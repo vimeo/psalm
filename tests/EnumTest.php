@@ -94,9 +94,67 @@ class EnumTest extends TestCase
                     $z = Mask::Two->value;
                 ',
                 'assertions' => [
-                    // xxx: we should be able to do better when we reference a case explicitly, like above
+                    '$z===' => '2',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'EnumCaseValue #8568' => [
+                'code' => '<?php
+                    enum Mask: int {
+                        case One = 1 << 0;
+                        case Two = 1 << 1;
+                    }
+                    /** @return Mask */
+                    function a() {
+                        return Mask::One;
+                    }
+
+                    $z = a()->value;
+                ',
+                'assertions' => [
                     '$z===' => '1|2',
                 ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'EnumUnionAsCaseValue #8568' => [
+                'code' => '<?php
+                    enum Mask: int {
+                        case One = 1 << 0;
+                        case Two = 1 << 1;
+                        case Four = 1 << 2;
+                    }
+                    /** @return Mask::One|Mask::Two */
+                    function a() {
+                        return Mask::One;
+                    }
+
+                    $z = a()->value;
+                ',
+                'assertions' => [
+                    '$z===' => '1|2',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'matchCaseOnEnumValue #8812' => [
+                'code' => '<?php
+                    enum SomeType: string
+                    {
+                        case FOO = "FOO";
+                        case BAR = "BAR";
+                    }
+
+                    function getSomething(string $moduleString): int
+                    {
+                        return match ($moduleString) {
+                            SomeType::FOO->value => 1,
+                            SomeType::BAR->value => 2,
+                        };
+                    }
+                ',
+                'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],

@@ -1368,6 +1368,34 @@ class ClosureTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'thisInStaticClosure' => [
+                'code' => '<?php
+                    class C {
+                        public string $a = "zzz";
+                        public function f(): void {
+                            $f = static function (): void {
+                                echo $this->a;
+                            };
+                            $f();
+                        }
+                    }
+                ',
+                'error_message' => 'InvalidScope',
+            ],
+            'thisInStaticArrowFunction' => [
+                'code' => '<?php
+                    class C {
+                        public int $a = 1;
+                        public function f(): int {
+                            $f = static fn(): int => $this->a;
+                            return $f();;
+                        }
+                    }
+                ',
+                'error_message' => 'InvalidScope',
+                'ignored_issues' => [],
+                'php_version' => '7.4',
+            ],
         ];
     }
 }

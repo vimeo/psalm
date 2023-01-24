@@ -597,6 +597,10 @@ final class Psalm
                 $progress = new DefaultProgress($show_errors, $show_info);
             }
         }
+        // output buffered warnings
+        foreach ($config->config_warnings as $warning) {
+            $progress->warning($warning);
+        }
         return $progress;
     }
 
@@ -1158,7 +1162,7 @@ final class Psalm
             );
         }
 
-        $is_shepherd_enabled = (bool) ($options['shepherd'] ?? getenv('PSALM_SHEPHERD'));
+        $is_shepherd_enabled = isset($options['shepherd']) || getenv('PSALM_SHEPHERD');
         if (! $is_shepherd_enabled) {
             return;
         }

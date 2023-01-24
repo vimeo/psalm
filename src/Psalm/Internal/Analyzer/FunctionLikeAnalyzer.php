@@ -217,7 +217,9 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             $this->suppressed_issues += $appearing_class_storage->suppressed_issues;
         }
 
-        if ($storage instanceof MethodStorage && $storage->is_static) {
+        if (($storage instanceof MethodStorage || $storage instanceof FunctionStorage)
+            && $storage->is_static
+        ) {
             $this->is_static = true;
         }
 

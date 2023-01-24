@@ -259,11 +259,15 @@ return [
     ],
     'ReflectionClass::newInstanceArgs' => [
       'old' => ['object', 'args='=>'list<mixed>'],
-      'new' => ['object', 'args='=>'array<array-key, mixed>'],
+      'new' => ['object', 'args='=>'list<mixed>|array<string, mixed>'],
     ],
     'ReflectionMethod::getClosure' => [
       'old' => ['?Closure', 'object='=>'object'],
       'new' => ['Closure', 'object='=>'?object'],
+    ],
+    'ReflectionObject::newInstanceArgs' => [
+      'old' => ['object', 'args='=>'list<mixed>'],
+      'new' => ['object', 'args='=>'list<mixed>|array<string, mixed>'],
     ],
     'ReflectionProperty::getValue' => [
       'old' => ['mixed', 'object='=>'object'],

@@ -62,13 +62,17 @@ use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
+use function array_filter;
 use function array_keys;
+use function array_map;
 use function array_search;
 use function count;
 use function in_array;
 use function is_int;
 use function is_string;
 use function strtolower;
+
+use const ARRAY_FILTER_USE_KEY;
 
 /**
  * @internal
@@ -198,7 +202,7 @@ class AtomicPropertyFetchAnalyzer
                     ]),
                 );
             } elseif ($prop_name === 'value' && $class_storage->enum_type !== null && $class_storage->enum_cases) {
-                self::handleEnumValue($statements_analyzer, $stmt, $class_storage);
+                self::handleEnumValue($statements_analyzer, $stmt, $stmt_var_type, $class_storage);
             } elseif ($prop_name === 'name') {
                 self::handleEnumName($statements_analyzer, $stmt, $lhs_type_part);
             } else {
@@ -941,11 +945,31 @@ class AtomicPropertyFetchAnalyzer
     private static function handleEnumValue(
         StatementsAnalyzer $statements_analyzer,
         PropertyFetch $stmt,
+        Union $stmt_var_type,
         ClassLikeStorage $class_storage
     ): void {
+        $relevant_enum_cases = array_filter(
+            $stmt_var_type->getAtomicTypes(),
+            static fn(Atomic $type): bool => $type instanceof TEnumCase,
+        );
+        $relevant_enum_case_names = array_map(
+            static fn(TEnumCase $enumCase): string => $enumCase->case_name,
+            $relevant_enum_cases,
+        );
+
+        $enum_cases = $class_storage->enum_cases;
+        if (!empty($relevant_enum_case_names)) {
+            // If we have a known subset of enum cases, include only those
+            $enum_cases = array_filter(
+                $enum_cases,
+                static fn(string $key) => in_array($key, $relevant_enum_case_names, true),
+                ARRAY_FILTER_USE_KEY,
+            );
+        }
+
         $case_values = [];
 
-        foreach ($class_storage->enum_cases as $enum_case) {
+        foreach ($enum_cases as $enum_case) {
             if (is_string($enum_case->value)) {
                 $case_values[] = new TLiteralString($enum_case->value);
             } elseif (is_int($enum_case->value)) {
@@ -956,7 +980,6 @@ class AtomicPropertyFetchAnalyzer
             }
         }
 
-        // todo: this is suboptimal when we reference enum directly, e.g. Status::Open->value
         /** @psalm-suppress ArgumentTypeCoercion */
         $statements_analyzer->node_data->setType(
             $stmt,
