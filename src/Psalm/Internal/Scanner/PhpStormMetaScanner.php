@@ -76,7 +76,7 @@ class PhpStormMetaScanner
                     $constant_type = $codebase->classlikes->getClassConstantType(
                         $resolved_name,
                         $array_item->key->name->name,
-                        ReflectionProperty::IS_PUBLIC,
+                        ReflectionProperty::IS_PRIVATE,
                     );
 
                     if (!$constant_type instanceof Union || !$constant_type->isSingleStringLiteral()) {

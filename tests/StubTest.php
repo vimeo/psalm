@@ -319,7 +319,7 @@ class StubTest extends TestCase
                     class MyClass {
                     
                         public const OBJECT = "object";
-                        public const EXCEPTION = "exception";
+                        private const EXCEPTION = "exception";
                         
                         /**
                          * @return mixed
