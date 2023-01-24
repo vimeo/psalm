@@ -2243,8 +2243,8 @@ class Config
             $is_stub_already_loaded = in_array($ext_stub_path, $this->internal_stubs, true);
             if (! $is_stub_already_loaded && extension_loaded($ext_name)) {
                 $this->internal_stubs[] = $ext_stub_path;
-                $progress->write("Warning: Psalm 6 will not automatically load stubs for ext-$ext_name."
-                    . " You should explicitly enable or disable this ext in composer.json or Psalm config.\n");
+                $progress->warning("Psalm 6 will not automatically load stubs for ext-$ext_name."
+                    . " You should explicitly enable or disable this ext in composer.json or Psalm config.");
             }
         }
 
