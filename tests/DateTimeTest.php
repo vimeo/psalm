@@ -44,8 +44,8 @@ class DateTimeTest extends TestCase
                     $b = $dateTimeImmutable->modify(getString());
                     ',
                 'assertions' => [
-                    '$a' => 'DateTime&static',
-                    '$b' => 'DateTimeImmutable&static',
+                    '$a' => 'DateTime',
+                    '$b' => 'DateTimeImmutable',
                 ],
             ],
             'modifyWithInvalidConstant' => [
@@ -88,6 +88,18 @@ class DateTimeTest extends TestCase
                     '$b' => 'DateTimeImmutable|false',
                 ],
             ],
+            'otherMethodAfterModify' => [
+                'code' => '<?php
+                    $datetime = new DateTime();
+                    $dateTimeImmutable = new DateTimeImmutable();
+                    $a = $datetime->modify("+1 day")->setTime(0, 0);
+                    $b = $dateTimeImmutable->modify("+1 day")->setTime(0, 0);
+                    ',
+                'assertions' => [
+                    '$a' => 'DateTime|false',
+                    '$b' => 'DateTimeImmutable',
+                ],
+            ],
             'modifyStaticReturn' => [
                 'code' => '<?php
 
@@ -99,7 +111,47 @@ class DateTimeTest extends TestCase
                     $mod = $foo->modify("+7 days");
                     ',
                 'assertions' => [
-                    '$mod' => 'Subclass&static',
+                    '$mod' => 'Subclass',
+                ],
+            ],
+            'otherMethodAfterModifyStaticReturn' => [
+                'code' => '<?php
+
+                    class Subclass extends DateTimeImmutable
+                    {
+                    }
+
+                    $datetime = new Subclass();
+                    $mod = $datetime->modify("+1 day")->setTime(0, 0);
+                    ',
+                'assertions' => [
+                    '$mod' => 'Subclass',
+                ],
+            ],
+            'formatAfterModify' => [
+                'code' => '<?php
+                    $datetime = new DateTime();
+                    $dateTimeImmutable = new DateTimeImmutable();
+                    $a = $datetime->modify("+1 day")->format("Y-m-d");
+                    $b = $dateTimeImmutable->modify("+1 day")->format("Y-m-d");
+                    ',
+                'assertions' => [
+                    '$a' => 'false|string',
+                    '$b' => 'string',
+                ],
+            ],
+            'formatAfterModifyStaticReturn' => [
+                'code' => '<?php
+
+                    class Subclass extends DateTimeImmutable
+                    {
+                    }
+
+                    $datetime = new Subclass();
+                    $format = $datetime->modify("+1 day")->format("Y-m-d");
+                    ',
+                'assertions' => [
+                    '$format' => 'string',
                 ],
             ],
         ];
