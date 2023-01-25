@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use Psalm\CodeLocation;
@@ -18,8 +20,11 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Union;
+use UnitEnum;
 use stdClass;
 
+use function is_int;
+use function is_string;
 use function reset;
 use function strtolower;
 
@@ -28,14 +33,9 @@ use function strtolower;
  */
 class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
-    /**
-     * @return array<lowercase-string>
-     */
     public static function getFunctionIds(): array
     {
-        return [
-            'get_object_vars',
-        ];
+        return ['get_object_vars'];
     }
 
     private static ?TArray $fallback = null;
@@ -54,6 +54,22 @@ class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProviderInter
         if ($first_arg_type->isSingle()) {
             $atomics = $first_arg_type->getAtomicTypes();
             $object_type = reset($atomics);
+
+            if ($object_type instanceof Atomic\TEnumCase) {
+                $properties = ['name' => new Union([new Atomic\TLiteralString($object_type->case_name)])];
+                $codebase = $statements_source->getCodebase();
+                $enum_classlike_storage = $codebase->classlike_storage_provider->get($object_type->value);
+                if ($enum_classlike_storage->enum_type === null) {
+                    return new TKeyedArray($properties);
+                }
+                $enum_case_storage = $enum_classlike_storage->enum_cases[$object_type->case_name];
+                if (is_int($enum_case_storage->value)) {
+                    $properties['value'] = new Union([new Atomic\TLiteralInt($enum_case_storage->value)]);
+                } elseif (is_string($enum_case_storage->value)) {
+                    $properties['value'] = new Union([new Atomic\TLiteralString($enum_case_storage->value)]);
+                }
+                return new TKeyedArray($properties);
+            }
 
             if ($object_type instanceof TObjectWithProperties) {
                 if ([] === $object_type->properties) {
@@ -126,7 +142,11 @@ class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProviderInter
                 return new TKeyedArray(
                     $properties,
                     null,
-                    $class_storage->final ? null : [Type::getString(), Type::getMixed()],
+                    $class_storage->final
+                        || $class_storage->name === UnitEnum::class
+                        || $codebase->interfaceExtends($class_storage->name, UnitEnum::class)
+                            ? null
+                            : [Type::getString(), Type::getMixed()],
                 );
             }
         }

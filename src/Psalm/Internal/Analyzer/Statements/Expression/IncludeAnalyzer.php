@@ -231,6 +231,15 @@ class IncludeAnalyzer
                 return true;
             }
 
+            if (isset($context->phantom_files[$path_to_file])) {
+                return true;
+            }
+
+            $var_id = ExpressionIdentifier::getExtendedVarId($stmt->expr, null);
+            if ($var_id && isset($context->phantom_files[$var_id])) {
+                return true;
+            }
+
             $source = $statements_analyzer->getSource();
 
             IssueBuffer::maybeAdd(

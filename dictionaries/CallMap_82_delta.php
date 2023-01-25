@@ -20,6 +20,7 @@ return [
     'mysqli::execute_query' => ['mysqli_result|bool', 'query'=>'non-empty-string', 'params='=>'list<mixed>|null'],
     'openssl_cipher_key_length' => ['positive-int|false', 'cipher_algo'=>'non-empty-string'],
     'curl_upkeep' => ['bool', 'handle'=>'CurlHandle'],
+    'imap_is_open' => ['bool', 'imap'=>'IMAP\Connection'],
     'ini_parse_quantity' => ['int', 'shorthand'=>'non-empty-string'],
     'libxml_get_external_entity_loader' => ['(callable(string,string,array{directory:?string,intSubName:?string,extSubURI:?string,extSubSystem:?string}):(resource|string|null))|null'],
     'memory_reset_peak_usage' => ['void'],
@@ -27,6 +28,8 @@ return [
     'ZipArchive::clearError' => ['void'],
     'ZipArchive::getStreamIndex' => ['resource|false', 'index'=>'int', 'flags='=>'int'],
     'ZipArchive::getStreamName' => ['resource|false', 'name'=>'string', 'flags='=>'int'],
+    'DateTimeInterface::__serialize' => ['array'],
+    'DateTimeInterface::__unserialize' => ['void', 'data'=>'array'],
   ],
 
   'changed' => [

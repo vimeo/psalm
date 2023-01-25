@@ -916,6 +916,19 @@ class MethodSignatureTest extends TestCase
                         public function a(mixed $a): void {}
                     }',
             ],
+            'doesNotRequireInterfaceDestructorsToHaveReturnType' => [
+                'code' => '<?php
+                    interface I
+                    {
+                        public function __destruct();
+                    }
+
+                    class C implements I
+                    {
+                        public function __destruct() {}
+                    }
+                ',
+            ],
         ];
     }
 

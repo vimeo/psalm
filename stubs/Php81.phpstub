@@ -13,6 +13,8 @@ namespace {
 
     interface BackedEnum extends UnitEnum
     {
+        /** @var non-empty-string $name */
+        public readonly string $name;
         public readonly int|string $value;
 
         /**
@@ -24,6 +26,12 @@ namespace {
          * @psalm-pure
          */
         public static function tryFrom(string|int $value): ?static;
+
+        /**
+         * @psalm-pure
+         * @return list<static>
+         */
+        public static function cases(): array;
     }
 
     class ReflectionClass implements Reflector {

@@ -2,13 +2,14 @@
 
 Psalm supports some _magical_ utility types that brings superpower to the PHP type system.
 
-## `key-of<T>`
+## key-of&lt;T&gt;
 
 (Psalm 5.0+)
 
 The `key-of` utility returns the offset-type for any [array type](array_types.md).
 
 Some examples:
+
 - `key-of<Foo\Bar::ARRAY_CONST>` evaluates to offset-type of `ARRAY_CONST` (Psalm 3.3+)
 - `key-of<list<mixed>>` evaluates to `int`
 - `key-of<array{a: mixed, b: mixed}|array{c: mixed}>` evaluates to `'a'|'b'|'c'`
@@ -18,6 +19,7 @@ Some examples:
 ### Notes on template usage
 
 If you use `key-of` with a template param, you can fulfill the type check only with these allowed methods:
+
 - `array_keys($t)`
 - `array_key_first($t)`
 - `array_key_last($t)`
@@ -35,14 +37,14 @@ function getKeys($array) {
 }
 ```
 
-
-## `value-of<T>`
+## value-of&lt;T&gt;
 
 (Psalm 5.0+)
 
 The `value-of` utility returns the value-type for any [array type](array_types.md).
 
 Some examples:
+
 - `value-of<Foo\Bar::ARRAY_CONST>` evaluates to value-type of `ARRAY_CONST` (Psalm 3.3+)
 - `value-of<list<float>>` evaluates to `float`
 - `value-of<array{a: bool, b: int}|array{c: string}>` evaluates to `bool|int|string`
@@ -52,6 +54,7 @@ Some examples:
 ### Notes on template usage
 
 If you use `value-of` with a template param, you can fulfill the type check only with these allowed methods:
+
 - `array_values`
 
 ```php
@@ -67,8 +70,7 @@ function getValues($array) {
 
 Currently `in_array($value, $t)` **does not** infer that `$value` is of `value-of<T>`.
 
-
-## `properties-of<T>`
+## properties-of&lt;T&gt;
 
 (Psalm 5.0+)
 
@@ -103,10 +105,10 @@ class A {
 
 Note that `properties-of<T>` will return **all non-static** properties. There are the following subtypes to pick only
 properties with a certain visibility:
+
 - `public-properties-of<T>`
 - `protected-properties-of<T>`
 - `private-properties-of<T>`
-
 
 ### Sealed array support
 
@@ -139,7 +141,7 @@ $b = asArray(new B);
 /** @psalm-trace $b */; // array{foo: string, bar: int, baz: float}
 ```
 
-## `class-string-map<T as Foo, T>`
+## class-string-map&lt;T as Foo, T&gt;
 
 Used to indicate an array where each value is equal an instance of the class string contained in the key:
 

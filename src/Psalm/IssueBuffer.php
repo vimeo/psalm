@@ -14,6 +14,7 @@ use Psalm\Issue\CodeIssue;
 use Psalm\Issue\ConfigIssue;
 use Psalm\Issue\MixedIssue;
 use Psalm\Issue\TaintedInput;
+use Psalm\Issue\UnusedBaselineEntry;
 use Psalm\Issue\UnusedPsalmSuppress;
 use Psalm\Plugin\EventHandler\Event\AfterAnalysisEvent;
 use Psalm\Plugin\EventHandler\Event\BeforeAddIssueEvent;
@@ -254,16 +255,16 @@ final class IssueBuffer
     public static function add(CodeIssue $e, bool $is_fixable = false): bool
     {
         $config = Config::getInstance();
+        $project_analyzer = ProjectAnalyzer::getInstance();
+        $codebase = $project_analyzer->getCodebase();
 
-        $event = new BeforeAddIssueEvent($e, $is_fixable);
+        $event = new BeforeAddIssueEvent($e, $is_fixable, $codebase);
         if ($config->eventDispatcher->dispatchBeforeAddIssue($event) === false) {
             return false;
-        };
+        }
 
         $fqcn_parts = explode('\\', get_class($e));
         $issue_type = array_pop($fqcn_parts);
-
-        $project_analyzer = ProjectAnalyzer::getInstance();
 
         if (!$project_analyzer->show_issues) {
             return false;
@@ -271,7 +272,7 @@ final class IssueBuffer
 
         $is_tainted = strpos($issue_type, 'Tainted') === 0;
 
-        if ($project_analyzer->getCodebase()->taint_flow_graph && !$is_tainted) {
+        if ($codebase->taint_flow_graph && !$is_tainted) {
             return false;
         }
 
@@ -609,6 +610,39 @@ final class IssueBuffer
                         }
 
                         $issues_data[$file_path][$key] = $issue_data;
+                    }
+                }
+
+                if ($codebase->config->find_unused_baseline_entry) {
+                    foreach ($issue_baseline as $file_path => $issues) {
+                        foreach ($issues as $issue_name => $issue) {
+                            if ($issue['o'] !== 0) {
+                                $issues_data[$file_path][] = new IssueData(
+                                    Config::REPORT_ERROR,
+                                    0,
+                                    0,
+                                    UnusedBaselineEntry::getIssueType(),
+                                    sprintf(
+                                        'Baseline for issue "%s" has %d extra %s.',
+                                        $issue_name,
+                                        $issue['o'],
+                                        $issue['o'] === 1 ? 'entry' : 'entries',
+                                    ),
+                                    $file_path,
+                                    '',
+                                    '',
+                                    '',
+                                    0,
+                                    0,
+                                    0,
+                                    0,
+                                    0,
+                                    0,
+                                    UnusedBaselineEntry::SHORTCODE,
+                                    UnusedBaselineEntry::ERROR_LEVEL,
+                                );
+                            }
+                        }
                     }
                 }
             }

@@ -154,14 +154,14 @@ class TypeCombiner
             $from_docblock = true;
 
             if (!isset($combination->value_types['null'])) {
-                $combination->value_types['null'] = new TNull();
+                $combination->value_types['null'] = new TNull($from_docblock);
             }
         }
 
         if (isset($combination->value_types['true']) && isset($combination->value_types['false'])) {
             unset($combination->value_types['true'], $combination->value_types['false']);
 
-            $combination->value_types['bool'] = new TBool();
+            $combination->value_types['bool'] = new TBool($from_docblock);
         }
 
         if ($combination->array_type_params
@@ -210,6 +210,7 @@ class TypeCombiner
             $new_types = self::handleKeyedArrayEntries(
                 $combination,
                 $overwrite_empty_array,
+                $from_docblock,
             );
         }
 
@@ -225,6 +226,7 @@ class TypeCombiner
                 $allow_mixed_union,
                 $type,
                 $combination->array_type_params,
+                $from_docblock,
             );
         }
 
@@ -239,7 +241,7 @@ class TypeCombiner
         foreach ($combination->builtin_type_params as $generic_type => $generic_type_params) {
             if ($generic_type === 'iterable') {
                 assert(count($generic_type_params) <= 2);
-                $new_types[] = new TIterable($generic_type_params);
+                $new_types[] = new TIterable($generic_type_params, [], $from_docblock);
             } else {
                 /** @psalm-suppress ArgumentTypeCoercion Caused by the PropertyTypeCoercion above */
                 $generic_object = new TGenericObject(
@@ -248,6 +250,7 @@ class TypeCombiner
                     false,
                     false,
                     $combination->extra_types,
+                    $from_docblock,
                 );
                 $new_types[] = $generic_object;
 
@@ -267,6 +270,7 @@ class TypeCombiner
                 false,
                 $combination->object_static[$generic_type] ?? false,
                 $combination->extra_types,
+                $from_docblock,
             );
 
             $new_types[] = $generic_object;
@@ -293,10 +297,14 @@ class TypeCombiner
 
                 foreach ($object_type->getAtomicTypes() as $object_atomic_type) {
                     if ($object_atomic_type instanceof TNamedObject) {
-                        $new_types[] = new TClassString($object_atomic_type->value, $object_atomic_type);
+                        $class_type = new TClassString($object_atomic_type->value, $object_atomic_type);
                     } elseif ($object_atomic_type instanceof TObject) {
-                        $new_types[] = new TClassString();
+                        $class_type = new TClassString();
+                    } else {
+                        continue;
                     }
+
+                    $new_types[] = $class_type->setFromDocblock($from_docblock);
                 }
             }
         }
@@ -351,7 +359,7 @@ class TypeCombiner
                 continue;
             }
 
-            $new_types[] = $type;
+            $new_types[] = $type->setFromDocblock($from_docblock);
         }
 
         if (!$new_types && !$has_never) {
@@ -1321,7 +1329,8 @@ class TypeCombiner
      */
     private static function handleKeyedArrayEntries(
         TypeCombination $combination,
-        bool $overwrite_empty_array
+        bool $overwrite_empty_array,
+        bool $from_docblock
     ): array {
         $new_types = [];
 
@@ -1397,6 +1406,7 @@ class TypeCombiner
                             ? null
                             : [$fallback_key_type, $fallback_value_type],
                         (bool)$combination->all_arrays_lists,
+                        $from_docblock,
                     );
                 } else {
                     $objectlike = new TKeyedArray(
@@ -1406,6 +1416,7 @@ class TypeCombiner
                             ? null
                             : [$fallback_key_type, $fallback_value_type],
                         (bool)$combination->all_arrays_lists,
+                        $from_docblock,
                     );
                 }
 
@@ -1414,10 +1425,12 @@ class TypeCombiner
                 $key_type = $combination->objectlike_key_type ?? Type::getArrayKey();
                 $value_type = $combination->objectlike_value_type ?? Type::getMixed();
                 if ($combination->array_always_filled) {
-                    $new_types[] = new TNonEmptyArray([$key_type, $value_type]);
+                    $array_type = new TNonEmptyArray([$key_type, $value_type]);
                 } else {
-                    $new_types[] = new TArray([$key_type, $value_type]);
+                    $array_type = new TArray([$key_type, $value_type]);
                 }
+
+                $new_types[] = $array_type->setFromDocblock($from_docblock);
             }
 
             // if we're merging an empty array with an object-like, clobber empty array
@@ -1436,7 +1449,8 @@ class TypeCombiner
         bool $overwrite_empty_array,
         bool $allow_mixed_union,
         Atomic $type,
-        array $generic_type_params
+        array $generic_type_params,
+        bool $from_docblock
     ): Atomic {
         if ($combination->objectlike_entries) {
             $objectlike_generic_type = null;
@@ -1455,11 +1469,11 @@ class TypeCombiner
                 );
 
                 if (is_int($property_name)) {
-                    $objectlike_keys[$property_name] = new TLiteralInt($property_name);
+                    $objectlike_keys[$property_name] = new TLiteralInt($property_name, $from_docblock);
                 } elseif ($type instanceof TKeyedArray && isset($type->class_strings[$property_name])) {
-                    $objectlike_keys[$property_name] = new TLiteralClassString($property_name);
+                    $objectlike_keys[$property_name] = new TLiteralClassString($property_name, $from_docblock);
                 } else {
-                    $objectlike_keys[$property_name] = new TLiteralString($property_name);
+                    $objectlike_keys[$property_name] = new TLiteralString($property_name, $from_docblock);
                 }
             }
 
@@ -1580,6 +1594,6 @@ class TypeCombiner
             }
         }
 
-        return $array_type;
+        return $array_type->setFromDocblock($from_docblock);
     }
 }

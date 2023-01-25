@@ -17,7 +17,7 @@ This functions list can be extended by configuring `forbiddenFunctions` in `psal
 
     <forbiddenFunctions>
         <function name="dd"/>
-        <function name="dump"/>
+        <function name="var_dump"/>
     </forbiddenFunctions>
 </psalm>
 ```

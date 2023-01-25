@@ -725,6 +725,46 @@ function join($separator, array $array = []): string
 /**
  * @psalm-pure
  *
+ * @param non-empty-string $separator
+ *
+ * @return (
+ *     $string is lowercase-string
+ *         ? (
+ *             $limit is int<min, -2>
+ *                 ? list<empty>
+ *                 : (
+ *                     $limit is int<0, 1>
+ *                         ? list{lowercase-string}
+ *                         : (
+ *                             $limit is 2
+ *                                 ? list{0: lowercase-string, 1?: lowercase-string}
+ *                                 : (
+ *                                     $limit is 3
+ *                                         ? list{0: lowercase-string, 1?: lowercase-string, 2?: lowercase-string}
+ *                                         : non-empty-list<lowercase-string>
+ *                                 )
+ *                         )
+ *                 )
+ *         )
+ *         : (
+ *             $limit is int<min, -2>
+ *                 ? list<empty>
+ *                 : (
+ *                     $limit is int<0, 1>
+ *                         ? list{string}
+ *                         : (
+ *                             $limit is 2
+ *                                 ? list{0: string, 1?: string}
+ *                                 : (
+ *                                     $limit is 3
+ *                                         ? list{0: string, 1?: string, 2?: string}
+ *                                         : non-empty-list<string>
+ *                                 )
+ *                         )
+ *                 )
+ *         )
+ * )
+ *
  * @psalm-flow ($string) -(array-assignment)-> return
  */
 function explode(string $separator, string $string, int $limit = -1) : array {}
@@ -1442,7 +1482,7 @@ function bin2hex(string $string): string {}
  *
  * @param resource|null $context
  *
- * @return ($associative is 0 ? list<string> : array<string, string|list<string>>)|false
+ * @return ($associative is false|0 ? list<string> : array<string, string|list<string>>)|false
  *
  * @psalm-taint-sink ssrf $url
  */
@@ -1492,3 +1532,67 @@ function mb_convert_encoding(array|string $string, string $to_encoding, array|st
  * @psalm-suppress ReferenceConstraintViolation
  */
 function stream_select(null|array &$read, null|array &$write, null|array &$except, null|int $seconds, null|int $microseconds = null) : bool|int {}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-taint-escape sql
+ * @psalm-flow ($string) -> return
+ */
+function mysqli_escape_string($string) {}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-taint-escape sql
+ * @psalm-flow ($string) -> return
+ */
+function mysqli_real_escape_string($string) {}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-taint-escape sql
+ * @psalm-flow ($string) -> return
+ */
+function db2_escape_string($string) {}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-taint-escape sql
+ * @psalm-flow ($string) -> return
+ */
+function cubrid_real_escape_string($string) {}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-taint-escape sql
+ * @psalm-flow ($string1, $string2) -> return
+ */
+function pg_escape_bytea($string1, $string2 = null) {}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-taint-escape sql
+ * @psalm-flow ($string1, $string2) -> return
+ */
+function pg_escape_identifier($string1, $string2 = null) {}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-taint-escape sql
+ * @psalm-flow ($string1, $string2) -> return
+ */
+function pg_escape_literal($string1, $string2 = null) {}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-taint-escape sql
+ * @psalm-flow ($string1, $string2) -> return
+ */
+function pg_escape_string($string1, $string2 = null) {}

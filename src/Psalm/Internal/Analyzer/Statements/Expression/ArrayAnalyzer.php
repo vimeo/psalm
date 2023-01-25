@@ -97,9 +97,6 @@ class ArrayAnalyzer
             $item_key_type = TypeCombiner::combine(
                 $array_creation_info->item_key_atomic_types,
                 $codebase,
-                false,
-                true,
-                30,
             );
         } else {
             $item_key_type = null;
@@ -109,9 +106,6 @@ class ArrayAnalyzer
             $item_value_type = TypeCombiner::combine(
                 $array_creation_info->item_value_atomic_types,
                 $codebase,
-                false,
-                true,
-                30,
             );
         } else {
             $item_value_type = null;

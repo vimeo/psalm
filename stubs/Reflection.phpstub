@@ -67,8 +67,6 @@ class ReflectionClass implements Reflector {
     public function hasMethod(string $name): bool {}
 
     /**
-     * @param non-empty-string $name
-     *
      * @psalm-pure
      * @throws ReflectionException
      */
@@ -82,16 +80,12 @@ class ReflectionClass implements Reflector {
     public function getMethods(?int $filter = null): array {}
 
     /**
-     * @param non-empty-string $name
-     *
      * @psalm-pure
      * @throws ReflectionException
      */
     public function hasProperty(string $name): bool {}
 
     /**
-     * @param non-empty-string $name
-     *
      * @psalm-pure
      * @throws ReflectionException
      */
@@ -106,14 +100,11 @@ class ReflectionClass implements Reflector {
     public function getProperties(?int $filter = null): array {}
 
     /**
-     * @param non-empty-string $name
-     *
      * @psalm-pure
      */
     public function hasConstant(string $name): bool {}
 
     /**
-     * @param non-empty-string $name
      * @return mixed
      *
      * @psalm-pure
@@ -122,7 +113,6 @@ class ReflectionClass implements Reflector {
     public function getConstant(string $name) {}
 
     /**
-     * @param non-empty-string $name
      * @return ReflectionClassConstant|false
      *
      * @psalm-pure
@@ -140,7 +130,7 @@ class ReflectionClass implements Reflector {
 
     /**
      * @param int-mask-of<ReflectionClassConstant::IS_*>|null $filter
-     * @return array<non-empty-string, mixed>
+     * @return list<ReflectionClassConstant>
      *
      * @psalm-pure
      */
@@ -169,7 +159,7 @@ class ReflectionClass implements Reflector {
     public function getTraits(): array {}
 
     /**
-     * @return list<non-empty-string, non-empty-string>
+     * @return array<non-empty-string, non-empty-string>
      *
      * @psalm-pure
      */
@@ -188,7 +178,7 @@ class ReflectionClass implements Reflector {
      * @return int-mask-of<ReflectionClass::IS_*>
      * @psalm-pure
      */
-    public function getModifiers(): bool {}
+    public function getModifiers(): int {}
 
     /**
      * @template J as object
@@ -206,7 +196,7 @@ class ReflectionClass implements Reflector {
     public function newInstance(...$args): object {}
 
     /**
-     * @param array<int, mixed> $args
+     * @param list<mixed> $args
      *
      * @return T
      */
@@ -280,8 +270,7 @@ class ReflectionClass implements Reflector {
     public function getShortName(): string {}
 
     /**
-     * @return ?list<trait-string>
-     * @psalm-ignore-nullable-return
+     * @return list<trait-string>
      * @psalm-pure
      */
     public function getTraitNames(): array {}
@@ -346,11 +335,11 @@ abstract class ReflectionFunctionAbstract implements Reflector
     public function getExtension(): ?ReflectionExtension {}
 
     /**
-     * @return non-empty-string
+     * @return non-empty-string|false
      *
      * @psalm-pure
      */
-    public function getExtensionName(): string {}
+    public function getExtensionName() {}
 
     /**
      * @return non-empty-string|false
@@ -574,7 +563,7 @@ class ReflectionMethod extends ReflectionFunctionAbstract
      * @return int-mask-of<ReflectionMethod::IS_*>
      * @psalm-pure
      */
-    public function getModifiers(): bool {}
+    public function getModifiers(): int {}
 
     /** @psalm-pure */
     public function getDeclaringClass(): ReflectionClass {}
@@ -653,6 +642,13 @@ class ReflectionParameter implements Reflector {
     * @since 8.0
     */
     public function isPromoted(): bool {}
+
+    /**
+     * @psalm-assert-if-true string $this->getDefaultValueConstantName()
+     */
+    public function isDefaultValueConstant(): bool {}
+
+    public function getDefaultValueConstantName(): ?string {}
 }
 
 /** @psalm-immutable */

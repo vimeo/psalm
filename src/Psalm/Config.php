@@ -441,6 +441,8 @@ class Config
     public $forbidden_functions = [];
 
     /**
+     * TODO: Psalm 6: Update default to be true and remove warning.
+     *
      * @var bool
      */
     public $find_unused_code = false;
@@ -454,6 +456,11 @@ class Config
      * @var bool
      */
     public $find_unused_psalm_suppress = false;
+
+    /**
+     * TODO: Psalm 6: Update default to be true and remove warning.
+     */
+    public bool $find_unused_baseline_entry = false;
 
     /**
      * @var bool
@@ -534,8 +541,17 @@ class Config
      */
     public $include_php_versions_in_error_baseline = false;
 
-    /** @var string */
+    /**
+     * @var string
+     * @deprecated Please use {@see self::$shepherd_endpoint} instead. Property will be removed in Psalm 6.
+     */
     public $shepherd_host = 'shepherd.dev';
+
+    /**
+     * @var string
+     * @internal
+     */
+    public $shepherd_endpoint = 'https://shepherd.dev/hooks/psalm/';
 
     /**
      * @var array<string, string>
@@ -608,6 +624,73 @@ class Config
     ];
 
     /**
+     * A list of php extensions described in CallMap Psalm files
+     * as opposite to stub files loaded by condition (see stubs/extensions dir).
+     *
+     * @see https://www.php.net/manual/en/extensions.membership.php
+     * @var list<non-empty-string>
+     * @readonly
+     */
+    public $php_extensions_supported_by_psalm_callmaps = [
+        'apache',
+        'bcmath',
+        'bzip2',
+        'calendar',
+        'ctype',
+        'curl',
+        'dom',
+        'enchant',
+        'exif',
+        'filter',
+        'gd',
+        'gettext',
+        'gmp',
+        'hash',
+        'iconv',
+        'imap',
+        'intl',
+        'json',
+        'ldap',
+        'libxml',
+        'mbstring',
+        'mysqli',
+        'mysqlnd',
+        'mhash',
+        'oci8',
+        'opcache',
+        'openssl',
+        'pcntl',
+        'PDO',
+        'pdo_mysql',
+        'pdo-sqlite',
+        'pdo-pgsql',
+        'pgsql',
+        'pspell',
+        'phar',
+        'phpdbg',
+        'posix',
+        'redis',
+        'readline',
+        'session',
+        'sockets',
+        'sqlite3',
+        'snmp',
+        'soap',
+        'sodium',
+        'shmop',
+        'sysvsem',
+        'tidy',
+        'tokenizer',
+        'uodbc',
+        'xml',
+        'xmlreader',
+        'xmlwriter',
+        'xsl',
+        'zip',
+        'zlib',
+    ];
+
+    /**
      * A list of php extensions required by the project that aren't fully supported by Psalm.
      *
      * @var array<string, true>
@@ -618,6 +701,9 @@ class Config
      * @var array<class-string, PluginInterface>
      */
     private array $plugins = [];
+
+    /** @var list<string> */
+    public array $config_warnings = [];
 
     /** @internal */
     protected function __construct()
@@ -989,6 +1075,7 @@ class Config
             'allowInternalNamedArgumentsCalls' => 'allow_internal_named_arg_calls',
             'allowNamedArgumentCalls' => 'allow_named_arg_calls',
             'findUnusedPsalmSuppress' => 'find_unused_psalm_suppress',
+            'findUnusedBaselineEntry' => 'find_unused_baseline_entry',
             'reportInfo' => 'report_info',
             'restrictReturnTypes' => 'restrict_return_types',
             'limitMethodComplexity' => 'limit_method_complexity',
@@ -1060,7 +1147,14 @@ class Config
             $autoloader_path = $config->base_dir . DIRECTORY_SEPARATOR . $config_xml['autoloader'];
 
             if (!file_exists($autoloader_path)) {
-                throw new ConfigException('Cannot locate autoloader');
+                // in here for legacy reasons where people put absolute paths but psalm resolved it relative
+                if ($config_xml['autoloader']->__toString()[0] === '/') {
+                    $autoloader_path = $config_xml['autoloader']->__toString();
+                }
+
+                if (!file_exists($autoloader_path)) {
+                    throw new ConfigException('Cannot locate autoloader');
+                }
             }
 
             $config->autoloader = realpath($autoloader_path);
@@ -1085,11 +1179,18 @@ class Config
             $config->use_igbinary = version_compare($igbinary_version, '2.0.5') >= 0;
         }
 
+        if (!isset($config_xml['findUnusedBaselineEntry'])) {
+            $config->config_warnings[] = '"findUnusedBaselineEntry" will be defaulted to "true" in Psalm 6.'
+                . ' You should explicitly enable or disable this setting.';
+        }
 
         if (isset($config_xml['findUnusedCode'])) {
             $attribute_text = (string) $config_xml['findUnusedCode'];
             $config->find_unused_code = $attribute_text === 'true' || $attribute_text === '1';
             $config->find_unused_variables = $config->find_unused_code;
+        } else {
+            $config->config_warnings[] = '"findUnusedCode" will be defaulted to "true" in Psalm 6.'
+                . ' You should explicitly enable or disable this setting.';
         }
 
         if (isset($config_xml['findUnusedVariablesAndParams'])) {
@@ -2125,6 +2226,7 @@ class Config
         if ($codebase->analysis_php_version_id >= 8_02_00) {
             $stringable_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'Php82.phpstub';
             $this->internal_stubs[] = $stringable_path;
+            $this->php_extensions['random'] = true; // random is a part of the PHP core starting from PHP 8.2
         }
 
         $ext_stubs_dir = $dir_lvl_2 . DIRECTORY_SEPARATOR . "stubs" . DIRECTORY_SEPARATOR . "extensions";
@@ -2143,7 +2245,7 @@ class Config
                 $this->internal_stubs[] = $ext_stub_path;
                 $progress->write("Deprecation: Psalm stubs for ext-$ext_name loaded using legacy way."
                     . " Instead, please declare ext-$ext_name as dependency in composer.json"
-                    . " or use <enableExtensions> directive in Psalm config.\n");
+                    . " or use <enableExtensions> and/or <disableExtensions> directives in Psalm config.\n");
             }
         }
 
@@ -2257,17 +2359,11 @@ class Config
     public function collectPredefinedFunctions(): void
     {
         $defined_functions = get_defined_functions();
-
-        if (isset($defined_functions['user'])) {
-            foreach ($defined_functions['user'] as $function_name) {
-                $this->predefined_functions[$function_name] = true;
-            }
+        foreach ($defined_functions['user'] as $function_name) {
+            $this->predefined_functions[$function_name] = true;
         }
-
-        if (isset($defined_functions['internal'])) {
-            foreach ($defined_functions['internal'] as $function_name) {
-                $this->predefined_functions[$function_name] = true;
-            }
+        foreach ($defined_functions['internal'] as $function_name) {
+            $this->predefined_functions[$function_name] = true;
         }
     }
 

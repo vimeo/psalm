@@ -47,7 +47,7 @@ class ClientHandler
             /**
              * @return Generator<int, Promise, mixed, Promise<mixed>>
              */
-            static function () use ($id, $method, $params): Generator {
+            function () use ($id, $method, $params): Generator {
                 yield $this->protocolWriter->write(
                     new Message(
                         new Request($id, $method, (object) $params),
@@ -57,7 +57,7 @@ class ClientHandler
                 $deferred = new Deferred();
 
                 $listener =
-                    static function (Message $msg) use ($id, $deferred, &$listener): void {
+                    function (Message $msg) use ($id, $deferred, &$listener): void {
                         /**
                          * @psalm-suppress UndefinedPropertyFetch
                          * @psalm-suppress MixedArgument

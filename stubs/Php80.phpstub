@@ -110,6 +110,13 @@ class ReflectionClass implements Reflector {
      * @psalm-pure
      */
     public function getExtensionName(): string|false {}
+
+    /**
+     * @param list<mixed>|array<string, mixed> $args
+     *
+     * @return T
+     */
+    public function newInstanceArgs(array $args): object {}
 }
 
 /** @psalm-immutable */
@@ -152,6 +159,13 @@ abstract class ReflectionFunctionAbstract implements Reflector
      * @psalm-pure
      */
     public function getFileName(): string|false {}
+
+    /**
+     * @return non-empty-string|false
+     *
+     * @psalm-pure
+     */
+    public function getExtensionName(): string|false {}
 }
 
 /** @psalm-immutable */
@@ -214,3 +228,14 @@ class DatePeriod implements IteratorAggregate
     /** @psalm-return (Start is string ? (Traversable<int, DateTime>&Iterator) : (Traversable<int, Start>&Iterator)) */
     public function getIterator(): Iterator {}
 }
+
+/**
+ * @psalm-pure
+ *
+ * @param resource|null $context
+ *
+ * @return ($associative is false|0 ? list<string> : array<string, string|list<string>>)|false
+ *
+ * @psalm-taint-sink ssrf $url
+ */
+function get_headers(string $url, bool $associative = false, $context = null) : array|false {}

@@ -255,4 +255,21 @@ class TNamedObject extends Atomic
     {
         return ['extra_types'];
     }
+
+    /**
+     * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties> $extra_types
+     */
+    public static function createFromName(
+        string $value,
+        bool $is_static = false,
+        bool $definite_class = false,
+        array $extra_types = [],
+        bool $from_docblock = false
+    ): TNamedObject {
+        if ($value === 'Closure') {
+            return new TClosure($value, null, null, null, [], $extra_types, $from_docblock);
+        }
+
+        return new TNamedObject($value, $is_static, $definite_class, $extra_types, $from_docblock);
+    }
 }

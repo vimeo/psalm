@@ -63,11 +63,14 @@ use function is_string;
 use function json_encode;
 use function max;
 use function microtime;
+use function parse_url;
 use function preg_match;
 use function preg_replace;
 use function realpath;
 use function setlocale;
 use function str_repeat;
+use function str_replace;
+use function strlen;
 use function strpos;
 use function substr;
 use function version_compare;
@@ -77,6 +80,7 @@ use const JSON_THROW_ON_ERROR;
 use const LC_CTYPE;
 use const PHP_EOL;
 use const PHP_OS;
+use const PHP_URL_SCHEME;
 use const PHP_VERSION;
 use const STDERR;
 
@@ -195,10 +199,9 @@ final class Psalm
         if (array_key_exists('h', $options)) {
             echo self::getHelpText();
             /*
-            --shepherd[=host]
-                Send data to Shepherd, Psalm's GitHub integration tool.
-                `host` is the location of the Shepherd server. It defaults to shepherd.dev
-                More information is available at https://psalm.dev/shepherd
+            --shepherd[=endpoint]
+                Send analysis statistics to Shepherd server.
+                `endpoint` is the URL to the Shepherd server. It defaults to shepherd.dev
             */
 
             exit;
@@ -279,13 +282,16 @@ final class Psalm
             chdir($current_dir);
         }
 
+        /** @var list<string> $plugins List of paths to plugin files */
         $plugins = [];
 
         if (isset($options['plugin'])) {
-            $plugins = $options['plugin'];
+            $plugins_from_options = $options['plugin'];
 
-            if (!is_array($plugins)) {
-                $plugins = [$plugins];
+            if (is_array($plugins_from_options)) {
+                $plugins = $plugins_from_options;
+            } elseif (is_string($plugins_from_options)) {
+                $plugins = [$plugins_from_options];
             }
         }
 
@@ -301,24 +307,7 @@ final class Psalm
             ? $options['find-references-to']
             : null;
 
-        if (isset($options['shepherd']) || getenv('PSALM_SHEPHERD')) {
-            if (isset($options['shepherd'])) {
-                if (is_string($options['shepherd'])) {
-                    $config->shepherd_host = $options['shepherd'];
-                }
-            } elseif (getenv('PSALM_SHEPHERD')) {
-                if (false !== ($shepherd_host = getenv('PSALM_SHEPHERD_HOST'))) {
-                    $config->shepherd_host = $shepherd_host;
-                }
-            }
-            $shepherd_plugin = Path::canonicalize(__DIR__ . '/../../Plugin/Shepherd.php');
-
-            if (!file_exists($shepherd_plugin)) {
-                die('Could not find Shepherd plugin location ' . $shepherd_plugin . PHP_EOL);
-            }
-
-            $plugins[] = $shepherd_plugin;
-        }
+        self::configureShepherd($config, $options, $plugins);
 
         if (isset($options['clear-cache'])) {
             self::clearCache($config);
@@ -607,6 +596,10 @@ final class Psalm
             } else {
                 $progress = new DefaultProgress($show_errors, $show_info);
             }
+        }
+        // output buffered warnings
+        foreach ($config->config_warnings as $warning) {
+            $progress->warning($warning);
         }
         return $progress;
     }
@@ -1157,6 +1150,53 @@ final class Psalm
         }
     }
 
+    private static function configureShepherd(Config $config, array $options, array &$plugins): void
+    {
+        if (is_string(getenv('PSALM_SHEPHERD_HOST'))) { // remove this block in Psalm 6
+            fwrite(
+                STDERR,
+                'PSALM_SHEPHERD_HOST env variable is deprecated and will be removed in Psalm 6.'
+                .' Please use "--shepherd" cli option or PSALM_SHEPHERD env variable'
+                .' to specify a custom Shepherd host/endpoint.'
+                . PHP_EOL,
+            );
+        }
+
+        $is_shepherd_enabled = isset($options['shepherd']) || getenv('PSALM_SHEPHERD');
+        if (! $is_shepherd_enabled) {
+            return;
+        }
+
+        $plugins[] = Path::canonicalize(__DIR__ . '/../../Plugin/Shepherd.php');
+
+        /** @psalm-suppress MixedAssignment */
+        $custom_shepherd_endpoint = ($options['shepherd'] ?? getenv('PSALM_SHEPHERD'));
+        if (is_string($custom_shepherd_endpoint) && strlen($custom_shepherd_endpoint) > 2) {
+            if (parse_url($custom_shepherd_endpoint, PHP_URL_SCHEME) === null) {
+                $custom_shepherd_endpoint = 'https://' . $custom_shepherd_endpoint;
+            }
+
+            /** @psalm-suppress DeprecatedProperty */
+            $config->shepherd_host = str_replace('/hooks/psalm', '', $custom_shepherd_endpoint);
+            $config->shepherd_endpoint = $custom_shepherd_endpoint;
+
+            return;
+        }
+
+        // Legacy part, will be removed in Psalm 6
+        $custom_shepherd_host = getenv('PSALM_SHEPHERD_HOST');
+
+        if (is_string($custom_shepherd_host)) {
+            if (parse_url($custom_shepherd_host, PHP_URL_SCHEME) === null) {
+                $custom_shepherd_host = 'https://' . $custom_shepherd_host;
+            }
+
+            /** @psalm-suppress DeprecatedProperty */
+            $config->shepherd_host = $custom_shepherd_host;
+            $config->shepherd_endpoint = $custom_shepherd_host . '/hooks/psalm';
+        }
+    }
+
     private static function generateStubs(
         array $options,
         Providers $providers,
@@ -1329,8 +1369,8 @@ final class Psalm
             --generate-stubs=PATH
                 Generate stubs for the project and dump the file in the given path
 
-            --shepherd[=host]
-                Send data to Shepherd, Psalm’s GitHub integration tool.
+            --shepherd[=endpoint]
+                Send analysis statistics to Shepherd (shepherd.dev) or your server.
 
             --alter
                 Run Psalter

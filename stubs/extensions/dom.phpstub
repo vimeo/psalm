@@ -50,10 +50,6 @@ const DOM_NAMESPACE_ERR = 14;
 const DOM_INVALID_ACCESS_ERR = 15;
 const DOM_VALIDATION_ERR = 16;
 
-function dom_import_simplexml(object $node): ?DOMElement {}
-/** @php-from 8.0 */
-function dom_import_simplexml(object $node): DOMElement {}
-
 final class DOMException extends Exception
 {
     public int $code;
@@ -978,6 +974,9 @@ class DOMXPath
 
     public function evaluate(string $expression, ?DOMNode $contextNode = null, bool $registerNodeNS = true): mixed {}
 
+    /**
+     * @return DOMNodeList<DOMNode>|false
+     */
     public function query(string $expression, ?DOMNode $contextNode = null, bool $registerNodeNS = true): mixed {}
 
     public function registerNamespace(string $prefix, string $namespace): bool {}

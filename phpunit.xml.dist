@@ -48,4 +48,8 @@
             <directory>tests</directory>
         </testsuite>
     </testsuites>
+
+    <php>
+        <const name="__IS_TEST_ENV__" value="1" />
+    </php>
 </phpunit>

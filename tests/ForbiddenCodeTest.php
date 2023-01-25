@@ -216,6 +216,40 @@ class ForbiddenCodeTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
+    public function testNoExceptionWithMatchingNameButDifferentNamespace(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2),
+                <<<'XML'
+                    <?xml version="1.0"?>
+                    <psalm>
+                        <forbiddenFunctions>
+                            <function name="strlen"/>
+                        </forbiddenFunctions>
+                    </psalm>
+                    XML,
+            ),
+        );
+        $file_path = getcwd() . '/src/somefile.php';
+        $this->addFile(
+            $file_path,
+            <<<'PHP'
+                <?php
+                namespace Foo {
+                    function strlen(): int {
+                        return 0;
+                    }
+                }
+                namespace {
+                    use function Foo\strlen;
+                    strlen();
+                }
+                PHP,
+        );
+        $this->analyzeFile($file_path, new Context());
+    }
+
     public function testForbiddenEmptyFunction(): void
     {
         $this->expectExceptionMessage('ForbiddenCode');

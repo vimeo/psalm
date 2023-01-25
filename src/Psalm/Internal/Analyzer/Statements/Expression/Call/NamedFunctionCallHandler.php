@@ -10,6 +10,7 @@ use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\IncludeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\VariableUseGraph;
@@ -48,7 +49,6 @@ use Psalm\Type\Union;
 
 use function array_map;
 use function extension_loaded;
-use function implode;
 use function in_array;
 use function is_string;
 use function strpos;
@@ -60,7 +60,7 @@ use function strtolower;
 class NamedFunctionCallHandler
 {
     /**
-     * @param  lowercase-string  $function_id
+     * @param lowercase-string $function_id
      */
     public static function handle(
         StatementsAnalyzer $statements_analyzer,
@@ -68,7 +68,7 @@ class NamedFunctionCallHandler
         PhpParser\Node\Expr\FuncCall $stmt,
         PhpParser\Node\Expr\FuncCall $real_stmt,
         PhpParser\Node\Name $function_name,
-        ?string $function_id,
+        string $function_id,
         Context $context
     ): void {
         if ($function_id === 'get_class'
@@ -179,6 +179,22 @@ class NamedFunctionCallHandler
 
             if ($var_id) {
                 $context->phantom_files[$var_id] = true;
+                return;
+            }
+
+            // literal string or (magic) const in file path
+            $codebase = $statements_analyzer->getCodebase();
+            $config = $codebase->config;
+            $path_to_file = IncludeAnalyzer::getPathTo(
+                $first_arg->value,
+                $statements_analyzer->node_data,
+                $statements_analyzer,
+                $statements_analyzer->getFileName(),
+                $config,
+            );
+
+            if ($path_to_file) {
+                $context->phantom_files[$path_to_file] = true;
             }
 
             return;
@@ -298,17 +314,17 @@ class NamedFunctionCallHandler
         ) {
             IssueBuffer::maybeAdd(
                 new ForbiddenCode(
-                    'Unsafe ' . implode('', $function_name->parts),
+                    'Unsafe ' . $function_id,
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
                 ),
                 $statements_analyzer->getSuppressedIssues(),
             );
         }
 
-        if (isset($codebase->config->forbidden_functions[strtolower((string) $function_name)])) {
+        if (isset($codebase->config->forbidden_functions[$function_id])) {
             IssueBuffer::maybeAdd(
                 new ForbiddenCode(
-                    'You have forbidden the use of ' . $function_name,
+                    'You have forbidden the use of ' . $function_id,
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
                 ),
                 $statements_analyzer->getSuppressedIssues(),

@@ -4,6 +4,7 @@ namespace Psalm\Storage;
 
 use Psalm\Aliases;
 use Psalm\CodeLocation;
+use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TypeAlias\ClassTypeAlias;
 use Psalm\Issue\CodeIssue;
@@ -184,12 +185,17 @@ final class ClassLikeStorage implements HasAttributesInterface
     public $trait_alias_map = [];
 
     /**
+     * @var array<string, string>
+     */
+    public array $trait_alias_map_cased = [];
+
+    /**
      * @var array<lowercase-string, bool>
      */
     public $trait_final_map = [];
 
     /**
-     * @var array<string, int>
+     * @var array<string, ClassLikeAnalyzer::VISIBILITY_*>
      */
     public $trait_visibility_map = [];
 
@@ -461,6 +467,8 @@ final class ClassLikeStorage implements HasAttributesInterface
      * @var ?string
      */
     public $description;
+
+    public bool $public_api = false;
 
     public function __construct(string $name)
     {

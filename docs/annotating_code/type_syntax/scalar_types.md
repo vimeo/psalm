@@ -21,12 +21,12 @@ Examples:
 * `int<min, 0>` (equivalent to `non-positive-int`)
 * `int<min, max>` (equivalent to `int`)
 
-## `int-mask<1, 2, 4>`
+## int-mask&lt;1, 2, 4&gt;
 
 Represents the type that is the result of a bitmask combination of its parameters.  
 `int-mask<1, 2, 4>` corresponds to `0|1|2|3|4|5|6|7`.  
 
-## `int-mask-of<MyClass::CLASS_CONSTANT_*>`
+## int-mask-of&lt;MyClass::CLASS_CONSTANT_*&gt;
 
 Represents the type that is the result of a bitmask combination of its parameters.  
 This is the same concept as [`int-mask`](#int-mask1-2-4) but this type is used with a reference to constants in code: `int-mask-of<MyClass::CLASS_CONSTANT_*>` will correspond to `0|1|2|3|4|5|6|7` if there are three constants called `CLASS_CONSTANT_{A,B,C}` with values 1, 2 and 4.  

@@ -251,7 +251,7 @@
     </rule>
     <rule ref="SlevomatCodingStandard.TypeHints.PropertyTypeHint">
         <exclude name="SlevomatCodingStandard.TypeHints.PropertyTypeHint.MissingTraversableTypeHintSpecification"/>
-        <!-- TODO: Remove these include-patterns in Psalm v6.0.0 -->
+        <!-- TODO: Remove in Psalm 6 -->
         <include-pattern>bin/*</include-pattern>
         <include-pattern>src/Psalm/Internal/*</include-pattern>
         <include-pattern>tests/*</include-pattern>

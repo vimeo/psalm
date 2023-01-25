@@ -44,8 +44,8 @@ class DateTimeTest extends TestCase
                     $b = $dateTimeImmutable->modify(getString());
                     ',
                 'assertions' => [
-                    '$a' => 'DateTime',
-                    '$b' => 'DateTimeImmutable',
+                    '$a' => 'DateTime&static',
+                    '$b' => 'DateTimeImmutable&static',
                 ],
             ],
             'modifyWithInvalidConstant' => [
@@ -86,6 +86,20 @@ class DateTimeTest extends TestCase
                 'assertions' => [
                     '$a' => 'DateTime|false',
                     '$b' => 'DateTimeImmutable|false',
+                ],
+            ],
+            'modifyStaticReturn' => [
+                'code' => '<?php
+
+                    class Subclass extends DateTimeImmutable
+                    {
+                    }
+
+                    $foo = new Subclass("2023-01-01 12:12:13");
+                    $mod = $foo->modify("+7 days");
+                    ',
+                'assertions' => [
+                    '$mod' => 'Subclass&static',
                 ],
             ],
         ];

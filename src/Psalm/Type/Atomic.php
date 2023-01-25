@@ -162,7 +162,13 @@ abstract class Atomic implements TypeNode
         ?string $text = null,
         bool    $from_docblock = false
     ): Atomic {
-        $result = self::createInner($value, $analysis_php_version_id, $template_type_map, $type_aliases);
+        $result = self::createInner(
+            $value,
+            $analysis_php_version_id,
+            $template_type_map,
+            $type_aliases,
+            $from_docblock,
+        );
         $result->offset_start = $offset_start;
         $result->offset_end = $offset_end;
         $result->text = $text;
@@ -378,6 +384,9 @@ abstract class Atomic implements TypeNode
 
             case 'non-empty-mixed':
                 return new TNonEmptyMixed();
+
+            case 'Closure':
+                return new TClosure('Closure');
         }
 
         if (strpos($value, '-') && strpos($value, 'OCI-') !== 0) {

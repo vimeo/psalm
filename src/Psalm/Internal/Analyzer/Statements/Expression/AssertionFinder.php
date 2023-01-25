@@ -1246,7 +1246,7 @@ class AssertionFinder
                     $instanceof_class = $codebase->classlikes->getUnAliasedName($instanceof_class);
                 }
 
-                return [new IsType(new TNamedObject($instanceof_class))];
+                return [new IsType(TNamedObject::createFromName($instanceof_class))];
             }
 
             if ($this_class_name

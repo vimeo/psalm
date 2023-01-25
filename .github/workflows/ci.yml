@@ -87,7 +87,7 @@ jobs:
           ini-values: zend.assertions=1, assert.exception=1
           tools: composer:v2
           coverage: none
-          extensions: none, curl, dom, filter, json, libxml, mbstring, openssl, pcre, phar, reflection, simplexml, spl, tokenizer, xml, xmlwriter
+          extensions: none, curl, dom, filter, intl, json, libxml, mbstring, openssl, pcre, phar, reflection, simplexml, spl, tokenizer, xml, xmlwriter
 
       - uses: actions/checkout@v3
 

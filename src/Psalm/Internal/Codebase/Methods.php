@@ -771,14 +771,14 @@ class Methods
                 if (((!$old_contained_by_new && !$new_contained_by_old)
                     || ($old_contained_by_new && $new_contained_by_old))
                     && !$candidate_type->hasTemplate()
-                    && !$overridden_storage->return_type->hasTemplate()
+                    && !$overridden_storage_return_type->hasTemplate()
                 ) {
                     $attempted_intersection = null;
                     if ($old_contained_by_new) { //implicitly $new_contained_by_old as well
                         try {
                             $attempted_intersection = Type::intersectUnionTypes(
                                 $candidate_type,
-                                $overridden_storage->return_type,
+                                $overridden_storage_return_type,
                                 $source_analyzer->getCodebase(),
                             );
                         } catch (InvalidArgumentException $e) {
@@ -786,7 +786,7 @@ class Methods
                         }
                     } else {
                         $attempted_intersection = Type::intersectUnionTypes(
-                            $overridden_storage->return_type,
+                            $overridden_storage_return_type,
                             $candidate_type,
                             $source_analyzer->getCodebase(),
                         );
@@ -811,7 +811,7 @@ class Methods
 
                 $self_class = $overridden_method_id->fq_class_name;
 
-                return $overridden_storage->return_type;
+                return $overridden_storage_return_type;
             }
         }
 
@@ -920,13 +920,19 @@ class Methods
 
         $storage = $this->getStorage($method_id);
 
+        // if function exists in stubs and in analyzed code
+        // use the return type location of the analyzed code instead of the stubbed location
+        if ($storage->stubbed) {
+            return null;
+        }
+
         if (!$storage->return_type_location) {
             $overridden_method_ids = $this->getOverriddenMethodIds($method_id);
 
             foreach ($overridden_method_ids as $overridden_method_id) {
                 $overridden_storage = $this->getStorage($overridden_method_id);
 
-                if ($overridden_storage->return_type_location) {
+                if ($overridden_storage->return_type_location && !$overridden_storage->stubbed) {
                     $defined_location = $overridden_storage->return_type_location;
                     break;
                 }

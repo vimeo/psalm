@@ -71,11 +71,6 @@ final class CliUtils
         $in_phar = Phar::running() || strpos(__NAMESPACE__, 'HumbugBox');
 
         if ($in_phar) {
-            // require this before anything else
-            $stringable_path = __DIR__ . '/../../../vendor/symfony/polyfill-php80/Resources/stubs/Stringable.php';
-            if (file_exists($stringable_path)) {
-                require_once $stringable_path;
-            }
             require_once __DIR__ . '/../../../vendor/autoload.php';
 
             // hack required for JsonMapper

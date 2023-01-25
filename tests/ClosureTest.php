@@ -914,6 +914,26 @@ class ClosureTest extends TestCase
                     /** @psalm-suppress UndefinedFunction */
                     unknown(...);',
             ],
+            'reconcileClosure' => [
+                'code' => '<?php
+                    /**
+                    * @param Closure|callable-string $callable
+                    */
+                    function use_callable($callable) : void
+                    {
+                    }
+
+                    /**
+                    * @param Closure|string $var
+                    */
+                    function test($var) : void
+                    {
+                        if (is_callable($var))
+                            use_callable($var);
+                        else
+                            echo $var;  // $var should be string, instead it\'s considered to be Closure|string.
+                    }',
+            ],
         ];
     }
 
@@ -1347,6 +1367,34 @@ class ClosureTest extends TestCase
                 'error_message' => 'MixedAssignment',
                 'ignored_issues' => [],
                 'php_version' => '8.1',
+            ],
+            'thisInStaticClosure' => [
+                'code' => '<?php
+                    class C {
+                        public string $a = "zzz";
+                        public function f(): void {
+                            $f = static function (): void {
+                                echo $this->a;
+                            };
+                            $f();
+                        }
+                    }
+                ',
+                'error_message' => 'InvalidScope',
+            ],
+            'thisInStaticArrowFunction' => [
+                'code' => '<?php
+                    class C {
+                        public int $a = 1;
+                        public function f(): int {
+                            $f = static fn(): int => $this->a;
+                            return $f();;
+                        }
+                    }
+                ',
+                'error_message' => 'InvalidScope',
+                'ignored_issues' => [],
+                'php_version' => '7.4',
             ],
         ];
     }

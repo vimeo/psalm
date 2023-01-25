@@ -38,6 +38,7 @@ use Psalm\Internal\Type\TypeAlias\InlineTypeAlias;
 use Psalm\Internal\Type\TypeAlias\LinkableTypeAlias;
 use Psalm\Internal\Type\TypeParser;
 use Psalm\Internal\Type\TypeTokenizer;
+use Psalm\Issue\ConstantDeclarationInTrait;
 use Psalm\Issue\DuplicateClass;
 use Psalm\Issue\DuplicateConstant;
 use Psalm\Issue\DuplicateEnumCase;
@@ -73,6 +74,8 @@ use function assert;
 use function count;
 use function get_class;
 use function implode;
+use function is_int;
+use function is_string;
 use function preg_match;
 use function preg_replace;
 use function preg_split;
@@ -286,6 +289,7 @@ class ClassLikeNodeScanner
             $this->codebase->classlikes->addFullyQualifiedTraitName($fq_classlike_name, $this->file_path);
         } elseif ($node instanceof PhpParser\Node\Stmt\Enum_) {
             $storage->is_enum = true;
+            $storage->final = true;
 
             if ($node->scalarType) {
                 if ($node->scalarType->name === 'string' || $node->scalarType->name === 'int') {
@@ -678,6 +682,8 @@ class ClassLikeNodeScanner
             if ($docblock_info->description) {
                 $storage->description = $docblock_info->description;
             }
+
+            $storage->public_api = $docblock_info->public_api;
         }
 
         foreach ($node->stmts as $node_stmt) {
@@ -691,6 +697,33 @@ class ClassLikeNodeScanner
                     $storage,
                     $fq_classlike_name,
                 );
+            }
+        }
+
+        if ($storage->is_enum) {
+            $name_types = [];
+            $values_types = [];
+            foreach ($storage->enum_cases as $name => $enumCaseStorage) {
+                $name_types[] = new Type\Atomic\TLiteralString($name);
+                if ($storage->enum_type !== null) {
+                    if (is_string($enumCaseStorage->value)) {
+                        $values_types[] = new Type\Atomic\TLiteralString($enumCaseStorage->value);
+                    } elseif (is_int($enumCaseStorage->value)) {
+                        $values_types[] = new Type\Atomic\TLiteralInt($enumCaseStorage->value);
+                    }
+                }
+            }
+            if ($name_types !== []) {
+                $storage->declaring_property_ids['name'] = $storage->name;
+                $storage->appearing_property_ids['name'] = "{$storage->name}::\$name";
+                $storage->properties['name'] = new PropertyStorage();
+                $storage->properties['name']->type = new Union($name_types);
+            }
+            if ($values_types !== []) {
+                $storage->declaring_property_ids['value'] = $storage->name;
+                $storage->appearing_property_ids['value'] = "{$storage->name}::\$value";
+                $storage->properties['value'] = new PropertyStorage();
+                $storage->properties['value']->type = new Union($values_types);
             }
         }
 
@@ -785,6 +818,11 @@ class ClassLikeNodeScanner
                 );
 
                 $converted_aliases[$key] = new ClassTypeAlias(array_values($union->getAtomicTypes()));
+            } catch (TypeParseTreeException $e) {
+                $classlike_storage->docblock_issues[] = new InvalidDocblock(
+                    '@psalm-type ' . $key . ' contains invalid reference: ' . $e->getMessage(),
+                    new CodeLocation($this->file_scanner, $node, null, true),
+                );
             } catch (Exception $e) {
                 $classlike_storage->docblock_issues[] = new InvalidDocblock(
                     '@psalm-type ' . $key . ' contains invalid references',
@@ -806,10 +844,6 @@ class ClassLikeNodeScanner
             throw new UnexpectedValueException('bad');
         }
 
-        $method_map = $storage->trait_alias_map ?: [];
-        $visibility_map = $storage->trait_visibility_map ?: [];
-        $final_map = $storage->trait_final_map ?: [];
-
         foreach ($node->adaptations as $adaptation) {
             if ($adaptation instanceof PhpParser\Node\Stmt\TraitUseAdaptation\Alias) {
                 $old_name = strtolower($adaptation->method->name);
@@ -819,35 +853,32 @@ class ClassLikeNodeScanner
                     $new_name = strtolower($adaptation->newName->name);
 
                     if ($new_name !== $old_name) {
-                        $method_map[$new_name] = $old_name;
+                        $storage->trait_alias_map[$new_name] = $old_name;
+                        $storage->trait_alias_map_cased[$adaptation->newName->name] = $adaptation->method->name;
                     }
                 }
 
                 if ($adaptation->newModifier) {
                     switch ($adaptation->newModifier) {
                         case 1:
-                            $visibility_map[$new_name] = ClassLikeAnalyzer::VISIBILITY_PUBLIC;
+                            $storage->trait_visibility_map[$new_name] = ClassLikeAnalyzer::VISIBILITY_PUBLIC;
                             break;
 
                         case 2:
-                            $visibility_map[$new_name] = ClassLikeAnalyzer::VISIBILITY_PROTECTED;
+                            $storage->trait_visibility_map[$new_name] = ClassLikeAnalyzer::VISIBILITY_PROTECTED;
                             break;
 
                         case 4:
-                            $visibility_map[$new_name] = ClassLikeAnalyzer::VISIBILITY_PRIVATE;
+                            $storage->trait_visibility_map[$new_name] = ClassLikeAnalyzer::VISIBILITY_PRIVATE;
                             break;
 
                         case 32:
-                            $final_map[$new_name] = true;
+                            $storage->trait_final_map[$new_name] = true;
                             break;
                     }
                 }
             }
         }
-
-        $storage->trait_alias_map = $method_map;
-        $storage->trait_visibility_map = $visibility_map;
-        $storage->trait_final_map = $final_map;
 
         foreach ($node->traits as $trait) {
             $trait_fqcln = ClassLikeAnalyzer::getFQCLNFromNameObject($trait, $this->aliases);
@@ -1173,6 +1204,14 @@ class ClassLikeNodeScanner
         ClassLikeStorage $storage,
         string $fq_classlike_name
     ): void {
+        if ($storage->is_trait && $this->codebase->analysis_php_version_id < 8_02_00) {
+            IssueBuffer::maybeAdd(new ConstantDeclarationInTrait(
+                'Traits cannot declare constants until PHP 8.2.0',
+                new CodeLocation($this->file_scanner, $stmt),
+            ));
+            return;
+        }
+
         $existing_constants = $storage->constants;
 
         $comment = $stmt->getDocComment();
@@ -1580,9 +1619,7 @@ class ClassLikeNodeScanner
                 }
 
                 if ($doc_var_group_type) {
-                    $property_storage->type = count($stmt->props) === 1
-                        ? $doc_var_group_type
-                        : $doc_var_group_type;
+                    $property_storage->type = $doc_var_group_type;
                 }
             }
 
