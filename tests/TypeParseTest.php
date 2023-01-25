@@ -473,52 +473,58 @@ class TypeParseTest extends TestCase
 
     public function testTKeyedListNonList(): void
     {
-        $this->expectExceptionMessage('A list shape cannot describe a non-list!');
+        $this->expectExceptionMessage('A list shape cannot describe a non-list');
         Type::parseString('list{a: 0, b: 1, c: 2}');
     }
 
 
     public function testTKeyedListNonListOptional(): void
     {
-        $this->expectExceptionMessage('A list shape cannot describe a non-list!');
+        $this->expectExceptionMessage('A list shape cannot describe a non-list');
         Type::parseString('list{a: 0, b?: 1, c?: 2}');
     }
 
     public function testTKeyedListNonListOptionalWrongOrder1(): void
     {
-        $this->expectExceptionMessage('A list shape cannot describe a non-list!');
+        $this->expectExceptionMessage('A list shape cannot describe a non-list');
         Type::parseString('list{0?: 0, 1: 1, 2: 2}');
     }
 
     public function testTKeyedListNonListOptionalWrongOrder2(): void
     {
-        $this->expectExceptionMessage('A list shape cannot describe a non-list!');
+        $this->expectExceptionMessage('A list shape cannot describe a non-list');
         Type::parseString('list{0: 0, 1?: 1, 2: 2}');
     }
 
 
     public function testTKeyedListWrongOrder(): void
     {
-        $this->expectExceptionMessage('A list shape cannot describe a non-list!');
+        $this->expectExceptionMessage('A list shape cannot describe a non-list');
         Type::parseString('list{1: 1, 0: 0}');
     }
 
     public function testTKeyedListNonListKeys(): void
     {
-        $this->expectExceptionMessage('A list shape cannot describe a non-list!');
+        $this->expectExceptionMessage('A list shape cannot describe a non-list');
         Type::parseString('list{1: 1, 2: 2}');
     }
 
     public function testTKeyedListNoExplicitAndImplicitKeys(): void
     {
-        $this->expectExceptionMessage('Cannot mix explicit and implicit keys!');
+        $this->expectExceptionMessage('Cannot mix explicit and implicit keys');
         Type::parseString('list{0: 0, 1}');
     }
 
     public function testTKeyedArrayNoExplicitAndImplicitKeys(): void
     {
-        $this->expectExceptionMessage('Cannot mix explicit and implicit keys!');
+        $this->expectExceptionMessage('Cannot mix explicit and implicit keys');
         Type::parseString('array{0, test: 1}');
+    }
+
+    public function testTKeyedArrayNoDuplicateKeys(): void
+    {
+        $this->expectExceptionMessage('Duplicate key a detected');
+        Type::parseString('array{a: int, a: int}');
     }
 
     public function testSimpleCallable(): void

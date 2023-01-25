@@ -1895,7 +1895,7 @@ class ClassLikeNodeScanner
                     $self_fqcln,
                 );
             } catch (TypeParseTreeException $e) {
-                throw new DocblockParseException($type_string . ' is not a valid type');
+                throw new DocblockParseException($type_string . ' is not a valid type: '.$e->getMessage());
             }
 
             $type_alias_tokens[$type_alias] = new InlineTypeAlias($type_tokens);

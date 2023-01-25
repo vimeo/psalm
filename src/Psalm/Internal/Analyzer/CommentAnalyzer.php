@@ -162,7 +162,7 @@ class CommentAnalyzer
                     throw new DocblockParseException(
                         $line_parts[0] .
                         ' is not a valid type' .
-                        ' (from ' .
+                        ' ('.$e->getMessage().' in ' .
                         $source->getFilePath() .
                         ':' .
                         $comment->getStartLine() .
