@@ -82,6 +82,7 @@ final class LanguageServer
             'tcp:',
             'tcp-server',
             'disable-on-change::',
+            'use-baseline:',
             'enable-autocomplete::',
             'enable-code-actions::',
             'enable-provide-diagnostics::',
@@ -180,6 +181,9 @@ final class LanguageServer
 
                 --use-ini-defaults
                     Use PHP-provided ini defaults for memory and error display
+
+                --use-baseline=PATH
+                    Allows you to use a baseline other than the default baseline provided in your config
 
                 --tcp=url
                     Use TCP mode (by default Psalm uses STDIO)
@@ -310,6 +314,10 @@ final class LanguageServer
                 echo 'Cache directory deleted' . PHP_EOL;
                 exit;
             }
+        }
+
+        if (isset($options['use-baseline']) && is_string($options['use-baseline'])) {
+            $clientConfiguration->baseline = $options['use-baseline'];
         }
 
         if (isset($options['disable-on-change']) && is_numeric($options['disable-on-change'])) {

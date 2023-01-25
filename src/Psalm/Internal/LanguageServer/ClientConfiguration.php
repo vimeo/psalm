@@ -13,6 +13,11 @@ class ClientConfiguration
 {
 
     /**
+     * Location of Baseline file
+     */
+    public ?string $baseline = null;
+
+    /**
      * TCP Server Address
      */
     public ?string $TCPServerAddress = null;
@@ -106,7 +111,8 @@ class ClientConfiguration
         ?bool $findUnusedVariables = null,
         ?string $findUnusedCode = null,
         ?int $logLevel = null,
-        ?int $onchangeLineLimit = null
+        ?int $onchangeLineLimit = null,
+        ?string $baseline = null
     ) {
         $this->hideWarnings = $hideWarnings;
         $this->provideCompletion = $provideCompletion;
@@ -119,5 +125,6 @@ class ClientConfiguration
         $this->findUnusedCode = $findUnusedCode;
         $this->logLevel = $logLevel;
         $this->onchangeLineLimit = $onchangeLineLimit;
+        $this->baseline = $baseline;
     }
 }

@@ -37,6 +37,7 @@ use LanguageServerProtocol\TextDocumentSyncKind;
 use LanguageServerProtocol\TextDocumentSyncOptions;
 use Psalm\Codebase;
 use Psalm\Config;
+use Psalm\ErrorBaseline;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Composer;
@@ -59,10 +60,13 @@ use function array_filter;
 use function array_keys;
 use function array_map;
 use function array_reduce;
+use function array_search;
 use function array_shift;
+use function array_splice;
 use function array_unshift;
 use function array_values;
 use function cli_set_process_title;
+use function count;
 use function explode;
 use function extension_loaded;
 use function fwrite;
@@ -124,6 +128,9 @@ class LanguageServer extends Dispatcher
      * The AMP Delay token
      */
     protected string $versionedAnalysisDelayToken = '';
+
+    /** @var array<string,array<string,array{o:int, s: list<string>}>> */
+    protected array $issue_baseline = [];
 
     /**
      * This should actually be a private property on `parent`
@@ -578,6 +585,14 @@ class LanguageServer extends Dispatcher
                  */
                 $serverCapabilities->signatureHelpProvider = new SignatureHelpOptions(['(', ',']);
 
+                if ($this->client->clientConfiguration->baseline !== null) {
+                    $this->logInfo('Utilizing Baseline: '.$this->client->clientConfiguration->baseline);
+                    $this->issue_baseline= ErrorBaseline::read(
+                        new FileProvider,
+                        $this->client->clientConfiguration->baseline,
+                    );
+                }
+
                 $this->logInfo("Initializing: Complete.");
                 $this->clientStatus('initialized');
 
@@ -724,6 +739,9 @@ class LanguageServer extends Dispatcher
             'version' => $version,
         ]);
 
+        //Copy variable here to be able to process it
+        $issue_baseline = $this->issue_baseline;
+
         $data = IssueBuffer::clear();
         foreach ($files as $file_path => $uri) {
             //Dont report errors in files we are not watching
@@ -787,7 +805,41 @@ class LanguageServer extends Dispatcher
                     return $diagnostic;
                 },
                 array_filter(
-                    $data[$file_path] ?? [],
+                    array_map(function (IssueData $issue_data) use (&$issue_baseline) {
+                        if (empty($issue_baseline)) {
+                            return $issue_data;
+                        }
+                        //Process Baseline
+                        $file = $issue_data->file_name;
+                        $type = $issue_data->type;
+                        /** @psalm-suppress MixedArrayAccess */
+                        if (isset($issue_baseline[$file][$type]) && $issue_baseline[$file][$type]['o'] > 0) {
+                            /** @psalm-suppress MixedArrayAccess, MixedArgument */
+                            if ($issue_baseline[$file][$type]['o'] === count($issue_baseline[$file][$type]['s'])) {
+                                /** @psalm-suppress MixedArrayAccess, MixedAssignment */
+                                $position = array_search(
+                                    trim($issue_data->selected_text),
+                                    $issue_baseline[$file][$type]['s'],
+                                    true,
+                                );
+
+                                if ($position !== false) {
+                                    $issue_data->severity = Config::REPORT_INFO;
+                                    /** @psalm-suppress MixedArgument */
+                                    array_splice($issue_baseline[$file][$type]['s'], $position, 1);
+                                    /** @psalm-suppress MixedArrayAssignment, MixedOperand, MixedAssignment */
+                                    $issue_baseline[$file][$type]['o']--;
+                                }
+                            } else {
+                                /** @psalm-suppress MixedArrayAssignment, MixedOperand, MixedAssignment */
+                                $issue_baseline[$file][$type]['s'] = [];
+                                $issue_data->severity = Config::REPORT_INFO;
+                                /** @psalm-suppress MixedArrayAssignment, MixedOperand, MixedAssignment */
+                                $issue_baseline[$file][$type]['o']--;
+                            }
+                        }
+                        return $issue_data;
+                    }, $data[$file_path] ?? []),
                     function (IssueData $issue_data) {
                         //Hide Warnings
                         if ($issue_data->severity === Config::REPORT_INFO &&
