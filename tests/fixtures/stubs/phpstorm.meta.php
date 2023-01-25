@@ -25,6 +25,13 @@ namespace PHPSTORM_META {
         'object' => \stdClass::class,
     ]));
 
+    // tests with class constant as key
+    override(\Ns\MyClass::crEate3(), map([
+        '' => '@',
+        \Ns\MyClass::EXCEPTION => \Exception::class,
+        \Ns\MyClass::OBJECT => \stdClass::class,
+    ]));
+
     override(\Ns\MyClass::foO(0), type(0));
     override(\Ns\MyClass::Bar(0), elementType(0));
     override(\foo(0), type(0));
