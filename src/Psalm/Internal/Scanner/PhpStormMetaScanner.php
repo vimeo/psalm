@@ -64,10 +64,12 @@ class PhpStormMetaScanner
                     } elseif ($array_item->value instanceof PhpParser\Node\Scalar\String_) {
                         $map[$array_item->key->value] = $array_item->value->value;
                     }
-                } elseif ($array_item->key instanceof PhpParser\Node\Expr\ClassConstFetch
+                } elseif ($array_item
+                    && $array_item->key instanceof PhpParser\Node\Expr\ClassConstFetch
                     && $array_item->key->class instanceof PhpParser\Node\Name\FullyQualified
                     && $array_item->key->name instanceof PhpParser\Node\Identifier
                 ) {
+                    /** @var string|null $resolved_name */
                     $resolved_name =  $array_item->key->class->getAttribute('resolvedName');
                     if (!$resolved_name) {
                         continue;
