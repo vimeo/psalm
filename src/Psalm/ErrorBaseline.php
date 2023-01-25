@@ -266,7 +266,12 @@ final class ErrorBaseline
 
                 foreach ($existingIssueType['s'] as $selection) {
                     $codeNode = $baselineDoc->createElement('code');
-                    $codeNode->textContent = trim($selection);
+                    $textContent = trim($selection);
+                    if ($textContent !== \htmlspecialchars($textContent)) {
+                        $codeNode->append($baselineDoc->createCDATASection($textContent));
+                    } else {
+                        $codeNode->textContent = trim($textContent);
+                    }
                     $issueNode->appendChild($codeNode);
                 }
                 $fileNode->appendChild($issueNode);
