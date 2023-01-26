@@ -109,6 +109,8 @@ class LanguageServer extends Dispatcher
      */
     public ?ServerWorkspace $workspace = null;
 
+    public ?ClientInfo $clientInfo = null;
+
     protected ProtocolReader $protocolReader;
 
     protected ProtocolWriter $protocolWriter;
@@ -426,6 +428,7 @@ class LanguageServer extends Dispatcher
         ?string $trace = null
         //?array $workspaceFolders = null //error in json-dispatcher
     ): Promise {
+        $this->clientInfo = $clientInfo;
         $this->clientCapabilities = $capabilities;
         $this->trace = $trace;
         return call(

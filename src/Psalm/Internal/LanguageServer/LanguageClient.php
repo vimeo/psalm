@@ -11,6 +11,8 @@ use Psalm\Internal\LanguageServer\Client\TextDocument as ClientTextDocument;
 use Psalm\Internal\LanguageServer\Client\Workspace as ClientWorkspace;
 
 use function is_null;
+use function json_decode;
+use function json_encode;
 
 /**
  * @internal
@@ -144,8 +146,39 @@ class LanguageClient
             return;
         }
 
-        if (!is_null($this->clientConfiguration->provideCompletion)) {
-            //$this->server->project_analyzer->provide_completion = $this->clientConfiguration->provideCompletion;
+        /** @var array */
+        $array = json_decode(json_encode($config), true);
+
+        if (isset($array['hideWarnings'])) {
+            $this->clientConfiguration->hideWarnings = (bool) $array['hideWarnings'];
+        }
+
+        if (isset($array['provideCompletion'])) {
+            $this->clientConfiguration->provideCompletion = (bool) $array['provideCompletion'];
+        }
+
+        if (isset($array['provideDefinition'])) {
+            $this->clientConfiguration->provideDefinition = (bool) $array['provideDefinition'];
+        }
+
+        if (isset($array['provideHover'])) {
+            $this->clientConfiguration->provideHover = (bool) $array['provideHover'];
+        }
+
+        if (isset($array['provideSignatureHelp'])) {
+            $this->clientConfiguration->provideSignatureHelp = (bool) $array['provideSignatureHelp'];
+        }
+
+        if (isset($array['provideCodeActions'])) {
+            $this->clientConfiguration->provideCodeActions = (bool) $array['provideCodeActions'];
+        }
+
+        if (isset($array['provideDiagnostics'])) {
+            $this->clientConfiguration->provideDiagnostics = (bool) $array['provideDiagnostics'];
+        }
+
+        if (isset($array['findUnusedVariables'])) {
+            $this->clientConfiguration->findUnusedVariables = (bool) $array['findUnusedVariables'];
         }
     }
 }

@@ -45,7 +45,7 @@ class ClientConfiguration
     /**
      * Provide Hover Requests or not
      */
-    public ?bool  $provideHover= null;
+    public ?bool $provideHover = null;
 
     /**
      * Provide Signature Help or not
