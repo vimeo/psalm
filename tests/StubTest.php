@@ -317,6 +317,10 @@ class StubTest extends TestCase
             '<?php
                 namespace Ns {
                     class MyClass {
+                    
+                        public const OBJECT = "object";
+                        private const EXCEPTION = "exception";
+                        
                         /**
                          * @return mixed
                          * @psalm-suppress InvalidReturnType
@@ -328,6 +332,12 @@ class StubTest extends TestCase
                          * @psalm-suppress InvalidReturnType
                          */
                         public function create2(string $s) {}
+                        
+                        /**
+                         * @return mixed
+                         * @psalm-suppress InvalidReturnType
+                         */
+                        public function create3(string $s) {}
 
                         /**
                          * @param mixed $s
@@ -374,6 +384,9 @@ class StubTest extends TestCase
 
                     $y1 = (new \Ns\MyClass)->creAte2("object");
                     $y2 = (new \Ns\MyClass)->creaTe2("exception");
+                    
+                    $const1 = (new \Ns\MyClass)->creAte3(\Ns\MyClass::OBJECT);
+                    $const2 = (new \Ns\MyClass)->creaTe3("exception");
 
                     $b1 = \Create("object");
                     $b2 = \cReate("exception");
@@ -403,6 +416,9 @@ class StubTest extends TestCase
 
                 '$y1===' => 'stdClass',
                 '$y2===' => 'Exception',
+
+                '$const1===' => 'stdClass',
+                '$const2===' => 'Exception',
 
                 '$b1===' => 'stdClass',
                 '$b2===' => 'Exception',
