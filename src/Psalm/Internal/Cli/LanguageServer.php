@@ -90,6 +90,7 @@ final class LanguageServer
             'enable-provide-signature-help::',
             'enable-provide-definition::',
             'show-diagnostic-warnings::',
+            'disable-xdebug::',
             'on-change-debounce-ms::',
             'use-extended-diagnostic-codes',
             'verbose',
@@ -222,6 +223,9 @@ final class LanguageServer
                 --on-change-debounce-ms=[INT]
                     The number of milliseconds to debounce onChange events.
 
+                --disable-xdebug[=BOOL]
+                    Disable xdebug for performance reasons. Enable for debugging
+
                 --verbose
                     Will send log messages to the client with information.
 
@@ -275,8 +279,14 @@ final class LanguageServer
 
         $ini_handler->disableExtension('grpc');
 
-        // If Xdebug is enabled, restart without it
-        $ini_handler->check();
+        $diableXdebug = !isset($options['disable-xdebug'])
+            || !is_string($options['disable-xdebug'])
+            || strtolower($options['disable-xdebug']) !== 'false';
+
+        // If Xdebug is enabled, restart without it based on cli
+        if ($diableXdebug) {
+            $ini_handler->check();
+        }
 
         setlocale(LC_CTYPE, 'C');
 
