@@ -168,7 +168,7 @@ class PsalmEndToEndTest extends TestCase
         $this->assertStringContainsString('InvalidReturnType', $result['STDOUT']);
         $this->assertStringContainsString('InvalidReturnStatement', $result['STDOUT']);
         $this->assertStringContainsString('3 errors', $result['STDOUT']);
-        $this->assertEquals(1, substr_count($result['STDERR'], 'E')); // Should only have 'E' from 'Extensions' in version message
+        $this->assertStringNotContainsString('E', $result['STDERR']);
 
         $this->assertSame(2, $result['CODE']);
 
