@@ -1155,7 +1155,7 @@ final class Psalm
         if (is_string(getenv('PSALM_SHEPHERD_HOST'))) { // remove this block in Psalm 6
             fwrite(
                 STDERR,
-                'PSALM_SHEPHERD_HOST env variable is deprecated and will be removed in Psalm 6.'
+                'Warning: PSALM_SHEPHERD_HOST env variable will be removed in Psalm 6.'
                 .' Please use "--shepherd" cli option or PSALM_SHEPHERD env variable'
                 .' to specify a custom Shepherd host/endpoint.'
                 . PHP_EOL,
