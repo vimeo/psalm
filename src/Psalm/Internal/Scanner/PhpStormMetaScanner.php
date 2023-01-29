@@ -12,6 +12,7 @@ use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
+use ReflectionProperty;
 
 use function count;
 use function implode;
@@ -62,6 +63,40 @@ class PhpStormMetaScanner
                         ]);
                     } elseif ($array_item->value instanceof PhpParser\Node\Scalar\String_) {
                         $map[$array_item->key->value] = $array_item->value->value;
+                    }
+                } elseif ($array_item
+                    && $array_item->key instanceof PhpParser\Node\Expr\ClassConstFetch
+                    && $array_item->key->class instanceof PhpParser\Node\Name\FullyQualified
+                    && $array_item->key->name instanceof PhpParser\Node\Identifier
+                ) {
+                    /** @var string|null $resolved_name */
+                    $resolved_name =  $array_item->key->class->getAttribute('resolvedName');
+                    if (!$resolved_name) {
+                        continue;
+                    }
+
+                    $constant_type = $codebase->classlikes->getClassConstantType(
+                        $resolved_name,
+                        $array_item->key->name->name,
+                        ReflectionProperty::IS_PRIVATE,
+                    );
+
+                    if (!$constant_type instanceof Union || !$constant_type->isSingleStringLiteral()) {
+                        continue;
+                    }
+
+                    $meta_key = $constant_type->getSingleStringLiteral()->value;
+
+                    if ($array_item->value instanceof PhpParser\Node\Expr\ClassConstFetch
+                        && $array_item->value->class instanceof PhpParser\Node\Name\FullyQualified
+                        && $array_item->value->name instanceof PhpParser\Node\Identifier
+                        && strtolower($array_item->value->name->name)
+                    ) {
+                        $map[$meta_key] = new Union([
+                            new TNamedObject(implode('\\', $array_item->value->class->parts)),
+                        ]);
+                    } elseif ($array_item->value instanceof PhpParser\Node\Scalar\String_) {
+                        $map[$meta_key] = $array_item->value->value;
                     }
                 }
             }

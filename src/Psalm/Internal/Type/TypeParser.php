@@ -1478,6 +1478,10 @@ class TypeParser
                 $had_optional = true;
             }
 
+            if (isset($properties[$property_key])) {
+                throw new TypeParseTreeException("Duplicate key $property_key detected");
+            }
+
             $properties[$property_key] = $property_type;
             if ($class_string) {
                 $class_strings[$property_key] = true;
@@ -1485,7 +1489,7 @@ class TypeParser
         }
 
         if ($had_explicit && $had_implicit) {
-            throw new TypeParseTreeException('Cannot mix explicit and implicit keys!');
+            throw new TypeParseTreeException('Cannot mix explicit and implicit keys');
         }
 
         if ($type === 'object') {
@@ -1500,7 +1504,7 @@ class TypeParser
         }
 
         if ($callable && !$properties) {
-            throw new TypeParseTreeException('A callable array cannot be empty!');
+            throw new TypeParseTreeException('A callable array cannot be empty');
         }
 
         if ($type !== 'array' && $type !== 'list') {
@@ -1508,7 +1512,7 @@ class TypeParser
         }
 
         if ($type === 'list' && !$is_list) {
-            throw new TypeParseTreeException('A list shape cannot describe a non-list!');
+            throw new TypeParseTreeException('A list shape cannot describe a non-list');
         }
 
         if (!$properties) {
@@ -1520,7 +1524,7 @@ class TypeParser
             $class_strings,
             $sealed
                 ? null
-                : [$is_list ? Type::getInt() : Type::getArrayKey(), Type::getMixed()],
+                : [$is_list ? Type::getListKey() : Type::getArrayKey(), Type::getMixed()],
             $is_list,
             $from_docblock,
         );

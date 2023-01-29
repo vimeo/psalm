@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<files psalm-version="dev-master@6bcd3bffe3385bc33643a694c32af515395bf437">
+<files psalm-version="dev-master@8b9cd5fb333866c1e84ca9564394816a7ff5ae6f">
   <file src="examples/TemplateChecker.php">
     <PossiblyUndefinedIntArrayOffset>
-      <code>$comment_block-&gt;tags['variablesfrom'][0]</code>
+      <code><![CDATA[$comment_block->tags['variablesfrom'][0]]]></code>
       <code>$matches[1]</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="examples/TemplateScanner.php">
     <PossiblyUndefinedIntArrayOffset>
-      <code>$comment_block-&gt;tags['variablesfrom'][0]</code>
+      <code><![CDATA[$comment_block->tags['variablesfrom'][0]]]></code>
       <code>$matches[1]</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
@@ -24,7 +24,7 @@
   </file>
   <file src="src/Psalm/Config/FileFilter.php">
     <PossiblyUndefinedIntArrayOffset>
-      <code>explode('::', $method_id)[1]</code>
+      <code><![CDATA[explode('::', $method_id)[1]]]></code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/ErrorBaseline.php">
@@ -38,7 +38,7 @@
     <PossiblyUndefinedIntArrayOffset>
       <code>$comments[0]</code>
       <code>$property_name</code>
-      <code>$stmt-&gt;props[0]</code>
+      <code><![CDATA[$stmt->props[0]]]></code>
       <code>$uninitialized_variables[0]</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
@@ -58,7 +58,7 @@
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Block/ForAnalyzer.php">
     <ArgumentTypeCoercion>
-      <code>$stmt-&gt;cond</code>
+      <code><![CDATA[$stmt->cond]]></code>
     </ArgumentTypeCoercion>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Block/ForeachAnalyzer.php">
@@ -69,46 +69,46 @@
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Block/SwitchAnalyzer.php">
     <InvalidPropertyAssignmentValue>
-      <code>$context-&gt;assigned_var_ids += $switch_scope-&gt;new_assigned_var_ids</code>
+      <code><![CDATA[$context->assigned_var_ids += $switch_scope->new_assigned_var_ids]]></code>
     </InvalidPropertyAssignmentValue>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Block/SwitchCaseAnalyzer.php">
     <PossiblyUndefinedIntArrayOffset>
-      <code>$new_case_equality_expr-&gt;getArgs()[1]</code>
-      <code>$switch_scope-&gt;leftover_statements[0]</code>
-      <code>$traverser-&gt;traverse([$switch_condition])[0]</code>
+      <code><![CDATA[$new_case_equality_expr->getArgs()[1]]]></code>
+      <code><![CDATA[$switch_scope->leftover_statements[0]]]></code>
+      <code><![CDATA[$traverser->traverse([$switch_condition])[0]]]></code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/AssertionFinder.php">
     <PossiblyUndefinedIntArrayOffset>
-      <code>$assertion-&gt;rule[0]</code>
-      <code>$assertion-&gt;rule[0]</code>
-      <code>$assertion-&gt;rule[0]</code>
-      <code>$assertion-&gt;rule[0]</code>
-      <code>$assertion-&gt;rule[0]</code>
-      <code>$assertion-&gt;rule[0]</code>
-      <code>$assertion-&gt;rule[0]</code>
-      <code>$count_expr-&gt;getArgs()[0]</code>
-      <code>$count_expr-&gt;getArgs()[0]</code>
-      <code>$count_expr-&gt;getArgs()[0]</code>
-      <code>$count_expr-&gt;getArgs()[0]</code>
-      <code>$count_expr-&gt;getArgs()[0]</code>
-      <code>$counted_expr-&gt;getArgs()[0]</code>
-      <code>$expr-&gt;getArgs()[0]</code>
-      <code>$expr-&gt;getArgs()[0]</code>
-      <code>$expr-&gt;getArgs()[0]</code>
-      <code>$expr-&gt;getArgs()[0]</code>
-      <code>$expr-&gt;getArgs()[0]</code>
-      <code>$expr-&gt;getArgs()[0]</code>
-      <code>$expr-&gt;getArgs()[0]</code>
-      <code>$expr-&gt;getArgs()[0]</code>
-      <code>$expr-&gt;getArgs()[1]</code>
-      <code>$expr-&gt;getArgs()[1]</code>
-      <code>$get_debug_type_expr-&gt;getArgs()[0]</code>
-      <code>$get_debug_type_expr-&gt;getArgs()[0]</code>
-      <code>$getclass_expr-&gt;getArgs()[0]</code>
-      <code>$gettype_expr-&gt;getArgs()[0]</code>
-      <code>$gettype_expr-&gt;getArgs()[0]</code>
+      <code><![CDATA[$assertion->rule[0]]]></code>
+      <code><![CDATA[$assertion->rule[0]]]></code>
+      <code><![CDATA[$assertion->rule[0]]]></code>
+      <code><![CDATA[$assertion->rule[0]]]></code>
+      <code><![CDATA[$assertion->rule[0]]]></code>
+      <code><![CDATA[$assertion->rule[0]]]></code>
+      <code><![CDATA[$assertion->rule[0]]]></code>
+      <code><![CDATA[$count_expr->getArgs()[0]]]></code>
+      <code><![CDATA[$count_expr->getArgs()[0]]]></code>
+      <code><![CDATA[$count_expr->getArgs()[0]]]></code>
+      <code><![CDATA[$count_expr->getArgs()[0]]]></code>
+      <code><![CDATA[$count_expr->getArgs()[0]]]></code>
+      <code><![CDATA[$counted_expr->getArgs()[0]]]></code>
+      <code><![CDATA[$expr->getArgs()[0]]]></code>
+      <code><![CDATA[$expr->getArgs()[0]]]></code>
+      <code><![CDATA[$expr->getArgs()[0]]]></code>
+      <code><![CDATA[$expr->getArgs()[0]]]></code>
+      <code><![CDATA[$expr->getArgs()[0]]]></code>
+      <code><![CDATA[$expr->getArgs()[0]]]></code>
+      <code><![CDATA[$expr->getArgs()[0]]]></code>
+      <code><![CDATA[$expr->getArgs()[0]]]></code>
+      <code><![CDATA[$expr->getArgs()[1]]]></code>
+      <code><![CDATA[$expr->getArgs()[1]]]></code>
+      <code><![CDATA[$get_debug_type_expr->getArgs()[0]]]></code>
+      <code><![CDATA[$get_debug_type_expr->getArgs()[0]]]></code>
+      <code><![CDATA[$getclass_expr->getArgs()[0]]]></code>
+      <code><![CDATA[$gettype_expr->getArgs()[0]]]></code>
+      <code><![CDATA[$gettype_expr->getArgs()[0]]]></code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Assignment/StaticPropertyAssignmentAnalyzer.php">
@@ -129,7 +129,7 @@
     <PossiblyUndefinedIntArrayOffset>
       <code>$method_name</code>
       <code>$parts[1]</code>
-      <code>explode('::', $cased_method_id)[1]</code>
+      <code><![CDATA[explode('::', $cased_method_id)[1]]]></code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Call/ArrayFunctionArgumentsAnalyzer.php">
@@ -143,7 +143,7 @@
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Call/FunctionCallAnalyzer.php">
     <PossiblyUndefinedArrayOffset>
-      <code>$stmt-&gt;getArgs()[0]</code>
+      <code><![CDATA[$stmt->getArgs()[0]]]></code>
     </PossiblyUndefinedArrayOffset>
     <PossiblyUndefinedIntArrayOffset>
       <code>$parts[1]</code>
@@ -156,12 +156,12 @@
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Call/MethodCallAnalyzer.php">
     <PossiblyUndefinedIntArrayOffset>
-      <code>$result-&gt;invalid_method_call_types[0]</code>
-      <code>$result-&gt;non_existent_class_method_ids[0]</code>
-      <code>$result-&gt;non_existent_class_method_ids[0]</code>
-      <code>$result-&gt;non_existent_interface_method_ids[0]</code>
-      <code>$result-&gt;non_existent_interface_method_ids[0]</code>
-      <code>$result-&gt;non_existent_magic_method_ids[0]</code>
+      <code><![CDATA[$result->invalid_method_call_types[0]]]></code>
+      <code><![CDATA[$result->non_existent_class_method_ids[0]]]></code>
+      <code><![CDATA[$result->non_existent_class_method_ids[0]]]></code>
+      <code><![CDATA[$result->non_existent_interface_method_ids[0]]]></code>
+      <code><![CDATA[$result->non_existent_interface_method_ids[0]]]></code>
+      <code><![CDATA[$result->non_existent_magic_method_ids[0]]]></code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Call/StaticMethod/ExistingAtomicStaticCallAnalyzer.php">
@@ -171,8 +171,8 @@
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/CallAnalyzer.php">
     <PossiblyUndefinedIntArrayOffset>
-      <code>$callable_arg-&gt;items[0]</code>
-      <code>$callable_arg-&gt;items[1]</code>
+      <code><![CDATA[$callable_arg->items[0]]]></code>
+      <code><![CDATA[$callable_arg->items[1]]]></code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/ClassConstAnalyzer.php">
@@ -205,7 +205,7 @@
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/YieldAnalyzer.php">
     <PossiblyUndefinedIntArrayOffset>
-      <code>$atomic_return_type-&gt;type_params[2]</code>
+      <code><![CDATA[$atomic_return_type->type_params[2]]]></code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/ReturnAnalyzer.php">
@@ -225,7 +225,7 @@
   </file>
   <file src="src/Psalm/Internal/Analyzer/StatementsAnalyzer.php">
     <PossiblyUndefinedArrayOffset>
-      <code>$stmt-&gt;expr-&gt;getArgs()[0]</code>
+      <code><![CDATA[$stmt->expr->getArgs()[0]]]></code>
     </PossiblyUndefinedArrayOffset>
     <PossiblyUndefinedIntArrayOffset>
       <code>$check_type_string</code>
@@ -233,7 +233,7 @@
   </file>
   <file src="src/Psalm/Internal/Cli/LanguageServer.php">
     <PossiblyInvalidArgument>
-      <code>$options['tcp'] ?? null</code>
+      <code><![CDATA[$options['tcp'] ?? null]]></code>
     </PossiblyInvalidArgument>
   </file>
   <file src="src/Psalm/Internal/Cli/Refactor.php">
@@ -283,11 +283,11 @@
   </file>
   <file src="src/Psalm/Internal/Diff/ClassStatementsDiffer.php">
     <PossiblyUndefinedIntArrayOffset>
-      <code>$a-&gt;props[0]</code>
-      <code>$a-&gt;stmts[0]</code>
+      <code><![CDATA[$a->props[0]]]></code>
+      <code><![CDATA[$a->stmts[0]]]></code>
       <code>$a_stmt_comments[0]</code>
-      <code>$b-&gt;props[0]</code>
-      <code>$b-&gt;stmts[0]</code>
+      <code><![CDATA[$b->props[0]]]></code>
+      <code><![CDATA[$b->stmts[0]]]></code>
       <code>$b_stmt_comments[0]</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
@@ -304,14 +304,14 @@
   </file>
   <file src="src/Psalm/Internal/FileManipulation/PropertyDocblockManipulator.php">
     <PossiblyUndefinedIntArrayOffset>
-      <code>$stmt-&gt;props[0]</code>
+      <code><![CDATA[$stmt->props[0]]]></code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/LanguageServer/LanguageClient.php">
     <DocblockTypeContradiction>
-      <code>$type &lt; 1</code>
-      <code>$type &lt; 1 || $type &gt; 4</code>
-      <code>$type &gt; 4</code>
+      <code><![CDATA[$type < 1]]></code>
+      <code><![CDATA[$type < 1 || $type > 4]]></code>
+      <code><![CDATA[$type > 4]]></code>
     </DocblockTypeContradiction>
   </file>
   <file src="src/Psalm/Internal/LanguageServer/LanguageServer.php">
@@ -347,7 +347,7 @@
       <code>$match[0]</code>
       <code>$match[1]</code>
       <code>$match[2]</code>
-      <code>$node-&gt;stmts[0]</code>
+      <code><![CDATA[$node->stmts[0]]]></code>
       <code>$replacement_stmts[0]</code>
       <code>$replacement_stmts[0]</code>
       <code>$replacement_stmts[0]</code>
@@ -357,8 +357,8 @@
     <PossiblyUndefinedIntArrayOffset>
       <code>$doc_line_parts[1]</code>
       <code>$matches[0]</code>
-      <code>$method_tree-&gt;children[0]</code>
-      <code>$method_tree-&gt;children[1]</code>
+      <code><![CDATA[$method_tree->children[0]]]></code>
+      <code><![CDATA[$method_tree->children[1]]]></code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/PhpVisitor/Reflector/ClassLikeNodeScanner.php">
@@ -369,8 +369,8 @@
   </file>
   <file src="src/Psalm/Internal/PhpVisitor/Reflector/ExpressionScanner.php">
     <PossiblyUndefinedIntArrayOffset>
-      <code>$node-&gt;getArgs()[0]</code>
-      <code>$node-&gt;getArgs()[1]</code>
+      <code><![CDATA[$node->getArgs()[0]]]></code>
+      <code><![CDATA[$node->getArgs()[1]]]></code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/PhpVisitor/Reflector/FunctionLikeDocblockParser.php">
@@ -378,7 +378,7 @@
       <code>$since_parts[1]</code>
     </PossiblyUndefinedIntArrayOffset>
     <RedundantCondition>
-      <code>count($line_parts) &gt; 0</code>
+      <code><![CDATA[count($line_parts) > 0]]></code>
     </RedundantCondition>
   </file>
   <file src="src/Psalm/Internal/PhpVisitor/Reflector/FunctionLikeDocblockScanner.php">
@@ -391,7 +391,7 @@
   </file>
   <file src="src/Psalm/Internal/PhpVisitor/Reflector/FunctionLikeNodeScanner.php">
     <PossiblyUndefinedIntArrayOffset>
-      <code>$stmt-&gt;stmts[0]</code>
+      <code><![CDATA[$stmt->stmts[0]]]></code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/PhpVisitor/SimpleNameResolver.php">
@@ -419,8 +419,8 @@
       <code>isContainedBy</code>
     </ComplexMethod>
     <PossiblyUndefinedIntArrayOffset>
-      <code>$array-&gt;properties[0]</code>
-      <code>$array-&gt;properties[0]</code>
+      <code><![CDATA[$array->properties[0]]]></code>
+      <code><![CDATA[$array->properties[0]]]></code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Type/Comparator/CallableTypeComparator.php">
@@ -433,7 +433,7 @@
   </file>
   <file src="src/Psalm/Internal/Type/SimpleAssertionReconciler.php">
     <PossiblyUndefinedIntArrayOffset>
-      <code>$array_atomic_type-&gt;properties[0]</code>
+      <code><![CDATA[$array_atomic_type->properties[0]]]></code>
       <code>$properties[0]</code>
       <code>$properties[0]</code>
       <code>$properties[0]</code>
@@ -447,13 +447,13 @@
   </file>
   <file src="src/Psalm/Internal/Type/TypeCombiner.php">
     <PossiblyUndefinedIntArrayOffset>
-      <code>$combination-&gt;array_type_params[1]</code>
-      <code>$combination-&gt;array_type_params[1]</code>
-      <code>$combination-&gt;array_type_params[1]</code>
-      <code>$combination-&gt;array_type_params[1]</code>
-      <code>$combination-&gt;array_type_params[1]</code>
-      <code>$combination-&gt;array_type_params[1]</code>
-      <code>$combination-&gt;array_type_params[1]</code>
+      <code><![CDATA[$combination->array_type_params[1]]]></code>
+      <code><![CDATA[$combination->array_type_params[1]]]></code>
+      <code><![CDATA[$combination->array_type_params[1]]]></code>
+      <code><![CDATA[$combination->array_type_params[1]]]></code>
+      <code><![CDATA[$combination->array_type_params[1]]]></code>
+      <code><![CDATA[$combination->array_type_params[1]]]></code>
+      <code><![CDATA[$combination->array_type_params[1]]]></code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Type/TypeExpander.php">
@@ -466,8 +466,8 @@
       <code>$const_name</code>
       <code>$const_name</code>
       <code>$intersection_types[0]</code>
-      <code>$parse_tree-&gt;children[0]</code>
-      <code>$parse_tree-&gt;condition-&gt;children[0]</code>
+      <code><![CDATA[$parse_tree->children[0]]]></code>
+      <code><![CDATA[$parse_tree->condition->children[0]]]></code>
       <code>array_keys($offset_template_data)[0]</code>
       <code>array_keys($template_type_map[$array_param_name])[0]</code>
       <code>array_keys($template_type_map[$class_name])[0]</code>
@@ -485,7 +485,7 @@
   </file>
   <file src="src/Psalm/Plugin/Shepherd.php">
     <DeprecatedProperty>
-      <code>$codebase-&gt;config-&gt;shepherd_host</code>
+      <code><![CDATA[$codebase->config->shepherd_host]]></code>
     </DeprecatedProperty>
   </file>
   <file src="src/Psalm/Storage/ClassConstantStorage.php">
@@ -543,7 +543,7 @@
       <code>replace</code>
     </ImpureMethodCall>
     <PossiblyUndefinedIntArrayOffset>
-      <code>$this-&gt;type_params[1]</code>
+      <code><![CDATA[$this->type_params[1]]]></code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Type/Atomic/HasIntersectionTrait.php">
@@ -569,7 +569,7 @@
       <code>replace</code>
     </ImpureMethodCall>
     <ImpurePropertyAssignment>
-      <code>$cloned-&gt;value_param</code>
+      <code><![CDATA[$cloned->value_param]]></code>
     </ImpurePropertyAssignment>
   </file>
   <file src="src/Psalm/Type/Atomic/TConditional.php">
@@ -585,8 +585,8 @@
   <file src="src/Psalm/Type/Atomic/TKeyedArray.php">
     <DeprecatedClass>
       <code>TList</code>
-      <code>new TList($this-&gt;getGenericValueType())</code>
-      <code>new TNonEmptyList($this-&gt;getGenericValueType())</code>
+      <code><![CDATA[new TList($this->getGenericValueType())]]></code>
+      <code><![CDATA[new TNonEmptyList($this->getGenericValueType())]]></code>
     </DeprecatedClass>
     <ImpureMethodCall>
       <code>combine</code>
@@ -604,12 +604,12 @@
       <code>replace</code>
     </ImpureMethodCall>
     <ImpurePropertyAssignment>
-      <code>$key_type-&gt;possibly_undefined</code>
+      <code><![CDATA[$key_type->possibly_undefined]]></code>
     </ImpurePropertyAssignment>
     <PossiblyUndefinedIntArrayOffset>
-      <code>$this-&gt;properties[0]</code>
-      <code>$this-&gt;properties[0]</code>
-      <code>$this-&gt;properties[0]</code>
+      <code><![CDATA[$this->properties[0]]]></code>
+      <code><![CDATA[$this->properties[0]]]></code>
+      <code><![CDATA[$this->properties[0]]]></code>
     </PossiblyUndefinedIntArrayOffset>
     <PossiblyUnusedMethod>
       <code>getList</code>
@@ -621,7 +621,7 @@
       <code>replace</code>
     </ImpureMethodCall>
     <ImpurePropertyAssignment>
-      <code>$cloned-&gt;type_param</code>
+      <code><![CDATA[$cloned->type_param]]></code>
     </ImpurePropertyAssignment>
   </file>
   <file src="src/Psalm/Type/Atomic/TNonEmptyList.php">
@@ -697,7 +697,7 @@
       <code>TArray|TKeyedArray|TClassStringMap</code>
     </MoreSpecificReturnType>
     <PossiblyUndefinedStringArrayOffset>
-      <code>$this-&gt;types['array']</code>
+      <code><![CDATA[$this->types['array']]]></code>
     </PossiblyUndefinedStringArrayOffset>
     <PossiblyUnusedMethod>
       <code>allFloatLiterals</code>
@@ -708,7 +708,7 @@
   </file>
   <file src="vendor/nikic/php-parser/lib/PhpParser/Node/Expr/ArrowFunction.php">
     <PossiblyUndefinedStringArrayOffset>
-      <code>$subNodes['expr']</code>
+      <code><![CDATA[$subNodes['expr']]]></code>
     </PossiblyUndefinedStringArrayOffset>
   </file>
 </files>
