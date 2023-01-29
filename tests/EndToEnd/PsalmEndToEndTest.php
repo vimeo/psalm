@@ -20,7 +20,6 @@ use function preg_replace;
 use function readdir;
 use function rmdir;
 use function str_replace;
-use function substr_count;
 use function sys_get_temp_dir;
 use function tempnam;
 use function unlink;
