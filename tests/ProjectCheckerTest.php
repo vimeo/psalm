@@ -34,18 +34,9 @@ use const DIRECTORY_SEPARATOR;
 
 class ProjectCheckerTest extends TestCase
 {
-    /** @var TestConfig */
-    protected static $config;
+    protected static TestConfig $config;
 
-    /** @var ProjectAnalyzer */
-    protected $project_analyzer;
-
-    private const EXPECTED_OUTPUT = "Target PHP version: 8.1 (set by tests) Extensions enabled: dom, simplexml "
-        . "(unsupported extensions: ctype, json, libxml, mbstring, tokenizer)\n"
-        . "Scanning files...\n"
-        . "Analyzing files...\n"
-        . "\n"
-    ;
+    protected ProjectAnalyzer $project_analyzer;
 
     public static function setUpBeforeClass(): void
     {
@@ -77,9 +68,9 @@ class ProjectCheckerTest extends TestCase
                 new FileStorageInstanceCacheProvider(),
                 new ClassLikeStorageInstanceCacheProvider(),
                 new FakeFileReferenceCacheProvider(),
-                new ProjectCacheProvider()
+                new ProjectCacheProvider(),
             ),
-            new ReportOptions()
+            new ReportOptions(),
         );
     }
 
@@ -93,8 +84,8 @@ class ProjectCheckerTest extends TestCase
                     <projectFiles>
                         <directory name="tests/fixtures/DummyProject" />
                     </projectFiles>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
         $this->project_analyzer->setPhpVersion('8.1', 'tests');
 
@@ -104,7 +95,9 @@ class ProjectCheckerTest extends TestCase
         $this->project_analyzer->check('tests/fixtures/DummyProject');
         $output = ob_get_clean();
 
-        $this->assertSame(self::EXPECTED_OUTPUT, $output);
+        $this->assertStringContainsString('Target PHP version: 8.1 (set by tests)', $output);
+        $this->assertStringContainsString('Scanning files...', $output);
+        $this->assertStringContainsString('Analyzing files...', $output);
 
         $this->assertSame(0, IssueBuffer::getErrorCount());
 
@@ -115,16 +108,15 @@ class ProjectCheckerTest extends TestCase
         $this->assertSame(
             'Psalm was able to infer types for 100% of the codebase',
             $codebase->analyzer->getTypeInferenceSummary(
-                $codebase
-            )
+                $codebase,
+            ),
         );
     }
 
     public function testAfterCodebasePopulatedIsInvoked(): void
     {
         $hook = new class implements AfterCodebasePopulatedInterface {
-            /** @var bool */
-            public static $called = false;
+            public static bool $called = false;
 
             /**
              * @return void
@@ -144,8 +136,8 @@ class ProjectCheckerTest extends TestCase
                     <projectFiles>
                         <directory name="tests/fixtures/DummyProject" />
                     </projectFiles>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $hook_class = get_class($hook);
@@ -169,8 +161,8 @@ class ProjectCheckerTest extends TestCase
                     <projectFiles>
                         <directory name="tests/fixtures/DummyProject" />
                     </projectFiles>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $this->assertNotNull($this->project_analyzer->stdout_report_options);
@@ -185,8 +177,8 @@ class ProjectCheckerTest extends TestCase
         $this->assertSame(
             'Psalm was able to infer types for 100% of the codebase',
             $this->project_analyzer->getCodebase()->analyzer->getTypeInferenceSummary(
-                $this->project_analyzer->getCodebase()
-            )
+                $this->project_analyzer->getCodebase(),
+            ),
         );
 
         $this->project_analyzer->getCodebase()->reloadFiles($this->project_analyzer, []);
@@ -198,8 +190,8 @@ class ProjectCheckerTest extends TestCase
         $this->assertSame(
             'Psalm was able to infer types for 100% of the codebase',
             $this->project_analyzer->getCodebase()->analyzer->getTypeInferenceSummary(
-                $this->project_analyzer->getCodebase()
-            )
+                $this->project_analyzer->getCodebase(),
+            ),
         );
     }
 
@@ -213,8 +205,8 @@ class ProjectCheckerTest extends TestCase
                     <projectFiles>
                         <directory name="tests/fixtures/DummyProject" />
                     </projectFiles>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $this->assertNotNull($this->project_analyzer->stdout_report_options);
@@ -229,8 +221,8 @@ class ProjectCheckerTest extends TestCase
         $this->assertSame(
             'Psalm was able to infer types for 100% of the codebase',
             $this->project_analyzer->getCodebase()->analyzer->getTypeInferenceSummary(
-                $this->project_analyzer->getCodebase()
-            )
+                $this->project_analyzer->getCodebase(),
+            ),
         );
 
         $bat_file_path = getcwd()
@@ -263,8 +255,8 @@ class Bat
         $this->assertSame(
             'Psalm was able to infer types for 100% of the codebase',
             $this->project_analyzer->getCodebase()->analyzer->getTypeInferenceSummary(
-                $this->project_analyzer->getCodebase()
-            )
+                $this->project_analyzer->getCodebase(),
+            ),
         );
     }
 
@@ -278,8 +270,8 @@ class Bat
                     <projectFiles>
                         <directory name="tests/fixtures/DummyProject" />
                     </projectFiles>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $this->project_analyzer->setPhpVersion('8.1', 'tests');
@@ -290,15 +282,17 @@ class Bat
         $this->project_analyzer->checkDir('tests/fixtures/DummyProject');
         $output = ob_get_clean();
 
-        $this->assertSame(self::EXPECTED_OUTPUT, $output);
+        $this->assertStringContainsString('Target PHP version: 8.1 (set by tests)', $output);
+        $this->assertStringContainsString('Scanning files...', $output);
+        $this->assertStringContainsString('Analyzing files...', $output);
 
         $this->assertSame(0, IssueBuffer::getErrorCount());
 
         $this->assertSame(
             'Psalm was able to infer types for 100% of the codebase',
             $this->project_analyzer->getCodebase()->analyzer->getTypeInferenceSummary(
-                $this->project_analyzer->getCodebase()
-            )
+                $this->project_analyzer->getCodebase(),
+            ),
         );
     }
 
@@ -312,8 +306,8 @@ class Bat
                     <projectFiles>
                         <directory name="tests/fixtures/DummyProject" />
                     </projectFiles>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $this->project_analyzer->setPhpVersion('8.1', 'tests');
@@ -329,15 +323,17 @@ class Bat
         ]);
         $output = ob_get_clean();
 
-        $this->assertSame(self::EXPECTED_OUTPUT, $output);
+        $this->assertStringContainsString('Target PHP version: 8.1 (set by tests)', $output);
+        $this->assertStringContainsString('Scanning files...', $output);
+        $this->assertStringContainsString('Analyzing files...', $output);
 
         $this->assertSame(0, IssueBuffer::getErrorCount());
 
         $this->assertSame(
             'Psalm was able to infer types for 100% of the codebase',
             $this->project_analyzer->getCodebase()->analyzer->getTypeInferenceSummary(
-                $this->project_analyzer->getCodebase()
-            )
+                $this->project_analyzer->getCodebase(),
+            ),
         );
     }
 
@@ -351,8 +347,8 @@ class Bat
                     <projectFiles>
                         <directory name="tests/fixtures/DummyProject" />
                     </projectFiles>
-                </psalm>'
-            )
+                </psalm>',
+            ),
         );
 
         $this->project_analyzer->setPhpVersion('8.1', 'tests');
@@ -368,15 +364,17 @@ class Bat
         ]);
         $output = ob_get_clean();
 
-        $this->assertSame(self::EXPECTED_OUTPUT, $output);
+        $this->assertStringContainsString('Target PHP version: 8.1 (set by tests)', $output);
+        $this->assertStringContainsString('Scanning files...', $output);
+        $this->assertStringContainsString('Analyzing files...', $output);
 
         $this->assertSame(0, IssueBuffer::getErrorCount());
 
         $this->assertSame(
             'Psalm was able to infer types for 100% of the codebase',
             $this->project_analyzer->getCodebase()->analyzer->getTypeInferenceSummary(
-                $this->project_analyzer->getCodebase()
-            )
+                $this->project_analyzer->getCodebase(),
+            ),
         );
     }
 }

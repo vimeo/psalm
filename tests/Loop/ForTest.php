@@ -13,12 +13,17 @@ class ForTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
-    /**
-     *
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
+            'forTrue' => [
+                'code' => '<?php
+                    function ret(): int {
+                        for (;;) {
+                            return 1;
+                        }
+                    }',
+            ],
             'implicitFourthLoop' => [
                 'code' => '<?php
                     function test(): int {
@@ -120,7 +125,7 @@ class ForTest extends TestCase
                         for ($j = 1; $j < 2; $j++) {}
                     }
 
-                    echo $i * $j;'
+                    echo $i * $j;',
             ],
             'reconcileOuterVars' => [
                 'code' => '<?php
@@ -128,7 +133,7 @@ class ForTest extends TestCase
                         if ($i === 0) {
                             continue;
                         }
-                    }'
+                    }',
             ],
             'noException' => [
                 'code' => '<?php
@@ -137,7 +142,7 @@ class ForTest extends TestCase
                      */
                     function cartesianProduct(array $arr) : void {
                         for ($i = 20; $arr[$i] === 5 && $i > 0; $i--) {}
-                    }'
+                    }',
             ],
             'noCrashOnLongThing' => [
                 'code' => '<?php
@@ -152,13 +157,14 @@ class ForTest extends TestCase
                                         continue;
                                     }
 
+                                    /** @psalm-suppress PossiblyUndefinedArrayOffset */
                                     $data[0]["a"] = array_merge($data[0]["a"], $data[0]["a"]);
                                 }
                             }
                         }
 
                         return $data;
-                    }'
+                    }',
             ],
             'InfiniteForLoop' => [
                 'code' => '<?php
@@ -178,14 +184,11 @@ class ForTest extends TestCase
                         for (;1;) {
                             return 1;
                         }
-                    }'
+                    }',
             ],
         ];
     }
 
-    /**
-     *
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [

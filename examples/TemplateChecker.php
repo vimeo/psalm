@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Examples\Template;
 
 use InvalidArgumentException;
@@ -13,6 +14,7 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Node\Stmt\VirtualClass;
 use Psalm\Node\Stmt\VirtualClassMethod;
@@ -20,7 +22,13 @@ use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
-use Psalm\Internal\MethodIdentifier;
+
+use function explode;
+use function preg_match;
+use function preg_replace;
+use function str_replace;
+use function strtolower;
+use function trim;
 
 class TemplateAnalyzer extends Psalm\Internal\Analyzer\FileAnalyzer
 {
@@ -92,7 +100,7 @@ class TemplateAnalyzer extends Psalm\Internal\Analyzer\FileAnalyzer
             null,
             null,
             [],
-            new ClassLikeNameOptions(true)
+            new ClassLikeNameOptions(true),
         ) === false
         ) {
             return false;
@@ -109,7 +117,7 @@ class TemplateAnalyzer extends Psalm\Internal\Analyzer\FileAnalyzer
             new MethodIdentifier($method_id->fq_class_name, '__construct'),
             $this_context,
             $this->getRootFilePath(),
-            $this->getRootFileName()
+            $this->getRootFileName(),
         );
 
         $this_context->vars_in_scope['$this'] = new Union([new TNamedObject($class_storage->name)]);
@@ -119,7 +127,7 @@ class TemplateAnalyzer extends Psalm\Internal\Analyzer\FileAnalyzer
             $method_id,
             $this_context,
             $this->getRootFilePath(),
-            $this->getRootFileName()
+            $this->getRootFileName(),
         );
 
         $view_context = new Context();
@@ -139,7 +147,6 @@ class TemplateAnalyzer extends Psalm\Internal\Analyzer\FileAnalyzer
 
     /**
      * @param  array<PhpParser\Node\Stmt> $stmts
-     *
      */
     protected function checkWithViewClass(Context $context, array $stmts): void
     {
@@ -169,7 +176,7 @@ class TemplateAnalyzer extends Psalm\Internal\Analyzer\FileAnalyzer
 
         $statements_source = new StatementsAnalyzer(
             $view_method_analyzer,
-            new NodeDataProvider()
+            new NodeDataProvider(),
         );
 
         $statements_source->analyze($pseudo_method_stmts, $context);

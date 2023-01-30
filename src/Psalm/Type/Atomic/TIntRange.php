@@ -7,6 +7,7 @@ use function min;
 
 /**
  * Denotes an interval of integers between two bounds
+ *
  * @psalm-immutable
  */
 final class TIntRange extends TInt
@@ -23,11 +24,19 @@ final class TIntRange extends TInt
      */
     public $max_bound;
 
-    public function __construct(?int $min_bound, ?int $max_bound, bool $from_docblock = false)
-    {
+    /** @var string|null */
+    public $dependent_list_key;
+
+    public function __construct(
+        ?int $min_bound,
+        ?int $max_bound,
+        bool $from_docblock = false,
+        ?string $dependent_list_key = null
+    ) {
         $this->min_bound = $min_bound;
         $this->max_bound = $max_bound;
         $this->from_docblock = $from_docblock;
+        $this->dependent_list_key = $dependent_list_key;
     }
 
     public function getKey(bool $include_extra = true): string

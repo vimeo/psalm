@@ -11,9 +11,6 @@ class NestedTemplateTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
-    /**
-     *
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -47,7 +44,7 @@ class NestedTemplateTest extends TestCase
                     class StudentRepository extends BaseRepository {}
 
                     /** @extends BaseRepository<TeacherViewData, TeacherModel> */
-                    class TeacherRepository extends BaseRepository {}'
+                    class TeacherRepository extends BaseRepository {}',
             ],
             'unwrapIndirectGenericTemplated' => [
                 'code' => '<?php
@@ -77,7 +74,7 @@ class NestedTemplateTest extends TestCase
                      */
                     function unwrapGeneric(Wrapper $wrapper) {
                         return $wrapper->unwrap();
-                    }'
+                    }',
             ],
             'unwrapFromTemplatedClassString' => [
                 'code' => '<?php
@@ -110,7 +107,7 @@ class NestedTemplateTest extends TestCase
                         return $package->unwrap();
                     }
 
-                    $result = load(StringWrapper::class);'
+                    $result = load(StringWrapper::class);',
             ],
             'unwrapNestedTemplateWithReset' => [
                 'code' => '<?php
@@ -122,14 +119,232 @@ class NestedTemplateTest extends TestCase
                      */
                     function toList(array $arr): array {
                         return reset($arr);
-                    }'
+                    }',
+            ],
+            '3levelNestedTemplatesOfMixed' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface A {}
+
+                    /**
+                     * @template T
+                     * @template U of A<T>
+                     */
+                    interface B {}
+
+                    /** @template T */
+                    interface J {}
+
+                    /**
+                     * @template T
+                     * @template U of A<T>
+                     * @implements J<U>
+                     */
+                    class K2 implements J {}
+
+                    /**
+                     * @template T
+                     * @template U of A<T>
+                     * @template V of B<T, U>
+                     * @extends J<V>
+                     */
+                    interface K3 extends J {}
+
+                    /**
+                     * @template T
+                     * @template U of A<T>
+                     * @template V of B<T, U>
+                     * @implements J<V>
+                     */
+                    class K1 implements J {}',
+            ],
+            '4levelNestedTemplatesOfObjects' => [
+                'code' => '<?php
+                    /**
+                     * Interface for all DB entities that map to some data-model object.
+                     *
+                     * @template T
+                     */
+                    interface DbEntity
+                    {
+                        /**
+                         * Maps this entity to a data-model entity
+                         *
+                         * @return T Data-model entity to which this DB entity maps.
+                         */
+                        public function toCore();
+                    }
+
+                    /**
+                     * @template T of object
+                     */
+                    abstract class EntityRepository {}
+
+                    /**
+                     * Base entity repository with common tooling.
+                     *
+                     * @template T of object
+                     * @extends EntityRepository<T>
+                     */
+                    abstract class DbEntityRepository
+                    extends EntityRepository {}
+
+                    interface ObjectId {}
+
+                    /**
+                     * @template I of ObjectId
+                     */
+                    interface AnObject {}
+
+                    /**
+                     * Base entity repository with common tooling.
+                     *
+                     * @template I of ObjectId
+                     * @template O of AnObject<I>
+                     * @template E of DbEntity<O>
+                     * @extends DbEntityRepository<E>
+                     */
+                    abstract class AnObjectEntityRepository
+                    extends DbEntityRepository
+                    {}
+
+                    /**
+                     * Base repository implementation backed by a Db repository.
+                     *
+                     * @template T
+                     * @template E of DbEntity<T>
+                     * @template R of DbEntityRepository<E>
+                     */
+                    abstract class DbRepositoryWrapper
+                    {
+                        /** @var R $repo Db repository */
+                        private DbEntityRepository $repo;
+
+                        /**
+                         * Getter for the Db repository.
+                         *
+                         * @return DbEntityRepository The Db repository.
+                         * @psalm-return R
+                         */
+                        protected function getDbRepo(): DbEntityRepository
+                        {
+                            return $this->repo;
+                        }
+                    }
+
+                    /**
+                     * Base implementation for all custom repositories that map to Core objects.
+                     *
+                     * @template I of ObjectId
+                     * @template O of AnObject<I>
+                     * @template E of DbEntity<O>
+                     * @template R of AnObjectEntityRepository<I, O, E>
+                     * @extends DbRepositoryWrapper<O, E, R>
+                     */
+                    abstract class AnObjectDbRepositoryWrapper
+                    extends DbRepositoryWrapper {}',
+            ],
+            '4levelNestedTemplateAsFunctionParameter' => [
+                'code' => '<?php
+                    /**
+                     * Interface for all DB entities that map to some data-model object.
+                     *
+                     * @template T
+                     */
+                    interface DbEntity
+                    {
+                        /**
+                         * Maps this entity to a data-model entity
+                         *
+                         * @return T Data-model entity to which this DB entity maps.
+                         */
+                        public function toCore();
+                    }
+
+                    /**
+                     * @template T of object
+                     */
+                    abstract class EntityRepository {}
+
+                    /**
+                     * Base entity repository with common tooling.
+                     *
+                     * @template T of object
+                     * @extends EntityRepository<T>
+                     */
+                    abstract class DbEntityRepository
+                    extends EntityRepository {}
+
+                    interface ObjectId {}
+
+                    /**
+                     * @template I of ObjectId
+                     */
+                    interface AnObject {}
+
+                    /**
+                     * Base entity repository with common tooling.
+                     *
+                     * @template I of ObjectId
+                     * @template O of AnObject<I>
+                     * @template E of DbEntity<O>
+                     * @extends DbEntityRepository<E>
+                     */
+                    abstract class AnObjectEntityRepository
+                    extends DbEntityRepository
+                    {}
+
+                    /**
+                     * Base repository implementation backed by a Db repository.
+                     *
+                     * @template T
+                     * @template E of DbEntity<T>
+                     * @template R of DbEntityRepository<E>
+                     */
+                    abstract class DbRepositoryWrapper
+                    {
+                        /** @var R $repo Db repository */
+                        private DbEntityRepository $repo;
+
+                        /**
+                         * Getter for the Db repository.
+                         *
+                         * @return DbEntityRepository The Db repository.
+                         * @psalm-return R
+                         */
+                        protected function getDbRepo(): DbEntityRepository
+                        {
+                            return $this->repo;
+                        }
+                    }
+
+                    /**
+                     * Base implementation for all custom repositories that map to Core objects.
+                     *
+                     * @template I of ObjectId
+                     * @template O of AnObject<I>
+                     * @template E of DbEntity<O>
+                     * @template R of AnObjectEntityRepository<I, O, E>
+                     * @extends DbRepositoryWrapper<O, E, R>
+                     */
+                    abstract class AnObjectDbRepositoryWrapper
+                    extends DbRepositoryWrapper {}
+
+                    abstract class Utilities {
+                        /**
+                         * @template I of ObjectId
+                         * @template O of AnObject<I>
+                         * @template E of DbEntity<O>
+                         * @template R of AnObjectEntityRepository<I, O, E>
+                         * @psalm-param AnObjectDbRepositoryWrapper<I, O, E, R> $repo
+                         * @return void
+                         */
+                        abstract public static function doSomething(AnObjectDbRepositoryWrapper $repo): void;
+                    }',
             ],
         ];
     }
 
-    /**
-     *
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [
@@ -161,7 +376,7 @@ class NestedTemplateTest extends TestCase
 
                     /** @extends BaseRepository<StudentViewData, TeacherModel> */
                     class StudentRepository extends BaseRepository {}',
-                'error_message' => 'InvalidTemplateParam'
+                'error_message' => 'InvalidTemplateParam',
             ],
         ];
     }

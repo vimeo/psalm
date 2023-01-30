@@ -21,7 +21,7 @@ class MethodExistenceProvider
      *   array<Closure(MethodExistenceProviderEvent): ?bool>
      * >
      */
-    private static $handlers = [];
+    private static array $handlers = [];
 
     public function __construct()
     {
@@ -64,7 +64,7 @@ class MethodExistenceProvider
                 $fq_classlike_name,
                 $method_name_lowercase,
                 $source,
-                $code_location
+                $code_location,
             );
             $method_exists = $method_handler($event);
 

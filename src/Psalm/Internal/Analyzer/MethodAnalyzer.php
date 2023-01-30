@@ -9,6 +9,7 @@ use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Issue\InvalidEnumMethod;
 use Psalm\Issue\InvalidStaticInvocation;
 use Psalm\Issue\MethodSignatureMustOmitReturnType;
 use Psalm\Issue\NonStaticSelfCall;
@@ -27,6 +28,24 @@ use function strtolower;
  */
 class MethodAnalyzer extends FunctionLikeAnalyzer
 {
+    // https://github.com/php/php-src/blob/a83923044c48982c80804ae1b45e761c271966d3/Zend/zend_enum.c#L77-L95
+    private const FORBIDDEN_ENUM_METHODS = [
+        '__construct',
+        '__destruct',
+        '__clone',
+        '__get',
+        '__set',
+        '__unset',
+        '__isset',
+        '__tostring',
+        '__debuginfo',
+        '__serialize',
+        '__unserialize',
+        '__sleep',
+        '__wakeup',
+        '__set_state',
+    ];
+
     /** @psalm-external-mutation-free */
     public function __construct(
         PhpParser\Node\Stmt\ClassMethod $function,
@@ -69,6 +88,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
 
     /**
      * Determines whether a given method is static or not
+     *
      * @param  array<string>   $suppressed_issues
      */
     public static function checkStatic(
@@ -79,13 +99,13 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
         CodeLocation $code_location,
         array $suppressed_issues,
         ?bool &$is_dynamic_this_method = false
-    ): bool {
+    ): void {
         $codebase_methods = $codebase->methods;
 
         if ($method_id->fq_class_name === 'Closure'
             && $method_id->method_name === 'fromcallable'
         ) {
-            return true;
+            return;
         }
 
         $original_method_id = $method_id;
@@ -94,7 +114,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
 
         if (!$method_id) {
             if (InternalCallMapHandler::inCallMap((string) $original_method_id)) {
-                return true;
+                return;
             }
 
             throw new LogicException('Declaring method for ' . $original_method_id . ' should not be null');
@@ -110,11 +130,11 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                             'Method ' . $codebase_methods->getCasedMethodId($method_id) .
                                 ' is not static, but is called ' .
                                 'using self::',
-                            $code_location
+                            $code_location,
                         ),
-                        $suppressed_issues
+                        $suppressed_issues,
                     )) {
-                        return false;
+                        return;
                     }
                 } else {
                     $is_dynamic_this_method = true;
@@ -125,22 +145,19 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                         'Method ' . $codebase_methods->getCasedMethodId($method_id) .
                             ' is not static, but is called ' .
                             'statically',
-                        $code_location
+                        $code_location,
                     ),
-                    $suppressed_issues
+                    $suppressed_issues,
                 )) {
-                    return false;
+                    return;
                 }
             }
         }
-
-        return true;
     }
 
     /**
      * @param  string[]     $suppressed_issues
      * @param  lowercase-string|null  $calling_method_id
-     *
      */
     public static function checkMethodExists(
         Codebase $codebase,
@@ -157,14 +174,14 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                 ? $code_location
                 : null,
             null,
-            $code_location->file_path
+            $code_location->file_path,
         )) {
             return true;
         }
 
         if (IssueBuffer::accepts(
             new UndefinedMethod('Method ' . $method_id . ' does not exist', $code_location, (string) $method_id),
-            $suppressed_issues
+            $suppressed_issues,
         )) {
             return false;
         }
@@ -188,7 +205,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
                 $fq_classlike_name,
                 $method_name,
                 $context,
-                null
+                null,
             );
 
             if ($method_visible !== null) {
@@ -266,15 +283,19 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
             return;
         }
 
-        $cased_method_name = $method_storage->cased_name;
+        if ($method_storage->cased_name === null) {
+            return;
+        }
+
+        $method_name_lc = strtolower($method_storage->cased_name);
         $methodsOfInterest = ['__clone', '__construct', '__destruct'];
 
-        if (in_array($cased_method_name, $methodsOfInterest)) {
+        if (in_array($method_name_lc, $methodsOfInterest, true)) {
             IssueBuffer::maybeAdd(
                 new MethodSignatureMustOmitReturnType(
-                    'Method ' . $cased_method_name . ' must not declare a return type',
-                    $code_location
-                )
+                    'Method ' . $method_storage->cased_name . ' must not declare a return type',
+                    $code_location,
+                ),
             );
         }
     }
@@ -285,7 +306,23 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
 
         return new MethodIdentifier(
             $context_self ?: (string) $this->source->getFQCLN(),
-            strtolower($function_name)
+            strtolower($function_name),
         );
+    }
+
+    public static function checkForbiddenEnumMethod(MethodStorage $method_storage): void
+    {
+        if ($method_storage->cased_name === null || $method_storage->location === null) {
+            return;
+        }
+
+        $method_name_lc = strtolower($method_storage->cased_name);
+        if (in_array($method_name_lc, self::FORBIDDEN_ENUM_METHODS, true)) {
+            IssueBuffer::maybeAdd(new InvalidEnumMethod(
+                'Enums cannot define ' . $method_storage->cased_name,
+                $method_storage->location,
+                $method_storage->defining_fqcln . '::' . $method_storage->cased_name,
+            ));
+        }
     }
 }

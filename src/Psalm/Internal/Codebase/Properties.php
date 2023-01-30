@@ -25,38 +25,19 @@ use function strtolower;
  */
 class Properties
 {
-    /**
-     * @var ClassLikeStorageProvider
-     */
-    private $classlike_storage_provider;
+    private ClassLikeStorageProvider $classlike_storage_provider;
 
-    /** @var ClassLikes */
-    private $classlikes;
+    private ClassLikes $classlikes;
 
-    /**
-     * @var bool
-     */
-    public $collect_locations = false;
+    public bool $collect_locations = false;
 
-    /**
-     * @var FileReferenceProvider
-     */
-    public $file_reference_provider;
+    public FileReferenceProvider $file_reference_provider;
 
-    /**
-     * @var PropertyExistenceProvider
-     */
-    public $property_existence_provider;
+    public PropertyExistenceProvider $property_existence_provider;
 
-    /**
-     * @var PropertyTypeProvider
-     */
-    public $property_type_provider;
+    public PropertyTypeProvider $property_type_provider;
 
-    /**
-     * @var PropertyVisibilityProvider
-     */
-    public $property_visibility_provider;
+    public PropertyVisibilityProvider $property_visibility_provider;
 
 
     public function __construct(
@@ -74,7 +55,6 @@ class Properties
 
     /**
      * Whether or not a given property exists
-     *
      */
     public function propertyExists(
         string $property_id,
@@ -96,7 +76,7 @@ class Properties
                 $read_mode,
                 $source,
                 $context,
-                $code_location
+                $code_location,
             );
 
             if ($property_exists !== null) {
@@ -119,12 +99,12 @@ class Properties
             if ($context->calling_method_id) {
                 $this->file_reference_provider->addMethodReferenceToClass(
                     $context->calling_method_id,
-                    $fq_class_name_lc
+                    $fq_class_name_lc,
                 );
             } else {
                 $this->file_reference_provider->addNonMethodReferenceToClass(
                     $source->getFilePath(),
-                    $fq_class_name_lc
+                    $fq_class_name_lc,
                 );
             }
         }
@@ -136,26 +116,26 @@ class Properties
                 $this->file_reference_provider->addMethodReferenceToClassMember(
                     $context->calling_method_id,
                     $declaring_property_class . '::$' . $property_name,
-                    false
+                    false,
                 );
 
                 if ($read_mode) {
                     $this->file_reference_provider->addMethodReferenceToClassProperty(
                         $context->calling_method_id,
-                        $declaring_property_class . '::$' . $property_name
+                        $declaring_property_class . '::$' . $property_name,
                     );
                 }
             } elseif ($source) {
                 $this->file_reference_provider->addFileReferenceToClassMember(
                     $source->getFilePath(),
                     $declaring_property_class . '::$' . $property_name,
-                    false
+                    false,
                 );
 
                 if ($read_mode) {
                     $this->file_reference_provider->addFileReferenceToClassProperty(
                         $source->getFilePath(),
-                        $declaring_property_class . '::$' . $property_name
+                        $declaring_property_class . '::$' . $property_name,
                     );
                 }
             }
@@ -163,7 +143,7 @@ class Properties
             if ($this->collect_locations && $code_location) {
                 $this->file_reference_provider->addCallingLocationForClassProperty(
                     $code_location,
-                    $declaring_property_class . '::$' . $property_name
+                    $declaring_property_class . '::$' . $property_name,
                 );
             }
 
@@ -173,12 +153,12 @@ class Properties
         if ($context && $context->calling_method_id) {
             $this->file_reference_provider->addMethodReferenceToMissingClassMember(
                 $context->calling_method_id,
-                $fq_class_name_lc . '::$' . $property_name
+                $fq_class_name_lc . '::$' . $property_name,
             );
         } elseif ($source) {
             $this->file_reference_provider->addFileReferenceToMissingClassMember(
                 $source->getFilePath(),
-                $fq_class_name_lc . '::$' . $property_name
+                $fq_class_name_lc . '::$' . $property_name,
             );
         }
 
@@ -198,7 +178,7 @@ class Properties
                 $property_name,
                 $read_mode,
                 $source,
-                null
+                null,
             )) {
                 return $fq_class_name;
             }
@@ -229,7 +209,7 @@ class Properties
                 $property_name,
                 $read_mode,
                 $source,
-                null
+                null,
             )) {
                 return $fq_class_name;
             }
@@ -302,7 +282,7 @@ class Properties
                 $property_name,
                 !$property_set,
                 $source,
-                $context
+                $context,
             );
 
             if ($property_type !== null) {

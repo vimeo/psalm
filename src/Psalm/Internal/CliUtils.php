@@ -4,7 +4,6 @@ namespace Psalm\Internal;
 
 use Composer\Autoload\ClassLoader;
 use JsonException;
-use PackageVersions\Versions;
 use Phar;
 use Psalm\Config;
 use Psalm\Config\Creator;
@@ -14,11 +13,13 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Report;
 use RuntimeException;
 
+use function array_filter;
 use function array_slice;
 use function assert;
 use function count;
 use function define;
 use function dirname;
+use function extension_loaded;
 use function fgets;
 use function file_exists;
 use function file_get_contents;
@@ -48,6 +49,8 @@ use function trim;
 use const DIRECTORY_SEPARATOR;
 use const JSON_THROW_ON_ERROR;
 use const PHP_EOL;
+use const PHP_VERSION;
+use const PHP_VERSION_ID;
 use const STDERR;
 use const STDIN;
 
@@ -68,11 +71,6 @@ final class CliUtils
         $in_phar = Phar::running() || strpos(__NAMESPACE__, 'HumbugBox');
 
         if ($in_phar) {
-            // require this before anything else
-            $stringable_path = __DIR__ . '/../../../vendor/symfony/polyfill-php80/Resources/stubs/Stringable.php';
-            if (file_exists($stringable_path)) {
-                require_once $stringable_path;
-            }
             require_once __DIR__ . '/../../../vendor/autoload.php';
 
             // hack required for JsonMapper
@@ -89,7 +87,7 @@ final class CliUtils
         foreach ($autoload_roots as $autoload_root) {
             $has_autoloader = false;
 
-            $nested_autoload_file = dirname($autoload_root, 2). DIRECTORY_SEPARATOR . 'autoload.php';
+            $nested_autoload_file = dirname($autoload_root, 2) . DIRECTORY_SEPARATOR . 'autoload.php';
 
             // note: don't realpath $nested_autoload_file, or phar version will fail
             if (file_exists($nested_autoload_file)) {
@@ -129,7 +127,6 @@ final class CliUtils
         foreach ($autoload_files as $file) {
             /**
              * @psalm-suppress UnresolvableInclude
-             *
              * @var mixed
              */
             $autoloader = require_once $file;
@@ -147,19 +144,19 @@ final class CliUtils
             } else {
                 fwrite(
                     STDERR,
-                    'Failed to find a valid Composer autoloader in ' . implode(', ', $autoload_files) . "\n"
+                    'Failed to find a valid Composer autoloader in ' . implode(', ', $autoload_files) . "\n",
                 );
             }
 
             fwrite(
                 STDERR,
-                'Please make sure you’ve run `composer install` in the current directory before using Psalm.' . "\n"
+                'Please make sure you’ve run `composer install` in the current directory before using Psalm.' . "\n",
             );
             exit(1);
         }
 
-        define('PSALM_VERSION', Versions::getVersion('vimeo/psalm'));
-        define('PHP_PARSER_VERSION', Versions::getVersion('nikic/php-parser'));
+        define('PSALM_VERSION', VersionUtils::getPsalmVersion());
+        define('PHP_PARSER_VERSION', VersionUtils::getPhpParserVersion());
 
         return $first_autoloader;
     }
@@ -179,7 +176,7 @@ final class CliUtils
         } catch (JsonException $e) {
             fwrite(
                 STDERR,
-                'Invalid composer.json at ' . $composer_json_path . "\n" . $e->getMessage() . "\n"
+                'Invalid composer.json at ' . $composer_json_path . "\n" . $e->getMessage() . "\n",
             );
             exit(1);
         }
@@ -187,7 +184,7 @@ final class CliUtils
         if (!$composer_json) {
             fwrite(
                 STDERR,
-                'Invalid composer.json at ' . $composer_json_path . "\n"
+                'Invalid composer.json at ' . $composer_json_path . "\n",
             );
             exit(1);
         }
@@ -252,7 +249,6 @@ final class CliUtils
 
     /**
      * @param  string|array|null|false $f_paths
-     *
      * @return list<string>|null
      */
     public static function getPathsToCheck($f_paths): ?array
@@ -301,7 +297,7 @@ final class CliUtils
             if ($stdin = fgets(STDIN)) {
                 $filtered_input_paths = preg_split('/\s+/', trim($stdin));
                 if ($filtered_input_paths === false) {
-                    throw new RuntimeException('Invalid paths: '.preg_last_error_msg());
+                    throw new RuntimeException('Invalid paths: ' . preg_last_error_msg());
                 }
             }
             $blocked = $meta['blocked'];
@@ -356,7 +352,7 @@ final class CliUtils
                             fwrite(
                                 STDERR,
                                 'Could not locate a config XML file in path ' . $current_dir
-                                    . '. Have you run \'psalm --init\' ?' . PHP_EOL
+                                    . '. Have you run \'psalm --init\' ?' . PHP_EOL,
                             );
                             exit(1);
                         }
@@ -367,14 +363,14 @@ final class CliUtils
                     $config = Creator::createBareConfig(
                         $current_dir,
                         null,
-                        self::getVendorDir($current_dir)
+                        self::getVendorDir($current_dir),
                     );
                 }
             }
         } catch (ConfigException $e) {
             fwrite(
                 STDERR,
-                $e->getMessage() . PHP_EOL
+                $e->getMessage() . PHP_EOL,
             );
             exit(1);
         }
@@ -408,7 +404,7 @@ final class CliUtils
             $amended_config_file_contents = preg_replace(
                 '/errorBaseline=".*?"/',
                 "errorBaseline=\"{$baseline_path}\"",
-                $config_file_contents
+                $config_file_contents,
             );
         } else {
             $end_psalm_open_tag = strpos($config_file_contents, '>', (int)strpos($config_file_contents, '<psalm'));
@@ -423,14 +419,14 @@ final class CliUtils
                     $config_file_contents,
                     "    errorBaseline=\"{$baseline_path}\"\n>",
                     $end_psalm_open_tag,
-                    1
+                    1,
                 );
             } else {
                 $amended_config_file_contents = substr_replace(
                     $config_file_contents,
                     " errorBaseline=\"{$baseline_path}\">",
                     $end_psalm_open_tag,
-                    1
+                    1,
                 );
             }
         }
@@ -515,5 +511,55 @@ final class CliUtils
             || isset($_SERVER['GITLAB_CI'])
             || isset($_SERVER['GITHUB_WORKFLOW'])
             || isset($_SERVER['DRONE']);
+    }
+
+    public static function checkRuntimeRequirements(): void
+    {
+        $required_php_version = 7_04_00;
+        $required_php_version_text = '7.4.0';
+
+        // the following list was taken from vendor/composer/platform_check.php
+        // It includes both Psalm's requirements (from composer.json) and the
+        // requirements of our dependencies `netresearch/jsonmapper` and
+        // `phpdocumentor/reflection-docblock`. The latter is transitive
+        // dependency of `felixfbecker/advanced-json-rpc`
+        $required_extensions = [
+            'dom',
+            'filter',
+            'json',
+            'libxml',
+            'pcre',
+            'reflection',
+            'simplexml',
+            'spl',
+            'tokenizer',
+        ];
+        $issues = [];
+
+        if (PHP_VERSION_ID < $required_php_version) {
+            $issues[] = 'Psalm requires a PHP version ">= ' . $required_php_version_text . '".'
+                        . ' You are running ' . PHP_VERSION . '.';
+        }
+
+        $missing_extensions = array_filter(
+            $required_extensions,
+            static fn(string $ext) => !extension_loaded($ext)
+        );
+
+        if ($missing_extensions) {
+            $issues[] = 'Psalm requires the following PHP extensions to be installed: '
+                        . implode(', ', $missing_extensions)
+                        . '.';
+        }
+
+        if ($issues) {
+            fwrite(
+                STDERR,
+                'Psalm has detected issues in your platform:' . PHP_EOL . PHP_EOL
+                . implode(PHP_EOL, $issues)
+                . PHP_EOL . PHP_EOL,
+            );
+            exit(1);
+        }
     }
 }

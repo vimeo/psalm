@@ -9,25 +9,14 @@ use Psalm\StatementsSource;
 
 final class AddRemoveTaintsEvent
 {
-    /**
-     * @var Expr
-     */
-    private $expr;
-    /**
-     * @var Context
-     */
-    private $context;
-    /**
-     * @var StatementsSource
-     */
-    private $statements_source;
-    /**
-     * @var Codebase
-     */
-    private $codebase;
+    private Expr $expr;
+    private Context $context;
+    private StatementsSource $statements_source;
+    private Codebase $codebase;
 
     /**
      * Called after an expression has been checked
+     *
      * @internal
      */
     public function __construct(

@@ -6,67 +6,33 @@ use Psalm\Storage\ImmutableNonCloneableTrait;
 
 /**
  * @psalm-immutable
- *
  * @internal
  */
 class DataFlowNodeData
 {
     use ImmutableNonCloneableTrait;
 
-    /**
-     * @var int
-     */
-    public $line_from;
+    public int $line_from;
 
-    /**
-     * @var int
-     */
-    public $line_to;
+    public int $line_to;
 
-    /**
-     * @var string
-     */
-    public $label;
+    public string $label;
 
-    /**
-     * @var string
-     */
-    public $file_name;
+    public string $file_name;
 
-    /**
-     * @var string
-     */
-    public $file_path;
+    public string $file_path;
 
-    /**
-     * @var string
-     */
-    public $snippet;
+    public string $snippet;
 
-    /**
-     * @var int
-     */
-    public $from;
+    public int $from;
 
-    /**
-     * @var int
-     */
-    public $to;
+    public int $to;
 
-    /**
-     * @var int
-     */
-    public $snippet_from;
+    public int $snippet_from;
 
-    /**
-     * @var int
-     */
-    public $column_from;
+    public int $column_from;
 
-    /**
-     * @var int
-     */
-    public $column_to;
+    public int $column_to;
 
     public function __construct(
         string $label,

@@ -5,14 +5,13 @@ namespace Psalm\Tests;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use const DIRECTORY_SEPARATOR;
+
 class ArgTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
-    /**
-     *
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -203,8 +202,8 @@ class ArgTest extends TestCase
                     $a = [3, 5, 7];
                     takeVariadicInts(...$a);',
                 'assertions' => [
-                    '$a' => 'non-empty-list<int>'
-                ]
+                    '$a' => 'non-empty-list<int>',
+                ],
             ],
             'iterableSplat' => [
                 'code' => '<?php
@@ -228,7 +227,7 @@ class ArgTest extends TestCase
                         $rest[] = "xxx";
                     }
 
-                    foo("first", ...$rest);'
+                    foo("first", ...$rest);',
             ],
             'useNamedArguments' => [
                 'code' => '<?php
@@ -249,14 +248,14 @@ class ArgTest extends TestCase
                             name: $input["name"],
                             email: $input["email"],
                         );
-                    }'
+                    }',
             ],
             'useNamedArgumentsSimple' => [
                 'code' => '<?php
                     function takesArguments(string $name, int $age) : void {}
 
                     takesArguments(name: "hello", age: 5);
-                    takesArguments(age: 5, name: "hello");'
+                    takesArguments(age: 5, name: "hello");',
             ],
             'useNamedArgumentsSpread' => [
                 'code' => '<?php
@@ -266,7 +265,7 @@ class ArgTest extends TestCase
                     takesArguments(...$args);',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.0'
+                'php_version' => '8.0',
             ],
             'useNamedVariadicArguments' => [
                 'code' => '<?php
@@ -275,7 +274,7 @@ class ArgTest extends TestCase
                     takesArguments(age: 5);',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.0'
+                'php_version' => '8.0',
             ],
             'useUnpackedNamedVariadicArguments' => [
                 'code' => '<?php
@@ -284,19 +283,19 @@ class ArgTest extends TestCase
                     takesArguments(...["age" => 5]);',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.0'
+                'php_version' => '8.0',
             ],
             'variadicArgsOptional' => [
                 'code' => '<?php
                     bar(...["aaaaa"]);
-                    function bar(string $p1, int $p3 = 10) : void {}'
+                    function bar(string $p1, int $p3 = 10) : void {}',
             ],
             'mkdirNamedParameters' => [
                 'code' => '<?php declare(strict_types=1);
                     mkdir("/var/test/123", recursive: true);',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.0'
+                'php_version' => '8.0',
             ],
             'variadicArgumentWithNoNamedArgumentsIsList' => [
                 'code' => '<?php
@@ -360,9 +359,6 @@ class ArgTest extends TestCase
         ];
     }
 
-    /**
-     *
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [
@@ -431,7 +427,7 @@ class ArgTest extends TestCase
                          */
                         new Exception($mixed_or_null);
                     }',
-                'error_message' => 'PossiblyNullArgument'
+                'error_message' => 'PossiblyNullArgument',
             ],
             'useInvalidNamedArgument' => [
                 'code' => '<?php
@@ -453,7 +449,7 @@ class ArgTest extends TestCase
                             email: $input["email"],
                         );
                     }',
-                'error_message' => 'InvalidNamedArgument'
+                'error_message' => 'InvalidNamedArgument',
             ],
             'usePositionalArgAfterNamed' => [
                 'code' => '<?php
@@ -466,7 +462,7 @@ class ArgTest extends TestCase
                     }
 
                     new Person(name: "", 0);',
-                'error_message' => 'InvalidNamedArgument'
+                'error_message' => 'InvalidNamedArgument',
             ],
             'useUnpackedInvalidNamedArgument' => [
                 'code' => '<?php
@@ -486,7 +482,7 @@ class ArgTest extends TestCase
                     }',
                 'error_message' => 'InvalidNamedArgument',
                 'ignored_issues' => [],
-                'php_version' => '8.0'
+                'php_version' => '8.0',
             ],
             'noNamedArgsMethod' => [
                 'code' => '<?php
@@ -538,7 +534,7 @@ class ArgTest extends TestCase
                     }',
                 'error_message' => 'MixedArgument',
                 'ignored_issues' => [],
-                'php_version' => '8.0'
+                'php_version' => '8.0',
             ],
             'arrayWithoutAllNamedParametersSuppressMixed' => [
                 'code' => '<?php
@@ -559,7 +555,7 @@ class ArgTest extends TestCase
                     }',
                 'error_message' => 'TooFewArguments',
                 'ignored_issues' => [],
-                'php_version' => '8.0'
+                'php_version' => '8.0',
             ],
             'wrongTypeVariadicArguments' => [
                 'code' => '<?php
@@ -568,7 +564,7 @@ class ArgTest extends TestCase
                     takesArguments(age: "abc");',
                 'error_message' => 'InvalidScalarArgument',
                 'ignored_issues' => [],
-                'php_version' => '8.0'
+                'php_version' => '8.0',
             ],
             'byrefVarSetsPossible' => [
                 'code' => '<?php
@@ -596,7 +592,7 @@ class ArgTest extends TestCase
                     test(param: 1, param: 2);',
                 'error_message' => 'InvalidNamedArgument',
                 'ignored_issues' => [],
-                'php_version' => '8.0'
+                'php_version' => '8.0',
             ],
             'overwriteOrderedNamedParam' => [
                 'code' => '<?php
@@ -607,7 +603,7 @@ class ArgTest extends TestCase
                     test(1, param: 2);',
                 'error_message' => 'InvalidNamedArgument',
                 'ignored_issues' => [],
-                'php_version' => '8.0'
+                'php_version' => '8.0',
             ],
             'overwriteOrderedWithUnpackedNamedParam' => [
                 'code' => '<?php
@@ -618,7 +614,7 @@ class ArgTest extends TestCase
                     test(1, ...["param" => 2]);',
                 'error_message' => 'InvalidNamedArgument',
                 'ignored_issues' => [],
-                'php_version' => '8.0'
+                'php_version' => '8.0',
             ],
             'variadicArgumentIsNotList' => [
                 'code' => '<?php
@@ -628,7 +624,7 @@ class ArgTest extends TestCase
                         return $values;
                     }
                 ',
-                'error_message' => 'MixedReturnTypeCoercion',
+                'error_message' => 'LessSpecificReturnStatement',
             ],
             'preventUnpackingPossiblyIterable' => [
                 'code' => '<?php
@@ -638,7 +634,7 @@ class ArgTest extends TestCase
                     $test = [1, 2];
                     foo(...$test);
                 ',
-                'error_message' => 'PossiblyInvalidArgument'
+                'error_message' => 'PossiblyInvalidArgument',
             ],
             'SKIPPED-preventUnpackingPossiblyArray' => [
                 'code' => '<?php
@@ -648,7 +644,7 @@ class ArgTest extends TestCase
                     $test = [1, 2];
                     foo(...$test);
                 ',
-                'error_message' => 'PossiblyInvalidArgument'
+                'error_message' => 'PossiblyInvalidArgument',
             ],
             'noNamedArguments' => [
                 'code' => '<?php
@@ -792,7 +788,7 @@ class ArgTest extends TestCase
                     $sealedExtraKeys = ["test" => "str", "somethingElse" => "test"];
                     a($sealedExtraKeys);
                 ',
-                'error_message' => 'InvalidArgument',
+                'error_message' => 'InvalidArgument - src'  . DIRECTORY_SEPARATOR . 'somefile.php:8:23 - Argument 1 of a expects array{test: string}, but array{somethingElse: \'test\', test: \'str\'} with additional array shape fields (somethingElse) was provided',
             ],
             'callbackArgsCountMismatch' => [
                 'code' => '<?php

@@ -24,7 +24,7 @@ class FunctionParamsProvider
      *   array<Closure(FunctionParamsProviderEvent): ?array<int, FunctionLikeParameter>>
      * >
      */
-    private static $handlers = [];
+    private static array $handlers = [];
 
     public function __construct()
     {
@@ -58,7 +58,6 @@ class FunctionParamsProvider
 
     /**
      * @param list<Arg> $call_args
-     *
      * @return  ?array<int, FunctionLikeParameter>
      */
     public function getFunctionParams(
@@ -74,7 +73,7 @@ class FunctionParamsProvider
                 $function_id,
                 $call_args,
                 $context,
-                $code_location
+                $code_location,
             );
             $result = $class_handler($event);
 

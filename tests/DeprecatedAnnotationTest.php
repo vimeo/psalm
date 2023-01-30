@@ -10,9 +10,6 @@ class DeprecatedAnnotationTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
-    /**
-     *
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -50,7 +47,7 @@ class DeprecatedAnnotationTest extends TestCase
             'annotationOnStatement' => [
                 'code' => '<?php
                     /** @deprecated */
-                    $a = "A";'
+                    $a = "A";',
             ],
             'noNoticeOnInheritance' => [
                 'code' => '<?php
@@ -81,7 +78,7 @@ class DeprecatedAnnotationTest extends TestCase
                         public function getDifferentFoos() {
                             return [];
                         }
-                    }'
+                    }',
             ],
             'suppressDeprecatedClassOnMember' => [
                     'code' => '<?php
@@ -101,13 +98,10 @@ class DeprecatedAnnotationTest extends TestCase
                              */
                             public $property;
                         }
-                ']
+                '],
         ];
     }
 
-    /**
-     *
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [

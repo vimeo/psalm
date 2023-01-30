@@ -16,14 +16,15 @@ use function array_merge;
 use function array_reduce;
 use function array_values;
 use function get_loaded_extensions;
+use function htmlspecialchars;
 use function implode;
 use function ksort;
 use function min;
 use function phpversion;
 use function preg_replace_callback;
 use function sort;
+use function sprintf;
 use function str_replace;
-use function strpos;
 use function trim;
 use function usort;
 
@@ -34,8 +35,6 @@ final class ErrorBaseline
 {
     /**
      * @param array<string,array<string,array{o:int, s:array<int, string>}>> $existingIssues
-     *
-     *
      * @psalm-pure
      */
     public static function countTotalIssues(array $existingIssues): int
@@ -49,7 +48,7 @@ final class ErrorBaseline
                  * @param array{o:int, s:array<int, string>} $existingIssue
                  */
                 static fn(int $carry, array $existingIssue): int => $carry + $existingIssue['o'],
-                0
+                0,
             );
         }
 
@@ -58,7 +57,6 @@ final class ErrorBaseline
 
     /**
      * @param array<string, list<IssueData>> $issues
-     *
      */
     public static function create(
         FileProvider $fileProvider,
@@ -73,7 +71,6 @@ final class ErrorBaseline
 
     /**
      * @return array<string,array<string,array{o:int, s: list<string>}>>
-     *
      * @throws ConfigException
      */
     public static function read(FileProvider $fileProvider, string $baselineFile): array
@@ -116,14 +113,18 @@ final class ErrorBaseline
 
                 $issueType = $issue->tagName;
 
-                $files[$fileName][$issueType] = [
-                    'o' => (int)$issue->getAttribute('occurrences'),
-                    's' => [],
-                ];
+                $files[$fileName][$issueType] = ['o' => 0, 's' => []];
                 $codeSamples = $issue->getElementsByTagName('code');
 
                 foreach ($codeSamples as $codeSample) {
+                    $files[$fileName][$issueType]['o'] += 1;
                     $files[$fileName][$issueType]['s'][] = trim($codeSample->textContent);
+                }
+
+                // TODO: Remove in Psalm 6
+                $occurrencesAttr = $issue->getAttribute('occurrences');
+                if ($occurrencesAttr !== '') {
+                    $files[$fileName][$issueType]['o'] = (int) $occurrencesAttr;
                 }
             }
         }
@@ -133,9 +134,7 @@ final class ErrorBaseline
 
     /**
      * @param array<string, list<IssueData>> $issues
-     *
      * @return array<string, array<string, array{o: int, s: list<string>}>>
-     *
      * @throws ConfigException
      */
     public static function update(
@@ -163,11 +162,11 @@ final class ErrorBaseline
 
                 $existingIssuesCount[$issueType]['o'] = min(
                     $existingIssueType['o'],
-                    $newIssues[$file][$issueType]['o']
+                    $newIssues[$file][$issueType]['o'],
                 );
                 $existingIssuesCount[$issueType]['s'] = array_intersect(
                     $existingIssueType['s'],
-                    $newIssues[$file][$issueType]['s']
+                    $newIssues[$file][$issueType]['s'],
                 );
             }
         }
@@ -181,7 +180,6 @@ final class ErrorBaseline
 
     /**
      * @param array<string, list<IssueData>> $issues
-     *
      * @return array<string,array<string,array{o:int, s:array<int, string>}>>
      */
     private static function countIssueTypesByFile(array $issues): array
@@ -193,7 +191,6 @@ final class ErrorBaseline
             array_merge(...array_values($issues)),
             /**
              * @param array<string,array<string,array{o:int, s:array<int, string>}>> $carry
-             *
              * @return array<string,array<string,array{o:int, s:array<int, string>}>>
              */
             static function (array $carry, IssueData $issue): array {
@@ -214,14 +211,11 @@ final class ErrorBaseline
                 }
 
                 ++$carry[$fileName][$issueType]['o'];
-
-                if (!strpos($issue->selected_text, "\n")) {
-                    $carry[$fileName][$issueType]['s'][] = $issue->selected_text;
-                }
+                $carry[$fileName][$issueType]['s'][] = $issue->selected_text;
 
                 return $carry;
             },
-            []
+            [],
         );
 
         // Sort files first
@@ -237,7 +231,6 @@ final class ErrorBaseline
 
     /**
      * @param array<string,array<string,array{o:int, s:array<int, string>}>> $groupedIssues
-     *
      */
     private static function writeToFile(
         FileProvider $fileProvider,
@@ -258,7 +251,7 @@ final class ErrorBaseline
                 ('php:' . PHP_VERSION),
             ], ...array_map(
                 static fn(string $extension): string => $extension . ':' . phpversion($extension),
-                $extensions
+                $extensions,
             )]));
         }
 
@@ -270,13 +263,16 @@ final class ErrorBaseline
             foreach ($issueTypes as $issueType => $existingIssueType) {
                 $issueNode = $baselineDoc->createElement($issueType);
 
-                $issueNode->setAttribute('occurrences', (string)$existingIssueType['o']);
-
                 sort($existingIssueType['s']);
 
                 foreach ($existingIssueType['s'] as $selection) {
                     $codeNode = $baselineDoc->createElement('code');
-                    $codeNode->textContent = trim($selection);
+                    $textContent = trim($selection);
+                    if ($textContent !== htmlspecialchars($textContent)) {
+                        $codeNode->append($baselineDoc->createCDATASection($textContent));
+                    } else {
+                        $codeNode->textContent = trim($textContent);
+                    }
                     $issueNode->appendChild($codeNode);
                 }
                 $fileNode->appendChild($issueNode);
@@ -289,23 +285,17 @@ final class ErrorBaseline
         $baselineDoc->formatOutput = true;
 
         $xml = preg_replace_callback(
-            '/<files (psalm-version="[^"]+") (?:php-version="(.+)"(\/?>)\n)/',
+            '/<files (psalm-version="[^"]+") php-version="(.+)"(\/?>)\n/',
             /**
              * @param string[] $matches
              */
-            static fn(array $matches): string => '<files' .
-            "\n  " .
-            $matches[1] .
-            "\n" .
-            '  php-version="' .
-            "\n    " .
-            str_replace('&#10;&#9;', "\n    ", $matches[2]).
-            "\n" .
-            '  "' .
-            "\n" .
-            $matches[3] .
-            "\n",
-            $baselineDoc->saveXML()
+            static fn(array $matches): string => sprintf(
+                "<files\n  %s\n  php-version=\"\n    %s\n  \"\n%s\n",
+                $matches[1],
+                str_replace('&#10;&#9;', "\n    ", $matches[2]),
+                $matches[3],
+            ),
+            $baselineDoc->saveXML(),
         );
 
         if ($xml === null) {

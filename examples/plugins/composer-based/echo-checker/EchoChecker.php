@@ -27,17 +27,14 @@ class EchoChecker implements AfterStatementAnalysisInterface
                 $expr_type = $statements_source->getNodeTypeProvider()->getType($expr);
 
                 if (!$expr_type || $expr_type->hasMixed()) {
-                    if (IssueBuffer::accepts(
+                    IssueBuffer::maybeAdd(
                         new ArgumentTypeCoercion(
                             'Echo requires an unescaped string, ' . $expr_type . ' provided',
                             new CodeLocation($statements_source, $expr),
-                            'echo'
+                            'echo',
                         ),
-                        $statements_source->getSuppressedIssues()
-                    )) {
-                        // keep soldiering on
-                    }
-
+                        $statements_source->getSuppressedIssues(),
+                    );
                     continue;
                 }
 
@@ -47,16 +44,14 @@ class EchoChecker implements AfterStatementAnalysisInterface
                     if ($type instanceof TString
                         && !$type instanceof TLiteralString
                     ) {
-                        if (IssueBuffer::accepts(
+                        IssueBuffer::maybeAdd(
                             new ArgumentTypeCoercion(
                                 'Echo requires an unescaped string, ' . $expr_type . ' provided',
                                 new CodeLocation($statements_source, $expr),
-                                'echo'
+                                'echo',
                             ),
-                            $statements_source->getSuppressedIssues()
-                        )) {
-                            // keep soldiering on
-                        }
+                            $statements_source->getSuppressedIssues(),
+                        );
                     }
                 }
             }

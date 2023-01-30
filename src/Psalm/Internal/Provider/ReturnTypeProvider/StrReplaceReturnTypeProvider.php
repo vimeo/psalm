@@ -67,7 +67,7 @@ class StrReplaceReturnTypeProvider implements FunctionReturnTypeProviderInterfac
                         $function_id,
                         $first_arg->getSingleStringLiteral()->value,
                         $second_arg->getSingleStringLiteral()->value,
-                        $subject_type->getSingleStringLiteral()->value
+                        $subject_type->getSingleStringLiteral()->value,
                     );
                     $return_type = Type::getString($replaced_string);
                 }
@@ -75,7 +75,7 @@ class StrReplaceReturnTypeProvider implements FunctionReturnTypeProviderInterfac
                 $codebase = $statements_source->getCodebase();
 
                 $return_type = new Union([new TString, new TNull()], [
-                    'ignore_nullable_issues' => $codebase->config->ignore_internal_nullable_issues
+                    'ignore_nullable_issues' => $codebase->config->ignore_internal_nullable_issues,
                 ]);
             }
 

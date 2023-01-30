@@ -10,15 +10,12 @@ use Psalm\Type\Union;
  */
 class CaseScope
 {
-    /**
-     * @var Context
-     */
-    public $parent_context;
+    public Context $parent_context;
 
     /**
      * @var array<string, Union>|null
      */
-    public $break_vars;
+    public ?array $break_vars = null;
 
     public function __construct(Context $parent_context)
     {

@@ -35,7 +35,7 @@ class AnnotationTest extends TestCase
                  * @method int test()
                  * @method \DateTime modify($modify)
                  */
-                class WTF extends \DateTime { }'
+                class WTF extends \DateTime { }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -66,7 +66,7 @@ class AnnotationTest extends TestCase
              */
             class BreakingThings extends ParentClass
             {
-            }'
+            }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -87,7 +87,7 @@ class AnnotationTest extends TestCase
                  *
                  * @method \DateTime modify($modify)
                  */
-                class WTF extends \DateTime { }'
+                class WTF extends \DateTime { }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -105,7 +105,7 @@ class AnnotationTest extends TestCase
                  * @param array $arr
                  * @return void
                  */
-                function foo($arr = false) {}'
+                function foo($arr = false) {}',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -124,7 +124,7 @@ class AnnotationTest extends TestCase
                  */
                 function foo($_arr = false) {}
                 foo(false);
-                foo(["hello"]);'
+                foo(["hello"]);',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -140,7 +140,7 @@ class AnnotationTest extends TestCase
         $this->addFile(
             'somefile.php',
             '<?php
-                function foo(array $arr = false) : void {}'
+                function foo(array $arr = false) : void {}',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -496,7 +496,7 @@ class AnnotationTest extends TestCase
                      * @return array{d:Exception}
                      * @psalm-suppress InvalidReturnType
                      */
-                    function f() {}'
+                    function f() {}',
             ],
             'slashAfter?' => [
                 'code' => '<?php
@@ -986,7 +986,7 @@ class AnnotationTest extends TestCase
                         $json = \'{"name": "John", "age": 44}\';
                         /** @psalm-var Person */
                         return json_decode($json, true);
-                    }'
+                    }',
             ],
             'allowDocblockDefinedTKeyedArrayIntoNonEmpty' => [
                 'code' => '<?php
@@ -996,12 +996,12 @@ class AnnotationTest extends TestCase
                     /** @var array{0:list<string>, 1:list<int>} */
                     $bar = [[], []];
 
-                    foo($bar);'
+                    foo($bar);',
             ],
             'allowResourceInList' => [
                 'code' => '<?php
                     /** @param list<scalar|array|object|resource|null> $_s */
-                    function foo(array $_s) : void { }'
+                    function foo(array $_s) : void { }',
             ],
             'possiblyUndefinedObjectProperty' => [
                 'code' => '<?php
@@ -1011,7 +1011,7 @@ class AnnotationTest extends TestCase
 
                     /** @var object{value?: string} $data */
                     $data = json_decode("{}", false);
-                    consume($data->value ?? "");'
+                    consume($data->value ?? "");',
             ],
             'throwSelf' => [
                 'code' => '<?php
@@ -1024,7 +1024,7 @@ class AnnotationTest extends TestCase
                         public static function create(): void {
                             throw new self();
                         }
-                    }'
+                    }',
             ],
             'parseTrailingCommaInReturn' => [
                 'code' => '<?php
@@ -1036,7 +1036,7 @@ class AnnotationTest extends TestCase
                      */
                     function foo(): array {
                         return ["a" => 1, "b" => "two"];
-                    }'
+                    }',
             ],
             'falsableFunctionAllowedWhenBooleanExpected' => [
                 'code' => '<?php
@@ -1050,7 +1050,7 @@ class AnnotationTest extends TestCase
                     function alwaysFalse2(): bool
                     {
                         return false;
-                    }'
+                    }',
             ],
             'dontInheritDocblockReturnWhenRedeclared' => [
                 'code' => '<?php
@@ -1070,28 +1070,28 @@ class AnnotationTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '7.4'
+                'php_version' => '7.4',
             ],
             'arrayWithKeySlashesAndNewline' => [
                 'code' => '<?php
                     $_arr = ["foo\\bar\nbaz" => "literal"];',
                 'assertions' => [
-                    '$_arr' => 'array{\'foo\\\\bar\nbaz\': string}'
-                ]
+                    '$_arr' => 'array{\'foo\\\\bar\nbaz\': string}',
+                ],
             ],
             'doubleSpaceBeforeAt' => [
                 'code' => '<?php
                     /**
                      *  @param string $_c
                      */
-                    function foo($_c) : void {}'
+                    function foo($_c) : void {}',
             ],
             'throwsAnnotationWithBarAndSpace' => [
                 'code' => '<?php
                     /**
                      * @throws \Exception| \InvalidArgumentException
                      */
-                    function bar() : void {}'
+                    function bar() : void {}',
             ],
             'varDocblockAboveCall' => [
                 'code' => '<?php
@@ -1103,12 +1103,12 @@ class AnnotationTest extends TestCase
                         }
                     }
 
-                    function takesString(string $_s): void {}'
+                    function takesString(string $_s): void {}',
             ],
             'noCrashWithoutAssignment' => [
                 'code' => '<?php
                     /** @var DateTime $obj */
-                    echo $obj->format("Y");'
+                    echo $obj->format("Y");',
             ],
             'intMaskWithClassConstants' => [
                 'code' => '<?php
@@ -1125,7 +1125,7 @@ class AnnotationTest extends TestCase
                         echo $flags;
                     }
 
-                    takesFlags(FileFlag::MODIFIED | FileFlag::NEW);'
+                    takesFlags(FileFlag::MODIFIED | FileFlag::NEW);',
             ],
             'intMaskWithZero' => [
                 'code' => '<?php
@@ -1133,7 +1133,7 @@ class AnnotationTest extends TestCase
                     function takesFlags(int $_flags): void {}
 
                     takesFlags(0);
-                '
+                ',
             ],
             'intMaskOfWithClassWildcard' => [
                 'code' => '<?php
@@ -1150,7 +1150,7 @@ class AnnotationTest extends TestCase
                         echo $flags;
                     }
 
-                    takesFlags(FileFlag::MODIFIED | FileFlag::NEW);'
+                    takesFlags(FileFlag::MODIFIED | FileFlag::NEW);',
             ],
             'intMaskOfWithZero' => [
                 'code' => '<?php
@@ -1164,7 +1164,7 @@ class AnnotationTest extends TestCase
                     function takesFlags(int $_flags): void {}
 
                     takesFlags(0);
-                '
+                ',
             ],
             'emptyStringFirst' => [
                 'code' => '<?php
@@ -1173,7 +1173,7 @@ class AnnotationTest extends TestCase
                      */
                     function testBad(string $v): void {
                         echo $v;
-                    }'
+                    }',
             ],
             'UnnecessaryVarAnnotationSuppress' => [
                 'code' => '<?php
@@ -1217,7 +1217,7 @@ class AnnotationTest extends TestCase
                     }
                     $a = new Vendor();
                     $_b = new A();
-                    echo (string)($a->getConfig()[0]??"");'
+                    echo (string)($a->getConfig()[0]??"");',
             ],
             'promotedPropertiesDocumentationEitherForParamOrForProperty' => [
                 'code' => '<?php
@@ -1233,7 +1233,7 @@ class AnnotationTest extends TestCase
                     }
 
                     new UserRole(new stdClass(), new stdClass());
-                    '
+                    ',
             ],
             'promotedPropertiesDocumentationForPropertyAndSignature' => [
                 'code' => '<?php
@@ -1246,14 +1246,11 @@ class AnnotationTest extends TestCase
                             private iterable $strings,
                         ) {
                         }
-                    }'
+                    }',
             ],
         ];
     }
 
-    /**
-     *
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [
@@ -1787,7 +1784,7 @@ class AnnotationTest extends TestCase
                         /** @return X */
                         public function run() {}
                     }',
-                'error_message' => 'ImplementedReturnTypeMismatch'
+                'error_message' => 'ImplementedReturnTypeMismatch',
             ],
             'unexpectedImportType' => [
                 'code' => '<?php

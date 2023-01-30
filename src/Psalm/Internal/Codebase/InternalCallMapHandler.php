@@ -14,7 +14,6 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\TaintKind;
 use UnexpectedValueException;
 
@@ -40,29 +39,23 @@ class InternalCallMapHandler
     private const PHP_MINOR_VERSION = 2;
     private const LOWEST_AVAILABLE_DELTA = 71;
 
-    /**
-     * @var ?int
-     */
-    private static $loaded_php_major_version;
-    /**
-     * @var ?int
-     */
-    private static $loaded_php_minor_version;
+    private static ?int $loaded_php_major_version = null;
+    private static ?int $loaded_php_minor_version = null;
 
     /**
      * @var array<lowercase-string, array<int|string,string>>|null
      */
-    private static $call_map;
+    private static ?array $call_map = null;
 
     /**
      * @var array<list<TCallable>>|null
      */
-    private static $call_map_callables = [];
+    private static ?array $call_map_callables = [];
 
     /**
      * @var array<string, list<list<TaintKind::*>>>
      */
-    private static $taint_sink_map = [];
+    private static array $taint_sink_map = [];
 
     /**
      * @param  list<PhpParser\Node\Arg>   $args
@@ -77,7 +70,7 @@ class InternalCallMapHandler
 
         if ($possible_callables === null) {
             throw new UnexpectedValueException(
-                'Not expecting $function_param_options to be null for ' . $method_id
+                'Not expecting $function_param_options to be null for ' . $method_id,
             );
         }
 
@@ -86,14 +79,13 @@ class InternalCallMapHandler
             $possible_callables,
             $args,
             $nodes,
-            $method_id
+            $method_id,
         );
     }
 
     /**
      * @param  array<int, TCallable>  $callables
      * @param  list<PhpParser\Node\Arg>                 $args
-     *
      */
     public static function getMatchingCallableFromCallMapOptions(
         Codebase $codebase,
@@ -165,15 +157,12 @@ class InternalCallMapHandler
                 if ($arg->unpack && !$function_param->is_variadic) {
                     if ($arg_type->hasArray()) {
                         /**
-                         * @psalm-suppress PossiblyUndefinedStringArrayOffset
-                         * @var TArray|TKeyedArray|TList
+                         * @var TArray|TKeyedArray
                          */
-                        $array_atomic_type = $arg_type->getAtomicTypes()['array'];
+                        $array_atomic_type = $arg_type->getArray();
 
                         if ($array_atomic_type instanceof TKeyedArray) {
                             $arg_type = $array_atomic_type->getGenericValueType();
-                        } elseif ($array_atomic_type instanceof TList) {
-                            $arg_type = $array_atomic_type->type_param;
                         } else {
                             $arg_type = $array_atomic_type->type_params[1];
                         }
@@ -188,7 +177,7 @@ class InternalCallMapHandler
                     $param_type,
                     true,
                     true,
-                    $arg_result
+                    $arg_result,
                 ) || $arg_result->type_coerced) {
                     if ($arg_result->type_coerced) {
                         $type_coerced = true;
@@ -310,7 +299,7 @@ class InternalCallMapHandler
                     null,
                     $optional,
                     false,
-                    $variadic
+                    $variadic,
                 );
 
                 if ($out_type) {

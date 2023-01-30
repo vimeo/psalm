@@ -7,7 +7,6 @@ use Psalm\Storage\ImmutableNonCloneableTrait;
 
 /**
  * @psalm-immutable
- *
  * @internal
  */
 class InlineTypeAlias implements TypeAlias
@@ -17,7 +16,7 @@ class InlineTypeAlias implements TypeAlias
     /**
      * @var list<array{0: string, 1: int, 2?: string}>
      */
-    public $replacement_tokens;
+    public array $replacement_tokens;
 
     /**
      * @param list<array{0: string, 1: int, 2?: string}> $replacement_tokens

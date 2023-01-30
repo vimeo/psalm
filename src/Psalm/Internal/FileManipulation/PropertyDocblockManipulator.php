@@ -27,46 +27,33 @@ class PropertyDocblockManipulator
     /**
      * @var array<string, array<int, self>>
      */
-    private static $manipulators = [];
+    private static array $manipulators = [];
 
-    /** @var Property */
-    private $stmt;
+    private Property $stmt;
 
-    /** @var int */
-    private $docblock_start;
+    private int $docblock_start;
 
-    /** @var int */
-    private $docblock_end;
+    private int $docblock_end;
 
-    /** @var null|int */
-    private $typehint_start;
+    private ?int $typehint_start = null;
 
-    /** @var int */
-    private $typehint_area_start;
+    private int $typehint_area_start;
 
-    /** @var null|int */
-    private $typehint_end;
+    private ?int $typehint_end = null;
 
-    /** @var null|string */
-    private $new_php_type;
+    private ?string $new_php_type = null;
 
-    /** @var bool */
-    private $type_is_php_compatible = false;
+    private bool $type_is_php_compatible = false;
 
-    /** @var null|string */
-    private $new_phpdoc_type;
+    private ?string $new_phpdoc_type = null;
 
-    /** @var null|string */
-    private $new_psalm_type;
+    private ?string $new_psalm_type = null;
 
-    /** @var string */
-    private $indentation;
+    private string $indentation;
 
-    /** @var bool */
-    private $add_newline = false;
+    private bool $add_newline = false;
 
-    /** @var string|null */
-    private $type_description;
+    private ?string $type_description = null;
 
     public static function getForProperty(
         ProjectAnalyzer $project_analyzer,
@@ -133,7 +120,7 @@ class PropertyDocblockManipulator
                 $preceding_space = substr(
                     $file_contents,
                     $preceding_semicolon_pos + 1,
-                    $preceding_newline_pos - $preceding_semicolon_pos - 1
+                    $preceding_newline_pos - $preceding_semicolon_pos - 1,
                 );
 
                 if (!substr_count($preceding_space, "\n")) {
@@ -166,7 +153,6 @@ class PropertyDocblockManipulator
     /**
      * Gets a new docblock given the existing docblock, if one exists, and the updated return types
      * and/or parameters
-     *
      */
     private function getDocblock(): string
     {
@@ -236,13 +222,13 @@ class PropertyDocblockManipulator
                     $file_manipulations[$manipulator->typehint_start] = new FileManipulation(
                         $manipulator->typehint_start,
                         $manipulator->typehint_end,
-                        $manipulator->new_php_type
+                        $manipulator->new_php_type,
                     );
                 } else {
                     $file_manipulations[$manipulator->typehint_area_start] = new FileManipulation(
                         $manipulator->typehint_area_start,
                         $manipulator->typehint_area_start,
-                        ' ' . $manipulator->new_php_type
+                        ' ' . $manipulator->new_php_type,
                     );
                 }
             } elseif ($manipulator->new_php_type === ''
@@ -253,7 +239,7 @@ class PropertyDocblockManipulator
                 $file_manipulations[$manipulator->typehint_start] = new FileManipulation(
                     $manipulator->typehint_start,
                     $manipulator->typehint_end,
-                    ''
+                    '',
                 );
             }
 
@@ -266,7 +252,7 @@ class PropertyDocblockManipulator
                         - ($manipulator->add_newline ? strlen($manipulator->indentation) : 0),
                     $manipulator->docblock_end,
                     ($manipulator->add_newline ? "\n" . $manipulator->indentation : '')
-                        . $manipulator->getDocblock()
+                        . $manipulator->getDocblock(),
                 );
             }
         }

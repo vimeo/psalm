@@ -439,7 +439,6 @@ final class Context
      * @param  bool        $has_leaving_statements   whether or not the parent scope is abandoned between
      *                                               $start_context and $end_context
      * @param  array<string, bool>  $updated_vars
-     *
      */
     public function update(
         Context $start_context,
@@ -513,7 +512,6 @@ final class Context
 
     /**
      * @param  array<string, Union> $new_vars_in_scope
-     *
      * @return array<string, Union>
      */
     public function getRedefinedVars(array $new_vars_in_scope, bool $include_new_vars = false): array
@@ -533,7 +531,7 @@ final class Context
             if (!$this_type->equals(
                 $new_type,
                 true,
-                !($this_type->propagate_parent_nodes || $new_type->propagate_parent_nodes)
+                !($this_type->propagate_parent_nodes || $new_type->propagate_parent_nodes),
             )
             ) {
                 $redefined_vars[$var_id] = $this_type;
@@ -636,9 +634,7 @@ final class Context
     /**
      * @param Clause[]             $clauses
      * @param array<string, bool>  $changed_var_ids
-     *
      * @return array{list<Clause>, list<Clause>}
-     *
      * @psalm-pure
      */
     public static function removeReconciledClauses(array $clauses, array $changed_var_ids): array
@@ -667,7 +663,6 @@ final class Context
 
     /**
      * @param  Clause[]               $clauses
-     *
      * @return list<Clause>
      */
     public static function filterClauses(
@@ -719,7 +714,7 @@ final class Context
                         [],
                         null,
                         [],
-                        $failed_reconciliation
+                        $failed_reconciliation,
                     );
 
                     if ($result_type->getId() !== $new_type_string) {
@@ -762,7 +757,7 @@ final class Context
                 || ($new_type && $existing_type->from_docblock !== $new_type->from_docblock)
                 ? null
                 : $new_type,
-            $statements_analyzer
+            $statements_analyzer,
         );
 
         foreach ($this->vars_in_scope as $var_id => &$type) {

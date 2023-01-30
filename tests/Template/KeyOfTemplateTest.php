@@ -13,9 +13,6 @@ class KeyOfTemplateTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
-    /**
-     *
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -29,7 +26,7 @@ class KeyOfTemplateTest extends TestCase
                     function getKey($array) {
                         return array_keys($array);
                     }
-                '
+                ',
             ],
             'acceptsArrayKeyFirstFn' => [
                 'code' => '<?php
@@ -41,7 +38,7 @@ class KeyOfTemplateTest extends TestCase
                     function getKey($array) {
                         return array_key_first($array);
                     }
-                '
+                ',
             ],
             'acceptsArrayKeyLastFn' => [
                 'code' => '<?php
@@ -53,7 +50,7 @@ class KeyOfTemplateTest extends TestCase
                     function getKey($array) {
                         return array_key_last($array);
                     }
-                '
+                ',
             ],
             'SKIPPED-acceptsIfArrayKeyExistsFn' => [
                 'code' => '<?php
@@ -68,7 +65,7 @@ class KeyOfTemplateTest extends TestCase
                         }
                         return null;
                     }
-                '
+                ',
             ],
             'keyOfUnreplacedTemplateParam' => [
                 'code' => '<?php
@@ -93,14 +90,11 @@ class KeyOfTemplateTest extends TestCase
                      */
                     function toListOfKeys(array $array): array {
                         return array_keys($array);
-                    }'
+                    }',
             ],
         ];
     }
 
-    /**
-     *
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [
@@ -115,7 +109,7 @@ class KeyOfTemplateTest extends TestCase
                         return "foo";
                     }
                 ',
-                'error_message' => 'InvalidReturnStatement'
+                'error_message' => 'InvalidReturnStatement',
             ],
             'keyOfTemplateNotIncludesInt' => [
                 'code' => '<?php
@@ -128,7 +122,7 @@ class KeyOfTemplateTest extends TestCase
                         return 0;
                     }
                 ',
-                'error_message' => 'InvalidReturnStatement'
+                'error_message' => 'InvalidReturnStatement',
             ],
             'keyOfUnresolvedTemplateParamIsStillChecked' => [
                 'code' => '<?php
@@ -142,7 +136,7 @@ class KeyOfTemplateTest extends TestCase
                         abstract public function getRandomKey(): string;
                     }
                 ',
-                'error_message' => 'MismatchingDocblockReturnType'
+                'error_message' => 'MismatchingDocblockReturnType',
             ],
         ];
     }

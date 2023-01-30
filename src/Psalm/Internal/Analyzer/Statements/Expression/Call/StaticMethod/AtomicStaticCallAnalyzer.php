@@ -100,8 +100,8 @@ class AtomicStaticCallAnalyzer
                 new ClassLikeNameOptions(
                     $stmt->class instanceof PhpParser\Node\Name
                         && count($stmt->class->parts) === 1
-                        && in_array(strtolower($stmt->class->parts[0]), ['self', 'static'], true)
-                )
+                        && in_array(strtolower($stmt->class->parts[0]), ['self', 'static'], true),
+                ),
             )) {
                 return;
             }
@@ -118,7 +118,7 @@ class AtomicStaticCallAnalyzer
                 new CodeLocation($statements_analyzer, $stmt->class),
                 $context->self,
                 $context->calling_method_id,
-                $statements_analyzer->getSuppressedIssues()
+                $statements_analyzer->getSuppressedIssues(),
             )) {
                 return;
             }
@@ -151,7 +151,7 @@ class AtomicStaticCallAnalyzer
                 new CodeLocation($statements_analyzer, $stmt->class),
                 $context->self,
                 $context->calling_method_id,
-                $statements_analyzer->getSuppressedIssues()
+                $statements_analyzer->getSuppressedIssues(),
             )) {
                 return;
             }
@@ -175,9 +175,9 @@ class AtomicStaticCallAnalyzer
                     new UndefinedClass(
                         'Type ' . $lhs_type_part->as . ' cannot be called as a class',
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
-                        (string) $lhs_type_part
+                        (string) $lhs_type_part,
                     ),
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 );
 
                 return;
@@ -188,7 +188,7 @@ class AtomicStaticCallAnalyzer
                 $stmt,
                 $context,
                 $lhs_type_part,
-                $ignore_nullable_issues
+                $ignore_nullable_issues,
             );
 
             return;
@@ -213,7 +213,7 @@ class AtomicStaticCallAnalyzer
                 $fq_class_name,
                 $moved_call,
                 $has_existing_method,
-                $inferred_template_result
+                $inferred_template_result,
             );
         } else {
             if ($stmt->name instanceof PhpParser\Node\Expr) {
@@ -228,7 +228,7 @@ class AtomicStaticCallAnalyzer
             if (!$context->ignore_variable_method) {
                 $codebase->analyzer->addMixedMemberName(
                     strtolower($fq_class_name) . '::',
-                    $context->calling_method_id ?: $statements_analyzer->getFileName()
+                    $context->calling_method_id ?: $statements_analyzer->getFileName(),
                 );
             }
 
@@ -239,7 +239,7 @@ class AtomicStaticCallAnalyzer
                     if ($method_name_type && $method_name_type->isSingleStringLiteral()) {
                         $method_identifier = new MethodIdentifier(
                             $fq_class_name,
-                            strtolower($method_name_type->getSingleStringLiteral()->value)
+                            strtolower($method_name_type->getSingleStringLiteral()->value),
                         );
                         //the call to methodExists will register that the method was called from somewhere
                         if ($codebase->methods->methodExists(
@@ -249,7 +249,7 @@ class AtomicStaticCallAnalyzer
                             $statements_analyzer,
                             $statements_analyzer->getFilePath(),
                             true,
-                            $context->insideUse()
+                            $context->insideUse(),
                         )) {
                             $method_storage = $codebase->methods->getStorage($method_identifier);
 
@@ -257,7 +257,7 @@ class AtomicStaticCallAnalyzer
                                 'Closure',
                                 $method_storage->params,
                                 $method_storage->return_type,
-                                $method_storage->pure
+                                $method_storage->pure,
                             )]);
                         }
                     }
@@ -274,7 +274,7 @@ class AtomicStaticCallAnalyzer
                 null,
                 null,
                 true,
-                $context
+                $context,
             ) === false) {
                 return;
             }
@@ -293,7 +293,7 @@ class AtomicStaticCallAnalyzer
                 $fq_class_name,
                 $context->calling_method_id,
                 false,
-                $stmt->class->parts[0] === 'self'
+                $stmt->class->parts[0] === 'self',
             );
         }
     }
@@ -329,7 +329,7 @@ class AtomicStaticCallAnalyzer
                 $statements_analyzer,
                 $stmt,
                 $codebase,
-                (string) $method_id
+                (string) $method_id,
             );
         }
 
@@ -343,7 +343,7 @@ class AtomicStaticCallAnalyzer
 
                 $intersection_method_id = new MethodIdentifier(
                     $intersection_type->value,
-                    $method_name_lc
+                    $method_name_lc,
                 );
 
                 if ($codebase->methods->methodExists($intersection_method_id)) {
@@ -369,7 +369,7 @@ class AtomicStaticCallAnalyzer
             $statements_analyzer,
             $statements_analyzer->getFilePath(),
             false,
-            $context->insideUse()
+            $context->insideUse(),
         );
 
         $fake_method_exists = false;
@@ -381,7 +381,7 @@ class AtomicStaticCallAnalyzer
                 $fq_class_name,
                 $method_id->method_name,
                 $statements_analyzer,
-                null
+                null,
             ) ?? false;
         }
 
@@ -394,7 +394,7 @@ class AtomicStaticCallAnalyzer
             foreach ($class_storage->namedMixins as $mixin) {
                 $new_method_id = new MethodIdentifier(
                     $mixin->value,
-                    $method_name_lc
+                    $method_name_lc,
                 );
 
                 if ($codebase->methods->methodExists(
@@ -409,7 +409,7 @@ class AtomicStaticCallAnalyzer
                         : null,
                     $statements_analyzer->getFilePath(),
                     true,
-                    $context->insideUse()
+                    $context->insideUse(),
                 )) {
                     $mixin_candidates = [];
                     foreach ($class_storage->templatedMixins as $mixin_candidate) {
@@ -437,7 +437,7 @@ class AtomicStaticCallAnalyzer
                         }
 
                         $mixin_declaring_class_storage = $codebase->classlike_storage_provider->get(
-                            $class_storage->mixin_declaring_fqcln
+                            $class_storage->mixin_declaring_fqcln,
                         );
 
                         $new_mixin_candidate_type = AtomicPropertyFetchAnalyzer::localizePropertyType(
@@ -445,7 +445,7 @@ class AtomicStaticCallAnalyzer
                             new Union([$lhs_type_part]),
                             $tGenericMixin,
                             $class_storage,
-                            $mixin_declaring_class_storage
+                            $mixin_declaring_class_storage,
                         )->getBuilder();
 
                         foreach ($mixin_candidate_type->getAtomicTypes() as $type) {
@@ -463,7 +463,7 @@ class AtomicStaticCallAnalyzer
                         $class_storage->parent_class,
                         true,
                         false,
-                        $class_storage->final
+                        $class_storage->final,
                     );
 
                     $mixin_context = clone $context;
@@ -475,7 +475,7 @@ class AtomicStaticCallAnalyzer
                         $stmt_name,
                         $mixin_context,
                         '__tmp_mixin_var__',
-                        true
+                        true,
                     );
                 }
             }
@@ -486,7 +486,7 @@ class AtomicStaticCallAnalyzer
         $found_method_and_class_storage = self::findPseudoMethodAndClassStorages(
             $codebase,
             $class_storage,
-            $method_name_lc
+            $method_name_lc,
         );
 
         if ($stmt->isFirstClassCallable()) {
@@ -497,7 +497,7 @@ class AtomicStaticCallAnalyzer
                     'Closure',
                     $method_storage->params,
                     $method_storage->return_type,
-                    $method_storage->pure
+                    $method_storage->pure,
                 )]);
             } else {
                 $method_exists = $naive_method_exists
@@ -512,7 +512,7 @@ class AtomicStaticCallAnalyzer
                         'Closure',
                         array_values($codebase->getMethodParams($method_id)),
                         $codebase->getMethodReturnType($method_id, $fq_class_name),
-                        $codebase->methods->getStorage($declaring_method_id)->pure
+                        $codebase->methods->getStorage($declaring_method_id)->pure,
                     )]);
                 } else {
                     // FIXME: perhaps Psalm should complain about nonexisting method here, or throw a logic exception?
@@ -528,7 +528,7 @@ class AtomicStaticCallAnalyzer
                 $context->parent,
                 true,
                 false,
-                true
+                true,
             );
 
             $statements_analyzer->node_data->setType($stmt, $expanded_return_type);
@@ -540,7 +540,7 @@ class AtomicStaticCallAnalyzer
             || !MethodAnalyzer::isMethodVisible(
                 $method_id,
                 $context,
-                $statements_analyzer->getSource()
+                $statements_analyzer->getSource(),
             )
             || $fake_method_exists
             || ($found_method_and_class_storage
@@ -548,7 +548,7 @@ class AtomicStaticCallAnalyzer
         ) {
             $callstatic_id = new MethodIdentifier(
                 $fq_class_name,
-                '__callstatic'
+                '__callstatic',
             );
 
             if ($codebase->methods->methodExists(
@@ -563,7 +563,7 @@ class AtomicStaticCallAnalyzer
                     : null,
                 $statements_analyzer->getFilePath(),
                 true,
-                $context->insideUse()
+                $context->insideUse(),
             )) {
                 $callstatic_appearing_id = $codebase->methods->getAppearingMethodId($callstatic_id);
                 assert($callstatic_appearing_id !== null);
@@ -584,7 +584,7 @@ class AtomicStaticCallAnalyzer
                         new CodeLocation($statements_analyzer->getSource(), $stmt_name),
                         null,
                         null,
-                        strtolower($stmt_name->name)
+                        strtolower($stmt_name->name),
                     );
 
                     if ($return_type_candidate) {
@@ -594,7 +594,7 @@ class AtomicStaticCallAnalyzer
                             new TemplateResult([], []),
                             $context,
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
-                            $statements_analyzer
+                            $statements_analyzer,
                         );
 
                         $statements_analyzer->node_data->setType($stmt, $return_type_candidate);
@@ -614,7 +614,7 @@ class AtomicStaticCallAnalyzer
                         $args,
                         $defining_class_storage,
                         $pseudo_method_storage,
-                        $context
+                        $context,
                     ) === false
                     ) {
                         return false;
@@ -625,17 +625,17 @@ class AtomicStaticCallAnalyzer
                             IssueBuffer::maybeAdd(
                                 new ImpureMethodCall(
                                     'Cannot call an impure method from a pure context',
-                                    new CodeLocation($statements_analyzer, $stmt_name)
+                                    new CodeLocation($statements_analyzer, $stmt_name),
                                 ),
-                                $statements_analyzer->getSuppressedIssues()
+                                $statements_analyzer->getSuppressedIssues(),
                             );
                         } elseif ($context->mutation_free && !$callstatic_mutation_free) {
                             IssueBuffer::maybeAdd(
                                 new ImpureMethodCall(
                                     'Cannot call a possibly-mutating method from a mutation-free context',
-                                    new CodeLocation($statements_analyzer, $stmt_name)
+                                    new CodeLocation($statements_analyzer, $stmt_name),
                                 ),
-                                $statements_analyzer->getSuppressedIssues()
+                                $statements_analyzer->getSuppressedIssues(),
                             );
                         } elseif ($statements_analyzer->getSource()
                             instanceof FunctionLikeAnalyzer
@@ -660,7 +660,7 @@ class AtomicStaticCallAnalyzer
                         null,
                         null,
                         true,
-                        $context
+                        $context,
                     ) === false) {
                         return false;
                     }
@@ -671,9 +671,9 @@ class AtomicStaticCallAnalyzer
                         $arg->value,
                         null,
                         false,
-                        $arg->getAttributes()
+                        $arg->getAttributes(),
                     ),
-                    $args
+                    $args,
                 );
 
                 $args = [
@@ -681,19 +681,19 @@ class AtomicStaticCallAnalyzer
                         new VirtualString((string) $method_id, $stmt_name->getAttributes()),
                         false,
                         false,
-                        $stmt_name->getAttributes()
+                        $stmt_name->getAttributes(),
                     ),
                     new VirtualArg(
                         new VirtualArray($array_values, $stmt->getAttributes()),
                         false,
                         false,
-                        $stmt->getAttributes()
+                        $stmt->getAttributes(),
                     ),
                 ];
 
                 $method_id = new MethodIdentifier(
                     $fq_class_name,
-                    '__callstatic'
+                    '__callstatic',
                 );
             } elseif ($found_method_and_class_storage
                 && ($config->use_phpdoc_method_without_magic_or_parent || $class_storage->parent_class)
@@ -708,7 +708,7 @@ class AtomicStaticCallAnalyzer
                     $args,
                     $defining_class_storage,
                     $pseudo_method_storage,
-                    $context
+                    $context,
                 ) === false
                 ) {
                     return false;
@@ -733,7 +733,7 @@ class AtomicStaticCallAnalyzer
                     $stmt,
                     $stmt_name,
                     $tmp_context,
-                    '__tmp_parent_var__'
+                    '__tmp_parent_var__',
                 ) === false) {
                     return false;
                 }
@@ -767,7 +767,7 @@ class AtomicStaticCallAnalyzer
                     null,
                     null,
                     true,
-                    $context
+                    $context,
                 ) === false) {
                     return false;
                 }
@@ -781,7 +781,7 @@ class AtomicStaticCallAnalyzer
             $method_id,
             new CodeLocation($statements_analyzer, $stmt),
             $statements_analyzer->getSuppressedIssues(),
-            $context->calling_method_id
+            $context->calling_method_id,
         );
 
         if (!$does_method_exist) {
@@ -791,7 +791,7 @@ class AtomicStaticCallAnalyzer
                 null,
                 null,
                 true,
-                $context
+                $context,
             ) === false) {
                 return false;
             }
@@ -802,7 +802,7 @@ class AtomicStaticCallAnalyzer
                     $statements_analyzer,
                     $stmt->class,
                     $fq_class_name,
-                    $context->calling_method_id
+                    $context->calling_method_id,
                 );
             }
 
@@ -816,9 +816,9 @@ class AtomicStaticCallAnalyzer
                 new DeprecatedClass(
                     $fq_class_name . ' is marked deprecated',
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
-                    $fq_class_name
+                    $fq_class_name,
                 ),
-                $statements_analyzer->getSuppressedIssues()
+                $statements_analyzer->getSuppressedIssues(),
             );
         }
 
@@ -828,9 +828,9 @@ class AtomicStaticCallAnalyzer
                     $fq_class_name . ' is internal to ' . InternalClass::listToPhrase($class_storage->internal)
                         . ' but called from ' . $context->self,
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
-                    $fq_class_name
+                    $fq_class_name,
                 ),
-                $statements_analyzer->getSuppressedIssues()
+                $statements_analyzer->getSuppressedIssues(),
             );
         }
 
@@ -839,7 +839,7 @@ class AtomicStaticCallAnalyzer
             $context,
             $statements_analyzer->getSource(),
             new CodeLocation($statements_analyzer, $stmt),
-            $statements_analyzer->getSuppressedIssues()
+            $statements_analyzer->getSuppressedIssues(),
         ) === false) {
             return false;
         }
@@ -853,26 +853,24 @@ class AtomicStaticCallAnalyzer
                 || !$codebase->classExtends($context->self, $fq_class_name)
             )
         ) {
-            if (MethodAnalyzer::checkStatic(
+            MethodAnalyzer::checkStatic(
                 $method_id,
                 ($stmt->class instanceof PhpParser\Node\Name
                     && strtolower($stmt->class->parts[0]) === 'self')
-                    || $context->self === $fq_class_name,
+                || $context->self === $fq_class_name,
                 !$statements_analyzer->isStatic(),
                 $codebase,
                 new CodeLocation($statements_analyzer, $stmt),
                 $statements_analyzer->getSuppressedIssues(),
-                $is_dynamic_this_method
-            ) === false) {
-                // fall through
-            }
+                $is_dynamic_this_method,
+            );
 
             if ($is_dynamic_this_method) {
                 return self::forwardCallToInstanceMethod(
                     $statements_analyzer,
                     $stmt,
                     $stmt_name,
-                    $context
+                    $context,
                 );
             }
         }
@@ -890,7 +888,7 @@ class AtomicStaticCallAnalyzer
             $cased_method_id,
             $class_storage,
             $moved_call,
-            $inferred_template_result
+            $inferred_template_result,
         );
 
         return true;
@@ -916,7 +914,7 @@ class AtomicStaticCallAnalyzer
             $pseudo_method_storage->params,
             (string) $method_id,
             true,
-            $context
+            $context,
         ) === false) {
             return false;
         }
@@ -932,7 +930,7 @@ class AtomicStaticCallAnalyzer
             null,
             new TemplateResult([], []),
             new CodeLocation($statements_analyzer, $stmt),
-            $context
+            $context,
         ) === false) {
             return false;
         }
@@ -949,7 +947,7 @@ class AtomicStaticCallAnalyzer
                     $method_storage->params,
                     (string) $method_id,
                     true,
-                    $context
+                    $context,
                 );
 
                 ArgumentsAnalyzer::checkArgumentsMatch(
@@ -961,7 +959,7 @@ class AtomicStaticCallAnalyzer
                     null,
                     new TemplateResult([], []),
                     new CodeLocation($statements_analyzer, $stmt),
-                    $context
+                    $context,
                 );
             } catch (Exception $e) {
                 // do nothing
@@ -976,7 +974,7 @@ class AtomicStaticCallAnalyzer
                 $return_type_candidate,
                 $class_storage->name,
                 $static_fq_class_name,
-                $class_storage->parent_class
+                $class_storage->parent_class,
             );
 
             if ($method_storage) {
@@ -988,7 +986,7 @@ class AtomicStaticCallAnalyzer
                     $return_type_candidate,
                     $method_storage,
                     null,
-                    $context
+                    $context,
                 );
             }
 
@@ -998,8 +996,8 @@ class AtomicStaticCallAnalyzer
                 $stmt,
                 Type::combineUnionTypes(
                     $return_type_candidate,
-                    $stmt_type
-                )
+                    $stmt_type,
+                ),
             );
         }
 
@@ -1024,16 +1022,16 @@ class AtomicStaticCallAnalyzer
             if ($stmt->name instanceof PhpParser\Node\Identifier) {
                 $codebase->analyzer->addMixedMemberName(
                     strtolower($stmt->name->name),
-                    $context->calling_method_id ?: $statements_analyzer->getFileName()
+                    $context->calling_method_id ?: $statements_analyzer->getFileName(),
                 );
             }
 
             IssueBuffer::maybeAdd(
                 new MixedMethodCall(
                     'Cannot call method on an unknown class',
-                    new CodeLocation($statements_analyzer->getSource(), $stmt)
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
                 ),
-                $statements_analyzer->getSuppressedIssues()
+                $statements_analyzer->getSuppressedIssues(),
             );
 
             return;
@@ -1049,9 +1047,9 @@ class AtomicStaticCallAnalyzer
             IssueBuffer::maybeAdd(
                 new InvalidStringClass(
                     'String cannot be used as a class',
-                    new CodeLocation($statements_analyzer->getSource(), $stmt)
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
                 ),
-                $statements_analyzer->getSuppressedIssues()
+                $statements_analyzer->getSuppressedIssues(),
             );
 
             return;
@@ -1067,9 +1065,9 @@ class AtomicStaticCallAnalyzer
             new UndefinedClass(
                 'Type ' . $lhs_type_part . ' cannot be called as a class',
                 new CodeLocation($statements_analyzer->getSource(), $stmt),
-                (string) $lhs_type_part
+                (string) $lhs_type_part,
             ),
-            $statements_analyzer->getSuppressedIssues()
+            $statements_analyzer->getSuppressedIssues(),
         );
     }
 
@@ -1079,10 +1077,8 @@ class AtomicStaticCallAnalyzer
      * Returns the pseudo method if exists, with its defining class storage.
      * If the method is not declared, null is returned.
      *
-     * @param Codebase $codebase
      * @param ClassLikeStorage $static_class_storage The called class
      * @param lowercase-string $method_name_lc
-     *
      * @return array{MethodStorage, ClassLikeStorage}|null
      */
     private static function findPseudoMethodAndClassStorages(
@@ -1102,7 +1098,7 @@ class AtomicStaticCallAnalyzer
             if ($class_storage && isset($class_storage->pseudo_static_methods[$method_name_lc])) {
                 return [
                     $class_storage->pseudo_static_methods[$method_name_lc],
-                    $class_storage
+                    $class_storage,
                 ];
             }
         }
@@ -1114,15 +1110,9 @@ class AtomicStaticCallAnalyzer
      * Forward static call to instance call, using `VirtualMethodCall` and `MethodCallAnalyzer::analyze()`
      * The resolved method return type will be set as type of the $stmt node.
      *
-     * @param StatementsAnalyzer $statements_analyzer
-     * @param PhpParser\Node\Expr\StaticCall $stmt
-     * @param PhpParser\Node\Identifier $stmt_name
-     * @param Context $context
      * @param string $virtual_var_name Temporary var name to use for create the fake MethodCall statement.
      * @param bool $always_set_node_type If true, when the method has no declared typed, mixed will be set on node.
-     *
      * @return bool Result of analysis. False if the call is invalid.
-     *
      * @see MethodCallAnalyzer::analyze()
      */
     private static function forwardCallToInstanceMethod(
@@ -1141,13 +1131,13 @@ class AtomicStaticCallAnalyzer
             new VirtualVariable($virtual_var_name, $stmt->class->getAttributes()),
             $stmt_name,
             $stmt->getArgs(),
-            $stmt->getAttributes()
+            $stmt->getAttributes(),
         );
 
         if (MethodCallAnalyzer::analyze(
             $statements_analyzer,
             $fake_method_call_expr,
-            $context
+            $context,
         ) === false) {
             return false;
         }

@@ -21,6 +21,10 @@ return [
     'openssl_x509_verify' => ['int', 'certificate'=>'string|resource', 'public_key'=>'string|array|resource'],
   ],
   'changed' => [
+    'Locale::lookup' => [
+      'old' => ['?string', 'languageTag'=>'array', 'locale'=>'string', 'canonicalize='=>'bool', 'defaultLocale='=>'string'],
+      'new' => ['?string', 'languageTag'=>'array', 'locale'=>'string', 'canonicalize='=>'bool', 'defaultLocale='=>'?string'],
+    ],
     'array_merge' => [
         'old' => ['array', '...arrays'=>'array'],
         'new' => ['array', '...arrays='=>'array'],
@@ -32,6 +36,14 @@ return [
     'gzread' => [
       'old' => ['string|0', 'stream'=>'resource', 'length'=>'int'],
       'new' => ['string|false', 'stream'=>'resource', 'length'=>'int'],
+    ],
+    'locale_lookup' => [
+      'old' => ['?string', 'languageTag'=>'array', 'locale'=>'string', 'canonicalize='=>'bool', 'defaultLocale='=>'string'],
+      'new' => ['?string', 'languageTag'=>'array', 'locale'=>'string', 'canonicalize='=>'bool', 'defaultLocale='=>'?string'],
+    ],
+    'openssl_random_pseudo_bytes' => [
+      'old' => ['string|false', 'length'=>'int', '&w_strong_result='=>'bool'],
+      'new' => ['string', 'length'=>'int', '&w_strong_result='=>'bool'],
     ],
     'password_hash' => [
       'old' => ['string|false', 'password'=>'string', 'algo'=>'int', 'options='=>'array'],

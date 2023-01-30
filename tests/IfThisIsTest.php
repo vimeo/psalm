@@ -10,9 +10,6 @@ class IfThisIsTest extends TestCase
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
 
-    /**
-     *
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -43,7 +40,7 @@ class IfThisIsTest extends TestCase
                     $f = new F();
                     $f->convert();
                     $f->test();
-                '
+                ',
             ],
             'withTemplate' => [
                 'code' => '<?php
@@ -91,7 +88,7 @@ class IfThisIsTest extends TestCase
 
                 $f = new Foo(new Unfrozen());
                 $f->set("asd", 10);
-                '
+                ',
             ],
             'subclass' => [
                 'code' => '<?php
@@ -110,7 +107,7 @@ class IfThisIsTest extends TestCase
 
                 $f = new F();
                 $f->test();
-                '
+                ',
             ],
             'ifThisIsWithSelfAlias' => [
                 'code' => '<?php
@@ -132,7 +129,7 @@ class IfThisIsTest extends TestCase
                     /** @var App<"idle"> */
                     $app = new App();
                     $app->start();
-                '
+                ',
             ],
             'ifThisIsAndThisOutAtTheSameTime' => [
                 'code' => '<?php
@@ -154,7 +151,7 @@ class IfThisIsTest extends TestCase
                     /** @var App<"idle"> */
                     $app = new App();
                     $app->start();
-                '
+                ',
             ],
             'ifThisIsChangeThisTypeInsideMethod' => [
                 'code' => '<?php
@@ -213,7 +210,7 @@ class IfThisIsTest extends TestCase
                     $numbers = $list->compact();
                 ',
                 'assertions' => [
-                    '$numbers' => 'ArrayList<int>'
+                    '$numbers' => 'ArrayList<int>',
                 ],
             ],
             'ifThisIsResolveTemplateParams' => [
@@ -283,7 +280,7 @@ class IfThisIsTest extends TestCase
                     $numbers = $list->compact();
                 ',
                 'assertions' => [
-                    '$numbers' => 'ArrayList<int>'
+                    '$numbers' => 'ArrayList<int>',
                 ],
             ],
         ];
@@ -322,7 +319,7 @@ class IfThisIsTest extends TestCase
                 $i = new a("test");
                 $i->test();
                 ',
-                'error_message' => 'IfThisIsMismatch'
+                'error_message' => 'IfThisIsMismatch',
             ],
             'failsWithWrongTemplate2' => [
                 'code' => '<?php
@@ -371,7 +368,7 @@ class IfThisIsTest extends TestCase
                 $g = $f->freeze();
                 $g->set("asd", 20);  // Fails
                 ',
-                'error_message' => 'IfThisIsMismatch'
+                'error_message' => 'IfThisIsMismatch',
             ],
             'failWithInvalidTemplateConstraint' => [
                 'code' => '<?php
@@ -397,7 +394,7 @@ class IfThisIsTest extends TestCase
                     /** @var ArrayList<int> $list */
                     $list = new ArrayList();
                     $numbers = $list->compact();',
-                'error_message' => 'IfThisIsMismatch'
+                'error_message' => 'IfThisIsMismatch',
             ],
         ];
     }

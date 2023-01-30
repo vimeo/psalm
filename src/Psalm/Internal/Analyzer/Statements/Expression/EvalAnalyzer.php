@@ -44,7 +44,7 @@ class EvalAnalyzer
                     'eval',
                     0,
                     $arg_location,
-                    $arg_location
+                    $arg_location,
                 );
 
                 $eval_param_sink->taints = [TaintKind::INPUT_EVAL];
@@ -63,7 +63,7 @@ class EvalAnalyzer
                         $eval_param_sink,
                         'arg',
                         $added_taints,
-                        $removed_taints
+                        $removed_taints,
                     );
                 }
             }
@@ -73,9 +73,9 @@ class EvalAnalyzer
             IssueBuffer::maybeAdd(
                 new ForbiddenCode(
                     'You have forbidden the use of eval',
-                    new CodeLocation($statements_analyzer, $stmt)
+                    new CodeLocation($statements_analyzer, $stmt),
                 ),
-                $statements_analyzer->getSuppressedIssues()
+                $statements_analyzer->getSuppressedIssues(),
             );
         }
 

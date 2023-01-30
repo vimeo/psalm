@@ -12,9 +12,6 @@ class SwitchTypeTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
-    /**
-     *
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -558,7 +555,7 @@ class SwitchTypeTest extends TestCase
                         }
 
                         return null;
-                    }'
+                    }',
             ],
             'evenLongerSwitch' => [
                 'code' => '<?php
@@ -863,7 +860,7 @@ class SwitchTypeTest extends TestCase
                             default;
                                 return "foo69";
                         }
-                    }'
+                    }',
             ],
             'switchTruthyWithBoolean' => [
                 'code' => '<?php
@@ -872,7 +869,7 @@ class SwitchTypeTest extends TestCase
                     switch(true) {
                         case $a !== null && $a->format("Y") === "2020":
                             $a->format("d-m-Y");
-                    }'
+                    }',
             ],
             'evenWorseSwitch' => [
                 'code' => '<?php
@@ -925,7 +922,7 @@ class SwitchTypeTest extends TestCase
                         }
 
                         return 4;
-                    }'
+                    }',
             ],
             'suppressParadox' => [
                 'code' => '<?php
@@ -939,7 +936,7 @@ class SwitchTypeTest extends TestCase
                         case 3: break;
                         default:
                             echo "bar";
-                    }'
+                    }',
             ],
             'switchGetClassProperty' => [
                 'code' => '<?php
@@ -986,7 +983,7 @@ class SwitchTypeTest extends TestCase
                         }
 
                         return true;
-                    }'
+                    }',
             ],
             'alwaysReturnsWithConditionalReturnFirst' => [
                 'code' => '<?php
@@ -1001,7 +998,7 @@ class SwitchTypeTest extends TestCase
                             default:
                                 return 1;
                         }
-                    }'
+                    }',
             ],
             'loopWithSwitchAlwaysReturns' => [
                 'code' => '<?php
@@ -1033,7 +1030,7 @@ class SwitchTypeTest extends TestCase
                            default:
                                return 0;
                        }
-                   }'
+                   }',
             ],
             'terminatesAfterContinueInsideWhile' => [
                 'code' => '<?php
@@ -1048,7 +1045,7 @@ class SwitchTypeTest extends TestCase
                                 }
                                 return 2;
                         }
-                    }'
+                    }',
             ],
             'switchDoesNotReturnNever' => [
                 'code' => '<?php
@@ -1059,7 +1056,7 @@ class SwitchTypeTest extends TestCase
                             default:
                                 return null;
                         }
-                    }'
+                    }',
             ],
             'nonTotalSwitchStillSometimesExits' => [
                 'code' => '<?php
@@ -1073,7 +1070,7 @@ class SwitchTypeTest extends TestCase
                         }
 
                         throw new Exception();
-                    }'
+                    }',
             ],
             'switchWithLeftoverFunctionCallUsesTheFunction' => [
                 'code' => '<?php
@@ -1085,14 +1082,11 @@ class SwitchTypeTest extends TestCase
                                     return 1;
                         }
                         return -1;
-                    }'
+                    }',
             ],
         ];
     }
 
-    /**
-     *
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [
@@ -1356,7 +1350,7 @@ class SwitchTypeTest extends TestCase
                         default:
                             echo "bar";
                     }',
-                'error_message' => 'ParadoxicalCondition'
+                'error_message' => 'ParadoxicalCondition',
             ],
             'loopWithSwitchDoesntReturnFirstCase' => [
                 'code' => '<?php
@@ -1372,7 +1366,7 @@ class SwitchTypeTest extends TestCase
                                 return 2;
                         }
                     }',
-                'error_message' => 'InvalidReturnType'
+                'error_message' => 'InvalidReturnType',
             ],
             'clearDependentTypeWhenAssigning' => [
                 'code' => '<?php
@@ -1394,7 +1388,7 @@ class SwitchTypeTest extends TestCase
                                 $a->bar();
                         }
                     }',
-                'error_message' => 'UndefinedMethod'
+                'error_message' => 'UndefinedMethod',
             ],
         ];
     }

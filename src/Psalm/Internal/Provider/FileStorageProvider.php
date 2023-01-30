@@ -19,7 +19,7 @@ class FileStorageProvider
      *
      * @var array<lowercase-string, FileStorage>
      */
-    private static $storage = [];
+    private static array $storage = [];
 
     /**
      * A list of data useful to analyse new files
@@ -27,12 +27,9 @@ class FileStorageProvider
      *
      * @var array<string, FileStorage>
      */
-    private static $new_storage = [];
+    private static array $new_storage = [];
 
-    /**
-     * @var ?FileStorageCacheProvider
-     */
-    public $cache;
+    public ?FileStorageCacheProvider $cache = null;
 
     public function __construct(?FileStorageCacheProvider $cache = null)
     {

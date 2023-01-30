@@ -6,14 +6,18 @@ use Psalm\Codebase;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TIterable;
+use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
+use function count;
+use function current;
 use function in_array;
 use function strpos;
 use function strtolower;
+use function substr;
 
 /**
  * @internal
@@ -23,7 +27,6 @@ class ObjectComparator
     /**
      * @param  TNamedObject|TTemplateParam|TIterable  $input_type_part
      * @param  TNamedObject|TTemplateParam|TIterable  $container_type_part
-     *
      */
     public static function isShallowlyContainedBy(
         Codebase $codebase,
@@ -32,6 +35,49 @@ class ObjectComparator
         bool $allow_interface_equality,
         ?TypeComparisonResult $atomic_comparison_result
     ): bool {
+        if ($container_type_part instanceof TTemplateParam
+            && $input_type_part instanceof TTemplateParam
+            && $container_type_part->defining_class != $input_type_part->defining_class
+            && 1 == count($container_type_part->as->getAtomicTypes())
+            && 1 == count($input_type_part->as->getAtomicTypes())) {
+            $containerDefinedInFunction = strpos($container_type_part->defining_class, 'fn-') === 0;
+            $inputDefinedInFunction = strpos($input_type_part->defining_class, 'fn-') === 0;
+            if ($inputDefinedInFunction) {
+                $separatorPos = strpos($input_type_part->defining_class, '::');
+                if ($separatorPos === false) {
+                    // Is that possible ? Falling back to default definition.
+                    $inputDefiningClass = $input_type_part->defining_class;
+                } else {
+                    $inputDefiningClass = substr($input_type_part->defining_class, 3, $separatorPos - 3);
+                }
+            } else {
+                $inputDefiningClass = $input_type_part->defining_class;
+            }
+
+            // FIXME Missing analysis for additional cases, for example :
+            // - input from a parameter in a static function that is defined in the container class
+            // - input and container are both defined on function parameters
+            if ((!$inputDefinedInFunction
+                 && !$containerDefinedInFunction)
+                || ($inputDefinedInFunction
+                    && !$containerDefinedInFunction
+                    && strtolower($inputDefiningClass) != strtolower($container_type_part->defining_class))) {
+                $containerAs = current($container_type_part->as->getAtomicTypes());
+                $inputAs = current($input_type_part->as->getAtomicTypes());
+                if ($containerAs instanceof TNamedObject && $inputAs instanceof TNamedObject) {
+                    return self::isShallowlyContainedBy(
+                        $codebase,
+                        $inputAs,
+                        $containerAs,
+                        $allow_interface_equality,
+                        $atomic_comparison_result,
+                    );
+                } elseif ($containerAs instanceof TMixed && $inputAs instanceof TMixed) {
+                    return true;
+                }
+            }
+        }
+
         $intersection_input_types = self::getIntersectionTypes($input_type_part);
         $intersection_container_types = self::getIntersectionTypes($container_type_part);
 
@@ -49,8 +95,8 @@ class ObjectComparator
 
                 $intersection_container_type_lower = strtolower(
                     $codebase->classlikes->getUnAliasedName(
-                        $intersection_container_type->value
-                    )
+                        $intersection_container_type->value,
+                    ),
                 );
             }
 
@@ -72,7 +118,7 @@ class ObjectComparator
                     $intersection_container_type_lower,
                     $container_was_static,
                     $allow_interface_equality,
-                    $atomic_comparison_result
+                    $atomic_comparison_result,
                 )) {
                     $any_inputs_contained = true;
                 }
@@ -122,7 +168,6 @@ class ObjectComparator
     /**
      * @param  TNamedObject|TTemplateParam|TIterable|TObjectWithProperties  $intersection_input_type
      * @param  TNamedObject|TTemplateParam|TIterable|TObjectWithProperties  $intersection_container_type
-     *
      */
     private static function isIntersectionShallowlyContainedBy(
         Codebase $codebase,
@@ -175,7 +220,7 @@ class ObjectComparator
                 }
 
                 $input_class_storage = $codebase->classlike_storage_provider->get(
-                    $intersection_input_type->defining_class
+                    $intersection_input_type->defining_class,
                 );
 
                 if (isset($input_class_storage->template_extended_params
@@ -213,7 +258,7 @@ class ObjectComparator
                 false,
                 false,
                 $atomic_comparison_result,
-                $allow_interface_equality
+                $allow_interface_equality,
             );
         }
 
@@ -228,8 +273,8 @@ class ObjectComparator
 
             $intersection_input_type_lower = strtolower(
                 $codebase->classlikes->getUnAliasedName(
-                    $intersection_input_type->value
-                )
+                    $intersection_input_type->value,
+                ),
             );
         }
 
@@ -256,12 +301,12 @@ class ObjectComparator
                 || ($codebase->classlikes->classExists($intersection_input_type_lower)
                     && $codebase->classlikes->classImplements(
                         $intersection_input_type_lower,
-                        'Traversable'
+                        'Traversable',
                     ))
                 || ($codebase->classlikes->interfaceExists($intersection_input_type_lower)
                     && $codebase->classlikes->interfaceExtends(
                         $intersection_input_type_lower,
-                        'Traversable'
+                        'Traversable',
                     ))
             ) {
                 return true;
@@ -289,7 +334,7 @@ class ObjectComparator
             && $codebase->classOrInterfaceExists($intersection_container_type_lower)
             && $codebase->classExtendsOrImplements(
                 $intersection_input_type_lower,
-                $intersection_container_type_lower
+                $intersection_container_type_lower,
             )
         ) {
             if ($container_was_static && !$input_was_static) {
@@ -306,7 +351,7 @@ class ObjectComparator
         if ($input_type_is_interface
             && $codebase->interfaceExtends(
                 $intersection_input_type_lower,
-                $intersection_container_type_lower
+                $intersection_container_type_lower,
             )
         ) {
             return true;

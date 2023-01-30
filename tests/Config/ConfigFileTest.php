@@ -21,8 +21,7 @@ use const PHP_EOL;
 /** @group PluginManager */
 class ConfigFileTest extends TestCase
 {
-    /** @var string */
-    private $file_path;
+    private string $file_path;
 
     public function setUp(): void
     {
@@ -61,7 +60,7 @@ class ConfigFileTest extends TestCase
                 name="bar"
             >
                 <plugins></plugins>
-            </psalm>' . PHP_EOL
+            </psalm>' . PHP_EOL,
         );
 
         $config_file = new ConfigFile((string)getcwd(), $this->file_path);
@@ -74,7 +73,7 @@ class ConfigFileTest extends TestCase
             >
                 <plugins><pluginClass xmlns="' . Config::CONFIG_NAMESPACE . '" class="a\b\c"/></plugins>
             </psalm>',
-            file_get_contents($this->file_path)
+            file_get_contents($this->file_path),
         ));
     }
 
@@ -86,7 +85,7 @@ class ConfigFileTest extends TestCase
         file_put_contents(
             $this->file_path,
             '<?xml version="1.0"?>
-            <psalm></psalm>' . PHP_EOL
+            <psalm></psalm>' . PHP_EOL,
         );
 
         $config_file = new ConfigFile((string)getcwd(), $this->file_path);
@@ -95,7 +94,7 @@ class ConfigFileTest extends TestCase
         $this->assertTrue(static::compareContentWithTemplateAndTrailingLineEnding(
             '<?xml version="1.0"?>
             <psalm><plugins><pluginClass xmlns="' . Config::CONFIG_NAMESPACE . '" class="a\b\c"/></plugins></psalm>',
-            file_get_contents($this->file_path)
+            file_get_contents($this->file_path),
         ));
     }
 
@@ -114,7 +113,7 @@ class ConfigFileTest extends TestCase
 
         $this->assertSame(
             $noPlugins,
-            file_get_contents($this->file_path)
+            file_get_contents($this->file_path),
         );
     }
 
@@ -138,7 +137,7 @@ class ConfigFileTest extends TestCase
 
         $this->assertXmlStringEqualsXmlString(
             $noPlugins,
-            file_get_contents($this->file_path)
+            file_get_contents($this->file_path),
         );
     }
 
@@ -164,7 +163,7 @@ class ConfigFileTest extends TestCase
 
         $this->assertXmlStringEqualsXmlString(
             $noPlugins,
-            file_get_contents($this->file_path)
+            file_get_contents($this->file_path),
         );
     }
 
@@ -199,7 +198,7 @@ class ConfigFileTest extends TestCase
 
         $this->assertXmlStringEqualsXmlString(
             $noPlugins,
-            file_get_contents($this->file_path)
+            file_get_contents($this->file_path),
         );
     }
 
@@ -262,13 +261,9 @@ class ConfigFileTest extends TestCase
     }
 
     /**
-     * @param string $expected_template
-     * @param string $contents
-     *
-     *
      * @psalm-pure
      */
-    protected static function compareContentWithTemplateAndTrailingLineEnding($expected_template, $contents): bool
+    protected static function compareContentWithTemplateAndTrailingLineEnding(string $expected_template, string $contents): bool
     {
         $passed = false;
 

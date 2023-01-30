@@ -8,9 +8,6 @@ class TraceTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
 
-    /**
-     *
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [
@@ -42,7 +39,7 @@ class TraceTest extends TestCase
                 'ignored_issues' => [
                     'MixedAssignment',
                 ],
-            ]
+            ],
         ];
     }
 }

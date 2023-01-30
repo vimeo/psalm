@@ -33,20 +33,22 @@ class DocCommentTest extends BaseTestCase
                     [
                         0 => 'bool',
                     ],
-            ]
+            ],
         );
 
-        $expectedDoc = '/**
- * some desc
- *
- * @param string $bli
- * @param int $bla
- *
- * @throws \Exception
- *
- * @return bool
- */
-';
+        $expectedDoc = <<<'PHP'
+            /**
+             * some desc
+             *
+             * @param string $bli
+             * @param int $bla
+             *
+             * @throws \Exception
+             *
+             * @return bool
+             */
+
+            PHP;
 
         $this->assertSame($expectedDoc, $docComment->render(''));
     }
@@ -71,18 +73,20 @@ class DocCommentTest extends BaseTestCase
                     [
                         0 => 'bool',
                     ],
-            ]
+            ],
         );
 
-        $expectedDoc = '/**
- * some desc
- *
- * @param string $bli
- * @param int $bla
- * @throws \Exception
- * @return bool
- */
-';
+        $expectedDoc = <<<'PHP'
+            /**
+             * some desc
+             *
+             * @param string $bli
+             * @param int $bla
+             * @throws \Exception
+             * @return bool
+             */
+
+            PHP;
 
         $this->assertSame($expectedDoc, $docComment->render(''));
     }
@@ -107,20 +111,22 @@ class DocCommentTest extends BaseTestCase
                     [
                         0 => 'bool',
                     ],
-            ]
+            ],
         );
 
-        $expectedDoc = '/**
- * some desc
- *
- * @param string $bli
- * @param int $bla
- *
- * @throws \Exception
- *
- * @return bool
- */
-';
+        $expectedDoc = <<<'PHP'
+            /**
+             * some desc
+             *
+             * @param string $bli
+             * @param int $bla
+             *
+             * @throws \Exception
+             *
+             * @return bool
+             */
+
+            PHP;
 
         $this->assertSame($expectedDoc, $docComment->render(''));
     }
@@ -129,19 +135,21 @@ class DocCommentTest extends BaseTestCase
     {
         ParsedDocblock::addNewLineBetweenAnnotations(true);
 
-        $expectedDoc = '/**
- * some desc
- *
- * @param string $bli
- * @param int $bla
- *
- * @throws \Exception
- *
- * @return bool
- */
-';
+        $expectedDoc = <<<'PHP'
+            /**
+             * some desc
+             *
+             * @param string $bli
+             * @param int $bla
+             *
+             * @throws \Exception
+             *
+             * @return bool
+             */
+
+            PHP;
         $docComment = DocComment::parsePreservingLength(
-            new Doc($expectedDoc)
+            new Doc($expectedDoc),
         );
 
         $this->assertSame($expectedDoc, $docComment->render(''));
@@ -151,19 +159,23 @@ class DocCommentTest extends BaseTestCase
     {
         ParsedDocblock::addNewLineBetweenAnnotations(true);
 
-        $expectedDoc = '/**
-     * some desc
-     *
-     * @param string $bli
-     * @param int $bla
-     *
-     * @throws \Exception
-     *
-     * @return bool
-     */
-    ';
+        $expectedDoc = <<<'PHP'
+            /**
+                 * some desc
+                 *
+                 * @param string $bli
+                 * @param int $bla
+                 *
+                 * @throws \Exception
+                 *
+                 * @return bool
+                 */
+
+            PHP
+            . "    ";
+
         $docComment = DocComment::parsePreservingLength(
-            new Doc($expectedDoc)
+            new Doc($expectedDoc),
         );
 
         $this->assertSame($expectedDoc, $docComment->render('    '));
@@ -173,21 +185,23 @@ class DocCommentTest extends BaseTestCase
     {
         ParsedDocblock::addNewLineBetweenAnnotations(true);
 
-        $expectedDoc = '/**
- * some self-referential desc with " * @return bool
- * " as part of it.
- *
- * @param string $bli
- * @param string $bli_this_suffix_is_kept
- * @param int $bla
- *
- * @throws \Exception
- *
- * @return bool
- */
-';
+        $expectedDoc = <<<'PHP'
+            /**
+             * some self-referential desc with " * @return bool
+             * " as part of it.
+             *
+             * @param string $bli
+             * @param string $bli_this_suffix_is_kept
+             * @param int $bla
+             *
+             * @throws \Exception
+             *
+             * @return bool
+             */
+
+            PHP;
         $docComment = DocComment::parsePreservingLength(
-            new Doc($expectedDoc)
+            new Doc($expectedDoc),
         );
 
         $this->assertSame($expectedDoc, $docComment->render(''));

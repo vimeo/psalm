@@ -10,9 +10,6 @@ class TypeAnnotationTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
-    /**
-     *
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -201,7 +198,7 @@ class TypeAnnotationTest extends TestCase
                                 (new Phone)->toArray()
                             );
                         }
-                    }'
+                    }',
             ],
             'classTypeAliasImportWithAlias' => [
                 'code' => '<?php
@@ -223,7 +220,7 @@ class TypeAnnotationTest extends TestCase
                         function toArray(): array {
                             return array_merge([], (new Phone)->toArray());
                         }
-                    }'
+                    }',
             ],
             'classTypeAliasDirectUsage' => [
                 'code' => '<?php
@@ -245,7 +242,7 @@ class TypeAnnotationTest extends TestCase
                         function toArray(): array {
                             return array_merge([], (new Phone)->toArray());
                         }
-                    }'
+                    }',
             ],
             'classTypeAliasFromExternalNamespace' => [
                 'code' => '<?php
@@ -269,7 +266,7 @@ class TypeAnnotationTest extends TestCase
                             return (new \Foo\Phone)->toArray();
                         }
                     }
-                }'
+                }',
             ],
             'importTypeForParam' => [
                 'code' => '<?php
@@ -307,7 +304,7 @@ class TypeAnnotationTest extends TestCase
                         private function b(int $type): void
                         {
                         }
-                    }'
+                    }',
             ],
             'usedInVarForForeach' => [
                 'code' => '<?php
@@ -318,7 +315,7 @@ class TypeAnnotationTest extends TestCase
                     foreach ($a as $elt) {
                         echo $elt["p1"];
                     }
-                }'
+                }',
             ],
             'objectWithPropertiesAlias' => [
                 'code' => '<?php
@@ -338,7 +335,7 @@ class TypeAnnotationTest extends TestCase
                         public function bar($a) {
                             return $a;
                         }
-                    }'
+                    }',
             ],
             'sameDocBlockTypeAliasAsTypeParameterForInterface' => [
                 'code' => '<?php
@@ -447,7 +444,7 @@ class TypeAnnotationTest extends TestCase
                      * @implements A<Foo>
                      */
                     class C implements A {}
-                '
+                ',
             ],
             'importedTypeAliasAsTypeParameterForExtendedClass' => [
                 'code' => '<?php
@@ -628,7 +625,7 @@ class TypeAnnotationTest extends TestCase
                 ',
                 'assertions' => [
                     '$output' => 'string',
-                ]
+                ],
             ],
             'importedTypeUsedInOtherType' => [
                 'code' => '<?php
@@ -654,14 +651,11 @@ class TypeAnnotationTest extends TestCase
                 ',
                 'assertions' => [
                     '$output===' => 'list<1|2>',
-                ]
-            ]
+                ],
+            ],
         ];
     }
 
-    /**
-     *
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [

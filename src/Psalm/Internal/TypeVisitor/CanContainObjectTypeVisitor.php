@@ -12,15 +12,9 @@ use Psalm\Type\Union;
 /** @internal */
 class CanContainObjectTypeVisitor extends TypeVisitor
 {
-    /**
-     * @var bool
-     */
-    private $contains_object_type = false;
+    private bool $contains_object_type = false;
 
-    /**
-     * @var Codebase
-     */
-    private $codebase;
+    private Codebase $codebase;
 
     public function __construct(Codebase $codebase)
     {

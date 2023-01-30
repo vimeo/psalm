@@ -9,6 +9,7 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Type;
 use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\TList;
 use Psalm\Type\Union;
 
 use function array_map;
@@ -26,7 +27,6 @@ trait GenericTrait
 {
     /**
      * @param TTypeParams $type_params
-     *
      * @return static
      */
     public function setTypeParams(array $type_params): self
@@ -54,8 +54,8 @@ trait GenericTrait
                     '&',
                     array_map(
                         static fn(Atomic $type): string => $type->getId($exact, true),
-                        $this->extra_types
-                    )
+                        $this->extra_types,
+                    ),
                 );
             }
 
@@ -69,7 +69,6 @@ trait GenericTrait
 
     /**
      * @param  array<lowercase-string, string> $aliased_classes
-     *
      */
     public function toNamespacedString(
         ?string $namespace,
@@ -139,8 +138,8 @@ trait GenericTrait
                 array_map(
                     static fn(Atomic $extra_type): string =>
                         $extra_type->toNamespacedString($namespace, $aliased_classes, $this_class, false),
-                    $this->extra_types
-                )
+                    $this->extra_types,
+                ),
             );
         }
 
@@ -151,8 +150,8 @@ trait GenericTrait
                     array_map(
                         static fn(Union $type_param): string =>
                             $type_param->toNamespacedString($namespace, $aliased_classes, $this_class, false),
-                        $type_params
-                    )
+                        $type_params,
+                    ),
                 ) .
                 '>' . $extra_types;
     }
@@ -173,7 +172,7 @@ trait GenericTrait
         int $depth = 0
     ): ?array {
         if ($input_type instanceof TList) {
-            $input_type = new TArray([Type::getInt(), $input_type->type_param]);
+            $input_type = $input_type->getKeyedArray();
         }
 
         $input_object_type_params = [];
@@ -187,7 +186,7 @@ trait GenericTrait
                 $codebase,
                 $input_type,
                 $this,
-                $container_type_params_covariant
+                $container_type_params_covariant,
             );
         }
 
@@ -229,7 +228,7 @@ trait GenericTrait
                     && $this instanceof TGenericObject
                     ? $this->value
                     : null,
-                $depth + 1
+                $depth + 1,
             );
         }
 
@@ -248,7 +247,7 @@ trait GenericTrait
             $type_param = TemplateInferredTypeReplacer::replace(
                 $type_param,
                 $template_result,
-                $codebase
+                $codebase,
             );
 
             if ($this instanceof TArray && $offset === 0 && $type_param->isMixed()) {

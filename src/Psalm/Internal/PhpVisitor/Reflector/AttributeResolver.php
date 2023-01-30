@@ -51,14 +51,14 @@ class AttributeResolver
                 $aliases,
                 null,
                 [],
-                $fq_classlike_name
+                $fq_classlike_name,
             );
 
             if (!$const_type) {
                 $const_type = ExpressionResolver::getUnresolvedClassConstExpr(
                     $arg_node->value,
                     $aliases,
-                    $fq_classlike_name
+                    $fq_classlike_name,
                 );
             }
 
@@ -69,7 +69,7 @@ class AttributeResolver
             $args[] = new AttributeArg(
                 $key,
                 $const_type,
-                new CodeLocation($file_scanner, $arg_node->value)
+                new CodeLocation($file_scanner, $arg_node->value),
             );
         }
 
@@ -77,7 +77,7 @@ class AttributeResolver
             $fq_type_string,
             $args,
             new CodeLocation($file_scanner, $stmt),
-            new CodeLocation($file_scanner, $stmt->name)
+            new CodeLocation($file_scanner, $stmt->name),
         );
     }
 }

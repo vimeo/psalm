@@ -7,6 +7,7 @@ namespace Psalm\Internal\Provider\ReturnTypeProvider;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
+use Psalm\Type;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TLiteralInt;
@@ -39,7 +40,7 @@ class TriggerErrorReturnTypeProvider implements FunctionReturnTypeProviderInterf
         $codebase = $event->getStatementsSource()->getCodebase();
         $config = $codebase->config;
         if ($config->trigger_error_exits === 'always') {
-            return new Union([new TNever()]);
+            return Type::getNever();
         }
 
         if ($config->trigger_error_exits === 'never') {

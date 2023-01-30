@@ -46,8 +46,8 @@ class YieldTypeCollector extends NodeVisitorAbstract
                         $key_type ? $key_type : Type::getInt(),
                         $value_type,
                         Type::getMixed(),
-                        Type::getMixed()
-                    ]
+                        Type::getMixed(),
+                    ],
                 );
 
                 $this->yield_types []= new Union([$generator_type]);

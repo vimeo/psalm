@@ -6,16 +6,13 @@ use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 
 /**
  * @psalm-immutable
- *
  * @internal
  */
 class KeyValuePair extends UnresolvedConstantComponent
 {
-    /** @var ?UnresolvedConstantComponent */
-    public $key;
+    public ?UnresolvedConstantComponent $key = null;
 
-    /** @var UnresolvedConstantComponent */
-    public $value;
+    public UnresolvedConstantComponent $value;
 
     public function __construct(?UnresolvedConstantComponent $key, UnresolvedConstantComponent $value)
     {

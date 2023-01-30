@@ -15,6 +15,7 @@ use Amp\Promise;
 use Amp\Success;
 use Generator;
 use InvalidArgumentException;
+use JsonMapper;
 use LanguageServerProtocol\ClientCapabilities;
 use LanguageServerProtocol\CompletionOptions;
 use LanguageServerProtocol\Diagnostic;
@@ -61,52 +62,43 @@ class LanguageServer extends Dispatcher
 {
     /**
      * Handles textDocument/* method calls
-     *
-     * @var ?ServerTextDocument
      */
-    public $textDocument;
+    public ?ServerTextDocument $textDocument = null;
 
     /**
      * Handles workspace/* method calls
-     *
-     * @var ?ServerWorkspace
      */
-    public $workspace;
+    public ?ServerWorkspace $workspace = null;
 
-    /**
-     * @var ProtocolReader
-     */
-    protected $protocolReader;
+    protected ProtocolReader $protocolReader;
 
-    /**
-     * @var ProtocolWriter
-     */
-    protected $protocolWriter;
+    protected ProtocolWriter $protocolWriter;
 
-    /**
-     * @var LanguageClient
-     */
-    public $client;
+    public LanguageClient $client;
 
-    /**
-     * @var ProjectAnalyzer
-     */
-    protected $project_analyzer;
+    protected ProjectAnalyzer $project_analyzer;
 
     /**
      * @var array<string, string>
      */
-    protected $onsave_paths_to_analyze = [];
+    protected array $onsave_paths_to_analyze = [];
 
     /**
      * @var array<string, string>
      */
-    protected $onchange_paths_to_analyze = [];
+    protected array $onchange_paths_to_analyze = [];
 
     /**
      * @var array<string, list<IssueData>>
      */
-    protected $current_issues = [];
+    protected array $current_issues = [];
+
+    /**
+     * This should actually be a private property on `parent`
+     *
+     * @psalm-suppress UnusedProperty
+     */
+    protected JsonMapper $mapper;
 
     public function __construct(
         ProtocolReader $reader,
@@ -124,7 +116,7 @@ class LanguageServer extends Dispatcher
             function (): void {
                 $this->shutdown();
                 $this->exit();
-            }
+            },
         );
         $this->protocolReader->on(
             'message',
@@ -160,7 +152,7 @@ class LanguageServer extends Dispatcher
                             (string) $e,
                             ErrorCode::INTERNAL_ERROR,
                             null,
-                            $e
+                            $e,
                         );
                     }
                     // Only send a Response for a Request
@@ -177,15 +169,15 @@ class LanguageServer extends Dispatcher
                         }
                         yield $this->protocolWriter->write(new Message($responseBody));
                     }
-                }
-            )
+                },
+            ),
         );
 
         $this->protocolReader->on(
             'readMessageGroup',
             function (): void {
                 $this->doAnalysis();
-            }
+            },
         );
 
         $this->client = new LanguageClient($reader, $writer);
@@ -237,7 +229,7 @@ class LanguageServer extends Dispatcher
                     $this->textDocument = new ServerTextDocument(
                         $this,
                         $codebase,
-                        $this->project_analyzer
+                        $this->project_analyzer,
                     );
                 }
 
@@ -245,7 +237,7 @@ class LanguageServer extends Dispatcher
                     $this->workspace = new ServerWorkspace(
                         $this,
                         $codebase,
-                        $this->project_analyzer
+                        $this->project_analyzer,
                     );
                 }
 
@@ -297,13 +289,12 @@ class LanguageServer extends Dispatcher
                 $this->verboseLog("Initializing: Complete.");
                 $this->clientStatus('initialized');
                 return new InitializeResult($serverCapabilities);
-            }
+            },
         );
     }
 
     /**
      * @psalm-suppress PossiblyUnusedMethod
-     *
      */
     public function initialized(): void
     {
@@ -343,7 +334,7 @@ class LanguageServer extends Dispatcher
 
             $all_file_paths_to_analyze = array_keys($all_files_to_analyze);
             $codebase->analyzer->addFilesToAnalyze(
-                array_combine($all_file_paths_to_analyze, $all_file_paths_to_analyze)
+                array_combine($all_file_paths_to_analyze, $all_file_paths_to_analyze),
             );
             $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
 
@@ -359,7 +350,6 @@ class LanguageServer extends Dispatcher
 
     /**
      * @param array<string, string> $uris
-     *
      */
     public function emitIssues(array $uris): void
     {
@@ -381,7 +371,7 @@ class LanguageServer extends Dispatcher
                 // Language server has 0 based lines and columns, phan has 1-based lines and columns.
                 $range = new Range(
                     new Position($start_line - 1, $start_column - 1),
-                    new Position($end_line - 1, $end_column - 1)
+                    new Position($end_line - 1, $end_column - 1),
                 );
                 switch ($severity) {
                     case Config::REPORT_INFO:
@@ -397,7 +387,7 @@ class LanguageServer extends Dispatcher
                     $range,
                     null,
                     $diagnostic_severity,
-                    'Psalm'
+                    'Psalm',
                 );
 
                 //$code = 'PS' . \str_pad((string) $issue_data->shortcode, 3, "0", \STR_PAD_LEFT);
@@ -432,6 +422,7 @@ class LanguageServer extends Dispatcher
      * The shutdown request is sent from the client to the server. It asks the server to shut down,
      * but to not exit (otherwise the response might not be delivered correctly to the client).
      * There is a separate exit notification that asks the server to exit.
+     *
      * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function shutdown(): Promise
@@ -442,7 +433,7 @@ class LanguageServer extends Dispatcher
         $scanned_files = $codebase->scanner->getScannedFiles();
         $codebase->file_reference_provider->updateReferenceCache(
             $codebase,
-            $scanned_files
+            $scanned_files,
         );
         $this->clientStatus('closed');
         return new Success(null);
@@ -450,7 +441,6 @@ class LanguageServer extends Dispatcher
 
     /**
      * A notification to ask the server to exit its process.
-     *
      */
     public function exit(): void
     {
@@ -475,7 +465,7 @@ class LanguageServer extends Dispatcher
             try {
                 $this->client->logMessage(
                     '[Psalm ' .PSALM_VERSION. ' - PHP Language Server] ' . $message,
-                    $type
+                    $type,
                 );
             } catch (Throwable $err) {
                 // do nothing
@@ -499,7 +489,7 @@ class LanguageServer extends Dispatcher
             $this->client->logMessage(
                 $status . (!empty($additional_info) ? ': ' . $additional_info : ''),
                 3,
-                'telemetry/event'
+                'telemetry/event',
             );
         } catch (Throwable $err) {
             // do nothing
@@ -530,8 +520,6 @@ class LanguageServer extends Dispatcher
 
     /**
      * Transforms URI into file path
-     *
-     *
      */
     public static function uriToPath(string $uri): string
     {

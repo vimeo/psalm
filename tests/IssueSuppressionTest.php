@@ -42,7 +42,7 @@ class IssueSuppressionTest extends TestCase
                     public function b() {
                         B::fooFoo()->barBar()->bat()->baz()->bam()->bas()->bee()->bet()->bes()->bis();
                     }
-                }'
+                }',
         );
 
         $this->analyzeFile(getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php', new Context());
@@ -57,7 +57,7 @@ class IssueSuppressionTest extends TestCase
             getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php',
             '<?php
                 /** @psalm-suppress InvalidArgument */
-                echo strlen("hello");'
+                echo strlen("hello");',
         );
 
         $this->analyzeFile(getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php', new Context());
@@ -75,7 +75,7 @@ class IssueSuppressionTest extends TestCase
                 /** @psalm-suppress all */
                 function foo(): string {
                     return "foo";
-                }'
+                }',
         );
 
         $this->analyzeFile(getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php', new Context());
@@ -90,7 +90,7 @@ class IssueSuppressionTest extends TestCase
             getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php',
             '<?php
                 /** @psalm-suppress all */
-                print("foo");'
+                print("foo");',
         );
         $this->analyzeFile(getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php', new Context());
     }
@@ -112,7 +112,7 @@ class IssueSuppressionTest extends TestCase
                     function example2 (): void {
                         throw new Exception();
                     }
-                }'
+                }',
         );
 
         $context = new Context();
@@ -132,7 +132,7 @@ class IssueSuppressionTest extends TestCase
                 /** @psalm-suppress MissingThrowsDocblock */
                 if (rand(0, 1)) {
                     function example (): void {}
-                }'
+                }',
         );
 
         $context = new Context();
@@ -153,7 +153,7 @@ class IssueSuppressionTest extends TestCase
                 function example1 (): void {
                     /** @psalm-suppress MissingThrowsDocblock */
                     throw new Exception();
-                }'
+                }',
         );
 
         $context = new Context();
@@ -180,7 +180,7 @@ class IssueSuppressionTest extends TestCase
                 }
 
                 /** @psalm-suppress UncaughtThrowInGlobalScope */
-                throw new Exception();'
+                throw new Exception();',
         );
 
         $context = new Context();
@@ -198,7 +198,7 @@ class IssueSuppressionTest extends TestCase
             getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php',
             '<?php
                 /** @psalm-suppress UncaughtThrowInGlobalScope */
-                echo "hello";'
+                echo "hello";',
         );
 
         $context = new Context();
@@ -220,7 +220,7 @@ class IssueSuppressionTest extends TestCase
                 }
 
                 $_foo = new Foo();
-            '
+            ',
         );
 
         $this->analyzeFile($file_path, new Context(), false);
@@ -242,7 +242,7 @@ class IssueSuppressionTest extends TestCase
                 }
 
                 $_foo = new Foo();
-            '
+            ',
         );
 
         $this->analyzeFile($file_path, new Context(), false);
@@ -250,9 +250,6 @@ class IssueSuppressionTest extends TestCase
         IssueBuffer::processUnusedSuppressions($this->project_analyzer->getCodebase()->file_provider);
     }
 
-    /**
-     *
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -409,9 +406,6 @@ class IssueSuppressionTest extends TestCase
         ];
     }
 
-    /**
-     *
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [

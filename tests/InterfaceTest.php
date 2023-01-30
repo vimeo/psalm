@@ -12,9 +12,6 @@ class InterfaceTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
-    /**
-     *
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -705,7 +702,7 @@ class InterfaceTest extends TestCase
 
                     function f3(H $f) : void {
                         $f->m()->m();
-                    }'
+                    }',
             ],
             'dontModifyAfterUnnecessaryAssertion' => [
                 'code' => '<?php
@@ -720,7 +717,7 @@ class InterfaceTest extends TestCase
                         /** @psalm-suppress RedundantConditionGivenDocblockType */
                         assert($a instanceof A);
                         return $a;
-                    }'
+                    }',
             ],
             'interfaceAssertionOnClassInterfaceUnion' => [
                 'code' => '<?php
@@ -742,9 +739,6 @@ class InterfaceTest extends TestCase
         ];
     }
 
-    /**
-     *
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [
@@ -970,14 +964,14 @@ class InterfaceTest extends TestCase
                     interface foo {
                         public function withoutAnyReturnType();
                     }',
-                'error_message' => 'MissingReturnType'
+                'error_message' => 'MissingReturnType',
             ],
             'missingParamType' => [
                 'code' => '<?php
                     interface foo {
                         public function withoutAnyReturnType($s) : void;
                     }',
-                'error_message' => 'MissingParamType'
+                'error_message' => 'MissingParamType',
             ],
             'missingTemplateExtendsInterface' => [
                 'code' => '<?php

@@ -44,45 +44,29 @@ use function strtolower;
  */
 class TypeChecker extends TypeVisitor
 {
-    /**
-     * @var StatementsSource
-     */
-    private $source;
+    private StatementsSource $source;
 
-    /**
-     * @var CodeLocation
-     */
-    private $code_location;
+    private CodeLocation $code_location;
 
     /**
      * @var array<string>
      */
-    private $suppressed_issues;
+    private array $suppressed_issues;
 
     /**
      * @var array<string, bool>
      */
-    private $phantom_classes;
+    private array $phantom_classes;
 
-    /**
-     * @var bool
-     */
-    private $inferred;
+    private bool $inferred;
 
-    /**
-     * @var bool
-     */
-    private $inherited;
+    private bool $inherited;
 
-    /**
-     * @var bool
-     */
-    private $prevent_template_covariance;
+    private bool $prevent_template_covariance;
 
-    /** @var bool */
-    private $has_errors = false;
+    private bool $has_errors = false;
 
-    private $calling_method_id;
+    private ?string $calling_method_id = null;
 
     /**
      * @param  array<string>    $suppressed_issues
@@ -155,7 +139,7 @@ class TypeChecker extends TypeVisitor
                 $this->source->getFilePath(),
                 $this->code_location->raw_file_start + $atomic->offset_start,
                 $this->code_location->raw_file_start + $atomic->offset_end,
-                $atomic->value
+                $atomic->value,
             );
         }
 
@@ -165,7 +149,7 @@ class TypeChecker extends TypeVisitor
             $codebase->file_reference_provider->addMethodReferenceToClassMember(
                 $this->calling_method_id,
                 'use:' . $atomic->text . ':' . md5($this->source->getFilePath()),
-                false
+                false,
             );
         }
 
@@ -177,7 +161,7 @@ class TypeChecker extends TypeVisitor
                 $this->source->getFQCLN(),
                 $this->calling_method_id,
                 $this->suppressed_issues,
-                new ClassLikeNameOptions($this->inferred, false, true, true, $atomic->from_docblock)
+                new ClassLikeNameOptions($this->inferred, false, true, true, $atomic->from_docblock),
             ) === false
         ) {
             $this->has_errors = true;
@@ -198,18 +182,18 @@ class TypeChecker extends TypeVisitor
                         new DeprecatedInterface(
                             'Interface ' . $atomic->value . ' is marked as deprecated',
                             $this->code_location,
-                            $atomic->value
+                            $atomic->value,
                         ),
-                        $this->source->getSuppressedIssues() + $this->suppressed_issues
+                        $this->source->getSuppressedIssues() + $this->suppressed_issues,
                     );
                 } else {
                     IssueBuffer::maybeAdd(
                         new DeprecatedClass(
                             'Class ' . $atomic->value . ' is marked as deprecated',
                             $this->code_location,
-                            $atomic->value
+                            $atomic->value,
                         ),
-                        $this->source->getSuppressedIssues() + $this->suppressed_issues
+                        $this->source->getSuppressedIssues() + $this->suppressed_issues,
                     );
                 }
             }
@@ -241,18 +225,18 @@ class TypeChecker extends TypeVisitor
                 new MissingTemplateParam(
                     $atomic->value . ' has missing template params, expecting '
                         . $template_type_count,
-                    $this->code_location
+                    $this->code_location,
                 ),
-                $this->suppressed_issues
+                $this->suppressed_issues,
             );
         } elseif ($template_type_count < $template_param_count) {
             IssueBuffer::maybeAdd(
                 new TooManyTemplateParams(
                     $atomic->getId(). ' has too many template params, expecting '
                         . $template_type_count,
-                    $this->code_location
+                    $this->code_location,
                 ),
-                $this->suppressed_issues
+                $this->suppressed_issues,
             );
         }
 
@@ -272,7 +256,7 @@ class TypeChecker extends TypeVisitor
                         $expected_type_param,
                         $defining_class,
                         null,
-                        null
+                        null,
                     );
 
                     $type_param = TypeExpander::expandUnion(
@@ -280,7 +264,7 @@ class TypeChecker extends TypeVisitor
                         $type_param,
                         $defining_class,
                         null,
-                        null
+                        null,
                     );
 
                     if (!UnionTypeComparator::isContainedBy($codebase, $type_param, $expected_type_param)) {
@@ -291,9 +275,9 @@ class TypeChecker extends TypeVisitor
                                     . ' expects type '
                                     . $expected_type_param->getId()
                                     . ', type ' . $type_param->getId() . ' given',
-                                $this->code_location
+                                $this->code_location,
                             ),
-                            $this->suppressed_issues
+                            $this->suppressed_issues,
                         );
                     }
                 }
@@ -318,7 +302,7 @@ class TypeChecker extends TypeVisitor
             null,
             null,
             $this->suppressed_issues,
-            new ClassLikeNameOptions($this->inferred, false, true, true, $atomic->from_docblock)
+            new ClassLikeNameOptions($this->inferred, false, true, true, $atomic->from_docblock),
         ) === false
         ) {
             $this->has_errors = true;
@@ -334,7 +318,7 @@ class TypeChecker extends TypeVisitor
                 $fq_classlike_name,
                 null,
                 true,
-                true
+                true,
             );
 
             $is_defined = true;
@@ -343,7 +327,7 @@ class TypeChecker extends TypeVisitor
                 $fq_classlike_name,
                 $atomic->const_name,
                 ReflectionProperty::IS_PRIVATE,
-                null
+                null,
             );
 
             $is_defined = null !== $class_constant_type;
@@ -353,9 +337,9 @@ class TypeChecker extends TypeVisitor
             IssueBuffer::maybeAdd(
                 new UndefinedConstant(
                     'Constant ' . $fq_classlike_name . '::' . $const_name . ' is not defined',
-                    $this->code_location
+                    $this->code_location,
                 ),
-                $this->source->getSuppressedIssues()
+                $this->source->getSuppressedIssues(),
             );
         }
     }
@@ -391,9 +375,9 @@ class TypeChecker extends TypeVisitor
                         new InvalidTemplateParam(
                             'Template param ' . $atomic->param_name . ' of '
                                 . $atomic->defining_class . ' is marked covariant and cannot be used here',
-                            $this->code_location
+                            $this->code_location,
                         ),
-                        $this->source->getSuppressedIssues()
+                        $this->source->getSuppressedIssues(),
                     );
                 }
             }
@@ -407,9 +391,9 @@ class TypeChecker extends TypeVisitor
                 new ReservedWord(
                     '\'resource\' is a reserved word',
                     $this->code_location,
-                    'resource'
+                    'resource',
                 ),
-                $this->source->getSuppressedIssues()
+                $this->source->getSuppressedIssues(),
             );
         }
     }

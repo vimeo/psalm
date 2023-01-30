@@ -5,7 +5,6 @@ namespace Psalm\Internal\Provider;
 use Psalm\Config;
 
 use function file_exists;
-use function file_get_contents;
 use function file_put_contents;
 use function filemtime;
 use function hash;
@@ -26,17 +25,11 @@ class ProjectCacheProvider
     private const GOOD_RUN_NAME = 'good_run';
     private const COMPOSER_LOCK_HASH = 'composer_lock_hash';
 
-    /**
-     * @var int|null
-     */
-    private $last_run;
+    private ?int $last_run = null;
 
-    /**
-     * @var string|null
-     */
-    private $composer_lock_hash;
+    private ?string $composer_lock_hash = null;
 
-    private $composer_lock_location;
+    private string $composer_lock_location;
 
     public function __construct(string $composer_lock_location)
     {
@@ -72,7 +65,8 @@ class ProjectCacheProvider
 
             $run_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::GOOD_RUN_NAME;
 
-            if (file_exists($run_cache_location) && file_get_contents($run_cache_location) === $psalm_version) {
+            if (file_exists($run_cache_location)
+                && Providers::safeFileGetContents($run_cache_location) === $psalm_version) {
                 $this->last_run = filemtime($run_cache_location);
             } else {
                 $this->last_run = 0;
@@ -88,7 +82,7 @@ class ProjectCacheProvider
             return true;
         }
 
-        $lockfile_contents = file_get_contents($this->composer_lock_location);
+        $lockfile_contents = Providers::safeFileGetContents($this->composer_lock_location);
 
         if (!$lockfile_contents) {
             return true;
@@ -132,7 +126,7 @@ class ProjectCacheProvider
             $lock_hash_location = $cache_directory . DIRECTORY_SEPARATOR . self::COMPOSER_LOCK_HASH;
 
             if (file_exists($lock_hash_location)) {
-                $this->composer_lock_hash = file_get_contents($lock_hash_location) ?: '';
+                $this->composer_lock_hash = Providers::safeFileGetContents($lock_hash_location) ?: '';
             } else {
                 $this->composer_lock_hash = '';
             }

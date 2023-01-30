@@ -18,8 +18,7 @@ use const DIRECTORY_SEPARATOR;
 
 class UnusedVariableTest extends TestCase
 {
-    /** @var ProjectAnalyzer */
-    protected $project_analyzer;
+    protected ProjectAnalyzer $project_analyzer;
 
     public function setUp(): void
     {
@@ -31,8 +30,8 @@ class UnusedVariableTest extends TestCase
             new TestConfig(),
             new Providers(
                 $this->file_provider,
-                new FakeParserCacheProvider()
-            )
+                new FakeParserCacheProvider(),
+            ),
         );
 
         $this->project_analyzer->getCodebase()->reportUnusedVariables();
@@ -40,12 +39,9 @@ class UnusedVariableTest extends TestCase
 
     /**
      * @dataProvider providerValidCodeParse
-     *
-     * @param string $code
      * @param array<string> $ignored_issues
-     *
      */
-    public function testValidCode($code, array $ignored_issues = [], string $php_version = '7.4'): void
+    public function testValidCode(string $code, array $ignored_issues = [], string $php_version = '7.4'): void
     {
         $test_name = $this->getTestName();
         if (strpos($test_name, 'SKIPPED-') !== false) {
@@ -58,7 +54,7 @@ class UnusedVariableTest extends TestCase
 
         $this->addFile(
             $file_path,
-            $code
+            $code,
         );
 
         foreach ($ignored_issues as $error_level) {
@@ -70,13 +66,9 @@ class UnusedVariableTest extends TestCase
 
     /**
      * @dataProvider providerInvalidCodeParse
-     *
-     * @param string $code
-     * @param string $error_message
      * @param array<string> $ignored_issues
-     *
      */
-    public function testInvalidCode($code, $error_message, $ignored_issues = []): void
+    public function testInvalidCode(string $code, string $error_message, array $ignored_issues = []): void
     {
         if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
             $this->markTestSkipped();
@@ -95,7 +87,7 @@ class UnusedVariableTest extends TestCase
 
         $this->addFile(
             $file_path,
-            $code
+            $code,
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -771,7 +763,7 @@ class UnusedVariableTest extends TestCase
                     foreach ($rules as $rule) {
                         $report["runs"][] = $rule;
                     }
-                    echo(count($report));'
+                    echo(count($report));',
             ],
             'arrayAssignmentInFunctionCoerced' => [
                 'code' => '<?php
@@ -786,7 +778,7 @@ class UnusedVariableTest extends TestCase
                             $this->b = (int) $b;
                         }
                     }
-                    '
+                    ',
             ],
             'varCheckAfterNestedAssignmentAndBreak' => [
                 'code' => '<?php
@@ -1103,7 +1095,7 @@ class UnusedVariableTest extends TestCase
                                 static::${$var} = true;
                             }
                         }
-                    }'
+                    }',
             ],
             'setInLoopThatsAlwaysEntered' => [
                 'code' => '<?php
@@ -1115,7 +1107,7 @@ class UnusedVariableTest extends TestCase
                             $last = $num;
                         }
                         return $last;
-                    }'
+                    }',
             ],
             'usedStrtolowerInArray' => [
                 'code' => '<?php
@@ -1132,7 +1124,7 @@ class UnusedVariableTest extends TestCase
                     function foo(object $mock) : void {
                         $m = new \ReflectionProperty($mock, "bar");
                         $m->setValue([get_class($mock) => "hello"]);
-                    }'
+                    }',
             ],
             'defineBeforeAssignmentInConditional' => [
                 'code' => '<?php
@@ -1171,7 +1163,7 @@ class UnusedVariableTest extends TestCase
                         $path = "hello";
                     }
 
-                    echo $path;'
+                    echo $path;',
             ],
             'assignedInElseif' => [
                 'code' => '<?php
@@ -1202,7 +1194,7 @@ class UnusedVariableTest extends TestCase
 
                     do {
                       echo $index;
-                    } while (($index = $index +  1) < 10);'
+                    } while (($index = $index +  1) < 10);',
             ],
             'tryCatchInsaneRepro' => [
                 'code' => '<?php
@@ -1223,7 +1215,7 @@ class UnusedVariableTest extends TestCase
                         } catch (\Exception $e) {}
 
                         echo $b;
-                    }'
+                    }',
             ],
             'tryCatchInsaneReproNoFirstBoolCheck' => [
                 'code' => '<?php
@@ -1240,7 +1232,7 @@ class UnusedVariableTest extends TestCase
                         } catch (\Exception $e) {}
 
                         echo $b;
-                    }'
+                    }',
             ],
             'tryWithWhile' => [
                 'code' => '<?php
@@ -1300,7 +1292,7 @@ class UnusedVariableTest extends TestCase
                             /** @psalm-suppress PossiblyUndefinedVariable */
                             echo $a;
                         }
-                    }'
+                    }',
             ],
             'usedVarInCatchAndAfter' => [
                 'code' => '<?php
@@ -1319,7 +1311,7 @@ class UnusedVariableTest extends TestCase
                         echo $a;
                     }
 
-                    echo $a;'
+                    echo $a;',
             ],
             'unusedForeach' => [
                 'code' => '<?php
@@ -1330,7 +1322,7 @@ class UnusedVariableTest extends TestCase
                         foreach($test as $key => $_testValue) {
                             echo $key;
                         }
-                    }'
+                    }',
             ],
             'usedAfterMixedVariableAssignment' => [
                 'code' => '<?php
@@ -1346,21 +1338,21 @@ class UnusedVariableTest extends TestCase
                     function foo(int $i, string $alias) : void {
                         echo $alias ?: $i++;
                         echo $i;
-                    }'
+                    }',
             ],
             'binaryOpIncrementInCond' => [
                 'code' => '<?php
                     function foo(int $i, string $alias) : void {
                         echo $i++ ?: $alias;
                         echo $i;
-                    }'
+                    }',
             ],
             'binaryOpIncrementInIf' => [
                 'code' => '<?php
                     function foo(int $i, string $alias) : void {
                         echo rand(0, 1) ? $i++ : $alias;
                         echo $i;
-                    }'
+                    }',
             ],
             'usedInNewCall' => [
                 'code' => '<?php
@@ -1384,14 +1376,14 @@ class UnusedVariableTest extends TestCase
                     /** @var mixed $k */
                     foreach (keys() as $k) {
                         echo gettype($k);
-                    }'
+                    }',
             ],
             'byRefVariableAfterAssignmentToArray' => [
                 'code' => '<?php
                     $a = [1, 2, 3];
                     $b = &$a[1];
                     $b = 5;
-                    print_r($a);'
+                    print_r($a);',
             ],
             'byRefVariableAfterAssignmentToProperty' => [
                 'code' => '<?php
@@ -1401,7 +1393,7 @@ class UnusedVariableTest extends TestCase
                             $update =& $this->value;
                             $update = $value;
                         }
-                    }'
+                    }',
             ],
             'createdAndUsedInCondition' => [
                 'code' => '<?php
@@ -1420,7 +1412,7 @@ class UnusedVariableTest extends TestCase
                         return;
                     }
 
-                    if (!($a = getA()) || $a->foo()) {}'
+                    if (!($a = getA()) || $a->foo()) {}',
             ],
             'usedInUndefinedFunction' => [
                 'code' => '<?php
@@ -1432,7 +1424,7 @@ class UnusedVariableTest extends TestCase
                         $s = "a";
                         /** @psalm-suppress UndefinedFunction */
                         return undefined_function($s);
-                    }'
+                    }',
             ],
             'useVariableVariable' => [
                 'code' => '<?php
@@ -1440,7 +1432,7 @@ class UnusedVariableTest extends TestCase
 
                     foreach ($variables as $name => $value) {
                         ${$name} = $value;
-                    }'
+                    }',
             ],
             'usedLoopVariable' => [
                 'code' => '<?php
@@ -1453,7 +1445,7 @@ class UnusedVariableTest extends TestCase
                         }
                         echo "goodbye";
                         break;
-                    }'
+                    }',
             ],
             'usedForVariable' => [
                 'code' => '<?php
@@ -1466,7 +1458,7 @@ class UnusedVariableTest extends TestCase
                         break;
                     }
 
-                    echo $a;'
+                    echo $a;',
             ],
             'usedForVariableMinusString' => [
                 'code' => '<?php
@@ -1477,7 +1469,7 @@ class UnusedVariableTest extends TestCase
                         for ($i = $limit; $i > 0; $i--) {
                             echo $i . "\n";
                         }
-                    }'
+                    }',
             ],
             'usedForVariablePlusString' => [
                 'code' => '<?php
@@ -1488,7 +1480,7 @@ class UnusedVariableTest extends TestCase
                         for ($i = $limit; $i < 50; $i++) {
                             echo $i . "\n";
                         }
-                    }'
+                    }',
             ],
             'breakInForeachInsideSwitch' => [
                 'code' => '<?php
@@ -1504,7 +1496,7 @@ class UnusedVariableTest extends TestCase
                                 }
                                 echo $a;
                         }
-                    }'
+                    }',
             ],
             'passedByRefSimpleUndefinedBefore' => [
                 'code' => '<?php
@@ -1512,7 +1504,7 @@ class UnusedVariableTest extends TestCase
 
                     function takes_ref(?array &$p): void {
                         $p = [0];
-                    }'
+                    }',
             ],
             'passedByRefSimpleDefinedBefore' => [
                 'code' => '<?php
@@ -1521,7 +1513,7 @@ class UnusedVariableTest extends TestCase
 
                     function takes_ref(?array &$p): void {
                         $p = [0];
-                    }'
+                    }',
             ],
             'passedByRefSimpleDefinedBeforeWithExtract' => [
                 'code' => '<?php
@@ -1538,7 +1530,7 @@ class UnusedVariableTest extends TestCase
                      * @param mixed $p
                      * @psalm-suppress UnusedParam
                      */
-                    function takes_ref(&$p): void {}'
+                    function takes_ref(&$p): void {}',
             ],
             'passedByRefArrayOffset' => [
                 'code' => '<?php
@@ -1554,7 +1546,7 @@ class UnusedVariableTest extends TestCase
                     /** @param array<string|int> $p */
                     function takes_ref(array &$p): void {
                         echo implode(",", $p);
-                    }'
+                    }',
             ],
             'doWhileWithBreak' => [
                 'code' => '<?php
@@ -1569,7 +1561,7 @@ class UnusedVariableTest extends TestCase
                         } while (rand(0,1));
 
                         if ($f) {}
-                    }'
+                    }',
             ],
             'usedParamInWhileAddition' => [
                 'code' => '<?php
@@ -1577,7 +1569,7 @@ class UnusedVariableTest extends TestCase
                         while ($index++ <= 100) {
                             //
                         }
-                    }'
+                    }',
             ],
             'usedParamInWhileDirectly' => [
                 'code' => '<?php
@@ -1589,7 +1581,7 @@ class UnusedVariableTest extends TestCase
 
                     function nextNumber(int $eee): int {
                         return $eee + 1;
-                    }'
+                    }',
             ],
             'usedParamInWhileIndirectly' => [
                 'code' => '<?php
@@ -1602,7 +1594,7 @@ class UnusedVariableTest extends TestCase
 
                     function nextNumber(int $i): int {
                         return $i + 1;
-                    }'
+                    }',
             ],
             'doArrayIncrement' => [
                 'code' => '<?php
@@ -1619,7 +1611,7 @@ class UnusedVariableTest extends TestCase
                         } while ($nextKey === null);
 
                         return $nextKey;
-                    }'
+                    }',
             ],
             'variableUsedIndirectly' => [
                 'code' => '<?php
@@ -1757,7 +1749,7 @@ class UnusedVariableTest extends TestCase
                         }
 
                         if ($t->b) {}
-                    }'
+                    }',
             ],
             'loopOverUnknown' => [
                 'code' => '<?php
@@ -1766,7 +1758,7 @@ class UnusedVariableTest extends TestCase
                         foreach ($t as $u) {
                             if ($u instanceof stdClass) {}
                         }
-                    }'
+                    }',
             ],
             'loopWithRequire' => [
                 'code' => '<?php
@@ -1803,7 +1795,7 @@ class UnusedVariableTest extends TestCase
                         }
 
                         return $lines;
-                    }'
+                    }',
             ],
             'necessaryVarAnnotation' => [
                 'code' => '<?php
@@ -1812,7 +1804,7 @@ class UnusedVariableTest extends TestCase
                         foreach ($arr as $key => $_) {
                             echo $key;
                         }
-                    }'
+                    }',
             ],
             'continuingEducation' => [
                 'code' => '<?php
@@ -1832,14 +1824,14 @@ class UnusedVariableTest extends TestCase
 
                             $b = true;
                         }
-                    }'
+                    }',
             ],
             'usedInBinaryOp' => [
                 'code' => '<?php
                     function foo(int $a, int $b) : int {
                         $a |= $b;
                         return $a;
-                    }'
+                    }',
             ],
             'reassignedInFinally' => [
                 'code' => '<?php
@@ -1850,7 +1842,7 @@ class UnusedVariableTest extends TestCase
                         }
 
                         echo $s;
-                    }'
+                    }',
             ],
             'divAssignOp' => [
                 'code' => '<?php
@@ -1858,7 +1850,7 @@ class UnusedVariableTest extends TestCase
                         $hue /= 360;
 
                         return $hue;
-                    }'
+                    }',
             ],
             'concatAssignOp' => [
                 'code' => '<?php
@@ -1866,7 +1858,7 @@ class UnusedVariableTest extends TestCase
                         $hue .= "hello";
 
                         return $hue;
-                    }'
+                    }',
             ],
             'possiblyUndefinedVariableUsed' => [
                 'code' => '<?php
@@ -1882,7 +1874,7 @@ class UnusedVariableTest extends TestCase
                          * @psalm-suppress MixedArgument
                          */
                         echo $hue;
-                    }'
+                    }',
             ],
             'possiblyUndefinedVariableUsedInUnknownMethod' => [
                 'code' => '<?php
@@ -1898,14 +1890,14 @@ class UnusedVariableTest extends TestCase
                          * @psalm-suppress MixedMethodCall
                          */
                         $b->foo($hue);
-                    }'
+                    }',
             ],
             'usedAsArrayKey' => [
                 'code' => '<?php
                     function hslToRgb(string $hue, string $lightness): array {
                         $arr = [$hue => $lightness];
                         return $arr;
-                    }'
+                    }',
             ],
             'assignToGlobalVar' => [
                 'code' => '<?php
@@ -1914,7 +1906,7 @@ class UnusedVariableTest extends TestCase
                         foreach ($args as $key => $value) {
                             $_GET[$key] = $value;
                         }
-                    }'
+                    }',
             ],
             'assignToArrayTwice' => [
                 'code' => '<?php
@@ -1925,7 +1917,7 @@ class UnusedVariableTest extends TestCase
                         foreach ($arr as $e) {
                             echo $e;
                         }
-                    }'
+                    }',
             ],
             'classPropertyThing' => [
                 'code' => '<?php
@@ -1943,7 +1935,7 @@ class UnusedVariableTest extends TestCase
                         $notice .= "s";
 
                         return $notice;
-                    }'
+                    }',
             ],
             'usedInIsset' => [
                 'code' => '<?php
@@ -1958,14 +1950,14 @@ class UnusedVariableTest extends TestCase
                             /** @psalm-suppress MixedArgument */
                             echo $j;
                         }
-                    }'
+                    }',
             ],
             'byRefNestedArrayParam' => [
                 'code' => '<?php
                     function foo(array &$arr): void {
                         $b = 5;
                         $arr[0] = $b;
-                    }'
+                    }',
             ],
             'byRefDeeplyNestedArrayParam' => [
                 'code' => '<?php
@@ -1976,7 +1968,7 @@ class UnusedVariableTest extends TestCase
                     function foo(array &$arr): void {
                         $b = 5;
                         $arr[0][0] = $b;
-                    }'
+                    }',
             ],
             'nestedReferencesToByRefParam' => [
                 'code' => '<?php
@@ -1988,7 +1980,7 @@ class UnusedVariableTest extends TestCase
                         $a = &$arr[0];
                         $b = &$a[0];
                         $b = 5;
-                    }'
+                    }',
             ],
             'byRefNestedArrayInForeach' => [
                 'code' => '<?php
@@ -2003,7 +1995,7 @@ class UnusedVariableTest extends TestCase
                         }
 
                         return $arr;
-                    }'
+                    }',
             ],
             'instantArrayAssignment' => [
                 'code' => '<?php
@@ -2022,7 +2014,7 @@ class UnusedVariableTest extends TestCase
                      * @psalm-suppress InvalidOperand
                      */
                     $start = $start[1] + $start[0];
-                    echo $start;'
+                    echo $start;',
             ],
             'csvByRefForeach' => [
                 'code' => '<?php
@@ -2034,7 +2026,7 @@ class UnusedVariableTest extends TestCase
                         }
 
                         return $arr;
-                    }'
+                    }',
             ],
             'memoryFree' => [
                 'code' => '<?php
@@ -2050,14 +2042,14 @@ class UnusedVariableTest extends TestCase
                         $used_mem  = ($total_mem - $free_mem) / $total_mem;
 
                         echo $used_mem;
-                    }'
+                    }',
             ],
             'returnNotBool' => [
                 'code' => '<?php
                     function verifyLoad(bool $b) : bool {
                         $c = !$b;
                         return $c;
-                    }'
+                    }',
             ],
             'sourcemaps' => [
                 'code' => '<?php
@@ -2084,7 +2076,7 @@ class UnusedVariableTest extends TestCase
                         echo $i;
                         echo $index;
                         echo $key;
-                    }'
+                    }',
             ],
             'whileLoopVarUpdatedInWhileLoop' => [
                 'code' => '<?php
@@ -2098,7 +2090,7 @@ class UnusedVariableTest extends TestCase
 
                             echo "here";
                         }
-                    }'
+                    }',
             ],
             'usedThroughParamByRef' => [
                 'code' => '<?php
@@ -2110,7 +2102,7 @@ class UnusedVariableTest extends TestCase
 
                     $populator($arr);
 
-                    print_r($arr);'
+                    print_r($arr);',
             ],
             'maybeUndefinedCheckedWithEmpty' => [
                 'code' => '<?php
@@ -2124,7 +2116,7 @@ class UnusedVariableTest extends TestCase
                         }
 
                         print_r($maybe_undefined);
-                    }'
+                    }',
             ],
             'maybeUndefinedCheckedWithEmptyOrRand' => [
                 'code' => '<?php
@@ -2138,7 +2130,7 @@ class UnusedVariableTest extends TestCase
                         }
 
                         print_r($maybe_undefined);
-                    }'
+                    }',
             ],
             'maybeUndefinedCheckedWithNotIsset' => [
                 'code' => '<?php
@@ -2152,7 +2144,7 @@ class UnusedVariableTest extends TestCase
                         }
 
                         print_r($maybe_undefined);
-                    }'
+                    }',
             ],
             'maybeUndefinedCheckedWithImplicitIsset' => [
                 'code' => '<?php
@@ -2165,7 +2157,7 @@ class UnusedVariableTest extends TestCase
                         $maybe_undefined = $maybe_undefined ?? [0];
 
                         print_r($maybe_undefined);
-                    }'
+                    }',
             ],
             'usedInGlobalAfterAssignOp' => [
                 'code' => '<?php
@@ -2174,7 +2166,7 @@ class UnusedVariableTest extends TestCase
 
                     $total = 5;
 
-                    echo $foo;'
+                    echo $foo;',
             ],
             'takesByRefThing' => [
                 'code' => '<?php
@@ -2192,7 +2184,7 @@ class UnusedVariableTest extends TestCase
                      */
                     function takesByRef(?int &$c) : void {
                         $c = 7;
-                    }'
+                    }',
             ],
             'clips' => [
                 'code' => '<?php declare(strict_types=1);
@@ -2209,7 +2201,7 @@ class UnusedVariableTest extends TestCase
                                 print_r($clips);
                             }
                         }
-                    }'
+                    }',
             ],
             'validator' => [
                 'code' => '<?php
@@ -2226,14 +2218,14 @@ class UnusedVariableTest extends TestCase
                         }
 
                         print_r($source);
-                    }'
+                    }',
             ],
             'implicitSpread' => [
                 'code' => '<?php
                     function validate(bool $b, bool $c) : void {
                         $d = [$b, $c];
                         print_r(...$d);
-                    }'
+                    }',
             ],
             'explicitSpread' => [
                 'code' => '<?php
@@ -2243,14 +2235,14 @@ class UnusedVariableTest extends TestCase
 
                         $r = [...$s, ...$b];
                         return $r;
-                    }'
+                    }',
             ],
             'funcGetArgs' => [
                 'code' => '<?php
                     function validate(bool $b, bool $c) : void {
                         /** @psalm-suppress MixedArgument */
                         print_r(...func_get_args());
-                    }'
+                    }',
             ],
             'nullCoalesce' => [
                 'code' => '<?php
@@ -2258,13 +2250,13 @@ class UnusedVariableTest extends TestCase
                         $b ??= $c;
 
                         echo $b;
-                    }'
+                    }',
             ],
             'arrowFunctionImplicitlyUsedVar' => [
                 'code' => '<?php
                     function test(Exception $e): callable {
                         return fn() => $e->getMessage();
-                    }'
+                    }',
             ],
             'useImmutableGetIteratorInForeach' => [
                 'code' => '<?php
@@ -2286,7 +2278,7 @@ class UnusedVariableTest extends TestCase
 
                     foreach ($a as $v) {
                         echo $v;
-                    }'
+                    }',
             ],
             'castToBoolAndDouble' => [
                 'code' => '<?php
@@ -2298,7 +2290,7 @@ class UnusedVariableTest extends TestCase
                     function string_to_float(string $a): float {
                         $b = (float)$a;
                         return $b;
-                    }'
+                    }',
             ],
             'allowUseByRef' => [
                 'code' => '<?php
@@ -2317,7 +2309,7 @@ class UnusedVariableTest extends TestCase
                         );
 
                         return $output;
-                    }'
+                    }',
             ],
             'allowedUseByRefArrayAssignment' => [
                 'code' => '<?php
@@ -2330,7 +2322,7 @@ class UnusedVariableTest extends TestCase
                     };
                     $a();
 
-                    print_r($output_rows);'
+                    print_r($output_rows);',
             ],
             'usedInAssignOpToByRef' => [
                 'code' => '<?php
@@ -2352,7 +2344,7 @@ class UnusedVariableTest extends TestCase
                              */
                             $item[0] = $item[1];
                         }
-                    }'
+                    }',
             ],
             'usedThrow' => [
                 'code' => '<?php
@@ -2381,7 +2373,7 @@ class UnusedVariableTest extends TestCase
 
                         return $b;
                     }
-                '
+                ',
             ],
             'promotedPropertiesAreNeverMarkedAsUnusedParams' => [
                 'code' => '<?php
@@ -2393,7 +2385,7 @@ class UnusedVariableTest extends TestCase
                         public static function fromValue(float $value): self {
                             return new self($value);
                         }
-                    }'
+                    }',
             ],
             'noUnusedVariableDefinedInBranchOfIf' => [
                 'code' => '<?php
@@ -2424,7 +2416,7 @@ class UnusedVariableTest extends TestCase
                         $sortA .= $a->$k;
 
                         return $sortA;
-                    }'
+                    }',
             ],
             'varDocblockVariableIsUsedByRef' => [
                 'code' => '<?php
@@ -2435,7 +2427,7 @@ class UnusedVariableTest extends TestCase
                             $val = urlencode($val);
                         }
                         return implode("/", $arr);
-                    }'
+                    }',
             ],
             'initVariableInOffset'  => [
                 'code' => '<?php
@@ -2455,7 +2447,7 @@ class UnusedVariableTest extends TestCase
                         $bytes = 2;
                         $ret = $bytes | ~$bitmask;
                         return $ret;
-                    }'
+                    }',
             ],
             'stringAndBitwiseAndOperator' => [
                 'code' => '<?php
@@ -2467,7 +2459,7 @@ class UnusedVariableTest extends TestCase
                         $randomBytes[0] = $randomBytes[0] & $bitmask;
 
                         return $randomBytes;
-                    }'
+                    }',
             ],
             'globalChangeValue' => [
                 'code' => '<?php
@@ -2475,7 +2467,7 @@ class UnusedVariableTest extends TestCase
                         global $a;
 
                         $a = false;
-                    }'
+                    }',
             ],
             'usedInCatchIsAlwaysUsedInTry' => [
                 'code' => '<?php
@@ -3324,7 +3316,7 @@ class UnusedVariableTest extends TestCase
                         return $elt;
                     }
                 ',
-                'error_message' => 'UnusedForeachValue'
+                'error_message' => 'UnusedForeachValue',
             ],
             'defineInBothBranchesOfConditional' => [
                 'code' => '<?php
@@ -3438,7 +3430,7 @@ class UnusedVariableTest extends TestCase
                          */
                         return new Exception($mixed_or_null);
                     }',
-                'error_message' => 'PossiblyNullArgument'
+                'error_message' => 'PossiblyNullArgument',
             ],
             'useArrayAssignmentNeverUsed' => [
                 'code' => '<?php
@@ -3454,7 +3446,7 @@ class UnusedVariableTest extends TestCase
                     function takesArray(array $arr) : void {
                         foreach ($arr as $a) {}
                     }',
-                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:42 - Unable to determine the type that $a is being assigned to. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:47'
+                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:42 - Unable to determine the type that $a is being assigned to. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:47',
             ],
             'warnAboutOriginalBadFunctionCall' => [
                 'code' => '<?php
@@ -3467,7 +3459,7 @@ class UnusedVariableTest extends TestCase
                     foreach ($arr as $a) {
                         echo $a;
                     }',
-                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:38 - Unable to determine the type that $a is being assigned to. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:44'
+                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:38 - Unable to determine the type that $a is being assigned to. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:44',
             ],
             'warnAboutOriginalBadStaticCall' => [
                 'code' => '<?php
@@ -3482,7 +3474,7 @@ class UnusedVariableTest extends TestCase
                     foreach ($arr as $a) {
                         echo $a;
                     }',
-                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:38 - Unable to determine the type that $a is being assigned to. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:3:62'
+                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:38 - Unable to determine the type that $a is being assigned to. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:3:62',
             ],
             'warnAboutOriginalBadInstanceCall' => [
                 'code' => '<?php
@@ -3497,7 +3489,7 @@ class UnusedVariableTest extends TestCase
                     foreach ($arr as $a) {
                         echo $a;
                     }',
-                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:38 - Unable to determine the type that $a is being assigned to. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:3:55'
+                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:38 - Unable to determine the type that $a is being assigned to. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:3:55',
             ],
             'warnAboutDocblockReturnType' => [
                 'code' => '<?php
@@ -3513,7 +3505,7 @@ class UnusedVariableTest extends TestCase
                             echo $a;
                         }
                     }',
-                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:47 - Unable to determine the type that $a is being assigned to. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:33'
+                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:47 - Unable to determine the type that $a is being assigned to. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:33',
             ],
             'warnAboutMixedArgument' => [
                 'code' => '<?php
@@ -3527,7 +3519,7 @@ class UnusedVariableTest extends TestCase
                     foreach ($arr as $a) {
                         echo $a;
                     }',
-                'error_message' => 'MixedArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:30 - Argument 1 of echo cannot be mixed, expecting string. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:44'
+                'error_message' => 'MixedArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:30 - Argument 1 of echo cannot be mixed, expecting string. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:44',
             ],
             'warnAboutMixedMethodCall' => [
                 'code' => '<?php
@@ -3541,7 +3533,7 @@ class UnusedVariableTest extends TestCase
                     foreach ($arr as $a) {
                         $a->foo();
                     }',
-                'error_message' => 'MixedMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:29 - Cannot determine the type of $a when calling method foo. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:44'
+                'error_message' => 'MixedMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:29 - Cannot determine the type of $a when calling method foo. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:44',
             ],
             'warnAboutMixedReturnStatement' => [
                 'code' => '<?php
@@ -3559,14 +3551,14 @@ class UnusedVariableTest extends TestCase
 
                         return "";
                     }',
-                'error_message' => 'MixedReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:36 - Could not infer a return type. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:44'
+                'error_message' => 'MixedReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:36 - Could not infer a return type. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:44',
             ],
             'warnAboutIterableKeySource' => [
                 'code' => '<?php
                     function foo(iterable $arr) : void {
                         foreach ($arr as $key => $_) {}
                     }',
-                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:42 - Unable to determine the type that $key is being assigned to. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:43'
+                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:42 - Unable to determine the type that $key is being assigned to. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:2:43',
             ],
             'warnAboutMixedKeySource' => [
                 'code' => '<?php
@@ -3574,7 +3566,7 @@ class UnusedVariableTest extends TestCase
                     function foo($arr) : void {
                         foreach ($arr as $key => $_) {}
                     }',
-                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:42 - Unable to determine the type that $key is being assigned to. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:3:34'
+                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:42 - Unable to determine the type that $key is being assigned to. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:3:34',
             ],
             'warnAboutMixedArgumentTypeCoercionSource' => [
                 'code' => '<?php
@@ -3590,7 +3582,7 @@ class UnusedVariableTest extends TestCase
                         $arr = [$a];
                         takesArrayOfString($arr);
                     }',
-                'error_message' => 'MixedArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:44 - Argument 1 of takesArrayOfString expects array<array-key, string>, but parent type list{mixed} provided. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:10:41'
+                'error_message' => 'MixedArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:44 - Argument 1 of takesArrayOfString expects array<array-key, string>, but parent type list{mixed} provided. Consider improving the type at src' . DIRECTORY_SEPARATOR . 'somefile.php:10:41',
             ],
             'warnAboutUnusedVariableInTryReassignedInCatch' => [
                 'code' => '<?php

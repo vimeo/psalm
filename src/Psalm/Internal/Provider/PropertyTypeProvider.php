@@ -24,7 +24,7 @@ class PropertyTypeProvider
      *   array<Closure(PropertyTypeProviderEvent): ?Union>
      * >
      */
-    private static $handlers = [];
+    private static array $handlers = [];
 
     public function __construct()
     {
@@ -78,7 +78,7 @@ class PropertyTypeProvider
                 $property_name,
                 $read_mode,
                 $source,
-                $context
+                $context,
             );
             $property_type = $property_handler($event);
 

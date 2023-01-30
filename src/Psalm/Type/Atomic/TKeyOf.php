@@ -2,7 +2,7 @@
 
 namespace Psalm\Type\Atomic;
 
-use Psalm\Type;
+use Psalm\Type\Atomic\TList;
 use Psalm\Type\Union;
 
 use function array_merge;
@@ -10,6 +10,7 @@ use function array_values;
 
 /**
  * Represents an offset of an array.
+ *
  * @psalm-immutable
  */
 final class TKeyOf extends TArrayKey
@@ -72,10 +73,12 @@ final class TKeyOf extends TArrayKey
         $key_types = [];
 
         foreach ($type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TList) {
+                $atomic_type = $atomic_type->getKeyedArray();
+            }
+
             if ($atomic_type instanceof TArray) {
                 $array_key_atomics = $atomic_type->type_params[0];
-            } elseif ($atomic_type instanceof TList) {
-                $array_key_atomics = Type::getInt();
             } elseif ($atomic_type instanceof TKeyedArray) {
                 $array_key_atomics = $atomic_type->getGenericKeyType();
             } elseif ($atomic_type instanceof TTemplateParam) {
@@ -84,7 +87,7 @@ final class TKeyOf extends TArrayKey
                 } else {
                     $array_key_atomics = static::getArrayKeyType(
                         $atomic_type->as,
-                        $keep_template_params
+                        $keep_template_params,
                     );
                     if ($array_key_atomics === null) {
                         continue;
@@ -96,7 +99,7 @@ final class TKeyOf extends TArrayKey
 
             $key_types = array_merge(
                 $key_types,
-                array_values($array_key_atomics->getAtomicTypes())
+                array_values($array_key_atomics->getAtomicTypes()),
             );
         }
 

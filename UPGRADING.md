@@ -1,3 +1,14 @@
+# Upgrading from Psalm 5 to Psalm 6
+## Changed
+
+- [BC] Switched the internal representation of `list<T>` and `non-empty-list<T>` from the TList and TNonEmptyList classes to an unsealed list shape: the TList, TNonEmptyList and TCallableList classes were removed.
+  Nothing will change for users: the `list<T>` and `non-empty-list<T>` syntax will remain supported and its semantics unchanged.
+  Psalm 5 already deprecates the `TList`, `TNonEmptyList` and `TCallableList` classes: use `\Psalm\Type::getListAtomic`, `\Psalm\Type::getNonEmptyListAtomic` and `\Psalm\Type::getCallableListAtomic` to instantiate list atomics, or directly instantiate TKeyedArray objects with `is_list=true` where appropriate.
+
+- [BC] The only optional boolean parameter of `TKeyedArray::getGenericArrayType` was removed, and was replaced with a string parameter with a different meaning.
+
+- [BC] The `TDependentListKey` type was removed and replaced with an optional property of the `TIntRange` type.
+
 # Upgrading from Psalm 4 to Psalm 5
 ## Changed
 
@@ -26,6 +37,9 @@
 - [BC] `Psalm\Type\TypeVisitor` is now fully immutable, implementors MUST NOT alter type nodes during iteration: use `Psalm\Type\MutableTypeVisitor` if type node mutation is desired.  
 
 - [BC] TPositiveInt has been removed and replaced by TIntRange
+
+- [BC] Property `Psalm\Config::$cache_directory` is now internal. Use
+  `Psalm\Config::getCacheDirectory()` instead.
 
 - [BC] The parameter `$php_version` of `Psalm\Type\Atomic::create()` renamed
   to `$analysis_php_version_id` and changed from `array|null` to `int|null`.

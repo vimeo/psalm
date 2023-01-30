@@ -40,7 +40,7 @@ class MktimeReturnTypeProvider implements FunctionReturnTypeProviderInterface
                 $codebase = $statements_source->getCodebase();
 
                 return new Union([new TInt, new TFalse], [
-                    'ignore_falsable_issues' => $codebase->config->ignore_internal_falsable_issues
+                    'ignore_falsable_issues' => $codebase->config->ignore_internal_falsable_issues,
                 ]);
             }
         }

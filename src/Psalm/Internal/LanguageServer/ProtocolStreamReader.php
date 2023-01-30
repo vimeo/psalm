@@ -31,20 +31,14 @@ class ProtocolStreamReader implements ProtocolReader
     /**
      * This is checked by ProtocolStreamReader so that it will stop reading from streams in the forked process.
      * There could be buffered bytes in stdin/over TCP, those would be processed by TCP if it were not for this check.
-     *
-     * @var bool
      */
-    private $is_accepting_new_requests = true;
-    /** @var int */
-    private $parsing_mode = self::PARSE_HEADERS;
-    /** @var string */
-    private $buffer = '';
+    private bool $is_accepting_new_requests = true;
+    private int $parsing_mode = self::PARSE_HEADERS;
+    private string $buffer = '';
     /** @var string[] */
-    private $headers = [];
-    /** @var ?int */
-    private $content_length;
-    /** @var bool */
-    private $did_emit_close = false;
+    private array $headers = [];
+    private ?int $content_length = null;
+    private bool $did_emit_close = false;
 
     /**
      * @param resource $input
@@ -72,14 +66,14 @@ class ProtocolStreamReader implements ProtocolReader
                 }
 
                 $this->emitClose();
-            }
+            },
         );
 
         $this->on(
             'close',
             static function () use ($input): void {
                 $input->close();
-            }
+            },
         );
     }
 

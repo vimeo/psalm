@@ -6,7 +6,6 @@ use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 
 /**
  * @psalm-immutable
- *
  * @internal
  */
 class ScalarValue extends UnresolvedConstantComponent

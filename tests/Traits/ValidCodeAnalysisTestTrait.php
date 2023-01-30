@@ -18,22 +18,27 @@ use const PHP_VERSION;
 trait ValidCodeAnalysisTestTrait
 {
     /**
-     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>,php_version?:string}>
+     * @return iterable<
+     *     string,
+     *     array{
+     *         code: string,
+     *         assertions?: array<string, string>,
+     *         ignored_issues?: list<string>,
+     *         php_version?: string,
+     *     }
+     * >
      */
     abstract public function providerValidCodeParse(): iterable;
 
     /**
      * @dataProvider providerValidCodeParse
-     *
-     * @param string $code
      * @param array<string, string> $assertions
      * @param list<string> $ignored_issues
-     *
      * @small
      */
     public function testValidCode(
-        $code,
-        $assertions = [],
+        string $code,
+        array $assertions = [],
         $ignored_issues = [],
         string $php_version = '7.3'
     ): void {

@@ -10,7 +10,7 @@ final class UnpopulatedClasslikeException extends LogicException
     {
         parent::__construct(
             'Cannot check inheritance - \'' . $fq_classlike_name . '\' has not been populated yet.'
-            . ' You may need to defer this check to a later phase.'
+            . ' You may need to defer this check to a later phase.',
         );
     }
 }

@@ -6,6 +6,7 @@ use Psalm\Type\Union;
 
 /**
  * Represents a string whose value is a fully-qualified class found by get_class($var)
+ *
  * @psalm-immutable
  */
 final class TDependentGetClass extends TString implements DependentType

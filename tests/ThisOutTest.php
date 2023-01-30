@@ -8,9 +8,6 @@ class ThisOutTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
 
-    /**
-     *
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -34,7 +31,7 @@ class ThisOutTest extends TestCase
                       $bar = new Bar();
                       $bar->baz();
                       $bar->far();
-                '
+                ',
             ],
             'changeTemplateArguments' => [
                 'code' => '<?php
@@ -85,8 +82,8 @@ class ThisOutTest extends TestCase
                     '$data1===' => 'list<1>',
                     '$data2===' => 'list<2>',
                     '$data3===' => 'list<2|3>',
-                ]
-            ]
+                ],
+            ],
         ];
     }
 }

@@ -77,7 +77,7 @@ class ParseUrlReturnTypeProvider implements FunctionReturnTypeProviderInterface
                     if (UnionTypeComparator::isContainedBy(
                         $codebase,
                         $component_type,
-                        self::$acceptable_string_component_type
+                        self::$acceptable_string_component_type,
                     )) {
                         self::$nullable_falsable_string ??= new Union([
                             new TString,
@@ -95,7 +95,7 @@ class ParseUrlReturnTypeProvider implements FunctionReturnTypeProviderInterface
                     if (UnionTypeComparator::isContainedBy(
                         $codebase,
                         $component_type,
-                        self::$acceptable_int_component_type
+                        self::$acceptable_int_component_type,
                     )) {
                         self::$nullable_falsable_int ??= new Union([
                             new TInt,
@@ -141,18 +141,18 @@ class ParseUrlReturnTypeProvider implements FunctionReturnTypeProviderInterface
                     'query',
                     'fragment',
                 ],
-                new Union([new TString()], ['possibly_undefined' => true])
+                new Union([new TString()], ['possibly_undefined' => true]),
             );
             $component_types['port'] = new Union([new TInt()], ['possibly_undefined' => true]);
 
             self::$return_type = new Union([
                 new TKeyedArray(
                     $component_types,
-                    null
+                    null,
                 ),
                 new TFalse(),
             ], [
-                'ignore_falsable_issues' => $statements_source->getCodebase()->config->ignore_internal_falsable_issues
+                'ignore_falsable_issues' => $statements_source->getCodebase()->config->ignore_internal_falsable_issues,
             ]);
         }
 

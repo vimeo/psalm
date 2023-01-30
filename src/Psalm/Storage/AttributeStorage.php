@@ -22,14 +22,12 @@ final class AttributeStorage
 
     /**
      * @var CodeLocation
-     *
      * @psalm-suppress PossiblyUnusedProperty part of public API
      */
     public $location;
 
     /**
      * @var CodeLocation
-     *
      * @psalm-suppress PossiblyUnusedProperty part of public API
      */
     public $name_location;

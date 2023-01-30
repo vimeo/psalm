@@ -5,6 +5,7 @@ namespace Psalm\Type\Atomic;
 /**
  * Denotes the `scalar` super type (which can also result from an `is_scalar` check).
  * This type encompasses `float`, `int`, `bool` and `string`.
+ *
  * @psalm-immutable
  */
 class TScalar extends Scalar

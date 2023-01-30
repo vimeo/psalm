@@ -85,7 +85,7 @@ class MethodMutationTest extends TestCase
 
                         return new Response($this->user_viewdata);
                     }
-                }'
+                }',
         );
 
         new FileAnalyzer($this->project_analyzer, 'somefile.php', 'somefile.php');
@@ -96,7 +96,7 @@ class MethodMutationTest extends TestCase
             new MethodIdentifier('FooController', 'barbar'),
             $method_context,
             'somefile.php',
-            'somefile.php'
+            'somefile.php',
         );
 
         $this->assertSame('UserViewData', (string)$method_context->vars_in_scope['$this->user_viewdata']);
@@ -129,7 +129,7 @@ class MethodMutationTest extends TestCase
 
                         $this->doThingWithUser();
                     }
-                }'
+                }',
         );
 
         new FileAnalyzer($this->project_analyzer, 'somefile.php', 'somefile.php');
@@ -140,7 +140,7 @@ class MethodMutationTest extends TestCase
             new MethodIdentifier('FooController', 'barbar'),
             $method_context,
             'somefile.php',
-            'somefile.php'
+            'somefile.php',
         );
 
         $this->assertSame('User|null', (string)$method_context->vars_in_scope['$this->user']);
@@ -166,7 +166,7 @@ class MethodMutationTest extends TestCase
                     public function __construct() {
                         parent::__construct();
                     }
-                }'
+                }',
         );
 
         new FileAnalyzer($this->project_analyzer, 'somefile.php', 'somefile.php');
@@ -177,7 +177,7 @@ class MethodMutationTest extends TestCase
             new MethodIdentifier('FooController', '__construct'),
             $method_context,
             'somefile.php',
-            'somefile.php'
+            'somefile.php',
         );
 
         $this->assertSame('Foo', (string)$method_context->vars_in_scope['$this->foo']);
@@ -205,7 +205,7 @@ class MethodMutationTest extends TestCase
                     public function __construct() {
                         $this->setFoo();
                     }
-                }'
+                }',
         );
 
         new FileAnalyzer($this->project_analyzer, 'somefile.php', 'somefile.php');
@@ -216,7 +216,7 @@ class MethodMutationTest extends TestCase
             new MethodIdentifier('FooController', '__construct'),
             $method_context,
             'somefile.php',
-            'somefile.php'
+            'somefile.php',
         );
 
         $this->assertSame('Foo', (string)$method_context->vars_in_scope['$this->foo']);

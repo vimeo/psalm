@@ -10,6 +10,7 @@ use Psalm\Type\Union;
 
 /**
  * Internal representation of a conditional return type in phpdoc. For example ($param1 is int ? int : string)
+ *
  * @psalm-immutable
  */
 final class TConditional extends Atomic
@@ -110,7 +111,6 @@ final class TConditional extends Atomic
 
     /**
      * @param  array<lowercase-string, string> $aliased_classes
-     *
      * @return null
      */
     public function toPhpString(
@@ -124,7 +124,6 @@ final class TConditional extends Atomic
 
     /**
      * @param  array<lowercase-string, string> $aliased_classes
-     *
      */
     public function toNamespacedString(
         ?string $namespace,
@@ -155,7 +154,7 @@ final class TConditional extends Atomic
         $conditional = TemplateInferredTypeReplacer::replace(
             $this->conditional_type,
             $template_result,
-            $codebase
+            $codebase,
         );
         if ($conditional === $this->conditional_type) {
             return $this;
@@ -166,7 +165,7 @@ final class TConditional extends Atomic
             $this->as_type,
             $conditional,
             $this->if_type,
-            $this->else_type
+            $this->else_type,
         );
     }
 }

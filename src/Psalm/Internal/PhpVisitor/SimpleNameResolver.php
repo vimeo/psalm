@@ -19,18 +19,15 @@ use PhpParser\NodeVisitorAbstract;
  */
 class SimpleNameResolver extends NodeVisitorAbstract
 {
-    /** @var NameContext Naming context */
-    private $nameContext;
+    private NameContext $nameContext;
 
-    /** @var int|null */
-    private $start_change;
+    private ?int $start_change = null;
 
-    /** @var int|null */
-    private $end_change;
+    private ?int $end_change = null;
 
     /**
      * @param ErrorHandler $errorHandler Error handler
-     * @param null|array<int, array{int, int, int, int, int, string}> $offset_map
+     * @param null|array<int, array{0: int, 1: int, 2: int, 3: int, 4: int, 5: string}> $offset_map
      */
     public function __construct(ErrorHandler $errorHandler, ?array $offset_map = null)
     {
@@ -159,7 +156,7 @@ class SimpleNameResolver extends NodeVisitorAbstract
             $name,
             (string) $use->getAlias(),
             $type,
-            $use->getAttributes()
+            $use->getAttributes(),
         );
     }
 
@@ -201,7 +198,6 @@ class SimpleNameResolver extends NodeVisitorAbstract
      *
      * @param Name $name Function or constant name to resolve
      * @param Stmt\Use_::TYPE_*  $type One of Stmt\Use_::TYPE_*
-     *
      * @return Name Resolved name, or original name with attribute
      */
     protected function resolveName(Name $name, int $type): Name
@@ -213,7 +209,7 @@ class SimpleNameResolver extends NodeVisitorAbstract
             $namespaceName = Name\FullyQualified::concat(
                 $this->nameContext->getNamespace(),
                 $name,
-                $name->getAttributes()
+                $name->getAttributes(),
             );
             if ($namespaceName instanceof Name) {
                 $name->setAttribute('namespacedName', $namespaceName->toString());
@@ -231,7 +227,7 @@ class SimpleNameResolver extends NodeVisitorAbstract
     {
         $node->setAttribute('namespacedName', Name::concat(
             $this->nameContext->getNamespace(),
-            (string)$node->name
+            (string)$node->name,
         ));
     }
 

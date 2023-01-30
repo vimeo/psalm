@@ -37,9 +37,9 @@ class MagicConstAnalyzer
                 IssueBuffer::maybeAdd(
                     new UndefinedConstant(
                         'Cannot get __class__ outside a class',
-                        new CodeLocation($statements_analyzer->getSource(), $stmt)
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
                     ),
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 );
 
                 $statements_analyzer->node_data->setType($stmt, Type::getClassString());
@@ -50,7 +50,7 @@ class MagicConstAnalyzer
                         $statements_analyzer,
                         $stmt,
                         $context->self,
-                        $context->calling_method_id
+                        $context->calling_method_id,
                     );
                 }
 
@@ -58,16 +58,14 @@ class MagicConstAnalyzer
             }
         } elseif ($stmt instanceof PhpParser\Node\Scalar\MagicConst\Namespace_) {
             $namespace = $statements_analyzer->getNamespace();
-            if ($namespace === null
-                && IssueBuffer::accepts(
+            if ($namespace === null) {
+                IssueBuffer::maybeAdd(
                     new UndefinedConstant(
                         'Cannot get __namespace__ outside a namespace',
-                        new CodeLocation($statements_analyzer->getSource(), $stmt)
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
                     ),
-                    $statements_analyzer->getSuppressedIssues()
-                )
-            ) {
-                // fall through
+                    $statements_analyzer->getSuppressedIssues(),
+                );
             }
 
             $statements_analyzer->node_data->setType($stmt, Type::getString($namespace));
@@ -81,7 +79,7 @@ class MagicConstAnalyzer
                 } else {
                     $statements_analyzer->node_data->setType(
                         $stmt,
-                        Type::getString($source->getCorrectlyCasedMethodId())
+                        Type::getString($source->getCorrectlyCasedMethodId()),
                     );
                 }
             } elseif ($source instanceof FunctionAnalyzer) {
@@ -92,12 +90,12 @@ class MagicConstAnalyzer
         } elseif ($stmt instanceof PhpParser\Node\Scalar\MagicConst\Dir) {
             $statements_analyzer->node_data->setType(
                 $stmt,
-                Type::getString(dirname($statements_analyzer->getSource()->getFilePath()))
+                Type::getString(dirname($statements_analyzer->getSource()->getFilePath())),
             );
         } elseif ($stmt instanceof PhpParser\Node\Scalar\MagicConst\File) {
             $statements_analyzer->node_data->setType(
                 $stmt,
-                Type::getString($statements_analyzer->getSource()->getFilePath())
+                Type::getString($statements_analyzer->getSource()->getFilePath()),
             );
         } elseif ($stmt instanceof PhpParser\Node\Scalar\MagicConst\Trait_) {
             if ($statements_analyzer->getSource() instanceof TraitAnalyzer) {

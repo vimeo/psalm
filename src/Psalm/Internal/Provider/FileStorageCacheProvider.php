@@ -3,7 +3,6 @@
 namespace Psalm\Internal\Provider;
 
 use Psalm\Config;
-use Psalm\Internal\Provider\Providers;
 use Psalm\Storage\FileStorage;
 use RuntimeException;
 use UnexpectedValueException;
@@ -33,15 +32,9 @@ use const PHP_VERSION_ID;
  */
 class FileStorageCacheProvider
 {
-    /**
-     * @var string
-     */
-    private $modified_timestamps = '';
+    private string $modified_timestamps = '';
 
-    /**
-     * @var Config
-     */
-    private $config;
+    private Config $config;
 
     private const FILE_STORAGE_CACHE_DIRECTORY = 'file_cache';
 
@@ -173,7 +166,7 @@ class FileStorageCacheProvider
                 if (mkdir($parser_cache_directory, 0777, true) === false) {
                     // any other error than directory already exists/permissions issue
                     throw new RuntimeException(
-                        'Failed to create ' . $parser_cache_directory . ' cache directory for unknown reasons'
+                        'Failed to create ' . $parser_cache_directory . ' cache directory for unknown reasons',
                     );
                 }
             } catch (RuntimeException $e) {

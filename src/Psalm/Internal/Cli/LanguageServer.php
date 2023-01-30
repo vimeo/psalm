@@ -61,6 +61,7 @@ final class LanguageServer
     /** @param array<int,string> $argv */
     public static function run(array $argv): void
     {
+        CliUtils::checkRuntimeRequirements();
         gc_disable();
         ErrorHandler::install($argv);
         $valid_short_options = [
@@ -83,7 +84,7 @@ final class LanguageServer
             'disable-on-change::',
             'enable-autocomplete::',
             'use-extended-diagnostic-codes',
-            'verbose'
+            'verbose',
         ];
 
         $args = array_slice($argv, 1);
@@ -106,14 +107,14 @@ final class LanguageServer
                         fwrite(
                             STDERR,
                             'Unrecognised argument "--' . $arg_name . '"' . PHP_EOL
-                            . 'Type --help to see a list of supported arguments' . PHP_EOL
+                            . 'Type --help to see a list of supported arguments' . PHP_EOL,
                         );
                         error_log('Bad argument');
                         exit(1);
                     }
                 }
             },
-            $args
+            $args,
         );
 
         // get options from command line
@@ -210,7 +211,7 @@ final class LanguageServer
             if (!$root_path) {
                 fwrite(
                     STDERR,
-                    'Could not locate root directory ' . $current_dir . DIRECTORY_SEPARATOR . $options['r'] . PHP_EOL
+                    'Could not locate root directory ' . $current_dir . DIRECTORY_SEPARATOR . $options['r'] . PHP_EOL,
                 );
                 exit(1);
             }
@@ -258,7 +259,7 @@ final class LanguageServer
             $path_to_config,
             $current_dir,
             Report::TYPE_CONSOLE,
-            $first_autoloader
+            $first_autoloader,
         );
         $config->setIncludeCollector($include_collector);
 
@@ -285,12 +286,12 @@ final class LanguageServer
             new FileStorageCacheProvider($config),
             new ClassLikeStorageCacheProvider($config),
             new FileReferenceCacheProvider($config),
-            new ProjectCacheProvider(Composer::getLockFilePath($current_dir))
+            new ProjectCacheProvider(Composer::getLockFilePath($current_dir)),
         );
 
         $project_analyzer = new ProjectAnalyzer(
             $config,
-            $providers
+            $providers,
         );
 
         if ($config->find_unused_variables) {

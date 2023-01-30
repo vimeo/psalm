@@ -17,38 +17,17 @@ final class AfterMethodCallAnalysisEvent
      * @var MethodCall|StaticCall
      */
     private $expr;
-    /**
-     * @var string
-     */
-    private $method_id;
-    /**
-     * @var string
-     */
-    private $appearing_method_id;
-    /**
-     * @var string
-     */
-    private $declaring_method_id;
-    /**
-     * @var Context
-     */
-    private $context;
-    /**
-     * @var StatementsSource
-     */
-    private $statements_source;
-    /**
-     * @var Codebase
-     */
-    private $codebase;
+    private string $method_id;
+    private string $appearing_method_id;
+    private string $declaring_method_id;
+    private Context $context;
+    private StatementsSource $statements_source;
+    private Codebase $codebase;
     /**
      * @var FileManipulation[]
      */
-    private $file_replacements;
-    /**
-     * @var Union|null
-     */
-    private $return_type_candidate;
+    private array $file_replacements;
+    private ?Union $return_type_candidate;
 
     /**
      * @param  MethodCall|StaticCall $expr

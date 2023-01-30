@@ -80,7 +80,7 @@ final class SarifReport extends Report
                                 'endColumn' => $issue_data->column_to,
                             ],
                         ],
-                    ]
+                    ],
                 ],
             ];
 
@@ -95,7 +95,7 @@ final class SarifReport extends Report
                                 'locations' => [],
                             ],
                         ],
-                    ]
+                    ],
                 ];
 
                 foreach ($issue_data->taint_trace as $trace) {

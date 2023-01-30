@@ -14,17 +14,13 @@ class LanguageClient
 {
     /**
      * Handles textDocument/* methods
-     *
-     * @var ClientTextDocument
      */
-    public $textDocument;
+    public ClientTextDocument $textDocument;
 
     /**
      * The client handler
-     *
-     * @var ClientHandler
      */
-    private $handler;
+    private ClientHandler $handler;
 
     public function __construct(ProtocolReader $reader, ProtocolWriter $writer)
     {
@@ -57,8 +53,8 @@ class LanguageClient
             $method,
             [
                 'type' => $type,
-                'message' => $message
-            ]
+                'message' => $message,
+            ],
         );
     }
 }

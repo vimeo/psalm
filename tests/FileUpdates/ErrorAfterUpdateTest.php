@@ -36,22 +36,20 @@ class ErrorAfterUpdateTest extends TestCase
             null,
             null,
             new FakeFileReferenceCacheProvider(),
-            new ProjectCacheProvider()
+            new ProjectCacheProvider(),
         );
 
         $this->project_analyzer = new ProjectAnalyzer(
             $config,
-            $providers
+            $providers,
         );
         $this->project_analyzer->setPhpVersion('7.3', 'tests');
     }
 
     /**
      * @dataProvider providerTestInvalidUpdates
-     *
      * @param array<int, array<string, string>> $file_stages
      * @param array<string, string> $ignored_issues
-     *
      */
     public function testErrorAfterUpdate(
         array $file_stages,

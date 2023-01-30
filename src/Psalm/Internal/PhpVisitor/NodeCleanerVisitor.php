@@ -10,7 +10,7 @@ use Psalm\Internal\Provider\NodeDataProvider;
  */
 class NodeCleanerVisitor extends PhpParser\NodeVisitorAbstract
 {
-    private $type_provider;
+    private NodeDataProvider $type_provider;
 
     public function __construct(NodeDataProvider $type_provider)
     {

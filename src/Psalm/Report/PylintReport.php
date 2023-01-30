@@ -25,7 +25,7 @@ final class PylintReport extends Report
         $message = sprintf(
             '%s: %s',
             $issue_data->type,
-            $issue_data->message
+            $issue_data->message,
         );
 
         if ($issue_data->severity === Config::REPORT_ERROR) {
@@ -43,7 +43,7 @@ final class PylintReport extends Report
             $issue_data->file_name,
             $issue_data->line_from,
             $code,
-            $message
+            $message,
         );
     }
 }

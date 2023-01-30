@@ -28,7 +28,7 @@ class CreatorTest extends TestCase
                 . DIRECTORY_SEPARATOR . 'files_in_lib',
             null,
             1,
-            'vendor'
+            'vendor',
         );
 
         $this->assertSame('<?xml version="1.0"?>
@@ -38,6 +38,7 @@ class CreatorTest extends TestCase
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xmlns="https://getpsalm.org/schema/config"
     xsi:schemaLocation="https://getpsalm.org/schema/config vendor/vimeo/psalm/config.xsd"
+    findUnusedBaselineEntry="true"
 >
     <projectFiles>
         <directory name="lib" />

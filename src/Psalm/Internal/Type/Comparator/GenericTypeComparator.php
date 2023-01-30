@@ -33,7 +33,7 @@ class GenericTypeComparator
         ) {
             $container_type_part = new TGenericObject(
                 'Traversable',
-                $container_type_part->type_params
+                $container_type_part->type_params,
             );
 
             $container_was_iterable = true;
@@ -54,7 +54,7 @@ class GenericTypeComparator
             $codebase,
             $input_type_part,
             $container_type_part,
-            $container_type_params_covariant
+            $container_type_params_covariant,
         );
 
         $atomic_comparison_result_type_params = null;
@@ -91,7 +91,7 @@ class GenericTypeComparator
                 $input_param->ignore_nullable_issues,
                 $input_param->ignore_falsable_issues,
                 $param_comparison_result,
-                $allow_interface_equality
+                $allow_interface_equality,
             )) {
                 if ($input_type_part->value === 'Generator'
                     && $i === 2
@@ -153,7 +153,7 @@ class GenericTypeComparator
                             $container_param->ignore_nullable_issues,
                             $container_param->ignore_falsable_issues,
                             $param_comparison_result,
-                            $allow_interface_equality
+                            $allow_interface_equality,
                         ) || $param_comparison_result->type_coerced
                         ) {
                             if ($container_param->hasStaticObject()

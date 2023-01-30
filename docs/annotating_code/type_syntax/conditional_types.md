@@ -80,5 +80,3 @@ class A {
 
 
 ```
-
-Calling `getDifferentType(0)` will 

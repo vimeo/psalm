@@ -3,32 +3,21 @@
 namespace Psalm\Plugin\EventHandler\Event;
 
 use PhpParser;
+use PhpParser\Node\Expr\FuncCall;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\StatementsSource;
 
 final class FunctionReturnTypeProviderEvent
 {
-    /**
-     * @var StatementsSource
-     */
-    private $statements_source;
+    private StatementsSource $statements_source;
     /**
      * @var non-empty-string
      */
-    private $function_id;
-    /**
-     * @var PhpParser\Node\Expr\FuncCall
-     */
-    private $stmt;
-    /**
-     * @var Context
-     */
-    private $context;
-    /**
-     * @var CodeLocation
-     */
-    private $code_location;
+    private string $function_id;
+    private FuncCall $stmt;
+    private Context $context;
+    private CodeLocation $code_location;
 
     /**
      * Use this hook for providing custom return type logic. If this plugin does not know what a function should
@@ -41,7 +30,7 @@ final class FunctionReturnTypeProviderEvent
     public function __construct(
         StatementsSource $statements_source,
         string $function_id,
-        PhpParser\Node\Expr\FuncCall $stmt,
+        FuncCall $stmt,
         Context $context,
         CodeLocation $code_location
     ) {
@@ -83,7 +72,7 @@ final class FunctionReturnTypeProviderEvent
         return $this->code_location;
     }
 
-    public function getStmt(): PhpParser\Node\Expr\FuncCall
+    public function getStmt(): FuncCall
     {
         return $this->stmt;
     }

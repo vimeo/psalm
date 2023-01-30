@@ -66,7 +66,7 @@ class DoAnalyzer
             $stmt->cond,
             $context->self,
             $statements_analyzer,
-            $codebase
+            $codebase,
         );
 
         $while_clauses = array_values(
@@ -86,8 +86,8 @@ class DoAnalyzer
                     }
 
                     return true;
-                }
-            )
+                },
+            ),
         );
 
         if (!$while_clauses) {
@@ -102,7 +102,7 @@ class DoAnalyzer
             $loop_scope,
             $inner_loop_context,
             true,
-            true
+            true,
         ) === false) {
             return false;
         }
@@ -116,8 +116,8 @@ class DoAnalyzer
 
         $negated_while_types = Algebra::getTruthsFromFormula(
             Algebra::simplifyCNF(
-                [...$context->clauses, ...$negated_while_clauses]
-            )
+                [...$context->clauses, ...$negated_while_clauses],
+            ),
         );
 
         if ($negated_while_types) {
@@ -134,7 +134,7 @@ class DoAnalyzer
                     $statements_analyzer,
                     [],
                     true,
-                    new CodeLocation($statements_analyzer->getSource(), $stmt->cond)
+                    new CodeLocation($statements_analyzer->getSource(), $stmt->cond),
                 );
         }
 
@@ -146,7 +146,7 @@ class DoAnalyzer
                 if (isset($loop_scope->possibly_defined_loop_parent_vars[$var_id])) {
                     $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                         $type,
-                        $loop_scope->possibly_defined_loop_parent_vars[$var_id]
+                        $loop_scope->possibly_defined_loop_parent_vars[$var_id],
                     );
                 }
             } else {
@@ -158,7 +158,7 @@ class DoAnalyzer
 
         $context->vars_possibly_in_scope = array_merge(
             $context->vars_possibly_in_scope,
-            $do_context->vars_possibly_in_scope
+            $do_context->vars_possibly_in_scope,
         );
 
         if ($context->collect_exceptions) {

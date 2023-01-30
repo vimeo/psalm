@@ -41,7 +41,7 @@ class BreakAnalyzer
             foreach ($redefined_vars as $var => $type) {
                 $loop_scope->possibly_redefined_loop_parent_vars[$var] = Type::combineUnionTypes(
                     $type,
-                    $loop_scope->possibly_redefined_loop_parent_vars[$var] ?? null
+                    $loop_scope->possibly_redefined_loop_parent_vars[$var] ?? null,
                 );
             }
 
@@ -50,7 +50,7 @@ class BreakAnalyzer
                     if (!isset($loop_scope->loop_parent_context->vars_in_scope[$var_id])) {
                         $loop_scope->possibly_defined_loop_parent_vars[$var_id] = Type::combineUnionTypes(
                             $type,
-                            $loop_scope->possibly_defined_loop_parent_vars[$var_id] ?? null
+                            $loop_scope->possibly_defined_loop_parent_vars[$var_id] ?? null,
                         );
                     }
                 }
@@ -62,7 +62,7 @@ class BreakAnalyzer
                         $context->finally_scope->vars_in_scope[$var_id] = Type::combineUnionTypes(
                             $context->finally_scope->vars_in_scope[$var_id],
                             $type,
-                            $statements_analyzer->getCodebase()
+                            $statements_analyzer->getCodebase(),
                         );
                     } else {
                         $type = $type->setPossiblyUndefined(true, true);
@@ -82,7 +82,7 @@ class BreakAnalyzer
 
                 $case_scope->break_vars[$var_id] = Type::combineUnionTypes(
                     $type,
-                    $case_scope->break_vars[$var_id] ?? null
+                    $case_scope->break_vars[$var_id] ?? null,
                 );
             }
         }

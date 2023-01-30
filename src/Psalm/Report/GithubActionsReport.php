@@ -20,7 +20,7 @@ final class GithubActionsReport extends Report
                 $this->escapeProperty($issue_data->file_name),
                 $this->escapeProperty($issue_data->line_from),
                 $this->escapeProperty($issue_data->column_from),
-                $this->escapeProperty($issue_data->type)
+                $this->escapeProperty($issue_data->type),
             );
 
             $data = $this->escapeData(sprintf(
@@ -29,14 +29,14 @@ final class GithubActionsReport extends Report
                 $issue_data->line_from,
                 $issue_data->column_from,
                 $issue_data->type,
-                $issue_data->message . $issue_reference
+                $issue_data->message . $issue_reference,
             ));
 
             $output .= sprintf(
                 '::%1$s %2$s::%3$s',
                 ($issue_data->severity === Config::REPORT_ERROR ? 'error' : 'warning'),
                 $properties,
-                $data
+                $data,
             ) . "\n";
         }
 
@@ -51,7 +51,7 @@ final class GithubActionsReport extends Report
                 '%' => '%25',
                 "\r" => '%0D',
                 "\n" => '%0A',
-            ]
+            ],
         );
     }
 
@@ -66,7 +66,7 @@ final class GithubActionsReport extends Report
                 "\n" => '%0A',
                 ':' => '%3A',
                 ',' => '%2C',
-            ]
+            ],
         );
     }
 }

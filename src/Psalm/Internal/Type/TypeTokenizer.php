@@ -60,6 +60,9 @@ class TypeTokenizer
         'lowercase-string' => true,
         'non-empty-lowercase-string' => true,
         'positive-int' => true,
+        'non-negative-int' => true,
+        'negative-int' => true,
+        'non-positive-int' => true,
         'literal-int' => true,
         'boolean' => true,
         'integer' => true,
@@ -97,14 +100,13 @@ class TypeTokenizer
     /**
      * @var array<string, list<array{0: string, 1: int}>>
      */
-    private static $memoized_tokens = [];
+    private static array $memoized_tokens = [];
 
     /**
      * Tokenises a type string into an array of tuples where the first element
      * contains the string token and the second element contains its offset,
      *
-     * @return list<array{string, int}>
-     *
+     * @return list<array{0: string, 1: int}>
      * @psalm-suppress PossiblyUndefinedIntArrayOffset
      */
     public static function tokenize(string $string_type, bool $ignore_space = true): array
@@ -349,7 +351,6 @@ class TypeTokenizer
     /**
      * @param  array<string, mixed>|null       $template_type_map
      * @param  array<string, TypeAlias>|null   $type_aliases
-     *
      * @return list<array{0: string, 1: int, 2?: string}>
      */
     public static function getFullyQualifiedTokens(
@@ -371,7 +372,7 @@ class TypeTokenizer
                 [
                     '<', '>', '|', '?', ',', '{', '}', ':', '::', '[', ']', '(', ')', '&', '=', '...', 'as', 'is',
                 ],
-                true
+                true,
             )) {
                 continue;
             }
@@ -498,7 +499,7 @@ class TypeTokenizer
             } else {
                 $type_tokens[$i][0] = Type::getFQCLNFromString(
                     $string_type_token[0],
-                    $aliases
+                    $aliases,
                 );
             }
         }

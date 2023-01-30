@@ -3,14 +3,21 @@
 namespace Psalm\Internal\Type;
 
 use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\TArrayKey;
+use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TObject;
+use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
+
+use function is_int;
+use function is_string;
 
 /**
  * @internal
@@ -18,85 +25,104 @@ use Psalm\Type\Union;
 class TypeCombination
 {
     /** @var array<string, Atomic> */
-    public $value_types = [];
+    public array $value_types = [];
 
     /** @var array<string, TNamedObject>|null */
-    public $named_object_types = [];
+    public ?array $named_object_types = [];
 
     /** @var list<Union> */
-    public $array_type_params = [];
+    public array $array_type_params = [];
 
     /** @var array<string, non-empty-list<Union>> */
-    public $builtin_type_params = [];
+    public array $builtin_type_params = [];
 
     /** @var array<string, non-empty-list<Union>> */
-    public $object_type_params = [];
+    public array $object_type_params = [];
 
     /** @var array<string, bool> */
-    public $object_static = [];
+    public array $object_static = [];
 
     /** @var array<int, bool>|null */
-    public $array_counts = [];
+    public ?array $array_counts = [];
 
     /** @var array<int, bool>|null */
-    public $array_min_counts = [];
+    public ?array $array_min_counts = [];
 
-    /** @var bool */
-    public $array_sometimes_filled = false;
+    public bool $array_sometimes_filled = false;
 
-    /** @var bool */
-    public $array_always_filled = true;
+    public bool $array_always_filled = true;
 
     /** @var array<string|int, Union> */
-    public $objectlike_entries = [];
+    public array $objectlike_entries = [];
 
-    /** @var bool */
-    public $objectlike_sealed = true;
+    public bool $objectlike_sealed = true;
 
-    /** @var ?Union */
-    public $objectlike_key_type;
+    public ?Union $objectlike_key_type = null;
 
-    /** @var ?Union */
-    public $objectlike_value_type;
+    public ?Union $objectlike_value_type = null;
 
-    /** @var bool */
-    public $empty_mixed = false;
+    public bool $empty_mixed = false;
 
-    /** @var bool */
-    public $non_empty_mixed = false;
+    public bool $non_empty_mixed = false;
 
-    /** @var ?bool */
-    public $mixed_from_loop_isset;
+    public ?bool $mixed_from_loop_isset = null;
 
     /** @var array<string, TLiteralString>|null */
-    public $strings = [];
+    public ?array $strings = [];
 
     /** @var array<string, TLiteralInt>|null */
-    public $ints = [];
+    public ?array $ints = [];
 
     /** @var array<string, TLiteralFloat>|null */
-    public $floats = [];
+    public ?array $floats = [];
 
     /** @var array<string, TNamedObject|TObject>|null */
-    public $class_string_types = [];
+    public ?array $class_string_types = [];
 
     /**
      * @var array<string, TNamedObject|TTemplateParam|TIterable|TObject>
      */
-    public $extra_types = [];
+    public array $extra_types = [];
 
-    /** @var ?bool */
-    public $all_arrays_lists;
+    public ?bool $all_arrays_lists = null;
 
-    /** @var ?bool */
-    public $all_arrays_callable;
+    public ?bool $all_arrays_callable = null;
 
-    /** @var ?bool */
-    public $all_arrays_class_string_maps;
+    public ?bool $all_arrays_class_string_maps = null;
 
     /** @var array<string, bool> */
-    public $class_string_map_names = [];
+    public array $class_string_map_names = [];
 
     /** @var array<string, ?TNamedObject> */
-    public $class_string_map_as_types = [];
+    public array $class_string_map_as_types = [];
+
+    /**
+     * @psalm-assert-if-true !null $this->objectlike_key_type
+     * @psalm-assert-if-true !null $this->objectlike_value_type
+     * @param array-key $k
+     */
+    public function fallbackKeyContains($k): bool
+    {
+        if (!$this->objectlike_key_type) {
+            return false;
+        }
+        foreach ($this->objectlike_key_type->getAtomicTypes() as $t) {
+            if ($t instanceof TArrayKey) {
+                return true;
+            } elseif ($t instanceof TLiteralInt || $t instanceof TLiteralString) {
+                if ($t->value === $k) {
+                    return true;
+                }
+            } elseif ($t instanceof TIntRange) {
+                if (is_int($k) && $t->contains($k)) {
+                    return true;
+                }
+            } elseif ($t instanceof TString && is_string($k)) {
+                return true;
+            } elseif ($t instanceof TInt && is_int($k)) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

@@ -12,60 +12,36 @@ use Psalm\Type\Union;
  */
 class FunctionCallInfo
 {
-    /**
-     * @var ?string
-     */
-    public $function_id;
+    public ?string $function_id = null;
 
-    /**
-     * @var ?bool
-     */
-    public $function_exists;
+    public ?bool $function_exists = null;
 
-    /**
-     * @var bool
-     */
-    public $is_stubbed = false;
+    public bool $is_stubbed = false;
 
-    /**
-     * @var bool
-     */
-    public $in_call_map = false;
+    public bool $in_call_map = false;
 
     /**
      * @var array<string, Union>
      */
-    public $defined_constants = [];
+    public array $defined_constants = [];
 
     /**
      * @var array<string, bool>
      */
-    public $global_variables = [];
+    public array $global_variables = [];
 
     /**
      * @var ?array<int, FunctionLikeParameter>
      */
-    public $function_params;
+    public ?array $function_params = null;
 
-    /**
-     * @var ?FunctionLikeStorage
-     */
-    public $function_storage;
+    public ?FunctionLikeStorage $function_storage = null;
 
-    /**
-     * @var ?PhpParser\Node\Name
-     */
-    public $new_function_name;
+    public ?PhpParser\Node\Name $new_function_name = null;
 
-    /**
-     * @var bool
-     */
-    public $allow_named_args = true;
+    public bool $allow_named_args = true;
 
-    /**
-     * @var array
-     */
-    public $byref_uses = [];
+    public array $byref_uses = [];
 
     /**
      * @mutation-free

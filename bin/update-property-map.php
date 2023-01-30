@@ -25,7 +25,7 @@ foreach ([__DIR__ . '/../../../autoload.php', __DIR__ . '/../vendor/autoload.php
 $lexer = new PhpParser\Lexer\Emulative();
 $parser = (new PhpParser\ParserFactory)->create(
     PhpParser\ParserFactory::PREFER_PHP7,
-    $lexer
+    $lexer,
 );
 $traverser = new PhpParser\NodeTraverser();
 $traverser->addVisitor(new PhpParser\NodeVisitor\NameResolver);
@@ -48,7 +48,7 @@ function extractClassesFromStatements(array $statements): array
 $stubbedClasses = [];
 foreach (new RecursiveDirectoryIterator(
     __DIR__ . '/../stubs',
-    FilesystemIterator::CURRENT_AS_PATHNAME|FilesystemIterator::SKIP_DOTS
+    FilesystemIterator::CURRENT_AS_PATHNAME|FilesystemIterator::SKIP_DOTS,
 ) as $file) {
     if (is_dir($file)) {
         continue;
@@ -72,11 +72,11 @@ $files = new RegexIterator(
     new RecursiveIteratorIterator(
         new RecursiveDirectoryIterator(
             $docDir,
-            FilesystemIterator::CURRENT_AS_PATHNAME|FilesystemIterator::SKIP_DOTS
+            FilesystemIterator::CURRENT_AS_PATHNAME|FilesystemIterator::SKIP_DOTS,
         ),
-        RecursiveIteratorIterator::LEAVES_ONLY
+        RecursiveIteratorIterator::LEAVES_ONLY,
     ),
-    '/.*.xml$/'
+    '/.*.xml$/',
 );
 
 $classes = require_once dirname(__DIR__) . '/dictionaries/ManualPropertyMap.php';
@@ -100,9 +100,7 @@ foreach ($files as $file) {
             $file,
             get_class($exception),
             $exception->getMessage(),
-            implode("\n", array_map(function (LibXMLError $error): string {
-                return $error->message;
-            }, libxml_get_errors()))
+            implode("\n", array_map(fn(LibXMLError $error): string => $error->message, libxml_get_errors())),
         );
         libxml_clear_errors();
         continue;
@@ -159,9 +157,7 @@ foreach ($files as $file) {
 
 function serializeArray(array $array, string $prefix): string
 {
-    uksort($array, function (string $first, string $second): int {
-        return strtolower($first) <=> strtolower($second);
-    });
+    uksort($array, fn(string $first, string $second): int => strtolower($first) <=> strtolower($second));
     $result = "[\n";
     $localPrefix = $prefix . '    ';
     foreach ($array as $key => $value) {
@@ -190,5 +186,5 @@ namespace Psalm\Internal;
 
 return $serialized;
 
-EOF
+EOF,
 );

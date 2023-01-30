@@ -2,7 +2,7 @@
 	"minimum-stability": "dev",
 	"prefer-stable": true,
 	"require": {
-		"humbug/box": "3.10.*"
+		"humbug/box": "^3.16.0"
 	},
 	"config": {
 		"allow-plugins": {

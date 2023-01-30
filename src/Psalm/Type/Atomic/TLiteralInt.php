@@ -4,6 +4,7 @@ namespace Psalm\Type\Atomic;
 
 /**
  * Denotes an integer value where the exact numeric value is known.
+ *
  * @psalm-immutable
  */
 final class TLiteralInt extends TInt
@@ -38,7 +39,6 @@ final class TLiteralInt extends TInt
 
     /**
      * @param  array<lowercase-string, string> $aliased_classes
-     *
      */
     public function toNamespacedString(
         ?string $namespace,

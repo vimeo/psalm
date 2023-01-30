@@ -10,9 +10,6 @@ class ImmutableAnnotationTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
-    /**
-     *
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -113,7 +110,7 @@ class ImmutableAnnotationTest extends TestCase
                         {
                             return new self($id . rand(0, 1));
                         }
-                    }'
+                    }',
             ],
             'allowPropertySetOnNewInstance' => [
                 'code' => '<?php
@@ -133,7 +130,7 @@ class ImmutableAnnotationTest extends TestCase
 
                             return $new;
                         }
-                    }'
+                    }',
             ],
             'allowArrayMapCallable' => [
                 'code' => '<?php
@@ -171,7 +168,7 @@ class ImmutableAnnotationTest extends TestCase
 
                             return \implode(", ", $parts);
                         }
-                    }'
+                    }',
             ],
             'allowPropertyAssignmentInUnserialize' => [
                 'code' => '<?php
@@ -197,7 +194,7 @@ class ImmutableAnnotationTest extends TestCase
                         public function getData(): string {
                             return $this->data;
                         }
-                    }'
+                    }',
             ],
             'allowPropertyAssignmentInMagicUnserialize' => [
                 'code' => '<?php
@@ -224,7 +221,7 @@ class ImmutableAnnotationTest extends TestCase
                         public function getData(): string {
                             return $this->data;
                         }
-                    }'
+                    }',
             ],
             'allowMethodOverriding' => [
                 'code' => '<?php
@@ -305,7 +302,7 @@ class ImmutableAnnotationTest extends TestCase
 
                     if ($dto->getError()) {
                         takesString($dto->getError());
-                    }'
+                    }',
             ],
             'allowConstructorPrivateUnusedMethods' => [
                 'code' => '<?php
@@ -324,7 +321,7 @@ class ImmutableAnnotationTest extends TestCase
                         }
 
                         private function test(): void {}
-                    }'
+                    }',
             ],
             'canPassImmutableIntoImmutable' => [
                 'code' => '<?php
@@ -402,7 +399,7 @@ class ImmutableAnnotationTest extends TestCase
             ],
             'passDateTimeZone' => [
                 'code' => '<?php
-                    echo (new DateTimeImmutable("now", new DateTimeZone("UTC")))->format("Y-m-d");'
+                    echo (new DateTimeImmutable("now", new DateTimeZone("UTC")))->format("Y-m-d");',
             ],
             'allowPassingCloneOfMutableIntoImmutable' => [
                 'code' => '<?php
@@ -473,7 +470,7 @@ class ImmutableAnnotationTest extends TestCase
                         if ($e->getValue() === TestEnum::TEST
                             && $e->getValue() === TestEnum::TEST
                         ) {}
-                    }'
+                    }',
             ],
             'allowMutablePropertyFetch' => [
                 'code' => '<?php
@@ -550,9 +547,6 @@ class ImmutableAnnotationTest extends TestCase
         ];
     }
 
-    /**
-     *
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [
@@ -700,7 +694,7 @@ class ImmutableAnnotationTest extends TestCase
                     final class NotReallyImmutableClass {
                         use MutableTrait;
                     }',
-                'error_message' => 'MutableDependency'
+                'error_message' => 'MutableDependency',
             ],
             'preventImmutableClassInheritingMutableParent' => [
                 'code' => '<?php
@@ -716,7 +710,7 @@ class ImmutableAnnotationTest extends TestCase
                      * @psalm-immutable
                      */
                     final class NotReallyImmutableClass extends MutableParent {}',
-                'error_message' => 'MutableDependency'
+                'error_message' => 'MutableDependency',
             ],
             'mutationInPropertyAssignment' => [
                 'code' => '<?php

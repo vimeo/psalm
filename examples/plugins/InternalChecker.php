@@ -15,7 +15,7 @@ use function strpos;
 class InternalChecker implements AfterClassLikeAnalysisInterface
 {
     /** @return null|false */
-    public static function afterStatementAnalysis(AfterClassLikeAnalysisEvent $event)
+    public static function afterStatementAnalysis(AfterClassLikeAnalysisEvent $event): ?bool
     {
         $storage = $event->getClasslikeStorage();
         if (!$storage->internal
@@ -26,10 +26,10 @@ class InternalChecker implements AfterClassLikeAnalysisInterface
                 new InternalClass(
                     "Class $storage->name must be marked @internal",
                     $storage->location,
-                    $storage->name
+                    $storage->name,
                 ),
                 $event->getStatementsSource()->getSuppressedIssues(),
-                true
+                true,
             );
 
             if (!$event->getCodebase()->alter_code) {
@@ -50,7 +50,7 @@ class InternalChecker implements AfterClassLikeAnalysisInterface
             $parsed_docblock->tags['internal'] = [''];
             $new_docblock_content = $parsed_docblock->render('');
             $event->setFileReplacements([
-                new FileManipulation($docblock_start, $docblock_end, $new_docblock_content)
+                new FileManipulation($docblock_start, $docblock_end, $new_docblock_content),
             ]);
         }
         return null;

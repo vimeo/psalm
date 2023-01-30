@@ -33,7 +33,7 @@ class ThrowsInGlobalScopeTest extends TestCase
                     return intdiv($x, $y);
                 }
 
-                foo(0, 0);'
+                foo(0, 0);',
         );
 
         $context = new Context();
@@ -67,7 +67,7 @@ class ThrowsInGlobalScopeTest extends TestCase
 
                 try {
                     foo(0, 0);
-                } catch (Exception $e) {}'
+                } catch (Exception $e) {}',
         );
 
         $context = new Context();
@@ -94,7 +94,7 @@ class ThrowsInGlobalScopeTest extends TestCase
                     return intdiv($x, $y);
                 }
 
-                foo(0, 0);'
+                foo(0, 0);',
         );
 
         $context = new Context();
@@ -128,7 +128,7 @@ class ThrowsInGlobalScopeTest extends TestCase
                     return intdiv($x, $y);
                 }
 
-                foo(0, 0);'
+                foo(0, 0);',
         );
 
         $context = new Context();
@@ -146,7 +146,7 @@ class ThrowsInGlobalScopeTest extends TestCase
         $this->addFile(
             'somefile.php',
             '<?php
-                throw new \Exception();'
+                throw new \Exception();',
         );
 
         $context = new Context();
@@ -163,7 +163,7 @@ class ThrowsInGlobalScopeTest extends TestCase
             '<?php
                 try {
                     throw new \Exception();
-                } catch (\Exception $e) {}'
+                } catch (\Exception $e) {}',
         );
 
         $context = new Context();
@@ -179,7 +179,7 @@ class ThrowsInGlobalScopeTest extends TestCase
             'somefile.php',
             '<?php
                 /** @psalm-suppress UncaughtThrowInGlobalScope */
-                throw new \Exception();'
+                throw new \Exception();',
         );
 
         $context = new Context();
@@ -196,7 +196,7 @@ class ThrowsInGlobalScopeTest extends TestCase
             '<?php
                 namespace ns;
                 /** @psalm-suppress UncaughtThrowInGlobalScope */
-                throw new \Exception();'
+                throw new \Exception();',
         );
 
         $context = new Context();
@@ -228,7 +228,7 @@ class ThrowsInGlobalScopeTest extends TestCase
                 }
 
                 /** @psalm-suppress UncaughtThrowInGlobalScope */
-                foo(0, 0);'
+                foo(0, 0);',
         );
 
         $context = new Context();
@@ -261,7 +261,7 @@ class ThrowsInGlobalScopeTest extends TestCase
                 }
 
                 /** @psalm-suppress UncaughtThrowInGlobalScope */
-                foo(0, 0);'
+                foo(0, 0);',
         );
 
         $context = new Context();
@@ -297,7 +297,7 @@ class ThrowsInGlobalScopeTest extends TestCase
                 /** @psalm-suppress UncaughtThrowInGlobalScope */
                 foo(0, 0);
 
-                foo(0, 0);'
+                foo(0, 0);',
         );
 
         $context = new Context();

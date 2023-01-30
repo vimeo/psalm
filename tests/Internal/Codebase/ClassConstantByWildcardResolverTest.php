@@ -10,10 +10,7 @@ use Psalm\Type\Atomic\TLiteralString;
 
 final class ClassConstantByWildcardResolverTest extends TestCase
 {
-    /**
-     * @var ClassConstantByWildcardResolver
-     */
-    private $resolver;
+    private ClassConstantByWildcardResolver $resolver;
 
     public function setUp(): void
     {
@@ -34,7 +31,7 @@ final class ClassConstantByWildcardResolverTest extends TestCase
                 const PREFIX_BAZ = \'baz\';
                 const PREFIX_QOO = Foo::PREFIX_BAR;
             }
-            '
+            ',
         );
         $this->project_analyzer->getCodebase()->scanFiles();
         $resolved = $this->resolver->resolve('ReconciliationTest\\Foo', '*');
@@ -58,7 +55,7 @@ final class ClassConstantByWildcardResolverTest extends TestCase
                 const BAZ = \'baz\';
                 const QOO = \'qoo\';
             }
-            '
+            ',
         );
         $this->project_analyzer->getCodebase()->scanFiles();
         $resolved = $this->resolver->resolve('ReconciliationTest\\Foo', 'BA*');

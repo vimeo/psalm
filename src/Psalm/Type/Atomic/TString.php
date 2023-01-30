@@ -4,6 +4,7 @@ namespace Psalm\Type\Atomic;
 
 /**
  * Denotes the `string` type, where the exact value is unknown.
+ *
  * @psalm-immutable
  */
 class TString extends Scalar

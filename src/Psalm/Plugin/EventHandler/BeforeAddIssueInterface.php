@@ -15,7 +15,6 @@ interface BeforeAddIssueInterface
      * the handler registered earlier may prevent subsequent handlers from running by
      * returning a boolean value.
      *
-     * @param BeforeAddIssueEvent $event
      * @return null|bool $event How and whether to continue:
      *  + `null` continues with next event handler
      *  + `true` stops event handling & keeps issue

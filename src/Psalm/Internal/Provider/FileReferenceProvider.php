@@ -21,15 +21,11 @@ use function file_exists;
  *
  * Used to determine which files reference other files, necessary for using the --diff
  * option from the command line.
- *
  * @internal
  */
 class FileReferenceProvider
 {
-    /**
-     * @var bool
-     */
-    private $loaded_from_cache = false;
+    private bool $loaded_from_cache = false;
 
     /**
      * A lookup table used for getting all the references to a class not inside a method
@@ -37,141 +33,138 @@ class FileReferenceProvider
      *
      * @var array<string, array<string,bool>>
      */
-    private static $nonmethod_references_to_classes = [];
+    private static array $nonmethod_references_to_classes = [];
 
     /**
      * A lookup table used for getting all the methods that reference a class
      *
      * @var array<string, array<string,bool>>
      */
-    private static $method_references_to_classes = [];
+    private static array $method_references_to_classes = [];
 
     /**
      * A lookup table used for getting all the files that reference a class member
      *
      * @var array<string, array<string,bool>>
      */
-    private static $file_references_to_class_members = [];
+    private static array $file_references_to_class_members = [];
 
     /**
      * A lookup table used for getting all the files that reference a class property
      *
      * @var array<string, array<string,bool>>
      */
-    private static $file_references_to_class_properties = [];
+    private static array $file_references_to_class_properties = [];
 
     /**
      * A lookup table used for getting all the files that reference a method's return value
      *
      * @var array<string, array<string,bool>>
      */
-    private static $file_references_to_method_returns = [];
+    private static array $file_references_to_method_returns = [];
 
     /**
      * A lookup table used for getting all the files that reference a missing class member
      *
      * @var array<string, array<string,bool>>
      */
-    private static $file_references_to_missing_class_members = [];
+    private static array $file_references_to_missing_class_members = [];
 
     /**
      * @var array<string, array<string, true>>
      */
-    private static $files_inheriting_classes = [];
+    private static array $files_inheriting_classes = [];
 
     /**
      * A list of all files deleted since the last successful run
      *
      * @var array<int, string>|null
      */
-    private static $deleted_files;
+    private static ?array $deleted_files = null;
 
     /**
      * A lookup table used for getting all the files referenced by a file
      *
      * @var array<string, array{a:array<int, string>, i:array<int, string>}>
      */
-    private static $file_references = [];
+    private static array $file_references = [];
 
     /**
      * @var array<string, array<string, bool>>
      */
-    private static $method_references_to_class_members = [];
+    private static array $method_references_to_class_members = [];
 
     /**
      * @var array<string, array<string, bool>>
      */
-    private static $method_dependencies = [];
+    private static array $method_dependencies = [];
 
     /**
      * @var array<string, array<string, bool>>
      */
-    private static $method_references_to_class_properties = [];
+    private static array $method_references_to_class_properties = [];
 
     /**
      * @var array<string, array<string, bool>>
      */
-    private static $method_references_to_method_returns = [];
+    private static array $method_references_to_method_returns = [];
 
     /**
      * @var array<string, array<string, bool>>
      */
-    private static $method_references_to_missing_class_members = [];
+    private static array $method_references_to_missing_class_members = [];
 
     /**
      * @var array<string, array<string, bool>>
      */
-    private static $references_to_mixed_member_names = [];
+    private static array $references_to_mixed_member_names = [];
 
     /**
      * @var array<string, array<int, CodeLocation>>
      */
-    private static $class_method_locations = [];
+    private static array $class_method_locations = [];
 
     /**
      * @var array<string, array<int, CodeLocation>>
      */
-    private static $class_property_locations = [];
+    private static array $class_property_locations = [];
 
     /**
      * @var array<string, array<int, CodeLocation>>
      */
-    private static $class_locations = [];
+    private static array $class_locations = [];
 
     /**
      * @var array<string, string>
      */
-    private static $classlike_files = [];
+    private static array $classlike_files = [];
 
     /**
      * @var array<string, array<string, int>>
      */
-    private static $analyzed_methods = [];
+    private static array $analyzed_methods = [];
 
     /**
      * @var array<string, array<int, IssueData>>
      */
-    private static $issues = [];
+    private static array $issues = [];
 
     /**
      * @var array<string, FileMapType>
      */
-    private static $file_maps = [];
+    private static array $file_maps = [];
 
     /**
      * @var array<string, array{int, int}>
      */
-    private static $mixed_counts = [];
+    private static array $mixed_counts = [];
 
     /**
      * @var array<string, array<int, array<string, bool>>>
      */
-    private static $method_param_uses = [];
+    private static array $method_param_uses = [];
 
-    /**
-     * @var ?FileReferenceCacheProvider
-     */
-    public $cache;
+    public ?FileReferenceCacheProvider $cache = null;
 
     public function __construct(?FileReferenceCacheProvider $cache = null)
     {
@@ -211,7 +204,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      */
     public function addNonMethodReferencesToClasses(array $references): void
     {
@@ -219,7 +211,7 @@ class FileReferenceProvider
             if (isset(self::$nonmethod_references_to_classes[$key])) {
                 self::$nonmethod_references_to_classes[$key] = array_merge(
                     $reference,
-                    self::$nonmethod_references_to_classes[$key]
+                    self::$nonmethod_references_to_classes[$key],
                 );
             } else {
                 self::$nonmethod_references_to_classes[$key] = $reference;
@@ -291,7 +283,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      */
     public function addFileReferencesToClassMembers(array $references): void
     {
@@ -299,7 +290,7 @@ class FileReferenceProvider
             if (isset(self::$file_references_to_class_members[$key])) {
                 self::$file_references_to_class_members[$key] = array_merge(
                     $reference,
-                    self::$file_references_to_class_members[$key]
+                    self::$file_references_to_class_members[$key],
                 );
             } else {
                 self::$file_references_to_class_members[$key] = $reference;
@@ -309,7 +300,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      */
     public function addFileReferencesToClassProperties(array $references): void
     {
@@ -317,7 +307,7 @@ class FileReferenceProvider
             if (isset(self::$file_references_to_class_properties[$key])) {
                 self::$file_references_to_class_properties[$key] = array_merge(
                     $reference,
-                    self::$file_references_to_class_properties[$key]
+                    self::$file_references_to_class_properties[$key],
                 );
             } else {
                 self::$file_references_to_class_properties[$key] = $reference;
@@ -327,7 +317,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      */
     public function addFileReferencesToMethodReturns(array $references): void
     {
@@ -335,7 +324,7 @@ class FileReferenceProvider
             if (isset(self::$file_references_to_method_returns[$key])) {
                 self::$file_references_to_method_returns[$key] = array_merge(
                     $reference,
-                    self::$file_references_to_method_returns[$key]
+                    self::$file_references_to_method_returns[$key],
                 );
             } else {
                 self::$file_references_to_method_returns[$key] = $reference;
@@ -345,7 +334,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      */
     public function addFileReferencesToMissingClassMembers(array $references): void
     {
@@ -353,7 +341,7 @@ class FileReferenceProvider
             if (isset(self::$file_references_to_missing_class_members[$key])) {
                 self::$file_references_to_missing_class_members[$key] = array_merge(
                     $reference,
-                    self::$file_references_to_missing_class_members[$key]
+                    self::$file_references_to_missing_class_members[$key],
                 );
             } else {
                 self::$file_references_to_missing_class_members[$key] = $reference;
@@ -420,7 +408,7 @@ class FileReferenceProvider
             if (isset(self::$files_inheriting_classes[$file_class_lc])) {
                 $referenced_files = [
                     ...$referenced_files,
-                    ...array_keys(self::$files_inheriting_classes[$file_class_lc])
+                    ...array_keys(self::$files_inheriting_classes[$file_class_lc]),
                 ];
             }
         }
@@ -685,7 +673,6 @@ class FileReferenceProvider
 
     /**
      * @param  array<string, string|bool>  $visited_files
-     *
      */
     public function updateReferenceCache(Codebase $codebase, array $visited_files): void
     {
@@ -693,15 +680,15 @@ class FileReferenceProvider
             $all_file_references = array_unique(
                 array_merge(
                     self::$file_references[$file]['a'] ?? [],
-                    $this->calculateFilesReferencingFile($codebase, $file)
-                )
+                    $this->calculateFilesReferencingFile($codebase, $file),
+                ),
             );
 
             $inheritance_references = array_unique(
                 array_merge(
                     self::$file_references[$file]['i'] ?? [],
-                    $this->calculateFilesInheritingFile($codebase, $file)
-                )
+                    $this->calculateFilesInheritingFile($codebase, $file),
+                ),
             );
 
             self::$file_references[$file] = [
@@ -856,7 +843,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      */
     public function setNonMethodReferencesToClasses(array $references): void
     {
@@ -913,7 +899,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      */
     public function addMethodReferencesToClassMembers(array $references): void
     {
@@ -921,7 +906,7 @@ class FileReferenceProvider
             if (isset(self::$method_references_to_class_members[$key])) {
                 self::$method_references_to_class_members[$key] = array_merge(
                     $reference,
-                    self::$method_references_to_class_members[$key]
+                    self::$method_references_to_class_members[$key],
                 );
             } else {
                 self::$method_references_to_class_members[$key] = $reference;
@@ -931,7 +916,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      */
     public function addMethodDependencies(array $references): void
     {
@@ -939,7 +923,7 @@ class FileReferenceProvider
             if (isset(self::$method_dependencies[$key])) {
                 self::$method_dependencies[$key] = array_merge(
                     $reference,
-                    self::$method_dependencies[$key]
+                    self::$method_dependencies[$key],
                 );
             } else {
                 self::$method_dependencies[$key] = $reference;
@@ -949,7 +933,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      */
     public function addMethodReferencesToClassProperties(array $references): void
     {
@@ -957,7 +940,7 @@ class FileReferenceProvider
             if (isset(self::$method_references_to_class_properties[$key])) {
                 self::$method_references_to_class_properties[$key] = array_merge(
                     $reference,
-                    self::$method_references_to_class_properties[$key]
+                    self::$method_references_to_class_properties[$key],
                 );
             } else {
                 self::$method_references_to_class_properties[$key] = $reference;
@@ -967,7 +950,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      */
     public function addMethodReferencesToMethodReturns(array $references): void
     {
@@ -975,7 +957,7 @@ class FileReferenceProvider
             if (isset(self::$method_references_to_method_returns[$key])) {
                 self::$method_references_to_method_returns[$key] = array_merge(
                     $reference,
-                    self::$method_references_to_method_returns[$key]
+                    self::$method_references_to_method_returns[$key],
                 );
             } else {
                 self::$method_references_to_method_returns[$key] = $reference;
@@ -985,7 +967,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      */
     public function addMethodReferencesToClasses(array $references): void
     {
@@ -993,7 +974,7 @@ class FileReferenceProvider
             if (isset(self::$method_references_to_classes[$key])) {
                 self::$method_references_to_classes[$key] = array_merge(
                     $reference,
-                    self::$method_references_to_classes[$key]
+                    self::$method_references_to_classes[$key],
                 );
             } else {
                 self::$method_references_to_classes[$key] = $reference;
@@ -1003,7 +984,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      */
     public function addMethodReferencesToMissingClassMembers(array $references): void
     {
@@ -1011,7 +991,7 @@ class FileReferenceProvider
             if (isset(self::$method_references_to_missing_class_members[$key])) {
                 self::$method_references_to_missing_class_members[$key] = array_merge(
                     $reference,
-                    self::$method_references_to_missing_class_members[$key]
+                    self::$method_references_to_missing_class_members[$key],
                 );
             } else {
                 self::$method_references_to_missing_class_members[$key] = $reference;
@@ -1021,7 +1001,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<int, array<string, bool>>> $references
-     *
      */
     public function addMethodParamUses(array $references): void
     {
@@ -1031,7 +1010,7 @@ class FileReferenceProvider
                     if (isset(self::$method_param_uses[$method_id][$offset])) {
                         self::$method_param_uses[$method_id][$offset] = array_merge(
                             self::$method_param_uses[$method_id][$offset],
-                            $reference_map
+                            $reference_map,
                         );
                     } else {
                         self::$method_param_uses[$method_id][$offset] = $reference_map;
@@ -1045,7 +1024,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      */
     public function setCallingMethodReferencesToClasses(array $references): void
     {
@@ -1054,7 +1032,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      */
     public function setCallingMethodReferencesToClassMembers(array $references): void
     {
@@ -1063,7 +1040,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      */
     public function setMethodDependencies(array $references): void
     {
@@ -1072,7 +1048,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      */
     public function setCallingMethodReferencesToClassProperties(array $references): void
     {
@@ -1081,7 +1056,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      */
     public function setCallingMethodReferencesToMethodReturns(array $references): void
     {
@@ -1090,7 +1064,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      */
     public function setCallingMethodReferencesToMissingClassMembers(array $references): void
     {
@@ -1099,7 +1072,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      */
     public function setFileReferencesToClassMembers(array $references): void
     {
@@ -1108,7 +1080,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      */
     public function setFileReferencesToClassProperties(array $references): void
     {
@@ -1117,7 +1088,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      */
     public function setFileReferencesToMethodReturns(array $references): void
     {
@@ -1126,7 +1096,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      */
     public function setFileReferencesToMissingClassMembers(array $references): void
     {
@@ -1135,7 +1104,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<string,bool>> $references
-     *
      */
     public function setReferencesToMixedMemberNames(array $references): void
     {
@@ -1144,7 +1112,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<int, array<string, bool>>> $references
-     *
      */
     public function setMethodParamUses(array $references): void
     {
@@ -1153,7 +1120,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<int, CodeLocation>> $references
-     *
      */
     public function addClassMethodLocations(array $references): void
     {
@@ -1161,7 +1127,7 @@ class FileReferenceProvider
             if (isset(self::$class_method_locations[$referenced_member_id])) {
                 self::$class_method_locations[$referenced_member_id] = [
                     ...self::$class_method_locations[$referenced_member_id],
-                    ...$locations
+                    ...$locations,
                 ];
             } else {
                 self::$class_method_locations[$referenced_member_id] = $locations;
@@ -1171,7 +1137,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<int, CodeLocation>> $references
-     *
      */
     public function addClassPropertyLocations(array $references): void
     {
@@ -1179,7 +1144,7 @@ class FileReferenceProvider
             if (isset(self::$class_property_locations[$referenced_member_id])) {
                 self::$class_property_locations[$referenced_member_id] = [
                     ...self::$class_property_locations[$referenced_member_id],
-                    ...$locations
+                    ...$locations,
                 ];
             } else {
                 self::$class_property_locations[$referenced_member_id] = $locations;
@@ -1189,7 +1154,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<int, CodeLocation>> $references
-     *
      */
     public function addClassLocations(array $references): void
     {
@@ -1197,7 +1161,7 @@ class FileReferenceProvider
             if (isset(self::$class_locations[$referenced_member_id])) {
                 self::$class_locations[$referenced_member_id] = [
                     ...self::$class_locations[$referenced_member_id],
-                    ...$locations
+                    ...$locations,
                 ];
             } else {
                 self::$class_locations[$referenced_member_id] = $locations;
@@ -1239,7 +1203,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array<string, int>> $analyzed_methods
-     *
      */
     public function setAnalyzedMethods(array $analyzed_methods): void
     {
@@ -1264,7 +1227,6 @@ class FileReferenceProvider
 
     /**
      * @param array<string, array{int, int}> $mixed_counts
-     *
      */
     public function setTypeCoverage(array $mixed_counts): void
     {

@@ -15,8 +15,7 @@ use function strpos;
 
 class ClassMoveTest extends TestCase
 {
-    /** @var ProjectAnalyzer */
-    protected $project_analyzer;
+    protected ProjectAnalyzer $project_analyzer;
 
     public function setUp(): void
     {
@@ -27,7 +26,6 @@ class ClassMoveTest extends TestCase
 
     /**
      * @dataProvider providerValidCodeParse
-     *
      * @param array<string, string> $constants_to_move
      */
     public function testValidCode(
@@ -46,8 +44,8 @@ class ClassMoveTest extends TestCase
             $config,
             new Providers(
                 $this->file_provider,
-                new FakeParserCacheProvider()
-            )
+                new FakeParserCacheProvider(),
+            ),
         );
 
         $context = new Context();
@@ -56,7 +54,7 @@ class ClassMoveTest extends TestCase
 
         $this->addFile(
             $file_path,
-            $input_code
+            $input_code,
         );
 
         $codebase = $this->project_analyzer->getCodebase();
@@ -747,6 +745,29 @@ class ClassMoveTest extends TestCase
                     }',
                 'migrations' => [
                     'Foo\Hello' => 'Foo\Bar\Hello',
+                ],
+            ],
+            'renamesAllStaticPropReferences' => [
+                'input' => '<?php
+                    namespace Foo;
+
+                    class Bar {
+                        public static $props = [1, 2, 3];
+                    }
+                    echo Bar::$props[1];
+                    echo Bar::$props[2];
+                ',
+                'output' => '<?php
+                    namespace Zoo;
+
+                    class Baz {
+                        public static $props = [1, 2, 3];
+                    }
+                    echo \Zoo\Baz::$props[1];
+                    echo \Zoo\Baz::$props[2];
+                ',
+                'migrations' => [
+                    'Foo\Bar' => 'Zoo\Baz',
                 ],
             ],
         ];

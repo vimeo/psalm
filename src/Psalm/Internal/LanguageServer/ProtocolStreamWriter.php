@@ -12,10 +12,7 @@ use Amp\Promise;
  */
 class ProtocolStreamWriter implements ProtocolWriter
 {
-    /**
-     * @var ResourceOutputStream
-     */
-    private $output;
+    private ResourceOutputStream $output;
 
     /**
      * @param resource $output

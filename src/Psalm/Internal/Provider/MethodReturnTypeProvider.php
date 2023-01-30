@@ -31,7 +31,7 @@ class MethodReturnTypeProvider
      *   array<Closure(MethodReturnTypeProviderEvent): ?Union>
      * >
      */
-    private static $handlers = [];
+    private static array $handlers = [];
 
     public function __construct()
     {
@@ -74,7 +74,7 @@ class MethodReturnTypeProvider
 
     /**
      * @param PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall $stmt
-     * @param  ?array<Union> $template_type_parameters
+     * @param non-empty-list<Union>|null $template_type_parameters
      */
     public function getReturnType(
         StatementsSource $statements_source,
@@ -97,7 +97,7 @@ class MethodReturnTypeProvider
                 $code_location,
                 $template_type_parameters,
                 $called_fq_classlike_name,
-                $called_method_name ? strtolower($called_method_name) : null
+                $called_method_name ? strtolower($called_method_name) : null,
             );
             $result = $class_handler($event);
 
