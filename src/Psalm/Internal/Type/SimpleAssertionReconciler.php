@@ -74,6 +74,7 @@ use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
+use function array_key_exists;
 use function array_map;
 use function array_merge;
 use function assert;
@@ -2779,14 +2780,16 @@ class SimpleAssertionReconciler extends Reconciler
             ) {
                 unset($types['array']);
                 $types [] = new TNonEmptyArray($array_atomic_type->type_params);
-            } elseif ($array_atomic_type instanceof TKeyedArray
-                && $array_atomic_type->is_list
-                && $array_atomic_type->properties[0]->possibly_undefined
-            ) {
-                unset($types['array']);
-                $properties = $array_atomic_type->properties;
-                $properties[0] = $properties[0]->setPossiblyUndefined(false);
-                $types [] = $array_atomic_type->setProperties($properties);
+            } elseif ($array_atomic_type instanceof TKeyedArray) {
+                if ($array_atomic_type->is_list
+                    && array_key_exists(0, $array_atomic_type->properties)
+                    && $array_atomic_type->properties[0]->possibly_undefined
+                ) {
+                    unset($types['array']);
+                    $properties = $array_atomic_type->properties;
+                    $properties[0] = $properties[0]->setPossiblyUndefined(false);
+                    $types [] = $array_atomic_type->setProperties($properties);
+                }
             }
         }
 
