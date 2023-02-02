@@ -2110,6 +2110,193 @@ class AssertAnnotationTest extends TestCase
                     consumeAOrB($abc);
                 ',
             ],
+            'assertIfTrueFalseCompareTrue' => [
+                'code' => '<?php
+                    /**
+                     *
+                     * @param array<string, string|int|float>|list<string> $arg
+                     * @return bool
+                     *
+                     * @psalm-assert-if-false array<string, string|int|float> $arg
+                     * @psalm-assert-if-true list<string> $arg
+                     */
+                    function is_array_or_list($arg) {
+                        // should be array_is_list($arg), but tests run in non-PHP 8 environment
+                        if (array_values($arg) === $arg) {
+                            return true;
+                        }
+
+                        return false;
+                    }
+
+                    /**
+                     * @param list<string> $arg
+                     * @return void
+                     */
+                    function taskesAList($arg) {}
+
+                    /**
+                     * @param array<string, string|int|float> $arg
+                     * @return void
+                     */
+                    function taskesAnArray($arg) {}
+
+                    /**
+                     * @var array<string, string|int|float>|list<string> $foo
+                     */
+                    $foo;
+
+                    if (is_array_or_list($foo) === true) {
+                        taskesAList($foo);
+                    } else {
+                        taskesAnArray($foo);
+                    }',
+            ],
+            'assertIfTrueFalseCompareNotTrue' => [
+                'code' => '<?php
+                    /**
+                     *
+                     * @param array<string, string|int|float>|list<string> $arg
+                     * @return bool
+                     *
+                     * @psalm-assert-if-false array<string, string|int|float> $arg
+                     * @psalm-assert-if-true list<string> $arg
+                     */
+                    function is_array_or_list($arg) {
+                        if (array_values($arg) === $arg) {
+                            return true;
+                        }
+
+                        return false;
+                    }
+
+                    /**
+                     * @param list<string> $arg
+                     * @return void
+                     */
+                    function taskesAList($arg) {}
+
+                    /**
+                     * @param array<string, string|int|float> $arg
+                     * @return void
+                     */
+                    function taskesAnArray($arg) {}
+
+                    /**
+                     * @var array<string, string|int|float>|list<string> $foo
+                     */
+                    $foo;
+
+                    if (is_array_or_list($foo) !== true) {
+                        taskesAnArray($foo);
+                    } else {
+                        taskesAList($foo);
+                    }',
+            ],
+            'assertIfTrueFalseCompareFalse' => [
+                'code' => '<?php
+                    /**
+                     *
+                     * @param array<string, string|int|float>|list<string> $arg
+                     * @return bool
+                     *
+                     * @psalm-assert-if-false array<string, string|int|float> $arg
+                     * @psalm-assert-if-true list<string> $arg
+                     */
+                    function is_array_or_list($arg) {
+                        if (array_values($arg) === $arg) {
+                            return true;
+                        }
+
+                        return false;
+                    }
+
+                    /**
+                     * @param list<string> $arg
+                     * @return void
+                     */
+                    function taskesAList($arg) {}
+
+                    /**
+                     * @param array<string, string|int|float> $arg
+                     * @return void
+                     */
+                    function taskesAnArray($arg) {}
+
+                    /**
+                     * @var array<string, string|int|float>|list<string> $foo
+                     */
+                    $foo;
+
+                    if (is_array_or_list($foo) !== true) {
+                        taskesAnArray($foo);
+                    } else {
+                        taskesAList($foo);
+                    }',
+            ],
+            'assertIfTrueFalseCompareNotFalse' => [
+                'code' => '<?php
+                    /**
+                     *
+                     * @param array<string, string|int|float>|list<string> $arg
+                     * @return bool
+                     *
+                     * @psalm-assert-if-false array<string, string|int|float> $arg
+                     * @psalm-assert-if-true list<string> $arg
+                     */
+                    function is_array_or_list($arg) {
+                        if (array_values($arg) === $arg) {
+                            return true;
+                        }
+
+                        return false;
+                    }
+
+                    /**
+                     * @param list<string> $arg
+                     * @return void
+                     */
+                    function taskesAList($arg) {}
+
+                    /**
+                     * @param array<string, string|int|float> $arg
+                     * @return void
+                     */
+                    function taskesAnArray($arg) {}
+
+                    /**
+                     * @var array<string, string|int|float>|list<string> $foo
+                     */
+                    $foo;
+
+                    if (is_array_or_list($foo) !== false) {
+                        taskesAList($foo);
+                    } else {
+                        taskesAnArray($foo);
+                    }',
+            ],
+            'assertDocblockTypeContradictionCorrectType' => [
+                'code' => '<?php
+                    /**
+                     * @return void
+                     */
+                    function takesAnInt(int $i) {}
+
+                    /**
+                     * @return void
+                     */
+                    function takesAFloat(float $i) {}
+
+                    $foo = rand() / 2;
+
+                    /** @psalm-suppress TypeDoesNotContainType */
+                    if (is_int($foo) || !is_float($foo)) {
+                        takesAnInt($foo);
+                        exit;
+                    }
+
+                    takesAFloat($foo);',
+            ],
         ];
     }
 
