@@ -419,63 +419,63 @@ class EmptyTest extends TestCase
                     /** @return non-empty-string */
                     function nonEmptyString(string $str): string {
                         return strlen($str) > 0 ? $str : "string";
-                    }'
+                    }',
             ],
             'strlenRighthandWithGreaterZero' => [
                 'code' => '<?php
                     /** @return non-empty-string */
                     function nonEmptyString(string $str): string {
                         return 0 < strlen($str) ? $str : "string";
-                    }'
+                    }',
             ],
             'strlenWithGreaterEqualsOne' => [
                 'code' => '<?php
                     /** @return non-empty-string */
                     function nonEmptyString(string $str): string {
                         return strlen($str) >= 1 ? $str : "string";
-                    }'
+                    }',
             ],
             'strlenRighthandWithGreaterEqualsOne' => [
                 'code' => '<?php
                     /** @return non-empty-string */
                     function nonEmptyString(string $str): string {
                         return 1 <= strlen($str) ? $str : "string";
-                    }'
+                    }',
             ],
             'strlenWithInequalZero' => [
                 'code' => '<?php
                     /** @return non-empty-string */
                     function nonEmptyString(string $str): string {
                         return strlen($str) !== 0 ? $str : "string";
-                    }'
+                    }',
             ],
             'strlenRighthandWithInequalZero' => [
                 'code' => '<?php
                     /** @return non-empty-string */
                     function nonEmptyString(string $str): string {
                         return 0 !== strlen($str) ? $str : "string";
-                    }'
+                    }',
             ],
             'strlenWithEqualOne' => [
                 'code' => '<?php
                     /** @return non-empty-string */
                     function nonEmptyString(string $str): string {
                         return strlen($str) === 1 ? $str : "string";
-                    }'
+                    }',
             ],
             'strlenRighthandWithEqualOne' => [
                 'code' => '<?php
                     /** @return non-empty-string */
                     function nonEmptyString(string $str): string {
                         return 1 === strlen($str) ? $str : "string";
-                    }'
+                    }',
             ],
             'mb_strlen' => [
                 'code' => '<?php
                     /** @return non-empty-string */
                     function nonEmptyString(string $str): string {
                         return mb_strlen($str) === 1 ? $str : "string";
-                    }'
+                    }',
             ],
             'SKIPPED-countWithLiteralIntVariable' => [ // #8163
                 'code' => '<?php
@@ -564,7 +564,7 @@ class EmptyTest extends TestCase
                     function nonEmptyString(string $str): string {
                         return strlen($str) > -1 ? $str : "string";
                     }',
-                'error_message' => 'LessSpecificReturnStatement'
+                'error_message' => 'LessSpecificReturnStatement',
             ],
             'preventRighthandStrlenGreaterMinusOne' => [
                 'code' => '<?php
@@ -572,7 +572,7 @@ class EmptyTest extends TestCase
                     function nonEmptyString(string $str): string {
                         return -1 < strlen($str) ? $str : "string";
                     }',
-                'error_message' => 'LessSpecificReturnStatement'
+                'error_message' => 'LessSpecificReturnStatement',
             ],
             'preventStrlenGreaterEqualsZero' => [
                 'code' => '<?php
@@ -580,7 +580,7 @@ class EmptyTest extends TestCase
                     function nonEmptyString(string $str): string {
                         return strlen($str) >= 0 ? $str : "string";
                     }',
-                'error_message' => 'LessSpecificReturnStatement'
+                'error_message' => 'LessSpecificReturnStatement',
             ],
             'preventStrlenEqualsZero' => [
                 'code' => '<?php
@@ -588,7 +588,7 @@ class EmptyTest extends TestCase
                     function nonEmptyString(string $str): string {
                         return strlen($str) === 0 ? $str : "string";
                     }',
-                'error_message' => 'InvalidReturnStatement'
+                'error_message' => 'InvalidReturnStatement',
             ],
             'preventStrlenLessThanOne' => [
                 'code' => '<?php
@@ -596,7 +596,7 @@ class EmptyTest extends TestCase
                     function nonEmptyString(string $str): string {
                         return strlen($str) < 1 ? $str : "string";
                     }',
-                'error_message' => 'InvalidReturnStatement'
+                'error_message' => 'InvalidReturnStatement',
             ],
             'preventStrlenLessEqualsZero' => [
                 'code' => '<?php
@@ -604,7 +604,7 @@ class EmptyTest extends TestCase
                     function nonEmptyString(string $str): string {
                         return strlen($str) <= 0 ? $str : "string";
                     }',
-                'error_message' => 'InvalidReturnStatement'
+                'error_message' => 'InvalidReturnStatement',
             ],
             'preventStrlenWithConcatenatedString' => [
                 'code' => '<?php
@@ -612,7 +612,7 @@ class EmptyTest extends TestCase
                     function nonEmptyString(string $str): string {
                         return strlen("a" . $str . "b") > 2 ? $str : "string";
                     }',
-                'error_message' => 'LessSpecificReturnStatement'
+                'error_message' => 'LessSpecificReturnStatement',
             ],
         ];
     }

@@ -518,7 +518,7 @@ class AssertionFinder
             $var_name = ExpressionIdentifier::getExtendedVarId(
                 $strlen_expr->getArgs()[0]->value,
                 $this_class_name,
-                $source
+                $source,
             );
 
             if ($source instanceof StatementsAnalyzer) {
@@ -536,7 +536,7 @@ class AssertionFinder
                         $this_class_name,
                         $other_type,
                         $codebase,
-                        $conditional
+                        $conditional,
                     );
                 }
             }
@@ -794,7 +794,7 @@ class AssertionFinder
             $var_name = ExpressionIdentifier::getExtendedVarId(
                 $strlen_expr->getArgs()[0]->value,
                 $this_class_name,
-                $source
+                $source,
             );
 
             if ($source instanceof StatementsAnalyzer) {
@@ -812,7 +812,7 @@ class AssertionFinder
                         $this_class_name,
                         $other_type,
                         $codebase,
-                        $conditional
+                        $conditional,
                     );
                 }
             }
@@ -4048,7 +4048,7 @@ class AssertionFinder
             $var_name = ExpressionIdentifier::getExtendedVarId(
                 $strlened_expr->getArgs()[0]->value,
                 $this_class_name,
-                $source
+                $source,
             );
 
             if ($var_name) {
@@ -4223,7 +4223,7 @@ class AssertionFinder
             $var_name = ExpressionIdentifier::getExtendedVarId(
                 $strlen_expr->getArgs()[0]->value,
                 $this_class_name,
-                $source
+                $source,
             );
 
             if ($var_name) {
@@ -4251,7 +4251,7 @@ class AssertionFinder
             $var_name = ExpressionIdentifier::getExtendedVarId(
                 $strlen_expr->getArgs()[0]->value,
                 $this_class_name,
-                $source
+                $source,
             );
 
             if ($var_name) {

@@ -39,7 +39,7 @@ trait ValidCodeAnalysisTestTrait
     public function testValidCode(
         string $code,
         array $assertions = [],
-        $ignored_issues = [],
+        array $ignored_issues = [],
         string $php_version = '7.3'
     ): void {
         $test_name = $this->getTestName();

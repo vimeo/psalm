@@ -14,7 +14,7 @@ class CliUtilsTest extends TestCase
     /**
      * @var list<string>
      */
-    private $argv = [];
+    private array $argv = [];
 
     protected function setUp(): void
     {
@@ -68,7 +68,7 @@ class CliUtilsTest extends TestCase
         $dummyProjectDir = (string)realpath(
             __DIR__
             . DIRECTORY_SEPARATOR . '..'
-            . DIRECTORY_SEPARATOR. 'fixtures'
+            . DIRECTORY_SEPARATOR . 'fixtures'
             . DIRECTORY_SEPARATOR . 'DummyProject',
         );
         $currentDir = (string)realpath('.');
