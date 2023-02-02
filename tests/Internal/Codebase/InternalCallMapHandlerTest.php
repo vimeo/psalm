@@ -841,12 +841,6 @@ class InternalCallMapHandlerTest extends TestCase
         'xmlreader::next',
         'xmlreader::open',
         'xmlreader::xml',
-        'xmlrpc_encode_request',
-        'xmlrpc_server_add_introspection_data',
-        'xmlrpc_server_call_method',
-        'xmlrpc_server_destroy',
-        'xmlrpc_server_register_introspection_callback',
-        'xmlrpc_server_register_method',
         'xsltprocessor::registerphpfunctions',
         'xsltprocessor::transformtodoc',
         'yaml_emit',
@@ -915,8 +909,6 @@ class InternalCallMapHandlerTest extends TestCase
         'register_shutdown_function' => ['8.0', '8.1'],
         'splfileobject::fscanf' => ['8.1', '8.2'],
         'spltempfileobject::fscanf' => ['8.1', '8.2'],
-        'xmlrpc_encode',
-        'xmlrpc_server_create',
         'xsltprocessor::transformtoxml' => ['8.1', '8.2'],
     ];
 
