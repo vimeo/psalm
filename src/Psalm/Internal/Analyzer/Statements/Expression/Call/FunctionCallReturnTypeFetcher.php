@@ -658,7 +658,7 @@ class FunctionCallReturnTypeFetcher
                 $stmt->getArgs(),
                 $node_location,
                 $function_call_node,
-                $removed_taints,
+                array_merge($removed_taints, $conditionally_removed_taints),
                 $added_taints,
             );
         }

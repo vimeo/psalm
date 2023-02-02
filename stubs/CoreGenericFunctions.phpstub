@@ -813,20 +813,82 @@ function array_sum(array $array) {}
 function array_product(array $array) {}
 
 /**
+ * @psalm-pure
+ *
  * 257 is FILTER_VALIDATE_INT
+ * @psalm-taint-escape ($filter is 257 ? 'callable' : null)
+ * @psalm-taint-escape ($filter is 257 ? 'unserialize' : null)
+ * @psalm-taint-escape ($filter is 257 ? 'include' : null)
+ * @psalm-taint-escape ($filter is 257 ? 'eval' : null)
+ * @psalm-taint-escape ($filter is 257 ? 'ldap' : null)
+ * @psalm-taint-escape ($filter is 257 ? 'sql' : null)
  * @psalm-taint-escape ($filter is 257 ? 'html' : null)
+ * @psalm-taint-escape ($filter is 257 ? 'has_quotes' : null)
+ * @psalm-taint-escape ($filter is 257 ? 'shell' : null)
+ * @psalm-taint-escape ($filter is 257 ? 'ssrf' : null)
+ * @psalm-taint-escape ($filter is 257 ? 'file' : null)
+ * @psalm-taint-escape ($filter is 257 ? 'cookie' : null)
+ * @psalm-taint-escape ($filter is 257 ? 'header' : null)
  *
  * 258 is FILTER_VALIDATE_BOOLEAN
+ * @psalm-taint-escape ($filter is 258 ? 'callable' : null)
+ * @psalm-taint-escape ($filter is 258 ? 'unserialize' : null)
+ * @psalm-taint-escape ($filter is 258 ? 'include' : null)
+ * @psalm-taint-escape ($filter is 258 ? 'eval' : null)
+ * @psalm-taint-escape ($filter is 258 ? 'ldap' : null)
+ * @psalm-taint-escape ($filter is 258 ? 'sql' : null)
  * @psalm-taint-escape ($filter is 258 ? 'html' : null)
+ * @psalm-taint-escape ($filter is 258 ? 'has_quotes' : null)
+ * @psalm-taint-escape ($filter is 258 ? 'shell' : null)
+ * @psalm-taint-escape ($filter is 258 ? 'ssrf' : null)
+ * @psalm-taint-escape ($filter is 258 ? 'file' : null)
+ * @psalm-taint-escape ($filter is 258 ? 'cookie' : null)
+ * @psalm-taint-escape ($filter is 258 ? 'header' : null)
  *
  * 259 is FILTER_VALIDATE_FLOAT
+ * @psalm-taint-escape ($filter is 259 ? 'callable' : null)
+ * @psalm-taint-escape ($filter is 259 ? 'unserialize' : null)
+ * @psalm-taint-escape ($filter is 259 ? 'include' : null)
+ * @psalm-taint-escape ($filter is 259 ? 'eval' : null)
+ * @psalm-taint-escape ($filter is 259 ? 'ldap' : null)
+ * @psalm-taint-escape ($filter is 259 ? 'sql' : null)
  * @psalm-taint-escape ($filter is 259 ? 'html' : null)
+ * @psalm-taint-escape ($filter is 259 ? 'has_quotes' : null)
+ * @psalm-taint-escape ($filter is 259 ? 'shell' : null)
+ * @psalm-taint-escape ($filter is 259 ? 'ssrf' : null)
+ * @psalm-taint-escape ($filter is 259 ? 'file' : null)
+ * @psalm-taint-escape ($filter is 259 ? 'cookie' : null)
+ * @psalm-taint-escape ($filter is 259 ? 'header' : null)
  *
  * 519 is FILTER_SANITIZE_NUMBER_INT
+ * @psalm-taint-escape ($filter is 519 ? 'callable' : null)
+ * @psalm-taint-escape ($filter is 519 ? 'unserialize' : null)
+ * @psalm-taint-escape ($filter is 519 ? 'include' : null)
+ * @psalm-taint-escape ($filter is 519 ? 'eval' : null)
+ * @psalm-taint-escape ($filter is 519 ? 'ldap' : null)
+ * @psalm-taint-escape ($filter is 519 ? 'sql' : null)
  * @psalm-taint-escape ($filter is 519 ? 'html' : null)
+ * @psalm-taint-escape ($filter is 519 ? 'has_quotes' : null)
+ * @psalm-taint-escape ($filter is 519 ? 'shell' : null)
+ * @psalm-taint-escape ($filter is 519 ? 'ssrf' : null)
+ * @psalm-taint-escape ($filter is 519 ? 'file' : null)
+ * @psalm-taint-escape ($filter is 519 ? 'cookie' : null)
+ * @psalm-taint-escape ($filter is 519 ? 'header' : null)
  *
  * 520 is FILTER_SANITIZE_NUMBER_FLOAT
+ * @psalm-taint-escape ($filter is 520 ? 'callable' : null)
+ * @psalm-taint-escape ($filter is 520 ? 'unserialize' : null)
+ * @psalm-taint-escape ($filter is 520 ? 'include' : null)
+ * @psalm-taint-escape ($filter is 520 ? 'eval' : null)
+ * @psalm-taint-escape ($filter is 520 ? 'ldap' : null)
+ * @psalm-taint-escape ($filter is 520 ? 'sql' : null)
  * @psalm-taint-escape ($filter is 520 ? 'html' : null)
+ * @psalm-taint-escape ($filter is 520 ? 'has_quotes' : null)
+ * @psalm-taint-escape ($filter is 520 ? 'shell' : null)
+ * @psalm-taint-escape ($filter is 520 ? 'ssrf' : null)
+ * @psalm-taint-escape ($filter is 520 ? 'file' : null)
+ * @psalm-taint-escape ($filter is 520 ? 'cookie' : null)
+ * @psalm-taint-escape ($filter is 520 ? 'header' : null)
  *
  * @psalm-flow ($value, $filter, $options) -> return
  */
