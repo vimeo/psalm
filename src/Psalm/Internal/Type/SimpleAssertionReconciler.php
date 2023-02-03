@@ -248,6 +248,18 @@ class SimpleAssertionReconciler extends Reconciler
             );
         }
 
+        if ($assertion instanceof Assertion\NonEmptyString) {
+            return self::reconcileNonEmptyString(
+                $assertion,
+                $existing_var_type,
+                $key,
+                $negated,
+                $code_location,
+                $suppressed_issues,
+                $is_equality,
+            );
+        }
+
         if ($assertion instanceof HasAtLeastCount) {
             return self::reconcileNonEmptyCountable(
                 $assertion,
@@ -260,8 +272,32 @@ class SimpleAssertionReconciler extends Reconciler
             );
         }
 
+        if ($assertion instanceof Assertion\HasAtLeastStrlen) {
+            return self::reconcileNonEmptyString(
+                $assertion,
+                $existing_var_type,
+                $key,
+                $negated,
+                $code_location,
+                $suppressed_issues,
+                $is_equality,
+            );
+        }
+
         if ($assertion instanceof HasExactCount) {
             return self::reconcileExactlyCountable(
+                $existing_var_type,
+                $assertion,
+                $key,
+                $negated,
+                $code_location,
+                $suppressed_issues,
+                $is_equality,
+            );
+        }
+
+        if ($assertion instanceof Assertion\HasExactStrlen) {
+            return self::reconcileExactlyStrlen(
                 $existing_var_type,
                 $assertion,
                 $key,
@@ -735,6 +771,50 @@ class SimpleAssertionReconciler extends Reconciler
     }
 
     /**
+     * @param Assertion\NonEmptyString|Assertion\HasAtLeastStrlen $assertion
+     * @param   string[]  $suppressed_issues
+     */
+    private static function reconcileNonEmptyString(
+        Assertion $assertion,
+        Union $existing_var_type,
+        ?string $key,
+        bool $negated,
+        ?CodeLocation $code_location,
+        array $suppressed_issues,
+        bool $is_equality
+    ): Union {
+        $old_var_type_string = $existing_var_type->getId();
+        $existing_var_type = $existing_var_type->getBuilder();
+
+        if ($existing_var_type->hasType('string')) {
+            $existing_var_type->removeType('string');
+            $existing_var_type->addType(
+                new TNonEmptyString(),
+            );
+
+            if (!$is_equality
+                && !$existing_var_type->hasMixed()
+                && ($existing_var_type->isUnionEmpty())
+            ) {
+                if ($key && $code_location) {
+                    self::triggerIssueForImpossible(
+                        $existing_var_type,
+                        $old_var_type_string,
+                        $key,
+                        $assertion,
+                        false,
+                        $negated,
+                        $code_location,
+                        $suppressed_issues,
+                    );
+                }
+            }
+        }
+
+        return $existing_var_type->freeze();
+    }
+
+    /**
      * @param array<string> $suppressed_issues
      */
     private static function reconcileExactlyCountable(
@@ -842,6 +922,49 @@ class SimpleAssertionReconciler extends Reconciler
                         $key,
                         $assertion,
                         $redundant,
+                        $negated,
+                        $code_location,
+                        $suppressed_issues,
+                    );
+                }
+            }
+        }
+
+        return $existing_var_type->freeze();
+    }
+
+    /**
+     * @param array<string> $suppressed_issues
+     */
+    private static function reconcileExactlyStrlen(
+        Union $existing_var_type,
+        Assertion\HasExactStrlen $assertion,
+        ?string $key,
+        bool $negated,
+        ?CodeLocation $code_location,
+        array $suppressed_issues,
+        bool $is_equality
+    ): Union {
+        $existing_var_type = $existing_var_type->getBuilder();
+        if ($existing_var_type->hasType('string')) {
+            $old_var_type_string = $existing_var_type->getId();
+
+            $existing_var_type->removeType('string');
+            $existing_var_type->addType(
+                new TNonEmptyString(),
+            );
+
+            if (!$is_equality
+                && !$existing_var_type->hasMixed()
+                && ($existing_var_type->isUnionEmpty())
+            ) {
+                if ($key && $code_location) {
+                    self::triggerIssueForImpossible(
+                        $existing_var_type,
+                        $old_var_type_string,
+                        $key,
+                        $assertion,
+                        false,
                         $negated,
                         $code_location,
                         $suppressed_issues,

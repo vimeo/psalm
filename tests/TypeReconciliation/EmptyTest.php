@@ -614,6 +614,20 @@ class EmptyTest extends TestCase
                     }',
                 'error_message' => 'LessSpecificReturnStatement'
             ],
+
+
+            'strlen trace' => [
+                'code' => '<?php
+                    function nonEmptyString(string $str): string {
+                        /** @psalm-trace $str */
+                        if (strlen($str) === 2) {
+                            return $str;
+                        }
+
+                        return "string";
+                    }',
+                'error_message' => ' - $str: string',
+            ],
         ];
     }
 }

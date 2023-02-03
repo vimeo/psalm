@@ -452,104 +452,26 @@ class AssertionFinder
         $strlen_equality_position = self::hasStrlenEqualityCheck($conditional, $strlen);
 
         if ($count_equality_position) {
-            $if_types = [];
-
-            if ($count_equality_position === self::ASSIGNMENT_TO_RIGHT) {
-                $count_expr = $conditional->left;
-            } elseif ($count_equality_position === self::ASSIGNMENT_TO_LEFT) {
-                $count_expr = $conditional->right;
-            } else {
-                throw new UnexpectedValueException('$count_equality_position value');
-            }
-
-            /** @var PhpParser\Node\Expr\FuncCall $count_expr */
-            $var_name = ExpressionIdentifier::getExtendedVarId(
-                $count_expr->getArgs()[0]->value,
+            return self::handleCountStrlenEqualityCheck(
+                'count',
+                $count_equality_position,
+                $conditional,
                 $this_class_name,
                 $source,
+                $codebase,
+                $count,
             );
-
-            if ($source instanceof StatementsAnalyzer) {
-                $var_type = $source->node_data->getType($conditional->left);
-                $other_type = $source->node_data->getType($conditional->right);
-
-                if ($codebase
-                    && $other_type
-                    && $var_type
-                    && $conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
-                ) {
-                    self::handleParadoxicalAssertions(
-                        $source,
-                        $var_type,
-                        $this_class_name,
-                        $other_type,
-                        $codebase,
-                        $conditional,
-                    );
-                }
-            }
-
-            if ($var_name) {
-                if ($count > 0) {
-                    $if_types[$var_name] = [[new HasExactCount($count)]];
-                } else {
-                    $if_types[$var_name] = [[new NotNonEmptyCountable()]];
-                }
-            }
-
-            return $if_types ? [$if_types] : [];
         }
-
         if ($strlen_equality_position) {
-            $if_types = [];
-
-            if ($strlen_equality_position === self::ASSIGNMENT_TO_RIGHT) {
-                $strlen_expr = $conditional->left;
-            } elseif ($strlen_equality_position === self::ASSIGNMENT_TO_LEFT) {
-                $strlen_expr = $conditional->right;
-            } else {
-                throw new UnexpectedValueException('$strlen_equality_position value');
-            }
-
-            /** @var PhpParser\Node\Expr\FuncCall $strlen_expr */
-            if (!isset($strlen_expr->getArgs()[0])) {
-                return [];
-            }
-            $var_name = ExpressionIdentifier::getExtendedVarId(
-                $strlen_expr->getArgs()[0]->value,
+            return self::handleCountStrlenEqualityCheck(
+                'strlen',
+                $strlen_equality_position,
+                $conditional,
                 $this_class_name,
-                $source
+                $source,
+                $codebase,
+                $strlen,
             );
-
-            if ($source instanceof StatementsAnalyzer) {
-                $var_type = $source->node_data->getType($conditional->left);
-                $other_type = $source->node_data->getType($conditional->right);
-
-                if ($codebase
-                    && $other_type
-                    && $var_type
-                    && $conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
-                ) {
-                    self::handleParadoxicalAssertions(
-                        $source,
-                        $var_type,
-                        $this_class_name,
-                        $other_type,
-                        $codebase,
-                        $conditional
-                    );
-                }
-            }
-
-            if ($var_name) {
-                if ($strlen > 0) {
-                    $if_types[$var_name] = [[new Assertion\NonEmpty()]];
-                } else {
-                    $if_types[$var_name] = [[new Empty_()]];
-                }
-            }
-
-            return $if_types ? [$if_types] : [];
         }
 
         if (!$source instanceof StatementsAnalyzer) {
@@ -728,104 +650,26 @@ class AssertionFinder
         $strlen_inequality_position = self::hasStrlenEqualityCheck($conditional, $strlen);
 
         if ($count_inequality_position) {
-            $if_types = [];
-
-            if ($count_inequality_position === self::ASSIGNMENT_TO_RIGHT) {
-                $count_expr = $conditional->left;
-            } elseif ($count_inequality_position === self::ASSIGNMENT_TO_LEFT) {
-                $count_expr = $conditional->right;
-            } else {
-                throw new UnexpectedValueException('$count_inequality_position value');
-            }
-
-            /** @var PhpParser\Node\Expr\FuncCall $count_expr */
-            $var_name = ExpressionIdentifier::getExtendedVarId(
-                $count_expr->getArgs()[0]->value,
+            return self::handleCountStrlenInequalityCheck(
+                'count',
+                $count_inequality_position,
+                $conditional,
                 $this_class_name,
                 $source,
+                $codebase,
+                $count,
             );
-
-            if ($source instanceof StatementsAnalyzer) {
-                $var_type = $source->node_data->getType($conditional->left);
-                $other_type = $source->node_data->getType($conditional->right);
-
-                if ($codebase
-                    && $other_type
-                    && $var_type
-                    && $conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical
-                ) {
-                    self::handleParadoxicalAssertions(
-                        $source,
-                        $var_type,
-                        $this_class_name,
-                        $other_type,
-                        $codebase,
-                        $conditional,
-                    );
-                }
-            }
-
-            if ($var_name) {
-                if ($count > 0) {
-                    $if_types[$var_name] = [[new DoesNotHaveExactCount($count)]];
-                } else {
-                    $if_types[$var_name] = [[new NonEmptyCountable(true)]];
-                }
-            }
-
-            return $if_types ? [$if_types] : [];
         }
-
         if ($strlen_inequality_position) {
-            $if_types = [];
-
-            if ($strlen_inequality_position === self::ASSIGNMENT_TO_RIGHT) {
-                $strlen_expr = $conditional->left;
-            } elseif ($strlen_inequality_position === self::ASSIGNMENT_TO_LEFT) {
-                $strlen_expr = $conditional->right;
-            } else {
-                throw new UnexpectedValueException('$strlen_inequality_position value');
-            }
-
-            /** @var PhpParser\Node\Expr\FuncCall $strlen_expr */
-            if (!isset($strlen_expr->getArgs()[0])) {
-                return [];
-            }
-            $var_name = ExpressionIdentifier::getExtendedVarId(
-                $strlen_expr->getArgs()[0]->value,
+            return self::handleCountStrlenInequalityCheck(
+                'strlen',
+                $strlen_inequality_position,
+                $conditional,
                 $this_class_name,
-                $source
+                $source,
+                $codebase,
+                $strlen,
             );
-
-            if ($source instanceof StatementsAnalyzer) {
-                $var_type = $source->node_data->getType($conditional->left);
-                $other_type = $source->node_data->getType($conditional->right);
-
-                if ($codebase
-                    && $other_type
-                    && $var_type
-                    && $conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical
-                ) {
-                    self::handleParadoxicalAssertions(
-                        $source,
-                        $var_type,
-                        $this_class_name,
-                        $other_type,
-                        $codebase,
-                        $conditional
-                    );
-                }
-            }
-
-            if ($var_name) {
-                if ($strlen > 0) {
-                    $if_types[$var_name] = [[new Assertion\Empty_()]];
-                } else {
-                    $if_types[$var_name] = [[new Assertion\NonEmpty()]];
-                }
-            }
-
-            return $if_types ? [$if_types] : [];
         }
 
         if (!$source instanceof StatementsAnalyzer) {
@@ -1660,9 +1504,9 @@ class AssertionFinder
      */
     protected static function hasNonEmptyStrlenEqualityCheck(
         PhpParser\Node\Expr\BinaryOp $conditional,
-        ?int &$min_count
+        ?int &$min_strlen
     ) {
-        return self::hasNonEmptyCountOrStrlenEqualityCheck($conditional, $min_count, ['strlen', 'mb_strlen']);
+        return self::hasNonEmptyCountOrStrlenEqualityCheck($conditional, $min_strlen, ['strlen', 'mb_strlen']);
     }
 
     /**
@@ -1959,14 +1803,127 @@ class AssertionFinder
         return false;
     }
 
-    /**
-     * @param PhpParser\Node\Expr\BinaryOp\Greater|PhpParser\Node\Expr\BinaryOp\GreaterOrEqual $conditional
-     * @return false|int
-     */
-    protected static function hasReconcilableNonEmptyCountEqualityCheck(
-        PhpParser\Node\Expr\BinaryOp $conditional
-    ) {
-        return self::hasReconcilableNonEmptyCountOrStrlenEqualityCheck($conditional, ['count']);
+    public static function handleCountStrlenInequalityGreaterCheck(
+        string                                     $type,
+        int                                        $count_inequality_position,
+        PhpParser\Node\Expr|GreaterOrEqual|Greater $conditional,
+        ?string                                    $this_class_name,
+        FileSource                                 $source,
+        int                                        $max_operand,
+        array                                      $if_types,
+    ): array {
+        if ($count_inequality_position === self::ASSIGNMENT_TO_LEFT) {
+            $expr = $conditional->right;
+        } else {
+            throw new UnexpectedValueException(sprintf('$%s_inequality_position value', $type));
+        }
+
+        /** @var PhpParser\Node\Expr\FuncCall $expr */
+        $var_name = ExpressionIdentifier::getExtendedVarId(
+            $expr->getArgs()[0]->value,
+            $this_class_name,
+            $source,
+        );
+
+        if ($var_name) {
+            if ($type === 'count') {
+                $doesNotHaveAtLeastClass = DoesNotHaveAtLeastCount::class;
+                $notNonEmptyClass = NotNonEmptyCountable::class;
+            } else {
+                $doesNotHaveAtLeastClass = Assertion\DoesNotHaveAtLeastStrlen::class;
+                $notNonEmptyClass = Assertion\NotNonEmptyString::class;
+            }
+
+            if ($max_operand > 0) {
+                $if_types[$var_name] = [[new $doesNotHaveAtLeastClass($max_operand + 1)]];
+            } else {
+                $if_types[$var_name] = [[new $notNonEmptyClass()]];
+            }
+        }
+
+        return $if_types ? [$if_types] : [];
+    }
+
+    public static function handleCountStrlenEqualitySmallerCheck(
+        string                                     $type,
+        int                                        $equality_position,
+        PhpParser\Node\Expr|Smaller|SmallerOrEqual $conditional,
+        ?string                                    $this_class_name,
+        FileSource                                 $source,
+        int                                        $min_operand,
+        array                                      $if_types,
+    ): array {
+        if ($equality_position === self::ASSIGNMENT_TO_LEFT) {
+            $expr = $conditional->right;
+        } else {
+            throw new UnexpectedValueException(sprintf('$%s_equality_position value', $type));
+        }
+
+        /** @var PhpParser\Node\Expr\FuncCall $expr */
+        $var_name = ExpressionIdentifier::getExtendedVarId(
+            $expr->getArgs()[0]->value,
+            $this_class_name,
+            $source,
+        );
+
+        if ($var_name) {
+            if ($type === 'count') {
+                $hasAtLeastClass = Assertion\HasAtLeastCount::class;
+                $nonEmptyClass = NonEmptyCountable::class;
+            } else {
+                $hasAtLeastClass = Assertion\HasAtLeastStrlen::class;
+                $nonEmptyClass = Assertion\NonEmptyString::class;
+            }
+
+            if ($min_operand > 0) {
+                $if_types[$var_name] = [[new $hasAtLeastClass($min_operand)]];
+            } else {
+                $if_types[$var_name] = [[new $nonEmptyClass(false)]];
+            }
+        }
+
+        return $if_types ? [$if_types] : [];
+    }
+
+    public static function handleCountStrlenInequalitySmallerCheck(
+        string                                     $type,
+        int                                        $inequality_position,
+        PhpParser\Node\Expr|Smaller|SmallerOrEqual $conditional,
+        ?string                                    $this_class_name,
+        FileSource                                 $source,
+        int                                        $max_operand,
+        array                                      $if_types,
+    ): array {
+        if ($inequality_position === self::ASSIGNMENT_TO_RIGHT) {
+            $expr = $conditional->left;
+        } else {
+            throw new UnexpectedValueException(sprintf('$%s_inequality_position value', $type));
+        }
+
+        /** @var PhpParser\Node\Expr\FuncCall $expr */
+        $var_name = ExpressionIdentifier::getExtendedVarId(
+            $expr->getArgs()[0]->value,
+            $this_class_name,
+            $source,
+        );
+
+        if ($var_name) {
+            if ($type === 'count') {
+                $doesNotHaveAtLeastClass = Assertion\DoesNotHaveAtLeastCount::class;
+                $notNonEmptyClass = NotNonEmptyCountable::class;
+            } else {
+                $doesNotHaveAtLeastClass = Assertion\DoesNotHaveAtLeastStrlen::class;
+                $notNonEmptyClass = Assertion\NotNonEmptyString::class;
+            }
+
+            if ($max_operand > 0) {
+                $if_types[$var_name] = [[new $doesNotHaveAtLeastClass($max_operand + 1)]];
+            } else {
+                $if_types[$var_name] = [[new $notNonEmptyClass()]];
+            }
+        }
+
+        return $if_types ? [$if_types] : [];
     }
 
     /**
@@ -4004,95 +3961,55 @@ class AssertionFinder
         );
         $min_strlen = null;
         $strlen_equality_position = self::hasNonEmptyStrlenEqualityCheck($conditional, $min_strlen);
+        $max_strlen = null;
+        $strlen_inequality_position = self::hasLessThanStrlenEqualityCheck($conditional, $max_strlen);
 
         if ($count_equality_position) {
-            if ($count_equality_position === self::ASSIGNMENT_TO_RIGHT) {
-                $counted_expr = $conditional->left;
-            } else {
-                throw new UnexpectedValueException('$count_equality_position value');
-            }
-
-            /** @var PhpParser\Node\Expr\FuncCall $counted_expr */
-            $var_name = ExpressionIdentifier::getExtendedVarId(
-                $counted_expr->getArgs()[0]->value,
+            return self::handleCountStrlenEqualityGreaterCheck(
+                'count',
+                $count_equality_position,
+                $conditional,
                 $this_class_name,
                 $source,
+                $if_types,
+                $min_count,
             );
-
-            if ($var_name) {
-                if (self::hasReconcilableNonEmptyCountEqualityCheck($conditional)) {
-                    $if_types[$var_name] = [[new NonEmptyCountable(true)]];
-                } else {
-                    if ($min_count > 0) {
-                        $if_types[$var_name] = [[new HasAtLeastCount($min_count)]];
-                    } else {
-                        $if_types[$var_name] = [[new NonEmptyCountable(false)]];
-                    }
-                }
-            }
-
-            return $if_types ? [$if_types] : [];
         }
 
         if ($strlen_equality_position) {
-            if ($strlen_equality_position === self::ASSIGNMENT_TO_RIGHT) {
-                $strlened_expr = $conditional->left;
-            } else {
-                throw new UnexpectedValueException('$strlen_equality_position value');
-            }
-
-            /** @var PhpParser\Node\Expr\FuncCall $strlened_expr */
-            if (!isset($strlened_expr->getArgs()[0])) {
-                return [];
-            }
-            $var_name = ExpressionIdentifier::getExtendedVarId(
-                $strlened_expr->getArgs()[0]->value,
+            return self::handleCountStrlenEqualityGreaterCheck(
+                'strlen',
+                $strlen_equality_position,
+                $conditional,
                 $this_class_name,
-                $source
+                $source,
+                $if_types,
+                $min_strlen,
             );
-
-            if ($var_name) {
-                if (self::hasReconcilableNonEmptyStrlenEqualityCheck($conditional)) {
-                    $if_types[$var_name] = [[new Assertion\NonEmpty()]];
-                } else {
-                    if ($min_strlen > 0) {
-                        $if_types[$var_name] = [[new Assertion\NonEmpty()]];
-                    } else {
-                        $if_types[$var_name] = [[new Empty_()]];
-                    }
-                }
-            }
-
-            if ($var_name) {
-                $if_types[$var_name] = [[new Assertion\NonEmpty()]];
-            }
-
-            return $if_types ? [$if_types] : [];
         }
 
         if ($count_inequality_position) {
-            if ($count_inequality_position === self::ASSIGNMENT_TO_LEFT) {
-                $count_expr = $conditional->right;
-            } else {
-                throw new UnexpectedValueException('$count_inequality_position value');
-            }
-
-            /** @var PhpParser\Node\Expr\FuncCall $count_expr */
-            $var_name = ExpressionIdentifier::getExtendedVarId(
-                $count_expr->getArgs()[0]->value,
+            return self::handleCountStrlenInequalityGreaterCheck(
+                'count',
+                $count_inequality_position,
+                $conditional,
                 $this_class_name,
                 $source,
+                $max_count,
+                $if_types,
             );
+        }
 
-            if ($var_name) {
-                if ($max_count > 0) {
-                    $if_types[$var_name] = [[new DoesNotHaveAtLeastCount($max_count + 1)]];
-                } else {
-                    $if_types[$var_name] = [[new NotNonEmptyCountable()]];
-                }
-            }
-
-            return $if_types ? [$if_types] : [];
+        if ($strlen_inequality_position) {
+            return self::handleCountStrlenInequalityGreaterCheck(
+                'strlen',
+                $strlen_inequality_position,
+                $conditional,
+                $this_class_name,
+                $source,
+                $max_strlen,
+                $if_types,
+            );
         }
 
         if ($superior_value_position && $superior_value_comparison !== null) {
@@ -4160,109 +4077,51 @@ class AssertionFinder
         );
 
         if ($count_equality_position) {
-            if ($count_equality_position === self::ASSIGNMENT_TO_LEFT) {
-                $count_expr = $conditional->right;
-            } else {
-                throw new UnexpectedValueException('$count_equality_position value');
-            }
-
-            /** @var PhpParser\Node\Expr\FuncCall $count_expr */
-            $var_name = ExpressionIdentifier::getExtendedVarId(
-                $count_expr->getArgs()[0]->value,
+            return self::handleCountStrlenEqualitySmallerCheck(
+                'count',
+                $count_equality_position,
+                $conditional,
                 $this_class_name,
                 $source,
+                $min_count,
+                $if_types,
             );
-
-            if ($var_name) {
-                if ($min_count > 0) {
-                    $if_types[$var_name] = [[new HasAtLeastCount($min_count)]];
-                } else {
-                    $if_types[$var_name] = [[new NonEmptyCountable(false)]];
-                }
-            }
-
-            return $if_types ? [$if_types] : [];
         }
 
         if ($count_inequality_position) {
-            if ($count_inequality_position === self::ASSIGNMENT_TO_RIGHT) {
-                $count_expr = $conditional->left;
-            } else {
-                throw new UnexpectedValueException('$count_inequality_position value');
-            }
-
-            /** @var PhpParser\Node\Expr\FuncCall $count_expr */
-            $var_name = ExpressionIdentifier::getExtendedVarId(
-                $count_expr->getArgs()[0]->value,
+            return self::handleCountStrlenInequalitySmallerCheck(
+                'count',
+                $count_inequality_position,
+                $conditional,
                 $this_class_name,
                 $source,
+                $max_count,
+                $if_types,
             );
-
-            if ($var_name) {
-                if ($max_count > 0) {
-                    $if_types[$var_name] = [[new DoesNotHaveAtLeastCount($max_count + 1)]];
-                } else {
-                    $if_types[$var_name] = [[new NotNonEmptyCountable()]];
-                }
-            }
-
-            return $if_types ? [$if_types] : [];
         }
 
         if ($strlen_equality_position) {
-            if ($strlen_equality_position === self::ASSIGNMENT_TO_LEFT) {
-                $strlen_expr = $conditional->right;
-            } else {
-                throw new UnexpectedValueException('$strlen_equality_position value');
-            }
-
-            /** @var PhpParser\Node\Expr\FuncCall $strlen_expr */
-            if (!isset($strlen_expr->getArgs()[0])) {
-                return [];
-            }
-            $var_name = ExpressionIdentifier::getExtendedVarId(
-                $strlen_expr->getArgs()[0]->value,
+            return self::handleCountStrlenEqualitySmallerCheck(
+                'strlen',
+                $strlen_equality_position,
+                $conditional,
                 $this_class_name,
-                $source
+                $source,
+                $min_strlen,
+                $if_types,
             );
-
-            if ($var_name) {
-                if ($min_strlen > 0) {
-                    $if_types[$var_name] = [[new Assertion\NonEmpty()]];
-                } else {
-                    $if_types[$var_name] = [[new Empty_()]];
-                }
-            }
-
-            return $if_types ? [$if_types] : [];
         }
 
         if ($strlen_inequality_position) {
-            if ($strlen_inequality_position === self::ASSIGNMENT_TO_RIGHT) {
-                $strlen_expr = $conditional->left;
-            } else {
-                throw new UnexpectedValueException('$strlen_inequality_position value');
-            }
-
-            /** @var PhpParser\Node\Expr\FuncCall $strlen_expr */
-            if (!isset($strlen_expr->getArgs()[0])) {
-                return [];
-            }
-            $var_name = ExpressionIdentifier::getExtendedVarId(
-                $strlen_expr->getArgs()[0]->value,
+            return self::handleCountStrlenInequalitySmallerCheck(
+                'strlen',
+                $strlen_inequality_position,
+                $conditional,
                 $this_class_name,
-                $source
+                $source,
+                $max_strlen,
+                $if_types,
             );
-
-            if ($var_name) {
-                if ($max_strlen > 0) {
-                    $if_types[$var_name] = [[new Assertion\NonEmpty()]];
-                } else {
-                    $if_types[$var_name] = [[new Empty_()]];
-                }
-            }
-
-            return $if_types ? [$if_types] : [];
         }
 
         if ($inferior_value_position) {
@@ -4482,5 +4341,184 @@ class AssertionFinder
         }
 
         return null;
+    }
+
+    public static function handleCountStrlenEqualityCheck(
+        string $type,
+        int                      $equality_position,
+        Equal|Identical|BinaryOp $conditional,
+        ?string                  $this_class_name,
+        FileSource               $source,
+        ?Codebase                $codebase,
+        int $operand,
+    ): array {
+        $if_types = [];
+
+        if ($equality_position === self::ASSIGNMENT_TO_RIGHT) {
+            $expr = $conditional->left;
+        } elseif ($equality_position === self::ASSIGNMENT_TO_LEFT) {
+            $expr = $conditional->right;
+        } else {
+            throw new UnexpectedValueException(sprintf('$%s_equality_position value', $type));
+        }
+
+        /** @var PhpParser\Node\Expr\FuncCall $expr */
+        $var_name = ExpressionIdentifier::getExtendedVarId(
+            $expr->getArgs()[0]->value,
+            $this_class_name,
+            $source,
+        );
+
+        if ($source instanceof StatementsAnalyzer) {
+            $var_type = $source->node_data->getType($conditional->left);
+            $other_type = $source->node_data->getType($conditional->right);
+
+            if ($codebase
+                && $other_type
+                && $var_type
+                && $conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
+            ) {
+                self::handleParadoxicalAssertions(
+                    $source,
+                    $var_type,
+                    $this_class_name,
+                    $other_type,
+                    $codebase,
+                    $conditional,
+                );
+            }
+        }
+
+        if ($var_name) {
+            if ($type === 'count') {
+                $hasExactClass = HasExactCount::class;
+                $emptyClass = Empty_::class;
+                $notNonEmptyClass = NotNonEmptyCountable::class;
+            } else {
+                $hasExactClass = Assertion\HasExactStrlen::class;
+                $emptyClass = Empty_::class;
+                $notNonEmptyClass = Assertion\NotNonEmptyString::class;
+            }
+
+            if ($operand > 0) {
+                $if_types[$var_name] = [[new $hasExactClass($operand)]];
+            } elseif ($operand === 0) {
+                $if_types[$var_name] = [[new $emptyClass()]];
+            } else {
+                $if_types[$var_name] = [[new $notNonEmptyClass()]];
+            }
+        }
+
+        return $if_types ? [$if_types] : [];
+    }
+
+    public static function handleCountStrlenInequalityCheck(
+        string                         $type,
+        int                            $inequality_position,
+        NotIdentical|NotEqual|BinaryOp $conditional,
+        ?string                        $this_class_name,
+        FileSource                     $source,
+        ?Codebase                      $codebase,
+        int                            $operand,
+    ): array {
+        $if_types = [];
+
+        if ($inequality_position === self::ASSIGNMENT_TO_RIGHT) {
+            $expr = $conditional->left;
+        } elseif ($inequality_position === self::ASSIGNMENT_TO_LEFT) {
+            $expr = $conditional->right;
+        } else {
+            throw new UnexpectedValueException(sprintf('$%s_inequality_position value', $type));
+        }
+
+        /** @var PhpParser\Node\Expr\FuncCall $expr */
+        $var_name = ExpressionIdentifier::getExtendedVarId(
+            $expr->getArgs()[0]->value,
+            $this_class_name,
+            $source,
+        );
+
+        if ($source instanceof StatementsAnalyzer) {
+            $var_type = $source->node_data->getType($conditional->left);
+            $other_type = $source->node_data->getType($conditional->right);
+
+            if ($codebase
+                && $other_type
+                && $var_type
+                && $conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical
+            ) {
+                self::handleParadoxicalAssertions(
+                    $source,
+                    $var_type,
+                    $this_class_name,
+                    $other_type,
+                    $codebase,
+                    $conditional,
+                );
+            }
+        }
+
+        if ($var_name) {
+            if ($type === 'count') {
+                $doesNotHaveExactClass = DoesNotHaveExactCount::class;
+                $nonEmptyClass = NonEmptyCountable::class;
+            } else {
+                $doesNotHaveExactClass = Assertion\DoesNotHaveExactStrlen::class;
+                $nonEmptyClass = Assertion\NonEmptyString::class;
+            }
+
+            if ($operand > 0) {
+                $if_types[$var_name] = [[new $doesNotHaveExactClass($operand)]];
+            } else {
+                $if_types[$var_name] = [[new $nonEmptyClass(true)]];
+            }
+        }
+
+        return $if_types ? [$if_types] : [];
+    }
+
+    public static function handleCountStrlenEqualityGreaterCheck(
+        string                                     $type,
+        int                                        $equality_position,
+        PhpParser\Node\Expr|GreaterOrEqual|Greater $conditional,
+        ?string                                    $this_class_name,
+        FileSource                                 $source,
+        array                                      $if_types,
+        int                                        $min_operand,
+    ): array {
+        if ($equality_position === self::ASSIGNMENT_TO_RIGHT) {
+            $expr = $conditional->left;
+        } else {
+            throw new UnexpectedValueException(sprintf('$%s_equality_position value', $type));
+        }
+
+        /** @var PhpParser\Node\Expr\FuncCall $expr */
+        $var_name = ExpressionIdentifier::getExtendedVarId(
+            $expr->getArgs()[0]->value,
+            $this_class_name,
+            $source,
+        );
+
+        if ($var_name) {
+            if ($type === 'count') {
+                $nonEmptyClass = NonEmptyCountable::class;
+                $hasAtLeastClass = HasAtLeastCount::class;
+            } else {
+                $nonEmptyClass = Assertion\NonEmptyString::class;
+                $hasAtLeastClass = Assertion\HasAtLeastStrlen::class;
+            }
+
+            if (self::hasReconcilableNonEmptyCountOrStrlenEqualityCheck($conditional, [$type])) {
+                $if_types[$var_name] = [[new $nonEmptyClass(true)]];
+            } else {
+                if ($min_operand > 0) {
+                    $if_types[$var_name] = [[new $hasAtLeastClass($min_operand)]];
+                } else {
+                    $if_types[$var_name] = [[new $nonEmptyClass(false)]];
+                }
+            }
+        }
+
+        return $if_types ? [$if_types] : [];
     }
 }
