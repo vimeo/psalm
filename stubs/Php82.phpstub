@@ -10,4 +10,27 @@ namespace {
         /** @return non-empty-list<ReflectionNamedType|ReflectionIntersectionType> */
         public function getTypes(): array {}
     }
+
+    /**
+    * @psalm-immutable
+    *
+    * @template-covariant Start of string|DateTimeInterface
+    * @implements IteratorAggregate<int, DateTimeInterface>
+    */
+    class DatePeriod implements IteratorAggregate
+    {
+        const EXCLUDE_START_DATE = 1;
+        const INCLUDE_END_DATE = 2;
+
+        /**
+        * @param Start $start
+        * @param (Start is string ? int-mask<self::EXCLUDE_START_DATE, self::INCLUDE_END_DATE> : DateInterval) $interval
+        * @param (Start is string ? never : (DateTimeInterface|positive-int)) $end
+        * @param (Start is string ? never : int-mask<self::EXCLUDE_START_DATE, self::INCLUDE_END_DATE>) $options
+        */
+        public function __construct($start, $interval = 0, $end = 1, $options = 0) {}
+
+        /** @psalm-return (Start is string ? Iterator<int, DateTime> : Iterator<int, Start>) */
+        public function getIterator(): Iterator {}
+    }
 }
