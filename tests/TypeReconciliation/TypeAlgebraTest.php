@@ -1228,6 +1228,23 @@ class TypeAlgebraTest extends TestCase
                         }
                     }'
             ],
+            'subclassAfterElseifNegation' => [
+                'code' => '<?php
+                    abstract class Base {}
+                    class A extends Base {}
+                    class AChild extends A {}
+                    class B extends Base {
+                        public string $s = "";
+                    }
+
+                    function foo(Base $base): void {
+                        if ($base instanceof A && !($base instanceof AChild)) {
+                            // do nothing
+                        } elseif ($base instanceof B && rand(0, 1)) {
+                            echo $base->s;
+                        }
+                    }'
+            ],
         ];
     }
 
@@ -1364,14 +1381,15 @@ class TypeAlgebraTest extends TestCase
             ],
             'repeatedAndConditional' => [
                 'code' => '<?php
-                    function foo(string $a, string $b): void {
+                    class C {}
+                    function foo(?C $a, ?C $b): void {
                         if ($a && $b) {
                             echo "a";
                         } elseif ($a && $b) {
                             echo "b";
                         }
                     }',
-                'error_message' => 'ParadoxicalCondition',
+                'error_message' => 'TypeDoesNotContainType',
             ],
             'andConditionalAfterOrConditional' => [
                 'code' => '<?php
