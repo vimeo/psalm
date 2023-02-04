@@ -272,6 +272,9 @@ class IfElseAnalyzer
         // this has to go on a separate line because the phar compactor messes with precedence
         $scope_to_clone = $if_scope->post_leaving_if_context ?? $post_if_context;
         $else_context = clone $scope_to_clone;
+        $else_context->clauses = Algebra::simplifyCNF(
+            [...$else_context->clauses, ...$if_scope->negated_clauses],
+        );
 
         // check the elseifs
         foreach ($stmt->elseifs as $elseif) {
