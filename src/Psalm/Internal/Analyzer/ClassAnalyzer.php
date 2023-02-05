@@ -2434,7 +2434,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         $storage->name,
                     ),
                 );
-            } elseif ($case_storage->value !== null && $storage->enum_type !== null) {
+            } elseif ($case_storage->value !== null) {
                 if ((is_int($case_storage->value) && $storage->enum_type === 'string')
                     || (is_string($case_storage->value) && $storage->enum_type === 'int')
                 ) {

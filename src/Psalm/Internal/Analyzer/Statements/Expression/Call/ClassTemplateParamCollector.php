@@ -144,11 +144,10 @@ class ClassTemplateParamCollector
                         $template_result,
                     );
 
-                    $class_template_params[$type_name][$class_storage->name]
-                        = $output_type_extends ?? Type::getMixed();
-                }
-
-                if (!isset($class_template_params[$type_name][$class_storage->name])) {
+                    $class_template_params[$type_name] = [
+                        $class_storage->name => $output_type_extends ?? Type::getMixed(),
+                    ];
+                } else {
                     $class_template_params[$type_name] = [$class_storage->name => Type::getMixed()];
                 }
             }

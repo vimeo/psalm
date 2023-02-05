@@ -459,7 +459,6 @@
       <code><![CDATA[$combination->array_type_params[1]]]></code>
       <code><![CDATA[$combination->array_type_params[1]]]></code>
       <code><![CDATA[$combination->array_type_params[1]]]></code>
-      <code><![CDATA[$combination->array_type_params[1]]]></code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Type/TypeExpander.php">
