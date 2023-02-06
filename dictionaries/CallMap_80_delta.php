@@ -1845,6 +1845,22 @@ return [
       'old' => ['bool', 'stream'=>'resource', 'enable='=>'bool'],
       'new' => ['bool', 'stream'=>'resource', 'enable='=>'?bool'],
     ],
+    'sem_acquire' => [
+      'old' => ['bool', 'semaphore'=>'resource', 'non_blocking='=>'bool'],
+      'new' => ['bool', 'semaphore'=>'SysvSemaphore', 'non_blocking='=>'bool'],
+    ],
+    'sem_get' => [
+      'old' => ['resource|false', 'key'=>'int', 'max_acquire='=>'int', 'permissions='=>'int', 'auto_release='=>'bool'],
+      'new' => ['SysvSemaphore|false', 'key'=>'int', 'max_acquire='=>'int', 'permissions='=>'int', 'auto_release='=>'bool'],
+    ],
+    'sem_release' => [
+      'old' => ['bool', 'semaphore'=>'resource'],
+      'new' => ['bool', 'semaphore'=>'SysvSemaphore'],
+    ],
+    'sem_remove' => [
+      'old' => ['bool', 'semaphore'=>'resource'],
+      'new' => ['bool', 'semaphore'=>'SysvSemaphore'],
+    ],
     'session_cache_expire' => [
       'old' => ['int', 'value='=>'int'],
       'new' => ['int', 'value='=>'?int'],
@@ -1922,8 +1938,8 @@ return [
       'new' => ['array', 'address'=>'AddressInfo'],
     ],
     'socket_addrinfo_lookup' => [
-      'old' => ['resource[]', 'node'=>'string', 'service='=>'mixed', 'hints='=>'array'],
-      'new' => ['false|AddressInfo[]', 'host='=>'string|null', 'service='=>'mixed', 'hints='=>'array'],
+      'old' => ['resource[]', 'host'=>'string', 'service='=>'string', 'hints='=>'array'],
+      'new' => ['false|AddressInfo[]', 'host'=>'string', 'service='=>'?string', 'hints='=>'array'],
     ],
     'socket_bind' => [
       'old' => ['bool', 'socket'=>'resource', 'addr'=>'string', 'port='=>'int'],
@@ -1950,8 +1966,8 @@ return [
       'new' => ['Socket|false', 'port'=>'int', 'backlog='=>'int'],
     ],
     'socket_create_pair' => [
-      'old' => ['bool', 'domain'=>'int', 'type'=>'int', 'protocol'=>'int', '&w_fd'=>'resource[]'],
-      'new' => ['bool', 'domain'=>'int', 'type'=>'int', 'protocol'=>'int', '&w_fd'=>'Socket[]'],
+      'old' => ['bool', 'domain'=>'int', 'type'=>'int', 'protocol'=>'int', '&w_pair'=>'resource[]'],
+      'new' => ['bool', 'domain'=>'int', 'type'=>'int', 'protocol'=>'int', '&w_pair'=>'Socket[]'],
     ],
     'socket_export_stream' => [
       'old' => ['resource|false', 'socket'=>'resource'],

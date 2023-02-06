@@ -43,7 +43,7 @@ return [
     'socket_addrinfo_bind' => ['?resource', 'addrinfo'=>'resource'],
     'socket_addrinfo_connect' => ['resource', 'addrinfo'=>'resource'],
     'socket_addrinfo_explain' => ['array', 'addrinfo'=>'resource'],
-    'socket_addrinfo_lookup' => ['resource[]', 'node'=>'string', 'service='=>'mixed', 'hints='=>'array'],
+    'socket_addrinfo_lookup' => ['resource[]', 'host'=>'string', 'service='=>'string', 'hints='=>'array'],
     'sodium_add' => ['void', '&rw_string1'=>'string', 'string2'=>'string'],
     'sodium_base642bin' => ['string', 'string'=>'string', 'id'=>'int', 'ignore='=>'string'],
     'sodium_bin2base64' => ['string', 'string'=>'string', 'id'=>'int'],
