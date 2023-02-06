@@ -352,17 +352,13 @@ class MethodCallTest extends TestCase
                     '$b' => 'bool',
                 ],
             ],
-            'datetimeformatNotFalse' => [
+            'callMapMethodReturnFalse' => [
                 'code' => '<?php
-                    $format = random_bytes(10);
-                    $dt = new DateTime;
-                    $formatted = $dt->format($format);
-                    if (false !== $formatted) {}
-                    function takesString(string $s) : void {}
-                    takesString($formatted);',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' =>  '7.4',
+                    $cal = new IntlCalendar();
+                    $max = $cal->getMaximum(2);
+                    if ($max !== false) {}
+                    function takesArrayNull(?array $a) : void {}
+                    takesArrayNull($max);',
             ],
             'domElement' => [
                 'code' => '<?php
@@ -689,7 +685,7 @@ class MethodCallTest extends TestCase
             ],
             'dateTimeSecondArg' => [
                 'code' => '<?php
-                    $date = new DateTime(null, new DateTimeZone("Pacific/Nauru"));
+                    $date = new DateTime("null", new DateTimeZone("Pacific/Nauru"));
                     echo $date->format("Y-m-d H:i:sP") . "\n";',
             ],
             'noCrashOnGetClassMethodCallWithNull' => [

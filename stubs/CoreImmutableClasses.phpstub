@@ -39,10 +39,9 @@ class DateTimeImmutable implements DateTimeInterface
 
     /**
      * @psalm-mutation-free
-     * @param bool $absolute
      * @return DateInterval
      */
-    public function diff(DateTimeInterface $targetObject, $absolute = false) {}
+    public function diff(DateTimeInterface $targetObject, bool $absolute = false) {}
 
     /**
      * @psalm-mutation-free

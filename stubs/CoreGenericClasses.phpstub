@@ -1,5 +1,23 @@
 <?php
 
+#[Attribute(Attribute::TARGET_METHOD)]
+final class ReturnTypeWillChange
+{
+    public function __construct() {}
+}
+
+#[Attribute(Attribute::TARGET_PARAMETER)]
+final class SensitiveParameter
+{
+    public function __construct() {}
+}
+
+#[Attribute(Attribute::TARGET_CLASS)]
+final class AllowDynamicProperties
+{
+    public function __construct() {}
+}
+
 /**
  * Interface to detect if a class is traversable using &foreach;.
  * @link http://php.net/manual/en/class.traversable.php
@@ -495,6 +513,88 @@ final class WeakMap implements ArrayAccess, Countable, IteratorAggregate, Traver
     public function offsetUnset($offset) {}
 }
 
+class DateTime implements DateTimeInterface
+{
+    public function __construct(string $datetime = "now", DateTimeZone $timezone = null) {}
+
+    /**
+     * @psalm-mutation-free
+     * @return static|false
+     */
+    public static function createFromFormat(string $format, string $datetime, ?DateTimeZone $timezone = null) {}
+
+    /**
+     * @psalm-mutation-free
+     * @param string $format
+     * @return ($format is non-empty-string ? non-empty-string : string)
+     */
+    public function format($format) {}
+
+    /**
+     * @psalm-mutation-free
+     * @return DateTimeZone
+     */
+    public function getTimezone() {}
+
+    /**
+     * @psalm-mutation-free
+     * @return int
+     */
+    public function getOffset() {}
+
+    /**
+     * @psalm-mutation-free
+     * @return int
+     */
+    public function getTimestamp() {}
+
+    /**
+     * @psalm-mutation-free
+     * @return DateInterval
+     */
+    public function diff(DateTimeInterface $targetObject, bool $absolute = false) {}
+
+    /**
+     * @return static|false
+     */
+    public function modify(string $modifier) {}
+
+    /**
+     * @return static
+     */
+    public function add(DateInterval $interval) {}
+
+    /**
+     * @return static
+     */
+    public function sub(DateInterval $interval) {}
+
+    /**
+     * @return static
+     */
+    public function setTimezone(DateTimeZone $timezone) {}
+
+    /**
+     * @return static
+     */
+    public function setTime(int $hour, int $minute, int $second = 0, int $microsecond = 0) {}
+
+    /**
+     * @return static
+     */
+    public function setDate(int $year, int $month, int $day) {}
+
+    /**
+     * @return static
+     */
+    public function setISODate(int $year, int $week, int $dayOfWeek = 1) {}
+
+    /**
+     * @return static
+     */
+    public function setTimestamp(int $unixtimestamp) {}
+}
+
 class mysqli
 {
     /**
@@ -523,23 +623,4 @@ class SQLite3
      * @psalm-flow ($string) -> return
      */
     static function escapeString($string) {}
-}
-
-
-#[Attribute(Attribute::TARGET_METHOD)]
-final class ReturnTypeWillChange
-{
-    public function __construct() {}
-}
-
-#[Attribute(Attribute::TARGET_PARAMETER)]
-final class SensitiveParameter
-{
-    public function __construct() {}
-}
-
-#[Attribute(Attribute::TARGET_CLASS)]
-final class AllowDynamicProperties
-{
-    public function __construct() {}
 }
