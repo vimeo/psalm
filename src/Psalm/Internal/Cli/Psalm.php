@@ -1087,9 +1087,7 @@ final class Psalm
             } else {
                 $find_unused_code = 'auto';
             }
-        }
-
-        if ($config->find_unused_code) {
+        } elseif ($config->find_unused_code) {
             $find_unused_code = 'auto';
         }
 
