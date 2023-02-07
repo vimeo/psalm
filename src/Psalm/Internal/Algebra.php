@@ -4,7 +4,6 @@ namespace Psalm\Internal;
 
 use Psalm\Exception\ComplicatedExpressionException;
 use Psalm\Storage\Assertion;
-use Psalm\Storage\Assertion\Falsy;
 use UnexpectedValueException;
 
 use function array_filter;
