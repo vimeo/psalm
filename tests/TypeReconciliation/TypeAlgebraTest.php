@@ -1226,7 +1226,7 @@ class TypeAlgebraTest extends TestCase
                                 echo $base->s;
                             }
                         }
-                    }'
+                    }',
             ],
             'subclassAfterElseifNegation' => [
                 'code' => '<?php
@@ -1243,7 +1243,7 @@ class TypeAlgebraTest extends TestCase
                         } elseif ($base instanceof B && rand(0, 1)) {
                             echo $base->s;
                         }
-                    }'
+                    }',
             ],
         ];
     }
