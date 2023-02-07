@@ -5,10 +5,13 @@ namespace Psalm\Internal\Fork;
 use Composer\XdebugHandler\XdebugHandler;
 
 use function array_filter;
+use function array_splice;
 use function extension_loaded;
 use function file_get_contents;
 use function file_put_contents;
 use function implode;
+use function in_array;
+use function ini_get;
 use function preg_replace;
 
 /**
@@ -40,6 +43,18 @@ class PsalmRestarter extends XdebugHandler
             $this->disabledExtensions,
             static fn(string $extension): bool => extension_loaded($extension)
         );
+        if (!extension_loaded('opcache')) {
+            return true;
+        }
+        if (!in_array(ini_get('opcache.enable_cli'), ['1', 'true', true, 1])) {
+            return true;
+        }
+        if (((int) ini_get('opcache.jit')) !== 1205) {
+            return true;
+        }
+        if (((int) ini_get('opcache.jit')) === 0) {
+            return true;
+        }
 
         return $default || $this->required;
     }
@@ -47,9 +62,9 @@ class PsalmRestarter extends XdebugHandler
     /**
      * No type hint to allow xdebug-handler v1 and v2 usage
      *
-     * @param string|string[] $command
+     * @param string[] $command
      */
-    protected function restart($command): void
+    protected function restart(array $command): void
     {
         if ($this->required && $this->tmpIni) {
             $regex = '/^\s*(extension\s*=.*(' . implode('|', $this->disabledExtensions) . ').*)$/mi';
@@ -59,8 +74,18 @@ class PsalmRestarter extends XdebugHandler
 
             file_put_contents($this->tmpIni, $content);
         }
+        array_splice(
+            $command,
+            1,
+            0,
+            [
+                '-dzend_extension=opcache',
+                '-dopcache.enable_cli=true',
+                '-dopcache.jit_buffer_size=512M',
+                '-dopcache.jit=1205',
+            ],
+        );
 
-        /** @psalm-suppress PossiblyInvalidArgument */
         parent::restart($command);
     }
 }
