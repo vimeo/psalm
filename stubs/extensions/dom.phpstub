@@ -750,14 +750,6 @@ class DOMElement extends DOMNode implements DOMParentNode, DOMChildNode
     public ?DOMElement $nextElementSibling;
 
     /**
-     * Inherited from DOMNode, but always non-null.
-     *
-     * @readonly
-     * @var DOMNamedNodeMap<DOMAttr>
-     */
-    public DOMNamedNodeMap $attributes;
-
-    /**
      * Inherited from DOMNode, but always non-null
      * @readonly
      */
