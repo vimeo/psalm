@@ -12,7 +12,7 @@ final class HasAtLeastStrlen extends Assertion
     /** @var positive-int */
     public $strlen;
 
-    /** @param positive-int $count */
+    /** @param positive-int $strlen */
     public function __construct(int $strlen)
     {
         $this->strlen = $strlen;
