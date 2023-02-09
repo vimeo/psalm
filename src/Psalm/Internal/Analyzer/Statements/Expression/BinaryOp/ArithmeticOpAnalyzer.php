@@ -962,7 +962,7 @@ class ArithmeticOpAnalyzer
         } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\ShiftRight) {
             $result = $operand1 >> $operand2;
         } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\Div) {
-            if ($operand2 === 0) {
+            if ($operand2 === 0 || $operand2 === 0.0) {
                 return Type::getNever();
             }
 
