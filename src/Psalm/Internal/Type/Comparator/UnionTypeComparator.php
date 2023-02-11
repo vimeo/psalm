@@ -76,7 +76,7 @@ class UnionTypeComparator
                 continue;
             }
 
-            if ($input_type_part instanceof TFalse && $ignore_false) {
+            if ($input_type_part instanceof TFalse && ($ignore_false || $input_type->ignore_falsable_issues)) {
                 continue;
             }
 
