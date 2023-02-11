@@ -14,6 +14,8 @@ use function in_array;
 use function ini_get;
 use function preg_replace;
 
+use const PHP_VERSION_ID;
+
 /**
  * @internal
  */
@@ -44,16 +46,19 @@ class PsalmRestarter extends XdebugHandler
             static fn(string $extension): bool => extension_loaded($extension)
         );
 
-        if (!in_array(ini_get('opcache.enable_cli'), ['1', 'true', true, 1])) {
-            return true;
-        }
+        if (PHP_VERSION_ID >= 8_00_00 && (extension_loaded('opcache') || extension_loaded('Zend OPcache'))) {
+            // restart to enable JIT if it's not configured in the optimal way
+            if (!in_array(ini_get('opcache.enable_cli'), ['1', 'true', true, 1])) {
+                return true;
+            }
 
-        if (((int) ini_get('opcache.jit')) !== 1205) {
-            return true;
-        }
+            if (((int) ini_get('opcache.jit')) !== 1205) {
+                return true;
+            }
 
-        if (((int) ini_get('opcache.jit')) === 0) {
-            return true;
+            if (((int) ini_get('opcache.jit')) === 0) {
+                return true;
+            }
         }
 
         return $default || $this->required;
@@ -80,7 +85,8 @@ class PsalmRestarter extends XdebugHandler
         // executed in the parent process (before restart)
         // if it wasn't loaded then we apparently don't have opcache installed and there's no point trying
         // to tweak it
-        if (extension_loaded('opcache') || extension_loaded('Zend OPcache')) {
+        // If we're running on 7.4 there's no JIT available
+        if (PHP_VERSION_ID >= 8_00_00 && (extension_loaded('opcache') || extension_loaded('Zend OPcache'))) {
             $additional_options = [
                 '-dopcache.enable_cli=true',
                 '-dopcache.jit_buffer_size=512M',
