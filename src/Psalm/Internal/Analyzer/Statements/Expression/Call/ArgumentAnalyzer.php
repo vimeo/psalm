@@ -861,7 +861,7 @@ class ArgumentAnalyzer
             $input_type,
             $param_type,
             true,
-            false,
+            true,
             $union_comparison_results,
         );
 
