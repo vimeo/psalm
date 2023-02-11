@@ -43,15 +43,15 @@ class PsalmRestarter extends XdebugHandler
             $this->disabledExtensions,
             static fn(string $extension): bool => extension_loaded($extension)
         );
-        if (!extension_loaded('opcache')) {
-            return true;
-        }
+
         if (!in_array(ini_get('opcache.enable_cli'), ['1', 'true', true, 1])) {
             return true;
         }
+
         if (((int) ini_get('opcache.jit')) !== 1205) {
             return true;
         }
+
         if (((int) ini_get('opcache.jit')) === 0) {
             return true;
         }
@@ -74,16 +74,25 @@ class PsalmRestarter extends XdebugHandler
 
             file_put_contents($this->tmpIni, $content);
         }
+
+        $additional_options = [];
+
+        // executed in the parent process (before restart)
+        // if it wasn't loaded then we apparently don't have opcache installed and there's no point trying
+        // to tweak it
+        if (extension_loaded('opcache') || extension_loaded('Zend OPcache')) {
+            $additional_options = [
+                '-dopcache.enable_cli=true',
+                '-dopcache.jit_buffer_size=512M',
+                '-dopcache.jit=1205',
+            ];
+        }
+
         array_splice(
             $command,
             1,
             0,
-            [
-                '-dzend_extension=opcache',
-                '-dopcache.enable_cli=true',
-                '-dopcache.jit_buffer_size=512M',
-                '-dopcache.jit=1205',
-            ],
+            $additional_options,
         );
 
         parent::restart($command);
