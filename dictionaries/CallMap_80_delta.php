@@ -394,12 +394,12 @@ return [
       'new' => ['int', 'num1'=>'numeric-string', 'num2'=>'numeric-string', 'scale='=>'int|null'],
     ],
     'bcdiv' => [
-      'old' => ['numeric-string', 'dividend'=>'numeric-string', 'divisor'=>'numeric-string', 'scale='=>'int'],
-      'new' => ['numeric-string', 'dividend'=>'numeric-string', 'divisor'=>'numeric-string', 'scale='=>'int|null'],
+      'old' => ['numeric-string', 'num1'=>'numeric-string', 'num2'=>'numeric-string', 'scale='=>'int'],
+      'new' => ['numeric-string', 'num1'=>'numeric-string', 'num2'=>'numeric-string', 'scale='=>'int|null'],
     ],
     'bcmod' => [
-      'old' => ['numeric-string', 'dividend'=>'numeric-string', 'divisor'=>'numeric-string', 'scale='=>'int'],
-      'new' => ['numeric-string', 'dividend'=>'numeric-string', 'divisor'=>'numeric-string', 'scale='=>'int|null'],
+      'old' => ['numeric-string', 'num1'=>'numeric-string', 'num2'=>'numeric-string', 'scale='=>'int'],
+      'new' => ['numeric-string', 'num1'=>'numeric-string', 'num2'=>'numeric-string', 'scale='=>'int|null'],
     ],
     'bcmul' => [
       'old' => ['numeric-string', 'num1'=>'numeric-string', 'num2'=>'numeric-string', 'scale='=>'int'],
@@ -410,8 +410,8 @@ return [
       'new' => ['numeric-string', 'num'=>'numeric-string', 'exponent'=>'numeric-string', 'scale='=>'int|null'],
     ],
     'bcpowmod' => [
-      'old' => ['numeric-string|false', 'base'=>'numeric-string', 'exponent'=>'numeric-string', 'modulus'=>'numeric-string', 'scale='=>'int'],
-      'new' => ['numeric-string|false', 'base'=>'numeric-string', 'exponent'=>'numeric-string', 'modulus'=>'numeric-string', 'scale='=>'int|null'],
+      'old' => ['numeric-string|false', 'num'=>'numeric-string', 'exponent'=>'numeric-string', 'modulus'=>'numeric-string', 'scale='=>'int'],
+      'new' => ['numeric-string', 'num'=>'numeric-string', 'exponent'=>'numeric-string', 'modulus'=>'numeric-string', 'scale='=>'int|null'],
     ],
     'bcscale' => [
       'old' => ['int', 'scale='=>'int'],
@@ -432,6 +432,10 @@ return [
     'bindtextdomain' => [
       'old' => ['string', 'domain'=>'string', 'directory'=>'string'],
       'new' => ['string', 'domain'=>'string', 'directory'=>'?string'],
+    ],
+    'bzdecompress' => [
+      'old' => ['string|int|false', 'data'=>'string', 'use_less_memory='=>'int'],
+      'new' => ['string|int|false', 'data'=>'string', 'use_less_memory='=>'bool'],
     ],
     'bzwrite' => [
       'old' => ['int|false', 'bz'=>'resource', 'data'=>'string', 'length='=>'int'],
@@ -456,6 +460,10 @@ return [
     'count_chars\'1' => [
       'old' => ['string|false', 'input'=>'string', 'mode='=>'3|4'],
       'new' => ['string', 'input'=>'string', 'mode='=>'3|4'],
+    ],
+    'crypt' => [
+      'old' => ['string', 'string'=>'string', 'salt='=>'string'],
+      'new' => ['string', 'string'=>'string', 'salt'=>'string'],
     ],
     'curl_close' => [
       'old' => ['void', 'ch'=>'resource'],
@@ -649,9 +657,89 @@ return [
       'old' => ['int', 'year='=>'int', 'mode='=>'int'],
       'new' => ['int', 'year='=>'?int', 'mode='=>'int'],
     ],
+    'enchant_broker_describe' => [
+      'old' => ['array|false', 'broker'=>'resource'],
+      'new' => ['array', 'broker'=>'EnchantBroker'],
+    ],
+    'enchant_broker_dict_exists' => [
+      'old' => ['bool', 'broker'=>'resource', 'tag'=>'string'],
+      'new' => ['bool', 'broker'=>'EnchantBroker', 'tag'=>'string'],
+    ],
+    'enchant_broker_free' => [
+      'old' => ['bool', 'broker'=>'resource'],
+      'new' => ['bool', 'broker'=>'EnchantBroker'],
+    ],
+    'enchant_broker_free_dict' => [
+      'old' => ['bool', 'dictionary'=>'resource'],
+      'new' => ['bool', 'dictionary'=>'EnchantBroker'],
+    ],
+    'enchant_broker_get_dict_path' => [
+      'old' => ['string', 'broker'=>'resource', 'type'=>'int'],
+      'new' => ['string', 'broker'=>'EnchantBroker', 'type'=>'int'],
+    ],
+    'enchant_broker_get_error' => [
+      'old' => ['string|false', 'broker'=>'resource'],
+      'new' => ['string|false', 'broker'=>'EnchantBroker'],
+    ],
     'enchant_broker_init' => [
       'old' => ['resource|false'],
       'new' => ['EnchantBroker|false'],
+    ],
+    'enchant_broker_list_dicts' => [
+      'old' => ['array<int,array{lang_tag:string,provider_name:string,provider_desc:string,provider_file:string}>|false', 'broker'=>'resource'],
+      'new' => ['array<int,array{lang_tag:string,provider_name:string,provider_desc:string,provider_file:string}>', 'broker'=>'EnchantBroker'],
+    ],
+    'enchant_broker_request_dict' => [
+      'old' => ['resource|false', 'broker'=>'resource', 'tag'=>'string'],
+      'new' => ['EnchantDictionary|false', 'broker'=>'EnchantBroker', 'tag'=>'string'],
+    ],
+    'enchant_broker_request_pwl_dict' => [
+      'old' => ['resource|false', 'broker'=>'resource', 'filename'=>'string'],
+      'new' => ['EnchantDictionary|false', 'broker'=>'EnchantBroker', 'filename'=>'string'],
+    ],
+    'enchant_broker_set_dict_path' => [
+      'old' => ['bool', 'broker'=>'resource', 'type'=>'int', 'path'=>'string'],
+      'new' => ['bool', 'broker'=>'EnchantBroker', 'type'=>'int', 'path'=>'string'],
+    ],
+    'enchant_broker_set_ordering' => [
+      'old' => ['bool', 'broker'=>'resource', 'tag'=>'string', 'ordering'=>'string'],
+      'new' => ['bool', 'broker'=>'EnchantBroker', 'tag'=>'string', 'ordering'=>'string'],
+    ],
+    'enchant_dict_add_to_personal' => [
+      'old' => ['void', 'dictionary'=>'resource', 'word'=>'string'],
+      'new' => ['void', 'dictionary'=>'EnchantDictionary', 'word'=>'string'],
+    ],
+    'enchant_dict_add_to_session' => [
+      'old' => ['void', 'dictionary'=>'resource', 'word'=>'string'],
+      'new' => ['void', 'dictionary'=>'EnchantDictionary', 'word'=>'string'],
+    ],
+    'enchant_dict_check' => [
+      'old' => ['bool', 'dictionary'=>'resource', 'word'=>'string'],
+      'new' => ['bool', 'dictionary'=>'EnchantDictionary', 'word'=>'string'],
+    ],
+    'enchant_dict_describe' => [
+      'old' => ['array', 'dictionary'=>'resource'],
+      'new' => ['array', 'dictionary'=>'EnchantDictionary'],
+    ],
+    'enchant_dict_get_error' => [
+      'old' => ['string', 'dictionary'=>'resource'],
+      'new' => ['string', 'dictionary'=>'EnchantDictionary'],
+    ],
+    'enchant_dict_is_in_session' => [
+      'old' => ['bool', 'dictionary'=>'resource', 'word'=>'string'],
+      'new' => ['bool', 'dictionary'=>'EnchantDictionary', 'word'=>'string'],
+    ],
+    'enchant_dict_quick_check' => [
+      'old' => ['bool', 'dictionary'=>'resource', 'word'=>'string', '&w_suggestions='=>'array<int,string>'],
+      'new' => ['bool', 'dictionary'=>'EnchantDictionary', 'word'=>'string', '&w_suggestions='=>'array<int,string>'],
+    ],
+    'enchant_dict_store_replacement' => [
+      'old' => ['void', 'dictionary'=>'resource', 'misspelled'=>'string', 'correct'=>'string'],
+      'new' => ['void', 'dictionary'=>'EnchantDictionary', 'misspelled'=>'string', 'correct'=>'string'],
+    ],
+    'enchant_dict_suggest' => [
+      'old' => ['array', 'dictionary'=>'resource', 'word'=>'string'],
+      'new' => ['array', 'dictionary'=>'EnchantDictionary', 'word'=>'string'],
     ],
     'error_log' => [
       'old' => ['bool', 'message'=>'string', 'message_type='=>'int', 'destination='=>'string', 'additional_headers='=>'string'],
@@ -760,6 +848,10 @@ return [
     'hash_hmac' => [
       'old' => ['non-empty-string|false', 'algo'=>'string', 'data'=>'string', 'key'=>'string', 'binary='=>'bool'],
       'new' => ['non-empty-string', 'algo'=>'string', 'data'=>'string', 'key'=>'string', 'binary='=>'bool'],
+    ],
+    'hash_hmac_file' => [
+      'old' => ['non-empty-string|false', 'algo'=>'string', 'data'=>'string', 'key'=>'string', 'binary='=>'bool'],
+      'new' => ['non-empty-string', 'algo'=>'string', 'filename'=>'string', 'key'=>'string', 'binary='=>'bool'],
     ],
     'hash_init' => [
       'old' => ['HashContext|false', 'algo'=>'string', 'flags='=>'int', 'key='=>'string'],
@@ -1034,8 +1126,8 @@ return [
       'new' => ['bool', 'image'=>'GdImage', 'x'=>'int', 'y'=>'int', 'border_color'=>'int', 'color'=>'int'],
     ],
     'imagefilter' => [
-      'old' => ['bool', 'image'=>'resource', 'filter'=>'int', 'args='=>'int', 'arg2='=>'int', 'arg3='=>'int', 'arg4='=>'int'],
-      'new' => ['bool', 'image'=>'GdImage', 'filter'=>'int', 'args='=>'int', 'arg2='=>'int', 'arg3='=>'int', 'arg4='=>'int'],
+      'old' => ['bool', 'image'=>'resource', 'filter'=>'int', '...args='=>'array|int|float|bool'],
+      'new' => ['bool', 'image'=>'GdImage', 'filter'=>'int', '...args='=>'array|int|float|bool'],
     ],
     'imageflip' => [
       'old' => ['bool', 'image'=>'resource', 'mode'=>'int'],
@@ -1123,7 +1215,7 @@ return [
     ],
     'imagerotate' => [
       'old' => ['resource|false', 'src_im'=>'resource', 'angle'=>'float', 'bgdcolor'=>'int', 'ignoretransparent='=>'int'],
-      'new' => ['false|GdImage', 'image'=>'GdImage', 'angle'=>'float', 'background_color'=>'int', 'ignore_transparent='=>'int'],
+      'new' => ['false|GdImage', 'image'=>'GdImage', 'angle'=>'float', 'background_color'=>'int', 'ignore_transparent='=>'bool'],
     ],
     'imagesavealpha' => [
       'old' => ['bool', 'image'=>'resource', 'enable'=>'bool'],
@@ -1142,8 +1234,8 @@ return [
       'new' => ['bool', 'image'=>'GdImage', 'x1'=>'int', 'x2'=>'int', 'y1'=>'int', 'y2'=>'int'],
     ],
     'imagesetinterpolation' => [
-      'old' => ['bool', 'image'=>'resource', 'method'=>'int'],
-      'new' => ['bool', 'image'=>'GdImage', 'method'=>'int'],
+      'old' => ['bool', 'image'=>'resource', 'method='=>'int'],
+      'new' => ['bool', 'image'=>'GdImage', 'method='=>'int'],
     ],
     'imagesetpixel' => [
       'old' => ['bool', 'image'=>'resource', 'x'=>'int', 'y'=>'int', 'color'=>'int'],
@@ -1181,9 +1273,13 @@ return [
       'old' => ['bool', 'image'=>'resource', 'dither'=>'bool', 'num_colors'=>'int'],
       'new' => ['bool', 'image'=>'GdImage', 'dither'=>'bool', 'num_colors'=>'int'],
     ],
+    'imagettfbbox' => [
+      'old' => ['false|array', 'size'=>'float', 'angle'=>'float', 'font_filename'=>'string', 'string'=>'string'],
+      'new' => ['false|array', 'size'=>'float', 'angle'=>'float', 'font_filename'=>'string', 'string'=>'string', 'options='=>'array'],
+    ],
     'imagettftext' => [
       'old' => ['false|array', 'image'=>'resource', 'size'=>'float', 'angle'=>'float', 'x'=>'int', 'y'=>'int', 'color'=>'int', 'font_filename'=>'string', 'text'=>'string'],
-      'new' => ['false|array', 'image'=>'GdImage', 'size'=>'float', 'angle'=>'float', 'x'=>'int', 'y'=>'int', 'color'=>'int', 'font_filename'=>'string', 'text'=>'string'],
+      'new' => ['false|array', 'image'=>'GdImage', 'size'=>'float', 'angle'=>'float', 'x'=>'int', 'y'=>'int', 'color'=>'int', 'font_filename'=>'string', 'text'=>'string', 'options='=>'array'],
     ],
     'imagewbmp' => [
       'old' => ['bool', 'image'=>'resource', 'file='=>'string|resource|null', 'foreground_color='=>'int'],
@@ -1194,8 +1290,8 @@ return [
       'new' => ['bool', 'image'=>'GdImage', 'file='=>'string|resource|null', 'quality='=>'int'],
     ],
     'imagexbm' => [
-      'old' => ['bool', 'image'=>'resource', 'filename='=>'?string', 'foreground_color='=>'int'],
-      'new' => ['bool', 'image'=>'GdImage', 'filename='=>'?string', 'foreground_color='=>'int'],
+      'old' => ['bool', 'image'=>'resource', 'filename'=>'?string', 'foreground_color='=>'int'],
+      'new' => ['bool', 'image'=>'GdImage', 'filename'=>'?string', 'foreground_color='=>'?int'],
     ],
     'imap_append' => [
       'old' => ['bool', 'imap'=>'resource', 'folder'=>'string', 'message'=>'string', 'options='=>'string', 'internal_date='=>'string'],
@@ -1208,6 +1304,22 @@ return [
     'imap_mail' => [
       'old' => ['bool', 'to'=>'string', 'subject'=>'string', 'message'=>'string', 'additional_headers='=>'string', 'cc='=>'string', 'bcc='=>'string', 'return_path='=>'string'],
       'new' => ['bool', 'to'=>'string', 'subject'=>'string', 'message'=>'string', 'additional_headers='=>'?string', 'cc='=>'?string', 'bcc='=>'?string', 'return_path='=>'?string'],
+    ],
+    'imap_sort' => [
+      'old' => ['array|false', 'imap'=>'resource', 'criteria'=>'int', 'reverse'=>'int', 'flags='=>'int', 'search_criteria='=>'string', 'charset='=>'string'],
+      'new' => ['array|false', 'imap'=>'resource', 'criteria'=>'int', 'reverse'=>'bool', 'flags='=>'int', 'search_criteria='=>'?string', 'charset='=>'?string'],
+    ],
+    'inflate_add' => [
+      'old' => ['string|false', 'context'=>'resource', 'data'=>'string', 'flush_mode='=>'int'],
+      'new' => ['string|false', 'context'=>'InflateContext', 'data'=>'string', 'flush_mode='=>'int'],
+    ],
+    'inflate_get_read_len' => [
+      'old' => ['int', 'context'=>'resource'],
+      'new' => ['int', 'context'=>'InflateContext'],
+    ],
+    'inflate_get_status' => [
+      'old' => ['int', 'context'=>'resource'],
+      'new' => ['int', 'context'=>'InflateContext'],
     ],
     'inflate_init' => [
       'old' => ['resource|false', 'encoding'=>'int', 'options='=>'array'],

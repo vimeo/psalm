@@ -395,8 +395,8 @@ return [
         'new' => ['int', 'imap'=>'IMAP\Connection'],
     ],
     'imap_open' => [
-        'old' => ['resource|false', 'mailbox'=>'string', 'user'=>'string', 'password'=>'string', 'flags='=>'int', 'retries='=>'int', 'options='=>'?array'],
-        'new' => ['IMAP\Connection|false', 'mailbox'=>'string', 'user'=>'string', 'password'=>'string', 'flags='=>'int', 'retries='=>'int', 'options='=>'?array'],
+        'old' => ['resource|false', 'mailbox'=>'string', 'user'=>'string', 'password'=>'string', 'flags='=>'int', 'retries='=>'int', 'options='=>'array'],
+        'new' => ['IMAP\Connection|false', 'mailbox'=>'string', 'user'=>'string', 'password'=>'string', 'flags='=>'int', 'retries='=>'int', 'options='=>'array'],
     ],
     'imap_ping' => [
         'old' => ['bool', 'imap'=>'resource'],
@@ -443,8 +443,8 @@ return [
         'new' => ['bool', 'imap'=>'IMAP\Connection', 'sequence'=>'string', 'flag'=>'string', 'options='=>'int'],
     ],
     'imap_sort' => [
-        'old' => ['array|false', 'imap'=>'resource', 'criteria'=>'int', 'reverse'=>'int', 'flags='=>'int', 'search_criteria='=>'string', 'charset='=>'string'],
-        'new' => ['array|false', 'imap'=>'IMAP\Connection', 'criteria'=>'int', 'reverse'=>'int', 'flags='=>'int', 'search_criteria='=>'string', 'charset='=>'string'],
+        'old' => ['array|false', 'imap'=>'resource', 'criteria'=>'int', 'reverse'=>'bool', 'flags='=>'int', 'search_criteria='=>'?string', 'charset='=>'?string'],
+        'new' => ['array|false', 'imap'=>'IMAP\Connection', 'criteria'=>'int', 'reverse'=>'bool', 'flags='=>'int', 'search_criteria='=>'?string', 'charset='=>'?string'],
     ],
     'imap_status' => [
         'old' => ['stdClass|false', 'imap'=>'resource', 'mailbox'=>'string', 'flags'=>'int'],
