@@ -39,6 +39,7 @@ use Psalm\Issue\InaccessibleMethod;
 use Psalm\Issue\InternalClass;
 use Psalm\Issue\InvalidEnumCaseValue;
 use Psalm\Issue\InvalidExtendClass;
+use Psalm\Issue\InvalidInterfaceImplementation;
 use Psalm\Issue\InvalidTraversableImplementation;
 use Psalm\Issue\MethodSignatureMismatch;
 use Psalm\Issue\MismatchingDocblockPropertyType;
@@ -2108,6 +2109,35 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 IssueBuffer::maybeAdd(
                     new InvalidTraversableImplementation(
                         'Traversable should be implemented by implementing IteratorAggregate or Iterator',
+                        $code_location,
+                        $fq_class_name,
+                    ),
+                );
+            }
+
+            if ($fq_interface_name_lc === 'throwable'
+                && $codebase->analysis_php_version_id >= 7_00_00
+                && !$storage->abstract
+                && !isset($storage->parent_classes['exception'])
+                && !isset($storage->parent_classes['error'])
+            ) {
+                IssueBuffer::maybeAdd(
+                    new InvalidInterfaceImplementation(
+                        'Classes implementing Throwable should extend Exception or Error',
+                        $code_location,
+                        $fq_class_name,
+                    ),
+                );
+            }
+
+            if (($fq_interface_name_lc === 'unitenum'
+                    || $fq_interface_name_lc === 'backedenum')
+                && !$storage->is_enum
+                && $codebase->analysis_php_version_id >= 8_01_00
+            ) {
+                IssueBuffer::maybeAdd(
+                    new InvalidInterfaceImplementation(
+                        $fq_interface_name . ' cannot be implemented by classes',
                         $code_location,
                         $fq_class_name,
                     ),
