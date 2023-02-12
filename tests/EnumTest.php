@@ -765,6 +765,46 @@ class EnumTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'forbiddenUnitEnumImplementation' => [
+                'code' => '<?php
+                    class Foo implements UnitEnum {
+                        /** @psalm-pure */
+                        public static function cases(): array
+                        {
+                            return [];
+                        }
+                    }
+                ',
+                'error_message' => 'InvalidInterfaceImplementation',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'forbiddenBackedEnumImplementation' => [
+                'code' => '<?php
+                    class Foo implements BackedEnum {
+                        /** @psalm-pure */
+                        public static function cases(): array
+                        {
+                            return [];
+                        }
+
+                        /** @psalm-pure */
+                        public static function from(int|string $value): static
+                        {
+                            throw new Exception;
+                        }
+
+                        /** @psalm-pure */
+                        public static function tryFrom(int|string $value): ?static
+                        {
+                            return null;
+                        }
+                    }
+                ',
+                'error_message' => 'InvalidInterfaceImplementation',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 }
