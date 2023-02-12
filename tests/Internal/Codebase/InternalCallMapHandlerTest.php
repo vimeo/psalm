@@ -809,7 +809,7 @@ class InternalCallMapHandlerTest extends TestCase
         'callbackfilteriterator::getinneriterator' => ['8.1', '8.2'],
         'curl_multi_getcontent',
         'datetime::add' => ['8.1', '8.2'],
-        'datetime::createfromimmutable' => ['8.1', '8.2'],
+        'datetime::createfromimmutable' => ['8.1'],
         'datetime::createfrominterface',
         'datetime::setdate' => ['8.1', '8.2'],
         'datetime::settimezone' => ['8.1', '8.2'],
