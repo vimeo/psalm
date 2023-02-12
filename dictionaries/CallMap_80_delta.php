@@ -1341,6 +1341,14 @@ return [
       'old' => ['resource|false', 'ldap'=>'resource', 'dn='=>'string|null', 'password='=>'string|null', 'controls='=>'array'],
       'new' => ['resource|false', 'ldap'=>'resource', 'dn='=>'string|null', 'password='=>'string|null', 'controls='=>'?array'],
     ],
+    'ldap_compare' => [
+      'old' => ['bool|int', 'ldap'=>'resource', 'dn'=>'string', 'attribute'=>'string', 'value'=>'string', 'controls='=>'array'],
+      'new' => ['bool|int', 'ldap'=>'resource', 'dn'=>'string', 'attribute'=>'string', 'value'=>'string', 'controls='=>'?array'],
+    ],
+    'ldap_delete' => [
+      'old' => ['bool', 'ldap'=>'resource', 'dn'=>'string', 'controls='=>'array'],
+      'new' => ['bool', 'ldap'=>'resource', 'dn'=>'string', 'controls='=>'?array'],
+    ],
     'ldap_delete_ext' => [
       'old' => ['resource|false', 'ldap'=>'resource', 'dn'=>'string', 'controls='=>'array'],
       'new' => ['resource|false', 'ldap'=>'resource', 'dn'=>'string', 'controls='=>'?array'],
@@ -1349,21 +1357,57 @@ return [
       'old' => ['bool|string', 'ldap'=>'resource', 'user='=>'string', 'old_password='=>'string', 'new_password='=>'string', '&w_controls='=>'array'],
       'new' => ['bool|string', 'ldap'=>'resource', 'user='=>'string', 'old_password='=>'string', 'new_password='=>'string', '&w_controls='=>'array|null'],
     ],
+    'ldap_list' => [
+      'old' => ['resource|false', 'ldap'=>'resource|array', 'base'=>'string', 'filter'=>'string', 'attributes='=>'array', 'attributes_only='=>'int', 'sizelimit='=>'int', 'timelimit='=>'int', 'deref='=>'int', 'controls='=>'array'],
+      'new' => ['resource|false', 'ldap'=>'resource|array', 'base'=>'string', 'filter'=>'string', 'attributes='=>'array', 'attributes_only='=>'int', 'sizelimit='=>'int', 'timelimit='=>'int', 'deref='=>'int', 'controls='=>'?array'],
+    ],
     'ldap_rename_ext' => [
       'old' => ['resource|false', 'ldap'=>'resource', 'dn'=>'string', 'new_rdn'=>'string', 'new_parent'=>'string', 'delete_old_rdn'=>'bool', 'controls='=>'array'],
       'new' => ['resource|false', 'ldap'=>'resource', 'dn'=>'string', 'new_rdn'=>'string', 'new_parent'=>'string', 'delete_old_rdn'=>'bool', 'controls='=>'?array'],
+    ],
+    'ldap_mod_add' => [
+      'old' => ['bool', 'ldap'=>'resource', 'dn'=>'string', 'entry'=>'array', 'controls='=>'array'],
+      'new' => ['bool', 'ldap'=>'resource', 'dn'=>'string', 'entry'=>'array', 'controls='=>'?array'],
     ],
     'ldap_mod_add_ext' => [
       'old' => ['resource|false', 'ldap'=>'resource', 'dn'=>'string', 'entry'=>'array', 'controls='=>'array'],
       'new' => ['resource|false', 'ldap'=>'resource', 'dn'=>'string', 'entry'=>'array', 'controls='=>'?array'],
     ],
+    'ldap_mod_del' => [
+      'old' => ['bool', 'ldap'=>'resource', 'dn'=>'string', 'entry'=>'array', 'controls='=>'array'],
+      'new' => ['bool', 'ldap'=>'resource', 'dn'=>'string', 'entry'=>'array', 'controls='=>'?array'],
+    ],
     'ldap_mod_del_ext' => [
       'old' => ['resource|false', 'ldap'=>'resource', 'dn'=>'string', 'entry'=>'array', 'controls='=>'array'],
       'new' => ['resource|false', 'ldap'=>'resource', 'dn'=>'string', 'entry'=>'array', 'controls='=>'?array'],
     ],
+    'ldap_mod_replace' => [
+      'old' => ['bool', 'ldap'=>'resource', 'dn'=>'string', 'entry'=>'array', 'controls='=>'array'],
+      'new' => ['bool', 'ldap'=>'resource', 'dn'=>'string', 'entry'=>'array', 'controls='=>'?array'],
+    ],
     'ldap_mod_replace_ext' => [
       'old' => ['resource|false', 'ldap'=>'resource', 'dn'=>'string', 'entry'=>'array', 'controls='=>'array'],
       'new' => ['resource|false', 'ldap'=>'resource', 'dn'=>'string', 'entry'=>'array', 'controls='=>'?array'],
+    ],
+    'ldap_modify' => [
+      'old' => ['bool', 'ldap'=>'resource', 'dn'=>'string', 'entry'=>'array', 'controls='=>'array'],
+      'new' => ['bool', 'ldap'=>'resource', 'dn'=>'string', 'entry'=>'array', 'controls='=>'?array'],
+    ],
+    'ldap_modify_batch' => [
+      'old' => ['bool', 'ldap'=>'resource', 'dn'=>'string', 'modifications_info'=>'array', 'controls='=>'array'],
+      'new' => ['bool', 'ldap'=>'resource', 'dn'=>'string', 'modifications_info'=>'array', 'controls='=>'?array'],
+    ],
+    'ldap_read' => [
+      'old' => ['resource|false', 'ldap'=>'resource|array', 'base'=>'string', 'filter'=>'string', 'attributes='=>'array', 'attributes_only='=>'int', 'sizelimit='=>'int', 'timelimit='=>'int', 'deref='=>'int', 'controls='=>'array'],
+      'new' => ['resource|false', 'ldap'=>'resource|array', 'base'=>'string', 'filter'=>'string', 'attributes='=>'array', 'attributes_only='=>'int', 'sizelimit='=>'int', 'timelimit='=>'int', 'deref='=>'int', 'controls='=>'?array'],
+    ],
+    'ldap_rename' => [
+      'old' => ['bool', 'ldap'=>'resource', 'dn'=>'string', 'new_rdn'=>'string', 'new_parent'=>'string', 'delete_old_rdn'=>'bool', 'controls='=>'array'],
+      'new' => ['bool', 'ldap'=>'resource', 'dn'=>'string', 'new_rdn'=>'string', 'new_parent'=>'string', 'delete_old_rdn'=>'bool', 'controls='=>'?array'],
+    ],
+    'ldap_search' => [
+      'old' => ['resource|false', 'ldap'=>'resource|resource[]', 'base'=>'string', 'filter'=>'string', 'attributes='=>'array', 'attributes_only='=>'int', 'sizelimit='=>'int', 'timelimit='=>'int', 'deref='=>'int', 'controls='=>'array'],
+      'new' => ['resource|false', 'ldap'=>'resource|resource[]', 'base'=>'string', 'filter'=>'string', 'attributes='=>'array', 'attributes_only='=>'int', 'sizelimit='=>'int', 'timelimit='=>'int', 'deref='=>'int', 'controls='=>'?array'],
     ],
     'ldap_set_rebind_proc' => [
       'old' => ['bool', 'ldap'=>'resource', 'callback'=>'callable'],
@@ -1616,6 +1660,26 @@ return [
     'msg_get_queue' => [
       'old' => ['resource|false', 'key'=>'int', 'permissions='=>'int'],
       'new' => ['SysvMessageQueue|false', 'key'=>'int', 'permissions='=>'int'],
+    ],
+    'msg_receive' => [
+      'old' => ['bool', 'queue'=>'resource', 'desired_message_type'=>'int', '&w_received_message_type'=>'int', 'max_message_size'=>'int', '&w_message'=>'mixed', 'unserialize='=>'bool', 'flags='=>'int', '&w_error_code='=>'int'],
+      'new' => ['bool', 'queue'=>'SysvMessageQueue', 'desired_message_type'=>'int', '&w_received_message_type'=>'int', 'max_message_size'=>'int', '&w_message'=>'mixed', 'unserialize='=>'bool', 'flags='=>'int', '&w_error_code='=>'int'],
+    ],
+    'msg_remove_queue' => [
+      'old' => ['bool', 'queue'=>'resource'],
+      'new' => ['bool', 'queue'=>'SysvMessageQueue'],
+    ],
+    'msg_send' => [
+      'old' => ['bool', 'queue'=>'resource', 'message_type'=>'int', 'message'=>'mixed', 'serialize='=>'bool', 'blocking='=>'bool', '&w_error_code='=>'int'],
+      'new' => ['bool', 'queue'=>'SysvMessageQueue', 'message_type'=>'int', 'message'=>'mixed', 'serialize='=>'bool', 'blocking='=>'bool', '&w_error_code='=>'int'],
+    ],
+    'msg_set_queue' => [
+      'old' => ['bool', 'queue'=>'resource', 'data'=>'array'],
+      'new' => ['bool', 'queue'=>'SysvMessageQueue', 'data'=>'array'],
+    ],
+    'msg_stat_queue' => [
+      'old' => ['array', 'queue'=>'resource'],
+      'new' => ['array', 'queue'=>'SysvMessageQueue'],
     ],
     'mysqli::__construct' => [
       'old' => ['void', 'hostname='=>'string', 'username='=>'string', 'password='=>'string', 'database='=>'string', 'port='=>'int', 'socket='=>'string'],
@@ -2005,6 +2069,30 @@ return [
       'old' => ['resource|false', 'key'=>'int', 'size='=>'int', 'permissions='=>'int'],
       'new' => ['SysvSharedMemory|false', 'key'=>'int', 'size='=>'?int', 'permissions='=>'int'],
     ],
+    'shm_detach' => [
+      'old' => ['bool', 'shm'=>'resource'],
+      'new' => ['bool', 'shm'=>'SysvSharedMemory'],
+    ],
+    'shm_get_var' => [
+      'old' => ['mixed', 'shm'=>'resource', 'key'=>'int'],
+      'new' => ['mixed', 'shm'=>'SysvSharedMemory', 'key'=>'int'],
+    ],
+    'shm_has_var' => [
+      'old' => ['bool', 'shm'=>'resource', 'key'=>'int'],
+      'new' => ['bool', 'shm'=>'SysvSharedMemory', 'key'=>'int'],
+    ],
+    'shm_put_var' => [
+      'old' => ['bool', 'shm'=>'resource', 'key'=>'int', 'value'=>'mixed'],
+      'new' => ['bool', 'shm'=>'SysvSharedMemory', 'key'=>'int', 'value'=>'mixed'],
+    ],
+    'shm_remove' => [
+      'old' => ['bool', 'shm'=>'resource'],
+      'new' => ['bool', 'shm'=>'SysvSharedMemory'],
+    ],
+    'shm_remove_var' => [
+      'old' => ['bool', 'shm'=>'resource', 'key'=>'int'],
+      'new' => ['bool', 'shm'=>'SysvSharedMemory', 'key'=>'int'],
+    ],
     'shmop_close' => [
       'old' => ['void', 'shmop'=>'resource'],
       'new' => ['void', 'shmop'=>'Shmop'],
@@ -2054,8 +2142,8 @@ return [
       'new' => ['false|AddressInfo[]', 'host'=>'string', 'service='=>'?string', 'hints='=>'array'],
     ],
     'socket_bind' => [
-      'old' => ['bool', 'socket'=>'resource', 'addr'=>'string', 'port='=>'int'],
-      'new' => ['bool', 'socket'=>'Socket', 'addr'=>'string', 'port='=>'int'],
+      'old' => ['bool', 'socket'=>'resource', 'address'=>'string', 'port='=>'int'],
+      'new' => ['bool', 'socket'=>'Socket', 'address'=>'string', 'port='=>'int'],
     ],
     'socket_clear_error' => [
       'old' => ['void', 'socket='=>'resource'],
@@ -2066,8 +2154,8 @@ return [
       'new' => ['void', 'socket'=>'Socket'],
     ],
     'socket_connect' => [
-      'old' => ['bool', 'socket'=>'resource', 'addr'=>'string', 'port='=>'int'],
-      'new' => ['bool', 'socket'=>'Socket', 'addr'=>'string', 'port='=>'int'],
+      'old' => ['bool', 'socket'=>'resource', 'address'=>'string', 'port='=>'int'],
+      'new' => ['bool', 'socket'=>'Socket', 'address'=>'string', 'port='=>'?int'],
     ],
     'socket_create' => [
       'old' => ['resource|false', 'domain'=>'int', 'type'=>'int', 'protocol'=>'int'],
@@ -2086,24 +2174,24 @@ return [
       'new' => ['resource|false', 'socket'=>'Socket'],
     ],
     'socket_get_option' => [
-      'old' => ['mixed|false', 'socket'=>'resource', 'level'=>'int', 'optname'=>'int'],
-      'new' => ['mixed|false', 'socket'=>'Socket', 'level'=>'int', 'optname'=>'int'],
+      'old' => ['array|int|false', 'socket'=>'resource', 'level'=>'int', 'option'=>'int'],
+      'new' => ['array|int|false', 'socket'=>'Socket', 'level'=>'int', 'option'=>'int'],
     ],
     'socket_get_status' => [
       'old' => ['array', 'stream'=>'resource'],
       'new' => ['array', 'stream'=>'Socket'],
     ],
     'socket_getopt' => [
-      'old' => ['mixed', 'socket'=>'resource', 'level'=>'int', 'optname'=>'int'],
-      'new' => ['mixed', 'socket'=>'Socket', 'level'=>'int', 'optname'=>'int'],
+      'old' => ['array|int|false', 'socket'=>'resource', 'level'=>'int', 'option'=>'int'],
+      'new' => ['array|int|false', 'socket'=>'Socket', 'level'=>'int', 'option'=>'int'],
     ],
     'socket_getpeername' => [
-      'old' => ['bool', 'socket'=>'resource', '&w_addr'=>'string', '&w_port='=>'int'],
-      'new' => ['bool', 'socket'=>'Socket', '&w_addr'=>'string', '&w_port='=>'int'],
+      'old' => ['bool', 'socket'=>'resource', '&w_address'=>'string', '&w_port='=>'int'],
+      'new' => ['bool', 'socket'=>'Socket', '&w_address'=>'string', '&w_port='=>'int'],
     ],
     'socket_getsockname' => [
-      'old' => ['bool', 'socket'=>'resource', '&w_addr'=>'string', '&w_port='=>'int'],
-      'new' => ['bool', 'socket'=>'Socket', '&w_addr'=>'string', '&w_port='=>'int'],
+      'old' => ['bool', 'socket'=>'resource', '&w_address'=>'string', '&w_port='=>'int'],
+      'new' => ['bool', 'socket'=>'Socket', '&w_address'=>'string', '&w_port='=>'int'],
     ],
     'socket_import_stream' => [
       'old' => ['resource|false', 'stream'=>'resource'],
@@ -2118,68 +2206,64 @@ return [
       'new' => ['bool', 'socket'=>'Socket', 'backlog='=>'int'],
     ],
     'socket_read' => [
-      'old' => ['string|false', 'socket'=>'resource', 'length'=>'int', 'type='=>'int'],
-      'new' => ['string|false', 'socket'=>'Socket', 'length'=>'int', 'type='=>'int'],
+      'old' => ['string|false', 'socket'=>'resource', 'length'=>'int', 'mode='=>'int'],
+      'new' => ['string|false', 'socket'=>'Socket', 'length'=>'int', 'mode='=>'int'],
     ],
     'socket_recv' => [
-      'old' => ['int|false', 'socket'=>'resource', '&w_buf'=>'string', 'length'=>'int', 'flags'=>'int'],
-      'new' => ['int|false', 'socket'=>'Socket', '&w_buf'=>'string', 'length'=>'int', 'flags'=>'int'],
+      'old' => ['int|false', 'socket'=>'resource', '&w_data'=>'string', 'length'=>'int', 'flags'=>'int'],
+      'new' => ['int|false', 'socket'=>'Socket', '&w_data'=>'string', 'length'=>'int', 'flags'=>'int'],
     ],
     'socket_recvfrom' => [
-      'old' => ['int|false', 'socket'=>'resource', '&w_buf'=>'string', 'length'=>'int', 'flags'=>'int', '&w_name'=>'string', '&w_port='=>'int'],
-      'new' => ['int|false', 'socket'=>'Socket', '&w_buf'=>'string', 'length'=>'int', 'flags'=>'int', '&w_name'=>'string', '&w_port='=>'int'],
+      'old' => ['int|false', 'socket'=>'resource', '&w_data'=>'string', 'length'=>'int', 'flags'=>'int', '&w_address'=>'string', '&w_port='=>'int'],
+      'new' => ['int|false', 'socket'=>'Socket', '&w_data'=>'string', 'length'=>'int', 'flags'=>'int', '&w_address'=>'string', '&w_port='=>'int'],
     ],
     'socket_recvmsg' => [
-      'old' => ['int|false', 'socket'=>'resource', '&w_message'=>'string', 'flags='=>'int'],
-      'new' => ['int|false', 'socket'=>'Socket', '&w_message'=>'string', 'flags='=>'int'],
+      'old' => ['int|false', 'socket'=>'resource', '&w_message'=>'array', 'flags='=>'int'],
+      'new' => ['int|false', 'socket'=>'Socket', '&w_message'=>'array', 'flags='=>'int'],
     ],
     'socket_select' => [
-      'old' => ['int|false', '&rw_read_fds'=>'resource[]|null', '&rw_write_fds'=>'resource[]|null', '&rw_except_fds'=>'resource[]|null', 'tv_sec'=>'int|null', 'tv_usec='=>'int'],
-      'new' => ['int|false', '&rw_read_fds'=>'Socket[]|null', '&rw_write_fds'=>'Socket[]|null', '&rw_except_fds'=>'Socket[]|null', 'tv_sec'=>'int|null', 'tv_usec='=>'int'],
+      'old' => ['int|false', '&rw_read'=>'resource[]|null', '&rw_write'=>'resource[]|null', '&rw_except'=>'resource[]|null', 'seconds'=>'int|null', 'microseconds='=>'int'],
+      'new' => ['int|false', '&rw_read'=>'Socket[]|null', '&rw_write'=>'Socket[]|null', '&rw_except'=>'Socket[]|null', 'seconds'=>'int|null', 'microseconds='=>'int'],
     ],
     'socket_send' => [
-      'old' => ['int|false', 'socket'=>'resource', 'buf'=>'string', 'length'=>'int', 'flags'=>'int'],
-      'new' => ['int|false', 'socket'=>'Socket', 'buf'=>'string', 'length'=>'int', 'flags'=>'int'],
+      'old' => ['int|false', 'socket'=>'resource', 'data'=>'string', 'length'=>'int', 'flags'=>'int'],
+      'new' => ['int|false', 'socket'=>'Socket', 'data'=>'string', 'length'=>'int', 'flags'=>'int'],
     ],
     'socket_sendmsg' => [
-      'old' => ['int|false', 'socket'=>'resource', 'message'=>'array', 'flags'=>'int'],
-      'new' => ['int|false', 'socket'=>'Socket', 'message'=>'array', 'flags'=>'int'],
+      'old' => ['int|false', 'socket'=>'resource', 'message'=>'array', 'flags='=>'int'],
+      'new' => ['int|false', 'socket'=>'Socket', 'message'=>'array', 'flags='=>'int'],
     ],
     'socket_sendto' => [
-      'old' => ['int|false', 'socket'=>'resource', 'buf'=>'string', 'length'=>'int', 'flags'=>'int', 'addr'=>'string', 'port='=>'int'],
-      'new' => ['int|false', 'socket'=>'Socket', 'buf'=>'string', 'length'=>'int', 'flags'=>'int', 'addr'=>'string', 'port='=>'int'],
+      'old' => ['int|false', 'socket'=>'resource', 'data'=>'string', 'length'=>'int', 'flags'=>'int', 'address'=>'string', 'port='=>'int'],
+      'new' => ['int|false', 'socket'=>'Socket', 'data'=>'string', 'length'=>'int', 'flags'=>'int', 'address'=>'string', 'port='=>'?int'],
     ],
     'socket_set_block' => [
       'old' => ['bool', 'socket'=>'resource'],
       'new' => ['bool', 'socket'=>'Socket'],
     ],
     'socket_set_blocking' => [
-      'old' => ['bool', 'socket'=>'resource', 'mode'=>'int'],
-      'new' => ['bool', 'socket'=>'Socket', 'mode'=>'int'],
+      'old' => ['bool', 'stream'=>'resource', 'enable'=>'bool'],
+      'new' => ['bool', 'stream'=>'Socket', 'enable'=>'bool'],
     ],
     'socket_set_nonblock' => [
       'old' => ['bool', 'socket'=>'resource'],
       'new' => ['bool', 'socket'=>'Socket'],
     ],
     'socket_set_option' => [
-      'old' => ['bool', 'socket'=>'resource', 'level'=>'int', 'optname'=>'int', 'optval'=>'int|string|array'],
-      'new' => ['bool', 'socket'=>'Socket', 'level'=>'int', 'optname'=>'int', 'optval'=>'int|string|array'],
+      'old' => ['bool', 'socket'=>'resource', 'level'=>'int', 'option'=>'int', 'value'=>'int|string|array'],
+      'new' => ['bool', 'socket'=>'Socket', 'level'=>'int', 'option'=>'int', 'value'=>'int|string|array'],
     ],
     'socket_set_timeout' => [
       'old' => ['bool', 'stream'=>'resource', 'seconds'=>'int', 'microseconds='=>'int'],
       'new' => ['bool', 'stream'=>'resource', 'seconds'=>'int', 'microseconds='=>'int'],
     ],
     'socket_setopt' => [
-      'old' => ['void', 'socket'=>'resource', 'level'=>'int', 'optname'=>'int', 'optval'=>'int|string|array'],
-      'new' => ['void', 'socket'=>'Socket', 'level'=>'int', 'optname'=>'int', 'optval'=>'int|string|array'],
+      'old' => ['bool', 'socket'=>'resource', 'level'=>'int', 'option'=>'int', 'value'=>'int|string|array'],
+      'new' => ['bool', 'socket'=>'Socket', 'level'=>'int', 'option'=>'int', 'value'=>'int|string|array'],
     ],
     'socket_shutdown' => [
-      'old' => ['bool', 'socket'=>'resource', 'how='=>'int'],
-      'new' => ['bool', 'socket'=>'Socket', 'how='=>'int'],
-    ],
-    'socket_strerror' => [
-      'old' => ['string', 'errno'=>'int'],
-      'new' => ['string', 'errno'=>'int'],
+      'old' => ['bool', 'socket'=>'resource', 'mode='=>'int'],
+      'new' => ['bool', 'socket'=>'Socket', 'mode='=>'int'],
     ],
     'socket_write' => [
       'old' => ['int|false', 'socket'=>'resource', 'data'=>'string', 'length='=>'int'],
@@ -2308,6 +2392,10 @@ return [
     'substr' => [
       'old' => ['string|false', 'string'=>'string', 'offset'=>'int', 'length='=>'int'],
       'new' => ['string', 'string'=>'string', 'offset'=>'int', 'length='=>'?int'],
+    ],
+    'substr_replace' => [
+      'old' => ['string|string[]', 'string'=>'string|string[]', 'replace'=>'string|string[]', 'offset'=>'int|int[]', 'length='=>'int|int[]'],
+      'new' => ['string|string[]', 'string'=>'string|string[]', 'replace'=>'string|string[]', 'offset'=>'int|int[]', 'length='=>'int|int[]|null'],
     ],
     'tidy_parse_file' => [
       'old' => ['tidy', 'filename'=>'string', 'config='=>'array|string', 'encoding='=>'string', 'useIncludePath='=>'bool'],
