@@ -860,8 +860,8 @@ class ArgumentAnalyzer
             $codebase,
             $input_type,
             $param_type,
-            true,
-            true,
+            $input_type->ignore_nullable_issues,
+            $input_type->ignore_falsable_issues,
             $union_comparison_results,
         );
 
