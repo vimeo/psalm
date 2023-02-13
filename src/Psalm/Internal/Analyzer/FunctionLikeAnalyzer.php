@@ -2000,7 +2000,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             MethodAnalyzer::checkMethodSignatureMustOmitReturnType($storage, $codeLocation);
 
             if ($appearing_class_storage->is_enum) {
-                MethodAnalyzer::checkForbiddenEnumMethod($storage);
+                MethodAnalyzer::checkForbiddenEnumMethod($storage, $appearing_class_storage);
             }
 
             if (!$context->calling_method_id || !$context->collect_initializations) {

@@ -805,6 +805,62 @@ class EnumTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'forbiddenUnitEnumCasesMethod' => [
+                'code' => '<?php
+                    enum Foo {
+                        case A;
+                        public static function cases(): array
+                        {
+                            return [];
+                        }
+                    }
+                ',
+                'error_message' => 'InvalidEnumMethod',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'forbiddenBackedEnumCasesMethod' => [
+                'code' => '<?php
+                    enum Status: string {
+                        case Open = "open";
+                        public static function cases(): array
+                        {
+                            return [];
+                        }
+                    }
+                ',
+                'error_message' => 'InvalidEnumMethod',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'forbiddenBackedEnumFromMethod' => [
+                'code' => '<?php
+                    enum Status: string {
+                        case Open = "open";
+                        public static function from(string $value): self
+                        {
+                            throw new Exception;
+                        }
+                    }
+                ',
+                'error_message' => 'InvalidEnumMethod',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'forbiddenBackedEnumTryFromMethod' => [
+                'code' => '<?php
+                    enum Status: string {
+                        case Open = "open";
+                        public static function tryFrom(string $value): ?self
+                        {
+                            return null;
+                        }
+                    }
+                ',
+                'error_message' => 'InvalidEnumMethod',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 }
