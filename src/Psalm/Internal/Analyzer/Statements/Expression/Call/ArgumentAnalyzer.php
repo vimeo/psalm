@@ -2,6 +2,7 @@
 
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
+use InvalidArgumentException;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
@@ -42,6 +43,7 @@ use Psalm\Issue\NullArgument;
 use Psalm\Issue\PossiblyFalseArgument;
 use Psalm\Issue\PossiblyInvalidArgument;
 use Psalm\Issue\PossiblyNullArgument;
+use Psalm\Issue\UndefinedClass;
 use Psalm\IssueBuffer;
 use Psalm\Node\VirtualArg;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
@@ -269,17 +271,25 @@ class ArgumentAnalyzer
             }
         }
 
-        $param_type = TypeExpander::expandUnion(
-            $codebase,
-            $param_type,
-            $classlike_storage->name ?? null,
-            $static_classlike_storage->name ?? null,
-            $parent_class,
-            true,
-            false,
-            $static_classlike_storage->final ?? false,
-            true,
-        );
+        try {
+            $param_type = TypeExpander::expandUnion(
+                $codebase,
+                $param_type,
+                $classlike_storage->name ?? null,
+                $static_classlike_storage->name ?? null,
+                $parent_class,
+                true,
+                false,
+                $static_classlike_storage->final ?? false,
+                true,
+            );
+        } catch (InvalidArgumentException) {
+            IssueBuffer::maybeAdd(new UndefinedClass(
+                'Class, interface or enum named ' . $param_type->getKey() . ' does not exist',
+                new CodeLocation($statements_analyzer->getSource(), $arg->value),
+                $param_type->getKey()
+            ));
+        }
 
         if ($class_generic_params) {
             // here we're replacing the param types and arg types with the bound
