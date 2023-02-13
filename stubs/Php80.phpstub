@@ -239,3 +239,24 @@ class DatePeriod implements IteratorAggregate
  * @psalm-taint-sink ssrf $url
  */
 function get_headers(string $url, bool $associative = false, $context = null) : array|false {}
+
+final class CurlHandle
+{
+    private function __construct()
+    {
+    }
+}
+
+final class CurlMultiHandle
+{
+    private function __construct()
+    {
+    }
+}
+
+final class CurlShareHandle
+{
+    private function __construct()
+    {
+    }
+}
