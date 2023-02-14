@@ -514,6 +514,42 @@ class NamedFunctionCallHandler
                 }
             }
         }
+
+        if ($first_arg
+            && $function_id === 'is_a'
+            // assertion reconsiler already emits relevant (but different) issues
+            && !$context->inside_conditional
+        ) {
+            $first_arg_type = $statements_analyzer->node_data->getType($first_arg->value);
+
+            if ($first_arg_type && $first_arg_type->isString()) {
+                $third_arg = $stmt->getArgs()[2] ?? null;
+                if ($third_arg) {
+                    $third_arg_type = $statements_analyzer->node_data->getType($third_arg->value);
+                } else {
+                    $third_arg_type = Type::getFalse();
+                }
+
+                if ($third_arg_type
+                    && $third_arg_type->isSingle()
+                    && $third_arg_type->isFalse()
+                ) {
+                    if ($first_arg_type->from_docblock) {
+                        IssueBuffer::maybeAdd(new RedundantFunctionCallGivenDocblockType(
+                            'Call to is_a always return false when first argument is string '
+                            . 'unless third argument is true',
+                            new CodeLocation($statements_analyzer, $function_name),
+                        ));
+                    } else {
+                        IssueBuffer::maybeAdd(new RedundantFunctionCall(
+                            'Call to is_a always return false when first argument is string '
+                            . 'unless third argument is true',
+                            new CodeLocation($statements_analyzer, $function_name),
+                        ));
+                    }
+                }
+            }
+        }
     }
 
     private static function handleDependentTypeFunction(
