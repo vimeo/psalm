@@ -861,6 +861,77 @@ class EnumTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'functionCallWithInvalidCase' => [
+                'code' => '<?php
+                    enum Status {
+                        case Open;
+                        case Closed;
+                    }
+
+                    /** @param Status::Open $status */
+                    function foo(Status $status): void {}
+
+                    foo(Status::Closed);
+                ',
+                'error_message' => 'InvalidArgument',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'issue-7814-1' => [
+                'code' => '<?php
+                    enum State
+                    {
+                        case A;
+                        case B;
+                        case C;
+                    }
+
+                    /**
+                     * @param State::A|State::B $_
+                     */
+                    function test(State $_): void {}
+
+                    test(State::C);
+                ',
+                'error_message' => 'InvalidArgument',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'issue-7814-2' => [
+                'code' => '<?php
+                    enum State
+                    {
+                        case A;
+                        case B;
+                        case C;
+                    }
+
+                    /**
+                     * @template T of State
+                     */
+                    final class WithState
+                    {
+                        /**
+                         * @param T $s
+                         */
+                        public function __construct(
+                            public readonly State $s,
+                        ) {}
+                    }
+
+                    /**
+                     * @param WithState<State::A> $_
+                     */
+                    function withA(WithState $_): void {}
+
+                    // Should be issue here. But nothing
+                    // Argument 1 of withA expects WithState<enum(State::A)>, WithState<enum(State::C)> provided
+                    withA(new WithState(State::C));
+                ',
+                'error_message' => 'InvalidArgument',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 }
