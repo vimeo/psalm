@@ -439,7 +439,6 @@ interface Serializable {
 
 /**
  * @template-covariant T as object
- * @psalm-immutable
  */
 final class WeakReference
 {
@@ -448,10 +447,10 @@ final class WeakReference
 
     /**
      * @template TIn as object
-     * @param TIn $referent
+     * @param TIn $object
      * @return WeakReference<TIn>
      */
-    public static function create(object $referent): WeakReference {}
+    public static function create(object $object): WeakReference {}
 
     /** @return ?T */
     public function get(): ?object {}
