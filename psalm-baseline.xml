@@ -489,11 +489,6 @@
       <code>$type_tokens[$i - 1]</code>
     </PossiblyInvalidArrayOffset>
   </file>
-  <file src="src/Psalm/Plugin/Shepherd.php">
-    <DeprecatedProperty>
-      <code><![CDATA[$codebase->config->shepherd_host]]></code>
-    </DeprecatedProperty>
-  </file>
   <file src="src/Psalm/Storage/ClassConstantStorage.php">
     <MutableDependency>
       <code>CustomMetadataTrait</code>
