@@ -48,6 +48,7 @@ Level 5 and above allows a more non-verifiable code, and higher levels are even 
  - [InvalidEnumMethod](issues/InvalidEnumMethod.md)
  - [InvalidExtendClass](issues/InvalidExtendClass.md)
  - [InvalidGlobal](issues/InvalidGlobal.md)
+ - [InvalidInterfaceImplementation](issues/InvalidInterfaceImplementation.md)
  - [InvalidParamDefault](issues/InvalidParamDefault.md)
  - [InvalidParent](issues/InvalidParent.md)
  - [InvalidPassByReference](issues/InvalidPassByReference.md)

@@ -301,6 +301,13 @@ class AtomicTypeComparator
             return false;
         }
 
+        if ($container_type_part instanceof TEnumCase
+            && $input_type_part instanceof TEnumCase
+        ) {
+            return $container_type_part->value === $input_type_part->value
+                && $container_type_part->case_name === $input_type_part->case_name;
+        }
+
         if (($input_type_part instanceof TNamedObject
                 || ($input_type_part instanceof TTemplateParam
                     && $input_type_part->as->hasObjectType())

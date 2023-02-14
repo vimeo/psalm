@@ -656,9 +656,9 @@ class StatementsAnalyzer extends SourceAnalyzer
         }
 
         foreach ($checked_types as [$check_type_line, $is_exact]) {
-            [$checked_var, $check_type_string] = array_map('trim', explode('=', $check_type_line));
+            [$checked_var, $check_type_string] = array_map('trim', explode('=', $check_type_line, 2)) + ['', ''];
 
-            if ($check_type_string === '') {
+            if ($check_type_string === '' || $checked_var === '') {
                 IssueBuffer::maybeAdd(
                     new InvalidDocblock(
                         "Invalid format for @psalm-check-type" . ($is_exact ? "-exact" : ""),

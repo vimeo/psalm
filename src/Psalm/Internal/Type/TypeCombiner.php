@@ -362,9 +362,11 @@ class TypeCombiner
             $new_types[] = $type->setFromDocblock($from_docblock);
         }
 
-        if (!$new_types && !$has_never) {
-            throw new UnexpectedValueException('There should be types here');
-        } elseif (!$new_types && $has_never) {
+        if (!$new_types) {
+            if (!$has_never) {
+                throw new UnexpectedValueException('There should be types here');
+            }
+
             $union_type = Type::getNever($from_docblock);
         } else {
             $union_type = new Union($new_types);
@@ -1351,9 +1353,7 @@ class TypeCombiner
 
         if (!$combination->array_type_params || $combination->array_type_params[1]->isNever()) {
             if (!$overwrite_empty_array
-                && ($combination->array_type_params
-                    && ($combination->array_type_params[1]->isNever()
-                        || $combination->array_type_params[1]->isMixed()))
+                && $combination->array_type_params
             ) {
                 foreach ($combination->objectlike_entries as &$objectlike_entry) {
                     $objectlike_entry = $objectlike_entry->setPossiblyUndefined(true);

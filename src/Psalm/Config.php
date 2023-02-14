@@ -66,7 +66,6 @@ use function extension_loaded;
 use function fclose;
 use function file_exists;
 use function file_get_contents;
-use function filetype;
 use function flock;
 use function fopen;
 use function get_class;
@@ -2502,11 +2501,12 @@ class Config
                 $full_path = $dir . '/' . $object;
 
                 // if it was deleted in the meantime/race condition with other psalm process
+                clearstatcache(true, $full_path);
                 if (!file_exists($full_path)) {
                     continue;
                 }
 
-                if (filetype($full_path) === 'dir') {
+                if (is_dir($full_path)) {
                     self::removeCacheDirectory($full_path);
                 } else {
                     $fp = fopen($full_path, 'c');

@@ -46,6 +46,7 @@ use function chdir;
 use function count;
 use function file_exists;
 use function file_put_contents;
+use function function_exists;
 use function fwrite;
 use function gc_collect_cycles;
 use function gc_disable;
@@ -63,6 +64,7 @@ use function is_string;
 use function json_encode;
 use function max;
 use function microtime;
+use function opcache_get_status;
 use function parse_url;
 use function preg_match;
 use function preg_replace;
@@ -258,9 +260,11 @@ final class Psalm
 
         $threads = self::detectThreads($options, $config, $in_ci);
 
+        $progress = self::initProgress($options, $config);
+
         self::emitMacPcreWarning($options, $threads);
 
-        self::restart($options, $threads);
+        self::restart($options, $threads, $progress);
 
         if (isset($options['debug-emitted-issues'])) {
             $config->debug_emitted_issues = true;
@@ -317,7 +321,6 @@ final class Psalm
             self::clearGlobalCache($config);
         }
 
-        $progress = self::initProgress($options, $config);
         $providers = self::initProviders($options, $config, $current_dir);
 
         $stdout_report_options = self::initStdoutReportOptions($options, $show_info, $output_format, $in_ci);
@@ -879,7 +882,7 @@ final class Psalm
         }
     }
 
-    private static function restart(array $options, int $threads): void
+    private static function restart(array $options, int $threads, Progress $progress): void
     {
         $ini_handler = new PsalmRestarter('PSALM');
 
@@ -904,6 +907,16 @@ final class Psalm
 
         // If Xdebug is enabled, restart without it
         $ini_handler->check();
+
+        if (!function_exists('opcache_get_status')
+            || !($opcache_status = opcache_get_status(false))
+            || !isset($opcache_status['opcache_enabled'])
+            || !$opcache_status['opcache_enabled']
+        ) {
+            $progress->write(PHP_EOL
+                . 'Install the opcache extension to make use of JIT on PHP 8.0+ for a 20%+ performance boost!'
+                . PHP_EOL . PHP_EOL);
+        }
     }
 
     private static function detectThreads(array $options, Config $config, bool $in_ci): int
@@ -1087,9 +1100,7 @@ final class Psalm
             } else {
                 $find_unused_code = 'auto';
             }
-        }
-
-        if ($config->find_unused_code) {
+        } elseif ($config->find_unused_code) {
             $find_unused_code = 'auto';
         }
 

@@ -75,6 +75,7 @@
  - [InvalidFalsableReturnType](issues/InvalidFalsableReturnType.md)
  - [InvalidFunctionCall](issues/InvalidFunctionCall.md)
  - [InvalidGlobal](issues/InvalidGlobal.md)
+ - [InvalidInterfaceImplementation](issues/InvalidInterfaceImplementation.md)
  - [InvalidIterator](issues/InvalidIterator.md)
  - [InvalidLiteralArgument](issues/InvalidLiteralArgument.md)
  - [InvalidMethodCall](issues/InvalidMethodCall.md)

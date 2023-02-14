@@ -51,6 +51,13 @@ Some examples:
 - `value-of<string[]>` evaluates to `string`
 - `value-of<T>` evaluates to the template param's value-type (ensure `@template T of array`)
 
+### Use with enumerations
+
+In addition to array-types, `value-of` can also be used to specify an `int` or `string` that contains one of the possible values of a `BackedEnum`:
+
+- `value-of<Suit>` evaluates to `'H'|'D'|'C'|'S'` (see [Backed enumerations](https://www.php.net/manual/en/language.enumerations.backed.php))
+- `value-of<BinaryDigits>` evaluates to `0|1`
+
 ### Notes on template usage
 
 If you use `value-of` with a template param, you can fulfill the type check only with these allowed methods:

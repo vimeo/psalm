@@ -4,7 +4,6 @@ namespace Psalm\Internal;
 
 use Psalm\Exception\ComplicatedExpressionException;
 use Psalm\Storage\Assertion;
-use Psalm\Storage\Assertion\Falsy;
 use UnexpectedValueException;
 
 use function array_filter;
@@ -373,21 +372,17 @@ class Algebra
                     $things_that_can_be_said = [];
 
                     foreach ($possible_types as $assertion) {
-                        if ($assertion instanceof Falsy || !$assertion->isNegation()) {
-                            $things_that_can_be_said[(string)$assertion] = $assertion;
-                        }
+                        $things_that_can_be_said[(string)$assertion] = $assertion;
                     }
 
-                    if ($things_that_can_be_said && count($things_that_can_be_said) === count($possible_types)) {
-                        if ($clause->generated && count($possible_types) > 1) {
-                            unset($cond_referenced_var_ids[$var]);
-                        }
+                    if ($clause->generated && count($possible_types) > 1) {
+                        unset($cond_referenced_var_ids[$var]);
+                    }
 
-                        $truths[$var] = [array_values($things_that_can_be_said)];
+                    $truths[$var] = [array_values($things_that_can_be_said)];
 
-                        if ($creating_conditional_id && $creating_conditional_id === $clause->creating_conditional_id) {
-                            $active_truths[$var] = [array_values($things_that_can_be_said)];
-                        }
+                    if ($creating_conditional_id && $creating_conditional_id === $clause->creating_conditional_id) {
+                        $active_truths[$var] = [array_values($things_that_can_be_said)];
                     }
                 }
             }

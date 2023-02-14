@@ -710,7 +710,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
             foreach ($storage->throws as $expected_exception => $_) {
                 if ($expected_exception === $possibly_thrown_exception
-                    || $codebase->classExtendsOrImplements($possibly_thrown_exception, $expected_exception)
+                    || (
+                        $codebase->classOrInterfaceExists($possibly_thrown_exception)
+                        && $codebase->classExtendsOrImplements($possibly_thrown_exception, $expected_exception)
+                    )
                 ) {
                     $is_expected = true;
                     break;
@@ -1997,7 +2000,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             MethodAnalyzer::checkMethodSignatureMustOmitReturnType($storage, $codeLocation);
 
             if ($appearing_class_storage->is_enum) {
-                MethodAnalyzer::checkForbiddenEnumMethod($storage);
+                MethodAnalyzer::checkForbiddenEnumMethod($storage, $appearing_class_storage);
             }
 
             if (!$context->calling_method_id || !$context->collect_initializations) {

@@ -308,6 +308,7 @@ class DocumentationTest extends TestCase
                 case 'InvalidEnumMethod':
                 case 'NoEnumProperties':
                 case 'OverriddenFinalConstant':
+                case 'InvalidInterfaceImplementation':
                     $php_version = '8.1';
                     break;
             }

@@ -64,5 +64,23 @@ class CheckTypeTest extends TestCase
             ',
             'error_message' => 'Checked variable $foo? = 1 does not match $foo = 1',
         ];
+        yield 'invalidIncompleteSyntax' => [
+            'code' => '<?php
+                /** @psalm-check-type */
+            ',
+            'error_message' => 'InvalidDocblock',
+        ];
+        yield 'invalidIncompleteSyntaxNoVar' => [
+            'code' => '<?php
+                /** @psalm-check-type = 1 */
+            ',
+            'error_message' => 'InvalidDocblock',
+        ];
+        yield 'invalidIncompleteSyntaxNoType' => [
+            'code' => '<?php
+                /** @psalm-check-type $var = */
+            ',
+            'error_message' => 'InvalidDocblock',
+        ];
     }
 }

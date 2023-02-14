@@ -80,6 +80,7 @@ use function assert;
 use function count;
 use function explode;
 use function get_class;
+use function is_int;
 use function min;
 use function strlen;
 use function strpos;
@@ -2000,7 +2001,7 @@ class SimpleAssertionReconciler extends Reconciler
                         $existing_var_type->addType(new TIntRange($assertion_value, $atomic_type->value));
                     }
                 }*/
-            } elseif ($atomic_type instanceof TInt) {
+            } elseif ($atomic_type instanceof TInt && is_int($assertion_value)) {
                 $redundant = false;
                 $existing_var_type->removeType($atomic_type->getKey());
                 $existing_var_type->addType(new TIntRange($assertion_value, null));

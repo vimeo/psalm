@@ -272,6 +272,7 @@
             <xs:element name="InvalidFalsableReturnType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidFunctionCall" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidGlobal" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="InvalidInterfaceImplementation" type="ClassIssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidIterator" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidLiteralArgument" type="ArgumentIssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidMethodCall" type="IssueHandlerType" minOccurs="0" />

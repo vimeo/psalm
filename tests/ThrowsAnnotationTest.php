@@ -634,4 +634,29 @@ class ThrowsAnnotationTest extends TestCase
 
         $this->analyzeFile('somefile.php', $context);
     }
+
+    public function testUnknownExceptionInThrowsOfACalledMethod(): void
+    {
+        $this->expectExceptionMessage('MissingThrowsDocblock');
+        $this->expectException(CodeException::class);
+        Config::getInstance()->check_for_throws_docblock = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                final class Monkey {
+                    /** @throws InvalidArgumentException */
+                    public function spendsItsDay(): void {
+                        $this->havingFun();
+                    }
+                    /** @throws \Monkey\Shit */
+                    private function havingFun(): void {}
+                }
+            ',
+        );
+
+        $context = new Context();
+
+        $this->analyzeFile('somefile.php', $context);
+    }
 }

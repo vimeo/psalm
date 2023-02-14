@@ -16,7 +16,7 @@
  */
 return [
   'added' => [
-    'mysqli_execute_query' => ['mysqli_result|bool', 'mysqli'=>'mysqli', 'query'=>'non-empty-string', 'params='=>'list<mixed>|null'],
+    'mysqli_execute_query' => ['mysqli_result|bool', 'mysql'=>'mysqli', 'query'=>'non-empty-string', 'params='=>'list<mixed>|null'],
     'mysqli::execute_query' => ['mysqli_result|bool', 'query'=>'non-empty-string', 'params='=>'list<mixed>|null'],
     'openssl_cipher_key_length' => ['positive-int|false', 'cipher_algo'=>'non-empty-string'],
     'curl_upkeep' => ['bool', 'handle'=>'CurlHandle'],
@@ -33,6 +33,14 @@ return [
   ],
 
   'changed' => [
+    'dba_open' => [
+      'old' => ['resource', 'path'=>'string', 'mode'=>'string', 'handler='=>'string', '...handler_params='=>'string'],
+      'new' => ['resource', 'path'=>'string', 'mode'=>'string', 'handler='=>'?string', 'permission='=>'int', 'map_size='=>'int', 'flags='=>'?int'],
+    ],
+    'dba_popen' => [
+      'old' => ['resource', 'path'=>'string', 'mode'=>'string', 'handler='=>'string', '...handler_params='=>'string'],
+      'new' => ['resource', 'path'=>'string', 'mode'=>'string', 'handler='=>'?string', 'permission='=>'int', 'map_size='=>'int', 'flags='=>'?int'],
+    ],
     'str_split' => [
        'old' => ['non-empty-list<string>', 'string'=>'string', 'length='=>'positive-int'],
        'new' => ['list<string>', 'string'=>'string', 'length='=>'positive-int'],

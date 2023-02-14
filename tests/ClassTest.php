@@ -1202,6 +1202,14 @@ class ClassTest extends TestCase
                 ',
                 'error_message' => 'MixedMethodCall',
             ],
+            'forbiddenThrowableImplementation' => [
+                'code' => '<?php
+                    class C implements Throwable {}
+                ',
+                'error_message' => 'InvalidInterfaceImplementation',
+                'ignored_issues' => [],
+                'php_version' => '7.0',
+            ],
         ];
     }
 }
