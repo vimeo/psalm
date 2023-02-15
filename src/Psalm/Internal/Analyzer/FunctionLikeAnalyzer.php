@@ -736,6 +736,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                             $possibly_thrown_exception . ' is thrown but not caught - please either catch'
                                 . ' or add a @throws annotation',
                             $codelocation,
+                            $possibly_thrown_exception,
                         ),
                     );
                 }

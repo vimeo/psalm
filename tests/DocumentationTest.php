@@ -333,6 +333,7 @@ class DocumentationTest extends TestCase
         $all_shortcodes = [];
 
         foreach ($all_issues as $issue_type) {
+            /** @var class-string $issue_class */
             $issue_class = '\\Psalm\\Issue\\' . $issue_type;
             /** @var int $shortcode */
             $shortcode = $issue_class::SHORTCODE;
