@@ -2030,6 +2030,18 @@ class ConstantTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'classStringIsRequiredToAccessClassConstant' => [
+                'code' => '<?php
+                    class Foo {
+                        public const BAR = "bar";
+                    }
+
+                    $class = "Foo";
+
+                    $class::BAR;
+                ',
+                'error_message' => 'InvalidStringClass',
+            ],
         ];
     }
 }

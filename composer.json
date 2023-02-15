@@ -5,7 +5,8 @@
     "keywords": [
         "php",
         "code",
-        "inspection"
+        "inspection",
+        "static analysis"
     ],
     "license": "MIT",
     "authors": [
