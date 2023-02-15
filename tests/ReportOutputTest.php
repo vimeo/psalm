@@ -963,12 +963,14 @@ echo $a;';
         $emacs_report_options = ProjectAnalyzer::getFileReportOptions([__DIR__ . '/test-report.emacs'])[0];
 
         $this->assertSame(
-            'somefile.php:3:10:error - Cannot find referenced variable $as_you_____type
-somefile.php:3:10:error - Could not infer a return type
-somefile.php:2:42:error - Could not verify return type \'null|string\' for psalmCanVerify
-somefile.php:8:6:error - Const CHANGE_ME is not defined
-somefile.php:17:6:warning - Possibly undefined global variable $a, first seen on line 11
-',
+            <<<'EOF'
+            somefile.php:3:10:error - UndefinedVariable: Cannot find referenced variable $as_you_____type (see https://psalm.dev/024)
+            somefile.php:3:10:error - MixedReturnStatement: Could not infer a return type (see https://psalm.dev/138)
+            somefile.php:2:42:error - MixedInferredReturnType: Could not verify return type 'null|string' for psalmCanVerify (see https://psalm.dev/047)
+            somefile.php:8:6:error - UndefinedConstant: Const CHANGE_ME is not defined (see https://psalm.dev/020)
+            somefile.php:17:6:warning - PossiblyUndefinedGlobalVariable: Possibly undefined global variable $a, first seen on line 11 (see https://psalm.dev/126)
+
+            EOF,
             IssueBuffer::getOutput(IssueBuffer::getIssuesData(), $emacs_report_options),
         );
     }
