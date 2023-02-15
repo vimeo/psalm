@@ -1113,7 +1113,7 @@ class Config
             }
         }
         foreach ($required_extensions as $required_ext => $_) {
-            if (isset($config->php_extensions[$required_ext])) {
+            if (array_key_exists($required_ext, $config->php_extensions)) {
                 $config->php_extensions[$required_ext] = true;
             } else {
                 $config->php_extensions_not_supported[$required_ext] = true;
