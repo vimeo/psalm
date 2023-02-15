@@ -3,6 +3,8 @@
 Emitted when `--find-dead-code` is turned on and Psalm cannot find any uses of a
 private property.
 
+Properties used in constructor only are considered unused. Use normal variables instead.
+
 If this property is used and part of the public API, annotate the containing
 class with `@psalm-api`.
 
