@@ -1256,6 +1256,21 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         ),
                     );
                 }
+
+                if ($default_type
+                    && !$default_type->isNull()
+                    && $param_type->isSingleAndMaybeNullable()
+                    && $param_type->getCallableTypes()
+                ) {
+                    IssueBuffer::maybeAdd(
+                        new InvalidParamDefault(
+                            'Default value type for ' . $param_type->getId() . ' argument ' . ($offset + 1)
+                                . ' of method ' . $cased_method_id
+                                . ' can only be null, ' . $default_type->getId() . ' specified',
+                            $function_param->type_location,
+                        ),
+                    );
+                }
             }
 
             if ($has_template_types) {
