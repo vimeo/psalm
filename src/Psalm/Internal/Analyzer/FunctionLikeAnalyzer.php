@@ -361,8 +361,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             $context->external_mutation_free = true;
         }
 
-        if ($storage->unused_docblock_params) {
-            foreach ($storage->unused_docblock_params as $param_name => $param_location) {
+        if ($storage->has_undertyped_native_parameters) {
+            foreach ($storage->unused_docblock_parameters as $param_name => $param_location) {
                 IssueBuffer::maybeAdd(
                     new InvalidDocblockParamName(
                         'Incorrect param name $' . $param_name . ' in docblock for ' . $cased_method_id,

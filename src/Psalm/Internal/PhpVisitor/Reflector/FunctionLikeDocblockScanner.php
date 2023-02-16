@@ -908,8 +908,12 @@ class FunctionLikeDocblockScanner
         );
 
         if ($params_without_docblock_type) {
+            /** @psalm-suppress DeprecatedProperty remove in Psalm 6 */
             $storage->unused_docblock_params = $unused_docblock_params;
         }
+
+        $storage->has_undertyped_native_parameters = $params_without_docblock_type !== [];
+        $storage->unused_docblock_parameters = $unused_docblock_params;
     }
 
     /**
