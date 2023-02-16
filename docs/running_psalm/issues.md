@@ -21,6 +21,7 @@
  - [DeprecatedMethod](issues/DeprecatedMethod.md)
  - [DeprecatedProperty](issues/DeprecatedProperty.md)
  - [DeprecatedTrait](issues/DeprecatedTrait.md)
+ - [DirectConstructorCall](issues/DirectConstructorCall.md)
  - [DocblockTypeContradiction](issues/DocblockTypeContradiction.md)
  - [DuplicateArrayKey](issues/DuplicateArrayKey.md)
  - [DuplicateClass](issues/DuplicateClass.md)

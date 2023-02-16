@@ -226,6 +226,7 @@ Level 5 and above allows a more non-verifiable code, and higher levels are even 
 - [DeprecatedMethod](issues/DeprecatedMethod.md)
 - [DeprecatedProperty](issues/DeprecatedProperty.md)
 - [DeprecatedTrait](issues/DeprecatedTrait.md)
+- [DirectConstructorCall](issues/DirectConstructorCall.md)
 - [DocblockTypeContradiction](issues/DocblockTypeContradiction.md)
 - [InvalidDocblockParamName](issues/InvalidDocblockParamName.md)
 - [InvalidFalsableReturnType](issues/InvalidFalsableReturnType.md)
