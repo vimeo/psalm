@@ -351,7 +351,7 @@ function array_merge_recursive(array ...$arrays)
 
 /**
  * @psalm-pure
- * 
+ *
  * @no-named-arguments
  *
  * @psalm-template TKey as array-key
@@ -629,7 +629,7 @@ function substr_replace($string, $replace, $offset, $length = null) {}
  *
  * @psalm-return positive-int|0|false
  */
-function strpos($haystack, $needle, int $offset = 0) : int {}
+function strpos($haystack, $needle, int $offset = 0) : int|false {}
 
 /**
  * @psalm-pure
