@@ -288,6 +288,7 @@
  - [UnusedClass](issues/UnusedClass.md)
  - [UnusedClosureParam](issues/UnusedClosureParam.md)
  - [UnusedConstructor](issues/UnusedConstructor.md)
+ - [UnusedDocblockParam](issues/UnusedDocblockParam.md)
  - [UnusedForeachValue](issues/UnusedForeachValue.md)
  - [UnusedFunctionCall](issues/UnusedFunctionCall.md)
  - [UnusedMethod](issues/UnusedMethod.md)
