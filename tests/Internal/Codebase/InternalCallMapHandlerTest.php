@@ -423,6 +423,8 @@ class InternalCallMapHandlerTest extends TestCase
         'memcache_set_compress_threshold',
         'memcache_set_failure_callback',
         'memcache_set_server_params',
+        'memcached::cas', // memcached 3.2.0 has incorrect reflection
+        'memcached::casbykey', // memcached 3.2.0 has incorrect reflection
         'memcachepool::add',
         'memcachepool::addserver',
         'memcachepool::append',
