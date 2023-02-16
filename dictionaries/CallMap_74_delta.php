@@ -53,6 +53,22 @@ return [
       'old' => ['bool', 'hash'=>'string', 'algo'=>'int', 'options='=>'array'],
       'new' => ['bool', 'hash'=>'string', 'algo'=>'int|string|null', 'options='=>'array'],
     ],
+    'preg_replace_callback' => [
+      'old' => ['string|null', 'pattern'=>'string|array', 'callback'=>'callable(string[]):string', 'subject'=>'string', 'limit='=>'int', '&w_count='=>'int'],
+      'new' => ['string|null', 'pattern'=>'string|array', 'callback'=>'callable(string[]):string', 'subject'=>'string', 'limit='=>'int', '&w_count='=>'int', 'flags='=>'int'],
+    ],
+    'preg_replace_callback\'1' => [
+      'old' => ['string[]|null', 'pattern'=>'string|array', 'callback'=>'callable(string[]):string', 'subject'=>'string[]', 'limit='=>'int', '&w_count='=>'int'],
+      'new' => ['string[]|null', 'pattern'=>'string|array', 'callback'=>'callable(string[]):string', 'subject'=>'string[]', 'limit='=>'int', '&w_count='=>'int', 'flags='=>'int'],
+    ],
+    'preg_replace_callback_array' => [
+      'old' => ['string|null', 'pattern'=>'array<string,callable(array):string>', 'subject'=>'string', 'limit='=>'int', '&w_count='=>'int'],
+      'new' => ['string|null', 'pattern'=>'array<string,callable(array):string>', 'subject'=>'string', 'limit='=>'int', '&w_count='=>'int', 'flags='=>'int'],
+    ],
+    'preg_replace_callback_array\'1' => [
+        'old' => ['string[]|null', 'pattern'=>'array<string,callable(array):string>', 'subject'=>'string[]', 'limit='=>'int', '&w_count='=>'int'],
+        'new' => ['string[]|null', 'pattern'=>'array<string,callable(array):string>', 'subject'=>'string[]', 'limit='=>'int', '&w_count='=>'int', 'flags='=>'int'],
+    ],
     'proc_open' => [
       'old' => ['resource|false', 'command'=>'string', 'descriptor_spec'=>'array', '&pipes'=>'resource[]', 'cwd='=>'?string', 'env_vars='=>'?array', 'options='=>'?array'],
       'new' => ['resource|false', 'command'=>'string|array', 'descriptor_spec'=>'array', '&pipes'=>'resource[]', 'cwd='=>'?string', 'env_vars='=>'?array', 'options='=>'?array'],

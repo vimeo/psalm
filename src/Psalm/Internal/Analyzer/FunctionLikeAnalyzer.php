@@ -42,6 +42,7 @@ use Psalm\Issue\ReferenceConstraintViolation;
 use Psalm\Issue\ReservedWord;
 use Psalm\Issue\UnresolvableConstant;
 use Psalm\Issue\UnusedClosureParam;
+use Psalm\Issue\UnusedDocblockParam;
 use Psalm\Issue\UnusedParam;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AfterFunctionLikeAnalysisEvent;
@@ -361,14 +362,22 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             $context->external_mutation_free = true;
         }
 
-        if ($storage->unused_docblock_params) {
-            foreach ($storage->unused_docblock_params as $param_name => $param_location) {
+        foreach ($storage->unused_docblock_parameters as $param_name => $param_location) {
+            if ($storage->has_undertyped_native_parameters) {
                 IssueBuffer::maybeAdd(
                     new InvalidDocblockParamName(
                         'Incorrect param name $' . $param_name . ' in docblock for ' . $cased_method_id,
                         $param_location,
                     ),
                 );
+            } elseif ($codebase->find_unused_code) {
+                 IssueBuffer::maybeAdd(
+                     new UnusedDocblockParam(
+                         'Docblock parameter $' . $param_name . ' in docblock for ' . $cased_method_id
+                         . ' does not have a counterpart in signature parameter list',
+                         $param_location,
+                     ),
+                 );
             }
         }
 
@@ -710,7 +719,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
             foreach ($storage->throws as $expected_exception => $_) {
                 if ($expected_exception === $possibly_thrown_exception
-                    || $codebase->classExtendsOrImplements($possibly_thrown_exception, $expected_exception)
+                    || (
+                        $codebase->classOrInterfaceExists($possibly_thrown_exception)
+                        && $codebase->classExtendsOrImplements($possibly_thrown_exception, $expected_exception)
+                    )
                 ) {
                     $is_expected = true;
                     break;
@@ -733,6 +745,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                             $possibly_thrown_exception . ' is thrown but not caught - please either catch'
                                 . ' or add a @throws annotation',
                             $codelocation,
+                            $possibly_thrown_exception,
                         ),
                     );
                 }
@@ -1239,6 +1252,21 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                             'Default value type ' . $default_type->getId() . ' for argument ' . ($offset + 1)
                                 . ' of method ' . $cased_method_id
                                 . ' does not match the given type ' . $param_type->getId(),
+                            $function_param->type_location,
+                        ),
+                    );
+                }
+
+                if ($default_type
+                    && !$default_type->isNull()
+                    && $param_type->isSingleAndMaybeNullable()
+                    && $param_type->getCallableTypes()
+                ) {
+                    IssueBuffer::maybeAdd(
+                        new InvalidParamDefault(
+                            'Default value type for ' . $param_type->getId() . ' argument ' . ($offset + 1)
+                                . ' of method ' . $cased_method_id
+                                . ' can only be null, ' . $default_type->getId() . ' specified',
                             $function_param->type_location,
                         ),
                     );
@@ -1997,7 +2025,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             MethodAnalyzer::checkMethodSignatureMustOmitReturnType($storage, $codeLocation);
 
             if ($appearing_class_storage->is_enum) {
-                MethodAnalyzer::checkForbiddenEnumMethod($storage);
+                MethodAnalyzer::checkForbiddenEnumMethod($storage, $appearing_class_storage);
             }
 
             if (!$context->calling_method_id || !$context->collect_initializations) {

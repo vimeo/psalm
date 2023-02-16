@@ -151,7 +151,10 @@ class AndAnalyzer
             $right_context = clone $left_context;
         }
 
-        $partitioned_clauses = Context::removeReconciledClauses($left_clauses, $changed_var_ids);
+        $partitioned_clauses = Context::removeReconciledClauses(
+            [...$left_context->clauses, ...$left_clauses],
+            $changed_var_ids,
+        );
 
         $right_context->clauses = $partitioned_clauses[0];
 

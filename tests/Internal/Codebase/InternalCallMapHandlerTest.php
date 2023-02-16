@@ -44,8 +44,25 @@ use const PHP_MAJOR_VERSION;
 use const PHP_MINOR_VERSION;
 use const PHP_VERSION;
 
+/** @group callmap */
 class InternalCallMapHandlerTest extends TestCase
 {
+    /**
+     * Regex patterns for callmap entries that should be skipped.
+     *
+     * These will not be checked against reflection. This prevents a
+     * large ignore list for extension functions have invalid reflection
+     * or are not maintained.
+     *
+     * @var list<string>
+     */
+    private static array $skippedPatterns = [
+        '/\'\d$/', // skip alternate signatures
+        '/^redis/', // redis extension
+        '/^imagick/', // imagick extension
+        '/^uopz/', // uopz extension
+    ];
+
     /**
      * Specify a function name as value, or a function name as key and
      * an array containing the PHP versions in which to ignore this function as values.
@@ -78,10 +95,6 @@ class InternalCallMapHandlerTest extends TestCase
         'arrayobject::uasort',
         'arrayobject::uksort',
         'arrayobject::unserialize',
-        'bcdiv',
-        'bcmod',
-        'bcpowmod',
-        'bzdecompress',
         'cachingiterator::offsetexists',
         'cachingiterator::offsetget',
         'cachingiterator::offsetset',
@@ -96,7 +109,6 @@ class InternalCallMapHandlerTest extends TestCase
         'collator::setattribute',
         'collator::sort',
         'collator::sortwithsortkeys',
-        'crypt',
         'curlfile::__construct',
         'curlfile::setmimetype',
         'curlfile::setpostfilename',
@@ -111,7 +123,6 @@ class InternalCallMapHandlerTest extends TestCase
         'datetime::settime',
         'datetime::settimestamp',
         'datetimezone::gettransitions',
-        'debug_zval_dump',
         'directoryiterator::__construct',
         'directoryiterator::getfileinfo',
         'directoryiterator::getpathinfo',
@@ -119,7 +130,6 @@ class InternalCallMapHandlerTest extends TestCase
         'directoryiterator::seek',
         'directoryiterator::setfileclass',
         'directoryiterator::setinfoclass',
-        'dns_get_mx',
         'domattr::insertbefore',
         'domattr::isdefaultnamespace',
         'domattr::issamenode',
@@ -176,26 +186,6 @@ class InternalCallMapHandlerTest extends TestCase
         'domxpath::registernamespace',
         'domxpath::registerphpfunctions',
         'easter_date',
-        'enchant_broker_describe',
-        'enchant_broker_dict_exists',
-        'enchant_broker_free',
-        'enchant_broker_free_dict',
-        'enchant_broker_get_dict_path',
-        'enchant_broker_get_error',
-        'enchant_broker_list_dicts',
-        'enchant_broker_request_dict',
-        'enchant_broker_request_pwl_dict',
-        'enchant_broker_set_dict_path',
-        'enchant_broker_set_ordering',
-        'enchant_dict_add_to_personal',
-        'enchant_dict_add_to_session',
-        'enchant_dict_check',
-        'enchant_dict_describe',
-        'enchant_dict_get_error',
-        'enchant_dict_is_in_session',
-        'enchant_dict_quick_check',
-        'enchant_dict_store_replacement',
-        'enchant_dict_suggest',
         'fiber::start',
         'filesystemiterator::__construct',
         'filesystemiterator::getfileinfo',
@@ -218,9 +208,6 @@ class InternalCallMapHandlerTest extends TestCase
         'globiterator::setfileclass',
         'globiterator::setflags',
         'globiterator::setinfoclass',
-        'gmp_clrbit',
-        'gmp_div',
-        'gmp_setbit',
         'gnupg::adddecryptkey',
         'gnupg::addencryptkey',
         'gnupg::addsignkey',
@@ -255,26 +242,11 @@ class InternalCallMapHandlerTest extends TestCase
         'gnupg_setsignmode',
         'gnupg_sign',
         'gnupg_verify',
-        'hash_hmac_file',
-        'igbinary_unserialize',
         'imagefilledpolygon',
-        'imagefilter',
         'imagegd',
         'imagegd2',
         'imageopenpolygon',
         'imagepolygon',
-        'imagerotate',
-        'imagesetinterpolation',
-        'imagettfbbox',
-        'imagettftext',
-        'imagexbm',
-        'imap_open',
-        'imap_rfc822_write_address',
-        'imap_sort',
-        'inflate_add',
-        'inflate_get_read_len',
-        'inflate_get_status',
-        'inotify_rm_watch',
         'intlbreakiterator::getlocale',
         'intlbreakiterator::getpartsiterator',
         'intlcal_from_date_time',
@@ -394,20 +366,6 @@ class InternalCallMapHandlerTest extends TestCase
         'intltz_get_display_name',
         'iteratoriterator::__construct',
         'jsonexception::__construct',
-        'ldap_compare' => ['8.0'],
-        'ldap_delete' => ['8.0'],
-        'ldap_get_option' => ['8.0'],
-        'ldap_list' => ['8.0'],
-        'ldap_mod_add' => ['8.0'],
-        'ldap_mod_del' => ['8.0'],
-        'ldap_mod_replace' => ['8.0'],
-        'ldap_modify' => ['8.0'],
-        'ldap_modify_batch' => ['8.0'],
-        'ldap_next_entry' => ['8.0'],
-        'ldap_parse_reference' => ['8.0'],
-        'ldap_read' => ['8.0'],
-        'ldap_rename' => ['8.0'],
-        'ldap_search' => ['8.0'],
         'limititerator::__construct',
         'limititerator::seek',
         'locale::filtermatches',
@@ -416,10 +374,8 @@ class InternalCallMapHandlerTest extends TestCase
         'locale::getdisplayregion',
         'locale::getdisplayscript',
         'locale::getdisplayvariant',
-        'long2ip',
         'lzf_compress',
         'lzf_decompress',
-        'mail',
         'mailparse_msg_extract_part',
         'mailparse_msg_extract_part_file',
         'mailparse_msg_extract_whole_part_file',
@@ -467,6 +423,8 @@ class InternalCallMapHandlerTest extends TestCase
         'memcache_set_compress_threshold',
         'memcache_set_failure_callback',
         'memcache_set_server_params',
+        'memcached::cas', // memcached 3.2.0 has incorrect reflection
+        'memcached::casbykey', // memcached 3.2.0 has incorrect reflection
         'memcachepool::add',
         'memcachepool::addserver',
         'memcachepool::append',
@@ -490,11 +448,6 @@ class InternalCallMapHandlerTest extends TestCase
         'messageformatter::parse',
         'messageformatter::parsemessage',
         'mongodb\bson\binary::__construct',
-        'msg_receive',
-        'msg_remove_queue',
-        'msg_send',
-        'msg_set_queue',
-        'msg_stat_queue',
         'multipleiterator::attachiterator',
         'mysqli::poll',
         'mysqli_poll',
@@ -520,7 +473,6 @@ class InternalCallMapHandlerTest extends TestCase
         'oauth::setcapath',
         'oauth::settimeout',
         'oauth::settimestamp',
-        'oauth_get_sbs',
         'oauthprovider::consumerhandler',
         'oauthprovider::isrequesttokenendpoint',
         'oauthprovider::timestampnoncehandler',
@@ -573,13 +525,6 @@ class InternalCallMapHandlerTest extends TestCase
         'pdostatement::bindparam',
         'pdostatement::fetchobject',
         'pdostatement::getattribute',
-        'pg_exec',
-        'pg_fetch_all',
-        'pg_get_notify',
-        'pg_get_result',
-        'pg_pconnect',
-        'pg_select',
-        'pg_send_execute',
         'phar::__construct',
         'phar::addemptydir',
         'phar::addfile',
@@ -622,8 +567,6 @@ class InternalCallMapHandlerTest extends TestCase
         'pharfileinfo::__construct',
         'pharfileinfo::chmod',
         'pharfileinfo::iscompressed',
-        'preg_filter',
-        'preg_replace_callback_array',
         'recursivearrayiterator::asort',
         'recursivearrayiterator::ksort',
         'recursivearrayiterator::offsetexists',
@@ -680,19 +623,8 @@ class InternalCallMapHandlerTest extends TestCase
         'resourcebundle::__construct',
         'resourcebundle::create',
         'resourcebundle::getlocales',
-        'sapi_windows_cp_get',
-        'sem_acquire',
-        'sem_get',
-        'sem_release',
-        'sem_remove',
         'sessionhandler::gc',
         'sessionhandler::open',
-        'shm_detach',
-        'shm_get_var',
-        'shm_has_var',
-        'shm_put_var',
-        'shm_remove',
-        'shm_remove_var',
         'simplexmlelement::__construct',
         'simplexmlelement::addattribute',
         'simplexmlelement::addchild',
@@ -701,38 +633,6 @@ class InternalCallMapHandlerTest extends TestCase
         'simplexmlelement::getdocnamespaces',
         'simplexmlelement::registerxpathnamespace',
         'simplexmlelement::xpath',
-        'snmp::set',
-        'snmp_set_enum_print',
-        'snmp_set_valueretrieval',
-        'snmpset',
-        'socket_addrinfo_lookup',
-        'socket_bind',
-        'socket_cmsg_space',
-        'socket_connect',
-        'socket_create_pair',
-        'socket_get_option',
-        'socket_getopt',
-        'socket_getpeername',
-        'socket_getsockname',
-        'socket_read',
-        'socket_recv',
-        'socket_recvfrom',
-        'socket_recvmsg',
-        'socket_select',
-        'socket_send',
-        'socket_sendmsg',
-        'socket_sendto',
-        'socket_set_blocking',
-        'socket_set_option',
-        'socket_setopt',
-        'socket_shutdown',
-        'socket_strerror',
-        'sodium_crypto_generichash',
-        'sodium_crypto_generichash_final',
-        'sodium_crypto_generichash_init',
-        'sodium_crypto_generichash_update',
-        'sodium_crypto_kx_client_session_keys',
-        'sodium_crypto_secretstream_xchacha20poly1305_rekey',
         'spldoublylinkedlist::add',
         'spldoublylinkedlist::offsetset',
         'spldoublylinkedlist::setiteratormode',
@@ -789,11 +689,6 @@ class InternalCallMapHandlerTest extends TestCase
         'spltempfileobject::setfileclass',
         'spltempfileobject::setinfoclass',
         'spltempfileobject::setmaxlinelen',
-        'spoofchecker::areconfusable',
-        'spoofchecker::issuspicious',
-        'spoofchecker::setallowedlocales',
-        'spoofchecker::setchecks',
-        'spoofchecker::setrestrictionlevel',
         'sqlite3::__construct',
         'sqlite3::open',
         'sqlsrv_connect',
@@ -805,22 +700,11 @@ class InternalCallMapHandlerTest extends TestCase
         'sqlsrv_query',
         'sqlsrv_server_info',
         'ssh2_forward_accept',
-        'substr_replace',
-        'tidy_getopt',
         'transliterator::transliterate',
         'uconverter::convert',
         'uconverter::fromucallback',
         'uconverter::reasontext',
         'uconverter::transcode',
-        'uopz_allow_exit',
-        'uopz_get_mock',
-        'uopz_get_property',
-        'uopz_get_return',
-        'uopz_get_static',
-        'uopz_set_mock',
-        'uopz_set_property',
-        'uopz_set_static',
-        'uopz_unset_mock',
         'xdiff_file_bdiff',
         'xdiff_file_bdiff_size',
         'xdiff_file_diff',
@@ -843,15 +727,11 @@ class InternalCallMapHandlerTest extends TestCase
         'xmlreader::xml',
         'xsltprocessor::registerphpfunctions',
         'xsltprocessor::transformtodoc',
-        'yaml_emit',
-        'yaml_emit_file',
-        'zip_entry_close',
         'ziparchive::iscompressionmethodsupported',
         'ziparchive::isencryptionmethodsupported',
         'ziparchive::setcompressionindex',
         'ziparchive::setcompressionname',
         'ziparchive::setencryptionindex',
-        'zlib_encode',
     ];
 
     /**
@@ -867,7 +747,7 @@ class InternalCallMapHandlerTest extends TestCase
         'callbackfilteriterator::getinneriterator' => ['8.1', '8.2'],
         'curl_multi_getcontent',
         'datetime::add' => ['8.1', '8.2'],
-        'datetime::createfromimmutable' => ['8.1', '8.2'],
+        'datetime::createfromimmutable' => ['8.1'],
         'datetime::createfrominterface',
         'datetime::setdate' => ['8.1', '8.2'],
         'datetime::settimezone' => ['8.1', '8.2'],
@@ -1047,6 +927,17 @@ class InternalCallMapHandlerTest extends TestCase
         );
         $callMap = InternalCallMapHandler::getCallMap();
         foreach ($callMap as $function => $entry) {
+            foreach (static::$skippedPatterns as $skipPattern) {
+                if (preg_match($skipPattern, $function)) {
+                    continue 2;
+                }
+            }
+
+            // Skip functions with alternate signatures
+            if (isset($callMap["$function'1"])) {
+                continue;
+            }
+
             $classNameEnd = strpos($function, '::');
             if ($classNameEnd !== false) {
                 $className = substr($function, 0, $classNameEnd);
@@ -1057,11 +948,6 @@ class InternalCallMapHandlerTest extends TestCase
                 continue;
             }
 
-            // Skip functions with alternate signatures
-            if (isset($callMap["$function'1"]) || preg_match("/\'\d$/", $function)) {
-                continue;
-            }
-            // if ($function != 'fprintf') continue;
             yield "$function: " . json_encode($entry) => [$function, $entry];
         }
     }

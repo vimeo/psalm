@@ -2693,6 +2693,60 @@ class FunctionCallTest extends TestCase
                 ',
                 'error_message' => 'InvalidArgument',
             ],
+            'is_a_withAStringAndNoThirdArg' => [
+                'code' => '<?php
+                    is_a("Foo", Exception::class);
+                ',
+                'error_message' => 'RedundantFunctionCall',
+            ],
+            'is_a_withAStringAndFalseThirdArg' => [
+                'code' => '<?php
+                    is_a("Foo", Exception::class, false);
+                ',
+                'error_message' => 'RedundantFunctionCall',
+            ],
+            'is_a_withAUnionOfStringsAndNoThirdArg' => [
+                'code' => '<?php
+                    is_a(rand(0, 1) ? "Foo" : "Bar", Exception::class);
+                ',
+                'error_message' => 'RedundantFunctionCall',
+            ],
+            'is_a_withAUnionOfStringsAndFalseThirdArg' => [
+                'code' => '<?php
+                    is_a(rand(0, 1) ? "Foo" : "Bar", Exception::class, false);
+                ',
+                'error_message' => 'RedundantFunctionCall',
+            ],
+            'is_a_withAClassStringAndNoThirdArg' => [
+                'code' => '<?php
+                    is_a(InvalidArgumentException::class, Exception::class);
+                ',
+                'error_message' => 'RedundantFunctionCall',
+            ],
+            'is_a_withAClassStringAndFalseThirdArg' => [
+                'code' => '<?php
+                    is_a(InvalidArgumentException::class, Exception::class, false);
+                ',
+                'error_message' => 'RedundantFunctionCall',
+            ],
+            'is_a_withAUnionOfClassStringsAndNoThirdArg' => [
+                'code' => '<?php
+                    is_a(rand(0, 1) ? InvalidArgumentException::class : RuntimeException::class, Exception::class);
+                ',
+                'error_message' => 'RedundantFunctionCall',
+            ],
+            'is_a_withAUnionOfClassStringsAndFalseThirdArg' => [
+                'code' => '<?php
+                    is_a(rand(0, 1) ? InvalidArgumentException::class : RuntimeException::class, Exception::class, false);
+                ',
+                'error_message' => 'RedundantFunctionCall',
+            ],
+            'incorrectCallableParamDefault' => [
+                'code' => '<?php
+                    function foo(callable $_a = "strlen"): void {}
+                ',
+                'error_message' => 'InvalidParamDefault',
+            ],
         ];
     }
 

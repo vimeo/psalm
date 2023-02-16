@@ -5,6 +5,7 @@ namespace Psalm\Internal\Analyzer\Statements;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -43,56 +44,79 @@ class GlobalAnalyzer
             : null;
 
         foreach ($stmt->vars as $var) {
-            if ($var instanceof PhpParser\Node\Expr\Variable) {
-                if (is_string($var->name)) {
-                    $var_id = '$' . $var->name;
+            if (!$var instanceof PhpParser\Node\Expr\Variable) {
+                continue;
+            }
 
-                    if ($var->name === 'argv' || $var->name === 'argc') {
-                        $context->vars_in_scope[$var_id] =
-                            VariableFetchAnalyzer::getGlobalType($var_id, $codebase->analysis_php_version_id);
-                    } elseif (isset($function_storage->global_types[$var_id])) {
-                        $context->vars_in_scope[$var_id] = $function_storage->global_types[$var_id];
-                        $context->vars_possibly_in_scope[$var_id] = true;
-                    } else {
-                        $context->vars_in_scope[$var_id] =
-                            $global_context && $global_context->hasVariable($var_id)
-                                ? $global_context->vars_in_scope[$var_id]
-                                : VariableFetchAnalyzer::getGlobalType($var_id, $codebase->analysis_php_version_id);
+            if (!is_string($var->name)) {
+                continue;
+            }
 
-                        $context->vars_possibly_in_scope[$var_id] = true;
+            $var_id = '$' . $var->name;
 
-                        $context->byref_constraints[$var_id] = new ReferenceConstraint();
-                    }
+            $doc_comment = $stmt->getDocComment();
+            $comment_type = null;
 
-                    $assignment_node = DataFlowNode::getForAssignment(
-                        $var_id,
-                        new CodeLocation($statements_analyzer, $var),
-                    );
-                    $context->vars_in_scope[$var_id] = $context->vars_in_scope[$var_id]->setParentNodes([
-                        $assignment_node->id => $assignment_node,
-                    ]);
-                    $context->references_to_external_scope[$var_id] = true;
+            if ($doc_comment) {
+                $var_comments = CommentAnalyzer::getVarComments($doc_comment, $statements_analyzer, $var);
+                $comment_type = CommentAnalyzer::populateVarTypesFromDocblock(
+                    $var_comments,
+                    $var,
+                    $context,
+                    $statements_analyzer,
+                );
+            }
 
-                    if (isset($context->references_in_scope[$var_id])) {
-                        // Global shadows existing reference
-                        $context->decrementReferenceCount($var_id);
-                        unset($context->references_in_scope[$var_id]);
-                    }
-                    $statements_analyzer->registerVariable(
-                        $var_id,
-                        new CodeLocation($statements_analyzer, $var),
-                        $context->branch_point,
-                    );
-                    $statements_analyzer->getCodebase()->analyzer->addNodeReference(
-                        $statements_analyzer->getFilePath(),
-                        $var,
-                        $var_id,
-                    );
+            if ($comment_type) {
+                $context->vars_in_scope[$var_id] = $comment_type;
+                $context->vars_possibly_in_scope[$var_id] = true;
+                $context->byref_constraints[$var_id] = new ReferenceConstraint($comment_type);
+            } else {
+                if ($var->name === 'argv' || $var->name === 'argc') {
+                    $context->vars_in_scope[$var_id] =
+                        VariableFetchAnalyzer::getGlobalType($var_id, $codebase->analysis_php_version_id);
+                } elseif (isset($function_storage->global_types[$var_id])) {
+                    $context->vars_in_scope[$var_id] = $function_storage->global_types[$var_id];
+                    $context->vars_possibly_in_scope[$var_id] = true;
+                } else {
+                    $context->vars_in_scope[$var_id] =
+                        $global_context && $global_context->hasVariable($var_id)
+                            ? $global_context->vars_in_scope[$var_id]
+                            : VariableFetchAnalyzer::getGlobalType($var_id, $codebase->analysis_php_version_id);
 
-                    if ($global_context !== null && $global_context->hasVariable($var_id)) {
-                        $global_context->referenced_globals[$var_id] = true;
-                    }
+                    $context->vars_possibly_in_scope[$var_id] = true;
+
+                    $context->byref_constraints[$var_id] = new ReferenceConstraint();
                 }
+            }
+
+            $assignment_node = DataFlowNode::getForAssignment(
+                $var_id,
+                new CodeLocation($statements_analyzer, $var),
+            );
+            $context->vars_in_scope[$var_id] = $context->vars_in_scope[$var_id]->setParentNodes([
+                $assignment_node->id => $assignment_node,
+            ]);
+            $context->references_to_external_scope[$var_id] = true;
+
+            if (isset($context->references_in_scope[$var_id])) {
+                // Global shadows existing reference
+                $context->decrementReferenceCount($var_id);
+                unset($context->references_in_scope[$var_id]);
+            }
+            $statements_analyzer->registerVariable(
+                $var_id,
+                new CodeLocation($statements_analyzer, $var),
+                $context->branch_point,
+            );
+            $statements_analyzer->getCodebase()->analyzer->addNodeReference(
+                $statements_analyzer->getFilePath(),
+                $var,
+                $var_id,
+            );
+
+            if ($global_context !== null && $global_context->hasVariable($var_id)) {
+                $global_context->referenced_globals[$var_id] = true;
             }
         }
     }

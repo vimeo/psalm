@@ -308,6 +308,7 @@ class DocumentationTest extends TestCase
                 case 'InvalidEnumMethod':
                 case 'NoEnumProperties':
                 case 'OverriddenFinalConstant':
+                case 'InvalidInterfaceImplementation':
                     $php_version = '8.1';
                     break;
             }
@@ -332,6 +333,7 @@ class DocumentationTest extends TestCase
         $all_shortcodes = [];
 
         foreach ($all_issues as $issue_type) {
+            /** @var class-string $issue_class */
             $issue_class = '\\Psalm\\Issue\\' . $issue_type;
             /** @var int $shortcode */
             $shortcode = $issue_class::SHORTCODE;

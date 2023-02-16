@@ -1757,7 +1757,7 @@ class UnusedCodeTest extends TestCase
             'exitInlineHtml' => [
                 'code' => '<?php
                     exit(0);
-                    ?'.'>foo
+                    ?' . '>foo
                 ',
                 'error_message' => 'UnevaluatedCode',
             ],
@@ -1835,6 +1835,16 @@ class UnusedCodeTest extends TestCase
                     }
                     PHP,
                 'error_message' => 'PossiblyUnusedParam',
+            ],
+            'unused param tag' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param string $param
+                     */
+                    function f(): void {}
+                    PHP,
+                'error_message' => 'UnusedDocblockParam',
             ],
         ];
     }

@@ -70,7 +70,6 @@ abstract class Type
     /**
      * Parses a string type representation
      *
-     * @param  array{int,int}|null   $php_version
      * @param  array<string, array<string, Union>> $template_type_map
      */
     public static function parseString(
@@ -905,8 +904,8 @@ abstract class Type
             if ($intersection_atomic === null || $wider_type === null) {
                 throw new LogicException(
                     '$intersection_atomic and $wider_type should be both set or null.'
-                    .' Check the preceding code for errors.'
-                    .' Did you forget to assign one of the variables?',
+                    . ' Check the preceding code for errors.'
+                    . ' Did you forget to assign one of the variables?',
                 );
             }
             if (!self::mayHaveIntersection($intersection_atomic, $codebase)
@@ -914,7 +913,7 @@ abstract class Type
             ) {
                 throw new LogicException(
                     '$intersection_atomic and $wider_type should be both support intersection.'
-                    .' Check the preceding code for errors.',
+                    . ' Check the preceding code for errors.',
                 );
             }
 

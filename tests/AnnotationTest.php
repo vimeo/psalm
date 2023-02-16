@@ -1248,6 +1248,24 @@ class AnnotationTest extends TestCase
                         }
                     }',
             ],
+            'globalDocBlock' => [
+                'code' => '<?php
+                    function f(): string {
+                        /** @var string $a */
+                        global $a;
+                        return $a;
+                    }',
+            ],
+            'globalDocBlockInGlobalScope' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-suppress InvalidGlobal
+                     * @var string $a
+                     */
+                    global $a;
+                    echo strlen($a);
+                ',
+            ],
         ];
     }
 

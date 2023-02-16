@@ -27,7 +27,7 @@ return [
     'pcntl_async_signals' => ['bool', 'enable='=>'bool'],
     'pcntl_signal_get_handler' => ['int|string', 'signal'=>'int'],
     'sapi_windows_cp_conv' => ['?string', 'in_codepage'=>'int|string', 'out_codepage'=>'int|string', 'subject'=>'string'],
-    'sapi_windows_cp_get' => ['int'],
+    'sapi_windows_cp_get' => ['int', 'kind='=>'string'],
     'sapi_windows_cp_is_utf8' => ['bool'],
     'sapi_windows_cp_set' => ['bool', 'codepage'=>'int'],
     'session_create_id' => ['string', 'prefix='=>'string'],
@@ -56,11 +56,11 @@ return [
     ],
     'pg_fetch_all' => [
       'old' => ['array<array>', 'result'=>'resource'],
-      'new' => ['array<array>', 'result'=>'resource', 'result_type='=>'int'],
+      'new' => ['array<array>', 'result'=>'resource', 'mode='=>'int'],
     ],
     'pg_select' => [
-      'old' => ['string|array|false', 'connection'=>'resource', 'table_name'=>'string', 'assoc_array'=>'array', 'options='=>'int'],
-      'new' => ['string|array|false', 'connection'=>'resource', 'table_name'=>'string', 'assoc_array'=>'array', 'options='=>'int', 'result_type='=>'int'],
+      'old' => ['string|array|false', 'connection'=>'resource', 'table_name'=>'string', 'conditions'=>'array', 'flags='=>'int'],
+      'new' => ['string|array|false', 'connection'=>'resource', 'table_name'=>'string', 'conditions'=>'array', 'flags='=>'int', 'mode='=>'int'],
     ],
     'timezone_identifiers_list' => [
       'old' => ['list<string>|false', 'timezoneGroup='=>'int', 'countryCode='=>'string'],

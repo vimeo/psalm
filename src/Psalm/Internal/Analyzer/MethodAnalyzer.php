@@ -16,6 +16,7 @@ use Psalm\Issue\NonStaticSelfCall;
 use Psalm\Issue\UndefinedMethod;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
+use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\MethodStorage;
 use UnexpectedValueException;
 
@@ -310,7 +311,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
         );
     }
 
-    public static function checkForbiddenEnumMethod(MethodStorage $method_storage): void
+    public static function checkForbiddenEnumMethod(MethodStorage $method_storage, ClassLikeStorage $enum_storage): void
     {
         if ($method_storage->cased_name === null || $method_storage->location === null) {
             return;
@@ -318,6 +319,22 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
 
         $method_name_lc = strtolower($method_storage->cased_name);
         if (in_array($method_name_lc, self::FORBIDDEN_ENUM_METHODS, true)) {
+            IssueBuffer::maybeAdd(new InvalidEnumMethod(
+                'Enums cannot define ' . $method_storage->cased_name,
+                $method_storage->location,
+                $method_storage->defining_fqcln . '::' . $method_storage->cased_name,
+            ));
+        }
+
+        if ($method_name_lc === 'cases') {
+            IssueBuffer::maybeAdd(new InvalidEnumMethod(
+                'Enums cannot define ' . $method_storage->cased_name,
+                $method_storage->location,
+                $method_storage->defining_fqcln . '::' . $method_storage->cased_name,
+            ));
+        }
+
+        if ($enum_storage->enum_type && ($method_name_lc === 'from' || $method_name_lc === 'tryfrom')) {
             IssueBuffer::maybeAdd(new InvalidEnumMethod(
                 'Enums cannot define ' . $method_storage->cased_name,
                 $method_storage->location,

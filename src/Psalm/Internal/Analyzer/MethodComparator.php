@@ -320,10 +320,10 @@ class MethodComparator
         ) {
             IssueBuffer::maybeAdd(
                 new MissingImmutableAnnotation(
-                    $cased_guide_method_id . ' is marked @psalm-immutable, but '
+                    $cased_guide_method_id . ' is marked @psalm-external-mutation-free, but '
                         . $implementer_classlike_storage->name . '::'
                         . ($guide_method_storage->cased_name ?: '')
-                        . ' is not marked @psalm-immutable',
+                        . ' is not marked @psalm-external-mutation-free',
                     $code_location,
                 ),
                 $suppressed_issues + $implementer_classlike_storage->suppressed_issues,
