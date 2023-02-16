@@ -48,6 +48,22 @@ use const PHP_VERSION;
 class InternalCallMapHandlerTest extends TestCase
 {
     /**
+     * Regex patterns for callmap entries that should be skipped.
+     *
+     * These will not be checked against reflection. This prevents a
+     * large ignore list for extension functions have invalid reflection
+     * or are not maintained.
+     *
+     * @var list<string>
+     */
+    private static array $skippedPatterns = [
+        '/\'\d$/', // skip alternate signatures
+        '/^redis/', // redis extension
+        '/^imagick/', // imagick extension
+        '/^uopz/', // uopz extension
+    ];
+
+    /**
      * Specify a function name as value, or a function name as key and
      * an array containing the PHP versions in which to ignore this function as values.
      *
@@ -407,6 +423,8 @@ class InternalCallMapHandlerTest extends TestCase
         'memcache_set_compress_threshold',
         'memcache_set_failure_callback',
         'memcache_set_server_params',
+        'memcached::cas', // memcached 3.2.0 has incorrect reflection
+        'memcached::casbykey', // memcached 3.2.0 has incorrect reflection
         'memcachepool::add',
         'memcachepool::addserver',
         'memcachepool::append',
@@ -687,15 +705,6 @@ class InternalCallMapHandlerTest extends TestCase
         'uconverter::fromucallback',
         'uconverter::reasontext',
         'uconverter::transcode',
-        'uopz_allow_exit',
-        'uopz_get_mock',
-        'uopz_get_property',
-        'uopz_get_return',
-        'uopz_get_static',
-        'uopz_set_mock',
-        'uopz_set_property',
-        'uopz_set_static',
-        'uopz_unset_mock',
         'xdiff_file_bdiff',
         'xdiff_file_bdiff_size',
         'xdiff_file_diff',
@@ -918,6 +927,17 @@ class InternalCallMapHandlerTest extends TestCase
         );
         $callMap = InternalCallMapHandler::getCallMap();
         foreach ($callMap as $function => $entry) {
+            foreach (static::$skippedPatterns as $skipPattern) {
+                if (preg_match($skipPattern, $function)) {
+                    continue 2;
+                }
+            }
+
+            // Skip functions with alternate signatures
+            if (isset($callMap["$function'1"])) {
+                continue;
+            }
+
             $classNameEnd = strpos($function, '::');
             if ($classNameEnd !== false) {
                 $className = substr($function, 0, $classNameEnd);
@@ -928,11 +948,6 @@ class InternalCallMapHandlerTest extends TestCase
                 continue;
             }
 
-            // Skip functions with alternate signatures
-            if (isset($callMap["$function'1"]) || preg_match("/\'\d$/", $function)) {
-                continue;
-            }
-            // if ($function != 'fprintf') continue;
             yield "$function: " . json_encode($entry) => [$function, $entry];
         }
     }

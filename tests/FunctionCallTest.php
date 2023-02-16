@@ -2741,6 +2741,12 @@ class FunctionCallTest extends TestCase
                 ',
                 'error_message' => 'RedundantFunctionCall',
             ],
+            'incorrectCallableParamDefault' => [
+                'code' => '<?php
+                    function foo(callable $_a = "strlen"): void {}
+                ',
+                'error_message' => 'InvalidParamDefault',
+            ],
         ];
     }
 
