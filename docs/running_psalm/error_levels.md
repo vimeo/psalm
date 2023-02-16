@@ -302,6 +302,7 @@ Level 5 and above allows a more non-verifiable code, and higher levels are even 
  - [UnusedClass](issues/UnusedClass.md)
  - [UnusedClosureParam](issues/UnusedClosureParam.md)
  - [UnusedConstructor](issues/UnusedConstructor.md)
+ - [UnusedDocblockParam](issues/UnusedDocblockParam.md)
  - [UnusedForeachValue](issues/UnusedForeachValue.md)
  - [UnusedMethod](issues/UnusedMethod.md)
  - [UnusedParam](issues/UnusedParam.md)

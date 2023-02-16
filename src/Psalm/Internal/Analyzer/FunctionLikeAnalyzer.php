@@ -42,6 +42,7 @@ use Psalm\Issue\ReferenceConstraintViolation;
 use Psalm\Issue\ReservedWord;
 use Psalm\Issue\UnresolvableConstant;
 use Psalm\Issue\UnusedClosureParam;
+use Psalm\Issue\UnusedDocblockParam;
 use Psalm\Issue\UnusedParam;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AfterFunctionLikeAnalysisEvent;
@@ -361,14 +362,22 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             $context->external_mutation_free = true;
         }
 
-        if ($storage->has_undertyped_native_parameters) {
-            foreach ($storage->unused_docblock_parameters as $param_name => $param_location) {
+        foreach ($storage->unused_docblock_parameters as $param_name => $param_location) {
+            if ($storage->has_undertyped_native_parameters) {
                 IssueBuffer::maybeAdd(
                     new InvalidDocblockParamName(
                         'Incorrect param name $' . $param_name . ' in docblock for ' . $cased_method_id,
                         $param_location,
                     ),
                 );
+            } elseif ($codebase->find_unused_code) {
+                 IssueBuffer::maybeAdd(
+                     new UnusedDocblockParam(
+                         'Docblock parameter $' . $param_name . ' in docblock for ' . $cased_method_id
+                         . ' does not have a counterpart in signature parameter list',
+                         $param_location,
+                     ),
+                 );
             }
         }
 

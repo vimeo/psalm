@@ -104,7 +104,6 @@ class TypeParser
      * Parses a string type representation
      *
      * @param  list<array{0: string, 1: int, 2?: string}> $type_tokens
-     * @param  array{int,int}|null   $php_version
      * @param  array<string, array<string, Union>> $template_type_map
      * @param  array<string, TypeAlias> $type_aliases
      */
@@ -716,7 +715,7 @@ class TypeParser
                     throw new TypeParseTreeException('Class string param should be a named object');
                 }
 
-                $types []= new TClassString($type->value, $type, false, false, false, $from_docblock);
+                $types[] = new TClassString($type->value, $type, false, false, false, $from_docblock);
             }
 
             return new Union($types);
@@ -1452,7 +1451,7 @@ class TypeParser
                         || ($had_optional && !$property_maybe_undefined)
                         || $type === 'array'
                         || $type === 'callable-array'
-                        || $previous_property_key != ($property_key-1)
+                        || $previous_property_key != ($property_key - 1)
                     )
                 ) {
                     $is_list = false;
