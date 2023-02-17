@@ -3,13 +3,13 @@
 namespace Psalm\Internal\Cli;
 
 use AssertionError;
-use Composer\XdebugHandler\XdebugHandler;
 use Psalm\Config;
 use Psalm\Exception\UnsupportedIssueToFixException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\CliUtils;
 use Psalm\Internal\Composer;
 use Psalm\Internal\ErrorHandler;
+use Psalm\Internal\Fork\PsalmRestarter;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\Provider\ClassLikeStorageCacheProvider;
 use Psalm\Internal\Provider\FileProvider;
@@ -218,10 +218,16 @@ final class Psalter
             static fn(): ?\Composer\Autoload\ClassLoader =>
                 CliUtils::requireAutoloaders($current_dir, isset($options['r']), $vendor_dir)
         );
-
+        $ini_handler = new PsalmRestarter('PSALTER');
+        $ini_handler->disableExtensions([
+            'grpc',
+            'uopz',
+            'pcov',
+            'blackfire',
+        ]);
 
         // If Xdebug is enabled, restart without it
-        (new XdebugHandler('PSALTER'))->check();
+        $ini_handler->check();
 
         $paths_to_check = CliUtils::getPathsToCheck($options['f'] ?? null);
 

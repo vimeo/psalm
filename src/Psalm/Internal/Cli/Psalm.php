@@ -903,7 +903,12 @@ final class Psalm
             $ini_handler->disableExtension('grpc');
         }
 
-        $ini_handler->disableExtension('uopz');
+        $ini_handler->disableExtensions([
+            'uopz',
+            // extesions that are incompatible with JIT (they are also usually make Psalm slow)
+            'pcov',
+            'blackfire',
+        ]);
 
         // If Xdebug is enabled, restart without it
         $ini_handler->check();

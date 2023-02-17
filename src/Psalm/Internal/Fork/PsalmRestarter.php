@@ -5,6 +5,7 @@ namespace Psalm\Internal\Fork;
 use Composer\XdebugHandler\XdebugHandler;
 
 use function array_filter;
+use function array_merge;
 use function array_splice;
 use function extension_loaded;
 use function file_get_contents;
@@ -26,11 +27,17 @@ class PsalmRestarter extends XdebugHandler
     /**
      * @var string[]
      */
-    private array $disabledExtensions = [];
+    private array $disabled_extensions = [];
 
-    public function disableExtension(string $disabledExtension): void
+    public function disableExtension(string $disabled_extension): void
     {
-        $this->disabledExtensions[] = $disabledExtension;
+        $this->disabled_extensions[] = $disabled_extension;
+    }
+
+    /** @param list<non-empty-string> $disable_extensions */
+    public function disableExtensions(array $disable_extensions): void
+    {
+        $this->disabled_extensions = array_merge($this->disabled_extensions, $disable_extensions);
     }
 
     /**
@@ -42,7 +49,7 @@ class PsalmRestarter extends XdebugHandler
     protected function requiresRestart($default): bool
     {
         $this->required = (bool) array_filter(
-            $this->disabledExtensions,
+            $this->disabled_extensions,
             static fn(string $extension): bool => extension_loaded($extension)
         );
 
@@ -72,7 +79,7 @@ class PsalmRestarter extends XdebugHandler
     protected function restart(array $command): void
     {
         if ($this->required && $this->tmpIni) {
-            $regex = '/^\s*(extension\s*=.*(' . implode('|', $this->disabledExtensions) . ').*)$/mi';
+            $regex = '/^\s*(extension\s*=.*(' . implode('|', $this->disabled_extensions) . ').*)$/mi';
             $content = file_get_contents($this->tmpIni);
 
             $content = preg_replace($regex, ';$1', $content);
