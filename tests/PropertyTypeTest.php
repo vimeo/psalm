@@ -2687,6 +2687,21 @@ class PropertyTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'propertyExists' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class A {}
+                    $a = new A;
+
+                    $z = null;
+                    if (property_exists($a, "foo")) {
+                        $z = $a;
+                    }
+                    PHP,
+                'assertions' => [
+                    '$z===' => 'A&object{foo:mixed}|null',
+                ],
+            ],
         ];
     }
 

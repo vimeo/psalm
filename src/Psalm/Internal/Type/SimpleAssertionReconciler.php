@@ -15,6 +15,7 @@ use Psalm\Storage\Assertion\HasAtLeastCount;
 use Psalm\Storage\Assertion\HasExactCount;
 use Psalm\Storage\Assertion\HasIntOrStringArrayAccess;
 use Psalm\Storage\Assertion\HasMethod;
+use Psalm\Storage\Assertion\HasProperty;
 use Psalm\Storage\Assertion\HasStringArrayAccess;
 use Psalm\Storage\Assertion\InArray;
 use Psalm\Storage\Assertion\IsCountable;
@@ -275,6 +276,19 @@ class SimpleAssertionReconciler extends Reconciler
 
         if ($assertion instanceof HasMethod) {
             return self::reconcileHasMethod(
+                $assertion,
+                $codebase,
+                $existing_var_type,
+                $key,
+                $negated,
+                $code_location,
+                $suppressed_issues,
+                $failed_reconciliation,
+            );
+        }
+
+        if ($assertion instanceof HasProperty) {
+            return self::reconcileHasProperty(
                 $assertion,
                 $codebase,
                 $existing_var_type,
@@ -927,6 +941,120 @@ class SimpleAssertionReconciler extends Reconciler
                 $object_types[] = new TObjectWithProperties(
                     [],
                     [strtolower($method_name) =>  'object::' . $method_name],
+                );
+                $redundant = false;
+            } elseif ($type instanceof TString) {
+                // we don’t know
+                $object_types[] = $type;
+                $redundant = false;
+            } elseif ($type instanceof TTemplateParam) {
+                $object_types[] = $type;
+                $redundant = false;
+            } else {
+                $redundant = false;
+            }
+        }
+
+        if (!$object_types || $redundant) {
+            if ($key && $code_location) {
+                self::triggerIssueForImpossible(
+                    $existing_var_type,
+                    $old_var_type_string,
+                    $key,
+                    $assertion,
+                    $redundant,
+                    $negated,
+                    $code_location,
+                    $suppressed_issues,
+                );
+            }
+        }
+
+        if ($object_types) {
+            return new Union($object_types);
+        }
+
+        $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
+
+        return $existing_var_type->from_docblock
+            ? new Union([new TEmptyMixed()])
+            : Type::getNever();
+    }
+
+    /**
+     * @param   string[]  $suppressed_issues
+     * @param Reconciler::RECONCILIATION_* $failed_reconciliation
+     */
+    private static function reconcileHasProperty(
+        HasProperty $assertion,
+        Codebase $codebase,
+        Union $existing_var_type,
+        ?string $key,
+        bool $negated,
+        ?CodeLocation $code_location,
+        array $suppressed_issues,
+        int &$failed_reconciliation
+    ): Union {
+        $property_name = $assertion->property_name;
+
+        $old_var_type_string = $existing_var_type->getId();
+        $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
+
+        $object_types = [];
+        $redundant = true;
+
+        foreach ($existing_var_atomic_types as $type) {
+            if ($type instanceof TNamedObject
+                && $codebase->classOrInterfaceExists($type->value)
+            ) {
+                if (!$codebase->propertyExists($type->value . '::$' . $property_name)) {
+                    $match_found = false;
+
+                    $extra_types = $type->extra_types;
+                    foreach ($type->extra_types as $k => $extra_type) {
+                        if ($extra_type instanceof TNamedObject
+                            && $codebase->classOrInterfaceExists($extra_type->value)
+                            && $codebase->propertyExists($extra_type->value . '::$' . $property_name)
+                        ) {
+                            $match_found = true;
+                        } elseif ($extra_type instanceof TObjectWithProperties) {
+                            $match_found = true;
+
+                            if (!isset($extra_type->properties[$property_name])) {
+                                unset($extra_types[$k]);
+                                $extra_type = $extra_type->setProperties(array_merge(
+                                    $extra_type->properties,
+                                    [$property_name => Type::getMixed()],
+                                ));
+                                $extra_types[$extra_type->getKey()] = $extra_type;
+                                $redundant = false;
+                            }
+                        }
+                    }
+
+                    if (!$match_found) {
+                        $extra_type = new TObjectWithProperties(
+                            [$property_name => Type::getMixed()],
+                        );
+                        $extra_types[$extra_type->getKey()] = $extra_type;
+                        $redundant = false;
+                    }
+
+                    $type = $type->setIntersectionTypes($extra_types);
+                }
+                $object_types[] = $type;
+            } elseif ($type instanceof TObjectWithProperties) {
+                if (!isset($type->properties[$property_name])) {
+                    $type = $type->setProperties(array_merge(
+                        $type->properties,
+                        [$property_name => Type::getMixed()],
+                    ));
+                    $redundant = false;
+                }
+                $object_types[] = $type;
+            } elseif ($type instanceof TObject || $type instanceof TMixed) {
+                $object_types[] = new TObjectWithProperties(
+                    [$property_name => Type::getMixed()],
                 );
                 $redundant = false;
             } elseif ($type instanceof TString) {
