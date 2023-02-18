@@ -934,6 +934,29 @@ class ClosureTest extends TestCase
                             echo $var;  // $var should be string, instead it\'s considered to be Closure|string.
                     }',
             ],
+            'classExistsInOuterScopeOfArrowFunction' => [
+                'code' => <<<'PHP'
+                    <?php
+                    if (class_exists(Foo::class)) {
+                        /** @return mixed */
+                        fn() => Foo::bar(23, []);
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.4',
+            ],
+            'classExistsInOuterScopeOfAClosure' => [
+                'code' => <<<'PHP'
+                    <?php
+                    if (class_exists(Foo::class)) {
+                        /** @return mixed */
+                        function () {
+                            return Foo::bar(23, []);
+                        };
+                    }
+                    PHP,
+            ],
         ];
     }
 
