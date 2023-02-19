@@ -203,7 +203,7 @@ class ConditionalTest extends TestCase
                      * @param scalar $v
                      * @return bool|string
                      */
-                    function toString($)
+                    function toString($v)
                     {
                         if (is_numeric($v)) {
                             return false;
