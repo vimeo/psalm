@@ -1419,6 +1419,15 @@ class ClosureTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '7.4',
             ],
+            'FirstClassCallable:WithNew' => [
+                'code' => <<<'PHP'
+                    <?php
+                        new stdClass(...);
+                    PHP,
+                'error_message' => 'ParseError',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 }
