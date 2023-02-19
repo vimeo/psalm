@@ -95,6 +95,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
         }
 
         if ($codebase->store_node_types
+            && !$stmt->isFirstClassCallable()
             && !$context->collect_initializations
             && !$context->collect_mutations
         ) {
@@ -226,6 +227,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
         }
 
         if ($codebase->store_node_types
+            && !$stmt->isFirstClassCallable()
             && !$context->collect_initializations
             && !$context->collect_mutations
         ) {

@@ -68,6 +68,7 @@ trait ValidCodeAnalysisTestTrait
         $this->project_analyzer->setPhpVersion($php_version, 'tests');
 
         $codebase = $this->project_analyzer->getCodebase();
+        $codebase->enterServerMode();
         $codebase->config->visitPreloadedStubFiles($codebase);
 
         $file_path = self::$src_dir_path . 'somefile.php';
