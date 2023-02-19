@@ -1292,6 +1292,10 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             } elseif ($type instanceof TArrayKey) {
                 $redundant = false;
                 $non_numeric_types[] = new TString();
+            } elseif ($type instanceof TScalar) {
+                $redundant = false;
+                $non_numeric_types[] = new TString();
+                $non_numeric_types[] = new TBool();
             } elseif (!$type->isNumericType()) {
                 $non_numeric_types[] = $type;
             } else {
