@@ -2,6 +2,7 @@
 
 namespace Psalm\Tests;
 
+use Psalm\Context;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
@@ -11,6 +12,36 @@ class ClosureTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
+
+    public function testLanguageServerFirstClassCallable(): void
+    {
+        $code = '<?php
+            function foo(): void {}
+
+            class A {
+                public static function publicStatic(): void {}
+
+                public function publicMethod(): void {}
+            }
+
+            foo(...);
+            A::publicStatic(...);
+            (new A())->publicMethod(...);
+        ';
+
+        $context = new Context();
+
+        $this->project_analyzer->setPhpVersion('8.1.0', 'tests');
+
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->enterServerMode();
+        $codebase->config->visitPreloadedStubFiles($codebase);
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile($file_path, $code);
+        $this->analyzeFile($file_path, $context);
+    }
 
     public function providerValidCodeParse(): iterable
     {
