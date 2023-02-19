@@ -66,6 +66,10 @@ class PsalmRestarter extends XdebugHandler
             if (((int) ini_get('opcache.jit')) === 0) {
                 return true;
             }
+
+            if (ini_get('opcache.optimization_level') !== '0x7FFEBFFF') {
+                return true;
+            }
         }
 
         return $default || $this->required;
@@ -98,6 +102,7 @@ class PsalmRestarter extends XdebugHandler
                 '-dopcache.enable_cli=true',
                 '-dopcache.jit_buffer_size=512M',
                 '-dopcache.jit=1205',
+                '-dopcache.optimization_level=0x7FFEBFFF',
             ];
         }
 
