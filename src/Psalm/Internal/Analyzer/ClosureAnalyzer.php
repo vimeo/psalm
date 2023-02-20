@@ -203,6 +203,7 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
         }
 
         $use_context->calling_method_id = $context->calling_method_id;
+        $use_context->phantom_classes = $context->phantom_classes;
 
         $closure_analyzer->analyze($use_context, $statements_analyzer->node_data, $context, false);
 

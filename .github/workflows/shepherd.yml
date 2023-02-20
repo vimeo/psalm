@@ -14,6 +14,9 @@ jobs:
     - uses: shivammathur/setup-php@v2
       with:
         php-version: '8.2'
+        ini-values: zend.assertions=1
+        tools: composer:v2
+        coverage: none
 
     - name: Install dependencies
       run: composer install --prefer-dist --no-progress --no-suggest
