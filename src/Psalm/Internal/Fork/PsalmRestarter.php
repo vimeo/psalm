@@ -63,7 +63,7 @@ class PsalmRestarter extends XdebugHandler
         }
         $cmd = [PHP_BINARY, '-n', '-dzend_extension=opcache', '-r', 'var_dump(function_exists("opcache_get_status"));'];
 
-        if (PHP_VERSION_ID >= 70400) {
+        if (PHP_VERSION_ID >= 7_04_00) {
             $cmd = $cmd;
         } else {
             $cmd = Process::escapeShellCommand($cmd);
