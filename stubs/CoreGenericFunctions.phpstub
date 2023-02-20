@@ -131,6 +131,20 @@ function array_flip(array $array)
 
 /**
  * @psalm-template TKey as array-key
+ * @psalm-template TValue
+ * @psalm-template TArray as array<TKey, TValue>
+ *
+ * @param TArray $array
+ *
+ * @return (TArray is non-empty-array ? non-empty-array<TKey, TValue> : array<TKey, TValue>)
+ * @psalm-pure
+ */
+function array_unique(array $array, int $flags = 0)
+{
+}
+
+/**
+ * @psalm-template TKey as array-key
  * @psalm-template TArray as array<TKey, mixed>
  *
  * @param TArray $array
