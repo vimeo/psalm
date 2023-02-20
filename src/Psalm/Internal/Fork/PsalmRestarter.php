@@ -79,8 +79,9 @@ class PsalmRestarter extends XdebugHandler
      * No type hint to allow xdebug-handler v1 and v2 usage
      *
      * @param string[] $command
+     * @phpcsSuppress SlevomatCodingStandard.TypeHints.ParameterTypeHint.MissingNativeTypeHint
      */
-    protected function restart(array $command): void
+    protected function restart($command): void
     {
         if ($this->required && $this->tmpIni) {
             $regex = '/^\s*(extension\s*=.*(' . implode('|', $this->disabled_extensions) . ').*)$/mi';
