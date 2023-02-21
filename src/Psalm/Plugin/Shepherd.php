@@ -77,6 +77,10 @@ final class Shepherd implements AfterAnalysisInterface
         self::sendPayload($shepherd_endpoint, $rawPayload);
     }
 
+    /**
+     * @psalm-pure
+     * @deprecated Will be removed in Psalm 6
+     */
     private static function buildShepherdUrlFromHost(string $host): string
     {
         if (parse_url($host, PHP_URL_SCHEME) === null) {
@@ -177,6 +181,10 @@ final class Shepherd implements AfterAnalysisInterface
         fwrite(STDERR, "Shepherd error: $endpoint endpoint responded with $response_status_code HTTP status code.\n");
         $response_content = is_string($curl_result) ? strip_tags($curl_result) : 'n/a';
         fwrite(STDERR, "Shepherd response: $response_content\n");
+        if ($response_status_code === 0) {
+            fwrite(STDERR, "Please check shepherd endpoint — it should be a valid URL. cURL Debug info:\n");
+            fwrite(STDERR, var_export($curl_info) . PHP_EOL);
+        }
     }
 
     /**
