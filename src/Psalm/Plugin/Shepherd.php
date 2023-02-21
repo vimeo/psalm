@@ -164,7 +164,7 @@ final class Shepherd implements AfterAnalysisInterface
             return;
         }
 
-        fwrite(STDERR, "Shepherd error: server responded with $response_status_code HTTP status code.\n");
+        fwrite(STDERR, "Shepherd error: $endpoint endpoint responded with $response_status_code HTTP status code.\n");
         $response_content = is_string($curl_result) ? strip_tags($curl_result) : 'n/a';
         fwrite(STDERR, "Shepherd response: $response_content\n");
     }
