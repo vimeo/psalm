@@ -506,6 +506,112 @@ class EmptyTest extends TestCase
                 ',
                 'assertions' => ['$arr===' => 'list<int>'],
             ],
+            'issue-9205-1' => [
+                'code' => <<<'PHP'
+                    <?php
+                        /** @var string $domainCandidate */;
+
+                        $candidateLabels = explode('.', $domainCandidate);
+
+                        $lastLabel = $candidateLabels[0];
+
+                        if (strlen($lastLabel) === 2) {
+                            exit;
+                        }
+                    PHP,
+                'assertions' => [
+                    '$lastLabel===' => 'string',
+                ],
+            ],
+            'issue-9205-2' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @var string $x */
+                    if (strlen($x) > 0) {
+                        exit;
+                    }
+                    PHP,
+                'assertions' => [
+                    '$x===' => 'string', // perhaps this should be improved in future
+                ],
+            ],
+            'issue-9205-3' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @var string $x */
+                    if (strlen($x) === 2) {
+                        exit;
+                    }
+                    PHP,
+                'assertions' => [
+                    '$x===' => 'string', // can't be improved really
+                ],
+            ],
+            'issue-9205-4' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @var string $x */
+                    if (strlen($x) < 2 ) {
+                        exit;
+                    }
+                    PHP,
+                'assertions' => [
+                    '$x===' => 'string', // can be improved
+                ],
+            ],
+            'issue-9349' => [
+                'code' => <<<'PHP'
+                    <?php
+
+                    $str = $argv[1] ?? '';
+                    if (empty($str) || strlen($str) < 3) {
+                        exit(1);
+                    }
+
+                    echo $str;
+                    PHP,
+                'assertions' => [
+                    '$str===' => 'non-falsy-string', // can't be improved
+                ],
+            ],
+            'issue-9349-2' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function test(string $s): void {
+                        if (!$s || strlen($s) !== 9) {
+                            throw new Exception();
+                        }
+                    }
+                    PHP,
+            ],
+            'issue-9349-3' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @var string $a */;
+                    if (strlen($a) === 7) {
+                        return $a;
+                    } elseif (strlen($a) === 10) {
+                        return $a;
+                    }
+                    PHP,
+                'assertions' => [
+                    '$a===' => 'string', // can't be improved
+                ],
+            ],
+            'issue-9341-1' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @var string */
+                    $GLOBALS['sql_query'] = rand(0,1) ? 'asd' : null;
+                    if(!empty($GLOBALS['sql_query']) && mb_strlen($GLOBALS['sql_query']) > 2)
+                    {
+                        exit;
+                    }
+                    PHP,
+                'assertions' => [
+                    '$GLOBALS[\'sql_query\']===' => 'string',
+                ],
+            ],
         ];
     }
 
