@@ -182,10 +182,10 @@ final class Shepherd implements AfterAnalysisInterface
         $response_content = is_string($curl_result) ? strip_tags($curl_result) : 'n/a';
         $output .= "Shepherd response: $response_content\n";
         if ($response_status_code === 0) {
-            $output .= "Please check shepherd endpoint — it should be a valid URL. cURL Debug info:\n";
-            $output .= var_export($curl_info) . PHP_EOL;
+            $output .= 'Please check shepherd endpoint — it should be a valid URL.';
         }
 
+        $output .= sprintf("cURL Debug info:\n%s\n", var_export($curl_info));
         fwrite(STDERR, $output);
     }
 
