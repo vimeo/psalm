@@ -69,10 +69,12 @@ final class Shepherd implements AfterAnalysisInterface
          * case 2: custom domain (/hooks/psalm should be appended)      (use https://custom.domain/hooks/psalm)
          * case 3: custom endpoint (/hooks/psalm should be appended)    (use custom endpoint)
          */
-        /** @psalm-suppress DeprecatedProperty */
-        $shepherd_endpoint = substr_compare($config->shepherd_endpoint, '#', -1) === 0
-            ? $config->shepherd_endpoint
-            : self::buildShepherdUrlFromHost($config->shepherd_host);
+        if (substr_compare($config->shepherd_endpoint, '#', -1) === 0) {
+            $shepherd_endpoint = $config->shepherd_endpoint;
+        } else {
+            /** @psalm-suppress DeprecatedProperty, DeprecatedMethod */
+            $shepherd_endpoint = self::buildShepherdUrlFromHost($config->shepherd_host);
+        }
 
         self::sendPayload($shepherd_endpoint, $rawPayload);
     }
