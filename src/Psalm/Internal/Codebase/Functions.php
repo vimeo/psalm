@@ -425,7 +425,7 @@ class Functions
             'call_user_func', 'call_user_func_array', 'define', 'create_function',
 
             // http
-            'header', 'header_remove', 'http_response_code', 'setcookie',
+            'header', 'header_remove', 'http_response_code', 'setcookie', 'setrawcookie',
 
             // output buffer
             'ob_start', 'ob_end_clean', 'ob_get_clean', 'readfile', 'printf', 'var_dump', 'phpinfo',
