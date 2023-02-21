@@ -24,9 +24,11 @@ use function is_int;
 use function is_string;
 use function json_encode;
 use function parse_url;
+use function sprintf;
 use function strip_tags;
 use function strlen;
 use function substr_compare;
+use function var_export;
 
 use const CURLINFO_HEADER_OUT;
 use const CURLOPT_FOLLOWLOCATION;
@@ -37,6 +39,7 @@ use const CURLOPT_RETURNTRANSFER;
 use const JSON_THROW_ON_ERROR;
 use const PHP_EOL;
 use const PHP_URL_HOST;
+use const PHP_URL_SCHEME;
 use const STDERR;
 
 final class Shepherd implements AfterAnalysisInterface
@@ -46,8 +49,7 @@ final class Shepherd implements AfterAnalysisInterface
      */
     public static function afterAnalysis(
         AfterAnalysisEvent $event
-    ): void
-    {
+    ): void {
         if (!function_exists('curl_init')) {
             fwrite(STDERR, "No curl found, cannot send data to shepherd server.\n");
 
