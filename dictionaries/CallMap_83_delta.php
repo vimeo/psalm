@@ -11,6 +11,7 @@
  *     representing the function as it was in PHP 8.2 and in PHP 8.3, respectively
  *
  * @see CallMap.php
+ * @see https://php.watch/versions/8.3
  *
  * @phan-file-suppress PhanPluginMixedKeyNoKey (read by Phan when analyzing this file)
  */
@@ -20,6 +21,10 @@ return [
   ],
 
   'changed' => [
+    'gc_status' => [
+      'old' => ['array{runs:int,collected:int,threshold:int,roots:int}'],
+      'new' => ['array{runs:int,collected:int,threshold:int,roots:int,running:bool,protected:bool,full:bool,buffer_size:int}'],
+    ],
   ],
 
   'removed' => [

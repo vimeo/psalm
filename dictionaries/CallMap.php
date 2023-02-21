@@ -2951,7 +2951,7 @@ return [
 'gc_enable' => ['void'],
 'gc_enabled' => ['bool'],
 'gc_mem_caches' => ['int'],
-'gc_status' => ['array{runs:int,collected:int,threshold:int,roots:int}'],
+'gc_status' => ['array{runs:int,collected:int,threshold:int,roots:int,running:bool,protected:bool,full:bool,buffer_size:int}'],
 'gd_info' => ['array'],
 'gearman_bugreport' => [''],
 'gearman_client_add_options' => ['', 'client_object'=>'', 'option'=>''],
