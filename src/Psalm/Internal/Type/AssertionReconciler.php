@@ -249,6 +249,8 @@ class AssertionReconciler extends Reconciler
         if ($assertion instanceof ArrayKeyExists
             || $assertion instanceof NonEmptyCountable
             || $assertion instanceof HasExactCount
+            || $assertion instanceof Assertion\HasExactStrlen
+            || $assertion instanceof Assertion\NonEmptyString
             || $assertion instanceof HasAtLeastCount
         ) {
             return Type::getMixed();
