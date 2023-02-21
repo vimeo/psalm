@@ -66,6 +66,14 @@ return [
       'old' => ['DOMDocumentFragment|false'],
       'new' => ['DOMDocumentFragment'],
     ],
+    'SplFileObject::fputcsv' => [
+      'old' => ['int|false', 'fields'=>'array<array-key, null|scalar|Stringable>', 'separator='=>'string', 'enclosure='=>'string', 'escape='=>'string'],
+      'new' => ['int|false', 'fields'=>'array<array-key, null|scalar|Stringable>', 'separator='=>'string', 'enclosure='=>'string', 'escape='=>'string', 'eol='=>'string'],
+    ],
+    'SplTempFileObject::fputcsv' => [
+      'old' => ['int|false', 'fields'=>'array<array-key, null|scalar|Stringable>', 'separator='=>'string', 'enclosure='=>'string', 'escape='=>'string'],
+      'new' => ['int|false', 'fields'=>'array<array-key, null|scalar|Stringable>', 'separator='=>'string', 'enclosure='=>'string', 'escape='=>'string', 'eol='=>'string'],
+    ],
     'finfo_buffer' => [
        'old' => ['string|false', 'finfo'=>'resource', 'string'=>'string', 'flags='=>'int', 'context='=>'resource'],
        'new' => ['string|false', 'finfo'=>'finfo', 'string'=>'string', 'flags='=>'int', 'context='=>'resource'],
