@@ -19,9 +19,10 @@ namespace {
         }
 
         /**
+         * Note: Official docs say this could return `null`, but it throws exceptions instead.
          * @param \FFI\CType|string $type
          */
-        public static function new($type, bool $owned = true, bool $persistent = false): ?\FFI\CData
+        public static function new($type, bool $owned = true, bool $persistent = false): \FFI\CData
         {
         }
 
