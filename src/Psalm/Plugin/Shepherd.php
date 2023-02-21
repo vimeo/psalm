@@ -46,7 +46,8 @@ final class Shepherd implements AfterAnalysisInterface
      */
     public static function afterAnalysis(
         AfterAnalysisEvent $event
-    ): void {
+    ): void
+    {
         if (!function_exists('curl_init')) {
             fwrite(STDERR, "No curl found, cannot send data to shepherd server.\n");
 
@@ -71,9 +72,18 @@ final class Shepherd implements AfterAnalysisInterface
         /** @psalm-suppress DeprecatedProperty */
         $shepherd_endpoint = substr_compare($config->shepherd_endpoint, '#', -1) === 0
             ? $config->shepherd_endpoint
-            : $config->shepherd_host . '/hooks/psalm';
+            : self::buildShepherdUrlFromHost($config->shepherd_host);
 
         self::sendPayload($shepherd_endpoint, $rawPayload);
+    }
+
+    private static function buildShepherdUrlFromHost(string $host): string
+    {
+        if (parse_url($host, PHP_URL_SCHEME) === null) {
+            $host = 'https://' . $host;
+        }
+
+        return $host . '/hooks/psalm';
     }
 
     /**
