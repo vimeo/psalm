@@ -6162,6 +6162,7 @@ return [
 'json_encode' => ['non-empty-string|false', 'value'=>'mixed', 'flags='=>'int', 'depth='=>'int'],
 'json_last_error' => ['int'],
 'json_last_error_msg' => ['string'],
+'json_validate' => ['bool', 'json'=>'string', 'depth?'=>'positive-int', 'flags='=>'int'],
 'JsonException::__clone' => ['void'],
 'JsonException::__construct' => ['void'],
 'JsonException::__toString' => ['string'],
