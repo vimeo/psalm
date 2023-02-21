@@ -178,6 +178,8 @@ class ConcatAnalyzer
                     }
 
                     if ($literal_concat) {
+                        (function (int $_): void {
+                        })($combinations);
                         if (count($result_type_parts) === 0) {
                             throw new AssertionError("The number of parts cannot be 0!");
                         }
