@@ -178,13 +178,15 @@ final class Shepherd implements AfterAnalysisInterface
             return;
         }
 
-        fwrite(STDERR, "Shepherd error: $endpoint endpoint responded with $response_status_code HTTP status code.\n");
+        $output = "Shepherd error: $endpoint endpoint responded with $response_status_code HTTP status code.\n";
         $response_content = is_string($curl_result) ? strip_tags($curl_result) : 'n/a';
-        fwrite(STDERR, "Shepherd response: $response_content\n");
+        $output .= "Shepherd response: $response_content\n";
         if ($response_status_code === 0) {
-            fwrite(STDERR, "Please check shepherd endpoint — it should be a valid URL. cURL Debug info:\n");
-            fwrite(STDERR, var_export($curl_info) . PHP_EOL);
+            $output .= "Please check shepherd endpoint — it should be a valid URL. cURL Debug info:\n";
+            $output .= var_export($curl_info) . PHP_EOL;
         }
+
+        fwrite(STDERR, $output);
     }
 
     /**
