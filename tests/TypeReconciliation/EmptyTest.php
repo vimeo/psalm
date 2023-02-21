@@ -414,63 +414,63 @@ class EmptyTest extends TestCase
                         if (empty($arr["a"])) {}
                     }',
             ],
-            'strlenWithGreaterZero' => [
+            'SKIPPED-strlenWithGreaterZero' => [
                 'code' => '<?php
                     /** @return non-empty-string */
                     function nonEmptyString(string $str): string {
                         return strlen($str) > 0 ? $str : "string";
                     }',
             ],
-            'strlenRighthandWithGreaterZero' => [
+            'SKIPPED-strlenRighthandWithGreaterZero' => [
                 'code' => '<?php
                     /** @return non-empty-string */
                     function nonEmptyString(string $str): string {
                         return 0 < strlen($str) ? $str : "string";
                     }',
             ],
-            'strlenWithGreaterEqualsOne' => [
+            'SKIPPED-strlenWithGreaterEqualsOne' => [
                 'code' => '<?php
                     /** @return non-empty-string */
                     function nonEmptyString(string $str): string {
                         return strlen($str) >= 1 ? $str : "string";
                     }',
             ],
-            'strlenRighthandWithGreaterEqualsOne' => [
+            'SKIPPED-strlenRighthandWithGreaterEqualsOne' => [
                 'code' => '<?php
                     /** @return non-empty-string */
                     function nonEmptyString(string $str): string {
                         return 1 <= strlen($str) ? $str : "string";
                     }',
             ],
-            'strlenWithInequalZero' => [
+            'SKIPPED-strlenWithInequalZero' => [
                 'code' => '<?php
                     /** @return non-empty-string */
                     function nonEmptyString(string $str): string {
                         return strlen($str) !== 0 ? $str : "string";
                     }',
             ],
-            'strlenRighthandWithInequalZero' => [
+            'SKIPPED-strlenRighthandWithInequalZero' => [
                 'code' => '<?php
                     /** @return non-empty-string */
                     function nonEmptyString(string $str): string {
                         return 0 !== strlen($str) ? $str : "string";
                     }',
             ],
-            'strlenWithEqualOne' => [
+            'SKIPPED-strlenWithEqualOne' => [
                 'code' => '<?php
                     /** @return non-empty-string */
                     function nonEmptyString(string $str): string {
                         return strlen($str) === 1 ? $str : "string";
                     }',
             ],
-            'strlenRighthandWithEqualOne' => [
+            'SKIPPED-strlenRighthandWithEqualOne' => [
                 'code' => '<?php
                     /** @return non-empty-string */
                     function nonEmptyString(string $str): string {
                         return 1 === strlen($str) ? $str : "string";
                     }',
             ],
-            'mb_strlen' => [
+            'SKIPPED-mb_strlen' => [
                 'code' => '<?php
                     /** @return non-empty-string */
                     function nonEmptyString(string $str): string {
@@ -505,6 +505,112 @@ class EmptyTest extends TestCase
                     assert(count($arr) === $c);
                 ',
                 'assertions' => ['$arr===' => 'list<int>'],
+            ],
+            'issue-9205-1' => [
+                'code' => <<<'PHP'
+                    <?php
+                        /** @var string $domainCandidate */;
+
+                        $candidateLabels = explode('.', $domainCandidate);
+
+                        $lastLabel = $candidateLabels[0];
+
+                        if (strlen($lastLabel) === 2) {
+                            exit;
+                        }
+                    PHP,
+                'assertions' => [
+                    '$lastLabel===' => 'string',
+                ],
+            ],
+            'issue-9205-2' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @var string $x */
+                    if (strlen($x) > 0) {
+                        exit;
+                    }
+                    PHP,
+                'assertions' => [
+                    '$x===' => 'string', // perhaps this should be improved in future
+                ],
+            ],
+            'issue-9205-3' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @var string $x */
+                    if (strlen($x) === 2) {
+                        exit;
+                    }
+                    PHP,
+                'assertions' => [
+                    '$x===' => 'string', // can't be improved really
+                ],
+            ],
+            'issue-9205-4' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @var string $x */
+                    if (strlen($x) < 2 ) {
+                        exit;
+                    }
+                    PHP,
+                'assertions' => [
+                    '$x===' => 'string', // can be improved
+                ],
+            ],
+            'issue-9349' => [
+                'code' => <<<'PHP'
+                    <?php
+
+                    $str = $argv[1] ?? '';
+                    if (empty($str) || strlen($str) < 3) {
+                        exit(1);
+                    }
+
+                    echo $str;
+                    PHP,
+                'assertions' => [
+                    '$str===' => 'non-falsy-string', // can't be improved
+                ],
+            ],
+            'issue-9349-2' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function test(string $s): void {
+                        if (!$s || strlen($s) !== 9) {
+                            throw new Exception();
+                        }
+                    }
+                    PHP,
+            ],
+            'issue-9349-3' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @var string $a */;
+                    if (strlen($a) === 7) {
+                        return $a;
+                    } elseif (strlen($a) === 10) {
+                        return $a;
+                    }
+                    PHP,
+                'assertions' => [
+                    '$a===' => 'string', // can't be improved
+                ],
+            ],
+            'issue-9341-1' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @var string */
+                    $GLOBALS['sql_query'] = rand(0,1) ? 'asd' : null;
+                    if(!empty($GLOBALS['sql_query']) && mb_strlen($GLOBALS['sql_query']) > 2)
+                    {
+                        exit;
+                    }
+                    PHP,
+                'assertions' => [
+                    '$GLOBALS[\'sql_query\']===' => 'string',
+                ],
             ],
         ];
     }
@@ -558,7 +664,7 @@ class EmptyTest extends TestCase
                     }',
                 'error_message' => 'MixedReturnTypeCoercion',
             ],
-            'preventStrlenGreaterMinusOne' => [
+            'SKIPPED-preventStrlenGreaterMinusOne' => [
                 'code' => '<?php
                     /** @return non-empty-string */
                     function nonEmptyString(string $str): string {
@@ -566,7 +672,7 @@ class EmptyTest extends TestCase
                     }',
                 'error_message' => 'LessSpecificReturnStatement',
             ],
-            'preventRighthandStrlenGreaterMinusOne' => [
+            'SKIPPED-preventRighthandStrlenGreaterMinusOne' => [
                 'code' => '<?php
                     /** @return non-empty-string */
                     function nonEmptyString(string $str): string {
@@ -574,7 +680,7 @@ class EmptyTest extends TestCase
                     }',
                 'error_message' => 'LessSpecificReturnStatement',
             ],
-            'preventStrlenGreaterEqualsZero' => [
+            'SKIPPED-preventStrlenGreaterEqualsZero' => [
                 'code' => '<?php
                     /** @return non-empty-string */
                     function nonEmptyString(string $str): string {
@@ -582,7 +688,7 @@ class EmptyTest extends TestCase
                     }',
                 'error_message' => 'LessSpecificReturnStatement',
             ],
-            'preventStrlenEqualsZero' => [
+            'SKIPPED-preventStrlenEqualsZero' => [
                 'code' => '<?php
                     /** @return non-empty-string */
                     function nonEmptyString(string $str): string {
@@ -590,7 +696,7 @@ class EmptyTest extends TestCase
                     }',
                 'error_message' => 'InvalidReturnStatement',
             ],
-            'preventStrlenLessThanOne' => [
+            'SKIPPED-preventStrlenLessThanOne' => [
                 'code' => '<?php
                     /** @return non-empty-string */
                     function nonEmptyString(string $str): string {
@@ -598,7 +704,7 @@ class EmptyTest extends TestCase
                     }',
                 'error_message' => 'InvalidReturnStatement',
             ],
-            'preventStrlenLessEqualsZero' => [
+            'SKIPPED-preventStrlenLessEqualsZero' => [
                 'code' => '<?php
                     /** @return non-empty-string */
                     function nonEmptyString(string $str): string {
@@ -606,7 +712,7 @@ class EmptyTest extends TestCase
                     }',
                 'error_message' => 'InvalidReturnStatement',
             ],
-            'preventStrlenWithConcatenatedString' => [
+            'SKIPPED-preventStrlenWithConcatenatedString' => [
                 'code' => '<?php
                     /** @return non-empty-string */
                     function nonEmptyString(string $str): string {

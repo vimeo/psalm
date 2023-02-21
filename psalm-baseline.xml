@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<files psalm-version="dev-master@1ee0f1bcb81fa87d8b33a74ede37a6b1d8317294">
+<files psalm-version="dev-master@">
   <file src="examples/TemplateChecker.php">
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$comment_block->tags['variablesfrom'][0]]]></code>
@@ -237,12 +237,6 @@
     <PossiblyUndefinedIntArrayOffset>
       <code>$identifier_name</code>
     </PossiblyUndefinedIntArrayOffset>
-  </file>
-  <file src="src/Psalm/Internal/CliUtils.php">
-    <InvalidArrayOffset>
-      <code>$input_path[2]</code>
-      <code>$input_path[2]</code>
-    </InvalidArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Codebase/Analyzer.php">
     <PossiblyUndefinedIntArrayOffset>

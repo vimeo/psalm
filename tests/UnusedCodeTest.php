@@ -666,6 +666,13 @@ class UnusedCodeTest extends TestCase
                         return $c;
                     }',
             ],
+            'setRawCookieImpure' => [
+                'code' => '<?php
+                    setrawcookie(
+                        "name",
+                        "value",
+                    );',
+            ],
             'usedUsort' => [
                 'code' => '<?php
                     /** @param string[] $arr */

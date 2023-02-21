@@ -85,6 +85,10 @@ return [
       'old' => ['void', 'message='=>'string', 'code='=>'int', 'severity='=>'int', 'filename='=>'string', 'line='=>'int', 'previous='=>'?Throwable'],
       'new' => ['void', 'message='=>'string', 'code='=>'int', 'severity='=>'int', 'filename='=>'?string', 'line='=>'?int', 'previous='=>'?Throwable'],
     ],
+    'finfo::__construct' => [
+      'old' => ['void', 'flags='=>'int', 'magic_database='=>'string'],
+      'new' => ['void', 'flags='=>'int', 'magic_database='=>'?string'],
+    ],
     'IntlDateFormatter::__construct' => [
       'old' => ['void', 'locale'=>'?string', 'datetype'=>'null|int', 'timetype'=>'null|int', 'timezone='=>'IntlTimeZone|DateTimeZone|string|null', 'calendar='=>'IntlCalendar|int|null', 'pattern='=>'?string'],
       'new' => ['void', 'locale'=>'?string', 'dateType'=>'int', 'timeType'=>'int', 'timezone='=>'IntlTimeZone|DateTimeZone|string|null', 'calendar='=>'IntlCalendar|int|null', 'pattern='=>'?string'],
@@ -146,8 +150,28 @@ return [
       'new' => ['void', 'lenient'=>'bool'],
     ],
     'IntlDateFormatter::setTimeZone' => [
-        'old' => ['null|false', 'zone'=>'IntlTimeZone|DateTimeZone|string|null'],
-        'new' => ['null|false', 'timezone'=>'IntlTimeZone|DateTimeZone|string|null'],
+      'old' => ['null|false', 'zone'=>'IntlTimeZone|DateTimeZone|string|null'],
+      'new' => ['null|false', 'timezone'=>'IntlTimeZone|DateTimeZone|string|null'],
+    ],
+    'Locale::getDisplayLanguage' => [
+      'old' => ['string', 'locale'=>'string', 'displayLocale='=>'string'],
+      'new' => ['string', 'locale'=>'string', 'displayLocale='=>'?string'],
+    ],
+    'Locale::getDisplayName' => [
+      'old' => ['string', 'locale'=>'string', 'displayLocale='=>'string'],
+      'new' => ['string', 'locale'=>'string', 'displayLocale='=>'?string'],
+    ],
+    'Locale::getDisplayRegion' => [
+      'old' => ['string', 'locale'=>'string', 'displayLocale='=>'string'],
+      'new' => ['string', 'locale'=>'string', 'displayLocale='=>'?string'],
+    ],
+    'Locale::getDisplayScript' => [
+      'old' => ['string', 'locale'=>'string', 'displayLocale='=>'string'],
+      'new' => ['string', 'locale'=>'string', 'displayLocale='=>'?string'],
+    ],
+    'Locale::getDisplayVariant' => [
+      'old' => ['string', 'locale'=>'string', 'displayLocale='=>'string'],
+      'new' => ['string', 'locale'=>'string', 'displayLocale='=>'?string'],
     ],
     'NumberFormatter::__construct' => [
       'old' => ['void', 'locale'=>'string', 'style'=>'int', 'pattern='=>'string'],
@@ -156,18 +180,6 @@ return [
     'NumberFormatter::create' => [
       'old' => ['NumberFormatter|null', 'locale'=>'string', 'style'=>'int', 'pattern='=>'string'],
       'new' => ['NumberFormatter|null', 'locale'=>'string', 'style'=>'int', 'pattern='=>'?string'],
-    ],
-    'PDOStatement::bindColumn' => [
-      'old' => ['bool', 'column'=>'mixed', '&rw_param'=>'mixed', 'type='=>'int', 'maxlen='=>'int', 'driverdata='=>'mixed'],
-      'new' => ['bool', 'column'=>'mixed', '&rw_var'=>'mixed', 'type='=>'int', 'maxLength='=>'int', 'driverOptions='=>'mixed'],
-    ],
-    'PDOStatement::bindParam' => [
-      'old' => ['bool', 'paramno'=>'mixed', '&rw_param'=>'mixed', 'type='=>'int', 'maxlen='=>'int', 'driverdata='=>'mixed'],
-      'new' => ['bool', 'param,'=>'string|int', '&rw_var'=>'mixed', 'type='=>'int', 'maxLength='=>'int', 'driverOptions='=>'mixed'],
-    ],
-    'PDOStatement::bindValue' => [
-      'old' => ['bool', 'paramno'=>'mixed', 'param'=>'mixed', 'type='=>'int'],
-      'new' => ['bool', 'param'=>'string|int', 'value'=>'mixed', 'type='=>'int'],
     ],
     'PDOStatement::debugDumpParams' => [
       'old' => ['void'],
@@ -192,10 +204,6 @@ return [
     'PDOStatement::fetchColumn' => [
       'old' => ['string|int|float|bool|null', 'column_number='=>'int'],
       'new' => ['mixed', 'column='=>'int'],
-    ],
-    'PDOStatement::fetchObject' => [
-      'old' => ['object|false', 'class_name='=>'string', 'ctor_args='=>'array'],
-      'new' => ['object|false', 'class='=>'?string', 'ctorArgs='=>'?array'],
     ],
     'PDOStatement::setFetchMode' => [
       'old' => ['bool', 'mode'=>'int'],
@@ -272,6 +280,42 @@ return [
     'ReflectionProperty::getValue' => [
       'old' => ['mixed', 'object='=>'object'],
       'new' => ['mixed', 'object='=>'null|object'],
+    ],
+    'SplFileInfo::getFileInfo' => [
+      'old' => ['SplFileInfo', 'class='=>'string'],
+      'new' => ['SplFileInfo', 'class='=>'?string'],
+    ],
+    'SplFileInfo::getPathInfo' => [
+      'old' => ['SplFileInfo|null', 'class='=>'string'],
+      'new' => ['SplFileInfo|null', 'class='=>'?string'],
+    ],
+    'SplFileInfo::openFile' => [
+      'old' => ['SplFileObject', 'mode='=>'string', 'useIncludePath='=>'bool', 'context='=>'resource'],
+      'new' => ['SplFileObject', 'mode='=>'string', 'useIncludePath='=>'bool', 'context='=>'?resource'],
+    ],
+    'SplFileObject::getFileInfo' => [
+      'old' => ['SplFileInfo', 'class='=>'string'],
+      'new' => ['SplFileInfo', 'class='=>'?string'],
+    ],
+    'SplFileObject::getPathInfo' => [
+      'old' => ['SplFileInfo|null', 'class='=>'string'],
+      'new' => ['SplFileInfo|null', 'class='=>'?string'],
+    ],
+    'SplFileObject::openFile' => [
+      'old' => ['SplFileObject', 'mode='=>'string', 'useIncludePath='=>'bool', 'context='=>'resource'],
+      'new' => ['SplFileObject', 'mode='=>'string', 'useIncludePath='=>'bool', 'context='=>'?resource'],
+    ],
+    'SplTempFileObject::getFileInfo' => [
+      'old' => ['SplFileInfo', 'class='=>'string'],
+      'new' => ['SplFileInfo', 'class='=>'?string'],
+    ],
+    'SplTempFileObject::getPathInfo' => [
+      'old' => ['SplFileInfo|null', 'class='=>'string'],
+      'new' => ['SplFileInfo|null', 'class='=>'?string'],
+    ],
+    'SplTempFileObject::openFile' => [
+      'old' => ['SplTempFileObject', 'mode='=>'string', 'useIncludePath='=>'bool', 'context='=>'resource'],
+      'new' => ['SplTempFileObject', 'mode='=>'string', 'useIncludePath='=>'bool', 'context='=>'?resource'],
     ],
     'tidy::__construct' => [
       'old' => ['void', 'filename='=>'string', 'config='=>'array|string', 'encoding='=>'string', 'useIncludePath='=>'bool'],

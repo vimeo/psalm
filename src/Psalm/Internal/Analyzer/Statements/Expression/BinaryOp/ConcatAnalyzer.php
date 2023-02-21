@@ -2,6 +2,7 @@
 
 namespace Psalm\Internal\Analyzer\Statements\Expression\BinaryOp;
 
+use AssertionError;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Config;
@@ -41,7 +42,6 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
-use function assert;
 use function count;
 use function reset;
 use function strlen;
@@ -178,8 +178,12 @@ class ConcatAnalyzer
                     }
 
                     if ($literal_concat) {
-                        assert(count($result_type_parts) === $combinations);
-                        assert(count($result_type_parts) !== 0); // #8163
+                        if (count($result_type_parts) === 0) {
+                            throw new AssertionError("The number of parts cannot be 0!");
+                        }
+                        if (count($result_type_parts) !== $combinations) {
+                            throw new AssertionError("The number of parts does not match!");
+                        }
                         $result_type = new Union($result_type_parts);
                     }
                 }
