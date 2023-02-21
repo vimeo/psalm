@@ -11,56 +11,40 @@ use Psalm\Internal\Provider\FileReferenceCacheProvider;
  */
 class FakeFileReferenceCacheProvider extends FileReferenceCacheProvider
 {
-    /** @var ?array */
-    private $cached_file_references;
+    private ?array $cached_file_references = null;
 
-    /** @var ?array */
-    private $cached_classlike_files;
+    private ?array $cached_classlike_files = null;
 
-    /** @var ?array */
-    private $cached_method_class_references;
+    private ?array $cached_method_class_references = null;
 
-    /** @var ?array */
-    private $cached_nonmethod_class_references;
+    private ?array $cached_nonmethod_class_references = null;
 
-    /** @var ?array */
-    private $cached_method_member_references;
+    private ?array $cached_method_member_references = null;
 
-    /** @var ?array */
-    private $cached_method_dependencies;
+    private ?array $cached_method_dependencies = null;
 
-    /** @var ?array */
-    private $cached_method_property_references;
+    private ?array $cached_method_property_references = null;
 
-    /** @var ?array */
-    private $cached_method_method_return_references;
+    private ?array $cached_method_method_return_references = null;
 
-    /** @var ?array */
-    private $cached_file_member_references;
+    private ?array $cached_file_member_references = null;
 
-    /** @var ?array */
-    private $cached_file_property_references;
+    private ?array $cached_file_property_references = null;
 
-    /** @var ?array */
-    private $cached_file_method_return_references;
+    private ?array $cached_file_method_return_references = null;
 
-    /** @var ?array */
-    private $cached_method_missing_member_references;
+    private ?array $cached_method_missing_member_references = null;
 
-    /** @var ?array */
-    private $cached_file_missing_member_references;
+    private ?array $cached_file_missing_member_references = null;
 
-    /** @var ?array */
-    private $cached_unknown_member_references;
+    private ?array $cached_unknown_member_references = null;
 
-    /** @var ?array */
-    private $cached_method_param_uses;
+    private ?array $cached_method_param_uses = null;
 
-    /** @var ?array */
-    private $cached_issues;
+    private ?array $cached_issues = null;
 
     /** @var array<string, array<string, int>> */
-    private $cached_correct_methods = [];
+    private array $cached_correct_methods = [];
 
     /**
      * @var array<
@@ -72,7 +56,7 @@ class FakeFileReferenceCacheProvider extends FileReferenceCacheProvider
      *      }
      *  >
      */
-    private $cached_file_maps = [];
+    private array $cached_file_maps = [];
 
     public function __construct()
     {

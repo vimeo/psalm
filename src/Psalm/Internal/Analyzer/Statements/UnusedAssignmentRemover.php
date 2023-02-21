@@ -27,12 +27,11 @@ class UnusedAssignmentRemover
     /**
      * @var array<string, CodeLocation>
      */
-    private $removed_unref_vars = [];
+    private array $removed_unref_vars = [];
 
     /**
      * @param array<PhpParser\Node\Stmt>   $stmts
      * @param array<string, CodeLocation> $var_loc_map
-     *
      */
     public function findUnusedAssignment(
         Codebase $codebase,
@@ -83,7 +82,7 @@ class UnusedAssignmentRemover
                     $codebase,
                     $original_location,
                     $assign_stmt->getEndFilePos(),
-                    $is_assign_ref
+                    $is_assign_ref,
                 );
                 $this->removed_unref_vars[$var_id] = $original_location;
             } else {
@@ -93,7 +92,7 @@ class UnusedAssignmentRemover
                     $assign_stmt->getEndFilePos() + 1,
                     "",
                     false,
-                    true
+                    true,
                 );
 
                 // If statement we are removing is a chain of assignments, mark other variables as removed
@@ -111,7 +110,7 @@ class UnusedAssignmentRemover
                 $codebase,
                 $original_location,
                 $assign_exp->getEndFilePos(),
-                $is_assign_ref
+                $is_assign_ref,
             );
 
             FileManipulationBuffer::add($original_location->file_path, [$new_file_manipulation]);
@@ -127,7 +126,7 @@ class UnusedAssignmentRemover
     ): FileManipulation {
         $var_start_loc= $var_loc->raw_file_start;
         $stmt_content = $codebase->file_provider->getContents(
-            $var_loc->file_path
+            $var_loc->file_path,
         );
         $str_for_token = "<?php\n" . substr($stmt_content, $var_start_loc, $end_bound - $var_start_loc + 1);
         $token_list = array_slice(token_get_all($str_for_token), 1);   //Ignore "<?php"

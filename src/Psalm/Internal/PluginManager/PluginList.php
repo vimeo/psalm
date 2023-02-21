@@ -16,17 +16,15 @@ use function strpos;
  */
 class PluginList
 {
-    /** @var null|ConfigFile */
-    private $config_file;
+    private ?ConfigFile $config_file = null;
 
-    /** @var ComposerLock */
-    private $composer_lock;
+    private ComposerLock $composer_lock;
 
     /** @var ?array<string,string> [pluginClass => packageName] */
-    private $all_plugins;
+    private ?array $all_plugins = null;
 
     /** @var ?array<string,?string> [pluginClass => ?packageName] */
-    private $enabled_plugins;
+    private ?array $enabled_plugins = null;
 
     public function __construct(?ConfigFile $config_file, ComposerLock $composer_lock)
     {

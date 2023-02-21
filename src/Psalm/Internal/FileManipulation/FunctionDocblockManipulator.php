@@ -39,67 +39,54 @@ class FunctionDocblockManipulator
      *
      * @var array<string, array<int, FunctionDocblockManipulator>>
      */
-    private static $manipulators = [];
+    private static array $manipulators = [];
 
     /** @var Closure|Function_|ClassMethod|ArrowFunction */
     private $stmt;
 
-    /** @var int */
-    private $docblock_start;
+    private int $docblock_start;
 
-    /** @var int */
-    private $docblock_end;
+    private int $docblock_end;
 
-    /** @var int */
-    private $return_typehint_area_start;
+    private int $return_typehint_area_start;
 
-    /** @var null|int */
-    private $return_typehint_colon_start;
+    private ?int $return_typehint_colon_start = null;
 
-    /** @var null|int */
-    private $return_typehint_start;
+    private ?int $return_typehint_start = null;
 
-    /** @var null|int */
-    private $return_typehint_end;
+    private ?int $return_typehint_end = null;
 
-    /** @var null|string */
-    private $new_php_return_type;
+    private ?string $new_php_return_type = null;
 
-    /** @var bool */
-    private $return_type_is_php_compatible = false;
+    private bool $return_type_is_php_compatible = false;
 
-    /** @var null|string */
-    private $new_phpdoc_return_type;
+    private ?string $new_phpdoc_return_type = null;
 
-    /** @var null|string */
-    private $new_psalm_return_type;
+    private ?string $new_psalm_return_type = null;
 
     /** @var array<string, string> */
-    private $new_php_param_types = [];
+    private array $new_php_param_types = [];
 
     /** @var array<string, string> */
-    private $new_phpdoc_param_types = [];
+    private array $new_phpdoc_param_types = [];
 
     /** @var array<string, string> */
-    private $new_psalm_param_types = [];
+    private array $new_psalm_param_types = [];
 
-    /** @var string */
-    private $indentation;
+    private string $indentation;
 
-    /** @var string|null */
-    private $return_type_description;
+    private ?string $return_type_description = null;
 
     /** @var array<string, int> */
-    private $param_offsets = [];
+    private array $param_offsets = [];
 
     /** @var array<string, array{int, int}> */
-    private $param_typehint_offsets = [];
+    private array $param_typehint_offsets = [];
 
-    /** @var bool */
-    private $is_pure = false;
+    private bool $is_pure = false;
 
     /** @var list<string> */
-    private $throwsExceptions = [];
+    private array $throwsExceptions = [];
 
     /**
      * @param  Closure|Function_|ClassMethod|ArrowFunction $stmt
@@ -148,7 +135,7 @@ class FunctionDocblockManipulator
                 if ($param->type) {
                     $this->param_typehint_offsets[$param->var->name] = [
                         (int) $param->type->getAttribute('startFilePos'),
-                        (int) $param->type->getAttribute('endFilePos')
+                        (int) $param->type->getAttribute('endFilePos'),
                     ];
                 }
             }
@@ -278,7 +265,6 @@ class FunctionDocblockManipulator
 
     /**
      * Sets the new return type
-     *
      */
     public function setReturnType(
         ?string $php_type,
@@ -325,7 +311,6 @@ class FunctionDocblockManipulator
     /**
      * Gets a new docblock given the existing docblock, if one exists, and the updated return types
      * and/or parameters
-     *
      */
     private function getDocblock(): string
     {
@@ -406,10 +391,10 @@ class FunctionDocblockManipulator
             $modified_docblock = true;
             $inferredThrowsClause = array_reduce(
                 $this->throwsExceptions,
-                function (string $throwsClause, string $exception) {
-                    return $throwsClause === '' ? $exception : $throwsClause.'|'.$exception;
-                },
-                ''
+                fn(string $throwsClause, string $exception) => $throwsClause === ''
+                    ? $exception
+                    : $throwsClause.'|'.$exception,
+                '',
             );
             if (array_key_exists('throws', $parsed_docblock->tags)) {
                 $parsed_docblock->tags['throws'][] = $inferredThrowsClause;
@@ -473,13 +458,13 @@ class FunctionDocblockManipulator
                     $file_manipulations[$manipulator->return_typehint_start] = new FileManipulation(
                         $manipulator->return_typehint_start,
                         $manipulator->return_typehint_end,
-                        $manipulator->new_php_return_type
+                        $manipulator->new_php_return_type,
                     );
                 } else {
                     $file_manipulations[$manipulator->return_typehint_area_start] = new FileManipulation(
                         $manipulator->return_typehint_area_start,
                         $manipulator->return_typehint_area_start,
-                        ': ' . $manipulator->new_php_return_type
+                        ': ' . $manipulator->new_php_return_type,
                     );
                 }
             } elseif ($manipulator->new_php_return_type === ''
@@ -491,7 +476,7 @@ class FunctionDocblockManipulator
                 $file_manipulations[$manipulator->return_typehint_start] = new FileManipulation(
                     $manipulator->return_typehint_colon_start,
                     $manipulator->return_typehint_end,
-                    ''
+                    '',
                 );
             }
 
@@ -503,7 +488,7 @@ class FunctionDocblockManipulator
                 $file_manipulations[$manipulator->docblock_start] = new FileManipulation(
                     $manipulator->docblock_start,
                     $manipulator->docblock_end,
-                    $manipulator->getDocblock()
+                    $manipulator->getDocblock(),
                 );
             }
 
@@ -521,13 +506,13 @@ class FunctionDocblockManipulator
                         $file_manipulations[$typehint_offsets[0]] = new FileManipulation(
                             $typehint_offsets[0],
                             $typehint_offsets[1],
-                            $new_php_param_type
+                            $new_php_param_type,
                         );
                     } else {
                         $file_manipulations[$param_offset] = new FileManipulation(
                             $param_offset,
                             $param_offset,
-                            $new_php_param_type . ' '
+                            $new_php_param_type . ' ',
                         );
                     }
                 } elseif ($new_php_param_type === ''
@@ -536,7 +521,7 @@ class FunctionDocblockManipulator
                     $file_manipulations[$typehint_offsets[0]] = new FileManipulation(
                         $typehint_offsets[0],
                         $param_offset,
-                        ''
+                        '',
                     );
                 }
             }

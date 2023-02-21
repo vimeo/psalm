@@ -121,7 +121,7 @@ class ExpressionAnalyzer
                     $codebase,
                     $negate,
                     true,
-                    false
+                    false,
                 );
             }
         }
@@ -131,7 +131,7 @@ class ExpressionAnalyzer
             $context,
             $statements_analyzer,
             $codebase,
-            []
+            [],
         );
 
         if ($codebase->config->eventDispatcher->dispatchAfterExpressionAnalysis($event) === false) {
@@ -170,7 +170,7 @@ class ExpressionAnalyzer
                 null,
                 $array_assignment,
                 false,
-                $assigned_to_reference
+                $assigned_to_reference,
             );
         }
 
@@ -245,7 +245,7 @@ class ExpressionAnalyzer
                 $statements_analyzer,
                 $stmt,
                 $context,
-                $array_assignment
+                $array_assignment,
             );
         }
 
@@ -253,7 +253,7 @@ class ExpressionAnalyzer
             return StaticPropertyFetchAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt,
-                $context
+                $context,
             );
         }
 
@@ -267,7 +267,7 @@ class ExpressionAnalyzer
                 $stmt,
                 $context,
                 0,
-                $from_stmt
+                $from_stmt,
             );
         }
 
@@ -296,7 +296,7 @@ class ExpressionAnalyzer
                 $statements_analyzer,
                 $stmt,
                 $context,
-                $template_result
+                $template_result,
             );
         }
 
@@ -324,7 +324,7 @@ class ExpressionAnalyzer
             return ArrayFetchAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt,
-                $context
+                $context,
             );
         }
 
@@ -358,7 +358,7 @@ class ExpressionAnalyzer
                 IssueBuffer::maybeAdd(
                     new UnsupportedReferenceUsage(
                         "This reference cannot be analyzed by Psalm",
-                        new CodeLocation($statements_analyzer->getSource(), $stmt)
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
                     ),
                     $statements_analyzer->getSuppressedIssues(),
                 );
@@ -396,7 +396,7 @@ class ExpressionAnalyzer
                         'shell_exec',
                         0,
                         null,
-                        $call_location
+                        $call_location,
                     );
 
                     $sink->taints = [TaintKind::INPUT_SHELL];
@@ -417,7 +417,7 @@ class ExpressionAnalyzer
 
                         $shell_exec_param = new FunctionLikeParameter(
                             'var',
-                            false
+                            false,
                         );
 
                         if (ArgumentAnalyzer::verifyType(
@@ -436,7 +436,7 @@ class ExpressionAnalyzer
                             null,
                             true,
                             true,
-                            new CodeLocation($statements_analyzer, $stmt)
+                            new CodeLocation($statements_analyzer, $stmt),
                         ) === false) {
                             return false;
                         }
@@ -445,7 +445,7 @@ class ExpressionAnalyzer
                             $statements_analyzer->data_flow_graph->addPath(
                                 $parent_node,
                                 new DataFlowNode('variable-use', 'variable use', null),
-                                'variable-use'
+                                'variable-use',
                             );
                         }
                     }
@@ -455,9 +455,9 @@ class ExpressionAnalyzer
             IssueBuffer::maybeAdd(
                 new ForbiddenCode(
                     'Use of shell_exec',
-                    new CodeLocation($statements_analyzer->getSource(), $stmt)
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
                 ),
-                $statements_analyzer->getSuppressedIssues()
+                $statements_analyzer->getSuppressedIssues(),
             );
 
             return true;
@@ -507,16 +507,14 @@ class ExpressionAnalyzer
             return true;
         }
 
-        if (IssueBuffer::accepts(
+        IssueBuffer::maybeAdd(
             new UnrecognizedExpression(
                 'Psalm does not understand ' . get_class($stmt) . ' for PHP ' .
                 $codebase->getMajorAnalysisPhpVersion() . '.' . $codebase->getMinorAnalysisPhpVersion(),
-                new CodeLocation($statements_analyzer->getSource(), $stmt)
+                new CodeLocation($statements_analyzer->getSource(), $stmt),
             ),
-            $statements_analyzer->getSuppressedIssues()
-        )) {
-           // fall through
-        }
+            $statements_analyzer->getSuppressedIssues(),
+        );
 
         return false;
     }
@@ -543,7 +541,7 @@ class ExpressionAnalyzer
             $context,
             $stmt->getDocComment(),
             [],
-            !$from_stmt ? $stmt : null
+            !$from_stmt ? $stmt : null,
         );
 
         if ($assignment_type === false) {

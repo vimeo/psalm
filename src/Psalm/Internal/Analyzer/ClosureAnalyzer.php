@@ -84,12 +84,12 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
 
         $codebase = $statements_analyzer->getCodebase();
 
-        if (!$statements_analyzer->isStatic()) {
+        if (!$statements_analyzer->isStatic() && !$closure_analyzer->isStatic()) {
             if ($context->collect_mutations &&
                 $context->self &&
                 $codebase->classExtends(
                     $context->self,
-                    (string)$statements_analyzer->getFQCLN()
+                    (string)$statements_analyzer->getFQCLN(),
                 )
             ) {
                 /** @psalm-suppress PossiblyUndefinedStringArrayOffset */
@@ -115,7 +115,7 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
                 $self_class_storage,
                 $use_context,
                 $context->self,
-                $statements_analyzer->getParentFQCLN()
+                $statements_analyzer->getParentFQCLN(),
             );
         }
 
@@ -148,7 +148,7 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
                         $statements_analyzer->data_flow_graph->addPath(
                             $parent_node,
                             new DataFlowNode('closure-use', 'closure use', null),
-                            'closure-use'
+                            'closure-use',
                         );
                     }
                 }
@@ -192,7 +192,7 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
                             $statements_analyzer->data_flow_graph->addPath(
                                 $parent_node,
                                 new DataFlowNode('closure-use', 'closure use', null),
-                                'closure-use'
+                                'closure-use',
                             );
                         }
                     }
@@ -203,6 +203,7 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
         }
 
         $use_context->calling_method_id = $context->calling_method_id;
+        $use_context->phantom_classes = $context->phantom_classes;
 
         $closure_analyzer->analyze($use_context, $statements_analyzer->node_data, $context, false);
 
@@ -254,9 +255,9 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
                 if (IssueBuffer::accepts(
                     new DuplicateParam(
                         'Closure use duplicates param name ' . $use_var_id,
-                        new CodeLocation($statements_analyzer->getSource(), $use->var)
+                        new CodeLocation($statements_analyzer->getSource(), $use->var),
                     ),
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 )) {
                     return false;
                 }
@@ -275,7 +276,7 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
                         $statements_analyzer->registerVariable(
                             $use_var_id,
                             new CodeLocation($statements_analyzer, $use->var),
-                            null
+                            null,
                         );
                     }
 
@@ -287,9 +288,9 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
                         if (IssueBuffer::accepts(
                             new UndefinedVariable(
                                 'Cannot find referenced variable ' . $use_var_id,
-                                new CodeLocation($statements_analyzer->getSource(), $use->var)
+                                new CodeLocation($statements_analyzer->getSource(), $use->var),
                             ),
-                            $statements_analyzer->getSuppressedIssues()
+                            $statements_analyzer->getSuppressedIssues(),
                         )) {
                             return false;
                         }
@@ -305,9 +306,9 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
                         new PossiblyUndefinedVariable(
                             'Possibly undefined variable ' . $use_var_id . ', first seen on line ' .
                                 $first_appearance->getLineNumber(),
-                            new CodeLocation($statements_analyzer->getSource(), $use->var)
+                            new CodeLocation($statements_analyzer->getSource(), $use->var),
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
                     )) {
                         return false;
                     }
@@ -319,9 +320,9 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
                     if (IssueBuffer::accepts(
                         new UndefinedVariable(
                             'Cannot find referenced variable ' . $use_var_id,
-                            new CodeLocation($statements_analyzer->getSource(), $use->var)
+                            new CodeLocation($statements_analyzer->getSource(), $use->var),
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
                     )) {
                         return false;
                     }
@@ -330,7 +331,7 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
                 }
             } elseif ($use->byRef) {
                 $new_type = new Union([new TMixed()], [
-                    'parent_nodes' => $context->vars_in_scope[$use_var_id]->parent_nodes
+                    'parent_nodes' => $context->vars_in_scope[$use_var_id]->parent_nodes,
                 ]);
 
                 $context->remove($use_var_id);

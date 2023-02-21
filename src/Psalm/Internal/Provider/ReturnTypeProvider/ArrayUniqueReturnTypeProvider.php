@@ -8,9 +8,7 @@ use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TNonEmptyArray;
-use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Union;
 
 /**
@@ -39,10 +37,9 @@ class ArrayUniqueReturnTypeProvider implements FunctionReturnTypeProviderInterfa
         $first_arg_array = $first_arg
             && ($first_arg_type = $statements_source->node_data->getType($first_arg))
             && $first_arg_type->hasType('array')
-            && ($array_atomic_type = $first_arg_type->getAtomicTypes()['array'])
+            && ($array_atomic_type = $first_arg_type->getArray())
             && ($array_atomic_type instanceof TArray
-                || $array_atomic_type instanceof TKeyedArray
-                || $array_atomic_type instanceof TList)
+                || $array_atomic_type instanceof TKeyedArray)
         ? $array_atomic_type
         : null;
 
@@ -56,24 +53,6 @@ class ArrayUniqueReturnTypeProvider implements FunctionReturnTypeProviderInterfa
             }
 
             return new Union([$first_arg_array]);
-        }
-
-        if ($first_arg_array instanceof TList) {
-            if ($first_arg_array instanceof TNonEmptyList) {
-                return new Union([
-                    new TNonEmptyArray([
-                        Type::getInt(),
-                        $first_arg_array->type_param
-                    ])
-                ]);
-            }
-
-            return new Union([
-                new TArray([
-                    Type::getInt(),
-                    $first_arg_array->type_param
-                ])
-            ]);
         }
 
         return new Union([$first_arg_array->getGenericArrayType()]);

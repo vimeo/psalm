@@ -44,91 +44,65 @@ class FileAnalyzer extends SourceAnalyzer
 {
     use CanAlias;
 
-    /**
-     * @var string
-     */
-    protected $file_name;
+    protected string $file_name;
 
-    /**
-     * @var string
-     */
-    protected $file_path;
+    protected string $file_path;
 
-    /**
-     * @var string|null
-     */
-    protected $root_file_path;
+    protected ?string $root_file_path = null;
 
-    /**
-     * @var string|null
-     */
-    protected $root_file_name;
+    protected ?string $root_file_name = null;
 
     /**
      * @var array<string, bool>
      */
-    private $required_file_paths = [];
+    private array $required_file_paths = [];
 
     /**
      * @var array<string, bool>
      */
-    private $parent_file_paths = [];
+    private array $parent_file_paths = [];
 
     /**
      * @var array<string>
      */
-    private $suppressed_issues = [];
+    private array $suppressed_issues = [];
 
     /**
      * @var array<string, array<string, string>>
      */
-    private $namespace_aliased_classes = [];
+    private array $namespace_aliased_classes = [];
 
     /**
      * @var array<string, array<lowercase-string, string>>
      */
-    private $namespace_aliased_classes_flipped = [];
+    private array $namespace_aliased_classes_flipped = [];
 
     /**
      * @var array<string, array<string, string>>
      */
-    private $namespace_aliased_classes_flipped_replaceable = [];
+    private array $namespace_aliased_classes_flipped_replaceable = [];
 
     /**
      * @var array<lowercase-string, InterfaceAnalyzer>
      */
-    public $interface_analyzers_to_analyze = [];
+    public array $interface_analyzers_to_analyze = [];
 
     /**
      * @var array<lowercase-string, ClassAnalyzer>
      */
-    public $class_analyzers_to_analyze = [];
+    public array $class_analyzers_to_analyze = [];
 
-    /**
-     * @var null|Context
-     */
-    public $context;
+    public ?Context $context = null;
 
-    /**
-     * @var ProjectAnalyzer
-     */
-    public $project_analyzer;
+    public ProjectAnalyzer $project_analyzer;
 
-    /**
-     * @var Codebase
-     */
-    public $codebase;
+    public Codebase $codebase;
 
-    /**
-     * @var int
-     */
-    private $first_statement_offset = -1;
+    private int $first_statement_offset = -1;
 
-    /** @var ?NodeDataProvider */
-    private $node_data;
+    private ?NodeDataProvider $node_data = null;
 
-    /** @var ?Union */
-    private $return_type;
+    private ?Union $return_type = null;
 
     public function __construct(ProjectAnalyzer $project_analyzer, string $file_path, string $file_name)
     {
@@ -237,8 +211,8 @@ class FileAnalyzer extends SourceAnalyzer
                     IssueBuffer::maybeAdd(
                         new UncaughtThrowInGlobalScope(
                             $possibly_thrown_exception . ' is thrown but not caught in global scope',
-                            $codelocation
-                        )
+                            $codelocation,
+                        ),
                     );
                 }
             }
@@ -252,7 +226,7 @@ class FileAnalyzer extends SourceAnalyzer
                         $this->getSource(),
                         $alias->start_offset,
                         $alias->end_offset,
-                        $alias->line_number
+                        $alias->line_number,
                     );
                     $fq_source_classlike = $alias->declaring_fq_classlike_name;
                     if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
@@ -267,8 +241,8 @@ class FileAnalyzer extends SourceAnalyzer
                             false,
                             true,
                             true,
-                            true
-                        )
+                            true,
+                        ),
                     ) === false) {
                         continue;
                     }
@@ -280,8 +254,8 @@ class FileAnalyzer extends SourceAnalyzer
                                 'Type alias ' . $alias->alias_name
                                 . ' imported from ' . $fq_source_classlike
                                 . ' is not defined on the source class',
-                                $location
-                            )
+                                $location,
+                            ),
                         );
                     }
                 }
@@ -297,7 +271,6 @@ class FileAnalyzer extends SourceAnalyzer
 
     /**
      * @param  array<int, PhpParser\Node\Stmt>  $stmts
-     *
      * @return list<PhpParser\Node\Stmt>
      */
     public function populateCheckers(array $stmts): array
@@ -405,7 +378,7 @@ class FileAnalyzer extends SourceAnalyzer
                     $method_id,
                     $this_context,
                     $this->getRootFilePath(),
-                    $this->getRootFileName()
+                    $this->getRootFileName(),
                 );
             }
 

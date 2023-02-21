@@ -44,6 +44,8 @@
         <xs:attribute name="findUnusedCode" type="xs:boolean" default="false" />
         <xs:attribute name="findUnusedVariablesAndParams" type="xs:boolean" default="false" />
         <xs:attribute name="findUnusedPsalmSuppress" type="xs:boolean" default="false" />
+        <!-- TODO: Update default to true in Psalm 6 -->
+        <xs:attribute name="findUnusedBaselineEntry" type="xs:boolean" default="false" />
         <xs:attribute name="hideExternalErrors" type="xs:boolean" default="false" />
         <xs:attribute name="hoistConstants" type="xs:boolean" default="false" />
         <xs:attribute name="ignoreInternalFunctionFalseReturn" type="xs:boolean" default="true" />
@@ -206,6 +208,7 @@
             <xs:element name="ComplexMethod" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ConfigIssue" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ConflictingReferenceConstraint" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="ConstantDeclarationInTrait" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ConstructorSignatureMismatch" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ContinueOutsideLoop" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="DeprecatedClass" type="ClassIssueHandlerType" minOccurs="0" />
@@ -215,6 +218,7 @@
             <xs:element name="DeprecatedMethod" type="MethodIssueHandlerType" minOccurs="0" />
             <xs:element name="DeprecatedProperty" type="PropertyIssueHandlerType" minOccurs="0" />
             <xs:element name="DeprecatedTrait" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="DirectConstructorCall" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="DocblockTypeContradiction" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="DuplicateArrayKey" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="DuplicateClass" type="IssueHandlerType" minOccurs="0" />
@@ -264,10 +268,12 @@
             <xs:element name="InvalidDocblockParamName" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidEnumBackingType" type="ClassIssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidEnumCaseValue" type="ClassIssueHandlerType" minOccurs="0" />
+            <xs:element name="InvalidEnumMethod" type="MethodIssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidExtendClass" type="ClassIssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidFalsableReturnType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidFunctionCall" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidGlobal" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="InvalidInterfaceImplementation" type="ClassIssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidIterator" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidLiteralArgument" type="ArgumentIssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidMethodCall" type="IssueHandlerType" minOccurs="0" />
@@ -313,7 +319,7 @@
             <xs:element name="MissingPropertyType" type="PropertyIssueHandlerType" minOccurs="0" />
             <xs:element name="MissingReturnType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingTemplateParam" type="IssueHandlerType" minOccurs="0" />
-            <xs:element name="MissingThrowsDocblock" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="MissingThrowsDocblock" type="ClassIssueHandlerType" minOccurs="0" />
             <xs:element name="MixedArgument" type="ArgumentIssueHandlerType" minOccurs="0" />
             <xs:element name="MixedArgumentTypeCoercion" type="ArgumentIssueHandlerType" minOccurs="0" />
             <xs:element name="MixedArrayAccess" type="IssueHandlerType" minOccurs="0" />
@@ -474,9 +480,11 @@
             <xs:element name="UnsafeGenericInstantiation" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnsafeInstantiation" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnsupportedReferenceUsage" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="UnusedBaselineEntry" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnusedClass" type="ClassIssueHandlerType" minOccurs="0" />
             <xs:element name="UnusedClosureParam" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnusedConstructor" type="MethodIssueHandlerType" minOccurs="0" />
+            <xs:element name="UnusedDocblockParam" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnusedForeachValue" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnusedFunctionCall" type="FunctionIssueHandlerType" minOccurs="0" />
             <xs:element name="UnusedMethod" type="MethodIssueHandlerType" minOccurs="0" />
@@ -710,14 +718,18 @@
 
     <xs:simpleType name="ExtensionType">
         <xs:restriction base="xs:string">
+            <xs:enumeration value="apcu"/>
             <xs:enumeration value="decimal"/>
             <xs:enumeration value="dom"/>
             <xs:enumeration value="ds"/>
+            <xs:enumeration value="ffi"/>
             <xs:enumeration value="geos"/>
             <xs:enumeration value="gmp"/>
             <xs:enumeration value="mongodb"/>
             <xs:enumeration value="mysqli"/>
             <xs:enumeration value="pdo"/>
+            <xs:enumeration value="random"/>
+            <xs:enumeration value="redis"/>
             <xs:enumeration value="simplexml"/>
             <xs:enumeration value="soap"/>
             <xs:enumeration value="xdebug"/>

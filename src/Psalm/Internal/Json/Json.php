@@ -27,8 +27,6 @@ class Json
 
     /**
      * @param mixed $data
-     *
-     *
      * @psalm-pure
      */
     public static function encode($data, ?int $options = null): string

@@ -18,23 +18,28 @@ use const PHP_VERSION;
 trait ValidCodeAnalysisTestTrait
 {
     /**
-     * @return iterable<string,array{code:string,assertions?:array<string,string>,ignored_issues?:list<string>,php_version?:string}>
+     * @return iterable<
+     *     string,
+     *     array{
+     *         code: string,
+     *         assertions?: array<string, string>,
+     *         ignored_issues?: list<string>,
+     *         php_version?: string,
+     *     }
+     * >
      */
     abstract public function providerValidCodeParse(): iterable;
 
     /**
      * @dataProvider providerValidCodeParse
-     *
-     * @param string $code
      * @param array<string, string> $assertions
      * @param list<string> $ignored_issues
-     *
      * @small
      */
     public function testValidCode(
-        $code,
-        $assertions = [],
-        $ignored_issues = [],
+        string $code,
+        array $assertions = [],
+        array $ignored_issues = [],
         string $php_version = '7.3'
     ): void {
         $test_name = $this->getTestName();
@@ -63,6 +68,7 @@ trait ValidCodeAnalysisTestTrait
         $this->project_analyzer->setPhpVersion($php_version, 'tests');
 
         $codebase = $this->project_analyzer->getCodebase();
+        $codebase->enterServerMode();
         $codebase->config->visitPreloadedStubFiles($codebase);
 
         $file_path = self::$src_dir_path . 'somefile.php';

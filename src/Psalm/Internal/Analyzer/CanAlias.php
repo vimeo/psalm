@@ -11,37 +11,40 @@ use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use function implode;
 use function strtolower;
 
+/**
+ * @internal
+ */
 trait CanAlias
 {
     /**
      * @var array<lowercase-string, string>
      */
-    private $aliased_classes = [];
+    private array $aliased_classes = [];
 
     /**
      * @var array<lowercase-string, CodeLocation>
      */
-    private $aliased_class_locations = [];
+    private array $aliased_class_locations = [];
 
     /**
      * @var array<lowercase-string, string>
      */
-    private $aliased_classes_flipped = [];
+    private array $aliased_classes_flipped = [];
 
     /**
      * @var array<lowercase-string, string>
      */
-    private $aliased_classes_flipped_replaceable = [];
+    private array $aliased_classes_flipped_replaceable = [];
 
     /**
      * @var array<lowercase-string, non-empty-string>
      */
-    private $aliased_functions = [];
+    private array $aliased_functions = [];
 
     /**
      * @var array<string, string>
      */
-    private $aliased_constants = [];
+    private array $aliased_constants = [];
 
     public function visitUse(PhpParser\Node\Stmt\Use_ $stmt): void
     {
@@ -67,7 +70,7 @@ trait CanAlias
                         $this->getFilePath(),
                         (int) $use->getAttribute('startFilePos'),
                         (int) $use->getAttribute('endFilePos'),
-                        $use_path
+                        $use_path,
                     );
                     if ($codebase->collect_locations) {
                         // register the path
@@ -84,7 +87,7 @@ trait CanAlias
                             $file_manipulations[] = new FileManipulation(
                                 (int) $use->getAttribute('startFilePos'),
                                 (int) $use->getAttribute('endFilePos') + 1,
-                                $new_fq_class_name . ($use->alias ? ' as ' . $use_alias : '')
+                                $new_fq_class_name . ($use->alias ? ' as ' . $use_alias : ''),
                             );
 
                             FileManipulationBuffer::add($this->getFilePath(), $file_manipulations);
@@ -159,7 +162,7 @@ trait CanAlias
             $this->getNamespace(),
             $this->aliased_classes,
             $this->aliased_functions,
-            $this->aliased_constants
+            $this->aliased_constants,
         );
     }
 }

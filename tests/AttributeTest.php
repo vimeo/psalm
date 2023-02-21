@@ -23,14 +23,14 @@ class AttributeTest extends TestCase
 
                 #[Attr]
                 class Foo {}
-            '
+            ',
         );
 
         $this->addFile(
             'somefile.php',
             '<?php
                 class Foo {}
-            '
+            ',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -114,7 +114,7 @@ class AttributeTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.0'
+                'php_version' => '8.0',
             ],
             'testReflectingAllAttributes' => [
                 'code' => '<?php
@@ -125,10 +125,10 @@ class AttributeTest extends TestCase
                     $b = $a->getAttributes();
                     ',
                 'assertions' => [
-                    '$b' => 'array<array-key, ReflectionAttribute<object>>',
+                    '$b' => 'list<ReflectionAttribute<object>>',
                 ],
                 'ignored_issues' => [],
-                'php_version' => '8.0'
+                'php_version' => '8.0',
             ],
             'convertKeyedArray' => [
                 'code' => '<?php
@@ -202,7 +202,7 @@ class AttributeTest extends TestCase
                         #[FooAttribute(className: ZZ::class)]
                         class Baz {}
                     }
-                '
+                ',
             ],
             'returnTypeWillChange7.1' => [
                 'code' => '<?php
@@ -226,7 +226,7 @@ class AttributeTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '7.1'
+                'php_version' => '7.1',
             ],
             'returnTypeWillChange8.1' => [
                 'code' => '<?php
@@ -250,7 +250,7 @@ class AttributeTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.1'
+                'php_version' => '8.1',
             ],
             'allowDynamicProperties' => [
                 'code' => '<?php
@@ -428,14 +428,11 @@ class AttributeTest extends TestCase
                             public function __construct() {}
                         }
                     }
-                '
+                ',
             ],
         ];
     }
 
-    /**
-     *
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [

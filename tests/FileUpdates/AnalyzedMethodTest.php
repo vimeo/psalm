@@ -34,23 +34,21 @@ class AnalyzedMethodTest extends TestCase
             null,
             null,
             new FakeFileReferenceCacheProvider(),
-            new ProjectCacheProvider()
+            new ProjectCacheProvider(),
         );
 
         $this->project_analyzer = new ProjectAnalyzer(
             $config,
-            $providers
+            $providers,
         );
         $this->project_analyzer->setPhpVersion('7.3', 'tests');
     }
 
     /**
      * @dataProvider providerTestValidUpdates
-     *
      * @param array<string, string> $start_files
      * @param array<string, string> $end_files
      * @param array<string, string> $ignored_issues
-     *
      */
     public function testValidInclude(
         array $start_files,
@@ -89,7 +87,7 @@ class AnalyzedMethodTest extends TestCase
         $this->assertSame(
             $initial_analyzed_methods,
             $codebase->analyzer->getAnalyzedMethods(),
-            'initial analyzed methods are not the same'
+            'initial analyzed methods are not the same',
         );
 
         foreach ($end_files as $file_path => $contents) {
@@ -103,7 +101,7 @@ class AnalyzedMethodTest extends TestCase
         $this->assertSame(
             $unaffected_analyzed_methods,
             $codebase->analyzer->getAnalyzedMethods(),
-            'unaffected analyzed methods are not the same'
+            'unaffected analyzed methods are not the same',
         );
     }
 
@@ -1220,7 +1218,7 @@ class AnalyzedMethodTest extends TestCase
                 'unaffected_analyzed_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
                         'foo\a::__construct' => 2,
-                        'foo\a::bar' => 1
+                        'foo\a::bar' => 1,
                     ],
                 ],
             ],
@@ -1262,7 +1260,7 @@ class AnalyzedMethodTest extends TestCase
                 'unaffected_analyzed_methods' => [
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
                         'foo\a::__construct' => 2,
-                        'foo\a::bar' => 1
+                        'foo\a::bar' => 1,
                     ],
                 ],
             ],
@@ -1321,7 +1319,7 @@ class AnalyzedMethodTest extends TestCase
                     getcwd() . DIRECTORY_SEPARATOR . 'A.php' => [
                         'foo\a::__construct' => 2,
                     ],
-                    getcwd() . DIRECTORY_SEPARATOR . 'AChild.php' => []
+                    getcwd() . DIRECTORY_SEPARATOR . 'AChild.php' => [],
                 ],
             ],
         ];

@@ -10,9 +10,6 @@ class EnumTest extends TestCase
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
 
-    /**
-     *
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -53,7 +50,7 @@ class EnumTest extends TestCase
                     Suit::Diamonds->shape();',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.1'
+                'php_version' => '8.1',
             ],
             'enumValue' => [
                 'code' => '<?php
@@ -67,7 +64,7 @@ class EnumTest extends TestCase
                     if (Suit::Hearts->value === "h") {}',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.1'
+                'php_version' => '8.1',
             ],
             'enumCases' => [
                 'code' => '<?php
@@ -86,7 +83,7 @@ class EnumTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.1'
+                'php_version' => '8.1',
             ],
             'literalExpressionAsCaseValue' => [
                 'code' => '<?php
@@ -97,11 +94,69 @@ class EnumTest extends TestCase
                     $z = Mask::Two->value;
                 ',
                 'assertions' => [
-                    // xxx: we should be able to do better when we reference a case explicitly, like above
+                    '$z===' => '2',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'EnumCaseValue #8568' => [
+                'code' => '<?php
+                    enum Mask: int {
+                        case One = 1 << 0;
+                        case Two = 1 << 1;
+                    }
+                    /** @return Mask */
+                    function a() {
+                        return Mask::One;
+                    }
+
+                    $z = a()->value;
+                ',
+                'assertions' => [
                     '$z===' => '1|2',
                 ],
                 'ignored_issues' => [],
-                'php_version' => '8.1'
+                'php_version' => '8.1',
+            ],
+            'EnumUnionAsCaseValue #8568' => [
+                'code' => '<?php
+                    enum Mask: int {
+                        case One = 1 << 0;
+                        case Two = 1 << 1;
+                        case Four = 1 << 2;
+                    }
+                    /** @return Mask::One|Mask::Two */
+                    function a() {
+                        return Mask::One;
+                    }
+
+                    $z = a()->value;
+                ',
+                'assertions' => [
+                    '$z===' => '1|2',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'matchCaseOnEnumValue #8812' => [
+                'code' => '<?php
+                    enum SomeType: string
+                    {
+                        case FOO = "FOO";
+                        case BAR = "BAR";
+                    }
+
+                    function getSomething(string $moduleString): int
+                    {
+                        return match ($moduleString) {
+                            SomeType::FOO->value => 1,
+                            SomeType::BAR->value => 2,
+                        };
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'namePropertyFromOutside' => [
                 'code' => '<?php
@@ -117,7 +172,7 @@ class EnumTest extends TestCase
                     '$a===' => "'DRAFT'",
                 ],
                 'ignored_issues' => [],
-                'php_version' => '8.1'
+                'php_version' => '8.1',
             ],
             'namePropertyFromInside' => [
                 'code' => '<?php
@@ -138,7 +193,7 @@ class EnumTest extends TestCase
                 ',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.1'
+                'php_version' => '8.1',
             ],
             'valuePropertyFromInside' => [
                 'code' => '<?php
@@ -159,7 +214,7 @@ class EnumTest extends TestCase
                 ',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.1'
+                'php_version' => '8.1',
             ],
             'wildcardEnumAsParam' => [
                 'code' => '<?php
@@ -456,12 +511,25 @@ class EnumTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'methodInheritanceByInterfaces' => [
+                'code' => '<?php
+                    interface I extends BackedEnum {}
+                    /** @var I $i */
+                    $a = $i::cases();
+                    $b = $i::from(1);
+                    $c = $i::tryFrom(2);
+                ',
+                'assertions' => [
+                    '$a===' => 'list<I>',
+                    '$b===' => 'I',
+                    '$c===' => 'I|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
-    /**
-     *
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [
@@ -477,7 +545,7 @@ class EnumTest extends TestCase
                     if (Suit::Hearts->value === "a") {}',
                 'error_message' => 'TypeDoesNotContainType',
                 'ignored_issues' => [],
-                'php_version' => '8.1'
+                'php_version' => '8.1',
             ],
             'enumValueNotBacked' => [
                 'code' => '<?php
@@ -491,7 +559,7 @@ class EnumTest extends TestCase
                     echo Suit::Hearts->value;',
                 'error_message' => 'UndefinedPropertyFetch',
                 'ignored_issues' => [],
-                'php_version' => '8.1'
+                'php_version' => '8.1',
             ],
             'badSuit' => [
                 'code' => '<?php
@@ -507,7 +575,7 @@ class EnumTest extends TestCase
                     }',
                 'error_message' => 'UndefinedConstant',
                 'ignored_issues' => [],
-                'php_version' => '8.1'
+                'php_version' => '8.1',
             ],
             'cantCompareToSuitTwice' => [
                 'code' => '<?php
@@ -527,7 +595,7 @@ class EnumTest extends TestCase
                     }',
                 'error_message' => 'RedundantCondition',
                 'ignored_issues' => [],
-                'php_version' => '8.1'
+                'php_version' => '8.1',
             ],
             'insufficientMatches' => [
                 'code' => '<?php
@@ -546,7 +614,7 @@ class EnumTest extends TestCase
                     }',
                 'error_message' => 'UnhandledMatchCondition',
                 'ignored_issues' => [],
-                'php_version' => '8.1'
+                'php_version' => '8.1',
             ],
             'insufficientMatchesForCases' => [
                 'code' => '<?php
@@ -565,7 +633,7 @@ class EnumTest extends TestCase
                     }',
                 'error_message' => 'UnhandledMatchCondition',
                 'ignored_issues' => [],
-                'php_version' => '8.1'
+                'php_version' => '8.1',
             ],
             'invalidBackingType' => [
                 'code' => '<?php
@@ -683,6 +751,184 @@ class EnumTest extends TestCase
                     Foo::B;
                     ',
                 'error_message' => 'DeprecatedConstant',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'forbiddenMethod' => [
+                'code' => '<?php
+                    enum Foo {
+                        case A;
+                        public function __get() {}
+                    }
+                ',
+                'error_message' => 'InvalidEnumMethod',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'forbiddenUnitEnumImplementation' => [
+                'code' => '<?php
+                    class Foo implements UnitEnum {
+                        /** @psalm-pure */
+                        public static function cases(): array
+                        {
+                            return [];
+                        }
+                    }
+                ',
+                'error_message' => 'InvalidInterfaceImplementation',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'forbiddenBackedEnumImplementation' => [
+                'code' => '<?php
+                    class Foo implements BackedEnum {
+                        /** @psalm-pure */
+                        public static function cases(): array
+                        {
+                            return [];
+                        }
+
+                        /** @psalm-pure */
+                        public static function from(int|string $value): static
+                        {
+                            throw new Exception;
+                        }
+
+                        /** @psalm-pure */
+                        public static function tryFrom(int|string $value): ?static
+                        {
+                            return null;
+                        }
+                    }
+                ',
+                'error_message' => 'InvalidInterfaceImplementation',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'forbiddenUnitEnumCasesMethod' => [
+                'code' => '<?php
+                    enum Foo {
+                        case A;
+                        public static function cases(): array
+                        {
+                            return [];
+                        }
+                    }
+                ',
+                'error_message' => 'InvalidEnumMethod',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'forbiddenBackedEnumCasesMethod' => [
+                'code' => '<?php
+                    enum Status: string {
+                        case Open = "open";
+                        public static function cases(): array
+                        {
+                            return [];
+                        }
+                    }
+                ',
+                'error_message' => 'InvalidEnumMethod',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'forbiddenBackedEnumFromMethod' => [
+                'code' => '<?php
+                    enum Status: string {
+                        case Open = "open";
+                        public static function from(string $value): self
+                        {
+                            throw new Exception;
+                        }
+                    }
+                ',
+                'error_message' => 'InvalidEnumMethod',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'forbiddenBackedEnumTryFromMethod' => [
+                'code' => '<?php
+                    enum Status: string {
+                        case Open = "open";
+                        public static function tryFrom(string $value): ?self
+                        {
+                            return null;
+                        }
+                    }
+                ',
+                'error_message' => 'InvalidEnumMethod',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'functionCallWithInvalidCase' => [
+                'code' => '<?php
+                    enum Status {
+                        case Open;
+                        case Closed;
+                    }
+
+                    /** @param Status::Open $status */
+                    function foo(Status $status): void {}
+
+                    foo(Status::Closed);
+                ',
+                'error_message' => 'InvalidArgument',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'issue-7814-1' => [
+                'code' => '<?php
+                    enum State
+                    {
+                        case A;
+                        case B;
+                        case C;
+                    }
+
+                    /**
+                     * @param State::A|State::B $_
+                     */
+                    function test(State $_): void {}
+
+                    test(State::C);
+                ',
+                'error_message' => 'InvalidArgument',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'issue-7814-2' => [
+                'code' => '<?php
+                    enum State
+                    {
+                        case A;
+                        case B;
+                        case C;
+                    }
+
+                    /**
+                     * @template T of State
+                     */
+                    final class WithState
+                    {
+                        /**
+                         * @param T $s
+                         */
+                        public function __construct(
+                            public readonly State $s,
+                        ) {}
+                    }
+
+                    /**
+                     * @param WithState<State::A> $_
+                     */
+                    function withA(WithState $_): void {}
+
+                    // Should be issue here. But nothing
+                    // Argument 1 of withA expects WithState<enum(State::A)>, WithState<enum(State::C)> provided
+                    withA(new WithState(State::C));
+                ',
+                'error_message' => 'InvalidArgument',
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],

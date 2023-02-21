@@ -12,9 +12,6 @@ class ReadonlyPropertyTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
-    /**
-     *
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -31,7 +28,7 @@ class ReadonlyPropertyTest extends TestCase
                         }
                     }
 
-                    echo (new A)->bar;'
+                    echo (new A)->bar;',
             ],
             'readonlyPropertySetInConstructor' => [
                 'code' => '<?php
@@ -46,7 +43,7 @@ class ReadonlyPropertyTest extends TestCase
                     echo (new A)->bar;',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.1'
+                'php_version' => '8.1',
             ],
             'docblockReadonlyWithPrivateMutationsAllowedPropertySetInAnotherMethod' => [
                 'code' => '<?php
@@ -62,7 +59,7 @@ class ReadonlyPropertyTest extends TestCase
                         }
                     }
 
-                    echo (new A)->bar;'
+                    echo (new A)->bar;',
             ],
             'readonlyPublicPropertySetInAnotherMethod' => [
                 'code' => '<?php
@@ -77,7 +74,7 @@ class ReadonlyPropertyTest extends TestCase
                         }
                     }
 
-                    echo (new A)->bar;'
+                    echo (new A)->bar;',
             ],
             'docblockReadonlyWithPrivateMutationsAllowedConstructorPropertySetInAnotherMethod' => [
                 'code' => '<?php
@@ -95,7 +92,7 @@ class ReadonlyPropertyTest extends TestCase
                         }
                     }
 
-                    echo (new A)->bar;'
+                    echo (new A)->bar;',
             ],
             'readonlyPublicConstructorPropertySetInAnotherMethod' => [
                 'code' => '<?php
@@ -112,7 +109,7 @@ class ReadonlyPropertyTest extends TestCase
                         }
                     }
 
-                    echo (new A)->bar;'
+                    echo (new A)->bar;',
             ],
             'readonlyPropertySetChildClass' => [
                 'code' => '<?php
@@ -129,14 +126,11 @@ class ReadonlyPropertyTest extends TestCase
                         }
                     }
 
-                    echo (new B)->bar;'
+                    echo (new B)->bar;',
             ],
         ];
     }
 
-    /**
-     *
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [
@@ -269,7 +263,7 @@ class ReadonlyPropertyTest extends TestCase
                     $test = new Test(5);
 
                     $test->prop += 1;',
-                'error_message' => 'InaccessibleProperty'
+                'error_message' => 'InaccessibleProperty',
             ],
             'readonlyPropertyWithDefault' => [
                 'code' => '<?php

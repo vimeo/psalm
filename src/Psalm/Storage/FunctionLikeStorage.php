@@ -172,9 +172,18 @@ abstract class FunctionLikeStorage implements HasAttributesInterface
     public $return_type_description;
 
     /**
+     * @psalm-suppress PossiblyUnusedProperty
      * @var array<string, CodeLocation>|null
+     * @deprecated will be removed in Psalm 6. use {@see FunctionLikeStorage::$unused_docblock_parameters} instead
      */
     public $unused_docblock_params;
+
+    /**
+     * @var array<string, CodeLocation>
+     */
+    public array $unused_docblock_parameters = [];
+
+    public bool $has_undertyped_native_parameters = false;
 
     /**
      * @var bool
@@ -252,8 +261,8 @@ abstract class FunctionLikeStorage implements HasAttributesInterface
                         ($newlines ? '    ' : '')
                         . ($param->type ? $param->type->getId(false) : 'mixed')
                         . ' $' . $param->name,
-                    $this->params
-                )
+                    $this->params,
+                ),
             )
             . ($newlines ? "\n" : '')
             . ') : '
@@ -281,7 +290,6 @@ abstract class FunctionLikeStorage implements HasAttributesInterface
 
     /**
      * @internal
-     *
      * @param list<FunctionLikeParameter> $params
      */
     public function setParams(array $params): void

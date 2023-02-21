@@ -13,10 +13,7 @@ use Psalm\Type\Union;
  */
 abstract class SourceAnalyzer implements StatementsSource
 {
-    /**
-     * @var SourceAnalyzer
-     */
-    protected $source;
+    protected SourceAnalyzer $source;
 
     public function __destruct()
     {
@@ -122,7 +119,8 @@ abstract class SourceAnalyzer implements StatementsSource
 
     /**
      * Get a list of suppressed issues
-     *@psalm-mutation-free
+     *
+     * @psalm-mutation-free
      * @return array<string>
      */
     public function getSuppressedIssues(): array

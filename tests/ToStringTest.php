@@ -10,9 +10,6 @@ class ToStringTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
-    /**
-     *
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -102,7 +99,7 @@ class ToStringTest extends TestCase
                         }
 
                         return null;
-                    }'
+                    }',
             ],
             'refineToStringType' => [
                 'code' => '<?php
@@ -121,7 +118,7 @@ class ToStringTest extends TestCase
                         function __toString(): string {
                             return "ha";
                         }
-                    }'
+                    }',
             ],
             'intersectionCanBeString' => [
                 'code' => '<?php
@@ -149,7 +146,7 @@ class ToStringTest extends TestCase
                     if (is_callable([$object, \'__toString\'])) {
                         $a = (string) $object;
                         echo $a;
-                    }'
+                    }',
             ],
             'PHP80-stringableInterface' => [
                 'code' => '<?php
@@ -171,7 +168,7 @@ class ToStringTest extends TestCase
                     takesFoo(new FooImplementer());',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.0'
+                'php_version' => '8.0',
             ],
             'implicitStringable' => [
                 'code' => '<?php
@@ -195,7 +192,7 @@ class ToStringTest extends TestCase
                             throw new BadMethodCallException("bad");
                         }
                     }
-                '
+                ',
             ],
             'toStringToImplode' => [
                 'code' => '<?php
@@ -210,9 +207,6 @@ class ToStringTest extends TestCase
         ];
     }
 
-    /**
-     *
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [
@@ -252,7 +246,7 @@ class ToStringTest extends TestCase
                     }',
                 'error_message' => 'InvalidToString',
                 'ignored_issues' => [],
-                'php_version' => '8.0'
+                'php_version' => '8.0',
             ],
             'implicitCastWithStrictTypes' => [
                 'code' => '<?php declare(strict_types=1);
@@ -425,7 +419,7 @@ class ToStringTest extends TestCase
                         return [$s];
                     }
                 ',
-                'error_message' => 'ImplicitToStringCast'
+                'error_message' => 'ImplicitToStringCast',
             ],
             'implicitCastInList' => [
                 'code' => '<?php
@@ -437,7 +431,7 @@ class ToStringTest extends TestCase
                         return [$s];
                     }
                 ',
-                'error_message' => 'ImplicitToStringCast'
+                'error_message' => 'ImplicitToStringCast',
             ],
             'implicitCastInTuple' => [
                 'code' => '<?php
@@ -449,7 +443,7 @@ class ToStringTest extends TestCase
                         return [$s];
                     }
                 ',
-                'error_message' => 'ImplicitToStringCast'
+                'error_message' => 'ImplicitToStringCast',
             ],
             'implicitCastInShape' => [
                 'code' => '<?php
@@ -461,7 +455,7 @@ class ToStringTest extends TestCase
                         return [$s];
                     }
                 ',
-                'error_message' => 'ImplicitToStringCast'
+                'error_message' => 'ImplicitToStringCast',
             ],
             'implicitCastInIterable' => [
                 'code' => '<?php
@@ -473,7 +467,7 @@ class ToStringTest extends TestCase
                         return [$s];
                     }
                 ',
-                'error_message' => 'ImplicitToStringCast'
+                'error_message' => 'ImplicitToStringCast',
             ],
             'implicitCastInToString' => [
                 'code' => '<?php
@@ -487,7 +481,7 @@ class ToStringTest extends TestCase
                         }
                     }
                 ',
-                'error_message' => 'ImplicitToStringCast'
+                'error_message' => 'ImplicitToStringCast',
             ],
             'toStringTypecastNonString' => [
                 'code' => '<?php

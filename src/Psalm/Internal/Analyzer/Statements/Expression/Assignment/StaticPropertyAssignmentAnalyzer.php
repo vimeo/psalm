@@ -48,7 +48,7 @@ class StaticPropertyAssignmentAnalyzer
         $var_id = ExpressionIdentifier::getExtendedVarId(
             $stmt,
             $context->self,
-            $statements_analyzer
+            $statements_analyzer,
         );
 
         $lhs_type = $statements_analyzer->node_data->getType($stmt->class);
@@ -92,7 +92,7 @@ class StaticPropertyAssignmentAnalyzer
                 if (!$context->ignore_variable_property) {
                     $codebase->analyzer->addMixedMemberName(
                         strtolower($fq_class_name) . '::$',
-                        $context->calling_method_id ?: $statements_analyzer->getFileName()
+                        $context->calling_method_id ?: $statements_analyzer->getFileName(),
                     );
                 }
 
@@ -108,13 +108,13 @@ class StaticPropertyAssignmentAnalyzer
                 $codebase->analyzer->addNodeReference(
                     $statements_analyzer->getFilePath(),
                     $stmt->class,
-                    $fq_class_name
+                    $fq_class_name,
                 );
 
                 $codebase->analyzer->addNodeReference(
                     $statements_analyzer->getFilePath(),
                     $stmt->name,
-                    $property_id
+                    $property_id,
                 );
             }
 
@@ -123,9 +123,9 @@ class StaticPropertyAssignmentAnalyzer
                     new UndefinedPropertyAssignment(
                         'Static property ' . $property_id . ' is not defined',
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
-                        $property_id
+                        $property_id,
                     ),
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 );
 
                 return null;
@@ -136,14 +136,14 @@ class StaticPropertyAssignmentAnalyzer
                 $context,
                 $statements_analyzer,
                 new CodeLocation($statements_analyzer->getSource(), $stmt),
-                $statements_analyzer->getSuppressedIssues()
+                $statements_analyzer->getSuppressedIssues(),
             ) === false) {
                 return false;
             }
 
             $declaring_property_class = (string) $codebase->properties->getDeclaringClassForProperty(
                 $fq_class_name . '::$' . $prop_name->name,
-                false
+                false,
             );
 
             $declaring_property_id = strtolower($declaring_property_class) . '::$' . $prop_name;
@@ -154,7 +154,7 @@ class StaticPropertyAssignmentAnalyzer
                     $statements_analyzer,
                     $stmt->class,
                     $fq_class_name,
-                    $context->calling_method_id
+                    $context->calling_method_id,
                 );
 
                 if (!$moved_class) {
@@ -173,15 +173,15 @@ class StaticPropertyAssignmentAnalyzer
                                         $new_fq_class_name,
                                         $statements_analyzer->getNamespace(),
                                         $statements_analyzer->getAliasedClassesFlipped(),
-                                        null
-                                    )
+                                        null,
+                                    ),
                                 );
                             }
 
                             $file_manipulations[] = new FileManipulation(
                                 (int) $stmt->name->getAttribute('startFilePos'),
                                 (int) $stmt->name->getAttribute('endFilePos') + 1,
-                                '$' . $new_property_name
+                                '$' . $new_property_name,
                             );
 
                             FileManipulationBuffer::add($statements_analyzer->getFilePath(), $file_manipulations);
@@ -203,14 +203,14 @@ class StaticPropertyAssignmentAnalyzer
                 $class_storage,
                 $assignment_value_type,
                 $context,
-                null
+                null,
             );
 
             $class_property_type = $codebase->properties->getPropertyType(
                 $property_id,
                 true,
                 $statements_analyzer,
-                $context
+                $context,
             );
 
             if (!$class_property_type) {
@@ -225,7 +225,7 @@ class StaticPropertyAssignmentAnalyzer
                 ) {
                     $source_analyzer->inferred_property_types[$prop_name_name] = Type::combineUnionTypes(
                         $assignment_value_type,
-                        $source_analyzer->inferred_property_types[$prop_name_name] ?? null
+                        $source_analyzer->inferred_property_types[$prop_name_name] ?? null,
                     );
                 }
             }
@@ -243,7 +243,7 @@ class StaticPropertyAssignmentAnalyzer
                 $class_property_type,
                 $fq_class_name,
                 $fq_class_name,
-                $class_storage->parent_class
+                $class_storage->parent_class,
             );
 
             $union_comparison_results = new TypeComparisonResult();
@@ -254,7 +254,7 @@ class StaticPropertyAssignmentAnalyzer
                 $class_property_type,
                 true,
                 true,
-                $union_comparison_results
+                $union_comparison_results,
             );
 
             if ($union_comparison_results->type_coerced) {
@@ -266,11 +266,11 @@ class StaticPropertyAssignmentAnalyzer
                             new CodeLocation(
                                 $statements_analyzer->getSource(),
                                 $assignment_value ?? $stmt,
-                                $context->include_location
+                                $context->include_location,
                             ),
-                            $property_id
+                            $property_id,
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
                     );
                 } else {
                     IssueBuffer::maybeAdd(
@@ -280,11 +280,11 @@ class StaticPropertyAssignmentAnalyzer
                             new CodeLocation(
                                 $statements_analyzer->getSource(),
                                 $assignment_value ?? $stmt,
-                                $context->include_location
+                                $context->include_location,
                             ),
-                            $property_id
+                            $property_id,
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
                     );
                 }
             }
@@ -297,10 +297,10 @@ class StaticPropertyAssignmentAnalyzer
                         new CodeLocation(
                             $statements_analyzer->getSource(),
                             $assignment_value ?? $stmt,
-                            $context->include_location
-                        )
+                            $context->include_location,
+                        ),
                     ),
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 );
             }
 
@@ -313,11 +313,11 @@ class StaticPropertyAssignmentAnalyzer
                                 . $assignment_value_type->getId() . '\'',
                             new CodeLocation(
                                 $statements_analyzer->getSource(),
-                                $assignment_value ?? $stmt
+                                $assignment_value ?? $stmt,
                             ),
-                            $property_id
+                            $property_id,
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
                     )) {
                         return false;
                     }
@@ -329,11 +329,11 @@ class StaticPropertyAssignmentAnalyzer
                                 . $assignment_value_type->getId() . '\'',
                             new CodeLocation(
                                 $statements_analyzer->getSource(),
-                                $assignment_value ?? $stmt
+                                $assignment_value ?? $stmt,
                             ),
-                            $property_id
+                            $property_id,
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
                     )) {
                         return false;
                     }

@@ -46,6 +46,7 @@ use function chdir;
 use function count;
 use function file_exists;
 use function file_put_contents;
+use function function_exists;
 use function fwrite;
 use function gc_collect_cycles;
 use function gc_disable;
@@ -63,11 +64,15 @@ use function is_string;
 use function json_encode;
 use function max;
 use function microtime;
+use function opcache_get_status;
+use function parse_url;
 use function preg_match;
 use function preg_replace;
 use function realpath;
 use function setlocale;
 use function str_repeat;
+use function str_replace;
+use function strlen;
 use function strpos;
 use function substr;
 use function version_compare;
@@ -77,6 +82,7 @@ use const JSON_THROW_ON_ERROR;
 use const LC_CTYPE;
 use const PHP_EOL;
 use const PHP_OS;
+use const PHP_URL_SCHEME;
 use const PHP_VERSION;
 use const STDERR;
 
@@ -195,10 +201,9 @@ final class Psalm
         if (array_key_exists('h', $options)) {
             echo self::getHelpText();
             /*
-            --shepherd[=host]
-                Send data to Shepherd, Psalm's GitHub integration tool.
-                `host` is the location of the Shepherd server. It defaults to shepherd.dev
-                More information is available at https://psalm.dev/shepherd
+            --shepherd[=endpoint]
+                Send analysis statistics to Shepherd server.
+                `endpoint` is the URL to the Shepherd server. It defaults to shepherd.dev
             */
 
             exit;
@@ -238,7 +243,7 @@ final class Psalm
             $path_to_config,
             $output_format,
             $run_taint_analysis,
-            $options
+            $options,
         );
 
         if (isset($options['no-cache'])) {
@@ -255,9 +260,11 @@ final class Psalm
 
         $threads = self::detectThreads($options, $config, $in_ci);
 
+        $progress = self::initProgress($options, $config);
+
         self::emitMacPcreWarning($options, $threads);
 
-        self::restart($options, $threads);
+        self::restart($options, $threads, $progress);
 
         if (isset($options['debug-emitted-issues'])) {
             $config->debug_emitted_issues = true;
@@ -279,13 +286,16 @@ final class Psalm
             chdir($current_dir);
         }
 
+        /** @var list<string> $plugins List of paths to plugin files */
         $plugins = [];
 
         if (isset($options['plugin'])) {
-            $plugins = $options['plugin'];
+            $plugins_from_options = $options['plugin'];
 
-            if (!is_array($plugins)) {
-                $plugins = [$plugins];
+            if (is_array($plugins_from_options)) {
+                $plugins = $plugins_from_options;
+            } elseif (is_string($plugins_from_options)) {
+                $plugins = [$plugins_from_options];
             }
         }
 
@@ -301,24 +311,7 @@ final class Psalm
             ? $options['find-references-to']
             : null;
 
-        if (isset($options['shepherd']) || getenv('PSALM_SHEPHERD')) {
-            if (isset($options['shepherd'])) {
-                if (is_string($options['shepherd'])) {
-                    $config->shepherd_host = $options['shepherd'];
-                }
-            } elseif (getenv('PSALM_SHEPHERD')) {
-                if (false !== ($shepherd_host = getenv('PSALM_SHEPHERD_HOST'))) {
-                    $config->shepherd_host = $shepherd_host;
-                }
-            }
-            $shepherd_plugin = Path::canonicalize(__DIR__ . '/../../Plugin/Shepherd.php');
-
-            if (!file_exists($shepherd_plugin)) {
-                die('Could not find Shepherd plugin location ' . $shepherd_plugin . PHP_EOL);
-            }
-
-            $plugins[] = $shepherd_plugin;
-        }
+        self::configureShepherd($config, $options, $plugins);
 
         if (isset($options['clear-cache'])) {
             self::clearCache($config);
@@ -328,7 +321,6 @@ final class Psalm
             self::clearGlobalCache($config);
         }
 
-        $progress = self::initProgress($options, $config);
         $providers = self::initProviders($options, $config, $current_dir);
 
         $stdout_report_options = self::initStdoutReportOptions($options, $show_info, $output_format, $in_ci);
@@ -347,10 +339,10 @@ final class Psalm
                 $report_file_paths,
                 isset($options['report-show-info'])
                     ? $options['report-show-info'] !== 'false' && $options['report-show-info'] !== '0'
-                    : true
+                    : true,
             ),
             $threads,
-            $progress
+            $progress,
         );
 
         CliUtils::initPhpVersion($options, $config, $project_analyzer);
@@ -364,7 +356,7 @@ final class Psalm
             $find_references_to,
             $find_unused_code,
             $find_unused_variables,
-            $run_taint_analysis
+            $run_taint_analysis,
         );
 
         if ($config->run_taint_analysis || $run_taint_analysis) {
@@ -402,7 +394,7 @@ final class Psalm
                 !$paths_to_check,
                 $start_time,
                 isset($options['stats']),
-                self::initBaseline($options, $config, $current_dir, $path_to_config)
+                self::initBaseline($options, $config, $current_dir, $path_to_config),
             );
         } else {
             self::autoGenerateConfig($project_analyzer, $current_dir, $init_source_dir, $vendor_dir);
@@ -447,7 +439,7 @@ final class Psalm
                         fwrite(
                             STDERR,
                             'Unrecognised argument "--' . $arg_name . '"' . PHP_EOL
-                            . 'Type --help to see a list of supported arguments'. PHP_EOL
+                            . 'Type --help to see a list of supported arguments'. PHP_EOL,
                         );
                         exit(1);
                     }
@@ -460,13 +452,13 @@ final class Psalm
                         fwrite(
                             STDERR,
                             'Unrecognised argument "-' . $arg_name . '"' . PHP_EOL
-                            . 'Type --help to see a list of supported arguments'. PHP_EOL
+                            . 'Type --help to see a list of supported arguments'. PHP_EOL,
                         );
                         exit(1);
                     }
                 }
             },
-            $args
+            $args,
         );
     }
 
@@ -542,7 +534,7 @@ final class Psalm
                     $current_dir,
                     $init_source_dir,
                     $init_level,
-                    $vendor_dir
+                    $vendor_dir,
                 );
             } catch (ConfigCreationException $e) {
                 die($e->getMessage() . PHP_EOL);
@@ -569,7 +561,7 @@ final class Psalm
             $current_dir,
             $output_format,
             $first_autoloader,
-            $run_taint_analysis
+            $run_taint_analysis,
         );
 
         if (isset($options['error-level'])
@@ -579,7 +571,7 @@ final class Psalm
 
             if (!in_array($config_level, [1, 2, 3, 4, 5, 6, 7, 8], true)) {
                 throw new ConfigException(
-                    'Invalid error level ' . $config_level
+                    'Invalid error level ' . $config_level,
                 );
             }
 
@@ -608,6 +600,10 @@ final class Psalm
                 $progress = new DefaultProgress($show_errors, $show_info);
             }
         }
+        // output buffered warnings
+        foreach ($config->config_warnings as $warning) {
+            $progress->warning($warning);
+        }
         return $progress;
     }
 
@@ -615,7 +611,7 @@ final class Psalm
     {
         if (isset($options['no-cache']) || isset($options['i'])) {
             $providers = new Providers(
-                new FileProvider
+                new FileProvider,
             );
         } else {
             $no_reflection_cache = isset($options['no-reflection-cache']);
@@ -635,7 +631,7 @@ final class Psalm
                 $file_storage_cache_provider,
                 $classlike_storage_cache_provider,
                 new FileReferenceCacheProvider($config),
-                new ProjectCacheProvider(Composer::getLockFilePath($current_dir))
+                new ProjectCacheProvider(Composer::getLockFilePath($current_dir)),
             );
         }
         return $providers;
@@ -656,7 +652,7 @@ final class Psalm
         try {
             $issue_baseline = ErrorBaseline::read(
                 new FileProvider,
-                $options['set-baseline']
+                $options['set-baseline'],
             );
         } catch (ConfigException $e) {
             $issue_baseline = [];
@@ -666,7 +662,7 @@ final class Psalm
             new FileProvider,
             $options['set-baseline'],
             IssueBuffer::getIssuesData(),
-            $config->include_php_versions_in_error_baseline || isset($options['include-php-versions'])
+            $config->include_php_versions_in_error_baseline || isset($options['include-php-versions']),
         );
 
         fwrite(STDERR, "Baseline saved to {$options['set-baseline']}.");
@@ -674,7 +670,7 @@ final class Psalm
         CliUtils::updateConfigFile(
             $config,
             $path_to_config ?? $current_dir,
-            $options['set-baseline']
+            $options['set-baseline'],
         );
 
         fwrite(STDERR, PHP_EOL);
@@ -696,7 +692,7 @@ final class Psalm
         try {
             $issue_current_baseline = ErrorBaseline::read(
                 new FileProvider,
-                $baselineFile
+                $baselineFile,
             );
             $total_issues_current_baseline = ErrorBaseline::countTotalIssues($issue_current_baseline);
 
@@ -704,7 +700,7 @@ final class Psalm
                 new FileProvider,
                 $baselineFile,
                 IssueBuffer::getIssuesData(),
-                $config->include_php_versions_in_error_baseline || isset($options['include-php-versions'])
+                $config->include_php_versions_in_error_baseline || isset($options['include-php-versions']),
             );
             $total_issues_updated_baseline = ErrorBaseline::countTotalIssues($issue_baseline);
 
@@ -741,17 +737,17 @@ final class Psalm
 
         $reference_dictionary = ReferenceMapGenerator::getReferenceMap(
             $providers->classlike_storage_provider,
-            $expected_references
+            $expected_references,
         );
 
         $type_map_string = json_encode(
             ['files' => $name_file_map, 'references' => $reference_dictionary],
-            JSON_THROW_ON_ERROR
+            JSON_THROW_ON_ERROR,
         );
 
         $providers->file_provider->setContents(
             $type_map_location,
-            $type_map_string
+            $type_map_string,
         );
     }
 
@@ -771,7 +767,7 @@ final class Psalm
 
             $init_level = Creator::getLevel(
                 array_merge(...array_values($issues_by_file)),
-                array_sum($mixed_counts)
+                array_sum($mixed_counts),
             );
         }
 
@@ -782,7 +778,7 @@ final class Psalm
                 $current_dir,
                 $init_source_dir,
                 $init_level,
-                $vendor_dir
+                $vendor_dir,
             );
         } catch (ConfigCreationException $e) {
             die($e->getMessage() . PHP_EOL);
@@ -857,7 +853,7 @@ final class Psalm
             if (!$root_path) {
                 fwrite(
                     STDERR,
-                    'Could not locate root directory ' . $current_dir . DIRECTORY_SEPARATOR . $options['r'] . PHP_EOL
+                    'Could not locate root directory ' . $current_dir . DIRECTORY_SEPARATOR . $options['r'] . PHP_EOL,
                 );
                 exit(1);
             }
@@ -886,7 +882,7 @@ final class Psalm
         }
     }
 
-    private static function restart(array $options, int $threads): void
+    private static function restart(array $options, int $threads, Progress $progress): void
     {
         $ini_handler = new PsalmRestarter('PSALM');
 
@@ -907,10 +903,25 @@ final class Psalm
             $ini_handler->disableExtension('grpc');
         }
 
-        $ini_handler->disableExtension('uopz');
+        $ini_handler->disableExtensions([
+            'uopz',
+            // extesions that are incompatible with JIT (they are also usually make Psalm slow)
+            'pcov',
+            'blackfire',
+        ]);
 
         // If Xdebug is enabled, restart without it
         $ini_handler->check();
+
+        if (!function_exists('opcache_get_status')
+            || !($opcache_status = opcache_get_status(false))
+            || !isset($opcache_status['opcache_enabled'])
+            || !$opcache_status['opcache_enabled']
+        ) {
+            $progress->write(PHP_EOL
+                . 'Install the opcache extension to make use of JIT on PHP 8.0+ for a 20%+ performance boost!'
+                . PHP_EOL . PHP_EOL);
+        }
     }
 
     private static function detectThreads(array $options, Config $config, bool $in_ci): int
@@ -1012,7 +1023,7 @@ final class Psalm
                 $output_format,
                 $first_autoloader,
                 $run_taint_analysis,
-                $options
+                $options,
             );
         }
         return [$config, $init_source_dir];
@@ -1053,7 +1064,7 @@ final class Psalm
             try {
                 $issue_baseline = ErrorBaseline::read(
                     new FileProvider,
-                    $baseline_file_path
+                    $baseline_file_path,
                 );
             } catch (ConfigException $exception) {
                 fwrite(STDERR, 'Error while reading baseline: ' . $exception->getMessage() . PHP_EOL);
@@ -1074,7 +1085,7 @@ final class Psalm
             file_put_contents($dump_taint_graph, "digraph Taints {\n\t".
                 implode("\n\t", array_map(
                     static fn(array $edges) => '"'.implode('" -> "', $edges).'"',
-                    $flow_graph->summarizeEdges()
+                    $flow_graph->summarizeEdges(),
                 )) .
                 "\n}\n");
         }
@@ -1094,9 +1105,7 @@ final class Psalm
             } else {
                 $find_unused_code = 'auto';
             }
-        }
-
-        if ($config->find_unused_code) {
+        } elseif ($config->find_unused_code) {
             $find_unused_code = 'auto';
         }
 
@@ -1157,6 +1166,53 @@ final class Psalm
         }
     }
 
+    private static function configureShepherd(Config $config, array $options, array &$plugins): void
+    {
+        if (is_string(getenv('PSALM_SHEPHERD_HOST'))) { // remove this block in Psalm 6
+            fwrite(
+                STDERR,
+                'Warning: PSALM_SHEPHERD_HOST env variable will be removed in Psalm 6.'
+                .' Please use "--shepherd" cli option or PSALM_SHEPHERD env variable'
+                .' to specify a custom Shepherd host/endpoint.'
+                . PHP_EOL,
+            );
+        }
+
+        $is_shepherd_enabled = isset($options['shepherd']) || getenv('PSALM_SHEPHERD');
+        if (! $is_shepherd_enabled) {
+            return;
+        }
+
+        $plugins[] = Path::canonicalize(__DIR__ . '/../../Plugin/Shepherd.php');
+
+        /** @psalm-suppress MixedAssignment */
+        $custom_shepherd_endpoint = ($options['shepherd'] ?? getenv('PSALM_SHEPHERD'));
+        if (is_string($custom_shepherd_endpoint) && strlen($custom_shepherd_endpoint) > 2) {
+            if (parse_url($custom_shepherd_endpoint, PHP_URL_SCHEME) === null) {
+                $custom_shepherd_endpoint = 'https://' . $custom_shepherd_endpoint;
+            }
+
+            /** @psalm-suppress DeprecatedProperty */
+            $config->shepherd_host = str_replace('/hooks/psalm', '', $custom_shepherd_endpoint);
+            $config->shepherd_endpoint = $custom_shepherd_endpoint;
+
+            return;
+        }
+
+        // Legacy part, will be removed in Psalm 6
+        $custom_shepherd_host = getenv('PSALM_SHEPHERD_HOST');
+
+        if (is_string($custom_shepherd_host)) {
+            if (parse_url($custom_shepherd_host, PHP_URL_SCHEME) === null) {
+                $custom_shepherd_host = 'https://' . $custom_shepherd_host;
+            }
+
+            /** @psalm-suppress DeprecatedProperty */
+            $config->shepherd_host = $custom_shepherd_host;
+            $config->shepherd_endpoint = $custom_shepherd_host . '/hooks/psalm';
+        }
+    }
+
     private static function generateStubs(
         array $options,
         Providers $providers,
@@ -1170,8 +1226,8 @@ final class Psalm
                 StubsGenerator::getAll(
                     $project_analyzer->getCodebase(),
                     $providers->classlike_storage_provider,
-                    $providers->file_storage_provider
-                )
+                    $providers->file_storage_provider,
+                ),
             );
         }
     }
@@ -1329,8 +1385,8 @@ final class Psalm
             --generate-stubs=PATH
                 Generate stubs for the project and dump the file in the given path
 
-            --shepherd[=host]
-                Send data to Shepherd, Psalm’s GitHub integration tool.
+            --shepherd[=endpoint]
+                Send analysis statistics to Shepherd (shepherd.dev) or your server.
 
             --alter
                 Run Psalter

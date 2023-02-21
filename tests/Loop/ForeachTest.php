@@ -13,9 +13,6 @@ class ForeachTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
-    /**
-     *
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -1006,7 +1003,7 @@ class ForeachTest extends TestCase
                         foreach ($elt as $item) {
                             f($item);
                         }
-                    }'
+                    }',
             ],
             'loopOverIteratorWithTooFewParams' => [
                 'code' => '<?php
@@ -1015,7 +1012,7 @@ class ForeachTest extends TestCase
                      */
                     function foo(Iterator $arr) : void {
                         foreach ($arr as $a) {}
-                    }'
+                    }',
             ],
             'foreachLoopInvalidation' => [
                 'code' => '<?php
@@ -1036,7 +1033,7 @@ class ForeachTest extends TestCase
 
                             $arr[$i]["a"] += 5;
                         }
-                    }'
+                    }',
             ],
             'iteratorForeach' => [
                 'code' => '<?php
@@ -1078,7 +1075,7 @@ class ForeachTest extends TestCase
 
                     foreach (new FooIterator() as $key => $value) {
                         echo $key . " " . $value;
-                    }'
+                    }',
             ],
             'loopClosure' => [
                 'code' => '<?php
@@ -1092,9 +1089,10 @@ class ForeachTest extends TestCase
                                 $currentIndexes
                             );
 
+                            /** @psalm-suppress PossiblyUndefinedArrayOffset */
                             $currentIndexes[0]++;
                         }
-                    }'
+                    }',
             ],
             'loopCanUpdateOuterWithoutBreak' => [
                 'code' => '<?php
@@ -1109,7 +1107,7 @@ class ForeachTest extends TestCase
                         }
 
                         if (is_int($id)) {}
-                    }'
+                    }',
             ],
             'loopCanUpdateOuterWithBreak' => [
                 'code' => '<?php
@@ -1127,7 +1125,7 @@ class ForeachTest extends TestCase
                         }
 
                         if (is_int($id)) {}
-                    }'
+                    }',
             ],
             'loopCanUpdateOuterWithContinue' => [
                 'code' => '<?php
@@ -1145,7 +1143,7 @@ class ForeachTest extends TestCase
                         }
 
                         if (is_int($id)) {}
-                    }'
+                    }',
             ],
             'loopVarRedefinedAtLoopStart' => [
                 'code' => '<?php
@@ -1159,14 +1157,11 @@ class ForeachTest extends TestCase
                             strlen($file);
                             $file = 0;
                         }
-                    }'
+                    }',
             ],
         ];
     }
 
-    /**
-     *
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [

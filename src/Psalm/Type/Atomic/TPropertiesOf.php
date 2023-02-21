@@ -9,7 +9,6 @@ use Psalm\Type\Atomic;
  * their apropriate types as values.
  *
  * @psalm-type TokenName = 'properties-of'|'public-properties-of'|'protected-properties-of'|'private-properties-of'
- *
  * @psalm-immutable
  */
 final class TPropertiesOf extends Atomic
@@ -36,7 +35,7 @@ final class TPropertiesOf extends Atomic
             'properties-of',
             'public-properties-of',
             'protected-properties-of',
-            'private-properties-of'
+            'private-properties-of',
         ];
     }
 
@@ -54,7 +53,6 @@ final class TPropertiesOf extends Atomic
     }
 
     /**
-     * @param TokenName $tokenName
      * @return self::VISIBILITY_*|null
      */
     public static function filterForTokenName(string $token_name): ?int

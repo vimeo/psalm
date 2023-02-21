@@ -33,9 +33,9 @@ class JsonOutputTest extends TestCase
             $config,
             new Providers(
                 $this->file_provider,
-                new FakeParserCacheProvider()
+                new FakeParserCacheProvider(),
             ),
-            $stdout_report_options
+            $stdout_report_options,
         );
 
         $this->project_analyzer->getCodebase()->reportUnusedCode();
@@ -63,7 +63,7 @@ class JsonOutputTest extends TestCase
         $this->assertSame($line_number, $issue_data->line_from);
         $this->assertSame(
             $error,
-            substr($code, $issue_data->from, $issue_data->to - $issue_data->from)
+            substr($code, $issue_data->from, $issue_data->to - $issue_data->from),
         );
     }
 

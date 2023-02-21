@@ -37,32 +37,22 @@ use function substr;
  */
 class Functions
 {
-    /**
-     * @var FileStorageProvider
-     */
-    private $file_storage_provider;
+    private FileStorageProvider $file_storage_provider;
 
     /**
      * @var array<lowercase-string, FunctionStorage>
      */
-    private static $stubbed_functions;
+    private static array $stubbed_functions;
 
-    /** @var FunctionReturnTypeProvider */
-    public $return_type_provider;
+    public FunctionReturnTypeProvider $return_type_provider;
 
-    /** @var FunctionExistenceProvider */
-    public $existence_provider;
+    public FunctionExistenceProvider $existence_provider;
 
-    /** @var FunctionParamsProvider */
-    public $params_provider;
+    public FunctionParamsProvider $params_provider;
 
-    /** @var DynamicFunctionStorageProvider */
-    public $dynamic_storage_provider;
+    public DynamicFunctionStorageProvider $dynamic_storage_provider;
 
-    /**
-     * @var Reflection
-     */
-    private $reflection;
+    private Reflection $reflection;
 
     public function __construct(FileStorageProvider $storage_provider, Reflection $reflection)
     {
@@ -128,7 +118,7 @@ class Functions
             }
 
             throw new UnexpectedValueException(
-                'Expecting non-empty $root_file_path and $checked_file_path'
+                'Expecting non-empty $root_file_path and $checked_file_path',
             );
         }
 
@@ -150,7 +140,7 @@ class Functions
             }
 
             throw new UnexpectedValueException(
-                'Expecting ' . $function_id . ' to have storage in ' . $checked_file_path
+                'Expecting ' . $function_id . ' to have storage in ' . $checked_file_path,
             );
         }
 
@@ -164,7 +154,7 @@ class Functions
             }
 
             throw new UnexpectedValueException(
-                'Not expecting ' . $function_id . ' to not have storage in ' . $declaring_file_path
+                'Not expecting ' . $function_id . ' to not have storage in ' . $declaring_file_path,
             );
         }
 
@@ -238,7 +228,6 @@ class Functions
 
     /**
      * @param  non-empty-string         $function_name
-     *
      * @return non-empty-string
      */
     public function getFullyQualifiedFunctionNameFromString(string $function_name, StatementsSource $source): string
@@ -429,13 +418,14 @@ class Functions
             // stream/socket io
             'stream_context_set_option', 'socket_write', 'stream_set_blocking', 'socket_close',
             'socket_set_option', 'stream_set_write_buffer', 'stream_socket_enable_crypto', 'stream_copy_to_stream',
-            'stream_wrapper_register',
+            'stream_wrapper_register', 'socket_connect', 'socket_bind', 'socket_set_block', 'socket_set_nonblock',
+            'socket_listen',
 
             // meta calls
             'call_user_func', 'call_user_func_array', 'define', 'create_function',
 
             // http
-            'header', 'header_remove', 'http_response_code', 'setcookie',
+            'header', 'header_remove', 'http_response_code', 'setcookie', 'setrawcookie',
 
             // output buffer
             'ob_start', 'ob_end_clean', 'ob_get_clean', 'readfile', 'printf', 'var_dump', 'phpinfo',
@@ -529,7 +519,7 @@ class Functions
             'hash_update', 'hash_update_file', 'hash_update_stream',
 
             // unserialize
-            'unserialize'
+            'unserialize',
         ];
 
         if (in_array(strtolower($function_id), $impure_functions, true)) {
@@ -573,7 +563,7 @@ class Functions
                     if ($atomic_count_type instanceof TNamedObject) {
                         $count_method_id = new MethodIdentifier(
                             $atomic_count_type->value,
-                            'count'
+                            'count',
                         );
 
                         try {
@@ -590,7 +580,7 @@ class Functions
             $codebase,
             $function_id,
             $args ?: [],
-            null
+            null,
         );
 
         if (!$function_callable->params
@@ -611,7 +601,7 @@ class Functions
                     foreach ($arg_type->getAtomicTypes() as $possible_callable) {
                         $possible_callable = CallableTypeComparator::getCallableFromAtomic(
                             $codebase,
-                            $possible_callable
+                            $possible_callable,
                         );
 
                         if ($possible_callable && !$possible_callable->is_pure) {

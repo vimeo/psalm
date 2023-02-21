@@ -22,9 +22,6 @@ class IntRangeTest extends TestCase
         $this->assertEquals(10, $range->max_bound);
     }
 
-    /**
-     *
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -43,6 +40,36 @@ class IntRangeTest extends TestCase
                     /**
                      * @param int<1,12> $a
                      * @return positive-int
+                     */
+                    function scope(int $a){
+                        return $a;
+                    }',
+            ],
+            'nonNegativeIntRange' => [
+                'code' => '<?php
+                    /**
+                     * @param int<0,12> $a
+                     * @return non-negative-int
+                     */
+                    function scope(int $a){
+                        return $a;
+                    }',
+            ],
+            'negativeIntRange' => [
+                'code' => '<?php
+                    /**
+                     * @param int<-12,-1> $a
+                     * @return negative-int
+                     */
+                    function scope(int $a){
+                        return $a;
+                    }',
+            ],
+            'nonPositiveIntRange' => [
+                'code' => '<?php
+                    /**
+                     * @param int<-12,0> $a
+                     * @return non-positive-int
                      */
                     function scope(int $a){
                         return $a;
@@ -72,7 +99,7 @@ class IntRangeTest extends TestCase
                     '$a===' => 'int<500, 4999>',
                     '$b===' => 'int<-5000, -502>',
                     '$c===' => 'int<-499, -61>',
-                ]
+                ],
             ],
             'complexAssertions' => [
                 'code' => '<?php
@@ -84,7 +111,7 @@ class IntRangeTest extends TestCase
                     ',
                 'assertions' => [
                     '$a===' => 'int<500, 4999>',
-                ]
+                ],
             ],
             'negatedAssertions' => [
                 'code' => '<?php
@@ -180,7 +207,7 @@ class IntRangeTest extends TestCase
                     '$n===' => 'int<-9, max>',
                     '$o===' => 'int<min, 499>',
                     '$p===' => 'int<min, -501>',
-                ]
+                ],
             ],
             'intOperations' => [
                 'code' => '<?php
@@ -196,8 +223,8 @@ class IntRangeTest extends TestCase
                     '$b===' => 'int<0, 9>',
                     '$c===' => 'int<1, max>',
                     '$d===' => 'int<495, 4994>',
-                    '$e===' => 'int<500, 4999>'
-                ]
+                    '$e===' => 'int<500, 4999>',
+                ],
             ],
             'mod' => [
                 'code' => '<?php
@@ -264,7 +291,7 @@ class IntRangeTest extends TestCase
                     '$z===' => 'never',
                     '$aa===' => 'int<-2, 2>',
                     '$ab===' => 'int<-2, 2>',
-                ]
+                ],
             ],
             'pow' => [
                 'code' => '<?php
@@ -326,7 +353,7 @@ class IntRangeTest extends TestCase
                     '$z===' => '1',
                     '$aa===' => 'int<1, max>',
                     '$ab===' => 'float',
-                ]
+                ],
             ],
             'multiplications' => [
                 'code' => '<?php
@@ -381,7 +408,7 @@ class IntRangeTest extends TestCase
                     '$x===' => 'int<4, max>',
                     '$y===' => 'int',
                     '$z===' => 'int<-4, 4>',
-                ]
+                ],
             ],
             'SKIPPED-intLoopPositive' => [
                 'code' => '<?php
@@ -390,8 +417,8 @@ class IntRangeTest extends TestCase
 
                     }',
                 'assertions' => [
-                    '$i===' => 'int<0, 9>'
-                ]
+                    '$i===' => 'int<0, 9>',
+                ],
             ],
             'SKIPPED-intLoopNegative' => [
                 'code' => '<?php
@@ -400,8 +427,8 @@ class IntRangeTest extends TestCase
 
                     }',
                 'assertions' => [
-                    '$i===' => 'int<2, 10>'
-                ]
+                    '$i===' => 'int<2, 10>',
+                ],
             ],
             'integrateExistingArrayPositive' => [
                 'code' => '<?php
@@ -415,8 +442,8 @@ class IntRangeTest extends TestCase
                     $a = getInt();
                     $_arr[$a] = 12;',
                 'assertions' => [
-                    '$_arr===' => "non-empty-array<int<0, max>, 'a'|'b'|'c'|12>"
-                ]
+                    '$_arr===' => "non-empty-array<int<0, max>, 'a'|'b'|'c'|12>",
+                ],
             ],
             'integrateExistingArrayNegative' => [
                 'code' => '<?php
@@ -430,8 +457,8 @@ class IntRangeTest extends TestCase
                     $a = getInt();
                     $_arr[$a] = 12;',
                 'assertions' => [
-                    '$_arr===' => "non-empty-array<int<min, 2>, 'a'|'b'|'c'|12>"
-                ]
+                    '$_arr===' => "non-empty-array<int<min, 2>, 'a'|'b'|'c'|12>",
+                ],
             ],
             'SKIPPED-statementsInLoopAffectsEverything' => [
                 'code' => '<?php
@@ -443,12 +470,11 @@ class IntRangeTest extends TestCase
                         }
                     }',
                 'assertions' => [
-                    '$remainder===' => 'int<min, 1>'
-                ]
+                    '$remainder===' => 'int<min, 1>',
+                ],
             ],
-            'SKIPPED-IntRangeRestrictWhenUntouched' => [
+            'IntRangeRestrictWhenUntouched' => [
                 'code' => '<?php
-                    //skipped, int range in loops not supported yet
                     foreach ([1, 2, 3] as $i) {
                         if ($i > 1) {
                             takesInt($i);
@@ -460,26 +486,48 @@ class IntRangeTest extends TestCase
                         return;
                     }',
             ],
-            'SKIPPED-wrongLoopAssertion' => [
+            'intRangeExpandedByLoop' => [
                 'code' => '<?php
-                    //skipped, int range in loops not supported yet
+                    for ($i = 0; $i < 10; $i++) {
+                        takesInt($i);
+                    }
+                    for (; $i < 20; $i++) {
+                        takesInt($i);
+                    }
+
+                    /** @psalm-param int<0, 20> $i */
+                    function takesInt(int $i): void{
+                        return;
+                    }',
+            ],
+            'statementsInLoopPreserveNonNegativeIntRange' => [
+                'code' => '<?php
+                    $sum = 0;
+                    foreach ([-6, 0, 2] as $i) {
+                        if ($i > 0) {
+                            $sum += $i;
+                        }
+                    }
+                    takesNonNegativeInt($sum);
+
+                    /** @psalm-param int<0, max> $i */
+                    function takesNonNegativeInt(int $i): void{
+                        return;
+                    }',
+            ],
+            'wrongLoopAssertion' => [
+                'code' => '<?php
                     function a(): array {
                         $type_tokens = getArray();
 
                         for ($i = 0, $l = rand(0,100); $i < $l; ++$i) {
-
-                            /** @psalm-trace $i */;
                             if ($i > 0 && rand(0,1)) {
                                 continue;
                             }
-                            /** @psalm-trace $i  */;
-
 
                             $type_tokens[$i] = "";
 
-                            /** @psalm-trace $type_tokens */;
-
-                            if($i > 1){
+                            if ($i > 1) {
                                 $type_tokens[$i - 2];
                             }
                         }
@@ -487,11 +535,10 @@ class IntRangeTest extends TestCase
                         return [];
                     }
 
-
                     /** @return array<int, string> */
                     function getArray(): array {
                         return [];
-                    }'
+                    }',
             ],
             'IntRangeContainedInMultipleInt' => [
                 'code' => '<?php
@@ -504,7 +551,7 @@ class IntRangeTest extends TestCase
                     /** @var int<0,1> $j */
                     $j = 0;
 
-                    echo $_arr[$j];'
+                    echo $_arr[$j];',
             ],
             'modulo' => [
                 'code' => '<?php
@@ -517,7 +564,7 @@ class IntRangeTest extends TestCase
                 'assertions' => [
                     '$b===' => 'int<-9, 9>',
                     '$c===' => 'int<0, 9>',
-                    '$d===' => 'int<0, max>'
+                    '$d===' => 'int<0, max>',
                 ],
             ],
             'minus' => [
@@ -648,7 +695,7 @@ class IntRangeTest extends TestCase
 
                         /** @var int<0, max> $count */
                         $count = 1;
-                        /** @var int $middle */
+                        /** @var int<0, max> $middle */
                         $middle = 1;
                         /** @var int<0, max> $remainder */
                         $remainder = 1;
@@ -680,6 +727,42 @@ class IntRangeTest extends TestCase
                     '$length===' => 'int<8, max>',
                 ],
             ],
+            'nonNegativeIntToRangeWithInferior' => [
+                'code' => '<?php
+                    /** @var non-negative-int $length */
+                    $length = 0;
+
+                    if ($length < 8) {
+                        throw new \RuntimeException();
+                    }',
+                'assertions' => [
+                    '$length===' => 'int<8, max>',
+                ],
+            ],
+            'negativeIntToRangeWithSuperior' => [
+                'code' => '<?php
+                    /** @var negative-int $length */
+                    $length = -8;
+
+                    if ($length > -8) {
+                        throw new \RuntimeException();
+                    }',
+                'assertions' => [
+                    '$length===' => 'int<min, -8>',
+                ],
+            ],
+            'nonPositiveIntToRangeWithSuperior' => [
+                'code' => '<?php
+                    /** @var non-positive-int $length */
+                    $length = -8;
+
+                    if ($length > -8) {
+                        throw new \RuntimeException();
+                    }',
+                'assertions' => [
+                    '$length===' => 'int<min, -8>',
+                ],
+            ],
             'positiveIntToRangeWithSuperiorOrEqual' => [
                 'code' => '<?php
                     /** @var positive-int $length */
@@ -690,6 +773,42 @@ class IntRangeTest extends TestCase
                     }',
                 'assertions' => [
                     '$length===' => 'int<1, 7>',
+                ],
+            ],
+            'nonNegativeIntToRangeWithSuperiorOrEqual' => [
+                'code' => '<?php
+                    /** @var non-negative-int $length */
+                    $length = 0;
+
+                    if ($length >= 8) {
+                        throw new \RuntimeException();
+                    }',
+                'assertions' => [
+                    '$length===' => 'int<0, 7>',
+                ],
+            ],
+            'negativeIntToRangeWithInferiorOrEqual' => [
+                'code' => '<?php
+                    /** @var negative-int $length */
+                    $length = -1;
+
+                    if ($length <= -8) {
+                        throw new \RuntimeException();
+                    }',
+                'assertions' => [
+                    '$length===' => 'int<-7, -1>',
+                ],
+            ],
+            'nonPositiveIntToRangeWithInferiorOrEqual' => [
+                'code' => '<?php
+                    /** @var non-positive-int $length */
+                    $length = -1;
+
+                    if ($length <= -8) {
+                        throw new \RuntimeException();
+                    }',
+                'assertions' => [
+                    '$length===' => 'int<-7, 0>',
                 ],
             ],
             'literalEquality' => [
@@ -718,6 +837,47 @@ class IntRangeTest extends TestCase
                     $_arr[$int] = 2;',
                 'assertions' => [
                     '$_arr===' => 'non-empty-array<int<0, max>, int<0, max>>',
+                ],
+            ],
+            'nonNegativeIntCombinedWithIntRange' => [
+                'code' => '<?php
+                    /** @var non-negative-int */
+                    $int = 1;
+                    /** @var array<int<0, max>, int<0, max>> */
+                    $_arr = [];
+
+                    $_arr[0] = 0;
+                    $_arr[1] = $int;
+                    $_arr[$int] = 2;',
+                'assertions' => [
+                    '$_arr===' => 'non-empty-array<int<0, max>, int<0, max>>',
+                ],
+            ],
+            'negativeIntCombinedWithIntRange' => [
+                'code' => '<?php
+                    /** @var negative-int */
+                    $int = -1;
+                    /** @var array<int<min, -1>, int<min, -1>> */
+                    $_arr = [];
+
+                    $_arr[-1] = $int;
+                    $_arr[$int] = -2;',
+                'assertions' => [
+                    '$_arr===' => 'non-empty-array<int<min, -1>, int<min, -1>>',
+                ],
+            ],
+            'nonPositiveIntCombinedWithIntRange' => [
+                'code' => '<?php
+                    /** @var non-positive-int */
+                    $int = -1;
+                    /** @var array<int<min, 0>, int<min, 0>> */
+                    $_arr = [];
+
+                    $_arr[0] = 0;
+                    $_arr[-1] = $int;
+                    $_arr[$int] = -2;',
+                'assertions' => [
+                    '$_arr===' => 'non-empty-array<int<min, 0>, int<min, 0>>',
                 ],
             ],
             'noErrorPushingBigShapeIntoConstant' => [
@@ -820,7 +980,7 @@ class IntRangeTest extends TestCase
                 'code' => '<?php
                     /**
                      * @param array-key $key
-                     * @param positive-int $expected
+                     * @param positive-int|non-negative-int|negative-int|non-positive-int $expected
                      */
                     function matches($key, int $expected): bool {
                         if ($key !== $expected) {
@@ -828,7 +988,7 @@ class IntRangeTest extends TestCase
                         }
 
                         return true;
-                    }'
+                    }',
             ],
             'literalArrayUnpack' => [
                 'code' => '<?php
@@ -856,13 +1016,23 @@ class IntRangeTest extends TestCase
                         function bar(int $_a, int $_b): void {}
                     }
                 ',
-            ]
+            ],
+            'rangeOverflow' => [
+                'code' => '<?php
+                    $i = (int)ceil(1);
+                    if ($i <= 9223372036854775807) {
+                        $z = $i;
+                    } else {
+                        $z = null;
+                    }
+                ',
+                'assertions' => [
+                    '$z' => 'int<min, 9223372036854775807>|null',
+                ],
+            ],
         ];
     }
 
-    /**
-     *
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [

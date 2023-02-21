@@ -4,6 +4,7 @@ namespace Psalm\Type\Atomic;
 
 /**
  * Denotes an enum with a specific value
+ *
  * @psalm-immutable
  */
 final class TEnumCase extends TNamedObject
@@ -46,7 +47,6 @@ final class TEnumCase extends TNamedObject
 
     /**
      * @param  array<lowercase-string, string> $aliased_classes
-     *
      */
     public function toNamespacedString(
         ?string $namespace,

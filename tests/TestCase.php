@@ -30,17 +30,13 @@ use const DIRECTORY_SEPARATOR;
 
 class TestCase extends BaseTestCase
 {
-    /** @var string */
-    protected static $src_dir_path;
+    protected static string $src_dir_path;
 
-    /** @var ProjectAnalyzer */
-    protected $project_analyzer;
+    protected ProjectAnalyzer $project_analyzer;
 
-    /** @var FakeFileProvider */
-    protected $file_provider;
+    protected FakeFileProvider $file_provider;
 
-    /** @var Config */
-    protected $testConfig;
+    protected Config $testConfig;
 
     public static function setUpBeforeClass(): void
     {
@@ -75,12 +71,12 @@ class TestCase extends BaseTestCase
 
         $providers = new Providers(
             $this->file_provider,
-            new FakeParserCacheProvider()
+            new FakeParserCacheProvider(),
         );
 
         $this->project_analyzer = new ProjectAnalyzer(
             $this->testConfig,
-            $providers
+            $providers,
         );
 
         $this->project_analyzer->setPhpVersion('7.4', 'tests');
@@ -92,32 +88,19 @@ class TestCase extends BaseTestCase
         RuntimeCaches::clearAll();
     }
 
-    /**
-     * @param string $file_path
-     * @param string $contents
-     *
-     */
-    public function addFile($file_path, $contents): void
+    public function addFile(string $file_path, string $contents): void
     {
         $this->file_provider->registerFile($file_path, $contents);
         $this->project_analyzer->getCodebase()->scanner->addFileToShallowScan($file_path);
     }
 
-    /**
-     * @param string $file_path
-     * @param string $contents
-     */
-    public function addStubFile($file_path, $contents): void
+    public function addStubFile(string $file_path, string $contents): void
     {
         $this->file_provider->registerFile($file_path, $contents);
         $this->project_analyzer->getConfig()->addStubFile($file_path);
     }
 
-    /**
-     * @param  string         $file_path
-     *
-     */
-    public function analyzeFile($file_path, Context $context, bool $track_unused_suppressions = true, bool $taint_flow_tracking = false): void
+    public function analyzeFile(string $file_path, Context $context, bool $track_unused_suppressions = true, bool $taint_flow_tracking = false): void
     {
         $codebase = $this->project_analyzer->getCodebase();
 
@@ -140,7 +123,7 @@ class TestCase extends BaseTestCase
         $file_analyzer = new FileAnalyzer(
             $this->project_analyzer,
             $file_path,
-            $codebase->config->shortenFileName($file_path)
+            $codebase->config->shortenFileName($file_path),
         );
         $file_analyzer->analyze($context);
 
@@ -153,11 +136,7 @@ class TestCase extends BaseTestCase
         }
     }
 
-    /**
-     * @param  bool $withDataSet
-     *
-     */
-    protected function getTestName($withDataSet = true): string
+    protected function getTestName(bool $withDataSet = true): string
     {
         return $this->getName($withDataSet);
     }

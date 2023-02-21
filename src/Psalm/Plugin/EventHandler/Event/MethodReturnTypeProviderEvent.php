@@ -10,42 +10,25 @@ use Psalm\Type\Union;
 
 final class MethodReturnTypeProviderEvent
 {
-    /**
-     * @var StatementsSource
-     */
-    private $source;
-    /**
-     * @var string
-     */
-    private $fq_classlike_name;
+    private StatementsSource $source;
+    private string $fq_classlike_name;
     /**
      * @var lowercase-string
      */
-    private $method_name_lowercase;
-    /**
-     * @var Context
-     */
-    private $context;
-    /**
-     * @var CodeLocation
-     */
-    private $code_location;
+    private string $method_name_lowercase;
+    private Context $context;
+    private CodeLocation $code_location;
     /**
      * @var PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall
      */
     private $stmt;
-    /**
-     * @var Union[]|null
-     */
-    private $template_type_parameters;
-    /**
-     * @var string|null
-     */
-    private $called_fq_classlike_name;
+    /** @var non-empty-list<Union>|null */
+    private ?array $template_type_parameters;
+    private ?string $called_fq_classlike_name;
     /**
      * @var lowercase-string|null
      */
-    private $called_method_name_lowercase;
+    private ?string $called_method_name_lowercase;
 
     /**
      * Use this hook for providing custom return type logic. If this plugin does not know what a method should return
@@ -53,10 +36,9 @@ final class MethodReturnTypeProviderEvent
      * something should be returned, but can't be more specific.
      *
      * @param PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall $stmt
-     * @param  ?array<Union> $template_type_parameters
+     * @param non-empty-list<Union>|null $template_type_parameters
      * @param lowercase-string $method_name_lowercase
      * @param lowercase-string $called_method_name_lowercase
-     *
      * @internal
      */
     public function __construct(
@@ -118,7 +100,7 @@ final class MethodReturnTypeProviderEvent
     }
 
     /**
-     * @return Union[]|null
+     * @return non-empty-list<Union>|null
      */
     public function getTemplateTypeParameters(): ?array
     {

@@ -22,11 +22,9 @@ use const STDERR;
  */
 final class ErrorHandler
 {
-    /** @var bool */
-    private static $exceptions_enabled = true;
+    private static bool $exceptions_enabled = true;
 
-    /** @var string */
-    private static $args = '';
+    private static string $args = '';
 
     /**
      * @param array<int,string> $argv
@@ -78,7 +76,7 @@ final class ErrorHandler
                     'PHP Error: ' . $error_message
                     . ' in ' . $error_filename . ':' . $error_line
                     . ' for command with CLI args "' . ErrorHandler::$args . '"',
-                    $error_code
+                    $error_code,
                 );
             }
             // let PHP handle suppressed errors how it sees fit

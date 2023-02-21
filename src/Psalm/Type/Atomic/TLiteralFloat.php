@@ -4,6 +4,7 @@ namespace Psalm\Type\Atomic;
 
 /**
  * Denotes a floating point value where the exact numeric value is known.
+ *
  * @psalm-immutable
  */
 final class TLiteralFloat extends TFloat
@@ -33,7 +34,6 @@ final class TLiteralFloat extends TFloat
 
     /**
      * @param  array<lowercase-string, string> $aliased_classes
-     *
      */
     public function toNamespacedString(
         ?string $namespace,

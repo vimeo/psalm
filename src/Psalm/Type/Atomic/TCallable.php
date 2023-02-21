@@ -9,6 +9,7 @@ use Psalm\Type\Atomic;
 
 /**
  * Denotes the `callable` type. Can result from an `is_callable` check.
+ *
  * @psalm-immutable
  */
 final class TCallable extends Atomic
@@ -50,7 +51,7 @@ final class TCallable extends Atomic
             $this->value,
             $replaced[0],
             $replaced[1],
-            $this->is_pure
+            $this->is_pure,
         );
     }
     /**
@@ -78,7 +79,7 @@ final class TCallable extends Atomic
             $calling_function,
             $replace,
             $add_lower_bound,
-            $depth
+            $depth,
         );
         if (!$replaced) {
             return $this;
@@ -87,7 +88,7 @@ final class TCallable extends Atomic
             $this->value,
             $replaced[0],
             $replaced[1],
-            $this->is_pure
+            $this->is_pure,
         );
     }
 

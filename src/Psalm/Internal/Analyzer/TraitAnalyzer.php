@@ -13,10 +13,7 @@ use function assert;
  */
 class TraitAnalyzer extends ClassLikeAnalyzer
 {
-    /**
-     * @var Aliases
-     */
-    private $aliases;
+    private Aliases $aliases;
 
     public function __construct(
         Trait_ $class,
@@ -81,7 +78,7 @@ class TraitAnalyzer extends ClassLikeAnalyzer
             $storage,
             $stmt->attrGroups,
             AttributesAnalyzer::TARGET_CLASS,
-            $storage->suppressed_issues + $statements_analyzer->getSuppressedIssues()
+            $storage->suppressed_issues + $statements_analyzer->getSuppressedIssues(),
         );
     }
 }

@@ -19,7 +19,6 @@ abstract class MutableTypeVisitor
      * @template T as TypeNode
      * @param T $node
      * @param-out T $node
-     *
      * @psalm-suppress ReferenceConstraintViolation
      */
     public function traverse(TypeNode &$node): bool

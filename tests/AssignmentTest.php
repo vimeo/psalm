@@ -89,14 +89,11 @@ class AssignmentTest extends TestCase
                 'assertions' => [
                     '$a' => 'int',
                     '$B' => 'int',
-                ]
+                ],
             ],
         ];
     }
 
-    /**
-     *
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [

@@ -13,7 +13,7 @@ class CoreStubsTest extends TestCase
         yield 'RecursiveArrayIterator::CHILD_ARRAYS_ONLY (#6464)' => [
             'code' => '<?php
 
-            new RecursiveArrayIterator([], RecursiveArrayIterator::CHILD_ARRAYS_ONLY);'
+            new RecursiveArrayIterator([], RecursiveArrayIterator::CHILD_ARRAYS_ONLY);',
         ];
         yield 'proc_open() named arguments' => [
             'code' => '<?php
@@ -44,7 +44,7 @@ class CoreStubsTest extends TestCase
             }',
             'assertions' => [
                 '$period' => 'DatePeriod<DateTimeImmutable>',
-                '$dt' => 'DateTimeInterface|null'
+                '$dt' => 'DateTimeInterface|null',
             ],
             'ignored_issues' => [],
             'php_version' => '7.3',
@@ -63,7 +63,7 @@ class CoreStubsTest extends TestCase
             }',
             'assertions' => [
                 '$period' => 'DatePeriod<DateTimeImmutable>',
-                '$dt' => 'DateTimeImmutable|null'
+                '$dt' => 'DateTimeImmutable|null',
             ],
             'ignored_issues' => [],
             'php_version' => '8.0',
@@ -78,7 +78,7 @@ class CoreStubsTest extends TestCase
             }',
             'assertions' => [
                 '$period' => 'DatePeriod<string>',
-                '$dt' => 'DateTime|null'
+                '$dt' => 'DateTime|null',
             ],
             'ignored_issues' => [],
             'php_version' => '8.0',
@@ -100,6 +100,28 @@ class CoreStubsTest extends TestCase
             'assertions' => [],
             'ignored_issues' => ['RedundantCondition'],
             'php_version' => '8.0',
+        ];
+        yield 'sprintf yields a non-empty-string for non-empty-string value' => [
+            'code' => '<?php
+
+            /**
+             * @param non-empty-string $foo
+             * @return non-empty-string
+             */
+            function foo(string $foo): string
+            {
+                return sprintf("%s", $foo);
+            }
+            ',
+        ];
+        yield 'sprintf yields a string for possible empty string param' => [
+            'code' => '<?php
+
+            $a = sprintf("%s", "");
+            ',
+            'assertions' => [
+                '$a===' => 'string',
+            ],
         ];
     }
 }

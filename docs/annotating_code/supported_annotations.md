@@ -630,7 +630,7 @@ class Success implements Promise {
  * @return Promise<string>
  */
 function fetch(): Promise {
-	return new Success('{"data":[]}');
+    return new Success('{"data":[]}');
 }
 
 function (): Generator {
@@ -641,6 +641,21 @@ function (): Generator {
 };
 ```
 This annotation supports only generic types, meaning that e.g. `@psalm-yield string` would be ignored.
+
+### `@psalm-api`
+
+Used to tell Psalm that a class is used, even if no references to it can be
+found. Unused issues will be suppressed.
+
+For example, in frameworks, controllers are often invoked "magically" without
+any explicit references to them in your code. You should mark these classes with
+`@psalm-api`.
+```php
+/**
+ * @psalm-api
+ */
+class UnreferencedClass {}
+```
 
 ## Type Syntax
 

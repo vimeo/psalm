@@ -20,8 +20,7 @@ use const DIRECTORY_SEPARATOR;
 
 class UnusedCodeTest extends TestCase
 {
-    /** @var ProjectAnalyzer */
-    protected $project_analyzer;
+    protected ProjectAnalyzer $project_analyzer;
 
     public function setUp(): void
     {
@@ -33,8 +32,8 @@ class UnusedCodeTest extends TestCase
             new TestConfig(),
             new Providers(
                 $this->file_provider,
-                new FakeParserCacheProvider()
-            )
+                new FakeParserCacheProvider(),
+            ),
         );
 
         $this->project_analyzer->getCodebase()->reportUnusedCode();
@@ -43,12 +42,9 @@ class UnusedCodeTest extends TestCase
 
     /**
      * @dataProvider providerValidCodeParse
-     *
-     * @param string $code
      * @param array<string> $ignored_issues
-     *
      */
-    public function testValidCode($code, array $ignored_issues = []): void
+    public function testValidCode(string $code, array $ignored_issues = []): void
     {
         $test_name = $this->getTestName();
         if (strpos($test_name, 'SKIPPED-') !== false) {
@@ -59,7 +55,7 @@ class UnusedCodeTest extends TestCase
 
         $this->addFile(
             $file_path,
-            $code
+            $code,
         );
 
         $this->project_analyzer->setPhpVersion('8.0', 'tests');
@@ -77,13 +73,9 @@ class UnusedCodeTest extends TestCase
 
     /**
      * @dataProvider providerInvalidCodeParse
-     *
-     * @param string $code
-     * @param string $error_message
      * @param array<string> $ignored_issues
-     *
      */
-    public function testInvalidCode($code, $error_message, $ignored_issues = []): void
+    public function testInvalidCode(string $code, string $error_message, array $ignored_issues = []): void
     {
         if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
             $this->markTestSkipped();
@@ -100,7 +92,7 @@ class UnusedCodeTest extends TestCase
 
         $this->addFile(
             $file_path,
-            $code
+            $code,
         );
 
         $this->analyzeFile($file_path, new Context(), false);
@@ -131,7 +123,7 @@ class UnusedCodeTest extends TestCase
                         echo "foo";
                     }
                 }
-            '
+            ',
         );
         $this->analyzeFile($file_path, new Context(), false);
         $this->project_analyzer->consolidateAnalyzedData();
@@ -163,7 +155,7 @@ class UnusedCodeTest extends TestCase
                         echo "foo";
                     }
                 }
-            '
+            ',
         );
         $this->analyzeFile($file_path, new Context(), false);
         $this->project_analyzer->consolidateAnalyzedData();
@@ -585,7 +577,7 @@ class UnusedCodeTest extends TestCase
                         public function foo() : void {}
                     }
 
-                    new A();'
+                    new A();',
             ],
             'usedFunctionInCall' => [
                 'code' => '<?php
@@ -603,7 +595,7 @@ class UnusedCodeTest extends TestCase
                      */
                     function foo(string $s, object $o) : void {
                         $o->foo("COUNT{$s}");
-                    }'
+                    }',
             ],
             'usedFunctioninMethodCallName' => [
                 'code' => '<?php
@@ -618,7 +610,7 @@ class UnusedCodeTest extends TestCase
                         }
                     }
 
-                    (new Foo)->bar("request");'
+                    (new Foo)->bar("request");',
             ],
             'usedMethodCallForExternalMutationFreeClass' => [
                 'code' => '<?php
@@ -650,7 +642,7 @@ class UnusedCodeTest extends TestCase
                     function inc(array $arr) : array {
                         $arr[strlen("hello")]++;
                         return $arr;
-                    }'
+                    }',
             ],
             'pureFunctionUsesMethodBeforeReturning' => [
                 'code' => '<?php
@@ -674,19 +666,26 @@ class UnusedCodeTest extends TestCase
                         return $c;
                     }',
             ],
+            'setRawCookieImpure' => [
+                'code' => '<?php
+                    setrawcookie(
+                        "name",
+                        "value",
+                    );',
+            ],
             'usedUsort' => [
                 'code' => '<?php
                     /** @param string[] $arr */
                     function foo(array $arr) : array {
                         usort($arr, "strnatcasecmp");
                         return $arr;
-                    }'
+                    }',
             ],
             'allowArrayMapWithClosure' => [
                 'code' => '<?php
                     $a = [1, 2, 3];
 
-                    array_map(function($i) { echo $i;}, $a);'
+                    array_map(function($i) { echo $i;}, $a);',
             ],
             'usedAssertFunction' => [
                 'code' => '<?php
@@ -708,7 +707,7 @@ class UnusedCodeTest extends TestCase
                     function takesMixed($i) : int {
                         assertInt($i);
                         return $i;
-                    }'
+                    }',
             ],
             'usedFunctionCallInsideSwitchWithTernary' => [
                 'code' => '<?php
@@ -723,7 +722,7 @@ class UnusedCodeTest extends TestCase
                             default:
                                 break;
                         }
-                    }'
+                    }',
             ],
             'ignoreSerializerSerialize' => [
                 'code' => '<?php
@@ -735,7 +734,7 @@ class UnusedCodeTest extends TestCase
                         public function unserialize($_serialized) : void {}
                     }
 
-                    new Foo();'
+                    new Foo();',
             ],
             'ignoreSerializeAndUnserialize' => [
                 'code' => '<?php
@@ -765,7 +764,7 @@ class UnusedCodeTest extends TestCase
                         }
 
                         return true;
-                    }'
+                    }',
             ],
             'useIteratorMethodsWhenCallingForeach' => [
                 'code' => '<?php
@@ -782,7 +781,7 @@ class UnusedCodeTest extends TestCase
 
                     $items = new IterableResult();
 
-                    foreach ($items as $_item) {}'
+                    foreach ($items as $_item) {}',
             ],
             'usedThroughNewClassStringOfBase' => [
                 'code' => '<?php
@@ -808,7 +807,7 @@ class UnusedCodeTest extends TestCase
 
                     class Foo extends FooBase {}
 
-                    createFoo(Foo::class)->baz();'
+                    createFoo(Foo::class)->baz();',
             ],
             'usedMethodReferencedByString' => [
                 'code' => '<?php
@@ -832,7 +831,7 @@ class UnusedCodeTest extends TestCase
 
                     array_push($a, strlen("hello"));
 
-                    echo $a[0];'
+                    echo $a[0];',
             ],
             'callMethodThatUpdatesStaticVar' => [
                 'code' => '<?php
@@ -850,7 +849,7 @@ class UnusedCodeTest extends TestCase
                         }
                     }
 
-                    (new References)->bar(["a" => "b"]);'
+                    (new References)->bar(["a" => "b"]);',
             ],
             'promotedPropertyIsUsed' => [
                 'code' => '<?php
@@ -860,7 +859,7 @@ class UnusedCodeTest extends TestCase
 
                     $test = new Test(1, "ame");
                     echo $test->id;
-                    echo $test->name;'
+                    echo $test->name;',
             ],
             'unusedNoReturnFunctionCall' => [
                 'code' => '<?php
@@ -886,7 +885,7 @@ class UnusedCodeTest extends TestCase
                         }
 
                         return strrev($string);
-                    }'
+                    }',
             ],
             'unusedByReferenceFunctionCall' => [
                 'code' => '<?php
@@ -903,7 +902,7 @@ class UnusedCodeTest extends TestCase
                         bar($f);
 
                         return $f;
-                    }'
+                    }',
             ],
             'unusedVoidByReferenceFunctionCall' => [
                 'code' => '<?php
@@ -918,7 +917,7 @@ class UnusedCodeTest extends TestCase
                         bar($f);
 
                         return $f;
-                    }'
+                    }',
             ],
             'unusedNamedByReferenceFunctionCall' => [
                 'code' => '<?php
@@ -936,7 +935,7 @@ class UnusedCodeTest extends TestCase
                         bar(str: $f);
 
                         return $f;
-                    }'
+                    }',
             ],
             'unusedNamedByReferenceFunctionCallV2' => [
                 'code' => '<?php
@@ -982,7 +981,7 @@ class UnusedCodeTest extends TestCase
                         return new \Exception();
                     }
 
-                    throw getException();'
+                    throw getException();',
             ],
             'nullableMethodCallIsUsed' => [
                 'code' => '<?php
@@ -1009,7 +1008,7 @@ class UnusedCodeTest extends TestCase
 
                     $exception = new \Exception();
 
-                    throw ($exception->getPrevious() ?? $exception);'
+                    throw ($exception->getPrevious() ?? $exception);',
             ],
             'publicPropertyReadInFile' => [
                 'code' => '<?php
@@ -1122,7 +1121,7 @@ class UnusedCodeTest extends TestCase
                         }
                     }
                     throw (new A)->foo();
-                '
+                ',
             ],
             'staticMethodReturnValueUsedInThrow' => [
                 'code' => '<?php
@@ -1132,7 +1131,7 @@ class UnusedCodeTest extends TestCase
                         }
                     }
                     throw A::foo();
-                '
+                ',
             ],
             'variableUsedAsUnaryMinusOperand' => [
                 'code' => '<?php
@@ -1236,6 +1235,33 @@ class UnusedCodeTest extends TestCase
                     $a = new A();
                     $a->bar[$a->foo] = "bar";
                     print_r($a->bar);',
+            ],
+            'psalm-api with unused class' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @psalm-api */
+                    class A {}
+                    PHP,
+            ],
+            'psalm-api with unused public and protected property' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @psalm-api */
+                    class A {
+                        public int $b = 0;
+                        protected int $c = 0;
+                    }
+                    PHP,
+            ],
+            'psalm-api with unused public and protected method' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @psalm-api */
+                    class A {
+                        public function b(): void {}
+                        protected function c(): void {}
+                    }
+                    PHP,
             ],
         ];
     }
@@ -1738,7 +1764,7 @@ class UnusedCodeTest extends TestCase
             'exitInlineHtml' => [
                 'code' => '<?php
                     exit(0);
-                    ?'.'>foo
+                    ?' . '>foo
                 ',
                 'error_message' => 'UnevaluatedCode',
             ],
@@ -1756,6 +1782,76 @@ class UnusedCodeTest extends TestCase
                     }
                 ',
                 'error_message' => 'InaccessibleProperty',
+            ],
+            'psalm-api with unused private property' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @psalm-api */
+                    class A {
+                        private int $b = 0;
+                    }
+                    PHP,
+                'error_message' => 'UnusedProperty',
+            ],
+            'psalm-api with final class and unused protected property' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @psalm-api */
+                    final class A {
+                        protected int $b = 0;
+                    }
+                    PHP,
+                'error_message' => 'PossiblyUnusedProperty',
+            ],
+            'psalm-api with unused private method' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @psalm-api */
+                    class A {
+                        private function b(): void {}
+                    }
+                    PHP,
+                'error_message' => 'UnusedMethod',
+            ],
+            'psalm-api with final class and unused protected method' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @psalm-api */
+                    final class A {
+                        protected function b(): void {}
+                    }
+                    PHP,
+                'error_message' => 'PossiblyUnusedMethod',
+            ],
+            'psalm-api with unused class and unused param' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @psalm-api */
+                    class A {
+                        public function b(int $c): void {}
+                    }
+                    PHP,
+                'error_message' => 'PossiblyUnusedParam',
+            ],
+            'unused param' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @psalm-suppress UnusedClass */
+                    class A {
+                        public function b(int $c): void {}
+                    }
+                    PHP,
+                'error_message' => 'PossiblyUnusedParam',
+            ],
+            'unused param tag' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param string $param
+                     */
+                    function f(): void {}
+                    PHP,
+                'error_message' => 'UnusedDocblockParam',
             ],
         ];
     }

@@ -10,11 +10,10 @@ use Psalm\Internal\MethodIdentifier;
  */
 class AtomicCallContext
 {
-    /** @var MethodIdentifier */
-    public $method_id;
+    public MethodIdentifier $method_id;
 
     /** @var list<PhpParser\Node\Arg> */
-    public $args;
+    public array $args;
 
     /** @param list<PhpParser\Node\Arg> $args */
     public function __construct(MethodIdentifier $method_id, array $args)

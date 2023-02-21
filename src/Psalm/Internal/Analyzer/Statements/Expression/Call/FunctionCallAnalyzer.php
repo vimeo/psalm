@@ -112,7 +112,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 $stmt = new VirtualFuncCall(
                     $function_name,
                     $other_args,
-                    $stmt->getAttributes()
+                    $stmt->getAttributes(),
                 );
             }
 
@@ -122,7 +122,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 $stmt = new VirtualFuncCall(
                     $function_name,
                     [new VirtualArg($stmt->getArgs()[1]->value, false, true)],
-                    $stmt->getAttributes()
+                    $stmt->getAttributes(),
                 );
             }
         }
@@ -133,7 +133,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 $stmt,
                 $real_stmt,
                 $function_name,
-                $context
+                $context,
             );
 
             if ($function_call_info->function_exists === false) {
@@ -149,7 +149,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 $stmt,
                 $function_name,
                 $context,
-                $code_location
+                $code_location,
             );
 
             if (!$function_call_info->function_exists) {
@@ -183,7 +183,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 $function_call_info->function_id,
                 $function_call_info->allow_named_args,
                 $context,
-                $template_result
+                $template_result,
             );
         }
 
@@ -202,7 +202,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     $codebase,
                     $function_call_info->function_id,
                     $stmt->getArgs(),
-                    $statements_analyzer->node_data
+                    $statements_analyzer->node_data,
                 );
 
                 $function_call_info->function_params = $function_callable->params;
@@ -224,7 +224,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 null,
                 $template_result,
                 $code_location,
-                $context
+                $context,
             );
         }
 
@@ -232,7 +232,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
             $statements_analyzer,
             $template_result,
             $code_location,
-            $function_call_info->function_id
+            $function_call_info->function_id,
         );
 
         $template_result->lower_bounds += $already_inferred_lower_bounds;
@@ -249,7 +249,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 $function_call_info->function_storage,
                 $function_callable,
                 $template_result,
-                $context
+                $context,
             );
 
             $statements_analyzer->node_data->setType($real_stmt, $stmt_type);
@@ -263,7 +263,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 $function_call_info->function_id,
                 $context,
                 $statements_analyzer->getSource(),
-                $codebase
+                $codebase,
             );
 
             $config->eventDispatcher->dispatchAfterEveryFunctionCallAnalysis($event);
@@ -283,7 +283,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                         $codebase,
                         $atomic_type,
                         null,
-                        $statements_analyzer
+                        $statements_analyzer,
                     );
 
                     if ($candidate_callable) {
@@ -291,7 +291,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                             'Closure',
                             $candidate_callable->params,
                             $candidate_callable->return_type,
-                            $candidate_callable->is_pure
+                            $candidate_callable->is_pure,
                         );
                     }
                 }
@@ -327,7 +327,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 $codebase,
                 $stmt,
                 $stmt->getArgs()[0],
-                $context
+                $context,
             );
         }
 
@@ -339,7 +339,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
             $codebase->analyzer->addNodeType(
                 $statements_analyzer->getFilePath(),
                 $stmt,
-                $stmt_type->getId()
+                $stmt_type->getId(),
             );
         }
 
@@ -349,7 +349,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
             $stmt,
             $function_name,
             $function_call_info,
-            $context
+            $context,
         );
 
         if ($function_call_info->function_storage) {
@@ -361,7 +361,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     $stmt->getArgs(),
                     $template_result,
                     $context,
-                    $statements_analyzer
+                    $statements_analyzer,
                 );
             }
 
@@ -371,8 +371,8 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     array_map(
                         static fn(Possibilities $assertion): Possibilities =>
                             $assertion->getUntemplatedCopy($template_result, null, $codebase),
-                        $function_call_info->function_storage->if_true_assertions
-                    )
+                        $function_call_info->function_storage->if_true_assertions,
+                    ),
                 );
             }
 
@@ -382,8 +382,8 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     array_map(
                         static fn(Possibilities $assertion): Possibilities =>
                             $assertion->getUntemplatedCopy($template_result, null, $codebase),
-                        $function_call_info->function_storage->if_false_assertions
-                    )
+                        $function_call_info->function_storage->if_false_assertions,
+                    ),
                 );
             }
 
@@ -392,9 +392,9 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     new DeprecatedFunction(
                         'The function ' . $function_call_info->function_id . ' has been marked as deprecated',
                         $code_location,
-                        $function_call_info->function_id
+                        $function_call_info->function_id,
                     ),
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 );
             }
         }
@@ -414,7 +414,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 $real_stmt,
                 $function_name,
                 strtolower($function_call_info->function_id),
-                $context
+                $context,
             );
         }
 
@@ -442,7 +442,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
         if (!$function_name instanceof PhpParser\Node\Name\FullyQualified) {
             $function_call_info->function_id = $codebase_functions->getFullyQualifiedFunctionNameFromString(
                 $original_function_id,
-                $statements_analyzer
+                $statements_analyzer,
             );
         } else {
             $function_call_info->function_id = $original_function_id;
@@ -450,7 +450,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
 
         $namespaced_function_exists = $codebase_functions->functionExists(
             $statements_analyzer,
-            strtolower($function_call_info->function_id)
+            strtolower($function_call_info->function_id),
         );
 
         if (!$namespaced_function_exists
@@ -471,6 +471,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
             = $function_call_info->is_stubbed || $function_call_info->in_call_map || $namespaced_function_exists;
 
         if ($function_call_info->function_exists
+            && !$stmt->isFirstClassCallable()
             && $codebase->store_node_types
             && !$context->collect_initializations
             && !$context->collect_mutations
@@ -479,7 +480,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 $statements_analyzer,
                 $stmt,
                 $codebase,
-                $function_call_info->function_id
+                $function_call_info->function_id,
             );
         }
 
@@ -500,17 +501,17 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     $statements_analyzer,
                     $function_call_info->function_id,
                     $code_location,
-                    $is_maybe_root_function
+                    $is_maybe_root_function,
                 ) === false) {
-                    if ($args && ArgumentsAnalyzer::analyze(
-                        $statements_analyzer,
-                        $args,
-                        null,
-                        null,
-                        true,
-                        $context
-                    ) === false) {
-                        // fall through
+                    if ($args) {
+                        ArgumentsAnalyzer::analyze(
+                            $statements_analyzer,
+                            $args,
+                            null,
+                            null,
+                            true,
+                            $context,
+                        );
                     }
 
                     return $function_call_info;
@@ -534,7 +535,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 $statements_analyzer,
                 $function_call_info->function_id,
                 $context,
-                $code_location
+                $code_location,
             );
         }
 
@@ -549,7 +550,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 try {
                     $function_call_info->function_storage = $function_storage = $codebase_functions->getStorage(
                         $statements_analyzer,
-                        strtolower($function_call_info->function_id)
+                        strtolower($function_call_info->function_id),
                     );
 
                     $function_call_info->function_params = $function_call_info->function_storage->params;
@@ -564,7 +565,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     }
                 } catch (UnexpectedValueException $e) {
                     $function_call_info->function_params = [
-                        new FunctionLikeParameter('args', false, null, null, null, null, false, false, true)
+                        new FunctionLikeParameter('args', false, null, null, null, null, false, false, true),
                     ];
                 }
             } else {
@@ -572,7 +573,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     $codebase,
                     $function_call_info->function_id,
                     $args,
-                    $statements_analyzer->node_data
+                    $statements_analyzer->node_data,
                 );
 
                 $function_call_info->function_params = $function_callable->params;
@@ -584,7 +585,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     $function_call_info->function_id,
                     $args,
                     $context,
-                    $code_location
+                    $code_location,
                 );
             }
 
@@ -595,7 +596,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 $codebase->analyzer->addNodeReference(
                     $statements_analyzer->getFilePath(),
                     $function_name,
-                    $function_call_info->function_id . '()'
+                    $function_call_info->function_id . '()',
                 );
             }
         }
@@ -632,9 +633,9 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 IssueBuffer::maybeAdd(
                     new NullFunctionCall(
                         'Cannot call function on null value',
-                        new CodeLocation($statements_analyzer->getSource(), $stmt)
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
                     ),
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 );
 
                 return $function_call_info;
@@ -644,9 +645,9 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 IssueBuffer::maybeAdd(
                     new PossiblyNullFunctionCall(
                         'Cannot call function on possibly null value',
-                        new CodeLocation($statements_analyzer->getSource(), $stmt)
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
                     ),
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 );
             }
 
@@ -663,15 +664,19 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     continue;
                 }
 
+                if ($var_type_part instanceof TList) {
+                    $var_type_part = $var_type_part->getKeyedArray();
+                }
+
                 if ($var_type_part instanceof TClosure || $var_type_part instanceof TCallable) {
                     if (!$var_type_part->is_pure) {
                         if ($context->pure || $context->mutation_free) {
                             IssueBuffer::maybeAdd(
                                 new ImpureFunctionCall(
                                     'Cannot call an impure function from a mutation-free context',
-                                    new CodeLocation($statements_analyzer->getSource(), $stmt)
+                                    new CodeLocation($statements_analyzer->getSource(), $stmt),
                                 ),
-                                $statements_analyzer->getSuppressedIssues()
+                                $statements_analyzer->getSuppressedIssues(),
                             );
                         }
 
@@ -692,13 +697,13 @@ class FunctionCallAnalyzer extends CallAnalyzer
                             $real_stmt,
                             Type::combineUnionTypes(
                                 $stmt_type,
-                                $var_type_part->return_type
-                            )
+                                $var_type_part->return_type,
+                            ),
                         );
                     } else {
                         $statements_analyzer->node_data->setType(
                             $real_stmt,
-                            $var_type_part->return_type ?? Type::getMixed()
+                            $var_type_part->return_type ?? Type::getMixed(),
                         );
                     }
 
@@ -714,9 +719,9 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     IssueBuffer::maybeAdd(
                         new MixedFunctionCall(
                             'Cannot call function on ' . $var_type_part->getId(),
-                            new CodeLocation($statements_analyzer->getSource(), $stmt)
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
                     );
                 } elseif ($var_type_part instanceof TCallableObject
                     || $var_type_part instanceof TCallableString
@@ -727,7 +732,6 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     $has_valid_function_call_type = true;
                 } elseif ($var_type_part instanceof TString
                     || $var_type_part instanceof TArray
-                    || $var_type_part instanceof TList
                     || ($var_type_part instanceof TKeyedArray
                         && count($var_type_part->properties) === 2)
                 ) {
@@ -738,7 +742,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                             $var_type_part,
                             $codebase,
                             $context->calling_method_id,
-                            $statements_analyzer->getFilePath()
+                            $statements_analyzer->getFilePath(),
                         );
 
                         if ($potential_method_id === 'not-callable') {
@@ -758,7 +762,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                         } else {
                             $function_call_info->new_function_name = new VirtualFullyQualified(
                                 $var_type_part->value,
-                                $function_name->getAttributes()
+                                $function_name->getAttributes(),
                             );
                         }
                     }
@@ -769,7 +773,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                             $context->calling_method_id,
                             null,
                             $statements_analyzer,
-                            $statements_analyzer->getFilePath()
+                            $statements_analyzer->getFilePath(),
                         );
                     }
 
@@ -782,8 +786,8 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     || !$codebase->methods->methodExists(
                         new MethodIdentifier(
                             $var_type_part->value,
-                            '__invoke'
-                        )
+                            '__invoke',
+                        ),
                     )
                 ) {
                     $invalid_function_call_types[] = (string)$var_type_part;
@@ -794,7 +798,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                         $real_stmt,
                         $function_name,
                         $context,
-                        $var_type_part
+                        $var_type_part,
                     );
                 }
             }
@@ -806,17 +810,17 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     IssueBuffer::maybeAdd(
                         new PossiblyInvalidFunctionCall(
                             'Cannot treat type ' . $var_type_part . ' as callable',
-                            new CodeLocation($statements_analyzer->getSource(), $stmt)
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
                     );
                 } else {
                     IssueBuffer::maybeAdd(
                         new InvalidFunctionCall(
                             'Cannot treat type ' . $var_type_part . ' as callable',
-                            new CodeLocation($statements_analyzer->getSource(), $stmt)
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
                     );
                 }
 
@@ -834,7 +838,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     'variable-call',
                     0,
                     $arg_location,
-                    $arg_location
+                    $arg_location,
                 );
 
                 $custom_call_sink->taints = [TaintKind::INPUT_CALLABLE];
@@ -852,7 +856,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                         $custom_call_sink,
                         'call',
                         $added_taints,
-                        $removed_taints
+                        $removed_taints,
                     );
                 }
             }
@@ -880,7 +884,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
         $fake_method_call = new VirtualMethodCall(
             $function_name,
             new VirtualIdentifier('__invoke', $function_name->getAttributes()),
-            $stmt->args
+            $stmt->args,
         );
 
         $suppressed_issues = $statements_analyzer->getSuppressedIssues();
@@ -895,7 +899,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
             $statements_analyzer,
             $fake_method_call,
             $context,
-            false
+            false,
         );
 
         if (!in_array('InternalMethod', $suppressed_issues, true)) {
@@ -911,13 +915,13 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 $real_stmt,
                 Type::combineUnionTypes(
                     $fake_method_call_type ?? Type::getMixed(),
-                    $stmt_type
-                )
+                    $stmt_type,
+                ),
             );
         } else {
             $statements_analyzer->node_data->setType(
                 $real_stmt,
-                $fake_method_call_type ?? Type::getMixed()
+                $fake_method_call_type ?? Type::getMixed(),
             );
         }
     }
@@ -937,7 +941,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
             $first_arg->value,
             $context->self,
             $statements_analyzer,
-            $codebase
+            $codebase,
         );
 
         AlgebraAnalyzer::checkForParadox(
@@ -945,7 +949,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
             $assert_clauses,
             $statements_analyzer,
             $stmt,
-            []
+            [],
         );
 
         $simplified_clauses = Algebra::simplifyCNF([...$context->clauses, ...$assert_clauses]);
@@ -965,12 +969,12 @@ class FunctionCallAnalyzer extends CallAnalyzer
                 $changed_var_ids,
                 array_map(
                     static fn($_): bool => true,
-                    $assert_type_assertions
+                    $assert_type_assertions,
                 ),
                 $statements_analyzer,
                 $statements_analyzer->getTemplateTypeMap() ?: [],
                 $context->inside_loop,
-                new CodeLocation($statements_analyzer->getSource(), $stmt)
+                new CodeLocation($statements_analyzer->getSource(), $stmt),
             );
 
             foreach ($changed_var_ids as $var_id => $_) {
@@ -993,7 +997,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     IssueBuffer::remove(
                         $statements_analyzer->getFilePath(),
                         'MixedAssignment',
-                        $first_appearance->raw_file_start
+                        $first_appearance->raw_file_start,
                     );
                 }
 
@@ -1040,7 +1044,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     $statements_analyzer->node_data,
                     $function_call_info->function_id,
                     $stmt->isFirstClassCallable() ? [] : $stmt->getArgs(),
-                    $must_use
+                    $must_use,
                 )
                 : null;
 
@@ -1054,9 +1058,9 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     IssueBuffer::maybeAdd(
                         new ImpureFunctionCall(
                             'Cannot call an impure function from a mutation-free context',
-                            new CodeLocation($statements_analyzer, $function_name)
+                            new CodeLocation($statements_analyzer, $function_name),
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
                     );
                 } elseif ($statements_analyzer->getSource() instanceof FunctionLikeAnalyzer
                     && $statements_analyzer->getSource()->track_mutations
@@ -1094,9 +1098,9 @@ class FunctionCallAnalyzer extends CallAnalyzer
                         new UnusedFunctionCall(
                             'The call to ' . $function_call_info->function_id . ' is not used',
                             new CodeLocation($statements_analyzer, $function_name),
-                            $function_call_info->function_id
+                            $function_call_info->function_id,
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
                     );
                 } else {
                     $stmt->setAttribute('pure', true);

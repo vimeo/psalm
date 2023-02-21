@@ -13,18 +13,18 @@ use function strtolower;
 
 /**
  * @psalm-immutable
- *
  * @internal
  */
 class MethodIdentifier
 {
     use ImmutableNonCloneableTrait;
 
-    public $fq_class_name;
-    public $method_name;
+    public string $fq_class_name;
+    /** @var lowercase-string  */
+    public string $method_name;
 
     /**
-     * @param  lowercase-string $method_name
+     * @param lowercase-string $method_name
      */
     public function __construct(string $fq_class_name, string $method_name)
     {
@@ -37,7 +37,6 @@ class MethodIdentifier
      * it into a MethodIdentifier
      *
      * @param string|MethodIdentifier $method_id
-     *
      * @psalm-pure
      */
     public static function wrap($method_id): self

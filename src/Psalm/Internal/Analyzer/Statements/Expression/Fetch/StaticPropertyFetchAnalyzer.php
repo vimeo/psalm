@@ -58,17 +58,13 @@ class StaticPropertyFetchAnalyzer
                 $fq_class_name = $statements_analyzer->getParentFQCLN();
 
                 if ($fq_class_name === null) {
-                    if (IssueBuffer::accepts(
+                    return !IssueBuffer::accepts(
                         new ParentNotFound(
                             'Cannot check property fetch on parent as this class does not extend another',
-                            new CodeLocation($statements_analyzer->getSource(), $stmt)
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
                         ),
-                        $statements_analyzer->getSuppressedIssues()
-                    )) {
-                        return false;
-                    }
-
-                    return true;
+                        $statements_analyzer->getSuppressedIssues(),
+                    );
                 }
             } else {
                 $fq_class_name = (string)$context->self;
@@ -86,13 +82,13 @@ class StaticPropertyFetchAnalyzer
                 $codebase->file_reference_provider->addMethodReferenceToClassMember(
                     $context->calling_method_id,
                     'use:' . $stmt->class->parts[0] . ':' . md5($statements_analyzer->getFilePath()),
-                    false
+                    false,
                 );
             }
 
             $fq_class_name = ClassLikeAnalyzer::getFQCLNFromNameObject(
                 $stmt->class,
-                $aliases
+                $aliases,
             );
 
             if ($context->isPhantomClass($fq_class_name)) {
@@ -106,7 +102,7 @@ class StaticPropertyFetchAnalyzer
                     new CodeLocation($statements_analyzer->getSource(), $stmt->class),
                     $context->self,
                     $context->calling_method_id,
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 ) !== true) {
                     return false;
                 }
@@ -125,14 +121,14 @@ class StaticPropertyFetchAnalyzer
                 explode('::', $destination_method_id)[0],
                 $statements_analyzer->getFilePath(),
                 (int) $stmt->class->getAttribute('startFilePos'),
-                (int) $stmt->class->getAttribute('endFilePos') + 1
+                (int) $stmt->class->getAttribute('endFilePos') + 1,
             );
         }
 
         if ($fq_class_name) {
             $statements_analyzer->node_data->setType(
                 $stmt->class,
-                new Union([new TNamedObject($fq_class_name)])
+                new Union([new TNamedObject($fq_class_name)]),
             );
         }
 
@@ -150,7 +146,7 @@ class StaticPropertyFetchAnalyzer
             if ($fq_class_name) {
                 $codebase->analyzer->addMixedMemberName(
                     strtolower($fq_class_name) . '::$',
-                    $context->calling_method_id ?: $statements_analyzer->getFileName()
+                    $context->calling_method_id ?: $statements_analyzer->getFileName(),
                 );
             }
 
@@ -168,7 +164,7 @@ class StaticPropertyFetchAnalyzer
         $var_id = ExpressionIdentifier::getVarId(
             $stmt,
             $context->self ?: $statements_analyzer->getFQCLN(),
-            $statements_analyzer
+            $statements_analyzer,
         );
 
         $property_id = $fq_class_name . '::$' . $prop_name;
@@ -180,7 +176,7 @@ class StaticPropertyFetchAnalyzer
             $codebase->analyzer->addNodeReference(
                 $statements_analyzer->getFilePath(),
                 $stmt->name,
-                $property_id
+                $property_id,
             );
         }
 
@@ -188,9 +184,9 @@ class StaticPropertyFetchAnalyzer
             IssueBuffer::maybeAdd(
                 new ImpureStaticProperty(
                     'Cannot use a static property in a mutation-free context',
-                    new CodeLocation($statements_analyzer, $stmt)
+                    new CodeLocation($statements_analyzer, $stmt),
                 ),
-                $statements_analyzer->getSuppressedIssues()
+                $statements_analyzer->getSuppressedIssues(),
             );
         } elseif ($statements_analyzer->getSource()
                 instanceof FunctionLikeAnalyzer
@@ -210,7 +206,7 @@ class StaticPropertyFetchAnalyzer
                 $property_id,
                 false,
                 [],
-                []
+                [],
             );
 
             $context->vars_in_scope[$var_id] = $stmt_type;
@@ -225,7 +221,7 @@ class StaticPropertyFetchAnalyzer
                     $context,
                     $codebase->collect_locations
                         ? new CodeLocation($statements_analyzer->getSource(), $stmt)
-                        : null
+                        : null,
                 );
             }
 
@@ -236,7 +232,7 @@ class StaticPropertyFetchAnalyzer
                 $codebase->analyzer->addNodeType(
                     $statements_analyzer->getFilePath(),
                     $stmt->name,
-                    $stmt_type->getId()
+                    $stmt_type->getId(),
                 );
             }
 
@@ -250,7 +246,7 @@ class StaticPropertyFetchAnalyzer
             $context,
             $codebase->collect_locations
                 ? new CodeLocation($statements_analyzer->getSource(), $stmt)
-                : null
+                : null,
         )
         ) {
             if ($context->inside_isset) {
@@ -261,9 +257,9 @@ class StaticPropertyFetchAnalyzer
                 new UndefinedPropertyFetch(
                     'Static property ' . $property_id . ' is not defined',
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
-                    $property_id
+                    $property_id,
                 ),
-                $statements_analyzer->getSuppressedIssues()
+                $statements_analyzer->getSuppressedIssues(),
             );
 
             return true;
@@ -272,7 +268,7 @@ class StaticPropertyFetchAnalyzer
         $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(
             $fq_class_name . '::$' . $prop_name,
             true,
-            $statements_analyzer
+            $statements_analyzer,
         );
 
         if ($declaring_property_class === null) {
@@ -283,7 +279,7 @@ class StaticPropertyFetchAnalyzer
             $prop_name,
             $declaring_property_class,
             $stmt,
-            $statements_analyzer
+            $statements_analyzer,
         );
 
         $class_storage = $codebase->classlike_storage_provider->get($declaring_property_class);
@@ -299,18 +295,18 @@ class StaticPropertyFetchAnalyzer
                     new UndefinedPropertyAssignment(
                         'Static property ' . $property_id . ' is not defined',
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
-                        $property_id
+                        $property_id,
                     ),
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 );
             } else {
                 IssueBuffer::maybeAdd(
                     new UndefinedPropertyFetch(
                         'Static property ' . $property_id . ' is not defined',
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
-                        $property_id
+                        $property_id,
                     ),
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 );
             }
 
@@ -322,7 +318,7 @@ class StaticPropertyFetchAnalyzer
             $context,
             $statements_analyzer,
             new CodeLocation($statements_analyzer->getSource(), $stmt),
-            $statements_analyzer->getSuppressedIssues()
+            $statements_analyzer->getSuppressedIssues(),
         ) === false) {
             return false;
         }
@@ -335,7 +331,7 @@ class StaticPropertyFetchAnalyzer
                 $statements_analyzer,
                 $stmt->class,
                 $fq_class_name,
-                $context->calling_method_id
+                $context->calling_method_id,
             );
 
             if (!$moved_class) {
@@ -354,15 +350,15 @@ class StaticPropertyFetchAnalyzer
                                     $new_fq_class_name,
                                     $statements_analyzer->getNamespace(),
                                     $statements_analyzer->getAliasedClassesFlipped(),
-                                    null
-                                )
+                                    null,
+                                ),
                             );
                         }
 
                         $file_manipulations[] = new FileManipulation(
                             (int) $stmt->name->getAttribute('startFilePos'),
                             (int) $stmt->name->getAttribute('endFilePos') + 1,
-                            '$' . $new_property_name
+                            '$' . $new_property_name,
                         );
 
                         FileManipulationBuffer::add($statements_analyzer->getFilePath(), $file_manipulations);
@@ -380,7 +376,7 @@ class StaticPropertyFetchAnalyzer
                     $property->type,
                     $class_storage->name,
                     $class_storage->name,
-                    $class_storage->parent_class
+                    $class_storage->parent_class,
                 );
             } else {
                 $context->vars_in_scope[$var_id] = Type::getMixed();
@@ -395,7 +391,7 @@ class StaticPropertyFetchAnalyzer
                 $property_id,
                 false,
                 [],
-                []
+                [],
             );
 
             $context->vars_in_scope[$var_id] = $stmt_type;
@@ -408,7 +404,7 @@ class StaticPropertyFetchAnalyzer
                 $codebase->analyzer->addNodeType(
                     $statements_analyzer->getFilePath(),
                     $stmt->name,
-                    $stmt_type->getId()
+                    $stmt_type->getId(),
                 );
             }
         } else {
@@ -431,7 +427,7 @@ class StaticPropertyFetchAnalyzer
         ExpressionAnalyzer::analyze(
             $statements_analyzer,
             $stmt_class,
-            $context
+            $context,
         );
 
         $context->inside_general_use = $was_inside_general_use;
@@ -457,13 +453,13 @@ class StaticPropertyFetchAnalyzer
             if ($string_type) {
                 $new_stmt_name = new VirtualFullyQualified(
                     $string_type,
-                    $stmt_class->getAttributes()
+                    $stmt_class->getAttributes(),
                 );
 
                 $fake_static_property = new VirtualStaticPropertyFetch(
                     $new_stmt_name,
                     $stmt->name,
-                    $stmt->getAttributes()
+                    $stmt->getAttributes(),
                 );
 
                 self::analyze($statements_analyzer, $fake_static_property, $context);
@@ -474,7 +470,7 @@ class StaticPropertyFetchAnalyzer
 
                 $fake_var = new VirtualVariable(
                     $fake_var_name,
-                    $stmt_class->getAttributes()
+                    $stmt_class->getAttributes(),
                 );
 
                 $context->vars_in_scope['$' . $fake_var_name] = new Union([$class_atomic_type]);
@@ -482,7 +478,7 @@ class StaticPropertyFetchAnalyzer
                 $fake_instance_property = new VirtualPropertyFetch(
                     $fake_var,
                     $stmt->name,
-                    $stmt->getAttributes()
+                    $stmt->getAttributes(),
                 );
 
                 InstancePropertyFetchAnalyzer::analyze(
@@ -490,7 +486,7 @@ class StaticPropertyFetchAnalyzer
                     $fake_instance_property,
                     $context,
                     false,
-                    true
+                    true,
                 );
 
                 $fake_stmt_type = $statements_analyzer->node_data->getType($fake_instance_property) ?? Type::getMixed();

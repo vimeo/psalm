@@ -4,6 +4,7 @@ namespace Psalm\Type\Atomic;
 
 /**
  * Denotes an anonymous class (i.e. `new class{}`) with potential methods
+ *
  * @psalm-immutable
  */
 final class TAnonymousClassInstance extends TNamedObject
@@ -39,7 +40,6 @@ final class TAnonymousClassInstance extends TNamedObject
 
     /**
      * @param  array<lowercase-string, string> $aliased_classes
-     *
      */
     public function toNamespacedString(
         ?string $namespace,

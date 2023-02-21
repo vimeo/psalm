@@ -4,6 +4,7 @@ namespace Psalm\Type\Atomic;
 
 /**
  * Denotes the `callable-string` type, used to represent an unknown string that is also `callable`.
+ *
  * @psalm-immutable
  */
 final class TCallableString extends TNonFalsyString

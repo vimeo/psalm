@@ -145,14 +145,11 @@ class ClassScopeTest extends TestCase
                         protected static function foo(): void {
                             echo "here";
                         }
-                    }'
+                    }',
             ],
         ];
     }
 
-    /**
-     *
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [

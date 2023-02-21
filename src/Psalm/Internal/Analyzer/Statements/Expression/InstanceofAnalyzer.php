@@ -45,7 +45,7 @@ class InstanceofAnalyzer
 
                 $fq_class_name = ClassLikeAnalyzer::getFQCLNFromNameObject(
                     $stmt->class,
-                    $statements_analyzer->getAliases()
+                    $statements_analyzer->getAliases(),
                 );
 
                 if ($codebase->store_node_types
@@ -62,7 +62,7 @@ class InstanceofAnalyzer
                                 . ($stmt->class instanceof PhpParser\Node\Name\FullyQualified
                                     ? '\\'
                                     : $statements_analyzer->getNamespace() . '-')
-                                . implode('\\', $stmt->class->parts)
+                                . implode('\\', $stmt->class->parts),
                     );
                 }
 
@@ -73,7 +73,7 @@ class InstanceofAnalyzer
                         new CodeLocation($statements_analyzer->getSource(), $stmt->class),
                         $context->self,
                         $context->calling_method_id,
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
                     ) === false) {
                         return false;
                     }
@@ -85,7 +85,7 @@ class InstanceofAnalyzer
                         $statements_analyzer,
                         $stmt->class,
                         $fq_class_name,
-                        $context->calling_method_id
+                        $context->calling_method_id,
                     );
                 }
             }

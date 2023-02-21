@@ -8,22 +8,13 @@ use Psalm\SourceControl\SourceControlInfo;
 
 final class AfterAnalysisEvent
 {
-    /**
-     * @var Codebase
-     */
-    private $codebase;
+    private Codebase $codebase;
     /**
      * @var IssueData[][]
      */
-    private $issues;
-    /**
-     * @var array
-     */
-    private $build_info;
-    /**
-     * @var SourceControlInfo|null
-     */
-    private $source_control_info;
+    private array $issues;
+    private array $build_info;
+    private ?SourceControlInfo $source_control_info;
 
     /**
      * Called after analysis is complete

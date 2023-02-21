@@ -8,7 +8,6 @@ use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Union;
 
 /**
@@ -34,37 +33,30 @@ class ArraySpliceReturnTypeProvider implements FunctionReturnTypeProviderInterfa
 
         $first_arg = $call_args[0]->value ?? null;
 
-        $first_arg_array = $first_arg
+        $array_type = $first_arg
             && ($first_arg_type = $statements_source->node_data->getType($first_arg))
             && $first_arg_type->hasType('array')
-            && ($array_atomic_type = $first_arg_type->getAtomicTypes()['array'])
+            && ($array_atomic_type = $first_arg_type->getArray())
             && ($array_atomic_type instanceof TArray
-                || $array_atomic_type instanceof TKeyedArray
-                || $array_atomic_type instanceof TList)
+                || $array_atomic_type instanceof TKeyedArray)
         ? $array_atomic_type
         : null;
 
-        if (!$first_arg_array) {
+        if (!$array_type) {
             return Type::getArray();
         }
 
-        if ($first_arg_array instanceof TKeyedArray) {
-            $first_arg_array = $first_arg_array->getGenericArrayType();
-        }
-
-        if ($first_arg_array instanceof TArray) {
-            $array_type = new TArray($first_arg_array->type_params);
-        } else {
-            $array_type = new TArray([Type::getInt(), $first_arg_array->type_param]);
+        if ($array_type instanceof TKeyedArray) {
+            $array_type = $array_type->getGenericArrayType();
         }
 
         if (!$array_type->type_params[0]->hasString()) {
             if ($array_type->type_params[1]->isString()) {
-                $array_type = new TList(Type::getString());
+                $array_type = Type::getListAtomic(Type::getString());
             } elseif ($array_type->type_params[1]->isInt()) {
-                $array_type = new TList(Type::getInt());
+                $array_type = Type::getListAtomic(Type::getInt());
             } else {
-                $array_type = new TList(Type::getMixed());
+                $array_type = Type::getListAtomic(Type::getMixed());
             }
         }
 

@@ -20,7 +20,7 @@ jobs:
       should_skip: ${{ steps.skip_check.outputs.should_skip }}
     steps:
       - id: skip_check
-        uses: fkirc/skip-duplicate-actions@v4.0.0
+        uses: fkirc/skip-duplicate-actions@v5.3.0
         with:
           concurrent_skipping: always
           cancel_others: true
@@ -43,12 +43,14 @@ jobs:
           coverage: none
 
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # required for composer to automatically detect root package version
 
       - name: Get Composer Cache Directories
         id: composer-cache
         run: |
-          echo "::set-output name=files_cache::$(composer config cache-files-dir)"
-          echo "::set-output name=vcs_cache::$(composer config cache-vcs-dir)"
+          echo "files_cache=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+          echo "vcs_cache=$(composer config cache-vcs-dir)" >> $GITHUB_OUTPUT
 
       - name: Cache composer cache
         uses: actions/cache@v3
@@ -62,8 +64,9 @@ jobs:
 
       - name: Run composer install
         run: composer install -o
-        env:
-          COMPOSER_ROOT_VERSION: dev-master
+          # DO NOT set this, we need composer to figure out the version itself
+          # env:
+          #   COMPOSER_ROOT_VERSION: dev-master
 
       - run: bin/build-phar.sh
         env:

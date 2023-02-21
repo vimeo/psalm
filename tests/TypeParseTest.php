@@ -35,12 +35,12 @@ class TypeParseTest extends TestCase
 
         $providers = new Providers(
             $this->file_provider,
-            new FakeParserCacheProvider()
+            new FakeParserCacheProvider(),
         );
 
         $this->project_analyzer = new ProjectAnalyzer(
             $config,
-            $providers
+            $providers,
         );
     }
 
@@ -166,7 +166,7 @@ class TypeParseTest extends TestCase
     {
         $this->assertSame(
             'Traversable&Iterator<mixed, int>|null',
-            (string) Type::parseString('Traversable&Iterator<int>|null')
+            (string) Type::parseString('Traversable&Iterator<int>|null'),
         );
     }
 
@@ -174,7 +174,7 @@ class TypeParseTest extends TestCase
     {
         $this->assertSame(
             'Iterator<mixed, int>&Traversable|null',
-            (string) Type::parseString('Iterator<mixed, int>&Traversable|null')
+            (string) Type::parseString('Iterator<mixed, int>&Traversable|null'),
         );
     }
 
@@ -279,7 +279,7 @@ class TypeParseTest extends TestCase
     {
         $this->assertSame(
             'array<array-key, array{b: bool, d: string}>',
-            (string) Type::parseString('array{b: bool, d: string}[]')
+            (string) Type::parseString('array{b: bool, d: string}[]'),
         );
     }
 
@@ -378,7 +378,7 @@ class TypeParseTest extends TestCase
     {
         $this->assertSame(
             'array{a: int|string, b: string}',
-            (string) Type::parseString('array{a: int|string, b: string}')
+            (string) Type::parseString('array{a: int|string, b: string}'),
         );
     }
 
@@ -386,7 +386,7 @@ class TypeParseTest extends TestCase
     {
         $this->assertSame(
             'array{a: array<int, int|string>, b: string}',
-            (string) Type::parseString('array{a: array<int, string|int>, b: string}')
+            (string) Type::parseString('array{a: array<int, string|int>, b: string}'),
         );
     }
 
@@ -394,7 +394,7 @@ class TypeParseTest extends TestCase
     {
         $this->assertSame(
             'list{null|stdClass}',
-            (string)Type::parseString('list{stdClass|null}')
+            (string)Type::parseString('list{stdClass|null}'),
         );
     }
 
@@ -402,12 +402,12 @@ class TypeParseTest extends TestCase
     {
         $this->assertSame(
             'list{array<array-key, mixed>}',
-            (string)Type::parseString('array{array}')
+            (string)Type::parseString('array{array}'),
         );
 
         $this->assertSame(
             'list{array<int, string>}',
-            (string)Type::parseString('array{array<int, string>}')
+            (string)Type::parseString('array{array<int, string>}'),
         );
     }
 
@@ -415,7 +415,7 @@ class TypeParseTest extends TestCase
     {
         $this->assertSame(
             'array{a: int, b?: int}',
-            (string)Type::parseString('array{a: int, b?: int}')
+            (string)Type::parseString('array{a: int, b?: int}'),
         );
     }
 
@@ -423,15 +423,115 @@ class TypeParseTest extends TestCase
     {
         $this->assertSame(
             'array{a: int, ...<array-key, mixed>}',
-            (string)Type::parseString('array{a: int, ...}')
+            (string)Type::parseString('array{a: int, ...}'),
         );
+    }
+
+    public function testTKeyedList(): void
+    {
+        $this->assertSame(
+            'list{int, int, string}',
+            (string)Type::parseString('list{int, int, string}'),
+        );
+    }
+
+    public function testTKeyedListOptional(): void
+    {
+        $this->assertSame(
+            'list{0: int, 1?: int, 2?: string}',
+            (string)Type::parseString('list{0: int, 1?: int, 2?: string}'),
+        );
+    }
+
+
+    public function testTKeyedArrayList(): void
+    {
+        $this->assertSame(
+            'list{int, int, string}',
+            (string)Type::parseString('array{int, int, string}'),
+        );
+    }
+
+
+    public function testTKeyedArrayNonList(): void
+    {
+        $this->assertSame(
+            'array{0: int, 1: int, 2: string}',
+            (string)Type::parseString('array{0: int, 1: int, 2: string}'),
+        );
+    }
+
+
+    public function testTKeyedCallableArrayNonList(): void
+    {
+        $this->assertSame(
+            'callable-array{0: class-string, 1: string}',
+            (string)Type::parseString('callable-array{0: class-string, 1: string}'),
+        );
+    }
+
+
+    public function testTKeyedListNonList(): void
+    {
+        $this->expectExceptionMessage('A list shape cannot describe a non-list');
+        Type::parseString('list{a: 0, b: 1, c: 2}');
+    }
+
+
+    public function testTKeyedListNonListOptional(): void
+    {
+        $this->expectExceptionMessage('A list shape cannot describe a non-list');
+        Type::parseString('list{a: 0, b?: 1, c?: 2}');
+    }
+
+    public function testTKeyedListNonListOptionalWrongOrder1(): void
+    {
+        $this->expectExceptionMessage('A list shape cannot describe a non-list');
+        Type::parseString('list{0?: 0, 1: 1, 2: 2}');
+    }
+
+    public function testTKeyedListNonListOptionalWrongOrder2(): void
+    {
+        $this->expectExceptionMessage('A list shape cannot describe a non-list');
+        Type::parseString('list{0: 0, 1?: 1, 2: 2}');
+    }
+
+
+    public function testTKeyedListWrongOrder(): void
+    {
+        $this->expectExceptionMessage('A list shape cannot describe a non-list');
+        Type::parseString('list{1: 1, 0: 0}');
+    }
+
+    public function testTKeyedListNonListKeys(): void
+    {
+        $this->expectExceptionMessage('A list shape cannot describe a non-list');
+        Type::parseString('list{1: 1, 2: 2}');
+    }
+
+    public function testTKeyedListNoExplicitAndImplicitKeys(): void
+    {
+        $this->expectExceptionMessage('Cannot mix explicit and implicit keys');
+        Type::parseString('list{0: 0, 1}');
+    }
+
+    public function testTKeyedArrayNoExplicitAndImplicitKeys(): void
+    {
+        $this->expectExceptionMessage('Cannot mix explicit and implicit keys');
+        Type::parseString('array{0, test: 1}');
+    }
+
+    public function testTKeyedArrayNoDuplicateKeys(): void
+    {
+        $this->expectExceptionMessage('Duplicate key a detected');
+        Type::parseString('array{a: int, a: int}');
     }
 
     public function testSimpleCallable(): void
     {
         $this->assertSame(
             'callable(int, string):void',
-            (string)Type::parseString('callable(int, string) : void')
+            (string)Type::parseString('callable(int, string) : void'),
         );
     }
 
@@ -445,7 +545,7 @@ class TypeParseTest extends TestCase
     {
         $this->assertSame(
             'callable(int, string):void',
-            (string)Type::parseString('callable(int $foo, string $bar) : void')
+            (string)Type::parseString('callable(int $foo, string $bar) : void'),
         );
     }
 
@@ -453,7 +553,7 @@ class TypeParseTest extends TestCase
     {
         $this->assertSame(
             'callable(int, string):I1&I2',
-            (string)Type::parseString('callable(int, string) : (I1&I2)')
+            (string)Type::parseString('callable(int, string) : (I1&I2)'),
         );
     }
 
@@ -461,7 +561,7 @@ class TypeParseTest extends TestCase
     {
         $this->assertSame(
             'callable():void',
-            (string)Type::parseString('callable() : void')
+            (string)Type::parseString('callable() : void'),
         );
     }
 
@@ -469,7 +569,7 @@ class TypeParseTest extends TestCase
     {
         $this->assertSame(
             'callable(int, int|string):void',
-            (string)Type::parseString('callable(int, int|string) : void')
+            (string)Type::parseString('callable(int, int|string) : void'),
         );
     }
 
@@ -477,7 +577,7 @@ class TypeParseTest extends TestCase
     {
         $this->assertSame(
             'callable(int, string...):void',
-            (string)Type::parseString('callable(int, string...) : void')
+            (string)Type::parseString('callable(int, string...) : void'),
         );
     }
 
@@ -485,7 +585,7 @@ class TypeParseTest extends TestCase
     {
         $this->assertSame(
             'callable():callable():string',
-            (string)Type::parseString('callable() : callable() : string')
+            (string)Type::parseString('callable() : callable() : string'),
         );
     }
 
@@ -493,7 +593,7 @@ class TypeParseTest extends TestCase
     {
         $this->assertSame(
             'callable():callable():callable():string',
-            (string)Type::parseString('callable() : callable() : callable() : string')
+            (string)Type::parseString('callable() : callable() : callable() : string'),
         );
     }
 
@@ -501,7 +601,7 @@ class TypeParseTest extends TestCase
     {
         $this->assertSame(
             'callable(string):void|int',
-            (string)Type::parseString('callable(string):void|int')
+            (string)Type::parseString('callable(string):void|int'),
         );
     }
 
@@ -515,7 +615,7 @@ class TypeParseTest extends TestCase
     {
         $this->assertSame(
             'callable(int, string...):void',
-            (string)Type::parseString('callable(int, ...string):void')
+            (string)Type::parseString('callable(int, ...string):void'),
         );
     }
 
@@ -523,7 +623,7 @@ class TypeParseTest extends TestCase
     {
         $this->assertSame(
             '(T is string ? string : int)',
-            (string) Type::parseString('(T is string ? string : int)', null, ['T' => ['' => Type::getArray()]])
+            (string) Type::parseString('(T is string ? string : int)', null, ['T' => ['' => Type::getArray()]]),
         );
     }
 
@@ -531,7 +631,7 @@ class TypeParseTest extends TestCase
     {
         $this->assertSame(
             '(T is string|true ? int|string : int)',
-            Type::parseString('(T is "hello"|true ? string|int : int)', null, ['T' => ['' => Type::getArray()]])->getId(false)
+            Type::parseString('(T is "hello"|true ? string|int : int)', null, ['T' => ['' => Type::getArray()]])->getId(false),
         );
     }
 
@@ -539,7 +639,7 @@ class TypeParseTest extends TestCase
     {
         $this->assertSame(
             '(T is array{a: string} ? string : int)',
-            (string) Type::parseString('(T is array{a: string} ? string : int)', null, ['T' => ['' => Type::getArray()]])
+            (string) Type::parseString('(T is array{a: string} ? string : int)', null, ['T' => ['' => Type::getArray()]]),
         );
     }
 
@@ -547,7 +647,7 @@ class TypeParseTest extends TestCase
     {
         $this->assertSame(
             '(T is array<array-key, string> ? string : int)',
-            (string) Type::parseString('(T is array<string> ? string : int)', null, ['T' => ['' => Type::getArray()]])
+            (string) Type::parseString('(T is array<string> ? string : int)', null, ['T' => ['' => Type::getArray()]]),
         );
     }
 
@@ -555,7 +655,7 @@ class TypeParseTest extends TestCase
     {
         $this->assertSame(
             '(T is A&B ? string : int)',
-            (string) Type::parseString('(T is A&B ? string : int)', null, ['T' => ['' => Type::getArray()]])
+            (string) Type::parseString('(T is A&B ? string : int)', null, ['T' => ['' => Type::getArray()]]),
         );
     }
 
@@ -563,7 +663,7 @@ class TypeParseTest extends TestCase
     {
         $this->assertSame(
             '(T is string ? string : int)',
-            (string) Type::parseString('(T is string?string:int)', null, ['T' => ['' => Type::getArray()]])
+            (string) Type::parseString('(T is string?string:int)', null, ['T' => ['' => Type::getArray()]]),
         );
     }
 
@@ -577,7 +677,7 @@ class TypeParseTest extends TestCase
     {
         $this->assertSame(
             '(T is string ? callable():bool : bool)',
-            (string) Type::parseString('(T is string ? (callable() : bool) : bool)', null, ['T' => ['' => Type::getArray()]])
+            (string) Type::parseString('(T is string ? (callable() : bool) : bool)', null, ['T' => ['' => Type::getArray()]]),
         );
     }
 
@@ -588,8 +688,8 @@ class TypeParseTest extends TestCase
             (string) Type::parseString(
                 '(T is string ? string : array<string, string>)',
                 null,
-                ['T' => ['' => Type::getArray()]]
-            )
+                ['T' => ['' => Type::getArray()]],
+            ),
         );
     }
 
@@ -600,8 +700,8 @@ class TypeParseTest extends TestCase
             (string) Type::parseString(
                 '(T is string ? (callable(string, string):string) : (callable(mixed...):mixed))',
                 null,
-                ['T' => ['' => Type::getArray()]]
-            )
+                ['T' => ['' => Type::getArray()]],
+            ),
         );
     }
 
@@ -612,8 +712,8 @@ class TypeParseTest extends TestCase
             (string) Type::parseString(
                 '(T is string ? callable(string, string):string : callable(mixed...):mixed)',
                 null,
-                ['T' => ['' => Type::getArray()]]
-            )
+                ['T' => ['' => Type::getArray()]],
+            ),
         );
     }
 
@@ -633,7 +733,7 @@ class TypeParseTest extends TestCase
     {
         $this->assertSame(
             'callable(mixed...):void',
-            (string) Type::parseString('callable(...): void')
+            (string) Type::parseString('callable(...): void'),
         );
     }
 
@@ -725,7 +825,7 @@ class TypeParseTest extends TestCase
     {
         $this->assertSame(
             'callable(int, string=):void',
-            (string)Type::parseString('callable(int, string=) : void')
+            (string)Type::parseString('callable(int, string=) : void'),
         );
     }
 
@@ -733,7 +833,7 @@ class TypeParseTest extends TestCase
     {
         $this->assertSame(
             'callable(callable(A):B):C',
-            (string)Type::parseString('callable(callable(A):B):C')
+            (string)Type::parseString('callable(callable(A):B):C'),
         );
     }
 
@@ -741,7 +841,7 @@ class TypeParseTest extends TestCase
     {
         $this->assertSame(
             'callable(int, string)',
-            (string)Type::parseString('callable(int, string)')
+            (string)Type::parseString('callable(int, string)'),
         );
     }
 
@@ -749,7 +849,7 @@ class TypeParseTest extends TestCase
     {
         $this->assertSame(
             "'array'|class-string",
-            Type::parseString('"array"|class-string')->getId()
+            Type::parseString('"array"|class-string')->getId(),
         );
     }
 
@@ -757,7 +857,7 @@ class TypeParseTest extends TestCase
     {
         $this->assertSame(
             'class-string',
-            Type::parseString('A::class|class-string')->getId()
+            Type::parseString('A::class|class-string')->getId(),
         );
     }
 
@@ -765,7 +865,7 @@ class TypeParseTest extends TestCase
     {
         $this->assertSame(
             'key-of<Foo\Baz::BAR>',
-            (string)Type::parseString('key-of<Foo\Baz::BAR>')
+            (string)Type::parseString('key-of<Foo\Baz::BAR>'),
         );
     }
 
@@ -773,7 +873,7 @@ class TypeParseTest extends TestCase
     {
         $this->assertSame(
             'key-of<T>',
-            Type::parseString('key-of<T>', null, ['T' => ['' => Type::getArray()]])->getId(false)
+            Type::parseString('key-of<T>', null, ['T' => ['' => Type::getArray()]])->getId(false),
         );
     }
 
@@ -781,7 +881,7 @@ class TypeParseTest extends TestCase
     {
         $this->assertSame(
             'value-of<T>',
-            (string)Type::parseString('value-of<T>', null, ['T' => ['' => Type::getArray()]])
+            (string)Type::parseString('value-of<T>', null, ['T' => ['' => Type::getArray()]]),
         );
     }
 
@@ -795,10 +895,10 @@ class TypeParseTest extends TestCase
                 [
                     'T' => ['' => Type::getArray()],
                     'K' => ['' => new Union([
-                        new TTemplateKeyOf('T', 'fn-foo', Type::getMixed())
+                        new TTemplateKeyOf('T', 'fn-foo', Type::getMixed()),
                     ])],
-                ]
-            )
+                ],
+            ),
         );
     }
 
@@ -806,7 +906,7 @@ class TypeParseTest extends TestCase
     {
         $this->assertSame(
             'value-of<Foo\Baz::BAR>',
-            (string)Type::parseString('value-of<Foo\Baz::BAR>')
+            (string)Type::parseString('value-of<Foo\Baz::BAR>'),
         );
     }
 
@@ -814,7 +914,7 @@ class TypeParseTest extends TestCase
     {
         $this->assertSame(
             'class-string-map<T as Foo, T>',
-            Type::parseString('class-string-map<T as Foo, T>')->getId(false)
+            Type::parseString('class-string-map<T as Foo, T>')->getId(false),
         );
     }
 
@@ -824,7 +924,7 @@ class TypeParseTest extends TestCase
 
         $this->assertSame(
             $very_large_type,
-            (string) Type::parseString($very_large_type)
+            (string) Type::parseString($very_large_type),
         );
     }
 
@@ -912,7 +1012,7 @@ class TypeParseTest extends TestCase
     {
         $this->assertSame(
             "'var'",
-            Type::parseString('"var"')->getId()
+            Type::parseString('"var"')->getId(),
         );
     }
 
@@ -920,7 +1020,7 @@ class TypeParseTest extends TestCase
     {
         $this->assertSame(
             'array<never, never>',
-            (string)Type::parseString('array{}')
+            (string)Type::parseString('array{}'),
         );
     }
 
@@ -928,7 +1028,7 @@ class TypeParseTest extends TestCase
     {
         $this->assertSame(
             '6',
-            Type::parseString('6')->getId()
+            Type::parseString('6')->getId(),
         );
     }
 
@@ -936,7 +1036,7 @@ class TypeParseTest extends TestCase
     {
         $this->assertSame(
             'float(6.315)',
-            Type::parseString('6.315')->getId()
+            Type::parseString('6.315')->getId(),
         );
     }
 
@@ -1024,22 +1124,22 @@ class TypeParseTest extends TestCase
 
         $this->assertSame(
             'string',
-            (string) Codebase::getPsalmTypeFromReflection($reflectionParams[0]->getType())
+            (string) Codebase::getPsalmTypeFromReflection($reflectionParams[0]->getType()),
         );
 
         $this->assertSame(
             'array<array-key, mixed>',
-            (string) Codebase::getPsalmTypeFromReflection($reflectionParams[1]->getType())
+            (string) Codebase::getPsalmTypeFromReflection($reflectionParams[1]->getType()),
         );
 
         $this->assertSame(
             'int|null',
-            (string) Codebase::getPsalmTypeFromReflection($reflectionParams[2]->getType())
+            (string) Codebase::getPsalmTypeFromReflection($reflectionParams[2]->getType()),
         );
 
         $this->assertSame(
             'string',
-            (string) Codebase::getPsalmTypeFromReflection($reflectionFunc->getReturnType())
+            (string) Codebase::getPsalmTypeFromReflection($reflectionFunc->getReturnType()),
         );
     }
 

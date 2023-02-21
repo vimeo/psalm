@@ -27,12 +27,12 @@ class TypeComparatorTest extends TestCase
 
         $providers = new Providers(
             $this->file_provider,
-            new FakeParserCacheProvider()
+            new FakeParserCacheProvider(),
         );
 
         $this->project_analyzer = new ProjectAnalyzer(
             $config,
-            $providers
+            $providers,
         );
     }
 
@@ -48,8 +48,8 @@ class TypeComparatorTest extends TestCase
             UnionTypeComparator::isContainedBy(
                 $this->project_analyzer->getCodebase(),
                 $type_1,
-                $type_2
-            )
+                $type_2,
+            ),
         );
     }
 
@@ -82,14 +82,14 @@ class TypeComparatorTest extends TestCase
             [
                 'array' => true, // Requires a shape
                 'list' => true, // Requires a shape
-            ]
+            ],
         );
         $basic_types['array{test: 123}'] = true;
         $basic_types['list{123}'] = true;
 
         return array_map(
             fn($type) => [$type],
-            array_keys($basic_types)
+            array_keys($basic_types),
         );
     }
 
@@ -105,8 +105,8 @@ class TypeComparatorTest extends TestCase
             UnionTypeComparator::isContainedBy(
                 $this->project_analyzer->getCodebase(),
                 $child_type,
-                $parent_type
-            )
+                $parent_type,
+            ),
         );
     }
 

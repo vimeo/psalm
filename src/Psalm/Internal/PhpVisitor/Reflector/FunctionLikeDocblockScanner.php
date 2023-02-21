@@ -41,7 +41,6 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\TaintKindGroup;
@@ -165,7 +164,7 @@ class FunctionLikeDocblockScanner
         if ($docblock_info->stub_override && !$is_functionlike_override) {
             throw new InvalidMethodOverrideException(
                 'Method ' . $cased_function_id . ' is marked as stub override,'
-                . ' but no original counterpart found'
+                . ' but no original counterpart found',
             );
         }
 
@@ -176,7 +175,7 @@ class FunctionLikeDocblockScanner
                 $file_scanner,
                 $offset,
                 $offset + strlen($throw),
-                $line
+                $line,
             );
 
             foreach (explode('|', $throw) as $throw_class) {
@@ -189,7 +188,7 @@ class FunctionLikeDocblockScanner
                 if ($throw_class !== 'self' && $throw_class !== 'static' && $throw_class !== 'parent') {
                     $exception_fqcln = Type::getFQCLNFromString(
                         $throw_class,
-                        $aliases
+                        $aliases,
                     );
                 } else {
                     $exception_fqcln = $throw_class;
@@ -226,7 +225,7 @@ class FunctionLikeDocblockScanner
                 $type_aliases,
                 $file_scanner,
                 $stmt,
-                $cased_function_id
+                $cased_function_id,
             );
         }
 
@@ -241,7 +240,7 @@ class FunctionLikeDocblockScanner
             $class_template_types,
             $function_template_types,
             $type_aliases,
-            $classlike_storage
+            $classlike_storage,
         );
 
         foreach ($docblock_info->globals as $global) {
@@ -251,14 +250,14 @@ class FunctionLikeDocblockScanner
                         $global['type'],
                         $aliases,
                         null,
-                        $type_aliases
+                        $type_aliases,
                     ),
-                    null
+                    null,
                 );
             } catch (TypeParseTreeException $e) {
                 $storage->docblock_issues[] = new InvalidDocblock(
                     $e->getMessage() . ' in docblock for ' . $cased_function_id,
-                    new CodeLocation($file_scanner, $stmt, null, true)
+                    new CodeLocation($file_scanner, $stmt, null, true),
                 );
 
                 continue;
@@ -279,14 +278,14 @@ class FunctionLikeDocblockScanner
                 $docblock_info->params,
                 $stmt,
                 $fake_method,
-                $classlike_storage && !$classlike_storage->is_trait ? $classlike_storage->name : null
+                $classlike_storage && !$classlike_storage->is_trait ? $classlike_storage->name : null,
             );
         }
 
         if ($storage instanceof MethodStorage) {
             $storage->has_docblock_param_types = (bool) array_filter(
                 $storage->params,
-                static fn(FunctionLikeParameter $p): bool => $p->type !== null && $p->has_docblock_type
+                static fn(FunctionLikeParameter $p): bool => $p->type !== null && $p->has_docblock_type,
             );
         }
 
@@ -302,7 +301,7 @@ class FunctionLikeDocblockScanner
                 $stmt,
                 $storage,
                 $codebase,
-                $file_storage
+                $file_storage,
             );
         }
 
@@ -314,11 +313,11 @@ class FunctionLikeDocblockScanner
                     $aliases,
                     $function_template_types + $class_template_types,
                     $type_aliases,
-                    $classlike_storage ? $classlike_storage->name : null
+                    $classlike_storage ? $classlike_storage->name : null,
                 ),
                 null,
                 $function_template_types + $class_template_types,
-                $type_aliases
+                $type_aliases,
             );
             $storage->self_out_type = $out_type;
         }
@@ -331,11 +330,11 @@ class FunctionLikeDocblockScanner
                     $aliases,
                     $function_template_types + $class_template_types,
                     $type_aliases,
-                    $classlike_storage ? $classlike_storage->name : null
+                    $classlike_storage ? $classlike_storage->name : null,
                 ),
                 null,
                 $function_template_types + $class_template_types,
-                $type_aliases
+                $type_aliases,
             );
             $storage->if_this_is_type = $out_type;
         }
@@ -354,7 +353,7 @@ class FunctionLikeDocblockScanner
             if ($taint_source_type === 'input') {
                 $storage->taint_source_types = array_merge(
                     $storage->taint_source_types,
-                    TaintKindGroup::ALL_INPUT
+                    TaintKindGroup::ALL_INPUT,
                 );
             } else {
                 $storage->taint_source_types[] = $taint_source_type;
@@ -377,7 +376,7 @@ class FunctionLikeDocblockScanner
                     $classlike_storage,
                     $cased_function_id,
                     $file_storage,
-                    $file_scanner
+                    $file_scanner,
                 );
             } else {
                 $storage->removed_taints[] = $removed_taint;
@@ -411,7 +410,7 @@ class FunctionLikeDocblockScanner
                 $type_aliases,
                 $classlike_storage,
                 $cased_function_id,
-                $file_storage
+                $file_storage,
             );
         }
 
@@ -424,7 +423,6 @@ class FunctionLikeDocblockScanner
      * @param  array<string, array<string, Union>> $template_types
      * @param  array<string, TypeAlias>|null   $type_aliases
      * @param  array<string, array<string, Union>> $function_template_types
-     *
      * @return array{
      *     array<int, array{0: string, 1: int, 2?: string}>,
      *     array<string, array<string, Union>>
@@ -445,7 +443,7 @@ class FunctionLikeDocblockScanner
             $aliases,
             $template_types,
             $type_aliases,
-            $classlike_storage && !$classlike_storage->is_trait ? $classlike_storage->name : null
+            $classlike_storage && !$classlike_storage->is_trait ? $classlike_storage->name : null,
         );
 
         $param_type_mapping = [];
@@ -483,8 +481,8 @@ class FunctionLikeDocblockScanner
                                     new TTemplateParam(
                                         $template_name,
                                         $template_as_type,
-                                        $template_function_id
-                                    )
+                                        $template_function_id,
+                                    ),
                                 ]);
                             }
                         }
@@ -534,7 +532,7 @@ class FunctionLikeDocblockScanner
                 $template_name = 'TPhpVersionId';
 
                 $storage->template_types[$template_name] = [
-                    $template_function_id => Type::getInt()
+                    $template_function_id => Type::getInt(),
                 ];
 
                 $function_template_types[$template_name]
@@ -612,16 +610,16 @@ class FunctionLikeDocblockScanner
                     $type_aliases,
                     $self_fqcln,
                     null,
-                    true
+                    true,
                 ),
                 null,
                 $template_types,
-                $type_aliases
+                $type_aliases,
             );
         } catch (TypeParseTreeException $e) {
             $storage->docblock_issues[] = new InvalidDocblock(
                 'Invalid @psalm-assert union type ' . $e,
-                new CodeLocation($file_scanner, $stmt, null, true)
+                new CodeLocation($file_scanner, $stmt, null, true),
             );
 
             return null;
@@ -632,7 +630,7 @@ class FunctionLikeDocblockScanner
         ) {
             $storage->docblock_issues[] = new InvalidDocblock(
                 'Docblock assertions cannot contain | characters together with a prefix',
-                new CodeLocation($file_scanner, $stmt, null, true)
+                new CodeLocation($file_scanner, $stmt, null, true),
             );
 
             return null;
@@ -642,7 +640,7 @@ class FunctionLikeDocblockScanner
         $namespaced_type->queueClassLikesForScanning(
             $codebase,
             $file_storage,
-            $function_template_types + $class_template_types
+            $function_template_types + $class_template_types,
         );
 
         $assertion_type_parts = [];
@@ -736,7 +734,7 @@ class FunctionLikeDocblockScanner
                     $file_scanner,
                     $docblock_param['start'],
                     $docblock_param['end'],
-                    $docblock_param['line_number']
+                    $docblock_param['line_number'],
                 );
             } else {
                 $docblock_type_location = new CodeLocation(
@@ -745,7 +743,7 @@ class FunctionLikeDocblockScanner
                     null,
                     false,
                     CodeLocation::FUNCTION_PHPDOC_METHOD,
-                    null
+                    null,
                 );
             }
 
@@ -757,7 +755,7 @@ class FunctionLikeDocblockScanner
                     true,
                     CodeLocation::FUNCTION_PARAM_VAR,
                     null,
-                    $docblock_param['line_number']
+                    $docblock_param['line_number'],
                 );
 
                 $unused_docblock_params[$param_name] = $param_location;
@@ -776,7 +774,7 @@ class FunctionLikeDocblockScanner
                     false,
                     false,
                     true,
-                    null
+                    null,
                 );
 
                 $storage->addParam($storage_param);
@@ -789,17 +787,17 @@ class FunctionLikeDocblockScanner
                         $aliases,
                         $function_template_types + $class_template_types,
                         $type_aliases,
-                        $fq_classlike_name
+                        $fq_classlike_name,
                     ),
                     null,
                     $function_template_types + $class_template_types,
                     $type_aliases,
-                    true
+                    true,
                 );
             } catch (TypeParseTreeException $e) {
                 $storage->docblock_issues[] = new InvalidDocblock(
                     $e->getMessage() . ' in docblock for ' . $cased_method_id,
-                    $docblock_type_location
+                    $docblock_type_location,
                 );
 
                 continue;
@@ -811,7 +809,7 @@ class FunctionLikeDocblockScanner
             $new_param_type->queueClassLikesForScanning(
                 $codebase,
                 $file_storage,
-                $storage->template_types ?: []
+                $storage->template_types ?: [],
             );
 
             if ($storage->template_types) {
@@ -830,15 +828,12 @@ class FunctionLikeDocblockScanner
 
             if (!$docblock_param_variadic && $storage_param->is_variadic && $new_param_type->hasArray()) {
                 /**
-                 * @psalm-suppress PossiblyUndefinedStringArrayOffset
-                 * @var TArray|TKeyedArray|TList
+                 * @var TArray|TKeyedArray
                  */
-                $array_type = $new_param_type->getAtomicTypes()['array'];
+                $array_type = $new_param_type->getArray();
 
                 if ($array_type instanceof TKeyedArray) {
                     $new_param_type = $array_type->getGenericValueType();
-                } elseif ($array_type instanceof TList) {
-                    $new_param_type = $array_type->type_param;
                 } else {
                     $new_param_type = $array_type->type_params[1];
                 }
@@ -913,8 +908,12 @@ class FunctionLikeDocblockScanner
         );
 
         if ($params_without_docblock_type) {
+            /** @psalm-suppress DeprecatedProperty remove in Psalm 6 */
             $storage->unused_docblock_params = $unused_docblock_params;
         }
+
+        $storage->has_undertyped_native_parameters = $params_without_docblock_type !== [];
+        $storage->unused_docblock_parameters = $unused_docblock_params;
     }
 
     /**
@@ -947,7 +946,7 @@ class FunctionLikeDocblockScanner
                 $file_scanner,
                 $docblock_info->return_type_start,
                 $docblock_info->return_type_end,
-                $docblock_info->return_type_line_number
+                $docblock_info->return_type_line_number,
             );
         } else {
             $storage->return_type_location = new CodeLocation(
@@ -961,7 +960,7 @@ class FunctionLikeDocblockScanner
                 $docblock_info->return_type,
                 $docblock_info->return_type_line_number && !$fake_method
                     ? $docblock_info->return_type_line_number
-                    : null
+                    : null,
             );
         }
 
@@ -974,7 +973,7 @@ class FunctionLikeDocblockScanner
                 $storage,
                 $classlike_storage,
                 $cased_function_id,
-                $function_template_types
+                $function_template_types,
             );
 
             $storage->return_type = TypeParser::parseTokens(
@@ -982,7 +981,7 @@ class FunctionLikeDocblockScanner
                 null,
                 $function_template_types + $class_template_types,
                 $type_aliases,
-                true
+                true,
             );
 
             if ($storage instanceof MethodStorage) {
@@ -1023,7 +1022,7 @@ class FunctionLikeDocblockScanner
                         UnionTypeComparator::isContainedBy(
                             $codebase,
                             $storage->return_type,
-                            $storage->signature_return_type
+                            $storage->signature_return_type,
                         )
                     ) {
                         $storage->return_type = $storage->return_type->getBuilder()->addType(new TNull())->freeze();
@@ -1036,7 +1035,7 @@ class FunctionLikeDocblockScanner
         } catch (TypeParseTreeException $e) {
             $storage->docblock_issues[] = new InvalidDocblock(
                 $e->getMessage() . ' in docblock for ' . $cased_function_id,
-                new CodeLocation($file_scanner, $stmt, null, true)
+                new CodeLocation($file_scanner, $stmt, null, true),
             );
         }
 
@@ -1135,7 +1134,7 @@ class FunctionLikeDocblockScanner
                         $storage->proxy_calls[] = [
                             'fqn' => $fully_qualified_name,
                             'params' => $call_params,
-                            'return' => isset($flow_parts[1]) && trim($flow_parts[1]) === 'return'
+                            'return' => isset($flow_parts[1]) && trim($flow_parts[1]) === 'return',
                         ];
                     }
                 }
@@ -1171,14 +1170,14 @@ class FunctionLikeDocblockScanner
                 $storage,
                 $classlike_storage,
                 $cased_function_id,
-                $function_template_types
+                $function_template_types,
             );
 
             $removed_taint = TypeParser::parseTokens(
                 array_values($fixed_type_tokens),
                 null,
                 $function_template_types + $class_template_types,
-                $type_aliases
+                $type_aliases,
             );
 
             /** @psalm-suppress UnusedMethodCall */
@@ -1194,7 +1193,7 @@ class FunctionLikeDocblockScanner
         } catch (TypeParseTreeException $e) {
             $storage->docblock_issues[] = new InvalidDocblock(
                 $e->getMessage() . ' in docblock for ' . $cased_function_id,
-                new CodeLocation($file_scanner, $stmt, null, true)
+                new CodeLocation($file_scanner, $stmt, null, true),
             );
         }
     }
@@ -1232,7 +1231,7 @@ class FunctionLikeDocblockScanner
                     $class_template_types,
                     $function_template_types,
                     $type_aliases,
-                    $classlike_storage && !$classlike_storage->is_trait ? $classlike_storage->name : null
+                    $classlike_storage && !$classlike_storage->is_trait ? $classlike_storage->name : null,
                 );
 
                 if (!$assertion_type_parts) {
@@ -1243,7 +1242,7 @@ class FunctionLikeDocblockScanner
                     if ($param->name === $assertion['param_name']) {
                         $storage->assertions[] = new Possibilities(
                             $i,
-                            $assertion_type_parts
+                            $assertion_type_parts,
                         );
                         continue 2;
                     }
@@ -1251,7 +1250,7 @@ class FunctionLikeDocblockScanner
                     if (strpos($assertion['param_name'], $param->name.'->') === 0) {
                         $storage->assertions[] = new Possibilities(
                             str_replace($param->name, (string) $i, $assertion['param_name']),
-                            $assertion_type_parts
+                            $assertion_type_parts,
                         );
                         continue 2;
                     }
@@ -1259,7 +1258,7 @@ class FunctionLikeDocblockScanner
 
                 $storage->assertions[] = new Possibilities(
                     (strpos($assertion['param_name'], '$') === false ? '$' : '') . $assertion['param_name'],
-                    $assertion_type_parts
+                    $assertion_type_parts,
                 );
             }
         }
@@ -1279,7 +1278,7 @@ class FunctionLikeDocblockScanner
                     $class_template_types,
                     $function_template_types,
                     $type_aliases,
-                    $classlike_storage && !$classlike_storage->is_trait ? $classlike_storage->name : null
+                    $classlike_storage && !$classlike_storage->is_trait ? $classlike_storage->name : null,
                 );
 
                 if (!$assertion_type_parts) {
@@ -1290,7 +1289,7 @@ class FunctionLikeDocblockScanner
                     if ($param->name === $assertion['param_name']) {
                         $storage->if_true_assertions[] = new Possibilities(
                             $i,
-                            $assertion_type_parts
+                            $assertion_type_parts,
                         );
                         continue 2;
                     }
@@ -1298,7 +1297,7 @@ class FunctionLikeDocblockScanner
                     if (strpos($assertion['param_name'], $param->name.'->') === 0) {
                         $storage->if_true_assertions[] = new Possibilities(
                             str_replace($param->name, (string) $i, $assertion['param_name']),
-                            $assertion_type_parts
+                            $assertion_type_parts,
                         );
                         continue 2;
                     }
@@ -1306,7 +1305,7 @@ class FunctionLikeDocblockScanner
 
                 $storage->if_true_assertions[] = new Possibilities(
                     (strpos($assertion['param_name'], '$') === false ? '$' : '') . $assertion['param_name'],
-                    $assertion_type_parts
+                    $assertion_type_parts,
                 );
             }
         }
@@ -1326,7 +1325,7 @@ class FunctionLikeDocblockScanner
                     $class_template_types,
                     $function_template_types,
                     $type_aliases,
-                    $classlike_storage && !$classlike_storage->is_trait ? $classlike_storage->name : null
+                    $classlike_storage && !$classlike_storage->is_trait ? $classlike_storage->name : null,
                 );
 
                 if (!$assertion_type_parts) {
@@ -1337,7 +1336,7 @@ class FunctionLikeDocblockScanner
                     if ($param->name === $assertion['param_name']) {
                         $storage->if_false_assertions[] = new Possibilities(
                             $i,
-                            $assertion_type_parts
+                            $assertion_type_parts,
                         );
                         continue 2;
                     }
@@ -1345,7 +1344,7 @@ class FunctionLikeDocblockScanner
                     if (strpos($assertion['param_name'], $param->name.'->') === 0) {
                         $storage->if_false_assertions[] = new Possibilities(
                             str_replace($param->name, (string) $i, $assertion['param_name']),
-                            $assertion_type_parts
+                            $assertion_type_parts,
                         );
                         continue 2;
                     }
@@ -1353,7 +1352,7 @@ class FunctionLikeDocblockScanner
 
                 $storage->if_false_assertions[] = new Possibilities(
                     (strpos($assertion['param_name'], '$') === false ? '$' : '') . $assertion['param_name'],
-                    $assertion_type_parts
+                    $assertion_type_parts,
                 );
             }
         }
@@ -1386,16 +1385,16 @@ class FunctionLikeDocblockScanner
                     $docblock_param_out['type'],
                     $aliases,
                     $function_template_types + $class_template_types,
-                    $type_aliases
+                    $type_aliases,
                 ),
                 null,
                 $function_template_types + $class_template_types,
-                $type_aliases
+                $type_aliases,
             );
         } catch (TypeParseTreeException $e) {
             $storage->docblock_issues[] = new InvalidDocblock(
                 $e->getMessage() . ' in docblock for ' . $cased_function_id,
-                new CodeLocation($file_scanner, $stmt, null, true)
+                new CodeLocation($file_scanner, $stmt, null, true),
             );
 
             return;
@@ -1405,7 +1404,7 @@ class FunctionLikeDocblockScanner
         $out_type->queueClassLikesForScanning(
             $codebase,
             $file_storage,
-            $storage->template_types ?: []
+            $storage->template_types ?: [],
         );
 
         foreach ($storage->params as $param_storage) {
@@ -1443,16 +1442,16 @@ class FunctionLikeDocblockScanner
                                 $template_map[2],
                                 $aliases,
                                 $storage->template_types + ($template_types ?: []),
-                                $type_aliases
+                                $type_aliases,
                             ),
                             null,
                             $storage->template_types + ($template_types ?: []),
-                            $type_aliases
+                            $type_aliases,
                         );
                     } catch (TypeParseTreeException $e) {
                         $storage->docblock_issues[] = new InvalidDocblock(
                             'Template ' . $template_name . ' has invalid as type - ' . $e->getMessage(),
-                            new CodeLocation($file_scanner, $stmt, null, true)
+                            new CodeLocation($file_scanner, $stmt, null, true),
                         );
 
                         $template_type = Type::getMixed();
@@ -1460,7 +1459,7 @@ class FunctionLikeDocblockScanner
                 } else {
                     $storage->docblock_issues[] = new InvalidDocblock(
                         'Template ' . $template_name . ' missing as type',
-                        new CodeLocation($file_scanner, $stmt, null, true)
+                        new CodeLocation($file_scanner, $stmt, null, true),
                     );
 
                     $template_type = Type::getMixed();
@@ -1473,7 +1472,7 @@ class FunctionLikeDocblockScanner
                 $storage->docblock_issues[] = new InvalidDocblock(
                     'Duplicate template param ' . $template_name . ' in docblock for '
                     . $cased_function_id,
-                    new CodeLocation($file_scanner, $stmt, null, true)
+                    new CodeLocation($file_scanner, $stmt, null, true),
                 );
             } else {
                 $storage->template_types[$template_name] = [
@@ -1501,7 +1500,7 @@ class FunctionLikeDocblockScanner
                     true,
                     null,
                     null,
-                    $line
+                    $line,
                 );
 
                 $message = 'Docblock tag @' . $tag . ' is not recognized in the function docblock '

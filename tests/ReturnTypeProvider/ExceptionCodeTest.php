@@ -9,9 +9,6 @@ class ExceptionCodeTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
 
-    /**
-     *
-     */
     public function providerValidCodeParse(): iterable
     {
         yield 'RuntimeException' => [

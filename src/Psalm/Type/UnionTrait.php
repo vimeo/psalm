@@ -24,6 +24,7 @@ use Psalm\Type\Atomic\TEmptyMixed;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
+use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
@@ -61,7 +62,6 @@ trait UnionTrait
      * Constructs an Union instance
      *
      * @psalm-external-mutation-free
-     *
      * @param non-empty-array<Atomic>     $types
      * @param TProperties $properties
      */
@@ -330,7 +330,7 @@ trait UnionTrait
                 $namespace,
                 $aliased_classes,
                 $this_class,
-                $analysis_php_version_id
+                $analysis_php_version_id,
             );
 
             if (!$php_type) {
@@ -400,6 +400,17 @@ trait UnionTrait
     }
 
     /**
+     * @return TArray|TKeyedArray|TClassStringMap
+     */
+    public function getArray(): Atomic
+    {
+        if ($this->types['array'] instanceof TList) {
+            return $this->types['array']->getKeyedArray();
+        }
+        return $this->types['array'];
+    }
+
+    /**
      * @psalm-mutation-free
      */
     public function hasIterable(): bool
@@ -412,7 +423,9 @@ trait UnionTrait
      */
     public function hasList(): bool
     {
-        return isset($this->types['array']) && $this->types['array'] instanceof TList;
+        return isset($this->types['array'])
+            && $this->types['array'] instanceof TKeyedArray
+            && $this->types['array']->is_list;
     }
 
     /**
@@ -432,8 +445,8 @@ trait UnionTrait
             && count(
                 array_filter(
                     $this->types,
-                    static fn($type): bool => $type instanceof TTemplateParamClass
-                )
+                    static fn($type): bool => $type instanceof TTemplateParamClass,
+                ),
             ) === 1;
     }
 
@@ -464,7 +477,7 @@ trait UnionTrait
     {
         return array_filter(
             $this->types,
-            static fn($type): bool => $type instanceof TCallable
+            static fn($type): bool => $type instanceof TCallable,
         );
     }
 
@@ -476,7 +489,7 @@ trait UnionTrait
     {
         return array_filter(
             $this->types,
-            static fn($type): bool => $type instanceof TClosure
+            static fn($type): bool => $type instanceof TClosure,
         );
     }
 
@@ -733,7 +746,7 @@ trait UnionTrait
                     && $type->extra_types
                     && array_filter(
                         $type->extra_types,
-                        static fn($t): bool => $t instanceof TTemplateParam
+                        static fn($t): bool => $t instanceof TTemplateParam,
                     )
                 )
         );
@@ -746,7 +759,7 @@ trait UnionTrait
     {
         return (bool) array_filter(
             $this->types,
-            static fn(Atomic $type): bool => $type instanceof TConditional
+            static fn(Atomic $type): bool => $type instanceof TConditional,
         );
     }
 
@@ -763,7 +776,7 @@ trait UnionTrait
                         || ($type->extra_types
                             && array_filter(
                                 $type->extra_types,
-                                static fn($t): bool => $t instanceof TTemplateParam
+                                static fn($t): bool => $t instanceof TTemplateParam,
                             )
                         )
                     )
@@ -968,7 +981,7 @@ trait UnionTrait
                         && $type instanceof TTemplateParam
                         && $type->as->isInt()
                     )
-            )
+            ),
         ) === count($this->types);
     }
 
@@ -999,7 +1012,7 @@ trait UnionTrait
                         && $type instanceof TTemplateParam
                         && $type->as->isString()
                     )
-            )
+            ),
         ) === count($this->types);
     }
 
@@ -1249,7 +1262,7 @@ trait UnionTrait
             $inferred,
             $inherited,
             $prevent_template_covariance,
-            $calling_method_id
+            $calling_method_id,
         );
 
         $checker->traverseArray($this->types);
@@ -1271,7 +1284,7 @@ trait UnionTrait
         $scanner_visitor = new TypeScanner(
             $codebase->scanner,
             $file_storage,
-            $phantom_classes
+            $phantom_classes,
         );
 
         /** @psalm-suppress ImpureMethodCall */
@@ -1300,7 +1313,7 @@ trait UnionTrait
         $type = $this;
         (new ClasslikeReplacer(
             $old,
-            $new
+            $new,
         ))->traverse($type);
         return $type;
     }
@@ -1336,7 +1349,8 @@ trait UnionTrait
     public function equals(
         self $other_type,
         bool $ensure_source_equality = true,
-        bool $ensure_parent_node_equality = true
+        bool $ensure_parent_node_equality = true,
+        bool $ensure_possibly_undefined_equality = true
     ): bool {
         if ($other_type === $this) {
             return true;
@@ -1350,7 +1364,7 @@ trait UnionTrait
             return false;
         }
 
-        if ($this->possibly_undefined !== $other_type->possibly_undefined) {
+        if ($this->possibly_undefined !== $other_type->possibly_undefined && $ensure_possibly_undefined_equality) {
             return false;
         }
 
@@ -1456,7 +1470,6 @@ trait UnionTrait
     /**
      * @psalm-mutation-free
      * @throws InvalidArgumentException if isSingleFloatLiteral is false
-     *
      * @return TLiteralFloat the only float literal represented by this union type
      */
     public function getSingleFloatLiteral(): TLiteralFloat

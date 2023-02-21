@@ -55,18 +55,18 @@ class NullsafeAnalyzer
 
         $null_value1 = new VirtualConstFetch(
             new VirtualName('null'),
-            $stmt->var->getAttributes()
+            $stmt->var->getAttributes(),
         );
 
         $null_comparison = new VirtualIdentical(
             $tmp_var,
             $null_value1,
-            $stmt->var->getAttributes()
+            $stmt->var->getAttributes(),
         );
 
         $null_value2 = new VirtualConstFetch(
             new VirtualName('null'),
-            $stmt->var->getAttributes()
+            $stmt->var->getAttributes(),
         );
 
         if ($stmt instanceof PhpParser\Node\Expr\NullsafePropertyFetch) {
@@ -74,14 +74,14 @@ class NullsafeAnalyzer
                 $null_comparison,
                 $null_value2,
                 new VirtualPropertyFetch($tmp_var, $stmt->name, $stmt->getAttributes()),
-                $stmt->getAttributes()
+                $stmt->getAttributes(),
             );
         } else {
             $ternary = new VirtualTernary(
                 $null_comparison,
                 $null_value2,
                 new VirtualMethodCall($tmp_var, $stmt->name, $stmt->args, $stmt->getAttributes()),
-                $stmt->getAttributes()
+                $stmt->getAttributes(),
             );
         }
 

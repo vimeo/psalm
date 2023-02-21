@@ -11,10 +11,7 @@ use function strpos;
 /** @internal */
 final class ProjectFileFilter extends FileFilter
 {
-    /**
-     * @var ProjectFileFilter|null
-     */
-    private $file_filter;
+    private ?ProjectFileFilter $file_filter = null;
 
     /**
      * @return static

@@ -12,9 +12,6 @@ class ValueOfTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
-    /**
-     *
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -29,7 +26,7 @@ class ValueOfTest extends TestCase
                             return "bar";
                         }
                     }
-                '
+                ',
             ],
             'valueOfAssociativeArrayClassConstant' => [
                 'code' => '<?php
@@ -42,7 +39,7 @@ class ValueOfTest extends TestCase
                             return 42;
                         }
                     }
-                '
+                ',
             ],
             'allValuesOfAssociativeArrayPossible' => [
                 'code' => '<?php
@@ -59,7 +56,7 @@ class ValueOfTest extends TestCase
                             return 43;
                         }
                     }
-                '
+                ',
             ],
             'valueOfAsArray' => [
                 'code' => '<?php
@@ -74,7 +71,7 @@ class ValueOfTest extends TestCase
                             return array_values(self::FOO);
                         }
                     }
-                '
+                ',
             ],
             'valueOfArrayLiteral' => [
                 'code' => '<?php
@@ -84,7 +81,7 @@ class ValueOfTest extends TestCase
                     function getKey() {
                         return "42";
                     }
-                '
+                ',
             ],
             'valueOfUnionArrayLiteral' => [
                 'code' => '<?php
@@ -97,7 +94,7 @@ class ValueOfTest extends TestCase
                         }
                         return 42;
                     }
-                '
+                ',
             ],
             'valueOfStringArrayConformsToString' => [
                 'code' => '<?php
@@ -109,7 +106,7 @@ class ValueOfTest extends TestCase
                         $keys2 = ["foo"];
                         return $keys2[0];
                     }
-                '
+                ',
             ],
             'acceptLiteralIntInValueOfUnionLiteralInts' => [
                 'code' => '<?php
@@ -212,9 +209,6 @@ class ValueOfTest extends TestCase
         ];
     }
 
-    /**
-     *
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [
@@ -230,7 +224,7 @@ class ValueOfTest extends TestCase
                         }
                     }
                 ',
-                'error_message' => 'InvalidReturnStatement'
+                'error_message' => 'InvalidReturnStatement',
             ],
             'noIntForValueOfStringArrayLiteral' => [
                 'code' => '<?php
@@ -243,7 +237,7 @@ class ValueOfTest extends TestCase
                         }
                     }
                 ',
-                'error_message' => 'InvalidReturnStatement'
+                'error_message' => 'InvalidReturnStatement',
             ],
             'noStringForValueOfIntList' => [
                 'code' => '<?php
@@ -256,7 +250,7 @@ class ValueOfTest extends TestCase
                         }
                     }
                 ',
-                'error_message' => 'InvalidReturnStatement'
+                'error_message' => 'InvalidReturnStatement',
             ],
             'noOtherStringAllowedForValueOfKeyedArray' => [
                 'code' => '<?php
@@ -267,7 +261,7 @@ class ValueOfTest extends TestCase
                         return "adams";
                     }
                 ',
-                'error_message' => 'InvalidReturnStatement'
+                'error_message' => 'InvalidReturnStatement',
             ],
             'noOtherIntAllowedInValueOfUnionLiteralInts' => [
                 'code' => '<?php
@@ -278,7 +272,7 @@ class ValueOfTest extends TestCase
                         return 5;
                     }
                 ',
-                'error_message' => 'InvalidReturnStatement'
+                'error_message' => 'InvalidReturnStatement',
             ],
             'valueOfUnitEnum' => [
                 'code' => '<?php

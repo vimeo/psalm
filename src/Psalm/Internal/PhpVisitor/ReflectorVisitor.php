@@ -4,6 +4,8 @@ namespace Psalm\Internal\PhpVisitor;
 
 use LogicException;
 use PhpParser;
+use PhpParser\Node\Expr;
+use PhpParser\Node\Name;
 use Psalm\Aliases;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
@@ -52,74 +54,44 @@ use const PHP_VERSION_ID;
  */
 class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSource
 {
-    /**
-     * @var Aliases
-     */
-    private $aliases;
+    private Aliases $aliases;
 
-    /**
-     * @var FileScanner
-     */
-    private $file_scanner;
+    private FileScanner $file_scanner;
 
-    /**
-     * @var Codebase
-     */
-    private $codebase;
+    private Codebase $codebase;
 
-    /**
-     * @var string
-     */
-    private $file_path;
+    private string $file_path;
 
-    /**
-     * @var bool
-     */
-    private $scan_deep;
+    private bool $scan_deep;
 
-    /**
-     * @var FileStorage
-     */
-    private $file_storage;
+    private FileStorage $file_storage;
 
     /**
      * @var array<FunctionLikeNodeScanner>
      */
-    private $functionlike_node_scanners = [];
+    private array $functionlike_node_scanners = [];
 
     /**
      * @var array<ClassLikeNodeScanner>
      */
-    private $classlike_node_scanners = [];
+    private array $classlike_node_scanners = [];
 
-    /**
-     * @var PhpParser\Node\Name|null
-     */
-    private $namespace_name;
+    private ?Name $namespace_name = null;
 
-    /**
-     * @var PhpParser\Node\Expr|null
-     */
-    private $exists_cond_expr;
+    private ?Expr $exists_cond_expr = null;
 
-    /**
-     * @var ?int
-     */
-    private $skip_if_descendants;
+    private ?int $skip_if_descendants = null;
 
     /**
      * @var array<string, TypeAlias>
      */
-    private $type_aliases = [];
+    private array $type_aliases = [];
 
     /**
      * @var array<int, bool>
      */
-    private $bad_classes = [];
-    /**
-     * @var EventDispatcher
-     */
-    private $eventDispatcher;
+    private array $bad_classes = [];
+    private EventDispatcher $eventDispatcher;
 
     public function __construct(
         Codebase $codebase,
@@ -144,7 +116,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                         $comment,
                         $this->aliases,
                         $this->type_aliases,
-                        null
+                        null,
                     );
 
                     foreach ($type_aliases as $type_alias) {
@@ -156,7 +128,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                 } catch (DocblockParseException | TypeParseTreeException $e) {
                     $this->file_storage->docblock_issues[] = new InvalidDocblock(
                         $e->getMessage(),
-                        new CodeLocation($this->file_scanner, $node, null, true)
+                        new CodeLocation($this->file_scanner, $node, null, true),
                     );
                 }
             }
@@ -178,7 +150,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                 $this->file_storage,
                 $this->file_scanner,
                 $this->aliases,
-                $this->namespace_name
+                $this->namespace_name,
             );
 
             $this->classlike_node_scanners[] = $classlike_node_scanner;
@@ -230,7 +202,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                 $this->aliases,
                 $this->type_aliases,
                 $classlike_storage,
-                $functionlike_types
+                $functionlike_types,
             );
 
             $functionlike_node_scanner->start($node);
@@ -288,7 +260,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                     $this->codebase,
                     new NodeDataProvider(),
                     $const->value,
-                    $this->aliases
+                    $this->aliases,
                 ) ?? Type::getMixed();
 
                 $fq_const_name = Type::getFQCLNFromString($const->name->name, $this->aliases);
@@ -307,7 +279,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                 if (ExpressionResolver::enterConditional(
                     $this->codebase,
                     $this->file_path,
-                    $this->exists_cond_expr
+                    $this->exists_cond_expr,
                 ) === false
                 ) {
                     // the else node should terminate the agreement
@@ -323,13 +295,13 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                     && ExpressionResolver::enterConditional(
                         $this->codebase,
                         $this->file_path,
-                        $this->exists_cond_expr
+                        $this->exists_cond_expr,
                     ) === true
                 ) {
                     $this->skip_if_descendants = $node->getLine();
                 }
             }
-        } elseif ($node instanceof PhpParser\Node\Expr) {
+        } elseif ($node instanceof Expr) {
             $functionlike_storage = null;
 
             if ($this->functionlike_node_scanners) {
@@ -344,7 +316,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                 $this->aliases,
                 $node,
                 $functionlike_storage,
-                $this->skip_if_descendants
+                $this->skip_if_descendants,
             );
         }
 
@@ -370,7 +342,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                     $this->file_scanner,
                     $this->aliases,
                     $template_types,
-                    $this->type_aliases
+                    $this->type_aliases,
                 );
             } catch (DocblockParseException $e) {
                 // do nothing
@@ -423,7 +395,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
             $this->aliases->constants,
             $this->aliases->uses_flipped,
             $this->aliases->functions_flipped,
-            $this->aliases->constants_flipped
+            $this->aliases->constants_flipped,
         );
 
         $this->file_storage->namespace_aliases[(int) $node->getAttribute('startFilePos')] = $this->aliases;
@@ -517,7 +489,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                 foreach ($node->stmts as $meta_stmt) {
                     if ($meta_stmt instanceof PhpParser\Node\Stmt\Expression
                         && $meta_stmt->expr instanceof PhpParser\Node\Expr\FuncCall
-                        && $meta_stmt->expr->name instanceof PhpParser\Node\Name
+                        && $meta_stmt->expr->name instanceof Name
                         && $meta_stmt->expr->name->parts === ['override']
                     ) {
                         PhpStormMetaScanner::handleOverride($meta_stmt->expr->getArgs(), $this->codebase);
@@ -550,7 +522,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                 $classlike_storage,
                 $this,
                 $this->codebase,
-                []
+                [],
             );
 
             $this->eventDispatcher->dispatchAfterClassLikeVisit($event);
@@ -569,7 +541,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                 }
 
                 throw new UnexpectedValueException(
-                    'There should be function storages for line ' . $this->file_path . ':' . $node->getLine()
+                    'There should be function storages for line ' . $this->file_path . ':' . $node->getLine(),
                 );
             }
 
@@ -595,7 +567,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                                 . $issue_type
                                 . ' - ' . $e->getShortLocationWithPrevious()
                                 . ':' . $e->code_location->getColumn()
-                                . ' - ' . $message
+                                . ' - ' . $message,
                         );
                     }
                 }

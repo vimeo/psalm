@@ -5,7 +5,8 @@
     "keywords": [
         "php",
         "code",
-        "inspection"
+        "inspection",
+        "static analysis"
     ],
     "license": "MIT",
     "authors": [
@@ -30,13 +31,13 @@
         "dnoegel/php-xdg-base-dir": "^0.1.1",
         "felixfbecker/advanced-json-rpc": "^3.1",
         "felixfbecker/language-server-protocol": "^1.5.2",
+        "fidry/cpu-core-counter": "^0.4.1 || ^0.5.1",
         "netresearch/jsonmapper": "^1.0 || ^2.0 || ^3.0 || ^4.0",
         "nikic/php-parser": "^4.13",
-        "openlss/lib-array2xml": "^1.0",
-        "sebastian/diff": "^4.0",
+        "sebastian/diff": "^4.0 || ^5.0",
+        "spatie/array-to-xml": "^2.17.0 || ^3.0",
         "symfony/console": "^4.1.6 || ^5.0 || ^6.0",
-        "symfony/filesystem": "^5.4 || ^6.0",
-        "symfony/polyfill-php80": "^1.25"
+        "symfony/filesystem": "^5.4 || ^6.0"
     },
     "provide": {
         "psalm/psalm": "self.version"
@@ -44,12 +45,12 @@
     "require-dev": {
         "ext-curl": "*",
         "bamarni/composer-bin-plugin": "^1.4",
-        "brianium/paratest": "^6.0",
+        "brianium/paratest": "^6.9",
         "mockery/mockery": "^1.5",
         "nunomaduro/mock-final-classes": "^1.1",
         "php-parallel-lint/php-parallel-lint": "^1.2",
         "phpstan/phpdoc-parser": "^1.6",
-        "phpunit/phpunit": "^9.5",
+        "phpunit/phpunit": "^9.6",
         "psalm/plugin-mockery": "^1.1",
         "psalm/plugin-phpunit": "^0.18",
         "slevomat/coding-standard": "^8.4",
@@ -105,13 +106,20 @@
         "psalter"
     ],
     "scripts": {
-        "cs": "phpcs -p",
-        "cs-fix": "phpcbf -p",
+        "cs": "phpcs -ps",
+        "cs-fix": "phpcbf -ps",
         "lint": "parallel-lint ./src ./tests",
-        "phpunit": "paratest --runner=WrapperRunner",
-        "phpunit-std": "phpunit",
+        "phpunit": [
+            "Composer\\Config::disableProcessTimeout",
+            "paratest --runner=WrapperRunner"
+        ],
+        "phpunit-std": [
+            "Composer\\Config::disableProcessTimeout",
+            "phpunit"
+        ],
         "verify-callmap": "phpunit tests/Internal/Codebase/InternalCallMapHandlerTest.php",
-        "psalm": "@php ./psalm --find-dead-code",
+        "psalm": "@php ./psalm",
+        "psalm-set-baseline": "@php ./psalm --set-baseline=psalm-baseline.xml",
         "tests": [
             "@lint",
             "@cs",

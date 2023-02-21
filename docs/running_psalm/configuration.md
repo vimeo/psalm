@@ -435,6 +435,67 @@ Arrays bigger than this value (100 by default) will be transformed in a generic 
 
 Please note that changing this setting might introduce unwanted side effects and those side effects won't be considered as bugs.  
 
+#### restrictReturnTypes
+
+```xml
+<psalm
+  restrictReturnTypes="true"
+>
+```
+
+Emits `LessSpecificReturnType` when the declared return type is not as tight as
+the inferred return type.
+
+This code:
+```php
+function getOne(): int // declared type: int
+{ 
+    return 1; // inferred type: 1 (int literal)
+}
+```
+Will give this error: `LessSpecificReturnType - The inferred return type '1' for
+a is more specific than the declared return type 'int'`
+
+To fix the error, you should specify the more specific type in the doc-block:
+```php
+/**
+ * @return 1
+ */
+function getOne(): int 
+{ 
+    return 1;
+}
+```
+
+**Warning**: Forcing a tighter type is not always the best course of action and
+may cause unexpected results. The following code is invalid with
+`restrictReturnTypes="true"`:
+```php
+class StandardCar {
+    /**
+     * @return list{'motor', 'brakes', 'wheels'}
+     */
+    public function getSystems(): array {
+        return ['motor', 'brakes', 'wheels'];
+    }
+}
+
+class PremiumCar extends StandardCar {
+    /**
+     * @return list{'motor', 'brakes', 'wheels', 'rear parking sensor'}
+     */
+    public function getSystems(): array {
+        return ['motor', 'brakes', 'wheels', 'rear parking sensor'];
+    }
+}
+```
+`ImplementedReturnTypeMismatch - The inherited return type 'list{'motor', 'brakes', 'wheels'}' for StandardCar::getSystems is different to the implemented return type for PremiumCar::getsystems 'list{'motor', 'brakes', 'wheels', 'rear parking sensor'}'`
+
+#### findUnusedBaselineEntry
+
+Emits [UnusedBaselineEntry](issues/UnusedBaselineEntry.md) when a baseline entry
+is not being used to suppress an issue.
+
 ## Project settings
 
 #### &lt;projectFiles&gt;

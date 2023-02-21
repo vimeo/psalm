@@ -17,7 +17,6 @@ use function md5;
  *
  * @see https://docs.gitlab.com/ee/user/project/merge_requests/code_quality.html
  * @see https://github.com/codeclimate/platform/blob/master/spec/analyzers/SPEC.md#data-types
- *
  * @author Olivier Doucet <webmaster@ajeux.com>
  */
 final class CodeClimateReport extends Report
@@ -28,7 +27,7 @@ final class CodeClimateReport extends Report
 
         $issues_data = array_map(
             [$this, 'mapToNewStructure'],
-            $this->issues_data
+            $this->issues_data,
         );
 
         return Json::encode(array_values($issues_data), $options) . "\n";

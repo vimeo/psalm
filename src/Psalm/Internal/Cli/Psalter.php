@@ -3,13 +3,13 @@
 namespace Psalm\Internal\Cli;
 
 use AssertionError;
-use Composer\XdebugHandler\XdebugHandler;
 use Psalm\Config;
 use Psalm\Exception\UnsupportedIssueToFixException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\CliUtils;
 use Psalm\Internal\Composer;
 use Psalm\Internal\ErrorHandler;
+use Psalm\Internal\Fork\PsalmRestarter;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\Provider\ClassLikeStorageCacheProvider;
 use Psalm\Internal\Provider\FileProvider;
@@ -88,7 +88,7 @@ final class Psalter
         'allow-backwards-incompatible-changes:',
         'add-newline-between-docblock-annotations:',
         'no-cache',
-        'no-progress'
+        'no-progress',
     ];
 
     /** @param array<int,string> $argv */
@@ -189,7 +189,7 @@ final class Psalter
                 STDERR,
                 'Please specify the issues you want to fix with --issues=IssueOne,IssueTwo or --issues=all, '
                 . 'or provide a plugin that has its own manipulations with --plugin=path/to/plugin.php'
-                . PHP_EOL
+                . PHP_EOL,
             );
             exit(1);
         }
@@ -218,10 +218,16 @@ final class Psalter
             static fn(): ?\Composer\Autoload\ClassLoader =>
                 CliUtils::requireAutoloaders($current_dir, isset($options['r']), $vendor_dir)
         );
-
+        $ini_handler = new PsalmRestarter('PSALTER');
+        $ini_handler->disableExtensions([
+            'grpc',
+            'uopz',
+            'pcov',
+            'blackfire',
+        ]);
 
         // If Xdebug is enabled, restart without it
-        (new XdebugHandler('PSALTER'))->check();
+        $ini_handler->check();
 
         $paths_to_check = CliUtils::getPathsToCheck($options['f'] ?? null);
 
@@ -231,7 +237,7 @@ final class Psalter
             $path_to_config,
             $current_dir,
             Report::TYPE_CONSOLE,
-            $first_autoloader
+            $first_autoloader,
         );
 
         if (isset($options['no-cache'])) {
@@ -249,7 +255,7 @@ final class Psalter
 
         if (isset($options['no-cache'])) {
             $providers = new Providers(
-                new FileProvider()
+                new FileProvider(),
             );
         } else {
             $providers = new Providers(
@@ -258,7 +264,7 @@ final class Psalter
                 new FileStorageCacheProvider($config),
                 new ClassLikeStorageCacheProvider($config),
                 null,
-                new ProjectCacheProvider(Composer::getLockFilePath($current_dir))
+                new ProjectCacheProvider(Composer::getLockFilePath($current_dir)),
             );
         }
 
@@ -285,7 +291,7 @@ final class Psalter
             $stdout_report_options,
             [],
             $threads,
-            $progress
+            $progress,
         );
 
         if (array_key_exists('debug-by-line', $options)) {
@@ -329,7 +335,7 @@ final class Psalter
             $allow_backwards_incompatible_changes = filter_var(
                 $options['allow-backwards-incompatible-changes'],
                 FILTER_VALIDATE_BOOLEAN,
-                ['flags' => FILTER_NULL_ON_FAILURE]
+                ['flags' => FILTER_NULL_ON_FAILURE],
             );
 
             if ($allow_backwards_incompatible_changes === null) {
@@ -344,7 +350,7 @@ final class Psalter
             $doc_block_add_new_line_before_return = filter_var(
                 $options['add-newline-between-docblock-annotations'],
                 FILTER_VALIDATE_BOOLEAN,
-                ['flags' => FILTER_NULL_ON_FAILURE]
+                ['flags' => FILTER_NULL_ON_FAILURE],
             );
 
             if ($doc_block_add_new_line_before_return === null) {
@@ -389,7 +395,7 @@ final class Psalter
 
         $project_analyzer->alterCodeAfterCompletion(
             array_key_exists('dry-run', $options),
-            array_key_exists('safe-types', $options)
+            array_key_exists('safe-types', $options),
         );
 
         if ($keyed_issues === ['all' => true]) {
@@ -465,13 +471,13 @@ final class Psalter
                         fwrite(
                             STDERR,
                             'Unrecognised argument "--' . $arg_name . '"' . PHP_EOL
-                            . 'Type --help to see a list of supported arguments'. PHP_EOL
+                            . 'Type --help to see a list of supported arguments'. PHP_EOL,
                         );
                         exit(1);
                     }
                 }
             },
-            $args
+            $args,
         );
     }
 
@@ -531,8 +537,8 @@ final class Psalter
                     // currently we don’t match wildcard files or files that could appear anywhere
                     // in the repo
                     return $line && $line[0] === '/' && strpos($line, '*') === false;
-                }
-            )
+                },
+            ),
         );
 
         $codeowner_files = [];

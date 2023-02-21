@@ -9,6 +9,7 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Type;
 use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\TList;
 use Psalm\Type\Union;
 
 use function get_class;
@@ -16,6 +17,7 @@ use function get_class;
 /**
  * Represents an array where the type of each value
  * is a function of its string key value
+ *
  * @psalm-immutable
  */
 final class TClassStringMap extends Atomic
@@ -61,7 +63,6 @@ final class TClassStringMap extends Atomic
 
     /**
      * @param  array<lowercase-string, string> $aliased_classes
-     *
      */
     public function toNamespacedString(
         ?string $namespace,
@@ -75,7 +76,7 @@ final class TClassStringMap extends Atomic
                     $namespace,
                     $aliased_classes,
                     $this_class,
-                    true
+                    true,
                 );
         }
 
@@ -88,7 +89,7 @@ final class TClassStringMap extends Atomic
                 $namespace,
                 $aliased_classes,
                 $this_class,
-                false
+                false,
             )
             . '>';
     }
@@ -136,6 +137,10 @@ final class TClassStringMap extends Atomic
         foreach ([Type::getString(), $this->value_param] as $offset => $type_param) {
             $input_type_param = null;
 
+            if ($input_type instanceof TList) {
+                $input_type = $input_type->getKeyedArray();
+            }
+
             if (($input_type instanceof TGenericObject
                     || $input_type instanceof TIterable
                     || $input_type instanceof TArray)
@@ -145,16 +150,13 @@ final class TClassStringMap extends Atomic
                 $input_type_param = $input_type->type_params[$offset];
             } elseif ($input_type instanceof TKeyedArray) {
                 if ($offset === 0) {
+                    if ($input_type->is_list) {
+                        continue;
+                    }
                     $input_type_param = $input_type->getGenericKeyType();
                 } else {
                     $input_type_param = $input_type->getGenericValueType();
                 }
-            } elseif ($input_type instanceof TList) {
-                if ($offset === 0) {
-                    continue;
-                }
-
-                $input_type_param = $input_type->type_param;
             }
 
             $value_param = TemplateStandinTypeReplacer::replace(
@@ -169,7 +171,7 @@ final class TClassStringMap extends Atomic
                 $replace,
                 $add_lower_bound,
                 null,
-                $depth + 1
+                $depth + 1,
             );
 
             if ($offset === 1 && ($cloned || $this->value_param !== $value_param)) {
@@ -191,7 +193,7 @@ final class TClassStringMap extends Atomic
         $value_param = TemplateInferredTypeReplacer::replace(
             $this->value_param,
             $template_result,
-            $codebase
+            $codebase,
         );
         if ($value_param === $this->value_param) {
             return $this;
@@ -199,7 +201,7 @@ final class TClassStringMap extends Atomic
         return new static(
             $this->param_name,
             $this->as_type,
-            $value_param
+            $value_param,
         );
     }
 
@@ -233,8 +235,8 @@ final class TClassStringMap extends Atomic
                 $this->param_name,
                 $this->as_type->value ?? 'object',
                 $this->as_type,
-                'class-string-map'
-            )
+                'class-string-map',
+            ),
         ]);
     }
 }

@@ -412,7 +412,7 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                     }',
                 'php_version' => '7.3',
                 'issues_to_fix' => ['InvalidReturnType'],
-                'safe_types' => false,
+                'safe_types' => true,
             ],
             'fixInvalidIntReturnTypeJustInPhpDocWhenDisallowingBackwardsIncompatibleChanges' => [
                 'input' => '<?php
@@ -957,7 +957,7 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                 'issues_to_fix' => ['MissingReturnType'],
                 'safe_types' => false,
                 'allow_backwards_incompatible_changes' => true,
-            ]
+            ],
         ];
     }
 }

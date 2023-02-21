@@ -45,29 +45,27 @@ trait HasIntersectionTrait
                     $namespace,
                     $aliased_classes,
                     $this_class,
-                    $use_phpdoc_format
+                    $use_phpdoc_format,
                 ),
-                $this->extra_types
-            )
+                $this->extra_types,
+            ),
         );
     }
 
     /**
      * @param TNamedObject|TTemplateParam|TIterable|TObjectWithProperties $type
-     *
      * @return static
      */
     public function addIntersectionType(Atomic $type): self
     {
         return $this->setIntersectionTypes(array_merge(
             $this->extra_types,
-            [$type->getKey() => $type]
+            [$type->getKey() => $type],
         ));
     }
 
     /**
      * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties> $types
-     *
      * @return static
      */
     public function setIntersectionTypes(array $types): self
@@ -107,7 +105,7 @@ trait HasIntersectionTrait
             ) {
                 $template_type = TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
                     $template_result->lower_bounds[$extra_type->param_name][$extra_type->defining_class],
-                    $codebase
+                    $codebase,
                 );
 
                 foreach ($template_type->getAtomicTypes() as $template_type_part) {
@@ -156,7 +154,7 @@ trait HasIntersectionTrait
                 $calling_function,
                 $replace,
                 $add_lower_bound,
-                $depth
+                $depth,
             );
             $new_types[$type->getKey()] = $type;
         }

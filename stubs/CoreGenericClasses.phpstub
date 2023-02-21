@@ -439,7 +439,6 @@ interface Serializable {
 
 /**
  * @template-covariant T as object
- * @psalm-immutable
  */
 final class WeakReference
 {
@@ -448,10 +447,10 @@ final class WeakReference
 
     /**
      * @template TIn as object
-     * @param TIn $referent
+     * @param TIn $object
      * @return WeakReference<TIn>
      */
-    public static function create(object $referent): WeakReference {}
+    public static function create(object $object): WeakReference {}
 
     /** @return ?T */
     public function get(): ?object {}
@@ -493,6 +492,36 @@ final class WeakMap implements ArrayAccess, Countable, IteratorAggregate, Traver
      * @return void
      */
     public function offsetUnset($offset) {}
+}
+
+class mysqli
+{
+    /**
+     * @psalm-pure
+     *
+     * @psalm-taint-escape sql
+     * @psalm-flow ($string) -> return
+     */
+    function escape_string($string) {}
+
+    /**
+     * @psalm-pure
+     *
+     * @psalm-taint-escape sql
+     * @psalm-flow ($string) -> return
+     */
+    function real_escape_string($string) {}
+}
+
+class SQLite3
+{
+    /**
+     * @psalm-pure
+     *
+     * @psalm-taint-escape sql
+     * @psalm-flow ($string) -> return
+     */
+    static function escapeString($string) {}
 }
 
 

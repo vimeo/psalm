@@ -10,6 +10,7 @@ use Psalm\Type\Union;
 
 /**
  * Represents the type used when using TPropertiesOf when the type of the array is a template
+ *
  * @psalm-immutable
  */
 final class TTemplatePropertiesOf extends Atomic
@@ -93,7 +94,7 @@ final class TTemplatePropertiesOf extends Atomic
                 $template_result,
                 $codebase,
             ),
-            $this->as->defining_class
+            $this->as->defining_class,
         );
         if ($param->as === $this->as->as) {
             return $this;
@@ -102,7 +103,7 @@ final class TTemplatePropertiesOf extends Atomic
             $this->param_name,
             $this->defining_class,
             $param,
-            $this->visibility_filter
+            $this->visibility_filter,
         );
     }
 }

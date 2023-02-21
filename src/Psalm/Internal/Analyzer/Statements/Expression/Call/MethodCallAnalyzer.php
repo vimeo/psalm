@@ -13,6 +13,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Issue\DirectConstructorCall;
 use Psalm\Issue\InvalidMethodCall;
 use Psalm\Issue\InvalidScope;
 use Psalm\Issue\NullReference;
@@ -83,19 +84,31 @@ class MethodCallAnalyzer extends CallAnalyzer
                 if (IssueBuffer::accepts(
                     new InvalidScope(
                         'Use of $this in non-class context',
-                        new CodeLocation($statements_analyzer->getSource(), $stmt)
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
                     ),
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 )) {
                     return false;
                 }
+            }
+
+            if ($stmt->name instanceof PhpParser\Node\Identifier
+                && strtolower($stmt->name->name) === '__construct'
+            ) {
+                IssueBuffer::maybeAdd(
+                    new DirectConstructorCall(
+                        'Constructors should not be called directly',
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
             }
         }
 
         $lhs_var_id = ExpressionIdentifier::getExtendedVarId(
             $stmt->var,
             $statements_analyzer->getFQCLN(),
-            $statements_analyzer
+            $statements_analyzer,
         );
 
         $class_type = $lhs_var_id && $context->hasVariable($lhs_var_id)
@@ -115,7 +128,7 @@ class MethodCallAnalyzer extends CallAnalyzer
                 null,
                 null,
                 true,
-                $context
+                $context,
             ) === false) {
                 return false;
             }
@@ -127,17 +140,13 @@ class MethodCallAnalyzer extends CallAnalyzer
             && $stmt->name instanceof PhpParser\Node\Identifier
             && ($class_type->isNull() || $class_type->isVoid())
         ) {
-            if (IssueBuffer::accepts(
+            return !IssueBuffer::accepts(
                 new NullReference(
                     'Cannot call method ' . $stmt->name->name . ' on null value',
-                    new CodeLocation($statements_analyzer->getSource(), $stmt->name)
+                    new CodeLocation($statements_analyzer->getSource(), $stmt->name),
                 ),
-                $statements_analyzer->getSuppressedIssues()
-            )) {
-                return false;
-            }
-
-            return true;
+                $statements_analyzer->getSuppressedIssues(),
+            );
         }
 
         if ($class_type
@@ -150,9 +159,9 @@ class MethodCallAnalyzer extends CallAnalyzer
             IssueBuffer::maybeAdd(
                 new PossiblyNullReference(
                     'Cannot call method ' . $stmt->name->name . ' on possibly null value',
-                    new CodeLocation($statements_analyzer->getSource(), $stmt->name)
+                    new CodeLocation($statements_analyzer->getSource(), $stmt->name),
                 ),
-                $statements_analyzer->getSuppressedIssues()
+                $statements_analyzer->getSuppressedIssues(),
             );
         }
 
@@ -164,9 +173,9 @@ class MethodCallAnalyzer extends CallAnalyzer
             IssueBuffer::maybeAdd(
                 new PossiblyFalseReference(
                     'Cannot call method ' . $stmt->name->name . ' on possibly false value',
-                    new CodeLocation($statements_analyzer->getSource(), $stmt->name)
+                    new CodeLocation($statements_analyzer->getSource(), $stmt->name),
                 ),
-                $statements_analyzer->getSuppressedIssues()
+                $statements_analyzer->getSuppressedIssues(),
             );
         }
 
@@ -198,7 +207,7 @@ class MethodCallAnalyzer extends CallAnalyzer
                 false,
                 $lhs_var_id,
                 $result,
-                $template_result
+                $template_result,
             );
             if (isset($context->vars_in_scope[$lhs_var_id])
                 && ($possible_new_class_type = $context->vars_in_scope[$lhs_var_id]) instanceof Union
@@ -217,7 +226,7 @@ class MethodCallAnalyzer extends CallAnalyzer
                     $result->return_type = $context->vars_in_scope[$method_var_id];
                 } elseif ($result->return_type !== null) {
                     $context->vars_in_scope[$method_var_id] = $result->return_type->setProperties([
-                        'has_mutations' => false
+                        'has_mutations' => false,
                     ]);
                 }
 
@@ -241,17 +250,17 @@ class MethodCallAnalyzer extends CallAnalyzer
                 IssueBuffer::maybeAdd(
                     new PossiblyInvalidMethodCall(
                         'Cannot call method on possible ' . $invalid_class_type . ' variable ' . $lhs_var_id,
-                        new CodeLocation($source, $stmt->name)
+                        new CodeLocation($source, $stmt->name),
                     ),
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 );
             } else {
                 IssueBuffer::maybeAdd(
                     new InvalidMethodCall(
                         'Cannot call method on ' . $invalid_class_type . ' variable ' . $lhs_var_id,
-                        new CodeLocation($source, $stmt->name)
+                        new CodeLocation($source, $stmt->name),
                     ),
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 );
             }
         }
@@ -262,9 +271,9 @@ class MethodCallAnalyzer extends CallAnalyzer
                     new UndefinedMagicMethod(
                         'Magic method ' . $result->non_existent_magic_method_ids[0] . ' does not exist',
                         new CodeLocation($source, $stmt->name),
-                        $result->non_existent_magic_method_ids[0]
+                        $result->non_existent_magic_method_ids[0],
                     ),
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 );
             }
         }
@@ -276,18 +285,18 @@ class MethodCallAnalyzer extends CallAnalyzer
                         new PossiblyUndefinedMethod(
                             'Method ' . $result->non_existent_class_method_ids[0] . ' does not exist',
                             new CodeLocation($source, $stmt->name),
-                            $result->non_existent_class_method_ids[0]
+                            $result->non_existent_class_method_ids[0],
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
                     );
                 } else {
                     IssueBuffer::maybeAdd(
                         new UndefinedMethod(
                             'Method ' . $result->non_existent_class_method_ids[0] . ' does not exist',
                             new CodeLocation($source, $stmt->name),
-                            $result->non_existent_class_method_ids[0]
+                            $result->non_existent_class_method_ids[0],
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
                     );
                 }
             }
@@ -302,18 +311,18 @@ class MethodCallAnalyzer extends CallAnalyzer
                         new PossiblyUndefinedMethod(
                             'Method ' . $result->non_existent_interface_method_ids[0] . ' does not exist',
                             new CodeLocation($source, $stmt->name),
-                            $result->non_existent_interface_method_ids[0]
+                            $result->non_existent_interface_method_ids[0],
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
                     );
                 } else {
                     IssueBuffer::maybeAdd(
                         new UndefinedInterfaceMethod(
                             'Method ' . $result->non_existent_interface_method_ids[0] . ' does not exist',
                             new CodeLocation($source, $stmt->name),
-                            $result->non_existent_interface_method_ids[0]
+                            $result->non_existent_interface_method_ids[0],
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
                     );
                 }
             }
@@ -328,9 +337,9 @@ class MethodCallAnalyzer extends CallAnalyzer
                 new TooManyArguments(
                     'Too many arguments for method ' . $error_method_id . ' - saw ' . count($stmt->getArgs()),
                     new CodeLocation($source, $stmt->name),
-                    (string) $error_method_id
+                    (string) $error_method_id,
                 ),
-                $statements_analyzer->getSuppressedIssues()
+                $statements_analyzer->getSuppressedIssues(),
             );
         }
 
@@ -341,9 +350,9 @@ class MethodCallAnalyzer extends CallAnalyzer
                 new TooFewArguments(
                     'Too few arguments for method ' . $error_method_id . ' saw ' . count($stmt->getArgs()),
                     new CodeLocation($source, $stmt->name),
-                    (string) $error_method_id
+                    (string) $error_method_id,
                 ),
-                $statements_analyzer->getSuppressedIssues()
+                $statements_analyzer->getSuppressedIssues(),
             );
         }
 
@@ -375,7 +384,7 @@ class MethodCallAnalyzer extends CallAnalyzer
                 $statements_analyzer->getFilePath(),
                 $stmt->name,
                 $stmt_type->getId(),
-                $stmt
+                $stmt,
             );
         }
 
@@ -386,7 +395,7 @@ class MethodCallAnalyzer extends CallAnalyzer
                 new TemplateResult([], []),
                 $context,
                 new CodeLocation($statements_analyzer->getSource(), $stmt),
-                $statements_analyzer
+                $statements_analyzer,
             );
         }
 

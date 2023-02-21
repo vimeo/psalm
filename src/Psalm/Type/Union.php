@@ -9,7 +9,6 @@ use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
-use Stringable;
 
 use function get_object_vars;
 
@@ -40,7 +39,7 @@ use function get_object_vars;
  *      parent_nodes?: array<string, DataFlowNode>
  * }
  */
-final class Union implements TypeNode, Stringable
+final class Union implements TypeNode
 {
     use ImmutableNonCloneableTrait;
     use UnionTrait;
@@ -49,7 +48,7 @@ final class Union implements TypeNode, Stringable
      * @psalm-readonly
      * @var non-empty-array<string, Atomic>
      */
-    private $types;
+    private array $types;
 
     /**
      * Whether the type originated in a docblock
@@ -170,22 +169,22 @@ final class Union implements TypeNode, Stringable
     /**
      * @var array<string, TLiteralString>
      */
-    private $literal_string_types = [];
+    private array $literal_string_types = [];
 
     /**
      * @var array<string, TClassString>
      */
-    private $typed_class_strings = [];
+    private array $typed_class_strings = [];
 
     /**
      * @var array<string, TLiteralInt>
      */
-    private $literal_int_types = [];
+    private array $literal_int_types = [];
 
     /**
      * @var array<string, TLiteralFloat>
      */
-    private $literal_float_types = [];
+    private array $literal_float_types = [];
 
     /**
      * True if the type was passed or returned by reference, or if the type refers to an object's
@@ -213,15 +212,13 @@ final class Union implements TypeNode, Stringable
 
     /**
      * This is a cache of getId on non-exact mode
-     * @var null|string
      */
-    private $id;
+    private ?string $id = null;
 
     /**
      * This is a cache of getId on exact mode
-     * @var null|string
      */
-    private $exact_id;
+    private ?string $exact_id;
 
 
     /**
@@ -360,6 +357,9 @@ final class Union implements TypeNode, Stringable
         return $cloned;
     }
 
+    /**
+     * @phpcsSuppress SlevomatCodingStandard.TypeHints.ParameterTypeHint.MissingAnyTypeHint
+     */
     public static function visitMutable(MutableTypeVisitor $visitor, &$node, bool $cloned): bool
     {
         $result = true;

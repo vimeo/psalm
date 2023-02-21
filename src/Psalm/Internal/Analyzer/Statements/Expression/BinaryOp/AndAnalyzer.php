@@ -42,11 +42,11 @@ class AndAnalyzer
                 [
                     'stmts' => [
                         new VirtualExpression(
-                            $stmt->right
-                        )
-                    ]
+                            $stmt->right,
+                        ),
+                    ],
                 ],
-                $stmt->getAttributes()
+                $stmt->getAttributes(),
             );
 
             return IfElseAnalyzer::analyze($statements_analyzer, $fake_if_stmt, $context) !== false;
@@ -80,7 +80,7 @@ class AndAnalyzer
             $stmt->left,
             $context->self,
             $statements_analyzer,
-            $codebase
+            $codebase,
         );
 
         foreach ($left_context->vars_in_scope as $var_id => $type) {
@@ -106,7 +106,7 @@ class AndAnalyzer
                 array_filter(
                     $context_clauses,
                     static fn(Clause $c): bool => !in_array($c->hash, $reconciled_expression_clauses, true)
-                )
+                ),
             );
 
             if (count($context_clauses) === 1
@@ -125,7 +125,7 @@ class AndAnalyzer
             $simplified_clauses,
             $left_cond_id,
             $left_referenced_var_ids,
-            $active_left_assertions
+            $active_left_assertions,
         );
 
         $changed_var_ids = [];
@@ -145,13 +145,16 @@ class AndAnalyzer
                 $statements_analyzer->getTemplateTypeMap() ?: [],
                 $context->inside_loop,
                 new CodeLocation($statements_analyzer->getSource(), $stmt->left),
-                $context->inside_negation
+                $context->inside_negation,
             );
         } else {
             $right_context = clone $left_context;
         }
 
-        $partitioned_clauses = Context::removeReconciledClauses($left_clauses, $changed_var_ids);
+        $partitioned_clauses = Context::removeReconciledClauses(
+            [...$left_context->clauses, ...$left_clauses],
+            $changed_var_ids,
+        );
 
         $right_context->clauses = $partitioned_clauses[0];
 
@@ -163,7 +166,7 @@ class AndAnalyzer
 
         $context->cond_referenced_var_ids = array_merge(
             $right_context->cond_referenced_var_ids,
-            $left_context->cond_referenced_var_ids
+            $left_context->cond_referenced_var_ids,
         );
 
         if ($context->inside_conditional) {
@@ -171,12 +174,12 @@ class AndAnalyzer
 
             $context->vars_possibly_in_scope = array_merge(
                 $right_context->vars_possibly_in_scope,
-                $left_context->vars_possibly_in_scope
+                $left_context->vars_possibly_in_scope,
             );
 
             $context->assigned_var_ids = array_merge(
                 $left_context->assigned_var_ids,
-                $right_context->assigned_var_ids
+                $right_context->assigned_var_ids,
             );
         }
 
@@ -185,7 +188,7 @@ class AndAnalyzer
             $context->vars_in_scope = $right_context->vars_in_scope;
             $if_body_context->vars_in_scope = array_merge(
                 $if_body_context->vars_in_scope,
-                $context->vars_in_scope
+                $context->vars_in_scope,
             );
 
             $if_body_context->cond_referenced_var_ids = array_merge(
@@ -203,8 +206,8 @@ class AndAnalyzer
                 ...array_map(
                     /** @return string|int */
                     static fn(Clause $c) => $c->hash,
-                    $partitioned_clauses[1]
-                )
+                    $partitioned_clauses[1],
+                ),
             ];
 
             $if_body_context->vars_possibly_in_scope = array_merge(

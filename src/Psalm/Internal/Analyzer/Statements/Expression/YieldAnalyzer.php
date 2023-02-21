@@ -47,14 +47,14 @@ class YieldAnalyzer
                 $var_comments = CommentAnalyzer::getTypeFromComment(
                     $doc_comment,
                     $statements_analyzer,
-                    $statements_analyzer->getAliases()
+                    $statements_analyzer->getAliases(),
                 );
             } catch (DocblockParseException $e) {
                 IssueBuffer::maybeAdd(
                     new InvalidDocblock(
                         $e->getMessage(),
-                        new CodeLocation($statements_analyzer->getSource(), $stmt)
-                    )
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                    ),
                 );
             }
 
@@ -68,7 +68,7 @@ class YieldAnalyzer
                     $var_comment->type,
                     $context->self,
                     $context->self ? new TNamedObject($context->self) : null,
-                    $statements_analyzer->getParentFQCLN()
+                    $statements_analyzer->getParentFQCLN(),
                 );
 
                 $type_location = null;
@@ -81,7 +81,7 @@ class YieldAnalyzer
                         $statements_analyzer,
                         $var_comment->type_start,
                         $var_comment->type_end,
-                        $var_comment->line_number
+                        $var_comment->line_number,
                     );
                 }
 
@@ -101,21 +101,21 @@ class YieldAnalyzer
                         && isset($project_analyzer->getIssuesToFix()['UnnecessaryVarAnnotation'])
                     ) {
                         FileManipulationBuffer::addVarAnnotationToRemove($type_location);
-                    } elseif (IssueBuffer::accepts(
-                        new UnnecessaryVarAnnotation(
-                            'The @var annotation for ' . $var_comment->var_id . ' is unnecessary',
-                            $type_location
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                        true
-                    )) {
-                        // fall through
+                    } else {
+                        IssueBuffer::maybeAdd(
+                            new UnnecessaryVarAnnotation(
+                                'The @var annotation for ' . $var_comment->var_id . ' is unnecessary',
+                                $type_location,
+                            ),
+                            $statements_analyzer->getSuppressedIssues(),
+                            true,
+                        );
                     }
                 }
 
                 if (isset($context->vars_in_scope[$var_comment->var_id])) {
                     $comment_type = $comment_type->setParentNodes(
-                        $context->vars_in_scope[$var_comment->var_id]->parent_nodes
+                        $context->vars_in_scope[$var_comment->var_id]->parent_nodes,
                     );
                 }
 
@@ -187,7 +187,7 @@ class YieldAnalyzer
                 $classlike_storage,
                 null,
                 $expression_atomic_type,
-                true
+                true,
             );
 
             if ($class_template_params) {
@@ -206,14 +206,14 @@ class YieldAnalyzer
                     $yield_candidate_type,
                     $expression_atomic_type,
                     $classlike_storage,
-                    $declaring_classlike_storage
+                    $declaring_classlike_storage,
                 );
             }
 
             $yield_type = Type::combineUnionTypes(
                 $yield_type,
                 $yield_candidate_type,
-                $codebase
+                $codebase,
             );
         }
 
@@ -241,7 +241,7 @@ class YieldAnalyzer
                             if (!$atomic_return_type->type_params[2]->isVoid()) {
                                 $statements_analyzer->node_data->setType(
                                     $stmt,
-                                    $atomic_return_type->type_params[2]
+                                    $atomic_return_type->type_params[2],
                                 );
                             }
                         } else {
@@ -249,8 +249,8 @@ class YieldAnalyzer
                                 $stmt,
                                 Type::combineUnionTypes(
                                     Type::getMixed(),
-                                    $expression_type
-                                )
+                                    $expression_type,
+                                ),
                             );
                         }
                     }

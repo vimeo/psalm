@@ -10,6 +10,7 @@ use Psalm\Type\Union;
 
 /**
  * Represents the type used when using TValueOf when the type of the array or enum is a template
+ *
  * @psalm-immutable
  */
 final class TTemplateValueOf extends Atomic
@@ -94,7 +95,7 @@ final class TTemplateValueOf extends Atomic
         $as = TemplateInferredTypeReplacer::replace(
             $this->as,
             $template_result,
-            $codebase
+            $codebase,
         );
         if ($as === $this->as) {
             return $this;
@@ -102,7 +103,7 @@ final class TTemplateValueOf extends Atomic
         return new static(
             $this->param_name,
             $this->defining_class,
-            $as
+            $as,
         );
     }
 }

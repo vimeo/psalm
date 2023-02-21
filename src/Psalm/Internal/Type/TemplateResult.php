@@ -26,29 +26,27 @@ class TemplateResult
     /**
      * @var array<string, array<string, Union>>
      */
-    public $template_types;
+    public array $template_types;
 
     /**
      * @var array<string, array<string, non-empty-list<TemplateBound>>>
      */
-    public $lower_bounds;
+    public array $lower_bounds;
 
     /**
      * @var array<string, array<string, TemplateBound>>
      */
-    public $upper_bounds = [];
+    public array $upper_bounds = [];
 
     /**
      * If set to true then we shouldn't update the template bounds
-     *
-     * @var bool
      */
-    public $readonly = false;
+    public bool $readonly = false;
 
     /**
      * @var list<Union>
      */
-    public $upper_bounds_unintersectable_types = [];
+    public array $upper_bounds_unintersectable_types = [];
 
     /**
      * @param  array<string, array<string, Union>> $template_types

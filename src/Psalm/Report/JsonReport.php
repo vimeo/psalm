@@ -21,7 +21,7 @@ final class JsonReport extends Report
                 unset($issue_data['dupe_key']);
                 return $issue_data;
             },
-            $this->issues_data
+            $this->issues_data,
         );
 
         return Json::encode(array_values($issues_data), $options) . "\n";

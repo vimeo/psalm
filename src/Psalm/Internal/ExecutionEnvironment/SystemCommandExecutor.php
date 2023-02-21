@@ -11,7 +11,6 @@ use function sprintf;
 /**
  * @author Kitamura Satoshi <with.no.parachute@gmail.com>
  * @author Dariusz Rumiński <dariusz.ruminski@gmail.com>
- *
  * @internal
  */
 final class SystemCommandExecutor
@@ -19,9 +18,7 @@ final class SystemCommandExecutor
     /**
      * Execute command.
      *
-     *
      * @throws RuntimeException
-     *
      * @return string[]
      */
     public function execute(string $command): array

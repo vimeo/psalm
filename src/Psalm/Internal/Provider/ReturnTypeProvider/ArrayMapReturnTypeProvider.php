@@ -28,7 +28,6 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyArray;
-use Psalm\Type\Atomic\TNonEmptyList;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Union;
@@ -77,6 +76,10 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
         if ($function_call_type && $function_call_type->isNull()) {
             array_shift($call_args);
 
+            if (!$call_args) {
+                return Type::getNever();
+            }
+
             $array_arg_types = [];
             $orig_types = [];
 
@@ -113,11 +116,11 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
                 function (array $sub) use ($null) {
                     $sub = array_map(
                         fn(?Union $t) => $t ?? $null,
-                        $sub
+                        $sub,
                     );
                     return new Union([new TKeyedArray($sub, null, null, true)]);
                 },
-                $array_arg_types
+                $array_arg_types,
             );
 
             if (!$array_arg_types) {
@@ -141,6 +144,9 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
 
             if (isset($arg_types['array'])) {
                 $array_arg_atomic_type = $arg_types['array'];
+                if ($array_arg_atomic_type instanceof TList) {
+                    $array_arg_atomic_type = $array_arg_atomic_type->getKeyedArray();
+                }
                 $array_arg_type = ArrayType::infer($array_arg_atomic_type);
             }
         }
@@ -172,7 +178,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
             ) {
                 $mapping_function_ids = CallAnalyzer::getFunctionIdsFromCallableArg(
                     $statements_source,
-                    $function_call_arg->value
+                    $function_call_arg->value,
                 );
 
                 if ($mapping_function_ids) {
@@ -181,7 +187,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
                         $mapping_function_ids,
                         $context,
                         $function_call_arg,
-                        array_slice($call_args, 1)
+                        array_slice($call_args, 1),
                     );
                 }
 
@@ -202,7 +208,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
                             $fake_method_call = new VirtualStaticCall(
                                 $function_call_arg->value->items[0]->value,
                                 $function_call_arg->value->items[1]->value->value,
-                                []
+                                [],
                             );
                         }
                     }
@@ -211,7 +217,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
                         $fake_method_return_type = self::executeFakeCall(
                             $statements_source,
                             $fake_method_call,
-                            $context
+                            $context,
                         );
 
                         if ($fake_method_return_type) {
@@ -226,35 +232,33 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
             if ($array_arg_atomic_type instanceof TKeyedArray && count($call_args) === 2) {
                 $atomic_type = new TKeyedArray(
                     array_map(
-                        static fn(Union $_): Union => $mapping_return_type,
-                        $array_arg_atomic_type->properties
+                        static fn(Union $in): Union => $mapping_return_type->setPossiblyUndefined(
+                            $in->possibly_undefined,
+                        ),
+                        $array_arg_atomic_type->properties,
                     ),
                     null,
                     $array_arg_atomic_type->fallback_params === null
                         ? null
                         : [$array_arg_atomic_type->fallback_params[0], $mapping_return_type],
-                    $array_arg_atomic_type->is_list
+                    $array_arg_atomic_type->is_list,
                 );
 
                 return new Union([$atomic_type]);
             }
 
-            if ($array_arg_atomic_type instanceof TList
+            if (($array_arg_atomic_type instanceof TKeyedArray && $array_arg_atomic_type->is_list)
                 || count($call_args) !== 2
             ) {
-                if ($array_arg_atomic_type instanceof TNonEmptyList) {
-                    return new Union([
-                        new TNonEmptyList(
-                            $mapping_return_type
-                        ),
-                    ]);
+                if ($array_arg_atomic_type instanceof TKeyedArray && $array_arg_atomic_type->isNonEmpty()) {
+                    return Type::getNonEmptyList(
+                        $mapping_return_type,
+                    );
                 }
 
-                return new Union([
-                    new TList(
-                        $mapping_return_type
-                    ),
-                ]);
+                return Type::getList(
+                    $mapping_return_type,
+                );
             }
 
             if ($array_arg_atomic_type instanceof TNonEmptyArray) {
@@ -270,7 +274,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
                 new TArray([
                     $generic_key_type,
                     $mapping_return_type,
-                ])
+                ]),
             ]);
         }
 
@@ -279,7 +283,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
                 new TArray([
                     $array_arg_type->key ?? Type::getArrayKey(),
                     Type::getMixed(),
-                ])
+                ]),
             ])
             : Type::getList();
     }
@@ -315,19 +319,19 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
             StaticCallAnalyzer::analyze(
                 $statements_analyzer,
                 $fake_call,
-                $context
+                $context,
             );
         } elseif ($fake_call instanceof PhpParser\Node\Expr\MethodCall) {
             MethodCallAnalyzer::analyze(
                 $statements_analyzer,
                 $fake_call,
-                $context
+                $context,
             );
         } elseif ($fake_call instanceof PhpParser\Node\Expr\FuncCall) {
             FunctionCallAnalyzer::analyze(
                 $statements_analyzer,
                 $fake_call,
-                $context
+                $context,
             );
         } else {
             throw new UnexpectedValueException('UnrecognizedCall');
@@ -340,7 +344,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
                 $fake_call,
                 null,
                 $statements_analyzer,
-                $codebase
+                $codebase,
             );
 
             $assertions = $anded_assertions[0] ?? [];
@@ -402,13 +406,13 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
                             $array_arg->value,
                             new VirtualVariable(
                                 "__fake_{$fake_var_discriminator}_offset_var__",
-                                $array_arg->value->getAttributes()
+                                $array_arg->value->getAttributes(),
                             ),
-                            $array_arg->value->getAttributes()
+                            $array_arg->value->getAttributes(),
                         ),
                         false,
                         false,
-                        $array_arg->getAttributes()
+                        $array_arg->getAttributes(),
                     );
                 }
 
@@ -427,14 +431,14 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
                         $fake_method_call = new VirtualMethodCall(
                             new VirtualVariable(
                                 "__fake_{$fake_var_discriminator}_method_call_var__",
-                                $function_call_arg->getAttributes()
+                                $function_call_arg->getAttributes(),
                             ),
                             new VirtualIdentifier(
                                 $callable_method_name,
-                                $function_call_arg->getAttributes()
+                                $function_call_arg->getAttributes(),
                             ),
                             $fake_args,
-                            $function_call_arg->getAttributes()
+                            $function_call_arg->getAttributes(),
                         );
 
                         $lhs_instance_type = null;
@@ -459,14 +463,14 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
                         $fake_method_call = new VirtualStaticCall(
                             new VirtualFullyQualified(
                                 $callable_fq_class_name,
-                                $function_call_arg->getAttributes()
+                                $function_call_arg->getAttributes(),
                             ),
                             new VirtualIdentifier(
                                 $callable_method_name,
-                                $function_call_arg->getAttributes()
+                                $function_call_arg->getAttributes(),
                             ),
                             $fake_args,
-                            $function_call_arg->getAttributes()
+                            $function_call_arg->getAttributes(),
                         );
 
                         $context->vars_in_scope["\$__fake_{$fake_var_discriminator}_offset_var__"] = Type::getMixed();
@@ -476,7 +480,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
                         $statements_source,
                         $fake_method_call,
                         $context,
-                        $assertions
+                        $assertions,
                     );
 
                     $function_id_return_type = $fake_method_return_type ?? Type::getMixed();
@@ -484,10 +488,10 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
                     $fake_function_call = new VirtualFuncCall(
                         new VirtualFullyQualified(
                             $mapping_function_id_part,
-                            $function_call_arg->getAttributes()
+                            $function_call_arg->getAttributes(),
                         ),
                         $fake_args,
-                        $function_call_arg->getAttributes()
+                        $function_call_arg->getAttributes(),
                     );
 
                     $context->vars_in_scope["\$__fake_{$fake_var_discriminator}_offset_var__"] = Type::getMixed();
@@ -496,7 +500,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
                         $statements_source,
                         $fake_function_call,
                         $context,
-                        $assertions
+                        $assertions,
                     );
 
                     $function_id_return_type = $fake_function_return_type ?? Type::getMixed();
@@ -512,7 +516,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
             $mapping_return_type = Type::combineUnionTypes(
                 $function_id_return_type,
                 $mapping_return_type,
-                $codebase
+                $codebase,
             );
         }
 

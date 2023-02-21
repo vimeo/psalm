@@ -10,9 +10,6 @@ class ExtendsFinalClassTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
-    /**
-     *
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -24,7 +21,7 @@ class ExtendsFinalClassTest extends TestCase
                 /**
                 * @psalm-suppress InvalidExtendClass
                 */
-                class B extends A {}'
+                class B extends A {}',
             ],
             'suppressingIssueWhenUsedWithAnnotation' => [
                 'code' => '<?php
@@ -37,14 +34,11 @@ class ExtendsFinalClassTest extends TestCase
                 /**
                 * @psalm-suppress InvalidExtendClass
                 */
-                class B extends A {}'
+                class B extends A {}',
             ],
         ];
     }
 
-    /**
-     *
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [

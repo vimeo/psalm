@@ -14,6 +14,7 @@ use Psalm\Issue\CodeIssue;
 use Psalm\Issue\ConfigIssue;
 use Psalm\Issue\MixedIssue;
 use Psalm\Issue\TaintedInput;
+use Psalm\Issue\UnusedBaselineEntry;
 use Psalm\Issue\UnusedPsalmSuppress;
 use Psalm\Plugin\EventHandler\Event\AfterAnalysisEvent;
 use Psalm\Plugin\EventHandler\Event\BeforeAddIssueEvent;
@@ -123,10 +124,11 @@ final class IssueBuffer
     protected static $used_suppressions = [];
 
     /** @var array<array-key,mixed> */
-    private static $server = [];
+    private static array $server = [];
 
     /**
      * This will add an issue to be emitted if it's not suppressed and return if it has been added
+     *
      * @param string[]  $suppressed_issues
      */
     public static function accepts(CodeIssue $e, array $suppressed_issues = [], bool $is_fixable = false): bool
@@ -140,15 +142,12 @@ final class IssueBuffer
 
     /**
      * This will add an issue to be emitted if it's not suppressed
+     *
      * @param string[]  $suppressed_issues
      */
     public static function maybeAdd(CodeIssue $e, array $suppressed_issues = [], bool $is_fixable = false): void
     {
-        if (self::isSuppressed($e, $suppressed_issues)) {
-            return;
-        }
-
-        self::add($e, $is_fixable);
+        self::accepts($e, $suppressed_issues, $is_fixable);
     }
 
     /**
@@ -176,6 +175,7 @@ final class IssueBuffer
      * - The issue is suppressed in config
      * - We're in a recording state
      * - The issue is included in the list of issues to be suppressed in param
+     *
      * @param string[] $suppressed_issues
      */
     public static function isSuppressed(CodeIssue $e, array $suppressed_issues = []): bool
@@ -250,22 +250,21 @@ final class IssueBuffer
      *
      * @psalm-internal Psalm\IssueBuffer
      * @psalm-internal Psalm\Type\Reconciler::getValueForKey
-     *
      * @throws  CodeException
      */
     public static function add(CodeIssue $e, bool $is_fixable = false): bool
     {
         $config = Config::getInstance();
+        $project_analyzer = ProjectAnalyzer::getInstance();
+        $codebase = $project_analyzer->getCodebase();
 
-        $event = new BeforeAddIssueEvent($e, $is_fixable);
+        $event = new BeforeAddIssueEvent($e, $is_fixable, $codebase);
         if ($config->eventDispatcher->dispatchBeforeAddIssue($event) === false) {
             return false;
-        };
+        }
 
         $fqcn_parts = explode('\\', get_class($e));
         $issue_type = array_pop($fqcn_parts);
-
-        $project_analyzer = ProjectAnalyzer::getInstance();
 
         if (!$project_analyzer->show_issues) {
             return false;
@@ -273,7 +272,7 @@ final class IssueBuffer
 
         $is_tainted = strpos($issue_type, 'Tainted') === 0;
 
-        if ($project_analyzer->getCodebase()->taint_flow_graph && !$is_tainted) {
+        if ($codebase->taint_flow_graph && !$is_tainted) {
             return false;
         }
 
@@ -326,7 +325,7 @@ final class IssueBuffer
                 $issue_type
                     . ' - ' . $e->getShortLocationWithPrevious()
                     . ':' . $e->code_location->getColumn()
-                    . ' - ' . $message
+                    . ' - ' . $message,
             );
         }
 
@@ -499,9 +498,9 @@ final class IssueBuffer
                             $file_path,
                             $config->shortenFileName($file_path),
                             $start,
-                            $end
-                        )
-                    )
+                            $end,
+                        ),
+                    ),
                 );
             }
         }
@@ -514,7 +513,6 @@ final class IssueBuffer
 
     /**
      * @param array<string, list<IssueData>> $issues_data
-     *
      */
     public static function addIssues(array $issues_data): void
     {
@@ -535,7 +533,6 @@ final class IssueBuffer
 
     /**
      * @param  array<string,array<string,array{o:int, s:array<int, string>}>>  $issue_baseline
-     *
      */
     public static function finish(
         ProjectAnalyzer $project_analyzer,
@@ -551,9 +548,7 @@ final class IssueBuffer
         $codebase = $project_analyzer->getCodebase();
 
         foreach ($codebase->config->config_issues as $issue) {
-            if (self::accepts($issue)) {
-                // fall through
-            }
+            self::maybeAdd($issue);
         }
 
         $error_count = 0;
@@ -565,7 +560,7 @@ final class IssueBuffer
         if (self::$issues_data) {
             if (in_array(
                 $project_analyzer->stdout_report_options->format,
-                [Report::TYPE_CONSOLE, Report::TYPE_PHP_STORM]
+                [Report::TYPE_CONSOLE, Report::TYPE_PHP_STORM],
             )) {
                 echo "\n";
             }
@@ -599,7 +594,7 @@ final class IssueBuffer
                                 $position = array_search(
                                     trim($issue_data->selected_text),
                                     $issue_baseline[$file][$type]['s'],
-                                    true
+                                    true,
                                 );
 
                                 if ($position !== false) {
@@ -617,13 +612,46 @@ final class IssueBuffer
                         $issues_data[$file_path][$key] = $issue_data;
                     }
                 }
+
+                if ($codebase->config->find_unused_baseline_entry) {
+                    foreach ($issue_baseline as $file_path => $issues) {
+                        foreach ($issues as $issue_name => $issue) {
+                            if ($issue['o'] !== 0) {
+                                $issues_data[$file_path][] = new IssueData(
+                                    Config::REPORT_ERROR,
+                                    0,
+                                    0,
+                                    UnusedBaselineEntry::getIssueType(),
+                                    sprintf(
+                                        'Baseline for issue "%s" has %d extra %s.',
+                                        $issue_name,
+                                        $issue['o'],
+                                        $issue['o'] === 1 ? 'entry' : 'entries',
+                                    ),
+                                    $file_path,
+                                    '',
+                                    '',
+                                    '',
+                                    0,
+                                    0,
+                                    0,
+                                    0,
+                                    0,
+                                    0,
+                                    UnusedBaselineEntry::SHORTCODE,
+                                    UnusedBaselineEntry::ERROR_LEVEL,
+                                );
+                            }
+                        }
+                    }
+                }
             }
         }
 
         echo self::getOutput(
             $issues_data,
             $project_analyzer->stdout_report_options,
-            $codebase->analyzer->getTotalTypeCoverage($codebase)
+            $codebase->analyzer->getTotalTypeCoverage($codebase),
         );
 
         foreach ($issues_data as $file_issues) {
@@ -652,7 +680,7 @@ final class IssueBuffer
                 $codebase,
                 $issues_data,
                 $build_info,
-                $source_control_info
+                $source_control_info,
             );
 
             $codebase->config->eventDispatcher->dispatchAfterAnalysis($event);
@@ -672,14 +700,14 @@ final class IssueBuffer
                 self::getOutput(
                     $issues_data,
                     $report_options,
-                    $codebase->analyzer->getTotalTypeCoverage($codebase)
-                )
+                    $codebase->analyzer->getTotalTypeCoverage($codebase),
+                ),
             );
         }
 
         if (in_array(
             $project_analyzer->stdout_report_options->format,
-            [Report::TYPE_CONSOLE, Report::TYPE_PHP_STORM]
+            [Report::TYPE_CONSOLE, Report::TYPE_PHP_STORM],
         )) {
             echo str_repeat('-', 30) . "\n";
 
@@ -824,7 +852,6 @@ final class IssueBuffer
     /**
      * @param array<string, array<int, IssueData>> $issues_data
      * @param array{int, int} $mixed_counts
-     *
      */
     public static function getOutput(
         array $issues_data,
@@ -865,7 +892,7 @@ final class IssueBuffer
                     self::$fixable_issue_counts,
                     $report_options,
                     $mixed_expression_count,
-                    $total_expression_count
+                    $total_expression_count,
                 );
                 break;
 
@@ -976,6 +1003,7 @@ final class IssueBuffer
 
     /**
      * Decrease the recording level after leaving a loop
+     *
      * @see startRecording
      */
     public static function stopRecording(): void
@@ -989,6 +1017,7 @@ final class IssueBuffer
 
     /**
      * This will return the recorded issues for the current recording level
+     *
      * @return array<int, CodeIssue>
      */
     public static function clearRecordingLevel(): array

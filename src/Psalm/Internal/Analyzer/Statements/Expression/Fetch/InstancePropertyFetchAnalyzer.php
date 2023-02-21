@@ -74,13 +74,13 @@ class InstancePropertyFetchAnalyzer
         $stmt_var_id = ExpressionIdentifier::getExtendedVarId(
             $stmt->var,
             $statements_analyzer->getFQCLN(),
-            $statements_analyzer
+            $statements_analyzer,
         );
 
         $var_id = ExpressionIdentifier::getExtendedVarId(
             $stmt,
             $statements_analyzer->getFQCLN(),
-            $statements_analyzer
+            $statements_analyzer,
         );
 
         if ($var_id && $context->hasVariable($var_id)) {
@@ -91,7 +91,7 @@ class InstancePropertyFetchAnalyzer
                 $stmt,
                 $codebase,
                 $stmt_var_id,
-                $in_assignment
+                $in_assignment,
             );
 
             return true;
@@ -108,31 +108,23 @@ class InstancePropertyFetchAnalyzer
         }
 
         if ($stmt_var_type->isNull()) {
-            if (IssueBuffer::accepts(
+            return !IssueBuffer::accepts(
                 new NullPropertyFetch(
                     'Cannot get property on null variable ' . $stmt_var_id,
-                    new CodeLocation($statements_analyzer->getSource(), $stmt)
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
                 ),
-                $statements_analyzer->getSuppressedIssues()
-            )) {
-                return false;
-            }
-
-            return true;
+                $statements_analyzer->getSuppressedIssues(),
+            );
         }
 
         if ($stmt_var_type->isNever()) {
-            if (IssueBuffer::accepts(
+            return !IssueBuffer::accepts(
                 new MixedPropertyFetch(
                     'Cannot fetch property on empty var ' . $stmt_var_id,
-                    new CodeLocation($statements_analyzer->getSource(), $stmt)
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
                 ),
-                $statements_analyzer->getSuppressedIssues()
-            )) {
-                return false;
-            }
-
-            return true;
+                $statements_analyzer->getSuppressedIssues(),
+            );
         }
 
         if ($stmt_var_type->hasMixed()) {
@@ -149,16 +141,16 @@ class InstancePropertyFetchAnalyzer
             if ($stmt->name instanceof PhpParser\Node\Identifier) {
                 $codebase->analyzer->addMixedMemberName(
                     '$' . $stmt->name->name,
-                    $context->calling_method_id ?: $statements_analyzer->getFileName()
+                    $context->calling_method_id ?: $statements_analyzer->getFileName(),
                 );
             }
 
             IssueBuffer::maybeAdd(
                 new MixedPropertyFetch(
                     'Cannot fetch property on mixed var ' . $stmt_var_id,
-                    new CodeLocation($statements_analyzer->getSource(), $stmt)
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
                 ),
-                $statements_analyzer->getSuppressedIssues()
+                $statements_analyzer->getSuppressedIssues(),
             );
 
             $statements_analyzer->node_data->setType($stmt, Type::getMixed());
@@ -170,7 +162,7 @@ class InstancePropertyFetchAnalyzer
                 $codebase->analyzer->addNodeType(
                     $statements_analyzer->getFilePath(),
                     $stmt->name,
-                    $stmt_var_type->getId()
+                    $stmt_var_type->getId(),
                 );
             }
         }
@@ -195,9 +187,9 @@ class InstancePropertyFetchAnalyzer
                     new PossiblyNullPropertyFetch(
                         rtrim('Cannot get property on possibly null variable ' . $stmt_var_id)
                         . ' of type ' . $stmt_var_type,
-                        new CodeLocation($statements_analyzer->getSource(), $stmt)
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
                     ),
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 );
             } else {
                 $statements_analyzer->node_data->setType($stmt, Type::getNull());
@@ -210,7 +202,7 @@ class InstancePropertyFetchAnalyzer
                     if ($type instanceof TNamedObject) {
                         $codebase->analyzer->addMixedMemberName(
                             strtolower($type->value) . '::$',
-                            $context->calling_method_id ?: $statements_analyzer->getFileName()
+                            $context->calling_method_id ?: $statements_analyzer->getFileName(),
                         );
                     }
                 }
@@ -225,7 +217,7 @@ class InstancePropertyFetchAnalyzer
                 $codebase->analyzer->addNodeType(
                     $statements_analyzer->getFilePath(),
                     $stmt->name,
-                    $stmt_var_type->getId()
+                    $stmt_var_type->getId(),
                 );
             }
 
@@ -255,7 +247,7 @@ class InstancePropertyFetchAnalyzer
                 $prop_name,
                 $has_valid_fetch_type,
                 $invalid_fetch_types,
-                $is_static_access
+                $is_static_access,
             );
         }
 
@@ -279,7 +271,7 @@ class InstancePropertyFetchAnalyzer
             $codebase->analyzer->addNodeType(
                 $statements_analyzer->getFilePath(),
                 $stmt->name,
-                $stmt_type->getId()
+                $stmt_type->getId(),
             );
         }
 
@@ -290,17 +282,17 @@ class InstancePropertyFetchAnalyzer
                 IssueBuffer::maybeAdd(
                     new PossiblyInvalidPropertyFetch(
                         'Cannot fetch property on possible non-object ' . $stmt_var_id . ' of type ' . $lhs_type_part,
-                        new CodeLocation($statements_analyzer->getSource(), $stmt)
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
                     ),
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 );
             } else {
                 IssueBuffer::maybeAdd(
                     new InvalidPropertyFetch(
                         'Cannot fetch property on non-object ' . $stmt_var_id . ' of type ' . $lhs_type_part,
-                        new CodeLocation($statements_analyzer->getSource(), $stmt)
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
                     ),
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 );
             }
         }
@@ -343,7 +335,7 @@ class InstancePropertyFetchAnalyzer
             $codebase->analyzer->addNodeType(
                 $statements_analyzer->getFilePath(),
                 $stmt->name,
-                $stmt_type->getId()
+                $stmt_type->getId(),
             );
         }
 
@@ -387,9 +379,9 @@ class InstancePropertyFetchAnalyzer
                         new UninitializedProperty(
                             'Cannot use uninitialized property ' . $var_id,
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
-                            $var_id
+                            $var_id,
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
                     );
 
                     $stmt_type = $stmt_type->getBuilder()->addType(new TNull)->freeze();
@@ -423,16 +415,16 @@ class InstancePropertyFetchAnalyzer
                         $stmt_type,
                         $property_id,
                         $class_storage,
-                        $in_assignment
+                        $in_assignment,
                     );
-                    
+
                     $context->vars_in_scope[$var_id] = $stmt_type;
                     $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
                     $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(
                         $property_id,
                         true,
-                        $statements_analyzer
+                        $statements_analyzer,
                     );
 
                     if ($declaring_property_class) {
@@ -440,7 +432,7 @@ class InstancePropertyFetchAnalyzer
                             $stmt->name->name,
                             $declaring_property_class,
                             $stmt,
-                            $statements_analyzer
+                            $statements_analyzer,
                         );
                     }
 
@@ -451,7 +443,7 @@ class InstancePropertyFetchAnalyzer
                         $context,
                         $codebase->collect_locations
                             ? new CodeLocation($statements_analyzer->getSource(), $stmt)
-                            : null
+                            : null,
                     );
 
                     if ($codebase->store_node_types
@@ -461,7 +453,7 @@ class InstancePropertyFetchAnalyzer
                         $codebase->analyzer->addNodeReference(
                             $statements_analyzer->getFilePath(),
                             $stmt->name,
-                            $property_id
+                            $property_id,
                         );
                     }
 
@@ -474,9 +466,9 @@ class InstancePropertyFetchAnalyzer
                             IssueBuffer::maybeAdd(
                                 new ImpurePropertyFetch(
                                     'Cannot access a property on a mutable object from a pure context',
-                                    new CodeLocation($statements_analyzer, $stmt)
+                                    new CodeLocation($statements_analyzer, $stmt),
                                 ),
-                                $statements_analyzer->getSuppressedIssues()
+                                $statements_analyzer->getSuppressedIssues(),
                             );
                         } elseif ($statements_analyzer->getSource()
                             instanceof FunctionLikeAnalyzer

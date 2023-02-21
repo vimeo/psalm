@@ -19,14 +19,21 @@ use const PHP_VERSION;
 trait InvalidCodeAnalysisTestTrait
 {
     /**
-     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:list<string>,php_version?:string}>
+     * @return iterable<
+     *     string,
+     *     array{
+     *         code: string,
+     *         error_message: string,
+     *         ignored_issues?: list<string>,
+     *         php_version?: string,
+     *     }
+     * >
      */
     abstract public function providerInvalidCodeParse(): iterable;
 
     /**
      * @dataProvider providerInvalidCodeParse
      * @small
-     *
      * @param list<string> $error_levels
      */
     public function testInvalidCode(
@@ -66,6 +73,7 @@ trait InvalidCodeAnalysisTestTrait
         $this->expectExceptionMessageMatches('/\b' . preg_quote($error_message, '/') . '\b/');
 
         $codebase = $this->project_analyzer->getCodebase();
+        $codebase->enterServerMode();
         $codebase->config->visitPreloadedStubFiles($codebase);
 
         $this->addFile($file_path, $code);

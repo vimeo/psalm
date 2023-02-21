@@ -6,6 +6,7 @@ use Psalm\Codebase;
 use Psalm\Internal\Codebase\ConstantTypeResolver;
 use Psalm\Storage\EnumCaseStorage;
 use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\TList;
 use Psalm\Type\Union;
 
 use function array_map;
@@ -15,6 +16,7 @@ use function count;
 
 /**
  * Represents a value of an array or enum.
+ *
  * @psalm-immutable
  */
 final class TValueOf extends Atomic
@@ -92,7 +94,7 @@ final class TValueOf extends Atomic
                     $value_atomics = static::getValueType(
                         $atomic_type->as,
                         $codebase,
-                        $keep_template_params
+                        $keep_template_params,
                     );
                     if ($value_atomics === null) {
                         continue;

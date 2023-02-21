@@ -23,8 +23,7 @@ use const DIRECTORY_SEPARATOR;
  */
 class DisableCommand extends Command
 {
-    /** @var PluginListFactory */
-    private $plugin_list_factory;
+    private PluginListFactory $plugin_list_factory;
 
     public function __construct(PluginListFactory $plugin_list_factory)
     {
@@ -40,7 +39,7 @@ class DisableCommand extends Command
             ->addArgument(
                 'pluginName',
                 InputArgument::REQUIRED,
-                'Plugin name (fully qualified class name or composer package name)'
+                'Plugin name (fully qualified class name or composer package name)',
             )
             ->addOption('config', 'c', InputOption::VALUE_REQUIRED, 'Path to Psalm config file')
             ->addUsage('vendor/plugin-package-name [-c path/to/psalm.xml]');

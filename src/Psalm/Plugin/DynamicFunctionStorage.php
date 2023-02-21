@@ -66,7 +66,7 @@ final class DynamicFunctionStorage
 
             foreach ($this->templates as $template) {
                 $storage->template_types[$template->param_name] = [
-                    $template->defining_class => $template->as
+                    $template->defining_class => $template->as,
                 ];
             }
         }

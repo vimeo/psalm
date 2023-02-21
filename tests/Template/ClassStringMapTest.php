@@ -11,9 +11,6 @@ class ClassStringMapTest extends TestCase
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
 
-    /**
-     *
-     */
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -84,14 +81,11 @@ class ClassStringMapTest extends TestCase
                     /** @param class-string-map<A, A> $arr */
                     function foo(array $arr) : void {
                         takesVariadic(...$arr);
-                    }'
+                    }',
             ],
         ];
     }
 
-    /**
-     *
-     */
     public function providerInvalidCodeParse(): iterable
     {
         return [
@@ -111,7 +105,7 @@ class ClassStringMapTest extends TestCase
                             self::$map[$class] = 5;
                         }
                     }',
-                'error_message' => 'InvalidPropertyAssignmentValue'
+                'error_message' => 'InvalidPropertyAssignmentValue',
             ],
             'assignInvalidClassDifferentTemplateName' => [
                 'code' => '<?php
@@ -129,7 +123,7 @@ class ClassStringMapTest extends TestCase
                             self::$map[$class] = 5;
                         }
                     }',
-                'error_message' => 'InvalidPropertyAssignmentValue'
+                'error_message' => 'InvalidPropertyAssignmentValue',
             ],
         ];
     }

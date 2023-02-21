@@ -20,9 +20,9 @@ use function trait_exists;
 class TraitFinder extends PhpParser\NodeVisitorAbstract
 {
     /** @var list<PhpParser\Node\Stmt\Trait_> */
-    private $matching_trait_nodes = [];
+    private array $matching_trait_nodes = [];
 
-    private $fq_trait_name;
+    private string $fq_trait_name;
 
     public function __construct(string $fq_trait_name)
     {

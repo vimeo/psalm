@@ -21,7 +21,7 @@ class ImplementationRequirementTest extends TestCase
 
                 interface A { }
                 interface B { }
-            '
+            ',
         );
 
         $this->addFile(
@@ -37,7 +37,7 @@ class ImplementationRequirementTest extends TestCase
                  * @psalm-require-implements MyAliasedInterfaceB
                  */
                 trait ImposesImplementationRequirements { }
-            '
+            ',
         );
     }
 
@@ -53,8 +53,8 @@ class ImplementationRequirementTest extends TestCase
                     class Valid implements A, B {
                         use ImposesImplementationRequirements;
                     }
-                '
-            ]
+                ',
+            ],
         ];
     }
 
@@ -69,7 +69,7 @@ class ImplementationRequirementTest extends TestCase
                         use ImposesImplementationRequirements;
                     }
                 ',
-                'error_message' => 'requires using class to implement'
+                'error_message' => 'requires using class to implement',
             ],
             'onlyImplementsOneRequirement' => [
                 'code' => '<?php
@@ -80,8 +80,8 @@ class ImplementationRequirementTest extends TestCase
                         use ImposesImplementationRequirements;
                     }
                 ',
-                'error_message' => 'requires using class to implement'
-            ]
+                'error_message' => 'requires using class to implement',
+            ],
         ];
     }
 }

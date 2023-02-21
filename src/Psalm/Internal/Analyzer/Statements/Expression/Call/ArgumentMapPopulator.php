@@ -47,7 +47,7 @@ class ArgumentMapPopulator
         $method_name_and_first_paren_source_code = substr(
             $file_content,
             $stmt->getStartFilePos(),
-            $method_name_and_first_paren_source_code_length
+            $method_name_and_first_paren_source_code_length,
         );
         $method_name_and_first_paren_tokens = token_get_all('<?php ' . $method_name_and_first_paren_source_code);
         $opening_paren_position = $first_argument_character;
@@ -127,7 +127,7 @@ class ArgumentMapPopulator
                 $argument_start_position,
                 $comma,
                 $function_reference,
-                $argument_number
+                $argument_number,
             );
 
             ++$argument_number;
@@ -139,7 +139,7 @@ class ArgumentMapPopulator
             $argument_start_position,
             $stmt->getEndFilePos(),
             $function_reference,
-            $argument_number
+            $argument_number,
         );
     }
 }

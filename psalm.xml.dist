@@ -3,20 +3,16 @@
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xmlns="https://getpsalm.org/schema/config"
     name="Psalm for Psalm"
-    useDocblockTypes="true"
     errorLevel="1"
-    strictBinaryOperands="false"
-    rememberPropertyAssignmentsAfterCall="true"
-    checkForThrowsDocblock="false"
     throwExceptionOnError="0"
     findUnusedCode="true"
     ensureArrayStringOffsetsExist="true"
     ensureArrayIntOffsetsExist="true"
-    resolveFromConfigFile="true"
     xsi:schemaLocation="https://getpsalm.org/schema/config config.xsd"
     limitMethodComplexity="true"
     errorBaseline="psalm-baseline.xml"
     findUnusedPsalmSuppress="true"
+    findUnusedBaselineEntry="true"
 >
     <stubs>
         <file name="stubs/phpparser.phpstub"/>

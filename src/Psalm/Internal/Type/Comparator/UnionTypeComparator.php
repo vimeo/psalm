@@ -119,7 +119,7 @@ class UnionTypeComparator
             if ($input_type_part instanceof TIntRange && $container_type->hasInt()) {
                 if (IntegerRangeComparator::isContainedByUnion(
                     $input_type_part,
-                    $container_type
+                    $container_type,
                 )) {
                     continue;
                 }
@@ -194,7 +194,7 @@ class UnionTypeComparator
                     $container_type_part,
                     $allow_interface_equality,
                     $allow_float_int_equality,
-                    $atomic_comparison_result
+                    $atomic_comparison_result,
                 );
 
                 if ($input_type_part instanceof TMixed
@@ -229,7 +229,7 @@ class UnionTypeComparator
                         $replacement = $union_comparison_result->replacement_union_type->getBuilder();
                         $replacement->removeType($input_type->getKey());
                         $replacement->addType(
-                            $atomic_comparison_result->replacement_atomic_type
+                            $atomic_comparison_result->replacement_atomic_type,
                         );
                         $union_comparison_result->replacement_union_type = $replacement->freeze();
                     }
@@ -352,8 +352,6 @@ class UnionTypeComparator
 
     /**
      * Used for comparing signature typehints, uses PHP's light contravariance rules
-     *
-     *
      */
     public static function isContainedByInPhp(
         ?Union $input_type,
@@ -436,7 +434,7 @@ class UnionTypeComparator
                     $container_type_part,
                     false,
                     false,
-                    $atomic_comparison_result
+                    $atomic_comparison_result,
                 );
 
                 if (($is_atomic_contained_by && !$atomic_comparison_result->to_string_cast)
@@ -452,7 +450,6 @@ class UnionTypeComparator
 
     /**
      * Can any part of the $type1 be equal to any part of $type2
-     *
      */
     public static function canExpressionTypesBeIdentical(
         Codebase $codebase,
@@ -475,7 +472,7 @@ class UnionTypeComparator
                 if ($type1_part instanceof TIntRange && $type2_part instanceof TIntRange) {
                     $intersection_range = TIntRange::intersectIntRanges(
                         $type1_part,
-                        $type2_part
+                        $type2_part,
                     );
                     return $intersection_range !== null;
                 }
@@ -484,7 +481,7 @@ class UnionTypeComparator
                     $codebase,
                     $type1_part,
                     $type2_part,
-                    $allow_interface_equality
+                    $allow_interface_equality,
                 );
 
                 if ($either_contains) {
@@ -523,7 +520,7 @@ class UnionTypeComparator
                 $fq_classlike_name,
                 null,
                 true,
-                true
+                true,
             );
 
             array_push($atomic_types, ...$expanded);

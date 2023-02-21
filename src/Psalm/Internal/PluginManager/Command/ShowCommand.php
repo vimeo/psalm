@@ -24,8 +24,7 @@ use const DIRECTORY_SEPARATOR;
  */
 class ShowCommand extends Command
 {
-    /** @var PluginListFactory */
-    private $plugin_list_factory;
+    private PluginListFactory $plugin_list_factory;
 
     public function __construct(PluginListFactory $plugin_list_factory)
     {
@@ -70,8 +69,8 @@ class ShowCommand extends Command
                 array_map(
                     $formatRow,
                     array_keys($enabled),
-                    array_values($enabled)
-                )
+                    array_values($enabled),
+                ),
             );
         } else {
             $io->note('No plugins enabled');
@@ -84,8 +83,8 @@ class ShowCommand extends Command
                 array_map(
                     $formatRow,
                     array_keys($available),
-                    array_values($available)
-                )
+                    array_values($available),
+                ),
             );
         } else {
             $io->note('No plugins available');

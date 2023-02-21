@@ -15,6 +15,7 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
+use Psalm\Issue\UnusedBaselineEntry;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use UnexpectedValueException;
 
@@ -83,11 +84,9 @@ class DocumentationTest extends TestCase
         '@psalm-stub-override',
     ];
 
-    /** @var ProjectAnalyzer */
-    protected $project_analyzer;
+    protected ProjectAnalyzer $project_analyzer;
 
-    /** @var string */
-    private static $docContents = '';
+    private static string $docContents = '';
 
     /**
      * @return array<string, array<int, string>>
@@ -141,8 +140,8 @@ class DocumentationTest extends TestCase
             new TestConfig(),
             new Providers(
                 $this->file_provider,
-                new FakeParserCacheProvider()
-            )
+                new FakeParserCacheProvider(),
+            ),
         );
 
         $this->project_analyzer->setPhpVersion('8.0', 'tests');
@@ -200,14 +199,9 @@ class DocumentationTest extends TestCase
     /**
      * @dataProvider providerInvalidCodeParse
      * @small
-     *
-     * @param string $code
-     * @param string $error_message
      * @param array<string> $ignored_issues
-     * @param bool $check_references
-     *
      */
-    public function testInvalidCode($code, $error_message, $ignored_issues = [], $check_references = false, string $php_version = '8.0'): void
+    public function testInvalidCode(string $code, string $error_message, array $ignored_issues = [], bool $check_references = false, string $php_version = '8.0'): void
     {
         if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
             $this->markTestSkipped();
@@ -269,6 +263,7 @@ class DocumentationTest extends TestCase
                 case 'RedundantIdentityWithTrue':
                 case 'TraitMethodSignatureMismatch':
                 case 'UncaughtThrowInGlobalScope':
+                case UnusedBaselineEntry::getIssueType():
                     continue 2;
 
                 /** @todo reinstate this test when the issue is restored */
@@ -310,8 +305,10 @@ class DocumentationTest extends TestCase
                 case 'DuplicateEnumCaseValue':
                 case 'InvalidEnumBackingType':
                 case 'InvalidEnumCaseValue':
+                case 'InvalidEnumMethod':
                 case 'NoEnumProperties':
                 case 'OverriddenFinalConstant':
+                case 'InvalidInterfaceImplementation':
                     $php_version = '8.1';
                     break;
             }
@@ -323,7 +320,7 @@ class DocumentationTest extends TestCase
                 strpos($issue_name, 'Unused') !== false
                     || strpos($issue_name, 'Unevaluated') !== false
                     || strpos($issue_name, 'Unnecessary') !== false,
-                $php_version
+                $php_version,
             ];
         }
 
@@ -336,6 +333,7 @@ class DocumentationTest extends TestCase
         $all_shortcodes = [];
 
         foreach ($all_issues as $issue_type) {
+            /** @var class-string $issue_class */
             $issue_class = '\\Psalm\\Issue\\' . $issue_type;
             /** @var int $shortcode */
             $shortcode = $issue_class::SHORTCODE;
@@ -350,7 +348,7 @@ class DocumentationTest extends TestCase
         $this->assertEquals(
             [],
             $duplicate_shortcodes,
-            "Duplicate shortcodes found: \n" . var_export($duplicate_shortcodes, true)
+            "Duplicate shortcodes found: \n" . var_export($duplicate_shortcodes, true),
         );
     }
 
@@ -366,7 +364,7 @@ class DocumentationTest extends TestCase
         $this->assertThat(
             self::$docContents,
             $this->conciseExpected($this->stringContains('@psalm-' . $annotation)),
-            "'@psalm-$annotation' is not present in the docs"
+            "'@psalm-$annotation' is not present in the docs",
         );
     }
 
@@ -393,8 +391,7 @@ class DocumentationTest extends TestCase
     {
         return new class ($inner) extends Constraint
         {
-            /** @var Constraint */
-            private $inner;
+            private Constraint $inner;
 
             public function __construct(Constraint $inner)
             {
@@ -406,11 +403,17 @@ class DocumentationTest extends TestCase
                 return $this->inner->toString();
             }
 
+            /**
+             * @param mixed $other
+             */
             protected function matches($other): bool
             {
                 return $this->inner->matches($other);
             }
 
+            /**
+             * @param mixed $other
+             */
             protected function failureDescription($other): string
             {
                 return $this->exporter()->shortenedExport($other) . ' ' . $this->toString();
@@ -436,7 +439,7 @@ class DocumentationTest extends TestCase
             throw new UnexpectedValueException("Issues index not found");
         }
 
-        $issues_index_contents = file($issues_index, FILE_IGNORE_NEW_LINES|FILE_SKIP_EMPTY_LINES);
+        $issues_index_contents = file($issues_index, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
         if ($issues_index_contents === false) {
             throw new UnexpectedValueException("Issues index returned false");
         }

@@ -50,11 +50,11 @@ class OrAnalyzer
                 [
                     'stmts' => [
                         new VirtualExpression(
-                            $stmt->right
-                        )
-                    ]
+                            $stmt->right,
+                        ),
+                    ],
                 ],
-                $stmt->getAttributes()
+                $stmt->getAttributes(),
             );
 
             return IfElseAnalyzer::analyze($statements_analyzer, $fake_if_stmt, $context) !== false;
@@ -79,7 +79,7 @@ class OrAnalyzer
                     $context,
                     $codebase,
                     $if_scope,
-                    $context->branch_point ?: (int) $stmt->getAttribute('startFilePos')
+                    $context->branch_point ?: (int) $stmt->getAttribute('startFilePos'),
                 );
 
                 $left_context = $if_conditional_scope->if_context;
@@ -124,7 +124,7 @@ class OrAnalyzer
                     $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                         $context->vars_in_scope[$var_id],
                         $type,
-                        $codebase
+                        $codebase,
                     );
                 }
             }
@@ -146,7 +146,7 @@ class OrAnalyzer
             $stmt->left,
             $context->self,
             $statements_analyzer,
-            $codebase
+            $codebase,
         );
 
         try {
@@ -160,7 +160,7 @@ class OrAnalyzer
                     $context->self,
                     $statements_analyzer,
                     $codebase,
-                    false
+                    false,
                 );
             } catch (ComplicatedExpressionException $e) {
                 return false;
@@ -174,7 +174,7 @@ class OrAnalyzer
                 array_filter(
                     $negated_left_clauses,
                     static fn(Clause $c): bool => !in_array($c->hash, $reconciled_expression_clauses)
-                )
+                ),
             );
 
             if (count($negated_left_clauses) === 1
@@ -186,7 +186,7 @@ class OrAnalyzer
         }
 
         $clauses_for_right_analysis = Algebra::simplifyCNF(
-            [...$context->clauses, ...$negated_left_clauses]
+            [...$context->clauses, ...$negated_left_clauses],
         );
 
         $active_negated_type_assertions = [];
@@ -195,7 +195,7 @@ class OrAnalyzer
             $clauses_for_right_analysis,
             $left_cond_id,
             $left_referenced_var_ids,
-            $active_negated_type_assertions
+            $active_negated_type_assertions,
         );
 
         $changed_var_ids = [];
@@ -211,7 +211,7 @@ class OrAnalyzer
                 $stmt->left,
                 $post_leaving_if_context,
                 $right_context,
-                $left_assigned_var_ids
+                $left_assigned_var_ids,
             );
         }
 
@@ -229,7 +229,7 @@ class OrAnalyzer
                 [],
                 $left_context->inside_loop,
                 new CodeLocation($statements_analyzer->getSource(), $stmt->left),
-                !$context->inside_negation
+                !$context->inside_negation,
             );
         }
 
@@ -280,16 +280,16 @@ class OrAnalyzer
             $stmt->right,
             $context->self,
             $statements_analyzer,
-            $codebase
+            $codebase,
         );
 
         $clauses_for_right_analysis = Context::removeReconciledClauses(
             $clauses_for_right_analysis,
-            $right_assigned_var_ids
+            $right_assigned_var_ids,
         )[0];
 
         $combined_right_clauses = Algebra::simplifyCNF(
-            [...$clauses_for_right_analysis, ...$right_clauses]
+            [...$clauses_for_right_analysis, ...$right_clauses],
         );
 
         $active_right_type_assertions = [];
@@ -298,7 +298,7 @@ class OrAnalyzer
             $combined_right_clauses,
             $right_cond_id,
             $right_referenced_var_ids,
-            $active_right_type_assertions
+            $active_right_type_assertions,
         );
 
         if ($right_type_assertions) {
@@ -315,7 +315,7 @@ class OrAnalyzer
                 [],
                 $left_context->inside_loop,
                 new CodeLocation($statements_analyzer->getSource(), $stmt->right),
-                $context->inside_negation
+                $context->inside_negation,
             );
         }
 
@@ -325,7 +325,7 @@ class OrAnalyzer
                     $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                         $context->vars_in_scope[$var_id],
                         $type,
-                        $codebase
+                        $codebase,
                     );
                 }
             }
@@ -341,7 +341,7 @@ class OrAnalyzer
                     $context->inside_loop,
                     [],
                     new CodeLocation($statements_analyzer->getSource(), $stmt->left),
-                    $statements_analyzer->getSuppressedIssues()
+                    $statements_analyzer->getSuppressedIssues(),
                 );
 
                 $context->vars_in_scope[$var_id] = $left_inferred_reconciled;
@@ -354,12 +354,12 @@ class OrAnalyzer
 
         $context->cond_referenced_var_ids = array_merge(
             $right_context->cond_referenced_var_ids,
-            $context->cond_referenced_var_ids
+            $context->cond_referenced_var_ids,
         );
 
         $context->assigned_var_ids = array_merge(
             $context->assigned_var_ids,
-            $right_context->assigned_var_ids
+            $right_context->assigned_var_ids,
         );
 
         if ($context->if_body_context) {
@@ -370,25 +370,25 @@ class OrAnalyzer
                     $if_body_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                         $type,
                         $if_body_context->vars_in_scope[$var_id],
-                        $codebase
+                        $codebase,
                     );
                 } elseif (isset($left_context->vars_in_scope[$var_id])) {
                     $if_body_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                         $type,
                         $left_context->vars_in_scope[$var_id],
-                        $codebase
+                        $codebase,
                     );
                 }
             }
 
             $if_body_context->cond_referenced_var_ids = array_merge(
                 $context->cond_referenced_var_ids,
-                $if_body_context->cond_referenced_var_ids
+                $if_body_context->cond_referenced_var_ids,
             );
 
             $if_body_context->assigned_var_ids = array_merge(
                 $context->assigned_var_ids,
-                $if_body_context->assigned_var_ids
+                $if_body_context->assigned_var_ids,
             );
 
             $if_body_context->updateChecks($context);
@@ -396,7 +396,7 @@ class OrAnalyzer
 
         $context->vars_possibly_in_scope = array_merge(
             $right_context->vars_possibly_in_scope,
-            $context->vars_possibly_in_scope
+            $context->vars_possibly_in_scope,
         );
 
         return true;

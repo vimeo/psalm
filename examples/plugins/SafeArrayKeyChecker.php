@@ -1,4 +1,5 @@
 <?php
+
 namespace Psalm\Example\Plugin;
 
 use PhpParser\Node\Expr\ArrayItem;
@@ -13,7 +14,8 @@ class SafeArrayKeyChecker implements RemoveTaintsInterface
      *
      * @return list<string>
      */
-    public static function removeTaints(AddRemoveTaintsEvent $event): array {
+    public static function removeTaints(AddRemoveTaintsEvent $event): array
+    {
         $item = $event->getExpr();
         $statements_analyzer = $event->getStatementsSource();
         if (!($item instanceof ArrayItem) || !($statements_analyzer instanceof StatementsAnalyzer)) {

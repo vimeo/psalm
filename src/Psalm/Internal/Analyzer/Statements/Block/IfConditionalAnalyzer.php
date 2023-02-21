@@ -64,8 +64,8 @@ class IfConditionalAnalyzer
                             ? $cond->expr
                             : $cond,
                         $outer_context->include_location,
-                        false
-                    )
+                        false,
+                    ),
                 );
 
                 if ($changed_var_ids) {
@@ -79,7 +79,7 @@ class IfConditionalAnalyzer
                             static fn(Clause $c): bool => count($c->possibilities) > 1
                                 || $c->wedge
                                 || !isset($changed_var_ids[array_keys($c->possibilities)[0]])
-                        )
+                        ),
                     );
                 }
             }
@@ -116,7 +116,7 @@ class IfConditionalAnalyzer
         if (ExpressionAnalyzer::analyze(
             $statements_analyzer,
             $externally_applied_if_cond_expr,
-            $outer_context
+            $outer_context,
         ) === false) {
             throw new ScopeAnalysisException();
         }
@@ -124,13 +124,13 @@ class IfConditionalAnalyzer
         $first_cond_assigned_var_ids = $outer_context->assigned_var_ids;
         $outer_context->assigned_var_ids = array_merge(
             $pre_assigned_var_ids,
-            $first_cond_assigned_var_ids
+            $first_cond_assigned_var_ids,
         );
 
         $first_cond_referenced_var_ids = $outer_context->cond_referenced_var_ids;
         $outer_context->cond_referenced_var_ids = array_merge(
             $referenced_var_ids,
-            $first_cond_referenced_var_ids
+            $first_cond_referenced_var_ids,
         );
 
         $outer_context->inside_conditional = $was_inside_conditional;
@@ -176,24 +176,24 @@ class IfConditionalAnalyzer
             $more_cond_referenced_var_ids = $if_conditional_context->cond_referenced_var_ids;
             $if_conditional_context->cond_referenced_var_ids = array_merge(
                 $more_cond_referenced_var_ids,
-                $referenced_var_ids
+                $referenced_var_ids,
             );
 
             $cond_referenced_var_ids = array_merge(
                 $first_cond_referenced_var_ids,
-                $more_cond_referenced_var_ids
+                $more_cond_referenced_var_ids,
             );
 
             /** @var array<string, int> */
             $more_cond_assigned_var_ids = $if_conditional_context->assigned_var_ids;
             $if_conditional_context->assigned_var_ids = array_merge(
                 $more_cond_assigned_var_ids,
-                $assigned_var_ids
+                $assigned_var_ids,
             );
 
             $assigned_in_conditional_var_ids = array_merge(
                 $first_cond_assigned_var_ids,
-                $more_cond_assigned_var_ids
+                $more_cond_assigned_var_ids,
             );
         } else {
             $cond_referenced_var_ids = $first_cond_referenced_var_ids;
@@ -207,7 +207,7 @@ class IfConditionalAnalyzer
             $if_conditional_context->vars_in_scope,
             $pre_condition_vars_in_scope,
             $cond_referenced_var_ids,
-            $assigned_in_conditional_var_ids
+            $assigned_in_conditional_var_ids,
         ) as $name => $_value) {
             $newish_var_ids[$name] = true;
         }
@@ -224,7 +224,7 @@ class IfConditionalAnalyzer
             $post_if_context,
             $cond_referenced_var_ids,
             $assigned_in_conditional_var_ids,
-            $entry_clauses
+            $entry_clauses,
         );
     }
 
@@ -330,18 +330,18 @@ class IfConditionalAnalyzer
                         new DocblockTypeContradiction(
                             'Operand of type ' . $type->getId() . ' is always falsy',
                             new CodeLocation($statements_analyzer, $stmt),
-                            $type->getId() . ' falsy'
+                            $type->getId() . ' falsy',
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
                     );
                 } else {
                     IssueBuffer::maybeAdd(
                         new TypeDoesNotContainType(
                             'Operand of type ' . $type->getId() . ' is always falsy',
                             new CodeLocation($statements_analyzer, $stmt),
-                            $type->getId() . ' falsy'
+                            $type->getId() . ' falsy',
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
                     );
                 }
             } elseif ($type->isAlwaysTruthy() &&
@@ -352,18 +352,18 @@ class IfConditionalAnalyzer
                         new RedundantConditionGivenDocblockType(
                             'Operand of type ' . $type->getId() . ' is always truthy',
                             new CodeLocation($statements_analyzer, $stmt),
-                            $type->getId() . ' falsy'
+                            $type->getId() . ' falsy',
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
                     );
                 } else {
                     IssueBuffer::maybeAdd(
                         new RedundantCondition(
                             'Operand of type ' . $type->getId() . ' is always truthy',
                             new CodeLocation($statements_analyzer, $stmt),
-                            $type->getId() . ' falsy'
+                            $type->getId() . ' falsy',
                         ),
-                        $statements_analyzer->getSuppressedIssues()
+                        $statements_analyzer->getSuppressedIssues(),
                     );
                 }
             }
