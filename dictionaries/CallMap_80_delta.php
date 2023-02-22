@@ -497,6 +497,10 @@ return [
       'old' => ['int<0, max>', 'value'=>'Countable|array|SimpleXMLElement', 'mode='=>'int'],
       'new' => ['int<0, max>', 'value'=>'Countable|array', 'mode='=>'int'],
     ],
+    'sizeof' => [
+      'old' => ['int<0, max>', 'value'=>'Countable|array|SimpleXMLElement', 'mode='=>'int'],
+      'new' => ['int<0, max>', 'value'=>'Countable|array', 'mode='=>'int'],
+    ],
     'count_chars' => [
       'old' => ['array<int,int>|false', 'input'=>'string', 'mode='=>'0|1|2'],
       'new' => ['array<int,int>', 'input'=>'string', 'mode='=>'0|1|2'],

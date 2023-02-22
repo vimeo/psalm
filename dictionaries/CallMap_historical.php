@@ -14030,7 +14030,7 @@ return [
     'simplexml_load_string' => ['SimpleXMLElement|false', 'data'=>'string', 'class_name='=>'?string', 'options='=>'int', 'namespace_or_prefix='=>'string', 'is_prefix='=>'bool'],
     'sin' => ['float', 'num'=>'float'],
     'sinh' => ['float', 'num'=>'float'],
-    'sizeof' => ['int', 'value'=>'Countable|array', 'mode='=>'int'],
+    'sizeof' => ['int<0, max>', 'value'=>'Countable|array|SimpleXMLElement', 'mode='=>'int'],
     'sleep' => ['int|false', 'seconds'=>'0|positive-int'],
     'snmp2_get' => ['string|false', 'hostname'=>'string', 'community'=>'string', 'object_id'=>'string', 'timeout='=>'int', 'retries='=>'int'],
     'snmp2_getnext' => ['string|false', 'hostname'=>'string', 'community'=>'string', 'object_id'=>'string', 'timeout='=>'int', 'retries='=>'int'],
