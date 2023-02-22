@@ -2044,7 +2044,8 @@ class AssertionFinder
 
     protected static function hasNonEmptyCountCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
     {
-        return $stmt->name instanceof PhpParser\Node\Name && in_array(strtolower($stmt->name->parts[0]), ['count', 'sizeof']);
+        return $stmt->name instanceof PhpParser\Node\Name &&
+            in_array(strtolower($stmt->name->parts[0]), ['count', 'sizeof']);
     }
 
     protected static function hasArrayKeyExistsCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
