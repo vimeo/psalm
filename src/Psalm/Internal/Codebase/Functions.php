@@ -555,7 +555,7 @@ class Functions
             return true;
         }
 
-        if ($function_id === 'count' && isset($args[0]) && $type_provider) {
+        if (in_array($function_id, ['count', 'sizeof']) && isset($args[0]) && $type_provider) {
             $count_type = $type_provider->getType($args[0]->value);
 
             if ($count_type) {
@@ -563,7 +563,7 @@ class Functions
                     if ($atomic_count_type instanceof TNamedObject) {
                         $count_method_id = new MethodIdentifier(
                             $atomic_count_type->value,
-                            'count',
+                            $function_id,
                         );
 
                         try {
