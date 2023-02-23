@@ -417,6 +417,8 @@ class FunctionLikeDocblockScanner
         if ($docblock_info->description) {
             $storage->description = $docblock_info->description;
         }
+
+        $storage->public_api = $docblock_info->public_api;
     }
 
     /**
