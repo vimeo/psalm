@@ -390,40 +390,40 @@ return [
       'new' => ['array', 'array'=>'array', 'column_key'=>'int|string|null', 'index_key='=>'int|string|null'],
     ],
     'array_combine' => [
-      'old' => ['associative-array|false', 'keys'=>'string[]|int[]', 'values'=>'array'],
-      'new' => ['associative-array', 'keys'=>'string[]|int[]', 'values'=>'array'],
+      'old' => ['array|false', 'keys'=>'string[]|int[]', 'values'=>'array'],
+      'new' => ['array', 'keys'=>'string[]|int[]', 'values'=>'array'],
     ],
     'array_diff' => [
-      'old' => ['associative-array', 'array'=>'array', '...arrays'=>'array'],
-      'new' => ['associative-array', 'array'=>'array', '...arrays='=>'array'],
+      'old' => ['array', 'array'=>'array', '...arrays'=>'array'],
+      'new' => ['array', 'array'=>'array', '...arrays='=>'array'],
     ],
     'array_diff_assoc' => [
-      'old' => ['associative-array', 'array'=>'array', '...arrays'=>'array'],
-      'new' => ['associative-array', 'array'=>'array', '...arrays='=>'array'],
+      'old' => ['array', 'array'=>'array', '...arrays'=>'array'],
+      'new' => ['array', 'array'=>'array', '...arrays='=>'array'],
     ],
     'array_diff_key' => [
-      'old' => ['associative-array', 'array'=>'array', '...arrays'=>'array'],
-      'new' => ['associative-array', 'array'=>'array', '...arrays='=>'array'],
+      'old' => ['array', 'array'=>'array', '...arrays'=>'array'],
+      'new' => ['array', 'array'=>'array', '...arrays='=>'array'],
     ],
     'array_filter' => [
-      'old' => ['associative-array', 'array'=>'array', 'callback='=>'callable(mixed,mixed=):scalar', 'mode='=>'int'],
-      'new' => ['associative-array', 'array'=>'array', 'callback='=>'callable(mixed,mixed=):scalar|null', 'mode='=>'int'],
+      'old' => ['array', 'array'=>'array', 'callback='=>'callable(mixed,mixed=):scalar', 'mode='=>'int'],
+      'new' => ['array', 'array'=>'array', 'callback='=>'callable(mixed,mixed=):scalar|null', 'mode='=>'int'],
     ],
     'array_key_exists' => [
       'old' => ['bool', 'key'=>'string|int', 'array'=>'array|object'],
       'new' => ['bool', 'key'=>'string|int', 'array'=>'array'],
     ],
     'array_intersect' => [
-      'old' => ['associative-array', 'array'=>'array', '...arrays'=>'array'],
-      'new' => ['associative-array', 'array'=>'array', '...arrays='=>'array'],
+      'old' => ['array', 'array'=>'array', '...arrays'=>'array'],
+      'new' => ['array', 'array'=>'array', '...arrays='=>'array'],
     ],
     'array_intersect_assoc' => [
-      'old' => ['associative-array', 'array'=>'array', '...arrays'=>'array'],
-      'new' => ['associative-array', 'array'=>'array', '...arrays='=>'array'],
+      'old' => ['array', 'array'=>'array', '...arrays'=>'array'],
+      'new' => ['array', 'array'=>'array', '...arrays='=>'array'],
     ],
     'array_intersect_key' => [
-      'old' => ['associative-array', 'array'=>'array', '...arrays'=>'array'],
-      'new' => ['associative-array', 'array'=>'array', '...arrays='=>'array'],
+      'old' => ['array', 'array'=>'array', '...arrays'=>'array'],
+      'new' => ['array', 'array'=>'array', '...arrays='=>'array'],
     ],
     'array_splice' => [
       'old' => ['array', '&rw_array'=>'array', 'offset'=>'int', 'length='=>'int', 'replacement='=>'array|string'],
