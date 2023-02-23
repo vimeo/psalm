@@ -758,7 +758,7 @@ class SimpleTypeInferer
                 foreach ($unpacked_atomic_type->properties as $key => $property_value) {
                     if (is_string($key)) {
                         $new_offset = $key;
-                        $array_creation_info->item_key_atomic_types[] = new TLiteralString($new_offset);
+                        $array_creation_info->item_key_atomic_types[] = Type::getAtomicStringFromLiteral($new_offset);
                     } else {
                         $new_offset = $array_creation_info->int_offset++;
                         $array_creation_info->item_key_atomic_types[] = new TLiteralInt($new_offset);

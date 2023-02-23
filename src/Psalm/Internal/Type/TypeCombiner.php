@@ -1473,7 +1473,7 @@ class TypeCombiner
                 } elseif ($type instanceof TKeyedArray && isset($type->class_strings[$property_name])) {
                     $objectlike_keys[$property_name] = new TLiteralClassString($property_name, $from_docblock);
                 } else {
-                    $objectlike_keys[$property_name] = new TLiteralString($property_name, $from_docblock);
+                    $objectlike_keys[$property_name] = Type::getAtomicStringFromLiteral($property_name, $from_docblock);
                 }
             }
 
