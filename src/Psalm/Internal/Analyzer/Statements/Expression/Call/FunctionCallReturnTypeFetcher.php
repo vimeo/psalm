@@ -354,6 +354,7 @@ class FunctionCallReturnTypeFetcher
         } else {
             switch ($call_map_key) {
                 case 'count':
+                case 'sizeof':
                     if (($first_arg_type = $statements_analyzer->node_data->getType($call_args[0]->value))) {
                         $atomic_types = $first_arg_type->getAtomicTypes();
 

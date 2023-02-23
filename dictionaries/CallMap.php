@@ -11334,7 +11334,7 @@ return [
 'SimpleXMLElement::xpath' => ['SimpleXMLElement[]|false', 'path'=>'string'],
 'sin' => ['float', 'num'=>'float'],
 'sinh' => ['float', 'num'=>'float'],
-'sizeof' => ['int', 'value'=>'Countable|array', 'mode='=>'int'],
+'sizeof' => ['int<0, max>', 'value'=>'Countable|array', 'mode='=>'int'],
 'sleep' => ['int', 'seconds'=>'0|positive-int'],
 'snmp2_get' => ['string|false', 'hostname'=>'string', 'community'=>'string', 'object_id'=>'string', 'timeout='=>'int', 'retries='=>'int'],
 'snmp2_getnext' => ['string|false', 'hostname'=>'string', 'community'=>'string', 'object_id'=>'string', 'timeout='=>'int', 'retries='=>'int'],

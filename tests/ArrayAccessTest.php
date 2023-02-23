@@ -145,6 +145,22 @@ class ArrayAccessTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testNoIssueWhenUsingArrayValuesOnNonEmptyArrayCheckedWithSizeof(): void
+    {
+        Config::getInstance()->ensure_array_int_offsets_exist = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @param string[][] $arr */
+                function foo(array $arr) : void {
+                    if (sizeof($arr) === 1 && sizeof(array_values($arr)[0]) === 1) {}
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
     public function testNoIssueAfterManyIssets(): void
     {
         Config::getInstance()->ensure_array_int_offsets_exist = true;
