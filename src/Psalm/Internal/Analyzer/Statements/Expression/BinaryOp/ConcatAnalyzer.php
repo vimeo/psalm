@@ -29,7 +29,6 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
-use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TLowercaseString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
@@ -173,7 +172,7 @@ class ConcatAnalyzer
                                 break 2;
                             }
 
-                            $result_type_parts[] = new TLiteralString($literal);
+                            $result_type_parts[] = Type::getAtomicStringFromLiteral($literal);
                         }
                     }
 

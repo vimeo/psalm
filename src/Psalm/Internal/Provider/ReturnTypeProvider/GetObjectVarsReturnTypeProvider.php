@@ -56,7 +56,7 @@ class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProviderInter
             $object_type = reset($atomics);
 
             if ($object_type instanceof Atomic\TEnumCase) {
-                $properties = ['name' => new Union([new Atomic\TLiteralString($object_type->case_name)])];
+                $properties = ['name' => new Union([Type::getAtomicStringFromLiteral($object_type->case_name)])];
                 $codebase = $statements_source->getCodebase();
                 $enum_classlike_storage = $codebase->classlike_storage_provider->get($object_type->value);
                 if ($enum_classlike_storage->enum_type === null) {
@@ -66,7 +66,7 @@ class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProviderInter
                 if (is_int($enum_case_storage->value)) {
                     $properties['value'] = new Union([new Atomic\TLiteralInt($enum_case_storage->value)]);
                 } elseif (is_string($enum_case_storage->value)) {
-                    $properties['value'] = new Union([new Atomic\TLiteralString($enum_case_storage->value)]);
+                    $properties['value'] = new Union([Type::getAtomicStringFromLiteral($enum_case_storage->value)]);
                 }
                 return new TKeyedArray($properties);
             }

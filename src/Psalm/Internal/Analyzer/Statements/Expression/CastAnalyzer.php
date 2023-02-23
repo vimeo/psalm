@@ -721,7 +721,7 @@ class CastAnalyzer
                 || $atomic_type instanceof TNumeric
             ) {
                 if ($atomic_type instanceof TLiteralInt || $atomic_type instanceof TLiteralFloat) {
-                    $castable_types[] = new TLiteralString((string) $atomic_type->value);
+                    $castable_types[] = Type::getAtomicStringFromLiteral((string) $atomic_type->value);
                 } elseif ($atomic_type instanceof TNonspecificLiteralInt) {
                     $castable_types[] = new TNonspecificLiteralString();
                 } else {
@@ -740,20 +740,20 @@ class CastAnalyzer
             if ($atomic_type instanceof TNull
                 || $atomic_type instanceof TFalse
             ) {
-                $valid_strings[] = new TLiteralString('');
+                $valid_strings[] = Type::getAtomicStringFromLiteral('');
                 continue;
             }
 
             if ($atomic_type instanceof TTrue
             ) {
-                $valid_strings[] = new TLiteralString('1');
+                $valid_strings[] = Type::getAtomicStringFromLiteral('1');
                 continue;
             }
 
             if ($atomic_type instanceof TBool
             ) {
-                $valid_strings[] = new TLiteralString('1');
-                $valid_strings[] = new TLiteralString('');
+                $valid_strings[] = Type::getAtomicStringFromLiteral('1');
+                $valid_strings[] = Type::getAtomicStringFromLiteral('');
                 continue;
             }
 

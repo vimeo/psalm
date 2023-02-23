@@ -13,7 +13,6 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralInt;
-use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Union;
 use UnexpectedValueException;
@@ -309,7 +308,8 @@ class TKeyedArray extends Atomic
             } elseif (isset($this->class_strings[$key])) {
                 $key_types[] = new TLiteralClassString($key);
             } else {
-                $key_types[] = new TLiteralString($key);
+                /** @psalm-suppress ImpureMethodCall let's assume string interpreters are pure */
+                $key_types[] = Type::getAtomicStringFromLiteral($key);
             }
         }
 
@@ -362,7 +362,8 @@ class TKeyedArray extends Atomic
             } elseif (isset($this->class_strings[$key])) {
                 $key_types[] = new TLiteralClassString($key);
             } else {
-                $key_types[] = new TLiteralString($key);
+                /** @psalm-suppress ImpureMethodCall let's assume string interpreters are pure */
+                $key_types[] = Type::getAtomicStringFromLiteral($key);
             }
 
             $value_type = Type::combineUnionTypes($property, $value_type);

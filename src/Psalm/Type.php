@@ -251,29 +251,27 @@ abstract class Type
 
     public static function getString(?string $value = null): Union
     {
-        $type = null;
+        return new Union([$value === null ? new TString() : self::getAtomicStringFromLiteral($value)]);
+    }
 
-        if ($value !== null) {
-            $config = Config::getInstance();
+    /** @return TLiteralString|TNonEmptyString */
+    public static function getAtomicStringFromLiteral(string $value, bool $from_docblock = false): TString
+    {
+        $config = Config::getInstance();
 
-            $event = new StringInterpreterEvent($value, ProjectAnalyzer::getInstance()->getCodebase());
+        $event = new StringInterpreterEvent($value, ProjectAnalyzer::getInstance()->getCodebase());
 
-            $type = $config->eventDispatcher->dispatchStringInterpreter($event);
+        $type = $config->eventDispatcher->dispatchStringInterpreter($event);
 
-            if (!$type) {
-                if (strlen($value) < $config->max_string_length) {
-                    $type = new TLiteralString($value);
-                } else {
-                    $type = new TNonEmptyString();
-                }
+        if (!$type) {
+            if (strlen($value) < $config->max_string_length) {
+                $type = new TLiteralString($value, $from_docblock);
+            } else {
+                $type = new TNonEmptyString($from_docblock);
             }
         }
 
-        if (!$type) {
-            $type = new TString();
-        }
-
-        return new Union([$type]);
+        return $type;
     }
 
     /**

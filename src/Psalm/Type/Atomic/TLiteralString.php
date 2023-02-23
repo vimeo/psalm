@@ -2,9 +2,13 @@
 
 namespace Psalm\Type\Atomic;
 
+use InvalidArgumentException;
+use Psalm\Config;
+
 use function addcslashes;
 use function mb_strlen;
 use function mb_substr;
+use function strlen;
 
 /**
  * Denotes a string whose value is known.
@@ -16,10 +20,41 @@ class TLiteralString extends TString
     /** @var string */
     public $value;
 
+    /**
+     * Creates a literal string with a known value.
+     *
+     * Internal.
+     * String interpreters should use {@see TLiteralString::make} instead.
+     * All other clients should use {@see Type::getAtomicStringFromLiteral}.
+     *
+     * @psalm-internal Psalm\Type::getAtomicStringFromLiteral
+     * @psalm-internal Psalm\Type\Atomic\TLiteralClassString::__construct
+     * @psalm-internal Psalm\Type\Atomic\TLiteralString::make
+     */
     public function __construct(string $value, bool $from_docblock = false)
     {
+        $config = Config::getInstance();
+        if (strlen($value) >= $config->max_string_length) {
+            throw new InvalidArgumentException(
+                'Literal string length should be below the configured limit ('
+                . $config->max_string_length
+                . ')',
+            );
+        }
         $this->value = $value;
         $this->from_docblock = $from_docblock;
+    }
+
+    /**
+     * Should only be used by string interpreters to avoid recursive calls.
+     *
+     * For all other purposes use {@see Type::getAtomicStringFromLiteral}
+     *
+     * @psalm-api
+     */
+    public static function make(string $value, bool $from_docblock = false): self
+    {
+        return new self($value, $from_docblock);
     }
 
     /**
