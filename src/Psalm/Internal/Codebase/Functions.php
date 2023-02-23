@@ -563,7 +563,7 @@ class Functions
                     if ($atomic_count_type instanceof TNamedObject) {
                         $count_method_id = new MethodIdentifier(
                             $atomic_count_type->value,
-                            $function_id,
+                            'count',
                         );
 
                         try {
