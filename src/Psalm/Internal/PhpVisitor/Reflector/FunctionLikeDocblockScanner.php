@@ -489,7 +489,8 @@ class FunctionLikeDocblockScanner
 
                         // spaces are allowed before $foo in get(string $foo) magic method
                         // definitions, but we want to remove them in this instance
-                        if (isset($fixed_type_tokens[$i - 1])
+                        if ($i > 0
+                            && isset($fixed_type_tokens[$i - 1])
                             && $fixed_type_tokens[$i - 1][0][0] === ' '
                         ) {
                             unset($fixed_type_tokens[$i - 1]);
