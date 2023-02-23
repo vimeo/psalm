@@ -379,9 +379,6 @@
     </RedundantCondition>
   </file>
   <file src="src/Psalm/Internal/PhpVisitor/Reflector/FunctionLikeDocblockScanner.php">
-    <PossiblyInvalidArrayOffset>
-      <code>$fixed_type_tokens[$i - 1]</code>
-    </PossiblyInvalidArrayOffset>
     <PossiblyUndefinedArrayOffset>
       <code>$source_param_string</code>
     </PossiblyUndefinedArrayOffset>
