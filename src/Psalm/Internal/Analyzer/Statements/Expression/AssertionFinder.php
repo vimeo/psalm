@@ -1871,9 +1871,9 @@ class AssertionFinder
                 return new IsType(new Atomic\TString());
             case 'is_int':
             case 'is_integer':
+            case 'is_long':
                 return new IsType(new Atomic\TInt());
             case 'is_float':
-            case 'is_long':
             case 'is_double':
             case 'is_real':
                 return new IsType(new Atomic\TFloat());
