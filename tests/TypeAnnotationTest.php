@@ -876,6 +876,89 @@ class TypeAnnotationTest extends TestCase
                     class C implements B {}',
                 'error_message' => 'UndefinedDocblockClass',
             ],
+            'duplicateKeyInArrayShapeOnInterfaceIsReported' => [
+                'code' => <<<'PHP'
+                    <?php
+
+                    /**
+                     * @psalm-type Attributes = array{
+                     *   name: string,
+                     *   email: string,
+                     *   email: string,
+                     * }
+                     */
+                    interface A {
+                        /**
+                         * @return Attributes
+                         */
+                        public function getAttributes(): array;
+                    }
+                    PHP,
+                'error_message' => 'InvalidDocblock',
+            ],
+            'duplicateKeyInArrayShapeOnAClassIsReported' => [
+                'code' => <<<'PHP'
+                    <?php
+
+                    /**
+                     * @psalm-type Attributes = array{
+                     *   name: string,
+                     *   email: string,
+                     *   email: string,
+                     * }
+                     */
+                    class A {
+                        /**
+                         * @return Attributes
+                         */
+                        public function getAttributes(): array {
+                            return [];
+                        }
+                    }
+                    PHP,
+                'error_message' => 'InvalidDocblock',
+            ],
+            'duplicateKeyInArrayShapeOnATraitIsReported' => [
+                'code' => <<<'PHP'
+                    <?php
+
+                    /**
+                     * @psalm-type Attributes = array{
+                     *   name: string,
+                     *   email: string,
+                     *   email: string,
+                     * }
+                     */
+                    trait A {
+                        /**
+                         * @return Attributes
+                         */
+                        public function getAttributes(): array {
+                            return [];
+                        }
+                    }
+                    PHP,
+                'error_message' => 'InvalidDocblock',
+            ],
+            'duplicateKeyInArrayShapeOnAnEnumIsReported' => [
+                'code' => <<<'PHP'
+                    <?php
+
+                    /**
+                     * @psalm-type Attributes = array{
+                     *   name: string,
+                     *   email: string,
+                     *   email: string,
+                     * }
+                     */
+                    enum A {
+                        case FOO;
+                    }
+                    PHP,
+                'error_message' => 'InvalidDocblock',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 }
