@@ -14,6 +14,8 @@ use function implode;
 use function in_array;
 use function ini_get;
 use function preg_replace;
+use function strlen;
+use function strtolower;
 
 use const PHP_VERSION_ID;
 
@@ -22,6 +24,14 @@ use const PHP_VERSION_ID;
  */
 class PsalmRestarter extends XdebugHandler
 {
+    private const REQUIRED_OPCACHE_SETTINGS = [
+        'enable_cli' => true,
+        'jit' => 1205,
+        'jit_buffer_size' => 512 * 1024 * 1024,
+        'optimization_level' => '0x7FFEBFFF',
+        'preload' => '',
+    ];
+
     private bool $required = false;
 
     /**
@@ -53,27 +63,53 @@ class PsalmRestarter extends XdebugHandler
             static fn(string $extension): bool => extension_loaded($extension)
         );
 
-        if (PHP_VERSION_ID >= 8_00_00 && (extension_loaded('opcache') || extension_loaded('Zend OPcache'))) {
+        $opcache_loaded = extension_loaded('opcache') || extension_loaded('Zend OPcache');
+
+        if (PHP_VERSION_ID >= 8_00_00 && $opcache_loaded) {
             // restart to enable JIT if it's not configured in the optimal way
-            if (!in_array(ini_get('opcache.enable_cli'), ['1', 'true', true, 1])) {
-                return true;
-            }
+            $opcache_settings = [
+                'enable_cli' => in_array(ini_get('opcache.enable_cli'), ['1', 'true', true, 1]),
+                'jit' => (int) ini_get('opcache.jit'),
+                'optimization_level' => (string) ini_get('opcache.optimization_level'),
+                'preload' => (string) ini_get('opcache.preload'),
+                'jit_buffer_size' => self::toBytes(ini_get('opcache.jit_buffer_size')),
+            ];
 
-            if (((int) ini_get('opcache.jit')) !== 1205) {
-                return true;
-            }
-
-            if (((int) ini_get('opcache.jit')) === 0) {
-                return true;
-            }
-
-            if (ini_get('opcache.optimization_level') !== '0x7FFEBFFF') {
-                return true;
+            foreach (self::REQUIRED_OPCACHE_SETTINGS as $ini_name => $required_value) {
+                if ($opcache_settings[$ini_name] !== $required_value) {
+                    return true;
+                }
             }
         }
 
         return $default || $this->required;
     }
+
+    private static function toBytes(string $value): int
+    {
+        $unit = strtolower($value[strlen($value) - 1]);
+
+        if (in_array($unit, ['g', 'm', 'k'], true)) {
+            $value = (int) $value;
+        } else {
+            $unit = '';
+            $value = (int) $value;
+        }
+
+        switch ($unit) {
+            case 'g':
+                $value *= 1024;
+                // no break
+            case 'm':
+                $value *= 1024;
+                // no break
+            case 'k':
+                $value *= 1024;
+        }
+
+        return $value;
+    }
+
 
     /**
      * No type hint to allow xdebug-handler v1 and v2 usage
@@ -93,17 +129,19 @@ class PsalmRestarter extends XdebugHandler
         }
 
         $additional_options = [];
+        $opcache_loaded = extension_loaded('opcache') || extension_loaded('Zend OPcache');
 
         // executed in the parent process (before restart)
         // if it wasn't loaded then we apparently don't have opcache installed and there's no point trying
         // to tweak it
         // If we're running on 7.4 there's no JIT available
-        if (PHP_VERSION_ID >= 8_00_00 && (extension_loaded('opcache') || extension_loaded('Zend OPcache'))) {
+        if (PHP_VERSION_ID >= 8_00_00 && $opcache_loaded) {
             $additional_options = [
                 '-dopcache.enable_cli=true',
                 '-dopcache.jit_buffer_size=512M',
                 '-dopcache.jit=1205',
                 '-dopcache.optimization_level=0x7FFEBFFF',
+                '-dopcache.preload=',
             ];
         }
 
