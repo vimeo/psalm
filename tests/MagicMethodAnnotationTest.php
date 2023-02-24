@@ -939,6 +939,14 @@ class MagicMethodAnnotationTest extends TestCase
                     '$e' => 'B',
                 ],
             ],
+            'arrayAsMethodName' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @method static void array() */
+                    class C {}
+                    //C::array();
+                    PHP,
+            ],
         ];
     }
 
