@@ -15,6 +15,8 @@ use Psalm\Internal\Scanner\UnresolvedConstant\ArraySpread;
 use Psalm\Internal\Scanner\UnresolvedConstant\ArrayValue;
 use Psalm\Internal\Scanner\UnresolvedConstant\ClassConstant;
 use Psalm\Internal\Scanner\UnresolvedConstant\Constant;
+use Psalm\Internal\Scanner\UnresolvedConstant\EnumNameFetch;
+use Psalm\Internal\Scanner\UnresolvedConstant\EnumValueFetch;
 use Psalm\Internal\Scanner\UnresolvedConstant\KeyValuePair;
 use Psalm\Internal\Scanner\UnresolvedConstant\ScalarValue;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedAdditionOp;
@@ -295,6 +297,23 @@ class ExpressionResolver
             }
 
             return new ArrayValue($items);
+        }
+
+        if ($stmt instanceof PhpParser\Node\Expr\PropertyFetch
+            && $stmt->var instanceof PhpParser\Node\Expr\ClassConstFetch
+            && $stmt->var->name instanceof PhpParser\Node\Identifier
+            && $stmt->name instanceof PhpParser\Node\Identifier
+            && in_array($stmt->name->name, ['name', 'value', true])
+        ) {
+            $enum_fq_class_name = ClassLikeAnalyzer::getFQCLNFromNameObject(
+                $stmt->var->class,
+                $aliases,
+            );
+            if ($stmt->name->name === 'value') {
+                return new EnumValueFetch($enum_fq_class_name, $stmt->var->name);
+            } elseif ($stmt->name->name === 'name') {
+                return new EnumNameFetch($enum_fq_class_name, $stmt->var->name);
+            }
         }
 
         return null;

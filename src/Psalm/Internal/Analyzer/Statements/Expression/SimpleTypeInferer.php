@@ -504,33 +504,6 @@ class SimpleTypeInferer
             ]);
         }
 
-        if ($stmt instanceof PhpParser\Node\Expr\PropertyFetch
-            && $stmt->var instanceof PhpParser\Node\Expr\ClassConstFetch
-            && $stmt->var->name instanceof PhpParser\Node\Identifier
-            && $stmt->name instanceof PhpParser\Node\Identifier
-            && in_array($stmt->name->name, ['name', 'value', true])
-        ) {
-            $enum_fq_class_name = ClassLikeAnalyzer::getFQCLNFromNameObject(
-                $stmt->var->class,
-                $aliases,
-            );
-            if ($codebase->classlikes->enumExists($enum_fq_class_name)) {
-                $enum_storage = $codebase->classlike_storage_provider->get($enum_fq_class_name);
-                if (isset($enum_storage->enum_cases[$stmt->var->name->name])) {
-                    if ($stmt->name->name === 'value') {
-                        $value = $enum_storage->enum_cases[$stmt->var->name->name]->value;
-                        if (is_string($value)) {
-                            return Type::getString($value);
-                        } elseif (is_int($value)) {
-                            return Type::getInt(false, $value);
-                        }
-                    } elseif ($stmt->name->name === 'name') {
-                        return Type::getString($stmt->var->name->name);
-                    }
-                }
-            }
-        }
-
         return null;
     }
 
