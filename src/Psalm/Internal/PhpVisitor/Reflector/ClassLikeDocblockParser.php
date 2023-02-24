@@ -356,7 +356,12 @@ class ClassLikeDocblockParser
 
                     $method_tree = $parse_tree_creator->create();
                 } catch (TypeParseTreeException $e) {
-                    throw new DocblockParseException($method_entry . ' is not a valid method');
+                    throw new DocblockParseException(
+                        $method_entry . ' is not a valid method: '
+                        . $e->getMessage(),
+                        0,
+                        $e,
+                    );
                 }
 
                 if (!$method_tree instanceof MethodWithReturnTypeTree
