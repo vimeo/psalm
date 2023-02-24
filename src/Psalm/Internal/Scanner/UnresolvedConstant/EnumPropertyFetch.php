@@ -14,20 +14,9 @@ abstract class EnumPropertyFetch extends UnresolvedConstantComponent
 
     public string $case;
 
-    /** @var 'name'|'value' */
-    public string $name;
-
-    /**
-     * @param string $fqcln
-     * @param string $case
-     * @param 'name'|'value' $name
-     */
-    public function __construct(string $fqcln, string $case, string $name)
+    public function __construct(string $fqcln, string $case)
     {
         $this->fqcln = $fqcln;
         $this->case = $case;
-        $this->name = $name;
     }
-
-
 }

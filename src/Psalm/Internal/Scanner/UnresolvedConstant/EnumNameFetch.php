@@ -8,8 +8,4 @@ namespace Psalm\Internal\Scanner\UnresolvedConstant;
  */
 class EnumNameFetch extends EnumPropertyFetch
 {
-    public function __construct(string $fqcln, string $case)
-    {
-        parent::__construct($fqcln, $case, 'name');
-    }
 }

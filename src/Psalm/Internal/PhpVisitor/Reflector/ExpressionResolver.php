@@ -36,6 +36,7 @@ use function assert;
 use function class_exists;
 use function function_exists;
 use function implode;
+use function in_array;
 use function interface_exists;
 use function strtolower;
 
@@ -301,6 +302,7 @@ class ExpressionResolver
 
         if ($stmt instanceof PhpParser\Node\Expr\PropertyFetch
             && $stmt->var instanceof PhpParser\Node\Expr\ClassConstFetch
+            && $stmt->var->class instanceof PhpParser\Node\Name
             && $stmt->var->name instanceof PhpParser\Node\Identifier
             && $stmt->name instanceof PhpParser\Node\Identifier
             && in_array($stmt->name->name, ['name', 'value', true])
@@ -310,9 +312,9 @@ class ExpressionResolver
                 $aliases,
             );
             if ($stmt->name->name === 'value') {
-                return new EnumValueFetch($enum_fq_class_name, $stmt->var->name);
+                return new EnumValueFetch($enum_fq_class_name, $stmt->var->name->name);
             } elseif ($stmt->name->name === 'name') {
-                return new EnumNameFetch($enum_fq_class_name, $stmt->var->name);
+                return new EnumNameFetch($enum_fq_class_name, $stmt->var->name->name);
             }
         }
 

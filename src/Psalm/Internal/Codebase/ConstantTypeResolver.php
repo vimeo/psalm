@@ -336,17 +336,17 @@ class ConstantTypeResolver
 
         if ($c instanceof EnumPropertyFetch) {
             if ($classlikes->enumExists($c->fqcln)) {
-                $enum_storage = $classlikes->getStorageFor($c->fqcln);;
+                $enum_storage = $classlikes->getStorageFor($c->fqcln);
                 if (isset($enum_storage->enum_cases[$c->case])) {
                     if ($c instanceof EnumValueFetch) {
                         $value = $enum_storage->enum_cases[$c->case]->value;
                         if (is_string($value)) {
-                            return new TLiteralString($value);
+                            return Type::getString($value)->getSingleAtomic();
                         } elseif (is_int($value)) {
-                            return new TLiteralInt($value);
+                            return Type::getInt(false, $value)->getSingleAtomic();
                         }
                     } elseif ($c instanceof EnumNameFetch) {
-                        return new TLiteralString($c->case);
+                        return Type::getString($c->case)->getSingleAtomic();
                     }
                 }
             }
