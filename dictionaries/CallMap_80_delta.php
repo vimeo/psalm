@@ -209,21 +209,17 @@ return [
       'old' => ['bool', 'mode'=>'int'],
       'new' => ['bool', 'mode'=>'int', '...args='=>'mixed'],
     ],
-    'PharData::compress' => [
-      'old' => ['?PharData', 'compression'=>'int', 'extension='=>'string'],
-      'new' => ['?PharData', 'compression'=>'int', 'extension='=>'?string'],
+    'Phar::addFile' => [
+      'old' => ['void', 'filename'=>'string', 'localName='=>'string'],
+      'new' => ['void', 'filename'=>'string', 'localName='=>'?string'],
     ],
-    'PharData::convertToData' => [
-      'old' => ['?PharData', 'format='=>'int', 'compression='=>'int', 'extension='=>'string'],
-      'new' => ['?PharData', 'format='=>'?int', 'compression='=>'?int', 'extension='=>'?string'],
+    'Phar::buildFromIterator' => [
+      'old' => ['array|false', 'iterator'=>'Traversable', 'baseDirectory='=>'string'],
+      'new' => ['array|false', 'iterator'=>'Traversable', 'baseDirectory='=>'?string'],
     ],
-    'PharData::convertToExecutable' => [
-      'old' => ['?Phar', 'format='=>'int', 'compression='=>'int', 'extension='=>'string'],
-      'new' => ['?Phar', 'format='=>'?int', 'compression='=>'?int', 'extension='=>'?string'],
-    ],
-    'PharData::decompress' => [
-      'old' => ['?PharData', 'extension='=>'string'],
-      'new' => ['?PharData', 'extension='=>'?string'],
+    'Phar::createDefaultStub' => [
+      'old' => ['string', 'index='=>'string', 'webIndex='=>'string'],
+      'new' => ['string', 'index='=>'?string', 'webIndex='=>'?string'],
     ],
     'Phar::compress' => [
       'old' => ['?Phar', 'compression'=>'int', 'extension='=>'string'],
@@ -245,9 +241,57 @@ return [
       'old' => ['mixed'],
       'new' => ['mixed', 'unserializeOptions='=>'array'],
     ],
+    'Phar::setDefaultStub' => [
+      'old' => ['bool', 'index='=>'?string', 'webIndex='=>'string'],
+      'new' => ['bool', 'index='=>'?string', 'webIndex='=>'?string'],
+    ],
+    'Phar::setSignatureAlgorithm' => [
+      'old' => ['void', 'algo'=>'int', 'privateKey='=>'string'],
+      'new' => ['void', 'algo'=>'int', 'privateKey='=>'?string'],
+    ],
+    'Phar::webPhar' => [
+      'old' => ['void', 'alias='=>'?string', 'index='=>'?string', 'fileNotFoundScript='=>'string', 'mimeTypes='=>'array', 'rewrite='=>'callable'],
+      'new' => ['void', 'alias='=>'?string', 'index='=>'?string', 'fileNotFoundScript='=>'?string', 'mimeTypes='=>'array', 'rewrite='=>'?callable'],
+    ],
+    'PharData::addFile' => [
+      'old' => ['void', 'filename'=>'string', 'localName='=>'string'],
+      'new' => ['void', 'filename'=>'string', 'localName='=>'?string'],
+    ],
+    'PharData::buildFromIterator' => [
+      'old' => ['array|false', 'iterator'=>'Traversable', 'baseDirectory='=>'string'],
+      'new' => ['array|false', 'iterator'=>'Traversable', 'baseDirectory='=>'?string'],
+    ],
+    'PharData::compress' => [
+      'old' => ['?PharData', 'compression'=>'int', 'extension='=>'string'],
+      'new' => ['?PharData', 'compression'=>'int', 'extension='=>'?string'],
+    ],
+    'PharData::convertToData' => [
+      'old' => ['?PharData', 'format='=>'int', 'compression='=>'int', 'extension='=>'string'],
+      'new' => ['?PharData', 'format='=>'?int', 'compression='=>'?int', 'extension='=>'?string'],
+    ],
+    'PharData::convertToExecutable' => [
+      'old' => ['?Phar', 'format='=>'int', 'compression='=>'int', 'extension='=>'string'],
+      'new' => ['?Phar', 'format='=>'?int', 'compression='=>'?int', 'extension='=>'?string'],
+    ],
+    'PharData::decompress' => [
+      'old' => ['?PharData', 'extension='=>'string'],
+      'new' => ['?PharData', 'extension='=>'?string'],
+    ],
+    'PharData::setDefaultStub' => [
+      'old' => ['bool', 'index='=>'?string', 'webIndex='=>'string'],
+      'new' => ['bool', 'index='=>'?string', 'webIndex='=>'?string'],
+    ],
+    'PharData::setSignatureAlgorithm' => [
+      'old' => ['void', 'algo'=>'int', 'privateKey='=>'string'],
+      'new' => ['void', 'algo'=>'int', 'privateKey='=>'?string'],
+    ],
     'PharFileInfo::getMetadata' => [
       'old' => ['mixed'],
       'new' => ['mixed', 'unserializeOptions='=>'array'],
+    ],
+    'PharFileInfo::isCompressed' => [
+      'old' => ['bool', 'compression='=>'int'],
+      'new' => ['bool', 'compression='=>'?int'],
     ],
     'RecursiveIteratorIterator::getSubIterator' => [
       'old' => ['?RecursiveIterator', 'level='=>'int'],
