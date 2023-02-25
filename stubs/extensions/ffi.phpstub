@@ -19,9 +19,10 @@ namespace {
         }
 
         /**
+         * Note: Official docs say this could return `null`, but it throws exceptions instead.
          * @param \FFI\CType|string $type
          */
-        public static function new($type, bool $owned = true, bool $persistent = false): ?\FFI\CData
+        public static function new($type, bool $owned = true, bool $persistent = false): \FFI\CData
         {
         }
 
@@ -106,6 +107,25 @@ namespace {
         public static function isNull(\FFI\CData $ptr): bool
         {
         }
+
+        public function __call(...$values)
+        {
+        }
+
+        /**
+         * @param mixed $value
+         * @return mixed $value
+         */
+        public function __set(string $key, $value)
+        {
+        }
+
+        /**
+         * @return string|int|float|\FFI\CData|null
+         */
+        public function __get(string $key)
+        {
+        }
     }
 
 }
@@ -115,9 +135,36 @@ namespace FFI {
     /**
      * @since 7.4.0
      */
-    final class CData
+    final class CData implements \Countable, \ArrayAccess, \Countable, \Traversable
     {
+        /**
+         * @return bool
+         */
+        public function offsetExists($offset)
+        {
+        }
 
+        /**
+         * @return mixed|null
+         */
+        public function offsetGet($offset)
+        {
+        }
+
+        /**
+        * @param mixed|null $value
+        * @return void
+        */
+        public function offsetSet($offset, $value)
+        {
+        }
+
+        /**
+        * @return void
+        */
+        public function offsetUnset($offset)
+        {
+        }
     }
 
     /**

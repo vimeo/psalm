@@ -29,7 +29,6 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
-use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TLowercaseString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
@@ -173,11 +172,14 @@ class ConcatAnalyzer
                                 break 2;
                             }
 
-                            $result_type_parts[] = new TLiteralString($literal);
+                            $result_type_parts[] = Type::getAtomicStringFromLiteral($literal);
                         }
                     }
 
                     if ($literal_concat) {
+                        // Bypass opcache bug: https://github.com/php/php-src/issues/10635
+                        (function (int $_): void {
+                        })($combinations);
                         if (count($result_type_parts) === 0) {
                             throw new AssertionError("The number of parts cannot be 0!");
                         }

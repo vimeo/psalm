@@ -174,4 +174,6 @@ class FunctionDocblockComment
 
     /** @var array<string, array{lines:list<int>, suggested_replacement?:string}> */
     public array $unexpected_tags = [];
+
+    public bool $public_api = false;
 }

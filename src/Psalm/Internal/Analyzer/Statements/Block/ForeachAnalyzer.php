@@ -21,6 +21,7 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\Scope\LoopScope;
+use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\ImpureMethodCall;
@@ -36,6 +37,7 @@ use Psalm\Issue\UnnecessaryVarAnnotation;
 use Psalm\IssueBuffer;
 use Psalm\Node\Expr\VirtualMethodCall;
 use Psalm\Node\VirtualIdentifier;
+use Psalm\Storage\Assertion;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\Scalar;
@@ -266,6 +268,19 @@ class ForeachAnalyzer
 
         foreach ($foreach_context->vars_in_scope as $context_var_id => $context_type) {
             $foreach_context->vars_in_scope[$context_var_id] = $context_type;
+        }
+
+        if ($var_id && $foreach_context->hasVariable($var_id)) {
+            // refine the type of the array variable we iterate over
+            // if we entered loop body, the array cannot be empty
+            $foreach_context->vars_in_scope[$var_id] = AssertionReconciler::reconcile(
+                new Assertion\NonEmpty(),
+                $foreach_context->vars_in_scope[$var_id],
+                null,
+                $statements_analyzer,
+                true, // inside loop ?
+                $statements_analyzer->getTemplateTypeMap() ?? [],
+            );
         }
 
         $foreach_context->inside_loop = true;

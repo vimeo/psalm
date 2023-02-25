@@ -209,21 +209,17 @@ return [
       'old' => ['bool', 'mode'=>'int'],
       'new' => ['bool', 'mode'=>'int', '...args='=>'mixed'],
     ],
-    'PharData::compress' => [
-      'old' => ['?PharData', 'compression'=>'int', 'extension='=>'string'],
-      'new' => ['?PharData', 'compression'=>'int', 'extension='=>'?string'],
+    'Phar::addFile' => [
+      'old' => ['void', 'filename'=>'string', 'localName='=>'string'],
+      'new' => ['void', 'filename'=>'string', 'localName='=>'?string'],
     ],
-    'PharData::convertToData' => [
-      'old' => ['?PharData', 'format='=>'int', 'compression='=>'int', 'extension='=>'string'],
-      'new' => ['?PharData', 'format='=>'?int', 'compression='=>'?int', 'extension='=>'?string'],
+    'Phar::buildFromIterator' => [
+      'old' => ['array|false', 'iterator'=>'Traversable', 'baseDirectory='=>'string'],
+      'new' => ['array|false', 'iterator'=>'Traversable', 'baseDirectory='=>'?string'],
     ],
-    'PharData::convertToExecutable' => [
-      'old' => ['?Phar', 'format='=>'int', 'compression='=>'int', 'extension='=>'string'],
-      'new' => ['?Phar', 'format='=>'?int', 'compression='=>'?int', 'extension='=>'?string'],
-    ],
-    'PharData::decompress' => [
-      'old' => ['?PharData', 'extension='=>'string'],
-      'new' => ['?PharData', 'extension='=>'?string'],
+    'Phar::createDefaultStub' => [
+      'old' => ['string', 'index='=>'string', 'webIndex='=>'string'],
+      'new' => ['string', 'index='=>'?string', 'webIndex='=>'?string'],
     ],
     'Phar::compress' => [
       'old' => ['?Phar', 'compression'=>'int', 'extension='=>'string'],
@@ -245,9 +241,57 @@ return [
       'old' => ['mixed'],
       'new' => ['mixed', 'unserializeOptions='=>'array'],
     ],
+    'Phar::setDefaultStub' => [
+      'old' => ['bool', 'index='=>'?string', 'webIndex='=>'string'],
+      'new' => ['bool', 'index='=>'?string', 'webIndex='=>'?string'],
+    ],
+    'Phar::setSignatureAlgorithm' => [
+      'old' => ['void', 'algo'=>'int', 'privateKey='=>'string'],
+      'new' => ['void', 'algo'=>'int', 'privateKey='=>'?string'],
+    ],
+    'Phar::webPhar' => [
+      'old' => ['void', 'alias='=>'?string', 'index='=>'?string', 'fileNotFoundScript='=>'string', 'mimeTypes='=>'array', 'rewrite='=>'callable'],
+      'new' => ['void', 'alias='=>'?string', 'index='=>'?string', 'fileNotFoundScript='=>'?string', 'mimeTypes='=>'array', 'rewrite='=>'?callable'],
+    ],
+    'PharData::addFile' => [
+      'old' => ['void', 'filename'=>'string', 'localName='=>'string'],
+      'new' => ['void', 'filename'=>'string', 'localName='=>'?string'],
+    ],
+    'PharData::buildFromIterator' => [
+      'old' => ['array|false', 'iterator'=>'Traversable', 'baseDirectory='=>'string'],
+      'new' => ['array|false', 'iterator'=>'Traversable', 'baseDirectory='=>'?string'],
+    ],
+    'PharData::compress' => [
+      'old' => ['?PharData', 'compression'=>'int', 'extension='=>'string'],
+      'new' => ['?PharData', 'compression'=>'int', 'extension='=>'?string'],
+    ],
+    'PharData::convertToData' => [
+      'old' => ['?PharData', 'format='=>'int', 'compression='=>'int', 'extension='=>'string'],
+      'new' => ['?PharData', 'format='=>'?int', 'compression='=>'?int', 'extension='=>'?string'],
+    ],
+    'PharData::convertToExecutable' => [
+      'old' => ['?Phar', 'format='=>'int', 'compression='=>'int', 'extension='=>'string'],
+      'new' => ['?Phar', 'format='=>'?int', 'compression='=>'?int', 'extension='=>'?string'],
+    ],
+    'PharData::decompress' => [
+      'old' => ['?PharData', 'extension='=>'string'],
+      'new' => ['?PharData', 'extension='=>'?string'],
+    ],
+    'PharData::setDefaultStub' => [
+      'old' => ['bool', 'index='=>'?string', 'webIndex='=>'string'],
+      'new' => ['bool', 'index='=>'?string', 'webIndex='=>'?string'],
+    ],
+    'PharData::setSignatureAlgorithm' => [
+      'old' => ['void', 'algo'=>'int', 'privateKey='=>'string'],
+      'new' => ['void', 'algo'=>'int', 'privateKey='=>'?string'],
+    ],
     'PharFileInfo::getMetadata' => [
       'old' => ['mixed'],
       'new' => ['mixed', 'unserializeOptions='=>'array'],
+    ],
+    'PharFileInfo::isCompressed' => [
+      'old' => ['bool', 'compression='=>'int'],
+      'new' => ['bool', 'compression='=>'?int'],
     ],
     'RecursiveIteratorIterator::getSubIterator' => [
       'old' => ['?RecursiveIterator', 'level='=>'int'],
@@ -390,40 +434,40 @@ return [
       'new' => ['array', 'array'=>'array', 'column_key'=>'int|string|null', 'index_key='=>'int|string|null'],
     ],
     'array_combine' => [
-      'old' => ['associative-array|false', 'keys'=>'string[]|int[]', 'values'=>'array'],
-      'new' => ['associative-array', 'keys'=>'string[]|int[]', 'values'=>'array'],
+      'old' => ['array|false', 'keys'=>'string[]|int[]', 'values'=>'array'],
+      'new' => ['array', 'keys'=>'string[]|int[]', 'values'=>'array'],
     ],
     'array_diff' => [
-      'old' => ['associative-array', 'array'=>'array', '...arrays'=>'array'],
-      'new' => ['associative-array', 'array'=>'array', '...arrays='=>'array'],
+      'old' => ['array', 'array'=>'array', '...arrays'=>'array'],
+      'new' => ['array', 'array'=>'array', '...arrays='=>'array'],
     ],
     'array_diff_assoc' => [
-      'old' => ['associative-array', 'array'=>'array', '...arrays'=>'array'],
-      'new' => ['associative-array', 'array'=>'array', '...arrays='=>'array'],
+      'old' => ['array', 'array'=>'array', '...arrays'=>'array'],
+      'new' => ['array', 'array'=>'array', '...arrays='=>'array'],
     ],
     'array_diff_key' => [
-      'old' => ['associative-array', 'array'=>'array', '...arrays'=>'array'],
-      'new' => ['associative-array', 'array'=>'array', '...arrays='=>'array'],
+      'old' => ['array', 'array'=>'array', '...arrays'=>'array'],
+      'new' => ['array', 'array'=>'array', '...arrays='=>'array'],
     ],
     'array_filter' => [
-      'old' => ['associative-array', 'array'=>'array', 'callback='=>'callable(mixed,mixed=):scalar', 'mode='=>'int'],
-      'new' => ['associative-array', 'array'=>'array', 'callback='=>'callable(mixed,mixed=):scalar|null', 'mode='=>'int'],
+      'old' => ['array', 'array'=>'array', 'callback='=>'callable(mixed,mixed=):scalar', 'mode='=>'int'],
+      'new' => ['array', 'array'=>'array', 'callback='=>'callable(mixed,mixed=):scalar|null', 'mode='=>'int'],
     ],
     'array_key_exists' => [
       'old' => ['bool', 'key'=>'string|int', 'array'=>'array|object'],
       'new' => ['bool', 'key'=>'string|int', 'array'=>'array'],
     ],
     'array_intersect' => [
-      'old' => ['associative-array', 'array'=>'array', '...arrays'=>'array'],
-      'new' => ['associative-array', 'array'=>'array', '...arrays='=>'array'],
+      'old' => ['array', 'array'=>'array', '...arrays'=>'array'],
+      'new' => ['array', 'array'=>'array', '...arrays='=>'array'],
     ],
     'array_intersect_assoc' => [
-      'old' => ['associative-array', 'array'=>'array', '...arrays'=>'array'],
-      'new' => ['associative-array', 'array'=>'array', '...arrays='=>'array'],
+      'old' => ['array', 'array'=>'array', '...arrays'=>'array'],
+      'new' => ['array', 'array'=>'array', '...arrays='=>'array'],
     ],
     'array_intersect_key' => [
-      'old' => ['associative-array', 'array'=>'array', '...arrays'=>'array'],
-      'new' => ['associative-array', 'array'=>'array', '...arrays='=>'array'],
+      'old' => ['array', 'array'=>'array', '...arrays'=>'array'],
+      'new' => ['array', 'array'=>'array', '...arrays='=>'array'],
     ],
     'array_splice' => [
       'old' => ['array', '&rw_array'=>'array', 'offset'=>'int', 'length='=>'int', 'replacement='=>'array|string'],
@@ -494,6 +538,10 @@ return [
       'new' => ['bool', 'typelib_name'=>'string', 'case_insensitive='=>'true'],
     ],
     'count' => [
+      'old' => ['int<0, max>', 'value'=>'Countable|array|SimpleXMLElement', 'mode='=>'int'],
+      'new' => ['int<0, max>', 'value'=>'Countable|array', 'mode='=>'int'],
+    ],
+    'sizeof' => [
       'old' => ['int<0, max>', 'value'=>'Countable|array|SimpleXMLElement', 'mode='=>'int'],
       'new' => ['int<0, max>', 'value'=>'Countable|array', 'mode='=>'int'],
     ],

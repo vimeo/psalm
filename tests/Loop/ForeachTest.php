@@ -1159,6 +1159,18 @@ class ForeachTest extends TestCase
                         }
                     }',
             ],
+            'arrayIsNotEmptyInForeachLoop' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return non-empty-array */
+                    function f(array $a): array {
+                        foreach ($a as $_) {
+                            return $a;
+                        }
+                        throw new RuntimeException;
+                    }
+                    PHP,
+            ],
         ];
     }
 
@@ -1372,6 +1384,18 @@ class ForeachTest extends TestCase
 
                     if ($a) {}',
                 'error_message' => 'RedundantCondition',
+            ],
+            'arrayCanBeEmptyOutsideTheLoop' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return non-empty-array */
+                    function f(array $a): array {
+                        foreach ($a as $_) {
+                        }
+                        return $a;
+                    }
+                    PHP,
+                'error_message' => 'LessSpecificReturnStatement',
             ],
         ];
     }

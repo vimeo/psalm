@@ -780,8 +780,7 @@ class ParseTreeCreator
                         $type_token[0],
                         $new_parent,
                     );
-                } elseif ($type_token[0] !== 'array'
-                    && $type_token[0][0] !== '\\'
+                } elseif ($type_token[0][0] !== '\\'
                     && $this->current_leaf instanceof Root
                 ) {
                     $new_leaf = new MethodTree(

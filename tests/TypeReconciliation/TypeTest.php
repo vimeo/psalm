@@ -1239,6 +1239,32 @@ class TypeTest extends TestCase
                         strlen($s);
                     }',
             ],
+            'testIsIntAndAliasesTypeNarrowing' => [
+                'code' => '<?php
+                    /** @var mixed $a */
+                    $a;
+                    /** @var never $b */
+                    $b;
+                    /** @var never $c */
+                    $c;
+                    /** @var never $d */
+                    $d;
+                    if (is_int($a)) {
+                        $b = $a;
+                    }
+                    if (is_integer($a)) {
+                        $c = $a;
+                    }
+                    if (is_long($a)) {
+                        $d = $a;
+                    }
+                ',
+                'assertions' => [
+                    '$b===' => 'int',
+                    '$c===' => 'int',
+                    '$d===' => 'int',
+                ],
+            ],
             'narrowWithCountToAllowNonTupleKeyedArray' => [
                 'code' => '<?php
                     /**

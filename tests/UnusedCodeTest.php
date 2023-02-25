@@ -1263,6 +1263,16 @@ class UnusedCodeTest extends TestCase
                     }
                     PHP,
             ],
+            'psalm-api on unused public method' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class A {
+                        /** @psalm-api */
+                        public function b(): void {}
+                    }
+                    new A;
+                    PHP,
+            ],
         ];
     }
 

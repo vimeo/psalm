@@ -54,6 +54,7 @@
     </plugins>
 
     <issueHandlers>
+        <Trace errorLevel="error"/>
         <PossiblyNullOperand errorLevel="suppress"/>
 
         <DeprecatedMethod>
