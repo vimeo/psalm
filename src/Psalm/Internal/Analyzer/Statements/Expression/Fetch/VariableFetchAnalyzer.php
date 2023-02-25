@@ -321,11 +321,9 @@ class VariableFetchAnalyzer
                         (bool) $statements_analyzer->getBranchPoint($var_name),
                     );
                 } else {
-                    if ($codebase->alter_code) {
-                        if (!isset($project_analyzer->getIssuesToFix()['PossiblyUndefinedVariable'])) {
-                            return true;
-                        }
-
+                    if ($codebase->alter_code
+                        && isset($project_analyzer->getIssuesToFix()['PossiblyUndefinedVariable'])
+                    ) {
                         $branch_point = $statements_analyzer->getBranchPoint($var_name);
 
                         if ($branch_point) {
