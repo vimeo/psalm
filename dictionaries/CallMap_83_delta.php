@@ -17,7 +17,7 @@
  */
 return [
   'added' => [
-    'json_validate' => ['bool', 'json'=>'string', 'depth?'=>'positive-int', 'flags='=>'int'],
+    'json_validate' => ['bool', 'json'=>'string', 'depth='=>'positive-int', 'flags='=>'int'],
   ],
 
   'changed' => [
