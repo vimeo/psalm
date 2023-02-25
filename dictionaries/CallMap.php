@@ -2,7 +2,7 @@
 namespace Phan\Language\Internal;
 
 /**
- * CURRENT PHP TARGET VERSION: 8.2
+ * CURRENT PHP TARGET VERSION: 8.3
  * The version above has to match Psalm\Internal\Codebase\InternalCallMapHandler::PHP_(MAJOR|MINOR)_VERSION
  *
  * Format
@@ -2951,7 +2951,7 @@ return [
 'gc_enable' => ['void'],
 'gc_enabled' => ['bool'],
 'gc_mem_caches' => ['int'],
-'gc_status' => ['array{runs:int,collected:int,threshold:int,roots:int}'],
+'gc_status' => ['array{runs:int,collected:int,threshold:int,roots:int,running:bool,protected:bool,full:bool,buffer_size:int}'],
 'gd_info' => ['array'],
 'gearman_bugreport' => [''],
 'gearman_client_add_options' => ['', 'client_object'=>'', 'option'=>''],
@@ -6162,6 +6162,7 @@ return [
 'json_encode' => ['non-empty-string|false', 'value'=>'mixed', 'flags='=>'int', 'depth='=>'int'],
 'json_last_error' => ['int'],
 'json_last_error_msg' => ['string'],
+'json_validate' => ['bool', 'json'=>'string', 'depth='=>'positive-int', 'flags='=>'int'],
 'JsonException::__clone' => ['void'],
 'JsonException::__construct' => ['void'],
 'JsonException::__toString' => ['string'],
