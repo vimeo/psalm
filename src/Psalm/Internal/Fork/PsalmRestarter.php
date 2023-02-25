@@ -87,6 +87,10 @@ class PsalmRestarter extends XdebugHandler
 
     private static function toBytes(string $value): int
     {
+        if (strlen($value) === 0) {
+            return 0;
+        }
+
         $unit = strtolower($value[strlen($value) - 1]);
 
         if (in_array($unit, ['g', 'm', 'k'], true)) {
