@@ -9846,7 +9846,7 @@ return [
     'datefmt_set_lenient' => ['void', 'formatter'=>'IntlDateFormatter', 'lenient'=>'bool'],
     'datefmt_set_pattern' => ['bool', 'formatter'=>'IntlDateFormatter', 'pattern'=>'string'],
     'datefmt_set_timezone' => ['false|null', 'formatter'=>'IntlDateFormatter', 'timezone'=>'IntlTimeZone|DateTimeZone|string|null'],
-    'db2_autocommit' => ['int|bool', 'connection'=>'resource', 'value='=>'int'],
+    'db2_autocommit' => ['0|1|bool', 'connection'=>'resource', 'value='=>'0|1'],
     'db2_bind_param' => ['bool', 'stmt'=>'resource', 'parameter_number'=>'int', 'variable_name'=>'string', 'parameter_type='=>'int', 'data_type='=>'int', 'precision='=>'int', 'scale='=>'int'],
     'db2_client_info' => ['stdClass|false', 'connection'=>'resource'],
     'db2_close' => ['bool', 'connection'=>'resource'],
