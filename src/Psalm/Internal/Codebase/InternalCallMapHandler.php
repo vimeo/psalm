@@ -53,9 +53,9 @@ class InternalCallMapHandler
     private static ?array $call_map_callables = [];
 
     /**
-     * @var array<string, list<list<TaintKind::*>>>
+     * @var non-empty-array<string, non-empty-list<list<TaintKind::*>>>|null
      */
-    private static array $taint_sink_map = [];
+    private static ?array $taint_sink_map = null;
 
     /**
      * @param  list<PhpParser\Node\Arg>   $args
@@ -333,6 +333,8 @@ class InternalCallMapHandler
      * Gets the method/function call map
      *
      * @return non-empty-array<string, array<int|string, string>>
+     * @psalm-assert !null self::$taint_sink_map
+     * @psalm-assert !null self::$call_map
      */
     public static function getCallMap(): array
     {
@@ -366,14 +368,17 @@ class InternalCallMapHandler
         self::$call_map = $call_map;
 
         /**
-         * @var array<string, list<list<TaintKind::*>>>
+         * @var non-empty-array<string, non-empty-list<list<TaintKind::*>>>
          */
-        $taint_map = require(dirname(__DIR__, 4) . '/dictionaries/InternalTaintSinkMap.php');
+        $taint_map_data = require(dirname(__DIR__, 4) . '/dictionaries/InternalTaintSinkMap.php');
 
-        foreach ($taint_map as $key => $value) {
+        $taint_map = [];
+        foreach ($taint_map_data as $key => $value) {
             $cased_key = strtolower($key);
-            self::$taint_sink_map[$cased_key] = $value;
+            $taint_map[$cased_key] = $value;
         }
+
+        self::$taint_sink_map = $taint_map;
 
         if (version_compare($analyzer_version, $current_version, '<')) {
             // the following assumes both minor and major versions a single digits
