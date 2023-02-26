@@ -137,7 +137,6 @@
       <code>$args[0]</code>
       <code>$args[0]</code>
       <code>$args[1]</code>
-      <code>$callmap_callables[0]</code>
       <code>$method_name</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
@@ -255,17 +254,6 @@
   <file src="src/Psalm/Internal/Codebase/Functions.php">
     <PossiblyUndefinedIntArrayOffset>
       <code>$stub</code>
-    </PossiblyUndefinedIntArrayOffset>
-  </file>
-  <file src="src/Psalm/Internal/Codebase/InternalCallMapHandler.php">
-    <PossiblyUndefinedIntArrayOffset>
-      <code>$callables[0]</code>
-      <code>$callables[0]</code>
-    </PossiblyUndefinedIntArrayOffset>
-  </file>
-  <file src="src/Psalm/Internal/Codebase/Methods.php">
-    <PossiblyUndefinedIntArrayOffset>
-      <code>$function_callables[0]</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Codebase/Properties.php">

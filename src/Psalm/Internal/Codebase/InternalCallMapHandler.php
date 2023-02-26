@@ -43,12 +43,12 @@ class InternalCallMapHandler
     private static ?int $loaded_php_minor_version = null;
 
     /**
-     * @var array<lowercase-string, array<int|string,string>>|null
+     * @var non-empty-array<lowercase-string, array<int|string,string>>|null
      */
     private static ?array $call_map = null;
 
     /**
-     * @var array<list<TCallable>>|null
+     * @var array<string, non-empty-list<TCallable>>|null
      */
     private static ?array $call_map_callables = [];
 
@@ -84,7 +84,7 @@ class InternalCallMapHandler
     }
 
     /**
-     * @param  array<int, TCallable>  $callables
+     * @param  non-empty-list<TCallable>  $callables
      * @param  list<PhpParser\Node\Arg>                 $args
      */
     public static function getMatchingCallableFromCallMapOptions(
@@ -216,7 +216,7 @@ class InternalCallMapHandler
     }
 
     /**
-     * @return list<TCallable>|null
+     * @return non-empty-list<TCallable>|null
      */
     public static function getCallablesFromCallMap(string $function_id): ?array
     {
@@ -332,7 +332,7 @@ class InternalCallMapHandler
     /**
      * Gets the method/function call map
      *
-     * @return array<string, array<int|string, string>>
+     * @return non-empty-array<string, array<int|string, string>>
      */
     public static function getCallMap(): array
     {
@@ -353,15 +353,17 @@ class InternalCallMapHandler
             return self::$call_map;
         }
 
-        /** @var array<string, array<int|string, string>> */
-        $call_map = require(dirname(__DIR__, 4) . '/dictionaries/CallMap.php');
+        /** @var non-empty-array<string, array<int|string, string>> */
+        $call_map_data = require(dirname(__DIR__, 4) . '/dictionaries/CallMap.php');
 
-        self::$call_map = [];
+        $call_map = [];
 
-        foreach ($call_map as $key => $value) {
+        foreach ($call_map_data as $key => $value) {
             $cased_key = strtolower($key);
-            self::$call_map[$cased_key] = $value;
+            $call_map[$cased_key] = $value;
         }
+
+        self::$call_map = $call_map;
 
         /**
          * @var array<string, list<list<TaintKind::*>>>
@@ -408,6 +410,7 @@ class InternalCallMapHandler
                 }
             }
         }
+        assert(!empty(self::$call_map));
 
         self::$loaded_php_major_version = $analyzer_major_version;
         self::$loaded_php_minor_version = $analyzer_minor_version;
