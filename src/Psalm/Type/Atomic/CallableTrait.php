@@ -35,6 +35,25 @@ trait CallableTrait
     public $is_pure;
 
     /**
+     * Constructs a new instance of a generic type
+     *
+     * @param list<FunctionLikeParameter> $params
+     */
+    public function __construct(
+        string $value = 'callable',
+        ?array $params = null,
+        ?Union $return_type = null,
+        ?bool $is_pure = null,
+        bool $from_docblock = false
+    ) {
+        $this->value = $value;
+        $this->params = $params;
+        $this->return_type = $return_type;
+        $this->is_pure = $is_pure;
+        $this->from_docblock = $from_docblock;
+    }
+
+    /**
      * @param list<FunctionLikeParameter>|null $params
      * @return static
      */
