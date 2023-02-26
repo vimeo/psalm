@@ -23,12 +23,19 @@ git config user.email "github@muglug.com"
 git config user.name "Automated commit"
 git add --all .
 git commit -m "Updated Psalm phar to commit ${GITHUB_SHA}"
-git push origin master
 
 tag=${GITHUB_REF/refs\/heads\//}
 tag=${tag/refs\/tags\//}
 
 if [[ "$tag" != 'master' ]] ; then
     git tag "$tag"
-    git push origin "$tag"
 fi
+
+# this script runs on:
+#  1. pushes to master
+#  2. publishing releases
+#
+# So we push master to psalm/phar:master
+# and tags to psalm/phar:$tag
+
+git push origin "$tag"
