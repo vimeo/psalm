@@ -39,11 +39,10 @@ class TNonEmptyArray extends TArray
         string $value = 'non-empty-array',
         bool $from_docblock = false
     ) {
-        $this->type_params = $type_params;
         $this->count = $count;
         $this->min_count = $min_count;
         $this->value = $value;
-        $this->from_docblock = $from_docblock;
+        parent::__construct($type_params, $from_docblock);
     }
 
     /**

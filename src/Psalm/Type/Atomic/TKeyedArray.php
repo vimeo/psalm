@@ -84,7 +84,6 @@ class TKeyedArray extends Atomic
         $this->class_strings = $class_strings;
         $this->fallback_params = $fallback_params;
         $this->is_list = $is_list;
-        $this->from_docblock = $from_docblock;
         if ($this->is_list) {
             $last_k = -1;
             $had_possibly_undefined = false;
@@ -100,6 +99,7 @@ class TKeyedArray extends Atomic
                 $last_k = $k;
             }
         }
+        parent::__construct($from_docblock);
     }
 
     /**

@@ -41,7 +41,7 @@ class TArray extends Atomic
     public function __construct(array $type_params, bool $from_docblock = false)
     {
         $this->type_params = $type_params;
-        $this->from_docblock = $from_docblock;
+        parent::__construct($from_docblock);
     }
 
     public function getKey(bool $include_extra = true): string

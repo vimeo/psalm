@@ -48,7 +48,7 @@ final class TTemplateParam extends Atomic
         $this->as = $extends;
         $this->defining_class = $defining_class;
         $this->extra_types = $extra_types;
-        $this->from_docblock = $from_docblock;
+        parent::__construct($from_docblock);
     }
 
     /**

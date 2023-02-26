@@ -39,7 +39,7 @@ final class TTemplateKeyOf extends Atomic
         $this->param_name = $param_name;
         $this->defining_class = $defining_class;
         $this->as = $as;
-        $this->from_docblock = $from_docblock;
+        parent::__construct($from_docblock);
     }
 
     public function getKey(bool $include_extra = true): string

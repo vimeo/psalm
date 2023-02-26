@@ -60,7 +60,7 @@ final class TConditional extends Atomic
         $this->conditional_type = $conditional_type;
         $this->if_type = $if_type;
         $this->else_type = $else_type;
-        $this->from_docblock = $from_docblock;
+        parent::__construct($from_docblock);
     }
 
     public function setTypes(

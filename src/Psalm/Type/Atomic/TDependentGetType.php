@@ -22,6 +22,7 @@ final class TDependentGetType extends TString
     public function __construct(string $typeof)
     {
         $this->typeof = $typeof;
+        parent::__construct(false);
     }
 
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool

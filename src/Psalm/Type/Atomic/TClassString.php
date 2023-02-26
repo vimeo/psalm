@@ -54,7 +54,7 @@ class TClassString extends TString
         $this->is_loaded = $is_loaded;
         $this->is_interface = $is_interface;
         $this->is_enum = $is_enum;
-        $this->from_docblock = $from_docblock;
+        parent::__construct($from_docblock);
     }
     /**
      * @return static

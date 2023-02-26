@@ -51,12 +51,15 @@ final class TGenericObject extends TNamedObject
             $value = substr($value, 1);
         }
 
-        $this->value = $value;
         $this->type_params = $type_params;
         $this->remapped_params = $remapped_params;
-        $this->is_static = $is_static;
-        $this->extra_types = $extra_types;
-        $this->from_docblock = $from_docblock;
+        parent::__construct(
+            $value,
+            $is_static,
+            false,
+            $extra_types,
+            $from_docblock,
+        );
     }
 
     public function getKey(bool $include_extra = true): string

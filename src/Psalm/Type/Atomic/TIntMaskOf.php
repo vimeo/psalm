@@ -22,7 +22,7 @@ final class TIntMaskOf extends TInt
     public function __construct(Atomic $value, bool $from_docblock = false)
     {
         $this->value = $value;
-        $this->from_docblock = $from_docblock;
+        parent::__construct($from_docblock);
     }
 
     public function getKey(bool $include_extra = true): string
