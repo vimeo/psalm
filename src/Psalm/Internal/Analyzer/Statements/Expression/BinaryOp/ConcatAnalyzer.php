@@ -29,6 +29,7 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TLowercaseString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
@@ -293,6 +294,14 @@ class ConcatAnalyzer
 
                 if ($known_operands_atomic instanceof TNonFalsyString) {
                     $result_type = Type::getNonFalsyString();
+                }
+
+                if ($known_operands_atomic instanceof TLiteralString) {
+                    if ($known_operands_atomic->value) {
+                        $result_type = Type::getNonFalsyString();
+                    } elseif ($known_operands_atomic->value !== '') {
+                        $result_type = Type::getNonEmptyString();
+                    }
                 }
             }
         }
