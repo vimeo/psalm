@@ -33,6 +33,7 @@ use Psalm\Type\Atomic\TLowercaseString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
 use Psalm\Type\Atomic\TNonEmptyString;
+use Psalm\Type\Atomic\TNonFalsyString;
 use Psalm\Type\Atomic\TNonspecificLiteralString;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumericString;
@@ -276,6 +277,41 @@ class ConcatAnalyzer
                         $result_type = Type::getString();
                     }
                 }
+            }
+        } elseif ($left_type || $right_type) {
+            /**
+             * @var Union $known_operand
+             */
+            $known_operand = $right_type ?? $left_type;
+
+            $numeric_type = new Union([
+                new TNumericString,
+                new TInt,
+                new TFloat,
+            ]);
+
+            $non_empty_string = $numeric_type->getBuilder()->addType(new TNonEmptyString())->freeze();
+
+            $non_falsy_string = $numeric_type->getBuilder()->addType(new TNonFalsyString())->freeze();
+
+            $known_operand_not_empty = UnionTypeComparator::isContainedBy(
+                $codebase,
+                $known_operand,
+                $non_empty_string,
+            );
+
+            $known_operand_not_falsy = UnionTypeComparator::isContainedBy(
+                $codebase,
+                $known_operand,
+                $non_falsy_string,
+            );
+
+            if ($known_operand_not_empty) {
+                $result_type = Type::getNonEmptyString();
+            }
+
+            if ($known_operand_not_falsy) {
+                $result_type = Type::getNonFalsyString();
             }
         }
     }
