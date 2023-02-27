@@ -81,13 +81,49 @@ return [
       'old' => ['void', 'dir_handle='=>'resource'],
       'new' => ['void'],
     ],
+    'DirectoryIterator::getFileInfo' => [
+      'old' => ['SplFileInfo', 'class='=>'class-string'],
+      'new' => ['SplFileInfo', 'class='=>'?class-string'],
+    ],
+    'DirectoryIterator::getPathInfo' => [
+      'old' => ['?SplFileInfo', 'class='=>'class-string'],
+      'new' => ['?SplFileInfo', 'class='=>'?class-string'],
+    ],
+    'DirectoryIterator::openFile' => [
+      'old' => ['SplFileObject', 'mode='=>'string', 'useIncludePath='=>'bool', 'context='=>'resource'],
+      'new' => ['SplFileObject', 'mode='=>'string', 'useIncludePath='=>'bool', 'context='=>'?resource'],
+    ],
     'ErrorException::__construct' => [
       'old' => ['void', 'message='=>'string', 'code='=>'int', 'severity='=>'int', 'filename='=>'string', 'line='=>'int', 'previous='=>'?Throwable'],
       'new' => ['void', 'message='=>'string', 'code='=>'int', 'severity='=>'int', 'filename='=>'?string', 'line='=>'?int', 'previous='=>'?Throwable'],
     ],
+    'FilesystemIterator::getFileInfo' => [
+      'old' => ['SplFileInfo', 'class='=>'class-string'],
+      'new' => ['SplFileInfo', 'class='=>'?class-string'],
+    ],
+    'FilesystemIterator::getPathInfo' => [
+      'old' => ['?SplFileInfo', 'class='=>'class-string'],
+      'new' => ['?SplFileInfo', 'class='=>'?class-string'],
+    ],
+    'FilesystemIterator::openFile' => [
+      'old' => ['SplFileObject', 'mode='=>'string', 'useIncludePath='=>'bool', 'context='=>'resource'],
+      'new' => ['SplFileObject', 'mode='=>'string', 'useIncludePath='=>'bool', 'context='=>'?resource'],
+    ],
     'finfo::__construct' => [
       'old' => ['void', 'flags='=>'int', 'magic_database='=>'string'],
       'new' => ['void', 'flags='=>'int', 'magic_database='=>'?string'],
+    ],
+    'GlobIterator::getFileInfo' => [
+      'old' => ['SplFileInfo', 'class='=>'class-string'],
+      'new' => ['SplFileInfo', 'class='=>'?class-string'],
+    ],
+    'GlobIterator::getPathInfo' => [
+      'old' => ['?SplFileInfo', 'class='=>'class-string'],
+      'new' => ['?SplFileInfo', 'class='=>'?class-string'],
+    ],
+    'GlobIterator::openFile' => [
+      'old' => ['SplFileObject', 'mode='=>'string', 'useIncludePath='=>'bool', 'context='=>'resource'],
+      'new' => ['SplFileObject', 'mode='=>'string', 'useIncludePath='=>'bool', 'context='=>'?resource'],
     ],
     'IntlDateFormatter::__construct' => [
       'old' => ['void', 'locale'=>'?string', 'datetype'=>'null|int', 'timetype'=>'null|int', 'timezone='=>'IntlTimeZone|DateTimeZone|string|null', 'calendar='=>'IntlCalendar|int|null', 'pattern='=>'?string'],
@@ -293,6 +329,18 @@ return [
       'old' => ['bool', 'compression='=>'int'],
       'new' => ['bool', 'compression='=>'?int'],
     ],
+    'RecursiveDirectoryIterator::getFileInfo' => [
+      'old' => ['SplFileInfo', 'class='=>'class-string'],
+      'new' => ['SplFileInfo', 'class='=>'?class-string'],
+    ],
+    'RecursiveDirectoryIterator::getPathInfo' => [
+      'old' => ['?SplFileInfo', 'class='=>'class-string'],
+      'new' => ['?SplFileInfo', 'class='=>'?class-string'],
+    ],
+    'RecursiveDirectoryIterator::openFile' => [
+      'old' => ['SplFileObject', 'mode='=>'string', 'useIncludePath='=>'bool', 'context='=>'resource'],
+      'new' => ['SplFileObject', 'mode='=>'string', 'useIncludePath='=>'bool', 'context='=>'?resource'],
+    ],
     'RecursiveIteratorIterator::getSubIterator' => [
       'old' => ['?RecursiveIterator', 'level='=>'int'],
       'new' => ['?RecursiveIterator', 'level='=>'?int'],
@@ -326,36 +374,36 @@ return [
       'new' => ['mixed', 'object='=>'null|object'],
     ],
     'SplFileInfo::getFileInfo' => [
-      'old' => ['SplFileInfo', 'class='=>'string'],
-      'new' => ['SplFileInfo', 'class='=>'?string'],
+      'old' => ['SplFileInfo', 'class='=>'class-string'],
+      'new' => ['SplFileInfo', 'class='=>'?class-string'],
     ],
     'SplFileInfo::getPathInfo' => [
-      'old' => ['SplFileInfo|null', 'class='=>'string'],
-      'new' => ['SplFileInfo|null', 'class='=>'?string'],
+      'old' => ['SplFileInfo|null', 'class='=>'class-string'],
+      'new' => ['SplFileInfo|null', 'class='=>'?class-string'],
     ],
     'SplFileInfo::openFile' => [
       'old' => ['SplFileObject', 'mode='=>'string', 'useIncludePath='=>'bool', 'context='=>'resource'],
       'new' => ['SplFileObject', 'mode='=>'string', 'useIncludePath='=>'bool', 'context='=>'?resource'],
     ],
     'SplFileObject::getFileInfo' => [
-      'old' => ['SplFileInfo', 'class='=>'string'],
-      'new' => ['SplFileInfo', 'class='=>'?string'],
+      'old' => ['SplFileInfo', 'class='=>'class-string'],
+      'new' => ['SplFileInfo', 'class='=>'?class-string'],
     ],
     'SplFileObject::getPathInfo' => [
-      'old' => ['SplFileInfo|null', 'class='=>'string'],
-      'new' => ['SplFileInfo|null', 'class='=>'?string'],
+      'old' => ['SplFileInfo|null', 'class='=>'class-string'],
+      'new' => ['SplFileInfo|null', 'class='=>'?class-string'],
     ],
     'SplFileObject::openFile' => [
       'old' => ['SplFileObject', 'mode='=>'string', 'useIncludePath='=>'bool', 'context='=>'resource'],
       'new' => ['SplFileObject', 'mode='=>'string', 'useIncludePath='=>'bool', 'context='=>'?resource'],
     ],
     'SplTempFileObject::getFileInfo' => [
-      'old' => ['SplFileInfo', 'class='=>'string'],
-      'new' => ['SplFileInfo', 'class='=>'?string'],
+      'old' => ['SplFileInfo', 'class='=>'class-string'],
+      'new' => ['SplFileInfo', 'class='=>'?class-string'],
     ],
     'SplTempFileObject::getPathInfo' => [
-      'old' => ['SplFileInfo|null', 'class='=>'string'],
-      'new' => ['SplFileInfo|null', 'class='=>'?string'],
+      'old' => ['SplFileInfo|null', 'class='=>'class-string'],
+      'new' => ['SplFileInfo|null', 'class='=>'?class-string'],
     ],
     'SplTempFileObject::openFile' => [
       'old' => ['SplTempFileObject', 'mode='=>'string', 'useIncludePath='=>'bool', 'context='=>'resource'],
