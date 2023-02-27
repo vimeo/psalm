@@ -489,6 +489,30 @@ class BinaryOperationTest extends TestCase
                     foobar($foo . $bar);
                 ',
             ],
+            'concatenateNonFalsyStringWithUndefinedConstant' => [
+                'code' => '<?php
+                    /**
+                     * @param non-falsy-string $arg
+                     * @return non-falsy-string
+                     */
+                    function foo( $arg ) {
+                        /** @psalm-suppress UndefinedConstant */
+                        return FOO . $arg;
+                    }
+                ',
+            ],
+            'concatenateNonEmptyStringWithUndefinedConstant' => [
+                'code' => '<?php
+                    /**
+                     * @param non-empty-string $arg
+                     * @return non-empty-string
+                     */
+                    function foo( $arg ) {
+                        /** @psalm-suppress UndefinedConstant */
+                        return FOO . $arg;
+                    }
+                ',
+            ],
             'possiblyInvalidAdditionOnBothSides' => [
                 'code' => '<?php
                     function foo(string $s) : int {
