@@ -284,34 +284,16 @@ class ConcatAnalyzer
              */
             $known_operand = $right_type ?? $left_type;
 
-            $numeric_type = new Union([
-                new TNumericString,
-                new TInt,
-                new TFloat,
-            ]);
+            if ($known_operand->isSingle()) {
+                $known_operands_atomic = $known_operand->getSingleAtomic();
 
-            $non_empty_string = $numeric_type->getBuilder()->addType(new TNonEmptyString())->freeze();
+                if ($known_operands_atomic instanceof TNonEmptyString) {
+                    $result_type = Type::getNonEmptyString();
+                }
 
-            $non_falsy_string = $numeric_type->getBuilder()->addType(new TNonFalsyString())->freeze();
-
-            $known_operand_not_empty = UnionTypeComparator::isContainedBy(
-                $codebase,
-                $known_operand,
-                $non_empty_string,
-            );
-
-            $known_operand_not_falsy = UnionTypeComparator::isContainedBy(
-                $codebase,
-                $known_operand,
-                $non_falsy_string,
-            );
-
-            if ($known_operand_not_empty) {
-                $result_type = Type::getNonEmptyString();
-            }
-
-            if ($known_operand_not_falsy) {
-                $result_type = Type::getNonFalsyString();
+                if ($known_operands_atomic instanceof TNonFalsyString) {
+                    $result_type = Type::getNonFalsyString();
+                }
             }
         }
     }
