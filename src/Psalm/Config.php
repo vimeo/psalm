@@ -600,6 +600,10 @@ class Config
     /**
      * A list of php extensions supported by Psalm.
      * Where key - extension name (without ext- prefix), value - whether to load extension’s stub.
+     * Values:
+     *  - true: ext enabled explicitly or bundled with PHP (should load stubs)
+     *  - false: ext disabled explicitly (should not load stubs)
+     *  - null: state is unknown (e.g. config not processed yet) or ext neither explicitly enabled or disabled.
      *
      * @psalm-readonly-allow-private-mutation
      * @var array<string, bool|null>
@@ -612,7 +616,7 @@ class Config
         "ffi" => null,
         "geos" => null,
         "gmp" => null,
-        "ibm_db2" => false,
+        "ibm_db2" => null,
         "mongodb" => null,
         "mysqli" => null,
         "pdo" => null,
