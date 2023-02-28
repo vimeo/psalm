@@ -36,26 +36,26 @@ use function version_compare;
 class InternalCallMapHandler
 {
     private const PHP_MAJOR_VERSION = 8;
-    private const PHP_MINOR_VERSION = 2;
+    private const PHP_MINOR_VERSION = 3;
     private const LOWEST_AVAILABLE_DELTA = 71;
 
     private static ?int $loaded_php_major_version = null;
     private static ?int $loaded_php_minor_version = null;
 
     /**
-     * @var array<lowercase-string, array<int|string,string>>|null
+     * @var non-empty-array<lowercase-string, array<int|string,string>>|null
      */
     private static ?array $call_map = null;
 
     /**
-     * @var array<list<TCallable>>|null
+     * @var array<string, non-empty-list<TCallable>>|null
      */
     private static ?array $call_map_callables = [];
 
     /**
-     * @var array<string, list<list<TaintKind::*>>>
+     * @var non-empty-array<string, non-empty-list<list<TaintKind::*>>>|null
      */
-    private static array $taint_sink_map = [];
+    private static ?array $taint_sink_map = null;
 
     /**
      * @param  list<PhpParser\Node\Arg>   $args
@@ -84,7 +84,7 @@ class InternalCallMapHandler
     }
 
     /**
-     * @param  array<int, TCallable>  $callables
+     * @param  non-empty-list<TCallable>  $callables
      * @param  list<PhpParser\Node\Arg>                 $args
      */
     public static function getMatchingCallableFromCallMapOptions(
@@ -216,7 +216,7 @@ class InternalCallMapHandler
     }
 
     /**
-     * @return list<TCallable>|null
+     * @return non-empty-list<TCallable>|null
      */
     public static function getCallablesFromCallMap(string $function_id): ?array
     {
@@ -332,7 +332,9 @@ class InternalCallMapHandler
     /**
      * Gets the method/function call map
      *
-     * @return array<string, array<int|string, string>>
+     * @return non-empty-array<string, array<int|string, string>>
+     * @psalm-assert !null self::$taint_sink_map
+     * @psalm-assert !null self::$call_map
      */
     public static function getCallMap(): array
     {
@@ -353,25 +355,30 @@ class InternalCallMapHandler
             return self::$call_map;
         }
 
-        /** @var array<string, array<int|string, string>> */
-        $call_map = require(dirname(__DIR__, 4) . '/dictionaries/CallMap.php');
+        /** @var non-empty-array<string, array<int|string, string>> */
+        $call_map_data = require(dirname(__DIR__, 4) . '/dictionaries/CallMap.php');
 
-        self::$call_map = [];
+        $call_map = [];
 
-        foreach ($call_map as $key => $value) {
+        foreach ($call_map_data as $key => $value) {
             $cased_key = strtolower($key);
-            self::$call_map[$cased_key] = $value;
+            $call_map[$cased_key] = $value;
         }
+
+        self::$call_map = $call_map;
 
         /**
-         * @var array<string, list<list<TaintKind::*>>>
+         * @var non-empty-array<string, non-empty-list<list<TaintKind::*>>>
          */
-        $taint_map = require(dirname(__DIR__, 4) . '/dictionaries/InternalTaintSinkMap.php');
+        $taint_map_data = require(dirname(__DIR__, 4) . '/dictionaries/InternalTaintSinkMap.php');
 
-        foreach ($taint_map as $key => $value) {
+        $taint_map = [];
+        foreach ($taint_map_data as $key => $value) {
             $cased_key = strtolower($key);
-            self::$taint_sink_map[$cased_key] = $value;
+            $taint_map[$cased_key] = $value;
         }
+
+        self::$taint_sink_map = $taint_map;
 
         if (version_compare($analyzer_version, $current_version, '<')) {
             // the following assumes both minor and major versions a single digits
@@ -408,6 +415,7 @@ class InternalCallMapHandler
                 }
             }
         }
+        assert(!empty(self::$call_map));
 
         self::$loaded_php_major_version = $analyzer_major_version;
         self::$loaded_php_minor_version = $analyzer_minor_version;

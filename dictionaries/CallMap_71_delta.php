@@ -16,7 +16,7 @@
  */
 return [
   'added' => [
-    'Closure::fromCallable' => ['Closure', 'callable'=>'callable'],
+    'Closure::fromCallable' => ['Closure', 'callback'=>'callable'],
     'curl_multi_errno' => ['int|false', 'mh'=>'resource'],
     'curl_share_errno' => ['int|false', 'sh'=>'resource'],
     'curl_share_strerror' => ['?string', 'error_code'=>'int'],

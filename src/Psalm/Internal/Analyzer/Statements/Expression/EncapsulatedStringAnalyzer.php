@@ -10,6 +10,7 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
+use Psalm\Type;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
@@ -123,7 +124,7 @@ class EncapsulatedStringAnalyzer
         if ($non_empty) {
             if ($literal_string !== null) {
                 $stmt_type = new Union(
-                    [new TLiteralString($literal_string)],
+                    [Type::getAtomicStringFromLiteral($literal_string)],
                     ['parent_nodes' => $parent_nodes],
                 );
             } elseif ($all_literals) {

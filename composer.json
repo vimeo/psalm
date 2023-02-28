@@ -35,7 +35,7 @@
         "netresearch/jsonmapper": "^1.0 || ^2.0 || ^3.0 || ^4.0",
         "nikic/php-parser": "^4.13",
         "sebastian/diff": "^4.0 || ^5.0",
-        "spatie/array-to-xml": "^2.17.0",
+        "spatie/array-to-xml": "^2.17.0 || ^3.0",
         "symfony/console": "^4.1.6 || ^5.0 || ^6.0",
         "symfony/filesystem": "^5.4 || ^6.0"
     },
@@ -117,7 +117,7 @@
             "Composer\\Config::disableProcessTimeout",
             "phpunit"
         ],
-        "verify-callmap": "phpunit tests/Internal/Codebase/InternalCallMapHandlerTest.php",
+        "verify-callmap": "@php phpunit tests/Internal/Codebase/InternalCallMapHandlerTest.php",
         "psalm": "@php ./psalm",
         "psalm-set-baseline": "@php ./psalm --set-baseline=psalm-baseline.xml",
         "tests": [

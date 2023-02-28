@@ -243,6 +243,8 @@ abstract class FunctionLikeStorage implements HasAttributesInterface
      */
     public $description;
 
+    public bool $public_api = false;
+
     public function __toString(): string
     {
         return $this->getSignature(false);

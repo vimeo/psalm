@@ -237,7 +237,13 @@ final class LanguageServer
 
         $ini_handler = new PsalmRestarter('PSALM');
 
-        $ini_handler->disableExtension('grpc');
+        $ini_handler->disableExtensions([
+            'grpc',
+            'uopz',
+            // extensions bellow are incompatible with JIT
+            'pcov',
+            'blackfire',
+        ]);
 
         // If Xdebug is enabled, restart without it
         $ini_handler->check();

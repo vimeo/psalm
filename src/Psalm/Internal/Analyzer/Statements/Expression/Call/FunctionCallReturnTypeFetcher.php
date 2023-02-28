@@ -35,7 +35,6 @@ use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralInt;
-use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNull;
@@ -80,7 +79,7 @@ class FunctionCallReturnTypeFetcher
         if ($stmt->isFirstClassCallable()) {
             $candidate_callable = CallableTypeComparator::getCallableFromAtomic(
                 $codebase,
-                new TLiteralString($function_id),
+                Type::getAtomicStringFromLiteral($function_id),
                 null,
                 $statements_analyzer,
                 true,
@@ -354,6 +353,7 @@ class FunctionCallReturnTypeFetcher
         } else {
             switch ($call_map_key) {
                 case 'count':
+                case 'sizeof':
                     if (($first_arg_type = $statements_analyzer->node_data->getType($call_args[0]->value))) {
                         $atomic_types = $first_arg_type->getAtomicTypes();
 

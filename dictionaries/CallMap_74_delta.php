@@ -25,13 +25,21 @@ return [
       'old' => ['?string', 'languageTag'=>'array', 'locale'=>'string', 'canonicalize='=>'bool', 'defaultLocale='=>'string'],
       'new' => ['?string', 'languageTag'=>'array', 'locale'=>'string', 'canonicalize='=>'bool', 'defaultLocale='=>'?string'],
     ],
+    'SplFileObject::fwrite' => [
+      'old' => ['int', 'data'=>'string', 'length='=>'int'],
+      'new' => ['int|false', 'data'=>'string', 'length='=>'int'],
+    ],
+    'SplTempFileObject::fwrite' => [
+      'old' => ['int', 'data'=>'string', 'length='=>'int'],
+      'new' => ['int|false', 'data'=>'string', 'length='=>'int'],
+    ],
     'array_merge' => [
-        'old' => ['array', '...arrays'=>'array'],
-        'new' => ['array', '...arrays='=>'array'],
+      'old' => ['array', '...arrays'=>'array'],
+      'new' => ['array', '...arrays='=>'array'],
     ],
     'array_merge_recursive' => [
-        'old' => ['array', '...arrays'=>'array'],
-        'new' => ['array', '...arrays='=>'array'],
+      'old' => ['array', '...arrays'=>'array'],
+      'new' => ['array', '...arrays='=>'array'],
     ],
     'gzread' => [
       'old' => ['string|0', 'stream'=>'resource', 'length'=>'int'],

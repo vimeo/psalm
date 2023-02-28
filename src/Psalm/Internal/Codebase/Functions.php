@@ -425,7 +425,7 @@ class Functions
             'call_user_func', 'call_user_func_array', 'define', 'create_function',
 
             // http
-            'header', 'header_remove', 'http_response_code', 'setcookie',
+            'header', 'header_remove', 'http_response_code', 'setcookie', 'setrawcookie',
 
             // output buffer
             'ob_start', 'ob_end_clean', 'ob_get_clean', 'readfile', 'printf', 'var_dump', 'phpinfo',
@@ -555,7 +555,7 @@ class Functions
             return true;
         }
 
-        if ($function_id === 'count' && isset($args[0]) && $type_provider) {
+        if (in_array($function_id, ['count', 'sizeof']) && isset($args[0]) && $type_provider) {
             $count_type = $type_provider->getType($args[0]->value);
 
             if ($count_type) {

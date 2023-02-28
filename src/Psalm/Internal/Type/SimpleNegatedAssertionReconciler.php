@@ -987,17 +987,17 @@ class SimpleNegatedAssertionReconciler extends Reconciler
 
             if (get_class($string_atomic_type) === TString::class) {
                 $existing_var_type->removeType('string');
-                $existing_var_type->addType(new TLiteralString(''));
-                $existing_var_type->addType(new TLiteralString('0'));
+                $existing_var_type->addType(Type::getAtomicStringFromLiteral(''));
+                $existing_var_type->addType(Type::getAtomicStringFromLiteral('0'));
             } elseif (get_class($string_atomic_type) === TNonEmptyString::class) {
                 $existing_var_type->removeType('string');
-                $existing_var_type->addType(new TLiteralString('0'));
+                $existing_var_type->addType(Type::getAtomicStringFromLiteral('0'));
             } elseif (get_class($string_atomic_type) === TNonEmptyLowercaseString::class) {
                 $existing_var_type->removeType('string');
-                $existing_var_type->addType(new TLiteralString('0'));
+                $existing_var_type->addType(Type::getAtomicStringFromLiteral('0'));
             } elseif (get_class($string_atomic_type) === TNonEmptyNonspecificLiteralString::class) {
                 $existing_var_type->removeType('string');
-                $existing_var_type->addType(new TLiteralString('0'));
+                $existing_var_type->addType(Type::getAtomicStringFromLiteral('0'));
             }
         }
 
@@ -1292,6 +1292,10 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             } elseif ($type instanceof TArrayKey) {
                 $redundant = false;
                 $non_numeric_types[] = new TString();
+            } elseif ($type instanceof TScalar) {
+                $redundant = false;
+                $non_numeric_types[] = new TString();
+                $non_numeric_types[] = new TBool();
             } elseif (!$type->isNumericType()) {
                 $non_numeric_types[] = $type;
             } else {

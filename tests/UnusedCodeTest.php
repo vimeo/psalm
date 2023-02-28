@@ -666,6 +666,13 @@ class UnusedCodeTest extends TestCase
                         return $c;
                     }',
             ],
+            'setRawCookieImpure' => [
+                'code' => '<?php
+                    setrawcookie(
+                        "name",
+                        "value",
+                    );',
+            ],
             'usedUsort' => [
                 'code' => '<?php
                     /** @param string[] $arr */
@@ -1254,6 +1261,16 @@ class UnusedCodeTest extends TestCase
                         public function b(): void {}
                         protected function c(): void {}
                     }
+                    PHP,
+            ],
+            'psalm-api on unused public method' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class A {
+                        /** @psalm-api */
+                        public function b(): void {}
+                    }
+                    new A;
                     PHP,
             ],
         ];

@@ -76,7 +76,6 @@ use function fwrite;
 use function get_class;
 use function in_array;
 use function is_string;
-use function ltrim;
 use function preg_split;
 use function reset;
 use function round;
@@ -794,21 +793,21 @@ class StatementsAnalyzer extends SourceAnalyzer
 
         if (isset($comments->tags['psalm-scope-this'])) {
             $trimmed = trim(reset($comments->tags['psalm-scope-this']));
-            $trimmed = ltrim($trimmed, '\\');
+            $scope_fqcn = Type::getFQCLNFromString($trimmed, $this->getAliases());
 
-            if (!$codebase->classExists($trimmed)) {
+            if (!$codebase->classExists($scope_fqcn)) {
                 IssueBuffer::maybeAdd(
                     new UndefinedDocblockClass(
-                        'Scope class ' . $trimmed . ' does not exist',
+                        'Scope class ' . $scope_fqcn . ' does not exist',
                         new CodeLocation($this->getSource(), $stmt, null, true),
-                        $trimmed,
+                        $scope_fqcn,
                     ),
                 );
             } else {
-                $this_type = Type::parseString($trimmed);
-                $context->self = $trimmed;
+                $this_type = Type::parseString($scope_fqcn);
+                $context->self = $scope_fqcn;
                 $context->vars_in_scope['$this'] = $this_type;
-                $this->setFQCLN($trimmed);
+                $this->setFQCLN($scope_fqcn);
             }
         }
     }

@@ -35,7 +35,6 @@ use Psalm\Type\Atomic\TDependentGetDebugType;
 use Psalm\Type\Atomic\TDependentGetType;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
-use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TLowercaseString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
@@ -625,17 +624,17 @@ class NamedFunctionCallHandler
                         $class_string_types[] = new TClassString();
                     } else {
                         if ($class_type instanceof TInt) {
-                            $class_string_types[] = new TLiteralString('int');
+                            $class_string_types[] = Type::getAtomicStringFromLiteral('int');
                         } elseif ($class_type instanceof TString) {
-                            $class_string_types[] = new TLiteralString('string');
+                            $class_string_types[] = Type::getAtomicStringFromLiteral('string');
                         } elseif ($class_type instanceof TFloat) {
-                            $class_string_types[] = new TLiteralString('float');
+                            $class_string_types[] = Type::getAtomicStringFromLiteral('float');
                         } elseif ($class_type instanceof TBool) {
-                            $class_string_types[] = new TLiteralString('bool');
+                            $class_string_types[] = Type::getAtomicStringFromLiteral('bool');
                         } elseif ($class_type instanceof TClosedResource) {
-                            $class_string_types[] = new TLiteralString('resource (closed)');
+                            $class_string_types[] = Type::getAtomicStringFromLiteral('resource (closed)');
                         } elseif ($class_type instanceof TNull) {
-                            $class_string_types[] = new TLiteralString('null');
+                            $class_string_types[] = Type::getAtomicStringFromLiteral('null');
                         } else {
                             $class_string_types[] = new TString();
                         }

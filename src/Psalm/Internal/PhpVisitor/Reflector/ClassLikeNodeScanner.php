@@ -704,10 +704,10 @@ class ClassLikeNodeScanner
             $name_types = [];
             $values_types = [];
             foreach ($storage->enum_cases as $name => $enumCaseStorage) {
-                $name_types[] = new Type\Atomic\TLiteralString($name);
+                $name_types[] = Type::getAtomicStringFromLiteral($name);
                 if ($storage->enum_type !== null) {
                     if (is_string($enumCaseStorage->value)) {
-                        $values_types[] = new Type\Atomic\TLiteralString($enumCaseStorage->value);
+                        $values_types[] = Type::getAtomicStringFromLiteral($enumCaseStorage->value);
                     } elseif (is_int($enumCaseStorage->value)) {
                         $values_types[] = new Type\Atomic\TLiteralInt($enumCaseStorage->value);
                     }

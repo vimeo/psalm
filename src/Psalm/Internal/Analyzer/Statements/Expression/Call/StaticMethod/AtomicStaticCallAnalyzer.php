@@ -322,6 +322,7 @@ class AtomicStaticCallAnalyzer
         $cased_method_id = $fq_class_name . '::' . $stmt_name->name;
 
         if ($codebase->store_node_types
+            && !$stmt->isFirstClassCallable()
             && !$context->collect_initializations
             && !$context->collect_mutations
         ) {

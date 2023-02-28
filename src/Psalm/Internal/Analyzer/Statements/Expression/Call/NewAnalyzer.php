@@ -29,6 +29,7 @@ use Psalm\Issue\InternalClass;
 use Psalm\Issue\InternalMethod;
 use Psalm\Issue\InvalidStringClass;
 use Psalm\Issue\MixedMethodCall;
+use Psalm\Issue\ParseError;
 use Psalm\Issue\TooManyArguments;
 use Psalm\Issue\UndefinedClass;
 use Psalm\Issue\UnsafeGenericInstantiation;
@@ -83,6 +84,14 @@ class NewAnalyzer extends CallAnalyzer
         $can_extend = false;
 
         $from_static = false;
+
+        if ($stmt->isFirstClassCallable()) {
+            IssueBuffer::maybeAdd(new ParseError(
+                'First-class callables cannot be used in new',
+                new CodeLocation($statements_analyzer->getSource(), $stmt),
+            ));
+            return false;
+        }
 
         if ($stmt->class instanceof PhpParser\Node\Name) {
             if (!in_array(strtolower($stmt->class->parts[0]), ['self', 'static', 'parent'], true)) {

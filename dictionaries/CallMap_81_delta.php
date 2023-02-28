@@ -66,6 +66,30 @@ return [
       'old' => ['DOMDocumentFragment|false'],
       'new' => ['DOMDocumentFragment'],
     ],
+    'Phar::buildFromDirectory' => [
+      'old' => ['array|false', 'directory'=>'string', 'pattern='=>'string'],
+      'new' => ['array', 'directory'=>'string', 'pattern='=>'string'],
+    ],
+    'Phar::buildFromIterator' => [
+      'old' => ['array|false', 'iterator'=>'Traversable', 'baseDirectory='=>'?string'],
+      'new' => ['array', 'iterator'=>'Traversable', 'baseDirectory='=>'?string'],
+    ],
+    'PharData::buildFromDirectory' => [
+        'old' => ['array|false', 'directory'=>'string', 'pattern='=>'string'],
+        'new' => ['array', 'directory'=>'string', 'pattern='=>'string'],
+    ],
+    'PharData::buildFromIterator' => [
+      'old' => ['array|false', 'iterator'=>'Traversable', 'baseDirectory='=>'?string'],
+      'new' => ['array', 'iterator'=>'Traversable', 'baseDirectory='=>'?string'],
+    ],
+    'SplFileObject::fputcsv' => [
+      'old' => ['int|false', 'fields'=>'array<array-key, null|scalar|Stringable>', 'separator='=>'string', 'enclosure='=>'string', 'escape='=>'string'],
+      'new' => ['int|false', 'fields'=>'array<array-key, null|scalar|Stringable>', 'separator='=>'string', 'enclosure='=>'string', 'escape='=>'string', 'eol='=>'string'],
+    ],
+    'SplTempFileObject::fputcsv' => [
+      'old' => ['int|false', 'fields'=>'array<array-key, null|scalar|Stringable>', 'separator='=>'string', 'enclosure='=>'string', 'escape='=>'string'],
+      'new' => ['int|false', 'fields'=>'array<array-key, null|scalar|Stringable>', 'separator='=>'string', 'enclosure='=>'string', 'escape='=>'string', 'eol='=>'string'],
+    ],
     'finfo_buffer' => [
        'old' => ['string|false', 'finfo'=>'resource', 'string'=>'string', 'flags='=>'int', 'context='=>'resource'],
        'new' => ['string|false', 'finfo'=>'finfo', 'string'=>'string', 'flags='=>'int', 'context='=>'resource'],

@@ -269,7 +269,7 @@ final class ErrorBaseline
                     $codeNode = $baselineDoc->createElement('code');
                     $textContent = trim($selection);
                     if ($textContent !== htmlspecialchars($textContent)) {
-                        $codeNode->append($baselineDoc->createCDATASection($textContent));
+                        $codeNode->appendChild($baselineDoc->createCDATASection($textContent));
                     } else {
                         $codeNode->textContent = trim($textContent);
                     }

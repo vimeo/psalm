@@ -14,7 +14,7 @@ final class XmlReport extends Report
 {
     public function create(): string
     {
-        $xml = (string) ArrayToXml::convert(
+        $xml = ArrayToXml::convert(
             [
                 'item' => array_map(
                     static function (IssueData $issue_data): array {

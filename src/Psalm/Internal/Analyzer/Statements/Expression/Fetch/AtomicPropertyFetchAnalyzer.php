@@ -52,7 +52,6 @@ use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TLiteralInt;
-use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
@@ -935,7 +934,7 @@ class AtomicPropertyFetchAnalyzer
         if ($lhs_type_part instanceof TEnumCase) {
             $statements_analyzer->node_data->setType(
                 $stmt,
-                new Union([new TLiteralString($lhs_type_part->case_name)]),
+                new Union([Type::getAtomicStringFromLiteral($lhs_type_part->case_name)]),
             );
         } else {
             $statements_analyzer->node_data->setType($stmt, Type::getNonEmptyString());
@@ -971,7 +970,7 @@ class AtomicPropertyFetchAnalyzer
 
         foreach ($enum_cases as $enum_case) {
             if (is_string($enum_case->value)) {
-                $case_values[] = new TLiteralString($enum_case->value);
+                $case_values[] = Type::getAtomicStringFromLiteral($enum_case->value);
             } elseif (is_int($enum_case->value)) {
                 $case_values[] = new TLiteralInt($enum_case->value);
             } else {
