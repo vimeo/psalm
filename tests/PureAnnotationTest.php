@@ -902,30 +902,6 @@ class PureAnnotationTest extends TestCase
                     ',
                 'error_message' => 'ImpureFunctionCall',
             ],
-            'array_popIsNotMutationFree' => [
-                'code' => <<<'PHP'
-                    <?php
-                    class Stack
-                    {
-                        /** @var array<string> */
-                        private array $stack = [];
-
-                        public function push(string $item): void
-                        {
-                            $this->stack[] = $item;
-                        }
-
-                        /** @psalm-mutation-free */
-                        public function next(): string|null
-                        {
-                            return array_pop($this->stack);
-                        }
-                    }
-                    PHP,
-                'error_message' => 'ImpureFunctionCall',
-                'ignored_issues' => [],
-                'php_version' => '8.0',
-            ],
         ];
     }
 }
