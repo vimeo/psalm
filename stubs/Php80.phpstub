@@ -240,6 +240,13 @@ class DatePeriod implements IteratorAggregate
  */
 function get_headers(string $url, bool $associative = false, $context = null) : array|false {}
 
+/**
+ * @psalm-pure
+ *
+ * @psalm-flow ($values) -> return
+ */
+function pack(string $format, mixed ...$values): string {}
+
 final class CurlHandle
 {
     private function __construct()
