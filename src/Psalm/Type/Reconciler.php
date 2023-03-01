@@ -761,7 +761,7 @@ class Reconciler
                                 return null;
                             }
 
-                            $new_base_type_candidate = $existing_key_type_part->getGenericValueType();
+                            $new_base_type_candidate = $existing_key_type_part->getGenericValueType(true);
                         } else {
                             $array_properties = $existing_key_type_part->properties;
 
