@@ -40,15 +40,14 @@ use Psalm\Config;
 use Psalm\ErrorBaseline;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
-use Psalm\Internal\Composer;
+use Psalm\Internal\LanguageServer\Provider\ClassLikeStorageCacheProvider;
+use Psalm\Internal\LanguageServer\Provider\FileReferenceCacheProvider;
+use Psalm\Internal\LanguageServer\Provider\FileStorageCacheProvider;
+use Psalm\Internal\LanguageServer\Provider\ParserCacheProvider;
+use Psalm\Internal\LanguageServer\Provider\ProjectCacheProvider;
 use Psalm\Internal\LanguageServer\Server\TextDocument as ServerTextDocument;
 use Psalm\Internal\LanguageServer\Server\Workspace as ServerWorkspace;
-use Psalm\Internal\Provider\ClassLikeStorageCacheProvider;
 use Psalm\Internal\Provider\FileProvider;
-use Psalm\Internal\Provider\FileReferenceCacheProvider;
-use Psalm\Internal\Provider\FileStorageCacheProvider;
-use Psalm\Internal\Provider\ParserCacheProvider;
-use Psalm\Internal\Provider\ProjectCacheProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\IssueBuffer;
 use Throwable;
@@ -68,15 +67,11 @@ use function array_values;
 use function cli_set_process_title;
 use function count;
 use function explode;
-use function extension_loaded;
 use function fwrite;
 use function implode;
-use function in_array;
-use function ini_get;
 use function json_encode;
 use function max;
 use function parse_url;
-use function pcntl_fork;
 use function rawurlencode;
 use function realpath;
 use function str_replace;
@@ -249,14 +244,13 @@ class LanguageServer extends Dispatcher
     {
         $progress = new Progress();
 
-        //no-cache mode does not work in the LSP
         $providers = new Providers(
             new FileProvider,
-            new ParserCacheProvider($config),
-            new FileStorageCacheProvider($config),
-            new ClassLikeStorageCacheProvider($config),
+            new ParserCacheProvider,
+            new FileStorageCacheProvider,
+            new ClassLikeStorageCacheProvider,
             new FileReferenceCacheProvider($config),
-            new ProjectCacheProvider(Composer::getLockFilePath($base_dir)),
+            new ProjectCacheProvider,
         );
 
         $codebase = new Codebase(
@@ -318,67 +312,20 @@ class LanguageServer extends Dispatcher
             }
             fwrite(STDOUT, "Server listening on {$clientConfiguration->TCPServerAddress}\n");
 
-            $fork_available = true;
-            if (!extension_loaded('pcntl')) {
-                fwrite(STDERR, "PCNTL is not available. Only a single connection will be accepted\n");
-                $fork_available = false;
-            }
-
-            $disabled_functions = array_map('trim', explode(',', ini_get('disable_functions')));
-            if (in_array('pcntl_fork', $disabled_functions)) {
-                fwrite(
-                    STDERR,
-                    "pcntl_fork() is disabled by php configuration (disable_functions directive)."
-                    . " Only a single connection will be accepted\n",
-                );
-                $fork_available = false;
-            }
-
             while ($socket = stream_socket_accept($tcpServer, -1)) {
                 fwrite(STDOUT, "Connection accepted\n");
                 stream_set_blocking($socket, false);
-                if ($fork_available) {
-                    // If PCNTL is available, fork a child process for the connection
-                    // An exit notification will only terminate the child process
-                    $pid = pcntl_fork();
-                    if ($pid === -1) {
-                        fwrite(STDERR, "Could not fork\n");
-                        exit(1);
-                    }
-
-                    if ($pid === 0) {
-                        // Child process
-                        $reader = new ProtocolStreamReader($socket);
-                        $reader->on(
-                            'close',
-                            function (): void {
-                                fwrite(STDOUT, "Connection closed\n");
-                            },
-                        );
-                        new self(
-                            $reader,
-                            new ProtocolStreamWriter($socket),
-                            $project_analyzer,
-                            $codebase,
-                            $clientConfiguration,
-                            $progress,
-                        );
-                        // Just for safety
-                        exit(0);
-                    }
-                } else {
-                    // If PCNTL is not available, we only accept one connection.
-                    // An exit notification will terminate the server
-                    new LanguageServer(
-                        new ProtocolStreamReader($socket),
-                        new ProtocolStreamWriter($socket),
-                        $project_analyzer,
-                        $codebase,
-                        $clientConfiguration,
-                        $progress,
-                    );
-                    Loop::run();
-                }
+                //we only accept one connection.
+                //An exit notification will terminate the server
+                new LanguageServer(
+                    new ProtocolStreamReader($socket),
+                    new ProtocolStreamWriter($socket),
+                    $project_analyzer,
+                    $codebase,
+                    $clientConfiguration,
+                    $progress,
+                );
+                Loop::run();
             }
         } else {
             // Use STDIO
