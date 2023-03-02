@@ -26,6 +26,25 @@ class ParamTypeManipulationTest extends FileManipulationTestCase
                 'issues_to_fix' => ['MismatchingDocblockParamType'],
                 'safe_types' => true,
             ],
+            'fixMismatchingDocblockWithDescriptionParamType70' => [
+                'input' => '<?php
+                    /**
+                     * @param int $s the string
+                     */
+                    function foo(string $s): string {
+                        return "hello";
+                    }',
+                'output' => '<?php
+                    /**
+                     * @param string $s the string
+                     */
+                    function foo(string $s): string {
+                        return "hello";
+                    }',
+                'php_version' => '7.0',
+                'issues_to_fix' => ['MismatchingDocblockParamType'],
+                'safe_types' => true,
+            ],
             'fixNamespacedMismatchingDocblockParamsType70' => [
                 'input' => '<?php
                     namespace Foo\Bar {
@@ -134,6 +153,39 @@ class ParamTypeManipulationTest extends FileManipulationTestCase
                      */
                     function callsWithString($a): void {
                         (new C)->fooFoo($a);
+                    }',
+                'php_version' => '7.1',
+                'issues_to_fix' => ['MissingParamType'],
+                'safe_types' => true,
+            ],
+            'noStringParamTypeWithDocblockAndDescriptionCall' => [
+                'input' => '<?php
+                    class C {
+                        /**
+                         * @param $ab the string you pass in
+                         */
+                        public function fooFoo($ab): void {}
+                    }
+
+                    /**
+                     * @param string $ab
+                     */
+                    function callsWithString($ab): void {
+                        (new C)->fooFoo($ab);
+                    }',
+                'output' => '<?php
+                    class C {
+                        /**
+                         * @param string $ab the string you pass in
+                         */
+                        public function fooFoo($ab): void {}
+                    }
+
+                    /**
+                     * @param string $ab
+                     */
+                    function callsWithString($ab): void {
+                        (new C)->fooFoo($ab);
                     }',
                 'php_version' => '7.1',
                 'issues_to_fix' => ['MissingParamType'],
