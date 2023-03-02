@@ -1521,7 +1521,7 @@ final class Codebase
     public function getReferenceAtPosition(string $file_path, Position $position): ?array
     {
         $ref = $this->getReferenceAtPositionAsReference($file_path, $position);
-        if($ref === null) {
+        if ($ref === null) {
             return null;
         }
         return [$ref->symbol, $ref->range];
