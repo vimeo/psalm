@@ -430,6 +430,9 @@ class TextDocument
             /** @var array{type: string, snippet: string, line_from: int, line_to: int} */
             $data = (array)$diagnostic->data;
 
+            //$file_path = LanguageServer::uriToPath($textDocument->uri);
+            //$contents = $this->codebase->file_provider->getContents($file_path);
+
             $snippetRange = new Range(
                 new Position($data['line_from']-1),
                 new Position($data['line_to']),
@@ -451,9 +454,7 @@ class TextDocument
                     $textDocument->uri => [
                         new TextEdit(
                             $snippetRange,
-                            "{$indentation}/**\n".
-                            "{$indentation} * @psalm-suppress {$data['type']}\n".
-                            "{$indentation} */\n".
+                            "{$indentation}/** @psalm-suppress {$data['type']} */\n".
                             "{$data['snippet']}\n",
                         ),
                     ],

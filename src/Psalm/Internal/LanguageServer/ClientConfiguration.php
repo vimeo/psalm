@@ -50,7 +50,7 @@ class ClientConfiguration
     /**
      * Provide Signature Help or not
      */
-    public ?bool $provideSignatureHelp= null;
+    public ?bool $provideSignatureHelp = null;
 
     /**
      * Provide Code Actions or not
