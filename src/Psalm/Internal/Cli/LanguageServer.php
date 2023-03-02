@@ -378,6 +378,6 @@ final class LanguageServer
         $clientConfiguration->TCPServerAddress = $options['tcp'] ?? null;
         $clientConfiguration->TCPServerMode = isset($options['tcp-server']);
 
-        LanguageServerLanguageServer::run($config, $clientConfiguration;
+        LanguageServerLanguageServer::run($config, $clientConfiguration);
     }
 }
