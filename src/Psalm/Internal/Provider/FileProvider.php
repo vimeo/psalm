@@ -44,25 +44,20 @@ class FileProvider
             return $this->temp_files[$file_path]['content'];
         }
 
-        /** @psalm-suppress ImpureStaticProperty Used only for caching */
         if (isset(self::$open_files[$file_path])) {
             return self::$open_files[$file_path];
         }
 
-        /** @psalm-suppress ImpureFunctionCall For our purposes, this should not mutate external state */
         if (!file_exists($file_path)) {
             throw new UnexpectedValueException('File ' . $file_path . ' should exist to get contents');
         }
 
-        /** @psalm-suppress ImpureFunctionCall For our purposes, this should not mutate external state */
         if (is_dir($file_path)) {
             throw new UnexpectedValueException('File ' . $file_path . ' is a directory');
         }
 
-        /** @psalm-suppress ImpureFunctionCall For our purposes, this should not mutate external state */
         $file_contents = (string) file_get_contents($file_path);
 
-        /** @psalm-suppress ImpureStaticProperty Used only for caching */
         self::$open_files[$file_path] = $file_contents;
 
         return $file_contents;

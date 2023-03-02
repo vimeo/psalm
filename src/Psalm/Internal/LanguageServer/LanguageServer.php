@@ -827,7 +827,7 @@ class LanguageServer extends Dispatcher
                                     $issue_baseline[$file][$type]['o']--;
                                 }
                             } else {
-                                /** @psalm-suppress MixedArrayAssignment, MixedAssignment */
+                                /** @psalm-suppress MixedArrayAssignment */
                                 $issue_baseline[$file][$type]['s'] = [];
                                 $issue_data->severity = Config::REPORT_INFO;
                                 /** @psalm-suppress MixedArrayAssignment, MixedOperand, MixedAssignment */
