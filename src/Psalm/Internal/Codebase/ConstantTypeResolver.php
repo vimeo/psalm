@@ -94,7 +94,7 @@ class ConstantTypeResolver
                         || $right instanceof TLiteralFloat
                         || $right instanceof TLiteralInt)
                 ) {
-                    return new TLiteralString($left->value . $right->value);
+                    return Type::getAtomicStringFromLiteral($left->value . $right->value);
                 }
 
                 return new TString();
@@ -355,7 +355,7 @@ class ConstantTypeResolver
         }
 
         if (is_string($value)) {
-            return new TLiteralString($value);
+            return Type::getAtomicStringFromLiteral($value);
         }
 
         if (is_int($value)) {

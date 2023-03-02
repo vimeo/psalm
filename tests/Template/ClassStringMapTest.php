@@ -83,6 +83,44 @@ class ClassStringMapTest extends TestCase
                         takesVariadic(...$arr);
                     }',
             ],
+            'assignClassStringMapInConstruct' => [
+                'code' => '<?php
+                    class A {
+                        /** @var class-string-map<T,T> */
+                        private array $map;
+                        /** @param class-string-map<T,T> $map */
+                        public function __construct(array $map) {
+                            $this->map = $map;
+                        }
+                    }',
+            ],
+            'assignClassStringMapInMethod' => [
+                'code' => '<?php
+                    class A {
+                        /** @var class-string-map<T,T> */
+                        private array $map = [];
+                        /** @param class-string-map<T,T> $map */
+                        public function set(array $map): void {
+                            $this->map = $map;
+                        }
+                    }',
+            ],
+            'simpleSetter' => [
+                'code' => '<?php
+                    class Container {
+                        /** @var class-string-map<T, T> */
+                        public array $map = [];
+                        /**
+                         * @template U of object
+                         * @param class-string<U> $key
+                         * @param U $obj
+                         */
+                        public function set(string $key, object $obj): void {
+                            $this->map[$key] = $obj;
+                        }
+                    }'
+                    ,
+            ],
         ];
     }
 

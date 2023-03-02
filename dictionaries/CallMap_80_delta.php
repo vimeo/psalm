@@ -81,13 +81,49 @@ return [
       'old' => ['void', 'dir_handle='=>'resource'],
       'new' => ['void'],
     ],
+    'DirectoryIterator::getFileInfo' => [
+      'old' => ['SplFileInfo', 'class='=>'class-string'],
+      'new' => ['SplFileInfo', 'class='=>'?class-string'],
+    ],
+    'DirectoryIterator::getPathInfo' => [
+      'old' => ['?SplFileInfo', 'class='=>'class-string'],
+      'new' => ['?SplFileInfo', 'class='=>'?class-string'],
+    ],
+    'DirectoryIterator::openFile' => [
+      'old' => ['SplFileObject', 'mode='=>'string', 'useIncludePath='=>'bool', 'context='=>'resource'],
+      'new' => ['SplFileObject', 'mode='=>'string', 'useIncludePath='=>'bool', 'context='=>'?resource'],
+    ],
     'ErrorException::__construct' => [
       'old' => ['void', 'message='=>'string', 'code='=>'int', 'severity='=>'int', 'filename='=>'string', 'line='=>'int', 'previous='=>'?Throwable'],
       'new' => ['void', 'message='=>'string', 'code='=>'int', 'severity='=>'int', 'filename='=>'?string', 'line='=>'?int', 'previous='=>'?Throwable'],
     ],
+    'FilesystemIterator::getFileInfo' => [
+      'old' => ['SplFileInfo', 'class='=>'class-string'],
+      'new' => ['SplFileInfo', 'class='=>'?class-string'],
+    ],
+    'FilesystemIterator::getPathInfo' => [
+      'old' => ['?SplFileInfo', 'class='=>'class-string'],
+      'new' => ['?SplFileInfo', 'class='=>'?class-string'],
+    ],
+    'FilesystemIterator::openFile' => [
+      'old' => ['SplFileObject', 'mode='=>'string', 'useIncludePath='=>'bool', 'context='=>'resource'],
+      'new' => ['SplFileObject', 'mode='=>'string', 'useIncludePath='=>'bool', 'context='=>'?resource'],
+    ],
     'finfo::__construct' => [
       'old' => ['void', 'flags='=>'int', 'magic_database='=>'string'],
       'new' => ['void', 'flags='=>'int', 'magic_database='=>'?string'],
+    ],
+    'GlobIterator::getFileInfo' => [
+      'old' => ['SplFileInfo', 'class='=>'class-string'],
+      'new' => ['SplFileInfo', 'class='=>'?class-string'],
+    ],
+    'GlobIterator::getPathInfo' => [
+      'old' => ['?SplFileInfo', 'class='=>'class-string'],
+      'new' => ['?SplFileInfo', 'class='=>'?class-string'],
+    ],
+    'GlobIterator::openFile' => [
+      'old' => ['SplFileObject', 'mode='=>'string', 'useIncludePath='=>'bool', 'context='=>'resource'],
+      'new' => ['SplFileObject', 'mode='=>'string', 'useIncludePath='=>'bool', 'context='=>'?resource'],
     ],
     'IntlDateFormatter::__construct' => [
       'old' => ['void', 'locale'=>'?string', 'datetype'=>'null|int', 'timetype'=>'null|int', 'timezone='=>'IntlTimeZone|DateTimeZone|string|null', 'calendar='=>'IntlCalendar|int|null', 'pattern='=>'?string'],
@@ -209,21 +245,17 @@ return [
       'old' => ['bool', 'mode'=>'int'],
       'new' => ['bool', 'mode'=>'int', '...args='=>'mixed'],
     ],
-    'PharData::compress' => [
-      'old' => ['?PharData', 'compression'=>'int', 'extension='=>'string'],
-      'new' => ['?PharData', 'compression'=>'int', 'extension='=>'?string'],
+    'Phar::addFile' => [
+      'old' => ['void', 'filename'=>'string', 'localName='=>'string'],
+      'new' => ['void', 'filename'=>'string', 'localName='=>'?string'],
     ],
-    'PharData::convertToData' => [
-      'old' => ['?PharData', 'format='=>'int', 'compression='=>'int', 'extension='=>'string'],
-      'new' => ['?PharData', 'format='=>'?int', 'compression='=>'?int', 'extension='=>'?string'],
+    'Phar::buildFromIterator' => [
+      'old' => ['array|false', 'iterator'=>'Traversable', 'baseDirectory='=>'string'],
+      'new' => ['array|false', 'iterator'=>'Traversable', 'baseDirectory='=>'?string'],
     ],
-    'PharData::convertToExecutable' => [
-      'old' => ['?Phar', 'format='=>'int', 'compression='=>'int', 'extension='=>'string'],
-      'new' => ['?Phar', 'format='=>'?int', 'compression='=>'?int', 'extension='=>'?string'],
-    ],
-    'PharData::decompress' => [
-      'old' => ['?PharData', 'extension='=>'string'],
-      'new' => ['?PharData', 'extension='=>'?string'],
+    'Phar::createDefaultStub' => [
+      'old' => ['string', 'index='=>'string', 'webIndex='=>'string'],
+      'new' => ['string', 'index='=>'?string', 'webIndex='=>'?string'],
     ],
     'Phar::compress' => [
       'old' => ['?Phar', 'compression'=>'int', 'extension='=>'string'],
@@ -245,9 +277,69 @@ return [
       'old' => ['mixed'],
       'new' => ['mixed', 'unserializeOptions='=>'array'],
     ],
+    'Phar::setDefaultStub' => [
+      'old' => ['bool', 'index='=>'?string', 'webIndex='=>'string'],
+      'new' => ['bool', 'index='=>'?string', 'webIndex='=>'?string'],
+    ],
+    'Phar::setSignatureAlgorithm' => [
+      'old' => ['void', 'algo'=>'int', 'privateKey='=>'string'],
+      'new' => ['void', 'algo'=>'int', 'privateKey='=>'?string'],
+    ],
+    'Phar::webPhar' => [
+      'old' => ['void', 'alias='=>'?string', 'index='=>'?string', 'fileNotFoundScript='=>'string', 'mimeTypes='=>'array', 'rewrite='=>'callable'],
+      'new' => ['void', 'alias='=>'?string', 'index='=>'?string', 'fileNotFoundScript='=>'?string', 'mimeTypes='=>'array', 'rewrite='=>'?callable'],
+    ],
+    'PharData::addFile' => [
+      'old' => ['void', 'filename'=>'string', 'localName='=>'string'],
+      'new' => ['void', 'filename'=>'string', 'localName='=>'?string'],
+    ],
+    'PharData::buildFromIterator' => [
+      'old' => ['array|false', 'iterator'=>'Traversable', 'baseDirectory='=>'string'],
+      'new' => ['array|false', 'iterator'=>'Traversable', 'baseDirectory='=>'?string'],
+    ],
+    'PharData::compress' => [
+      'old' => ['?PharData', 'compression'=>'int', 'extension='=>'string'],
+      'new' => ['?PharData', 'compression'=>'int', 'extension='=>'?string'],
+    ],
+    'PharData::convertToData' => [
+      'old' => ['?PharData', 'format='=>'int', 'compression='=>'int', 'extension='=>'string'],
+      'new' => ['?PharData', 'format='=>'?int', 'compression='=>'?int', 'extension='=>'?string'],
+    ],
+    'PharData::convertToExecutable' => [
+      'old' => ['?Phar', 'format='=>'int', 'compression='=>'int', 'extension='=>'string'],
+      'new' => ['?Phar', 'format='=>'?int', 'compression='=>'?int', 'extension='=>'?string'],
+    ],
+    'PharData::decompress' => [
+      'old' => ['?PharData', 'extension='=>'string'],
+      'new' => ['?PharData', 'extension='=>'?string'],
+    ],
+    'PharData::setDefaultStub' => [
+      'old' => ['bool', 'index='=>'?string', 'webIndex='=>'string'],
+      'new' => ['bool', 'index='=>'?string', 'webIndex='=>'?string'],
+    ],
+    'PharData::setSignatureAlgorithm' => [
+      'old' => ['void', 'algo'=>'int', 'privateKey='=>'string'],
+      'new' => ['void', 'algo'=>'int', 'privateKey='=>'?string'],
+    ],
     'PharFileInfo::getMetadata' => [
       'old' => ['mixed'],
       'new' => ['mixed', 'unserializeOptions='=>'array'],
+    ],
+    'PharFileInfo::isCompressed' => [
+      'old' => ['bool', 'compression='=>'int'],
+      'new' => ['bool', 'compression='=>'?int'],
+    ],
+    'RecursiveDirectoryIterator::getFileInfo' => [
+      'old' => ['SplFileInfo', 'class='=>'class-string'],
+      'new' => ['SplFileInfo', 'class='=>'?class-string'],
+    ],
+    'RecursiveDirectoryIterator::getPathInfo' => [
+      'old' => ['?SplFileInfo', 'class='=>'class-string'],
+      'new' => ['?SplFileInfo', 'class='=>'?class-string'],
+    ],
+    'RecursiveDirectoryIterator::openFile' => [
+      'old' => ['SplFileObject', 'mode='=>'string', 'useIncludePath='=>'bool', 'context='=>'resource'],
+      'new' => ['SplFileObject', 'mode='=>'string', 'useIncludePath='=>'bool', 'context='=>'?resource'],
     ],
     'RecursiveIteratorIterator::getSubIterator' => [
       'old' => ['?RecursiveIterator', 'level='=>'int'],
@@ -282,36 +374,36 @@ return [
       'new' => ['mixed', 'object='=>'null|object'],
     ],
     'SplFileInfo::getFileInfo' => [
-      'old' => ['SplFileInfo', 'class='=>'string'],
-      'new' => ['SplFileInfo', 'class='=>'?string'],
+      'old' => ['SplFileInfo', 'class='=>'class-string'],
+      'new' => ['SplFileInfo', 'class='=>'?class-string'],
     ],
     'SplFileInfo::getPathInfo' => [
-      'old' => ['SplFileInfo|null', 'class='=>'string'],
-      'new' => ['SplFileInfo|null', 'class='=>'?string'],
+      'old' => ['SplFileInfo|null', 'class='=>'class-string'],
+      'new' => ['SplFileInfo|null', 'class='=>'?class-string'],
     ],
     'SplFileInfo::openFile' => [
       'old' => ['SplFileObject', 'mode='=>'string', 'useIncludePath='=>'bool', 'context='=>'resource'],
       'new' => ['SplFileObject', 'mode='=>'string', 'useIncludePath='=>'bool', 'context='=>'?resource'],
     ],
     'SplFileObject::getFileInfo' => [
-      'old' => ['SplFileInfo', 'class='=>'string'],
-      'new' => ['SplFileInfo', 'class='=>'?string'],
+      'old' => ['SplFileInfo', 'class='=>'class-string'],
+      'new' => ['SplFileInfo', 'class='=>'?class-string'],
     ],
     'SplFileObject::getPathInfo' => [
-      'old' => ['SplFileInfo|null', 'class='=>'string'],
-      'new' => ['SplFileInfo|null', 'class='=>'?string'],
+      'old' => ['SplFileInfo|null', 'class='=>'class-string'],
+      'new' => ['SplFileInfo|null', 'class='=>'?class-string'],
     ],
     'SplFileObject::openFile' => [
       'old' => ['SplFileObject', 'mode='=>'string', 'useIncludePath='=>'bool', 'context='=>'resource'],
       'new' => ['SplFileObject', 'mode='=>'string', 'useIncludePath='=>'bool', 'context='=>'?resource'],
     ],
     'SplTempFileObject::getFileInfo' => [
-      'old' => ['SplFileInfo', 'class='=>'string'],
-      'new' => ['SplFileInfo', 'class='=>'?string'],
+      'old' => ['SplFileInfo', 'class='=>'class-string'],
+      'new' => ['SplFileInfo', 'class='=>'?class-string'],
     ],
     'SplTempFileObject::getPathInfo' => [
-      'old' => ['SplFileInfo|null', 'class='=>'string'],
-      'new' => ['SplFileInfo|null', 'class='=>'?string'],
+      'old' => ['SplFileInfo|null', 'class='=>'class-string'],
+      'new' => ['SplFileInfo|null', 'class='=>'?class-string'],
     ],
     'SplTempFileObject::openFile' => [
       'old' => ['SplTempFileObject', 'mode='=>'string', 'useIncludePath='=>'bool', 'context='=>'resource'],
@@ -390,40 +482,40 @@ return [
       'new' => ['array', 'array'=>'array', 'column_key'=>'int|string|null', 'index_key='=>'int|string|null'],
     ],
     'array_combine' => [
-      'old' => ['associative-array|false', 'keys'=>'string[]|int[]', 'values'=>'array'],
-      'new' => ['associative-array', 'keys'=>'string[]|int[]', 'values'=>'array'],
+      'old' => ['array|false', 'keys'=>'string[]|int[]', 'values'=>'array'],
+      'new' => ['array', 'keys'=>'string[]|int[]', 'values'=>'array'],
     ],
     'array_diff' => [
-      'old' => ['associative-array', 'array'=>'array', '...arrays'=>'array'],
-      'new' => ['associative-array', 'array'=>'array', '...arrays='=>'array'],
+      'old' => ['array', 'array'=>'array', '...arrays'=>'array'],
+      'new' => ['array', 'array'=>'array', '...arrays='=>'array'],
     ],
     'array_diff_assoc' => [
-      'old' => ['associative-array', 'array'=>'array', '...arrays'=>'array'],
-      'new' => ['associative-array', 'array'=>'array', '...arrays='=>'array'],
+      'old' => ['array', 'array'=>'array', '...arrays'=>'array'],
+      'new' => ['array', 'array'=>'array', '...arrays='=>'array'],
     ],
     'array_diff_key' => [
-      'old' => ['associative-array', 'array'=>'array', '...arrays'=>'array'],
-      'new' => ['associative-array', 'array'=>'array', '...arrays='=>'array'],
+      'old' => ['array', 'array'=>'array', '...arrays'=>'array'],
+      'new' => ['array', 'array'=>'array', '...arrays='=>'array'],
     ],
     'array_filter' => [
-      'old' => ['associative-array', 'array'=>'array', 'callback='=>'callable(mixed,mixed=):scalar', 'mode='=>'int'],
-      'new' => ['associative-array', 'array'=>'array', 'callback='=>'callable(mixed,mixed=):scalar|null', 'mode='=>'int'],
+      'old' => ['array', 'array'=>'array', 'callback='=>'callable(mixed,mixed=):scalar', 'mode='=>'int'],
+      'new' => ['array', 'array'=>'array', 'callback='=>'callable(mixed,mixed=):scalar|null', 'mode='=>'int'],
     ],
     'array_key_exists' => [
       'old' => ['bool', 'key'=>'string|int', 'array'=>'array|object'],
       'new' => ['bool', 'key'=>'string|int', 'array'=>'array'],
     ],
     'array_intersect' => [
-      'old' => ['associative-array', 'array'=>'array', '...arrays'=>'array'],
-      'new' => ['associative-array', 'array'=>'array', '...arrays='=>'array'],
+      'old' => ['array', 'array'=>'array', '...arrays'=>'array'],
+      'new' => ['array', 'array'=>'array', '...arrays='=>'array'],
     ],
     'array_intersect_assoc' => [
-      'old' => ['associative-array', 'array'=>'array', '...arrays'=>'array'],
-      'new' => ['associative-array', 'array'=>'array', '...arrays='=>'array'],
+      'old' => ['array', 'array'=>'array', '...arrays'=>'array'],
+      'new' => ['array', 'array'=>'array', '...arrays='=>'array'],
     ],
     'array_intersect_key' => [
-      'old' => ['associative-array', 'array'=>'array', '...arrays'=>'array'],
-      'new' => ['associative-array', 'array'=>'array', '...arrays='=>'array'],
+      'old' => ['array', 'array'=>'array', '...arrays'=>'array'],
+      'new' => ['array', 'array'=>'array', '...arrays='=>'array'],
     ],
     'array_splice' => [
       'old' => ['array', '&rw_array'=>'array', 'offset'=>'int', 'length='=>'int', 'replacement='=>'array|string'],
@@ -494,6 +586,10 @@ return [
       'new' => ['bool', 'typelib_name'=>'string', 'case_insensitive='=>'true'],
     ],
     'count' => [
+      'old' => ['int<0, max>', 'value'=>'Countable|array|SimpleXMLElement', 'mode='=>'int'],
+      'new' => ['int<0, max>', 'value'=>'Countable|array', 'mode='=>'int'],
+    ],
+    'sizeof' => [
       'old' => ['int<0, max>', 'value'=>'Countable|array|SimpleXMLElement', 'mode='=>'int'],
       'new' => ['int<0, max>', 'value'=>'Countable|array', 'mode='=>'int'],
     ],

@@ -1703,6 +1703,10 @@ class ClassLikes
                 continue;
             }
 
+            if ($method_storage->public_api) {
+                continue;
+            }
+
             if ($method_storage->location
                 && !$project_analyzer->canReportIssues($method_storage->location->file_path)
                 && !$codebase->analyzer->canReportIssues($method_storage->location->file_path)

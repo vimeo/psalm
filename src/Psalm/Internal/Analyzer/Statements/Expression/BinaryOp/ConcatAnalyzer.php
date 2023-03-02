@@ -34,6 +34,7 @@ use Psalm\Type\Atomic\TLowercaseString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
 use Psalm\Type\Atomic\TNonEmptyString;
+use Psalm\Type\Atomic\TNonFalsyString;
 use Psalm\Type\Atomic\TNonspecificLiteralString;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumericString;
@@ -173,7 +174,7 @@ class ConcatAnalyzer
                                 break 2;
                             }
 
-                            $result_type_parts[] = new TLiteralString($literal);
+                            $result_type_parts[] = Type::getAtomicStringFromLiteral($literal);
                         }
                     }
 
@@ -275,6 +276,31 @@ class ConcatAnalyzer
                         $result_type = Type::getLowercaseString();
                     } else {
                         $result_type = Type::getString();
+                    }
+                }
+            }
+        } elseif ($left_type || $right_type) {
+            /**
+             * @var Union $known_operand
+             */
+            $known_operand = $right_type ?? $left_type;
+
+            if ($known_operand->isSingle()) {
+                $known_operands_atomic = $known_operand->getSingleAtomic();
+
+                if ($known_operands_atomic instanceof TNonEmptyString) {
+                    $result_type = Type::getNonEmptyString();
+                }
+
+                if ($known_operands_atomic instanceof TNonFalsyString) {
+                    $result_type = Type::getNonFalsyString();
+                }
+
+                if ($known_operands_atomic instanceof TLiteralString) {
+                    if ($known_operands_atomic->value) {
+                        $result_type = Type::getNonFalsyString();
+                    } elseif ($known_operands_atomic->value !== '') {
+                        $result_type = Type::getNonEmptyString();
                     }
                 }
             }

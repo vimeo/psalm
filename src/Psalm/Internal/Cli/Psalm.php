@@ -44,6 +44,7 @@ use function array_sum;
 use function array_values;
 use function chdir;
 use function count;
+use function extension_loaded;
 use function file_exists;
 use function file_put_contents;
 use function function_exists;
@@ -899,8 +900,17 @@ final class Psalm
             }
         }
 
-        if ($threads > 1) {
+        if ($threads > 1
+            && extension_loaded('grpc')
+            && (ini_get('grpc.enable_fork_support') === '1' && ini_get('grpc.poll_strategy') === 'epoll1') === false
+        ) {
             $ini_handler->disableExtension('grpc');
+
+            $progress->warning(PHP_EOL
+                . 'grpc extension has been disabled. '
+                . 'Set grpc.enable_fork_support = 1 and grpc.poll_strategy = epoll1 in php.ini to enable it. '
+                . 'See https://github.com/grpc/grpc/issues/20250#issuecomment-531321945 for more information.'
+                . PHP_EOL . PHP_EOL);
         }
 
         $ini_handler->disableExtensions([

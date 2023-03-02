@@ -9,6 +9,7 @@ use Psalm\Plugin\EventHandler\AfterAnalysisInterface;
 use Psalm\Plugin\EventHandler\Event\AfterAnalysisEvent;
 
 use function array_filter;
+use function array_key_exists;
 use function array_merge;
 use function array_values;
 use function curl_close;
@@ -23,8 +24,11 @@ use function is_int;
 use function is_string;
 use function json_encode;
 use function parse_url;
+use function sprintf;
 use function strip_tags;
 use function strlen;
+use function substr_compare;
+use function var_export;
 
 use const CURLINFO_HEADER_OUT;
 use const CURLOPT_FOLLOWLOCATION;
@@ -46,93 +50,147 @@ final class Shepherd implements AfterAnalysisInterface
     public static function afterAnalysis(
         AfterAnalysisEvent $event
     ): void {
-        $codebase = $event->getCodebase();
-        $issues = $event->getIssues();
-        $build_info = $event->getBuildInfo();
-        $source_control_info = $event->getSourceControlInfo();
-
         if (!function_exists('curl_init')) {
-            fwrite(STDERR, 'No curl found, cannot send data to ' . $codebase->config->shepherd_host . PHP_EOL);
+            fwrite(STDERR, "No curl found, cannot send data to shepherd server.\n");
 
             return;
         }
 
+        $rawPayload = self::collectPayloadToSend($event);
+
+        if ($rawPayload === null) {
+            return;
+        }
+
+        $config = $event->getCodebase()->config;
+
+        /**
+         * Deprecated logic, in Psalm 6 just use $config->shepherd_endpoint
+         * '#' here is just a hack/marker to use a custom endpoint instead just a custom domain
+         * case 1: empty option                                         (use https://shepherd.dev/hooks/psalm/)
+         * case 2: custom domain (/hooks/psalm should be appended)      (use https://custom.domain/hooks/psalm)
+         * case 3: custom endpoint (/hooks/psalm should be appended)    (use custom endpoint)
+         */
+        if (substr_compare($config->shepherd_endpoint, '#', -1) === 0) {
+            $shepherd_endpoint = $config->shepherd_endpoint;
+        } else {
+            /** @psalm-suppress DeprecatedProperty, DeprecatedMethod */
+            $shepherd_endpoint = self::buildShepherdUrlFromHost($config->shepherd_host);
+        }
+
+        self::sendPayload($shepherd_endpoint, $rawPayload);
+    }
+
+    /**
+     * @psalm-pure
+     * @deprecated Will be removed in Psalm 6
+     */
+    private static function buildShepherdUrlFromHost(string $host): string
+    {
+        if (parse_url($host, PHP_URL_SCHEME) === null) {
+            $host = 'https://' . $host;
+        }
+
+        return $host . '/hooks/psalm';
+    }
+
+    /**
+     * @return array{build: array, git: array, issues: array, coverage: list<int>, level: int<1,8>}|null
+     */
+    private static function collectPayloadToSend(AfterAnalysisEvent $event): ?array
+    {
+        /** @see \Psalm\Internal\ExecutionEnvironment\BuildInfoCollector::collect */
+        $build_info = $event->getBuildInfo();
+
+        $is_ci_env = array_key_exists('CI_NAME', $build_info); // 'git' key always presents
+        if (! $is_ci_env) {
+            return null;
+        }
+
+        $source_control_info = $event->getSourceControlInfo();
         $source_control_data = $source_control_info ? $source_control_info->toArray() : [];
 
-        if (!$source_control_data && isset($build_info['git']) && is_array($build_info['git'])) {
+        if ($source_control_data === [] && isset($build_info['git']) && is_array($build_info['git'])) {
             $source_control_data = $build_info['git'];
         }
 
         unset($build_info['git']);
 
-        if ($build_info) {
-            $normalized_data = $issues === [] ? [] : array_filter(
-                array_merge(...array_values($issues)),
-                static fn(IssueData $i): bool => $i->severity === 'error',
-            );
-
-            $data = [
-                'build' => $build_info,
-                'git' => $source_control_data,
-                'issues' => $normalized_data,
-                'coverage' => $codebase->analyzer->getTotalTypeCoverage($codebase),
-                'level' => Config::getInstance()->level,
-            ];
-
-            $payload = json_encode($data, JSON_THROW_ON_ERROR);
-
-            /** @psalm-suppress DeprecatedProperty */
-            $base_address = $codebase->config->shepherd_host;
-
-            if (parse_url($base_address, PHP_URL_SCHEME) === null) {
-                $base_address = 'https://' . $base_address;
-            }
-
-            // Prepare new cURL resource
-            $ch = curl_init($base_address . '/hooks/psalm');
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-            curl_setopt($ch, CURLINFO_HEADER_OUT, true);
-            curl_setopt($ch, CURLOPT_POST, true);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
-
-            // Set HTTP Header for POST request
-            curl_setopt(
-                $ch,
-                CURLOPT_HTTPHEADER,
-                [
-                    'Content-Type: application/json',
-                    'Content-Length: ' . strlen($payload),
-                ],
-            );
-
-            // Submit the POST request
-            $curl_result = curl_exec($ch);
-
-            /** @var array{http_code: int, ssl_verify_result: int} $curl_info */
-            $curl_info = curl_getinfo($ch);
-
-            // Close cURL session handle
-            curl_close($ch);
-
-            $response_status_code = $curl_info['http_code'];
-            if ($response_status_code >= 200 && $response_status_code < 300) {
-                $shepherd_host = parse_url($codebase->config->shepherd_endpoint, PHP_URL_HOST);
-
-                fwrite(STDERR, "🐑 results sent to $shepherd_host 🐑" . PHP_EOL);
-                return;
-            }
-
-            $is_ssl_error = $curl_info['ssl_verify_result'] > 1;
-            if ($is_ssl_error) {
-                fwrite(STDERR, self::getCurlSslErrorMessage($curl_info['ssl_verify_result']) . PHP_EOL);
-                return;
-            }
-
-            fwrite(STDERR, "Shepherd error: server responded with $response_status_code HTTP status code.\n");
-            $response_content = is_string($curl_result) ? strip_tags($curl_result) : 'n/a';
-            fwrite(STDERR, "Shepherd response: $response_content\n");
+        if ($build_info === []) {
+            return null;
         }
+
+        $issues = $event->getIssues();
+        $normalized_data = $issues === [] ? [] : array_filter(
+            array_merge(...array_values($issues)),
+            static fn(IssueData $i): bool => $i->severity === 'error',
+        );
+
+        $codebase = $event->getCodebase();
+
+        return [
+            'build' => $build_info,
+            'git' => $source_control_data,
+            'issues' => $normalized_data,
+            'coverage' => $codebase->analyzer->getTotalTypeCoverage($codebase),
+            'level' => Config::getInstance()->level,
+        ];
+    }
+
+    private static function sendPayload(string $endpoint, array $rawPayload): void
+    {
+        $payload = json_encode($rawPayload, JSON_THROW_ON_ERROR);
+
+        // Prepare new cURL resource
+        $ch = curl_init($endpoint);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+        curl_setopt($ch, CURLINFO_HEADER_OUT, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
+
+        // Set HTTP Header for POST request
+        curl_setopt(
+            $ch,
+            CURLOPT_HTTPHEADER,
+            [
+                'Content-Type: application/json',
+                'Content-Length: ' . strlen($payload),
+            ],
+        );
+
+        // Submit the POST request
+        $curl_result = curl_exec($ch);
+
+        /** @var array{http_code: int, ssl_verify_result: int} $curl_info */
+        $curl_info = curl_getinfo($ch);
+
+        // Close cURL session handle
+        curl_close($ch);
+
+        $response_status_code = $curl_info['http_code'];
+        if ($response_status_code >= 200 && $response_status_code < 300) {
+            $shepherd_host = parse_url($endpoint, PHP_URL_HOST);
+
+            fwrite(STDERR, "🐑 results sent to $shepherd_host 🐑" . PHP_EOL);
+            return;
+        }
+
+        $is_ssl_error = $curl_info['ssl_verify_result'] > 1;
+        if ($is_ssl_error) {
+            fwrite(STDERR, self::getCurlSslErrorMessage($curl_info['ssl_verify_result']) . PHP_EOL);
+            return;
+        }
+
+        $output = "Shepherd error: $endpoint endpoint responded with $response_status_code HTTP status code.\n";
+        $response_content = is_string($curl_result) ? strip_tags($curl_result) : 'n/a';
+        $output .= "Shepherd response: $response_content\n";
+        if ($response_status_code === 0) {
+            $output .= "Please check shepherd endpoint — it should be a valid URL.\n";
+        }
+
+        $output .= sprintf("cURL Debug info:\n%s\n", var_export($curl_info, true));
+        fwrite(STDERR, $output);
     }
 
     /**

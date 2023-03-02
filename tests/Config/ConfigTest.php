@@ -1610,4 +1610,63 @@ class ConfigTest extends TestCase
 
         $this->assertFalse($config->reportIssueInFile('MixedAssignment', realpath('src/Psalm/Type.php')));
     }
+
+    /**
+     * @requires extension apcu
+     * @deprecated Remove in Psalm 6.
+     */
+    public function testConfigWarnsAboutDeprecatedWayToLoadStubsButLoadsTheStub(): void
+    {
+        $config_xml = Config::loadFromXML(
+            (string)getcwd(),
+            '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                </psalm>',
+        );
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig($config_xml);
+        $codebase = $this->project_analyzer->getCodebase();
+        $config = $this->project_analyzer->getConfig();
+
+        $config->visitStubFiles($codebase);
+
+        $this->assertContains(realpath('stubs/extensions/apcu.phpstub'), $config->internal_stubs);
+        $this->assertContains(
+            'Psalm 6 will not automatically load stubs for ext-apcu. You should explicitly enable or disable this ext in composer.json or Psalm config.',
+            $config->config_warnings,
+        );
+    }
+
+    /**
+     * @requires extension apcu
+     * @deprecated Remove deprecation warning part in Psalm 6.
+     */
+    public function testConfigWithDisableExtensionsDoesNotLoadExtensionStubsAndHidesDeprecationWarning(): void
+    {
+        $config_xml = Config::loadFromXML(
+            (string)getcwd(),
+            '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <disableExtensions>
+                        <extension name="apcu"/>
+                    </disableExtensions>
+                </psalm>',
+        );
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig($config_xml);
+        $codebase = $this->project_analyzer->getCodebase();
+        $config = $this->project_analyzer->getConfig();
+
+        $config->visitStubFiles($codebase);
+
+        $this->assertNotContains(realpath('stubs/extensions/apcu.phpstub'), $config->internal_stubs);
+        $this->assertNotContains(
+            'Psalm 6 will not automatically load stubs for ext-apcu. You should explicitly enable or disable this ext in composer.json or Psalm config.',
+            $config->internal_stubs,
+        );
+    }
 }

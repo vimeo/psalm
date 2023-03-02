@@ -47,7 +47,6 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
-use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyArray;
@@ -393,7 +392,7 @@ class TypeParser
         }
 
         if ($parse_tree->value[0] === '"' || $parse_tree->value[0] === '\'') {
-            return new TLiteralString(substr($parse_tree->value, 1, -1), $from_docblock);
+            return Type::getAtomicStringFromLiteral(substr($parse_tree->value, 1, -1), $from_docblock);
         }
 
         if (strpos($parse_tree->value, '::')) {

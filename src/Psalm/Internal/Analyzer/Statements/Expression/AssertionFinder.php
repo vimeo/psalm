@@ -1542,7 +1542,7 @@ class AssertionFinder
     ) {
         if ($conditional->left instanceof PhpParser\Node\Expr\FuncCall
             && $conditional->left->name instanceof PhpParser\Node\Name
-            && strtolower($conditional->left->name->parts[0]) === 'count'
+            && in_array(strtolower($conditional->left->name->parts[0]), ['count', 'sizeof'])
             && $conditional->left->getArgs()
             && ($conditional instanceof BinaryOp\Greater || $conditional instanceof BinaryOp\GreaterOrEqual)
         ) {
@@ -1551,7 +1551,7 @@ class AssertionFinder
             $comparison_adjustment = $conditional instanceof BinaryOp\Greater ? 1 : 0;
         } elseif ($conditional->right instanceof PhpParser\Node\Expr\FuncCall
             && $conditional->right->name instanceof PhpParser\Node\Name
-            && strtolower($conditional->right->name->parts[0]) === 'count'
+            && in_array(strtolower($conditional->right->name->parts[0]), ['count', 'sizeof'])
             && $conditional->right->getArgs()
             && ($conditional instanceof BinaryOp\Smaller || $conditional instanceof BinaryOp\SmallerOrEqual)
         ) {
@@ -1584,7 +1584,7 @@ class AssertionFinder
     ) {
         $left_count = $conditional->left instanceof PhpParser\Node\Expr\FuncCall
             && $conditional->left->name instanceof PhpParser\Node\Name
-            && strtolower($conditional->left->name->parts[0]) === 'count'
+            && in_array(strtolower($conditional->left->name->parts[0]), ['count', 'sizeof'])
             && $conditional->left->getArgs();
 
         $operator_less_than_or_equal =
@@ -1603,7 +1603,7 @@ class AssertionFinder
 
         $right_count = $conditional->right instanceof PhpParser\Node\Expr\FuncCall
             && $conditional->right->name instanceof PhpParser\Node\Name
-            && strtolower($conditional->right->name->parts[0]) === 'count'
+            && in_array(strtolower($conditional->right->name->parts[0]), ['count', 'sizeof'])
             && $conditional->right->getArgs();
 
         $operator_greater_than_or_equal =
@@ -1633,7 +1633,7 @@ class AssertionFinder
     ) {
         $left_count = $conditional->left instanceof PhpParser\Node\Expr\FuncCall
             && $conditional->left->name instanceof PhpParser\Node\Name
-            && strtolower($conditional->left->name->parts[0]) === 'count'
+            && in_array(strtolower($conditional->left->name->parts[0]), ['count', 'sizeof'])
             && $conditional->left->getArgs();
 
         if ($left_count && $conditional->right instanceof PhpParser\Node\Scalar\LNumber) {
@@ -1644,7 +1644,7 @@ class AssertionFinder
 
         $right_count = $conditional->right instanceof PhpParser\Node\Expr\FuncCall
             && $conditional->right->name instanceof PhpParser\Node\Name
-            && strtolower($conditional->right->name->parts[0]) === 'count'
+            && in_array(strtolower($conditional->right->name->parts[0]), ['count', 'sizeof'])
             && $conditional->right->getArgs();
 
         if ($right_count && $conditional->left instanceof PhpParser\Node\Scalar\LNumber) {
@@ -1785,7 +1785,7 @@ class AssertionFinder
     ) {
         $left_count = $conditional->left instanceof PhpParser\Node\Expr\FuncCall
             && $conditional->left->name instanceof PhpParser\Node\Name
-            && strtolower($conditional->left->name->parts[0]) === 'count';
+            && in_array(strtolower($conditional->left->name->parts[0]), ['count', 'sizeof']);
 
         $right_number = $conditional->right instanceof PhpParser\Node\Scalar\LNumber
             && $conditional->right->value === (
@@ -1871,9 +1871,9 @@ class AssertionFinder
                 return new IsType(new Atomic\TString());
             case 'is_int':
             case 'is_integer':
+            case 'is_long':
                 return new IsType(new Atomic\TInt());
             case 'is_float':
-            case 'is_long':
             case 'is_double':
             case 'is_real':
                 return new IsType(new Atomic\TFloat());
@@ -2044,7 +2044,8 @@ class AssertionFinder
 
     protected static function hasNonEmptyCountCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
     {
-        return $stmt->name instanceof PhpParser\Node\Name && strtolower($stmt->name->parts[0]) === 'count';
+        return $stmt->name instanceof PhpParser\Node\Name &&
+            in_array(strtolower($stmt->name->parts[0]), ['count', 'sizeof']);
     }
 
     protected static function hasArrayKeyExistsCheck(PhpParser\Node\Expr\FuncCall $stmt): bool

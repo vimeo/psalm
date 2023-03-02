@@ -555,6 +555,8 @@ class FunctionLikeDocblockParser
             $info->description = $parsed_docblock->description;
         }
 
+        $info->public_api = isset($parsed_docblock->tags['psalm-api']) || isset($parsed_docblock->tags['api']);
+
         return $info;
     }
 

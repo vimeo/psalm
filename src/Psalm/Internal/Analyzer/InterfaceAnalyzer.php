@@ -127,6 +127,10 @@ class InterfaceAnalyzer extends ClassLikeAnalyzer
             $class_storage->suppressed_issues + $this->getSuppressedIssues(),
         );
 
+        foreach ($class_storage->docblock_issues as $docblock_issue) {
+            IssueBuffer::maybeAdd($docblock_issue);
+        }
+
         $member_stmts = [];
         foreach ($this->class->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod) {

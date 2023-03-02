@@ -118,7 +118,7 @@
             "Composer\\Config::disableProcessTimeout",
             "phpunit"
         ],
-        "verify-callmap": "phpunit tests/Internal/Codebase/InternalCallMapHandlerTest.php",
+        "verify-callmap": "@php phpunit tests/Internal/Codebase/InternalCallMapHandlerTest.php",
         "psalm": "@php ./psalm",
         "psalm-set-baseline": "@php ./psalm --set-baseline=psalm-baseline.xml",
         "tests": [
