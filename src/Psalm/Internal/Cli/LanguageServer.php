@@ -71,8 +71,6 @@ final class LanguageServer
         ];
 
         $valid_long_options = [
-            'clear-cache',
-            'clear-cache-on-boot',
             'config:',
             'find-dead-code',
             'help',
@@ -172,13 +170,6 @@ final class LanguageServer
 
                 --find-dead-code
                     Look for dead code
-
-                --clear-cache
-                    Clears all cache files that the language server uses for this specific project (exits after)
-
-                --clear-cache-on-boot
-                    Clears all cache files that the language server uses for this specific project on boot
-                    (does not exit)
 
                 --use-ini-defaults
                     Use PHP-provided ini defaults for memory and error display
@@ -320,17 +311,8 @@ final class LanguageServer
 
         $config->setServerMode();
 
-        if (isset($options['clear-cache']) || isset($options['clear-cache-on-boot'])) {
-            $cache_directory = $config->getCacheDirectory();
-
-            if ($cache_directory !== null) {
-                Config::removeCacheDirectory($cache_directory);
-            }
-            if (!isset($options['clear-cache-on-boot'])) {
-                echo 'Cache directory deleted' . PHP_EOL;
-                exit;
-            }
-        }
+        //Theres no cache in LSP land
+        $config->cache_directory = null;
 
         if (isset($options['use-baseline']) && is_string($options['use-baseline'])) {
             $clientConfiguration->baseline = $options['use-baseline'];
