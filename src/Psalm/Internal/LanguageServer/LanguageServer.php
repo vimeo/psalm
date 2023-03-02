@@ -240,7 +240,7 @@ class LanguageServer extends Dispatcher
     /**
      * Start the Server
      */
-    public static function run(Config $config, ClientConfiguration $clientConfiguration, string $base_dir): void
+    public static function run(Config $config, ClientConfiguration $clientConfiguration): void
     {
         $progress = new Progress();
 

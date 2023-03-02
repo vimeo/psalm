@@ -8,6 +8,8 @@ use Psalm\Internal\Provider\FileReferenceCacheProvider as InternalFileReferenceC
 /**
  * Used to determine which files reference other files, necessary for using the --diff
  * option from the command line.
+ *
+ * @internal
  */
 class FileReferenceCacheProvider extends InternalFileReferenceCacheProvider
 {

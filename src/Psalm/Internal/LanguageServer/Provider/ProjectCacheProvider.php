@@ -4,6 +4,9 @@ namespace Psalm\Internal\LanguageServer\Provider;
 
 use Psalm\Internal\Provider\ProjectCacheProvider as PsalmProjectCacheProvider;
 
+/**
+ * @internal
+ */
 class ProjectCacheProvider extends PsalmProjectCacheProvider
 {
     private int $last_run = 0;

@@ -3,7 +3,6 @@
 namespace Psalm\Internal\Cli;
 
 use LanguageServerProtocol\MessageType;
-use Psalm\Config;
 use Psalm\Internal\CliUtils;
 use Psalm\Internal\ErrorHandler;
 use Psalm\Internal\Fork\PsalmRestarter;
@@ -379,6 +378,6 @@ final class LanguageServer
         $clientConfiguration->TCPServerAddress = $options['tcp'] ?? null;
         $clientConfiguration->TCPServerMode = isset($options['tcp-server']);
 
-        LanguageServerLanguageServer::run($config, $clientConfiguration, $current_dir);
+        LanguageServerLanguageServer::run($config, $clientConfiguration;
     }
 }
