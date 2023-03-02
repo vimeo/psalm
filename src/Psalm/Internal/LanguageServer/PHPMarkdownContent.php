@@ -12,6 +12,7 @@ use ReturnTypeWillChange;
 use function get_object_vars;
 
 /**
+ * @psalm-api
  * @internal
  */
 class PHPMarkdownContent extends MarkupContent implements JsonSerializable
@@ -46,7 +47,6 @@ class PHPMarkdownContent extends MarkupContent implements JsonSerializable
      * meaning if a null is sent then this will not compute
      *
      * @return mixed
-     * @psalm-suppress UnusedMethod
      */
     #[ReturnTypeWillChange]
     public function jsonSerialize()

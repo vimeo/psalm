@@ -98,7 +98,7 @@ class SymbolLookupTest extends TestCase
 
         $range = new Range(new Position(1, 1), new Position(1, 1));
 
-        $information = $this->codebase->getMarkupContentForSymbol(
+        $information = $this->codebase->getMarkupContentForSymbolByReference(
             new Reference(
                 'somefile.php',
                 'B\A::foo()',
@@ -110,7 +110,7 @@ class SymbolLookupTest extends TestCase
         $this->assertSame("B\A::foo", $information->title);
         $this->assertNull($information->description);
 
-        $information = $this->codebase->getMarkupContentForSymbol(
+        $information = $this->codebase->getMarkupContentForSymbolByReference(
             new Reference(
                 'somefile.php',
                 'B\A::$a',
@@ -122,7 +122,7 @@ class SymbolLookupTest extends TestCase
         $this->assertSame('B\A::$a', $information->title);
         $this->assertSame('', $information->description);
 
-        $information = $this->codebase->getMarkupContentForSymbol(
+        $information = $this->codebase->getMarkupContentForSymbolByReference(
             new Reference(
                 'somefile.php',
                 'B\bar()',
@@ -134,7 +134,7 @@ class SymbolLookupTest extends TestCase
         $this->assertSame('b\bar', $information->title);
         $this->assertNull($information->description);
 
-        $information = $this->codebase->getMarkupContentForSymbol(
+        $information = $this->codebase->getMarkupContentForSymbolByReference(
             new Reference(
                 'somefile.php',
                 'B\A::BANANA',
@@ -146,7 +146,7 @@ class SymbolLookupTest extends TestCase
         $this->assertSame('B\A::BANANA', $information->title);
         $this->assertNull($information->description);
 
-        $information = $this->codebase->getMarkupContentForSymbol(
+        $information = $this->codebase->getMarkupContentForSymbolByReference(
             new Reference(
                 'somefile.php',
                 'B\baz()',
@@ -158,7 +158,7 @@ class SymbolLookupTest extends TestCase
         $this->assertSame('b\baz', $information->title);
         $this->assertNull($information->description);
 
-        $information = $this->codebase->getMarkupContentForSymbol(
+        $information = $this->codebase->getMarkupContentForSymbolByReference(
             new Reference(
                 'somefile.php',
                 'B\qux()',
@@ -170,7 +170,7 @@ class SymbolLookupTest extends TestCase
         $this->assertSame('b\qux', $information->title);
         $this->assertNull($information->description);
 
-        $information = $this->codebase->getMarkupContentForSymbol(
+        $information = $this->codebase->getMarkupContentForSymbolByReference(
             new Reference(
                 'somefile.php',
                 '$_SESSION',
@@ -182,7 +182,7 @@ class SymbolLookupTest extends TestCase
         $this->assertSame('$_SESSION', $information->title);
         $this->assertNull($information->description);
 
-        $information = $this->codebase->getMarkupContentForSymbol(
+        $information = $this->codebase->getMarkupContentForSymbolByReference(
             new Reference(
                 'somefile.php',
                 '$my_global',
@@ -210,7 +210,7 @@ class SymbolLookupTest extends TestCase
 
         $this->analyzeFile('somefile.php', new Context());
 
-        $information = $this->codebase->getMarkupContentForSymbol(
+        $information = $this->codebase->getMarkupContentForSymbolByReference(
             new Reference(
                 'somefile.php',
                 'APPLE',
@@ -222,7 +222,7 @@ class SymbolLookupTest extends TestCase
         $this->assertSame("APPLE", $information->title);
         $this->assertNull($information->description);
 
-        $information = $this->codebase->getMarkupContentForSymbol(
+        $information = $this->codebase->getMarkupContentForSymbolByReference(
             new Reference(
                 'somefile.php',
                 'BANANA',
@@ -266,7 +266,7 @@ class SymbolLookupTest extends TestCase
 
         $range = new Range(new Position(1, 1), new Position(1, 1));
 
-        $method_symbol_location = $this->codebase->getSymbolLocation(new Reference(
+        $method_symbol_location = $this->codebase->getSymbolLocationByReference(new Reference(
             'somefile.php',
             'B\A::foo()',
             $range,
@@ -276,7 +276,7 @@ class SymbolLookupTest extends TestCase
         $this->assertSame(10, $method_symbol_location->getLineNumber());
         $this->assertSame(37, $method_symbol_location->getColumn());
 
-        $property_symbol_location = $this->codebase->getSymbolLocation(new Reference(
+        $property_symbol_location = $this->codebase->getSymbolLocationByReference(new Reference(
             'somefile.php',
             'B\A::$a',
             $range,
@@ -286,7 +286,7 @@ class SymbolLookupTest extends TestCase
         $this->assertSame(6, $property_symbol_location->getLineNumber());
         $this->assertSame(31, $property_symbol_location->getColumn());
 
-        $constant_symbol_location = $this->codebase->getSymbolLocation(new Reference(
+        $constant_symbol_location = $this->codebase->getSymbolLocationByReference(new Reference(
             'somefile.php',
             'B\A::BANANA',
             $range,
@@ -296,7 +296,7 @@ class SymbolLookupTest extends TestCase
         $this->assertSame(8, $constant_symbol_location->getLineNumber());
         $this->assertSame(27, $constant_symbol_location->getColumn());
 
-        $function_symbol_location = $this->codebase->getSymbolLocation(new Reference(
+        $function_symbol_location = $this->codebase->getSymbolLocationByReference(new Reference(
             'somefile.php',
             'B\bar()',
             $range,
@@ -306,7 +306,7 @@ class SymbolLookupTest extends TestCase
         $this->assertSame(16, $function_symbol_location->getLineNumber());
         $this->assertSame(26, $function_symbol_location->getColumn());
 
-        $function_symbol_location = $this->codebase->getSymbolLocation(new Reference(
+        $function_symbol_location = $this->codebase->getSymbolLocationByReference(new Reference(
             'somefile.php',
             '257-259',
             $range,
@@ -378,19 +378,19 @@ class SymbolLookupTest extends TestCase
 
         $this->codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
 
-        $reference = $this->codebase->getReferenceAtPosition('somefile.php', new Position(10, 30));
+        $reference = $this->codebase->getReferenceAtPositionAsReference('somefile.php', new Position(10, 30));
 
         $this->assertNotNull($reference);
 
         $this->assertSame('245-246:int|null', $reference->symbol);
 
-        $reference = $this->codebase->getReferenceAtPosition('somefile.php', new Position(12, 30));
+        $reference = $this->codebase->getReferenceAtPositionAsReference('somefile.php', new Position(12, 30));
 
         $this->assertNotNull($reference);
 
         $this->assertSame('213-214:1', $reference->symbol);
 
-        $reference = $this->codebase->getReferenceAtPosition('somefile.php', new Position(17, 30));
+        $reference = $this->codebase->getReferenceAtPositionAsReference('somefile.php', new Position(17, 30));
 
         $this->assertNotNull($reference);
 
@@ -422,7 +422,7 @@ class SymbolLookupTest extends TestCase
         $this->codebase->scanFiles();
         $this->analyzeFile('somefile.php', new Context());
 
-        $reference = $this->codebase->getReferenceAtPosition('somefile.php', new Position(9, 33));
+        $reference = $this->codebase->getReferenceAtPositionAsReference('somefile.php', new Position(9, 33));
 
         $this->assertNotNull($reference);
 
@@ -449,11 +449,11 @@ class SymbolLookupTest extends TestCase
         $this->codebase->scanFiles();
         $this->analyzeFile('somefile.php', new Context());
 
-        $reference = $this->codebase->getReferenceAtPosition('somefile.php', new Position(2, 31));
+        $reference = $this->codebase->getReferenceAtPositionAsReference('somefile.php', new Position(2, 31));
         $this->assertNotNull($reference);
         $this->assertSame('$my_global', $reference->symbol);
 
-        $reference = $this->codebase->getReferenceAtPosition('somefile.php', new Position(3, 28));
+        $reference = $this->codebase->getReferenceAtPositionAsReference('somefile.php', new Position(3, 28));
         $this->assertNotNull($reference);
         $this->assertSame('73-82:string', $reference->symbol);
     }
@@ -477,7 +477,7 @@ class SymbolLookupTest extends TestCase
         $this->codebase->scanFiles();
         $this->analyzeFile('somefile.php', new Context());
 
-        $reference =  $this->codebase->getReferenceAtPosition('somefile.php', new Position(4, 33));
+        $reference =  $this->codebase->getReferenceAtPositionAsReference('somefile.php', new Position(4, 33));
         $this->assertNotNull($reference);
 
         $this->assertSame('B\AClass', $reference->symbol);
@@ -506,7 +506,7 @@ class SymbolLookupTest extends TestCase
         $this->codebase->scanFiles();
         $this->analyzeFile('somefile.php', new Context());
 
-        $reference = $this->codebase->getReferenceAtPosition('somefile.php', new Position(6, 60));
+        $reference = $this->codebase->getReferenceAtPositionAsReference('somefile.php', new Position(6, 60));
         $this->assertNotNull($reference);
 
         $this->assertSame('B\AClass', $reference->symbol);
@@ -529,7 +529,7 @@ class SymbolLookupTest extends TestCase
         $this->codebase->scanFiles();
         $this->analyzeFile('somefile.php', new Context());
 
-        $reference = $this->codebase->getReferenceAtPosition('somefile.php', new Position(2, 25));
+        $reference = $this->codebase->getReferenceAtPositionAsReference('somefile.php', new Position(2, 25));
         $this->assertNotNull($reference);
 
         $this->assertSame('StreamWrapper', $reference->symbol);
@@ -557,7 +557,7 @@ class SymbolLookupTest extends TestCase
 
         // This is focusing the $active_symbol variable, the LSP Range that is
         // returned should also point to the same variable (that's where hover popovers will show)
-        $reference = $this->codebase->getReferenceAtPosition('somefile.php', new Position(6, 26));
+        $reference = $this->codebase->getReferenceAtPositionAsReference('somefile.php', new Position(6, 26));
 
         $this->assertNotNull($reference);
         $this->assertSame(16, $reference->range->start->character);
@@ -584,7 +584,7 @@ class SymbolLookupTest extends TestCase
         $this->codebase->scanFiles();
         $this->analyzeFile('somefile.php', new Context());
 
-        $reference = $this->codebase->getReferenceAtPosition('somefile.php', new Position(4, 35));
+        $reference = $this->codebase->getReferenceAtPositionAsReference('somefile.php', new Position(4, 35));
 
         $this->assertNotNull($reference);
 

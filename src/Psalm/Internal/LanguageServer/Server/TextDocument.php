@@ -186,7 +186,7 @@ class TextDocument
         }
 
         try {
-            $reference = $this->codebase->getReferenceAtPosition($file_path, $position);
+            $reference = $this->codebase->getReferenceAtPositionAsReference($file_path, $position);
         } catch (UnanalyzedFileException $e) {
             $this->server->logThrowable($e);
             return new Success(null);
@@ -197,7 +197,7 @@ class TextDocument
         }
 
 
-        $code_location = $this->codebase->getSymbolLocation($reference);
+        $code_location = $this->codebase->getSymbolLocationByReference($reference);
 
         if (!$code_location) {
             return new Success(null);
@@ -240,7 +240,7 @@ class TextDocument
         }
 
         try {
-            $reference = $this->codebase->getReferenceAtPosition($file_path, $position);
+            $reference = $this->codebase->getReferenceAtPositionAsReference($file_path, $position);
         } catch (UnanalyzedFileException $e) {
             $this->server->logThrowable($e);
             return new Success(null);
@@ -251,7 +251,7 @@ class TextDocument
         }
 
         try {
-            $markup = $this->codebase->getMarkupContentForSymbol($reference);
+            $markup = $this->codebase->getMarkupContentForSymbolByReference($reference);
         } catch (UnexpectedValueException $e) {
             $this->server->logThrowable($e);
             return new Success(null);
@@ -261,7 +261,6 @@ class TextDocument
             return new Success(null);
         }
 
-        /** @psalm-suppress InvalidArgument */
         return new Success(new Hover($markup, $reference->range));
     }
 
@@ -403,6 +402,8 @@ class TextDocument
      * The code action request is sent from the client to the server to compute commands
      * for a given text document and range. These commands are typically code fixes to
      * either fix problems or to beautify/refactor code.
+     *
+     * @psalm-suppress PossiblyUnusedParam
      */
     public function codeAction(TextDocumentIdentifier $textDocument, Range $range, CodeActionContext $context): Promise
     {

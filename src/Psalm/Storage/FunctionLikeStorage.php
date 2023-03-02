@@ -339,4 +339,18 @@ abstract class FunctionLikeStorage implements HasAttributesInterface
     {
         return $this->attributes;
     }
+
+    public function __toString(): string
+    {
+        return $this->getCompletionSignature();
+    }
+
+    /**
+     * @deprecated will be removed in Psalm 6. use {@see FunctionLikeStorage::getCompletionSignature()} instead
+     * @psalm-suppress PossiblyUnusedParam, PossiblyUnusedMethod
+     */
+    public function getSignature(bool $allow_newlines): string
+    {
+        return $this->getCompletionSignature();
+    }
 }

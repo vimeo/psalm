@@ -103,8 +103,6 @@ class LanguageClient
 
     /**
      * Send a log message to the client.
-     *
-     * @param LogMessage $message
      */
     public function logMessage(LogMessage $logMessage): void
     {

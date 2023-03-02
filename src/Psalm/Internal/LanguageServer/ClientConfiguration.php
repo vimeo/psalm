@@ -80,7 +80,6 @@ class ClientConfiguration
      * Log Level
      *
      * @see MessageType
-     * @psalm-suppress PossiblyUnusedProperty
      */
     public ?int $logLevel = null;
 

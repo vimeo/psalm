@@ -95,6 +95,7 @@ use const STDIN;
 use const STDOUT;
 
 /**
+ * @psalm-api
  * @internal
  */
 class LanguageServer extends Dispatcher
@@ -124,7 +125,6 @@ class LanguageServer extends Dispatcher
     protected ProjectAnalyzer $project_analyzer;
 
     protected Codebase $codebase;
-    protected array $onsave_paths_to_analyze = [];
 
     /**
      * The AMP Delay token
@@ -192,7 +192,6 @@ class LanguageServer extends Dispatcher
                          */
                         $dispatched = $this->dispatch($msg->body);
                         if ($dispatched !== null) {
-                            /** @psalm-suppress MixedAssignment */
                             $result = yield $dispatched;
                         } else {
                             $result = null;
@@ -410,12 +409,8 @@ class LanguageServer extends Dispatcher
      * @param string|null $rootPath The rootPath of the workspace. Is null if no folder is open.
      * @param mixed $initializationOptions
      * @param string|null $trace The initial trace setting. If omitted trace is disabled ('off').
-     * @param array|null $workspaceFolders The workspace folders configured in the client when
-     * the server starts. This property is only available if the client supports workspace folders.
-     * It can be `null` if the client supports workspace folders but none are
-     * configured.
      * @psalm-return Promise<InitializeResult>
-     * @psalm-suppress PossiblyUnusedMethod
+     * @psalm-suppress PossiblyUnusedParam
      */
     public function initialize(
         ClientCapabilities $capabilities,
@@ -616,8 +611,6 @@ class LanguageServer extends Dispatcher
      * initialize request but before the client is sending any other request or notification to the server.
      * The server can use the initialized notification for example to dynamically register capabilities.
      * The initialized notification may only be sent once.
-     *
-     * @psalm-suppress PossiblyUnusedMethod
      */
     public function initialized(): void
     {
@@ -834,7 +827,7 @@ class LanguageServer extends Dispatcher
                                     $issue_baseline[$file][$type]['o']--;
                                 }
                             } else {
-                                /** @psalm-suppress MixedArrayAssignment, MixedOperand, MixedAssignment */
+                                /** @psalm-suppress MixedArrayAssignment, MixedAssignment */
                                 $issue_baseline[$file][$type]['s'] = [];
                                 $issue_data->severity = Config::REPORT_INFO;
                                 /** @psalm-suppress MixedArrayAssignment, MixedOperand, MixedAssignment */
@@ -866,8 +859,6 @@ class LanguageServer extends Dispatcher
      * that asks the server to exit. Clients must not send any notifications other than exit or requests to a server to
      * which they have sent a shutdown request. Clients should also wait with sending the exit notification until they
      * have received a response from the shutdown request.
-     *
-     * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function shutdown(): Promise
     {
@@ -952,8 +943,6 @@ class LanguageServer extends Dispatcher
 
     /**
      * Log Warning message to the client
-     *
-     * @psalm-suppress PossiblyUnusedMethod
      */
     public function logWarning(string $message, array $context = []): void
     {

@@ -16,8 +16,6 @@
     <PossiblyUndefinedIntArrayOffset>
       <code>$const_name</code>
       <code>$const_name</code>
-      <code>$matches[0]</code>
-      <code>$property_name</code>
       <code>$symbol_name</code>
       <code>$symbol_parts[1]</code>
     </PossiblyUndefinedIntArrayOffset>
@@ -228,11 +226,6 @@
       <code><![CDATA[$stmt->expr->getArgs()[0]]]></code>
     </PossiblyUndefinedArrayOffset>
   </file>
-  <file src="src/Psalm/Internal/Cli/LanguageServer.php">
-    <PossiblyInvalidArgument>
-      <code><![CDATA[$options['tcp'] ?? null]]></code>
-    </PossiblyInvalidArgument>
-  </file>
   <file src="src/Psalm/Internal/Cli/Refactor.php">
     <PossiblyUndefinedIntArrayOffset>
       <code>$identifier_name</code>
@@ -302,35 +295,6 @@
   <file src="src/Psalm/Internal/FileManipulation/PropertyDocblockManipulator.php">
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$stmt->props[0]]]></code>
-    </PossiblyUndefinedIntArrayOffset>
-  </file>
-  <file src="src/Psalm/Internal/LanguageServer/LanguageClient.php">
-    <DocblockTypeContradiction>
-      <code><![CDATA[$type < 1]]></code>
-      <code><![CDATA[$type < 1 || $type > 4]]></code>
-      <code><![CDATA[$type > 4]]></code>
-    </DocblockTypeContradiction>
-  </file>
-  <file src="src/Psalm/Internal/LanguageServer/LanguageServer.php">
-    <PossiblyUnusedParam>
-      <code>$capabilities</code>
-      <code>$processId</code>
-      <code>$rootPath</code>
-    </PossiblyUnusedParam>
-  </file>
-  <file src="src/Psalm/Internal/LanguageServer/Message.php">
-    <PossiblyUndefinedIntArrayOffset>
-      <code>$pair[1]</code>
-    </PossiblyUndefinedIntArrayOffset>
-  </file>
-  <file src="src/Psalm/Internal/LanguageServer/ProtocolStreamReader.php">
-    <PossiblyUndefinedIntArrayOffset>
-      <code>$parts[1]</code>
-    </PossiblyUndefinedIntArrayOffset>
-  </file>
-  <file src="src/Psalm/Internal/LanguageServer/Server/TextDocument.php">
-    <PossiblyUndefinedIntArrayOffset>
-      <code>$contentChanges[0]</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/MethodIdentifier.php">
