@@ -4,22 +4,15 @@ namespace Psalm\Internal\Analyzer\Statements;
 
 use PhpParser;
 use Psalm\CodeLocation;
-use Psalm\CodeLocation\DocblockTypeLocation;
 use Psalm\Context;
-use Psalm\Exception\DocblockParseException;
-use Psalm\Exception\IncorrectDocblockException;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\ReferenceConstraint;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
-use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\ImpureStaticVariable;
-use Psalm\Issue\InvalidDocblock;
-use Psalm\Issue\MissingDocblockType;
 use Psalm\Issue\ReferenceConstraintViolation;
 use Psalm\IssueBuffer;
 use Psalm\Type;
-use UnexpectedValueException;
 
 use function is_string;
 
@@ -56,98 +49,18 @@ class StaticAnalyzer
 
             $comment_type = null;
 
-            if ($doc_comment && ($parsed_docblock = $statements_analyzer->getParsedDocblock())) {
-                $var_comments = [];
+            if ($doc_comment) {
+                $var_comments = CommentAnalyzer::getVarComments($doc_comment, $statements_analyzer, $var->var);
+                $comment_type = CommentAnalyzer::populateVarTypesFromDocblock(
+                    $var_comments,
+                    $var->var,
+                    $context,
+                    $statements_analyzer,
+                );
+            }
 
-                try {
-                    $var_comments = $codebase->config->disable_var_parsing
-                        ? []
-                        : CommentAnalyzer::arrayToDocblocks(
-                            $doc_comment,
-                            $parsed_docblock,
-                            $statements_analyzer->getSource(),
-                            $statements_analyzer->getSource()->getAliases(),
-                            $statements_analyzer->getSource()->getTemplateTypeMap(),
-                        );
-                } catch (IncorrectDocblockException $e) {
-                    IssueBuffer::maybeAdd(
-                        new MissingDocblockType(
-                            $e->getMessage(),
-                            new CodeLocation($statements_analyzer, $var),
-                        ),
-                    );
-                } catch (DocblockParseException $e) {
-                    IssueBuffer::maybeAdd(
-                        new InvalidDocblock(
-                            $e->getMessage(),
-                            new CodeLocation($statements_analyzer->getSource(), $var),
-                        ),
-                    );
-                }
-
-                foreach ($var_comments as $var_comment) {
-                    if (!$var_comment->type) {
-                        continue;
-                    }
-
-                    try {
-                        $var_comment_type = TypeExpander::expandUnion(
-                            $codebase,
-                            $var_comment->type,
-                            $context->self,
-                            $context->self,
-                            $statements_analyzer->getParentFQCLN(),
-                        );
-
-                        $var_comment_type = $var_comment_type->setFromDocblock();
-
-                        /** @psalm-suppress UnusedMethodCall */
-                        $var_comment_type->check(
-                            $statements_analyzer,
-                            new CodeLocation($statements_analyzer->getSource(), $var),
-                            $statements_analyzer->getSuppressedIssues(),
-                        );
-
-                        if ($codebase->alter_code
-                            && $var_comment->type_start
-                            && $var_comment->type_end
-                            && $var_comment->line_number
-                        ) {
-                            $type_location = new DocblockTypeLocation(
-                                $statements_analyzer,
-                                $var_comment->type_start,
-                                $var_comment->type_end,
-                                $var_comment->line_number,
-                            );
-
-                            $codebase->classlikes->handleDocblockTypeInMigration(
-                                $codebase,
-                                $statements_analyzer,
-                                $var_comment_type,
-                                $type_location,
-                                $context->calling_method_id,
-                            );
-                        }
-
-                        if (!$var_comment->var_id || $var_comment->var_id === $var_id) {
-                            $comment_type = $var_comment_type;
-                            continue;
-                        }
-
-                        $context->vars_in_scope[$var_comment->var_id] = $var_comment_type;
-                    } catch (UnexpectedValueException $e) {
-                        IssueBuffer::maybeAdd(
-                            new InvalidDocblock(
-                                $e->getMessage(),
-                                new CodeLocation($statements_analyzer, $var),
-                            ),
-                        );
-                    }
-                }
-
-                if ($comment_type) {
-                    $context->byref_constraints[$var_id] = new ReferenceConstraint($comment_type);
-                }
+            if ($comment_type) {
+                $context->byref_constraints[$var_id] = new ReferenceConstraint($comment_type);
             }
 
             if ($var->default) {

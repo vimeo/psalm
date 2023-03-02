@@ -85,6 +85,10 @@ return [
       'old' => ['void', 'message='=>'string', 'code='=>'int', 'severity='=>'int', 'filename='=>'string', 'line='=>'int', 'previous='=>'?Throwable'],
       'new' => ['void', 'message='=>'string', 'code='=>'int', 'severity='=>'int', 'filename='=>'?string', 'line='=>'?int', 'previous='=>'?Throwable'],
     ],
+    'finfo::__construct' => [
+      'old' => ['void', 'flags='=>'int', 'magic_database='=>'string'],
+      'new' => ['void', 'flags='=>'int', 'magic_database='=>'?string'],
+    ],
     'IntlDateFormatter::__construct' => [
       'old' => ['void', 'locale'=>'?string', 'datetype'=>'null|int', 'timetype'=>'null|int', 'timezone='=>'IntlTimeZone|DateTimeZone|string|null', 'calendar='=>'IntlCalendar|int|null', 'pattern='=>'?string'],
       'new' => ['void', 'locale'=>'?string', 'dateType'=>'int', 'timeType'=>'int', 'timezone='=>'IntlTimeZone|DateTimeZone|string|null', 'calendar='=>'IntlCalendar|int|null', 'pattern='=>'?string'],
@@ -146,8 +150,28 @@ return [
       'new' => ['void', 'lenient'=>'bool'],
     ],
     'IntlDateFormatter::setTimeZone' => [
-        'old' => ['null|false', 'zone'=>'IntlTimeZone|DateTimeZone|string|null'],
-        'new' => ['null|false', 'timezone'=>'IntlTimeZone|DateTimeZone|string|null'],
+      'old' => ['null|false', 'zone'=>'IntlTimeZone|DateTimeZone|string|null'],
+      'new' => ['null|false', 'timezone'=>'IntlTimeZone|DateTimeZone|string|null'],
+    ],
+    'Locale::getDisplayLanguage' => [
+      'old' => ['string', 'locale'=>'string', 'displayLocale='=>'string'],
+      'new' => ['string', 'locale'=>'string', 'displayLocale='=>'?string'],
+    ],
+    'Locale::getDisplayName' => [
+      'old' => ['string', 'locale'=>'string', 'displayLocale='=>'string'],
+      'new' => ['string', 'locale'=>'string', 'displayLocale='=>'?string'],
+    ],
+    'Locale::getDisplayRegion' => [
+      'old' => ['string', 'locale'=>'string', 'displayLocale='=>'string'],
+      'new' => ['string', 'locale'=>'string', 'displayLocale='=>'?string'],
+    ],
+    'Locale::getDisplayScript' => [
+      'old' => ['string', 'locale'=>'string', 'displayLocale='=>'string'],
+      'new' => ['string', 'locale'=>'string', 'displayLocale='=>'?string'],
+    ],
+    'Locale::getDisplayVariant' => [
+      'old' => ['string', 'locale'=>'string', 'displayLocale='=>'string'],
+      'new' => ['string', 'locale'=>'string', 'displayLocale='=>'?string'],
     ],
     'NumberFormatter::__construct' => [
       'old' => ['void', 'locale'=>'string', 'style'=>'int', 'pattern='=>'string'],
@@ -156,18 +180,6 @@ return [
     'NumberFormatter::create' => [
       'old' => ['NumberFormatter|null', 'locale'=>'string', 'style'=>'int', 'pattern='=>'string'],
       'new' => ['NumberFormatter|null', 'locale'=>'string', 'style'=>'int', 'pattern='=>'?string'],
-    ],
-    'PDOStatement::bindColumn' => [
-      'old' => ['bool', 'column'=>'mixed', '&rw_param'=>'mixed', 'type='=>'int', 'maxlen='=>'int', 'driverdata='=>'mixed'],
-      'new' => ['bool', 'column'=>'mixed', '&rw_var'=>'mixed', 'type='=>'int', 'maxLength='=>'int', 'driverOptions='=>'mixed'],
-    ],
-    'PDOStatement::bindParam' => [
-      'old' => ['bool', 'paramno'=>'mixed', '&rw_param'=>'mixed', 'type='=>'int', 'maxlen='=>'int', 'driverdata='=>'mixed'],
-      'new' => ['bool', 'param,'=>'string|int', '&rw_var'=>'mixed', 'type='=>'int', 'maxLength='=>'int', 'driverOptions='=>'mixed'],
-    ],
-    'PDOStatement::bindValue' => [
-      'old' => ['bool', 'paramno'=>'mixed', 'param'=>'mixed', 'type='=>'int'],
-      'new' => ['bool', 'param'=>'string|int', 'value'=>'mixed', 'type='=>'int'],
     ],
     'PDOStatement::debugDumpParams' => [
       'old' => ['void'],
@@ -192,10 +204,6 @@ return [
     'PDOStatement::fetchColumn' => [
       'old' => ['string|int|float|bool|null', 'column_number='=>'int'],
       'new' => ['mixed', 'column='=>'int'],
-    ],
-    'PDOStatement::fetchObject' => [
-      'old' => ['object|false', 'class_name='=>'string', 'ctor_args='=>'array'],
-      'new' => ['object|false', 'class='=>'?string', 'ctorArgs='=>'?array'],
     ],
     'PDOStatement::setFetchMode' => [
       'old' => ['bool', 'mode'=>'int'],
@@ -272,6 +280,42 @@ return [
     'ReflectionProperty::getValue' => [
       'old' => ['mixed', 'object='=>'object'],
       'new' => ['mixed', 'object='=>'null|object'],
+    ],
+    'SplFileInfo::getFileInfo' => [
+      'old' => ['SplFileInfo', 'class='=>'string'],
+      'new' => ['SplFileInfo', 'class='=>'?string'],
+    ],
+    'SplFileInfo::getPathInfo' => [
+      'old' => ['SplFileInfo|null', 'class='=>'string'],
+      'new' => ['SplFileInfo|null', 'class='=>'?string'],
+    ],
+    'SplFileInfo::openFile' => [
+      'old' => ['SplFileObject', 'mode='=>'string', 'useIncludePath='=>'bool', 'context='=>'resource'],
+      'new' => ['SplFileObject', 'mode='=>'string', 'useIncludePath='=>'bool', 'context='=>'?resource'],
+    ],
+    'SplFileObject::getFileInfo' => [
+      'old' => ['SplFileInfo', 'class='=>'string'],
+      'new' => ['SplFileInfo', 'class='=>'?string'],
+    ],
+    'SplFileObject::getPathInfo' => [
+      'old' => ['SplFileInfo|null', 'class='=>'string'],
+      'new' => ['SplFileInfo|null', 'class='=>'?string'],
+    ],
+    'SplFileObject::openFile' => [
+      'old' => ['SplFileObject', 'mode='=>'string', 'useIncludePath='=>'bool', 'context='=>'resource'],
+      'new' => ['SplFileObject', 'mode='=>'string', 'useIncludePath='=>'bool', 'context='=>'?resource'],
+    ],
+    'SplTempFileObject::getFileInfo' => [
+      'old' => ['SplFileInfo', 'class='=>'string'],
+      'new' => ['SplFileInfo', 'class='=>'?string'],
+    ],
+    'SplTempFileObject::getPathInfo' => [
+      'old' => ['SplFileInfo|null', 'class='=>'string'],
+      'new' => ['SplFileInfo|null', 'class='=>'?string'],
+    ],
+    'SplTempFileObject::openFile' => [
+      'old' => ['SplTempFileObject', 'mode='=>'string', 'useIncludePath='=>'bool', 'context='=>'resource'],
+      'new' => ['SplTempFileObject', 'mode='=>'string', 'useIncludePath='=>'bool', 'context='=>'?resource'],
     ],
     'tidy::__construct' => [
       'old' => ['void', 'filename='=>'string', 'config='=>'array|string', 'encoding='=>'string', 'useIncludePath='=>'bool'],
@@ -394,12 +438,12 @@ return [
       'new' => ['int', 'num1'=>'numeric-string', 'num2'=>'numeric-string', 'scale='=>'int|null'],
     ],
     'bcdiv' => [
-      'old' => ['numeric-string', 'dividend'=>'numeric-string', 'divisor'=>'numeric-string', 'scale='=>'int'],
-      'new' => ['numeric-string', 'dividend'=>'numeric-string', 'divisor'=>'numeric-string', 'scale='=>'int|null'],
+      'old' => ['numeric-string', 'num1'=>'numeric-string', 'num2'=>'numeric-string', 'scale='=>'int'],
+      'new' => ['numeric-string', 'num1'=>'numeric-string', 'num2'=>'numeric-string', 'scale='=>'int|null'],
     ],
     'bcmod' => [
-      'old' => ['numeric-string', 'dividend'=>'numeric-string', 'divisor'=>'numeric-string', 'scale='=>'int'],
-      'new' => ['numeric-string', 'dividend'=>'numeric-string', 'divisor'=>'numeric-string', 'scale='=>'int|null'],
+      'old' => ['numeric-string', 'num1'=>'numeric-string', 'num2'=>'numeric-string', 'scale='=>'int'],
+      'new' => ['numeric-string', 'num1'=>'numeric-string', 'num2'=>'numeric-string', 'scale='=>'int|null'],
     ],
     'bcmul' => [
       'old' => ['numeric-string', 'num1'=>'numeric-string', 'num2'=>'numeric-string', 'scale='=>'int'],
@@ -410,8 +454,8 @@ return [
       'new' => ['numeric-string', 'num'=>'numeric-string', 'exponent'=>'numeric-string', 'scale='=>'int|null'],
     ],
     'bcpowmod' => [
-      'old' => ['numeric-string|false', 'base'=>'numeric-string', 'exponent'=>'numeric-string', 'modulus'=>'numeric-string', 'scale='=>'int'],
-      'new' => ['numeric-string|false', 'base'=>'numeric-string', 'exponent'=>'numeric-string', 'modulus'=>'numeric-string', 'scale='=>'int|null'],
+      'old' => ['numeric-string|false', 'num'=>'numeric-string', 'exponent'=>'numeric-string', 'modulus'=>'numeric-string', 'scale='=>'int'],
+      'new' => ['numeric-string', 'num'=>'numeric-string', 'exponent'=>'numeric-string', 'modulus'=>'numeric-string', 'scale='=>'int|null'],
     ],
     'bcscale' => [
       'old' => ['int', 'scale='=>'int'],
@@ -432,6 +476,10 @@ return [
     'bindtextdomain' => [
       'old' => ['string', 'domain'=>'string', 'directory'=>'string'],
       'new' => ['string', 'domain'=>'string', 'directory'=>'?string'],
+    ],
+    'bzdecompress' => [
+      'old' => ['string|int|false', 'data'=>'string', 'use_less_memory='=>'int'],
+      'new' => ['string|int|false', 'data'=>'string', 'use_less_memory='=>'bool'],
     ],
     'bzwrite' => [
       'old' => ['int|false', 'bz'=>'resource', 'data'=>'string', 'length='=>'int'],
@@ -456,6 +504,10 @@ return [
     'count_chars\'1' => [
       'old' => ['string|false', 'input'=>'string', 'mode='=>'3|4'],
       'new' => ['string', 'input'=>'string', 'mode='=>'3|4'],
+    ],
+    'crypt' => [
+      'old' => ['string', 'string'=>'string', 'salt='=>'string'],
+      'new' => ['string', 'string'=>'string', 'salt'=>'string'],
     ],
     'curl_close' => [
       'old' => ['void', 'ch'=>'resource'],
@@ -649,9 +701,89 @@ return [
       'old' => ['int', 'year='=>'int', 'mode='=>'int'],
       'new' => ['int', 'year='=>'?int', 'mode='=>'int'],
     ],
+    'enchant_broker_describe' => [
+      'old' => ['array|false', 'broker'=>'resource'],
+      'new' => ['array', 'broker'=>'EnchantBroker'],
+    ],
+    'enchant_broker_dict_exists' => [
+      'old' => ['bool', 'broker'=>'resource', 'tag'=>'string'],
+      'new' => ['bool', 'broker'=>'EnchantBroker', 'tag'=>'string'],
+    ],
+    'enchant_broker_free' => [
+      'old' => ['bool', 'broker'=>'resource'],
+      'new' => ['bool', 'broker'=>'EnchantBroker'],
+    ],
+    'enchant_broker_free_dict' => [
+      'old' => ['bool', 'dictionary'=>'resource'],
+      'new' => ['bool', 'dictionary'=>'EnchantBroker'],
+    ],
+    'enchant_broker_get_dict_path' => [
+      'old' => ['string', 'broker'=>'resource', 'type'=>'int'],
+      'new' => ['string', 'broker'=>'EnchantBroker', 'type'=>'int'],
+    ],
+    'enchant_broker_get_error' => [
+      'old' => ['string|false', 'broker'=>'resource'],
+      'new' => ['string|false', 'broker'=>'EnchantBroker'],
+    ],
     'enchant_broker_init' => [
       'old' => ['resource|false'],
       'new' => ['EnchantBroker|false'],
+    ],
+    'enchant_broker_list_dicts' => [
+      'old' => ['array<int,array{lang_tag:string,provider_name:string,provider_desc:string,provider_file:string}>|false', 'broker'=>'resource'],
+      'new' => ['array<int,array{lang_tag:string,provider_name:string,provider_desc:string,provider_file:string}>', 'broker'=>'EnchantBroker'],
+    ],
+    'enchant_broker_request_dict' => [
+      'old' => ['resource|false', 'broker'=>'resource', 'tag'=>'string'],
+      'new' => ['EnchantDictionary|false', 'broker'=>'EnchantBroker', 'tag'=>'string'],
+    ],
+    'enchant_broker_request_pwl_dict' => [
+      'old' => ['resource|false', 'broker'=>'resource', 'filename'=>'string'],
+      'new' => ['EnchantDictionary|false', 'broker'=>'EnchantBroker', 'filename'=>'string'],
+    ],
+    'enchant_broker_set_dict_path' => [
+      'old' => ['bool', 'broker'=>'resource', 'type'=>'int', 'path'=>'string'],
+      'new' => ['bool', 'broker'=>'EnchantBroker', 'type'=>'int', 'path'=>'string'],
+    ],
+    'enchant_broker_set_ordering' => [
+      'old' => ['bool', 'broker'=>'resource', 'tag'=>'string', 'ordering'=>'string'],
+      'new' => ['bool', 'broker'=>'EnchantBroker', 'tag'=>'string', 'ordering'=>'string'],
+    ],
+    'enchant_dict_add_to_personal' => [
+      'old' => ['void', 'dictionary'=>'resource', 'word'=>'string'],
+      'new' => ['void', 'dictionary'=>'EnchantDictionary', 'word'=>'string'],
+    ],
+    'enchant_dict_add_to_session' => [
+      'old' => ['void', 'dictionary'=>'resource', 'word'=>'string'],
+      'new' => ['void', 'dictionary'=>'EnchantDictionary', 'word'=>'string'],
+    ],
+    'enchant_dict_check' => [
+      'old' => ['bool', 'dictionary'=>'resource', 'word'=>'string'],
+      'new' => ['bool', 'dictionary'=>'EnchantDictionary', 'word'=>'string'],
+    ],
+    'enchant_dict_describe' => [
+      'old' => ['array', 'dictionary'=>'resource'],
+      'new' => ['array', 'dictionary'=>'EnchantDictionary'],
+    ],
+    'enchant_dict_get_error' => [
+      'old' => ['string', 'dictionary'=>'resource'],
+      'new' => ['string', 'dictionary'=>'EnchantDictionary'],
+    ],
+    'enchant_dict_is_in_session' => [
+      'old' => ['bool', 'dictionary'=>'resource', 'word'=>'string'],
+      'new' => ['bool', 'dictionary'=>'EnchantDictionary', 'word'=>'string'],
+    ],
+    'enchant_dict_quick_check' => [
+      'old' => ['bool', 'dictionary'=>'resource', 'word'=>'string', '&w_suggestions='=>'array<int,string>'],
+      'new' => ['bool', 'dictionary'=>'EnchantDictionary', 'word'=>'string', '&w_suggestions='=>'array<int,string>'],
+    ],
+    'enchant_dict_store_replacement' => [
+      'old' => ['void', 'dictionary'=>'resource', 'misspelled'=>'string', 'correct'=>'string'],
+      'new' => ['void', 'dictionary'=>'EnchantDictionary', 'misspelled'=>'string', 'correct'=>'string'],
+    ],
+    'enchant_dict_suggest' => [
+      'old' => ['array', 'dictionary'=>'resource', 'word'=>'string'],
+      'new' => ['array', 'dictionary'=>'EnchantDictionary', 'word'=>'string'],
     ],
     'error_log' => [
       'old' => ['bool', 'message'=>'string', 'message_type='=>'int', 'destination='=>'string', 'additional_headers='=>'string'],
@@ -760,6 +892,10 @@ return [
     'hash_hmac' => [
       'old' => ['non-empty-string|false', 'algo'=>'string', 'data'=>'string', 'key'=>'string', 'binary='=>'bool'],
       'new' => ['non-empty-string', 'algo'=>'string', 'data'=>'string', 'key'=>'string', 'binary='=>'bool'],
+    ],
+    'hash_hmac_file' => [
+      'old' => ['non-empty-string|false', 'algo'=>'string', 'data'=>'string', 'key'=>'string', 'binary='=>'bool'],
+      'new' => ['non-empty-string', 'algo'=>'string', 'filename'=>'string', 'key'=>'string', 'binary='=>'bool'],
     ],
     'hash_init' => [
       'old' => ['HashContext|false', 'algo'=>'string', 'flags='=>'int', 'key='=>'string'],
@@ -1034,8 +1170,8 @@ return [
       'new' => ['bool', 'image'=>'GdImage', 'x'=>'int', 'y'=>'int', 'border_color'=>'int', 'color'=>'int'],
     ],
     'imagefilter' => [
-      'old' => ['bool', 'image'=>'resource', 'filter'=>'int', 'args='=>'int', 'arg2='=>'int', 'arg3='=>'int', 'arg4='=>'int'],
-      'new' => ['bool', 'image'=>'GdImage', 'filter'=>'int', 'args='=>'int', 'arg2='=>'int', 'arg3='=>'int', 'arg4='=>'int'],
+      'old' => ['bool', 'image'=>'resource', 'filter'=>'int', '...args='=>'array|int|float|bool'],
+      'new' => ['bool', 'image'=>'GdImage', 'filter'=>'int', '...args='=>'array|int|float|bool'],
     ],
     'imageflip' => [
       'old' => ['bool', 'image'=>'resource', 'mode'=>'int'],
@@ -1123,7 +1259,7 @@ return [
     ],
     'imagerotate' => [
       'old' => ['resource|false', 'src_im'=>'resource', 'angle'=>'float', 'bgdcolor'=>'int', 'ignoretransparent='=>'int'],
-      'new' => ['false|GdImage', 'image'=>'GdImage', 'angle'=>'float', 'background_color'=>'int', 'ignore_transparent='=>'int'],
+      'new' => ['false|GdImage', 'image'=>'GdImage', 'angle'=>'float', 'background_color'=>'int', 'ignore_transparent='=>'bool'],
     ],
     'imagesavealpha' => [
       'old' => ['bool', 'image'=>'resource', 'enable'=>'bool'],
@@ -1142,8 +1278,8 @@ return [
       'new' => ['bool', 'image'=>'GdImage', 'x1'=>'int', 'x2'=>'int', 'y1'=>'int', 'y2'=>'int'],
     ],
     'imagesetinterpolation' => [
-      'old' => ['bool', 'image'=>'resource', 'method'=>'int'],
-      'new' => ['bool', 'image'=>'GdImage', 'method'=>'int'],
+      'old' => ['bool', 'image'=>'resource', 'method='=>'int'],
+      'new' => ['bool', 'image'=>'GdImage', 'method='=>'int'],
     ],
     'imagesetpixel' => [
       'old' => ['bool', 'image'=>'resource', 'x'=>'int', 'y'=>'int', 'color'=>'int'],
@@ -1181,9 +1317,13 @@ return [
       'old' => ['bool', 'image'=>'resource', 'dither'=>'bool', 'num_colors'=>'int'],
       'new' => ['bool', 'image'=>'GdImage', 'dither'=>'bool', 'num_colors'=>'int'],
     ],
+    'imagettfbbox' => [
+      'old' => ['false|array', 'size'=>'float', 'angle'=>'float', 'font_filename'=>'string', 'string'=>'string'],
+      'new' => ['false|array', 'size'=>'float', 'angle'=>'float', 'font_filename'=>'string', 'string'=>'string', 'options='=>'array'],
+    ],
     'imagettftext' => [
       'old' => ['false|array', 'image'=>'resource', 'size'=>'float', 'angle'=>'float', 'x'=>'int', 'y'=>'int', 'color'=>'int', 'font_filename'=>'string', 'text'=>'string'],
-      'new' => ['false|array', 'image'=>'GdImage', 'size'=>'float', 'angle'=>'float', 'x'=>'int', 'y'=>'int', 'color'=>'int', 'font_filename'=>'string', 'text'=>'string'],
+      'new' => ['false|array', 'image'=>'GdImage', 'size'=>'float', 'angle'=>'float', 'x'=>'int', 'y'=>'int', 'color'=>'int', 'font_filename'=>'string', 'text'=>'string', 'options='=>'array'],
     ],
     'imagewbmp' => [
       'old' => ['bool', 'image'=>'resource', 'file='=>'string|resource|null', 'foreground_color='=>'int'],
@@ -1194,8 +1334,8 @@ return [
       'new' => ['bool', 'image'=>'GdImage', 'file='=>'string|resource|null', 'quality='=>'int'],
     ],
     'imagexbm' => [
-      'old' => ['bool', 'image'=>'resource', 'filename='=>'?string', 'foreground_color='=>'int'],
-      'new' => ['bool', 'image'=>'GdImage', 'filename='=>'?string', 'foreground_color='=>'int'],
+      'old' => ['bool', 'image'=>'resource', 'filename'=>'?string', 'foreground_color='=>'int'],
+      'new' => ['bool', 'image'=>'GdImage', 'filename'=>'?string', 'foreground_color='=>'?int'],
     ],
     'imap_append' => [
       'old' => ['bool', 'imap'=>'resource', 'folder'=>'string', 'message'=>'string', 'options='=>'string', 'internal_date='=>'string'],
@@ -1208,6 +1348,22 @@ return [
     'imap_mail' => [
       'old' => ['bool', 'to'=>'string', 'subject'=>'string', 'message'=>'string', 'additional_headers='=>'string', 'cc='=>'string', 'bcc='=>'string', 'return_path='=>'string'],
       'new' => ['bool', 'to'=>'string', 'subject'=>'string', 'message'=>'string', 'additional_headers='=>'?string', 'cc='=>'?string', 'bcc='=>'?string', 'return_path='=>'?string'],
+    ],
+    'imap_sort' => [
+      'old' => ['array|false', 'imap'=>'resource', 'criteria'=>'int', 'reverse'=>'int', 'flags='=>'int', 'search_criteria='=>'string', 'charset='=>'string'],
+      'new' => ['array|false', 'imap'=>'resource', 'criteria'=>'int', 'reverse'=>'bool', 'flags='=>'int', 'search_criteria='=>'?string', 'charset='=>'?string'],
+    ],
+    'inflate_add' => [
+      'old' => ['string|false', 'context'=>'resource', 'data'=>'string', 'flush_mode='=>'int'],
+      'new' => ['string|false', 'context'=>'InflateContext', 'data'=>'string', 'flush_mode='=>'int'],
+    ],
+    'inflate_get_read_len' => [
+      'old' => ['int', 'context'=>'resource'],
+      'new' => ['int', 'context'=>'InflateContext'],
+    ],
+    'inflate_get_status' => [
+      'old' => ['int', 'context'=>'resource'],
+      'new' => ['int', 'context'=>'InflateContext'],
     ],
     'inflate_init' => [
       'old' => ['resource|false', 'encoding'=>'int', 'options='=>'array'],
@@ -1229,6 +1385,14 @@ return [
       'old' => ['resource|false', 'ldap'=>'resource', 'dn='=>'string|null', 'password='=>'string|null', 'controls='=>'array'],
       'new' => ['resource|false', 'ldap'=>'resource', 'dn='=>'string|null', 'password='=>'string|null', 'controls='=>'?array'],
     ],
+    'ldap_compare' => [
+      'old' => ['bool|int', 'ldap'=>'resource', 'dn'=>'string', 'attribute'=>'string', 'value'=>'string', 'controls='=>'array'],
+      'new' => ['bool|int', 'ldap'=>'resource', 'dn'=>'string', 'attribute'=>'string', 'value'=>'string', 'controls='=>'?array'],
+    ],
+    'ldap_delete' => [
+      'old' => ['bool', 'ldap'=>'resource', 'dn'=>'string', 'controls='=>'array'],
+      'new' => ['bool', 'ldap'=>'resource', 'dn'=>'string', 'controls='=>'?array'],
+    ],
     'ldap_delete_ext' => [
       'old' => ['resource|false', 'ldap'=>'resource', 'dn'=>'string', 'controls='=>'array'],
       'new' => ['resource|false', 'ldap'=>'resource', 'dn'=>'string', 'controls='=>'?array'],
@@ -1237,21 +1401,57 @@ return [
       'old' => ['bool|string', 'ldap'=>'resource', 'user='=>'string', 'old_password='=>'string', 'new_password='=>'string', '&w_controls='=>'array'],
       'new' => ['bool|string', 'ldap'=>'resource', 'user='=>'string', 'old_password='=>'string', 'new_password='=>'string', '&w_controls='=>'array|null'],
     ],
+    'ldap_list' => [
+      'old' => ['resource|false', 'ldap'=>'resource|array', 'base'=>'string', 'filter'=>'string', 'attributes='=>'array', 'attributes_only='=>'int', 'sizelimit='=>'int', 'timelimit='=>'int', 'deref='=>'int', 'controls='=>'array'],
+      'new' => ['resource|false', 'ldap'=>'resource|array', 'base'=>'string', 'filter'=>'string', 'attributes='=>'array', 'attributes_only='=>'int', 'sizelimit='=>'int', 'timelimit='=>'int', 'deref='=>'int', 'controls='=>'?array'],
+    ],
     'ldap_rename_ext' => [
       'old' => ['resource|false', 'ldap'=>'resource', 'dn'=>'string', 'new_rdn'=>'string', 'new_parent'=>'string', 'delete_old_rdn'=>'bool', 'controls='=>'array'],
       'new' => ['resource|false', 'ldap'=>'resource', 'dn'=>'string', 'new_rdn'=>'string', 'new_parent'=>'string', 'delete_old_rdn'=>'bool', 'controls='=>'?array'],
+    ],
+    'ldap_mod_add' => [
+      'old' => ['bool', 'ldap'=>'resource', 'dn'=>'string', 'entry'=>'array', 'controls='=>'array'],
+      'new' => ['bool', 'ldap'=>'resource', 'dn'=>'string', 'entry'=>'array', 'controls='=>'?array'],
     ],
     'ldap_mod_add_ext' => [
       'old' => ['resource|false', 'ldap'=>'resource', 'dn'=>'string', 'entry'=>'array', 'controls='=>'array'],
       'new' => ['resource|false', 'ldap'=>'resource', 'dn'=>'string', 'entry'=>'array', 'controls='=>'?array'],
     ],
+    'ldap_mod_del' => [
+      'old' => ['bool', 'ldap'=>'resource', 'dn'=>'string', 'entry'=>'array', 'controls='=>'array'],
+      'new' => ['bool', 'ldap'=>'resource', 'dn'=>'string', 'entry'=>'array', 'controls='=>'?array'],
+    ],
     'ldap_mod_del_ext' => [
       'old' => ['resource|false', 'ldap'=>'resource', 'dn'=>'string', 'entry'=>'array', 'controls='=>'array'],
       'new' => ['resource|false', 'ldap'=>'resource', 'dn'=>'string', 'entry'=>'array', 'controls='=>'?array'],
     ],
+    'ldap_mod_replace' => [
+      'old' => ['bool', 'ldap'=>'resource', 'dn'=>'string', 'entry'=>'array', 'controls='=>'array'],
+      'new' => ['bool', 'ldap'=>'resource', 'dn'=>'string', 'entry'=>'array', 'controls='=>'?array'],
+    ],
     'ldap_mod_replace_ext' => [
       'old' => ['resource|false', 'ldap'=>'resource', 'dn'=>'string', 'entry'=>'array', 'controls='=>'array'],
       'new' => ['resource|false', 'ldap'=>'resource', 'dn'=>'string', 'entry'=>'array', 'controls='=>'?array'],
+    ],
+    'ldap_modify' => [
+      'old' => ['bool', 'ldap'=>'resource', 'dn'=>'string', 'entry'=>'array', 'controls='=>'array'],
+      'new' => ['bool', 'ldap'=>'resource', 'dn'=>'string', 'entry'=>'array', 'controls='=>'?array'],
+    ],
+    'ldap_modify_batch' => [
+      'old' => ['bool', 'ldap'=>'resource', 'dn'=>'string', 'modifications_info'=>'array', 'controls='=>'array'],
+      'new' => ['bool', 'ldap'=>'resource', 'dn'=>'string', 'modifications_info'=>'array', 'controls='=>'?array'],
+    ],
+    'ldap_read' => [
+      'old' => ['resource|false', 'ldap'=>'resource|array', 'base'=>'string', 'filter'=>'string', 'attributes='=>'array', 'attributes_only='=>'int', 'sizelimit='=>'int', 'timelimit='=>'int', 'deref='=>'int', 'controls='=>'array'],
+      'new' => ['resource|false', 'ldap'=>'resource|array', 'base'=>'string', 'filter'=>'string', 'attributes='=>'array', 'attributes_only='=>'int', 'sizelimit='=>'int', 'timelimit='=>'int', 'deref='=>'int', 'controls='=>'?array'],
+    ],
+    'ldap_rename' => [
+      'old' => ['bool', 'ldap'=>'resource', 'dn'=>'string', 'new_rdn'=>'string', 'new_parent'=>'string', 'delete_old_rdn'=>'bool', 'controls='=>'array'],
+      'new' => ['bool', 'ldap'=>'resource', 'dn'=>'string', 'new_rdn'=>'string', 'new_parent'=>'string', 'delete_old_rdn'=>'bool', 'controls='=>'?array'],
+    ],
+    'ldap_search' => [
+      'old' => ['resource|false', 'ldap'=>'resource|resource[]', 'base'=>'string', 'filter'=>'string', 'attributes='=>'array', 'attributes_only='=>'int', 'sizelimit='=>'int', 'timelimit='=>'int', 'deref='=>'int', 'controls='=>'array'],
+      'new' => ['resource|false', 'ldap'=>'resource|resource[]', 'base'=>'string', 'filter'=>'string', 'attributes='=>'array', 'attributes_only='=>'int', 'sizelimit='=>'int', 'timelimit='=>'int', 'deref='=>'int', 'controls='=>'?array'],
     ],
     'ldap_set_rebind_proc' => [
       'old' => ['bool', 'ldap'=>'resource', 'callback'=>'callable'],
@@ -1504,6 +1704,26 @@ return [
     'msg_get_queue' => [
       'old' => ['resource|false', 'key'=>'int', 'permissions='=>'int'],
       'new' => ['SysvMessageQueue|false', 'key'=>'int', 'permissions='=>'int'],
+    ],
+    'msg_receive' => [
+      'old' => ['bool', 'queue'=>'resource', 'desired_message_type'=>'int', '&w_received_message_type'=>'int', 'max_message_size'=>'int', '&w_message'=>'mixed', 'unserialize='=>'bool', 'flags='=>'int', '&w_error_code='=>'int'],
+      'new' => ['bool', 'queue'=>'SysvMessageQueue', 'desired_message_type'=>'int', '&w_received_message_type'=>'int', 'max_message_size'=>'int', '&w_message'=>'mixed', 'unserialize='=>'bool', 'flags='=>'int', '&w_error_code='=>'int'],
+    ],
+    'msg_remove_queue' => [
+      'old' => ['bool', 'queue'=>'resource'],
+      'new' => ['bool', 'queue'=>'SysvMessageQueue'],
+    ],
+    'msg_send' => [
+      'old' => ['bool', 'queue'=>'resource', 'message_type'=>'int', 'message'=>'mixed', 'serialize='=>'bool', 'blocking='=>'bool', '&w_error_code='=>'int'],
+      'new' => ['bool', 'queue'=>'SysvMessageQueue', 'message_type'=>'int', 'message'=>'mixed', 'serialize='=>'bool', 'blocking='=>'bool', '&w_error_code='=>'int'],
+    ],
+    'msg_set_queue' => [
+      'old' => ['bool', 'queue'=>'resource', 'data'=>'array'],
+      'new' => ['bool', 'queue'=>'SysvMessageQueue', 'data'=>'array'],
+    ],
+    'msg_stat_queue' => [
+      'old' => ['array', 'queue'=>'resource'],
+      'new' => ['array', 'queue'=>'SysvMessageQueue'],
     ],
     'mysqli::__construct' => [
       'old' => ['void', 'hostname='=>'string', 'username='=>'string', 'password='=>'string', 'database='=>'string', 'port='=>'int', 'socket='=>'string'],
@@ -1845,6 +2065,22 @@ return [
       'old' => ['bool', 'stream'=>'resource', 'enable='=>'bool'],
       'new' => ['bool', 'stream'=>'resource', 'enable='=>'?bool'],
     ],
+    'sem_acquire' => [
+      'old' => ['bool', 'semaphore'=>'resource', 'non_blocking='=>'bool'],
+      'new' => ['bool', 'semaphore'=>'SysvSemaphore', 'non_blocking='=>'bool'],
+    ],
+    'sem_get' => [
+      'old' => ['resource|false', 'key'=>'int', 'max_acquire='=>'int', 'permissions='=>'int', 'auto_release='=>'bool'],
+      'new' => ['SysvSemaphore|false', 'key'=>'int', 'max_acquire='=>'int', 'permissions='=>'int', 'auto_release='=>'bool'],
+    ],
+    'sem_release' => [
+      'old' => ['bool', 'semaphore'=>'resource'],
+      'new' => ['bool', 'semaphore'=>'SysvSemaphore'],
+    ],
+    'sem_remove' => [
+      'old' => ['bool', 'semaphore'=>'resource'],
+      'new' => ['bool', 'semaphore'=>'SysvSemaphore'],
+    ],
     'session_cache_expire' => [
       'old' => ['int', 'value='=>'int'],
       'new' => ['int', 'value='=>'?int'],
@@ -1876,6 +2112,30 @@ return [
     'shm_attach' => [
       'old' => ['resource|false', 'key'=>'int', 'size='=>'int', 'permissions='=>'int'],
       'new' => ['SysvSharedMemory|false', 'key'=>'int', 'size='=>'?int', 'permissions='=>'int'],
+    ],
+    'shm_detach' => [
+      'old' => ['bool', 'shm'=>'resource'],
+      'new' => ['bool', 'shm'=>'SysvSharedMemory'],
+    ],
+    'shm_get_var' => [
+      'old' => ['mixed', 'shm'=>'resource', 'key'=>'int'],
+      'new' => ['mixed', 'shm'=>'SysvSharedMemory', 'key'=>'int'],
+    ],
+    'shm_has_var' => [
+      'old' => ['bool', 'shm'=>'resource', 'key'=>'int'],
+      'new' => ['bool', 'shm'=>'SysvSharedMemory', 'key'=>'int'],
+    ],
+    'shm_put_var' => [
+      'old' => ['bool', 'shm'=>'resource', 'key'=>'int', 'value'=>'mixed'],
+      'new' => ['bool', 'shm'=>'SysvSharedMemory', 'key'=>'int', 'value'=>'mixed'],
+    ],
+    'shm_remove' => [
+      'old' => ['bool', 'shm'=>'resource'],
+      'new' => ['bool', 'shm'=>'SysvSharedMemory'],
+    ],
+    'shm_remove_var' => [
+      'old' => ['bool', 'shm'=>'resource', 'key'=>'int'],
+      'new' => ['bool', 'shm'=>'SysvSharedMemory', 'key'=>'int'],
     ],
     'shmop_close' => [
       'old' => ['void', 'shmop'=>'resource'],
@@ -1922,12 +2182,12 @@ return [
       'new' => ['array', 'address'=>'AddressInfo'],
     ],
     'socket_addrinfo_lookup' => [
-      'old' => ['resource[]', 'node'=>'string', 'service='=>'mixed', 'hints='=>'array'],
-      'new' => ['false|AddressInfo[]', 'host='=>'string|null', 'service='=>'mixed', 'hints='=>'array'],
+      'old' => ['resource[]', 'host'=>'string', 'service='=>'string', 'hints='=>'array'],
+      'new' => ['false|AddressInfo[]', 'host'=>'string', 'service='=>'?string', 'hints='=>'array'],
     ],
     'socket_bind' => [
-      'old' => ['bool', 'socket'=>'resource', 'addr'=>'string', 'port='=>'int'],
-      'new' => ['bool', 'socket'=>'Socket', 'addr'=>'string', 'port='=>'int'],
+      'old' => ['bool', 'socket'=>'resource', 'address'=>'string', 'port='=>'int'],
+      'new' => ['bool', 'socket'=>'Socket', 'address'=>'string', 'port='=>'int'],
     ],
     'socket_clear_error' => [
       'old' => ['void', 'socket='=>'resource'],
@@ -1938,8 +2198,8 @@ return [
       'new' => ['void', 'socket'=>'Socket'],
     ],
     'socket_connect' => [
-      'old' => ['bool', 'socket'=>'resource', 'addr'=>'string', 'port='=>'int'],
-      'new' => ['bool', 'socket'=>'Socket', 'addr'=>'string', 'port='=>'int'],
+      'old' => ['bool', 'socket'=>'resource', 'address'=>'string', 'port='=>'int'],
+      'new' => ['bool', 'socket'=>'Socket', 'address'=>'string', 'port='=>'?int'],
     ],
     'socket_create' => [
       'old' => ['resource|false', 'domain'=>'int', 'type'=>'int', 'protocol'=>'int'],
@@ -1950,32 +2210,32 @@ return [
       'new' => ['Socket|false', 'port'=>'int', 'backlog='=>'int'],
     ],
     'socket_create_pair' => [
-      'old' => ['bool', 'domain'=>'int', 'type'=>'int', 'protocol'=>'int', '&w_fd'=>'resource[]'],
-      'new' => ['bool', 'domain'=>'int', 'type'=>'int', 'protocol'=>'int', '&w_fd'=>'Socket[]'],
+      'old' => ['bool', 'domain'=>'int', 'type'=>'int', 'protocol'=>'int', '&w_pair'=>'resource[]'],
+      'new' => ['bool', 'domain'=>'int', 'type'=>'int', 'protocol'=>'int', '&w_pair'=>'Socket[]'],
     ],
     'socket_export_stream' => [
       'old' => ['resource|false', 'socket'=>'resource'],
       'new' => ['resource|false', 'socket'=>'Socket'],
     ],
     'socket_get_option' => [
-      'old' => ['mixed|false', 'socket'=>'resource', 'level'=>'int', 'optname'=>'int'],
-      'new' => ['mixed|false', 'socket'=>'Socket', 'level'=>'int', 'optname'=>'int'],
+      'old' => ['array|int|false', 'socket'=>'resource', 'level'=>'int', 'option'=>'int'],
+      'new' => ['array|int|false', 'socket'=>'Socket', 'level'=>'int', 'option'=>'int'],
     ],
     'socket_get_status' => [
       'old' => ['array', 'stream'=>'resource'],
       'new' => ['array', 'stream'=>'Socket'],
     ],
     'socket_getopt' => [
-      'old' => ['mixed', 'socket'=>'resource', 'level'=>'int', 'optname'=>'int'],
-      'new' => ['mixed', 'socket'=>'Socket', 'level'=>'int', 'optname'=>'int'],
+      'old' => ['array|int|false', 'socket'=>'resource', 'level'=>'int', 'option'=>'int'],
+      'new' => ['array|int|false', 'socket'=>'Socket', 'level'=>'int', 'option'=>'int'],
     ],
     'socket_getpeername' => [
-      'old' => ['bool', 'socket'=>'resource', '&w_addr'=>'string', '&w_port='=>'int'],
-      'new' => ['bool', 'socket'=>'Socket', '&w_addr'=>'string', '&w_port='=>'int'],
+      'old' => ['bool', 'socket'=>'resource', '&w_address'=>'string', '&w_port='=>'int'],
+      'new' => ['bool', 'socket'=>'Socket', '&w_address'=>'string', '&w_port='=>'int'],
     ],
     'socket_getsockname' => [
-      'old' => ['bool', 'socket'=>'resource', '&w_addr'=>'string', '&w_port='=>'int'],
-      'new' => ['bool', 'socket'=>'Socket', '&w_addr'=>'string', '&w_port='=>'int'],
+      'old' => ['bool', 'socket'=>'resource', '&w_address'=>'string', '&w_port='=>'int'],
+      'new' => ['bool', 'socket'=>'Socket', '&w_address'=>'string', '&w_port='=>'int'],
     ],
     'socket_import_stream' => [
       'old' => ['resource|false', 'stream'=>'resource'],
@@ -1990,68 +2250,64 @@ return [
       'new' => ['bool', 'socket'=>'Socket', 'backlog='=>'int'],
     ],
     'socket_read' => [
-      'old' => ['string|false', 'socket'=>'resource', 'length'=>'int', 'type='=>'int'],
-      'new' => ['string|false', 'socket'=>'Socket', 'length'=>'int', 'type='=>'int'],
+      'old' => ['string|false', 'socket'=>'resource', 'length'=>'int', 'mode='=>'int'],
+      'new' => ['string|false', 'socket'=>'Socket', 'length'=>'int', 'mode='=>'int'],
     ],
     'socket_recv' => [
-      'old' => ['int|false', 'socket'=>'resource', '&w_buf'=>'string', 'length'=>'int', 'flags'=>'int'],
-      'new' => ['int|false', 'socket'=>'Socket', '&w_buf'=>'string', 'length'=>'int', 'flags'=>'int'],
+      'old' => ['int|false', 'socket'=>'resource', '&w_data'=>'string', 'length'=>'int', 'flags'=>'int'],
+      'new' => ['int|false', 'socket'=>'Socket', '&w_data'=>'string', 'length'=>'int', 'flags'=>'int'],
     ],
     'socket_recvfrom' => [
-      'old' => ['int|false', 'socket'=>'resource', '&w_buf'=>'string', 'length'=>'int', 'flags'=>'int', '&w_name'=>'string', '&w_port='=>'int'],
-      'new' => ['int|false', 'socket'=>'Socket', '&w_buf'=>'string', 'length'=>'int', 'flags'=>'int', '&w_name'=>'string', '&w_port='=>'int'],
+      'old' => ['int|false', 'socket'=>'resource', '&w_data'=>'string', 'length'=>'int', 'flags'=>'int', '&w_address'=>'string', '&w_port='=>'int'],
+      'new' => ['int|false', 'socket'=>'Socket', '&w_data'=>'string', 'length'=>'int', 'flags'=>'int', '&w_address'=>'string', '&w_port='=>'int'],
     ],
     'socket_recvmsg' => [
-      'old' => ['int|false', 'socket'=>'resource', '&w_message'=>'string', 'flags='=>'int'],
-      'new' => ['int|false', 'socket'=>'Socket', '&w_message'=>'string', 'flags='=>'int'],
+      'old' => ['int|false', 'socket'=>'resource', '&w_message'=>'array', 'flags='=>'int'],
+      'new' => ['int|false', 'socket'=>'Socket', '&w_message'=>'array', 'flags='=>'int'],
     ],
     'socket_select' => [
-      'old' => ['int|false', '&rw_read_fds'=>'resource[]|null', '&rw_write_fds'=>'resource[]|null', '&rw_except_fds'=>'resource[]|null', 'tv_sec'=>'int|null', 'tv_usec='=>'int'],
-      'new' => ['int|false', '&rw_read_fds'=>'Socket[]|null', '&rw_write_fds'=>'Socket[]|null', '&rw_except_fds'=>'Socket[]|null', 'tv_sec'=>'int|null', 'tv_usec='=>'int'],
+      'old' => ['int|false', '&rw_read'=>'resource[]|null', '&rw_write'=>'resource[]|null', '&rw_except'=>'resource[]|null', 'seconds'=>'int|null', 'microseconds='=>'int'],
+      'new' => ['int|false', '&rw_read'=>'Socket[]|null', '&rw_write'=>'Socket[]|null', '&rw_except'=>'Socket[]|null', 'seconds'=>'int|null', 'microseconds='=>'int'],
     ],
     'socket_send' => [
-      'old' => ['int|false', 'socket'=>'resource', 'buf'=>'string', 'length'=>'int', 'flags'=>'int'],
-      'new' => ['int|false', 'socket'=>'Socket', 'buf'=>'string', 'length'=>'int', 'flags'=>'int'],
+      'old' => ['int|false', 'socket'=>'resource', 'data'=>'string', 'length'=>'int', 'flags'=>'int'],
+      'new' => ['int|false', 'socket'=>'Socket', 'data'=>'string', 'length'=>'int', 'flags'=>'int'],
     ],
     'socket_sendmsg' => [
-      'old' => ['int|false', 'socket'=>'resource', 'message'=>'array', 'flags'=>'int'],
-      'new' => ['int|false', 'socket'=>'Socket', 'message'=>'array', 'flags'=>'int'],
+      'old' => ['int|false', 'socket'=>'resource', 'message'=>'array', 'flags='=>'int'],
+      'new' => ['int|false', 'socket'=>'Socket', 'message'=>'array', 'flags='=>'int'],
     ],
     'socket_sendto' => [
-      'old' => ['int|false', 'socket'=>'resource', 'buf'=>'string', 'length'=>'int', 'flags'=>'int', 'addr'=>'string', 'port='=>'int'],
-      'new' => ['int|false', 'socket'=>'Socket', 'buf'=>'string', 'length'=>'int', 'flags'=>'int', 'addr'=>'string', 'port='=>'int'],
+      'old' => ['int|false', 'socket'=>'resource', 'data'=>'string', 'length'=>'int', 'flags'=>'int', 'address'=>'string', 'port='=>'int'],
+      'new' => ['int|false', 'socket'=>'Socket', 'data'=>'string', 'length'=>'int', 'flags'=>'int', 'address'=>'string', 'port='=>'?int'],
     ],
     'socket_set_block' => [
       'old' => ['bool', 'socket'=>'resource'],
       'new' => ['bool', 'socket'=>'Socket'],
     ],
     'socket_set_blocking' => [
-      'old' => ['bool', 'socket'=>'resource', 'mode'=>'int'],
-      'new' => ['bool', 'socket'=>'Socket', 'mode'=>'int'],
+      'old' => ['bool', 'stream'=>'resource', 'enable'=>'bool'],
+      'new' => ['bool', 'stream'=>'Socket', 'enable'=>'bool'],
     ],
     'socket_set_nonblock' => [
       'old' => ['bool', 'socket'=>'resource'],
       'new' => ['bool', 'socket'=>'Socket'],
     ],
     'socket_set_option' => [
-      'old' => ['bool', 'socket'=>'resource', 'level'=>'int', 'optname'=>'int', 'optval'=>'int|string|array'],
-      'new' => ['bool', 'socket'=>'Socket', 'level'=>'int', 'optname'=>'int', 'optval'=>'int|string|array'],
+      'old' => ['bool', 'socket'=>'resource', 'level'=>'int', 'option'=>'int', 'value'=>'int|string|array'],
+      'new' => ['bool', 'socket'=>'Socket', 'level'=>'int', 'option'=>'int', 'value'=>'int|string|array'],
     ],
     'socket_set_timeout' => [
       'old' => ['bool', 'stream'=>'resource', 'seconds'=>'int', 'microseconds='=>'int'],
       'new' => ['bool', 'stream'=>'resource', 'seconds'=>'int', 'microseconds='=>'int'],
     ],
     'socket_setopt' => [
-      'old' => ['void', 'socket'=>'resource', 'level'=>'int', 'optname'=>'int', 'optval'=>'int|string|array'],
-      'new' => ['void', 'socket'=>'Socket', 'level'=>'int', 'optname'=>'int', 'optval'=>'int|string|array'],
+      'old' => ['bool', 'socket'=>'resource', 'level'=>'int', 'option'=>'int', 'value'=>'int|string|array'],
+      'new' => ['bool', 'socket'=>'Socket', 'level'=>'int', 'option'=>'int', 'value'=>'int|string|array'],
     ],
     'socket_shutdown' => [
-      'old' => ['bool', 'socket'=>'resource', 'how='=>'int'],
-      'new' => ['bool', 'socket'=>'Socket', 'how='=>'int'],
-    ],
-    'socket_strerror' => [
-      'old' => ['string', 'errno'=>'int'],
-      'new' => ['string', 'errno'=>'int'],
+      'old' => ['bool', 'socket'=>'resource', 'mode='=>'int'],
+      'new' => ['bool', 'socket'=>'Socket', 'mode='=>'int'],
     ],
     'socket_write' => [
       'old' => ['int|false', 'socket'=>'resource', 'data'=>'string', 'length='=>'int'],
@@ -2181,6 +2437,10 @@ return [
       'old' => ['string|false', 'string'=>'string', 'offset'=>'int', 'length='=>'int'],
       'new' => ['string', 'string'=>'string', 'offset'=>'int', 'length='=>'?int'],
     ],
+    'substr_replace' => [
+      'old' => ['string|string[]', 'string'=>'string|string[]', 'replace'=>'string|string[]', 'offset'=>'int|int[]', 'length='=>'int|int[]'],
+      'new' => ['string|string[]', 'string'=>'string|string[]', 'replace'=>'string|string[]', 'offset'=>'int|int[]', 'length='=>'int|int[]|null'],
+    ],
     'tidy_parse_file' => [
       'old' => ['tidy', 'filename'=>'string', 'config='=>'array|string', 'encoding='=>'string', 'useIncludePath='=>'bool'],
       'new' => ['tidy', 'filename'=>'string', 'config='=>'array|string|null', 'encoding='=>'?string', 'useIncludePath='=>'bool'],
@@ -2262,44 +2522,44 @@ return [
       'new' => ['bool', 'parser'=>'XMLParser', 'option'=>'int', 'value'=>'mixed'],
     ],
     'xml_set_character_data_handler' => [
-      'old' => ['bool', 'parser'=>'resource', 'handler'=>'callable'],
-      'new' => ['bool', 'parser'=>'XMLParser', 'handler'=>'callable'],
+      'old' => ['true', 'parser'=>'resource', 'handler'=>'callable'],
+      'new' => ['true', 'parser'=>'XMLParser', 'handler'=>'callable'],
     ],
     'xml_set_default_handler' => [
-      'old' => ['bool', 'parser'=>'resource', 'handler'=>'callable'],
-      'new' => ['bool', 'parser'=>'XMLParser', 'handler'=>'callable'],
+      'old' => ['true', 'parser'=>'resource', 'handler'=>'callable'],
+      'new' => ['true', 'parser'=>'XMLParser', 'handler'=>'callable'],
     ],
     'xml_set_element_handler' => [
-      'old' => ['bool', 'parser'=>'resource', 'start_handler'=>'callable', 'end_handler'=>'callable'],
-      'new' => ['bool', 'parser'=>'XMLParser', 'start_handler'=>'callable', 'end_handler'=>'callable'],
+      'old' => ['true', 'parser'=>'resource', 'start_handler'=>'callable', 'end_handler'=>'callable'],
+      'new' => ['true', 'parser'=>'XMLParser', 'start_handler'=>'callable', 'end_handler'=>'callable'],
     ],
     'xml_set_end_namespace_decl_handler' => [
-      'old' => ['bool', 'parser'=>'resource', 'handler'=>'callable'],
-      'new' => ['bool', 'parser'=>'XMLParser', 'handler'=>'callable'],
+      'old' => ['true', 'parser'=>'resource', 'handler'=>'callable'],
+      'new' => ['true', 'parser'=>'XMLParser', 'handler'=>'callable'],
     ],
     'xml_set_external_entity_ref_handler' => [
-      'old' => ['bool', 'parser'=>'resource', 'handler'=>'callable'],
-      'new' => ['bool', 'parser'=>'XMLParser', 'handler'=>'callable'],
+      'old' => ['true', 'parser'=>'resource', 'handler'=>'callable'],
+      'new' => ['true', 'parser'=>'XMLParser', 'handler'=>'callable'],
     ],
     'xml_set_notation_decl_handler' => [
-      'old' => ['bool', 'parser'=>'resource', 'handler'=>'callable'],
-      'new' => ['bool', 'parser'=>'XMLParser', 'handler'=>'callable'],
+      'old' => ['true', 'parser'=>'resource', 'handler'=>'callable'],
+      'new' => ['true', 'parser'=>'XMLParser', 'handler'=>'callable'],
     ],
     'xml_set_object' => [
-      'old' => ['bool', 'parser'=>'resource', 'object'=>'object'],
-      'new' => ['bool', 'parser'=>'XMLParser', 'object'=>'object'],
+      'old' => ['true', 'parser'=>'resource', 'object'=>'object'],
+      'new' => ['true', 'parser'=>'XMLParser', 'object'=>'object'],
     ],
     'xml_set_processing_instruction_handler' => [
-      'old' => ['bool', 'parser'=>'resource', 'handler'=>'callable'],
-      'new' => ['bool', 'parser'=>'XMLParser', 'handler'=>'callable'],
+      'old' => ['true', 'parser'=>'resource', 'handler'=>'callable'],
+      'new' => ['true', 'parser'=>'XMLParser', 'handler'=>'callable'],
     ],
     'xml_set_start_namespace_decl_handler' => [
-      'old' => ['bool', 'parser'=>'resource', 'handler'=>'callable'],
-      'new' => ['bool', 'parser'=>'XMLParser', 'handler'=>'callable'],
+      'old' => ['true', 'parser'=>'resource', 'handler'=>'callable'],
+      'new' => ['true', 'parser'=>'XMLParser', 'handler'=>'callable'],
     ],
     'xml_set_unparsed_entity_decl_handler' => [
-      'old' => ['bool', 'parser'=>'resource', 'handler'=>'callable'],
-      'new' => ['bool', 'parser'=>'XMLParser', 'handler'=>'callable'],
+      'old' => ['true', 'parser'=>'resource', 'handler'=>'callable'],
+      'new' => ['true', 'parser'=>'XMLParser', 'handler'=>'callable'],
     ],
     'xmlwriter_end_attribute' => [
       'old' => ['bool', 'writer'=>'resource'],
@@ -2520,5 +2780,19 @@ return [
     'SimpleXMLIterator::hasChildren' => ['bool'],
     'SimpleXMLIterator::getChildren' => ['?SimpleXMLIterator'],
     'SplTempFileObject::fgetss' => ['string', 'allowable_tags='=>'string'],
+    'xmlrpc_decode' => ['mixed', 'xml'=>'string', 'encoding='=>'string'],
+    'xmlrpc_decode_request' => ['?array', 'xml'=>'string', '&w_method'=>'string', 'encoding='=>'string'],
+    'xmlrpc_encode' => ['string', 'value'=>'mixed'],
+    'xmlrpc_encode_request' => ['string', 'method'=>'string', 'params'=>'mixed', 'output_options='=>'array'],
+    'xmlrpc_get_type' => ['string', 'value'=>'mixed'],
+    'xmlrpc_is_fault' => ['bool', 'arg'=>'array'],
+    'xmlrpc_parse_method_descriptions' => ['array', 'xml'=>'string'],
+    'xmlrpc_server_add_introspection_data' => ['int', 'server'=>'resource', 'desc'=>'array'],
+    'xmlrpc_server_call_method' => ['string', 'server'=>'resource', 'xml'=>'string', 'user_data'=>'mixed', 'output_options='=>'array'],
+    'xmlrpc_server_create' => ['resource'],
+    'xmlrpc_server_destroy' => ['int', 'server'=>'resource'],
+    'xmlrpc_server_register_introspection_callback' => ['bool', 'server'=>'resource', 'function'=>'string'],
+    'xmlrpc_server_register_method' => ['bool', 'server'=>'resource', 'method_name'=>'string', 'function'=>'string'],
+    'xmlrpc_set_type' => ['bool', '&rw_value'=>'string|DateTime', 'type'=>'string'],
   ],
 ];

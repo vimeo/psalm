@@ -666,6 +666,13 @@ class UnusedCodeTest extends TestCase
                         return $c;
                     }',
             ],
+            'setRawCookieImpure' => [
+                'code' => '<?php
+                    setrawcookie(
+                        "name",
+                        "value",
+                    );',
+            ],
             'usedUsort' => [
                 'code' => '<?php
                     /** @param string[] $arr */
@@ -1757,7 +1764,7 @@ class UnusedCodeTest extends TestCase
             'exitInlineHtml' => [
                 'code' => '<?php
                     exit(0);
-                    ?'.'>foo
+                    ?' . '>foo
                 ',
                 'error_message' => 'UnevaluatedCode',
             ],
@@ -1835,6 +1842,16 @@ class UnusedCodeTest extends TestCase
                     }
                     PHP,
                 'error_message' => 'PossiblyUnusedParam',
+            ],
+            'unused param tag' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param string $param
+                     */
+                    function f(): void {}
+                    PHP,
+                'error_message' => 'UnusedDocblockParam',
             ],
         ];
     }

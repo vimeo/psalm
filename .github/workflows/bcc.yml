@@ -20,8 +20,8 @@ jobs:
       - name: Get Composer Cache Directories
         id: composer-cache
         run: |
-          echo "::set-output name=files_cache::$(composer config cache-files-dir)"
-          echo "::set-output name=vcs_cache::$(composer config cache-vcs-dir)"
+          echo "files_cache=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+          echo "vcs_cache=$(composer config cache-vcs-dir)" >> $GITHUB_OUTPUT
 
       - name: Cache composer cache
         uses: actions/cache@v3

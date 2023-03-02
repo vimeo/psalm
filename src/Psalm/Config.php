@@ -66,7 +66,6 @@ use function extension_loaded;
 use function fclose;
 use function file_exists;
 use function file_get_contents;
-use function filetype;
 use function flock;
 use function fopen;
 use function get_class;
@@ -2243,9 +2242,8 @@ class Config
             $is_stub_already_loaded = in_array($ext_stub_path, $this->internal_stubs, true);
             if (! $is_stub_already_loaded && extension_loaded($ext_name)) {
                 $this->internal_stubs[] = $ext_stub_path;
-                $progress->write("Deprecation: Psalm stubs for ext-$ext_name loaded using legacy way."
-                    . " Instead, please declare ext-$ext_name as dependency in composer.json"
-                    . " or use <enableExtensions> and/or <disableExtensions> directives in Psalm config.\n");
+                $this->config_warnings[] = "Psalm 6 will not automatically load stubs for ext-$ext_name."
+                    . " You should explicitly enable or disable this ext in composer.json or Psalm config.";
             }
         }
 
@@ -2503,11 +2501,12 @@ class Config
                 $full_path = $dir . '/' . $object;
 
                 // if it was deleted in the meantime/race condition with other psalm process
+                clearstatcache(true, $full_path);
                 if (!file_exists($full_path)) {
                     continue;
                 }
 
-                if (filetype($full_path) === 'dir') {
+                if (is_dir($full_path)) {
                     self::removeCacheDirectory($full_path);
                 } else {
                     $fp = fopen($full_path, 'c');

@@ -39,7 +39,7 @@ trait ValidCodeAnalysisTestTrait
     public function testValidCode(
         string $code,
         array $assertions = [],
-        $ignored_issues = [],
+        array $ignored_issues = [],
         string $php_version = '7.3'
     ): void {
         $test_name = $this->getTestName();
@@ -68,6 +68,7 @@ trait ValidCodeAnalysisTestTrait
         $this->project_analyzer->setPhpVersion($php_version, 'tests');
 
         $codebase = $this->project_analyzer->getCodebase();
+        $codebase->enterServerMode();
         $codebase->config->visitPreloadedStubFiles($codebase);
 
         $file_path = self::$src_dir_path . 'somefile.php';

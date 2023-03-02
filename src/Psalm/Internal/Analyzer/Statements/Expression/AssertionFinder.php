@@ -444,8 +444,6 @@ class AssertionFinder
             );
         }
 
-
-
         $count = null;
         $count_equality_position = self::hasCountEqualityCheck($conditional, $count);
 

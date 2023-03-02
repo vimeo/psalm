@@ -263,7 +263,7 @@ class MethodCallTest extends TestCase
                     $b = (new DateTimeImmutable())->modify("+3 hours");',
                 'assertions' => [
                     '$yesterday' => 'MyDate',
-                    '$b' => 'DateTimeImmutable&static',
+                    '$b' => 'DateTimeImmutable',
                 ],
             ],
             'magicCall' => [
@@ -1561,6 +1561,14 @@ class MethodCallTest extends TestCase
                         }
                     }',
                 'error_message' => 'UndefinedMethod',
+            ],
+            'incorrectCallableParamDefault' => [
+                'code' => '<?php
+                    class A {
+                        public function foo(callable $_a = "strlen"): void {}
+                    }
+                ',
+                'error_message' => 'InvalidParamDefault',
             ],
         ];
     }

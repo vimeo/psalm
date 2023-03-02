@@ -1202,6 +1202,35 @@ class ClassTest extends TestCase
                 ',
                 'error_message' => 'MixedMethodCall',
             ],
+            'forbiddenThrowableImplementation' => [
+                'code' => '<?php
+                    class C implements Throwable {}
+                ',
+                'error_message' => 'InvalidInterfaceImplementation',
+                'ignored_issues' => [],
+                'php_version' => '7.0',
+            ],
+            'directConstructorCall' => [
+                'code' => '<?php
+                    class A {
+                        public function __construct() {}
+                    }
+                    $a = new A;
+                    $a->__construct();
+                ',
+                'error_message' => 'DirectConstructorCall',
+            ],
+            'directConstructorCallOnThis' => [
+                'code' => '<?php
+                    class A {
+                        public function __construct() {}
+                        public function f(): void { $this->__construct(); }
+                    }
+                    $a = new A;
+                    $a->f();
+                ',
+                'error_message' => 'DirectConstructorCall',
+            ],
         ];
     }
 }

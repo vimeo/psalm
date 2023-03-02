@@ -13,6 +13,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Issue\DirectConstructorCall;
 use Psalm\Issue\InvalidMethodCall;
 use Psalm\Issue\InvalidScope;
 use Psalm\Issue\NullReference;
@@ -89,6 +90,18 @@ class MethodCallAnalyzer extends CallAnalyzer
                 )) {
                     return false;
                 }
+            }
+
+            if ($stmt->name instanceof PhpParser\Node\Identifier
+                && strtolower($stmt->name->name) === '__construct'
+            ) {
+                IssueBuffer::maybeAdd(
+                    new DirectConstructorCall(
+                        'Constructors should not be called directly',
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
             }
         }
 
