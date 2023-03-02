@@ -36,8 +36,11 @@ class ParserCacheProvider extends InternalParserCacheProvider
     {
     }
 
-    public function loadStatementsFromCache(string $file_path, int $file_modified_time, string $file_content_hash): ?array
-    {
+    public function loadStatementsFromCache(
+        string $file_path,
+        int $file_modified_time,
+        string $file_content_hash
+    ): ?array {
         if (isset($this->statements_cache[$file_path])
             && $this->statements_cache_time[$file_path] >= $file_modified_time
             && $this->file_content_hash[$file_path] === $file_content_hash
@@ -63,8 +66,12 @@ class ParserCacheProvider extends InternalParserCacheProvider
     /**
      * @param  list<PhpParser\Node\Stmt>        $stmts
      */
-    public function saveStatementsToCache(string $file_path, string $file_content_hash, array $stmts, bool $touch_only): void
-    {
+    public function saveStatementsToCache(
+        string $file_path,
+        string $file_content_hash,
+        array $stmts,
+        bool $touch_only
+    ): void {
         $this->statements_cache[$file_path] = $stmts;
         $this->statements_cache_time[$file_path] = microtime(true);
         $this->file_content_hash[$file_path] = $file_content_hash;
