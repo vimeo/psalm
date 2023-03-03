@@ -34,6 +34,7 @@ use Psalm\Issue\DuplicateParam;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\MissingDocblockType;
 use Psalm\Issue\ParseError;
+use Psalm\Issue\PrivateFinalMethod;
 use Psalm\IssueBuffer;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
@@ -1101,7 +1102,24 @@ class FunctionLikeNodeScanner
             $storage->is_static = $stmt->isStatic();
             $storage->abstract = $stmt->isAbstract();
 
-            $storage->final = $classlike_storage->final || $stmt->isFinal();
+            if ($stmt->isPrivate() && $stmt->isFinal() && $method_name_lc !== '__construct') {
+                IssueBuffer::maybeAdd(
+                    new PrivateFinalMethod(
+                        'Private methods cannot be final',
+                        new CodeLocation($this->file_scanner, $stmt, null, true),
+                        (string) $method_id,
+                    ),
+                );
+                if ($this->codebase->analysis_php_version_id >= 8_00_00) {
+                    // ignore `final` on the method as that's what PHP does
+                    $storage->final = $classlike_storage->final;
+                } else {
+                    $storage->final = true;
+                }
+            } else {
+                $storage->final = $classlike_storage->final || $stmt->isFinal();
+            }
+
             $storage->final_from_docblock = $classlike_storage->final_from_docblock;
 
             if ($stmt->isPrivate()) {
