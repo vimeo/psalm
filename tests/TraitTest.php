@@ -2,7 +2,6 @@
 
 namespace Psalm\Tests;
 
-use Psalm\Issue\ConstantDeclarationInTrait;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
@@ -1233,7 +1232,7 @@ class TraitTest extends TestCase
                     <?php
                     trait A { const B = 0; }
                     PHP,
-                'error_message' => ConstantDeclarationInTrait::getIssueType(),
+                'error_message' => 'ConstantDeclarationInTrait',
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
