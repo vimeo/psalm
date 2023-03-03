@@ -263,6 +263,9 @@ class AttributeTest extends TestCase
                     class Foo
                     {}
                 ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
             ],
             'sensitiveParameter' => [
                 'code' => '<?php
@@ -277,6 +280,9 @@ class AttributeTest extends TestCase
                         ) {}
                     }
                 ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
             ],
             'createObjectAsAttributeArg' => [
                 'code' => '<?php
@@ -801,6 +807,8 @@ class AttributeTest extends TestCase
                     }
                 ',
                 'error_message' => 'Attribute SensitiveParameter cannot be used on a method',
+                'ignored_issues' => [],
+                'php_version' => '8.2',
             ],
         ];
     }
