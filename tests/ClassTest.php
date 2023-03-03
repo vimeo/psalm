@@ -1248,6 +1248,51 @@ class ClassTest extends TestCase
                     PHP,
                 'error_message' => 'PrivateFinalMethod',
             ],
+            'readonlyClass' => [
+                'code' => <<<'PHP'
+                    <?php
+                    readonly class Foo {
+                        public int $a = 22;
+                    }
+                    $foo = new Foo;
+                    $foo->a = 33;
+                    PHP,
+                'error_message' => 'InaccessibleProperty',
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'readonlyClassRequiresTypedProperties' => [
+                'code' => <<<'PHP'
+                    <?php
+                    readonly class Foo {
+                        /** @var int */
+                        public $a = 22;
+                    }
+                    PHP,
+                'error_message' => 'MissingPropertyType',
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'readonlyClassCannotHaveDynamicProperties' => [
+                'code' => <<<'PHP'
+                    <?php
+                    #[AllowDynamicProperties]
+                    readonly class Foo {}
+                    PHP,
+                'error_message' => 'InvalidAttribute',
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'readonlyClassesCannotBeExtendedByNonReadonlyOnes' => [
+                'code' => <<<'PHP'
+                    <?php
+                    readonly class Foo {}
+                    class Bar extends Foo {}
+                    PHP,
+                'error_message' => 'InvalidExtendClass',
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
         ];
     }
 }

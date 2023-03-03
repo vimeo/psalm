@@ -470,6 +470,8 @@ final class ClassLikeStorage implements HasAttributesInterface
 
     public bool $public_api = false;
 
+    public bool $readonly = false;
+
     public function __construct(string $name)
     {
         $this->name = $name;
