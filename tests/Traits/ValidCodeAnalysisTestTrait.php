@@ -55,6 +55,11 @@ trait ValidCodeAnalysisTestTrait
             $this->markTestSkipped('Skipped due to a bug.');
         }
 
+        // sanity check - do we have a PHP tag?
+        if (strpos($code, '<?php') === false) {
+            $this->fail('Test case must have a <?php tag');
+        }
+
         foreach ($ignored_issues as $issue_name) {
             Config::getInstance()->setCustomErrorLevel($issue_name, Config::REPORT_SUPPRESS);
         }
