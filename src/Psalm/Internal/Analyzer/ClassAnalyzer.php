@@ -2360,6 +2360,18 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 );
             }
 
+            if ($parent_class_storage->readonly && !$storage->readonly) {
+                IssueBuffer::maybeAdd(
+                    new InvalidExtendClass(
+                        'Non-readonly class ' . $fq_class_name . ' may not inherit from '
+                        . 'readonly class ' . $parent_fq_class_name,
+                        $code_location,
+                        $fq_class_name,
+                    ),
+                    $storage->suppressed_issues + $this->getSuppressedIssues(),
+                );
+            }
+
             if ($parent_class_storage->deprecated) {
                 IssueBuffer::maybeAdd(
                     new DeprecatedClass(
