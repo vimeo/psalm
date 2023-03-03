@@ -51,6 +51,11 @@ trait InvalidCodeAnalysisTestTrait
             $this->markTestSkipped('Skipped due to a bug.');
         }
 
+        // sanity check - do we have a PHP tag?
+        if (strpos($code, '<?php') === false) {
+            $this->fail('Test case must have a <?php tag');
+        }
+
         if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
             $code = str_replace("\n", "\r\n", $code);
         }
