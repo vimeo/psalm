@@ -3,6 +3,7 @@
 namespace Psalm\Internal\Cli;
 
 use LanguageServerProtocol\MessageType;
+use Psalm\Config;
 use Psalm\Internal\CliUtils;
 use Psalm\Internal\ErrorHandler;
 use Psalm\Internal\Fork\PsalmRestarter;
@@ -87,6 +88,7 @@ final class LanguageServer
             'enable-provide-signature-help::',
             'enable-provide-definition::',
             'show-diagnostic-warnings::',
+            'in-memory::',
             'disable-xdebug::',
             'on-change-debounce-ms::',
             'use-extended-diagnostic-codes',
@@ -216,6 +218,9 @@ final class LanguageServer
                 --disable-xdebug[=BOOL]
                     Disable xdebug for performance reasons. Enable for debugging
 
+                --in-memory[=BOOL]
+                    Use in-memory mode. Default is false. Experimental.
+
                 --verbose
                     Will send log messages to the client with information.
 
@@ -275,12 +280,12 @@ final class LanguageServer
             'blackfire',
         ]);
 
-        $diableXdebug = !isset($options['disable-xdebug'])
+        $disableXdebug = !isset($options['disable-xdebug'])
             || !is_string($options['disable-xdebug'])
             || strtolower($options['disable-xdebug']) !== 'false';
 
         // If Xdebug is enabled, restart without it based on cli
-        if ($diableXdebug) {
+        if ($disableXdebug) {
             $ini_handler->check();
         }
 
@@ -310,8 +315,19 @@ final class LanguageServer
 
         $config->setServerMode();
 
-        //Theres no cache in LSP land
-        $config->cache_directory = null;
+        $inMemory = isset($options['in-memory']) &&
+            is_string($options['in-memory']) &&
+            strtolower($options['in-memory']) === 'true';
+
+        if ($inMemory) {
+            $config->cache_directory = null;
+        } else {
+            $cache_directory = $config->getCacheDirectory();
+
+            if ($cache_directory !== null) {
+                Config::removeCacheDirectory($cache_directory);
+            }
+        }
 
         if (isset($options['use-baseline']) && is_string($options['use-baseline'])) {
             $clientConfiguration->baseline = $options['use-baseline'];
@@ -378,6 +394,6 @@ final class LanguageServer
         $clientConfiguration->TCPServerAddress = $options['tcp'] ?? null;
         $clientConfiguration->TCPServerMode = isset($options['tcp-server']);
 
-        LanguageServerLanguageServer::run($config, $clientConfiguration);
+        LanguageServerLanguageServer::run($config, $clientConfiguration, $current_dir, $inMemory);
     }
 }

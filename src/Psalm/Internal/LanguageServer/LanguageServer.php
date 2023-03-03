@@ -40,14 +40,20 @@ use Psalm\Config;
 use Psalm\ErrorBaseline;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
-use Psalm\Internal\LanguageServer\Provider\ClassLikeStorageCacheProvider;
-use Psalm\Internal\LanguageServer\Provider\FileReferenceCacheProvider;
-use Psalm\Internal\LanguageServer\Provider\FileStorageCacheProvider;
-use Psalm\Internal\LanguageServer\Provider\ParserCacheProvider;
-use Psalm\Internal\LanguageServer\Provider\ProjectCacheProvider;
+use Psalm\Internal\Composer;
+use Psalm\Internal\LanguageServer\Provider\ClassLikeStorageCacheProvider as InMemoryClassLikeStorageCacheProvider;
+use Psalm\Internal\LanguageServer\Provider\FileReferenceCacheProvider as InMemoryFileReferenceCacheProvider;
+use Psalm\Internal\LanguageServer\Provider\FileStorageCacheProvider as InMemoryFileStorageCacheProvider;
+use Psalm\Internal\LanguageServer\Provider\ParserCacheProvider as InMemoryParserCacheProvider;
+use Psalm\Internal\LanguageServer\Provider\ProjectCacheProvider as InMemoryProjectCacheProvider;
 use Psalm\Internal\LanguageServer\Server\TextDocument as ServerTextDocument;
 use Psalm\Internal\LanguageServer\Server\Workspace as ServerWorkspace;
+use Psalm\Internal\Provider\ClassLikeStorageCacheProvider;
 use Psalm\Internal\Provider\FileProvider;
+use Psalm\Internal\Provider\FileReferenceCacheProvider;
+use Psalm\Internal\Provider\FileStorageCacheProvider;
+use Psalm\Internal\Provider\ParserCacheProvider;
+use Psalm\Internal\Provider\ProjectCacheProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\IssueBuffer;
 use Throwable;
@@ -240,18 +246,33 @@ class LanguageServer extends Dispatcher
     /**
      * Start the Server
      */
-    public static function run(Config $config, ClientConfiguration $clientConfiguration): void
-    {
+    public static function run(
+        Config $config,
+        ClientConfiguration $clientConfiguration,
+        string $base_dir,
+        bool $inMemory = false
+    ): void {
         $progress = new Progress();
 
-        $providers = new Providers(
-            new FileProvider,
-            new ParserCacheProvider,
-            new FileStorageCacheProvider,
-            new ClassLikeStorageCacheProvider,
-            new FileReferenceCacheProvider($config),
-            new ProjectCacheProvider,
-        );
+        if ($inMemory) {
+            $providers = new Providers(
+                new FileProvider,
+                new InMemoryParserCacheProvider,
+                new InMemoryFileStorageCacheProvider,
+                new InMemoryClassLikeStorageCacheProvider,
+                new InMemoryFileReferenceCacheProvider($config),
+                new InMemoryProjectCacheProvider,
+            );
+        } else {
+            $providers = new Providers(
+                new FileProvider,
+                new ParserCacheProvider($config),
+                new FileStorageCacheProvider($config),
+                new ClassLikeStorageCacheProvider($config),
+                new FileReferenceCacheProvider($config),
+                new ProjectCacheProvider(Composer::getLockFilePath($base_dir)),
+            );
+        }
 
         $codebase = new Codebase(
             $config,
