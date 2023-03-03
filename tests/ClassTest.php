@@ -839,6 +839,14 @@ class ClassTest extends TestCase
                     throw new $test();
                 ',
             ],
+            'privateFinalConstructorsAreAllowed' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Foo {
+                        private final function __construct() {}
+                    }
+                    PHP,
+            ],
         ];
     }
 
@@ -1230,6 +1238,15 @@ class ClassTest extends TestCase
                     $a->f();
                 ',
                 'error_message' => 'DirectConstructorCall',
+            ],
+            'privateFinalMethodsAreForbidden' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Foo {
+                        final private function baz(): void {}
+                    }
+                    PHP,
+                'error_message' => 'PrivateFinalMethod',
             ],
         ];
     }

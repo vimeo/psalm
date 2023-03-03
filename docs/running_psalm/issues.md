@@ -211,6 +211,7 @@
  - [PossiblyUnusedParam](issues/PossiblyUnusedParam.md)
  - [PossiblyUnusedProperty](issues/PossiblyUnusedProperty.md)
  - [PossiblyUnusedReturnValue](issues/PossiblyUnusedReturnValue.md)
+ - [PrivateFinalMethod](issues/PrivateFinalMethod.md)
  - [PropertyNotSetInConstructor](issues/PropertyNotSetInConstructor.md)
  - [PropertyTypeCoercion](issues/PropertyTypeCoercion.md)
  - [RawObjectIteration](issues/RawObjectIteration.md)

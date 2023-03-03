@@ -238,6 +238,7 @@ Level 5 and above allows a more non-verifiable code, and higher levels are even 
 - [MissingPropertyType](issues/MissingPropertyType.md)
 - [MissingReturnType](issues/MissingReturnType.md)
 - [NullOperand](issues/NullOperand.md)
+- [PrivateFinalMethod](issues/PrivateFinalMethod.md)
 - [PropertyNotSetInConstructor](issues/PropertyNotSetInConstructor.md)
 - [RawObjectIteration](issues/RawObjectIteration.md)
 - [RedundantConditionGivenDocblockType](issues/RedundantConditionGivenDocblockType.md)
