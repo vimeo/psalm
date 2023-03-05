@@ -945,6 +945,15 @@ class AssertionReconciler extends Reconciler
                     $redundant = false;
                     $existing_var_type->removeType($atomic_key);
                     $existing_var_type->addType(new TEnumCase($fq_enum_name, $case_name));
+                } elseif (AtomicTypeComparator::canBeIdentical(
+                    $statements_analyzer->getCodebase(),
+                    $atomic_type,
+                    $assertion_type,
+                )) {
+                    $can_be_equal = true;
+                    $redundant = $atomic_key === $assertion_type->getKey();
+                    $existing_var_type->removeType($atomic_key);
+                    $existing_var_type->addType(new TEnumCase($fq_enum_name, $case_name));
                 } elseif ($atomic_key !== $assertion_type->getKey()) {
                     $existing_var_type->removeType($atomic_key);
                     $redundant = false;

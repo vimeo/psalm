@@ -527,6 +527,21 @@ class EnumTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'reconcileCaseWithInterface' => [
+                'code' => <<<'PHP'
+                    <?php
+                    interface I {}
+                    enum E implements I { case A; }
+                    function f(I $i): void {
+                        if ($i === E::A) {
+                        } else {
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
