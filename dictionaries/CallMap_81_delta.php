@@ -66,6 +66,10 @@ return [
       'old' => ['DOMDocumentFragment|false'],
       'new' => ['DOMDocumentFragment'],
     ],
+    'DOMDocument::createTextNode' => [
+      'old' => ['DOMText|false', 'data'=>'string'],
+      'new' => ['DOMText', 'data'=>'string'],
+    ],
     'Phar::buildFromDirectory' => [
       'old' => ['array|false', 'directory'=>'string', 'pattern='=>'string'],
       'new' => ['array', 'directory'=>'string', 'pattern='=>'string'],

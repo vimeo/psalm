@@ -41,9 +41,9 @@ return [
       'old' => ['int|false'],
       'new' => ['int'],
     ],
-    'DateTime::diff' => [
-      'old' => ['DateInterval|false', 'datetime2'=>'DateTimeInterface', 'absolute='=>'bool'],
-      'new' => ['DateInterval', 'datetime2'=>'DateTimeInterface', 'absolute='=>'bool'],
+    'CURLFile::__construct' => [
+      'old' => ['void', 'filename'=>'string', 'mime_type='=>'string', 'posted_filename='=>'string'],
+      'new' => ['void', 'filename'=>'string', 'mime_type='=>'?string', 'posted_filename='=>'?string'],
     ],
     'DateTime::format' => [
       'old' => ['string|false', 'format'=>'string'],
@@ -52,10 +52,6 @@ return [
     'DateTime::getTimestamp' => [
       'old' => ['int|false'],
       'new' => ['int'],
-    ],
-    'DateTime::setTime' => [
-      'old' => ['static|false', 'hour'=>'int', 'minute'=>'int', 'second='=>'int', 'microseconds='=>'int'],
-      'new' => ['static', 'hour'=>'int', 'minute'=>'int', 'second='=>'int', 'microseconds='=>'int'],
     ],
     'DateTimeInterface::getTimestamp' => [
        'old' => ['int|false'],
@@ -92,6 +88,14 @@ return [
     'DirectoryIterator::openFile' => [
       'old' => ['SplFileObject', 'mode='=>'string', 'useIncludePath='=>'bool', 'context='=>'resource'],
       'new' => ['SplFileObject', 'mode='=>'string', 'useIncludePath='=>'bool', 'context='=>'?resource'],
+    ],
+    'DOMDocument::getElementsByTagNameNS' => [
+      'old' => ['DOMNodeList', 'namespace'=>'string', 'localName'=>'string'],
+      'new' => ['DOMNodeList', 'namespace'=>'?string', 'localName'=>'string'],
+    ],
+    'DOMImplementation::createDocument' => [
+      'old' => ['DOMDocument|false', 'namespace='=>'string', 'qualifiedName='=>'string', 'doctype='=>'DOMDocumentType'],
+      'new' => ['DOMDocument|false', 'namespace='=>'?string', 'qualifiedName='=>'string', 'doctype='=>'?DOMDocumentType'],
     ],
     'ErrorException::__construct' => [
       'old' => ['void', 'message='=>'string', 'code='=>'int', 'severity='=>'int', 'filename='=>'string', 'line='=>'int', 'previous='=>'?Throwable'],
