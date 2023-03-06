@@ -653,6 +653,14 @@ class TypeAnnotationTest extends TestCase
                     '$output===' => 'list<1|2>',
                 ],
             ],
+            'handlesTypeWhichEndsWithRoundBracket' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type Foo=(iterable<mixed>)
+                     */
+                    class A {}
+                    ',
+            ],
         ];
     }
 
