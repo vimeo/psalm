@@ -96,7 +96,7 @@ class DateTimeTest extends TestCase
                     $b = $dateTimeImmutable->modify("+1 day")->setTime(0, 0);
                     ',
                 'assertions' => [
-                    '$a' => 'DateTime|false',
+                    '$a' => 'DateTime',
                     '$b' => 'DateTimeImmutable',
                 ],
             ],
