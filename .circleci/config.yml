@@ -62,6 +62,8 @@ jobs:
           root: /home/docker/project/
           paths:
             - build/psalm.phar
+    # The resource_class feature allows configuring CPU and RAM resources for each job. Different resource classes are available for different executors. https://circleci.com/docs/2.0/configuration-reference/#resourceclass
+    resource_class: large
   test-with-real-projects:
     executor: php-81
     steps:
