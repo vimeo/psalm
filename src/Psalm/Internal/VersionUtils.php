@@ -4,7 +4,6 @@ namespace Psalm\Internal;
 
 use Composer\InstalledVersions;
 use OutOfBoundsException;
-use PackageVersions\Versions;
 use Phar;
 
 use function class_exists;
