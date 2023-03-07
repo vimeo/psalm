@@ -16,6 +16,17 @@ class TypeTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'strictNotNullCheck' => [
+                'code' => '<?php
+                    $a = 1;
+
+                    /** @psalm-suppress RedundantCondition */
+                    if ($a !== null) {
+                    }',
+                'assertions' => [
+                    '$a===' => '1',
+                ],
+            ],
             'sealArray' => [
                 'code' => '<?php
                     /** @var array */
