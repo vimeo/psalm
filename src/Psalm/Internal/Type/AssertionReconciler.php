@@ -47,6 +47,7 @@ use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TLowercaseString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonEmptyLowercaseString;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TNull;
@@ -508,6 +509,8 @@ class AssertionReconciler extends Reconciler
 
             if ($intersection_type) {
                 $new_type = $intersection_type;
+            } elseif ($key !== '$this') {
+                $new_type = new Union([new TNever()]);
             }
         }
 
