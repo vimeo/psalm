@@ -1013,6 +1013,15 @@ class BinaryOperationTest extends TestCase
                     '$b===' => 'non-falsy-string',
                 ],
             ],
+            'unaryMinusOverflows' => [
+                'code' => <<<'PHP'
+                    <?php
+                    $a = -(1 << 63);
+                    PHP,
+                'assertions' => [
+                    '$a===' => 'float(9.2233720368548E+18)',
+                ],
+            ],
         ];
     }
 
