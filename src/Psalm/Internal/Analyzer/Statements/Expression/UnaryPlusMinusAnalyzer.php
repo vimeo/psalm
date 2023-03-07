@@ -20,6 +20,8 @@ use Psalm\Type\Atomic\TString;
 use Psalm\Type\Union;
 use RuntimeException;
 
+use function is_int;
+
 /**
  * @internal
  */
@@ -51,7 +53,9 @@ class UnaryPlusMinusAnalyzer
                         continue;
                     }
                     if ($type_part instanceof TLiteralInt) {
-                        $type_part = new TLiteralInt(-$type_part->value);
+                        /** @var int|float $value */
+                        $value = -$type_part->value;
+                        $type_part = is_int($value) ? new TLiteralInt($value) : new TLiteralFloat($value);
                     } elseif ($type_part instanceof TLiteralFloat) {
                         $type_part = new TLiteralFloat(-$type_part->value);
                     } elseif ($type_part instanceof TIntRange) {
