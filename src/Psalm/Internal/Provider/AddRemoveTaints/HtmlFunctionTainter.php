@@ -47,8 +47,7 @@ class HtmlFunctionTainter implements AddTaintsInterface, RemoveTaintsInterface
             $second_arg = $item->getArgs()[1]->value ?? null;
 
             if ($second_arg === null) {
-                $php_version = $statements_analyzer->getCodebase()->config->getPhpVersion();
-                if ($php_version !== null && version_compare($php_version, '8.1', '>=')) {
+                if ($statements_analyzer->getCodebase()->analysis_php_version_id >= 8_01_00) {
                     return ['html', 'has_quotes'];
                 }
                 return ['html'];
@@ -100,8 +99,7 @@ class HtmlFunctionTainter implements AddTaintsInterface, RemoveTaintsInterface
             $second_arg = $item->getArgs()[1]->value ?? null;
 
             if ($second_arg === null) {
-                $php_version = $statements_analyzer->getCodebase()->config->getPhpVersion();
-                if ($php_version !== null && version_compare($php_version, '8.1', '>=')) {
+                if ($statements_analyzer->getCodebase()->analysis_php_version_id >= 8_01_00) {
                     return ['html', 'has_quotes'];
                 }
                 return ['html'];
