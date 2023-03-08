@@ -10,6 +10,7 @@ use Psalm\Plugin\EventHandler\RemoveTaintsInterface;
 
 use function count;
 use function strtolower;
+use function version_compare;
 
 use const ENT_QUOTES;
 
@@ -46,6 +47,10 @@ class HtmlFunctionTainter implements AddTaintsInterface, RemoveTaintsInterface
             $second_arg = $item->getArgs()[1]->value ?? null;
 
             if ($second_arg === null) {
+                $php_version = $statements_analyzer->getCodebase()->config->getPhpVersion();
+                if ($php_version !== null && version_compare($php_version, '8.1', '>=')) {
+                    return ['html', 'has_quotes'];
+                }
                 return ['html'];
             }
 
@@ -95,6 +100,10 @@ class HtmlFunctionTainter implements AddTaintsInterface, RemoveTaintsInterface
             $second_arg = $item->getArgs()[1]->value ?? null;
 
             if ($second_arg === null) {
+                $php_version = $statements_analyzer->getCodebase()->config->getPhpVersion();
+                if ($php_version !== null && version_compare($php_version, '8.1', '>=')) {
+                    return ['html', 'has_quotes'];
+                }
                 return ['html'];
             }
 
