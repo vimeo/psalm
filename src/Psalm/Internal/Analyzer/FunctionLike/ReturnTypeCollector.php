@@ -54,7 +54,7 @@ final class ReturnTypeCollector
                     $yield_types = array_merge($yield_types, self::getYieldTypeFromExpression($stmt->expr, $nodes));
                 } elseif ($stmt->expr instanceof PhpParser\Node\Scalar\String_) {
                     $return_types[] = Type::getString();
-                } elseif ($stmt->expr instanceof PhpParser\Node\Scalar\LNumber) {
+                } elseif ($stmt->expr instanceof PhpParser\Node\Scalar\Int_) {
                     $return_types[] = Type::getInt();
                 } elseif ($stmt->expr instanceof PhpParser\Node\Expr\ConstFetch) {
                     if ((string)$stmt->expr->name === 'true') {

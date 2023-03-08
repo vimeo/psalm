@@ -174,7 +174,7 @@ final class ArrayAssignmentAnalyzer
             if ($value_type instanceof TLiteralString) {
                 $key_values[] = $value_type;
             }
-        } elseif ($current_dim instanceof PhpParser\Node\Scalar\LNumber && !$root_is_string) {
+        } elseif ($current_dim instanceof PhpParser\Node\Scalar\Int_ && !$root_is_string) {
             $key_values[] = new TLiteralInt($current_dim->value);
         } elseif ($current_dim
             && ($key_type = $statements_analyzer->node_data->getType($current_dim))
@@ -1027,7 +1027,7 @@ final class ArrayAssignmentAnalyzer
             if ($value_type instanceof TLiteralString) {
                 $key_values[] = $value_type;
             }
-        } elseif ($dim instanceof PhpParser\Node\Scalar\LNumber) {
+        } elseif ($dim instanceof PhpParser\Node\Scalar\Int_) {
             $key_values[] = new TLiteralInt($dim->value);
         } else {
             $key_type = $statements_analyzer->node_data->getType($dim);
@@ -1084,12 +1084,12 @@ final class ArrayAssignmentAnalyzer
             return [$offset_type, $var_id_addition, true];
         }
 
-        if ($child_stmt->dim instanceof PhpParser\Node\Scalar\LNumber
+        if ($child_stmt->dim instanceof PhpParser\Node\Scalar\Int_
             || (($child_stmt->dim instanceof PhpParser\Node\Expr\ConstFetch
                     || $child_stmt->dim instanceof PhpParser\Node\Expr\ClassConstFetch)
                 && $child_stmt_dim_type->isSingleIntLiteral())
         ) {
-            if ($child_stmt->dim instanceof PhpParser\Node\Scalar\LNumber) {
+            if ($child_stmt->dim instanceof PhpParser\Node\Scalar\Int_) {
                 $offset_type = new TLiteralInt($child_stmt->dim->value);
             } else {
                 $offset_type = $child_stmt_dim_type->getSingleIntLiteral();

@@ -242,7 +242,7 @@ final class ArrayAnalyzer
         StatementsAnalyzer $statements_analyzer,
         Context $context,
         ArrayCreationInfo $array_creation_info,
-        PhpParser\Node\Expr\ArrayItem $item,
+        PhpParser\Node\ArrayItem $item,
         Codebase $codebase,
     ): void {
         if ($item->unpack) {
@@ -519,7 +519,7 @@ final class ArrayAnalyzer
     private static function handleUnpackedArray(
         StatementsAnalyzer $statements_analyzer,
         ArrayCreationInfo $array_creation_info,
-        PhpParser\Node\Expr\ArrayItem $item,
+        PhpParser\Node\ArrayItem $item,
         Union $unpacked_array_type,
         Codebase $codebase,
     ): void {

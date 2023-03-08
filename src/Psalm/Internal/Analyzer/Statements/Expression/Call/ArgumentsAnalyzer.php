@@ -1171,7 +1171,7 @@ final class ArgumentsAnalyzer
             || $arg->value instanceof PhpParser\Node\Expr\Array_
             || $arg->value instanceof PhpParser\Node\Expr\BinaryOp
             || $arg->value instanceof PhpParser\Node\Expr\Ternary
-            || $arg->value instanceof PhpParser\Node\Scalar\Encapsed
+            || $arg->value instanceof PhpParser\Node\Scalar\InterpolatedString
             || $arg->value instanceof PhpParser\Node\Expr\PostInc
             || $arg->value instanceof PhpParser\Node\Expr\PostDec
             || $arg->value instanceof PhpParser\Node\Expr\PreInc

@@ -1412,7 +1412,7 @@ final class AssignmentAnalyzer
                         $can_be_empty = !$assign_value_atomic_type instanceof TNonEmptyArray;
                     } elseif ($assign_value_atomic_type instanceof TKeyedArray) {
                         if (($assign_var_item->key instanceof PhpParser\Node\Scalar\String_
-                            || $assign_var_item->key instanceof PhpParser\Node\Scalar\LNumber)
+                            || $assign_var_item->key instanceof PhpParser\Node\Scalar\Int_)
                             && isset($assign_value_atomic_type->properties[$assign_var_item->key->value])
                         ) {
                             $new_assign_type =

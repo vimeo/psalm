@@ -16,7 +16,7 @@ use PhpParser\Node\Expr\BinaryOp\Smaller;
 use PhpParser\Node\Expr\BinaryOp\SmallerOrEqual;
 use PhpParser\Node\Expr\UnaryMinus;
 use PhpParser\Node\Expr\UnaryPlus;
-use PhpParser\Node\Scalar\LNumber;
+use PhpParser\Node\Scalar\Int_;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\FileSource;
@@ -1575,7 +1575,7 @@ final class AssertionFinder
         }
 
         // TODO get node type provider here somehow and check literal ints and int ranges
-        if ($compare_to instanceof PhpParser\Node\Scalar\LNumber
+        if ($compare_to instanceof PhpParser\Node\Scalar\Int_
             && $compare_to->value > (-1 * $comparison_adjustment)
         ) {
             $min_count = $compare_to->value + $comparison_adjustment;
@@ -1605,7 +1605,7 @@ final class AssertionFinder
 
         if ($left_count
             && $operator_less_than_or_equal
-            && $conditional->right instanceof PhpParser\Node\Scalar\LNumber
+            && $conditional->right instanceof PhpParser\Node\Scalar\Int_
         ) {
             $max_count = $conditional->right->value -
                 ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Smaller ? 1 : 0);
@@ -1624,7 +1624,7 @@ final class AssertionFinder
 
         if ($right_count
             && $operator_greater_than_or_equal
-            && $conditional->left instanceof PhpParser\Node\Scalar\LNumber
+            && $conditional->left instanceof PhpParser\Node\Scalar\Int_
         ) {
             $max_count = $conditional->left->value -
                 ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Greater ? 1 : 0);
@@ -1648,7 +1648,7 @@ final class AssertionFinder
             && in_array(strtolower($conditional->left->name->getFirst()), ['count', 'sizeof'])
             && $conditional->left->getArgs();
 
-        if ($left_count && $conditional->right instanceof PhpParser\Node\Scalar\LNumber) {
+        if ($left_count && $conditional->right instanceof PhpParser\Node\Scalar\Int_) {
             $count = $conditional->right->value;
 
             return self::ASSIGNMENT_TO_RIGHT;
@@ -1659,7 +1659,7 @@ final class AssertionFinder
             && in_array(strtolower($conditional->right->name->getFirst()), ['count', 'sizeof'])
             && $conditional->right->getArgs();
 
-        if ($right_count && $conditional->left instanceof PhpParser\Node\Scalar\LNumber) {
+        if ($right_count && $conditional->left instanceof PhpParser\Node\Scalar\Int_) {
             $count = $conditional->left->value;
 
             return self::ASSIGNMENT_TO_LEFT;
@@ -1685,13 +1685,13 @@ final class AssertionFinder
         ) {
             $right_assignment = true;
             $value_right = $type->getSingleIntLiteral()->value;
-        } elseif ($conditional->right instanceof LNumber) {
+        } elseif ($conditional->right instanceof Int_) {
             $right_assignment = true;
             $value_right = $conditional->right->value;
-        } elseif ($conditional->right instanceof UnaryMinus && $conditional->right->expr instanceof LNumber) {
+        } elseif ($conditional->right instanceof UnaryMinus && $conditional->right->expr instanceof Int_) {
             $right_assignment = true;
             $value_right = -$conditional->right->expr->value;
-        } elseif ($conditional->right instanceof UnaryPlus && $conditional->right->expr instanceof LNumber) {
+        } elseif ($conditional->right instanceof UnaryPlus && $conditional->right->expr instanceof Int_) {
             $right_assignment = true;
             $value_right = $conditional->right->expr->value;
         }
@@ -1709,13 +1709,13 @@ final class AssertionFinder
         ) {
             $left_assignment = true;
             $value_left = $type->getSingleIntLiteral()->value;
-        } elseif ($conditional->left instanceof LNumber) {
+        } elseif ($conditional->left instanceof Int_) {
             $left_assignment = true;
             $value_left = $conditional->left->value;
-        } elseif ($conditional->left instanceof UnaryMinus && $conditional->left->expr instanceof LNumber) {
+        } elseif ($conditional->left instanceof UnaryMinus && $conditional->left->expr instanceof Int_) {
             $left_assignment = true;
             $value_left = -$conditional->left->expr->value;
-        } elseif ($conditional->left instanceof UnaryPlus && $conditional->left->expr instanceof LNumber) {
+        } elseif ($conditional->left instanceof UnaryPlus && $conditional->left->expr instanceof Int_) {
             $left_assignment = true;
             $value_left = $conditional->left->expr->value;
         }
@@ -1745,13 +1745,13 @@ final class AssertionFinder
         ) {
             $right_assignment = true;
             $value_right = $type->getSingleIntLiteral()->value;
-        } elseif ($conditional->right instanceof LNumber) {
+        } elseif ($conditional->right instanceof Int_) {
             $right_assignment = true;
             $value_right = $conditional->right->value;
-        } elseif ($conditional->right instanceof UnaryMinus && $conditional->right->expr instanceof LNumber) {
+        } elseif ($conditional->right instanceof UnaryMinus && $conditional->right->expr instanceof Int_) {
             $right_assignment = true;
             $value_right = -$conditional->right->expr->value;
-        } elseif ($conditional->right instanceof UnaryPlus && $conditional->right->expr instanceof LNumber) {
+        } elseif ($conditional->right instanceof UnaryPlus && $conditional->right->expr instanceof Int_) {
             $right_assignment = true;
             $value_right = $conditional->right->expr->value;
         }
@@ -1769,13 +1769,13 @@ final class AssertionFinder
         ) {
             $left_assignment = true;
             $value_left = $type->getSingleIntLiteral()->value;
-        } elseif ($conditional->left instanceof LNumber) {
+        } elseif ($conditional->left instanceof Int_) {
             $left_assignment = true;
             $value_left = $conditional->left->value;
-        } elseif ($conditional->left instanceof UnaryMinus && $conditional->left->expr instanceof LNumber) {
+        } elseif ($conditional->left instanceof UnaryMinus && $conditional->left->expr instanceof Int_) {
             $left_assignment = true;
             $value_left = -$conditional->left->expr->value;
-        } elseif ($conditional->left instanceof UnaryPlus && $conditional->left->expr instanceof LNumber) {
+        } elseif ($conditional->left instanceof UnaryPlus && $conditional->left->expr instanceof Int_) {
             $left_assignment = true;
             $value_left = $conditional->left->expr->value;
         }
@@ -1799,7 +1799,7 @@ final class AssertionFinder
             && $conditional->left->name instanceof PhpParser\Node\Name
             && in_array(strtolower($conditional->left->name->getFirst()), ['count', 'sizeof']);
 
-        $right_number = $conditional->right instanceof PhpParser\Node\Scalar\LNumber
+        $right_number = $conditional->right instanceof PhpParser\Node\Scalar\Int_
             && $conditional->right->value === (
                 $conditional instanceof PhpParser\Node\Expr\BinaryOp\Greater ? 0 : 1);
 
@@ -3775,7 +3775,7 @@ final class AssertionFinder
 
                     if ($first_arg->value instanceof PhpParser\Node\Scalar\String_) {
                         $first_var_name = '\'' . $first_arg->value->value . '\'';
-                    } elseif ($first_arg->value instanceof PhpParser\Node\Scalar\LNumber) {
+                    } elseif ($first_arg->value instanceof PhpParser\Node\Scalar\Int_) {
                         $first_var_name = (string)$first_arg->value->value;
                     }
                 }

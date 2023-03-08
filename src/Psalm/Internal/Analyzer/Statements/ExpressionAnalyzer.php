@@ -50,7 +50,7 @@ use Psalm\Issue\UnrecognizedExpression;
 use Psalm\Issue\UnsupportedReferenceUsage;
 use Psalm\IssueBuffer;
 use Psalm\Node\Expr\VirtualFuncCall;
-use Psalm\Node\Scalar\VirtualEncapsed;
+use Psalm\Node\Scalar\VirtualInterpolatedString;
 use Psalm\Node\VirtualArg;
 use Psalm\Node\VirtualName;
 use Psalm\Plugin\EventHandler\Event\AfterExpressionAnalysisEvent;
@@ -191,7 +191,7 @@ final class ExpressionAnalyzer
             return true;
         }
 
-        if ($stmt instanceof PhpParser\Node\Scalar\EncapsedStringPart) {
+        if ($stmt instanceof PhpParser\Node\InterpolatedStringPart) {
             return true;
         }
 
@@ -201,13 +201,13 @@ final class ExpressionAnalyzer
             return true;
         }
 
-        if ($stmt instanceof PhpParser\Node\Scalar\LNumber) {
+        if ($stmt instanceof PhpParser\Node\Scalar\Int_) {
             $statements_analyzer->node_data->setType($stmt, Type::getInt(false, $stmt->value));
 
             return true;
         }
 
-        if ($stmt instanceof PhpParser\Node\Scalar\DNumber) {
+        if ($stmt instanceof PhpParser\Node\Scalar\Float_) {
             $statements_analyzer->node_data->setType($stmt, Type::getFloat($stmt->value));
 
             return true;
@@ -276,7 +276,7 @@ final class ExpressionAnalyzer
             return ArrayAnalyzer::analyze($statements_analyzer, $stmt, $context);
         }
 
-        if ($stmt instanceof PhpParser\Node\Scalar\Encapsed) {
+        if ($stmt instanceof PhpParser\Node\Scalar\InterpolatedString) {
             return EncapsulatedStringAnalyzer::analyze($statements_analyzer, $stmt, $context);
         }
 
@@ -376,7 +376,7 @@ final class ExpressionAnalyzer
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\ShellExec) {
-            $concat = new VirtualEncapsed($stmt->parts, $stmt->getAttributes());
+            $concat = new VirtualInterpolatedString($stmt->parts, $stmt->getAttributes());
             $virtual_call = new VirtualFuncCall(new VirtualName(['shell_exec']), [
                 new VirtualArg($concat),
             ], $stmt->getAttributes());

@@ -15,7 +15,6 @@ use Psalm\Issue\UnhandledMatchCondition;
 use Psalm\IssueBuffer;
 use Psalm\Node\Expr\BinaryOp\VirtualIdentical;
 use Psalm\Node\Expr\VirtualArray;
-use Psalm\Node\Expr\VirtualArrayItem;
 use Psalm\Node\Expr\VirtualConstFetch;
 use Psalm\Node\Expr\VirtualFuncCall;
 use Psalm\Node\Expr\VirtualNew;
@@ -24,6 +23,7 @@ use Psalm\Node\Expr\VirtualThrow;
 use Psalm\Node\Expr\VirtualVariable;
 use Psalm\Node\Name\VirtualFullyQualified;
 use Psalm\Node\VirtualArg;
+use Psalm\Node\VirtualArrayItem;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TEnumCase;
@@ -333,7 +333,7 @@ final class MatchAnalyzer
         }
 
         $array_items = array_map(
-            static fn(PhpParser\Node\Expr $cond): PhpParser\Node\Expr\ArrayItem =>
+            static fn(PhpParser\Node\Expr $cond): PhpParser\Node\ArrayItem =>
                 new VirtualArrayItem($cond, null, false, $cond->getAttributes()),
             $conds,
         );

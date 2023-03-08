@@ -18,9 +18,9 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Node\Expr\VirtualArray;
-use Psalm\Node\Expr\VirtualArrayItem;
 use Psalm\Node\Scalar\VirtualString;
 use Psalm\Node\VirtualArg;
+use Psalm\Node\VirtualArrayItem;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
@@ -203,7 +203,7 @@ final class MissingMethodCallHandler
         $result->existent_method_ids[$method_id->__toString()] = true;
 
         $array_values = array_map(
-            static fn(PhpParser\Node\Arg $arg): PhpParser\Node\Expr\ArrayItem => new VirtualArrayItem(
+            static fn(PhpParser\Node\Arg $arg): PhpParser\Node\ArrayItem => new VirtualArrayItem(
                 $arg->value,
                 null,
                 false,

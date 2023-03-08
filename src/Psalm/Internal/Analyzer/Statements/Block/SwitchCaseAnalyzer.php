@@ -26,15 +26,15 @@ use Psalm\Node\Expr\BinaryOp\VirtualBooleanOr;
 use Psalm\Node\Expr\BinaryOp\VirtualEqual;
 use Psalm\Node\Expr\BinaryOp\VirtualIdentical;
 use Psalm\Node\Expr\VirtualArray;
-use Psalm\Node\Expr\VirtualArrayItem;
 use Psalm\Node\Expr\VirtualBooleanNot;
 use Psalm\Node\Expr\VirtualConstFetch;
 use Psalm\Node\Expr\VirtualFuncCall;
 use Psalm\Node\Expr\VirtualVariable;
 use Psalm\Node\Name\VirtualFullyQualified;
-use Psalm\Node\Scalar\VirtualLNumber;
+use Psalm\Node\Scalar\VirtualInt;
 use Psalm\Node\Stmt\VirtualIf;
 use Psalm\Node\VirtualArg;
+use Psalm\Node\VirtualArrayItem;
 use Psalm\Node\VirtualName;
 use Psalm\Type;
 use Psalm\Type\Atomic\TDependentGetClass;
@@ -249,8 +249,8 @@ final class SwitchCaseAnalyzer
                 $case_equality_expr = new VirtualFuncCall(
                     new VirtualFullyQualified(['rand']),
                     [
-                        new VirtualArg(new VirtualLNumber(0)),
-                        new VirtualArg(new VirtualLNumber(1)),
+                        new VirtualArg(new VirtualInt(0)),
+                        new VirtualArg(new VirtualInt(1)),
                     ],
                     $case->getAttributes(),
                 );
@@ -294,8 +294,8 @@ final class SwitchCaseAnalyzer
                 $case_or_default_equality_expr = new VirtualFuncCall(
                     new VirtualFullyQualified(['rand']),
                     [
-                        new VirtualArg(new VirtualLNumber(0)),
-                        new VirtualArg(new VirtualLNumber(1)),
+                        new VirtualArg(new VirtualInt(0)),
+                        new VirtualArg(new VirtualInt(1)),
                     ],
                     $case->getAttributes(),
                 );
@@ -690,8 +690,8 @@ final class SwitchCaseAnalyzer
     }
 
     /**
-     * @param array<PhpParser\Node\Expr\ArrayItem> $in_array_values
-     * @return ?array<PhpParser\Node\Expr\ArrayItem>
+     * @param array<PhpParser\Node\ArrayItem> $in_array_values
+     * @return ?array<PhpParser\Node\ArrayItem>
      */
     private static function getOptionsFromNestedOr(
         PhpParser\Node\Expr $case_equality_expr,

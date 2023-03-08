@@ -85,7 +85,7 @@ final class ScopeAnalyzer
             if ($stmt instanceof PhpParser\Node\Stmt\Continue_) {
                 $count = !$stmt->num
                     ? 1
-                    : ($stmt->num instanceof PhpParser\Node\Scalar\LNumber ? $stmt->num->value : null);
+                    : ($stmt->num instanceof PhpParser\Node\Scalar\Int_ ? $stmt->num->value : null);
 
                 if ($break_types && $count !== null && count($break_types) >= $count) {
                     /** @psalm-suppress InvalidArrayOffset Some int-range improvements are needed */
@@ -102,7 +102,7 @@ final class ScopeAnalyzer
             if ($stmt instanceof PhpParser\Node\Stmt\Break_) {
                 $count = !$stmt->num
                     ? 1
-                    : ($stmt->num instanceof PhpParser\Node\Scalar\LNumber ? $stmt->num->value : null);
+                    : ($stmt->num instanceof PhpParser\Node\Scalar\Int_ ? $stmt->num->value : null);
 
                 if ($break_types && $count !== null && count($break_types) >= $count) {
                     /** @psalm-suppress InvalidArrayOffset Some int-range improvements are needed */
