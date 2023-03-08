@@ -10,7 +10,6 @@ use Psalm\Plugin\EventHandler\RemoveTaintsInterface;
 
 use function count;
 use function strtolower;
-use function version_compare;
 
 use const ENT_QUOTES;
 
