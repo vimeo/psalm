@@ -302,6 +302,7 @@ class InternalCallMapHandlerTest extends TestCase
         'datetimeimmutable::createfrominterface',
         'fiber::getcurrent',
         'filteriterator::getinneriterator' => ['8.1', '8.2'],
+        'get_cfg_var', // Ignore array return type
         'infiniteiterator::getinneriterator' => ['8.1', '8.2'],
         'iteratoriterator::getinneriterator' => ['8.1', '8.2'],
         'limititerator::getinneriterator' => ['8.1', '8.2'],
@@ -764,7 +765,7 @@ class InternalCallMapHandlerTest extends TestCase
         $callMapType = Type::parseString($specified);
 
         try {
-            $this->assertTrue(UnionTypeComparator::isContainedBy(self::$codebase, $callMapType, $expectedType), "{$msgPrefix} type '{$specified}' should be contained by reflected type '{$reflected}'");
+            $this->assertTrue(UnionTypeComparator::isContainedBy(self::$codebase, $callMapType, $expectedType, false, false, null, false, false), "{$msgPrefix} type '{$specified}' is not contained by reflected type '{$reflected}'");
         } catch (InvalidArgumentException $e) {
             if (preg_match('/^Could not get class storage for (.*)$/', $e->getMessage(), $matches)
                 && !class_exists($matches[1])
@@ -775,7 +776,11 @@ class InternalCallMapHandlerTest extends TestCase
 
         // Reflection::getPsalmTypeFromReflectionType adds |null to mixed types so skip comparison
         if (!$expectedType->hasMixed()) {
-            $this->assertSame($expectedType->isNullable(), $callMapType->isNullable(), "{$msgPrefix} type '{$specified}' should be nullable");
+            $this->assertSame($expectedType->isNullable(), $callMapType->isNullable(), "{$msgPrefix} type '{$specified}' missing null from reflected type '{$reflected}'");
+            //$this->assertSame($expectedType->hasBool(), $callMapType->hasBool(), "{$msgPrefix} type '{$specified}' missing bool from reflected type '{$reflected}'");
+            $this->assertSame($expectedType->hasArray(), $callMapType->hasArray(), "{$msgPrefix} type '{$specified}' missing array from reflected type '{$reflected}'");
+            $this->assertSame($expectedType->hasInt(), $callMapType->hasInt(), "{$msgPrefix} type '{$specified}' missing int from reflected type '{$reflected}'");
+            $this->assertSame($expectedType->hasFloat(), $callMapType->hasFloat(), "{$msgPrefix} type '{$specified}' missing float from reflected type '{$reflected}'");
         }
     }
 }

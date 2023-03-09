@@ -619,8 +619,8 @@ return [
       'new' => ['array|false', 'ldap'=>'LDAP\Connection', 'entry'=>'LDAP\ResultEntry', 'attribute'=>'string'],
     ],
     'ldap_list' => [
-      'old' => ['resource|false', 'ldap'=>'resource|array', 'base'=>'string', 'filter'=>'string', 'attributes='=>'array', 'attributes_only='=>'int', 'sizelimit='=>'int', 'timelimit='=>'int', 'deref='=>'int', 'controls='=>'?array'],
-      'new' => ['LDAP\Result|LDAP\Result[]|false', 'ldap'=>'LDAP\Connection|LDAP\Connection[]', 'base'=>'string', 'filter'=>'string', 'attributes='=>'array', 'attributes_only='=>'int', 'sizelimit='=>'int', 'timelimit='=>'int', 'deref='=>'int', 'controls='=>'?array'],
+      'old' => ['resource|false', 'ldap'=>'resource|array', 'base'=>'array|string', 'filter'=>'array|string', 'attributes='=>'array', 'attributes_only='=>'int', 'sizelimit='=>'int', 'timelimit='=>'int', 'deref='=>'int', 'controls='=>'?array'],
+      'new' => ['LDAP\Result|LDAP\Result[]|false', 'ldap'=>'LDAP\Connection|LDAP\Connection[]', 'base'=>'array|string', 'filter'=>'array|string', 'attributes='=>'array', 'attributes_only='=>'int', 'sizelimit='=>'int', 'timelimit='=>'int', 'deref='=>'int', 'controls='=>'?array'],
     ],
     'ldap_mod_add' => [
       'old' => ['bool', 'ldap'=>'resource', 'dn'=>'string', 'entry'=>'array', 'controls='=>'?array'],
@@ -679,8 +679,8 @@ return [
       'new' => ['bool', 'ldap'=>'LDAP\Connection', 'result'=>'LDAP\Result', '&w_error_code'=>'int', '&w_matched_dn='=>'string', '&w_error_message='=>'string', '&w_referrals='=>'array', '&w_controls='=>'array'],
     ],
     'ldap_read' => [
-      'old' => ['resource|false', 'ldap'=>'resource|array', 'base'=>'string', 'filter'=>'string', 'attributes='=>'array', 'attributes_only='=>'int', 'sizelimit='=>'int', 'timelimit='=>'int', 'deref='=>'int', 'controls='=>'?array'],
-      'new' => ['LDAP\Result|LDAP\Result[]|false', 'ldap'=>'LDAP\Connection|LDAP\Connection[]', 'base'=>'string', 'filter'=>'string', 'attributes='=>'array', 'attributes_only='=>'int', 'sizelimit='=>'int', 'timelimit='=>'int', 'deref='=>'int', 'controls='=>'?array'],
+      'old' => ['resource|false', 'ldap'=>'resource|array', 'base'=>'array|string', 'filter'=>'array|string', 'attributes='=>'array', 'attributes_only='=>'int', 'sizelimit='=>'int', 'timelimit='=>'int', 'deref='=>'int', 'controls='=>'?array'],
+      'new' => ['LDAP\Result|LDAP\Result[]|false', 'ldap'=>'LDAP\Connection|LDAP\Connection[]', 'base'=>'array|string', 'filter'=>'array|string', 'attributes='=>'array', 'attributes_only='=>'int', 'sizelimit='=>'int', 'timelimit='=>'int', 'deref='=>'int', 'controls='=>'?array'],
     ],
     'ldap_rename' => [
       'old' => ['bool', 'ldap'=>'resource', 'dn'=>'string', 'new_rdn'=>'string', 'new_parent'=>'string', 'delete_old_rdn'=>'bool', 'controls='=>'?array'],
@@ -695,8 +695,8 @@ return [
       'new' => ['bool', 'ldap'=>'LDAP\Connection', 'dn='=>'?string', 'password='=>'?string', 'mech='=>'?string', 'realm='=>'?string', 'authc_id='=>'?string', 'authz_id='=>'?string', 'props='=>'?string'],
     ],
     'ldap_search' => [
-      'old' => ['resource|false', 'ldap'=>'resource|resource[]', 'base'=>'string', 'filter'=>'string', 'attributes='=>'array', 'attributes_only='=>'int', 'sizelimit='=>'int', 'timelimit='=>'int', 'deref='=>'int', 'controls='=>'?array'],
-      'new' => ['LDAP\Result|LDAP\Result[]|false', 'ldap'=>'LDAP\Connection|LDAP\Connection[]', 'base'=>'string', 'filter'=>'string', 'attributes='=>'array', 'attributes_only='=>'int', 'sizelimit='=>'int', 'timelimit='=>'int', 'deref='=>'int', 'controls='=>'?array'],
+      'old' => ['resource[]|resource|false', 'ldap'=>'resource|resource[]', 'base'=>'array|string', 'filter'=>'array|string', 'attributes='=>'array', 'attributes_only='=>'int', 'sizelimit='=>'int', 'timelimit='=>'int', 'deref='=>'int', 'controls='=>'?array'],
+      'new' => ['LDAP\Result|LDAP\Result[]|false', 'ldap'=>'LDAP\Connection|LDAP\Connection[]', 'base'=>'array|string', 'filter'=>'array|string', 'attributes='=>'array', 'attributes_only='=>'int', 'sizelimit='=>'int', 'timelimit='=>'int', 'deref='=>'int', 'controls='=>'?array'],
     ],
     'ldap_set_option' => [
       'old' => ['bool', 'ldap'=>'resource|null', 'option'=>'int', 'value'=>'mixed'],
