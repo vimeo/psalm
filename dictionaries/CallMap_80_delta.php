@@ -193,6 +193,10 @@ return [
       'old' => ['null|false', 'zone'=>'IntlTimeZone|DateTimeZone|string|null'],
       'new' => ['null|false', 'timezone'=>'IntlTimeZone|DateTimeZone|string|null'],
     ],
+    'IntlTimeZone::getIDForWindowsID' => [
+      'old' => ['string|false', 'timezoneId'=>'string', 'region='=>'string'],
+      'new' => ['string|false', 'timezoneId'=>'string', 'region='=>'?string'],
+    ],
     'Locale::getDisplayLanguage' => [
       'old' => ['string', 'locale'=>'string', 'displayLocale='=>'string'],
       'new' => ['string', 'locale'=>'string', 'displayLocale='=>'?string'],
