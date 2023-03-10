@@ -1160,7 +1160,7 @@ class IssetTest extends TestCase
                         if (isset($list[$offset])) {}
                         $list[$offset] = "";
                     }',
-                'error_message' => 'ReferenceConstraintViolation'
+                'error_message' => 'ReferenceConstraintViolation',
             ],
             'setArbitraryListWithinNotIsset' => [
                 'code' => '<?php
@@ -1170,7 +1170,7 @@ class IssetTest extends TestCase
                             $list[$offset] = "";
                         }
                     }',
-                'error_message' => 'ReferenceConstraintViolation'
+                'error_message' => 'ReferenceConstraintViolation',
             ],
         ];
     }
