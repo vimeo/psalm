@@ -1467,7 +1467,11 @@ function json_decode(string $json, ?bool $associative = null, int $depth = 512, 
 /**
  * @psalm-pure
  *
- * @return ($flags is 4194304 ? non-empty-string : non-empty-string|false)
+ * @return (
+ *      $flags is 4194304
+ *          ? non-empty-string
+ *          : ($flags is 4194560 ? non-empty-string : non-empty-string|false)
+ *  )
  *
  * @psalm-flow ($value) -> return
  * @psalm-ignore-falsable-return
