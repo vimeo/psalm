@@ -125,11 +125,11 @@ class CoreStubsTest extends TestCase
         ];
         yield 'json_encode returns a non-empty-string provided JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE' => [
             'code' => '<?php
-                /** @return non-empty-string */
-                function foo(): string {
-                    return json_encode([], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
-                }
+                $a = json_encode([], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
             ',
+            'assertions' => [
+                '$a===' => 'non-empty-string',
+            ],
         ];
     }
 }
