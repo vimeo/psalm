@@ -127,6 +127,84 @@ class KeyedArrayComparator
             }
             return false;
         }
+
+        // check remaining $input_properties against container's fallback_params
+        if ($container_type_part instanceof TKeyedArray
+            && $container_type_part->fallback_params !== null
+        ) {
+            [$key_type, $value_type] = $container_type_part->fallback_params;
+            // treat fallback params as possibly undefined
+            // otherwise comparison below would fail for list{0?:int} <=> list{...<int<0,max>, int>}
+            // as the latter `int` is not marked as possibly_undefined
+            $value_type = $value_type->setPossiblyUndefined(true);
+
+            foreach ($input_properties as $key => $input_property_type) {
+                $key_type_comparison = new TypeComparisonResult();
+                if (!UnionTypeComparator::isContainedBy(
+                    $codebase,
+                    is_string($key) ? Type::getString($key) : Type::getInt(false, $key),
+                    $key_type,
+                    false,
+                    false,
+                    $key_type_comparison,
+                    $allow_interface_equality,
+                )) {
+                    if ($atomic_comparison_result) {
+                        $atomic_comparison_result->type_coerced
+                            = $key_type_comparison->type_coerced === true
+                                && $atomic_comparison_result->type_coerced !== false;
+                    }
+                    $all_types_contain = false;
+                }
+
+                $property_type_comparison = new TypeComparisonResult();
+                if (!UnionTypeComparator::isContainedBy(
+                    $codebase,
+                    $input_property_type,
+                    $value_type,
+                    false,
+                    false,
+                    $property_type_comparison,
+                    $allow_interface_equality,
+                )) {
+                    if ($atomic_comparison_result) {
+                        $atomic_comparison_result->type_coerced
+                            = $property_type_comparison->type_coerced === true
+                                && $atomic_comparison_result->type_coerced !== false;
+                    }
+                    $all_types_contain = false;
+                }
+            }
+        }
+
+        // finally, check input type fallback params against container type fallback params
+        if ($input_type_part instanceof TKeyedArray
+            && $container_type_part instanceof TKeyedArray
+            && $input_type_part->fallback_params !== null
+            && $container_type_part->fallback_params !== null
+        ) {
+            foreach ($input_type_part->fallback_params as $i => $input_param) {
+                $container_param = $container_type_part->fallback_params[$i];
+                $param_comparison = new TypeComparisonResult();
+                if (!UnionTypeComparator::isContainedBy(
+                    $codebase,
+                    $input_param,
+                    $container_param,
+                    false,
+                    false,
+                    $param_comparison,
+                    $allow_interface_equality,
+                )) {
+                    if ($atomic_comparison_result) {
+                        $atomic_comparison_result->type_coerced
+                            = $param_comparison->type_coerced === true
+                                && $atomic_comparison_result->type_coerced !== false;
+                    }
+                    $all_types_contain = false;
+                }
+            }
+        }
+
         return $all_types_contain;
     }
 
