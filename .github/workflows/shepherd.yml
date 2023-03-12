@@ -17,6 +17,8 @@ jobs:
         ini-values: zend.assertions=1
         tools: composer:v2
         coverage: none
+      env:
+        fail-fast: true
 
     - name: Install dependencies
       run: composer install --prefer-dist --no-progress --no-suggest

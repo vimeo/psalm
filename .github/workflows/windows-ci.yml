@@ -59,6 +59,8 @@ jobs:
           tools: composer:v2
           coverage: none
           extensions: none, curl, dom, filter, intl, json, libxml, mbstring, openssl, opcache, pcre, phar, reflection, simplexml, spl, tokenizer, xml, xmlwriter
+        env:
+          fail-fast: true
 
       - uses: actions/checkout@v3
 
