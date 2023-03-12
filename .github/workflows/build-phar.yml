@@ -41,6 +41,8 @@ jobs:
           php-version: '7.4'
           tools: composer:v2
           coverage: none
+        env:
+          fail-fast: true
 
       - uses: actions/checkout@v3
         with:
