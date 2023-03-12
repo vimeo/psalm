@@ -69,6 +69,10 @@ jobs:
           echo "vcs_cache=$(composer config cache-vcs-dir)" >> $GITHUB_OUTPUT
         shell: bash
 
+      - name: Generate composer.lock
+        run: |
+          composer update --no-install
+
       - name: Cache composer cache
         uses: actions/cache@v3
         with:
