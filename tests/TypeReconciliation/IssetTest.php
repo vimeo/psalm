@@ -1153,6 +1153,25 @@ class IssetTest extends TestCase
                     }',
                 'error_message' => 'RedundantPropertyInitializationCheck',
             ],
+            'setArbitraryListElementAfterIsset' => [
+                'code' => '<?php
+                    /** @param list<string> $list */
+                    function foo(array &$list, int $offset): void {
+                        if (isset($list[$offset])) {}
+                        $list[$offset] = "";
+                    }',
+                'error_message' => 'ReferenceConstraintViolation',
+            ],
+            'setArbitraryListWithinNotIsset' => [
+                'code' => '<?php
+                    /** @param list<string> $list */
+                    function foo(array &$list, int $offset): void {
+                        if (!isset($list[$offset])) {
+                            $list[$offset] = "";
+                        }
+                    }',
+                'error_message' => 'ReferenceConstraintViolation',
+            ],
         ];
     }
 }
