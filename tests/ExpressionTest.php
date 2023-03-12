@@ -39,6 +39,18 @@ class ExpressionTest extends TestCase
                 '$so===' => "array{'9223372036854775808': 1}",
             ],
         ];
+        yield 'autoincrementAlmostOverflow' => [
+            'code' => <<<'PHP'
+                <?php
+                $a = [
+                  9223372036854775806 => 0,
+                  1, // expected key = PHP_INT_MAX
+                ];
+                PHP,
+            'assertions' => [
+                '$a===' => 'array{9223372036854775806: 0, 9223372036854775807: 1}',
+            ],
+        ];
     }
 
     /**
@@ -59,6 +71,28 @@ class ExpressionTest extends TestCase
                 <?php
                 // PHP_INT_MAX + 1
                 [9223372036854775808 => 1];
+                PHP,
+            'error_message' => 'InvalidArrayOffset',
+        ];
+
+        yield 'autoincrementOverflow' => [
+            'code' => <<<'PHP'
+                <?php
+                $a = [
+                  9223372036854775807 => 0,
+                  1, // this is a fatal error
+                ];
+                PHP,
+            'error_message' => 'InvalidArrayOffset',
+        ];
+
+        yield 'autoincrementOverflowWithUnpack' => [
+            'code' => <<<'PHP'
+                <?php
+                $a = [
+                  9223372036854775807 => 0,
+                  ...[1], // this is a fatal error
+                ];
                 PHP,
             'error_message' => 'InvalidArrayOffset',
         ];

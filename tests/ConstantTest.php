@@ -1560,6 +1560,21 @@ class ConstantTest extends TestCase
                     '$so===' => "array{'9223372036854775808': 1}",
                 ],
             ],
+            'autoincrementAlmostOverflow' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class A {
+                        public const I = [
+                            9223372036854775806 => 0,
+                            1, // expected key = PHP_INT_MAX
+                        ];
+                    }
+                    $s = A::I;
+                    PHP,
+                'assertions' => [
+                    '$s===' => 'array{9223372036854775806: 0, 9223372036854775807: 1}',
+                ],
+            ],
         ];
     }
 
@@ -2087,6 +2102,30 @@ class ConstantTest extends TestCase
                     class A {
                         // PHP_INT_MAX + 1
                         public const IO = [9223372036854775808 => 1];
+                    }
+                    PHP,
+                'error_message' => 'InvalidArrayOffset',
+            ],
+            'autoincrementOverflow' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class A {
+                        public const I = [
+                            9223372036854775807 => 0,
+                            1, // this is a fatal error
+                        ];
+                    }
+                    PHP,
+                'error_message' => 'InvalidArrayOffset',
+            ],
+            'autoincrementOverflowWithUnpack' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class A {
+                        public const I = [
+                            9223372036854775807 => 0,
+                            ...[1], // this is a fatal error
+                        ];
                     }
                     PHP,
                 'error_message' => 'InvalidArrayOffset',

@@ -38,7 +38,14 @@ class ArrayCreationInfo
      */
     public array $array_keys = [];
 
-    public int $int_offset = 0;
+    /**
+     * Holds the integer offset of the *last* element added
+     *
+     * -1 means no elements have been added yet
+     *
+     * @var int<-1, max>
+     */
+    public int $int_offset = -1;
 
     public bool $all_list = true;
 
