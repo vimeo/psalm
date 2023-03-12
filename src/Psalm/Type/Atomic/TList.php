@@ -42,7 +42,7 @@ class TList extends Atomic
     public function __construct(Union $type_param, bool $from_docblock = false)
     {
         $this->type_param = $type_param;
-        $this->from_docblock = $from_docblock;
+        parent::__construct($from_docblock);
     }
 
     /**

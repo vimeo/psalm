@@ -35,8 +35,8 @@ final class TIntRange extends TInt
     ) {
         $this->min_bound = $min_bound;
         $this->max_bound = $max_bound;
-        $this->from_docblock = $from_docblock;
         $this->dependent_list_key = $dependent_list_key;
+        parent::__construct($from_docblock);
     }
 
     public function getKey(bool $include_extra = true): string

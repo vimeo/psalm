@@ -42,7 +42,7 @@ class TLiteralString extends TString
             );
         }
         $this->value = $value;
-        $this->from_docblock = $from_docblock;
+        parent::__construct($from_docblock);
     }
 
     /**

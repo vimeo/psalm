@@ -17,7 +17,7 @@ class TMixed extends Atomic
     public function __construct(bool $from_loop_isset = false, bool $from_docblock = false)
     {
         $this->from_loop_isset = $from_loop_isset;
-        $this->from_docblock = $from_docblock;
+        parent::__construct($from_docblock);
     }
 
     public function getKey(bool $include_extra = true): string

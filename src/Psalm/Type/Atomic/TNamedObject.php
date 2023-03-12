@@ -63,7 +63,7 @@ class TNamedObject extends Atomic
         $this->is_static = $is_static;
         $this->definite_class = $definite_class;
         $this->extra_types = $extra_types;
-        $this->from_docblock = $from_docblock;
+        parent::__construct($from_docblock);
     }
 
     /**

@@ -53,10 +53,11 @@ final class TObjectWithProperties extends TObject
         $this->properties = $properties;
         $this->methods = $methods;
         $this->extra_types = $extra_types;
-        $this->from_docblock = $from_docblock;
 
         $this->is_stringable_object_only =
             $this->properties === [] && $this->methods === ['__tostring' => 'string'];
+
+        parent::__construct($from_docblock);
     }
 
     /**

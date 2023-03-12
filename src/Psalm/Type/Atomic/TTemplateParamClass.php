@@ -27,10 +27,15 @@ final class TTemplateParamClass extends TClassString
         bool $from_docblock = false
     ) {
         $this->param_name = $param_name;
-        $this->as = $as;
-        $this->as_type = $as_type;
         $this->defining_class = $defining_class;
-        $this->from_docblock = $from_docblock;
+        parent::__construct(
+            $as,
+            $as_type,
+            false,
+            false,
+            false,
+            $from_docblock,
+        );
     }
 
     public function getKey(bool $include_extra = true): string
