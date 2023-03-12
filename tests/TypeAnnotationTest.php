@@ -653,6 +653,32 @@ class TypeAnnotationTest extends TestCase
                     '$output===' => 'list<1|2>',
                 ],
             ],
+            'callableWithReturnTypeWithinParens' => [
+                'code' => '<?php
+                    /** @psalm-type TCallback (callable():int) */
+                    class Foo {
+                        /** @psalm-var TCallback */
+                        public static $callback;
+                    }
+                    $output = Foo::$callback;
+                ',
+                'assertions' => [
+                    '$output===' => 'callable():int',
+                ],
+            ],
+            'callableWithReturnTypeWithoutParens' => [
+                'code' => '<?php
+                    /** @psalm-type TCallback callable():int */
+                    class Foo {
+                        /** @psalm-var TCallback */
+                        public static $callback;
+                    }
+                    $output = Foo::$callback;
+                ',
+                'assertions' => [
+                    '$output===' => 'callable():int',
+                ],
+            ],
             'handlesTypeWhichEndsWithRoundBracket' => [
                 'code' => '<?php
                     /**
