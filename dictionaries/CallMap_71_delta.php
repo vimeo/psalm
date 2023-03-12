@@ -30,7 +30,7 @@ return [
     'sapi_windows_cp_get' => ['int', 'kind='=>'string'],
     'sapi_windows_cp_is_utf8' => ['bool'],
     'sapi_windows_cp_set' => ['bool', 'codepage'=>'int'],
-    'session_create_id' => ['string', 'prefix='=>'string'],
+    'session_create_id' => ['string|false', 'prefix='=>'string'],
     'session_gc' => ['int|false'],
   ],
   'changed' => [
