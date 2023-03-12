@@ -91,6 +91,7 @@ use function stripslashes;
 use function strlen;
 use function strpos;
 use function strtolower;
+use function strtr;
 use function substr;
 
 /**
@@ -420,8 +421,8 @@ class TypeParser
             return new TLiteralFloat((float) $parse_tree->value, $from_docblock);
         }
 
-        if (preg_match('/^\-?(0|[1-9][0-9]*)$/', $parse_tree->value)) {
-            return new TLiteralInt((int) $parse_tree->value, $from_docblock);
+        if (preg_match('/^\-?(0|[1-9]([0-9_]*[0-9])?)$/', $parse_tree->value)) {
+            return new TLiteralInt((int) strtr($parse_tree->value, ['_' => '']), $from_docblock);
         }
 
         if (!preg_match('@^(\$this|\\\\?[a-zA-Z_\x7f-\xff][\\\\\-0-9a-zA-Z_\x7f-\xff]*)$@', $parse_tree->value)) {
