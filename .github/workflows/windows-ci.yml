@@ -72,6 +72,8 @@ jobs:
       - name: Generate composer.lock
         run: |
           composer update --no-install
+        env:
+          COMPOSER_ROOT_VERSION: dev-master
 
       - name: Cache composer cache
         uses: actions/cache@v3
