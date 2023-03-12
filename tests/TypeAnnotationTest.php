@@ -653,6 +653,88 @@ class TypeAnnotationTest extends TestCase
                     '$output===' => 'list<1|2>',
                 ],
             ],
+            'callableWithReturnTypeTypeAliasWithinBackets' => [
+                'code' => '<?php
+                    /** @psalm-type TCallback (callable():int) */
+                    class Foo {
+                        /** @psalm-var TCallback */
+                        public static callable $callback;
+                    }
+                    $output = Foo::$callback;
+                ',
+                'assertions' => [
+                    '$output===' => 'callable():int',
+                ],
+            ],
+            'callableWithReturnTypeTypeAlias' => [
+                'code' => '<?php
+                    /** @psalm-type TCallback callable():int */
+                    class Foo {
+                        /** @psalm-var TCallback */
+                        public static callable $callback;
+                    }
+                    $output = Foo::$callback;
+                ',
+                'assertions' => [
+                    '$output===' => 'callable():int',
+                ],
+            ],
+            'unionOfStringsContainingBraceCharTypeAlias' => [
+                'code' => '<?php
+                    /** @psalm-type T \'{\'|\'}\' */
+                    class Foo {
+                        /** @psalm-var T */
+                        public static string $t;
+                    }
+                    $t = Foo::$t;
+                ',
+                'assertions' => [
+                    '$t===' => '\'{\'|\'}\'',
+                ],
+            ],
+            'unionOfStringsContainingGTCharTypeAlias' => [
+                'code' => '<?php
+                    /** @psalm-type T \'<\'|\'>\' */
+                    class Foo {
+                        /** @psalm-var T */
+                        public static string $t;
+                    }
+                    $t = Foo::$t;
+                ',
+                'assertions' => [
+                    '$t===' => '\'<\'|\'>\'',
+                ],
+            ],
+            'unionOfStringsContainingBracketCharTypeAlias' => [
+                'code' => '<?php
+                    /** @psalm-type T \'(\'|\')\' */
+                    class Foo {
+                        /** @psalm-var T */
+                        public static string $t;
+                    }
+                    $t = Foo::$t;
+                ',
+                'assertions' => [
+                    '$t===' => '\'(\'|\')\'',
+                ],
+            ],
+            'handlesFreeTextAfterTypeAlias' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type T string
+                     *
+                     * Lorem ipsum.
+                     */
+                    class Foo {
+                        /** @psalm-var T */
+                        public static string $t;
+                    }
+                    $t = Foo::$t;
+                ',
+                'assertions' => [
+                    '$t===' => 'string',
+                ],
+            ],
             'handlesTypeWhichEndsWithRoundBracket' => [
                 'code' => '<?php
                     /**
