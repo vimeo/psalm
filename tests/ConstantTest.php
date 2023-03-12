@@ -1539,6 +1539,27 @@ class ConstantTest extends TestCase
                     $z = B::ARRAY['b'];
                     PHP,
             ],
+            'maxIntegerInArrayKey' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class A {
+                        // PHP_INT_MAX
+                        public const S = ['9223372036854775807' => 1];
+                        public const I = [9223372036854775807 => 1];
+
+                        // PHP_INT_MAX + 1
+                        public const SO = ['9223372036854775808' => 1];
+                    }
+                    $s = A::S;
+                    $i = A::I;
+                    $so = A::SO;
+                    PHP,
+                'assertions' => [
+                    '$s===' => 'array{9223372036854775807: 1}',
+                    '$i===' => 'array{9223372036854775807: 1}',
+                    '$so===' => "array{'9223372036854775808': 1}",
+                ],
+            ],
         ];
     }
 
@@ -2059,6 +2080,16 @@ class ConstantTest extends TestCase
                     $class::BAR;
                 ',
                 'error_message' => 'InvalidStringClass',
+            ],
+            'integerOverflowInArrayKey' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class A {
+                        // PHP_INT_MAX + 1
+                        public const IO = [9223372036854775808 => 1];
+                    }
+                    PHP,
+                'error_message' => 'InvalidArrayOffset',
             ],
         ];
     }

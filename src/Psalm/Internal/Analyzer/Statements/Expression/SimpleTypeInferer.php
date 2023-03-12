@@ -666,7 +666,9 @@ class SimpleTypeInferer
                 } elseif ($key_type->isSingleIntLiteral()) {
                     $item_key_value = $key_type->getSingleIntLiteral()->value;
 
-                    if ($item_key_value >= $array_creation_info->int_offset) {
+                    if ($item_key_value < PHP_INT_MAX
+                        && $item_key_value >= $array_creation_info->int_offset
+                    ) {
                         if ($item_key_value === $array_creation_info->int_offset) {
                             $item_is_list_item = true;
                         }
