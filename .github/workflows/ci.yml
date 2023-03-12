@@ -24,6 +24,12 @@ jobs:
           echo "files_cache=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
           echo "vcs_cache=$(composer config cache-vcs-dir)" >> $GITHUB_OUTPUT
 
+      - name: Generate composer.lock
+        run: |
+          composer update --no-install
+        env:
+          COMPOSER_ROOT_VERSION: dev-master
+
       - name: Cache composer cache
         uses: actions/cache@v3
         with:
@@ -96,6 +102,12 @@ jobs:
         run: |
           echo "files_cache=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
           echo "vcs_cache=$(composer config cache-vcs-dir)" >> $GITHUB_OUTPUT
+
+      - name: Generate composer.lock
+        run: |
+          composer update --no-install
+        env:
+          COMPOSER_ROOT_VERSION: dev-master
 
       - name: Cache composer cache
         uses: actions/cache@v3
