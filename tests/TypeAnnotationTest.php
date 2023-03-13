@@ -743,6 +743,34 @@ class TypeAnnotationTest extends TestCase
                     class A {}
                     ',
             ],
+            'commentAfterType' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type TTest string
+                     *
+                     * This is a test class.
+                     */
+                    class Test {}',
+            ],
+            'multilineTypeWithComment' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type PhoneType = array{
+                     *    phone: string
+                     * }
+                     *
+                     * Bar
+                     */
+                    class Foo {
+                        /** @var PhoneType */
+                        public static $phone;
+                    }
+                    $output = Foo::$phone;
+                    ',
+                'assertions' => [
+                    '$output===' => 'array{phone: string}',
+                ],
+            ],
         ];
     }
 
