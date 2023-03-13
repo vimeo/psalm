@@ -679,7 +679,7 @@ class TypeAnnotationTest extends TestCase
                     '$output===' => 'callable():int',
                 ],
             ],
-            'unionOfStringsContainingBraceCharTypeAlias' => [
+            'unionOfStringsContainingBraceChar' => [
                 'code' => '<?php
                     /** @psalm-type T \'{\'|\'}\' */
                     class Foo {
@@ -692,7 +692,7 @@ class TypeAnnotationTest extends TestCase
                     '$t===' => '\'{\'|\'}\'',
                 ],
             ],
-            'unionOfStringsContainingGTCharTypeAlias' => [
+            'unionOfStringsContainingGTChar' => [
                 'code' => '<?php
                     /** @psalm-type T \'<\'|\'>\' */
                     class Foo {
@@ -705,7 +705,7 @@ class TypeAnnotationTest extends TestCase
                     '$t===' => '\'<\'|\'>\'',
                 ],
             ],
-            'unionOfStringsContainingBracketCharTypeAlias' => [
+            'unionOfStringsContainingBracketChar' => [
                 'code' => '<?php
                     /** @psalm-type T \'(\'|\')\' */
                     class Foo {
@@ -718,12 +718,12 @@ class TypeAnnotationTest extends TestCase
                     '$t===' => '\'(\'|\')\'',
                 ],
             ],
-            'handlesFreeTextAfterTypeAlias' => [
+            'bareWordsCommentAfterType' => [
                 'code' => '<?php
                     /**
                      * @psalm-type T string
                      *
-                     * Lorem ipsum.
+                     * Lorem ipsum
                      */
                     class Foo {
                         /** @psalm-var T */
