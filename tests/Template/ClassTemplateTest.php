@@ -4051,6 +4051,64 @@ class ClassTemplateTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'template of simple type with additional comment without dot' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-template T of string
+                     *
+                     * lorem ipsum
+                     */
+                    class Foo {
+                        /** @psalm-var T */
+                        public string $t;
+
+                        /** @psalm-param T $t */
+                        public function __construct(string $t) {
+                            $this->t = $t;
+                        }
+
+                        /**
+                         * @psalm-return T
+                         */
+                        public function t(): string {
+                            return $this->t;
+                        }
+                    }
+                    $t = (new Foo(\'\'))->t();
+                ',
+                'assertions' => [
+                    '$t===' => '\'\'',
+                ],
+            ],
+            'template of simple type with additional comment with dot' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-template T of string
+                     *
+                     * lorem ipsum.
+                     */
+                    class Foo {
+                        /** @psalm-var T */
+                        public string $t;
+
+                        /** @psalm-param T $t */
+                        public function __construct(string $t) {
+                            $this->t = $t;
+                        }
+
+                        /**
+                         * @psalm-return T
+                         */
+                        public function t(): string {
+                            return $this->t;
+                        }
+                    }
+                    $t = (new Foo(\'\'))->t();
+                ',
+                'assertions' => [
+                    '$t===' => '\'\'',
+                ],
+            ],
         ];
     }
 
