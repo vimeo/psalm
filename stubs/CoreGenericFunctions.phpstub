@@ -1050,7 +1050,8 @@ function str_shuffle(string $string): string {}
 
 /**
  * @psalm-pure
- * @return ($length is positive-int ? list<string> : false)
+ * @param positive-int $length
+ * @return non-empty-list<string>
  *
  * @psalm-flow ($string) -> return
  */

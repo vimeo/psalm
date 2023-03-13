@@ -108,7 +108,6 @@ class TypeTokenizer
      * contains the string token and the second element contains its offset,
      *
      * @return list<array{0: string, 1: int}>
-     * @psalm-suppress PossiblyUndefinedIntArrayOffset
      */
     public static function tokenize(string $string_type, bool $ignore_space = true): array
     {

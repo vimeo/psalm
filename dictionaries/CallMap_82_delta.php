@@ -51,7 +51,7 @@ return [
     ],
     'str_split' => [
        'old' => ['non-empty-list<string>', 'string'=>'string', 'length='=>'positive-int'],
-       'new' => ['list<string>', 'string'=>'string', 'length='=>'positive-int'],
+       'new' => ['list<non-empty-string>', 'string'=>'string', 'length='=>'positive-int'],
     ],
   ],
 
