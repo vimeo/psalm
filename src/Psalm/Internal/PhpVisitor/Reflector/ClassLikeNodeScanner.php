@@ -421,9 +421,15 @@ class ClassLikeNodeScanner
                     if ($template_map[1] !== null && $template_map[2] !== null) {
                         if (trim($template_map[2])) {
                             try {
+                                $type_string = CommentAnalyzer::splitDocLine($template_map[2])[0];
+                            } catch (DocblockParseException $e) {
+                                throw new DocblockParseException($type_string . ' is not a valid type: '.$e->getMessage());
+                            }
+                            $type_string = CommentAnalyzer::sanitizeDocblockType($type_string);
+                            try {
                                 $template_type = TypeParser::parseTokens(
                                     TypeTokenizer::getFullyQualifiedTokens(
-                                        $template_map[2],
+                                        $type_string,
                                         $this->aliases,
                                         $storage->template_types,
                                         $this->type_aliases,
