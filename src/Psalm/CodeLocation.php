@@ -169,6 +169,7 @@ class CodeLocation
 
         $codebase = $project_analyzer->getCodebase();
 
+        /** @psalm-suppress ImpureMethodCall */
         $file_contents = $codebase->getFileContents($this->file_path);
 
         $file_length = strlen($file_contents);
