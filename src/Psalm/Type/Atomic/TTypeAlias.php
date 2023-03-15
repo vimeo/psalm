@@ -31,6 +31,7 @@ final class TTypeAlias extends Atomic
         $this->declaring_fq_classlike_name = $declaring_fq_classlike_name;
         $this->alias_name = $alias_name;
         $this->extra_types = $extra_types;
+        parent::__construct(true);
     }
     /**
      * @param array<string, TTypeAlias>|null $extra_types

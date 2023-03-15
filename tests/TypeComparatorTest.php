@@ -94,7 +94,7 @@ class TypeComparatorTest extends TestCase
     }
 
     /**
-     * @dataProvider getAllowedChildTypes
+     * @dataProvider getSuccessfulComparisons
      */
     public function testTypeAcceptsType(string $parent_type_string, string $child_type_string): void
     {
@@ -107,13 +107,32 @@ class TypeComparatorTest extends TestCase
                 $child_type,
                 $parent_type,
             ),
+            'Type ' . $parent_type_string . ' should contain ' . $child_type_string,
+        );
+    }
+
+    /**
+     * @dataProvider getUnsuccessfulComparisons
+     */
+    public function testTypeDoesNotAcceptType(string $parent_type_string, string $child_type_string): void
+    {
+        $parent_type = Type::parseString($parent_type_string);
+        $child_type = Type::parseString($child_type_string);
+
+        $this->assertFalse(
+            UnionTypeComparator::isContainedBy(
+                $this->project_analyzer->getCodebase(),
+                $child_type,
+                $parent_type,
+            ),
+            'Type ' . $parent_type_string . ' should not contain ' . $child_type_string,
         );
     }
 
     /**
      * @return array<array{string, string}>
      */
-    public function getAllowedChildTypes(): array
+    public function getSuccessfulComparisons(): array
     {
         return [
             'iterableAcceptsArray' => [
@@ -140,6 +159,19 @@ class TypeComparatorTest extends TestCase
                 'lowercase-string',
                 'callable-string',
             ],
+        ];
+    }
+
+    /** @return iterable<string, list{string,string}> */
+    public function getUnsuccessfulComparisons(): iterable
+    {
+        yield 'genericListDoesNotAcceptListTupleWithMismatchedTypes' => [
+            'list<int>',
+            'list{int, string}',
+        ];
+        yield 'genericListDoesNotAcceptArrayTupleWithMismatchedTypes' => [
+            'list<int>',
+            'array{int, string}',
         ];
     }
 }

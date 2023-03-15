@@ -1721,6 +1721,18 @@ class ReturnTypeTest extends TestCase
                     }',
                 'error_message' => 'InvalidClass',
             ],
+            'listItems' => [
+                'code' => <<<'PHP'
+                    <?php
+
+                    /** @return list<int> */
+                    function f(): array
+                    {
+                        return[ 1, new stdClass, "zzz"];
+                    }
+                    PHP,
+                'error_message' => 'InvalidReturnStatement',
+            ],
         ];
     }
 }

@@ -33,7 +33,7 @@ final class TTemplateIndexedAccess extends Atomic
         $this->array_param_name = $array_param_name;
         $this->offset_param_name = $offset_param_name;
         $this->defining_class = $defining_class;
-        $this->from_docblock = $from_docblock;
+        parent::__construct($from_docblock);
     }
 
     public function getKey(bool $include_extra = true): string

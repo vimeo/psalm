@@ -103,7 +103,7 @@ return [
     'sodium_crypto_secretstream_xchacha20poly1305_init_pull' => ['string', 'header'=>'string', 'key'=>'string'],
     'sodium_crypto_secretstream_xchacha20poly1305_init_push' => ['array', 'key'=>'string'],
     'sodium_crypto_secretstream_xchacha20poly1305_keygen' => ['non-empty-string'],
-    'sodium_crypto_secretstream_xchacha20poly1305_pull' => ['array', '&r_state'=>'string', 'ciphertext'=>'string', 'additional_data='=>'string'],
+    'sodium_crypto_secretstream_xchacha20poly1305_pull' => ['array|false', '&r_state'=>'string', 'ciphertext'=>'string', 'additional_data='=>'string'],
     'sodium_crypto_secretstream_xchacha20poly1305_push' => ['string', '&w_state'=>'string', 'message'=>'string', 'additional_data='=>'string', 'tag='=>'int'],
     'sodium_crypto_secretstream_xchacha20poly1305_rekey' => ['void', '&w_state'=>'string'],
     'sodium_crypto_shorthash' => ['string', 'message'=>'string', 'key'=>'string'],

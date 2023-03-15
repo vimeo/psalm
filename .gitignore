@@ -10,7 +10,7 @@
 /vendor-bin/*/composer.lock
 /vendor-bin/*/vendor/
 /tests/fixtures/symlinktest/*
-
+.vscode
 .idea/
 .vscode/
 .php-version

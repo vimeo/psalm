@@ -13,7 +13,6 @@ use Amp\Promise;
 use Generator;
 
 use function Amp\call;
-use function error_log;
 
 /**
  * @internal
@@ -59,7 +58,6 @@ class ClientHandler
 
                 $listener =
                     function (Message $msg) use ($id, $deferred, &$listener): void {
-                        error_log('request handler');
                         /**
                          * @psalm-suppress UndefinedPropertyFetch
                          * @psalm-suppress MixedArgument

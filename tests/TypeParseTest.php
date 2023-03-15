@@ -1032,6 +1032,26 @@ class TypeParseTest extends TestCase
         );
     }
 
+    public function testSingleLiteralIntWithSeparators(): void
+    {
+        $this->assertSame('10', Type::parseString('1_0')->getId());
+    }
+
+    public function testIntRangeWithSeparators(): void
+    {
+        $this->assertSame('int<10, 20>', Type::parseString('int<1_0, 2_0>')->getId());
+    }
+
+    public function testLiteralIntUnionWithSeparators(): void
+    {
+        $this->assertSame('10|20', Type::parseString('1_0|2_0')->getId());
+    }
+
+    public function testIntMaskWithIntsWithSeparators(): void
+    {
+        $this->assertSame('0|10|20|30', Type::parseString('int-mask<1_0, 2_0>')->getId());
+    }
+
     public function testSingleLiteralFloat(): void
     {
         $this->assertSame(

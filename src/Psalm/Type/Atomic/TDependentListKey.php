@@ -23,6 +23,7 @@ final class TDependentListKey extends TInt implements DependentType
     public function __construct(string $var_id)
     {
         $this->var_id = $var_id;
+        parent::__construct(false);
     }
 
     public function getId(bool $exact = true, bool $nested = false): string

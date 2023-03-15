@@ -49,7 +49,7 @@ final class TPropertiesOf extends Atomic
     ) {
         $this->classlike_type = $classlike_type;
         $this->visibility_filter = $visibility_filter;
-        $this->from_docblock = $from_docblock;
+        parent::__construct($from_docblock);
     }
 
     /**

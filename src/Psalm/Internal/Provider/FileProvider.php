@@ -24,7 +24,7 @@ use const DIRECTORY_SEPARATOR;
 class FileProvider
 {
     /**
-     * @var array<string, string>
+     * @var array<string, array{version: ?int, content: string}>
      */
     protected array $temp_files = [];
 
@@ -33,32 +33,31 @@ class FileProvider
      */
     protected static array $open_files = [];
 
-    /** @psalm-mutation-free */
+    /**
+     * @var array<string, string>
+     */
+    protected array $open_files_paths = [];
+
     public function getContents(string $file_path, bool $go_to_source = false): string
     {
         if (!$go_to_source && isset($this->temp_files[$file_path])) {
-            return $this->temp_files[$file_path];
+            return $this->temp_files[$file_path]['content'];
         }
 
-        /** @psalm-suppress ImpureStaticProperty Used only for caching */
         if (isset(self::$open_files[$file_path])) {
             return self::$open_files[$file_path];
         }
 
-        /** @psalm-suppress ImpureFunctionCall For our purposes, this should not mutate external state */
         if (!file_exists($file_path)) {
             throw new UnexpectedValueException('File ' . $file_path . ' should exist to get contents');
         }
 
-        /** @psalm-suppress ImpureFunctionCall For our purposes, this should not mutate external state */
         if (is_dir($file_path)) {
             throw new UnexpectedValueException('File ' . $file_path . ' is a directory');
         }
 
-        /** @psalm-suppress ImpureFunctionCall For our purposes, this should not mutate external state */
         $file_contents = (string) file_get_contents($file_path);
 
-        /** @psalm-suppress ImpureStaticProperty Used only for caching */
         self::$open_files[$file_path] = $file_contents;
 
         return $file_contents;
@@ -71,16 +70,19 @@ class FileProvider
         }
 
         if (isset($this->temp_files[$file_path])) {
-            $this->temp_files[$file_path] = $file_contents;
+            $this->temp_files[$file_path] = [
+                'version'=> null,
+                'content' => $file_contents,
+            ];
         }
 
         file_put_contents($file_path, $file_contents);
     }
 
-    public function setOpenContents(string $file_path, string $file_contents): void
+    public function setOpenContents(string $file_path, ?string $file_contents = null): void
     {
         if (isset(self::$open_files[$file_path])) {
-            self::$open_files[$file_path] = $file_contents;
+            self::$open_files[$file_path] = $file_contents ?? $this->getContents($file_path, true);
         }
     }
 
@@ -93,9 +95,19 @@ class FileProvider
         return (int) filemtime($file_path);
     }
 
-    public function addTemporaryFileChanges(string $file_path, string $new_content): void
+    public function addTemporaryFileChanges(string $file_path, string $new_content, ?int $version = null): void
     {
-        $this->temp_files[$file_path] = $new_content;
+        if (isset($this->temp_files[$file_path]) &&
+            $version !== null &&
+            $this->temp_files[$file_path]['version'] !== null &&
+            $version < $this->temp_files[$file_path]['version']
+        ) {
+            return;
+        }
+        $this->temp_files[$file_path] = [
+            'version' => $version,
+            'content' => $new_content,
+        ];
     }
 
     public function removeTemporaryFileChanges(string $file_path): void
@@ -103,9 +115,15 @@ class FileProvider
         unset($this->temp_files[$file_path]);
     }
 
+    public function getOpenFilesPath(): array
+    {
+        return $this->open_files_paths;
+    }
+
     public function openFile(string $file_path): void
     {
         self::$open_files[$file_path] = $this->getContents($file_path, true);
+        $this->open_files_paths[$file_path] = $file_path;
     }
 
     public function isOpen(string $file_path): bool
@@ -115,7 +133,11 @@ class FileProvider
 
     public function closeFile(string $file_path): void
     {
-        unset($this->temp_files[$file_path], self::$open_files[$file_path]);
+        unset(
+            $this->temp_files[$file_path],
+            self::$open_files[$file_path],
+            $this->open_files_paths[$file_path],
+        );
     }
 
     public function fileExists(string $file_path): bool

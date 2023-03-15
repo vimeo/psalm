@@ -84,7 +84,6 @@ class TKeyedArray extends Atomic
         $this->class_strings = $class_strings;
         $this->fallback_params = $fallback_params;
         $this->is_list = $is_list;
-        $this->from_docblock = $from_docblock;
         if ($this->is_list) {
             $last_k = -1;
             $had_possibly_undefined = false;
@@ -100,6 +99,7 @@ class TKeyedArray extends Atomic
                 $last_k = $k;
             }
         }
+        parent::__construct($from_docblock);
     }
 
     /**
@@ -663,8 +663,22 @@ class TKeyedArray extends Atomic
      */
     private function escapeAndQuote($name)
     {
-        if (is_string($name) && ($name === '' || preg_match('/[^a-zA-Z0-9_]/', $name))) {
-            $name = '\'' . str_replace("\n", '\n', addslashes($name)) . '\'';
+        if (is_string($name)) {
+            $quote = false;
+
+            if ($name === '' || preg_match('/[^a-zA-Z0-9_]/', $name)) {
+                $quote = true;
+            }
+
+            if (preg_match('/^-?[1-9][0-9]*$/', $name)
+                && (string)(int) $name !== $name // overflow occured
+            ) {
+                $quote = true;
+            }
+
+            if ($quote) {
+                $name = '\'' . str_replace("\n", '\n', addslashes($name)) . '\'';
+            }
         }
 
         return $name;

@@ -22,7 +22,7 @@ final class TClassConstant extends Atomic
     {
         $this->fq_classlike_name = $fq_classlike_name;
         $this->const_name = $const_name;
-        $this->from_docblock = $from_docblock;
+        parent::__construct($from_docblock);
     }
 
     public function getKey(bool $include_extra = true): string

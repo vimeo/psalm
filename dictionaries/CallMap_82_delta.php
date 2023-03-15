@@ -41,9 +41,17 @@ return [
       'old' => ['resource', 'path'=>'string', 'mode'=>'string', 'handler='=>'string', '...handler_params='=>'string'],
       'new' => ['resource', 'path'=>'string', 'mode'=>'string', 'handler='=>'?string', 'permission='=>'int', 'map_size='=>'int', 'flags='=>'?int'],
     ],
+    'iterator_count' => [
+      'old' => ['0|positive-int', 'iterator'=>'Traversable'],
+      'new' => ['0|positive-int', 'iterator'=>'Traversable|array'],
+    ],
+    'iterator_to_array' => [
+      'old' => ['array', 'iterator'=>'Traversable', 'preserve_keys='=>'bool'],
+      'new' => ['array', 'iterator'=>'Traversable|array', 'preserve_keys='=>'bool'],
+    ],
     'str_split' => [
        'old' => ['non-empty-list<string>', 'string'=>'string', 'length='=>'positive-int'],
-       'new' => ['list<string>', 'string'=>'string', 'length='=>'positive-int'],
+       'new' => ['list<non-empty-string>', 'string'=>'string', 'length='=>'positive-int'],
     ],
   ],
 

@@ -551,6 +551,8 @@ class TypeCombiner
             }
 
             foreach ($type->type_params as $i => $type_param) {
+                // See https://github.com/vimeo/psalm/pull/9439#issuecomment-1464563015
+                /** @psalm-suppress PropertyTypeCoercion */
                 $combination->array_type_params[$i] = Type::combineUnionTypes(
                     $combination->array_type_params[$i] ?? null,
                     $type_param,
@@ -599,6 +601,8 @@ class TypeCombiner
 
         if ($type instanceof TClassStringMap) {
             foreach ([$type->getStandinKeyParam(), $type->value_param] as $i => $type_param) {
+                // See https://github.com/vimeo/psalm/pull/9439#issuecomment-1464563015
+                /** @psalm-suppress PropertyTypeCoercion */
                 $combination->array_type_params[$i] = Type::combineUnionTypes(
                     $combination->array_type_params[$i] ?? null,
                     $type_param,

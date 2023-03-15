@@ -19,7 +19,7 @@ final class TIntMask extends TInt
     public function __construct(array $values, bool $from_docblock = false)
     {
         $this->values = $values;
-        $this->from_docblock = $from_docblock;
+        parent::__construct($from_docblock);
     }
 
     public function getKey(bool $include_extra = true): string

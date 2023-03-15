@@ -46,7 +46,7 @@ final class TTemplatePropertiesOf extends Atomic
         $this->defining_class = $defining_class;
         $this->as = $as;
         $this->visibility_filter = $visibility_filter;
-        $this->from_docblock = $from_docblock;
+        parent::__construct($from_docblock);
     }
 
     public function getKey(bool $include_extra = true): string

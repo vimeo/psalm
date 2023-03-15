@@ -22,6 +22,7 @@ final class TDependentGetDebugType extends TString implements DependentType
     public function __construct(string $typeof)
     {
         $this->typeof = $typeof;
+        parent::__construct(false);
     }
 
     public function getKey(bool $include_extra = true): string

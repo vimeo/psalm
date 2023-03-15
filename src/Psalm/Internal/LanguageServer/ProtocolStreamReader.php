@@ -91,7 +91,9 @@ class ProtocolStreamReader implements ProtocolReader
                         $this->buffer = '';
                     } elseif (substr($this->buffer, -2) === "\r\n") {
                         $parts = explode(':', $this->buffer);
-                        $this->headers[$parts[0]] = trim($parts[1]);
+                        if (isset($parts[1])) {
+                            $this->headers[$parts[0]] = trim($parts[1]);
+                        }
                         $this->buffer = '';
                     }
                     break;

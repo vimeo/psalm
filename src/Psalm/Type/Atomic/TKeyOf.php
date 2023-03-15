@@ -21,7 +21,7 @@ final class TKeyOf extends TArrayKey
     public function __construct(Union $type, bool $from_docblock = false)
     {
         $this->type = $type;
-        $this->from_docblock = $from_docblock;
+        parent::__construct($from_docblock);
     }
 
     public function getKey(bool $include_extra = true): string

@@ -666,17 +666,22 @@ class SimpleTypeInferer
                 } elseif ($key_type->isSingleIntLiteral()) {
                     $item_key_value = $key_type->getSingleIntLiteral()->value;
 
-                    if ($item_key_value >= $array_creation_info->int_offset) {
-                        if ($item_key_value === $array_creation_info->int_offset) {
+                    if ($item_key_value <= PHP_INT_MAX
+                        && $item_key_value > $array_creation_info->int_offset
+                    ) {
+                        if ($item_key_value - 1 === $array_creation_info->int_offset) {
                             $item_is_list_item = true;
                         }
-                        $array_creation_info->int_offset = $item_key_value + 1;
+                        $array_creation_info->int_offset = $item_key_value;
                     }
                 }
             }
         } else {
+            if ($array_creation_info->int_offset === PHP_INT_MAX) {
+                return false;
+            }
             $item_is_list_item = true;
-            $item_key_value = $array_creation_info->int_offset++;
+            $item_key_value = ++$array_creation_info->int_offset;
             $array_creation_info->item_key_atomic_types[] = new TLiteralInt($item_key_value);
         }
 
@@ -760,7 +765,10 @@ class SimpleTypeInferer
                         $new_offset = $key;
                         $array_creation_info->item_key_atomic_types[] = Type::getAtomicStringFromLiteral($new_offset);
                     } else {
-                        $new_offset = $array_creation_info->int_offset++;
+                        if ($array_creation_info->int_offset === PHP_INT_MAX) {
+                            return false;
+                        }
+                        $new_offset = ++$array_creation_info->int_offset;
                         $array_creation_info->item_key_atomic_types[] = new TLiteralInt($new_offset);
                     }
 

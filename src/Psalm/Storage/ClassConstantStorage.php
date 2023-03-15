@@ -7,6 +7,9 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Type\Union;
 
+use function array_values;
+use function property_exists;
+
 /**
  * @psalm-suppress PossiblyUnusedProperty
  * @psalm-immutable
@@ -87,5 +90,37 @@ final class ClassConstantStorage
         $this->attributes = $attributes;
         $this->suppressed_issues = $suppressed_issues;
         $this->description = $description;
+    }
+
+    /**
+     * Used in the Language Server
+     */
+    public function getHoverMarkdown(string $const): string
+    {
+        switch ($this->visibility) {
+            case ClassLikeAnalyzer::VISIBILITY_PRIVATE:
+                $visibility_text = 'private';
+                break;
+
+            case ClassLikeAnalyzer::VISIBILITY_PROTECTED:
+                $visibility_text = 'protected';
+                break;
+
+            default:
+                $visibility_text = 'public';
+        }
+
+        $value = '';
+        if ($this->type) {
+            $types = $this->type->getAtomicTypes();
+            $type = array_values($types)[0];
+            if (property_exists($type, 'value')) {
+                /** @psalm-suppress UndefinedPropertyFetch */
+                $value = " = {$type->value};";
+            }
+        }
+
+
+        return "$visibility_text const $const$value";
     }
 }

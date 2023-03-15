@@ -15,6 +15,8 @@ jobs:
           php-version: '7.4'
           tools: composer:v2
           coverage: none
+        env:
+          fail-fast: true
 
       - uses: actions/checkout@v3
 
@@ -23,6 +25,12 @@ jobs:
         run: |
           echo "files_cache=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
           echo "vcs_cache=$(composer config cache-vcs-dir)" >> $GITHUB_OUTPUT
+
+      - name: Generate composer.lock
+        run: |
+          composer update --no-install
+        env:
+          COMPOSER_ROOT_VERSION: dev-master
 
       - name: Cache composer cache
         uses: actions/cache@v3
@@ -88,6 +96,8 @@ jobs:
           tools: composer:v2
           coverage: none
           extensions: none, curl, dom, filter, intl, json, libxml, mbstring, opcache, openssl, pcre, phar, reflection, simplexml, spl, tokenizer, xml, xmlwriter
+        env:
+          fail-fast: true
 
       - uses: actions/checkout@v3
 
@@ -96,6 +106,12 @@ jobs:
         run: |
           echo "files_cache=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
           echo "vcs_cache=$(composer config cache-vcs-dir)" >> $GITHUB_OUTPUT
+
+      - name: Generate composer.lock
+        run: |
+          composer update --no-install
+        env:
+          COMPOSER_ROOT_VERSION: dev-master
 
       - name: Cache composer cache
         uses: actions/cache@v3

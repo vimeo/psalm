@@ -44,6 +44,7 @@
     },
     "require-dev": {
         "ext-curl": "*",
+        "amphp/phpunit-util": "^2.0",
         "bamarni/composer-bin-plugin": "^1.4",
         "brianium/paratest": "^6.9",
         "mockery/mockery": "^1.5",

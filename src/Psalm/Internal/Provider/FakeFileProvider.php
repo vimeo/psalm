@@ -29,7 +29,7 @@ class FakeFileProvider extends FileProvider
     public function getContents(string $file_path, bool $go_to_source = false): string
     {
         if (!$go_to_source && isset($this->temp_files[$file_path])) {
-            return $this->temp_files[$file_path];
+            return $this->temp_files[$file_path]['content'];
         }
 
         return $this->fake_files[$file_path] ?? parent::getContents($file_path);
@@ -40,10 +40,10 @@ class FakeFileProvider extends FileProvider
         $this->fake_files[$file_path] = $file_contents;
     }
 
-    public function setOpenContents(string $file_path, string $file_contents): void
+    public function setOpenContents(string $file_path, ?string $file_contents = null): void
     {
         if (isset($this->fake_files[$file_path])) {
-            $this->fake_files[$file_path] = $file_contents;
+            $this->fake_files[$file_path] = $file_contents ?? $this->getContents($file_path, true);
         }
     }
 
