@@ -61,6 +61,7 @@ use function strlen;
 use function strpos;
 use function strtolower;
 use function substr;
+use function substr_replace;
 use function trim;
 
 /**
@@ -1252,7 +1253,7 @@ class FunctionLikeDocblockScanner
 
                     if (strpos($assertion['param_name'], $param->name.'->') === 0) {
                         $storage->assertions[] = new Possibilities(
-                            str_replace($param->name, (string) $i, $assertion['param_name']),
+                            substr_replace($assertion['param_name'], (string) $i, 0, strlen($param->name)),
                             $assertion_type_parts,
                         );
                         continue 2;

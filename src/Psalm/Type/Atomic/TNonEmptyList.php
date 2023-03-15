@@ -44,10 +44,10 @@ class TNonEmptyList extends TList
         ?int $min_count = null,
         bool $from_docblock = false
     ) {
-        $this->type_param = $type_param;
         $this->count = $count;
         $this->min_count = $min_count;
-        $this->from_docblock = $from_docblock;
+        /** @psalm-suppress DeprecatedClass */
+        parent::__construct($type_param, $from_docblock);
     }
 
     public function getKeyedArray(): TKeyedArray

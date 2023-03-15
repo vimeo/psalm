@@ -38,6 +38,7 @@ trait CallableTrait
      * Constructs a new instance of a generic type
      *
      * @param list<FunctionLikeParameter> $params
+     * @deprecated
      */
     public function __construct(
         string $value = 'callable',

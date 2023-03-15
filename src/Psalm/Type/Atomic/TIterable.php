@@ -54,7 +54,7 @@ final class TIterable extends Atomic
             $this->type_params = [Type::getMixed(), Type::getMixed()];
         }
         $this->extra_types = $extra_types;
-        $this->from_docblock = $from_docblock;
+        parent::__construct($from_docblock);
     }
 
     public function getKey(bool $include_extra = true): string

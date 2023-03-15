@@ -46,7 +46,7 @@ final class TClassStringMap extends Atomic
         $this->param_name = $param_name;
         $this->as_type = $as_type;
         $this->value_param = $value_param;
-        $this->from_docblock = $from_docblock;
+        parent::__construct($from_docblock);
     }
 
     public function getId(bool $exact = true, bool $nested = false): string

@@ -24,8 +24,6 @@ class Message
 
     /**
      * Parses a message
-     *
-     * @psalm-suppress UnusedMethod
      */
     public static function parse(string $msg): Message
     {
@@ -35,7 +33,9 @@ class Message
         foreach ($parts as $line) {
             if ($line) {
                 $pair = explode(': ', $line);
-                $obj->headers[$pair[0]] = $pair[1];
+                if (isset($pair[1])) {
+                    $obj->headers[$pair[0]] = $pair[1];
+                }
             }
         }
 
@@ -56,6 +56,7 @@ class Message
 
     public function __toString(): string
     {
+
         $body = (string)$this->body;
         $contentLength = strlen($body);
         $this->headers['Content-Length'] = (string) $contentLength;

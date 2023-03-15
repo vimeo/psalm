@@ -2,20 +2,14 @@
 
 namespace Psalm\Internal\Cli;
 
+use LanguageServerProtocol\MessageType;
 use Psalm\Config;
-use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\CliUtils;
-use Psalm\Internal\Composer;
 use Psalm\Internal\ErrorHandler;
 use Psalm\Internal\Fork\PsalmRestarter;
 use Psalm\Internal\IncludeCollector;
-use Psalm\Internal\Provider\ClassLikeStorageCacheProvider;
-use Psalm\Internal\Provider\FileProvider;
-use Psalm\Internal\Provider\FileReferenceCacheProvider;
-use Psalm\Internal\Provider\FileStorageCacheProvider;
-use Psalm\Internal\Provider\ParserCacheProvider;
-use Psalm\Internal\Provider\ProjectCacheProvider;
-use Psalm\Internal\Provider\Providers;
+use Psalm\Internal\LanguageServer\ClientConfiguration;
+use Psalm\Internal\LanguageServer\LanguageServer as LanguageServerLanguageServer;
 use Psalm\Report;
 
 use function array_key_exists;
@@ -52,16 +46,21 @@ require_once __DIR__ . '/../ErrorHandler.php';
 require_once __DIR__ . '/../CliUtils.php';
 require_once __DIR__ . '/../Composer.php';
 require_once __DIR__ . '/../IncludeCollector.php';
+require_once __DIR__ . '/../LanguageServer/ClientConfiguration.php';
 
 /**
  * @internal
  */
 final class LanguageServer
 {
-    /** @param array<int,string> $argv */
+    /**
+     * @param array<int,string> $argv
+     * @psalm-suppress ComplexMethod
+     */
     public static function run(array $argv): void
     {
         CliUtils::checkRuntimeRequirements();
+        $clientConfiguration = new ClientConfiguration();
         gc_disable();
         ErrorHandler::install($argv);
         $valid_short_options = [
@@ -72,7 +71,6 @@ final class LanguageServer
         ];
 
         $valid_long_options = [
-            'clear-cache',
             'config:',
             'find-dead-code',
             'help',
@@ -82,7 +80,17 @@ final class LanguageServer
             'tcp:',
             'tcp-server',
             'disable-on-change::',
+            'use-baseline:',
             'enable-autocomplete::',
+            'enable-code-actions::',
+            'enable-provide-diagnostics::',
+            'enable-provide-hover::',
+            'enable-provide-signature-help::',
+            'enable-provide-definition::',
+            'show-diagnostic-warnings::',
+            'in-memory::',
+            'disable-xdebug::',
+            'on-change-debounce-ms::',
             'use-extended-diagnostic-codes',
             'verbose',
         ];
@@ -164,11 +172,11 @@ final class LanguageServer
                 --find-dead-code
                     Look for dead code
 
-                --clear-cache
-                    Clears all cache files that the language server uses for this specific project
-
                 --use-ini-defaults
                     Use PHP-provided ini defaults for memory and error display
+
+                --use-baseline=PATH
+                    Allows you to use a baseline other than the default baseline provided in your config
 
                 --tcp=url
                     Use TCP mode (by default Psalm uses STDIO)
@@ -180,11 +188,38 @@ final class LanguageServer
                     If added, the language server will not respond to onChange events.
                     You can also specify a line count over which Psalm will not run on-change events.
 
+                --enable-code-actions[=BOOL]
+                    Enables or disables code actions. Default is true.
+
+                --enable-provide-diagnostics[=BOOL]
+                    Enables or disables providing diagnostics. Default is true.
+
                 --enable-autocomplete[=BOOL]
                     Enables or disables autocomplete on methods and properties. Default is true.
 
-                --use-extended-diagnostic-codes
+                --enable-provide-hover[=BOOL]
+                    Enables or disables providing hover. Default is true.
+
+                --enable-provide-signature-help[=BOOL]
+                    Enables or disables providing signature help. Default is true.
+
+                --enable-provide-definition[=BOOL]
+                    Enables or disables providing definition. Default is true.
+
+                --show-diagnostic-warnings[=BOOL]
+                    Enables or disables showing diagnostic warnings. Default is true.
+
+                --use-extended-diagnostic-codes (DEPRECATED)
                     Enables sending help uri links with the code in diagnostic messages.
+
+                --on-change-debounce-ms=[INT]
+                    The number of milliseconds to debounce onChange events.
+
+                --disable-xdebug[=BOOL]
+                    Disable xdebug for performance reasons. Enable for debugging
+
+                --in-memory[=BOOL]
+                    Use in-memory mode. Default is false. Experimental.
 
                 --verbose
                     Will send log messages to the client with information.
@@ -245,8 +280,14 @@ final class LanguageServer
             'blackfire',
         ]);
 
-        // If Xdebug is enabled, restart without it
-        $ini_handler->check();
+        $disableXdebug = !isset($options['disable-xdebug'])
+            || !is_string($options['disable-xdebug'])
+            || strtolower($options['disable-xdebug']) !== 'false';
+
+        // If Xdebug is enabled, restart without it based on cli
+        if ($disableXdebug) {
+            $ini_handler->check();
+        }
 
         setlocale(LC_CTYPE, 'C');
 
@@ -258,8 +299,6 @@ final class LanguageServer
                 exit(1);
             }
         }
-
-        $find_unused_code = isset($options['find-dead-code']) ? 'auto' : null;
 
         $config = CliUtils::initializeConfig(
             $path_to_config,
@@ -276,58 +315,85 @@ final class LanguageServer
 
         $config->setServerMode();
 
-        if (isset($options['clear-cache'])) {
+        $inMemory = isset($options['in-memory']) &&
+            is_string($options['in-memory']) &&
+            strtolower($options['in-memory']) === 'true';
+
+        if ($inMemory) {
+            $config->cache_directory = null;
+        } else {
             $cache_directory = $config->getCacheDirectory();
 
             if ($cache_directory !== null) {
                 Config::removeCacheDirectory($cache_directory);
             }
-            echo 'Cache directory deleted' . PHP_EOL;
-            exit;
         }
 
-        $providers = new Providers(
-            new FileProvider,
-            new ParserCacheProvider($config),
-            new FileStorageCacheProvider($config),
-            new ClassLikeStorageCacheProvider($config),
-            new FileReferenceCacheProvider($config),
-            new ProjectCacheProvider(Composer::getLockFilePath($current_dir)),
-        );
-
-        $project_analyzer = new ProjectAnalyzer(
-            $config,
-            $providers,
-        );
-
-        if ($config->find_unused_variables) {
-            $project_analyzer->getCodebase()->reportUnusedVariables();
-        }
-
-        if ($config->find_unused_code) {
-            $find_unused_code = 'auto';
+        if (isset($options['use-baseline']) && is_string($options['use-baseline'])) {
+            $clientConfiguration->baseline = $options['use-baseline'];
         }
 
         if (isset($options['disable-on-change']) && is_numeric($options['disable-on-change'])) {
-            $project_analyzer->onchange_line_limit = (int) $options['disable-on-change'];
+            $clientConfiguration->onchangeLineLimit = (int) $options['disable-on-change'];
         }
 
-        $project_analyzer->provide_completion = !isset($options['enable-autocomplete'])
+        if (isset($options['on-change-debounce-ms']) && is_numeric($options['on-change-debounce-ms'])) {
+            $clientConfiguration->onChangeDebounceMs = (int) $options['on-change-debounce-ms'];
+        }
+
+        $clientConfiguration->provideDefinition = !isset($options['enable-provide-definition'])
+            || !is_string($options['enable-provide-definition'])
+            || strtolower($options['enable-provide-definition']) !== 'false';
+
+        $clientConfiguration->provideSignatureHelp = !isset($options['enable-provide-signature-help'])
+            || !is_string($options['enable-provide-signature-help'])
+            || strtolower($options['enable-provide-signature-help']) !== 'false';
+
+        $clientConfiguration->provideHover = !isset($options['enable-provide-hover'])
+            || !is_string($options['enable-provide-hover'])
+            || strtolower($options['enable-provide-hover']) !== 'false';
+
+        $clientConfiguration->provideDiagnostics = !isset($options['enable-provide-diagnostics'])
+            || !is_string($options['enable-provide-diagnostics'])
+            || strtolower($options['enable-provide-diagnostics']) !== 'false';
+
+        $clientConfiguration->provideCodeActions = !isset($options['enable-code-actions'])
+            || !is_string($options['enable-code-actions'])
+            || strtolower($options['enable-code-actions']) !== 'false';
+
+        $clientConfiguration->provideCompletion = !isset($options['enable-autocomplete'])
             || !is_string($options['enable-autocomplete'])
             || strtolower($options['enable-autocomplete']) !== 'false';
 
-        if ($find_unused_code) {
-            $project_analyzer->getCodebase()->reportUnusedCode($find_unused_code);
-        }
+        $clientConfiguration->hideWarnings = !(
+            !isset($options['show-diagnostic-warnings'])
+            || !is_string($options['show-diagnostic-warnings'])
+            || strtolower($options['show-diagnostic-warnings']) !== 'false'
+        );
 
-        if (isset($options['use-extended-diagnostic-codes'])) {
-            $project_analyzer->language_server_use_extended_diagnostic_codes = true;
+        /**
+         *         if ($config->find_unused_variables) {
+         *   $project_analyzer->getCodebase()->reportUnusedVariables();
+         * }
+         */
+
+        $find_unused_code = isset($options['find-dead-code']) ? 'auto' : null;
+        if ($config->find_unused_code) {
+            $find_unused_code = 'auto';
+        }
+        if ($find_unused_code) {
+            $clientConfiguration->findUnusedCode = $find_unused_code;
         }
 
         if (isset($options['verbose'])) {
-            $project_analyzer->language_server_verbose = true;
+            $clientConfiguration->logLevel = $options['verbose'] ? MessageType::LOG : MessageType::INFO;
+        } else {
+            $clientConfiguration->logLevel = MessageType::INFO;
         }
 
-        $project_analyzer->server($options['tcp'] ?? null, isset($options['tcp-server']));
+        $clientConfiguration->TCPServerAddress = $options['tcp'] ?? null;
+        $clientConfiguration->TCPServerMode = isset($options['tcp-server']);
+
+        LanguageServerLanguageServer::run($config, $clientConfiguration, $current_dir, $inMemory);
     }
 }
