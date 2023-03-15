@@ -709,6 +709,10 @@ class UnusedCodeTest extends TestCase
                         return $i;
                     }',
             ],
+            'usedFunctionCallInEval' => [
+                'code' => '<?php
+                    eval(str_repeat("a", 10));',
+            ],
             'usedFunctionCallInsideSwitchWithTernary' => [
                 'code' => '<?php
                     function getArg(string $method) : void {

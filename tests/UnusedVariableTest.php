@@ -115,6 +115,13 @@ class UnusedVariableTest extends TestCase
 
                     unset($arr[$a]);',
             ],
+            'eval' => [
+                'code' => '<?php
+                    if (rand()) {
+                        $v = "";
+                        eval($v);
+                    }',
+            ],
             'usedVariables' => [
                 'code' => '<?php
                     /** @return string */
