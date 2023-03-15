@@ -362,16 +362,6 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             return;
         }
 
-        if ($this->leftover_stmts) {
-            (new StatementsAnalyzer(
-                $this,
-                new NodeDataProvider(),
-            ))->analyze(
-                $this->leftover_stmts,
-                $class_context,
-            );
-        }
-
         if (!$storage->abstract) {
             foreach ($storage->declaring_method_ids as $declaring_method_id) {
                 $method_storage = $codebase->methods->getStorage($declaring_method_id);

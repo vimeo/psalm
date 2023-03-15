@@ -92,11 +92,6 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
      */
     protected ?string $parent_fq_class_name = null;
 
-    /**
-     * @var PhpParser\Node\Stmt[]
-     */
-    protected array $leftover_stmts = [];
-
     protected ClassLikeStorage $storage;
 
     public function __construct(PhpParser\Node\Stmt\ClassLike $class, SourceAnalyzer $source, string $fq_class_name)
