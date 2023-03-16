@@ -1460,19 +1460,19 @@ function ldap_escape(string $value, string $ignore = "", int $flags = 0) : strin
 /**
  * @psalm-pure
  *
+ * @param int<1, 2147483647> $depth
  * @return mixed
  * @psalm-flow ($json) -> return
  */
 function json_decode(string $json, ?bool $associative = null, int $depth = 512, int $flags = 0) {}
 
 /**
+ * The conditional return type below relies on the fact that JSON_THROW_ON_ERROR is 
+ * the highest-valued of JSON constants
  * @psalm-pure
  *
- * @return (
- *      $flags is 4194304
- *          ? non-empty-string
- *          : ($flags is 4194560 ? non-empty-string : non-empty-string|false)
- *  )
+ * @param int<1, 2147483647> $depth
+ * @return ($flags is int<4194304, 8388607> ? non-empty-string : non-empty-string|false)
  *
  * @psalm-flow ($value) -> return
  * @psalm-ignore-falsable-return

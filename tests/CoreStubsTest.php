@@ -2,11 +2,13 @@
 
 namespace Psalm\Tests;
 
+use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 class CoreStubsTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
+    use InvalidCodeAnalysisTestTrait;
 
     public function providerValidCodeParse(): iterable
     {
@@ -130,6 +132,40 @@ class CoreStubsTest extends TestCase
             'assertions' => [
                 '$a===' => 'non-empty-string',
             ],
+        ];
+        yield 'json_encode returns a non-empty-string with JSON_THROW_ON_ERROR' => [
+            'code' => '<?php
+                $a = json_encode([], JSON_THROW_ON_ERROR | JSON_HEX_TAG);
+                $b = json_encode([], JSON_THROW_ON_ERROR | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE);
+                $c = json_encode([], JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+                $d = json_encode([], JSON_THROW_ON_ERROR | JSON_PRESERVE_ZERO_FRACTION);
+                $e = json_encode([], JSON_PRESERVE_ZERO_FRACTION);
+                $f = json_encode([], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+            ',
+            'assertions' => [
+                '$a===' => 'non-empty-string',
+                '$b===' => 'non-empty-string',
+                '$c===' => 'non-empty-string',
+                '$d===' => 'non-empty-string',
+                '$e===' => 'false|non-empty-string',
+                '$f===' => 'false|non-empty-string',
+            ],
+        ];
+    }
+
+    public function providerInvalidCodeParse(): iterable
+    {
+        yield 'json_decode invalid depth' => [
+            'code' => '<?php
+                json_decode("true", depth: -1);
+            ',
+            'error_message' => 'InvalidArgument',
+        ];
+        yield 'json_encode invalid depth' => [
+            'code' => '<?php
+                json_encode([], depth: 439877348953739);
+            ',
+            'error_message' => 'InvalidArgument',
         ];
     }
 }
