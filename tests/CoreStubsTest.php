@@ -2,11 +2,13 @@
 
 namespace Psalm\Tests;
 
+use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 class CoreStubsTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
+    use InvalidCodeAnalysisTestTrait;
 
     public function providerValidCodeParse(): iterable
     {
@@ -144,6 +146,22 @@ class CoreStubsTest extends TestCase
                 '$c===' => 'non-empty-string',
                 '$d===' => 'non-empty-string',
             ],
+        ];
+    }
+
+    public function providerInvalidCodeParse(): iterable
+    {
+        yield 'json_decode invalid depth' => [
+            'code' => '<?php
+                json_decode("true", depth: -1);
+            ',
+            'error_message' => 'InvalidArgument',
+        ];
+        yield 'json_encode invalid depth' => [
+            'code' => '<?php
+                json_encode([], depth: 439877348953739);
+            ',
+            'error_message' => 'InvalidArgument',
         ];
     }
 }
