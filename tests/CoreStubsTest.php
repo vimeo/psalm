@@ -139,12 +139,16 @@ class CoreStubsTest extends TestCase
                 $b = json_encode([], JSON_THROW_ON_ERROR | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE);
                 $c = json_encode([], JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
                 $d = json_encode([], JSON_THROW_ON_ERROR | JSON_PRESERVE_ZERO_FRACTION);
+                $e = json_encode([], JSON_PRESERVE_ZERO_FRACTION);
+                $f = json_encode([], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
             ',
             'assertions' => [
                 '$a===' => 'non-empty-string',
                 '$b===' => 'non-empty-string',
                 '$c===' => 'non-empty-string',
                 '$d===' => 'non-empty-string',
+                '$e===' => 'false|non-empty-string',
+                '$f===' => 'false|non-empty-string',
             ],
         ];
     }
