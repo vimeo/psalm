@@ -653,6 +653,88 @@ class TypeAnnotationTest extends TestCase
                     '$output===' => 'list<1|2>',
                 ],
             ],
+            'callableWithReturnTypeTypeAliasWithinBackets' => [
+                'code' => '<?php
+                    /** @psalm-type TCallback (callable():int) */
+                    class Foo {
+                        /** @psalm-var TCallback */
+                        public static callable $callback;
+                    }
+                    $output = Foo::$callback;
+                ',
+                'assertions' => [
+                    '$output===' => 'callable():int',
+                ],
+            ],
+            'callableWithReturnTypeTypeAlias' => [
+                'code' => '<?php
+                    /** @psalm-type TCallback callable():int */
+                    class Foo {
+                        /** @psalm-var TCallback */
+                        public static callable $callback;
+                    }
+                    $output = Foo::$callback;
+                ',
+                'assertions' => [
+                    '$output===' => 'callable():int',
+                ],
+            ],
+            'unionOfStringsContainingBraceChar' => [
+                'code' => '<?php
+                    /** @psalm-type T \'{\'|\'}\' */
+                    class Foo {
+                        /** @psalm-var T */
+                        public static string $t;
+                    }
+                    $t = Foo::$t;
+                ',
+                'assertions' => [
+                    '$t===' => '\'{\'|\'}\'',
+                ],
+            ],
+            'unionOfStringsContainingGTChar' => [
+                'code' => '<?php
+                    /** @psalm-type T \'<\'|\'>\' */
+                    class Foo {
+                        /** @psalm-var T */
+                        public static string $t;
+                    }
+                    $t = Foo::$t;
+                ',
+                'assertions' => [
+                    '$t===' => '\'<\'|\'>\'',
+                ],
+            ],
+            'unionOfStringsContainingBracketChar' => [
+                'code' => '<?php
+                    /** @psalm-type T \'(\'|\')\' */
+                    class Foo {
+                        /** @psalm-var T */
+                        public static string $t;
+                    }
+                    $t = Foo::$t;
+                ',
+                'assertions' => [
+                    '$t===' => '\'(\'|\')\'',
+                ],
+            ],
+            'bareWordsCommentAfterType' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type T string
+                     *
+                     * Lorem ipsum
+                     */
+                    class Foo {
+                        /** @psalm-var T */
+                        public static string $t;
+                    }
+                    $t = Foo::$t;
+                ',
+                'assertions' => [
+                    '$t===' => 'string',
+                ],
+            ],
             'handlesTypeWhichEndsWithRoundBracket' => [
                 'code' => '<?php
                     /**
@@ -660,6 +742,34 @@ class TypeAnnotationTest extends TestCase
                      */
                     class A {}
                     ',
+            ],
+            'commentAfterType' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type TTest string
+                     *
+                     * This is a test class.
+                     */
+                    class Test {}',
+            ],
+            'multilineTypeWithComment' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type PhoneType = array{
+                     *    phone: string
+                     * }
+                     *
+                     * Bar
+                     */
+                    class Foo {
+                        /** @var PhoneType */
+                        public static $phone;
+                    }
+                    $output = Foo::$phone;
+                    ',
+                'assertions' => [
+                    '$output===' => 'array{phone: string}',
+                ],
             ],
         ];
     }
