@@ -721,7 +721,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 if ($expected_exception === $possibly_thrown_exception
                     || (
                         $codebase->classOrInterfaceExists($possibly_thrown_exception)
-                        && $codebase->classExtendsOrImplements($possibly_thrown_exception, $expected_exception)
+                        && (
+                            $codebase->interfaceExtends($possibly_thrown_exception, $expected_exception)
+                            || $codebase->classExtendsOrImplements($possibly_thrown_exception, $expected_exception)
+                        )
                     )
                 ) {
                     $is_expected = true;
