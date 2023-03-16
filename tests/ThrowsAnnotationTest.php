@@ -659,4 +659,41 @@ class ThrowsAnnotationTest extends TestCase
 
         $this->analyzeFile('somefile.php', $context);
     }
+
+    public function testDocumentedThrowInterfaceWithFunctionCallWithImplementedExceptionThrow(): void
+    {
+        Config::getInstance()->check_for_throws_docblock = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                interface TestExceptionInterface extends Throwable
+                {
+                }
+
+                class TestException extends Exception implements TestExceptionInterface
+                {
+                }
+
+                class Example
+                {
+                    /**
+                     * @throws Throwable
+                     */
+                    private function methodOne(): void {
+                        $this->methodTwo();
+                    }
+
+                    /**
+                     * @throws TestExceptionInterface
+                     */
+                    private function methodTwo(): void {}
+                }
+            ',
+        );
+
+        $context = new Context();
+
+        $this->analyzeFile('somefile.php', $context);
+    }
 }
