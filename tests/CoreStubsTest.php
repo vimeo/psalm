@@ -131,5 +131,19 @@ class CoreStubsTest extends TestCase
                 '$a===' => 'non-empty-string',
             ],
         ];
+        yield 'json_encode returns a non-empty-string with JSON_THROW_ON_ERROR' => [
+            'code' => '<?php
+                $a = json_encode([], JSON_THROW_ON_ERROR | JSON_HEX_TAG);
+                $b = json_encode([], JSON_THROW_ON_ERROR | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE);
+                $c = json_encode([], JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+                $d = json_encode([], JSON_THROW_ON_ERROR | JSON_PRESERVE_ZERO_FRACTION);
+            ',
+            'assertions' => [
+                '$a===' => 'non-empty-string',
+                '$b===' => 'non-empty-string',
+                '$c===' => 'non-empty-string',
+                '$d===' => 'non-empty-string',
+            ],
+        ];
     }
 }
