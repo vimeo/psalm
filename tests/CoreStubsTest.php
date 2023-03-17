@@ -262,6 +262,12 @@ class CoreStubsTest extends TestCase
                 '$c===' => 'false|string',
             ],
         ];
+        yield "str_contains doesn't yield InvalidLiteralArgument for __DIR__" => [
+            'code' => '<?php
+                $d = __DIR__;
+                echo str_contains($d, "psalm");
+            ',
+        ];
     }
 
     public function providerInvalidCodeParse(): iterable
