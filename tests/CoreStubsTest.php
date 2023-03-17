@@ -151,6 +151,35 @@ class CoreStubsTest extends TestCase
                 '$f===' => 'false|non-empty-string',
             ],
         ];
+        yield 'str_starts_with/str_ends_with/str_contains redundant condition detection' => [
+            'code' => '<?php
+                $a1 = str_starts_with(uniqid(), "");
+                /** @psalm-suppress InvalidLiteralArgument */
+                $b1 = str_starts_with("", "random string");
+                $c1 = str_starts_with(uniqid(), "random string");
+
+                $a2 = str_ends_with(uniqid(), "");
+                /** @psalm-suppress InvalidLiteralArgument */
+                $b2 = str_ends_with("", "random string");
+                $c2 = str_ends_with(uniqid(), "random string");
+
+                $a3 = str_contains(uniqid(), "");
+                /** @psalm-suppress InvalidLiteralArgument */
+                $b3 = str_contains("", "random string");
+                $c3 = str_contains(uniqid(), "random string");
+            ',
+            'assertions' => [
+                '$a1===' => 'true',
+                '$b1===' => 'false',
+                '$c1===' => 'bool',
+                '$a2===' => 'true',
+                '$b2===' => 'false',
+                '$c2===' => 'bool',
+                '$a3===' => 'true',
+                '$b3===' => 'false',
+                '$c3===' => 'bool',
+            ],
+        ];
     }
 
     public function providerInvalidCodeParse(): iterable
