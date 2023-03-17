@@ -12217,7 +12217,7 @@ return [
     'log' => ['float', 'num'=>'float', 'base='=>'float'],
     'log10' => ['float', 'num'=>'float'],
     'log1p' => ['float', 'num'=>'float'],
-    'long2ip' => ['string', 'ip'=>'int'],
+    'long2ip' => ['string|false', 'ip'=>'int'],
     'lstat' => ['array{0: int, 1: int, 2: int, 3: int, 4: int, 5: int, 6: int, 7: int, 8: int, 9: int, 10: int, 11: int, 12: int, dev: int, ino: int, mode: int, nlink: int, uid: int, gid: int, rdev: int, size: int, atime: int, mtime: int, ctime: int, blksize: int, blocks: int}|false', 'filename'=>'string'],
     'ltrim' => ['string', 'string'=>'string', 'characters='=>'string'],
     'lzf_compress' => ['string', 'data'=>'string'],
