@@ -196,5 +196,23 @@ class CoreStubsTest extends TestCase
             ',
             'error_message' => 'InvalidArgument',
         ];
+        yield 'str_contains literal haystack' => [
+            'code' => '<?php
+                str_contains("literal", "");
+            ',
+            'error_message' => 'InvalidLiteralArgument',
+        ];
+        yield 'str_starts_with literal haystack' => [
+            'code' => '<?php
+                str_starts_with("literal", "");
+            ',
+            'error_message' => 'InvalidLiteralArgument',
+        ];
+        yield 'str_ends_with literal haystack' => [
+            'code' => '<?php
+                str_ends_with("literal", "");
+            ',
+            'error_message' => 'InvalidLiteralArgument',
+        ];
     }
 }
