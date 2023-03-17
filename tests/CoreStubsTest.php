@@ -180,6 +180,88 @@ class CoreStubsTest extends TestCase
                 '$c3===' => 'bool',
             ],
         ];
+        yield 'PHP8 str_* function assert non-empty-string' => [
+            'code' => '<?php
+                /** @return non-empty-string */
+                function after_str_contains(): string
+                {
+                    $string = file_get_contents("");
+                    if (str_contains($string, "foo")) {
+                        return $string;
+                    }
+                    throw new RuntimeException();
+                }
+
+                /** @return non-empty-string */
+                function after_str_starts_with(): string
+                {
+                    $string = file_get_contents("");
+                    if (str_starts_with($string, "foo")) {
+                        return $string;
+                    }
+                    throw new RuntimeException();
+                }
+
+                /** @return non-empty-string */
+                function after_str_ends_with(): string
+                {
+                    $string = file_get_contents("");
+                    if (str_ends_with($string, "foo")) {
+                        return $string;
+                    }
+                    throw new RuntimeException();
+                }
+                $a = after_str_contains();
+                $b = after_str_starts_with();
+                $c = after_str_ends_with();
+            ',
+            'assertions' => [
+                '$a===' => 'non-empty-string',
+                '$b===' => 'non-empty-string',
+                '$c===' => 'non-empty-string',
+            ],
+        ];
+        yield "PHP8 str_* function doesn't subtract string after assertion" => [
+            'code' => '<?php
+                /** @return false|string */
+                function after_str_contains()
+                {
+                    $string = file_get_contents("");
+                    if (!str_contains($string, "foo")) {
+                        return $string;
+                    }
+                    throw new RuntimeException();
+                }
+
+                /** @return false|string */
+                function after_str_starts_with()
+                {
+                    $string = file_get_contents("");
+                    if (!str_starts_with($string, "foo")) {
+                        return $string;
+                    }
+                    throw new RuntimeException();
+                }
+
+                /** @return false|string */
+                function after_str_ends_with()
+                {
+                    $string = file_get_contents("");
+                    if (!str_ends_with($string, "foo")) {
+                        return $string;
+                    }
+                    throw new RuntimeException();
+                }
+                $a = after_str_contains();
+                $b = after_str_starts_with();
+                $c = after_str_ends_with();
+            ',
+            'assertions' => [
+                '$a===' => 'false|string',
+                '$b===' => 'false|string',
+                '$c===' => 'false|string',
+            ],
+        ];
     }
 
     public function providerInvalidCodeParse(): iterable
