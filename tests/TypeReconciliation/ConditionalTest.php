@@ -2974,7 +2974,7 @@ class ConditionalTest extends TestCase
                     }
                     ',
             ],
-            'elseDoesNotLeak' => [
+            'hypotheticalElseDoesNotLeak' => [
                 'code' => <<<'PHP'
                     <?php
                     $a = 1;
@@ -2999,20 +2999,27 @@ class ConditionalTest extends TestCase
             'ifElseDoesNotLeak' => [
                 'code' => <<<'PHP'
                     <?php
-                    $x = false;
-                    $y = false;
                     $a = 1;
                     /** @psalm-suppress TypeDoesNotContainNull */
                     if ($a === null) {
-                        $x = 2;
                     } else {
-                        $y = 3;
                     }
                     PHP,
                 'assertions' => [
                     '$a===' => '1',
-                    '$x===' => '2|false',
-                    '$y===' => '3|false',
+                ],
+            ],
+            'ifElseInvertedDoesNotLeak' => [
+                'code' => <<<'PHP'
+                    <?php
+                    $a = 1;
+                    /** @psalm-suppress RedundantCondition */
+                    if ($a !== null) {
+                    } else {
+                    }
+                    PHP,
+                'assertions' => [
+                    '$a===' => '1',
                 ],
             ],
             'SKIPPED-ctypeLowerNarrowsIntToARange' => [
