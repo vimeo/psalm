@@ -2974,6 +2974,47 @@ class ConditionalTest extends TestCase
                     }
                     ',
             ],
+            'elseDoesNotLeak' => [
+                'code' => <<<'PHP'
+                    <?php
+                    $a = 1;
+                    /** @psalm-suppress RedundantCondition */
+                    if ($a !== null) {}
+                    PHP,
+                'assertions' => [
+                    '$a===' => '1',
+                ],
+            ],
+            'ifDoesNotLeak' => [
+                'code' => <<<'PHP'
+                    <?php
+                    $a = 1;
+                    /** @psalm-suppress TypeDoesNotContainNull */
+                    if ($a === null) {}
+                    PHP,
+                'assertions' => [
+                    '$a===' => '1',
+                ],
+            ],
+            'ifElseDoesNotLeak' => [
+                'code' => <<<'PHP'
+                    <?php
+                    $x = false;
+                    $y = false;
+                    $a = 1;
+                    /** @psalm-suppress TypeDoesNotContainNull */
+                    if ($a === null) {
+                        $x = 2;
+                    } else {
+                        $y = 3;
+                    }
+                    PHP,
+                'assertions' => [
+                    '$a===' => '1',
+                    '$x===' => '2|false',
+                    '$y===' => '3|false',
+                ],
+            ],
             'SKIPPED-ctypeLowerNarrowsIntToARange' => [
                 'code' => '<?php
                     $int = rand(-1000, 1000);
