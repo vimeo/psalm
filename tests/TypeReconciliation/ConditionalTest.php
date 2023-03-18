@@ -2974,6 +2974,72 @@ class ConditionalTest extends TestCase
                     }
                     ',
             ],
+            'hypotheticalElseDoesNotLeak' => [
+                'code' => <<<'PHP'
+                    <?php
+                    $a = 1;
+                    /** @psalm-suppress RedundantCondition */
+                    if ($a !== null) {}
+                    PHP,
+                'assertions' => [
+                    '$a===' => '1',
+                ],
+            ],
+            'ifDoesNotLeak' => [
+                'code' => <<<'PHP'
+                    <?php
+                    $a = 1;
+                    /** @psalm-suppress TypeDoesNotContainNull */
+                    if ($a === null) {}
+                    PHP,
+                'assertions' => [
+                    '$a===' => '1',
+                ],
+            ],
+            'ifElseDoesNotLeak' => [
+                'code' => <<<'PHP'
+                    <?php
+                    $a = 1;
+                    /** @psalm-suppress TypeDoesNotContainNull */
+                    if ($a === null) {
+                    } else {
+                    }
+                    PHP,
+                'assertions' => [
+                    '$a===' => '1',
+                ],
+            ],
+            'ifElseInvertedDoesNotLeak' => [
+                'code' => <<<'PHP'
+                    <?php
+                    $a = 1;
+                    /** @psalm-suppress RedundantCondition */
+                    if ($a !== null) {
+                    } else {
+                    }
+                    PHP,
+                'assertions' => [
+                    '$a===' => '1',
+                ],
+            ],
+            'ifNotIssetDoesNotLeakArrayAssertions' => [
+                'code' => <<<'PHP'
+                    <?php
+
+                    /**
+                     * @param array{x?: int, y?: int, z?: int} $a
+                     * @param 'x'|'y'|'z' $b
+                     * @return void
+                     */
+                    function foo( $a, $b ) {
+                        if ( !isset( $a[ $b ] ) ) {
+                            return;
+                        }
+
+                        echo $a[ $b ];
+                    }
+                    PHP,
+            ],
             'SKIPPED-ctypeLowerNarrowsIntToARange' => [
                 'code' => '<?php
                     $int = rand(-1000, 1000);

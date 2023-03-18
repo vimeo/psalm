@@ -169,7 +169,7 @@ class ElseAnalyzer
                 $original_context,
                 $new_assigned_var_ids,
                 $new_possibly_assigned_var_ids,
-                [],
+                $if_scope->if_cond_changed_var_ids,
                 true,
             );
 
