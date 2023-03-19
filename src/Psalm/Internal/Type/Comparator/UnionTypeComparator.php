@@ -44,7 +44,7 @@ class UnionTypeComparator
         bool $allow_interface_equality = false,
         bool $allow_float_int_equality = true
     ): bool {
-        if ($container_type->isMixed()) {
+        if ($container_type->isVanillaMixed()) {
             return true;
         }
 
@@ -63,9 +63,6 @@ class UnionTypeComparator
             return false;
         }
 
-        if ($container_type->hasMixed() && !$container_type->isEmptyMixed()) {
-            return true;
-        }
 
         $container_has_template = $container_type->hasTemplateOrStatic();
 
