@@ -26,6 +26,7 @@ use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonEmptyArray;
+use Psalm\Type\Atomic\TNonEmptyMixed;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
@@ -87,8 +88,11 @@ class AtomicTypeComparator
                 && !$container_type_part->extra_types
                 && $input_type_part instanceof TMixed)
         ) {
-            if (get_class($container_type_part) === TEmptyMixed::class
-                && get_class($input_type_part) === TMixed::class
+            if (get_class($input_type_part) === TMixed::class
+                && (
+                    get_class($container_type_part) === TEmptyMixed::class
+                    || get_class($container_type_part) === TNonEmptyMixed::class
+                )
             ) {
                 if ($atomic_comparison_result) {
                     $atomic_comparison_result->type_coerced = true;

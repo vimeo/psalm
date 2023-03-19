@@ -173,5 +173,9 @@ class TypeComparatorTest extends TestCase
             'list<int>',
             'array{int, string}',
         ];
+        yield 'nonEmptyMixedDoesNotAcceptMixed' => [
+            'non-empty-mixed',
+            'mixed',
+        ];
     }
 }
