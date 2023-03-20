@@ -1277,6 +1277,23 @@ class UnusedCodeTest extends TestCase
                     new A;
                     PHP,
             ],
+            'api with unused class' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @api */
+                    class A {}
+                    PHP,
+            ],
+            'api on unused public method' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class A {
+                        /** @api */
+                        public function b(): void {}
+                    }
+                    new A;
+                    PHP,
+            ],
         ];
     }
 
