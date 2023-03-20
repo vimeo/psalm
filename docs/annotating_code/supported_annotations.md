@@ -644,7 +644,7 @@ This annotation supports only generic types, meaning that e.g. `@psalm-yield str
 
 ### `@psalm-api`
 
-Used to tell Psalm that a class is used, even if no references to it can be
+Used to tell Psalm that a class or method is used, even if no references to it can be
 found. Unused issues will be suppressed.
 
 For example, in frameworks, controllers are often invoked "magically" without
