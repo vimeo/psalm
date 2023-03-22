@@ -53,6 +53,10 @@ return [
        'old' => ['non-empty-list<string>', 'string'=>'string', 'length='=>'positive-int'],
        'new' => ['list<non-empty-string>', 'string'=>'string', 'length='=>'positive-int'],
     ],
+    'ReflectionUnionType::getTypes' => [
+        'old' => ['non-empty-list<ReflectionNamedType>'],
+        'new' => ['non-empty-list<ReflectionNamedType|ReflectionIntersectionType>'],
+    ],
   ],
 
   'removed' => [

@@ -27,7 +27,7 @@ return [
     'ReflectionFunctionAbstract::getAttributes' => ['list<ReflectionAttribute>', 'name='=>'?string', 'flags='=>'int'],
     'ReflectionParameter::getAttributes' => ['list<ReflectionAttribute>', 'name='=>'?string', 'flags='=>'int'],
     'ReflectionProperty::getAttributes' => ['list<ReflectionAttribute>', 'name='=>'?string', 'flags='=>'int'],
-    'ReflectionUnionType::getTypes' => ['list<ReflectionNamedType>'],
+    'ReflectionUnionType::getTypes' => ['non-empty-list<ReflectionNamedType>'],
     'fdiv' => ['float', 'num1'=>'float', 'num2'=>'float'],
     'get_debug_type' => ['string', 'value'=>'mixed'],
     'get_resource_id' => ['int', 'resource'=>'resource'],
