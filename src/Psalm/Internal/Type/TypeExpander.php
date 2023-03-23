@@ -77,8 +77,6 @@ class TypeExpander
     ): Union {
         $new_return_type_parts = [];
 
-        $had_split_values = false;
-
         foreach ($return_type->getAtomicTypes() as $return_type_part) {
             $parts = self::expandAtomic(
                 $codebase,
@@ -94,21 +92,13 @@ class TypeExpander
                 $throw_on_unresolvable_constant,
             );
 
-            if ($return_type_part instanceof TTypeAlias || count($parts) > 1) {
-                $had_split_values = true;
-            }
-
             $new_return_type_parts = [...$new_return_type_parts, ...$parts];
         }
 
-        if ($had_split_values) {
-            $fleshed_out_type = TypeCombiner::combine(
-                $new_return_type_parts,
-                $codebase,
-            );
-        } else {
-            $fleshed_out_type = new Union($new_return_type_parts);
-        }
+        $fleshed_out_type = TypeCombiner::combine(
+            $new_return_type_parts,
+            $codebase,
+        );
 
         $fleshed_out_type->from_docblock = $return_type->from_docblock;
         $fleshed_out_type->ignore_nullable_issues = $return_type->ignore_nullable_issues;
