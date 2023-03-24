@@ -79,11 +79,31 @@ class IssueBufferTest extends TestCase
                     0,
                 ),
             ],
+            '/path/four.php' => [
+                new IssueData(
+                    "error",
+                    0,
+                    0,
+                    "MissingPropertyType",
+                    'Message',
+                    "four.php",
+                    "/path/four.php",
+                    "snippet-4-multiline\r\nwith-carriage-return\r",
+                    "snippet-4-multiline\r\nwith-carriage-return\r",
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                ),
+            ],
         ]);
         $baseline = [
             'one.php' => ['MissingPropertyType' => ['o' => 1, 's' => ['snippet-1']] ],
             'two.php' => ['MissingPropertyType' => ['o' => 1, 's' => ['snippet-2']] ],
             'three.php' => ['MissingPropertyType' => ['o' => 1, 's' => ['snippet-3-has-carriage-return']] ],
+            'four.php' => ['MissingPropertyType' => ['o' => 1, 's' => ["snippet-4-multiline\nwith-carriage-return"]] ],
         ];
 
         $analyzer = $this->createMock(Analyzer::class);
