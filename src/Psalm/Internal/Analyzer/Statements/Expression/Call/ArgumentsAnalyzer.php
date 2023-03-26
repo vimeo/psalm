@@ -425,37 +425,44 @@ class ArgumentsAnalyzer
     private static function handleFirstClassCallableCallArg(
         StatementsAnalyzer $statements_analyzer,
         TemplateResult $inferred_template_result,
-        FunctionLikeStorage $storage,
-        FunctionLikeParameter $actual_func_param
+        FunctionLikeStorage $first_class_callable_storage,
+        FunctionLikeParameter $expected_callable_param
     ): ?Union {
-        $expected_func_type = $actual_func_param->type ?? Type::getMixed();
-        if (!$expected_func_type->isSingle()) {
+        $expected_callable_type = $expected_callable_param->type ?? Type::getMixed();
+
+        if (!$expected_callable_type->isSingle()) {
             return null;
         }
 
-        $expected_func_atomic = $expected_func_type->getSingleAtomic();
-        if (!$expected_func_atomic instanceof TClosure && !$expected_func_atomic instanceof TCallable) {
+        $expected_callable_atomic = $expected_callable_type->getSingleAtomic();
+
+        if (!$expected_callable_atomic instanceof TClosure && !$expected_callable_atomic instanceof TCallable) {
             return null;
         }
 
+        $codebase = $statements_analyzer->getCodebase();
         $remapped_lower_bounds = [];
 
-        foreach ($expected_func_atomic->params ?? [] as $offset => $expected_param) {
-            if (!isset($storage->params[$offset])) {
+        foreach ($expected_callable_atomic->params ?? [] as $offset => $expected_callable_param) {
+            if (!isset($first_class_callable_storage->params[$offset])) {
                 continue;
             }
 
-            $actual_param = $storage->params[$offset];
+            $actual_callable_storage_param = $first_class_callable_storage->params[$offset];
 
-            $expected_param_type = $expected_param->type ?? Type::getMixed();
-            $actual_param_type = $actual_param->type ?? Type::getMixed();
+            $expected_callable_param_type = $expected_callable_param->type ?? Type::getMixed();
+            $actual_callable_param_type = $actual_callable_storage_param->type ?? Type::getMixed();
 
-            if (!$expected_param_type->isSingle() || !$actual_param_type->isSingle()) {
+            if (!$codebase->isTypeContainedByType($actual_callable_param_type, $expected_callable_param_type)) {
                 continue;
             }
 
-            $expected_atomic = $expected_param_type->getSingleAtomic();
-            $actual_atomic = $actual_param_type->getSingleAtomic();
+            if (!$expected_callable_param_type->isSingle() || !$actual_callable_param_type->isSingle()) {
+                continue;
+            }
+
+            $expected_atomic = $expected_callable_param_type->getSingleAtomic();
+            $actual_atomic = $actual_callable_param_type->getSingleAtomic();
 
             if (!$expected_atomic instanceof TTemplateParam || !$actual_atomic instanceof TTemplateParam) {
                 continue;
@@ -466,23 +473,21 @@ class ArgumentsAnalyzer
             ]);
         }
 
-        $replaced_container_hof_atomic = new Union([
-            new TClosure(
-                'Closure',
-                $storage->params,
-                $storage->return_type,
-                $storage->pure,
-            ),
-        ]);
-
-        $codebase = $statements_analyzer->getCodebase();
+        $remapped_first_class_callable = TemplateInferredTypeReplacer::replace(
+            new Union([
+                new TClosure(
+                    'Closure',
+                    $first_class_callable_storage->params,
+                    $first_class_callable_storage->return_type,
+                    $first_class_callable_storage->pure,
+                ),
+            ]),
+            new TemplateResult($inferred_template_result->template_types, $remapped_lower_bounds),
+            $codebase,
+        );
 
         return TemplateInferredTypeReplacer::replace(
-            TemplateInferredTypeReplacer::replace(
-                $replaced_container_hof_atomic,
-                new TemplateResult($inferred_template_result->template_types, $remapped_lower_bounds),
-                $codebase,
-            ),
+            $remapped_first_class_callable,
             $inferred_template_result,
             $codebase,
         );

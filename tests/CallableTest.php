@@ -701,14 +701,14 @@ class CallableTest extends TestCase
                      * @param C $value3
                      * @return list{A, B, C}
                      */
-                    function doubleId(mixed $value1, mixed $value2, mixed $value3): array
+                    function tripleId(mixed $value1, mixed $value2, mixed $value3): array
                     {
                         return [$value1, $value2, $value3];
                     }
 
                     $processor = new Processor(a: 1, b: 2, c: 3);
 
-                    $test = $processor->process(doubleId(...));
+                    $test = $processor->process(tripleId(...));
                 ',
                 'assertions' => [
                     '$test' => 'list{int, int, int}',
@@ -1928,6 +1928,47 @@ class CallableTest extends TestCase
                         );
                     }',
                 'error_message' => 'InvalidArgument',
+            ],
+            'invalidFirstClassCallableCannotBeInferred' => [
+                'code' => '<?php
+                    /**
+                     * @template T1
+                     */
+                    final class App
+                    {
+                        /**
+                         * @param T1 $param1
+                         */
+                        public function __construct(
+                            private readonly mixed $param1,
+                        ) {}
+
+                        /**
+                         * @template T2
+                         * @param callable(T1): T2 $callback
+                         * @return T2
+                         */
+                        public function run(callable $callback): mixed
+                        {
+                            return $callback($this->param1);
+                        }
+                    }
+
+                    /**
+                     * @template P1 of int|float
+                     * @param P1 $param1
+                     * @return array{param1: P1}
+                     */
+                    function appHandler(mixed $param1): array
+                    {
+                        return ["param1" => $param1];
+                    }
+
+                    $result = (new App(param1: 42))->run(appHandler(...));
+                ',
+                'error_message' => 'InvalidArgument',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
         ];
     }
