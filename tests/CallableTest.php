@@ -514,6 +514,208 @@ class CallableTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'inferPipelineWithPartiallyAppliedFunctionsAndFirstClassCallable' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return T
+                     */
+                    function id(mixed $value): mixed
+                    {
+                        return $value;
+                    }
+
+                    /**
+                     * @template A
+                     * @template B
+                     * @param A $a
+                     * @param callable(A): B $ab
+                     * @return B
+                     */
+                    function pipe(mixed $a, callable $ab): mixed
+                    {
+                        return $ab($a);
+                    }
+
+                    /**
+                     * @template A
+                     * @template B
+                     * @param callable(A): B $callback
+                     * @return Closure(list<A>): list<B>
+                     */
+                    function map(callable $callback): Closure
+                    {
+                        return fn($array) => array_map($callback, $array);
+                    }
+
+                    /**
+                     * @return list<int>
+                     */
+                    function getNums(): array
+                    {
+                        return [];
+                    }
+
+                    /**
+                     * @template T of float|int
+                     */
+                    final class ObjectNum
+                    {
+                        /**
+                         * @psalm-param T $value
+                         */
+                        public function __construct(
+                            public readonly float|int $value,
+                        ) {}
+                    }
+
+                    /**
+                     * @return list<ObjectNum<int>>
+                     */
+                    function getObjectNums(): array
+                    {
+                        return [];
+                    }
+
+                    $id = pipe(getNums(), id(...));
+                    $wrapped_id = pipe(getNums(), map(id(...)));
+                    $id_nested = pipe(getObjectNums(), map(id(...)));
+                    $id_nested_simple = pipe(getObjectNums(), id(...));
+                ',
+                'assertions' => [
+                    '$id' => 'list<int>',
+                    '$wrapped_id' => 'list<int>',
+                    '$id_nested' => 'list<ObjectNum<int>>',
+                    '$id_nested_simple' => 'list<ObjectNum<int>>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'inferFirstClassCallableOnMethodCall' => [
+                'code' => '<?php
+                    /**
+                     * @template A
+                     * @template B
+                     */
+                    final class Processor
+                    {
+                        /**
+                         * @param A $a
+                         * @param B $b
+                         */
+                        public function __construct(
+                            public readonly mixed $a,
+                            public readonly mixed $b,
+                        ) {}
+
+                        /**
+                         * @template AProcessed
+                         * @template BProcessed
+                         * @param callable(A): AProcessed $processA
+                         * @param callable(B): BProcessed $processB
+                         * @return list{AProcessed, BProcessed}
+                         */
+                        public function process(callable $processA, callable $processB): array
+                        {
+                            return [$processA($this->a), $processB($this->b)];
+                        }
+                    }
+
+                    /**
+                     * @template A
+                     * @param A $value
+                     * @return A
+                     */
+                    function id(mixed $value): mixed
+                    {
+                        return $value;
+                    }
+
+                    function intToString(int $value): string
+                    {
+                        return (string) $value;
+                    }
+
+                    /**
+                     * @template A
+                     * @param A $value
+                     * @return list{A}
+                     */
+                    function singleToList(mixed $value): array
+                    {
+                        return [$value];
+                    }
+
+                    $processor = new Processor(a: 1, b: 2);
+
+                    $test_id = $processor->process(id(...), id(...));
+                    $test_complex = $processor->process(intToString(...), singleToList(...));
+                ',
+                'assertions' => [
+                    '$test_id' => 'list{int, int}',
+                    '$test_complex' => 'list{string, list{int}}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'inferFirstClassCallableOnMethodCallWithMultipleParams' => [
+                'code' => '<?php
+                    /**
+                     * @template A
+                     * @template B
+                     * @template C
+                     */
+                    final class Processor
+                    {
+                        /**
+                         * @param A $a
+                         * @param B $b
+                         * @param C $c
+                         */
+                        public function __construct(
+                            public readonly mixed $a,
+                            public readonly mixed $b,
+                            public readonly mixed $c,
+                        ) {}
+
+                        /**
+                         * @template AProcessed
+                         * @template BProcessed
+                         * @template CProcessed
+                         * @param callable(A, B, C): list{AProcessed, BProcessed, CProcessed} $processAB
+                         * @return list{AProcessed, BProcessed, CProcessed}
+                         */
+                        public function process(callable $processAB): array
+                        {
+                            return $processAB($this->a, $this->b, $this->c);
+                        }
+                    }
+
+                    /**
+                     * @template A
+                     * @template B
+                     * @template C
+                     * @param A $value1
+                     * @param B $value2
+                     * @param C $value3
+                     * @return list{A, B, C}
+                     */
+                    function doubleId(mixed $value1, mixed $value2, mixed $value3): array
+                    {
+                        return [$value1, $value2, $value3];
+                    }
+
+                    $processor = new Processor(a: 1, b: 2, c: 3);
+
+                    $test = $processor->process(doubleId(...));
+                ',
+                'assertions' => [
+                    '$test' => 'list{int, int, int}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'varReturnType' => [
                 'code' => '<?php
                     $add_one = function(int $a) : int {

@@ -197,6 +197,7 @@ class ArgumentsAnalyzer
             }
 
             $high_order_template_result = null;
+            $inferred_first_class_callable_type = null;
 
             if (($arg->value instanceof PhpParser\Node\Expr\FuncCall
                     || $arg->value instanceof PhpParser\Node\Expr\MethodCall
@@ -204,12 +205,21 @@ class ArgumentsAnalyzer
                 && $param
                 && $function_storage = self::getHighOrderFuncStorage($context, $statements_analyzer, $arg->value)
             ) {
-                $high_order_template_result = self::handleHighOrderFuncCallArg(
-                    $statements_analyzer,
-                    $template_result ?? new TemplateResult([], []),
-                    $function_storage,
-                    $param,
-                );
+                if (!$arg->value->isFirstClassCallable()) {
+                    $high_order_template_result = self::handleHighOrderFuncCallArg(
+                        $statements_analyzer,
+                        $template_result ?? new TemplateResult([], []),
+                        $function_storage,
+                        $param,
+                    );
+                } else {
+                    $inferred_first_class_callable_type = self::handleFirstClassCallableCallArg(
+                        $statements_analyzer,
+                        $template_result ?? new TemplateResult([], []),
+                        $function_storage,
+                        $param,
+                    );
+                }
             } elseif (($arg->value instanceof PhpParser\Node\Expr\Closure
                     || $arg->value instanceof PhpParser\Node\Expr\ArrowFunction)
                 && $param
@@ -231,7 +241,9 @@ class ArgumentsAnalyzer
 
             $context->inside_call = true;
 
-            if (ExpressionAnalyzer::analyze(
+            if ($inferred_first_class_callable_type) {
+                $statements_analyzer->node_data->setType($arg->value, $inferred_first_class_callable_type);
+            } elseif (ExpressionAnalyzer::analyze(
                 $statements_analyzer,
                 $arg->value,
                 $context,
@@ -353,9 +365,7 @@ class ArgumentsAnalyzer
         $codebase = $statements_analyzer->getCodebase();
 
         try {
-            if ($function_like_call instanceof PhpParser\Node\Expr\FuncCall &&
-                !$function_like_call->isFirstClassCallable()
-            ) {
+            if ($function_like_call instanceof PhpParser\Node\Expr\FuncCall) {
                 $function_id = strtolower((string) $function_like_call->name->getAttribute('resolvedName'));
 
                 if (empty($function_id)) {
@@ -410,6 +420,72 @@ class ArgumentsAnalyzer
         }
 
         return null;
+    }
+
+    private static function handleFirstClassCallableCallArg(
+        StatementsAnalyzer $statements_analyzer,
+        TemplateResult $inferred_template_result,
+        FunctionLikeStorage $storage,
+        FunctionLikeParameter $actual_func_param
+    ): ?Union {
+        $expected_func_type = $actual_func_param->type ?? Type::getMixed();
+        if (!$expected_func_type->isSingle()) {
+            return null;
+        }
+
+        $expected_func_atomic = $expected_func_type->getSingleAtomic();
+        if (!$expected_func_atomic instanceof TClosure && !$expected_func_atomic instanceof TCallable) {
+            return null;
+        }
+
+        $remapped_lower_bounds = [];
+
+        foreach ($expected_func_atomic->params ?? [] as $offset => $expected_param) {
+            if (!isset($storage->params[$offset])) {
+                continue;
+            }
+
+            $actual_param = $storage->params[$offset];
+
+            $expected_param_type = $expected_param->type ?? Type::getMixed();
+            $actual_param_type = $actual_param->type ?? Type::getMixed();
+
+            if (!$expected_param_type->isSingle() || !$actual_param_type->isSingle()) {
+                continue;
+            }
+
+            $expected_atomic = $expected_param_type->getSingleAtomic();
+            $actual_atomic = $actual_param_type->getSingleAtomic();
+
+            if (!$expected_atomic instanceof TTemplateParam || !$actual_atomic instanceof TTemplateParam) {
+                continue;
+            }
+
+            $remapped_lower_bounds[$actual_atomic->param_name][$actual_atomic->defining_class] = new Union([
+                $expected_atomic,
+            ]);
+        }
+
+        $replaced_container_hof_atomic = new Union([
+            new TClosure(
+                'Closure',
+                $storage->params,
+                $storage->return_type,
+                $storage->pure,
+            ),
+        ]);
+
+        $codebase = $statements_analyzer->getCodebase();
+
+        return TemplateInferredTypeReplacer::replace(
+            TemplateInferredTypeReplacer::replace(
+                $replaced_container_hof_atomic,
+                new TemplateResult($inferred_template_result->template_types, $remapped_lower_bounds),
+                $codebase,
+            ),
+            $inferred_template_result,
+            $codebase,
+        );
     }
 
     /**
