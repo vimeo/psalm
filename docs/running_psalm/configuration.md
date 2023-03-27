@@ -97,7 +97,7 @@ If not using all docblock types, you can still use docblock property types. Defa
   docblockPropertyTypesSealProperties="[bool]"
 >
 ```
-Whether using @property in class docblocks should imply @psalm-seal-properties
+Whether using @property in class docblocks should imply @psalm-seal-properties. Defaults to `true`.
 
 #### usePhpDocMethodsWithoutMagicCall
 
