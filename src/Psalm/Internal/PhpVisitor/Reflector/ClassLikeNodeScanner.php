@@ -568,7 +568,9 @@ class ClassLikeNodeScanner
                     }
                 }
 
-                $storage->sealed_properties = true;
+                if ($this->config->docblock_property_types_seal_properties) {
+                    $storage->sealed_properties = true;
+                }
             }
 
             foreach ($docblock_info->methods as $method) {

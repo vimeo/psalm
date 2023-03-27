@@ -90,6 +90,15 @@ Whether or not to use types as defined in docblocks. Defaults to `true`.
 ```
 If not using all docblock types, you can still use docblock property types. Defaults to `false` (though only relevant if `useDocblockTypes` is `false`).
 
+#### docblockPropertyTypesSealProperties
+
+```xml
+<psalm
+  docblockPropertyTypesSealProperties="[bool]"
+>
+```
+Whether using @property in class docblocks should imply @psalm-seal-properties. Defaults to `true`.
+
 #### usePhpDocMethodsWithoutMagicCall
 
 ```xml
