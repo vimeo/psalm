@@ -195,7 +195,7 @@ class Config
     public $use_docblock_property_types = false;
 
     /**
-     * Whether using @property in docblocks should implicitly seal properties
+     * Whether using property annotations in docblocks should implicitly seal properties
      *
      * @var bool
      */
