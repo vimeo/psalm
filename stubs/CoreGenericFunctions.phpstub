@@ -1059,6 +1059,33 @@ function str_split(string $string, int $length = 1) {}
 
 /**
  * @psalm-pure
+ * @template T as string
+ * @param T $needle
+ * @psalm-assert-if-true =(T is '' ? string : non-empty-string) $haystack
+ * @return ($needle is '' ? true : ($haystack is '' ? false : bool))
+ */
+function str_starts_with(string $haystack, string $needle): bool {}
+
+/**
+ * @psalm-pure
+ * @template T as string
+ * @param T $needle
+ * @psalm-assert-if-true =(T is '' ? string : non-empty-string) $haystack
+ * @return ($needle is '' ? true : ($haystack is '' ? false : bool))
+ */
+function str_ends_with(string $haystack, string $needle): bool {}
+
+/**
+ * @psalm-pure
+ * @template T as string
+ * @param T $needle
+ * @psalm-assert-if-true =(T is '' ? string : non-empty-string) $haystack
+ * @return ($needle is '' ? true : ($haystack is '' ? false : bool))
+ */
+function str_contains(string $haystack, string $needle): bool {}
+
+/**
+ * @psalm-pure
  * @return string|false
  * @psalm-ignore-falsable-return
  *

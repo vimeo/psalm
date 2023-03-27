@@ -71,7 +71,9 @@ use function reset;
 use function strpos;
 use function strtolower;
 use function substr;
+use function substr_count;
 
+use const DIRECTORY_SEPARATOR;
 use const PREG_SPLIT_NO_EMPTY;
 
 /**
@@ -174,7 +176,9 @@ class ArgumentAnalyzer
                     $prev_ord = $ord;
                 }
 
-                if (count($values) < 12 || ($gt_count / count($values)) < 0.8) {
+                if (substr_count($arg_value_type->getSingleStringLiteral()->value, DIRECTORY_SEPARATOR) <= 2
+                    && (count($values) < 12 || ($gt_count / count($values)) < 0.8)
+                ) {
                     IssueBuffer::maybeAdd(
                         new InvalidLiteralArgument(
                             'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id
