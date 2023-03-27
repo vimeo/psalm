@@ -446,7 +446,7 @@ class ArgumentsAnalyzer
 
         // Has no sense to analyse 'input' function
         // when 'container' function has more arguments than 'input'
-        if (count($container_callable_atomic->params ?? []) < count($input_first_class_callable->params)) {
+        if (count($container_callable_atomic->params ?? []) < count($input_first_class_callable->params ?? [])) {
             return null;
         }
 
