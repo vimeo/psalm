@@ -63,6 +63,7 @@ class InternalCallMapHandlerTest extends TestCase
         '/^uopz/', // uopz extension
         '/^memcache[_:]/', // memcache extension
         '/^memcachepool/', // memcache extension
+        '/^gnupg/', // gnupg extension
     ];
 
     /**
@@ -77,40 +78,6 @@ class InternalCallMapHandlerTest extends TestCase
         'datefmt_create' => ['8.0'],
         'easter_date',
         'fiber::start',
-        'gnupg::adddecryptkey',
-        'gnupg::addencryptkey',
-        'gnupg::addsignkey',
-        'gnupg::decrypt',
-        'gnupg::decryptverify',
-        'gnupg::encrypt',
-        'gnupg::encryptsign',
-        'gnupg::export',
-        'gnupg::import',
-        'gnupg::keyinfo',
-        'gnupg::seterrormode',
-        'gnupg::sign',
-        'gnupg::verify',
-        'gnupg_adddecryptkey',
-        'gnupg_addencryptkey',
-        'gnupg_addsignkey',
-        'gnupg_cleardecryptkeys',
-        'gnupg_clearencryptkeys',
-        'gnupg_clearsignkeys',
-        'gnupg_decrypt',
-        'gnupg_decryptverify',
-        'gnupg_encrypt',
-        'gnupg_encryptsign',
-        'gnupg_export',
-        'gnupg_geterror',
-        'gnupg_getprotocol',
-        'gnupg_import',
-        'gnupg_init',
-        'gnupg_keyinfo',
-        'gnupg_setarmor',
-        'gnupg_seterrormode',
-        'gnupg_setsignmode',
-        'gnupg_sign',
-        'gnupg_verify',
         'imagefilledpolygon',
         'imagegd',
         'imagegd2',
