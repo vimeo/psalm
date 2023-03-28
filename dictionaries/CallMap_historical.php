@@ -13729,7 +13729,7 @@ return [
     'rand\'1' => ['int'],
     'random_bytes' => ['non-empty-string', 'length'=>'positive-int'],
     'random_int' => ['int', 'min'=>'int', 'max'=>'int'],
-    'range' => ['array', 'start'=>'mixed', 'end'=>'mixed', 'step='=>'int|float'],
+    'range' => ['non-empty-array', 'start'=>'string|int|float', 'end'=>'string|int|float', 'step='=>'int<1, max>|float'],
     'rar_allow_broken_set' => ['bool', 'rarfile'=>'RarArchive', 'allow_broken'=>'bool'],
     'rar_broken_is' => ['bool', 'rarfile'=>'rararchive'],
     'rar_close' => ['bool', 'rarfile'=>'rararchive'],
