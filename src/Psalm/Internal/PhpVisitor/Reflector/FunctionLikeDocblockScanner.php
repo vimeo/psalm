@@ -9,8 +9,10 @@ use Psalm\CodeLocation;
 use Psalm\CodeLocation\DocblockTypeLocation;
 use Psalm\Codebase;
 use Psalm\Config;
+use Psalm\Exception\DocblockParseException;
 use Psalm\Exception\InvalidMethodOverrideException;
 use Psalm\Exception\TypeParseTreeException;
+use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Internal\Scanner\FunctionDocblockComment;
@@ -1440,10 +1442,17 @@ class FunctionLikeDocblockScanner
 
             if ($template_map[1] !== null && $template_map[2] !== null) {
                 if (trim($template_map[2])) {
+                    $type_string = $template_map[2];
+                    try {
+                        $type_string = CommentAnalyzer::splitDocLine($type_string)[0];
+                    } catch (DocblockParseException $e) {
+                        throw new DocblockParseException($type_string . ' is not a valid type: '.$e->getMessage());
+                    }
+                    $type_string = CommentAnalyzer::sanitizeDocblockType($type_string);
                     try {
                         $template_type = TypeParser::parseTokens(
                             TypeTokenizer::getFullyQualifiedTokens(
-                                $template_map[2],
+                                $type_string,
                                 $aliases,
                                 $storage->template_types + ($template_types ?: []),
                                 $type_aliases,
