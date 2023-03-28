@@ -2536,6 +2536,19 @@ class ArrayFunctionCallTest extends TestCase
                     consumeArray([makeKey() => null]);
                     ',
             ],
+            'arrayUniquePreservesNonEmptyInput' => [
+                'code' => '<?php
+                    /** @param non-empty-array<string, object> $input */
+                    function takes_non_empty_array(array $input): void {}
+
+                    takes_non_empty_array(array_unique(["test" => (object)[]]));
+
+                    /** @param non-empty-array<int, object> $input */
+                    function takes_non_empty_int_array(array $input): void {}
+
+                    takes_non_empty_int_array(array_unique([(object)[]]));
+                ',
+            ],
         ];
     }
 
@@ -2808,6 +2821,24 @@ class ArrayFunctionCallTest extends TestCase
                     array_merge_recursive(...$map);
                 ',
                 'error_message' => 'NamedArgumentNotAllowed',
+            ],
+            'arrayUniquePreservesEmptyInput' => [
+                'code' => '<?php
+                    /** @param non-empty-array<string, object> $input */
+                    function takes_non_empty_array(array $input): void {}
+
+                    takes_non_empty_array(array_unique([]));
+                ',
+                'error_message' => 'InvalidArgument',
+            ],
+            'arrayUniqueConvertsListToArray' => [
+                'code' => '<?php
+                    /** @param non-empty-list<object> $input */
+                    function takes_non_empty_list(array $input): void {}
+
+                    takes_non_empty_list(array_unique([(object)[]]));
+                ',
+                'error_message' => 'ArgumentTypeCoercion',
             ],
         ];
     }
