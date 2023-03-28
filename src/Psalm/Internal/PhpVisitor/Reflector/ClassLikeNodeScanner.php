@@ -143,6 +143,7 @@ class ClassLikeNodeScanner
 
     /**
      * @return false|null
+     * @psalm-suppress ComplexMethod
      */
     public function start(PhpParser\Node\Stmt\ClassLike $node): ?bool
     {
