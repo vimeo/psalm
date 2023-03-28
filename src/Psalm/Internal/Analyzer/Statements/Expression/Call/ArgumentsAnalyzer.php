@@ -197,6 +197,7 @@ class ArgumentsAnalyzer
             }
 
             $high_order_template_result = null;
+            $inferred_first_class_callable_type = null;
 
             if (($arg->value instanceof PhpParser\Node\Expr\FuncCall
                     || $arg->value instanceof PhpParser\Node\Expr\MethodCall
@@ -204,12 +205,26 @@ class ArgumentsAnalyzer
                 && $param
                 && $function_storage = self::getHighOrderFuncStorage($context, $statements_analyzer, $arg->value)
             ) {
-                $high_order_template_result = self::handleHighOrderFuncCallArg(
-                    $statements_analyzer,
-                    $template_result ?? new TemplateResult([], []),
-                    $function_storage,
-                    $param,
-                );
+                if (!$arg->value->isFirstClassCallable()) {
+                    $high_order_template_result = self::handleHighOrderFuncCallArg(
+                        $statements_analyzer,
+                        $template_result ?? new TemplateResult([], []),
+                        $function_storage,
+                        $param,
+                    );
+                } else {
+                    $inferred_first_class_callable_type = self::handleFirstClassCallableCallArg(
+                        $statements_analyzer->getCodebase(),
+                        $template_result ?? new TemplateResult([], []),
+                        new TClosure(
+                            'Closure',
+                            $function_storage->params,
+                            $function_storage->return_type,
+                            $function_storage->pure,
+                        ),
+                        $param,
+                    );
+                }
             } elseif (($arg->value instanceof PhpParser\Node\Expr\Closure
                     || $arg->value instanceof PhpParser\Node\Expr\ArrowFunction)
                 && $param
@@ -231,7 +246,9 @@ class ArgumentsAnalyzer
 
             $context->inside_call = true;
 
-            if (ExpressionAnalyzer::analyze(
+            if ($inferred_first_class_callable_type) {
+                $statements_analyzer->node_data->setType($arg->value, $inferred_first_class_callable_type);
+            } elseif (ExpressionAnalyzer::analyze(
                 $statements_analyzer,
                 $arg->value,
                 $context,
@@ -353,9 +370,7 @@ class ArgumentsAnalyzer
         $codebase = $statements_analyzer->getCodebase();
 
         try {
-            if ($function_like_call instanceof PhpParser\Node\Expr\FuncCall &&
-                !$function_like_call->isFirstClassCallable()
-            ) {
+            if ($function_like_call instanceof PhpParser\Node\Expr\FuncCall) {
                 $function_id = strtolower((string) $function_like_call->name->getAttribute('resolvedName'));
 
                 if (empty($function_id)) {
@@ -410,6 +425,88 @@ class ArgumentsAnalyzer
         }
 
         return null;
+    }
+
+    /**
+     * Infers type for first-class-callable call.
+     */
+    private static function handleFirstClassCallableCallArg(
+        Codebase $codebase,
+        TemplateResult $inferred_template_result,
+        TClosure $input_first_class_callable,
+        FunctionLikeParameter $container_callable_param
+    ): ?Union {
+        $container_callable_atomic = $container_callable_param->type && $container_callable_param->type->isSingle()
+            ? $container_callable_param->type->getSingleAtomic()
+            : null;
+
+        if (!$container_callable_atomic instanceof TClosure && !$container_callable_atomic instanceof TCallable) {
+            return null;
+        }
+
+        // Has no sense to analyse 'input' function
+        // when 'container' function has more arguments than 'input'
+        if (count($container_callable_atomic->params ?? []) < count($input_first_class_callable->params ?? [])) {
+            return null;
+        }
+
+        $remapped_lower_bounds = [];
+
+        // Traverse side by side 'container' params and 'input' params.
+        // This maps 'input' templates to 'container' templates.
+        //
+        // Example:
+        // 'input'     => Closure(C:Bar, D:Bar): array{C:Bar, D:Bar}
+        // 'container' => Closure(A:Foo, B:Foo): array{A:Foo, B:Foo}
+        //
+        // $remapped_lower_bounds will be: [
+        //     'C' => ['Bar' => ['A:Foo']],
+        //     'D' => ['Bar' => ['B:Foo']]
+        // ].
+        foreach ($container_callable_atomic->params ?? [] as $offset => $container_param) {
+            if (!isset($input_first_class_callable->params[$offset])) {
+                continue;
+            }
+
+            $input_param_type = $input_first_class_callable->params[$offset]->type ?? Type::getMixed();
+            $container_param_type = $container_param->type ?? Type::getMixed();
+
+            foreach ($input_param_type->getTemplateTypes() as $input_atomic) {
+                foreach ($container_param_type->getTemplateTypes() as $container_atomic) {
+                    $inferred_lower_bounds = $inferred_template_result->lower_bounds
+                        [$container_atomic->param_name]
+                        [$container_atomic->defining_class] ?? [];
+
+                    foreach ($inferred_lower_bounds as $lower_bound) {
+                        // Check template constraint of input first-class-callable.
+                        // Correct type cannot be inferred if constraint check failed.
+                        if (!$codebase->isTypeContainedByType($lower_bound->type, $input_atomic->as)) {
+                            return null;
+                        }
+                    }
+
+                    $remapped_lower_bounds
+                        [$input_atomic->param_name]
+                        [$input_atomic->defining_class] = new Union([$container_atomic]);
+                }
+            }
+        }
+
+        // Turns Closure(C:Bar, D:Bar): array{C:Bar, D:Bar}
+        //    to Closure(A:Foo, B:Foo): array{A:Foo, B:Foo}
+        $remapped_first_class_callable = TemplateInferredTypeReplacer::replace(
+            new Union([$input_first_class_callable]),
+            new TemplateResult($inferred_template_result->template_types, $remapped_lower_bounds),
+            $codebase,
+        );
+
+        // Turns Closure(A:Foo, B:Foo): array{A:Foo, B:Foo}
+        // to fully inferred Closure (thanks to $inferred_template_result)
+        return TemplateInferredTypeReplacer::replace(
+            $remapped_first_class_callable,
+            $inferred_template_result,
+            $codebase,
+        );
     }
 
     /**

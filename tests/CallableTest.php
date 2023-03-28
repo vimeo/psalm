@@ -101,6 +101,7 @@ class CallableTest extends TestCase
                     $a = $calc(
                         foo: fn($_a, $_b) => $_a + $_b,
                         bar: fn($_a, $_b) => $_a + $_b,
+                        baz: fn($_a, $_b) => $_a + $_b,
                     );',
                 'assertions' => [
                     '$a' => 'int',
@@ -513,6 +514,279 @@ class CallableTest extends TestCase
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
+            ],
+            'inferPipelineWithPartiallyAppliedFunctionsAndFirstClassCallable' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return T
+                     */
+                    function id(mixed $value): mixed
+                    {
+                        return $value;
+                    }
+
+                    /**
+                     * @template A
+                     * @template B
+                     * @param A $a
+                     * @param callable(A): B $ab
+                     * @return B
+                     */
+                    function pipe(mixed $a, callable $ab): mixed
+                    {
+                        return $ab($a);
+                    }
+
+                    /**
+                     * @template A
+                     * @template B
+                     * @param callable(A): B $callback
+                     * @return Closure(list<A>): list<B>
+                     */
+                    function map(callable $callback): Closure
+                    {
+                        return fn($array) => array_map($callback, $array);
+                    }
+
+                    /**
+                     * @return list<int>
+                     */
+                    function getNums(): array
+                    {
+                        return [];
+                    }
+
+                    /**
+                     * @template T of float|int
+                     */
+                    final class ObjectNum
+                    {
+                        /**
+                         * @psalm-param T $value
+                         */
+                        public function __construct(
+                            public readonly float|int $value,
+                        ) {}
+                    }
+
+                    /**
+                     * @return list<ObjectNum<int>>
+                     */
+                    function getObjectNums(): array
+                    {
+                        return [];
+                    }
+
+                    $id = pipe(getNums(), id(...));
+                    $wrapped_id = pipe(getNums(), map(id(...)));
+                    $id_nested = pipe(getObjectNums(), map(id(...)));
+                    $id_nested_simple = pipe(getObjectNums(), id(...));
+                ',
+                'assertions' => [
+                    '$id' => 'list<int>',
+                    '$wrapped_id' => 'list<int>',
+                    '$id_nested' => 'list<ObjectNum<int>>',
+                    '$id_nested_simple' => 'list<ObjectNum<int>>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'inferFirstClassCallableOnMethodCall' => [
+                'code' => '<?php
+                    /**
+                     * @template A
+                     * @template B
+                     */
+                    final class Processor
+                    {
+                        /**
+                         * @param A $a
+                         * @param B $b
+                         */
+                        public function __construct(
+                            public readonly mixed $a,
+                            public readonly mixed $b,
+                        ) {}
+
+                        /**
+                         * @template AProcessed
+                         * @template BProcessed
+                         * @param callable(A): AProcessed $processA
+                         * @param callable(B): BProcessed $processB
+                         * @return list{AProcessed, BProcessed}
+                         */
+                        public function process(callable $processA, callable $processB): array
+                        {
+                            return [$processA($this->a), $processB($this->b)];
+                        }
+                    }
+
+                    /**
+                     * @template A
+                     * @param A $value
+                     * @return A
+                     */
+                    function id(mixed $value): mixed
+                    {
+                        return $value;
+                    }
+
+                    function intToString(int $value): string
+                    {
+                        return (string) $value;
+                    }
+
+                    /**
+                     * @template A
+                     * @param A $value
+                     * @return list{A}
+                     */
+                    function singleToList(mixed $value): array
+                    {
+                        return [$value];
+                    }
+
+                    $processor = new Processor(a: 1, b: 2);
+
+                    $test_id = $processor->process(id(...), id(...));
+                    $test_complex = $processor->process(intToString(...), singleToList(...));
+                ',
+                'assertions' => [
+                    '$test_id' => 'list{int, int}',
+                    '$test_complex' => 'list{string, list{int}}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'inferFirstClassCallableOnMethodCallWithMultipleParams' => [
+                'code' => '<?php
+                    /**
+                     * @template A
+                     * @template B
+                     * @template C
+                     */
+                    final class Processor
+                    {
+                        /**
+                         * @param A $a
+                         * @param B $b
+                         * @param C $c
+                         */
+                        public function __construct(
+                            public readonly mixed $a,
+                            public readonly mixed $b,
+                            public readonly mixed $c,
+                        ) {}
+
+                        /**
+                         * @template AProcessed
+                         * @template BProcessed
+                         * @template CProcessed
+                         * @param callable(A, B, C): list{AProcessed, BProcessed, CProcessed} $processAB
+                         * @return list{AProcessed, BProcessed, CProcessed}
+                         */
+                        public function process(callable $processAB): array
+                        {
+                            return $processAB($this->a, $this->b, $this->c);
+                        }
+                    }
+
+                    /**
+                     * @template A
+                     * @template B
+                     * @template C
+                     * @param A $value1
+                     * @param B $value2
+                     * @param C $value3
+                     * @return list{A, B, C}
+                     */
+                    function tripleId(mixed $value1, mixed $value2, mixed $value3): array
+                    {
+                        return [$value1, $value2, $value3];
+                    }
+
+                    $processor = new Processor(a: 1, b: 2, c: 3);
+
+                    $test = $processor->process(tripleId(...));
+                ',
+                'assertions' => [
+                    '$test' => 'list{int, int, int}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'inferFirstClassCallableOnMethodCallWithTemplatedAndNonTemplatedParams' => [
+                'code' => '<?php
+                    /**
+                     * @template T1
+                     * @template T2
+                     */
+                    final class App
+                    {
+                        /**
+                         * @param T1 $param1
+                         * @param T2 $param2
+                         */
+                        public function __construct(
+                            private readonly mixed $param1,
+                            private readonly mixed $param2,
+                        ) {
+                        }
+                    
+                        /**
+                         * @template T3
+                         * @param callable(T1, T2): T3 $callback
+                         * @return T3
+                         */
+                        public function run(callable $callback): mixed
+                        {
+                            return $callback($this->param1, $this->param2);
+                        }
+                    }
+                    
+                    /**
+                     * @template T of int|float
+                     * @param T $param2
+                     * @return array{param1: int, param2: T}
+                     */
+                    function appHandler1(int $param1, int|float $param2): array
+                    {
+                        return ["param1" => $param1, "param2" => $param2];
+                    }
+                    
+                    /**
+                     * @template T of int|float
+                     * @param T $param1
+                     * @return array{param1: T, param2: int}
+                     */
+                    function appHandler2(int|float $param1, int $param2): array
+                    {
+                        return ["param1" => $param1, "param2" => $param2];
+                    }
+                    
+                    /**
+                     * @return array{param1: int, param2: int}
+                     */
+                    function appHandler3(int $param1, int $param2): array
+                    {
+                        return ["param1" => $param1, "param2" => $param2];
+                    }
+                    
+                    $app = new App(param1: 42, param2: 42);
+                    
+                    $result1 = $app->run(appHandler1(...));
+                    $result2 = $app->run(appHandler2(...));
+                    $result3 = $app->run(appHandler3(...));
+                ',
+                'assertions' => [
+                    '$result1===' => 'array{param1: int, param2: 42}',
+                    '$result2===' => 'array{param1: 42, param2: int}',
+                    '$result3===' => 'array{param1: int, param2: int}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'varReturnType' => [
                 'code' => '<?php
@@ -1726,6 +2000,47 @@ class CallableTest extends TestCase
                         );
                     }',
                 'error_message' => 'InvalidArgument',
+            ],
+            'invalidFirstClassCallableCannotBeInferred' => [
+                'code' => '<?php
+                    /**
+                     * @template T1
+                     */
+                    final class App
+                    {
+                        /**
+                         * @param T1 $param1
+                         */
+                        public function __construct(
+                            private readonly mixed $param1,
+                        ) {}
+
+                        /**
+                         * @template T2
+                         * @param callable(T1): T2 $callback
+                         * @return T2
+                         */
+                        public function run(callable $callback): mixed
+                        {
+                            return $callback($this->param1);
+                        }
+                    }
+
+                    /**
+                     * @template P1 of int|float
+                     * @param P1 $param1
+                     * @return array{param1: P1}
+                     */
+                    function appHandler(mixed $param1): array
+                    {
+                        return ["param1" => $param1];
+                    }
+
+                    $result = (new App(param1: [42]))->run(appHandler(...));
+                ',
+                'error_message' => 'InvalidArgument',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
         ];
     }
