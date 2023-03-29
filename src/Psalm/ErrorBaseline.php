@@ -118,7 +118,7 @@ final class ErrorBaseline
 
                 foreach ($codeSamples as $codeSample) {
                     $files[$fileName][$issueType]['o'] += 1;
-                    $files[$fileName][$issueType]['s'][] = trim($codeSample->textContent);
+                    $files[$fileName][$issueType]['s'][] = str_replace("\r\n", "\n", trim($codeSample->textContent));
                 }
 
                 // TODO: Remove in Psalm 6

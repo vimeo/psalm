@@ -782,7 +782,7 @@ class LanguageServer extends Dispatcher
                             if ($issue_baseline[$file][$type]['o'] === count($issue_baseline[$file][$type]['s'])) {
                                 /** @psalm-suppress MixedArrayAccess, MixedAssignment */
                                 $position = array_search(
-                                    trim($issue_data->selected_text),
+                                    str_replace("\r\n", "\n", trim($issue_data->selected_text)),
                                     $issue_baseline[$file][$type]['s'],
                                     true,
                                 );

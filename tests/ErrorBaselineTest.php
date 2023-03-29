@@ -98,6 +98,37 @@ class ErrorBaselineTest extends TestCase
         );
     }
 
+    public function testShouldIgnoreCarriageReturnInMultilineSnippets(): void
+    {
+        $baselineFilePath = 'baseline.xml';
+
+        $this->fileProvider->allows()->fileExists($baselineFilePath)->andReturns(true);
+        $this->fileProvider->allows()->getContents($baselineFilePath)->andReturns(
+            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+            <files>
+              <file src=\"sample/sample-file.php\">
+                <MixedAssignment>
+                  <code>
+foo&#13;
+bar&#13;
+                  </code>
+                </MixedAssignment>
+              </file>
+            </files>",
+        );
+
+        $expectedParsedBaseline = [
+            'sample/sample-file.php' => [
+                'MixedAssignment' => ['o' => 1, 's' => ["foo\nbar"]],
+            ],
+        ];
+
+        $this->assertSame(
+            $expectedParsedBaseline,
+            ErrorBaseline::read($this->fileProvider, $baselineFilePath),
+        );
+    }
+
     public function testLoadShouldThrowExceptionWhenFilesAreNotDefinedInBaselineFile(): void
     {
         $this->expectException(ConfigException::class);

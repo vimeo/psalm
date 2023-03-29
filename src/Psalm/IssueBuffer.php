@@ -592,7 +592,7 @@ final class IssueBuffer
                         if (isset($issue_baseline[$file][$type]) && $issue_baseline[$file][$type]['o'] > 0) {
                             if ($issue_baseline[$file][$type]['o'] === count($issue_baseline[$file][$type]['s'])) {
                                 $position = array_search(
-                                    trim($issue_data->selected_text),
+                                    str_replace("\r\n", "\n", trim($issue_data->selected_text)),
                                     $issue_baseline[$file][$type]['s'],
                                     true,
                                 );
