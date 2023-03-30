@@ -47,6 +47,7 @@ use ReflectionProperty;
 use UnexpectedValueException;
 
 use function array_filter;
+use function array_keys;
 use function array_merge;
 use function array_pop;
 use function count;
@@ -1603,8 +1604,7 @@ class ClassLikes
     }
 
     /**
-     * @param ReflectionProperty::IS_PUBLIC|ReflectionProperty::IS_PROTECTED|ReflectionProperty::IS_PRIVATE
-     *  $visibility
+     * @param ReflectionProperty::IS_PUBLIC|ReflectionProperty::IS_PROTECTED|ReflectionProperty::IS_PRIVATE $visibility
      */
     public function getClassConstantType(
         string $class_name,
@@ -1612,7 +1612,8 @@ class ClassLikes
         int $visibility,
         ?StatementsAnalyzer $statements_analyzer = null,
         array $visited_constant_ids = [],
-        bool $late_static_binding = false
+        bool $late_static_binding = false,
+        bool $in_value_of_context = false
     ): ?Union {
         $class_name = strtolower($class_name);
 
@@ -1622,41 +1623,42 @@ class ClassLikes
 
         $storage = $this->classlike_storage_provider->get($class_name);
 
-        if (isset($storage->constants[$constant_name])) {
-            $constant_storage = $storage->constants[$constant_name];
+        $enum_types = null;
 
-            if ($visibility === ReflectionProperty::IS_PUBLIC
-                && $constant_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PUBLIC
-            ) {
-                return null;
+        if ($storage->is_enum) {
+            $enum_types = $this->getEnumType(
+                $storage,
+                $constant_name,
+            );
+
+            if ($in_value_of_context) {
+                return $enum_types;
             }
-
-            if ($visibility === ReflectionProperty::IS_PROTECTED
-                && $constant_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PUBLIC
-                && $constant_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PROTECTED
-            ) {
-                return null;
-            }
-
-            if ($constant_storage->unresolved_node) {
-                /** @psalm-suppress InaccessibleProperty Lazy resolution */
-                $constant_storage->inferred_type = new Union([ConstantTypeResolver::resolve(
-                    $this,
-                    $constant_storage->unresolved_node,
-                    $statements_analyzer,
-                    $visited_constant_ids,
-                )]);
-                if ($constant_storage->type === null || !$constant_storage->type->from_docblock) {
-                    /** @psalm-suppress InaccessibleProperty Lazy resolution */
-                    $constant_storage->type = $constant_storage->inferred_type;
-                }
-            }
-
-            return $late_static_binding ? $constant_storage->type : ($constant_storage->inferred_type ?? null);
-        } elseif (isset($storage->enum_cases[$constant_name])) {
-            return new Union([new TEnumCase($storage->name, $constant_name)]);
         }
-        return null;
+
+        $constant_types = $this->getConstantType(
+            $storage,
+            $constant_name,
+            $visibility,
+            $statements_analyzer,
+            $visited_constant_ids,
+            $late_static_binding,
+        );
+
+        $types = [];
+        if ($enum_types !== null) {
+            $types = array_merge($types, $enum_types->getAtomicTypes());
+        }
+
+        if ($constant_types !== null) {
+            $types = array_merge($types, $constant_types->getAtomicTypes());
+        }
+
+        if ($types === []) {
+            return null;
+        }
+
+        return new Union($types);
     }
 
     private function checkMethodReferences(ClassLikeStorage $classlike_storage, Methods $methods): void
@@ -2365,5 +2367,114 @@ class ClassLikes
         } catch (InvalidArgumentException $e) {
             return null;
         }
+    }
+
+    private function getConstantType(
+        ClassLikeStorage $class_like_storage,
+        string $constant_name,
+        int $visibility,
+        ?StatementsAnalyzer $statements_analyzer,
+        array $visited_constant_ids,
+        bool $late_static_binding
+    ): ?Union {
+        $constant_resolver = new StorageByPatternResolver();
+        $resolved_constants = $constant_resolver->resolveConstants(
+            $class_like_storage,
+            $constant_name,
+        );
+
+        $filtered_constants_by_visibility = array_filter(
+            $resolved_constants,
+            fn(ClassConstantStorage $resolved_constant) => $this->filterConstantNameByVisibility(
+                $resolved_constant,
+                $visibility,
+            )
+        );
+
+        if ($filtered_constants_by_visibility === []) {
+            return null;
+        }
+
+        $new_atomic_types = [];
+
+        foreach ($filtered_constants_by_visibility as $filtered_constant_name => $constant_storage) {
+            if (!isset($class_like_storage->constants[$filtered_constant_name])) {
+                continue;
+            }
+
+            if ($constant_storage->unresolved_node) {
+                /** @psalm-suppress InaccessibleProperty Lazy resolution */
+                $constant_storage->inferred_type = new Union([ConstantTypeResolver::resolve(
+                    $this,
+                    $constant_storage->unresolved_node,
+                    $statements_analyzer,
+                    $visited_constant_ids,
+                )]);
+
+                if ($constant_storage->type === null || !$constant_storage->type->from_docblock) {
+                    /** @psalm-suppress InaccessibleProperty Lazy resolution */
+                    $constant_storage->type = $constant_storage->inferred_type;
+                }
+            }
+
+            $constant_type = $late_static_binding
+                ? $constant_storage->type
+                : ($constant_storage->inferred_type ?? null);
+
+            if ($constant_type === null) {
+                continue;
+            }
+
+            $new_atomic_types[] = $constant_type->getAtomicTypes();
+        }
+
+        if ($new_atomic_types === []) {
+            return null;
+        }
+
+        return new Union(array_merge([], ...$new_atomic_types));
+    }
+
+    private function getEnumType(
+        ClassLikeStorage $class_like_storage,
+        string $constant_name
+    ): ?Union {
+        $constant_resolver = new StorageByPatternResolver();
+        $resolved_enums = $constant_resolver->resolveEnums(
+            $class_like_storage,
+            $constant_name,
+        );
+
+        if ($resolved_enums === []) {
+            return null;
+        }
+
+        $types = [];
+        foreach (array_keys($resolved_enums) as $enum_case_name) {
+            $types[$enum_case_name] = new TEnumCase($class_like_storage->name, $enum_case_name);
+        }
+
+        return new Union($types);
+    }
+
+    private function filterConstantNameByVisibility(
+        ClassConstantStorage $constant_storage,
+        int $visibility
+    ): bool {
+
+        if ($visibility === ReflectionProperty::IS_PUBLIC
+            && $constant_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PUBLIC
+        ) {
+            return false;
+        }
+
+        if ($visibility === ReflectionProperty::IS_PROTECTED
+            && $constant_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PUBLIC
+            && $constant_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PROTECTED
+        ) {
+            return false;
+        }
+
+        return true;
     }
 }

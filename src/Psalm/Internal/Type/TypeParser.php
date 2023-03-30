@@ -779,7 +779,7 @@ class TypeParser
                 if ($template_param->getIntersectionTypes()) {
                     throw new TypeParseTreeException(
                         $generic_type_value . '<' . $param_name . '> must be a TTemplateParam'
-                            . ' with no intersection types.',
+                        . ' with no intersection types.',
                     );
                 }
 
