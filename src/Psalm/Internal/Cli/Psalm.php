@@ -1273,6 +1273,9 @@ final class Psalm
             --php-version=PHP_VERSION
                 Explicitly set PHP version to analyse code against.
 
+            --error-level=ERROR_LEVEL
+                Set the error reporting level
+
         Surfacing issues:
             --show-info[=BOOLEAN]
                 Show non-exception parser findings (defaults to false).
@@ -1299,9 +1302,6 @@ final class Psalm
 
             --dump-taint-graph=OUTPUT_PATH
                 Output the taint graph using the DOT language – requires --taint-analysis
-
-            --error-level=ERROR_LEVEL
-                Set the error reporting level
 
         Issue baselines:
             --set-baseline=PATH
