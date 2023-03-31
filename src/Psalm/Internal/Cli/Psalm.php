@@ -1300,6 +1300,9 @@ final class Psalm
             --dump-taint-graph=OUTPUT_PATH
                 Output the taint graph using the DOT language – requires --taint-analysis
 
+            --error-level=ERROR_LEVEL
+                Set the error reporting level
+
         Issue baselines:
             --set-baseline=PATH
                 Save all current error level issues to a file, to mark them as info in subsequent runs
