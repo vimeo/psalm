@@ -116,7 +116,7 @@ class KeyedArrayComparator
                     if ($atomic_comparison_result) {
                         $atomic_comparison_result->to_string_cast
                             = $atomic_comparison_result->to_string_cast === true
-                                || $property_type_comparison->to_string_cast === true;
+                            || $property_type_comparison->to_string_cast === true;
                     }
                 }
             }
@@ -152,7 +152,23 @@ class KeyedArrayComparator
                     if ($atomic_comparison_result) {
                         $atomic_comparison_result->type_coerced
                             = $key_type_comparison->type_coerced === true
-                                && $atomic_comparison_result->type_coerced !== false;
+                            && $atomic_comparison_result->type_coerced !== false;
+
+                        $atomic_comparison_result->type_coerced_from_mixed
+                            = $key_type_comparison->type_coerced_from_mixed === true
+                            && $atomic_comparison_result->type_coerced_from_mixed !== false;
+
+                        $atomic_comparison_result->type_coerced_from_as_mixed
+                            = $key_type_comparison->type_coerced_from_as_mixed === true
+                            && $atomic_comparison_result->type_coerced_from_as_mixed !== false;
+
+                        $atomic_comparison_result->type_coerced_from_scalar
+                            = $key_type_comparison->type_coerced_from_scalar === true
+                            && $atomic_comparison_result->type_coerced_from_scalar !== false;
+
+                        $atomic_comparison_result->scalar_type_match_found
+                            = $key_type_comparison->scalar_type_match_found === true
+                            && $atomic_comparison_result->scalar_type_match_found !== false;
                     }
                     $all_types_contain = false;
                 }
@@ -170,7 +186,23 @@ class KeyedArrayComparator
                     if ($atomic_comparison_result) {
                         $atomic_comparison_result->type_coerced
                             = $property_type_comparison->type_coerced === true
-                                && $atomic_comparison_result->type_coerced !== false;
+                            && $atomic_comparison_result->type_coerced !== false;
+
+                        $atomic_comparison_result->type_coerced_from_mixed
+                            = $property_type_comparison->type_coerced_from_mixed === true
+                            && $atomic_comparison_result->type_coerced_from_mixed !== false;
+
+                        $atomic_comparison_result->type_coerced_from_as_mixed
+                            = $property_type_comparison->type_coerced_from_as_mixed === true
+                            && $atomic_comparison_result->type_coerced_from_as_mixed !== false;
+
+                        $atomic_comparison_result->type_coerced_from_scalar
+                            = $property_type_comparison->type_coerced_from_scalar === true
+                            && $atomic_comparison_result->type_coerced_from_scalar !== false;
+
+                        $atomic_comparison_result->scalar_type_match_found
+                            = $property_type_comparison->scalar_type_match_found === true
+                            && $atomic_comparison_result->scalar_type_match_found !== false;
                     }
                     $all_types_contain = false;
                 }
@@ -198,7 +230,23 @@ class KeyedArrayComparator
                     if ($atomic_comparison_result) {
                         $atomic_comparison_result->type_coerced
                             = $param_comparison->type_coerced === true
-                                && $atomic_comparison_result->type_coerced !== false;
+                            && $atomic_comparison_result->type_coerced !== false;
+
+                        $atomic_comparison_result->type_coerced_from_mixed
+                            = $param_comparison->type_coerced_from_mixed === true
+                            && $atomic_comparison_result->type_coerced_from_mixed !== false;
+
+                        $atomic_comparison_result->type_coerced_from_as_mixed
+                            = $param_comparison->type_coerced_from_as_mixed === true
+                            && $atomic_comparison_result->type_coerced_from_as_mixed !== false;
+
+                        $atomic_comparison_result->type_coerced_from_scalar
+                            = $param_comparison->type_coerced_from_scalar === true
+                            && $atomic_comparison_result->type_coerced_from_scalar !== false;
+
+                        $atomic_comparison_result->scalar_type_match_found
+                            = $param_comparison->scalar_type_match_found === true
+                            && $atomic_comparison_result->scalar_type_match_found !== false;
                     }
                     $all_types_contain = false;
                 }
