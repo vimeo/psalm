@@ -1201,20 +1201,21 @@ class TypeParser
         }
 
         foreach ($intersection_types as $intersection_type) {
-            if (!$intersection_type instanceof TIterable
-                && !$intersection_type instanceof TNamedObject
-                && !$intersection_type instanceof TTemplateParam
-                && !$intersection_type instanceof TObjectWithProperties
+            if ($intersection_type instanceof TIterable
+                || $intersection_type instanceof TNamedObject
+                || $intersection_type instanceof TTemplateParam
+                || $intersection_type instanceof TObjectWithProperties
             ) {
-                throw new TypeParseTreeException(
-                    'Intersection types must be all objects, '
-                    . get_class($intersection_type) . ' provided',
-                );
+                $keyed_intersection_types[$intersection_type instanceof TIterable
+                    ? $intersection_type->getId()
+                    : $intersection_type->getKey()] = $intersection_type;
+                continue;
             }
 
-            $keyed_intersection_types[$intersection_type instanceof TIterable
-                ? $intersection_type->getId()
-                : $intersection_type->getKey()] = $intersection_type;
+            throw new TypeParseTreeException(
+                'Intersection types must be all objects, '
+                . get_class($intersection_type) . ' provided',
+            );
         }
 
         $intersect_static = false;
