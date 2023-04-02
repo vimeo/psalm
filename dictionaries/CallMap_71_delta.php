@@ -42,6 +42,10 @@ return [
         'old' => ['string|false', 'value'=>'IntlCalendar|DateTime|array{0: int, 1: int, 2: int, 3: int, 4: int, 5: int, 6: int, 7: int, 8: int}|array{tm_sec: int, tm_min: int, tm_hour: int, tm_mday: int, tm_mon: int, tm_year: int, tm_wday: int, tm_yday: int, tm_isdst: int}|string|int|float'],
         'new' => ['string|false', 'value'=>'IntlCalendar|DateTimeInterface|array{0: int, 1: int, 2: int, 3: int, 4: int, 5: int, 6: int, 7: int, 8: int}|array{tm_sec: int, tm_min: int, tm_hour: int, tm_mday: int, tm_mon: int, tm_year: int, tm_wday: int, tm_yday: int, tm_isdst: int}|string|int|float'],
     ],
+    'SessionHandler::gc' => [
+      'old' => ['bool', 'max_lifetime'=>'int'],
+      'new' => ['int|false', 'max_lifetime'=>'int'],
+    ],
     'SQLite3::createFunction' => [
       'old' => ['bool', 'name'=>'string', 'callback'=>'callable', 'argCount='=>'int'],
       'new' => ['bool', 'name'=>'string', 'callback'=>'callable', 'argCount='=>'int', 'flags='=>'int'],

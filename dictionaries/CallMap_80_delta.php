@@ -380,6 +380,14 @@ return [
       'old' => ['?Closure', 'object='=>'object'],
       'new' => ['Closure', 'object='=>'?object'],
     ],
+    'ReflectionObject::getConstants' => [
+      'old' => ['array<string,mixed>'],
+      'new' => ['array<string,mixed>', 'filter='=>'?int'],
+    ],
+    'ReflectionObject::getReflectionConstants' => [
+      'old' => ['list<\ReflectionClassConstant>'],
+      'new' => ['list<\ReflectionClassConstant>', 'filter='=>'?int'],
+    ],
     'ReflectionObject::newInstanceArgs' => [
       'old' => ['object', 'args='=>'list<mixed>'],
       'new' => ['object', 'args='=>'list<mixed>|array<string, mixed>'],
@@ -468,6 +476,10 @@ return [
       'old' => ['string|false'],
       'new' => ['string'],
     ],
+    'XMLReader::next' => [
+      'old' => ['bool', 'name='=>'string'],
+      'new' => ['bool', 'name='=>'?string'],
+    ],
     'XMLWriter::startAttributeNs' => [
       'old' => ['bool', 'prefix'=>'string', 'name'=>'string', 'namespace'=>'?string'],
       'new' => ['bool', 'prefix'=>'?string', 'name'=>'string', 'namespace'=>'?string'],
@@ -485,8 +497,8 @@ return [
       'new' => ['string'],
     ],
     'ZipArchive::setEncryptionIndex' => [
-      'old' => ['bool', 'index'=>'int', 'method'=>'string', 'password='=>'string'],
-      'new' => ['bool', 'index'=>'int', 'method'=>'string', 'password='=>'?string'],
+      'old' => ['bool', 'index'=>'int', 'method'=>'int', 'password='=>'string'],
+      'new' => ['bool', 'index'=>'int', 'method'=>'int', 'password='=>'?string'],
     ],
     'ZipArchive::setEncryptionName' => [
       'old' => ['bool', 'name'=>'string', 'method'=>'int', 'password='=>'string'],
