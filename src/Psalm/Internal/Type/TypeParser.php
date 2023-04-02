@@ -1196,46 +1196,48 @@ class TypeParser
             if ($keyed_intersection_types) {
                 return $first_type->setIntersectionTypes($keyed_intersection_types);
             }
-        } else {
-            foreach ($intersection_types as $intersection_type) {
-                if (!$intersection_type instanceof TIterable
-                    && !$intersection_type instanceof TNamedObject
-                    && !$intersection_type instanceof TTemplateParam
-                    && !$intersection_type instanceof TObjectWithProperties
-                ) {
-                    throw new TypeParseTreeException(
-                        'Intersection types must be all objects, '
-                        . get_class($intersection_type) . ' provided',
-                    );
-                }
 
-                $keyed_intersection_types[$intersection_type instanceof TIterable
-                    ? $intersection_type->getId()
-                    : $intersection_type->getKey()] = $intersection_type;
-            }
+            return $first_type;
+        }
 
-            $intersect_static = false;
-
-            if (isset($keyed_intersection_types['static'])) {
-                unset($keyed_intersection_types['static']);
-                $intersect_static = true;
-            }
-
-            if (!$keyed_intersection_types && $intersect_static) {
-                return new TNamedObject('static', false, false, [], $from_docblock);
-            }
-
-            $first_type = array_shift($keyed_intersection_types);
-
-            if ($intersect_static
-                && $first_type instanceof TNamedObject
+        foreach ($intersection_types as $intersection_type) {
+            if (!$intersection_type instanceof TIterable
+                && !$intersection_type instanceof TNamedObject
+                && !$intersection_type instanceof TTemplateParam
+                && !$intersection_type instanceof TObjectWithProperties
             ) {
-                $first_type->is_static = true;
+                throw new TypeParseTreeException(
+                    'Intersection types must be all objects, '
+                    . get_class($intersection_type) . ' provided',
+                );
             }
 
-            if ($keyed_intersection_types) {
-                return $first_type->setIntersectionTypes($keyed_intersection_types);
-            }
+            $keyed_intersection_types[$intersection_type instanceof TIterable
+                ? $intersection_type->getId()
+                : $intersection_type->getKey()] = $intersection_type;
+        }
+
+        $intersect_static = false;
+
+        if (isset($keyed_intersection_types['static'])) {
+            unset($keyed_intersection_types['static']);
+            $intersect_static = true;
+        }
+
+        if (!$keyed_intersection_types && $intersect_static) {
+            return new TNamedObject('static', false, false, [], $from_docblock);
+        }
+
+        $first_type = array_shift($keyed_intersection_types);
+
+        if ($intersect_static
+            && $first_type instanceof TNamedObject
+        ) {
+            $first_type->is_static = true;
+        }
+
+        if ($keyed_intersection_types) {
+            return $first_type->setIntersectionTypes($keyed_intersection_types);
         }
 
         return $first_type;
