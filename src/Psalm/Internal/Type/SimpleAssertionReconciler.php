@@ -71,11 +71,13 @@ use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTrue;
+use Psalm\Type\Atomic\TValueOf;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
 use function array_map;
 use function array_merge;
+use function array_values;
 use function assert;
 use function count;
 use function explode;
@@ -525,6 +527,10 @@ class SimpleAssertionReconciler extends Reconciler
                     }
                 }
             }
+        }
+
+        if ($assertion_type instanceof TValueOf) {
+            return $assertion_type->type;
         }
 
         return null;
@@ -2894,19 +2900,23 @@ class SimpleAssertionReconciler extends Reconciler
         int &$failed_reconciliation
     ): Union {
         $class_name = $class_constant_expression->fq_classlike_name;
-        $constant_pattern = $class_constant_expression->const_name;
-
-        $resolver = new ClassConstantByWildcardResolver($codebase);
-        $matched_class_constant_types = $resolver->resolve($class_name, $constant_pattern);
-        if ($matched_class_constant_types === null) {
+        if (!$codebase->classlike_storage_provider->has($class_name)) {
             return $existing_type;
         }
 
-        if ($matched_class_constant_types === []) {
+        $constant_pattern = $class_constant_expression->const_name;
+
+        $resolver = new ClassConstantByWildcardResolver($codebase);
+        $matched_class_constant_types = $resolver->resolve(
+            $class_name,
+            $constant_pattern,
+        );
+
+        if ($matched_class_constant_types === null) {
             $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
             return Type::getNever();
         }
 
-        return TypeCombiner::combine($matched_class_constant_types, $codebase);
+        return TypeCombiner::combine(array_values($matched_class_constant_types), $codebase);
     }
 }

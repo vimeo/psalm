@@ -8,6 +8,8 @@ use Psalm\Internal\Codebase\ClassConstantByWildcardResolver;
 use Psalm\Tests\TestCase;
 use Psalm\Type\Atomic\TLiteralString;
 
+use function reset;
+
 final class ClassConstantByWildcardResolverTest extends TestCase
 {
     private ClassConstantByWildcardResolver $resolver;
@@ -33,7 +35,8 @@ final class ClassConstantByWildcardResolverTest extends TestCase
             }
             ',
         );
-        $this->project_analyzer->getCodebase()->scanFiles();
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->scanFiles();
         $resolved = $this->resolver->resolve('ReconciliationTest\\Foo', '*');
         self::assertNotEmpty($resolved);
         foreach ($resolved as $type) {
@@ -57,7 +60,8 @@ final class ClassConstantByWildcardResolverTest extends TestCase
             }
             ',
         );
-        $this->project_analyzer->getCodebase()->scanFiles();
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->scanFiles();
         $resolved = $this->resolver->resolve('ReconciliationTest\\Foo', 'BA*');
         self::assertNotEmpty($resolved);
         foreach ($resolved as $type) {
@@ -68,7 +72,7 @@ final class ClassConstantByWildcardResolverTest extends TestCase
         $resolved = $this->resolver->resolve('ReconciliationTest\\Foo', 'QOO');
         self::assertNotNull($resolved);
         self::assertCount(1, $resolved);
-        $type = $resolved[0];
+        $type = reset($resolved);
         self::assertInstanceOf(TLiteralString::class, $type);
         self::assertTrue($type->value === 'qoo');
     }

@@ -12,7 +12,6 @@ use Psalm\Type\Union;
 use function array_map;
 use function array_values;
 use function assert;
-use function count;
 
 /**
  * Represents a value of an array or enum.
@@ -28,6 +27,27 @@ final class TValueOf extends Atomic
     {
         $this->type = $type;
         parent::__construct($from_docblock);
+    }
+
+    /**
+     * @param non-empty-array<string,EnumCaseStorage> $cases
+     */
+    private static function getValueTypeForNamedObject(array $cases, TNamedObject $atomic_type): Union
+    {
+        if ($atomic_type instanceof TEnumCase) {
+            assert(isset($cases[$atomic_type->case_name]), 'Should\'ve been verified in TValueOf#getValueType');
+            $value = $cases[$atomic_type->case_name]->value;
+            assert($value !== null, 'Backed enum must have a value.');
+            return new Union([ConstantTypeResolver::getLiteralTypeFromScalarValue($value)]);
+        }
+
+        return new Union(array_map(
+            function (EnumCaseStorage $case): Atomic {
+                assert($case->value !== null); // Backed enum must have a value
+                return ConstantTypeResolver::getLiteralTypeFromScalarValue($case->value);
+            },
+            array_values($cases),
+        ));
     }
 
     public function getKey(bool $include_extra = true): string
@@ -107,19 +127,14 @@ final class TValueOf extends Atomic
                 $cases = $class_storage->enum_cases;
                 if (!$class_storage->is_enum
                     || $class_storage->enum_type === null
-                    || count($cases) === 0
+                    || $cases === []
+                    || ($atomic_type instanceof TEnumCase && !isset($cases[$atomic_type->case_name]))
                 ) {
                     // Invalid value-of, skip
                     continue;
                 }
 
-                $value_atomics = new Union(array_map(
-                    function (EnumCaseStorage $case): Atomic {
-                        assert($case->value !== null); // Backed enum must have a value
-                        return ConstantTypeResolver::getLiteralTypeFromScalarValue($case->value);
-                    },
-                    array_values($cases),
-                ));
+                $value_atomics = self::getValueTypeForNamedObject($cases, $atomic_type);
             } else {
                 continue;
             }

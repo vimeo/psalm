@@ -1806,7 +1806,7 @@ class ConstantTest extends TestCase
                     function foo(int $s): string {
                         return [1 => "a", 2 => "b"][$s];
                     }',
-                'error_message' => "offset value of '1|0",
+                'error_message' => "offset value of '0|1",
             ],
             'constantWithMissingClass' => [
                 'code' => '<?php
