@@ -19,7 +19,7 @@ return [
     'DOMNodeList::count' => ['int'],
     'ReflectionClass::isIterable' => ['bool'],
     'ZipArchive::count' => ['int'],
-    'ZipArchive::setEncryptionIndex' => ['bool', 'index'=>'int', 'method'=>'string', 'password='=>'string'],
+    'ZipArchive::setEncryptionIndex' => ['bool', 'index'=>'int', 'method'=>'int', 'password='=>'string'],
     'ZipArchive::setEncryptionName' => ['bool', 'name'=>'string', 'method'=>'int', 'password='=>'string'],
     'ftp_append' => ['bool', 'ftp'=>'resource', 'remote_filename'=>'string', 'local_filename'=>'string', 'mode='=>'int'],
     'hash_hmac_algos' => ['list<string>'],

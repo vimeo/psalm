@@ -18,7 +18,7 @@ return [
   'added' => [
     'DateTime::createFromImmutable' => ['static', 'object'=>'DateTimeImmutable'],
     'JsonException::__clone' => ['void'],
-    'JsonException::__construct' => ['void'],
+    'JsonException::__construct' => ['void', "message="=>"string", 'code='=>'int', 'previous='=>'?Throwable'],
     'JsonException::__toString' => ['string'],
     'JsonException::__wakeup' => ['void'],
     'JsonException::getCode' => ['int'],
