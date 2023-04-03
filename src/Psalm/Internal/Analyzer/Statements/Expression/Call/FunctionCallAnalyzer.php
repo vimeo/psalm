@@ -723,8 +723,17 @@ class FunctionCallAnalyzer extends CallAnalyzer
                         ),
                         $statements_analyzer->getSuppressedIssues(),
                     );
-                } elseif ($var_type_part instanceof TCallableObject
-                    || $var_type_part instanceof TCallableString
+                } elseif ($var_type_part instanceof TCallableObject) {
+                    $has_valid_function_call_type = true;
+                    self::analyzeInvokeCall(
+                        $statements_analyzer,
+                        $stmt,
+                        $real_stmt,
+                        $function_name,
+                        $context,
+                        $var_type_part,
+                    );
+                } elseif ($var_type_part instanceof TCallableString
                     || ($var_type_part instanceof TNamedObject && $var_type_part->value === 'Closure')
                     || ($var_type_part instanceof TObjectWithProperties && isset($var_type_part->methods['__invoke']))
                 ) {

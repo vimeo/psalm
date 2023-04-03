@@ -52,6 +52,7 @@ use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
+use Psalm\Type\Atomic\TUnknownClassString;
 use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 
@@ -777,9 +778,10 @@ class NewAnalyzer extends CallAnalyzer
             ) {
                 if (!$statements_analyzer->node_data->getType($stmt)) {
                     if ($lhs_type_part instanceof TClassString) {
-                        $generated_type = $lhs_type_part->as_type
-                            ? $lhs_type_part->as_type
-                            : new TObject();
+                        $generated_type = $lhs_type_part->as_type ?? new TObject();
+                        if ($lhs_type_part instanceof TUnknownClassString) {
+                            $generated_type = $lhs_type_part->as_unknown_type ?? $generated_type;
+                        }
 
                         if ($lhs_type_part->as_type
                             && $codebase->classlikes->classExists($lhs_type_part->as_type->value)

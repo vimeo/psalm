@@ -42,7 +42,7 @@ final class TObjectWithProperties extends TObject
      *
      * @param array<string|int, Union> $properties
      * @param array<lowercase-string, string> $methods
-     * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties> $extra_types
+     * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties|TCallableObject> $extra_types
      */
     public function __construct(
         array $properties,

@@ -18,7 +18,7 @@ use function implode;
 trait HasIntersectionTrait
 {
     /**
-     * @var array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties>
+     * @var array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties|TCallableObject>
      */
     public array $extra_types = [];
 
@@ -39,7 +39,7 @@ trait HasIntersectionTrait
             '&',
             array_map(
                 /**
-                 * @param TNamedObject|TTemplateParam|TIterable|TObjectWithProperties $extra_type
+                 * @param TNamedObject|TTemplateParam|TIterable|TObjectWithProperties|TCallableObject $extra_type
                  */
                 static fn(Atomic $extra_type): string => $extra_type->toNamespacedString(
                     $namespace,
@@ -53,7 +53,7 @@ trait HasIntersectionTrait
     }
 
     /**
-     * @param TNamedObject|TTemplateParam|TIterable|TObjectWithProperties $type
+     * @param TNamedObject|TTemplateParam|TIterable|TObjectWithProperties|TCallableObject $type
      * @return static
      */
     public function addIntersectionType(Atomic $type): self
@@ -65,7 +65,7 @@ trait HasIntersectionTrait
     }
 
     /**
-     * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties> $types
+     * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties|TCallableObject> $types
      * @return static
      */
     public function setIntersectionTypes(array $types): self
@@ -79,7 +79,7 @@ trait HasIntersectionTrait
     }
 
     /**
-     * @return array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties>
+     * @return array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties|TCallableObject>
      */
     public function getIntersectionTypes(): array
     {
@@ -87,7 +87,7 @@ trait HasIntersectionTrait
     }
 
     /**
-     * @return array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties>|null
+     * @return array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties|TCallableObject>|null
      */
     protected function replaceIntersectionTemplateTypesWithArgTypes(
         TemplateResult $template_result,
@@ -125,7 +125,7 @@ trait HasIntersectionTrait
     }
 
     /**
-     * @return array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties>|null
+     * @return array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties|TCallableObject>|null
      */
     protected function replaceIntersectionTemplateTypesWithStandins(
         TemplateResult $template_result,

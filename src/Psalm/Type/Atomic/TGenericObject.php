@@ -37,7 +37,7 @@ final class TGenericObject extends TNamedObject
     /**
      * @param string                $value the name of the object
      * @param non-empty-list<Union> $type_params
-     * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties> $extra_types
+     * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties|TCallableObject> $extra_types
      */
     public function __construct(
         string $value,

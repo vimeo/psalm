@@ -42,6 +42,7 @@ use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TIterable;
@@ -750,6 +751,7 @@ class ForeachAnalyzer
         foreach ($iterator_atomic_types as $iterator_atomic_type) {
             if ($iterator_atomic_type instanceof TTemplateParam
                 || $iterator_atomic_type instanceof TObjectWithProperties
+                || $iterator_atomic_type instanceof TCallableObject
             ) {
                 throw new UnexpectedValueException('Shouldn’t get a generic param here');
             }
