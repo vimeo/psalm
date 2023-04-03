@@ -1227,6 +1227,22 @@ class ReturnTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.2',
             ],
+            'returnListMixedVsListStringIsAMixedError' => [
+                'code' => '<?php
+
+                    /**
+                     * @psalm-suppress MixedReturnTypeCoercion
+                     * @return list<string>
+                     */
+                    function foo(){
+                        /**
+                         * @var list<mixed>
+                         * @psalm-suppress MixedReturnTypeCoercion
+                         */
+                        return [];
+                    }
+                    ',
+            ],
         ];
     }
 
