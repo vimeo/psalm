@@ -619,6 +619,33 @@ class IncludeTest extends TestCase
                     getcwd() . DIRECTORY_SEPARATOR . 'user.php',
                 ],
             ],
+            'pathStartingWithDot' => [
+                'files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'test_1.php' => '<?php
+                        // direct usage
+                        require "./include_1.php";
+                        require "./a/include_2.php";
+
+                        Class_1::foo();
+                        Class_2::bar();
+                        ',
+                    getcwd() . DIRECTORY_SEPARATOR . 'include_1.php' => '<?php
+                        class Class_1 {
+                            public static function foo(): void {
+                                // empty;
+                            }
+                        }',
+                    getcwd() . DIRECTORY_SEPARATOR . 'a' . DIRECTORY_SEPARATOR . 'include_2.php' => '<?php
+                        class Class_2 {
+                            public static function bar(): void {
+                                // empty;
+                            }
+                        }',
+                ],
+                'files_to_check' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'test_1.php',
+                ],
+            ],
         ];
     }
 
@@ -866,6 +893,23 @@ class IncludeTest extends TestCase
                     getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
                 ],
                 'error_message' => 'UndefinedFunction',
+            ],
+            'pathStartingWithDot' => [
+                'files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'test_1.php' => '<?php
+                        // start with single dot
+                        require "./doesnotexist.php";
+                        ',
+                    getcwd() . DIRECTORY_SEPARATOR . 'a' . DIRECTORY_SEPARATOR . 'test_2.php' => '<?php
+                        // start with 2 dots
+                        require "../doesnotexist.php";
+                        ',
+                ],
+                'files_to_check' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'test_1.php',
+                    getcwd() . DIRECTORY_SEPARATOR . 'a' . DIRECTORY_SEPARATOR . 'test_2.php',
+                ],
+                'error_message' => 'MissingFile',
             ],
         ];
     }
