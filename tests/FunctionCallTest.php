@@ -2691,7 +2691,7 @@ class FunctionCallTest extends TestCase
 
                     takesArrayShapeWithZeroOrPositiveInt(["bar" => $mayBeInt]);
                 ',
-                'error_message' => 'InvalidArgument',
+                'error_message' => 'ArgumentTypeCoercion',
             ],
             'is_a_withAStringAndNoThirdArg' => [
                 'code' => '<?php
