@@ -4681,7 +4681,7 @@ class ClassTemplateTest extends TestCase
 
                     $m = new Map(fn(int $num) => (string) $num);
                     $m(["a"]);',
-                'error_message' => 'InvalidArgument',
+                'error_message' => 'InvalidScalarArgument',
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
