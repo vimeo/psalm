@@ -2,6 +2,7 @@
 
 namespace Psalm\Tests;
 
+use PHP_CodeSniffer\Tokenizers\PHP;
 use Psalm\Config;
 use Psalm\Exception\CodeException;
 use Psalm\Internal\Analyzer\FileAnalyzer;
@@ -12,8 +13,7 @@ use function strpos;
 
 use const DIRECTORY_SEPARATOR;
 
-class IncludeTest extends TestCase
-{
+class IncludeTest extends TestCase {
     /**
      * @dataProvider providerTestValidIncludes
      * @param array<int, string> $files_to_check
@@ -96,8 +96,7 @@ class IncludeTest extends TestCase
     /**
      * @return array<string,array{files:array<string,string>,files_to_check:array<int,string>,hoist_constants?:bool,ignored_issues?:list<string>}>
      */
-    public function providerTestValidIncludes(): array
-    {
+    public function providerTestValidIncludes(): array {
         return [
             'basicRequire' => [
                 'files' => [
@@ -619,14 +618,40 @@ class IncludeTest extends TestCase
                     getcwd() . DIRECTORY_SEPARATOR . 'user.php',
                 ],
             ],
+            'pathStartingWithDot' => [
+                'files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'test_1.php' => '<?php
+                        // direct usage
+                        require "./include_1.php";
+                        require "./a/include_2.php";
+
+                        Class_1::foo();
+                        Class_2::bar();
+                        ',
+                    getcwd() . DIRECTORY_SEPARATOR . 'include_1.php' => '<?php
+                        class Class_1 {
+                            public static function foo(): void {
+                                // empty;
+                            }
+                        }',
+                    getcwd() . DIRECTORY_SEPARATOR . 'a' . DIRECTORY_SEPARATOR . 'include_2.php' => '<?php
+                        class Class_2 {
+                            public static function bar(): void {
+                                // empty;
+                            }
+                        }',
+                ],
+                'files_to_check' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'test_1.php',
+                ],
+            ],
         ];
     }
 
     /**
      * @return array<string,array{files:array<string,string>,files_to_check:array<int,string>,error_message:string}>
      */
-    public function providerTestInvalidIncludes(): array
-    {
+    public function providerTestInvalidIncludes(): array {
         return [
             'undefinedMethodInRequire' => [
                 'files' => [
@@ -866,6 +891,23 @@ class IncludeTest extends TestCase
                     getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
                 ],
                 'error_message' => 'UndefinedFunction',
+            ],
+            'pathStartingWithDot' => [
+                'files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'test_1.php' => '<?php
+                        // start with single dot
+                        require "./doesnotexist.php";
+                        ',
+                    getcwd() . DIRECTORY_SEPARATOR . 'a' . DIRECTORY_SEPARATOR . 'test_2.php' => '<?php
+                        // start with 2 dots
+                        require "../doesnotexist.php";
+                        ',
+                ],
+                'files_to_check' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'test_1.php',
+                    getcwd() . DIRECTORY_SEPARATOR . 'a' . DIRECTORY_SEPARATOR . 'test_2.php',
+                ],
+                'error_message' => 'MissingFile'
             ],
         ];
     }
