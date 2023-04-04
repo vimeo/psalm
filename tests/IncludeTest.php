@@ -2,7 +2,6 @@
 
 namespace Psalm\Tests;
 
-use PHP_CodeSniffer\Tokenizers\PHP;
 use Psalm\Config;
 use Psalm\Exception\CodeException;
 use Psalm\Internal\Analyzer\FileAnalyzer;
@@ -13,7 +12,8 @@ use function strpos;
 
 use const DIRECTORY_SEPARATOR;
 
-class IncludeTest extends TestCase {
+class IncludeTest extends TestCase
+{
     /**
      * @dataProvider providerTestValidIncludes
      * @param array<int, string> $files_to_check
@@ -96,7 +96,8 @@ class IncludeTest extends TestCase {
     /**
      * @return array<string,array{files:array<string,string>,files_to_check:array<int,string>,hoist_constants?:bool,ignored_issues?:list<string>}>
      */
-    public function providerTestValidIncludes(): array {
+    public function providerTestValidIncludes(): array
+    {
         return [
             'basicRequire' => [
                 'files' => [
@@ -651,7 +652,8 @@ class IncludeTest extends TestCase {
     /**
      * @return array<string,array{files:array<string,string>,files_to_check:array<int,string>,error_message:string}>
      */
-    public function providerTestInvalidIncludes(): array {
+    public function providerTestInvalidIncludes(): array
+    {
         return [
             'undefinedMethodInRequire' => [
                 'files' => [
@@ -907,7 +909,7 @@ class IncludeTest extends TestCase {
                     getcwd() . DIRECTORY_SEPARATOR . 'test_1.php',
                     getcwd() . DIRECTORY_SEPARATOR . 'a' . DIRECTORY_SEPARATOR . 'test_2.php',
                 ],
-                'error_message' => 'MissingFile'
+                'error_message' => 'MissingFile',
             ],
         ];
     }

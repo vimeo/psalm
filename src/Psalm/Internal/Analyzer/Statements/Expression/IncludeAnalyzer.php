@@ -395,11 +395,9 @@ class IncludeAnalyzer
             return $file_name;
         }
 
-        if (
-            (substr($file_name, 0, 2) === '.' . DIRECTORY_SEPARATOR)
+        if ((substr($file_name, 0, 2) === '.' . DIRECTORY_SEPARATOR)
             || (substr($file_name, 0, 3) === '..' . DIRECTORY_SEPARATOR)
         ) {
-
             $file = $current_directory . DIRECTORY_SEPARATOR . $file_name;
 
             if (file_exists($file)) {
