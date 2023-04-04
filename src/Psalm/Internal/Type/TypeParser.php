@@ -718,6 +718,10 @@ class TypeParser
                     continue;
                 }
 
+                if ($type instanceof TCallable) {
+                    $type = new TCallableObject($from_docblock, $type);
+                }
+
                 if ($type instanceof TCallableObject) {
                     $types[] = new TUnknownClassString($type, false, $from_docblock);
                     continue;
