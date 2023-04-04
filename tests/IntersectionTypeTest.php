@@ -115,6 +115,28 @@ final class IntersectionTypeTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['UnsafeInstantiation', 'MixedMethodCall'],
             ],
+            'classStringOfCallableObjectEqualsObjectWithCallableIntersection' => [
+                'code' => '<?php
+                    /**
+                     * @param class-string<callable-object> $className
+                     */
+                    function takesCallableObject(string $className): void {
+                        $object = new $className();
+                        $object();
+                    }
+
+                    class Foo
+                    {
+                        public function __invoke(): void
+                        {
+                        }
+                    }
+
+                    takesCallableObject(Foo::class);
+                    ',
+                'assertions' => [],
+                'ignored_issues' => ['UnsafeInstantiation', 'MixedMethodCall'],
+            ],
         ];
     }
 
