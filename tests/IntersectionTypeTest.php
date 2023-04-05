@@ -92,29 +92,6 @@ final class IntersectionTypeTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['UnsafeInstantiation', 'MixedMethodCall'],
             ],
-            'classStringOfCallableWillBeTreatedAsCallableObject' => [
-                'code' => '<?php
-                    /**
-                     * @param class-string<callable():int> $className
-                     */
-                    function takesCallableObject(string $className): int {
-                        $object = new $className();
-                        return $object();
-                    }
-
-                    class Foo
-                    {
-                        public function __invoke(): int
-                        {
-                            return 0;
-                        }
-                    }
-
-                    takesCallableObject(Foo::class);
-                    ',
-                'assertions' => [],
-                'ignored_issues' => ['UnsafeInstantiation', 'MixedMethodCall'],
-            ],
             'classStringOfCallableObjectEqualsObjectWithCallableIntersection' => [
                 'code' => '<?php
                     /**
@@ -210,6 +187,30 @@ final class IntersectionTypeTest extends TestCase
                     takesCallableObject(Foo::class);
                     ',
                 'error_message' => 'MixedMethodCall',
+            ],
+            'classStringOfCallableIsNotAllowed' => [
+                # Ref: https://github.com/phpstan/phpstan/issues/9148
+                'code' => '<?php
+                    /**
+                     * @param class-string<callable():int> $className
+                     */
+                    function takesCallableObject(string $className): int {
+                        $object = new $className();
+                        return $object();
+                    }
+
+                    class Foo
+                    {
+                        public function __invoke(): int
+                        {
+                            return 0;
+                        }
+                    }
+
+                    takesCallableObject(Foo::class);
+                    ',
+                'error_message' => 'class-string param can only target',
+                'error_levels' => ['UnsafeInstantiation', 'MixedMethodCall'],
             ],
         ];
     }
