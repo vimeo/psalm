@@ -12,6 +12,7 @@ use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
+use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TClosure;
@@ -71,44 +72,64 @@ final class HighOrderFunctionArgHandler
         return $input_function_template_result;
     }
 
+    public static function enhanceCallableArgType(
+        PhpParser\Node\Expr $arg_expr,
+        StatementsAnalyzer $statements_analyzer,
+        HighOrderFunctionArgInfo $high_order_callable_info,
+        ?TemplateResult $high_order_template_result
+    ): void {
+        $statements_analyzer->node_data->setType($arg_expr, TemplateInferredTypeReplacer::replace(
+            $high_order_callable_info->getFunctionType(),
+            $high_order_template_result ?? new TemplateResult([], []),
+            $statements_analyzer->getCodebase(),
+        ));
+    }
+
     public static function getCallableArgInfo(
         Context $context,
-        PhpParser\Node\Expr $expr,
-        StatementsAnalyzer $statements_analyzer
+        PhpParser\Node\Expr $input_arg_expr,
+        StatementsAnalyzer $statements_analyzer,
+        FunctionLikeParameter $container_param
     ): ?HighOrderFunctionArgInfo {
+        if (!$container_param->type || !$container_param->type->hasCallableType()) {
+            return null;
+        }
+
         $codebase = $statements_analyzer->getCodebase();
 
         try {
-            if ($expr instanceof PhpParser\Node\Expr\FuncCall) {
-                $function_id = strtolower((string) $expr->name->getAttribute('resolvedName'));
+            if ($input_arg_expr instanceof PhpParser\Node\Expr\FuncCall) {
+                $function_id = strtolower((string) $input_arg_expr->name->getAttribute('resolvedName'));
 
                 if (empty($function_id)) {
                     return null;
                 }
 
-                $dynamic_storage = !$expr->isFirstClassCallable()
+                $dynamic_storage = !$input_arg_expr->isFirstClassCallable()
                     ? $codebase->functions->dynamic_storage_provider->getFunctionStorage(
-                        $expr,
+                        $input_arg_expr,
                         $statements_analyzer,
                         $function_id,
                         $context,
-                        new CodeLocation($statements_analyzer, $expr),
+                        new CodeLocation($statements_analyzer, $input_arg_expr),
                     )
                     : null;
 
                 return new HighOrderFunctionArgInfo(
-                    $expr->isFirstClassCallable(),
+                    $input_arg_expr->isFirstClassCallable()
+                        ? HighOrderFunctionArgInfo::TYPE_FIRST_CLASS_CALLABLE
+                        : HighOrderFunctionArgInfo::TYPE_CALLABLE,
                     $dynamic_storage ?? $codebase->functions->getStorage($statements_analyzer, $function_id),
                 );
             }
 
-            if ($expr instanceof PhpParser\Node\Expr\MethodCall &&
-                $expr->var instanceof PhpParser\Node\Expr\Variable &&
-                $expr->name instanceof PhpParser\Node\Identifier &&
-                is_string($expr->var->name) &&
-                isset($context->vars_in_scope['$' . $expr->var->name])
+            if ($input_arg_expr instanceof PhpParser\Node\Expr\MethodCall &&
+                $input_arg_expr->var instanceof PhpParser\Node\Expr\Variable &&
+                $input_arg_expr->name instanceof PhpParser\Node\Identifier &&
+                is_string($input_arg_expr->var->name) &&
+                isset($context->vars_in_scope['$' . $input_arg_expr->var->name])
             ) {
-                $lhs_type = $context->vars_in_scope['$' . $expr->var->name]->getSingleAtomic();
+                $lhs_type = $context->vars_in_scope['$' . $input_arg_expr->var->name]->getSingleAtomic();
 
                 if (!$lhs_type instanceof Type\Atomic\TNamedObject) {
                     return null;
@@ -116,67 +137,61 @@ final class HighOrderFunctionArgHandler
 
                 $method_id = new MethodIdentifier(
                     $lhs_type->value,
-                    strtolower((string)$expr->name),
+                    strtolower((string)$input_arg_expr->name),
                 );
 
                 return new HighOrderFunctionArgInfo(
-                    $expr->isFirstClassCallable(),
+                    $input_arg_expr->isFirstClassCallable()
+                        ? HighOrderFunctionArgInfo::TYPE_FIRST_CLASS_CALLABLE
+                        : HighOrderFunctionArgInfo::TYPE_CALLABLE,
                     $codebase->methods->getStorage($method_id),
                 );
             }
 
-            if ($expr instanceof PhpParser\Node\Expr\StaticCall &&
-                $expr->name instanceof PhpParser\Node\Identifier
+            if ($input_arg_expr instanceof PhpParser\Node\Expr\StaticCall &&
+                $input_arg_expr->name instanceof PhpParser\Node\Identifier
             ) {
                 $method_id = new MethodIdentifier(
-                    (string)$expr->class->getAttribute('resolvedName'),
-                    strtolower($expr->name->name),
+                    (string)$input_arg_expr->class->getAttribute('resolvedName'),
+                    strtolower($input_arg_expr->name->toString()),
                 );
 
                 return new HighOrderFunctionArgInfo(
-                    $expr->isFirstClassCallable(),
+                    $input_arg_expr->isFirstClassCallable()
+                        ? HighOrderFunctionArgInfo::TYPE_FIRST_CLASS_CALLABLE
+                        : HighOrderFunctionArgInfo::TYPE_CALLABLE,
                     $codebase->methods->getStorage($method_id),
                 );
             }
 
-            if ($expr instanceof PhpParser\Node\Expr\ConstFetch) {
-                $constant = $context->constants[$expr->name->toString()] ?? null;
+            if ($input_arg_expr instanceof PhpParser\Node\Expr\ConstFetch) {
+                $constant = $context->constants[$input_arg_expr->name->toString()] ?? null;
 
-                $literal = $constant && $constant->isSingle()
-                    ? $constant->getSingleAtomic()
+                return null !== $constant
+                    ? self::fromLiteralString($constant, $statements_analyzer)
+                    : null;
+            }
+
+            if ($input_arg_expr instanceof PhpParser\Node\Expr\ClassConstFetch &&
+                $input_arg_expr->name instanceof PhpParser\Node\Identifier
+            ) {
+                $storage = $codebase->classlikes
+                    ->getStorageFor((string)$input_arg_expr->class->getAttribute('resolvedName'));
+
+                $constant = null !== $storage
+                    ? $storage->constants[$input_arg_expr->name->toString()] ?? null
                     : null;
 
-                if (!$literal instanceof Type\Atomic\TLiteralString || empty($literal->value)) {
-                    return null;
-                }
-
-                return new HighOrderFunctionArgInfo(
-                    true,
-                    strpos($literal->value, '::') !== false
-                        ? $codebase->methods->getStorage(MethodIdentifier::wrap($literal->value))
-                        : $codebase->functions->getStorage($statements_analyzer, strtolower($literal->value)),
-                );
+                return null !== $constant && null !== $constant->type
+                    ? self::fromLiteralString($constant->type, $statements_analyzer)
+                    : null;
             }
 
-            if ($expr instanceof PhpParser\Node\Expr\ClassConstFetch &&
-                $expr->name instanceof PhpParser\Node\Identifier
-            ) {
-                $method_id = new MethodIdentifier(
-                    (string)$expr->class->getAttribute('resolvedName'),
-                    strtolower($expr->name->name),
-                );
-
-                return new HighOrderFunctionArgInfo(
-                    true,
-                    $codebase->methods->getStorage($method_id),
-                );
-            }
-
-            if ($expr instanceof PhpParser\Node\Expr\New_ &&
-                $expr->class instanceof PhpParser\Node\Name
+            if ($input_arg_expr instanceof PhpParser\Node\Expr\New_ &&
+                $input_arg_expr->class instanceof PhpParser\Node\Name
             ) {
                 $class_storage = $codebase->classlikes
-                    ->getStorageFor((string) $expr->class->getAttribute('resolvedName'));
+                    ->getStorageFor((string) $input_arg_expr->class->getAttribute('resolvedName'));
 
                 $invoke_storage = $class_storage && isset($class_storage->methods['__invoke'])
                     ? $class_storage->methods['__invoke']
@@ -186,12 +201,36 @@ final class HighOrderFunctionArgHandler
                     return null;
                 }
 
-                return new HighOrderFunctionArgInfo(false, $invoke_storage, $class_storage);
+                return new HighOrderFunctionArgInfo(
+                    HighOrderFunctionArgInfo::TYPE_CLASS_CALLABLE,
+                    $invoke_storage,
+                    $class_storage,
+                );
             }
         } catch (UnexpectedValueException $e) {
             return null;
         }
 
         return null;
+    }
+
+    private static function fromLiteralString(
+        Union $constant,
+        StatementsAnalyzer $statements_analyzer
+    ): ?HighOrderFunctionArgInfo {
+        $literal = $constant->isSingle() ? $constant->getSingleAtomic() : null;
+
+        if (!$literal instanceof Type\Atomic\TLiteralString || empty($literal->value)) {
+            return null;
+        }
+
+        $codebase = $statements_analyzer->getCodebase();
+
+        return new HighOrderFunctionArgInfo(
+            HighOrderFunctionArgInfo::TYPE_STRING_CALLABLE,
+            strpos($literal->value, '::') !== false
+                ? $codebase->methods->getStorage(MethodIdentifier::wrap($literal->value))
+                : $codebase->functions->getStorage($statements_analyzer, strtolower($literal->value)),
+        );
     }
 }

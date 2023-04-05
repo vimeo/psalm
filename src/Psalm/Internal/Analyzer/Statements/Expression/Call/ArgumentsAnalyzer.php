@@ -196,11 +196,9 @@ class ArgumentsAnalyzer
             }
 
             $high_order_template_result = null;
-            $high_order_callable_info = HighOrderFunctionArgHandler::getCallableArgInfo(
-                $context,
-                $arg->value,
-                $statements_analyzer,
-            );
+            $high_order_callable_info = $param
+                ? HighOrderFunctionArgHandler::getCallableArgInfo($context, $arg->value, $statements_analyzer, $param)
+                : null;
 
             if ($param && $high_order_callable_info) {
                 $high_order_template_result = HighOrderFunctionArgHandler::remapLowerBounds(
@@ -245,22 +243,13 @@ class ArgumentsAnalyzer
 
             $context->inside_call = $was_inside_call;
 
-            if ($high_order_callable_info && $high_order_callable_info->isFirstClassCallable()) {
-                $inferred_first_class_callable_type = TemplateInferredTypeReplacer::replace(
-                    $high_order_callable_info->asFirstClassCallable(),
-                    $high_order_template_result ?? new TemplateResult([], []),
-                    $statements_analyzer->getCodebase(),
+            if ($high_order_callable_info) {
+                HighOrderFunctionArgHandler::enhanceCallableArgType(
+                    $arg->value,
+                    $statements_analyzer,
+                    $high_order_callable_info,
+                    $high_order_template_result,
                 );
-
-                $statements_analyzer->node_data->setType($arg->value, $inferred_first_class_callable_type);
-            } elseif ($high_order_callable_info && $high_order_callable_info->isInvokableClassCallable()) {
-                $inferred_invokable_class_callable_type = TemplateInferredTypeReplacer::replace(
-                    $high_order_callable_info->asInvokableClassCallable(),
-                    $high_order_template_result ?? new TemplateResult([], []),
-                    $statements_analyzer->getCodebase(),
-                );
-
-                $statements_analyzer->node_data->setType($arg->value, $inferred_invokable_class_callable_type);
             }
 
             if (($argument_offset === 0 && $method_id === 'array_filter' && count($args) === 2)

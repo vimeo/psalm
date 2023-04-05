@@ -19,16 +19,25 @@ use function array_merge;
  */
 final class HighOrderFunctionArgInfo
 {
-    private bool $first_class_callable;
+    public const TYPE_FIRST_CLASS_CALLABLE = 'first-class-callable';
+    public const TYPE_CLASS_CALLABLE = 'class-callable';
+    public const TYPE_STRING_CALLABLE = 'string-callable';
+    public const TYPE_CALLABLE = 'callable';
+
+    /** @psalm-var HighOrderFunctionArgInfo::TYPE_* */
+    private string $type;
     private FunctionLikeStorage $function_storage;
     private ?ClassLikeStorage $class_storage;
 
+    /**
+     * @psalm-param HighOrderFunctionArgInfo::TYPE_* $type
+     */
     public function __construct(
-        bool $first_class_callable,
+        string $type,
         FunctionLikeStorage $function_storage,
         ClassLikeStorage $class_storage = null
     ) {
-        $this->first_class_callable = $first_class_callable;
+        $this->type = $type;
         $this->function_storage = $function_storage;
         $this->class_storage = $class_storage;
     }
@@ -45,55 +54,32 @@ final class HighOrderFunctionArgInfo
         return new TemplateResult($templates, []);
     }
 
-    public function isInvokableClassCallable(): bool
-    {
-        return null !== $this->class_storage;
-    }
-
-    public function isFirstClassCallable(): bool
-    {
-        return $this->first_class_callable;
-    }
-
     public function getFunctionType(): Union
     {
-        if ($this->isFirstClassCallable()) {
-            return $this->asFirstClassCallable();
+        switch ($this->type) {
+            case self::TYPE_FIRST_CLASS_CALLABLE:
+                return new Union([
+                    new TClosure(
+                        'Closure',
+                        $this->function_storage->params,
+                        $this->function_storage->return_type,
+                        $this->function_storage->pure,
+                    ),
+                ]);
+
+            case self::TYPE_STRING_CALLABLE:
+            case self::TYPE_CLASS_CALLABLE:
+                return new Union([
+                    new TCallable(
+                        'callable',
+                        $this->function_storage->params,
+                        $this->function_storage->return_type,
+                        $this->function_storage->pure,
+                    ),
+                ]);
+
+            default:
+                return $this->function_storage->return_type ?? Type::getMixed();
         }
-
-        if ($this->isInvokableClassCallable()) {
-            return $this->asInvokableClassCallable();
-        }
-
-        return $this->asHighOrderFunction();
-    }
-
-    public function asFirstClassCallable(): Union
-    {
-        return new Union([
-            new TClosure(
-                'Closure',
-                $this->function_storage->params,
-                $this->function_storage->return_type,
-                $this->function_storage->pure,
-            ),
-        ]);
-    }
-
-    public function asInvokableClassCallable(): Union
-    {
-        return new Union([
-            new TCallable(
-                'callable',
-                $this->function_storage->params,
-                $this->function_storage->return_type,
-                $this->function_storage->pure,
-            ),
-        ]);
-    }
-
-    public function asHighOrderFunction(): Union
-    {
-        return $this->function_storage->return_type ?? Type::getMixed();
     }
 }
