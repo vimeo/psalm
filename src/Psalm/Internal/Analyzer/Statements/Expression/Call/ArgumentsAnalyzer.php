@@ -243,8 +243,9 @@ class ArgumentsAnalyzer
 
             $context->inside_call = $was_inside_call;
 
-            if ($high_order_callable_info) {
+            if ($high_order_callable_info && $high_order_template_result) {
                 HighOrderFunctionArgHandler::enhanceCallableArgType(
+                    $context,
                     $arg->value,
                     $statements_analyzer,
                     $high_order_callable_info,

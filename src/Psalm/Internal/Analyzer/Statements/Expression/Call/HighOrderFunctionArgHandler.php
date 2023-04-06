@@ -12,6 +12,7 @@ use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
 use Psalm\Type\Atomic\TCallable;
@@ -73,19 +74,33 @@ final class HighOrderFunctionArgHandler
     }
 
     public static function enhanceCallableArgType(
+        Context $context,
         PhpParser\Node\Expr $arg_expr,
         StatementsAnalyzer $statements_analyzer,
         HighOrderFunctionArgInfo $high_order_callable_info,
-        ?TemplateResult $high_order_template_result
+        TemplateResult $high_order_template_result
     ): void {
         if ($high_order_callable_info->getType() === HighOrderFunctionArgInfo::TYPE_CALLABLE) {
             return;
         }
 
-        $statements_analyzer->node_data->setType($arg_expr, TemplateInferredTypeReplacer::replace(
+        $replaced = TemplateInferredTypeReplacer::replace(
             $high_order_callable_info->getFunctionType(),
-            $high_order_template_result ?? new TemplateResult([], []),
+            $high_order_template_result,
             $statements_analyzer->getCodebase(),
+        );
+
+        $statements_analyzer->node_data->setType($arg_expr, TypeExpander::expandUnion(
+            $statements_analyzer->getCodebase(),
+            $replaced,
+            $context->self,
+            $context->self,
+            $context->parent,
+            true,
+            true,
+            false,
+            false,
+            true,
         ));
     }
 
