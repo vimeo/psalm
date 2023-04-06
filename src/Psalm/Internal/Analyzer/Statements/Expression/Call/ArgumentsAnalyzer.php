@@ -758,7 +758,7 @@ class ArgumentsAnalyzer
                                 IssueBuffer::maybeAdd(
                                     new InvalidNamedArgument(
                                         'Parameter $' . $key_type->value . ' does not exist on function '
-                                        . ($cased_method_id ?: $method_id),
+                                            . ($cased_method_id ?: $method_id),
                                         new CodeLocation($statements_analyzer, $arg),
                                         (string)$method_id,
                                     ),
@@ -778,7 +778,7 @@ class ArgumentsAnalyzer
                                 IssueBuffer::maybeAdd(
                                     new InvalidNamedArgument(
                                         'Parameter $' . $arg->name->name . ' has already been used in '
-                                        . ($cased_method_id ?: $method_id),
+                                            . ($cased_method_id ?: $method_id),
                                         new CodeLocation($statements_analyzer, $arg->name),
                                         (string) $method_id,
                                     ),
@@ -990,7 +990,7 @@ class ArgumentsAnalyzer
             || $arg->value instanceof PhpParser\Node\Expr\Ternary
             || (
                 (
-                    $arg->value instanceof PhpParser\Node\Expr\ConstFetch
+                $arg->value instanceof PhpParser\Node\Expr\ConstFetch
                     || $arg->value instanceof PhpParser\Node\Expr\FuncCall
                     || $arg->value instanceof PhpParser\Node\Expr\MethodCall
                     || $arg->value instanceof PhpParser\Node\Expr\StaticCall
@@ -1188,7 +1188,7 @@ class ArgumentsAnalyzer
                     IssueBuffer::maybeAdd(
                         new PossiblyUndefinedVariable(
                             'Variable ' . $var_id
-                            . ' must be defined prior to use within an unknown function or method',
+                                . ' must be defined prior to use within an unknown function or method',
                             new CodeLocation($statements_analyzer->getSource(), $arg->value),
                         ),
                         $statements_analyzer->getSuppressedIssues(),

@@ -509,6 +509,14 @@ class CallableTest extends TestCase
                         $const_id = pipe1([42], id);
                         $const_composition = pipe1([42], map(id));
                         $const_sequential = pipe2([42], map(fn($i) => ["num" => $i]), id);
+
+                        $string_id = pipe1([42], "Functions\id");
+                        $string_composition = pipe1([42], map("Functions\id"));
+                        $string_sequential = pipe2([42], map(fn($i) => ["num" => $i]), "Functions\id");
+
+                        $class_string_id = pipe1([42], "Functions\Module::id");
+                        $class_string_composition = pipe1([42], map("Functions\Module::id"));
+                        $class_string_sequential = pipe2([42], map(fn($i) => ["num" => $i]), "Functions\Module::id");
                     }
                 ',
                 'assertions' => [
@@ -521,6 +529,12 @@ class CallableTest extends TestCase
                     '$const_id===' => 'list{42}',
                     '$const_composition===' => 'list<42>',
                     '$const_sequential===' => 'list<array{num: 42}>',
+                    '$string_id===' => 'list{42}',
+                    '$string_composition===' => 'list<42>',
+                    '$string_sequential===' => 'list<array{num: 42}>',
+                    '$class_string_id===' => 'list{42}',
+                    '$class_string_composition===' => 'list<42>',
+                    '$class_string_sequential===' => 'list<array{num: 42}>',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.0',

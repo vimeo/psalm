@@ -29,12 +29,39 @@ use function strtolower;
  */
 final class HighOrderFunctionArgHandler
 {
+    /**
+     * Compiles TemplateResult for high-order function
+     * by previous template args ($inferred_template_result).
+     *
+     * It's need for proper template replacement:
+     *
+     * ```
+     * * template T
+     * * return Closure(T): T
+     * function id(): Closure { ... }
+     *
+     * * template A
+     * * template B
+     * *
+     * * param list<A> $_items
+     * * param callable(A): B $_ab
+     * * return list<B>
+     * function map(array $items, callable $ab): array { ... }
+     *
+     * // list<int>
+     * $numbers = [1, 2, 3];
+     *
+     * $result = map($numbers, id());
+     * // $result is list<int> because template T of id() was inferred by previous arg.
+     * ```
+     */
     public static function remapLowerBounds(
         StatementsAnalyzer $statements_analyzer,
         TemplateResult $inferred_template_result,
         HighOrderFunctionArgInfo $input_function,
         Union $container_function_type
     ): TemplateResult {
+        // Try to infer container callable by $inferred_template_result
         $container_type = TemplateInferredTypeReplacer::replace(
             $container_function_type,
             $inferred_template_result,
@@ -44,6 +71,17 @@ final class HighOrderFunctionArgHandler
         $input_function_type = $input_function->getFunctionType();
         $input_function_template_result = $input_function->getTemplates();
 
+        // Traverse side by side 'container' params and 'input' params.
+        // This maps 'input' templates to 'container' templates.
+        //
+        // Example:
+        // 'input'     => Closure(C:Bar, D:Bar): array{C:Bar, D:Bar}
+        // 'container' => Closure(int, string): array{int, string}
+        //
+        // $remapped_lower_bounds will be: [
+        //     'C' => ['Bar' => [int]],
+        //     'D' => ['Bar' => [string]]
+        // ].
         foreach ($input_function_type->getAtomicTypes() as $input_atomic) {
             if (!$input_atomic instanceof TClosure && !$input_atomic instanceof TCallable) {
                 continue;
@@ -80,19 +118,23 @@ final class HighOrderFunctionArgHandler
         HighOrderFunctionArgInfo $high_order_callable_info,
         TemplateResult $high_order_template_result
     ): void {
+        // Psalm can infer simple callable/closure.
+        // But can't infer first-class-callable or high-order function.
         if ($high_order_callable_info->getType() === HighOrderFunctionArgInfo::TYPE_CALLABLE) {
             return;
         }
 
-        $replaced = TemplateInferredTypeReplacer::replace(
+        $fully_inferred_callable_type = TemplateInferredTypeReplacer::replace(
             $high_order_callable_info->getFunctionType(),
             $high_order_template_result,
             $statements_analyzer->getCodebase(),
         );
 
-        $statements_analyzer->node_data->setType($arg_expr, TypeExpander::expandUnion(
+        // Some templates may not have been replaced.
+        // They expansion makes error message better.
+        $expanded = TypeExpander::expandUnion(
             $statements_analyzer->getCodebase(),
-            $replaced,
+            $fully_inferred_callable_type,
             $context->self,
             $context->self,
             $context->parent,
@@ -101,7 +143,9 @@ final class HighOrderFunctionArgHandler
             false,
             false,
             true,
-        ));
+        );
+
+        $statements_analyzer->node_data->setType($arg_expr, $expanded);
     }
 
     public static function getCallableArgInfo(
@@ -181,6 +225,10 @@ final class HighOrderFunctionArgHandler
                         : HighOrderFunctionArgInfo::TYPE_CALLABLE,
                     $codebase->methods->getStorage($method_id),
                 );
+            }
+
+            if ($input_arg_expr instanceof PhpParser\Node\Scalar\String_) {
+                return self::fromLiteralString(Type::getString($input_arg_expr->value), $statements_analyzer);
             }
 
             if ($input_arg_expr instanceof PhpParser\Node\Expr\ConstFetch) {
