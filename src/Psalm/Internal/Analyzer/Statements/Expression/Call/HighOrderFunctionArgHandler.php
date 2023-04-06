@@ -78,6 +78,10 @@ final class HighOrderFunctionArgHandler
         HighOrderFunctionArgInfo $high_order_callable_info,
         ?TemplateResult $high_order_template_result
     ): void {
+        if ($high_order_callable_info->getType() === HighOrderFunctionArgInfo::TYPE_CALLABLE) {
+            return;
+        }
+
         $statements_analyzer->node_data->setType($arg_expr, TemplateInferredTypeReplacer::replace(
             $high_order_callable_info->getFunctionType(),
             $high_order_template_result ?? new TemplateResult([], []),

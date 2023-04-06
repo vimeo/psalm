@@ -54,6 +54,11 @@ final class HighOrderFunctionArgInfo
         return new TemplateResult($templates, []);
     }
 
+    public function getType(): string
+    {
+        return $this->type;
+    }
+
     public function getFunctionType(): Union
     {
         switch ($this->type) {
