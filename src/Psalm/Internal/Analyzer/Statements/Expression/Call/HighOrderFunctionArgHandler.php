@@ -154,7 +154,7 @@ final class HighOrderFunctionArgHandler
         StatementsAnalyzer $statements_analyzer,
         FunctionLikeParameter $container_param
     ): ?HighOrderFunctionArgInfo {
-        if (!$container_param->type || !$container_param->type->hasCallableType()) {
+        if (!self::isSupported($container_param)) {
             return null;
         }
 
@@ -279,6 +279,28 @@ final class HighOrderFunctionArgHandler
         }
 
         return null;
+    }
+
+    private static function isSupported(FunctionLikeParameter $container_param): bool
+    {
+        if (!$container_param->type || !$container_param->type->hasCallableType()) {
+            return false;
+        }
+
+        foreach ($container_param->type->getAtomicTypes() as $a) {
+            if (($a instanceof TClosure || $a instanceof TCallable) && !$a->params) {
+                return false;
+            }
+
+            if ($a instanceof Type\Atomic\TCallableArray ||
+                $a instanceof Type\Atomic\TCallableString ||
+                $a instanceof Type\Atomic\TCallableKeyedArray
+            ) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private static function fromLiteralString(
