@@ -271,7 +271,7 @@ class ObjectComparator
             $intersection_input_type_lower = 'iterable';
         } elseif ($intersection_input_type instanceof TObjectWithProperties) {
             $intersection_input_type_lower = 'object';
-        } elseif ($intersection_input_type instanceof TCallableOBject) {
+        } elseif ($intersection_input_type instanceof TCallableObject) {
             $intersection_input_type_lower = 'callable-object';
         } else {
             $input_was_static = $intersection_input_type->is_static;
