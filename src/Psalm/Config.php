@@ -1735,7 +1735,8 @@ class Config
 
     public function reportIssueInFile(string $issue_type, string $file_path): bool
     {
-        if (($this->show_mixed_issues === false || $this->level > 2)
+        if ((($this->level < 3 && $this->show_mixed_issues === false)
+            || ($this->level > 2 && $this->show_mixed_issues !== true))
             && in_array($issue_type, self::MIXED_ISSUES, true)
         ) {
             return false;
