@@ -353,6 +353,77 @@ class ConfigTest extends TestCase
         $this->assertFalse($config->reportIssueInFile('MissingReturnType', realpath('src/Psalm/Type.php')));
     }
 
+    public function testReportMixedIssues(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            Config::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                        <directory name="tests" />
+                    </projectFiles>
+                </psalm>',
+            ),
+        );
+        $config = $this->project_analyzer->getConfig();
+
+        $this->assertNull($config->show_mixed_issues);
+        $this->assertTrue($config->reportIssueInFile('MixedArgument', realpath(__FILE__)));
+
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            Config::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm reportMixedIssues="false">
+                    <projectFiles>
+                        <directory name="src" />
+                        <directory name="tests" />
+                    </projectFiles>
+                </psalm>',
+            ),
+        );
+        $config = $this->project_analyzer->getConfig();
+
+        $this->assertFalse($config->show_mixed_issues);
+        $this->assertFalse($config->reportIssueInFile('MixedArgument', realpath(__FILE__)));
+
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            Config::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm errorLevel="5">
+                    <projectFiles>
+                        <directory name="src" />
+                        <directory name="tests" />
+                    </projectFiles>
+                </psalm>',
+            ),
+        );
+        $config = $this->project_analyzer->getConfig();
+
+        $this->assertNull($config->show_mixed_issues);
+        $this->assertFalse($config->reportIssueInFile('MixedArgument', realpath(__FILE__)));
+
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            Config::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm errorLevel="5" reportMixedIssues="true">
+                    <projectFiles>
+                        <directory name="src" />
+                        <directory name="tests" />
+                    </projectFiles>
+                </psalm>',
+            ),
+        );
+        $config = $this->project_analyzer->getConfig();
+
+        $this->assertTrue($config->show_mixed_issues);
+        $this->assertTrue($config->reportIssueInFile('MixedArgument', realpath(__FILE__)));
+    }
+
     public function testGlobalUndefinedFunctionSuppression(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
