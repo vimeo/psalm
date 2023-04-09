@@ -18,9 +18,6 @@ class UnusedVariableTest extends TestCase
         $this->project_analyzer->getCodebase()->reportUnusedVariables();
     }
 
-    /**
-     * @return array<string, array{code:string,ignored_issues?:list<string>,php_version?:string}>
-     */
     public function providerValidCodeParse(): array
     {
         return [
@@ -2559,9 +2556,6 @@ class UnusedVariableTest extends TestCase
         ];
     }
 
-    /**
-     * @return array<string,array{code:string,error_message:string}>
-     */
     public function providerInvalidCodeParse(): array
     {
         return [
@@ -3670,6 +3664,26 @@ class UnusedVariableTest extends TestCase
                     }
                 ',
                 'error_message' => 'UnusedVariable',
+            ],
+            'reportWillReportFloatAsItIsAfterRequiredParameterAndUnused' => [
+                'code' => '<?php
+
+                /** @param callable(string,int,bool,mixed,float): void $callable */
+                function takesCallable(callable $callable): void
+                {
+                    /** @var mixed $mixed */
+                    $mixed = null;
+                    $callable("foo", 0, true, $mixed, 0.0);
+                }
+
+                takesCallable(
+                    static function (string $foo, int $bar, $float) {
+                        if ($bar === 0) {
+                            throw new RuntimeException();
+                        }
+                    }
+                );',
+                'error_message' => 'Param float is never referenced in this method',
             ],
         ];
     }
