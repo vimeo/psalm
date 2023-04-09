@@ -16,17 +16,26 @@ use function version_compare;
 use const PHP_OS;
 use const PHP_VERSION;
 
+/**
+ * @psalm-type DeprecatedDataProviderArrayNotation = array{
+ *     code: string,
+ *     error_message: string,
+ *     ignored_issues?: list<string>,
+ *     php_version?: string
+ * }
+ * @psalm-type NamedArgumentsDataProviderArrayNotation = array{
+ *     code: string,
+ *     error_message: string,
+ *     error_levels?: list<string>,
+ *     php_version?: string
+ * }
+ */
 trait InvalidCodeAnalysisTestTrait
 {
     /**
      * @return iterable<
      *     string,
-     *     array{
-     *         code: string,
-     *         error_message: string,
-     *         ignored_issues?: list<string>,
-     *         php_version?: string,
-     *     }
+     *     DeprecatedDataProviderArrayNotation|NamedArgumentsDataProviderArrayNotation
      * >
      */
     abstract public function providerInvalidCodeParse(): iterable;

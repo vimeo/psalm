@@ -42,6 +42,7 @@ use Psalm\Storage\Assertion\Truthy;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\Possibilities;
 use Psalm\Type;
+use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -579,6 +580,7 @@ class CallAnalyzer
                 foreach ($type_part->extra_types as $extra_type) {
                     if ($extra_type instanceof TTemplateParam
                         || $extra_type instanceof TObjectWithProperties
+                        || $extra_type instanceof TCallableObject
                     ) {
                         throw new UnexpectedValueException('Shouldn’t get a generic param here');
                     }

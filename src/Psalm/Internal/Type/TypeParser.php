@@ -31,6 +31,7 @@ use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCallableKeyedArray;
+use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClassStringMap;
@@ -61,6 +62,7 @@ use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTemplatePropertiesOf;
 use Psalm\Type\Atomic\TTemplateValueOf;
 use Psalm\Type\Atomic\TTypeAlias;
+use Psalm\Type\Atomic\TUnknownClassString;
 use Psalm\Type\Atomic\TValueOf;
 use Psalm\Type\TypeNode;
 use Psalm\Type\Union;
@@ -711,12 +713,24 @@ class TypeParser
 
             $types = [];
             foreach ($generic_params[0]->getAtomicTypes() as $type) {
-                if (!$type instanceof TNamedObject) {
-                    throw new TypeParseTreeException('Class string param should be a named object');
+                if ($type instanceof TNamedObject) {
+                    $types[] = new TClassString($type->value, $type, false, false, false, $from_docblock);
+                    continue;
                 }
 
-                $types[] = new TClassString($type->value, $type, false, false, false, $from_docblock);
+                if ($type instanceof TCallableObject) {
+                    $types[] = new TUnknownClassString($type, false, $from_docblock);
+                    continue;
+                }
+
+                throw new TypeParseTreeException('class-string param can only target to named or callable objects');
             }
+
+            assert(
+                $types !== [],
+                'Since `Union` cannot be empty and all non-supported atomics lead to thrown exception,'
+                .' we can safely assert that the types array is non-empty.',
+            );
 
             return new Union($types);
         }
@@ -1196,46 +1210,72 @@ class TypeParser
             if ($keyed_intersection_types) {
                 return $first_type->setIntersectionTypes($keyed_intersection_types);
             }
-        } else {
-            foreach ($intersection_types as $intersection_type) {
-                if (!$intersection_type instanceof TIterable
-                    && !$intersection_type instanceof TNamedObject
-                    && !$intersection_type instanceof TTemplateParam
-                    && !$intersection_type instanceof TObjectWithProperties
-                ) {
+
+            return $first_type;
+        }
+
+        $callable_intersection = null;
+
+        foreach ($intersection_types as $intersection_type) {
+            if ($intersection_type instanceof TIterable
+                || $intersection_type instanceof TNamedObject
+                || $intersection_type instanceof TTemplateParam
+                || $intersection_type instanceof TObjectWithProperties
+            ) {
+                $keyed_intersection_types[self::extractIntersectionKey($intersection_type)] = $intersection_type;
+                continue;
+            }
+
+            if (get_class($intersection_type) === TObject::class) {
+                continue;
+            }
+
+            if ($intersection_type instanceof TCallable) {
+                if ($callable_intersection !== null) {
                     throw new TypeParseTreeException(
-                        'Intersection types must be all objects, '
-                        . get_class($intersection_type) . ' provided',
+                        'The intersection type must not contain more than one callable type!',
                     );
                 }
-
-                $keyed_intersection_types[$intersection_type instanceof TIterable
-                    ? $intersection_type->getId()
-                    : $intersection_type->getKey()] = $intersection_type;
+                $callable_intersection = $intersection_type;
+                continue;
             }
 
-            $intersect_static = false;
+            throw new TypeParseTreeException(
+                'Intersection types must be all objects, '
+                . get_class($intersection_type) . ' provided',
+            );
+        }
 
-            if (isset($keyed_intersection_types['static'])) {
-                unset($keyed_intersection_types['static']);
-                $intersect_static = true;
-            }
+        if ($callable_intersection !== null) {
+            $callable_object_type = new TCallableObject(
+                $callable_intersection->from_docblock,
+                $callable_intersection,
+            );
 
-            if (!$keyed_intersection_types && $intersect_static) {
-                return new TNamedObject('static', false, false, [], $from_docblock);
-            }
+            $keyed_intersection_types[self::extractIntersectionKey($callable_object_type)] = $callable_object_type;
+        }
 
-            $first_type = array_shift($keyed_intersection_types);
+        $intersect_static = false;
 
-            if ($intersect_static
-                && $first_type instanceof TNamedObject
-            ) {
-                $first_type->is_static = true;
-            }
+        if (isset($keyed_intersection_types['static'])) {
+            unset($keyed_intersection_types['static']);
+            $intersect_static = true;
+        }
 
-            if ($keyed_intersection_types) {
-                return $first_type->setIntersectionTypes($keyed_intersection_types);
-            }
+        if (!$keyed_intersection_types && $intersect_static) {
+            return new TNamedObject('static', false, false, [], $from_docblock);
+        }
+
+        $first_type = array_shift($keyed_intersection_types);
+
+        if ($intersect_static
+            && $first_type instanceof TNamedObject
+        ) {
+            $first_type->is_static = true;
+        }
+
+        if ($keyed_intersection_types) {
+            return $first_type->setIntersectionTypes($keyed_intersection_types);
         }
 
         return $first_type;
@@ -1527,5 +1567,15 @@ class TypeParser
             $is_list,
             $from_docblock,
         );
+    }
+
+    /**
+     * @param TNamedObject|TObjectWithProperties|TCallableObject|TIterable|TTemplateParam $intersection_type
+     */
+    private static function extractIntersectionKey(Atomic $intersection_type): string
+    {
+        return $intersection_type instanceof TIterable
+            ? $intersection_type->getId()
+            : $intersection_type->getKey();
     }
 }

@@ -26,7 +26,7 @@ final class TClosure extends TNamedObject
     /**
      * @param list<FunctionLikeParameter> $params
      * @param array<string, bool> $byref_uses
-     * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties> $extra_types
+     * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties|TCallableObject> $extra_types
      */
     public function __construct(
         string $value = 'callable',

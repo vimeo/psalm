@@ -43,7 +43,7 @@ final class TIterable extends Atomic
 
     /**
      * @param array{Union, Union}|array<never, never> $type_params
-     * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties> $extra_types
+     * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties|TCallableObject> $extra_types
      */
     public function __construct(array $type_params = [], array $extra_types = [], bool $from_docblock = false)
     {

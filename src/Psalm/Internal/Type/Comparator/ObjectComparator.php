@@ -5,6 +5,7 @@ namespace Psalm\Internal\Type\Comparator;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
@@ -90,6 +91,8 @@ class ObjectComparator
                 $intersection_container_type_lower = 'object';
             } elseif ($intersection_container_type instanceof TTemplateParam) {
                 $intersection_container_type_lower = null;
+            } elseif ($intersection_container_type instanceof TCallableObject) {
+                $intersection_container_type_lower = 'callable-object';
             } else {
                 $container_was_static = $intersection_container_type->is_static;
 
@@ -134,7 +137,7 @@ class ObjectComparator
 
     /**
      * @param  TNamedObject|TTemplateParam|TIterable  $type_part
-     * @return array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties>
+     * @return array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties|TCallableObject>
      */
     private static function getIntersectionTypes(Atomic $type_part): array
     {
@@ -166,8 +169,8 @@ class ObjectComparator
     }
 
     /**
-     * @param  TNamedObject|TTemplateParam|TIterable|TObjectWithProperties  $intersection_input_type
-     * @param  TNamedObject|TTemplateParam|TIterable|TObjectWithProperties  $intersection_container_type
+     * @param  TNamedObject|TTemplateParam|TIterable|TObjectWithProperties|TCallableObject  $intersection_input_type
+     * @param  TNamedObject|TTemplateParam|TIterable|TObjectWithProperties|TCallableObject  $intersection_container_type
      */
     private static function isIntersectionShallowlyContainedBy(
         Codebase $codebase,
@@ -268,6 +271,8 @@ class ObjectComparator
             $intersection_input_type_lower = 'iterable';
         } elseif ($intersection_input_type instanceof TObjectWithProperties) {
             $intersection_input_type_lower = 'object';
+        } elseif ($intersection_input_type instanceof TCallableObject) {
+            $intersection_input_type_lower = 'callable-object';
         } else {
             $input_was_static = $intersection_input_type->is_static;
 

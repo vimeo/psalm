@@ -46,7 +46,7 @@ class TNamedObject extends Atomic
 
     /**
      * @param string $value the name of the object
-     * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties> $extra_types
+     * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties|TCallableObject> $extra_types
      */
     public function __construct(
         string $value,

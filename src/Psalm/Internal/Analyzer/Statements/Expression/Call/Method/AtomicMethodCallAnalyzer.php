@@ -27,6 +27,8 @@ use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TEmptyMixed;
 use Psalm\Type\Atomic\TFalse;
@@ -103,6 +105,18 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
         }
 
         $source = $statements_analyzer->getSource();
+
+        if ($lhs_type_part instanceof TCallableObject) {
+            self::handleCallableObject(
+                $statements_analyzer,
+                $stmt,
+                $context,
+                $lhs_type_part->callable,
+                $result,
+                $inferred_template_result,
+            );
+            return;
+        }
 
         if (!$lhs_type_part instanceof TNamedObject) {
             self::handleInvalidClass(
@@ -890,5 +904,56 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
             $method_id,
             $fq_class_name,
         ];
+    }
+
+    private static function handleCallableObject(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\MethodCall $stmt,
+        Context $context,
+        ?TCallable $lhs_type_part_callable,
+        AtomicMethodCallAnalysisResult $result,
+        ?TemplateResult $inferred_template_result = null
+    ): void {
+        $method_id = 'object::__invoke';
+        $result->existent_method_ids[] = $method_id;
+        $result->has_valid_method_call_type = true;
+
+        if ($lhs_type_part_callable !== null) {
+            $result->return_type = $lhs_type_part_callable->return_type ?? Type::getMixed();
+            $callableArgumentCount = count($lhs_type_part_callable->params ?? []);
+            $providedArgumentsCount = count($stmt->getArgs());
+
+            if ($callableArgumentCount > $providedArgumentsCount) {
+                $result->too_few_arguments = true;
+                $result->too_few_arguments_method_ids[] = new MethodIdentifier('callable-object', '__invoke');
+            } elseif ($providedArgumentsCount > $callableArgumentCount) {
+                $result->too_many_arguments = true;
+                $result->too_many_arguments_method_ids[] = new MethodIdentifier('callable-object', '__invoke');
+            }
+
+            $template_result = $inferred_template_result ?? new TemplateResult([], []);
+
+            ArgumentsAnalyzer::analyze(
+                $statements_analyzer,
+                $stmt->getArgs(),
+                $lhs_type_part_callable->params,
+                $method_id,
+                false,
+                $context,
+                $template_result,
+            );
+
+            ArgumentsAnalyzer::checkArgumentsMatch(
+                $statements_analyzer,
+                $stmt->getArgs(),
+                $method_id,
+                $lhs_type_part_callable->params ?? [],
+                null,
+                null,
+                $template_result,
+                new CodeLocation($statements_analyzer->getSource(), $stmt),
+                $context,
+            );
+        }
     }
 }

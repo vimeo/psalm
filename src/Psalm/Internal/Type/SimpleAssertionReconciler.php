@@ -1603,7 +1603,8 @@ class SimpleAssertionReconciler extends Reconciler
             if ($type->isObjectType()) {
                 $object_types[] = $type;
             } elseif ($type instanceof TCallable) {
-                $object_types[] = new TCallableObject();
+                $callable_object = new TCallableObject($type->from_docblock, $type);
+                $object_types[] = $callable_object;
                 $redundant = false;
             } elseif ($type instanceof TTemplateParam
                 && $type->as->isMixed()
