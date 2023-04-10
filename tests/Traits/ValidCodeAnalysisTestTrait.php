@@ -40,7 +40,7 @@ trait ValidCodeAnalysisTestTrait
         string $code,
         array $assertions = [],
         array $ignored_issues = [],
-        string $php_version = '7.3'
+        string $php_version = '7.4'
     ): void {
         $test_name = $this->getTestName();
         if (strpos($test_name, 'PHP80-') !== false) {
