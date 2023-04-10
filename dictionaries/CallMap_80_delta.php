@@ -224,6 +224,10 @@ return [
       'old' => ['string', 'locale'=>'string', 'displayLocale='=>'string'],
       'new' => ['string', 'locale'=>'string', 'displayLocale='=>'?string'],
     ],
+    'mysqli_stmt::__construct' => [
+      'old' => ['void', 'mysql'=>'mysqli', 'query='=>'string'],
+      'new' => ['void', 'mysql'=>'mysqli', 'query='=>'?string'],
+    ],
     'NumberFormatter::__construct' => [
       'old' => ['void', 'locale'=>'string', 'style'=>'int', 'pattern='=>'string'],
       'new' => ['void', 'locale'=>'string', 'style'=>'int', 'pattern='=>'?string'],
@@ -817,8 +821,8 @@ return [
       'new' => ['DOMElement', 'node'=>'SimpleXMLElement'],
     ],
     'easter_date' => [
-      'old' => ['int', 'year='=>'int'],
-      'new' => ['int', 'year='=>'?int'],
+      'old' => ['int', 'year='=>'int', 'mode='=>'int'],
+      'new' => ['int', 'year='=>'?int', 'mode='=>'int'],
     ],
     'easter_days' => [
       'old' => ['int', 'year='=>'int', 'mode='=>'int'],

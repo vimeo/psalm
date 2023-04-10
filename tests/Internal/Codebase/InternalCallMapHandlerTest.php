@@ -74,9 +74,7 @@ class InternalCallMapHandlerTest extends TestCase
      */
     private static array $ignoredFunctions = [
         'array_multisort',
-        'date_isodate_set',
         'datefmt_create' => ['8.0'],
-        'easter_date',
         'fiber::start',
         'imagefilledpolygon',
         'imagegd',
@@ -97,12 +95,6 @@ class InternalCallMapHandlerTest extends TestCase
         'mailparse_stream_encode',
         'memcached::cas', // memcached 3.2.0 has incorrect reflection
         'memcached::casbykey', // memcached 3.2.0 has incorrect reflection
-        'mysqli::poll',
-        'mysqli_poll',
-        'mysqli_real_connect',
-        'mysqli_stmt::__construct',
-        'mysqli_stmt::bind_param',
-        'mysqli_stmt_bind_param',
         'oauth::fetch',
         'oauth::getaccesstoken',
         'oauth::setcapath',
@@ -148,12 +140,7 @@ class InternalCallMapHandlerTest extends TestCase
         'oci_result',
         'ocigetbufferinglob',
         'ocisetbufferinglob',
-        'odbc_procedurecolumns',
-        'odbc_procedures',
-        'odbc_result',
         'recursiveiteratoriterator::__construct', // Class used in CallMap does not exist: recursiveiterator
-        'sqlsrv_connect',
-        'sqlsrv_errors',
         'sqlsrv_fetch_array',
         'sqlsrv_fetch_object',
         'sqlsrv_get_field',
