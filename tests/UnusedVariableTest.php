@@ -2,100 +2,22 @@
 
 namespace Psalm\Tests;
 
-use Psalm\Config;
-use Psalm\Context;
-use Psalm\Exception\CodeException;
-use Psalm\Internal\Analyzer\ProjectAnalyzer;
-use Psalm\Internal\Provider\FakeFileProvider;
-use Psalm\Internal\Provider\Providers;
-use Psalm\Internal\RuntimeCaches;
-use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
-
-use function preg_quote;
-use function strpos;
+use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
+use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 use const DIRECTORY_SEPARATOR;
 
 class UnusedVariableTest extends TestCase
 {
-    protected ProjectAnalyzer $project_analyzer;
+    use ValidCodeAnalysisTestTrait;
+    use InvalidCodeAnalysisTestTrait;
 
     public function setUp(): void
     {
-        RuntimeCaches::clearAll();
-
-        $this->file_provider = new FakeFileProvider();
-
-        $this->project_analyzer = new ProjectAnalyzer(
-            new TestConfig(),
-            new Providers(
-                $this->file_provider,
-                new FakeParserCacheProvider(),
-            ),
-        );
-
+        parent::setUp();
         $this->project_analyzer->getCodebase()->reportUnusedVariables();
     }
 
-    /**
-     * @dataProvider providerValidCodeParse
-     * @param array<string> $ignored_issues
-     */
-    public function testValidCode(string $code, array $ignored_issues = [], string $php_version = '7.4'): void
-    {
-        $test_name = $this->getTestName();
-        if (strpos($test_name, 'SKIPPED-') !== false) {
-            $this->markTestSkipped('Skipped due to a bug.');
-        }
-
-        $this->project_analyzer->setPhpVersion($php_version, 'tests');
-
-        $file_path = self::$src_dir_path . 'somefile.php';
-
-        $this->addFile(
-            $file_path,
-            $code,
-        );
-
-        foreach ($ignored_issues as $error_level) {
-            $this->project_analyzer->getCodebase()->config->setCustomErrorLevel($error_level, Config::REPORT_SUPPRESS);
-        }
-
-        $this->analyzeFile($file_path, new Context());
-    }
-
-    /**
-     * @dataProvider providerInvalidCodeParse
-     * @param array<string> $ignored_issues
-     */
-    public function testInvalidCode(string $code, string $error_message, array $ignored_issues = []): void
-    {
-        if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
-            $this->markTestSkipped();
-        }
-
-        $this->expectException(CodeException::class);
-        $this->expectExceptionMessageMatches('/\b' . preg_quote($error_message, '/') . '\b/');
-
-        $this->project_analyzer->setPhpVersion('7.4', 'tests');
-
-        $file_path = self::$src_dir_path . 'somefile.php';
-
-        foreach ($ignored_issues as $error_level) {
-            $this->project_analyzer->getCodebase()->config->setCustomErrorLevel($error_level, Config::REPORT_SUPPRESS);
-        }
-
-        $this->addFile(
-            $file_path,
-            $code,
-        );
-
-        $this->analyzeFile($file_path, new Context());
-    }
-
-    /**
-     * @return array<string, array{code:string,ignored_issues?:list<string>,php_version?:string}>
-     */
     public function providerValidCodeParse(): array
     {
         return [
@@ -137,6 +59,7 @@ class UnusedVariableTest extends TestCase
                         $f = new $d($e);
                         return $a . implode(",", $b) . $c[0] . get_class($f);
                     }',
+                'assertions' => [],
                 'ignored_issues' => [
                     'PossiblyUndefinedVariable',
                     'MixedArrayAccess',
@@ -539,6 +462,7 @@ class UnusedVariableTest extends TestCase
 
                         return $ret;
                     }',
+                'assertions' => [],
                 'ignored_issues' => [
                     'MixedAssignment',
                     'MixedMethodCall',
@@ -2410,6 +2334,7 @@ class UnusedVariableTest extends TestCase
                             }
                         }
                     }',
+                'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
@@ -2611,12 +2536,26 @@ class UnusedVariableTest extends TestCase
                     }
                 ',
             ],
+            'requiredClosureArgumentMustNotGetReported' => [
+                'code' => '<?php
+
+                /** @param callable(string,int): void $callable */
+                function takesCallable(callable $callable): void
+                {
+                    $callable("foo", 0);
+                }
+
+                takesCallable(
+                    static function (string $foo, int $bar) {
+                        if ($bar === 0) {
+                            throw new RuntimeException();
+                        }
+                    }
+                );',
+            ],
         ];
     }
 
-    /**
-     * @return array<string,array{code:string,error_message:string}>
-     */
     public function providerInvalidCodeParse(): array
     {
         return [
@@ -3725,6 +3664,26 @@ class UnusedVariableTest extends TestCase
                     }
                 ',
                 'error_message' => 'UnusedVariable',
+            ],
+            'reportWillReportFloatAsItIsAfterRequiredParameterAndUnused' => [
+                'code' => '<?php
+
+                /** @param callable(string,int,bool,mixed,float): void $callable */
+                function takesCallable(callable $callable): void
+                {
+                    /** @var mixed $mixed */
+                    $mixed = null;
+                    $callable("foo", 0, true, $mixed, 0.0);
+                }
+
+                takesCallable(
+                    static function (string $foo, int $bar, $float) {
+                        if ($bar === 0) {
+                            throw new RuntimeException();
+                        }
+                    }
+                );',
+                'error_message' => 'Param float is never referenced in this method',
             ],
         ];
     }

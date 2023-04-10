@@ -72,6 +72,7 @@ use function count;
 use function end;
 use function in_array;
 use function is_string;
+use function krsort;
 use function mb_strpos;
 use function md5;
 use function microtime;
@@ -79,6 +80,8 @@ use function reset;
 use function strpos;
 use function strtolower;
 use function substr;
+
+use const SORT_NUMERIC;
 
 /**
  * @internal
@@ -873,96 +876,55 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
-        $unused_params = [];
+        $unused_params = $this->detectUnusedParameters($statements_analyzer, $storage, $context);
 
-        foreach ($statements_analyzer->getUnusedVarLocations() as [$var_name, $original_location]) {
-            if (!array_key_exists(substr($var_name, 1), $storage->param_lookup)) {
-                continue;
-            }
+        if (!$storage instanceof MethodStorage
+            || !$storage->cased_name
+            || $storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
+        ) {
+            $last_unused_argument_position = $this->detectPreviousUnusedArgumentPosition(
+                $storage,
+                count($storage->params) - 1,
+            );
 
-            if (strpos($var_name, '$_') === 0 || (strpos($var_name, '$unused') === 0 && $var_name !== '$unused')) {
-                continue;
-            }
+            // Sort parameters in reverse order so that we can start from the end of parameters
+            krsort($unused_params, SORT_NUMERIC);
 
-            $position = array_search(substr($var_name, 1), array_keys($storage->param_lookup), true);
+            foreach ($unused_params as $unused_param_position => $unused_param_code_location) {
+                $unused_param_var_name = $storage->params[$unused_param_position]->name;
+                $unused_param_message = 'Param ' . $unused_param_var_name . ' is never referenced in this method';
 
-            if ($position === false) {
-                throw new UnexpectedValueException('$position should not be false here');
-            }
+                // Remove the key as we already report the issue
+                unset($unused_params[$unused_param_position]);
 
-            if ($storage->params[$position]->promoted_property) {
-                continue;
-            }
-
-            $did_match_param = false;
-
-            foreach ($this->function->params as $param) {
-                if ($param->var->getAttribute('endFilePos') === $original_location->raw_file_end) {
-                    $did_match_param = true;
+                // Do not report unused required parameters
+                if ($unused_param_position !== $last_unused_argument_position) {
                     break;
                 }
-            }
 
-            if (!$did_match_param) {
-                continue;
-            }
+                $last_unused_argument_position = $this->detectPreviousUnusedArgumentPosition(
+                    $storage,
+                    $unused_param_position - 1,
+                );
 
-            $assignment_node = DataFlowNode::getForAssignment($var_name, $original_location);
-
-            if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph
-                && $statements_analyzer->data_flow_graph->isVariableUsed($assignment_node)
-            ) {
-                continue;
-            }
-
-            if (!$storage instanceof MethodStorage
-                || !$storage->cased_name
-                || $storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
-            ) {
                 if ($this instanceof ClosureAnalyzer) {
                     IssueBuffer::maybeAdd(
                         new UnusedClosureParam(
-                            'Param ' . $var_name . ' is never referenced in this method',
-                            $original_location,
+                            $unused_param_message,
+                            $unused_param_code_location,
                         ),
                         $this->getSuppressedIssues(),
                     );
-                } else {
-                    IssueBuffer::maybeAdd(
-                        new UnusedParam(
-                            'Param ' . $var_name . ' is never referenced in this method',
-                            $original_location,
-                        ),
-                        $this->getSuppressedIssues(),
-                    );
-                }
-            } else {
-                $fq_class_name = (string)$context->self;
-
-                $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
-
-                $method_name_lc = strtolower($storage->cased_name);
-
-                if ($storage->abstract) {
                     continue;
                 }
 
-                if (isset($class_storage->overridden_method_ids[$method_name_lc])) {
-                    $parent_method_id = end($class_storage->overridden_method_ids[$method_name_lc]);
-
-                    if ($parent_method_id) {
-                        $parent_method_storage = $codebase->methods->getStorage($parent_method_id);
-
-                        // if the parent method has a param at that position and isn't abstract
-                        if (!$parent_method_storage->abstract
-                            && isset($parent_method_storage->params[$position])
-                        ) {
-                            continue;
-                        }
-                    }
-                }
-
-                $unused_params[$position] = $original_location;
+                IssueBuffer::maybeAdd(
+                    new UnusedParam(
+                        $unused_param_message,
+                        $unused_param_code_location,
+                    ),
+                    $this->getSuppressedIssues(),
+                );
             }
         }
 
@@ -2078,5 +2040,121 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             $cased_method_id,
             $overridden_method_ids,
         ];
+    }
+
+    /**
+     * @return array<int,CodeLocation>
+     */
+    private function detectUnusedParameters(
+        StatementsAnalyzer $statements_analyzer,
+        FunctionLikeStorage $storage,
+        Context $context
+    ): array {
+        $codebase = $statements_analyzer->getCodebase();
+
+        $unused_params = [];
+
+        foreach ($statements_analyzer->getUnusedVarLocations() as [$var_name, $original_location]) {
+            if (!array_key_exists(substr($var_name, 1), $storage->param_lookup)) {
+                continue;
+            }
+
+            if ($this->isIgnoredForUnusedParam($var_name)) {
+                continue;
+            }
+
+            $position = array_search(substr($var_name, 1), array_keys($storage->param_lookup), true);
+
+            if ($position === false) {
+                throw new UnexpectedValueException('$position should not be false here');
+            }
+
+            if ($storage->params[$position]->promoted_property) {
+                continue;
+            }
+
+            $did_match_param = false;
+
+            foreach ($this->function->params as $param) {
+                if ($param->var->getAttribute('endFilePos') === $original_location->raw_file_end) {
+                    $did_match_param = true;
+                    break;
+                }
+            }
+
+            if (!$did_match_param) {
+                continue;
+            }
+
+            $assignment_node = DataFlowNode::getForAssignment($var_name, $original_location);
+
+            if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph
+                && $statements_analyzer->data_flow_graph->isVariableUsed($assignment_node)
+            ) {
+                continue;
+            }
+
+            if (!$storage instanceof MethodStorage
+                || !$storage->cased_name
+                || $storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
+            ) {
+                $unused_params[$position] = $original_location;
+                continue;
+            }
+
+            $fq_class_name = (string)$context->self;
+
+            $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
+
+            $method_name_lc = strtolower($storage->cased_name);
+
+            if ($storage->abstract) {
+                continue;
+            }
+
+            if (isset($class_storage->overridden_method_ids[$method_name_lc])) {
+                $parent_method_id = end($class_storage->overridden_method_ids[$method_name_lc]);
+
+                if ($parent_method_id) {
+                    $parent_method_storage = $codebase->methods->getStorage($parent_method_id);
+
+                    // if the parent method has a param at that position and isn't abstract
+                    if (!$parent_method_storage->abstract
+                        && isset($parent_method_storage->params[$position])
+                    ) {
+                        continue;
+                    }
+                }
+            }
+
+            $unused_params[$position] = $original_location;
+        }
+
+        return $unused_params;
+    }
+
+    private function detectPreviousUnusedArgumentPosition(FunctionLikeStorage $function, int $position): int
+    {
+        $params = $function->params;
+        krsort($params, SORT_NUMERIC);
+
+        foreach ($params as $index => $param) {
+            if ($index > $position) {
+                continue;
+            }
+
+            if ($this->isIgnoredForUnusedParam($param->name)) {
+                continue;
+            }
+
+            return $index;
+        }
+
+        return 0;
+    }
+
+    private function isIgnoredForUnusedParam(string $var_name): bool
+    {
+        return strpos($var_name, '$_') === 0 || (strpos($var_name, '$unused') === 0 && $var_name !== '$unused');
     }
 }
