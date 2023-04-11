@@ -10,10 +10,6 @@ use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Type;
 use Psalm\Type\Atomic;
-use Psalm\Type\Atomic\TArray;
-use Psalm\Type\Atomic\TLiteralClassString;
-use Psalm\Type\Atomic\TLiteralInt;
-use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -49,7 +45,7 @@ class TKeyedArray extends Atomic
     /**
      * If the shape has fallback params then they are here
      *
-     * @var ?list{Union, Union}
+     * @var array{Union, Union}|null
      */
     public $fallback_params;
 
@@ -67,7 +63,7 @@ class TKeyedArray extends Atomic
      * Constructs a new instance of a generic type
      *
      * @param non-empty-array<string|int, Union> $properties
-     * @param ?list{Union, Union} $fallback_params
+     * @param array{Union, Union}|null $fallback_params
      * @param array<string, bool> $class_strings
      */
     public function __construct(
