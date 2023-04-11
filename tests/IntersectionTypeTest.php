@@ -114,6 +114,26 @@ final class IntersectionTypeTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['UnsafeInstantiation', 'MixedMethodCall'],
             ],
+            'classStringOfImportedCallableTypeIntersection' => [
+                'code' => '<?php
+                    /** @psalm-type CallableType = callable */
+                    class Bar
+                    {
+
+                    }
+
+                    /** @psalm-import-type CallableType from Bar */
+                    class Foo
+                    {
+                        /**
+                         * @param class-string<object&CallableType> $className
+                         */
+                        function takesCallableObject(string $className): void {}
+                    }
+                    ',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
         ];
     }
 
