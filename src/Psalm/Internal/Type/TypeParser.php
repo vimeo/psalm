@@ -71,6 +71,7 @@ use function array_key_exists;
 use function array_key_first;
 use function array_keys;
 use function array_map;
+use function array_merge;
 use function array_pop;
 use function array_shift;
 use function array_unique;
@@ -1214,46 +1215,7 @@ class TypeParser
             return $first_type;
         }
 
-        $callable_intersection = null;
-
-        foreach ($intersection_types as $intersection_type) {
-            if ($intersection_type instanceof TIterable
-                || $intersection_type instanceof TNamedObject
-                || $intersection_type instanceof TTemplateParam
-                || $intersection_type instanceof TObjectWithProperties
-            ) {
-                $keyed_intersection_types[self::extractIntersectionKey($intersection_type)] = $intersection_type;
-                continue;
-            }
-
-            if (get_class($intersection_type) === TObject::class) {
-                continue;
-            }
-
-            if ($intersection_type instanceof TCallable) {
-                if ($callable_intersection !== null) {
-                    throw new TypeParseTreeException(
-                        'The intersection type must not contain more than one callable type!',
-                    );
-                }
-                $callable_intersection = $intersection_type;
-                continue;
-            }
-
-            throw new TypeParseTreeException(
-                'Intersection types must be all objects, '
-                . get_class($intersection_type) . ' provided',
-            );
-        }
-
-        if ($callable_intersection !== null) {
-            $callable_object_type = new TCallableObject(
-                $callable_intersection->from_docblock,
-                $callable_intersection,
-            );
-
-            $keyed_intersection_types[self::extractIntersectionKey($callable_object_type)] = $callable_object_type;
-        }
+        $keyed_intersection_types = self::extractKeyedIntersectionTypes($codebase, $intersection_types);
 
         $intersect_static = false;
 
@@ -1577,5 +1539,76 @@ class TypeParser
         return $intersection_type instanceof TIterable
             ? $intersection_type->getId()
             : $intersection_type->getKey();
+    }
+
+    private static function extractKeyedIntersectionTypes(Codebase $codebase, array $intersection_types): array
+    {
+        $keyed_intersection_types = [];
+        $callable_intersection = null;
+
+        foreach ($intersection_types as $intersection_type) {
+            if ($intersection_type instanceof TTypeAlias) {
+                $replaced_intersection_type = $intersection_type;
+                $expanded = TypeExpander::expandAtomic(
+                    $codebase,
+                    $replaced_intersection_type,
+                    null,
+                    null,
+                    null,
+                    true,
+                    true,
+                    false,
+                    true,
+                    true,
+                    true,
+                );
+
+                $keyed_intersection_types = array_merge(
+                    $keyed_intersection_types,
+                    self::extractKeyedIntersectionTypes($codebase, $expanded),
+                );
+
+                continue;
+            }
+
+            if ($intersection_type instanceof TIterable
+                || $intersection_type instanceof TNamedObject
+                || $intersection_type instanceof TTemplateParam
+                || $intersection_type instanceof TObjectWithProperties
+            ) {
+                $keyed_intersection_types[self::extractIntersectionKey($intersection_type)] = $intersection_type;
+                continue;
+            }
+
+            if (get_class($intersection_type) === TObject::class) {
+                continue;
+            }
+
+            if ($intersection_type instanceof TCallable) {
+                if ($callable_intersection !== null) {
+                    throw new TypeParseTreeException(
+                        'The intersection type must not contain more than one callable type!',
+                    );
+                }
+                $callable_intersection = $intersection_type;
+                continue;
+            }
+
+            throw new TypeParseTreeException(
+                'Intersection types must be all objects, '
+                . get_class($intersection_type) . ' provided',
+            );
+        }
+
+        if ($callable_intersection !== null) {
+            $callable_object_type = new TCallableObject(
+                $callable_intersection->from_docblock,
+                $callable_intersection,
+            );
+
+            $keyed_intersection_types[self::extractIntersectionKey($callable_object_type)] = $callable_object_type;
+        }
+
+        return $keyed_intersection_types;
     }
 }
