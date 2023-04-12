@@ -1579,13 +1579,13 @@ class TypeParser
                 continue;
             }
 
+            $any_object_type_found = true;
+
             if ($intersection_type instanceof TIterable
                 || $intersection_type instanceof TNamedObject
                 || $intersection_type instanceof TTemplateParam
                 || $intersection_type instanceof TObjectWithProperties
             ) {
-                $any_object_type_found = true;
-
                 $keyed_intersection_types[self::extractIntersectionKey($intersection_type)] = $intersection_type;
                 continue;
             }
@@ -1617,6 +1617,12 @@ class TypeParser
             );
 
             $keyed_intersection_types[self::extractIntersectionKey($callable_object_type)] = $callable_object_type;
+        }
+
+        if ($any_object_type_found && $keyed_array_intersection_type !== null) {
+            throw new TypeParseTreeException(
+                'Intersection types must be all objects or all keyed array.',
+            );
         }
 
         assert($keyed_intersection_types !== []);
