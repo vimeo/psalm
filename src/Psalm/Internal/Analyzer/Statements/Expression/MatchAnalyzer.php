@@ -128,18 +128,27 @@ class MatchAnalyzer
         }
 
         $arms = $stmt->arms;
+        $flattened_arms = [];
+        $last_arm = null;
 
-        foreach ($arms as $i => $arm) {
-            // move default to the end
+        foreach ($arms as $arm) {
             if ($arm->conds === null) {
-                unset($arms[$i]);
-                $arms[] = $arm;
+                $last_arm = $arm;
+                continue;
+            }
+
+            foreach ($arm->conds as $cond) {
+                $flattened_arms[] = new PhpParser\Node\MatchArm(
+                    [$cond],
+                    $arm->body,
+                    $arm->getAttributes(),
+                );
             }
         }
 
+        $arms = $flattened_arms;
         $arms = array_reverse($arms);
-
-        $last_arm = array_shift($arms);
+        $last_arm ??= array_shift($arms);
 
         if (!$last_arm) {
             IssueBuffer::maybeAdd(
