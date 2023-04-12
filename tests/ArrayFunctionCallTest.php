@@ -1803,6 +1803,14 @@ class ArrayFunctionCallTest extends TestCase
                     '$d' => 'array<int, list{string}|string>',
                 ],
             ],
+            'arraySpliceEmptyRef' => [
+                'code' => '<?php
+                    $d = [1,2];
+                    array_splice($d, 0, 1);',
+                'assertions' => [
+                    '$d' => 'list<int>',
+                ],
+            ],
             'ksortPreserveShape' => [
                 'code' => '<?php
                     $a = ["a" => 3, "b" => 4];

@@ -346,6 +346,57 @@ class ArrayFunctionArgumentsAnalyzer
             return false;
         }
 
+        $array_type = null;
+
+        if (($array_arg_type = $statements_analyzer->node_data->getType($array_arg))
+            && $array_arg_type->hasArray()
+        ) {
+
+            /**
+             * @var TArray|TKeyedArray
+             */
+            $array_type = $array_arg_type->getArray();
+
+            if ($array_type instanceof TKeyedArray) {
+                if ($array_type->is_list && isset($args[3])) {
+                    $array_type = Type::getNonEmptyListAtomic($array_type->getGenericValueType());
+                } else {
+                    $array_type = $array_type->getGenericArrayType();
+                }
+            }
+
+            if ($array_type instanceof TArray
+                && $array_type->type_params[0]->hasInt()
+                && !$array_type->type_params[0]->hasString()
+            ) {
+                if ($array_type instanceof TNonEmptyArray && isset($args[3])) {
+                    $array_type = Type::getNonEmptyListAtomic($array_type->type_params[1]);
+                } else {
+                    $array_type = Type::getListAtomic($array_type->type_params[1]);
+                }
+            }
+
+            AssignmentAnalyzer::assignByRefParam(
+                $statements_analyzer,
+                $array_arg,
+                new Union([$array_type]),
+                new Union([$array_type]),
+                $context,
+                false,
+            );
+        } else {
+            $array_type = Type::getArray();
+
+            AssignmentAnalyzer::assignByRefParam(
+                $statements_analyzer,
+                $array_arg,
+                $array_type,
+                $array_type,
+                $context,
+                false,
+            );
+        }
+
         $offset_arg = $args[1]->value;
 
         if (ExpressionAnalyzer::analyze(
@@ -400,35 +451,10 @@ class ArrayFunctionArgumentsAnalyzer
             $statements_analyzer->node_data->setType($replacement_arg, $replacement_arg_type);
         }
 
-        if (($array_arg_type = $statements_analyzer->node_data->getType($array_arg))
-            && $array_arg_type->hasArray()
+        if ($array_type
             && $replacement_arg_type
             && $replacement_arg_type->hasArray()
         ) {
-            /**
-             * @var TArray|TKeyedArray
-             */
-            $array_type = $array_arg_type->getArray();
-
-            if ($array_type instanceof TKeyedArray) {
-                if ($array_type->is_list) {
-                    $array_type = Type::getNonEmptyListAtomic($array_type->getGenericValueType());
-                } else {
-                    $array_type = $array_type->getGenericArrayType();
-                }
-            }
-
-            if ($array_type instanceof TArray
-                && $array_type->type_params[0]->hasInt()
-                && !$array_type->type_params[0]->hasString()
-            ) {
-                if ($array_type instanceof TNonEmptyArray) {
-                    $array_type = Type::getNonEmptyListAtomic($array_type->type_params[1]);
-                } else {
-                    $array_type = Type::getListAtomic($array_type->type_params[1]);
-                }
-            }
-
             /**
              * @var TArray|TKeyedArray
              */
@@ -462,16 +488,6 @@ class ArrayFunctionArgumentsAnalyzer
             return null;
         }
 
-        $array_type = Type::getArray();
-
-        AssignmentAnalyzer::assignByRefParam(
-            $statements_analyzer,
-            $array_arg,
-            $array_type,
-            $array_type,
-            $context,
-            false,
-        );
 
         return null;
     }
