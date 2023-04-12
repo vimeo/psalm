@@ -114,7 +114,7 @@ class IteratorIterator implements OuterIterator {
     /**
      * @param TIterator $iterator
      */
-    public function __construct(Traversable $iterator) {}
+    public function __construct(Traversable $iterator, ?string $class = null) {}
 
     /**
      * @return TValue|null current value or null when iterator is drained
