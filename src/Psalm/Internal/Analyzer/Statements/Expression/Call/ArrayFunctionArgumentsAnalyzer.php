@@ -385,13 +385,13 @@ class ArrayFunctionArgumentsAnalyzer
                 false,
             );
         } else {
-            $array_type = Type::getArray();
+            $array_type_default = Type::getArray();
 
             AssignmentAnalyzer::assignByRefParam(
                 $statements_analyzer,
                 $array_arg,
-                $array_type,
-                $array_type,
+                $array_type_default,
+                $array_type_default,
                 $context,
                 false,
             );
