@@ -95,6 +95,44 @@ class MatchTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'multipleInstanceOfConditionsInOneArm' => [
+                'code' => '<?php
+                    interface Foo {}
+                    class A implements Foo {}
+                    class B implements Foo {}
+                    class C {}
+
+                    function baz(A|B $_): int {
+                        return 1;
+                    }
+
+                    function bar(Foo $foo): int {
+                        return match (true) {
+                            $foo instanceof A, $foo instanceof B => baz($foo),
+                            $foo instanceof C => 3,
+                            default => 0,
+                        };
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'multipleTypeCheckConditionsInOneArm' => [
+                'code' => '<?php
+                    function baz(int|string $_): int {
+                        return 1;
+                    }
+
+                    function bar(mixed $foo): int {
+                        return match (true) {
+                            is_string($foo), is_int($foo) => baz($foo),
+                            default => 0,
+                        };
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -240,6 +278,28 @@ class MatchTest extends TestCase
                         $foo instanceof \Exception => 1,
                     };',
                 'error_message' => 'TypeDoesNotContainType',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'multipleInstanceOfConditionsNotMetInOneArm' => [
+                'code' => '<?php
+                    interface Foo {}
+                    class A implements Foo {}
+                    class B implements Foo {}
+                    class C {}
+
+                    function baz(C $_): int {
+                        return 1;
+                    }
+
+                    function bar(Foo $foo): int {
+                        return match (true) {
+                            $foo instanceof A, $foo instanceof B => baz($foo),
+                            $foo instanceof C => 3,
+                            default => 0,
+                        };
+                    }',
+                'error_message' => 'InvalidArgument',
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
