@@ -122,7 +122,7 @@ function array_diff_assoc(array $array, array ...$arrays)
  *
  * @param array<TKey, TValue> $array
  *
- * @return array<TValue, TKey>
+ * @return ($array is non-empty-array ? non-empty-array<TValue, TKey> : array<TValue, TKey>)
  * @psalm-pure
  */
 function array_flip(array $array)
