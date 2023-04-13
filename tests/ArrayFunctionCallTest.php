@@ -1803,6 +1803,31 @@ class ArrayFunctionCallTest extends TestCase
                     '$d' => 'array<int, list{string}|string>',
                 ],
             ],
+            'arraySpliceRefWithoutReplacement' => [
+                'code' => '<?php
+                    $d = [1,2];
+                    $o = 0;
+                    array_splice($d, $o, 1);',
+                'assertions' => [
+                    '$d' => 'list<int>',
+                ],
+            ],
+            'arraySpliceEmptyRefWithoutReplacement' => [
+                'code' => '<?php
+                    $a = array( "hello" );
+                    $_b = array_splice( $a, 0, 1 );',
+                'assertions' => [
+                    '$a' => 'array<never, never>',
+                ],
+            ],
+            'arraySpliceEmptyRefWithEmptyReplacement' => [
+                'code' => '<?php
+                    $a = array( "hello" );
+                    $_b = array_splice( $a, 0, 1, [] );',
+                'assertions' => [
+                    '$a' => 'array<never, never>',
+                ],
+            ],
             'ksortPreserveShape' => [
                 'code' => '<?php
                     $a = ["a" => 3, "b" => 4];
