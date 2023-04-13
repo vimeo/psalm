@@ -2549,6 +2549,17 @@ class ArrayFunctionCallTest extends TestCase
                     takes_non_empty_int_array(array_unique([(object)[]]));
                 ',
             ],
+            'arrayFlipPreservesNonEmptyInput' => [
+                'code' => '<?php
+                    /** @param non-empty-array<string, int> $input */
+                    function takes_non_empty_array(array $input): void {}
+
+                    $array = ["hi", "there"];
+                    $flipped = array_flip($array);
+
+                    takes_non_empty_array($flipped);
+                ',
+            ],
         ];
     }
 
@@ -2839,6 +2850,15 @@ class ArrayFunctionCallTest extends TestCase
                     takes_non_empty_list(array_unique([(object)[]]));
                 ',
                 'error_message' => 'ArgumentTypeCoercion',
+            ],
+            'arrayFlipPreservesEmptyInput' => [
+                'code' => '<?php
+                    /** @param non-empty-array<string, int> $input */
+                    function takes_non_empty_array(array $input): void {}
+
+                    takes_non_empty_array(array_flip([]));
+                ',
+                'error_message' => 'InvalidArgument',
             ],
         ];
     }
