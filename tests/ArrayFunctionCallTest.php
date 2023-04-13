@@ -1806,7 +1806,8 @@ class ArrayFunctionCallTest extends TestCase
             'arraySpliceRefWithoutReplacement' => [
                 'code' => '<?php
                     $d = [1,2];
-                    array_splice($d, 0, 1);',
+                    $o = 0;
+                    array_splice($d, $o, 1);',
                 'assertions' => [
                     '$d' => 'list<int>',
                 ],
@@ -1814,9 +1815,17 @@ class ArrayFunctionCallTest extends TestCase
             'arraySpliceEmptyRefWithoutReplacement' => [
                 'code' => '<?php
                     $a = array( "hello" );
-                    $_b = array_splice( $a, 0, 50 );',
+                    $_b = array_splice( $a, 0, 1 );',
                 'assertions' => [
-                    '$a' => 'list<int>',
+                    '$a' => 'array<never, never>',
+                ],
+            ],
+            'arraySpliceEmptyRefWithEmptyReplacement' => [
+                'code' => '<?php
+                    $a = array( "hello" );
+                    $_b = array_splice( $a, 0, 1, [] );',
+                'assertions' => [
+                    '$a' => 'array<never, never>',
                 ],
             ],
             'ksortPreserveShape' => [

@@ -144,6 +144,11 @@ class TKeyedArray extends Atomic
         return $cloned;
     }
 
+    public function isSealed(): bool
+    {
+        return $this->fallback_params === null;
+    }
+
     public function getId(bool $exact = true, bool $nested = false): string
     {
         $property_strings = [];
