@@ -1265,6 +1265,7 @@ trait UnionTrait
             $calling_method_id,
         );
 
+        /** @psalm-suppress ImpureMethodCall */
         $checker->traverseArray($this->types);
 
         /** @psalm-suppress InaccessibleProperty, ImpurePropertyAssignment Does not affect anything else */
