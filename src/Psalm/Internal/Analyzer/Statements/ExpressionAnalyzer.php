@@ -280,7 +280,7 @@ class ExpressionAnalyzer
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\New_) {
-            return NewAnalyzer::analyze($statements_analyzer, $stmt, $context);
+            return NewAnalyzer::analyze($statements_analyzer, $stmt, $context, $template_result);
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\Array_) {

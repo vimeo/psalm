@@ -364,69 +364,177 @@ class CallableTest extends TestCase
                     '$result' => 'list<int>',
                 ],
             ],
-            'PipeTest' => [
+            'inferInvokableClassCallable' => [
                 'code' => '<?php
-                     /**
-                      * @template A
-                      * @template B
-                      */
-                     final class MapOperator
-                     {
-                         /**
-                          * @param Closure(A): B $ab
-                          */
-                         public function __construct(private Closure $ab) { }
+                    /**
+                     * @template A
+                     * @template B
+                     */
+                    final class MapOperator
+                    {
+                        /** @var Closure(A): B */
+                        private Closure $ab;
 
-                         /**
-                          * @param list<A> $a
-                          * @return list<B>
-                          */
-                         public function __invoke($a): array
-                         {
-                             $b = [];
+                        /**
+                         * @param callable(A): B $ab
+                         */
+                        public function __construct(callable $ab)
+                        {
+                            $this->ab = Closure::fromCallable($ab);
+                        }
 
-                             foreach ($a as $item) {
-                                 $b[] = ($this->ab)($item);
-                             }
+                        /**
+                         * @template K
+                         * @param array<K, A> $a
+                         * @return array<K, B>
+                         */
+                        public function __invoke(array $a): array
+                        {
+                            $b = [];
 
-                             return $b;
-                         }
-                     }
-                     /**
-                      * @template A
-                      * @template B
-                      *
-                      * @param Closure(A): B $ab
-                      * @return MapOperator<A, B>
-                      */
-                     function map(Closure $ab): MapOperator
-                     {
-                         return new MapOperator($ab);
-                     }
-                     /**
-                      * @template A
-                      * @template B
-                      *
-                      * @param A $_a
-                      * @param callable(A): B $_ab
-                      * @return B
-                      */
-                     function pipe(array $_a, callable $_ab): array
-                     {
-                         throw new RuntimeException("???");
-                     }
-                     $result1 = pipe(
-                         ["1", "2", "3"],
-                         map(fn ($i) => (int) $i)
-                     );
-                     $result2 = pipe(
-                         ["1", "2", "3"],
-                         new MapOperator(fn ($i) => (int) $i)
-                     );
-                 ',
+                            foreach ($a as $k => $v) {
+                                $b[$k] = ($this->ab)($v);
+                            }
+
+                            return $b;
+                        }
+                    }
+                    /**
+                     * @template A
+                     * @template B
+                     * @param A $a
+                     * @param callable(A): B $ab
+                     * @return B
+                     */
+                    function pipe(mixed $a, callable $ab): mixed
+                    {
+                        return $ab($a);
+                    }
+                    /**
+                     * @return array<string, int>
+                     */
+                    function getDict(): array
+                    {
+                        return ["fst" => 1, "snd" => 2, "thr" => 3];
+                    }
+                    $result = pipe(getDict(), new MapOperator(fn($i) => ["num" => $i]));
+                ',
                 'assertions' => [
-                    '$result1' => 'list<int>',
-                    '$result2' => 'list<int>',
+                    '$result' => 'array<string, array{num: int}>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'inferConstCallableLikeFirstClassCallable' => [
+                'code' => '<?php
+                    namespace Functions {
+                        use Closure;
+
+                        final class Module
+                        {
+                            const id = "Functions\Module::id";
+                            /**
+                             * @template A
+                             * @param A $value
+                             * @return A
+                             */
+                            public static function id(mixed $value): mixed
+                            {
+                                return $value;
+                            }
+                        }
+                        const classId = Module::id;
+                        const id = "Functions\id";
+                        /**
+                         * @template A
+                         * @param A $value
+                         * @return A
+                         */
+                        function id(mixed $value): mixed
+                        {
+                            return $value;
+                        }
+                        /**
+                         * @template A
+                         * @template B
+                         * @param callable(A): B $callback
+                         * @return Closure(list<A>): list<B>
+                         */
+                        function map(callable $callback): Closure
+                        {
+                            return fn(array $list) => array_map($callback, $list);
+                        }
+                        /**
+                         * @template A
+                         * @template B
+                         * @param A $a
+                         * @param callable(A): B $ab
+                         * @return B
+                         */
+                        function pipe1(mixed $a, callable $ab): mixed
+                        {
+                            return $ab($a);
+                        }
+                        /**
+                         * @template A
+                         * @template B
+                         * @template C
+                         * @param A $a
+                         * @param callable(A): B $ab
+                         * @param callable(B): C $bc
+                         * @return C
+                         */
+                        function pipe2(mixed $a, callable $ab, callable $bc): mixed
+                        {
+                            return $bc($ab($a));
+                        }
+                    }
+
+                    namespace App {
+                        use Functions\Module;
+                        use function Functions\map;
+                        use function Functions\pipe1;
+                        use function Functions\pipe2;
+                        use const Functions\classId;
+                        use const Functions\id;
+
+                        $class_const_id = pipe1([42], Module::id);
+                        $class_const_composition = pipe1([42], map(Module::id));
+                        $class_const_sequential = pipe2([42], map(fn($i) => ["num" => $i]), Module::id);
+
+                        $class_const_alias_id = pipe1([42], classId);
+                        $class_const_alias_composition = pipe1([42], map(classId));
+                        $class_const_alias_sequential = pipe2([42], map(fn($i) => ["num" => $i]), classId);
+
+                        $const_id = pipe1([42], id);
+                        $const_composition = pipe1([42], map(id));
+                        $const_sequential = pipe2([42], map(fn($i) => ["num" => $i]), id);
+
+                        $string_id = pipe1([42], "Functions\id");
+                        $string_composition = pipe1([42], map("Functions\id"));
+                        $string_sequential = pipe2([42], map(fn($i) => ["num" => $i]), "Functions\id");
+
+                        $class_string_id = pipe1([42], "Functions\Module::id");
+                        $class_string_composition = pipe1([42], map("Functions\Module::id"));
+                        $class_string_sequential = pipe2([42], map(fn($i) => ["num" => $i]), "Functions\Module::id");
+                    }
+                ',
+                'assertions' => [
+                    '$class_const_id===' => 'list{42}',
+                    '$class_const_composition===' => 'list<42>',
+                    '$class_const_sequential===' => 'list<array{num: 42}>',
+                    '$class_const_alias_id===' => 'list{42}',
+                    '$class_const_alias_composition===' => 'list<42>',
+                    '$class_const_alias_sequential===' => 'list<array{num: 42}>',
+                    '$const_id===' => 'list{42}',
+                    '$const_composition===' => 'list<42>',
+                    '$const_sequential===' => 'list<array{num: 42}>',
+                    '$string_id===' => 'list{42}',
+                    '$string_composition===' => 'list<42>',
+                    '$string_sequential===' => 'list<array{num: 42}>',
+                    '$class_string_id===' => 'list{42}',
+                    '$class_string_composition===' => 'list<42>',
+                    '$class_string_sequential===' => 'list<array{num: 42}>',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
@@ -593,6 +701,50 @@ class CallableTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'inferFirstClassCallableWithGenericObject' => [
+                'code' => '<?php
+                    /**
+                     * @template A
+                     * @template B
+                     * @param A $a
+                     * @param callable(A): B $ab
+                     * @return B
+                     */
+                    function pipe($a, callable $ab)
+                    {
+                        return $ab($a);
+                    }
+                    /**
+                     * @template A
+                     * @psalm-immutable
+                     */
+                    final class Container
+                    {
+                        /** @param A $value */
+                        public function __construct(
+                            public readonly mixed $value,
+                        ) {}
+                    }
+                    /**
+                     * @template A
+                     * @param Container<A> $container
+                     * @return A
+                     */
+                    function unwrap(Container $container)
+                    {
+                        return $container->value;
+                    }
+                    $result = pipe(
+                        new Container(42),
+                        unwrap(...),
+                    );
+                ',
+                'assertions' => [
+                    '$result===' => '42',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'inferFirstClassCallableOnMethodCall' => [
                 'code' => '<?php
                     /**
@@ -734,7 +886,7 @@ class CallableTest extends TestCase
                             private readonly mixed $param2,
                         ) {
                         }
-                    
+
                         /**
                          * @template T3
                          * @param callable(T1, T2): T3 $callback
@@ -745,7 +897,7 @@ class CallableTest extends TestCase
                             return $callback($this->param1, $this->param2);
                         }
                     }
-                    
+
                     /**
                      * @template T of int|float
                      * @param T $param2
@@ -755,7 +907,7 @@ class CallableTest extends TestCase
                     {
                         return ["param1" => $param1, "param2" => $param2];
                     }
-                    
+
                     /**
                      * @template T of int|float
                      * @param T $param1
@@ -765,7 +917,7 @@ class CallableTest extends TestCase
                     {
                         return ["param1" => $param1, "param2" => $param2];
                     }
-                    
+
                     /**
                      * @return array{param1: int, param2: int}
                      */
@@ -773,9 +925,9 @@ class CallableTest extends TestCase
                     {
                         return ["param1" => $param1, "param2" => $param2];
                     }
-                    
+
                     $app = new App(param1: 42, param2: 42);
-                    
+
                     $result1 = $app->run(appHandler1(...));
                     $result2 = $app->run(appHandler2(...));
                     $result3 = $app->run(appHandler3(...));

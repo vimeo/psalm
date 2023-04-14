@@ -2357,13 +2357,16 @@ class ClassTemplateTest extends TestCase
                         }
                     }
 
-                    /** @param ArrayCollection<int> $ints */
+                    /** @param ArrayCollection<int<0, max>> $ints */
                     function takesInts(ArrayCollection $ints) :void {}
 
                     /** @param ArrayCollection<int|string> $ints */
                     function takesIntsOrStrings(ArrayCollection $ints) :void {}
 
-                    takesInts((new ArrayCollection([ "a", "bc" ]))->map("strlen"));
+                    /** @return list<string> */
+                    function getList() :array {return [];}
+
+                    takesInts((new ArrayCollection(getList()))->map("strlen"));
 
                     /** @return ($s is "string" ? string : int) */
                     function foo(string $s) {
@@ -2373,7 +2376,7 @@ class ClassTemplateTest extends TestCase
                         return 5;
                     }
 
-                    takesIntsOrStrings((new ArrayCollection([ "a", "bc" ]))->map("foo"));
+                    takesIntsOrStrings((new ArrayCollection(getList()))->map("foo"));
 
                     /**
                      * @template T

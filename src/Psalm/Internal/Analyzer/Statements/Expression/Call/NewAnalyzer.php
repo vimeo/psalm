@@ -75,7 +75,8 @@ class NewAnalyzer extends CallAnalyzer
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\New_ $stmt,
-        Context $context
+        Context $context,
+        TemplateResult $template_result = null
     ): bool {
         $fq_class_name = null;
 
@@ -257,6 +258,7 @@ class NewAnalyzer extends CallAnalyzer
                     $fq_class_name,
                     $from_static,
                     $can_extend,
+                    $template_result,
                 );
             } else {
                 ArgumentsAnalyzer::analyze(
@@ -292,7 +294,8 @@ class NewAnalyzer extends CallAnalyzer
         Context $context,
         string $fq_class_name,
         bool $from_static,
-        bool $can_extend
+        bool $can_extend,
+        TemplateResult $template_result = null
     ): void {
         $storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
@@ -393,7 +396,7 @@ class NewAnalyzer extends CallAnalyzer
                 );
             }
 
-            $template_result = new TemplateResult([], []);
+            $template_result ??= new TemplateResult([], []);
 
             if (self::checkMethodArgs(
                 $method_id,
