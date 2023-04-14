@@ -102,7 +102,7 @@ class AtomicTypeComparator
             } elseif ($container_type_part instanceof Scalar) {
                 return UnionTypeComparator::isContainedBy(
                     $codebase,
-                    $input_type_part->type,
+                    TValueOf::getValueType($input_type_part->type, $codebase) ?? $input_type_part->type,
                     new Union([$container_type_part]),
                     false,
                     false,

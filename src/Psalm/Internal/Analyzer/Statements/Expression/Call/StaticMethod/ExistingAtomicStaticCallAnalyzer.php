@@ -3,6 +3,7 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call\StaticMethod;
 
 use PhpParser;
+use PhpParser\Node\Expr\StaticCall;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Config;
@@ -465,7 +466,7 @@ class ExistingAtomicStaticCallAnalyzer
     private static function getMethodReturnType(
         StatementsAnalyzer $statements_analyzer,
         Codebase $codebase,
-        PhpParser\Node\Expr\StaticCall $stmt,
+        StaticCall $stmt,
         MethodIdentifier $method_id,
         array $args,
         TemplateResult $template_result,
@@ -493,40 +494,14 @@ class ExistingAtomicStaticCallAnalyzer
                         [$template_type->param_name]
                         [$template_type->defining_class],
                     )) {
-                        if ($template_type->param_name === 'TFunctionArgCount') {
-                            $template_result->lower_bounds[$template_type->param_name] = [
-                                'fn-' . strtolower((string)$method_id) => [
-                                    new TemplateBound(
-                                        Type::getInt(false, count($stmt->getArgs())),
-                                    ),
-                                ],
-                            ];
-                        } elseif ($template_type->param_name === 'TPhpMajorVersion') {
-                            $template_result->lower_bounds[$template_type->param_name] = [
-                                'fn-' . strtolower((string)$method_id) => [
-                                    new TemplateBound(
-                                        Type::getInt(false, $codebase->getMajorAnalysisPhpVersion()),
-                                    ),
-                                ],
-                            ];
-                        } elseif ($template_type->param_name === 'TPhpVersionId') {
-                            $template_result->lower_bounds[$template_type->param_name] = [
-                                'fn-' . strtolower((string) $method_id) => [
-                                    new TemplateBound(
-                                        Type::getInt(
-                                            false,
-                                            $codebase->analysis_php_version_id,
-                                        ),
-                                    ),
-                                ],
-                            ];
-                        } else {
-                            $template_result->lower_bounds[$template_type->param_name] = [
-                                ($template_type->defining_class) => [
-                                    new TemplateBound(Type::getNever()),
-                                ],
-                            ];
-                        }
+                        $template_result->lower_bounds[$template_type->param_name]
+                            = self::resolveTemplateResultLowerBound(
+                                $codebase,
+                                $stmt,
+                                $class_storage,
+                                $method_id,
+                                $template_type,
+                            );
                     }
                 }
             }
@@ -631,5 +606,69 @@ class ExistingAtomicStaticCallAnalyzer
         $visitor = new ContainsStaticVisitor;
         $visitor->traverse($type);
         return $visitor->matches();
+    }
+
+    /**
+     * @return non-empty-array<string,non-empty-list<TemplateBound>>
+     */
+    private static function resolveTemplateResultLowerBound(
+        Codebase $codebase,
+        StaticCall $stmt,
+        ClassLikeStorage $class_storage,
+        MethodIdentifier $method_id,
+        TTemplateParam $template_type
+    ): array {
+        if ($template_type->param_name === 'TFunctionArgCount') {
+            return [
+                'fn-' . strtolower((string)$method_id) => [
+                    new TemplateBound(
+                        Type::getInt(false, count($stmt->getArgs())),
+                    ),
+                ],
+            ];
+        }
+
+        if ($template_type->param_name === 'TPhpMajorVersion') {
+            return [
+                'fn-' . strtolower((string)$method_id) => [
+                    new TemplateBound(
+                        Type::getInt(false, $codebase->getMajorAnalysisPhpVersion()),
+                    ),
+                ],
+            ];
+        }
+
+        if ($template_type->param_name === 'TPhpVersionId') {
+            return [
+                'fn-' . strtolower((string) $method_id) => [
+                    new TemplateBound(
+                        Type::getInt(
+                            false,
+                            $codebase->analysis_php_version_id,
+                        ),
+                    ),
+                ],
+            ];
+        }
+
+        if (isset(
+            $class_storage->template_extended_params[$template_type->defining_class][$template_type->param_name],
+        )) {
+            $extended_param_type = $class_storage->template_extended_params[
+                $template_type->defining_class
+            ][$template_type->param_name];
+
+            return [
+                ($template_type->defining_class) => [
+                    new TemplateBound($extended_param_type),
+                ],
+            ];
+        }
+
+        return [
+            ($template_type->defining_class) => [
+                new TemplateBound(Type::getNever()),
+            ],
+        ];
     }
 }
