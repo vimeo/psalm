@@ -2357,7 +2357,7 @@ class ClassTemplateTest extends TestCase
                         }
                     }
 
-                    /** @param ArrayCollection<int> $ints */
+                    /** @param ArrayCollection<int<0, max>> $ints */
                     function takesInts(ArrayCollection $ints) :void {}
 
                     /** @param ArrayCollection<int|string> $ints */
