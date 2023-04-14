@@ -14,6 +14,9 @@ final class TTypeAlias extends Atomic
 {
     /**
      * @var array<string, TTypeAlias>|null
+     * @deprecated type aliases are resolved within {@see TypeParser::resolveTypeAliases()} and therefore the
+     *             referencing type(s) are part of other intersection types. The intersection types are not set anymore
+     *             and with v6 this property along with its related methods will get removed.
      */
     public $extra_types;
 
@@ -30,14 +33,19 @@ final class TTypeAlias extends Atomic
     {
         $this->declaring_fq_classlike_name = $declaring_fq_classlike_name;
         $this->alias_name = $alias_name;
+        /** @psalm-suppress DeprecatedProperty For backwards compatibility, we have to keep this here. */
         $this->extra_types = $extra_types;
         parent::__construct(true);
     }
     /**
      * @param array<string, TTypeAlias>|null $extra_types
+     * @deprecated type aliases are resolved within {@see TypeParser::resolveTypeAliases()} and therefore the
+     *             referencing type(s) are part of other intersection types. This method will get removed with v6.
+     * @psalm-suppress PossiblyUnusedMethod For backwards compatibility, we have to keep this here.
      */
     public function setIntersectionTypes(?array $extra_types): self
     {
+        /** @psalm-suppress DeprecatedProperty For backwards compatibility, we have to keep this here. */
         if ($extra_types === $this->extra_types) {
             return $this;
         }
@@ -55,6 +63,7 @@ final class TTypeAlias extends Atomic
 
     public function getId(bool $exact = true, bool $nested = false): string
     {
+        /** @psalm-suppress DeprecatedProperty For backwards compatibility, we have to keep this here. */
         if ($this->extra_types) {
             return $this->getKey() . '&' . implode(
                 '&',
