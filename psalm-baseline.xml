@@ -549,7 +549,6 @@
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$this->properties[0]]]></code>
       <code><![CDATA[$this->properties[0]]]></code>
-      <code><![CDATA[$this->properties[0]]]></code>
     </PossiblyUndefinedIntArrayOffset>
     <PossiblyUnusedMethod>
       <code>getList</code>
