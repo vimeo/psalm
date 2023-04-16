@@ -78,11 +78,10 @@ trait CallableTrait
         $cloned->is_pure = $is_pure;
         return $cloned;
     }
-    public function getKey(bool $include_extra = true): string
+
+    public function getParamString(): string
     {
         $param_string = '';
-        $return_type_string = '';
-
         if ($this->params !== null) {
             $param_string .= '(';
             foreach ($this->params as $i => $param) {
@@ -96,11 +95,26 @@ trait CallableTrait
             $param_string .= ')';
         }
 
+        return $param_string;
+    }
+
+    public function getReturnTypeString(): string
+    {
+        $return_type_string = '';
+
         if ($this->return_type !== null) {
             $return_type_multiple = count($this->return_type->getAtomicTypes()) > 1;
             $return_type_string = ':' . ($return_type_multiple ? '(' : '')
                 . $this->return_type->getId() . ($return_type_multiple ? ')' : '');
         }
+
+        return $return_type_string;
+    }
+
+    public function getKey(bool $include_extra = true): string
+    {
+        $param_string = $this->getParamString();
+        $return_type_string = $this->getReturnTypeString();
 
         return ($this->is_pure ? 'pure-' : ($this->is_pure === null ? '' : 'impure-'))
             . $this->value . $param_string . $return_type_string;

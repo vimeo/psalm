@@ -21,7 +21,12 @@ final class TCallableObject extends TObject
 
     public function getKey(bool $include_extra = true): string
     {
-        return 'callable-object';
+        $key = 'callable-object';
+        if ($this->callable !== null) {
+            $key .= $this->callable->getParamString() . $this->callable->getReturnTypeString();
+        }
+
+        return $key;
     }
 
     /**
