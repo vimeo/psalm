@@ -125,7 +125,19 @@ class AtomicPropertyFetchAnalyzer
             $statements_analyzer->node_data->setType(
                 $stmt,
                 Type::combineUnionTypes(
-                    $lhs_type_part->properties[$prop_name],
+                    TypeExpander::expandUnion(
+                        $statements_analyzer->getCodebase(),
+                        $lhs_type_part->properties[$prop_name],
+                        null,
+                        null,
+                        null,
+                        true,
+                        true,
+                        false,
+                        true,
+                        true,
+                        true,
+                    ),
                     $stmt_type,
                 ),
             );
@@ -133,11 +145,19 @@ class AtomicPropertyFetchAnalyzer
             return;
         }
 
+        $intersection_types = [];
+        if (!$lhs_type_part instanceof TObject) {
+            $intersection_types = $lhs_type_part->getIntersectionTypes();
+        }
+
         // stdClass and SimpleXMLElement are special cases where we cannot infer the return types
         // but we don't want to throw an error
         // Hack has a similar issue: https://github.com/facebook/hhvm/issues/5164
         if ($lhs_type_part instanceof TObject
-            || in_array(strtolower($lhs_type_part->value), Config::getInstance()->getUniversalObjectCrates(), true)
+            || (
+                in_array(strtolower($lhs_type_part->value), Config::getInstance()->getUniversalObjectCrates(), true)
+                && $intersection_types === []
+            )
         ) {
             $statements_analyzer->node_data->setType($stmt, Type::getMixed());
 
@@ -148,8 +168,6 @@ class AtomicPropertyFetchAnalyzer
             $statements_analyzer->node_data->setType($stmt, Type::getMixed());
             return;
         }
-
-        $intersection_types = $lhs_type_part->getIntersectionTypes() ?: [];
 
         $fq_class_name = $lhs_type_part->value;
 
@@ -237,39 +255,60 @@ class AtomicPropertyFetchAnalyzer
         // add method before changing fq_class_name
         $get_method_id = new MethodIdentifier($fq_class_name, '__get');
 
-        if (!$naive_property_exists
-            && $class_storage->namedMixins
-        ) {
-            foreach ($class_storage->namedMixins as $mixin) {
-                $new_property_id = $mixin->value . '::$' . $prop_name;
+        if (!$naive_property_exists) {
+            if ($class_storage->namedMixins) {
+                foreach ($class_storage->namedMixins as $mixin) {
+                    $new_property_id = $mixin->value . '::$' . $prop_name;
 
-                try {
-                    $new_class_storage = $codebase->classlike_storage_provider->get($mixin->value);
-                } catch (InvalidArgumentException $e) {
-                    $new_class_storage = null;
-                }
-
-                if ($new_class_storage
-                    && ($codebase->properties->propertyExists(
-                        $new_property_id,
-                        !$in_assignment,
-                        $statements_analyzer,
-                        $context,
-                        $codebase->collect_locations
-                                ? new CodeLocation($statements_analyzer->getSource(), $stmt)
-                                : null,
-                    )
-                        || isset($new_class_storage->pseudo_property_get_types['$' . $prop_name]))
-                ) {
-                    $fq_class_name = $mixin->value;
-                    $lhs_type_part = $mixin;
-                    $class_storage = $new_class_storage;
-
-                    if (!isset($new_class_storage->pseudo_property_get_types['$' . $prop_name])) {
-                        $naive_property_exists = true;
+                    try {
+                        $new_class_storage = $codebase->classlike_storage_provider->get($mixin->value);
+                    } catch (InvalidArgumentException $e) {
+                        $new_class_storage = null;
                     }
 
-                    $property_id = $new_property_id;
+                    if ($new_class_storage
+                        && ($codebase->properties->propertyExists(
+                            $new_property_id,
+                            !$in_assignment,
+                            $statements_analyzer,
+                            $context,
+                            $codebase->collect_locations
+                                    ? new CodeLocation($statements_analyzer->getSource(), $stmt)
+                                    : null,
+                        )
+                            || isset($new_class_storage->pseudo_property_get_types['$' . $prop_name]))
+                    ) {
+                        $fq_class_name = $mixin->value;
+                        $lhs_type_part = $mixin;
+                        $class_storage = $new_class_storage;
+
+                        if (!isset($new_class_storage->pseudo_property_get_types['$' . $prop_name])) {
+                            $naive_property_exists = true;
+                        }
+
+                        $property_id = $new_property_id;
+                    }
+                }
+            } elseif ($intersection_types !== [] && !$class_storage->final) {
+                foreach ($intersection_types as $intersection_type) {
+                    self::analyze(
+                        $statements_analyzer,
+                        $stmt,
+                        $context,
+                        $in_assignment,
+                        $var_id,
+                        $stmt_var_id,
+                        $stmt_var_type,
+                        $intersection_type,
+                        $prop_name,
+                        $has_valid_fetch_type,
+                        $invalid_fetch_types,
+                        $is_static_access,
+                    );
+
+                    if ($has_valid_fetch_type) {
+                        return;
+                    }
                 }
             }
         }

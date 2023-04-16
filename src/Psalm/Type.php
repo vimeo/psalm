@@ -15,6 +15,7 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
+use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TFalse;
@@ -962,10 +963,18 @@ abstract class Type
 
     private static function hasIntersection(Atomic $type): bool
     {
-        return ($type instanceof TIterable
-                || $type instanceof TNamedObject
-                || $type instanceof TTemplateParam
-                || $type instanceof TObjectWithProperties
-            ) && $type->extra_types;
+        return self::isIntersectionType($type) && $type->extra_types;
+    }
+
+    /**
+     * @psalm-assert-if-true TNamedObject|TTemplateParam|TIterable|TObjectWithProperties|TCallableObject $type
+     */
+    public static function isIntersectionType(Atomic $type): bool
+    {
+        return $type instanceof TNamedObject
+            || $type instanceof TTemplateParam
+            || $type instanceof TIterable
+            || $type instanceof TObjectWithProperties
+            || $type instanceof TCallableObject;
     }
 }

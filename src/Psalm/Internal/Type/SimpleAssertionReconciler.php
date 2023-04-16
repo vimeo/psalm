@@ -28,6 +28,7 @@ use Psalm\Storage\Assertion\NonEmpty;
 use Psalm\Storage\Assertion\NonEmptyCountable;
 use Psalm\Storage\Assertion\Truthy;
 use Psalm\Type;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
@@ -292,7 +293,9 @@ class SimpleAssertionReconciler extends Reconciler
 
         if ($assertion_type instanceof TObject) {
             return self::reconcileObject(
+                $codebase,
                 $assertion,
+                $assertion_type,
                 $existing_var_type,
                 $key,
                 $negated,
@@ -1580,7 +1583,9 @@ class SimpleAssertionReconciler extends Reconciler
      * @param Reconciler::RECONCILIATION_* $failed_reconciliation
      */
     private static function reconcileObject(
+        Codebase $codebase,
         Assertion $assertion,
+        TObject $assertion_type,
         Union $existing_var_type,
         ?string $key,
         bool $negated,
@@ -1600,7 +1605,17 @@ class SimpleAssertionReconciler extends Reconciler
         $redundant = true;
 
         foreach ($existing_var_atomic_types as $type) {
-            if ($type->isObjectType()) {
+            if (Type::isIntersectionType($assertion_type)
+                && self::areIntersectionTypesAllowed($codebase, $type)
+            ) {
+                $object_types[] = $type->addIntersectionType($assertion_type);
+                $redundant = false;
+            } elseif ($type instanceof TNamedObject
+                && $codebase->classlike_storage_provider->has($type->value)
+                && $codebase->classlike_storage_provider->get($type->value)->final
+            ) {
+                $redundant = false;
+            } elseif ($type->isObjectType()) {
                 $object_types[] = $type;
             } elseif ($type instanceof TCallable) {
                 $callable_object = new TCallableObject($type->from_docblock, $type);
@@ -1614,8 +1629,17 @@ class SimpleAssertionReconciler extends Reconciler
                 $redundant = false;
             } elseif ($type instanceof TTemplateParam) {
                 if ($type->as->hasObject() || $type->as->hasMixed()) {
-                    $type = $type->replaceAs(self::reconcileObject(
+                    /**
+                     * @psalm-suppress PossiblyInvalidArgument This looks wrong, psalm assumes that $assertion_type
+                     *                                         can contain TNamedObject due to the reconciliation above
+                     *                                         regarding {@see Type::isIntersectionType}. Due to the
+                     *                                         native argument type `TObject`, the variable object will
+                     *                                         never be `TNamedObject`.
+                     */
+                    $reconciled_type = self::reconcileObject(
+                        $codebase,
                         $assertion,
+                        $assertion_type,
                         $type->as,
                         null,
                         false,
@@ -1623,7 +1647,8 @@ class SimpleAssertionReconciler extends Reconciler
                         $suppressed_issues,
                         $failed_reconciliation,
                         $is_equality,
-                    ));
+                    );
+                    $type = $type->replaceAs($reconciled_type);
 
                     $object_types[] = $type;
                 }
@@ -2919,5 +2944,23 @@ class SimpleAssertionReconciler extends Reconciler
         }
 
         return TypeCombiner::combine(array_values($matched_class_constant_types), $codebase);
+    }
+
+    /**
+     * @psalm-assert-if-true TCallableObject|TObjectWithProperties|TNamedObject $type
+     */
+    private static function areIntersectionTypesAllowed(Codebase $codebase, Atomic $type): bool
+    {
+        if ($type instanceof TObjectWithProperties || $type instanceof TCallableObject) {
+            return true;
+        }
+
+        if (!$type instanceof TNamedObject || !$codebase->classlike_storage_provider->has($type->value)) {
+            return false;
+        }
+
+        $class_storage = $codebase->classlike_storage_provider->get($type->value);
+
+        return !$class_storage->final;
     }
 }
