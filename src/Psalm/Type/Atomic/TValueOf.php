@@ -50,6 +50,12 @@ final class TValueOf extends Atomic
         ));
     }
 
+    protected function getChildNodeKeys(): array
+    {
+        return ['type'];
+    }
+
+
     public function getKey(bool $include_extra = true): string
     {
         return 'value-of<' . $this->type . '>';

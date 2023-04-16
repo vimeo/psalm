@@ -825,8 +825,6 @@ class Methods
             return null;
         }
 
-        $candidate_type = null;
-
         foreach ($class_storage->overridden_method_ids[$appearing_method_name] as $overridden_method_id) {
             $overridden_storage = $this->getStorage($overridden_method_id);
 
