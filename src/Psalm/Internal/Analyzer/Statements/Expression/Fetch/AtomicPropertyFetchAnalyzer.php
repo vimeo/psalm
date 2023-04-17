@@ -135,7 +135,7 @@ class AtomicPropertyFetchAnalyzer
                         true,
                         false,
                         true,
-                        true,
+                        false,
                         true,
                     ),
                     $stmt_type,
