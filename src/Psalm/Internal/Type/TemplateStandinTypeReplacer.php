@@ -7,6 +7,7 @@ use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\Methods;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
+use Psalm\Internal\Type\Comparator\KeyedArrayComparator;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Type;
 use Psalm\Type\Atomic;
@@ -582,53 +583,17 @@ class TemplateStandinTypeReplacer
             }
 
             if ($atomic_input_type instanceof TNamedObject
-                && $codebase->classlike_storage_provider->has($atomic_input_type->value)
                 && $base_type instanceof TObjectWithProperties
             ) {
-                $storage = $codebase->classlike_storage_provider->get($atomic_input_type->value);
-                $inferred_lower_bounds = [];
-
-                if ($atomic_input_type instanceof TGenericObject) {
-                    foreach ($storage->template_types ?? [] as $template_name => $templates) {
-                        foreach (array_keys($templates) as $offset => $defining_at) {
-                            $inferred_lower_bounds[$template_name][$defining_at] =
-                                $atomic_input_type->type_params[$offset];
-                        }
-                    }
-                }
-
-                foreach ($storage->template_extended_params ?? [] as $defining_at => $templates) {
-                    foreach ($templates as $template_name => $template_atomic) {
-                        $inferred_lower_bounds[$template_name][$defining_at] = $template_atomic;
-                    }
-                }
-
-                $properties = [];
-
-                foreach ($storage->appearing_property_ids as $property_name => $property_id) {
-                    if (!isset($base_type->properties[$property_name])) {
-                        continue;
-                    }
-
-                    $property_type = $codebase->properties->hasStorage($property_id)
-                        ? $codebase->properties->getStorage($property_id)->type
-                        : null;
-
-                    $properties[$property_name] = $property_type ?? Type::getMixed();
-                }
-
-                $replaced_object = TemplateInferredTypeReplacer::replace(
-                    new Union([
-                        new TObjectWithProperties($properties),
-                    ]),
-                    new TemplateResult(
-                        $storage->template_types ?? [],
-                        $inferred_lower_bounds,
-                    ),
+                $object_with_keys = KeyedArrayComparator::coerceToObjectWithProperties(
                     $codebase,
+                    $atomic_input_type,
+                    $base_type,
                 );
 
-                $matching_atomic_types[$replaced_object->getId()] = $replaced_object->getSingleAtomic();
+                if ($object_with_keys) {
+                    $matching_atomic_types[$object_with_keys->getId()] = $object_with_keys;
+                }
 
                 continue;
             }
