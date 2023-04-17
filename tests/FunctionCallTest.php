@@ -80,6 +80,134 @@ class FunctionCallTest extends TestCase
                     '$iterable===' => 'iterable<int, int|string>',
                 ],
             ],
+            'inferTypeFromAnonymousObjectWithTemplatedProperty' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Value
+                    {
+                        /** @param T $value */
+                        public function __construct(public readonly mixed $value) {}
+                    }
+                    /**
+                     * @template T
+                     * @param object{value: T} $object
+                     * @return T
+                     */
+                    function getValue(object $object): mixed
+                    {
+                        return $object->value;
+                    }
+                    /**
+                     * @template T
+                     * @param object{value: object{value: T}} $object
+                     * @return T
+                     */
+                    function getNestedValue(object $object): mixed
+                    {
+                        return $object->value->value;
+                    }
+                    $object = new Value(new Value(42));
+                    $value = getValue($object);
+                    $nestedValue = getNestedValue($object);',
+                'assertions' => [
+                    '$value===' => 'Value<42>',
+                    '$nestedValue===' => '42',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'inferTypeFromAnonymousObjectWithTemplatedPropertyFromTemplatedAncestor' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class AbstractValue
+                    {
+                        /** @param T $value */
+                        public function __construct(public readonly mixed $value) {}
+                    }
+                    /**
+                     * @template TValue
+                     * @extends AbstractValue<TValue>
+                     */
+                    final class ConcreteValue extends AbstractValue
+                    {
+                        /**
+                         * @param TValue $value
+                         */
+                        public function __construct(mixed $value)
+                        {
+                            parent::__construct($value);
+                        }
+                    }
+                    /**
+                     * @template T
+                     * @param object{value: T} $object
+                     * @return T
+                     */
+                    function getValue(object $object): mixed
+                    {
+                        return $object->value;
+                    }
+                    /**
+                     * @template T
+                     * @param object{value: object{value: T}} $object
+                     * @return T
+                     */
+                    function getNestedValue(object $object): mixed
+                    {
+                        return $object->value->value;
+                    }
+                    $object = new ConcreteValue(new ConcreteValue(42));
+                    $value = getValue($object);
+                    $nestedValue = getNestedValue($object);',
+                'assertions' => [
+                    '$value===' => 'ConcreteValue<42>',
+                    '$nestedValue===' => '42',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'inferTypeFromAnonymousObjectWithTemplatedPropertyFromConcreteAncestor' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class AbstractValue
+                    {
+                        /** @param T $value */
+                        public function __construct(public readonly mixed $value) {}
+                    }
+                    /** @extends AbstractValue<int> */
+                    final class IntValue extends AbstractValue {}
+                    final class Nested
+                    {
+                        public function __construct(public readonly IntValue $value) {}
+                    }
+                    /**
+                     * @template T
+                     * @param object{value: T} $object
+                     * @return T
+                     */
+                    function getValue(object $object): mixed
+                    {
+                        return $object->value;
+                    }
+                    /**
+                     * @template T
+                     * @param object{value: object{value: T}} $object
+                     * @return T
+                     */
+                    function getNestedValue(object $object): mixed
+                    {
+                        return $object->value->value;
+                    }
+                    $object = new Nested(new IntValue(42));
+                    $value = getValue($object);
+                    $nestedValue = getNestedValue($object);',
+                'assertions' => [
+                    '$value===' => 'IntValue',
+                    '$nestedValue===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'countShapedArrays' => [
                 'code' => '<?php
                     /** @var array{a?: int} */

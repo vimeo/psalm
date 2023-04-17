@@ -11,8 +11,8 @@ use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
-
 use Psalm\Type\Union;
+
 use function array_keys;
 use function is_string;
 
