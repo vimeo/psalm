@@ -306,7 +306,7 @@ class KeyedArrayComparator
             }
 
             $property_declaring_class = (string) $codebase->properties->getDeclaringClassForProperty(
-                $input_type_part . '::$' . $property_name,
+                $input_type_part->value . '::$' . $property_name,
                 true,
             );
 
