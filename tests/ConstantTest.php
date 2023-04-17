@@ -1338,6 +1338,323 @@ class ConstantTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'classConstantArrayWithEnumCaseKey' => [
+                'code' => '<?php
+                    enum E {
+                        case K1;
+                        case K2;
+                    }
+                    enum BEI: int {
+                        case K3 = 1;
+                        case K4 = 2;
+                    }
+                    enum BES: string {
+                        case K5 = "a";
+                        case K6 = "b";
+                    }
+                    class A {
+                        public const C = [
+                            BEI::K3->value => "e",
+                            BEI::K4->value => 5,
+                            E::K1->name => "c",
+                            E::K2->name => 3,
+                            BEI::K3->name => "d",
+                            BEI::K4->name => 4,
+                            BES::K5->name => "f",
+                            BES::K6->name => 6,
+                            BES::K5->value => "g",
+                            BES::K6->value => 7,
+                        ];
+                    }
+                    $c = A::C;
+                ',
+                'assertions' => [
+                    '$c===' => "array{1: 'e', 2: 5, K1: 'c', K2: 3, K3: 'd', K4: 4, K5: 'f', K6: 6, a: 'g', b: 7}",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'classConstantArrayWithEnumCaseKeyEnumDefinedAfterClass' => [
+                'code' => '<?php
+                    class A {
+                        public const C = [
+                            BEI::K3->value => "e",
+                            BEI::K4->value => 5,
+                            E::K1->name => "c",
+                            E::K2->name => 3,
+                            BEI::K3->name => "d",
+                            BEI::K4->name => 4,
+                            BES::K5->name => "f",
+                            BES::K6->name => 6,
+                            BES::K5->value => "g",
+                            BES::K6->value => 7,
+                        ];
+                    }
+                    enum E {
+                        case K1;
+                        case K2;
+                    }
+                    enum BEI: int {
+                        case K3 = 1;
+                        case K4 = 2;
+                    }
+                    enum BES: string {
+                        case K5 = "a";
+                        case K6 = "b";
+                    }
+                    $c = A::C;
+                ',
+                'assertions' => [
+                    '$c===' => "array{1: 'e', 2: 5, K1: 'c', K2: 3, K3: 'd', K4: 4, K5: 'f', K6: 6, a: 'g', b: 7}",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'classConstantArrayWithEnumCaseKeyNamespaced' => [
+                'code' => '<?php
+                    namespace OtherNamespace;
+                    enum E: int {
+                        case K1 = 1;
+                        case K2 = 2;
+                    }
+
+                    namespace UsedNamespace;
+                    enum E: int {
+                        case K3 = 3;
+                        case K4 = 4;
+                    }
+
+                    namespace AliasedNamespace;
+                    enum E: int {
+                        case K5 = 5;
+                        case K6 = 6;
+                    }
+
+                    namespace SameNamespace;
+                    use UsedNamespace\E;
+                    use AliasedNamespace\E as E2;
+
+                    enum E3: int {
+                        case K7 = 7;
+                        case K8 = 8;
+                    }
+                    class A {
+                        public const C = [
+                            \OtherNamespace\E::K1->name => "a",
+                            \OtherNamespace\E::K2->name => 10,
+                            \OtherNamespace\E::K1->value => "b",
+                            \OtherNamespace\E::K2->value => 11,
+                            E::K3->name => "c",
+                            E::K4->name => 12,
+                            E::K3->value => "d",
+                            E::K4->value => 13,
+                            E2::K5->name => "e",
+                            E2::K6->name => 14,
+                            E2::K5->value => "f",
+                            E2::K6->value => 15,
+                            E3::K7->name => "g",
+                            E3::K8->name => 16,
+                            E3::K7->value => "h",
+                            E3::K8->value => 17,
+                        ];
+                    }
+                    $c = A::C;
+                ',
+                'assertions' => [
+                    '$c===' => "array{1: 'b', 2: 11, 3: 'd', 4: 13, 5: 'f', 6: 15, 7: 'h', 8: 17, K1: 'a', K2: 10, K3: 'c', K4: 12, K5: 'e', K6: 14, K7: 'g', K8: 16}",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'classConstantArrayWithEnumCaseKeyDirectAccess' => [
+                'code' => '<?php
+                    enum E {
+                        case K1;
+                        case K2;
+                    }
+                    enum BEI: int {
+                        case K3 = 1;
+                        case K4 = 2;
+                    }
+                    enum BES: string {
+                        case K5 = "a";
+                        case K6 = "b";
+                    }
+                    class A {
+                        public const C = [
+                            E::K1->name => "c",
+                            E::K2->name => 3,
+                            BEI::K3->name => "d",
+                            BEI::K4->name => 4,
+                            BEI::K3->value => "e",
+                            BEI::K4->value => 5,
+                            BES::K5->name => "f",
+                            BES::K6->name => 6,
+                            BES::K5->value => "g",
+                            BES::K6->value => 7,
+                        ];
+                    }
+                    $a = A::C[E::K1->name];
+                    $b = A::C[E::K2->name];
+                    $c = A::C[BEI::K3->name];
+                    $d = A::C[BEI::K4->name];
+                    $e = A::C[BEI::K3->value];
+                    $f = A::C[BEI::K4->value];
+                    $g = A::C[BES::K5->name];
+                    $h = A::C[BES::K6->name];
+                    $i = A::C[BES::K5->value];
+                    $j = A::C[BES::K6->value];
+                    $k = A::C["K1"];
+                    $l = A::C["K2"];
+                    $m = A::C["K3"];
+                    $n = A::C["K4"];
+                    $o = A::C[1];
+                    $p = A::C[2];
+                    $q = A::C["K5"];
+                    $r = A::C["K6"];
+                    $s = A::C["a"];
+                    $t = A::C["b"];
+                ',
+                'assertions' => [
+                    '$a===' => "'c'",
+                    '$b===' => '3',
+                    '$c===' => "'d'",
+                    '$d===' => '4',
+                    '$e===' => "'e'",
+                    '$f===' => '5',
+                    '$g===' => "'f'",
+                    '$h===' => '6',
+                    '$i===' => "'g'",
+                    '$j===' => '7',
+                    '$k===' => "'c'",
+                    '$l===' => '3',
+                    '$m===' => "'d'",
+                    '$n===' => '4',
+                    '$o===' => "'e'",
+                    '$p===' => '5',
+                    '$q===' => "'f'",
+                    '$r===' => '6',
+                    '$s===' => "'g'",
+                    '$t===' => '7',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'classConstantNestedArrayWithEnumCaseKey' => [
+                'code' => '<?php
+                    enum E: string {
+                        case K1 = "a";
+                        case K2 = "b";
+                        case K3 = "c";
+                        case K4 = "d";
+                        case K5 = "e";
+                        case K6 = "f";
+                        case K7 = "g";
+                    }
+                    class A {
+                        public const C = [
+                            E::K1->name => [
+                                E::K2->name => [
+                                    E::K3->name => "h",
+                                    E::K4->name => "i",
+                                ],
+                                E::K5->name => [
+                                    E::K6->name => "j",
+                                    E::K7->name => "k",
+                                ],
+                            ],
+                            E::K1->value => [
+                                E::K2->value => [
+                                    E::K3->value => "l",
+                                    E::K4->value => "m",
+                                ],
+                                E::K5->value => [
+                                    E::K6->value => "n",
+                                    E::K7->value => "o",
+                                ],
+                            ]
+                        ];
+                    }
+                    $c = A::C;
+                ',
+                'assertions' => [
+                    '$c===' => "array{K1: array{K2: array{K3: 'h', K4: 'i'}, K5: array{K6: 'j', K7: 'k'}}, a: array{b: array{c: 'l', d: 'm'}, e: array{f: 'n', g: 'o'}}}",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'constantArrayWithEnumCaseKey' => [
+                'code' => '<?php
+                    enum E {
+                        case K1;
+                        case K2;
+                    }
+                    enum BEI: int {
+                        case K3 = 1;
+                        case K4 = 2;
+                    }
+                    enum BES: string {
+                        case K5 = "a";
+                        case K6 = "b";
+                    }
+                    const C = [
+                        E::K1->name => "c",
+                        E::K2->name => 3,
+                        BEI::K3->name => "d",
+                        BEI::K4->name => 4,
+                        BEI::K3->value => "e",
+                        BEI::K4->value => 5,
+                        BES::K5->name => "f",
+                        BES::K6->name => 6,
+                        BES::K5->value => "g",
+                        BES::K6->value => 7,
+                    ];
+                    $a = C[E::K1->name];
+                    $b = C[E::K2->name];
+                    $c = C[BEI::K3->name];
+                    $d = C[BEI::K4->name];
+                    $e = C[BEI::K3->value];
+                    $f = C[BEI::K4->value];
+                    $g = C[BES::K5->name];
+                    $h = C[BES::K6->name];
+                    $i = C[BES::K5->value];
+                    $j = C[BES::K6->value];
+                    $k = C["K1"];
+                    $l = C["K2"];
+                    $m = C["K3"];
+                    $n = C["K4"];
+                    $o = C[1];
+                    $p = C[2];
+                    $q = C["K5"];
+                    $r = C["K6"];
+                    $s = C["a"];
+                    $t = C["b"];
+                ',
+                'assertions' => [
+                    '$a===' => "'c'",
+                    '$b===' => '3',
+                    '$c===' => "'d'",
+                    '$d===' => '4',
+                    '$e===' => "'e'",
+                    '$f===' => '5',
+                    '$g===' => "'f'",
+                    '$h===' => '6',
+                    '$i===' => "'g'",
+                    '$j===' => '7',
+                    '$k===' => "'c'",
+                    '$l===' => '3',
+                    '$m===' => "'d'",
+                    '$n===' => '4',
+                    '$o===' => "'e'",
+                    '$p===' => '5',
+                    '$q===' => "'f'",
+                    '$r===' => '6',
+                    '$s===' => "'g'",
+                    '$t===' => '7',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
             'classConstWithParamOut' => [
                 'code' => '<?php
 

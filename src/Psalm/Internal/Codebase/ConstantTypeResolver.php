@@ -11,6 +11,9 @@ use Psalm\Internal\Scanner\UnresolvedConstant\ArraySpread;
 use Psalm\Internal\Scanner\UnresolvedConstant\ArrayValue;
 use Psalm\Internal\Scanner\UnresolvedConstant\ClassConstant;
 use Psalm\Internal\Scanner\UnresolvedConstant\Constant;
+use Psalm\Internal\Scanner\UnresolvedConstant\EnumNameFetch;
+use Psalm\Internal\Scanner\UnresolvedConstant\EnumPropertyFetch;
+use Psalm\Internal\Scanner\UnresolvedConstant\EnumValueFetch;
 use Psalm\Internal\Scanner\UnresolvedConstant\ScalarValue;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedAdditionOp;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedBinaryOp;
@@ -327,6 +330,24 @@ class ConstantTypeResolver
 
                 if ($found_type) {
                     return $found_type->getSingleAtomic();
+                }
+            }
+        }
+
+        if ($c instanceof EnumPropertyFetch) {
+            if ($classlikes->enumExists($c->fqcln)) {
+                $enum_storage = $classlikes->getStorageFor($c->fqcln);
+                if (isset($enum_storage->enum_cases[$c->case])) {
+                    if ($c instanceof EnumValueFetch) {
+                        $value = $enum_storage->enum_cases[$c->case]->value;
+                        if (is_string($value)) {
+                            return Type::getString($value)->getSingleAtomic();
+                        } elseif (is_int($value)) {
+                            return Type::getInt(false, $value)->getSingleAtomic();
+                        }
+                    } elseif ($c instanceof EnumNameFetch) {
+                        return Type::getString($c->case)->getSingleAtomic();
+                    }
                 }
             }
         }
