@@ -388,7 +388,6 @@
   <file src="src/Psalm/Internal/Type/TemplateStandinTypeReplacer.php">
     <ImpureMethodCall>
       <code>getClassTemplateTypes</code>
-      <code>has</code>
     </ImpureMethodCall>
   </file>
   <file src="src/Psalm/Internal/Type/TypeCombiner.php">
