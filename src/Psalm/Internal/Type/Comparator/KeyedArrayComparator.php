@@ -3,11 +3,15 @@
 namespace Psalm\Internal\Type\Comparator;
 
 use Psalm\Codebase;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
+use Psalm\Internal\Type\TemplateResult;
 use Psalm\Type;
 use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
+use Psalm\Type\Union;
 
 use function array_keys;
 use function is_string;
@@ -285,36 +289,20 @@ class KeyedArrayComparator
     ): bool {
         $all_types_contain = true;
 
+        $input_object_with_keys = self::coerceToObjectWithProperties(
+            $codebase,
+            $input_type_part,
+            $container_type_part,
+        );
+
         foreach ($container_type_part->properties as $property_name => $container_property_type) {
-            if (!is_string($property_name)) {
-                continue;
-            }
-
-            if (!$codebase->classlikes->classOrInterfaceExists($input_type_part->value)) {
+            if (!$input_object_with_keys || !isset($input_object_with_keys->properties[$property_name])) {
                 $all_types_contain = false;
 
                 continue;
             }
 
-            if (!$codebase->properties->propertyExists(
-                $input_type_part->value . '::$' . $property_name,
-                true,
-            )) {
-                $all_types_contain = false;
-
-                continue;
-            }
-
-            $property_declaring_class = (string) $codebase->properties->getDeclaringClassForProperty(
-                $input_type_part . '::$' . $property_name,
-                true,
-            );
-
-            $class_storage = $codebase->classlike_storage_provider->get($property_declaring_class);
-
-            $input_property_storage = $class_storage->properties[$property_name];
-
-            $input_property_type = $input_property_storage->type ?: Type::getMixed();
+            $input_property_type = $input_object_with_keys->properties[$property_name];
 
             $property_type_comparison = new TypeComparisonResult();
 
@@ -353,5 +341,62 @@ class KeyedArrayComparator
         }
 
         return $all_types_contain;
+    }
+
+    public static function coerceToObjectWithProperties(
+        Codebase $codebase,
+        TNamedObject $input_type_part,
+        TObjectWithProperties $container_type_part
+    ): ?TObjectWithProperties {
+        $storage = $codebase->classlikes->getStorageFor($input_type_part->value);
+
+        if (!$storage) {
+            return null;
+        }
+
+        $inferred_lower_bounds = [];
+
+        if ($input_type_part instanceof TGenericObject) {
+            foreach ($storage->template_types ?? [] as $template_name => $templates) {
+                foreach (array_keys($templates) as $offset => $defining_at) {
+                    $inferred_lower_bounds[$template_name][$defining_at] =
+                        $input_type_part->type_params[$offset];
+                }
+            }
+        }
+
+        foreach ($storage->template_extended_params ?? [] as $defining_at => $templates) {
+            foreach ($templates as $template_name => $template_atomic) {
+                $inferred_lower_bounds[$template_name][$defining_at] = $template_atomic;
+            }
+        }
+
+        $properties = [];
+
+        foreach ($storage->appearing_property_ids as $property_name => $property_id) {
+            if (!isset($container_type_part->properties[$property_name])) {
+                continue;
+            }
+
+            $property_type = $codebase->properties->hasStorage($property_id)
+                ? $codebase->properties->getStorage($property_id)->type
+                : null;
+
+            $properties[$property_name] = $property_type ?? Type::getMixed();
+        }
+
+        $replaced_object = TemplateInferredTypeReplacer::replace(
+            new Union([
+                new TObjectWithProperties($properties),
+            ]),
+            new TemplateResult(
+                $storage->template_types ?? [],
+                $inferred_lower_bounds,
+            ),
+            $codebase,
+        );
+
+        /** @var TObjectWithProperties */
+        return $replaced_object->getSingleAtomic();
     }
 }

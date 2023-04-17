@@ -7,6 +7,7 @@ use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\Methods;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
+use Psalm\Internal\Type\Comparator\KeyedArrayComparator;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Type;
 use Psalm\Type\Atomic;
@@ -579,6 +580,22 @@ class TemplateStandinTypeReplacer
                 } catch (InvalidArgumentException $e) {
                     // do nothing
                 }
+            }
+
+            if ($atomic_input_type instanceof TNamedObject
+                && $base_type instanceof TObjectWithProperties
+            ) {
+                $object_with_keys = KeyedArrayComparator::coerceToObjectWithProperties(
+                    $codebase,
+                    $atomic_input_type,
+                    $base_type,
+                );
+
+                if ($object_with_keys) {
+                    $matching_atomic_types[$object_with_keys->getId()] = $object_with_keys;
+                }
+
+                continue;
             }
 
             if ($atomic_input_type instanceof TTemplateParam) {
