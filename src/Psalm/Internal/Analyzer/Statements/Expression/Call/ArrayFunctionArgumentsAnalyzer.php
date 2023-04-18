@@ -42,6 +42,7 @@ use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_filter;
+use function array_merge;
 use function array_pop;
 use function array_shift;
 use function array_unshift;
@@ -395,7 +396,7 @@ class ArrayFunctionArgumentsAnalyzer
         $offset_arg_is_zero = false;
 
         if (($offset_arg_type = $statements_analyzer->node_data->getType($offset_arg))
-            && $offset_arg_type->hasLiteralValue()
+            && $offset_arg_type->hasLiteralValue() && $offset_arg_type->isSingleLiteral()
         ) {
             $offset_literal_value = $offset_arg_type->getSingleLiteral()->value;
             $offset_arg_is_zero = is_numeric($offset_literal_value) && ((int) $offset_literal_value)===0;
@@ -451,13 +452,27 @@ class ArrayFunctionArgumentsAnalyzer
             if (($length_arg_type = $statements_analyzer->node_data->getType($length_arg))
                 && $length_arg_type->hasLiteralValue()
             ) {
-                $length_literal = $length_arg_type->getSingleLiteral();
-                if ($length_literal->isNumericType()) {
-                    $length_value = (int)$length_literal->value;
-                    if ($length_value>=$array_size) {
-                        $cover_whole_arr = true;
+                $length_min = null;
+                if ($length_arg_type->isSingleLiteral()) {
+                    $length_literal =  $length_arg_type->getSingleLiteral();
+                    if ($length_literal->isNumericType()) {
+                        $length_min = (int) $length_literal->value;
+                    }
+                } else {
+                    $literals = array_merge(
+                        $length_arg_type->getLiteralStrings(),
+                        $length_arg_type->getLiteralInts(),
+                        $length_arg_type->getLiteralFloats(),
+                    );
+                    foreach ($literals as $literal) {
+                        if ($literal->isNumericType()
+                            && ($literal_val = (int) $literal->value)
+                            && ((isset($length_min) && $length_min> $literal_val) || !isset($length_min))) {
+                            $length_min = $literal_val;
+                        }
                     }
                 }
+                $cover_whole_arr = isset($length_min) && $length_min>= $array_size;
             } elseif ($length_arg_type&& $length_arg_type->isNull()) {
                 $cover_whole_arr = true;
             }
