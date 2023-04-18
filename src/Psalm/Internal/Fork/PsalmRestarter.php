@@ -30,6 +30,7 @@ class PsalmRestarter extends XdebugHandler
         'jit_buffer_size' => 512 * 1024 * 1024,
         'optimization_level' => '0x7FFEBFFF',
         'preload' => '',
+        'log_verbosity_level' => 0
     ];
 
     private bool $required = false;
@@ -70,6 +71,7 @@ class PsalmRestarter extends XdebugHandler
             $opcache_settings = [
                 'enable_cli' => in_array(ini_get('opcache.enable_cli'), ['1', 'true', true, 1]),
                 'jit' => (int) ini_get('opcache.jit'),
+                'log_verbosity_level' => (int) ini_get('opcache.log_verbosity_level'),
                 'optimization_level' => (string) ini_get('opcache.optimization_level'),
                 'preload' => (string) ini_get('opcache.preload'),
                 'jit_buffer_size' => self::toBytes(ini_get('opcache.jit_buffer_size')),
@@ -146,6 +148,7 @@ class PsalmRestarter extends XdebugHandler
                 '-dopcache.jit=1205',
                 '-dopcache.optimization_level=0x7FFEBFFF',
                 '-dopcache.preload=',
+                '-dopcache.log_verbosity_level=0'
             ];
         }
 
