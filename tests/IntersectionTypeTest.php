@@ -134,6 +134,29 @@ final class IntersectionTypeTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
             ],
+            'intersectionViaParamOut' => [
+                'code' => '<?php
+                /**
+                 * @template T of array{id: int, ...}
+                 *
+                 * @param T $arr
+                 * @param-out T&array{bar: string} $arr
+                 * @return void
+                 **/
+                function addBar(array &$arr): void {
+                    $arr["bar"] = "bar";
+                }
+
+                $arr1 = ["id" => 1, "foo" => "foo"];
+                $arr2 = ["id" => 2, "baz" => "baz"];
+
+                addBar($arr1);
+                addBar($arr2);',
+                'assertions' => [
+                    '$arr1===' => 'array{bar: string, id: int, ...<array-key, mixed>}',
+                    '$arr2===' => 'array{bar: string, id: int, ...<array-key, mixed>}',
+                ],
+            ],
         ];
     }
 

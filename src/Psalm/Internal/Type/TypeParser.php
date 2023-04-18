@@ -1116,23 +1116,11 @@ class TypeParser
             return new TMixed();
         }
 
+        $intersection_types = self::resolveTemplatedTypes($intersection_types);
+        $onlyTKeyedArray = self::validateAllKeyedArray($intersection_types);
+
         $first_type = reset($intersection_types);
         $last_type = end($intersection_types);
-
-        $onlyTKeyedArray = $first_type instanceof TKeyedArray
-            || $last_type instanceof TKeyedArray;
-
-        foreach ($intersection_types as $intersection_type) {
-            if (!$intersection_type instanceof TKeyedArray
-                && ($intersection_type !== $first_type
-                    || !$first_type instanceof TArray)
-                && ($intersection_type !== $last_type
-                    || !$last_type instanceof TArray)
-            ) {
-                $onlyTKeyedArray = false;
-                break;
-            }
-        }
 
         if ($onlyTKeyedArray) {
             /**
@@ -1161,8 +1149,12 @@ class TypeParser
             $intersect_static = true;
         }
 
-        if ($keyed_intersection_types === [] && $intersect_static) {
-            return new TNamedObject('static', false, false, [], $from_docblock);
+        if ($keyed_intersection_types === []) {
+            if ($intersect_static) {
+                return new TNamedObject('static', false, false, [], $from_docblock);
+            }
+
+            return new TObject($from_docblock);
         }
 
         $first_type = array_shift($keyed_intersection_types);
@@ -1533,7 +1525,7 @@ class TypeParser
 
     /**
      * @param non-empty-array<Atomic> $intersection_types
-     * @return non-empty-array<string,TIterable|TNamedObject|TCallableObject|TTemplateParam|TObjectWithProperties|TKeyedArray>
+     * @return non-empty-array<string,TIterable|TNamedObject|TCallableObject|TObjectWithProperties|TKeyedArray>
      */
     private static function extractKeyedIntersectionTypes(
         Codebase $codebase,
@@ -1547,6 +1539,8 @@ class TypeParser
             $codebase,
             $intersection_types,
         );
+
+        $object_from_docblock = false;
 
         foreach ($normalized_intersection_types as $intersection_type) {
             if ($intersection_type instanceof TKeyedArray
@@ -1568,7 +1562,6 @@ class TypeParser
 
             if ($intersection_type instanceof TIterable
                 || $intersection_type instanceof TNamedObject
-                || $intersection_type instanceof TTemplateParam
                 || $intersection_type instanceof TObjectWithProperties
             ) {
                 $keyed_intersection_types[self::extractIntersectionKey($intersection_type)] = $intersection_type;
@@ -1576,6 +1569,7 @@ class TypeParser
             }
 
             if (get_class($intersection_type) === TObject::class) {
+                $object_from_docblock = $object_from_docblock || $intersection_type->from_docblock;
                 continue;
             }
 
@@ -1604,14 +1598,19 @@ class TypeParser
             $keyed_intersection_types[self::extractIntersectionKey($callable_object_type)] = $callable_object_type;
         }
 
-        if ($any_object_type_found && $any_array_found) {
-            throw new TypeParseTreeException(
-                'Intersection types must be all objects or all keyed array.',
-            );
+        if ($any_object_type_found) {
+            if ($any_array_found) {
+                throw new TypeParseTreeException(
+                    'Intersection types must be all objects or all keyed array.',
+                );
+            }
+
+            if ($keyed_intersection_types === []) {
+                return ['object' => new TObjectWithProperties([], [], [], $object_from_docblock)];
+            }
         }
 
         assert($keyed_intersection_types !== []);
-
         return $keyed_intersection_types;
     }
 
@@ -1729,5 +1728,51 @@ class TypeParser
             false,
             $from_docblock,
         );
+    }
+
+
+    /**
+     * @param non-empty-array<Atomic> $types
+     * @return non-empty-array<Atomic>
+     */
+    private static function resolveTemplatedTypes(array $types): array
+    {
+        $resolved_types = [];
+        foreach ($types as $type) {
+            if ($type instanceof TTemplateParam) {
+                $resolved_types[] = self::resolveTemplatedTypes($type->as->getAtomicTypes());
+                continue;
+            }
+
+            $resolved_types[] = [$type];
+        }
+
+        $resolved_types = array_merge(...$resolved_types);
+        assert($resolved_types !== []);
+        return $resolved_types;
+    }
+
+    /**
+     * @param non-empty-array<Atomic> $types
+     */
+    private static function validateAllKeyedArray(
+        array $types
+    ): bool {
+        $first_type = reset($types);
+        $last_type = end($types);
+
+        foreach ($types as $intersection_type) {
+            if (!$intersection_type instanceof TKeyedArray
+                && ($intersection_type !== $first_type
+                    || !$first_type instanceof TArray)
+                && ($intersection_type !== $last_type
+                    || !$last_type instanceof TArray)
+            ) {
+                return false;
+            }
+        }
+
+        return $first_type instanceof TKeyedArray
+            || $last_type instanceof TKeyedArray;
     }
 }
