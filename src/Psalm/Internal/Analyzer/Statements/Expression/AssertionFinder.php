@@ -47,6 +47,7 @@ use Psalm\Storage\Assertion\Falsy;
 use Psalm\Storage\Assertion\HasAtLeastCount;
 use Psalm\Storage\Assertion\HasExactCount;
 use Psalm\Storage\Assertion\HasMethod;
+use Psalm\Storage\Assertion\HasProperty;
 use Psalm\Storage\Assertion\InArray;
 use Psalm\Storage\Assertion\IsAClass;
 use Psalm\Storage\Assertion\IsClassEqual;
@@ -836,6 +837,14 @@ class AssertionFinder
         ) {
             if ($first_var_name) {
                 $if_types[$first_var_name] = [[new HasMethod($expr->getArgs()[1]->value->value)]];
+            }
+        } elseif ($expr->name instanceof PhpParser\Node\Name
+            && strtolower($expr->name->parts[0]) === 'property_exists'
+            && isset($expr->getArgs()[1])
+            && $expr->getArgs()[1]->value instanceof PhpParser\Node\Scalar\String_
+        ) {
+            if ($first_var_name) {
+                $if_types[$first_var_name] = [[new HasProperty($expr->getArgs()[1]->value->value)]];
             }
         } elseif (self::hasInArrayCheck($expr) && $source instanceof StatementsAnalyzer) {
             return self::getInarrayAssertions($expr, $source, $first_var_name);

@@ -816,6 +816,22 @@ final class Codebase
     }
 
     /**
+     * Whether or not a given property exists
+     */
+    public function propertyExists(
+        string $property_id,
+        ?CodeLocation $code_location = null
+    ): bool {
+        return $this->properties->propertyExists(
+            $property_id,
+            true, // $read_mode, not sure about this
+            null,
+            null,
+            $code_location,
+        );
+    }
+
+    /**
      * Whether or not a given method exists
      *
      * @param  string|MethodIdentifier      $method_id
