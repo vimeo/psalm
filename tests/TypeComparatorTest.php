@@ -159,6 +159,10 @@ class TypeComparatorTest extends TestCase
                 'lowercase-string',
                 'callable-string',
             ],
+            'callableUnionAcceptsCallableUnion' => [
+                'callable(int,string[]): void|callable(int): void',
+                'callable(int): void|callable(int,string[]): void',
+            ],
         ];
     }
 
