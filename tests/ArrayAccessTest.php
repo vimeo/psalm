@@ -524,6 +524,15 @@ class ArrayAccessTest extends TestCase
                         }
                     }',
             ],
+            'nonEmptyStringAccess' => [
+                'code' => '<?php
+                    /** @var non-empty-string $a */
+                    $a = "blah";
+                    $b = $a[0];',
+                'assertions' => [
+                    '$b===' => 'non-empty-string',
+                ],
+            ],
             'notEmptyStringOffset' => [
                 'code' => '<?php
                     /**
