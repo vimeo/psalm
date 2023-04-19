@@ -805,7 +805,7 @@ class ArgTest extends TestCase
                     function foo($a) {}
 
                     caller("foo");',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'PossiblyInvalidArgument',
             ],
             'callableArgsCountMismatch' => [
                 'code' => '<?php
@@ -823,7 +823,7 @@ class ArgTest extends TestCase
                     function foo($a, $b) {}
 
                     caller("foo");',
-                'error_message' => 'InvalidScalarArgument',
+                'error_message' => 'InvalidArgument',
             ],
         ];
     }
