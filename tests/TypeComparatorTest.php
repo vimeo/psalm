@@ -160,8 +160,8 @@ class TypeComparatorTest extends TestCase
                 'callable-string',
             ],
             'callableUnionAcceptsCallableUnion' => [
-                'callable(int,string[]): void|callable(int): void',
-                'callable(int): void|callable(int,string[]): void',
+                '(callable(int,string[]): void)|(callable(int): void)',
+                '(callable(int): void)|(callable(int,string[]): void)',
             ],
         ];
     }
