@@ -30,7 +30,7 @@ class PsalmRestarter extends XdebugHandler
         'jit_buffer_size' => 512 * 1024 * 1024,
         'optimization_level' => '0x7FFEBFFF',
         'preload' => '',
-        'log_verbosity_level' => 0
+        'log_verbosity_level' => 0,
     ];
 
     private bool $required = false;
@@ -148,7 +148,7 @@ class PsalmRestarter extends XdebugHandler
                 '-dopcache.jit=1205',
                 '-dopcache.optimization_level=0x7FFEBFFF',
                 '-dopcache.preload=',
-                '-dopcache.log_verbosity_level=0'
+                '-dopcache.log_verbosity_level=0',
             ];
         }
 
