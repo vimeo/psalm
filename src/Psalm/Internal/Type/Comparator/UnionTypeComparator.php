@@ -175,7 +175,7 @@ class UnionTypeComparator
                     if ($container_required_param_count > $input_all_param_count
                         || $container_all_param_count < $input_required_param_count
                     ) {
-                        return false;
+                        continue;
                     }
                 }
 
