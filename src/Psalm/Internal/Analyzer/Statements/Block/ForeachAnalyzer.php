@@ -191,7 +191,7 @@ class ForeachAnalyzer
                     && $type_location
                     && isset($context->vars_in_scope[$var_comment->var_id])
                     && $context->vars_in_scope[$var_comment->var_id]->getId() === $comment_type->getId()
-                    && !$comment_type->isMixed()
+                    && !$comment_type->isMixed(true)
                 ) {
                     $project_analyzer = $statements_analyzer->getProjectAnalyzer();
 

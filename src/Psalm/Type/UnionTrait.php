@@ -795,9 +795,18 @@ trait UnionTrait
     /**
      * @psalm-mutation-free
      */
-    public function isMixed(): bool
+    public function isMixed(bool $check_templates = false): bool
     {
-        return isset($this->types['mixed']) && count($this->types) === 1;
+        return count(
+            array_filter(
+                $this->types,
+                static fn($type): bool => $type instanceof TMixed
+                    || ($check_templates
+                        && $type instanceof TTemplateParam
+                        && $type->as->isMixed()
+                    )
+            ),
+        ) === count($this->types);
     }
 
     /**
