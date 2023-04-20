@@ -1334,6 +1334,16 @@ class TypeTest extends TestCase
                     /** @param non-empty-array $a */
                     function expectNonEmptyArray(array $a): array { return $a; }',
             ],
+            'isObjectMakesObject' => [
+                'code' => '<?php
+
+                    final class test {}
+
+                    /** @var array|int|float|test|null */
+                    $a = null;
+                    if (\is_object($a)) {
+                    }',
+            ],
         ];
     }
 

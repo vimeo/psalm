@@ -1609,11 +1609,7 @@ class SimpleAssertionReconciler extends Reconciler
                 && self::areIntersectionTypesAllowed($codebase, $type)
             ) {
                 $object_types[] = $type->addIntersectionType($assertion_type);
-                $redundant = false;
-            } elseif ($type instanceof TNamedObject
-                && $codebase->classlike_storage_provider->has($type->value)
-                && $codebase->classlike_storage_provider->get($type->value)->final
-            ) {
+                // This is wrong, a proper check for redundant object shape assertions should be added
                 $redundant = false;
             } elseif ($type->isObjectType()) {
                 $object_types[] = $type;
