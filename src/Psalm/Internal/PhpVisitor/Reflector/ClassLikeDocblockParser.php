@@ -241,9 +241,15 @@ class ClassLikeDocblockParser
         if (isset($parsed_docblock->tags['psalm-seal-properties'])) {
             $info->sealed_properties = true;
         }
+        if (isset($parsed_docblock->tags['psalm-no-seal-properties'])) {
+            $info->sealed_properties = false;
+        }
 
         if (isset($parsed_docblock->tags['psalm-seal-methods'])) {
             $info->sealed_methods = true;
+        }
+        if (isset($parsed_docblock->tags['psalm-no-seal-methods'])) {
+            $info->sealed_methods = false;
         }
 
         if (isset($parsed_docblock->tags['psalm-immutable'])
@@ -296,6 +302,9 @@ class ClassLikeDocblockParser
         }
 
         if (isset($parsed_docblock->combined_tags['method'])) {
+            if ($info->sealed_methods === null) {
+                $info->sealed_methods = true;
+            }
             foreach ($parsed_docblock->combined_tags['method'] as $offset => $method_entry) {
                 $method_entry = preg_replace('/[ \t]+/', ' ', trim($method_entry));
 
@@ -480,6 +489,13 @@ class ClassLikeDocblockParser
         }
 
         $info->public_api = isset($parsed_docblock->tags['psalm-api']) || isset($parsed_docblock->tags['api']);
+
+        if (isset($parsed_docblock->tags['property'])
+            && $codebase->config->docblock_property_types_seal_properties
+            && $info->sealed_properties === null
+        ) {
+            $info->sealed_properties = true;
+        }
 
         self::addMagicPropertyToInfo($comment, $info, $parsed_docblock->tags, 'property');
         self::addMagicPropertyToInfo($comment, $info, $parsed_docblock->tags, 'psalm-property');

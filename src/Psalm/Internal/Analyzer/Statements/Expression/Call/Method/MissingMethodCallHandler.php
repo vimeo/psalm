@@ -190,7 +190,7 @@ class MissingMethodCallHandler
                 $context,
             );
 
-            if ($class_storage->sealed_methods || $config->seal_all_methods) {
+            if ($class_storage->hasSealedMethods($config)) {
                 $result->non_existent_magic_method_ids[] = $method_id->__toString();
 
                 return null;

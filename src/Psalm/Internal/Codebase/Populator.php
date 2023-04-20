@@ -920,8 +920,8 @@ class Populator
         $fq_class_name = $storage->name;
         $fq_class_name_lc = strtolower($fq_class_name);
 
-        if ($parent_storage->sealed_methods) {
-            $storage->sealed_methods = true;
+        if ($parent_storage->sealed_methods !== null) {
+            $storage->sealed_methods = $parent_storage->sealed_methods;
         }
 
         // register where they appear (can never be in a trait)
@@ -1032,8 +1032,8 @@ class Populator
         ClassLikeStorage $storage,
         ClassLikeStorage $parent_storage
     ): void {
-        if ($parent_storage->sealed_properties) {
-            $storage->sealed_properties = true;
+        if ($parent_storage->sealed_properties !== null) {
+            $storage->sealed_properties = $parent_storage->sealed_properties;
         }
 
         // register where they appear (can never be in a trait)

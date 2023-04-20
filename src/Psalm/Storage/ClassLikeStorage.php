@@ -4,6 +4,7 @@ namespace Psalm\Storage;
 
 use Psalm\Aliases;
 use Psalm\CodeLocation;
+use Psalm\Config;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TypeAlias\ClassTypeAlias;
@@ -66,14 +67,14 @@ final class ClassLikeStorage implements HasAttributesInterface
     public $mixin_declaring_fqcln;
 
     /**
-     * @var bool
+     * @var ?bool
      */
-    public $sealed_properties = false;
+    public $sealed_properties = null;
 
     /**
-     * @var bool
+     * @var ?bool
      */
-    public $sealed_methods = false;
+    public $sealed_methods = null;
 
     /**
      * @var bool
@@ -499,5 +500,15 @@ final class ClassLikeStorage implements HasAttributesInterface
         }
 
         return $type_params;
+    }
+
+    public function hasSealedProperties(Config $config): bool
+    {
+        return $this->sealed_properties ?? $config->seal_all_properties;
+    }
+
+    public function hasSealedMethods(Config $config): bool
+    {
+        return $this->sealed_methods ?? $config->seal_all_methods;
     }
 }

@@ -577,10 +577,6 @@ class ClassLikeNodeScanner
                         );
                     }
                 }
-
-                if ($this->config->docblock_property_types_seal_properties) {
-                    $storage->sealed_properties = true;
-                }
             }
 
             foreach ($docblock_info->methods as $method) {
@@ -607,8 +603,6 @@ class ClassLikeNodeScanner
                         $lc_method_name,
                     );
                 }
-
-                $storage->sealed_methods = true;
             }
 
 
