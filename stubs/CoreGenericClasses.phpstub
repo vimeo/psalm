@@ -531,3 +531,93 @@ final class ReturnTypeWillChange
     public function __construct() {}
 }
 
+class DateInterval
+{
+    /**
+     * Number of years
+     * @var int
+     * @readonly
+     */
+    public $y;
+
+    /**
+     * Number of months
+     * @var int
+     * @readonly
+     */
+    public $m;
+
+    /**
+     * Number of days
+     * @var int
+     * @readonly
+     */
+    public $d;
+
+    /**
+     * Number of hours
+     * @var int
+     * @readonly
+     */
+    public $h;
+
+    /**
+     * Number of minutes
+     * @var int
+     * @readonly
+     */
+    public $i;
+
+    /**
+     * Number of seconds
+     * @var int
+     * @readonly
+     */
+    public $s;
+
+    /**
+     * Number of microseconds
+     * @since 7.1.0
+     * @var float
+     * @readonly
+     */
+    public $f;
+
+    /**
+     * Is 1 if the interval is inverted and 0 otherwise
+     * @var int
+     * @readonly
+     */
+    public $invert;
+
+    /**
+     * Total number of days the interval spans. If this is unknown, days will be FALSE.
+     * @var int|false
+     * @readonly
+     */
+    public $days;
+
+    /**
+     * @throws Exception when the $duration cannot be parsed as an interval.
+     * @link https://php.net/manual/en/dateinterval.construct.php
+     */
+    public function __construct(string $duration = '') {}
+
+    /**
+     * Formats the interval
+     * @return string
+     * @link https://php.net/manual/en/dateinterval.format.php
+     * @psalm-pure
+     */
+    public function format(string $format = ''): string {}
+
+    /**
+     * Sets up a DateInterval from the relative parts of the string
+     * @return DateInterval|false Returns a new {@link https://www.php.net/manual/en/class.dateinterval.php DateInterval}
+     * instance on success, or <b>FALSE</b> on failure.
+     * @link https://php.net/manual/en/dateinterval.createfromdatestring.php
+     * @psalm-ignore-falsable-return
+     */
+    public static function createFromDateString(string $datetime = ''): DateInterval|false {}
+}
+
