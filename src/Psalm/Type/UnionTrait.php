@@ -52,6 +52,8 @@ use function reset;
 use function sort;
 use function strpos;
 
+use const ARRAY_FILTER_USE_BOTH;
+
 /**
  * @psalm-immutable
  * @psalm-import-type TProperties from Union
@@ -800,11 +802,13 @@ trait UnionTrait
         return count(
             array_filter(
                 $this->types,
-                static fn($type): bool => $type instanceof TMixed
+                static fn($type, $key): bool => $key === 'mixed'
+                    || $type instanceof TMixed
                     || ($check_templates
                         && $type instanceof TTemplateParam
                         && $type->as->isMixed()
-                    )
+                    ),
+                ARRAY_FILTER_USE_BOTH,
             ),
         ) === count($this->types);
     }
