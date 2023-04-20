@@ -270,7 +270,7 @@ class AssignmentAnalyzer
                 && $extended_var_id
                 && (!$not_ignored_docblock_var_ids || isset($not_ignored_docblock_var_ids[$extended_var_id]))
                 && $temp_assign_value_type->getId() === $comment_type->getId()
-                && !$comment_type->isMixed()
+                && !$comment_type->isMixed(true)
             ) {
                 if ($codebase->alter_code
                     && isset($statements_analyzer->getProjectAnalyzer()->getIssuesToFix()['UnnecessaryVarAnnotation'])
