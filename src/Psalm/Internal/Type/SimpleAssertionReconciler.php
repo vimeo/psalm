@@ -1609,6 +1609,7 @@ class SimpleAssertionReconciler extends Reconciler
             if ($assertion_type_is_intersectable_type
                 && self::areIntersectionTypesAllowed($codebase, $type)
             ) {
+                /** @var TNamedObject|TTemplateParam|TIterable|TObjectWithProperties|TCallableObject $assertion_type */
                 $object_types[] = $type->addIntersectionType($assertion_type);
                 $redundant = false;
             } elseif ($type->isObjectType()) {
