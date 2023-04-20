@@ -562,17 +562,6 @@ function range($start, $end, $step = 1) {}
 /**
  * @psalm-pure
  *
- * @return (
- *     $format is 'd'|'j'|'N'|'w'|'z'|'W'|'m'|'n'|'t'|'L'|'o'|'Y'|'y'|'B'|'g'|'G'|'h'|'H'|'i'|'s'|'u'|'v'|'Z'|'U'|'I'
- *     ? numeric-string
- *     : ($timestamp is numeric ? string : string|false)
- * )
- */
-function date(string $format, int $timestamp = 0) {}
-
-/**
- * @psalm-pure
- *
  * @param mixed $vars
  * @param-out string|int|float|null $vars
  * @psalm-flow ($string, $format) -> return
