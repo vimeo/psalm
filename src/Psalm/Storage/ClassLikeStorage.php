@@ -315,6 +315,11 @@ final class ClassLikeStorage implements HasAttributesInterface
     public $appearing_property_ids = [];
 
     /**
+     * @var ?Union
+     */
+    public $inheritors = null;
+
+    /**
      * @var array<string, string>
      */
     public $inheritable_property_ids = [];

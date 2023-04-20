@@ -737,6 +737,28 @@ any explicit references to them in your code. You should mark these classes with
 class UnreferencedClass {}
 ```
 
+### `@psalm-inheritors`
+
+Used to tell Psalm that a class can only be extended by a certain subset of classes.
+
+For example, 
+```php
+/**
+ * @psalm-inheritors FooClass|BarClass
+ */
+class BaseClass {}
+
+class FooClass extends BaseClass {
+  public function thing(string $s) : void { return $s . "hello"; }
+}
+
+class BarClass extends BaseClass {
+  public function thing(int $i) : string { return $i . "hello"; }
+}
+
+class BazClass extends BaseClass {} // this is an error
+```
+
 ## Type Syntax
 
 Psalm supports PHPDoc’s [type syntax](https://docs.phpdoc.org/latest/guide/guides/types.html), and also the [proposed PHPDoc PSR type syntax](https://github.com/php-fig/fig-standards/blob/master/proposed/phpdoc.md#appendix-a-types).

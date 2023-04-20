@@ -252,6 +252,14 @@ class ClassLikeDocblockParser
             $info->sealed_methods = false;
         }
 
+        if (isset($parsed_docblock->tags['psalm-inheritors'])) {
+            foreach ($parsed_docblock->tags['psalm-inheritors'] as $template_line) {
+                $doc_line_parts = CommentAnalyzer::splitDocLine($template_line);
+                $doc_line_parts[0] = CommentAnalyzer::sanitizeDocblockType($doc_line_parts[0]);
+                $info->inheritors = $doc_line_parts[0];
+            }
+        }
+
         if (isset($parsed_docblock->tags['psalm-immutable'])
             || isset($parsed_docblock->tags['psalm-mutation-free'])
         ) {

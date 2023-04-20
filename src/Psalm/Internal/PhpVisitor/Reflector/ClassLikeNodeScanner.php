@@ -539,6 +539,31 @@ class ClassLikeNodeScanner
             $storage->sealed_properties = $docblock_info->sealed_properties;
             $storage->sealed_methods = $docblock_info->sealed_methods;
 
+
+            if ($docblock_info->inheritors) {
+                try {
+                    $storage->inheritors = TypeParser::parseTokens(
+                        TypeTokenizer::getFullyQualifiedTokens(
+                            $docblock_info->inheritors,
+                            $storage->aliases,
+                            $storage->template_types ?? [],
+                            $storage->type_aliases,
+                            $fq_classlike_name,
+                        ),
+                        null,
+                        $storage->template_types ?? [],
+                        $storage->type_aliases,
+                        true,
+                    );
+                } catch (TypeParseTreeException $e) {
+                    $storage->docblock_issues[] = new InvalidDocblock(
+                        '@psalm-inheritors contains invalid reference:' . $e->getMessage(),
+                        $name_location ?? $class_location,
+                    );
+                }
+            }
+
+
             if ($docblock_info->properties) {
                 foreach ($docblock_info->properties as $property) {
                     $pseudo_property_type_tokens = TypeTokenizer::getFullyQualifiedTokens(
