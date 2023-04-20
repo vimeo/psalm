@@ -2026,20 +2026,46 @@ class FunctionCallTest extends TestCase
             ],
             'mb_strtolowerProducesStringWithSecondArgument' => [
                 'code' => '<?php
-                    $r = mb_strtolower("École", "BASE64");
+                    /** @var non-empty-string $a */
+                    $a = "École";
+                    $r = mb_strtolower($a, "BASE64");
+                    /** @var string $b */
+                    $b = "";
+                    $s = mb_strtolower($b, "BASE64");
+                    $t = mb_strtolower("ABC", "BASE64");
+                    $u = mb_strtolower("", "BASE64");
                 ',
                 'assertions' => [
-                    '$r===' => 'string',
+                    '$r===' => 'non-empty-string',
+                    '$s===' => 'string',
+                    '$t===' => 'non-empty-string',
+                    '$u===' => 'string',
                 ],
             ],
             'mb_strtolowerProducesLowercaseStringWithNullOrAbsentEncoding' => [
                 'code' => '<?php
-                    $a = mb_strtolower("AAA");
-                    $b = mb_strtolower("AAA", null);
+                    /** @var non-empty-string $i */
+                    $i = "École";
+                    /** @var string $j */
+                    $j = "";
+                    $a = mb_strtolower($i);
+                    $b = mb_strtolower($i, null);
+                    $c = mb_strtolower($j);
+                    $d = mb_strtolower($j, null);
+                    $e = mb_strtolower("AAA");
+                    $f = mb_strtolower("AAA", null);
+                    $g = mb_strtolower("");
+                    $h = mb_strtolower("", null);
                 ',
                 'assertions' => [
-                    '$a===' => 'lowercase-string',
-                    '$b===' => 'lowercase-string',
+                    '$a===' => 'non-empty-lowercase-string',
+                    '$b===' => 'non-empty-lowercase-string',
+                    '$c===' => 'lowercase-string',
+                    '$d===' => 'lowercase-string',
+                    '$e===' => 'non-empty-lowercase-string',
+                    '$f===' => 'non-empty-lowercase-string',
+                    '$g===' => 'lowercase-string',
+                    '$h===' => 'lowercase-string',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.1',

@@ -34,6 +34,7 @@ use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonEmptyLowercaseString;
+use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TNonspecificLiteralInt;
 use Psalm\Type\Atomic\TNonspecificLiteralString;
 use Psalm\Type\Atomic\TString;
@@ -1011,6 +1012,25 @@ trait UnionTrait
                     || ($check_templates
                         && $type instanceof TTemplateParam
                         && $type->as->isString()
+                    )
+            ),
+        ) === count($this->types);
+    }
+
+    /**
+     * @psalm-mutation-free
+     * @return bool true if this is a string
+     */
+    public function isNonEmptyString(bool $check_templates = false): bool
+    {
+        return count(
+            array_filter(
+                $this->types,
+                static fn($type): bool => $type instanceof TNonEmptyString
+                    || ($type instanceof TLiteralString && $type->value !== '')
+                    || ($check_templates
+                        && $type instanceof TTemplateParam
+                        && $type->as->isNonEmptyString()
                     )
             ),
         ) === count($this->types);
