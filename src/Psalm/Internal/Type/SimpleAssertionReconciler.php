@@ -1604,15 +1604,21 @@ class SimpleAssertionReconciler extends Reconciler
         $object_types = [];
         $redundant = true;
 
+        $assertion_type_is_intersectable_type = Type::isIntersectionType($assertion_type);
         foreach ($existing_var_atomic_types as $type) {
-            if (Type::isIntersectionType($assertion_type)
+            if ($assertion_type_is_intersectable_type
                 && self::areIntersectionTypesAllowed($codebase, $type)
             ) {
                 $object_types[] = $type->addIntersectionType($assertion_type);
-                // This is wrong, a proper check for redundant object shape assertions should be added
                 $redundant = false;
             } elseif ($type->isObjectType()) {
-                $object_types[] = $type;
+                if ($assertion_type_is_intersectable_type
+                    && !self::areIntersectionTypesAllowed($codebase, $type)
+                ) {
+                    $redundant = false;
+                } else {
+                    $object_types[] = $type;
+                }
             } elseif ($type instanceof TCallable) {
                 $callable_object = new TCallableObject($type->from_docblock, $type);
                 $object_types[] = $callable_object;
