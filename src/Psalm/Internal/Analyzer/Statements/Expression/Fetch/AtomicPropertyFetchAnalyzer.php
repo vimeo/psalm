@@ -1195,7 +1195,7 @@ class AtomicPropertyFetchAnalyzer
         ?string $stmt_var_id,
         bool $has_magic_getter,
         ?string $var_id,
-        bool &$has_valid_fetch_type,
+        bool &$has_valid_fetch_type
     ): void {
         if ($config->use_phpdoc_property_without_magic_or_parent
             && isset($class_storage->pseudo_property_get_types['$' . $prop_name])
