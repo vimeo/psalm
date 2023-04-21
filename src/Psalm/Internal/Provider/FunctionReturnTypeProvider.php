@@ -23,6 +23,7 @@ use Psalm\Internal\Provider\ReturnTypeProvider\ArrayReverseReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ArraySliceReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ArraySpliceReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\BasenameReturnTypeProvider;
+use Psalm\Internal\Provider\ReturnTypeProvider\DateReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\DirnameReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\FilterVarReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\FirstArgStringReturnTypeProvider;
@@ -101,6 +102,7 @@ class FunctionReturnTypeProvider
         $this->registerClass(InArrayReturnTypeProvider::class);
         $this->registerClass(RoundReturnTypeProvider::class);
         $this->registerClass(MbInternalEncodingReturnTypeProvider::class);
+        $this->registerClass(DateReturnTypeProvider::class);
     }
 
     /**
