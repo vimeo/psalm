@@ -252,7 +252,6 @@ class ParseTreeCreator
         $generic_leaf = new GenericTree(
             '',
             $current_parent,
-            true,
         );
         $current_parent->children []= $generic_leaf;
 

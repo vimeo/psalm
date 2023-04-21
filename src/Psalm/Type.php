@@ -488,7 +488,6 @@ abstract class Type
 
     /**
      * @psalm-pure
-     *
      * @psalm-suppress ImpureStaticProperty Used for caching
      */
     public static function getListKey(bool $from_docblock = false): Union
