@@ -484,12 +484,16 @@ abstract class Type
     }
 
     private static ?Union $listKey = null;
+    private static ?Union $listKeyFromDocblock = null;
 
     /**
      * @psalm-pure
      */
-    public static function getListKey(): Union
+    public static function getListKey(bool $from_docblock = false): Union
     {
+        if ($from_docblock) {
+            return self::$listKeyFromDocblock ??= new Union([new TIntRange(0, null, true)]);
+        }
         return self::$listKey ??= new Union([new TIntRange(0, null)]);
     }
 

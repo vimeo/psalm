@@ -183,6 +183,16 @@ class TypeParseTest extends TestCase
         $this->assertSame('array{a: int, ...<string, string>}', Type::parseString('array{a: int, ...<string, string>}')->getId());
     }
 
+    public function testUnsealedList(): void
+    {
+        $this->assertSame('list{int, ...<string>}', Type::parseString('list{int, ...<string>}')->getId());
+    }
+
+    public function testUnsealedListComplex(): void
+    {
+        $this->assertSame('list{array{a: 123}, ...<123>}', Type::parseString('list{0: array{a: 123}, ...<123>}')->getId());
+    }
+
     public function testIntersectionAfterGeneric(): void
     {
         $this->assertSame('Countable&iterable<mixed, int>&I', (string) Type::parseString('Countable&iterable<int>&I'));
