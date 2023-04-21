@@ -178,6 +178,11 @@ class TypeParseTest extends TestCase
         );
     }
 
+    public function testUnsealedArray(): void
+    {
+        $this->assertSame('array{a: int, ...<string, string>}', Type::parseString('array{a: int, ...<string, string>}')->getId());
+    }
+
     public function testIntersectionAfterGeneric(): void
     {
         $this->assertSame('Countable&iterable<mixed, int>&I', (string) Type::parseString('Countable&iterable<int>&I'));

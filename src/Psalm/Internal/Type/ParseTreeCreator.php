@@ -64,10 +64,13 @@ class ParseTreeCreator
             $type_token = $this->type_tokens[$this->t];
 
             switch ($type_token[0]) {
-                case '<':
                 case '{':
                 case ']':
                     throw new TypeParseTreeException('Unexpected token ' . $type_token[0]);
+
+                case '<':
+                    $this->handleLessThan();
+                    break;
 
                 case '[':
                     $this->handleOpenSquareBracket();
@@ -95,6 +98,11 @@ class ParseTreeCreator
                     break;
 
                 case '}':
+                    if ($this->current_leaf instanceof GenericTree
+                        && $this->current_leaf->is_unsealed_array_shape
+                    ) {
+                        break;
+                    }
                     do {
                         if ($this->current_leaf->parent === null) {
                             throw new TypeParseTreeException('Cannot parse array type');
@@ -230,6 +238,57 @@ class ParseTreeCreator
         $current_parent->children[] = $new_parent_leaf;
 
         $this->current_leaf = $new_parent_leaf;
+    }
+
+    private function handleLessThan(): void
+    {
+        if (!$this->current_leaf instanceof FieldEllipsis) {
+            throw new TypeParseTreeException('Unexpected token <');
+        }
+
+        $current_parent = $this->current_leaf->parent;
+
+        if (!$current_parent instanceof KeyedArrayTree) {
+            throw new TypeParseTreeException('Unexpected token <');
+        }
+
+        // Pop FieldEllipsis
+        array_pop($current_parent->children);
+
+        // Set the parent to the keyed array tree
+        $this->current_leaf = $current_parent;
+        $current_parent = $this->current_leaf->parent;
+
+        // Avoid array{a: int, ...<string, string>}&array<int, int>
+        if ($current_parent instanceof IntersectionTree) {
+            throw new TypeParseTreeException("Can't intersect an unsealed array with another array!");
+        }
+
+        // Otherwise replace the array tree with an intersection tree
+        $new_intersection_parent = new IntersectionTree($current_parent);
+
+        $this->current_leaf->parent = $new_intersection_parent;
+
+        // Append old keyed array tree and new generic array tree to intersection tree
+        $new_leaf = new GenericTree(
+            'array',
+            $new_intersection_parent,
+            true,
+        );
+
+        $new_intersection_parent->children = [
+            $this->current_leaf,
+            $new_leaf,
+        ];
+
+        if ($current_parent) {
+            array_pop($current_parent->children);
+            $current_parent->children []= $new_intersection_parent;
+        } else {
+            $this->parse_tree = $new_intersection_parent;
+        }
+
+        $this->current_leaf = $new_leaf;
     }
 
     private function handleOpenSquareBracket(): void
