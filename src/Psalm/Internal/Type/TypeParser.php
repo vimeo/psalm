@@ -1678,15 +1678,10 @@ class TypeParser
         }
 
         $all_sealed = true;
-        $all_list = true;
 
         foreach ($intersection_types as $intersection_type) {
             if ($intersection_type->fallback_params !== null) {
                 $all_sealed = false;
-            }
-
-            if (!$intersection_type->is_list) {
-                $all_list = false;
             }
 
             foreach ($intersection_type->properties as $property => $property_type) {
@@ -1731,7 +1726,7 @@ class TypeParser
             $properties,
             null,
             $fallback_params,
-            $all_list,
+            false,
             $from_docblock,
         );
     }
