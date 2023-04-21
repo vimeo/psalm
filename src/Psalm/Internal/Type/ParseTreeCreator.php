@@ -95,14 +95,17 @@ class ParseTreeCreator
 
                     $this->current_leaf->terminated = true;
 
+                    if ($this->current_leaf->is_unsealed_array_shape) {
+                        if (($this->type_tokens[$this->t+1][0] ?? '') === '}') {
+                            $this->t++;
+                        } else {
+                            throw new TypeParseTreeException("Missing closing '}' for unsealed shaped array!");
+                        }
+                    }
+
                     break;
 
                 case '}':
-                    if ($this->current_leaf instanceof GenericTree
-                        && $this->current_leaf->is_unsealed_array_shape
-                    ) {
-                        break;
-                    }
                     do {
                         if ($this->current_leaf->parent === null) {
                             throw new TypeParseTreeException('Cannot parse array type');
