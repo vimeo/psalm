@@ -1604,19 +1604,22 @@ class SimpleAssertionReconciler extends Reconciler
         $object_types = [];
         $redundant = true;
 
+        $assertion_type_is_intersectable_type = Type::isIntersectionType($assertion_type);
         foreach ($existing_var_atomic_types as $type) {
-            if (Type::isIntersectionType($assertion_type)
+            if ($assertion_type_is_intersectable_type
                 && self::areIntersectionTypesAllowed($codebase, $type)
             ) {
+                /** @var TNamedObject|TTemplateParam|TIterable|TObjectWithProperties|TCallableObject $assertion_type */
                 $object_types[] = $type->addIntersectionType($assertion_type);
                 $redundant = false;
-            } elseif ($type instanceof TNamedObject
-                && $codebase->classlike_storage_provider->has($type->value)
-                && $codebase->classlike_storage_provider->get($type->value)->final
-            ) {
-                $redundant = false;
             } elseif ($type->isObjectType()) {
-                $object_types[] = $type;
+                if ($assertion_type_is_intersectable_type
+                    && !self::areIntersectionTypesAllowed($codebase, $type)
+                ) {
+                    $redundant = false;
+                } else {
+                    $object_types[] = $type;
+                }
             } elseif ($type instanceof TCallable) {
                 $callable_object = new TCallableObject($type->from_docblock, $type);
                 $object_types[] = $callable_object;
