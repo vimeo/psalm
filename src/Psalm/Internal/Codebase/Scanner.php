@@ -291,6 +291,7 @@ class Scanner
     private function shouldScan(string $file_path): bool
     {
         return $this->file_provider->fileExists($file_path)
+            && !$this->file_provider->isDirectory($file_path)
             && (!isset($this->scanned_files[$file_path])
                 || (isset($this->files_to_deep_scan[$file_path]) && !$this->scanned_files[$file_path]));
     }

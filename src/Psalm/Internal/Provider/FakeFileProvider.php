@@ -20,9 +20,19 @@ class FakeFileProvider extends FileProvider
      */
     public array $fake_file_times = [];
 
+    /**
+     * @var array<string, true>
+     */
+    public array $fake_directories = [];
+
     public function fileExists(string $file_path): bool
     {
         return isset($this->fake_files[$file_path]) || parent::fileExists($file_path);
+    }
+
+    public function isDirectory(string $file_path): bool
+    {
+        return isset($this->fake_directories[$file_path]) || parent::isDirectory($file_path);
     }
 
     /** @psalm-external-mutation-free */

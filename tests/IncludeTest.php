@@ -58,11 +58,13 @@ class IncludeTest extends TestCase
      * @dataProvider providerTestInvalidIncludes
      * @param array<int, string> $files_to_check
      * @param array<string, string> $files
+     * @param list<string> $directories
      */
     public function testInvalidInclude(
         array $files,
         array $files_to_check,
-        string $error_message
+        string $error_message,
+        array $directories = []
     ): void {
         if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
             $this->markTestSkipped();
@@ -77,6 +79,10 @@ class IncludeTest extends TestCase
 
         foreach ($files_to_check as $file_path) {
             $codebase->addFilesToAnalyze([$file_path => $file_path]);
+        }
+
+        foreach ($directories as $directory) {
+            $this->file_provider->fake_directories[$directory] = true;
         }
 
         $config = $codebase->config;
@@ -650,7 +656,12 @@ class IncludeTest extends TestCase
     }
 
     /**
-     * @return array<string,array{files:array<string,string>,files_to_check:array<int,string>,error_message:string}>
+     * @return array<string,array{
+     *     files: array<string,string>,
+     *     files_to_check: array<int,string>,
+     *     error_message: string,
+     *     directories?: list<string>
+     * }>
      */
     public function providerTestInvalidIncludes(): array
     {
@@ -910,6 +921,17 @@ class IncludeTest extends TestCase
                     getcwd() . DIRECTORY_SEPARATOR . 'a' . DIRECTORY_SEPARATOR . 'test_2.php',
                 ],
                 'error_message' => 'MissingFile',
+            ],
+            'directoryPath' => [
+                'files' => [
+                    getcwd() . DIRECTORY_SEPARATOR . 'test.php' => '<?php
+                        // empty require resolves to a directory
+                        require "";
+                        ',
+                ],
+                'files_to_check' => [getcwd() . DIRECTORY_SEPARATOR . 'test.php'],
+                'error_message' => 'MissingFile',
+                'directories' => [getcwd() . DIRECTORY_SEPARATOR],
             ],
         ];
     }
