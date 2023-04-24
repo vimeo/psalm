@@ -105,7 +105,7 @@ class TypeCombinationTest extends TestCase
                 ],
             ],
             'complexArrayFallback2' => [
-                'list{0?: 0|a, 1?: 0|a, ...<int<0, max>, a>}',
+                'list{0?: 0|a, 1?: 0|a, ...<a>}',
                 [
                     'list<a>',
                     'list{0, 0}',
@@ -639,7 +639,7 @@ class TypeCombinationTest extends TestCase
                 ],
             ],
             'combineNonEmptyListWithTKeyedArrayList' => [
-                'list{null|string, ...<int<0, max>, string>}',
+                'list{null|string, ...<string>}',
                 [
                     'non-empty-list<string>',
                     'array{null}',

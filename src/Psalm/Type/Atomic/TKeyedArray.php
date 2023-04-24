@@ -202,8 +202,11 @@ class TKeyedArray extends Atomic
         }
 
         $params_part = $this->fallback_params !== null
-            ? ', ...<' . $this->fallback_params[0]->getId($exact) . ', '
-                . $this->fallback_params[1]->getId($exact) . '>'
+            ? ', ...<' . ($this->is_list
+                ? $this->fallback_params[1]->getId($exact)
+                : $this->fallback_params[0]->getId($exact) . ', '
+                    . $this->fallback_params[1]->getId($exact)
+            ) . '>'
             : '';
 
         return $key . '{' . implode(', ', $property_strings) . $params_part . '}';

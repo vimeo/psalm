@@ -64,10 +64,13 @@ class ParseTreeCreator
             $type_token = $this->type_tokens[$this->t];
 
             switch ($type_token[0]) {
-                case '<':
                 case '{':
                 case ']':
                     throw new TypeParseTreeException('Unexpected token ' . $type_token[0]);
+
+                case '<':
+                    $this->handleLessThan();
+                    break;
 
                 case '[':
                     $this->handleOpenSquareBracket();
@@ -230,6 +233,29 @@ class ParseTreeCreator
         $current_parent->children[] = $new_parent_leaf;
 
         $this->current_leaf = $new_parent_leaf;
+    }
+
+    private function handleLessThan(): void
+    {
+        if (!$this->current_leaf instanceof FieldEllipsis) {
+            throw new TypeParseTreeException('Unexpected token <');
+        }
+
+        $current_parent = $this->current_leaf->parent;
+
+        if (!$current_parent instanceof KeyedArrayTree) {
+            throw new TypeParseTreeException('Unexpected token <');
+        }
+
+        array_pop($current_parent->children);
+
+        $generic_leaf = new GenericTree(
+            '',
+            $current_parent,
+        );
+        $current_parent->children []= $generic_leaf;
+
+        $this->current_leaf = $generic_leaf;
     }
 
     private function handleOpenSquareBracket(): void

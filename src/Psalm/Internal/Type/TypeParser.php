@@ -688,6 +688,9 @@ class TypeParser
         }
 
         if ($generic_type_value === 'list') {
+            if (count($generic_params) > 1) {
+                throw new TypeParseTreeException('Too many template parameters for list');
+            }
             return Type::getListAtomic($generic_params[0], $from_docblock);
         }
 
@@ -1352,6 +1355,16 @@ class TypeParser
 
         $sealed = true;
 
+        $extra_params = null;
+
+        $last_property_branch = end($parse_tree->children);
+        if ($last_property_branch instanceof GenericTree
+            && $last_property_branch->value === ''
+        ) {
+            $extra_params = $last_property_branch->children;
+            array_pop($parse_tree->children);
+        }
+
         foreach ($parse_tree->children as $i => $property_branch) {
             $class_string = false;
 
@@ -1472,12 +1485,37 @@ class TypeParser
             return new TArray([Type::getNever($from_docblock), Type::getNever($from_docblock)], $from_docblock);
         }
 
+        if ($extra_params) {
+            if ($is_list && count($extra_params) !== 1) {
+                throw new TypeParseTreeException('Must have exactly one extra field!');
+            }
+            if (!$is_list && count($extra_params) !== 2) {
+                throw new TypeParseTreeException('Must have exactly two extra fields!');
+            }
+            $final_extra_params = $is_list ? [Type::getListKey(true)] : [];
+            foreach ($extra_params as $child_tree) {
+                $child_type = self::getTypeFromTree(
+                    $child_tree,
+                    $codebase,
+                    null,
+                    $template_type_map,
+                    $type_aliases,
+                    $from_docblock,
+                );
+                if ($child_type instanceof Atomic) {
+                    $child_type = new Union([$child_type]);
+                }
+                $final_extra_params []= $child_type;
+            }
+            $extra_params = $final_extra_params;
+        }
         return new $class(
             $properties,
             $class_strings,
-            $sealed
+            $extra_params ?? ($sealed
                 ? null
-                : [$is_list ? Type::getListKey() : Type::getArrayKey(), Type::getMixed()],
+                : [$is_list ? Type::getListKey() : Type::getArrayKey(), Type::getMixed()]
+            ),
             $is_list,
             $from_docblock,
         );
@@ -1642,11 +1680,11 @@ class TypeParser
         $all_sealed = true;
 
         foreach ($intersection_types as $intersection_type) {
-            foreach ($intersection_type->properties as $property => $property_type) {
-                if ($intersection_type->fallback_params !== null) {
-                    $all_sealed = false;
-                }
+            if ($intersection_type->fallback_params !== null) {
+                $all_sealed = false;
+            }
 
+            foreach ($intersection_type->properties as $property => $property_type) {
                 if (!array_key_exists($property, $properties)) {
                     $properties[$property] = $property_type;
                     continue;

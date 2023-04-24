@@ -29,7 +29,7 @@ class ReturnTypeTest extends TestCase
                     $result = ret();
                 ',
                 'assertions' => [
-                    '$result===' => 'list{0?: 0|a, 1?: 0|a, ...<int<0, max>, a>}',
+                    '$result===' => 'list{0?: 0|a, 1?: 0|a, ...<a>}',
                 ],
             ],
             'arrayCombineInv' => [
@@ -46,7 +46,7 @@ class ReturnTypeTest extends TestCase
                     $result = ret();
                 ',
                 'assertions' => [
-                    '$result===' => 'list{0?: 0|a, 1?: 0|a, ...<int<0, max>, a>}',
+                    '$result===' => 'list{0?: 0|a, 1?: 0|a, ...<a>}',
                 ],
             ],
             'arrayCombine2' => [

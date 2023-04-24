@@ -624,7 +624,7 @@ class FunctionCallTest extends TestCase
                      */
                     $elements = explode(" ", $string, $limit);',
                 'assertions' => [
-                    '$elements' => 'list{0?: string, 1?: string, 2?: string, ...<int<0, max>, string>}',
+                    '$elements' => 'list{0?: string, 1?: string, 2?: string, ...<string>}',
                 ],
             ],
             'explodeWithDynamicDelimiter' => [
@@ -680,7 +680,7 @@ class FunctionCallTest extends TestCase
                      */
                     $elements = explode($delim, $string, $limit);',
                 'assertions' => [
-                    '$elements' => 'list{0?: string, 1?: string, 2?: string, ...<int<0, max>, string>}',
+                    '$elements' => 'list{0?: string, 1?: string, 2?: string, ...<string>}',
                 ],
             ],
             'explodeWithDynamicNonEmptyDelimiter' => [

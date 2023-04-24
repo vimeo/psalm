@@ -308,8 +308,8 @@ class ArrayFunctionCallTest extends TestCase
                 'assertions' => [
                     // todo: this first type is not entirely correct
                     //'$c===' => "list{int|string, ...<int<0, max>, int|string>}",
-                    '$c===' => "list{string, ...<int<0, max>, int|string>}",
-                    '$d===' => "list{string, ...<int<0, max>, int|string>}",
+                    '$c===' => "list{string, ...<int|string>}",
+                    '$d===' => "list{string, ...<int|string>}",
                 ],
             ],
             'arrayMergeEmpty' => [
