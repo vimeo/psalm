@@ -115,11 +115,13 @@ class AtomicPropertyFetchAnalyzer
             return;
         }
 
-        $has_valid_fetch_type = true;
+        if ($lhs_type_part instanceof TObjectWithProperties) {
+            if (!isset($lhs_type_part->properties[$prop_name])) {
+                return;
+            }
 
-        if ($lhs_type_part instanceof TObjectWithProperties
-            && isset($lhs_type_part->properties[$prop_name])
-        ) {
+            $has_valid_fetch_type = true;
+
             $stmt_type = $statements_analyzer->node_data->getType($stmt);
 
             $statements_analyzer->node_data->setType(
@@ -159,6 +161,8 @@ class AtomicPropertyFetchAnalyzer
                 && $intersection_types === []
             )
         ) {
+            $has_valid_fetch_type = true;
+
             $statements_analyzer->node_data->setType($stmt, Type::getMixed());
 
             return;
@@ -211,6 +215,7 @@ class AtomicPropertyFetchAnalyzer
 
         if ($class_storage->is_enum || in_array('UnitEnum', $codebase->getParentInterfaces($fq_class_name))) {
             if ($prop_name === 'value' && !$class_storage->is_enum) {
+                $has_valid_fetch_type = true;
                 $statements_analyzer->node_data->setType(
                     $stmt,
                     new Union([
@@ -219,8 +224,10 @@ class AtomicPropertyFetchAnalyzer
                     ]),
                 );
             } elseif ($prop_name === 'value' && $class_storage->enum_type !== null && $class_storage->enum_cases) {
+                $has_valid_fetch_type = true;
                 self::handleEnumValue($statements_analyzer, $stmt, $stmt_var_type, $class_storage);
             } elseif ($prop_name === 'name') {
+                $has_valid_fetch_type = true;
                 self::handleEnumName($statements_analyzer, $stmt, $lhs_type_part);
             } else {
                 self::handleNonExistentProperty(
@@ -238,6 +245,7 @@ class AtomicPropertyFetchAnalyzer
                     $stmt_var_id,
                     $has_magic_getter,
                     $var_id,
+                    $has_valid_fetch_type,
                 );
             }
 
@@ -389,6 +397,7 @@ class AtomicPropertyFetchAnalyzer
                 $stmt_var_id,
                 $has_magic_getter,
                 $var_id,
+                $has_valid_fetch_type,
             );
 
             return;
@@ -524,6 +533,8 @@ class AtomicPropertyFetchAnalyzer
         }
 
         $stmt_type = $statements_analyzer->node_data->getType($stmt);
+
+        $has_valid_fetch_type = true;
         $statements_analyzer->node_data->setType(
             $stmt,
             Type::combineUnionTypes($class_property_type, $stmt_type),
@@ -1183,7 +1194,8 @@ class AtomicPropertyFetchAnalyzer
         bool $in_assignment,
         ?string $stmt_var_id,
         bool $has_magic_getter,
-        ?string $var_id
+        ?string $var_id,
+        bool &$has_valid_fetch_type
     ): void {
         if ($config->use_phpdoc_property_without_magic_or_parent
             && isset($class_storage->pseudo_property_get_types['$' . $prop_name])
@@ -1217,6 +1229,7 @@ class AtomicPropertyFetchAnalyzer
                 $context,
             );
 
+            $has_valid_fetch_type = true;
             $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
             return;
