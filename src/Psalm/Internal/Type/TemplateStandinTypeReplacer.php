@@ -231,6 +231,17 @@ class TemplateStandinTypeReplacer
             );
         }
 
+        if ($atomic_type instanceof TTemplateParam
+            && isset($template_result->lower_bounds[$atomic_type->param_name][$atomic_type->defining_class])
+        ) {
+            $most_specific_type = self::getMostSpecificTypeFromBounds(
+                $template_result->lower_bounds[$atomic_type->param_name][$atomic_type->defining_class],
+                $codebase,
+            );
+
+            return array_values($most_specific_type->getAtomicTypes());
+        }
+
         if ($atomic_type instanceof TTemplateParamClass
             && isset($template_result->template_types[$atomic_type->param_name][$atomic_type->defining_class])
         ) {
@@ -259,11 +270,14 @@ class TemplateStandinTypeReplacer
 
                 $include_first = true;
 
-                if (isset($template_result->template_types[$atomic_type->array_param_name][$atomic_type->defining_class])
+                if (isset($template_result->lower_bounds[$atomic_type->array_param_name][$atomic_type->defining_class])
                     && !empty($template_result->lower_bounds[$atomic_type->offset_param_name])
                 ) {
                     $array_template_type
-                        = $template_result->template_types[$atomic_type->array_param_name][$atomic_type->defining_class];
+                        = self::getMostSpecificTypeFromBounds(
+                            $template_result->lower_bounds[$atomic_type->array_param_name][$atomic_type->defining_class],
+                            $codebase,
+                        );
                     $offset_template_type
                         = self::getMostSpecificTypeFromBounds(
                             array_values($template_result->lower_bounds[$atomic_type->offset_param_name])[0],
@@ -317,10 +331,18 @@ class TemplateStandinTypeReplacer
             $atomic_types = [];
 
             $include_first = true;
+            $template_type = null;
 
-            if (isset($template_result->template_types[$atomic_type->param_name][$atomic_type->defining_class])) {
+            if (isset($template_result->lower_bounds[$atomic_type->param_name][$atomic_type->defining_class])) {
+                $template_type = self::getMostSpecificTypeFromBounds(
+                    $template_result->lower_bounds[$atomic_type->param_name][$atomic_type->defining_class],
+                    $codebase,
+                );
+            } elseif (isset($template_result->template_types[$atomic_type->param_name][$atomic_type->defining_class])) {
                 $template_type = $template_result->template_types[$atomic_type->param_name][$atomic_type->defining_class];
+            }
 
+            if ($template_type) {
                 foreach ($template_type->getAtomicTypes() as $template_atomic) {
                     if ($template_atomic instanceof TList) {
                         $template_atomic = $template_atomic->getKeyedArray();

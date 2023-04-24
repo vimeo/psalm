@@ -228,6 +228,9 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
         if ($inferred_template_result) {
             $template_result->lower_bounds += $inferred_template_result->lower_bounds;
         }
+        if ($method_storage && $method_storage->template_types) {
+            $template_result->template_types += $method_storage->template_types;
+        }
 
         if ($codebase->store_node_types
             && !$stmt->isFirstClassCallable()
