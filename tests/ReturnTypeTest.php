@@ -1277,12 +1277,7 @@ class ReturnTypeTest extends TestCase
                     function aggregate($type) {
                         $t = new $type;
                         return $t;
-                    }
-
-
-                    class b extends AggregateResult {}
-
-                    $b = aggregate(new b);',
+                    }',
                 'assertions' => [
                     '$b===' => 'b',
                 ],
