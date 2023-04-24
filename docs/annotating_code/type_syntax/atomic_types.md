@@ -46,7 +46,7 @@ Atomic types are the basic building block of all type information used in Psalm.
     * [`key-of<T>`](utility_types.md#key-oft)
     * [`value-of<T>`](utility_types.md#value-oft)
     * [`properties-of<T>`](utility_types.md#properties-oft)
-    * [`class-string-map<T as Foo, T>`](utility_types.md#class-string-mapt-as-foo-t)
+    * [`class-string-map<T of Foo, T>`](utility_types.md#class-string-mapt-as-foo-t)
     * [`T[K]`](utility_types.md#tk)
     * [Type aliases](utility_types.md#type-aliases)
     * [Variable templates](utility_types.md#variable-templates)
