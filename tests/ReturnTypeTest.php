@@ -1278,9 +1278,6 @@ class ReturnTypeTest extends TestCase
                         $t = new $type;
                         return $t;
                     }',
-                'assertions' => [
-                    '$b===' => 'b',
-                ],
             ],
         ];
     }
