@@ -145,6 +145,11 @@ class FileProvider
         return file_exists($file_path);
     }
 
+    public function isDirectory(string $file_path): bool
+    {
+        return is_dir($file_path);
+    }
+
     /**
      * @param array<string> $file_extensions
      * @param null|callable(string):bool $filter

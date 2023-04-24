@@ -1139,6 +1139,11 @@ class ProjectAnalyzer
         return $this->file_provider->fileExists($file_path);
     }
 
+    public function isDirectory(string $file_path): bool
+    {
+        return $this->file_provider->isDirectory($file_path);
+    }
+
     public function alterCodeAfterCompletion(
         bool $dry_run = false,
         bool $safe_types = false
