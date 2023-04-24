@@ -1286,7 +1286,7 @@ class ReturnTypeTest extends TestCase
                 'assertions' => [
                     '$b===' => 'b',
                 ],
-            ]
+            ],
         ];
     }
 
