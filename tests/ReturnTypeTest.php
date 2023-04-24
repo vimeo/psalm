@@ -1264,6 +1264,29 @@ class ReturnTypeTest extends TestCase
                     }
                     ',
             ],
+            'NewFromTemplateObject' => [
+                'code' => '<?php
+                    /** @psalm-consistent-constructor */
+                    class AggregateResult {}
+
+                    /**
+                     * @template T as AggregateResult
+                     * @param T $type
+                     * @return T
+                     */
+                    function aggregate($type) {
+                        $t = new $type;
+                        return $t;
+                    }
+
+
+                    class b extends AggregateResult {}
+
+                    $b = aggregate(new b);',
+                'assertions' => [
+                    '$b===' => 'b',
+                ],
+            ]
         ];
     }
 

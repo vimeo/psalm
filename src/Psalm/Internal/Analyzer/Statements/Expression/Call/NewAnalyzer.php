@@ -57,8 +57,6 @@ use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 
 use function array_map;
-use function array_merge;
-use function array_shift;
 use function array_values;
 use function implode;
 use function in_array;
@@ -703,15 +701,58 @@ class NewAnalyzer extends CallAnalyzer
             }
         }
 
-        $new_type = null;
+        $new_type = self::getNewType(
+            $statements_analyzer,
+            $codebase,
+            $context,
+            $stmt,
+            $stmt_class_type,
+            $config,
+            $can_extend,
+        );
 
-        $stmt_class_types = $stmt_class_type->getAtomicTypes();
+        if (!$has_single_class) {
+            if ($new_type) {
+                $statements_analyzer->node_data->setType($stmt, $new_type);
+            }
 
-        while ($stmt_class_types) {
-            $lhs_type_part = array_shift($stmt_class_types);
+            ArgumentsAnalyzer::analyze(
+                $statements_analyzer,
+                $stmt->getArgs(),
+                null,
+                null,
+                true,
+                $context,
+            );
 
+            return;
+        }
+    }
+    private static function getNewType(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        Context $context,
+        PhpParser\Node\Expr\New_ $stmt,
+        Union $stmt_class_type,
+        Config $config,
+        bool &$can_extend
+    ): ?Union {
+        $new_types = [];
+
+        foreach ($stmt_class_type->getAtomicTypes() as $lhs_type_part) {
             if ($lhs_type_part instanceof TTemplateParam) {
-                $stmt_class_types = array_merge($stmt_class_types, $lhs_type_part->as->getAtomicTypes());
+                $as = self::getNewType(
+                    $statements_analyzer,
+                    $codebase,
+                    $context,
+                    $stmt,
+                    $lhs_type_part->as,
+                    $config,
+                    $can_extend,
+                );
+                if ($as) {
+                    $new_types []= new Union([$lhs_type_part->replaceAs($as)]);
+                }
                 continue;
             }
 
@@ -735,7 +776,7 @@ class NewAnalyzer extends CallAnalyzer
                         );
                     }
 
-                    $new_type = Type::combineUnionTypes($new_type, new Union([$new_type_part]));
+                    $new_types []= new Union([$new_type_part]);
 
                     if ($lhs_type_part->as_type
                         && $codebase->classlikes->classExists($lhs_type_part->as_type->value)
@@ -839,7 +880,7 @@ class NewAnalyzer extends CallAnalyzer
                         );
                     }
 
-                    $new_type = Type::combineUnionTypes($new_type, new Union([$generated_type]));
+                    $new_types []= new Union([$generated_type]);
                 }
 
                 continue;
@@ -876,7 +917,7 @@ class NewAnalyzer extends CallAnalyzer
             ) {
                 // do nothing
             } elseif ($lhs_type_part instanceof TNamedObject) {
-                $new_type = Type::combineUnionTypes($new_type, new Union([$lhs_type_part]));
+                $new_types []= new Union([$lhs_type_part]);
                 continue;
             } else {
                 IssueBuffer::maybeAdd(
@@ -889,24 +930,12 @@ class NewAnalyzer extends CallAnalyzer
                 );
             }
 
-            $new_type = Type::combineUnionTypes($new_type, Type::getObject());
+            $new_types []= Type::getObject();
         }
 
-        if (!$has_single_class) {
-            if ($new_type) {
-                $statements_analyzer->node_data->setType($stmt, $new_type);
-            }
-
-            ArgumentsAnalyzer::analyze(
-                $statements_analyzer,
-                $stmt->getArgs(),
-                null,
-                null,
-                true,
-                $context,
-            );
-
-            return;
+        if ($new_types) {
+            return Type::combineUnionTypeArray($new_types, $codebase);
         }
+        return null;
     }
 }
