@@ -24,7 +24,7 @@ Psalm uses the following PHPDoc tags to understand your code:
   Used to mark functions, methods, classes and interfaces as being deprecated
 - [`@internal`](https://docs.phpdoc.org/latest/guide/references/phpdoc/tags/internal.html)
    Used to mark classes, functions and properties that are internal to an application or library.
-- [`@mixin`](https://phpstan.org/writing-php-code/phpdocs-basics#mixins)
+- [`@mixin`](#mixins)
     Used to tell Psalm that the current class proxies the methods and properties of the referenced class.
 
 ### Off-label usage of the `@var` tag
@@ -48,6 +48,49 @@ function bat(): string {
     return $_GET['bat'];
 }
 ```
+### @mixins
+
+Adding `@mixin` to a classes docblock tells Psalm that the class proxies will proxy the methods and properties of the referenced class.
+
+```php
+class A
+{
+    public string $a = 'A';
+ 
+    public function doA(): void
+    {
+    }
+}
+
+/**
+ * @mixin A
+ */
+class B
+{
+    public string $b = 'B';
+
+    public function doB(): void
+    {
+    }
+
+    public function __call($name, $arguments)
+    {
+        (new A())->$name(...$arguments);
+    }
+    
+    public function __get($name)
+    {
+        (new A())->$name;
+    }
+}
+
+$b = new B();
+$b->doB();
+$b->doA(); // works
+echo $b->b;
+echo $b->a; // works
+```
+
 
 ## Psalm-specific tags
 
