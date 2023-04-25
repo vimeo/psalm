@@ -1771,8 +1771,6 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         $method_context = clone $class_context;
 
         foreach ($method_context->vars_in_scope as $context_var_id => $context_type) {
-            $method_context->vars_in_scope[$context_var_id] = $context_type;
-
             if ($context_type->from_property && $stmt->name->name !== '__construct') {
                 $method_context->vars_in_scope[$context_var_id] =
                     $method_context->vars_in_scope[$context_var_id]->setProperties(['initialized' => true]);
