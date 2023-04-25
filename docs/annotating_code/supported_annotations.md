@@ -24,6 +24,8 @@ Psalm uses the following PHPDoc tags to understand your code:
   Used to mark functions, methods, classes and interfaces as being deprecated
 - [`@internal`](https://docs.phpdoc.org/latest/guide/references/phpdoc/tags/internal.html)
    used to mark classes, functions and properties that are internal to an application or library.
+- [`@mixin`](https://phpstan.org/writing-php-code/phpdocs-basics#mixins)
+    Used to tell Psalm that the current class proxies the methods and properties of the referenced class.
 
 ### Off-label usage of the `@var` tag
 
