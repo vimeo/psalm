@@ -1732,6 +1732,7 @@ class FunctionCallTest extends TestCase
                 'code' => '<?php
                     $y = date("Y");
                     $ym = date("Ym");
+                    $y_m = date("Y-m");
                     $m = date("m");
                     $F = date("F");
                     $y2 = date("Y", 10000);
@@ -1749,6 +1750,7 @@ class FunctionCallTest extends TestCase
                 'assertions' => [
                     '$y===' => 'numeric-string',
                     '$ym===' => 'numeric-string',
+                    '$y_m===' => 'string',
                     '$m===' => 'numeric-string',
                     '$F===' => 'string',
                     '$y2===' => 'numeric-string',

@@ -8,10 +8,13 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
+use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Union;
 
 use function array_values;
-use function preg_match;
+use function date;
+use function is_numeric;
 
 /**
  * @internal
@@ -35,21 +38,19 @@ class DateReturnTypeProvider implements FunctionReturnTypeProviderInterface
 
         $call_args = $event->getCallArgs();
 
+        $format_type = Type::getString();
         if (isset($call_args[0])) {
             $type = $source->node_data->getType($call_args[0]->value);
-            if ($type !== null && $type->isSingle()) {
-                $atomic_type = array_values($type->getAtomicTypes())[0];
-                if ($atomic_type instanceof Type\Atomic\TLiteralString
-                    && ($format_val = $atomic_type->value)
-                    && preg_match('/[djNwzWmntLoYyBgGhHisuvZUI]+/', $format_val)
-                ) {
-                    return Type::getNumericString();
-                }
+            if ($type !== null
+                && $type->isSingleStringLiteral()
+                && is_numeric(date($type->getSingleStringLiteral()->value))
+            ) {
+                $format_type = Type::getNumericString();
             }
         }
 
         if (!isset($call_args[1])) {
-            return Type::getString();
+            return $format_type;
         }
 
         $type = $source->node_data->getType($call_args[1]->value);
@@ -57,10 +58,12 @@ class DateReturnTypeProvider implements FunctionReturnTypeProviderInterface
             $atomic_type = array_values($type->getAtomicTypes())[0];
             if ($atomic_type instanceof Type\Atomic\TNumeric
                 || $atomic_type instanceof Type\Atomic\TInt
+                || $atomic_type instanceof TLiteralInt
+                || ($atomic_type instanceof TLiteralString && is_numeric($atomic_type->value))
             ) {
-                return Type::getString();
+                return $format_type;
             }
         }
-        return Type::combineUnionTypes(Type::getString(), Type::getFalse());
+        return Type::combineUnionTypes($format_type, Type::getFalse());
     }
 }
