@@ -267,10 +267,6 @@ class ForeachAnalyzer
 
         $foreach_context = clone $context;
 
-        foreach ($foreach_context->vars_in_scope as $context_var_id => $context_type) {
-            $foreach_context->vars_in_scope[$context_var_id] = $context_type;
-        }
-
         if ($var_id && $foreach_context->hasVariable($var_id)) {
             // refine the type of the array variable we iterate over
             // if we entered loop body, the array cannot be empty
