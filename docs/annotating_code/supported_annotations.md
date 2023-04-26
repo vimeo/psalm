@@ -446,7 +446,18 @@ $username = $_GET['username']; // prints something like "test.php:4 $username: m
 
 ```
 
-*Note*: it throws [special low-level issue](../running_psalm/issues/Trace.md), so you have to set errorLevel to 1, override it in config or invoke Psalm with `--show-info=true`.
+*Note*: it throws [special low-level issue](../running_psalm/issues/Trace.md).
+To see it, you can set the global `errorLevel` to 1, or invoke Psalm with
+`--show-info=true`, but both these solutions will probably result in a lot of
+output. Another solution is to selectively bump the error level of the issue,
+so that you only get one more error:
+
+```xml
+<!-- psalm.xml -->
+<issueHandlers>
+  <Trace errorLevel="error"/>
+</issueHandlers>
+```
 
 ### `@psalm-check-type`
 
@@ -596,7 +607,7 @@ class Foo
 }
 ```
 When Psalm encounters variable property, it treats all properties in given class as potentially referenced.
-With `@psalm-ignore-variable-property` annotation, this reference is ignored. 
+With `@psalm-ignore-variable-property` annotation, this reference is ignored.
 
 While `PossiblyUnusedProperty` would be emitted in both cases, using `@psalm-ignore-variable-property`
 would allow [Psalter](../manipulating_code/fixing.md) to delete `Foo::$bar`.
