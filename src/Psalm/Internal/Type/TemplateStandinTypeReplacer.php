@@ -890,7 +890,12 @@ class TemplateStandinTypeReplacer
                             [$param_name_key]
                             [$atomic_type->defining_class]
                             [] = new TemplateBound(
-                                $generic_param,
+                                TypeWidener::widenIfTemplateUnconstrained(
+                                    $atomic_type,
+                                    $generic_param,
+                                    $codebase,
+                                    $statements_analyzer,
+                                ),
                                 $depth,
                                 $input_arg_offset,
                                 $bound_equality_classlike,
@@ -899,7 +904,12 @@ class TemplateStandinTypeReplacer
                 } else {
                     $template_result->lower_bounds[$param_name_key][$atomic_type->defining_class] = [
                         new TemplateBound(
-                            $generic_param,
+                            TypeWidener::widenIfTemplateUnconstrained(
+                                $atomic_type,
+                                $generic_param,
+                                $codebase,
+                                $statements_analyzer,
+                            ),
                             $depth,
                             $input_arg_offset,
                             $bound_equality_classlike,

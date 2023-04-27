@@ -3523,7 +3523,7 @@ class ClassTemplateTest extends TestCase
                     '$b===' => '1|2',
                 ],
             ],
-            'generaliseTemplatedString' => [
+            'generaliseTemplatedStringLiteral' => [
                 'code' => '<?php
                     /** @template TData */
                     class Container {
@@ -3547,7 +3547,7 @@ class ClassTemplateTest extends TestCase
 
                     if ($me->data === "David") {}',
             ],
-            'generaliseTemplatedArray' => [
+            'generaliseTemplatedArrayShape' => [
                 'code' => '<?php
                     /** @template TData */
                     class Container {
@@ -3570,6 +3570,60 @@ class ClassTemplateTest extends TestCase
                     takesContainer($me);
 
                     if ($me->data["name"] === "David") {}',
+            ],
+            'generaliseTemplatedList' => [
+                'code' => '<?php
+                    /** @template T */
+                    class Container {
+                        /** @param T $_value */
+                        public function __construct($_value) {}
+                    }
+
+                    /** @param Container<list<int>> $_box */
+                    function takesContainer(Container $_box): void {}
+
+                    /** @var Container<non-empty-list<int>> */
+                    $container = new Container([42]);
+                    /** @psalm-check-type-exact $container = Container<non-empty-list<int>> */;
+
+                    takesContainer($container);
+                    /** @psalm-check-type-exact $container = Container<list<int>> */;',
+            ],
+            'generaliseTemplatedArray' => [
+                'code' => '<?php
+                    /** @template T */
+                    class Container {
+                        /** @param T $_value */
+                        public function __construct($_value) {}
+                    }
+
+                    /** @param Container<array<string, int>> $_box */
+                    function takesContainer(Container $_box): void {}
+
+                    /** @var Container<non-empty-array<string, int>> */
+                    $container = new Container(["fst" => 42]);
+                    /** @psalm-check-type-exact $container = Container<non-empty-array<string, int>> */;
+
+                    takesContainer($container);
+                    /** @psalm-check-type-exact $container = Container<array<string, int>> */;',
+            ],
+            'generaliseTemplatedNonEmptyString' => [
+                'code' => '<?php
+                    /** @template T */
+                    class Container {
+                        /** @param T $_value */
+                        public function __construct($_value) {}
+                    }
+
+                    /** @param Container<list<string>> $_box */
+                    function takesContainer(Container $_box): void {}
+
+                    /** @var Container<list<non-empty-string>> */
+                    $container = new Container(["str"]);
+                    /** @psalm-check-type-exact $container = Container<list<non-empty-string>> */;
+
+                    takesContainer($container);
+                    /** @psalm-check-type-exact $container = Container<list<string>> */;',
             ],
             'allowCovariantBoundsMismatchSameContainers' => [
                 'code' => '<?php

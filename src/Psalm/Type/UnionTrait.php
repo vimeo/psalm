@@ -9,6 +9,7 @@ use Psalm\Internal\TypeVisitor\CanContainObjectTypeVisitor;
 use Psalm\Internal\TypeVisitor\ClasslikeReplacer;
 use Psalm\Internal\TypeVisitor\ContainsClassLikeVisitor;
 use Psalm\Internal\TypeVisitor\ContainsLiteralVisitor;
+use Psalm\Internal\TypeVisitor\ContainsNonEmptinessVisitor;
 use Psalm\Internal\TypeVisitor\TemplateTypeCollector;
 use Psalm\Internal\TypeVisitor\TypeChecker;
 use Psalm\Internal\TypeVisitor\TypeScanner;
@@ -1360,6 +1361,17 @@ trait UnionTrait
         $literal_visitor->traverseArray($this->types);
 
         return $literal_visitor->matches();
+    }
+
+    /** @psalm-mutation-free */
+    public function containsAnyNonEmptiness(): bool
+    {
+        $non_emptiness_visitor = new ContainsNonEmptinessVisitor();
+
+        /** @psalm-suppress ImpureMethodCall Actually mutation-free */
+        $non_emptiness_visitor->traverseArray($this->types);
+
+        return $non_emptiness_visitor->matches();
     }
 
     /**

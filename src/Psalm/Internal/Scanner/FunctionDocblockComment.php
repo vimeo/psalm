@@ -176,4 +176,7 @@ class FunctionDocblockComment
     public array $unexpected_tags = [];
 
     public bool $public_api = false;
+
+    /** @var 'widen'|'narrow'|null */
+    public ?string $widen_unconstrained_templates = null;
 }

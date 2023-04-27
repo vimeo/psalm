@@ -270,6 +270,14 @@ class ClassLikeDocblockParser
             $info->override_method_visibility = true;
         }
 
+        if (isset($parsed_docblock->tags['psalm-widen-unconstrained-templates'])) {
+            $info->widen_unconstrained_templates = 'widen';
+        }
+
+        if (isset($parsed_docblock->tags['psalm-narrow-unconstrained-templates'])) {
+            $info->widen_unconstrained_templates = 'narrow';
+        }
+
         if (isset($parsed_docblock->tags['psalm-suppress'])) {
             foreach ($parsed_docblock->tags['psalm-suppress'] as $offset => $suppress_entry) {
                 foreach (DocComment::parseSuppressList($suppress_entry) as $issue_offset => $suppressed_issue) {

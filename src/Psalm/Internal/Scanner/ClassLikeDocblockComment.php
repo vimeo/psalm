@@ -103,4 +103,7 @@ class ClassLikeDocblockComment
     public ?string $description = null;
 
     public bool $public_api = false;
+
+    /** @var 'widen'|'narrow'|null */
+    public ?string $widen_unconstrained_templates = null;
 }

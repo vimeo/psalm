@@ -555,6 +555,14 @@ class FunctionLikeDocblockParser
             $info->description = $parsed_docblock->description;
         }
 
+        if (isset($parsed_docblock->tags['psalm-widen-unconstrained-templates'])) {
+            $info->widen_unconstrained_templates = 'widen';
+        }
+
+        if (isset($parsed_docblock->tags['psalm-narrow-unconstrained-templates'])) {
+            $info->widen_unconstrained_templates = 'narrow';
+        }
+
         $info->public_api = isset($parsed_docblock->tags['psalm-api']) || isset($parsed_docblock->tags['api']);
 
         return $info;

@@ -65,6 +65,11 @@ abstract class FunctionLikeStorage implements HasAttributesInterface
     public $cased_name;
 
     /**
+     * @var 'widen'|'narrow'|null
+     */
+    public $widen_unconstrained_templates = null;
+
+    /**
      * @var array<int, string>
      */
     public $suppressed_issues = [];

@@ -434,6 +434,11 @@ class Config
     /**
      * @var bool
      */
+    public $widen_unconstrained_templates = false;
+
+    /**
+     * @var bool
+     */
     public $ensure_array_string_offsets_exist = false;
 
     /**
@@ -1054,6 +1059,7 @@ class Config
         $config_xml = simplexml_import_dom($dom_document);
 
         $booleanAttributes = [
+            'widenUnconstrainedTemplates' => 'widen_unconstrained_templates',
             'useDocblockTypes' => 'use_docblock_types',
             'useDocblockPropertyTypes' => 'use_docblock_property_types',
             'docblockPropertyTypesSealProperties' => 'docblock_property_types_seal_properties',

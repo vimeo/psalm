@@ -136,36 +136,33 @@ class GenericTypeComparator
                 && !$container_type_part instanceof TIterable
                 && !$container_param->hasTemplate()
                 && !$input_param->hasTemplate()
+                && !($container_type_params_covariant[$i] ?? false)
             ) {
-                if ($input_param->containsAnyLiteral()) {
+                if ($input_param->containsAnyLiteral() || $input_param->containsAnyNonEmptiness()) {
                     if ($atomic_comparison_result_type_params !== null) {
                         $atomic_comparison_result_type_params[$i] = $container_param;
                     }
-                } else {
-                    if (!($container_type_params_covariant[$i] ?? false)
-                        && !$container_param->had_template
+                } elseif (!$container_param->had_template) {
+                    // Make sure types are basically the same
+                    if (!UnionTypeComparator::isContainedBy(
+                        $codebase,
+                        $container_param,
+                        $input_param,
+                        $container_param->ignore_nullable_issues,
+                        $container_param->ignore_falsable_issues,
+                        $param_comparison_result,
+                        $allow_interface_equality,
+                    ) || $param_comparison_result->type_coerced
                     ) {
-                        // Make sure types are basically the same
-                        if (!UnionTypeComparator::isContainedBy(
-                            $codebase,
-                            $container_param,
-                            $input_param,
-                            $container_param->ignore_nullable_issues,
-                            $container_param->ignore_falsable_issues,
-                            $param_comparison_result,
-                            $allow_interface_equality,
-                        ) || $param_comparison_result->type_coerced
+                        if ($container_param->hasStaticObject()
+                            && $input_param->isStaticObject()
                         ) {
-                            if ($container_param->hasStaticObject()
-                                && $input_param->isStaticObject()
-                            ) {
-                                // do nothing
-                            } else {
-                                $all_types_contain = false;
+                            // do nothing
+                        } else {
+                            $all_types_contain = false;
 
-                                if ($atomic_comparison_result) {
-                                    $atomic_comparison_result->type_coerced = false;
-                                }
+                            if ($atomic_comparison_result) {
+                                $atomic_comparison_result->type_coerced = false;
                             }
                         }
                     }

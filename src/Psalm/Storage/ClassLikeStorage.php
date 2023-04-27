@@ -86,6 +86,11 @@ final class ClassLikeStorage implements HasAttributesInterface
     public $override_method_visibility = false;
 
     /**
+     * @var 'widen'|'narrow'|null
+     */
+    public $widen_unconstrained_templates = null;
+
+    /**
      * @var array<int, string>
      */
     public $suppressed_issues = [];

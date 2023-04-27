@@ -713,6 +713,44 @@ any explicit references to them in your code. You should mark these classes with
 class UnreferencedClass {}
 ```
 
+### `@psalm-widen-unconstrained-templates`, `@psalm-narrow-unconstrained-templates`
+
+These annotations allow to control widening/narrowing unconstrained template parameters.
+
+```php
+<?php
+/**
+ * @template T
+ * @param T $value
+ * @return T
+ * @psalm-widen-unconstrained-templates
+ */
+function widen(mixed $value): mixed
+{
+    return $value;
+}
+
+/**
+ * @template T
+ * @param T $value
+ * @return T
+ * @psalm-narrow-unconstrained-templates
+ */
+function narrow(mixed $value): mixed
+{
+    return $value;
+}
+
+$int = widen(42);
+/** @psalm-check-type-exact $int = int */
+
+$literalInt = narrow(42);
+/** @psalm-check-type-exact $literalInt = 42 */
+```
+
+How to Psalm behaves with the unconstrained template depends
+on the [widenUnconstrainedTemplates](../running_psalm/configuration.md#widenunconstrainedtemplates) config parameter.
+
 ## Type Syntax
 
 Psalm supports PHPDoc’s [type syntax](https://docs.phpdoc.org/latest/guide/guides/types.html), and also the [proposed PHPDoc PSR type syntax](https://github.com/php-fig/fig-standards/blob/master/proposed/phpdoc.md#appendix-a-types).

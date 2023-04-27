@@ -171,6 +171,8 @@ class FunctionLikeDocblockScanner
             );
         }
 
+        $storage->widen_unconstrained_templates = $docblock_info->widen_unconstrained_templates;
+
         $storage->suppressed_issues = $docblock_info->suppressed_issues;
 
         foreach ($docblock_info->throws as [$throw, $offset, $line]) {

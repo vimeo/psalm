@@ -444,6 +444,85 @@ Arrays bigger than this value (100 by default) will be transformed in a generic 
 
 Please note that changing this setting might introduce unwanted side effects and those side effects won't be considered as bugs.  
 
+#### widenUnconstrainedTemplates
+```xml
+<psalm
+  widenUnconstrainedTemplates="true"
+>
+```
+It controls the replacement of unconstrained template parameters. By default `false`.
+Normally, Psalm tries to infer most specific type from usage:
+
+```php
+/**
+ * @template T
+ * @param T $value
+ * @return T 
+ */
+function id(mixed $value): mixed
+{
+    return $value;
+}
+
+// $int type is 42
+$int = id(42);
+
+// $list type is list{1, 2, 3}
+$list = id([1, 2, 3]);
+
+// $array type is array{fst: 1, snd: 2, thr: 3}
+$array = id(['fst' => 1, 'snd' => 2, 'thr' => 3]);
+```
+
+But with enabled `widenUnconstrainedTemplates` the inference will be less specific:
+
+```php
+/**
+ * @template T
+ * @param T $value
+ * @return T 
+ */
+function id(mixed $value): mixed
+{
+    return $value;
+}
+
+// $int type is int
+$int = id(42);
+
+// $list type is non-empty-list<int>
+$list = id([1, 2, 3]);
+
+// $array type is non-empty-array<non-empty-string, int>
+$array = id(['fst' => 1, 'snd' => 2, 'thr' => 3]);
+```
+
+Regardless of the `widenUnconstrainedTemplates` Psalm continues to infer most specific type for constrained templates:
+
+```php
+/**
+ * @template T of scalar|array
+ * @param T $value
+ * @return T 
+ */
+function id(mixed $value): mixed
+{
+    return $value;
+}
+
+// $int type is int
+$int = id(42);
+
+// $list type is non-empty-list<int>
+$list = id([1, 2, 3]);
+
+// $array type is non-empty-array<non-empty-string, int>
+$array = id(['fst' => 1, 'snd' => 2, 'thr' => 3]);
+```
+
+Also, you can control inference with `@psalm-widen-unconstrained-templates`/`@psalm-narrow-unconstrained-templates` annotations.
+See more [here](../annotating_code/supported_annotations.md#psalm-widen-unconstrained-templates-psalm-narrow-unconstrained-templates)
+
 #### restrictReturnTypes
 
 ```xml

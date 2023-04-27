@@ -692,6 +692,8 @@ class ClassLikeNodeScanner
             $storage->override_property_visibility = $docblock_info->override_property_visibility;
             $storage->override_method_visibility = $docblock_info->override_method_visibility;
 
+            $storage->widen_unconstrained_templates = $docblock_info->widen_unconstrained_templates;
+
             $storage->suppressed_issues = $docblock_info->suppressed_issues;
 
             if ($docblock_info->description) {
