@@ -7,23 +7,25 @@ Psalm supports a wide range of docblock annotations.
 Psalm uses the following PHPDoc tags to understand your code:
 
 - [`@var`](https://docs.phpdoc.org/latest/guide/references/phpdoc/tags/var.html)
-  Used for specifying the types of properties and variables@
+  Used for specifying the types of properties and variables
 - [`@return`](https://docs.phpdoc.org/latest/guide/references/phpdoc/tags/return.html)
   Used for specifying the return types of functions, methods and closures
 - [`@param`](https://docs.phpdoc.org/latest/guide/references/phpdoc/tags/param.html)
   Used for specifying types of parameters passed to functions, methods and closures
 - [`@property`](https://docs.phpdoc.org/latest/guide/references/phpdoc/tags/property.html)
   Used to specify what properties can be accessed on an object that uses `__get` and `__set`
-- [`@property-read`](https://docs.phpdoc.org/latest/guide/references/phpdoc/tags/property-read.html)
+- [`@property-read`](https://docs.phpdoc.org/latest/guide/references/phpdoc/tags/property.html)
   Used to specify what properties can be read on object that uses `__get`
-- [`@property-write`](https://docs.phpdoc.org/latest/guide/references/phpdoc/tags/property-write.html)
+- [`@property-write`](https://docs.phpdoc.org/latest/guide/references/phpdoc/tags/property.html)
   Used to specify what properties can be written on object that uses `__set`
 - [`@method`](https://docs.phpdoc.org/latest/guide/references/phpdoc/tags/method.html)
   Used to specify which magic methods are available on object that uses `__call`.
 - [`@deprecated`](https://docs.phpdoc.org/latest/guide/references/phpdoc/tags/deprecated.html)
   Used to mark functions, methods, classes and interfaces as being deprecated
 - [`@internal`](https://docs.phpdoc.org/latest/guide/references/phpdoc/tags/internal.html)
-   used to mark classes, functions and properties that are internal to an application or library.
+   Used to mark classes, functions and properties that are internal to an application or library.
+- [`@mixin`](#mixins)
+    Used to tell Psalm that the current class proxies the methods and properties of the referenced class.
 
 ### Off-label usage of the `@var` tag
 
@@ -46,6 +48,49 @@ function bat(): string {
     return $_GET['bat'];
 }
 ```
+### @mixins
+
+Adding `@mixin` to a classes docblock tells Psalm that the class proxies will proxy the methods and properties of the referenced class.
+
+```php
+class A
+{
+    public string $a = 'A';
+ 
+    public function doA(): void
+    {
+    }
+}
+
+/**
+ * @mixin A
+ */
+class B
+{
+    public string $b = 'B';
+
+    public function doB(): void
+    {
+    }
+
+    public function __call($name, $arguments)
+    {
+        (new A())->$name(...$arguments);
+    }
+    
+    public function __get($name)
+    {
+        (new A())->$name;
+    }
+}
+
+$b = new B();
+$b->doB();
+$b->doA(); // works
+echo $b->b;
+echo $b->a; // works
+```
+
 
 ## Psalm-specific tags
 
