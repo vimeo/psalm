@@ -496,6 +496,7 @@ class StatementsAnalyzer extends SourceAnalyzer
             && !($stmt instanceof PhpParser\Node\Stmt\Interface_)
             && !($stmt instanceof PhpParser\Node\Stmt\Trait_)
             && !($stmt instanceof PhpParser\Node\Stmt\HaltCompiler)
+            && !($stmt instanceof PhpParser\Node\Stmt\Declare_)
         ) {
             if ($codebase->find_unused_variables) {
                 IssueBuffer::maybeAdd(
