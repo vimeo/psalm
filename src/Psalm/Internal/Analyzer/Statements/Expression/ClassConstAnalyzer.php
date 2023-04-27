@@ -844,6 +844,7 @@ class ClassConstAnalyzer
                     assert($parent_classlike_storage !== null);
                     if (!isset($parent_classlike_storage->parent_interfaces[strtolower($interface)])
                         && !isset($interface_storage->parent_interfaces[strtolower($parent_classlike_storage->name)])
+                        && $interface_const_storage !== $parent_const_storage
                     ) {
                         IssueBuffer::maybeAdd(
                             new AmbiguousConstantInheritance(
