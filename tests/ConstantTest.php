@@ -1892,6 +1892,19 @@ class ConstantTest extends TestCase
                     '$s===' => 'array{9223372036854775806: 0, 9223372036854775807: 1}',
                 ],
             ],
+            'inheritedConstantIsNotAmbiguous' => [
+                'code' => <<<'PHP'
+                    <?php
+                    interface MainInterface {
+                        public const TEST = 'test';
+                    }
+
+                    interface FooInterface extends MainInterface {}
+                    interface BarInterface extends MainInterface {}
+
+                    class FooBar implements FooInterface, BarInterface {}
+                    PHP,
+            ],
         ];
     }
 
