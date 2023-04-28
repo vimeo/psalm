@@ -335,7 +335,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
 
 
         $classUnion = new Union([new TNamedObject($fq_class_name)]);
-        foreach ($class_storage->parent_classes as $parent_class) {
+        foreach ($class_storage->parent_classes + $class_storage->direct_class_interfaces as $parent_class) {
             $parent_storage = $codebase->classlikes->getStorageFor($parent_class);
             if ($parent_storage && $parent_storage->inheritors) {
                 if (!UnionTypeComparator::isContainedBy($codebase, $classUnion, $parent_storage->inheritors)) {

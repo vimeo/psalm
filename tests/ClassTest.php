@@ -909,6 +909,34 @@ class ClassTest extends TestCase
                     $b = new BarClass();
                     PHP,
             ],
+            'InterfaceInheritorIsAllowed' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @psalm-inheritors FooClass|BarClass
+                     */
+                    interface BaseInterface {}
+                    class FooClass implements BaseInterface {}
+                    $a = new FooClass();
+                    class BarClass implements BaseInterface {}
+                    $b = new BarClass();
+                    PHP,
+                ],
+                'MultiInterfaceInheritorIsAllowed' => [
+                    'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @psalm-inheritors FooClass|BarClass
+                     */
+                    interface InterfaceA {}
+                    /**
+                     * @psalm-inheritors FooClass|BarClass
+                     */
+                    interface InterfaceB {}
+                    class FooClass implements InterfaceA, InterfaceB {}
+                    $a = new FooClass();
+                    PHP,
+            ],
         ];
     }
 
@@ -1363,6 +1391,36 @@ class ClassTest extends TestCase
                      */
                     class BaseClass {}
                     class BazClass extends BaseClass {} // this is an error
+                    $a = new BazClass();
+                    PHP,
+                'error_message' => 'InvalidExtendClass',
+                'ignored_issues' => [],
+            ],
+            'classCannotImplementIfNotInInheritors' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @psalm-inheritors FooClass|BarClass
+                     */
+                    interface BaseInterface {}
+                    class BazClass implements BaseInterface {}
+                    $a = new BazClass();
+                    PHP,
+                'error_message' => 'InvalidExtendClass',
+                'ignored_issues' => [],
+            ],
+            'UnfulfilledInterfaceInheritors' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @psalm-inheritors FooClass
+                     */
+                    interface InterfaceA {}
+                    /**
+                     * @psalm-inheritors BarClass
+                     */
+                    interface InterfaceB {}
+                    class BazClass implements InterFaceA, InterFaceB {}
                     $a = new BazClass();
                     PHP,
                 'error_message' => 'InvalidExtendClass',
