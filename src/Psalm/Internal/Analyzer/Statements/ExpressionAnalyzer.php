@@ -53,6 +53,7 @@ use Psalm\Issue\UnrecognizedExpression;
 use Psalm\Issue\UnsupportedReferenceUsage;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AfterExpressionAnalysisEvent;
+use Psalm\Plugin\EventHandler\Event\BeforeExpressionAnalysisEvent;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
 use Psalm\Type\TaintKind;
@@ -80,6 +81,10 @@ class ExpressionAnalyzer
         ?TemplateResult $template_result = null,
         bool $assigned_to_reference = false
     ): bool {
+        if (self::dispatchBeforeExpressionAnalysis($stmt, $context, $statements_analyzer) === false) {
+            return false;
+        }
+
         $codebase = $statements_analyzer->getCodebase();
 
         if (self::handleExpression(
@@ -126,22 +131,8 @@ class ExpressionAnalyzer
             }
         }
 
-        $event = new AfterExpressionAnalysisEvent(
-            $stmt,
-            $context,
-            $statements_analyzer,
-            $codebase,
-            [],
-        );
-
-        if ($codebase->config->eventDispatcher->dispatchAfterExpressionAnalysis($event) === false) {
+        if (self::dispatchAfterExpressionAnalysis($stmt, $context, $statements_analyzer) === false) {
             return false;
-        }
-
-        $file_manipulations = $event->getFileReplacements();
-
-        if ($file_manipulations) {
-            FileManipulationBuffer::add($statements_analyzer->getFilePath(), $file_manipulations);
         }
 
         return true;
@@ -553,5 +544,61 @@ class ExpressionAnalyzer
         }
 
         return true;
+    }
+
+    private static function dispatchBeforeExpressionAnalysis(
+        PhpParser\Node\Expr $expr,
+        Context $context,
+        StatementsAnalyzer $statements_analyzer
+    ): ?bool {
+        $codebase = $statements_analyzer->getCodebase();
+
+        $event = new BeforeExpressionAnalysisEvent(
+            $expr,
+            $context,
+            $statements_analyzer,
+            $codebase,
+            [],
+        );
+
+        if ($codebase->config->eventDispatcher->dispatchBeforeExpressionAnalysis($event) === false) {
+            return false;
+        }
+
+        $file_manipulations = $event->getFileReplacements();
+
+        if ($file_manipulations !== []) {
+            FileManipulationBuffer::add($statements_analyzer->getFilePath(), $file_manipulations);
+        }
+
+        return null;
+    }
+
+    private static function dispatchAfterExpressionAnalysis(
+        PhpParser\Node\Expr $expr,
+        Context $context,
+        StatementsAnalyzer $statements_analyzer
+    ): ?bool {
+        $codebase = $statements_analyzer->getCodebase();
+
+        $event = new AfterExpressionAnalysisEvent(
+            $expr,
+            $context,
+            $statements_analyzer,
+            $codebase,
+            [],
+        );
+
+        if ($codebase->config->eventDispatcher->dispatchAfterExpressionAnalysis($event) === false) {
+            return false;
+        }
+
+        $file_manipulations = $event->getFileReplacements();
+
+        if ($file_manipulations !== []) {
+            FileManipulationBuffer::add($statements_analyzer->getFilePath(), $file_manipulations);
+        }
+
+        return null;
     }
 }
