@@ -567,7 +567,7 @@ class ExpressionAnalyzer
 
         $file_manipulations = $event->getFileReplacements();
 
-        if (!empty($file_manipulations)) {
+        if ($file_manipulations !== []) {
             FileManipulationBuffer::add($statements_analyzer->getFilePath(), $file_manipulations);
         }
 
@@ -595,7 +595,7 @@ class ExpressionAnalyzer
 
         $file_manipulations = $event->getFileReplacements();
 
-        if (!empty($file_manipulations)) {
+        if ($file_manipulations !== []) {
             FileManipulationBuffer::add($statements_analyzer->getFilePath(), $file_manipulations);
         }
 
