@@ -63,9 +63,9 @@ class ClassLikeDocblockComment
      */
     public array $methods = [];
 
-    public bool $sealed_properties = false;
+    public ?bool $sealed_properties = null;
 
-    public bool $sealed_methods = false;
+    public ?bool $sealed_methods = null;
 
     public bool $override_property_visibility = false;
 

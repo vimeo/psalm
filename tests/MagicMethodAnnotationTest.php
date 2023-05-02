@@ -1174,6 +1174,31 @@ class MagicMethodAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testNoSealAllMethods(): void
+    {
+        Config::getInstance()->seal_all_methods = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+              /** @psalm-no-seal-properties */
+              class A {
+                public function __call(string $method, array $args) {}
+              }
+
+              class B extends A {}
+
+              $b = new B();
+              $b->foo();
+              ',
+        );
+
+        $error_message = 'UndefinedMagicMethod';
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage($error_message);
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
     public function testSealAllMethodsWithFoo(): void
     {
         Config::getInstance()->seal_all_methods = true;
