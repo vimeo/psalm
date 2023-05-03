@@ -238,6 +238,12 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                             $var_id = '$' . $var->name;
 
                             $functionlike_node_scanner->storage->global_variables[$var_id] = true;
+
+                            if (isset($this->codebase->config->globals[$var_id])) {
+                                $var_type = Type::parseString($this->codebase->config->globals[$var_id]);
+                                /** @psalm-suppress UnusedMethodCall */
+                                $var_type->queueClassLikesForScanning($this->codebase, $this->file_storage);
+                            }
                         }
                     }
                 }
