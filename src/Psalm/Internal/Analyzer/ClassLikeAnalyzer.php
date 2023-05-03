@@ -14,8 +14,8 @@ use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Issue\InaccessibleProperty;
+use Psalm\Issue\InheritorViolation;
 use Psalm\Issue\InvalidClass;
-use Psalm\Issue\InvalidExtendClass;
 use Psalm\Issue\InvalidTemplateParam;
 use Psalm\Issue\MissingDependency;
 use Psalm\Issue\MissingTemplateParam;
@@ -340,10 +340,9 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
             if ($parent_storage && $parent_storage->inheritors) {
                 if (!UnionTypeComparator::isContainedBy($codebase, $classUnion, $parent_storage->inheritors)) {
                     IssueBuffer::maybeAdd(
-                        new InvalidExtendClass(
+                        new InheritorViolation(
                             'Class ' . $fq_class_name . ' is not an allowed inheritor of parent class ' . $parent_class,
                             $code_location,
-                            $fq_class_name,
                         ),
                         $suppressed_issues,
                     );

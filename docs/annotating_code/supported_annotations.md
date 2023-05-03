@@ -743,19 +743,13 @@ Used to tell Psalm that a class can only be extended by a certain subset of clas
 
 For example, 
 ```php
+<?php
 /**
  * @psalm-inheritors FooClass|BarClass
  */
 class BaseClass {}
-
-class FooClass extends BaseClass {
-  public function thing(string $s) : void { return $s . "hello"; }
-}
-
-class BarClass extends BaseClass {
-  public function thing(int $i) : string { return $i . "hello"; }
-}
-
+class FooClass extends BaseClass {}
+class BarClass extends BaseClass {}
 class BazClass extends BaseClass {} // this is an error
 ```
 

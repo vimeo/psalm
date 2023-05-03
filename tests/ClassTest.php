@@ -1393,7 +1393,7 @@ class ClassTest extends TestCase
                     class BazClass extends BaseClass {} // this is an error
                     $a = new BazClass();
                     PHP,
-                'error_message' => 'InvalidExtendClass',
+                'error_message' => 'InheritorViolation',
                 'ignored_issues' => [],
             ],
             'classCannotImplementIfNotInInheritors' => [
@@ -1406,7 +1406,7 @@ class ClassTest extends TestCase
                     class BazClass implements BaseInterface {}
                     $a = new BazClass();
                     PHP,
-                'error_message' => 'InvalidExtendClass',
+                'error_message' => 'InheritorViolation',
                 'ignored_issues' => [],
             ],
             'UnfulfilledInterfaceInheritors' => [
@@ -1423,7 +1423,7 @@ class ClassTest extends TestCase
                     class BazClass implements InterFaceA, InterFaceB {}
                     $a = new BazClass();
                     PHP,
-                'error_message' => 'InvalidExtendClass',
+                'error_message' => 'InheritorViolation',
                 'ignored_issues' => [],
             ],
         ];
