@@ -17,6 +17,19 @@ class FunctionCallTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'callFunctionWithTemplateClassStringWillNotFail' => [
+                'code' => '<?php
+                    /** @param class-string<SplFixedArray<string>> $classString */
+                    function acceptTemplatedClassString(string $classString): void
+                    {
+                    }
+
+                    /** @param class-string<SplFixedArray<string>> $classString */
+                    function app(string $classString): void
+                    {
+                        acceptTemplatedClassString($classString);
+                    }',
+            ],
             'inferGenericListFromTuple' => [
                 'code' => '<?php
                     /**
