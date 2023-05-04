@@ -1197,7 +1197,8 @@ class AtomicPropertyFetchAnalyzer
         ?string $var_id,
         bool &$has_valid_fetch_type
     ): void {
-        if ($config->use_phpdoc_property_without_magic_or_parent
+        if (($config->use_phpdoc_property_without_magic_or_parent
+            || $class_storage->hasAttributeIncludingParents('AllowDynamicProperties', $codebase))
             && isset($class_storage->pseudo_property_get_types['$' . $prop_name])
         ) {
             $stmt_type = $class_storage->pseudo_property_get_types['$' . $prop_name];

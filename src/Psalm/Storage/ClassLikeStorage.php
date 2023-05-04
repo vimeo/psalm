@@ -4,6 +4,7 @@ namespace Psalm\Storage;
 
 use Psalm\Aliases;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\MethodIdentifier;
@@ -486,6 +487,24 @@ final class ClassLikeStorage implements HasAttributesInterface
         return $this->attributes;
     }
 
+    public function hasAttributeIncludingParents(
+        string $fq_class_name,
+        Codebase $codebase
+    ): bool {
+        if ($this->hasAttribute($fq_class_name)) {
+            return true;
+        }
+
+        foreach ($this->parent_classes as $parent_class) {
+            $parent_class_storage = $codebase->classlike_storage_provider->get($parent_class);
+            if ($parent_class_storage->hasAttribute($fq_class_name)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     /**
      * Get the template constraint types for the class.
      *
@@ -510,5 +529,16 @@ final class ClassLikeStorage implements HasAttributesInterface
     public function hasSealedMethods(Config $config): bool
     {
         return $this->sealed_methods ?? $config->seal_all_methods;
+    }
+
+    private function hasAttribute(string $fq_class_name): bool
+    {
+        foreach ($this->attributes as $attribute) {
+            if ($fq_class_name === $attribute->fq_class_name) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
