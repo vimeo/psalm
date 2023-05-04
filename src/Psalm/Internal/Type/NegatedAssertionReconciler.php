@@ -182,6 +182,10 @@ class NegatedAssertionReconciler extends Reconciler
         ) {
             $existing_var_type->removeType('array-key');
             $existing_var_type->addType(new TString);
+        } elseif ($assertion_type instanceof TNonEmptyString
+            && $existing_var_type->hasString()
+        ) {
+            // do nothing
         } elseif ($assertion instanceof IsClassNotEqual) {
             // do nothing
         } elseif ($assertion_type instanceof TClassString && $assertion_type->is_loaded) {
