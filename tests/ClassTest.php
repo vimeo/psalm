@@ -5,6 +5,8 @@ namespace Psalm\Tests;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use const DIRECTORY_SEPARATOR;
+
 class ClassTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
@@ -936,7 +938,7 @@ class ClassTest extends TestCase
                         /** @var string|null */
                         private $foo;
                     }',
-                'error_message' => 'OverriddenPropertyAccess',
+                'error_message' => 'OverriddenPropertyAccess - src'  . DIRECTORY_SEPARATOR . 'somefile.php:9:33 - Property B::$foo has different access level than A::$foo',
             ],
             'overridePublicPropertyAccessLevelToProtected' => [
                 'code' => '<?php

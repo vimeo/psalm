@@ -702,7 +702,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                             new OverriddenPropertyAccess(
                                 'Property ' . $fq_class_name . '::$' . $property_name
                                     . ' has different access level than '
-                                    . $storage->name . '::$' . $property_name,
+                                    . $guide_class_name . '::$' . $property_name,
                                 $property_storage->location,
                             ),
                         );
