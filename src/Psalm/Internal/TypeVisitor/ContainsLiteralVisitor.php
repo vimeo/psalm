@@ -4,6 +4,7 @@ namespace Psalm\Internal\TypeVisitor;
 
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TFalse;
+use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
@@ -26,6 +27,11 @@ class ContainsLiteralVisitor extends TypeVisitor
             || $type instanceof TTrue
             || $type instanceof TFalse
         ) {
+            $this->contains_literal = true;
+            return self::STOP_TRAVERSAL;
+        }
+
+        if ($type instanceof TKeyedArray && !$type->isGenericList()) {
             $this->contains_literal = true;
             return self::STOP_TRAVERSAL;
         }

@@ -3571,6 +3571,33 @@ class ClassTemplateTest extends TestCase
 
                     if ($me->data["name"] === "David") {}',
             ],
+            'generaliseTemplatedTuple' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Container
+                    {
+                        /** @var T */
+                        private $data;
+
+                        /** @param T $value */
+                        public function __construct($value) {
+                            $this->data = $value;
+                        }
+                    }
+
+                    /**
+                     * @param Container<non-empty-list<DateTimeImmutable>> $_values
+                     */
+                    function test(Container $_values): void {}
+
+                    $container = new Container([
+                        new DateTimeImmutable(),
+                    ]);
+                    /** @psalm-check-type-exact $container = Container<list{DateTimeImmutable}> */;
+
+                    test($container);
+                    /** @psalm-check-type-exact $container = Container<non-empty-list<DateTimeImmutable>> */;',
+            ],
             'allowCovariantBoundsMismatchSameContainers' => [
                 'code' => '<?php
                     /**
