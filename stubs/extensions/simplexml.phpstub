@@ -53,6 +53,7 @@ class SimpleXMLElement implements Traversable, Countable
 
     final public function __construct(string $data, int $options = 0, bool $dataIsURL = false, string $namespaceOrPrefix = '', bool $isPrefix = false) {}
 
+    /** @psalm-ignore-nullable-return */
     public function addChild(string $qualifiedName, ?string $value = null, ?string $namespace = null): ?SimpleXMLElement {}
 
     public function addAttribute(string $qualifiedName, string $value, ?string $namespace = null): void {}
