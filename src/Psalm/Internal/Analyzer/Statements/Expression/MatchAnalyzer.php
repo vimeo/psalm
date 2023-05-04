@@ -110,6 +110,11 @@ class MatchAnalyzer
                         $stmt->cond->getAttributes(),
                     );
                 }
+            } elseif ($stmt->cond instanceof PhpParser\Node\Expr\ClassConstFetch
+                && $stmt->cond->name instanceof PhpParser\Node\Identifier
+                && $stmt->cond->name->toString() === 'class'
+            ) {
+                // do nothing
             } elseif ($stmt->cond instanceof PhpParser\Node\Expr\ConstFetch
                 && $stmt->cond->name->toString() === 'true'
             ) {
