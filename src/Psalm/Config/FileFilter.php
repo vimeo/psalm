@@ -122,6 +122,7 @@ class FileFilter
                 $declare_strict_types = (bool) ($directory['useStrictTypes'] ?? false);
 
                 if ($directory_path[0] === '/' && DIRECTORY_SEPARATOR === '/') {
+                    /** @var non-empty-string */
                     $prospective_directory_path = $directory_path;
                 } else {
                     $prospective_directory_path = $base_dir . DIRECTORY_SEPARATOR . $directory_path;
@@ -238,6 +239,7 @@ class FileFilter
                 $file_path = (string) ($file['name'] ?? '');
 
                 if ($file_path[0] === '/' && DIRECTORY_SEPARATOR === '/') {
+                    /** @var non-empty-string */
                     $prospective_file_path = $file_path;
                 } else {
                     $prospective_file_path = $base_dir . DIRECTORY_SEPARATOR . $file_path;
