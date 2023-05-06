@@ -10727,7 +10727,7 @@ return [
     'gettimeofday' => ['array<string, int>'],
     'gettimeofday\'1' => ['float', 'as_float='=>'true'],
     'gettype' => ['string', 'value'=>'mixed'],
-    'glob' => ['list<string>|false', 'pattern'=>'string', 'flags='=>'int'],
+    'glob' => ['list<non-empty-string>|false', 'pattern'=>'non-empty-string', 'flags='=>'int<1, max>'],
     'gmdate' => ['string', 'format'=>'string', 'timestamp='=>'int'],
     'gmmktime' => ['int|false', 'hour='=>'int', 'minute='=>'int', 'second='=>'int', 'month='=>'int', 'day='=>'int', 'year='=>'int'],
     'gmp_abs' => ['GMP', 'num'=>'GMP|string|int'],
