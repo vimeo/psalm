@@ -17,6 +17,29 @@ class FunctionCallTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'callTemplatedFunctionWithUnionArgument' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Message {}
+
+                    /** @implements Message<int> */
+                    final class FirstMessage implements Message {}
+
+                    /** @implements Message<int> */
+                    final class SecondMessage implements Message {}
+
+                    /**
+                     * @template T
+                     * @param Message<T> $msg
+                     */
+                    function test(Message $msg): void {}
+
+                    /** @var FirstMessage|SecondMessage $message */;
+                    test($message);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'callFunctionWithTemplateClassStringWillNotFail' => [
                 'code' => '<?php
                     /** @param class-string<SplFixedArray<string>> $classString */
