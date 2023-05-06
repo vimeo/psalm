@@ -585,7 +585,7 @@ class TemplateStandinTypeReplacer
 
                     if (!empty($classlike_storage->template_extended_params[$base_type->value])) {
                         $atomic_input_type = new TGenericObject(
-                            $atomic_input_type->value,
+                            $base_type->value,
                             array_values($classlike_storage->template_extended_params[$base_type->value]),
                         );
 
