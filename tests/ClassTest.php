@@ -849,6 +849,96 @@ class ClassTest extends TestCase
                     }
                     PHP,
             ],
+            'singleInheritorIsAllowed' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @psalm-inheritors FooClass
+                     */
+                    class BaseClass {}
+                    class FooClass extends BaseClass {}
+                    $a = new FooClass();
+                    PHP,
+            ],
+            'unionInheritorIsAllowed' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @psalm-inheritors FooClass|BarClass
+                     */
+                    class BaseClass {}
+                    class FooClass extends BaseClass {}
+                    $a = new FooClass();
+                    class BarClass extends FooClass {}
+                    $b = new BarClass();
+                    PHP,
+            ],
+            'multiInheritorIsAllowed' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @psalm-inheritors FooClass|arClass
+                     */
+                    class BaseClass {}
+                    class FooClass extends BaseClass {}
+                    $a = new FooClass();
+                    class BarClass extends FooClass {}
+                    $b = new BarClass();
+                    PHP,
+            ],
+            'skippedInheritorIsAllowed' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @psalm-inheritors FooClass|BarClass
+                     */
+                    class BaseClass {}
+                    class FooClass extends BaseClass {}
+                    $a = new FooClass();
+                    class BarClass extends FooClass {}
+                    $b = new BarClass();
+                    PHP,
+            ],
+            'CompositeInheritorIsAllowed' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @psalm-inheritors BarClass&FooInterface
+                     */
+                    class BaseClass {}
+                    interface FooInterface {}
+                    class BarClass extends BaseClass implements FooInterface {}
+                    $b = new BarClass();
+                    PHP,
+            ],
+            'InterfaceInheritorIsAllowed' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @psalm-inheritors FooClass|BarClass
+                     */
+                    interface BaseInterface {}
+                    class FooClass implements BaseInterface {}
+                    $a = new FooClass();
+                    class BarClass implements BaseInterface {}
+                    $b = new BarClass();
+                    PHP,
+                ],
+                'MultiInterfaceInheritorIsAllowed' => [
+                    'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @psalm-inheritors FooClass|BarClass
+                     */
+                    interface InterfaceA {}
+                    /**
+                     * @psalm-inheritors FooClass|BarClass
+                     */
+                    interface InterfaceB {}
+                    class FooClass implements InterfaceA, InterfaceB {}
+                    $a = new FooClass();
+                    PHP,
+            ],
         ];
     }
 
@@ -1294,6 +1384,49 @@ class ClassTest extends TestCase
                 'error_message' => 'InvalidExtendClass',
                 'ignored_issues' => [],
                 'php_version' => '8.2',
+            ],
+            'classCannotExtendIfNotInInheritors' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @psalm-inheritors FooClass|BarClass
+                     */
+                    class BaseClass {}
+                    class BazClass extends BaseClass {} // this is an error
+                    $a = new BazClass();
+                    PHP,
+                'error_message' => 'InheritorViolation',
+                'ignored_issues' => [],
+            ],
+            'classCannotImplementIfNotInInheritors' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @psalm-inheritors FooClass|BarClass
+                     */
+                    interface BaseInterface {}
+                    class BazClass implements BaseInterface {}
+                    $a = new BazClass();
+                    PHP,
+                'error_message' => 'InheritorViolation',
+                'ignored_issues' => [],
+            ],
+            'UnfulfilledInterfaceInheritors' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @psalm-inheritors FooClass
+                     */
+                    interface InterfaceA {}
+                    /**
+                     * @psalm-inheritors BarClass
+                     */
+                    interface InterfaceB {}
+                    class BazClass implements InterFaceA, InterFaceB {}
+                    $a = new BazClass();
+                    PHP,
+                'error_message' => 'InheritorViolation',
+                'ignored_issues' => [],
             ],
         ];
     }

@@ -87,6 +87,8 @@ class ClassLikeDocblockComment
      */
     public array $imported_types = [];
 
+    public ?string $inheritors = null;
+
     public bool $consistent_constructor = false;
 
     public bool $consistent_templates = false;

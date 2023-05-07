@@ -14,6 +14,7 @@ use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Issue\InaccessibleProperty;
+use Psalm\Issue\InheritorViolation;
 use Psalm\Issue\InvalidClass;
 use Psalm\Issue\InvalidTemplateParam;
 use Psalm\Issue\MissingDependency;
@@ -28,6 +29,7 @@ use Psalm\Plugin\EventHandler\Event\AfterClassLikeExistenceCheckEvent;
 use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 use UnexpectedValueException;
@@ -329,6 +331,23 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
             }
 
             return null;
+        }
+
+
+        $classUnion = new Union([new TNamedObject($fq_class_name)]);
+        foreach ($class_storage->parent_classes + $class_storage->direct_class_interfaces as $parent_class) {
+            $parent_storage = $codebase->classlikes->getStorageFor($parent_class);
+            if ($parent_storage && $parent_storage->inheritors) {
+                if (!UnionTypeComparator::isContainedBy($codebase, $classUnion, $parent_storage->inheritors)) {
+                    IssueBuffer::maybeAdd(
+                        new InheritorViolation(
+                            'Class ' . $fq_class_name . ' is not an allowed inheritor of parent class ' . $parent_class,
+                            $code_location,
+                        ),
+                        $suppressed_issues,
+                    );
+                }
+            }
         }
 
         foreach ($class_storage->invalid_dependencies as $dependency_class_name => $_) {
