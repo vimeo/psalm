@@ -64,6 +64,6 @@ class DateReturnTypeProvider implements FunctionReturnTypeProviderInterface
                 return $format_type;
             }
         }
-        return Type::combineUnionTypes($format_type, Type::getFalse());
+        return $format_type;
     }
 }
