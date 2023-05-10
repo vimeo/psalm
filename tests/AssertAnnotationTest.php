@@ -2598,6 +2598,7 @@ class AssertAnnotationTest extends TestCase
                     function requiresString(string $_str): void {}
                 ',
                 'error_message' => 'NullArgument',
+                'ignored_issues' => ['UnsupportedPropertyReferenceUsage'],
             ],
             'assertionOnMagicPropertyWithoutMutationFreeGet' => [
                 'code' => '<?php

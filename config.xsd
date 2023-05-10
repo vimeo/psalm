@@ -482,6 +482,7 @@
             <xs:element name="UnresolvableInclude" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnsafeGenericInstantiation" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnsafeInstantiation" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="UnsupportedPropertyReferenceUsage" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnsupportedReferenceUsage" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnusedBaselineEntry" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnusedClass" type="ClassIssueHandlerType" minOccurs="0" />
