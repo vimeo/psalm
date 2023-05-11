@@ -18,6 +18,7 @@ use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Plugin\EventHandler\Event\AfterFunctionCallAnalysisEvent;
@@ -357,45 +358,51 @@ class FunctionCallReturnTypeFetcher
                     if (($first_arg_type = $statements_analyzer->node_data->getType($call_args[0]->value))) {
                         $atomic_types = $first_arg_type->getAtomicTypes();
 
-                        if (count($atomic_types) === 1) {
-                            if (isset($atomic_types['array'])) {
-                                if ($atomic_types['array'] instanceof TList) {
-                                    $atomic_types['array'] = $atomic_types['array']->getKeyedArray();
-                                }
-                                if ($atomic_types['array'] instanceof TCallableArray
-                                    || $atomic_types['array'] instanceof TCallableKeyedArray
-                                ) {
-                                    return Type::getInt(false, 2);
-                                }
-
-                                if ($atomic_types['array'] instanceof TNonEmptyArray) {
-                                    return new Union([
-                                        $atomic_types['array']->count !== null
-                                            ? new TLiteralInt($atomic_types['array']->count)
-                                            : new TIntRange(1, null),
-                                    ]);
-                                }
-
-                                if ($atomic_types['array'] instanceof TKeyedArray) {
-                                    $min = $atomic_types['array']->getMinCount();
-                                    $max = $atomic_types['array']->getMaxCount();
-
-                                    if ($min === $max) {
-                                        return new Union([new TLiteralInt($max)]);
-                                    }
-                                    return new Union([new TIntRange($min, $max)]);
-                                }
-
-                                if ($atomic_types['array'] instanceof TArray
-                                    && $atomic_types['array']->isEmptyArray()
-                                ) {
-                                    return Type::getInt(false, 0);
-                                }
-
-                                return new Union([
-                                    new TIntRange(0, null),
-                                ]);
+                        $result = [];
+                        foreach ($atomic_types as $t) {
+                            if ($t instanceof TList) {
+                                $t = $t->getKeyedArray();
                             }
+                            if ($t instanceof TCallableArray
+                                    || $t instanceof TCallableKeyedArray
+                                ) {
+                                $result []= new TLiteralInt(2);
+                                continue;
+                            }
+
+                            if ($t instanceof TNonEmptyArray) {
+                                $result []=
+                                    $t->count !== null
+                                        ? new TLiteralInt($t->count)
+                                        : new TIntRange(1, null)
+                                ;
+                                continue;
+                            }
+
+                            if ($t instanceof TKeyedArray) {
+                                $min = $t->getMinCount();
+                                $max = $t->getMaxCount();
+
+                                if ($min === $max) {
+                                    $result []= new TLiteralInt($max);
+                                    continue;
+                                }
+                                $result []= new TIntRange($min, $max);
+                                continue;
+                            }
+
+                            if ($t instanceof TArray) {
+                                if ($t->isEmptyArray()) {
+                                    $result []= new TLiteralInt(0);
+                                } else {
+                                    $result []= new TIntRange(0, null);
+                                }
+                                continue;
+                            }
+                        }
+
+                        if ($result) {
+                            return TypeCombiner::combine($result, $codebase);
                         }
                     }
 

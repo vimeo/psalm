@@ -53,28 +53,28 @@ class InArrayReturnTypeProvider implements FunctionReturnTypeProviderInterface
             return $bool;
         }
 
-        /**
-         * @var TKeyedArray|TArray|null
-         */
-        $array_arg_type = ($types = $haystack_type->getAtomicTypes()) && isset($types['array'])
-            ? $types['array']
-            : null;
+        $found = true;
+        foreach ($haystack_type->getAtomicTypes() as $array_arg_type) {
+            if (!$array_arg_type->isArray()) {
+                $array_arg_type = $array_arg_type->getKeyedArray()->getGenericArrayType();
+            } elseif ($array_arg_type instanceof TKeyedArray) {
+                $array_arg_type = $array_arg_type->getGenericArrayType();
+            } elseif (!$array_arg_type instanceof TArray) {
+                continue;
+            }
+            $found = true;
 
-        if ($array_arg_type instanceof TKeyedArray) {
-            $array_arg_type = $array_arg_type->getGenericArrayType();
+            $haystack_item_type = $array_arg_type->type_params[1];
+
+            if (UnionTypeComparator::canExpressionTypesBeIdentical(
+                $event->getStatementsSource()->getCodebase(),
+                $needle_type,
+                $haystack_item_type,
+            )) {
+                return $bool;
+            }
         }
-
-        if (!$array_arg_type instanceof TArray) {
-            return $bool;
-        }
-
-        $haystack_item_type = $array_arg_type->type_params[1];
-
-        if (UnionTypeComparator::canExpressionTypesBeIdentical(
-            $event->getStatementsSource()->getCodebase(),
-            $needle_type,
-            $haystack_item_type,
-        )) {
+        if (!$found) {
             return $bool;
         }
 

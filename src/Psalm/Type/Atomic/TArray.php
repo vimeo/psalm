@@ -5,6 +5,7 @@ namespace Psalm\Type\Atomic;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
@@ -40,13 +41,16 @@ class TArray extends Atomic
      */
     public function __construct(array $type_params, bool $from_docblock = false)
     {
+        if ($type_params[0]->isNever() !== $type_params[1]->isNever()) {
+            $type_params = [Type::getNever($from_docblock), Type::getNever($from_docblock)];
+        }
         $this->type_params = $type_params;
         parent::__construct($from_docblock);
     }
 
     public function getKey(bool $include_extra = true): string
     {
-        return 'array';
+        return $this->getId(true);
     }
 
     /**

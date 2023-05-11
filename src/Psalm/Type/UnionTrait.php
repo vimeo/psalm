@@ -2,6 +2,7 @@
 
 namespace Psalm\Type;
 
+use Generator;
 use InvalidArgumentException;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
@@ -399,18 +400,31 @@ trait UnionTrait
      */
     public function hasArray(): bool
     {
-        return isset($this->types['array']);
+        foreach ($this->types as $t) {
+            if ($t instanceof TArray
+                || $t instanceof TKeyedArray
+                || $t instanceof TList
+                || $t instanceof TClassStringMap
+            ) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
-     * @return TArray|TKeyedArray|TClassStringMap
+     * @return Generator<int, (TArray|TKeyedArray|TClassStringMap)>
      */
-    public function getArray(): Atomic
+    public function getArrays(): Generator
     {
-        if ($this->types['array'] instanceof TList) {
-            return $this->types['array']->getKeyedArray();
+        foreach ($this->types as $t) {
+            if ($t instanceof TList) {
+                yield $t->getKeyedArray();
+            }
+            if ($t instanceof TKeyedArray || $t instanceof TArray) {
+                yield $t;
+            }
         }
-        return $this->types['array'];
     }
 
     /**
@@ -426,9 +440,12 @@ trait UnionTrait
      */
     public function hasList(): bool
     {
-        return isset($this->types['array'])
-            && $this->types['array'] instanceof TKeyedArray
-            && $this->types['array']->is_list;
+        foreach ($this->types as $t) {
+            if ($t instanceof TKeyedArray && $t->is_list) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -436,7 +453,12 @@ trait UnionTrait
      */
     public function hasClassStringMap(): bool
     {
-        return isset($this->types['array']) && $this->types['array'] instanceof TClassStringMap;
+        foreach ($this->types as $t) {
+            if ($t instanceof TClassStringMap) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -1068,11 +1090,15 @@ trait UnionTrait
      */
     public function isArray(): bool
     {
-        if (!$this->isSingle()) {
-            return false;
+        foreach ($this->types as $t) {
+            if (!$t instanceof TKeyedArray
+                && !$t instanceof TArray
+                && !$t instanceof TList
+            ) {
+                return false;
+            }
         }
-
-        return isset($this->types['array']);
+        return true;
     }
 
     /**
@@ -1536,9 +1562,7 @@ trait UnionTrait
     public function isEmptyArray(): bool
     {
         return count($this->types) === 1
-            && isset($this->types['array'])
-            && $this->types['array'] instanceof TArray
-            && $this->types['array']->isEmptyArray();
+            && isset($this->types['array<never, never>']);
     }
 
     /**

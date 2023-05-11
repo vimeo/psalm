@@ -529,8 +529,10 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         $old_var_type_string = $existing_var_type->getId();
         $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
 
-        if (isset($existing_var_atomic_types['array'])) {
-            $array_atomic_type = $existing_var_type->getArray();
+        foreach ($existing_var_atomic_types as $k => $array_atomic_type) {
+            if (!$array_atomic_type->isArray()) {
+                continue;
+            }
             $redundant = true;
 
             if ($array_atomic_type instanceof TKeyedArray) {
@@ -550,7 +552,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                     if ($prop_min_count >= $count) {
                         $redundant = false;
 
-                        $existing_var_type->removeType('array');
+                        $existing_var_type->removeType($k);
 
                         // Redundant because count($a) < $count always
                     } elseif ($prop_max_count && $prop_max_count < $count) {
@@ -564,7 +566,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                                 $properties []= $array_atomic_type->properties[$x]
                                     ?? $array_atomic_type->fallback_params[1]->setPossiblyUndefined(true);
                             }
-                            $existing_var_type->removeType('array');
+                            $existing_var_type->removeType($k);
                             if (!$properties) {
                                 $existing_var_type->addType(Type::getEmptyArrayAtomic());
                             } else {
@@ -583,11 +585,11 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                     if ($array_atomic_type->isNonEmpty()) {
                         // Impossible, never empty
                         $redundant = false;
-                        $existing_var_type->removeType('array');
+                        $existing_var_type->removeType($k);
                     } else {
                         // Possible, can be empty
                         $redundant = false;
-                        $existing_var_type->removeType('array');
+                        $existing_var_type->removeType($k);
                         $existing_var_type->addType(new TArray(
                             [
                                 new Union([new TNever()]),
@@ -954,8 +956,14 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             $existing_var_type->addType(new TFalse());
         }
 
-        if ($existing_var_type->hasArray()) {
-            $existing_var_type->removeType('array');
+        $had = false;
+        foreach ($existing_var_type->getAtomicTypes() as $k => $t) {
+            if ($t->isArray()) {
+                $had = true;
+                $existing_var_type->removeType($k);
+            }
+        }
+        if ($had) {
             $existing_var_type->addType(new TArray(
                 [
                     new Union([new TNever()]),

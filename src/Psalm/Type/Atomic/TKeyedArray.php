@@ -493,7 +493,7 @@ class TKeyedArray extends Atomic
 
     public function getKey(bool $include_extra = true): string
     {
-        return 'array';
+        return $this->getId(true);
     }
 
     /**

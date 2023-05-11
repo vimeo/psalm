@@ -426,6 +426,7 @@ abstract class Atomic implements TypeNode
      */
     abstract public function getKey(bool $include_extra = true): string;
 
+
     public function isNumericType(): bool
     {
         return $this instanceof TInt
@@ -472,6 +473,13 @@ abstract class Atomic implements TypeNode
         return $this instanceof TIterable
             || $this->hasTraversableInterface($codebase)
             || $this instanceof TArray
+            || $this instanceof TList
+            || $this instanceof TKeyedArray;
+    }
+
+    public function isArray(): bool
+    {
+        return $this instanceof TArray
             || $this instanceof TList
             || $this instanceof TKeyedArray;
     }

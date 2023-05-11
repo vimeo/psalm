@@ -7,6 +7,7 @@ use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Union;
 
@@ -34,50 +35,52 @@ class ArrayReverseReturnTypeProvider implements FunctionReturnTypeProviderInterf
         }
 
         $first_arg = $call_args[0]->value ?? null;
-        $first_arg_type = null;
 
-        $first_arg_array = $first_arg
-            && ($first_arg_type = $statements_source->node_data->getType($first_arg))
-            && $first_arg_type->hasType('array')
-            && $first_arg_type->isArray()
-            && ($array_atomic_type = $first_arg_type->getArray())
-            && ($array_atomic_type instanceof TArray
-                || $array_atomic_type instanceof TKeyedArray)
-        ? $array_atomic_type
-        : null;
-
-        if (!$first_arg_array || !$first_arg_type) {
+        if (!$first_arg) {
+            return Type::getArray();
+        }
+        if (!($first_arg_type = $statements_source->node_data->getType($first_arg))) {
             return Type::getArray();
         }
 
-        if ($first_arg_array instanceof TArray) {
-            return $first_arg_type;
-        }
-
-        if ($first_arg_array->is_list) {
-            $second_arg = $call_args[1]->value ?? null;
-
-            if (!$second_arg
-                || (($second_arg_type = $statements_source->node_data->getType($second_arg))
-                    && $second_arg_type->isFalse()
-                )
-            ) {
-                return $first_arg_array->fallback_params
-                    ? ($first_arg_array->isNonEmpty()
-                        ? Type::getNonEmptyList($first_arg_array->getGenericValueType())
-                        : Type::getList($first_arg_array->getGenericValueType())
-                    )
-                    : new Union([$first_arg_array->setProperties(array_reverse($first_arg_array->properties))]);
+        $result = [];
+        foreach ($first_arg_type->getArrays() as $first_arg_array) {
+            if ($first_arg_array instanceof TClassStringMap) {
+                continue; // TODO
+            }
+            if ($first_arg_array instanceof TArray) {
+                $result []= $first_arg_type;
+                continue;
             }
 
-            return new Union([new TKeyedArray(
-                $first_arg_array->properties,
-                null,
-                $first_arg_array->fallback_params,
-                false,
-            )]);
-        }
+            if ($first_arg_array->is_list) {
+                $second_arg = $call_args[1]->value ?? null;
 
-        return new Union([$first_arg_array->getGenericArrayType()]);
+                if (!$second_arg
+                    || (($second_arg_type = $statements_source->node_data->getType($second_arg))
+                        && $second_arg_type->isFalse()
+                    )
+                ) {
+                    $result []= $first_arg_array->fallback_params
+                    ? ($first_arg_array->isNonEmpty()
+                        ? Type::getNonEmptyListAtomic($first_arg_array->getGenericValueType())
+                        : Type::getListAtomic($first_arg_array->getGenericValueType())
+                        )
+                        : $first_arg_array->setProperties(array_reverse($first_arg_array->properties));
+                    continue;
+                }
+
+                $result []= new TKeyedArray(
+                    $first_arg_array->properties,
+                    null,
+                    $first_arg_array->fallback_params,
+                    false,
+                );
+                continue;
+            }
+
+            $result []= $first_arg_array->getGenericArrayType();
+        }
+        return $result ? new Union($result) : Type::getArray();
     }
 }

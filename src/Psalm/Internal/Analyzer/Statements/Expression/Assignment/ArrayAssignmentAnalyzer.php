@@ -521,18 +521,18 @@ class ArrayAssignmentAnalyzer
                     && $key_type
                     && $key_type->isTemplatedClassString()
                 ) {
-                    /**
-                     * @var TClassStringMap
-                     */
-                    $class_string_map = $parent_type->getArray();
+                    foreach ($parent_type->getArrays() as $class_string_map) {
+                        if (!$class_string_map instanceof TClassStringMap) {
+                            continue;
+                        }
                     /**
                      * @var TTemplateParamClass
                      */
-                    $offset_type_part = $key_type->getSingleAtomic();
+                        $offset_type_part = $key_type->getSingleAtomic();
 
-                    $template_result = new TemplateResult(
-                        [],
-                        [
+                        $template_result = new TemplateResult(
+                            [],
+                            [
                             $offset_type_part->param_name => [
                                 $offset_type_part->defining_class => new Union([
                                     new TTemplateParam(
@@ -544,20 +544,21 @@ class ArrayAssignmentAnalyzer
                                     ),
                                 ]),
                             ],
-                        ],
-                    );
+                            ],
+                        );
 
-                    $value_type = TemplateInferredTypeReplacer::replace(
-                        $value_type,
-                        $template_result,
-                        $codebase,
-                    );
+                        $value_type = TemplateInferredTypeReplacer::replace(
+                            $value_type,
+                            $template_result,
+                            $codebase,
+                        );
 
-                    $array_atomic_type_class_string = new TClassStringMap(
-                        $class_string_map->param_name,
-                        $class_string_map->as_type,
-                        $value_type,
-                    );
+                        $array_atomic_type_class_string = new TClassStringMap(
+                            $class_string_map->param_name,
+                            $class_string_map->as_type,
+                            $value_type,
+                        );
+                    }
                 } else {
                     $array_atomic_type_array = [
                         $array_atomic_key_type,
@@ -582,10 +583,13 @@ class ArrayAssignmentAnalyzer
         if (!$current_dim && !$context->inside_loop) {
             $atomic_root_types = $root_type->getAtomicTypes();
 
-            if (isset($atomic_root_types['array'])) {
-                $atomic_root_type_array = $atomic_root_types['array'];
+            foreach ($atomic_root_types as $atomic_root_type_array) {
                 if ($atomic_root_type_array instanceof TList) {
                     $atomic_root_type_array = $atomic_root_type_array->getKeyedArray();
+                } elseif (!$atomic_root_type_array instanceof TKeyedArray
+                    && !$atomic_root_type_array instanceof TArray
+                ) {
+                    continue;
                 }
 
                 if ($array_atomic_type_class_string) {

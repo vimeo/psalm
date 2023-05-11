@@ -624,8 +624,10 @@ class SimpleAssertionReconciler extends Reconciler
         $old_var_type_string = $existing_var_type->getId();
         $existing_var_type = $existing_var_type->getBuilder();
 
-        if ($existing_var_type->hasType('array')) {
-            $array_atomic_type = $existing_var_type->getArray();
+        foreach ($existing_var_type->getAtomicTypes() as $k => $array_atomic_type) {
+            if (!$array_atomic_type->isArray()) {
+                continue;
+            }
             $redundant = true;
 
             if ($array_atomic_type instanceof TArray) {
@@ -634,7 +636,7 @@ class SimpleAssertionReconciler extends Reconciler
                         && $array_atomic_type->min_count < $assertion->count)
                 ) {
                     if ($array_atomic_type->isEmptyArray()) {
-                        $existing_var_type->removeType('array');
+                        $existing_var_type->removeType($k);
                     } else {
                         $non_empty_array = new TNonEmptyArray(
                             $array_atomic_type->type_params,
@@ -670,7 +672,7 @@ class SimpleAssertionReconciler extends Reconciler
                     // Impossible because count($a) < $count always
                     if ($prop_max_count < $count) {
                         $redundant = false;
-                        $existing_var_type->removeType('array');
+                        $existing_var_type->removeType($k);
 
                         // Redundant because count($a) >= $count always
                     } elseif ($prop_min_count >= $count) {
@@ -678,7 +680,7 @@ class SimpleAssertionReconciler extends Reconciler
 
                         // If count($a) === $count and there are possibly undefined properties
                     } elseif ($prop_max_count === $count && $prop_min_count !== $prop_max_count) {
-                        $existing_var_type->removeType('array');
+                        $existing_var_type->removeType($k);
                         $existing_var_type->addType($array_atomic_type->setProperties(
                             array_map(
                                 fn(Union $union) => $union->setPossiblyUndefined(false),
@@ -697,7 +699,7 @@ class SimpleAssertionReconciler extends Reconciler
                             $properties[$i] = $properties[$i]->setPossiblyUndefined(false);
                         }
                         $array_atomic_type = $array_atomic_type->setProperties($properties);
-                        $existing_var_type->removeType('array');
+                        $existing_var_type->removeType($k);
                         $existing_var_type->addType($array_atomic_type);
                     } else {
                         $redundant = false;
@@ -714,7 +716,7 @@ class SimpleAssertionReconciler extends Reconciler
                                 : $array_atomic_type->fallback_params[1];
                         }
                         $array_atomic_type = $array_atomic_type->setProperties($properties);
-                        $existing_var_type->removeType('array');
+                        $existing_var_type->removeType($k);
                         $existing_var_type->addType($array_atomic_type);
                     }
                 } else {
@@ -757,9 +759,12 @@ class SimpleAssertionReconciler extends Reconciler
         bool $is_equality
     ): Union {
         $existing_var_type = $existing_var_type->getBuilder();
-        if ($existing_var_type->hasType('array')) {
-            $old_var_type_string = $existing_var_type->getId();
-            $array_atomic_type = $existing_var_type->getArray();
+        $old_var_type_string = $existing_var_type->getId();
+
+        foreach ($existing_var_type->getAtomicTypes() as $k => $array_atomic_type) {
+            if (!$array_atomic_type->isArray()) {
+                continue;
+            }
             $redundant = true;
 
             if ($array_atomic_type instanceof TArray) {
@@ -771,7 +776,7 @@ class SimpleAssertionReconciler extends Reconciler
                         $assertion->count,
                     );
 
-                    $existing_var_type->removeType('array');
+                    $existing_var_type->removeType($k);
                     $existing_var_type->addType(
                         $non_empty_array,
                     );
@@ -786,7 +791,7 @@ class SimpleAssertionReconciler extends Reconciler
 
                 if ($assertion->count < $prop_min_count) {
                     // Impossible
-                    $existing_var_type->removeType('array');
+                    $existing_var_type->removeType($k);
                     $redundant = false;
                 } elseif ($array_atomic_type->fallback_params === null) {
                     if ($assertion->count === $prop_min_count) {
@@ -794,11 +799,11 @@ class SimpleAssertionReconciler extends Reconciler
                         $redundant = true;
                     } elseif ($assertion->count > $prop_max_count) {
                         // Impossible
-                        $existing_var_type->removeType('array');
+                        $existing_var_type->removeType($k);
                         $redundant = false;
                     } elseif ($assertion->count === $prop_max_count) {
                         $redundant = false;
-                        $existing_var_type->removeType('array');
+                        $existing_var_type->removeType($k);
                         $existing_var_type->addType($array_atomic_type->setProperties(
                             array_map(
                                 fn(Union $union) => $union->setPossiblyUndefined(false),
@@ -812,7 +817,7 @@ class SimpleAssertionReconciler extends Reconciler
                             $properties[$x] = $properties[$x]->setPossiblyUndefined(false);
                         }
                         $array_atomic_type = $array_atomic_type->setProperties($properties);
-                        $existing_var_type->removeType('array');
+                        $existing_var_type->removeType($k);
                         $existing_var_type->addType($array_atomic_type);
                     } else {
                         $redundant = false;
@@ -832,10 +837,10 @@ class SimpleAssertionReconciler extends Reconciler
                             null,
                             true,
                         );
-                        $existing_var_type->removeType('array');
+                        $existing_var_type->removeType($k);
                         $existing_var_type->addType($array_atomic_type);
                     } elseif ($prop_max_count === $prop_min_count && $prop_max_count === $assertion->count) {
-                        $existing_var_type->removeType('array');
+                        $existing_var_type->removeType($k);
                         $existing_var_type->addType($array_atomic_type->makeSealed());
                     }
                 }
