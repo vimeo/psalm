@@ -65,7 +65,6 @@ use function is_string;
 use function json_encode;
 use function max;
 use function microtime;
-use function opcache_get_status;
 use function parse_url;
 use function preg_match;
 use function preg_replace;
