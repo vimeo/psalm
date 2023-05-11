@@ -923,11 +923,7 @@ final class Psalm
         // If Xdebug is enabled, restart without it
         $ini_handler->check();
 
-        if (!function_exists('opcache_get_status')
-            || !($opcache_status = opcache_get_status(false))
-            || !isset($opcache_status['opcache_enabled'])
-            || !$opcache_status['opcache_enabled']
-        ) {
+        if (!function_exists('opcache_get_status')) {
             $progress->write(PHP_EOL
                 . 'Install the opcache extension to make use of JIT on PHP 8.0+ for a 20%+ performance boost!'
                 . PHP_EOL . PHP_EOL);
