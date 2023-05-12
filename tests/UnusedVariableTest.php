@@ -1325,6 +1325,8 @@ class UnusedVariableTest extends TestCase
                             $update = $value;
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['UnsupportedPropertyReferenceUsage'],
             ],
             'createdAndUsedInCondition' => [
                 'code' => '<?php

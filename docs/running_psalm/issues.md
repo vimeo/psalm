@@ -285,6 +285,7 @@
  - [UnresolvableInclude](issues/UnresolvableInclude.md)
  - [UnsafeGenericInstantiation](issues/UnsafeGenericInstantiation.md)
  - [UnsafeInstantiation](issues/UnsafeInstantiation.md)
+ - [UnsupportedPropertyReferenceUsage](issues/UnsupportedPropertyReferenceUsage.md)
  - [UnsupportedReferenceUsage](issues/UnsupportedReferenceUsage.md)
  - [UnusedBaselineEntry](issues/UnusedBaselineEntry.md)
  - [UnusedClass](issues/UnusedClass.md)
