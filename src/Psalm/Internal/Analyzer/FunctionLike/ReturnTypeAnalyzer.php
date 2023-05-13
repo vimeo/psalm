@@ -981,13 +981,12 @@ class ReturnTypeAnalyzer
 
         if (!UnionTypeComparator::isContainedBy(
             $codebase,
-            $fleshed_out_return_type,
             $fleshed_out_signature_type,
+            $fleshed_out_return_type,
             false,
             false,
             $union_comparison_result,
-        ) && !$union_comparison_result->type_coerced_from_mixed
-        ) {
+        )) {
             if ($codebase->alter_code
                 && isset($project_analyzer->getIssuesToFix()['MismatchingDocblockReturnType'])
             ) {

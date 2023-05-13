@@ -1398,6 +1398,18 @@ class AnnotationTest extends TestCase
                     }',
                 'error_message' => 'MismatchingDocblockReturnType',
             ],
+            'invalidDocblockNullableReturn' => [
+                'code' => '<?php
+                    /**
+                     * @param ?string[] $in
+                     * @return string[]
+                     */
+                    function A(?array $in): ?array
+                    {
+                        return $in;
+                    }',
+                'error_message' => 'MismatchingDocblockReturnType',
+            ],
             'intParamTypeDefinedInParent' => [
                 'code' => '<?php
                     class A {
