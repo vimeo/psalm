@@ -203,6 +203,17 @@ $options['verbose'] = isset($options['verbose']);
 handleOptions($options);
 ```
 
+`...` is a shorthand for `...<array-key, mixed>` you can use other array generic types to provide more information about the open shape.
+
+```php
+// This is an open array
+/** @param array{someKey: string, ...} */ 
+// Which is the same as
+/** @param array{someKey: string, ...<array-key, mixed>} */ 
+// But it can be further locked down with a shape ...<TKey, TValue>
+/** @return array{someKey: string, ...<int, bool>} */
+```
+
 ## Callable arrays
 
 An array holding a callable, like PHP's native `call_user_func()` and friends supports it:
