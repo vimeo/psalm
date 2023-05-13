@@ -81,7 +81,6 @@ class ReferenceConstraintTest extends TestCase
                     'MixedAssignment',
                     'MixedArrayAccess',
                     'MixedReturnStatement',
-                    'MixedInferredReturnType',
                     'MixedOperand',
                 ],
             ],

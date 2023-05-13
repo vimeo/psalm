@@ -1383,7 +1383,6 @@ class ConditionalTest extends TestCase
                 'code' => '<?php
                     /**
                      * @psalm-suppress MixedReturnStatement
-                     * @psalm-suppress MixedInferredReturnType
                      */
                     function foo() : array {
                         return filter_input(INPUT_POST, "some_var") ?? [];
@@ -1727,7 +1726,6 @@ class ConditionalTest extends TestCase
                         /**
                          * @psalm-suppress MixedArrayAccess
                          * @psalm-suppress MixedReturnStatement
-                         * @psalm-suppress MixedInferredReturnType
                          * @psalm-suppress MixedArrayAssignment
                          */
                         public function foo() : stdClass {
@@ -2112,7 +2110,6 @@ class ConditionalTest extends TestCase
 
                         /**
                          * @psalm-suppress MixedReturnStatement
-                         * @psalm-suppress MixedInferredReturnType
                          * @psalm-suppress MixedArrayAccess
                          */
                         public static function get(string $k1, string $k2) : ?string {

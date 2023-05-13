@@ -1150,7 +1150,7 @@ class MethodCallTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MixedReturnStatement', 'MixedInferredReturnType'],
+                'ignored_issues' => ['MixedReturnStatement'],
                 'php_version' => '8.0',
             ],
             'nullsafeShortCircuit' => [
@@ -1342,7 +1342,7 @@ class MethodCallTest extends TestCase
                         }
                     }',
                 'error_message' => 'LessSpecificReturnStatement',
-                'ignored_issues' => ['MixedInferredReturnType', 'MixedReturnStatement', 'MixedMethodCall'],
+                'ignored_issues' => ['MixedReturnStatement', 'MixedMethodCall'],
             ],
             'undefinedVariableStaticCall' => [
                 'code' => '<?php

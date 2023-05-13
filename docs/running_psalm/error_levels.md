@@ -262,7 +262,6 @@ Level 5 and above allows a more non-verifiable code, and higher levels are even 
  - [MixedAssignment](issues/MixedAssignment.md)
  - [MixedClone](issues/MixedClone.md)
  - [MixedFunctionCall](issues/MixedFunctionCall.md)
- - [MixedInferredReturnType](issues/MixedInferredReturnType.md)
  - [MixedMethodCall](issues/MixedMethodCall.md)
  - [MixedOperand](issues/MixedOperand.md)
  - [MixedPropertyAssignment](issues/MixedPropertyAssignment.md)

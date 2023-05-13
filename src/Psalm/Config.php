@@ -156,7 +156,6 @@ final class Config
         'MixedArrayTypeCoercion',
         'MixedAssignment',
         'MixedFunctionCall',
-        'MixedInferredReturnType',
         'MixedMethodCall',
         'MixedOperand',
         'MixedPropertyFetch',

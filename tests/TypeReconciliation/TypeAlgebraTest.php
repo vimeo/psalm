@@ -842,7 +842,6 @@ class TypeAlgebraTest extends TestCase
                         return "LTR";
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MixedInferredReturnType'],
             ],
             'grandParentInstanceofConfusion' => [
                 'code' => '<?php

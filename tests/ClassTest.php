@@ -341,7 +341,6 @@ class ClassTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [
                     'UndefinedClass',
-                    'MixedInferredReturnType',
                     'InvalidArgument',
                 ],
             ],
@@ -356,7 +355,6 @@ class ClassTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [
                     'UndefinedClass',
-                    'MixedInferredReturnType',
                     'InvalidArgument',
                 ],
             ],

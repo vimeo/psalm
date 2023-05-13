@@ -40,7 +40,6 @@ use Psalm\Issue\LessSpecificReturnType;
 use Psalm\Issue\MismatchingDocblockReturnType;
 use Psalm\Issue\MissingClosureReturnType;
 use Psalm\Issue\MissingReturnType;
-use Psalm\Issue\MixedInferredReturnType;
 use Psalm\Issue\MixedReturnTypeCoercion;
 use Psalm\Issue\MoreSpecificReturnType;
 use Psalm\Issue\UnresolvableConstant;
@@ -516,17 +515,6 @@ final class ReturnTypeAnalyzer
             }
 
             if ($inferred_return_type->hasMixed()) {
-                if (IssueBuffer::accepts(
-                    new MixedInferredReturnType(
-                        'Could not verify return type \'' . $declared_return_type . '\' for ' .
-                            $cased_method_id,
-                        $return_type_location,
-                    ),
-                    $suppressed_issues,
-                )) {
-                    return false;
-                }
-
                 return null;
             }
 

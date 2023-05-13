@@ -301,7 +301,6 @@ class CacheTest extends TestCase
                         '/src/A.php' => [
                             "UndefinedThisPropertyFetch: Instance property A::\$foo is not defined",
                             "MixedReturnStatement: Could not infer a return type",
-                            "MixedInferredReturnType: Could not verify return type 'string' for A::bar",
                         ],
                     ],
                 ],

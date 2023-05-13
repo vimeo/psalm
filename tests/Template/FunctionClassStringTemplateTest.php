@@ -406,7 +406,6 @@ class FunctionClassStringTemplateTest extends TestCase
                      * @psalm-template RequestedType
                      * @psalm-param class-string<RequestedType> $className
                      * @psalm-return RequestedType&MockObject
-                     * @psalm-suppress MixedInferredReturnType
                      * @psalm-suppress MixedReturnStatement
                      */
                     function mockHelper(string $className)
@@ -444,7 +443,6 @@ class FunctionClassStringTemplateTest extends TestCase
                      * @psalm-template RequestedType
                      * @psalm-param class-string<RequestedType> $className
                      * @psalm-return RequestedType&MockObject
-                     * @psalm-suppress MixedInferredReturnType
                      * @psalm-suppress MixedReturnStatement
                      */
                     function mockHelper(string $className)
@@ -482,7 +480,6 @@ class FunctionClassStringTemplateTest extends TestCase
                      * @psalm-template RequestedType
                      * @psalm-param class-string<RequestedType> $className
                      * @psalm-return MockObject&RequestedType
-                     * @psalm-suppress MixedInferredReturnType
                      * @psalm-suppress MixedReturnStatement
                      */
                     function mockHelper(string $className)
