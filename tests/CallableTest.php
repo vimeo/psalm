@@ -1827,16 +1827,16 @@ class CallableTest extends TestCase
                     {
                         return 0;
                     }
-                    
+
                     /** @param Closure(int, int): int $f */
                     function int_int(Closure $f): void {}
-                    
+
                     /** @param Closure(int, int, int): int $f */
                     function int_int_int(Closure $f): void {}
-                    
+
                     /** @param Closure(int, int, int, int): int $f */
                     function int_int_int_int(Closure $f): void {}
-                    
+
                     int_int(withVariadic(...));
                     int_int_int(withVariadic(...));
                     int_int_int_int(withVariadic(...));',
@@ -1844,6 +1844,18 @@ class CallableTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'callableArrayTypes' => [
+                'code' => '<?php
+                    /** @var callable-array $c */
+                    $c;
+                    [$a, $b] = $c;
+                    ',
+                'assertions' => [
+                    '$a' => 'class-string|object',
+                    '$b' => 'string',
+                    '$c' => 'list{class-string|object, string}',
+                ],
+            ]
         ];
     }
 
@@ -2291,16 +2303,16 @@ class CallableTest extends TestCase
                     {
                         return 0;
                     }
-                    
+
                     /** @param Closure(int, int, string, int, int): int $f */
                     function int_int_string_int_int(Closure $f): void {}
-                    
+
                     /** @param Closure(int, int, int, string, int): int $f */
                     function int_int_int_string_int(Closure $f): void {}
-                    
+
                     /** @param Closure(int, int, int, int, string): int $f */
                     function int_int_int_int_string(Closure $f): void {}
-                    
+
                     int_int_string_int_int(add(...));
                     int_int_int_string_int(add(...));
                     int_int_int_int_string(add(...));',

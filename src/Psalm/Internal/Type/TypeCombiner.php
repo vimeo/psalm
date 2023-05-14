@@ -591,6 +591,7 @@ class TypeCombiner
                 $combination->all_arrays_class_string_maps = false;
             }
 
+            $combination->all_arrays_callable = false;
             return null;
         }
 
@@ -952,8 +953,8 @@ class TypeCombiner
         if ($type instanceof TCallable && $type_key === 'callable') {
             if (($combination->value_types['string'] ?? null) instanceof TCallableString) {
                 unset($combination->value_types['string']);
-            } elseif (!empty($combination->array_type_params) && $combination->all_arrays_callable) {
-                $combination->array_type_params = [];
+            } elseif (!empty($combination->objectlike_entries) && $combination->all_arrays_callable) {
+                $combination->objectlike_entries = [];
             } elseif (isset($combination->value_types['callable-object'])) {
                 unset($combination->value_types['callable-object']);
             }
@@ -1408,7 +1409,6 @@ class TypeCombiner
                         $sealed || $fallback_key_type === null || $fallback_value_type === null
                             ? null
                             : [$fallback_key_type, $fallback_value_type],
-                        (bool)$combination->all_arrays_lists,
                         $from_docblock,
                     );
                 } else {

@@ -257,9 +257,19 @@ abstract class Atomic implements TypeNode
                 ]);
 
             case 'callable-array':
+                $classString = new TClassString(
+                    'object',
+                    null,
+                    false,
+                    false,
+                    false,
+                    true
+                );
+                $object = new TObject(true);
+                $string = new TString(true);
                 return new TCallableKeyedArray([
-                    new Union([new TArrayKey($from_docblock)]),
-                    new Union([new TMixed(false, $from_docblock)]),
+                    new Union([$classString, $object]),
+                    new Union([$string]),
                 ]);
 
             case 'list':
