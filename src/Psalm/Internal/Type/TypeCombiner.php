@@ -11,7 +11,6 @@ use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
-use Psalm\Type\Atomic\TCallableArray;
 use Psalm\Type\Atomic\TCallableKeyedArray;
 use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TCallableString;
@@ -400,7 +399,6 @@ class TypeCombiner
         bool $allow_mixed_union,
         int $literal_limit
     ): ?Union {
-
         if ($type instanceof TMixed) {
             if ($type->from_loop_isset) {
                 if ($combination->mixed_from_loop_isset === null) {
@@ -544,11 +542,17 @@ class TypeCombiner
             }
         }
 
-        if ($type instanceof TArray && $type_key === 'array') {
-            if ($type instanceof TCallableArray && isset($combination->value_types['callable'])) {
+        if ($type instanceof TCallableKeyedArray) {
+            if (isset($combination->value_types['callable'])) {
                 return null;
             }
-
+            if ($combination->all_arrays_callable !== false) {
+                $combination->all_arrays_callable = true;
+            } else {
+                $combination->all_arrays_callable = false;
+            }
+        }
+        if ($type instanceof TArray && $type_key === 'array') {
             foreach ($type->type_params as $i => $type_param) {
                 // See https://github.com/vimeo/psalm/pull/9439#issuecomment-1464563015
                 /** @psalm-suppress PropertyTypeCoercion */
@@ -585,14 +589,6 @@ class TypeCombiner
             if (!$type->isEmptyArray()) {
                 $combination->all_arrays_lists = false;
                 $combination->all_arrays_class_string_maps = false;
-            }
-
-            if ($type instanceof TCallableArray) {
-                if ($combination->all_arrays_callable !== false) {
-                    $combination->all_arrays_callable = true;
-                }
-            } else {
-                $combination->all_arrays_callable = false;
             }
 
             return null;
@@ -1525,7 +1521,7 @@ class TypeCombiner
         }
 
         if ($combination->all_arrays_callable) {
-            $array_type = new TCallableArray($generic_type_params);
+            $array_type = new TCallableKeyedArray($generic_type_params);
         } elseif ($combination->array_always_filled
             || ($combination->array_sometimes_filled && $overwrite_empty_array)
             || ($combination->objectlike_entries

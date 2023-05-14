@@ -26,7 +26,7 @@ use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
-use Psalm\Type\Atomic\TCallableArray;
+use Psalm\Type\Atomic\TCallableKeyedArray;
 use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TEmptyMixed;
@@ -1187,7 +1187,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                     $non_object_types[] = $type;
                 }
             } elseif ($type instanceof TCallable) {
-                $non_object_types[] = new TCallableArray([
+                $non_object_types[] = new TCallableKeyedArray([
                     Type::getArrayKey(),
                     Type::getMixed(),
                 ]);
@@ -1586,7 +1586,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                 $non_string_types[] = new TInt();
                 $redundant = false;
             } elseif ($type instanceof TCallable) {
-                $non_string_types[] = new TCallableArray([
+                $non_string_types[] = new TCallableKeyedArray([
                     Type::getArrayKey(),
                     Type::getMixed(),
                 ]);

@@ -34,7 +34,6 @@ use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
-use Psalm\Type\Atomic\TCallableArray;
 use Psalm\Type\Atomic\TCallableKeyedArray;
 use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TCallableString;
@@ -2651,11 +2650,11 @@ class SimpleAssertionReconciler extends Reconciler
             ) {
                 $callable_types[] = $type;
                 $redundant = false;
-            } elseif ($type instanceof TArray) {
+            } /*elseif ($type instanceof TArray) {
                 $type = new TCallableArray($type->type_params);
                 $callable_types[] = $type;
                 $redundant = false;
-            } elseif ($type instanceof TKeyedArray && count($type->properties) === 2) {
+            } */elseif ($type instanceof TKeyedArray && count($type->properties) === 2) {
                 $type = new TCallableKeyedArray($type->properties);
                 $callable_types[] = $type;
                 $redundant = false;

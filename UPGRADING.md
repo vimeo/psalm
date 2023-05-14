@@ -10,6 +10,7 @@
 - [BC] The only optional boolean parameter of `TKeyedArray::getGenericArrayType` was removed, and was replaced with a string parameter with a different meaning.
 
 - [BC] The `TDependentListKey` type was removed and replaced with an optional property of the `TIntRange` type.
+- [BC] `TCallableArray` and `TCallableList` removed and replaced with `TCallableKeyedArray`.
 
 - [BC] Value of constant `Psalm\Type\TaintKindGroup::ALL_INPUT` changed to reflect new `TaintKind::INPUT_SLEEP` and `TaintKind::INPUT_XPATH` have been added. Accordingly, default values for `$taint` parameters of `Psalm\Codebase::addTaintSource()` and `Psalm\Codebase::addTaintSink()` have been changed as well.
 
