@@ -1855,7 +1855,7 @@ class CallableTest extends TestCase
                     '$b' => 'string',
                     '$c' => 'list{class-string|object, string}',
                 ],
-            ]
+            ],
         ];
     }
 

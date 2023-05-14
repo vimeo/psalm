@@ -263,7 +263,7 @@ abstract class Atomic implements TypeNode
                     false,
                     false,
                     false,
-                    true
+                    true,
                 );
                 $object = new TObject(true);
                 $string = new TString(true);

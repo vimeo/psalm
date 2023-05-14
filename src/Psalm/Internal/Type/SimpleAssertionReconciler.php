@@ -2650,11 +2650,7 @@ class SimpleAssertionReconciler extends Reconciler
             ) {
                 $callable_types[] = $type;
                 $redundant = false;
-            } /*elseif ($type instanceof TArray) {
-                $type = new TCallableArray($type->type_params);
-                $callable_types[] = $type;
-                $redundant = false;
-            } */elseif ($type instanceof TKeyedArray && count($type->properties) === 2) {
+            } elseif ($type instanceof TKeyedArray && count($type->properties) === 2) {
                 $type = new TCallableKeyedArray($type->properties);
                 $callable_types[] = $type;
                 $redundant = false;
