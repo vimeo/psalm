@@ -211,14 +211,39 @@ class CoreStubsTest extends TestCase
                     }
                     throw new RuntimeException();
                 }
+
+                /** @return non-empty-string */
+                function after_strpos(): string
+                {
+                    $string = uniqid();
+                    if (strpos($string, "foo") !== false) {
+                        return $string;
+                    }
+                    throw new RuntimeException();
+                }
+
+                /** @return non-empty-string */
+                function after_stripos(): string
+                {
+                    $string = uniqid();
+                    if (stripos($string, "foo") !== false) {
+                        return $string;
+                    }
+                    throw new RuntimeException();
+                }
+
                 $a = after_str_contains();
                 $b = after_str_starts_with();
                 $c = after_str_ends_with();
+                $d = after_strpos();
+                $e = after_stripos();
             ',
             'assertions' => [
                 '$a===' => 'non-empty-string',
                 '$b===' => 'non-empty-string',
                 '$c===' => 'non-empty-string',
+                '$d===' => 'non-empty-string',
+                '$e===' => 'non-empty-string',
             ],
         ];
         yield "PHP8 str_* function doesn't subtract string after assertion" => [

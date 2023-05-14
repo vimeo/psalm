@@ -627,12 +627,23 @@ function substr_replace($string, $replace, $offset, $length = null) {}
 
 /**
  * @psalm-pure
- *
  * @param string $haystack
- *
+ * @param string $needle
+ * @param int $offset
+ * @psalm-assert-if-true =non-empty-string $haystack
  * @psalm-return positive-int|0|false
  */
-function strpos($haystack, $needle, int $offset = 0) : int|false {}
+function strpos(string $haystack, string $needle, int $offset = 0) {}
+
+/**
+ * @psalm-pure
+ * @param string $haystack
+ * @param string $needle
+ * @param int $offset
+ * @psalm-assert-if-true =non-empty-string $haystack
+ * @psalm-return positive-int|0|false
+ */
+function stripos(string $haystack, string $needle, int $offset = 0) {}
 
 /**
  * @psalm-pure
