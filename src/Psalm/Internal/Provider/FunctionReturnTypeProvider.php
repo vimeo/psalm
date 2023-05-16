@@ -36,6 +36,7 @@ use Psalm\Internal\Provider\ReturnTypeProvider\MbInternalEncodingReturnTypeProvi
 use Psalm\Internal\Provider\ReturnTypeProvider\MinMaxReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\MktimeReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ParseUrlReturnTypeProvider;
+use Psalm\Internal\Provider\ReturnTypeProvider\PowReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\RandReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\RoundReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\StrReplaceReturnTypeProvider;
@@ -103,6 +104,7 @@ class FunctionReturnTypeProvider
         $this->registerClass(RoundReturnTypeProvider::class);
         $this->registerClass(MbInternalEncodingReturnTypeProvider::class);
         $this->registerClass(DateReturnTypeProvider::class);
+        $this->registerClass(PowReturnTypeProvider::class);
     }
 
     /**
