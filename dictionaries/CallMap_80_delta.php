@@ -957,8 +957,8 @@ return [
       'new' => ['int|false', 'stream'=>'resource', 'data'=>'string', 'length='=>'?int'],
     ],
     'get_class_methods' => [
-      'old' => ['list<string>|null', 'object_or_class'=>'mixed'],
-      'new' => ['list<string>', 'object_or_class'=>'object|class-string'],
+      'old' => ['list<non-falsy-string>|null', 'object_or_class'=>'mixed'],
+      'new' => ['list<non-falsy-string>', 'object_or_class'=>'object|class-string'],
     ],
     'get_headers' => [
       'old' => ['array|false', 'url'=>'string', 'associative='=>'int', 'context='=>'?resource'],
