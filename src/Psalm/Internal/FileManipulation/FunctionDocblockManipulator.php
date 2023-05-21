@@ -137,7 +137,7 @@ class FunctionDocblockManipulator
                 if ($param->type) {
                     $this->param_typehint_offsets[$param->var->name] = [
                         (int) $param->type->getAttribute('startFilePos'),
-                        (int) $param->type->getAttribute('endFilePos'),
+                        (int) $param->type->getAttribute('endFilePos') + 1,
                     ];
                 }
             }

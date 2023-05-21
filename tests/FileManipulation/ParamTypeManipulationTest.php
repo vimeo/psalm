@@ -365,6 +365,54 @@ class ParamTypeManipulationTest extends FileManipulationTestCase
                 'issues_to_fix' => ['MissingParamType'],
                 'safe_types' => true,
             ],
+            'ChangingTypeOfExplicitMixedParam' => [
+                'input' => '<?php
+
+                    class ConfigContainer
+                    {
+
+                        public function setValue(mixed $value): void
+                        {
+                        }
+
+
+                    }
+
+                    function foo(){
+                        $config = new ConfigContainer();
+
+                        $config->setValue([1,2,3,4]);
+
+                    }
+                    ',
+                'output' => '<?php
+
+                    class ConfigContainer
+                    {
+
+                        /**
+                         * @param int[] $value
+                         *
+                         * @psalm-param list{1, 2, 3, 4} $value
+                         */
+                        public function setValue(array $value): void
+                        {
+                        }
+
+
+                    }
+
+                    function foo(){
+                        $config = new ConfigContainer();
+
+                        $config->setValue([1,2,3,4]);
+
+                    }
+                    ',
+                'php_version' => '8.0',
+                'issues_to_fix' => ['MissingParamType'],
+                'safe_types' => false,
+            ],
         ];
     }
 }
