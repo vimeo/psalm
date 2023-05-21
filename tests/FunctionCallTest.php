@@ -598,12 +598,6 @@ class FunctionCallTest extends TestCase
                         return $aTime - $bTime;
                     }',
             ],
-            'strposIntSecondParam' => [
-                'code' => '<?php
-                    function hasZeroByteOffset(string $s) : bool {
-                        return strpos($s, 0) !== false;
-                    }',
-            ],
             'functionCallInGlobalScope' => [
                 'code' => '<?php
                     $a = function() use ($argv) : void {};',
@@ -3018,6 +3012,13 @@ class FunctionCallTest extends TestCase
                     function foo(callable $_a = "strlen"): void {}
                 ',
                 'error_message' => 'InvalidParamDefault',
+            ],
+            'disallowStrposIntSecondParam' => [
+                'code' => '<?php
+                    function hasZeroByteOffset(string $s) : bool {
+                        return strpos($s, 0) !== false;
+                    }',
+                'error_message' => 'InvalidScalarArgument',
             ],
         ];
     }
