@@ -57,10 +57,8 @@ use function getopt;
 use function implode;
 use function in_array;
 use function ini_get;
-use function ini_set;
 use function is_array;
 use function is_numeric;
-use function is_scalar;
 use function is_string;
 use function json_encode;
 use function max;
@@ -189,7 +187,7 @@ final class Psalm
 
         self::validateCliArguments($args);
 
-        self::setMemoryLimit($options);
+        CliUtils::setMemoryLimit($options);
 
         self::syncShortOptions($options);
 
@@ -460,29 +458,6 @@ final class Psalm
             },
             $args,
         );
-    }
-
-    /**
-     * @param array<string,string|false|list<mixed>> $options
-     */
-    private static function setMemoryLimit(array $options): void
-    {
-        if (!array_key_exists('use-ini-defaults', $options)) {
-            ini_set('display_errors', 'stderr');
-            ini_set('display_startup_errors', '1');
-
-            $memoryLimit = (8 * 1_024 * 1_024 * 1_024);
-
-            if (array_key_exists('memory-limit', $options)) {
-                $memoryLimit = $options['memory-limit'];
-
-                if (!is_scalar($memoryLimit)) {
-                    throw new ConfigException('Invalid memory limit specified.');
-                }
-            }
-
-            ini_set('memory_limit', (string) $memoryLimit);
-        }
     }
 
     /**
