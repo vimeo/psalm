@@ -14,8 +14,8 @@ use Psalm\Report;
 use RuntimeException;
 
 use function array_filter;
+use function array_key_exists;
 use function array_slice;
-use function assert;
 use function count;
 use function define;
 use function dirname;
@@ -27,13 +27,13 @@ use function file_put_contents;
 use function fwrite;
 use function implode;
 use function in_array;
-use function ini_get;
+use function ini_set;
 use function is_array;
 use function is_dir;
+use function is_scalar;
 use function is_string;
 use function json_decode;
 use function preg_last_error_msg;
-use function preg_match;
 use function preg_replace;
 use function preg_split;
 use function realpath;
@@ -41,7 +41,6 @@ use function stream_get_meta_data;
 use function stream_set_blocking;
 use function strlen;
 use function strpos;
-use function strtoupper;
 use function substr;
 use function substr_replace;
 use function trim;
@@ -446,38 +445,27 @@ final class CliUtils
     }
 
     /**
-     * @psalm-pure
+     * @param array<string,string|false|list<mixed>> $options
+     * @throws ConfigException
      */
-    public static function getMemoryLimitInBytes(): int
+    public static function setMemoryLimit(array $options): void
     {
-        return self::convertMemoryLimitToBytes(ini_get('memory_limit'));
-    }
+        if (!array_key_exists('use-ini-defaults', $options)) {
+            ini_set('display_errors', 'stderr');
+            ini_set('display_startup_errors', '1');
 
-    /** @psalm-pure */
-    public static function convertMemoryLimitToBytes(string $limit): int
-    {
-        // for unlimited = -1
-        if ($limit < 0) {
-            return -1;
-        }
+            $memoryLimit = (8 * 1_024 * 1_024 * 1_024);
 
-        if (preg_match('/^(\d+)(\D?)$/', $limit, $matches)) {
-            assert(isset($matches[1]));
-            $limit = (int)$matches[1];
-            switch (strtoupper($matches[2] ?? '')) {
-                case 'G':
-                    $limit *= 1_024 * 1_024 * 1_024;
-                    break;
-                case 'M':
-                    $limit *= 1_024 * 1_024;
-                    break;
-                case 'K':
-                    $limit *= 1_024;
-                    break;
+            if (array_key_exists('memory-limit', $options)) {
+                $memoryLimit = $options['memory-limit'];
+
+                if (!is_scalar($memoryLimit)) {
+                    throw new ConfigException('Invalid memory limit specified.');
+                }
             }
-        }
 
-        return (int)$limit;
+            ini_set('memory_limit', (string) $memoryLimit);
+        }
     }
 
     public static function initPhpVersion(array $options, Config $config, ProjectAnalyzer $project_analyzer): void

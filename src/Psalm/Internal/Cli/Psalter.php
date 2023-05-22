@@ -4,6 +4,7 @@ namespace Psalm\Internal\Cli;
 
 use AssertionError;
 use Psalm\Config;
+use Psalm\Exception\ConfigException;
 use Psalm\Exception\UnsupportedIssueToFixException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\CliUtils;
@@ -47,6 +48,7 @@ use function ini_set;
 use function is_array;
 use function is_dir;
 use function is_numeric;
+use function is_scalar;
 use function is_string;
 use function microtime;
 use function pathinfo;
@@ -89,6 +91,7 @@ final class Psalter
         'add-newline-between-docblock-annotations:',
         'no-cache',
         'no-progress',
+        'memory-limit:',
     ];
 
     /** @param array<int,string> $argv */
@@ -100,14 +103,14 @@ final class Psalter
 
         ErrorHandler::install($argv);
 
-        self::setMemoryLimit();
-
         $args = array_slice($argv, 1);
 
         // get options from command line
         $options = getopt(implode('', self::SHORT_OPTIONS), self::LONG_OPTIONS);
 
         self::validateCliArguments($args);
+
+        CliUtils::setMemoryLimit($options);
 
         self::syncShortOptions($options);
 
@@ -440,15 +443,6 @@ final class Psalter
         }
 
         IssueBuffer::finish($project_analyzer, false, $start_time);
-    }
-
-    private static function setMemoryLimit(): void
-    {
-        $memLimit = CliUtils::getMemoryLimitInBytes();
-        // Magic number is 4096M in bytes
-        if ($memLimit > 0 && $memLimit < 8 * 1_024 * 1_024 * 1_024) {
-            ini_set('memory_limit', (string) (8 * 1_024 * 1_024 * 1_024));
-        }
     }
 
     /** @param array<int,string> $args */
