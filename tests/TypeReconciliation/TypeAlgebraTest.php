@@ -1111,6 +1111,29 @@ class TypeAlgebraTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'customAssertionIsAppliedAfterSuccessfulNullsafeMethodCall' => [
+                'code' => <<<'PHP'
+                    <?php
+                    interface X {
+                        /** @psalm-assert-if-true string $this->>b() */
+                        public function a(): bool;
+                        public function b(): int|string;
+                    }
+
+                    function foo(string $s): void {
+                        echo $s;
+                    }
+
+                    function bar(?X $x): void {
+                        if ($x?->a()) {
+                            foo($x->b());
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'narrowedTypeAfterIdenticalCheckWithOtherType' => [
                 'code' => '<?php
                     function a(int $a, ?int $b = null): void
@@ -1528,6 +1551,56 @@ class TypeAlgebraTest extends TestCase
                 'error_message' => 'NullReference',
                 'ignored_issues' => [],
                 'php_version' => '8.1',
+            ],
+            'customTrueAssertionIsNotAppliedAfterFailedNullsafeMethodCall' => [
+                'code' => <<<'PHP'
+                    <?php
+                    interface X {
+                        /** @psalm-assert-if-true string $this->>b() */
+                        public function a(): bool;
+                        public function b(): int|string;
+                    }
+
+                    function foo(string $s): void {
+                        echo $s;
+                    }
+
+                    function bar(?X $x): void {
+                        if (!($x?->a())) {
+                            if ($x !== null) {
+                                foo($x->b());
+                            }
+                        }
+                    }
+                    PHP,
+                'error_message' => 'InvalidScalarArgument',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'customFalseAssertionIsNotAppliedAfterFailedNullsafeMethodCall' => [
+                'code' => <<<'PHP'
+                    <?php
+                    interface X {
+                        /** @psalm-assert-if-false string $this->>b() */
+                        public function a(): bool;
+                        public function b(): int|string;
+                    }
+
+                    function foo(string $s): void {
+                        echo $s;
+                    }
+
+                    function bar(?X $x): void {
+                        if (!($x?->a())) {
+                            if ($x !== null) {
+                                foo($x->b());
+                            }
+                        }
+                    }
+                    PHP,
+                'error_message' => 'InvalidScalarArgument',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'arrayShapeListCanBeEmpty' => [
                 'code' => '<?php
