@@ -1111,6 +1111,24 @@ class TypeAlgebraTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'notOnlyNullAfterFailedNullsafeMethodCall' => [
+                'code' => '<?php
+                    interface X {
+                        public function a(): bool;
+                        public function b(): string;
+                    }
+
+                    function foo(?X $x): void {
+                        if (!($x?->a())) {
+                            if ($x !== null) {
+                                echo $x->b();
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'customAssertionIsAppliedAfterSuccessfulNullsafeMethodCall' => [
                 'code' => <<<'PHP'
                     <?php
