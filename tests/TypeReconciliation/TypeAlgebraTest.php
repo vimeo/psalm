@@ -1080,6 +1080,21 @@ class TypeAlgebraTest extends TestCase
                         return "";
                     }',
             ],
+            'notNullAfterSuccessfulTernaryNotNullComparison' => [
+                'code' => '<?php
+                    interface X {
+                        public function a(): bool;
+                        public function b(): string;
+                    }
+
+                    function foo(?X $x): void {
+                        if ($x === null ? null : $x->a()) {
+                            echo $x->b();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
             'notNullAfterSuccessfulNullsafeMethodCall' => [
                 'code' => '<?php
                     interface X {
@@ -1482,6 +1497,21 @@ class TypeAlgebraTest extends TestCase
                         }
                     }',
                 'error_message' => 'PossiblyNullReference',
+            ],
+            'stillNullAfterTernaryNullComparison' => [
+                'code' => '<?php
+                    interface X {
+                        public function a(): bool;
+                        public function b(): string;
+                    }
+
+                    function foo(?X $x): void {
+                        if (!($x === null ? null : $x->a())) {
+                            echo $x->b();
+                        }
+                    }',
+                'error_message' => 'PossiblyNullReference',
+                'ignored_issues' => [],
             ],
             'stillNullAfterNullsafeMethodCall' => [
                 'code' => '<?php
