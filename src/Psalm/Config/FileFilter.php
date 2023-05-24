@@ -11,7 +11,7 @@ use SimpleXMLElement;
 use function array_filter;
 use function array_map;
 use function array_merge;
-use function array_slice;
+use function array_shift;
 use function count;
 use function explode;
 use function glob;
@@ -137,7 +137,9 @@ class FileFilter
                     $prospective_directory_path = preg_replace('#(\/\*\*)+\/?$#', '/', $prospective_directory_path);
                     // Strip meaningless duplicated wildcards like "path/**/**/path"
                     $prospective_directory_path = preg_replace('#(\*\*\/)+#', '**/', $prospective_directory_path);
-                    $globs = self::recursiveGlob(explode('/**/', $prospective_directory_path), true);
+                    /** @var non-empty-list<non-empty-string> $path_parts */
+                    $path_parts = explode('/**/', $prospective_directory_path);
+                    $globs = self::recursiveGlob($path_parts, true);
 
                     if (empty($globs)) {
                         if ($allow_missing_files) {
@@ -150,8 +152,8 @@ class FileFilter
                         );
                     }
 
-                    foreach ($globs as $glob_index => $directory_path) {
-                        if (!$directory_path) {
+                    foreach ($globs as $glob_index => $glob_directory_path) {
+                        if (!$glob_directory_path) {
                             if ($allow_missing_files) {
                                 continue;
                             }
@@ -163,14 +165,14 @@ class FileFilter
                         }
 
                         if ($ignore_type_stats && $filter instanceof ProjectFileFilter) {
-                            $filter->ignore_type_stats[$directory_path] = true;
+                            $filter->ignore_type_stats[$glob_directory_path] = true;
                         }
 
                         if ($declare_strict_types && $filter instanceof ProjectFileFilter) {
-                            $filter->declare_strict_types[$directory_path] = true;
+                            $filter->declare_strict_types[$glob_directory_path] = true;
                         }
 
-                        $filter->addDirectory($directory_path);
+                        $filter->addDirectory($glob_directory_path);
                     }
                     continue;
                 }
@@ -253,7 +255,9 @@ class FileFilter
                 if (strpos($prospective_file_path, '*') !== false) {
                     // Strip meaningless duplicated wildcards like "path/**/**/path"
                     $prospective_file_path = preg_replace('#(\*\*\/)+#', '**/', $prospective_file_path);
-                    $globs = self::recursiveGlob(explode('/**/', $prospective_file_path), false);
+                    /** @var non-empty-list<non-empty-string> $path_parts */
+                    $path_parts = explode('/**/', $prospective_file_path);
+                    $globs = self::recursiveGlob($path_parts, false);
 
                     if (empty($globs)) {
                         if ($allow_missing_files) {
@@ -266,14 +270,18 @@ class FileFilter
                         );
                     }
 
-                    foreach ($globs as $glob_index => $file_path) {
-                        if (!$file_path && !$allow_missing_files) {
+                    foreach ($globs as $glob_index => $glob_file_path) {
+                        if (!$glob_file_path) {
+                            if ($allow_missing_files) {
+                                continue;
+                            }
+
                             throw new ConfigException(
                                 'Could not resolve config path to ' . $base_dir . DIRECTORY_SEPARATOR .
                                 $file_path . ':' . $glob_index,
                             );
                         }
-                        $filter->addFile($file_path);
+                        $filter->addFile($glob_file_path);
                     }
                     continue;
                 }
@@ -446,31 +454,37 @@ class FileFilter
         return $is_regexp;
     }
 
-    private static function recursiveGlob(array $parts, bool $onlyDir): array
+    /**
+     * @mutation-free
+     * @param non-empty-list<non-empty-string> $parts
+     * @return array<string|false>
+     */
+    private static function recursiveGlob(array $parts, bool $only_dir): array
     {
-        if (count($parts) === 1) {
-            if ($onlyDir) {
-                return array_map('realpath', glob($parts[0], GLOB_ONLYDIR | GLOB_NOSORT));
+        if (count($parts) < 2) {
+            if ($only_dir) {
+                $list = glob($parts[0], GLOB_ONLYDIR | GLOB_NOSORT) ?: [];
             } else {
-                return array_map(
-                    'realpath',
-                    array_filter(
-                        glob($parts[0], GLOB_NOSORT),
-                        'file_exists',
-                    ),
+                $list = array_filter(
+                    glob($parts[0], GLOB_NOSORT) ?: [],
+                    'file_exists',
                 );
             }
+
+            return array_map('realpath', $list);
         }
-        $firstDir = self::slashify($parts[0]);
-        $paths = glob($firstDir . '*', GLOB_ONLYDIR | GLOB_NOSORT);
+
+        $first_dir = self::slashify($parts[0]);
+        $paths = glob($first_dir . '*', GLOB_ONLYDIR | GLOB_NOSORT);
         $result = [];
         foreach ($paths as $path) {
             $parts[0] = $path;
-            $result = array_merge($result, self::recursiveGlob($parts, $onlyDir));
+            $result = array_merge($result, self::recursiveGlob($parts, $only_dir));
         }
-        $parts[1] =  $firstDir . $parts[1];
+        array_shift($parts);
+        $parts[0] =  $first_dir . $parts[0];
 
-        return array_merge($result, self::recursiveGlob(array_slice($parts, 1), $onlyDir));
+        return array_merge($result, self::recursiveGlob($parts, $only_dir));
     }
 
     /**
