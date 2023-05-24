@@ -452,7 +452,13 @@ class FileFilter
             if ($onlyDir) {
                 return array_map('realpath', glob($parts[0], GLOB_ONLYDIR | GLOB_NOSORT));
             } else {
-                return array_map('realpath', glob($parts[0], GLOB_NOSORT));
+                return array_map(
+                    'realpath',
+                    array_filter(
+                        glob($parts[0], GLOB_NOSORT),
+                        'file_exists',
+                    ),
+                );
             }
         }
         $firstDir = self::slashify($parts[0]);
