@@ -233,7 +233,7 @@ class ConfigTest extends TestCase
                     <projectFiles>
                         <directory name="src" />
                         <ignoreFiles>
-                            <directory name="src/**/Internal/Analyzer" />
+                            <directory name="src/*/Internal/Analyzer" />
                         </ignoreFiles>
                     </projectFiles>
                 </psalm>',
@@ -246,6 +246,54 @@ class ConfigTest extends TestCase
         $this->assertFalse($config->isInProjectDirs(realpath('src/Psalm/Internal/Analyzer/FileAnalyzer.php')));
         $this->assertFalse($config->isInProjectDirs(realpath('src/Psalm/Internal/Analyzer/Statements/ReturnAnalyzer.php')));
         $this->assertFalse($config->isInProjectDirs(realpath('examples/TemplateScanner.php')));
+    }
+
+    public function testIgnoreRecursiveWildcardProjectDirectory(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            Config::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                        <ignoreFiles>
+                            <directory name="src/**/BinaryOp*" />
+                        </ignoreFiles>
+                    </projectFiles>
+                </psalm>',
+            ),
+        );
+
+        $config = $this->project_analyzer->getConfig();
+
+        $this->assertTrue($config->isInProjectDirs(realpath('src/Psalm/Internal/Analyzer/Statements/Expression/BinaryOpAnalyzer.php')));
+        $this->assertFalse($config->isInProjectDirs(realpath('src/Psalm/Internal/Analyzer/Statements/Expression/BinaryOp/OrAnalyzer.php')));
+        $this->assertFalse($config->isInProjectDirs(realpath('src/Psalm/Node/Expr/BinaryOp/VirtualPlus.php')));
+    }
+
+    public function testIgnoreRecursiveDoubleWildcardProjectFiles(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            Config::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                        <ignoreFiles>
+                            <file name="src/**/*Analyzer.php" />
+                        </ignoreFiles>
+                    </projectFiles>
+                </psalm>',
+            ),
+        );
+
+        $config = $this->project_analyzer->getConfig();
+
+        $this->assertTrue($config->isInProjectDirs(realpath('src/Psalm/Type.php')));
+        $this->assertFalse($config->isInProjectDirs(realpath('src/Psalm/Internal/Analyzer/FileAnalyzer.php')));
+        $this->assertFalse($config->isInProjectDirs(realpath('src/Psalm/Internal/Analyzer/Statements/ReturnAnalyzer.php')));
     }
 
     public function testIgnoreWildcardFiles(): void
@@ -1680,6 +1728,42 @@ class ConfigTest extends TestCase
         $config = $this->project_analyzer->getConfig();
 
         $this->assertFalse($config->reportIssueInFile('MixedAssignment', realpath('src/Psalm/Type.php')));
+    }
+
+    public function testConfigFileWithWildcardPathIssueHandler(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            Config::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                        <directory name="tests" />
+                    </projectFiles>
+
+                    <issueHandlers>
+                        <MissingReturnType>
+                            <errorLevel type="suppress">
+                                <file name="src/**/*TypeAlias.php" />
+                                <directory name="src/**/BinaryOp*" />
+                            </errorLevel>
+                        </MissingReturnType>
+                    </issueHandlers>
+                </psalm>',
+            ),
+        );
+
+        $config = $this->project_analyzer->getConfig();
+
+        $this->assertTrue($config->reportIssueInFile('MissingReturnType', realpath(__FILE__)));
+        $this->assertTrue($config->reportIssueInFile('MissingReturnType', realpath('src/Psalm/Type.php')));
+        $this->assertTrue($config->reportIssueInFile('MissingReturnType', realpath('src/Psalm/Internal/Analyzer/Statements/ReturnAnalyzer.php')));
+
+        $this->assertFalse($config->reportIssueInFile('MissingReturnType', realpath('src/Psalm/Node/Expr/BinaryOp/VirtualPlus.php')));
+        $this->assertFalse($config->reportIssueInFile('MissingReturnType', realpath('src/Psalm/Internal/Analyzer/Statements/Expression/BinaryOp/OrAnalyzer.php')));
+        $this->assertFalse($config->reportIssueInFile('MissingReturnType', realpath('src/Psalm/Internal/Type/TypeAlias.php')));
+        $this->assertFalse($config->reportIssueInFile('MissingReturnType', realpath('src/Psalm/Internal/Type/TypeAlias/ClassTypeAlias.php')));
     }
 
     /**
