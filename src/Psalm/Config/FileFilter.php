@@ -20,6 +20,7 @@ use function is_dir;
 use function is_iterable;
 use function preg_match;
 use function preg_replace;
+use function preg_split;
 use function readlink;
 use function realpath;
 use function restore_error_handler;
@@ -133,12 +134,11 @@ class FileFilter
                 }
 
                 if (strpos($prospective_directory_path, '*') !== false) {
-                    // Strip meaningless finishing recursive wildcard like "path/**/" or "path/**"
+                    // Strip meaningless trailing recursive wildcard like "path/**/" or "path/**"
                     $prospective_directory_path = preg_replace('#(\/\*\*)+\/?$#', '/', $prospective_directory_path);
-                    // Strip meaningless duplicated wildcards like "path/**/**/path"
-                    $prospective_directory_path = preg_replace('#(\*\*\/)+#', '**/', $prospective_directory_path);
+                    // Split by /**/, allow duplicated wildcards like "path/**/**/path" and any leading dir separator.
                     /** @var non-empty-list<non-empty-string> $path_parts */
-                    $path_parts = explode('/**/', $prospective_directory_path);
+                    $path_parts = preg_split('#(\/|\\\)(\*\*\/)+#', $prospective_directory_path);
                     $globs = self::recursiveGlob($path_parts, true);
 
                     if (empty($globs)) {
@@ -253,10 +253,9 @@ class FileFilter
                 }
 
                 if (strpos($prospective_file_path, '*') !== false) {
-                    // Strip meaningless duplicated wildcards like "path/**/**/path"
-                    $prospective_file_path = preg_replace('#(\*\*\/)+#', '**/', $prospective_file_path);
+                    // Split by /**/, allow duplicated wildcards like "path/**/**/path" and any leading dir separator.
                     /** @var non-empty-list<non-empty-string> $path_parts */
-                    $path_parts = explode('/**/', $prospective_file_path);
+                    $path_parts = preg_split('#(\/|\\\)(\*\*\/)+#', $prospective_file_path);
                     $globs = self::recursiveGlob($path_parts, false);
 
                     if (empty($globs)) {
