@@ -390,7 +390,7 @@ class Redis {
     public function select(int $db): bool {}
 
     /** @return bool|Redis */
-    public function set(string $key, string $value, mixed $opt = NULL) {}
+    public function set(string $key, mixed $value, mixed $opt = NULL) {}
 
 	/** @return false|int|Redis */
     public function setBit(string $key, int $idx, bool $value) {}
@@ -402,12 +402,12 @@ class Redis {
     public function setOption(int $option, mixed $value): bool {}
 
     /** @return bool|Redis */
-    public function setex(string $key, int $expire, string $value) {}
+    public function setex(string $key, int $expire, mixed $value) {}
 
 	/** @return bool|array|Redis */
-    public function setnx(string $key, string $value) {}
+    public function setnx(string $key, mixed $value) {}
 
-    public function sismember(string $key, string $value): Redis|bool {}
+    public function sismember(string $key, mixed $value): Redis|bool {}
 
     public function slaveof(string $host = null, int $port = 6379): bool {}
 
