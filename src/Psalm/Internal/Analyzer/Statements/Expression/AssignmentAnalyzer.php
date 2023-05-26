@@ -981,17 +981,23 @@ class AssignmentAnalyzer
             $context->references_to_external_scope[$lhs_var_id] = true;
         }
         if (strpos($rhs_var_id, '->') !== false) {
-            IssueBuffer::maybeAdd(new UnsupportedPropertyReferenceUsage(
-                new CodeLocation($statements_analyzer->getSource(), $stmt),
-            ));
+            IssueBuffer::maybeAdd(
+                new UnsupportedPropertyReferenceUsage(
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                ),
+                $statements_analyzer->getSuppressedIssues(),
+            );
             // Reference to object property, we always consider object properties to be an external scope for references
             // TODO handle differently so it's detected as unused if the object is unused?
             $context->references_to_external_scope[$lhs_var_id] = true;
         }
         if (strpos($rhs_var_id, '::') !== false) {
-            IssueBuffer::maybeAdd(new UnsupportedPropertyReferenceUsage(
-                new CodeLocation($statements_analyzer->getSource(), $stmt),
-            ));
+            IssueBuffer::maybeAdd(
+                new UnsupportedPropertyReferenceUsage(
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                ),
+                $statements_analyzer->getSuppressedIssues(),
+            );
         }
 
         $lhs_location = new CodeLocation($statements_analyzer->getSource(), $stmt->var);
