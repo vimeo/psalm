@@ -5,10 +5,29 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
+use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 class UnsupportedPropertyReferenceUsage extends TestCase
 {
+    use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
+
+    public function providerValidCodeParse(): iterable
+    {
+        return [
+            'can be suppressed' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class A {
+                        public int $b = 0;
+                    }
+                    $a = new A();
+                    /** @psalm-suppress UnsupportedPropertyReferenceUsage */
+                    $b = &$a->b;
+                    PHP,
+            ],
+        ];
+    }
 
     public function providerInvalidCodeParse(): iterable
     {
