@@ -59,6 +59,11 @@ class NegatedAssertionReconciler extends Reconciler
         int &$failed_reconciliation,
         bool $inside_loop
     ): Union {
+        $existing_var_type = ClosedInheritanceToUnion::map(
+            $existing_var_type,
+            $statements_analyzer->getCodebase(),
+        );
+
         $is_equality = $assertion->hasEquality();
 
         $assertion_type = $assertion->getAtomicType();
