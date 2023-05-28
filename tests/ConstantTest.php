@@ -1655,6 +1655,22 @@ class ConstantTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.2',
             ],
+            'constantEnumSelfReference' => [
+                'code' => '<?php<?php
+                    enum Bar: string {
+                        case A = "a";
+                        case B = "b";
+                        public const STR = self::A->value . self::B->value;
+                    }
+
+                    class Foo {
+                        public const CONCAT_STR = "a" . Bar::STR . "e";
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
             'classConstWithParamOut' => [
                 'code' => '<?php
 
