@@ -305,15 +305,28 @@ class ExpressionResolver
             && $stmt->var->class instanceof PhpParser\Node\Name
             && $stmt->var->name instanceof PhpParser\Node\Identifier
             && $stmt->name instanceof PhpParser\Node\Identifier
-            && in_array($stmt->name->name, ['name', 'value', true])
+            && in_array($stmt->name->name, ['name', 'value'], true)
+            && ($stmt->var->class->parts !== ['self'] || $fq_classlike_name !== null)
+            && $stmt->var->class->parts !== ['static']
+            && ($stmt->var->class->parts !== ['parent'] || $parent_fq_class_name !== null)
         ) {
-            $enum_fq_class_name = ClassLikeAnalyzer::getFQCLNFromNameObject(
-                $stmt->var->class,
-                $aliases,
-            );
+            if ($stmt->var->class->parts === ['self']) {
+                assert($fq_classlike_name !== null);
+                $enum_fq_class_name = $fq_classlike_name;
+            } else {
+                if ($stmt->var->class->parts === ['parent']) {
+                    assert($parent_fq_class_name !== null);
+                    $enum_fq_class_name = $parent_fq_class_name;
+                } else {
+                    $enum_fq_class_name = ClassLikeAnalyzer::getFQCLNFromNameObject(
+                        $stmt->var->class,
+                        $aliases,
+                    );
+                }
+            }
             if ($stmt->name->name === 'value') {
                 return new EnumValueFetch($enum_fq_class_name, $stmt->var->name->name);
-            } elseif ($stmt->name->name === 'name') {
+            } else /*if ($stmt->name->name === 'name')*/ {
                 return new EnumNameFetch($enum_fq_class_name, $stmt->var->name->name);
             }
         }
