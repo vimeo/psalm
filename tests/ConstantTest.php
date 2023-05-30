@@ -1656,7 +1656,7 @@ class ConstantTest extends TestCase
                 'php_version' => '8.2',
             ],
             'constantEnumSelfReference' => [
-                'code' => '<?php<?php
+                'code' => '<?php
                     enum Bar: string {
                         case A = "a";
                         case B = "b";
