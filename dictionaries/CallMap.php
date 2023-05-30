@@ -1613,7 +1613,7 @@ return [
 'DirectoryIterator::setFileClass' => ['void', 'class='=>'class-string'],
 'DirectoryIterator::setInfoClass' => ['void', 'class='=>'class-string'],
 'DirectoryIterator::valid' => ['bool'],
-'dirname' => ['string', 'path'=>'string', 'levels='=>'int'],
+'dirname' => ['string', 'path'=>'string', 'levels='=>'int<1, max>'],
 'disk_free_space' => ['float|false', 'directory'=>'string'],
 'disk_total_space' => ['float|false', 'directory'=>'string'],
 'diskfreespace' => ['float|false', 'directory'=>'string'],

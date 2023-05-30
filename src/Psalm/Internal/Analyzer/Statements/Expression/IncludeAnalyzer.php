@@ -369,6 +369,10 @@ class IncludeAnalyzer
                     return null;
                 }
 
+                if ($dir_level < 1) {
+                    return null;
+                }
+
                 return dirname($evaled_path, $dir_level);
             }
         } elseif ($stmt instanceof PhpParser\Node\Expr\ConstFetch) {
