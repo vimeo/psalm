@@ -1750,6 +1750,15 @@ class PropertyTypeTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['PropertyNotSetInConstructor'],
             ],
+            'unitializedPropertySuppressPropertyNotSetInAbstractConstructor' => [
+                'code' => '<?php
+                    abstract class A {
+                          /** @readonly */
+                          public string $s;
+
+                          abstract public function __construct(string $s);
+                    }',
+            ],
             'setTKeyedArrayPropertyType' => [
                 'code' => '<?php
                     class Foo {

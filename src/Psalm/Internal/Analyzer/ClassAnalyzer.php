@@ -999,6 +999,11 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             return;
         }
 
+        // abstract constructors do not have any code, therefore cannot set any properties either
+        if (isset($storage->methods['__construct']) && $storage->methods['__construct']->abstract) {
+            return;
+        }
+
         $fq_class_name = $class_context->self ?: $this->fq_class_name;
         $fq_class_name_lc = strtolower($fq_class_name);
 
