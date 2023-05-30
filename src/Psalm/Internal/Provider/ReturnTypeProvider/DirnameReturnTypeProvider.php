@@ -62,7 +62,7 @@ class DirnameReturnTypeProvider implements FunctionReturnTypeProviderInterface
             $statements_source->getCodebase()->config,
         );
 
-        if ($evaled_path === null && $dir_level === 1) {
+        if ($evaled_path === null) {
             $type = $node_type_provider->getType($call_args[0]->value);
             if ($type !== null && $type->isSingle()) {
                 $atomic_type = array_values($type->getAtomicTypes())[0];

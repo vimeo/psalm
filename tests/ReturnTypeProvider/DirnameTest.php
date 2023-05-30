@@ -35,18 +35,18 @@ class DirnameTest extends TestCase
             ],
         ];
 
-        yield 'dirnameOfIntLevelReturnsString' => [
+        yield 'dirnameOfIntLevelLiteralReturnsLiteral' => [
             'code' => '<?php
                 $dir = dirname("' . $input . '", 10);
             ',
             'assertions' => [
-                '$dir===' => 'string',
+                '$dir===' => '.',
             ],
         ];
 
         yield 'dirnameOfNonEmptyStringIntLevelOneReturnsNonEmptyString' => [
             'code' => '<?php
-                $dir = dirname(uniqid() . "abc", 1);
+                $dir = dirname(uniqid() . "abc", 2);
             ',
             'assertions' => [
                 '$dir===' => 'non-empty-string',
