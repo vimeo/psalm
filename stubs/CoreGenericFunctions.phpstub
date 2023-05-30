@@ -1508,7 +1508,7 @@ function ldap_escape(string $value, string $ignore = "", int $flags = 0) : strin
 function json_decode(string $json, ?bool $associative = null, int $depth = 512, int $flags = 0) {}
 
 /**
- * The conditional return type below relies on the fact that JSON_THROW_ON_ERROR is 
+ * The conditional return type below relies on the fact that JSON_THROW_ON_ERROR is
  * the highest-valued of JSON constants
  * @psalm-pure
  *
@@ -1541,6 +1541,8 @@ function sapi_windows_cp_conv($in_codepage, $out_codepage, string $subject) : ?s
 
 /**
  * @psalm-pure
+ *
+ * @return non-empty-string
  *
  * @psalm-flow ($prefix) -> return
  */
