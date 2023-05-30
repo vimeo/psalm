@@ -40,7 +40,7 @@ class DirnameTest extends TestCase
                 $dir = dirname("' . $input . '", 10);
             ',
             'assertions' => [
-                '$dir===' => '"."',
+                '$dir===' => "'.'",
             ],
         ];
 
