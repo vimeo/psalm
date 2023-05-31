@@ -598,13 +598,13 @@ final class IssueBuffer
                                 );
 
                                 if ($position !== false) {
-                                    $issue_data->severity = Config::REPORT_INFO;
+                                    $issue_data->severity = IssueData::SEVERITY_INFO;
                                     array_splice($issue_baseline[$file][$type]['s'], $position, 1);
                                     $issue_baseline[$file][$type]['o']--;
                                 }
                             } else {
                                 $issue_baseline[$file][$type]['s'] = [];
-                                $issue_data->severity = Config::REPORT_INFO;
+                                $issue_data->severity = IssueData::SEVERITY_INFO;
                                 $issue_baseline[$file][$type]['o']--;
                             }
                         }

@@ -27,8 +27,8 @@ final class JunitReport extends Report
         $ndata = [];
 
         foreach ($this->issues_data as $error) {
-            $is_error = $error->severity === Config::REPORT_ERROR;
-            $is_warning = $error->severity === Config::REPORT_INFO;
+            $is_error = $error->severity === IssueData::SEVERITY_ERROR;
+            $is_warning = $error->severity === IssueData::SEVERITY_INFO;
 
             if (!$is_error && !$is_warning) {
                 continue;
