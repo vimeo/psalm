@@ -10,7 +10,7 @@ final class AfterAnalysisEvent
 {
     private Codebase $codebase;
     /**
-     * @var IssueData[][]
+     * @var array<string, list<IssueData>> where string key is a filepath
      */
     private array $issues;
     private array $build_info;
@@ -19,7 +19,7 @@ final class AfterAnalysisEvent
     /**
      * Called after analysis is complete
      *
-     * @param array<string, list<IssueData>> $issues
+     * @param array<string, list<IssueData>> $issues where string key is a filepath
      * @internal
      */
     public function __construct(
@@ -40,7 +40,7 @@ final class AfterAnalysisEvent
     }
 
     /**
-     * @return IssueData[][]
+     * @return array<string, list<IssueData>> where string key is a filepath
      */
     public function getIssues(): array
     {

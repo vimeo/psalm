@@ -121,10 +121,10 @@ final class Shepherd implements AfterAnalysisInterface
         }
 
         $issues = $event->getIssues();
-        $normalized_data = $issues === [] ? [] : array_filter(
-            array_merge(...array_values($issues)),
+        $normalized_data = $issues === [] ? [] : array_values(array_filter(
+            array_merge(...array_values($issues)), // flatten an array
             static fn(IssueData $i): bool => $i->severity === 'error',
-        );
+        ));
 
         $codebase = $event->getCodebase();
 
