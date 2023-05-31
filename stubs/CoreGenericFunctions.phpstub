@@ -627,9 +627,8 @@ function substr_replace($string, $replace, $offset, $length = null) {}
 
 /**
  * @psalm-pure
- * @param string $haystack
- * @param string $needle
- * @param int $offset
+ * @template T as string
+ * @param T $needle
  * @psalm-assert-if-true =(T is non-empty-string ? non-empty-string : string) $haystack
  * @return ($needle is '' ? 0 : ($haystack is '' ? false : int<0, max>|false))
  */
@@ -637,9 +636,8 @@ function strpos(string $haystack, string $needle, int $offset = 0) {}
 
 /**
  * @psalm-pure
- * @param string $haystack
- * @param string $needle
- * @param int $offset
+ * @template T as string
+ * @param T $needle
  * @psalm-assert-if-true =(T is non-empty-string ? non-empty-string : string) $haystack
  * @return ($needle is '' ? 0 : ($haystack is '' ? false : int<0, max>|false))
  */
