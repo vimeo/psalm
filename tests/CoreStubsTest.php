@@ -293,6 +293,38 @@ class CoreStubsTest extends TestCase
                 echo str_contains($d, "psalm");
             ',
         ];
+        yield "PHP8 str_* function non-empty-string in else" => [
+            'code' => '<?php
+                /**
+                 * @param non-empty-string $arg
+                 * @return void
+                 */
+                function takesNonEmptyString($arg) {
+                    echo $arg;
+                }
+
+                $string = file_get_contents("");
+                if (!str_contains($string, "foo")) {
+                    echo $string;
+                } else {
+                    takesNonEmptyString($string);
+                }
+
+                $string = file_get_contents("");
+                if (!str_starts_with($string, "foo")) {
+                    echo $string;
+                } else {
+                    takesNonEmptyString($string);
+                }
+
+                $string = file_get_contents("");
+                if (!str_ends_with($string, "foo")) {
+                    echo $string;
+                } else {
+                    takesNonEmptyString($string);
+                }
+            ',
+        ];
     }
 
     public function providerInvalidCodeParse(): iterable
