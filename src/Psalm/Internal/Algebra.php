@@ -4,10 +4,10 @@ namespace Psalm\Internal;
 
 use Psalm\Exception\ComplicatedExpressionException;
 use Psalm\Storage\Assertion;
-use UnexpectedValueException;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
+use UnexpectedValueException;
 
 use function array_filter;
 use function array_intersect_key;
@@ -325,6 +325,8 @@ class Algebra
     /**
      * Look for clauses with only one possible value
      *
+     * @psalm-suppress MoreSpecificReturnType
+     *
      * @param  list<Clause>  $clauses
      * @param  array<string, bool> $cond_referenced_var_ids
      * @param  array<string, array<int, array<int, Assertion>>> $active_truths
@@ -408,7 +410,8 @@ class Algebra
                         || $assertion->type instanceof TKeyedArray) {
                         $has_list_or_array = true;
                         // list/array are collapsed, therefore there can only be 1 and we can abort
-                        // otherwise we would have to remove them all individually e.g. array<string, string> cannot be array<int, float>
+                        // otherwise we would have to remove them all individually
+                        // e.g. array<string, string> cannot be array<int, float>
                         break 2;
                     }
                 }
@@ -418,7 +421,6 @@ class Algebra
                 continue;
             }
 
-            $is_array = $is_list = $has_list_or_array;
             foreach ($anded_types as $key => $orred_types) {
                 foreach ($orred_types as $index => $assertion) {
                     // we only need to check negations
@@ -438,14 +440,23 @@ class Algebra
                     }
                 }
 
+                /**
+                 * doesn't infer the "unset" correctly
+                 * @psalm-suppress DocblockTypeContradiction
+                 */
                 if ($truths[$var][$key] === []) {
                     unset($truths[$var][$key]);
                 } else {
+                    /**
+                     * doesn't infer the "unset" correctly
+                     * @psalm-suppress RedundantFunctionCallGivenDocblockType
+                     */
                     $truths[$var][$key] = array_values($truths[$var][$key]);
                 }
             }
         }
 
+        /** @psalm-suppress LessSpecificReturnStatement */
         return $truths;
     }
 

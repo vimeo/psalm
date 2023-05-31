@@ -2254,6 +2254,7 @@ class AssertionFinder
     }
 
     /**
+     * @psalm-suppress MoreSpecificReturnType
      * @param PhpParser\Node\Expr\BinaryOp\NotIdentical|PhpParser\Node\Expr\BinaryOp\NotEqual $conditional
      * @return list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>
      */
@@ -2401,6 +2402,7 @@ class AssertionFinder
             }
         }
 
+        /** @psalm-suppress LessSpecificReturnStatement */
         return $if_types;
     }
 
@@ -2979,6 +2981,7 @@ class AssertionFinder
     }
 
     /**
+     * @psalm-suppress MoreSpecificReturnType
      * @param PhpParser\Node\Expr\BinaryOp\Identical|PhpParser\Node\Expr\BinaryOp\Equal $conditional
      * @return list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>
      */
@@ -3125,6 +3128,7 @@ class AssertionFinder
             }
         }
 
+        /** @psalm-suppress LessSpecificReturnStatement */
         return $if_types;
     }
 
