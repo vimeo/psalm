@@ -326,7 +326,6 @@ class Algebra
      * Look for clauses with only one possible value
      *
      * @psalm-suppress MoreSpecificReturnType
-     *
      * @param  list<Clause>  $clauses
      * @param  array<string, bool> $cond_referenced_var_ids
      * @param  array<string, array<int, array<int, Assertion>>> $active_truths
@@ -442,6 +441,7 @@ class Algebra
 
                 /**
                  * doesn't infer the "unset" correctly
+                 *
                  * @psalm-suppress DocblockTypeContradiction
                  */
                 if ($truths[$var][$key] === []) {
@@ -449,6 +449,7 @@ class Algebra
                 } else {
                     /**
                      * doesn't infer the "unset" correctly
+                     *
                      * @psalm-suppress RedundantFunctionCallGivenDocblockType
                      */
                     $truths[$var][$key] = array_values($truths[$var][$key]);
