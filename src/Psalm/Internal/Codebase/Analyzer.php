@@ -1552,12 +1552,12 @@ class Analyzer
         $has_info = false;
 
         foreach ($issues as $issue) {
-            if ($issue->severity === 'error') {
+            if ($issue->severity === IssueData::SEVERITY_ERROR) {
                 $has_error = true;
                 break;
             }
 
-            if ($issue->severity === 'info') {
+            if ($issue->severity === IssueData::SEVERITY_INFO) {
                 $has_info = true;
             }
         }

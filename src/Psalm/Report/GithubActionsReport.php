@@ -2,7 +2,7 @@
 
 namespace Psalm\Report;
 
-use Psalm\Config;
+use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Report;
 
 use function sprintf;
@@ -34,7 +34,7 @@ final class GithubActionsReport extends Report
 
             $output .= sprintf(
                 '::%1$s %2$s::%3$s',
-                ($issue_data->severity === Config::REPORT_ERROR ? 'error' : 'warning'),
+                ($issue_data->severity === IssueData::SEVERITY_ERROR ? 'error' : 'warning'),
                 $properties,
                 $data,
             ) . "\n";

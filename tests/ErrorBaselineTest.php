@@ -187,7 +187,7 @@ bar&#13;
             [
                 'sample/sample-file.php' => [
                     new IssueData(
-                        'error',
+                        IssueData::SEVERITY_ERROR,
                         0,
                         0,
                         'MixedAssignment',
@@ -204,7 +204,7 @@ bar&#13;
                         0,
                     ),
                     new IssueData(
-                        'error',
+                        IssueData::SEVERITY_ERROR,
                         0,
                         0,
                         'MixedAssignment',
@@ -221,7 +221,7 @@ bar&#13;
                         0,
                     ),
                     new IssueData(
-                        'error',
+                        IssueData::SEVERITY_ERROR,
                         0,
                         0,
                         'MixedAssignment',
@@ -238,7 +238,7 @@ bar&#13;
                         0,
                     ),
                     new IssueData(
-                        'error',
+                        IssueData::SEVERITY_ERROR,
                         0,
                         0,
                         'MixedOperand',
@@ -274,7 +274,7 @@ bar&#13;
                 ],
                 'sample/sample-file2.php' => [
                     new IssueData(
-                        'error',
+                        IssueData::SEVERITY_ERROR,
                         0,
                         0,
                         'MixedAssignment',
@@ -291,7 +291,7 @@ bar&#13;
                         0,
                     ),
                     new IssueData(
-                        'error',
+                        IssueData::SEVERITY_ERROR,
                         0,
                         0,
                         'MixedAssignment',
@@ -308,7 +308,7 @@ bar&#13;
                         0,
                     ),
                     new IssueData(
-                        'error',
+                        IssueData::SEVERITY_ERROR,
                         0,
                         0,
                         'TypeCoercion',
@@ -410,7 +410,7 @@ bar&#13;
         $newIssues = [
             'sample/sample-file.php' => [
                 new IssueData(
-                    'error',
+                    IssueData::SEVERITY_ERROR,
                     0,
                     0,
                     'MixedAssignment',
@@ -427,7 +427,7 @@ bar&#13;
                     0,
                 ),
                 new IssueData(
-                    'error',
+                    IssueData::SEVERITY_ERROR,
                     0,
                     0,
                     'MixedAssignment',
@@ -444,7 +444,7 @@ bar&#13;
                     0,
                 ),
                 new IssueData(
-                    'error',
+                    IssueData::SEVERITY_ERROR,
                     0,
                     0,
                     'MixedOperand',
@@ -461,7 +461,7 @@ bar&#13;
                     0,
                 ),
                 new IssueData(
-                    'error',
+                    IssueData::SEVERITY_ERROR,
                     0,
                     0,
                     'MixedOperand',
@@ -480,7 +480,7 @@ bar&#13;
             ],
             'sample/sample-file2.php' => [
                 new IssueData(
-                    'error',
+                    IssueData::SEVERITY_ERROR,
                     0,
                     0,
                     'TypeCoercion',

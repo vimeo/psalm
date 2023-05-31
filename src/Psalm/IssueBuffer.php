@@ -302,7 +302,7 @@ final class IssueBuffer
 
         if ($reporting_level === Config::REPORT_INFO) {
             if ($is_tainted || !self::alreadyEmitted($emitted_key)) {
-                self::$issues_data[$e->getFilePath()][] = $e->toIssueData(Config::REPORT_INFO);
+                self::$issues_data[$e->getFilePath()][] = $e->toIssueData(IssueData::SEVERITY_INFO);
 
                 if ($is_fixable) {
                     self::addFixableIssue($issue_type);
@@ -331,7 +331,7 @@ final class IssueBuffer
 
         if ($is_tainted || !self::alreadyEmitted($emitted_key)) {
             ++self::$error_count;
-            self::$issues_data[$e->getFilePath()][] = $e->toIssueData(Config::REPORT_ERROR);
+            self::$issues_data[$e->getFilePath()][] = $e->toIssueData(IssueData::SEVERITY_ERROR);
 
             if ($is_fixable) {
                 self::addFixableIssue($issue_type);
@@ -618,7 +618,7 @@ final class IssueBuffer
                         foreach ($issues as $issue_name => $issue) {
                             if ($issue['o'] !== 0) {
                                 $issues_data[$file_path][] = new IssueData(
-                                    Config::REPORT_ERROR,
+                                    IssueData::SEVERITY_ERROR,
                                     0,
                                     0,
                                     UnusedBaselineEntry::getIssueType(),
