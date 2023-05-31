@@ -403,7 +403,20 @@ final class Psalm
     {
         return isset($options['output-format']) && is_string($options['output-format'])
             ? $options['output-format']
-            : Report::TYPE_CONSOLE;
+            : self::findDefaultOutputFormat();
+    }
+
+    /**
+     * @return Report::TYPE_*
+     */
+    private static function findDefaultOutputFormat(): string
+    {
+        $emulator = getenv('TERMINAL_EMULATOR');
+        if (is_string($emulator) && substr($emulator, 0, 9) === 'JetBrains') {
+            return Report::TYPE_PHP_STORM;
+        }
+
+        return Report::TYPE_CONSOLE;
     }
 
     private static function initShowInfo(array $options): bool
