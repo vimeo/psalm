@@ -630,8 +630,8 @@ function substr_replace($string, $replace, $offset, $length = null) {}
  * @param string $haystack
  * @param string $needle
  * @param int $offset
- * @psalm-assert-if-true =non-empty-string $haystack
- * @psalm-return positive-int|0|false
+ * @psalm-assert-if-true =(T is non-empty-string ? non-empty-string : string) $haystack
+ * @return ($needle is '' ? 0 : ($haystack is '' ? false : int<0, max>|false))
  */
 function strpos(string $haystack, string $needle, int $offset = 0) {}
 
@@ -640,8 +640,8 @@ function strpos(string $haystack, string $needle, int $offset = 0) {}
  * @param string $haystack
  * @param string $needle
  * @param int $offset
- * @psalm-assert-if-true =non-empty-string $haystack
- * @psalm-return positive-int|0|false
+ * @psalm-assert-if-true =(T is non-empty-string ? non-empty-string : string) $haystack
+ * @return ($needle is '' ? 0 : ($haystack is '' ? false : int<0, max>|false))
  */
 function stripos(string $haystack, string $needle, int $offset = 0) {}
 
@@ -1075,7 +1075,7 @@ function str_split(string $string, int $length = 1) {}
  * @psalm-pure
  * @template T as string
  * @param T $needle
- * @psalm-assert-if-true =(T is '' ? string : non-empty-string) $haystack
+ * @psalm-assert-if-true (T is non-empty-string ? non-empty-string : string) $haystack
  * @return ($needle is '' ? true : ($haystack is '' ? false : bool))
  */
 function str_starts_with(string $haystack, string $needle): bool {}
@@ -1084,7 +1084,7 @@ function str_starts_with(string $haystack, string $needle): bool {}
  * @psalm-pure
  * @template T as string
  * @param T $needle
- * @psalm-assert-if-true =(T is '' ? string : non-empty-string) $haystack
+ * @psalm-assert-if-true (T is non-empty-string ? non-empty-string : string) $haystack
  * @return ($needle is '' ? true : ($haystack is '' ? false : bool))
  */
 function str_ends_with(string $haystack, string $needle): bool {}
@@ -1093,7 +1093,7 @@ function str_ends_with(string $haystack, string $needle): bool {}
  * @psalm-pure
  * @template T as string
  * @param T $needle
- * @psalm-assert-if-true =(T is '' ? string : non-empty-string) $haystack
+ * @psalm-assert-if-true (T is non-empty-string ? non-empty-string : string) $haystack
  * @return ($needle is '' ? true : ($haystack is '' ? false : bool))
  */
 function str_contains(string $haystack, string $needle): bool {}
