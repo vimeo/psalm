@@ -39,6 +39,7 @@ use Psalm\Internal\Provider\ReturnTypeProvider\ParseUrlReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\PowReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\RandReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\RoundReturnTypeProvider;
+use Psalm\Internal\Provider\ReturnTypeProvider\SprintfReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\StrReplaceReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\StrTrReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\TriggerErrorReturnTypeProvider;
@@ -105,6 +106,7 @@ class FunctionReturnTypeProvider
         $this->registerClass(MbInternalEncodingReturnTypeProvider::class);
         $this->registerClass(DateReturnTypeProvider::class);
         $this->registerClass(PowReturnTypeProvider::class);
+        $this->registerClass(SprintfReturnTypeProvider::class);
     }
 
     /**
