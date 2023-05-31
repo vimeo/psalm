@@ -731,7 +731,6 @@ class LanguageServer extends Dispatcher
                         case IssueData::SEVERITY_INFO:
                             $diagnostic_severity = DiagnosticSeverity::WARNING;
                             break;
-                        case IssueData::SEVERITY_ERROR:
                         default:
                             $diagnostic_severity = DiagnosticSeverity::ERROR;
                             break;
