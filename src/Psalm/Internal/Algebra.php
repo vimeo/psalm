@@ -5,6 +5,9 @@ namespace Psalm\Internal;
 use Psalm\Exception\ComplicatedExpressionException;
 use Psalm\Storage\Assertion;
 use UnexpectedValueException;
+use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TList;
 
 use function array_filter;
 use function array_intersect_key;
@@ -384,6 +387,61 @@ class Algebra
                     if ($creating_conditional_id && $creating_conditional_id === $clause->creating_conditional_id) {
                         $active_truths[$var] = [array_values($things_that_can_be_said)];
                     }
+                }
+            }
+        }
+
+        foreach ($truths as $var => $anded_types) {
+            $has_list_or_array = false;
+            foreach ($anded_types as $orred_types) {
+                foreach ($orred_types as $assertion) {
+                    if ($assertion->isNegation()) {
+                        continue;
+                    }
+
+                    if (!isset($assertion->type)) {
+                        continue;
+                    }
+
+                    if ($assertion->type instanceof TList
+                        || $assertion->type instanceof TArray
+                        || $assertion->type instanceof TKeyedArray) {
+                        $has_list_or_array = true;
+                        // list/array are collapsed, therefore there can only be 1 and we can abort
+                        // otherwise we would have to remove them all individually e.g. array<string, string> cannot be array<int, float>
+                        break 2;
+                    }
+                }
+            }
+
+            if ($has_list_or_array === false) {
+                continue;
+            }
+
+            $is_array = $is_list = $has_list_or_array;
+            foreach ($anded_types as $key => $orred_types) {
+                foreach ($orred_types as $index => $assertion) {
+                    // we only need to check negations
+                    // due to type collapsing, any negations for arrays are irrelevant
+                    if (!$assertion->isNegation()) {
+                        continue;
+                    }
+
+                    if (!isset($assertion->type)) {
+                        continue;
+                    }
+
+                    if ($assertion->type instanceof TList
+                        || $assertion->type instanceof TArray
+                        || $assertion->type instanceof TKeyedArray) {
+                        unset($truths[$var][$key][$index]);
+                    }
+                }
+
+                if ($truths[$var][$key] === []) {
+                    unset($truths[$var][$key]);
+                } else {
+                    $truths[$var][$key] = array_values($truths[$var][$key]);
                 }
             }
         }
