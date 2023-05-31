@@ -1552,13 +1552,13 @@ class Analyzer
         $has_info = false;
 
         foreach ($issues as $issue) {
-            if ($issue->severity === 'error') {
-                $has_error = true;
-                break;
-            }
-
-            if ($issue->severity === 'info') {
-                $has_info = true;
+            switch ($issue->severity) {
+                case IssueData::SEVERITY_INFO:
+                    $has_info = true;
+                    break;
+                default:
+                    $has_error = true;
+                    break;
             }
         }
 

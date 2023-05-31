@@ -728,10 +728,9 @@ class LanguageServer extends Dispatcher
                         new Position($end_line - 1, $end_column - 1),
                     );
                     switch ($severity) {
-                        case Config::REPORT_INFO:
+                        case IssueData::SEVERITY_INFO:
                             $diagnostic_severity = DiagnosticSeverity::WARNING;
                             break;
-                        case Config::REPORT_ERROR:
                         default:
                             $diagnostic_severity = DiagnosticSeverity::ERROR;
                             break;
@@ -788,7 +787,7 @@ class LanguageServer extends Dispatcher
                                 );
 
                                 if ($position !== false) {
-                                    $issue_data->severity = Config::REPORT_INFO;
+                                    $issue_data->severity = IssueData::SEVERITY_INFO;
                                     /** @psalm-suppress MixedArgument */
                                     array_splice($issue_baseline[$file][$type]['s'], $position, 1);
                                     /** @psalm-suppress MixedArrayAssignment, MixedOperand, MixedAssignment */
@@ -797,7 +796,7 @@ class LanguageServer extends Dispatcher
                             } else {
                                 /** @psalm-suppress MixedArrayAssignment */
                                 $issue_baseline[$file][$type]['s'] = [];
-                                $issue_data->severity = Config::REPORT_INFO;
+                                $issue_data->severity = IssueData::SEVERITY_INFO;
                                 /** @psalm-suppress MixedArrayAssignment, MixedOperand, MixedAssignment */
                                 $issue_baseline[$file][$type]['o']--;
                             }
@@ -806,7 +805,7 @@ class LanguageServer extends Dispatcher
                     }, $data[$file_path] ?? []),
                     function (IssueData $issue_data) {
                         //Hide Warnings
-                        if ($issue_data->severity === Config::REPORT_INFO &&
+                        if ($issue_data->severity === IssueData::SEVERITY_INFO &&
                             $this->client->clientConfiguration->hideWarnings
                         ) {
                             return false;

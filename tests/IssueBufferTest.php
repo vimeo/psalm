@@ -24,7 +24,7 @@ class IssueBufferTest extends TestCase
         IssueBuffer::addIssues([
             '/path/one.php' => [
                 new IssueData(
-                    "error",
+                    IssueData::SEVERITY_ERROR,
                     0,
                     0,
                     "MissingPropertyType",
@@ -43,7 +43,7 @@ class IssueBufferTest extends TestCase
             ],
             '/path/two.php' => [
                 new IssueData(
-                    "error",
+                    IssueData::SEVERITY_ERROR,
                     0,
                     0,
                     "MissingPropertyType",
@@ -62,7 +62,7 @@ class IssueBufferTest extends TestCase
             ],
             '/path/three.php' => [
                 new IssueData(
-                    "error",
+                    IssueData::SEVERITY_ERROR,
                     0,
                     0,
                     "MissingPropertyType",
@@ -81,7 +81,7 @@ class IssueBufferTest extends TestCase
             ],
             '/path/four.php' => [
                 new IssueData(
-                    "error",
+                    IssueData::SEVERITY_ERROR,
                     0,
                     0,
                     "MissingPropertyType",
