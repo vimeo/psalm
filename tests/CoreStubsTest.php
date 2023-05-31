@@ -325,6 +325,22 @@ class CoreStubsTest extends TestCase
                 }
             ',
         ];
+        yield "strlen basic non-empty-string" => [
+            'code' => '<?php
+                /**
+                 * @param non-empty-string $arg
+                 * @return void
+                 */
+                function takesNonEmptyString($arg) {
+                    echo $arg;
+                }
+
+                $a = implode("", array());
+                if (strlen($a)) {
+                    takesNonEmptyString($a);
+                }
+            ',
+        ];
     }
 
     public function providerInvalidCodeParse(): iterable

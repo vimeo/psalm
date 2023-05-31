@@ -981,6 +981,8 @@ function urlencode(string $string) : string {}
 /**
  * @psalm-pure
  *
+ * @psalm-assert-if-true non-empty-string $string
+ *
  * @psalm-return (
  *     $string is ''
  *     ? 0
