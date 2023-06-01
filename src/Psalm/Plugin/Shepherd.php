@@ -5,6 +5,7 @@ namespace Psalm\Plugin;
 use BadMethodCallException;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\IssueData;
+use Psalm\Internal\VersionUtils;
 use Psalm\Plugin\EventHandler\AfterAnalysisInterface;
 use Psalm\Plugin\EventHandler\Event\AfterAnalysisEvent;
 
@@ -134,6 +135,10 @@ final class Shepherd implements AfterAnalysisInterface
             'issues' => $normalized_data,
             'coverage' => $codebase->analyzer->getTotalTypeCoverage($codebase),
             'level' => Config::getInstance()->level,
+            'versions' => [
+                'psalm' => VersionUtils::getPsalmVersion(),
+                'parser' => VersionUtils::getPhpParserVersion(),
+            ],
         ];
     }
 
