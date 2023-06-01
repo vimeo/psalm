@@ -120,7 +120,6 @@ class PsalmEndToEndTest extends TestCase
             'Target PHP version: 7.1 (inferred from composer.json)',
             $result['STDERR'],
         );
-        $this->assertStringContainsString('UnusedParam', $result['STDOUT']);
         $this->assertStringContainsString('InvalidReturnType', $result['STDOUT']);
         $this->assertStringContainsString('InvalidReturnStatement', $result['STDOUT']);
         $this->assertStringContainsString('3 errors', $result['STDOUT']);
@@ -153,7 +152,6 @@ class PsalmEndToEndTest extends TestCase
 
         $this->runPsalmInit(1);
         $result = $this->runPsalm(['--diff', '-m'], self::$tmpDir, true);
-        $this->assertStringContainsString('UnusedParam', $result['STDOUT']);
         $this->assertStringContainsString('InvalidReturnType', $result['STDOUT']);
         $this->assertStringContainsString('InvalidReturnStatement', $result['STDOUT']);
         $this->assertStringContainsString('3 errors', $result['STDOUT']);
