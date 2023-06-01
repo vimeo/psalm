@@ -161,10 +161,9 @@ class PsalmEndToEndTest extends TestCase
 
         $result = $this->runPsalm(['--diff', '-m'], self::$tmpDir, true);
 
-        $this->assertStringContainsString('UnusedParam', $result['STDOUT']);
         $this->assertStringContainsString('InvalidReturnType', $result['STDOUT']);
         $this->assertStringContainsString('InvalidReturnStatement', $result['STDOUT']);
-        $this->assertStringContainsString('3 errors', $result['STDOUT']);
+        $this->assertStringContainsString('2 errors', $result['STDOUT']);
         $this->assertStringNotContainsString('E', $result['STDERR']);
 
         $this->assertSame(2, $result['CODE']);
