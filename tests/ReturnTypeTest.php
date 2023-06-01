@@ -1785,6 +1785,28 @@ class ReturnTypeTest extends TestCase
                     PHP,
                 'error_message' => 'InvalidReturnStatement',
             ],
+            'invalidReturnStatementDetectedInOverriddenMethod' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @template T */
+                    interface I
+                    {
+                        /** @return T */
+                        public function process(): mixed;
+                    }
+                    /** @implements I<int> */
+                    final class B implements I
+                    {
+                        public function process(): mixed
+                        {
+                            return '';
+                        }
+                    }
+                    PHP,
+                'error_message' => 'InvalidReturnStatement',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 }
