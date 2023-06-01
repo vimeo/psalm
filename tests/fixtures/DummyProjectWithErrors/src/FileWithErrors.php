@@ -3,7 +3,7 @@ namespace Acme\SampleProject;
 
 function foo(string $s): int
 {
-    return 'bar';
+    return $s;
 }
 
 function bar(string $s) : string {
