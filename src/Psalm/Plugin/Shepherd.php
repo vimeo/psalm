@@ -120,9 +120,9 @@ final class Shepherd implements AfterAnalysisInterface
             return null;
         }
 
-        $issues = $event->getIssues();
-        $normalized_data = $issues === [] ? [] : array_values(array_filter(
-            array_merge(...array_values($issues)), // flatten an array
+        $issues_grouped_by_filename = $event->getIssues();
+        $normalized_data = $issues_grouped_by_filename === [] ? [] : array_values(array_filter(
+            array_merge(...array_values($issues_grouped_by_filename)), // flatten an array
             static fn(IssueData $i): bool => $i->severity === IssueData::SEVERITY_ERROR,
         ));
 
