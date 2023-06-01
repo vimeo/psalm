@@ -96,7 +96,7 @@ final class Shepherd implements AfterAnalysisInterface
     }
 
     /**
-     * @return array{build: array, git: array, issues: array, coverage: list<int>, level: int<1,8>}|null
+     * @return array{build: array, git: array, issues: array, coverage: list<int>, level: int<1,8>, versions: array<string, string>}|null
      */
     private static function collectPayloadToSend(AfterAnalysisEvent $event): ?array
     {
