@@ -574,10 +574,11 @@ or interfaces defined in a stub file, this stub should be configured with attrib
 ```
 
 #### &lt;ignoreExceptions&gt;
-Optional. A list of exceptions to not report for `checkForThrowsDocblock` or `checkForThrowsInGlobalScope`. If an exception has `onlyGlobalScope` set to `true`, only `checkForThrowsInGlobalScope` is ignored for that exception, e.g.
+Optional. A list of exceptions to not report for `checkForThrowsDocblock` or `checkForThrowsInGlobalScope`. The `class` tag will make Psalm ignore only instances of the specified class, while `classAndDescendants` will make Psalm also ignore subclasses. If an exception has `onlyGlobalScope` set to `true`, only `checkForThrowsInGlobalScope` is ignored for that exception, e.g.
 ```xml
 <ignoreExceptions>
   <class name="fully\qualified\path\Exc" onlyGlobalScope="true" />
+  <classAndDescendants name="fully\qualified\path\OtherExc" />
 </ignoreExceptions>
 ```
 
