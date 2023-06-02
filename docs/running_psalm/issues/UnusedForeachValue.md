@@ -1,6 +1,6 @@
 # UnusedForeachValue
 
-Emitted when `--find-dead-code` is turned on and Psalm cannot find any
+Emitted when `--find-unused-code` is turned on and Psalm cannot find any
 references to the foreach value
 
 ```php
