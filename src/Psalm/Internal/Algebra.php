@@ -325,6 +325,7 @@ class Algebra
     /**
      * Look for clauses with only one possible value
      *
+     * doesn't infer the "unset" correctly
      * @psalm-suppress MoreSpecificReturnType
      * @param  list<Clause>  $clauses
      * @param  array<string, bool> $cond_referenced_var_ids

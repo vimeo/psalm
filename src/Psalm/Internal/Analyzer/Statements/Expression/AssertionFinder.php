@@ -2336,6 +2336,8 @@ class AssertionFinder
         $if_types = $if_types ? [$if_types] : [];
 
         if ($if_types === [] && count($notif_types) === 2) {
+            $check_var_assertion = null;
+            $check_var = null;
             foreach ($notif_types as $notif_type) {
                 foreach ($notif_type as $var => $assertions) {
                     if (count($assertions) !== 1 || count($assertions[0]) !== 1) {
@@ -3066,6 +3068,8 @@ class AssertionFinder
         // @todo optionally extend this to arbitrary number of assert-if cases of multiple variables in the function
         // same code above too
         if ($if_types === [] && count($notif_types) === 2) {
+            $check_var_assertion = null;
+            $check_var = null;
             foreach ($notif_types as $notif_type) {
                 foreach ($notif_type as $var => $assertions) {
                     if (count($assertions) !== 1 || count($assertions[0]) !== 1) {
