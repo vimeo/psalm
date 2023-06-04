@@ -2254,6 +2254,7 @@ class AssertionFinder
     }
 
     /**
+     * @psalm-suppress MoreSpecificReturnType
      * @param PhpParser\Node\Expr\BinaryOp\NotIdentical|PhpParser\Node\Expr\BinaryOp\NotEqual $conditional
      * @return list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>
      */
@@ -2325,14 +2326,44 @@ class AssertionFinder
         }
 
         if (count($notif_types) === 1) {
-            $notif_types = $notif_types[0];
+            $notif_type = $notif_types[0];
 
-            if (count($notif_types) === 1) {
-                $if_types = Algebra::negateTypes($notif_types);
+            if (count($notif_type) === 1) {
+                $if_types = Algebra::negateTypes($notif_type);
             }
         }
 
         $if_types = $if_types ? [$if_types] : [];
+
+        if ($if_types === [] && count($notif_types) === 2) {
+            $check_var_assertion = null;
+            $check_var = null;
+            foreach ($notif_types as $notif_type) {
+                foreach ($notif_type as $var => $assertions) {
+                    if (count($assertions) !== 1 || count($assertions[0]) !== 1) {
+                        $if_types = [];
+                        break 2;
+                    }
+
+                    $is_not_assertion = $assertions[0][0] instanceof IsNotType ? true : false;
+                    if (!isset($check_var)) {
+                        $check_var_assertion = $is_not_assertion;
+                        $check_var = $var;
+                        continue;
+                    }
+
+                    // only if we have 1 IsType and 1 IsNotType assertion for same variable
+                    if ($check_var !== $var
+                        || !isset($check_var_assertion)
+                        || $check_var_assertion === $is_not_assertion) {
+                        $if_types = [];
+                        break 2;
+                    }
+                }
+
+                $if_types[] = Algebra::negateTypes($notif_type);
+            }
+        }
 
         if ($codebase
             && $source instanceof StatementsAnalyzer
@@ -2373,6 +2404,7 @@ class AssertionFinder
             }
         }
 
+        /** @psalm-suppress LessSpecificReturnStatement */
         return $if_types;
     }
 
@@ -2951,6 +2983,7 @@ class AssertionFinder
     }
 
     /**
+     * @psalm-suppress MoreSpecificReturnType
      * @param PhpParser\Node\Expr\BinaryOp\Identical|PhpParser\Node\Expr\BinaryOp\Equal $conditional
      * @return list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>
      */
@@ -3022,14 +3055,47 @@ class AssertionFinder
         }
 
         if (count($notif_types) === 1) {
-            $notif_types = $notif_types[0];
+            $notif_type = $notif_types[0];
 
-            if (count($notif_types) === 1) {
-                $if_types = Algebra::negateTypes($notif_types);
+            if (count($notif_type) === 1) {
+                $if_types = Algebra::negateTypes($notif_type);
             }
         }
 
         $if_types = $if_types ? [$if_types] : [];
+
+        // @psalm-assert-if-true and @psalm-assert-if-false for same variable in same function, e.g. array/list cases
+        // @todo optionally extend this to arbitrary number of assert-if cases of multiple variables in the function
+        // same code above too
+        if ($if_types === [] && count($notif_types) === 2) {
+            $check_var_assertion = null;
+            $check_var = null;
+            foreach ($notif_types as $notif_type) {
+                foreach ($notif_type as $var => $assertions) {
+                    if (count($assertions) !== 1 || count($assertions[0]) !== 1) {
+                        $if_types = [];
+                        break 2;
+                    }
+
+                    $is_not_assertion = $assertions[0][0] instanceof IsNotType ? true : false;
+                    if (!isset($check_var)) {
+                        $check_var_assertion = $is_not_assertion;
+                        $check_var = $var;
+                        continue;
+                    }
+
+                    // only if we have 1 IsType and 1 IsNotType assertion for same variable
+                    if ($check_var !== $var
+                        || !isset($check_var_assertion)
+                        || $check_var_assertion === $is_not_assertion) {
+                        $if_types = [];
+                        break 2;
+                    }
+                }
+
+                $if_types[] = Algebra::negateTypes($notif_type);
+            }
+        }
 
         if ($codebase
             && $source instanceof StatementsAnalyzer
@@ -3066,6 +3132,7 @@ class AssertionFinder
             }
         }
 
+        /** @psalm-suppress LessSpecificReturnStatement */
         return $if_types;
     }
 
