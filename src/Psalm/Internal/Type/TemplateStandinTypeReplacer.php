@@ -36,6 +36,7 @@ use Psalm\Type\Atomic\TTemplateValueOf;
 use Psalm\Type\Union;
 
 use function array_fill;
+use function array_filter;
 use function array_keys;
 use function array_merge;
 use function array_search;
@@ -1253,6 +1254,7 @@ class TemplateStandinTypeReplacer
         Atomic $container_type_part,
         ?array &$container_type_params_covariant = null
     ): array {
+        $_ = null;
         if ($input_type_part instanceof TGenericObject || $input_type_part instanceof TIterable) {
             $input_type_params = $input_type_part->type_params;
         } elseif ($codebase->classlike_storage_provider->has($input_type_part->value)) {
@@ -1316,40 +1318,43 @@ class TemplateStandinTypeReplacer
                 foreach ($params as $extended_input_param_type) {
                     $new_input_param = null;
 
-                    foreach ($extended_input_param_type->getAtomicTypes() as $et) {
-                        if ($et instanceof TTemplateParam) {
-                            $ets = Methods::getExtendedTemplatedTypes(
-                                $et,
-                                $template_extends,
-                            );
-                        } else {
-                            $ets = [];
-                        }
-
-                        if ($ets
-                            && $ets[0] instanceof TTemplateParam
-                            && isset(
-                                $input_class_storage->template_types
-                                    [$ets[0]->param_name]
-                                    [$ets[0]->defining_class],
+                    foreach ($extended_input_param_type->getAtomicTypes() as $extended_template) {
+                        $extended_templates = $extended_template instanceof TTemplateParam
+                            ? array_values(
+                                array_filter(
+                                    Methods::getExtendedTemplatedTypes($extended_template, $template_extends),
+                                    static fn(Atomic $a) => $a instanceof TTemplateParam,
+                                ),
                             )
-                        ) {
-                            $old_params_offset = (int) array_search(
-                                $ets[0]->param_name,
-                                array_keys($input_class_storage->template_types),
-                            );
+                            : [];
 
-                            $candidate_param_type = $input_type_params[$old_params_offset] ?? Type::getMixed();
-                            $candidate_param_type = $candidate_param_type->setProperties([
-                                'from_template_default' => true,
-                            ]);
-                        } else {
-                            $candidate_param_type = new Union([$et], ['from_template_default' => true]);
+                        $candidate_param_types = [];
+
+                        if ($extended_templates) {
+                            foreach ($extended_templates as $template) {
+                                if (!isset(
+                                    $input_class_storage->template_types
+                                        [$template->param_name]
+                                        [$template->defining_class],
+                                )) {
+                                    continue;
+                                }
+
+                                $old_params_offset = (int) array_search(
+                                    $template->param_name,
+                                    array_keys($input_class_storage->template_types),
+                                );
+
+                                $candidate_param_types[] = ($input_type_params[$old_params_offset] ?? Type::getMixed())
+                                    ->setProperties(['from_template_default' => true]);
+                            }
                         }
 
                         $new_input_param = Type::combineUnionTypes(
                             $new_input_param,
-                            $candidate_param_type,
+                            $candidate_param_types
+                                ? Type::combineUnionTypeArray($candidate_param_types, $codebase)
+                                : new Union([$extended_template], ['from_template_default' => true]),
                         );
                     }
 
