@@ -739,6 +739,20 @@ abstract class Type
                 $combined_type = null;
                 foreach ($type_1->getAtomicTypes() as $type_1_atomic) {
                     foreach ($type_2->getAtomicTypes() as $type_2_atomic) {
+                        if ($type_1_atomic instanceof TTemplateParam
+                            && $type_2_atomic instanceof TNamedObject
+                        ) {
+                            $intersected_with_template = self::intersectUnionTypes(
+                                $type_1_atomic->as,
+                                new Union([$type_2_atomic]),
+                                $codebase,
+                            );
+
+                            if ($intersected_with_template && $intersected_with_template->isSingle()) {
+                                $type_1_atomic = $intersected_with_template->getSingleAtomic();
+                            }
+                        }
+
                         $intersection_atomic = self::intersectAtomicTypes(
                             $type_1_atomic,
                             $type_2_atomic,
