@@ -1314,7 +1314,7 @@ function wordwrap(string $string, int $width = 75, string $break = "\n", bool $c
  * @psalm-taint-sink html $format
  * @psalm-taint-sink html $values
  */
-function printf(string $format, ...$values) : string {}
+function printf(string $format, ...$values) : int {}
 
 /**
  * @psalm-taint-specialize
