@@ -126,7 +126,10 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
                         break;
                     }
 
-                    // PHP 7
+                    /**
+                     * PHP 7
+                     * @psalm-suppress DocblockTypeContradiction
+                     */
                     if ($result === false && count($dummy) >= $args_count) {
                         IssueBuffer::maybeAdd(
                             new TooFewArguments(
@@ -140,7 +143,10 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
                         return Type::getFalse();
                     }
 
-                    // PHP 7
+                    /**
+                     * PHP 7
+                     * @psalm-suppress DocblockTypeContradiction
+                     */
                     if ($result === false && count($dummy) + 1 !== $args_count) {
                         IssueBuffer::maybeAdd(
                             new TooManyArguments(
@@ -163,6 +169,10 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
                     return null;
                 }
 
+                /**
+                 * PHP 7
+                 * @psalm-suppress RedundantConditionGivenDocblockType
+                 */
                 if ($initial_result !== null && $initial_result !== false && $initial_result !== '') {
                     return Type::getNonEmptyString();
                 }

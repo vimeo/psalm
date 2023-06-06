@@ -1285,7 +1285,7 @@ function preg_quote(string $str, ?string $delimiter = null) : string {}
  *
  * @psalm-flow ($format, $values) -> return
  */
-function sprintf(string $format, ...$values) : string {}
+function sprintf(string $format, ...$values) {}
 
 /**
  * @psalm-pure
@@ -1314,14 +1314,14 @@ function wordwrap(string $string, int $width = 75, string $break = "\n", bool $c
  * @psalm-taint-sink html $format
  * @psalm-taint-sink html $values
  */
-function printf(string $format, ...$values) : int {}
+function printf(string $format, ...$values) {}
 
 /**
  * @psalm-taint-specialize
  * @psalm-taint-sink html $format
  * @psalm-taint-sink html $values
  */
-function vprintf(string $format, array $values) : int {}
+function vprintf(string $format, array $values) {}
 
 /**
  * @psalm-pure
