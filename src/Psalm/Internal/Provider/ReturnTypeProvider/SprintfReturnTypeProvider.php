@@ -2,6 +2,12 @@
 
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
+use ArgumentCountError;
+use ValueError;
+use Psalm\Issue\InvalidArgument;
+use Psalm\Issue\TooFewArguments;
+use Psalm\Issue\TooManyArguments;
+use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
@@ -28,16 +34,32 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
     public static function getFunctionIds(): array
     {
         return [
+            'printf',
             'sprintf',
         ];
     }
 
-    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Union
+    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): ?Union
     {
         $statements_source = $event->getStatementsSource();
-        $node_type_provider = $statements_source->getNodeTypeProvider();
-
         $call_args = $event->getCallArgs();
+
+        // it makes no sense to use sprintf/printf when there is only 1 arg (the format)
+        // as it wouldn't have any placeholders
+        if (count($call_args) === 1) {
+            IssueBuffer::maybeAdd(
+                new TooFewArguments(
+                    'Too few arguments for ' . $event->getFunctionId() . ', expecting at least 2 arguments',
+                    $event->getCodeLocation(),
+                    $event->getFunctionId(),
+                ),
+                $statements_source->getSuppressedIssues(),
+            );
+
+            return null;
+        }
+
+        $node_type_provider = $statements_source->getNodeTypeProvider();
         foreach ($call_args as $index => $call_arg) {
             $type = $node_type_provider->getType($call_arg->value);
             if ($type === null) {
@@ -45,12 +67,111 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
             }
 
             if ($index === 0 && $type->isSingleStringLiteral()) {
-                // use empty string dummies to check if the format itself produces a non-empty return value
-                // faster than validating the pattern and checking all args separately
-                $dummy = array_fill(0, count($call_args) - 1, '');
-                if (sprintf($type->getSingleStringLiteral()->value, ...$dummy) !== '') {
+                $args_count = count($call_args) - 1;
+                $dummy = array_fill(0, $args_count, '');
+
+                // check if we have enough/too many arguments and a valid format
+                $result = null;
+                $initial_result = null;
+                while (count($dummy) > -1) {
+                    try {
+                        // before PHP 8, an uncatchable Warning is thrown if too few arguments are passed, which is ignored and handled below instead
+                        $result = @sprintf($type->getSingleStringLiteral()->value, ...$dummy);
+                        if ($initial_result === null) {
+                            $initial_result = $result;
+                        }
+                    } catch(ValueError $value_error) {
+                        // PHP 8
+                        // the format is invalid
+                        IssueBuffer::maybeAdd(
+                            new InvalidArgument(
+                                'Argument 1 of ' . $event->getFunctionId() . ' is invalid - ' . $value_error->getMessage(),
+                                $event->getCodeLocation(),
+                                $event->getFunctionId(),
+                            ),
+                            $statements_source->getSuppressedIssues(),
+                        );
+
+                        return null;
+                    } catch(ArgumentCountError $error) {
+                        // PHP 8
+                        if (count($dummy) >= $args_count) {
+                            IssueBuffer::maybeAdd(
+                                new TooFewArguments(
+                                    'Too few arguments for ' . $event->getFunctionId(),
+                                    $event->getCodeLocation(),
+                                    $event->getFunctionId(),
+                                ),
+                                $statements_source->getSuppressedIssues(),
+                            );
+
+                            return null;
+                        }
+
+                        // we are in the next iteration, so we have 1 placeholder less here
+                        // otherwise we would have reported an error above already
+                        if (count($dummy) + 1 === $args_count) {
+                            break;
+                        }
+
+                        IssueBuffer::maybeAdd(
+                            new TooManyArguments(
+                                'Too many arguments for the number of placeholders in ' . $event->getFunctionId(),
+                                $event->getCodeLocation(),
+                                $event->getFunctionId(),
+                            ),
+                            $statements_source->getSuppressedIssues(),
+                        );
+
+                        break;
+                    }
+
+                    // PHP 7
+                    if ($result === false && count($dummy) >= $args_count) {
+                        IssueBuffer::maybeAdd(
+                            new TooFewArguments(
+                                'Too few arguments for ' . $event->getFunctionId(),
+                                $event->getCodeLocation(),
+                                $event->getFunctionId(),
+                            ),
+                            $statements_source->getSuppressedIssues(),
+                        );
+
+                        return Type::getFalse();
+                    }
+
+                    // PHP 7
+                    if ($result === false && count($dummy) + 1 !== $args_count) {
+                        IssueBuffer::maybeAdd(
+                            new TooManyArguments(
+                                'Too many arguments for the number of placeholders in ' . $event->getFunctionId(),
+                                $event->getCodeLocation(),
+                                $event->getFunctionId(),
+                            ),
+                            $statements_source->getSuppressedIssues(),
+                        );
+
+                        break;
+                    }
+
+                    array_pop($dummy);
+                }
+
+                if ($event->getFunctionId() === 'printf') {
+                    // printf only has the format validated above
+                    // don't change the return type
+                    return null;
+                }
+
+                if ($initial_result !== null && $initial_result !== false && $initial_result !== '') {
                     return Type::getNonEmptyString();
                 }
+            }
+
+            if ($index === 0 && $event->getFunctionId() === 'printf') {
+                // printf only has the format validated above
+                // don't change the return type
+                return null;
             }
 
             if ($index === 0) {
@@ -59,9 +180,7 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
 
             // if the function has more arguments than the pattern has placeholders, this could be a false positive
             // if the param is not used in the pattern
-            // however we would need to analyze the format arg to check that
-            // can be done eventually to also implement https://github.com/vimeo/psalm/issues/9818
-            // and https://github.com/vimeo/psalm/issues/9817
+            // however this is already reported above and returned, so this cannot happen
             if ($type->isNonEmptyString() || $type->isInt() || $type->isFloat()) {
                 return Type::getNonEmptyString();
             }
@@ -91,6 +210,6 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
             return Type::getNonEmptyString();
         }
 
-        return Type::getString();
+        return null;
     }
 }

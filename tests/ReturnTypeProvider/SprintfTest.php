@@ -3,10 +3,12 @@
 namespace Psalm\Tests\ReturnTypeProvider;
 
 use Psalm\Tests\TestCase;
+use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 class SprintfTest extends TestCase
 {
+    use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
     public function providerValidCodeParse(): iterable
@@ -118,6 +120,69 @@ class SprintfTest extends TestCase
             ',
             'assertions' => [
                 '$val===' => 'string',
+            ],
+        ];
+
+        yield 'printfSimple' => [
+            'code' => '<?php
+                $val = printf("%s", "hello");
+            ',
+            'assertions' => [
+                '$val===' => 'int<0, max>',
+            ],
+        ];
+    }
+
+    public function providerInvalidCodeParse(): iterable
+    {
+        return [
+            'sprintfOnlyFormat' => [
+                'code' => '<?php
+                    $x = sprintf("hello");
+                ',
+                'error_message' => 'TooFewArguments',
+            ],
+            'sprintfTooFewArguments' => [
+                'code' => '<?php
+                    $x = sprintf("%s hello %d", "a");
+                ',
+                'error_message' => 'TooFewArguments',
+            ],
+            'sprintfTooManyArguments' => [
+                'code' => '<?php
+                    $x = sprintf("%s hello", "a", "b");
+                ',
+                'error_message' => 'TooManyArguments',
+            ],
+            'sprintfInvalidFormat' => [
+                'code' => '<?php
+                    $x = sprintf(\'"%" hello\', "a");
+                ',
+                'error_message' => 'InvalidArgument',
+            ],
+            'printfOnlyFormat' => [
+                'code' => '<?php
+                    printf("hello");
+                ',
+                'error_message' => 'TooFewArguments',
+            ],
+            'printfTooFewArguments' => [
+                'code' => '<?php
+                    printf("%s hello %d", "a");
+                ',
+                'error_message' => 'TooFewArguments',
+            ],
+            'printfTooManyArguments' => [
+                'code' => '<?php
+                    printf("%s hello", "a", "b");
+                ',
+                'error_message' => 'TooManyArguments',
+            ],
+            'printfInvalidFormat' => [
+                'code' => '<?php
+                    printf(\'"%" hello\', "a");
+                ',
+                'error_message' => 'InvalidArgument',
             ],
         ];
     }
