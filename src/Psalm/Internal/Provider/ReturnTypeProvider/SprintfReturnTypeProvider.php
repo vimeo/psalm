@@ -160,7 +160,11 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
                         break;
                     }
 
-                    array_pop($dummy);
+                    // for PHP 7, since it doesn't throw above
+                    // abort if it's empty, since we checked everything
+                    if (array_pop($dummy) === null) {
+                        break;
+                    }
                 }
 
                 if ($event->getFunctionId() === 'printf') {
