@@ -3330,7 +3330,7 @@ return [
 'gettimeofday' => ['array<string, int>'],
 'gettimeofday\'1' => ['float', 'as_float='=>'true'],
 'gettype' => ['string', 'value'=>'mixed'],
-'glob' => ['list<non-empty-string>|false', 'pattern'=>'string', 'flags='=>'int<1, max>'],
+'glob' => ['false|list{0?:string, ...<non-empty-string>}', 'pattern'=>'string', 'flags='=>'int-mask<GLOB_MARK, GLOB_NOSORT, GLOB_NOCHECK, GLOB_NOESCAPE, GLOB_BRACE, GLOB_ONLYDIR, GLOB_ERR>'],
 'GlobIterator::__construct' => ['void', 'pattern'=>'string', 'flags='=>'int'],
 'GlobIterator::count' => ['int'],
 'GlobIterator::current' => ['FilesystemIterator|SplFileInfo|string'],
