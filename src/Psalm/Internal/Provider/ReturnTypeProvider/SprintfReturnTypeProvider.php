@@ -63,6 +63,10 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
         $node_type_provider = $statements_source->getNodeTypeProvider();
         foreach ($call_args as $index => $call_arg) {
             $type = $node_type_provider->getType($call_arg->value);
+            if ($type === null && $event->getFunctionId() === 'printf') {
+                break;
+            }
+
             if ($type === null) {
                 continue;
             }
@@ -95,7 +99,7 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
                             $statements_source->getSuppressedIssues(),
                         );
 
-                        return null;
+                        break 2;
                     } catch (ArgumentCountError $error) {
                         // PHP 8
                         if (count($dummy) >= $args_count) {
@@ -108,7 +112,7 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
                                 $statements_source->getSuppressedIssues(),
                             );
 
-                            return null;
+                            break 2;
                         }
 
                         // we are in the next iteration, so we have 1 placeholder less here
@@ -179,7 +183,7 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
                 }
 
                 /**
-                 * PHP 7
+                 * PHP 7 can have false here
                  *
                  * @psalm-suppress RedundantConditionGivenDocblockType
                  */
@@ -191,7 +195,7 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
             if ($index === 0 && $event->getFunctionId() === 'printf') {
                 // printf only has the format validated above
                 // don't change the return type
-                return null;
+                break;
             }
 
             if ($index === 0) {
