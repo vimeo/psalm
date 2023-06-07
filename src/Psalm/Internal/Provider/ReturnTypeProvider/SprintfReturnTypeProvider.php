@@ -76,9 +76,9 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
                 $dummy = array_fill(0, $args_count, '');
 
                 // check if we have enough/too many arguments and a valid format
-                $result = null;
                 $initial_result = null;
                 while (count($dummy) > -1) {
+                    $result = null;
                     try {
                         // before PHP 8, an uncatchable Warning is thrown if too few arguments are passed
                         // which is ignored and handled below instead
