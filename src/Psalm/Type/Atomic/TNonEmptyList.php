@@ -8,13 +8,12 @@ use Psalm\Type\Union;
 use function array_fill;
 
 /**
- * @deprecated Will be removed in Psalm v6, please use TKeyedArrays with is_list=true instead.
- *
  * You may also use the \Psalm\Type::getNonEmptyListAtomic shortcut, which creates unsealed list-like shaped arrays
  * with one non-optional element, semantically equivalent to a TNonEmptyList.
  *
- *
  * Represents a non-empty list
+ *
+ * @deprecated Will be removed in Psalm v6, please use TKeyedArrays with is_list=true instead.
  * @psalm-immutable
  */
 class TNonEmptyList extends TList

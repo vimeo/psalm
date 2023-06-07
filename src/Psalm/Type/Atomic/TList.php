@@ -14,16 +14,15 @@ use Psalm\Type\Union;
 use function get_class;
 
 /**
- * @deprecated Will be removed in Psalm v6, please use TKeyedArrays with is_list=true instead.
- *
  * You may also use the \Psalm\Type::getListAtomic shortcut, which creates unsealed list-like shaped arrays
  * with all elements optional, semantically equivalent to a TList.
- *
  *
  * Represents an array that has some particularities:
  * - its keys are integers
  * - they start at 0
  * - they are consecutive and go upwards (no negative int)
+ *
+ * @deprecated Will be removed in Psalm v6, please use TKeyedArrays with is_list=true instead.
  * @psalm-immutable
  */
 class TList extends Atomic
