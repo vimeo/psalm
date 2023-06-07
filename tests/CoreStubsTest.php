@@ -393,9 +393,8 @@ class CoreStubsTest extends TestCase
                 '$stringPatternWithNocheckFlagAndMaybeOnlydir===' => 'false|list{0?: string, ...<non-empty-string>}',
                 '$stringPatternMaybeWithNocheckFlag===' => 'false|list{0?: string, ...<non-empty-string>}',
                 '$stringPatternMaybeWithNocheckFlagAndOnlydir===' => 'false|list<non-empty-string>',
-                '$stringPatternMaybeWithNocheckFlagAndMaybeOnlydir===' => 'false|list{0?: string, ...<non-empty-string>}'
-            ]
-
+                '$stringPatternMaybeWithNocheckFlagAndMaybeOnlydir===' => 'false|list{0?: string, ...<non-empty-string>}',
+            ],
         ];
         yield 'glob return ignores false' => [
             'code' => <<<'PHP'
