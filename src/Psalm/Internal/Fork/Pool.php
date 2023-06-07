@@ -98,7 +98,7 @@ class Pool
      * @param array<int, array<int, mixed>> $process_task_data_iterator
      * An array of task data items to be divided up among the
      * workers. The size of this is the number of forked processes.
-     * phpcs:ignore SlevomatCodingStandard.TypeHints.TypeHintDeclaration
+     * @phpcsSuppress SlevomatCodingStandard.TypeHints.ParameterTypeHint
      * @param Closure $startup_closure
      * A closure to execute upon starting a child
      * @param Closure(int, mixed):mixed $task_closure

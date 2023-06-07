@@ -17,10 +17,10 @@ use function explode;
 use function file_exists;
 
 /**
- * @psalm-import-type FileMapType from Analyzer
- *
  * Used to determine which files reference other files, necessary for using the --diff
  * option from the command line.
+ *
+ * @psalm-import-type FileMapType from Analyzer
  * @internal
  */
 class FileReferenceProvider
