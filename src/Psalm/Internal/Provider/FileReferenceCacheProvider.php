@@ -23,10 +23,10 @@ use const DIRECTORY_SEPARATOR;
 use const LOCK_EX;
 
 /**
- * @psalm-import-type FileMapType from Analyzer
- *
  * Used to determine which files reference other files, necessary for using the --diff
  * option from the command line.
+ *
+ * @psalm-import-type FileMapType from Analyzer
  * @internal
  */
 class FileReferenceCacheProvider
