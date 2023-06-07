@@ -3,7 +3,6 @@
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use ArgumentCountError;
-use ValueError;
 use Psalm\Issue\InvalidArgument;
 use Psalm\Issue\TooFewArguments;
 use Psalm\Issue\TooManyArguments;
@@ -18,8 +17,10 @@ use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Union;
+use ValueError;
 
 use function array_fill;
+use function array_pop;
 use function count;
 use function sprintf;
 
@@ -75,17 +76,19 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
                 $initial_result = null;
                 while (count($dummy) > -1) {
                     try {
-                        // before PHP 8, an uncatchable Warning is thrown if too few arguments are passed, which is ignored and handled below instead
+                        // before PHP 8, an uncatchable Warning is thrown if too few arguments are passed
+                        // which is ignored and handled below instead
                         $result = @sprintf($type->getSingleStringLiteral()->value, ...$dummy);
                         if ($initial_result === null) {
                             $initial_result = $result;
                         }
-                    } catch(ValueError $value_error) {
+                    } catch (ValueError $value_error) {
                         // PHP 8
                         // the format is invalid
                         IssueBuffer::maybeAdd(
                             new InvalidArgument(
-                                'Argument 1 of ' . $event->getFunctionId() . ' is invalid - ' . $value_error->getMessage(),
+                                'Argument 1 of ' . $event->getFunctionId() . ' is invalid - '
+                                . $value_error->getMessage(),
                                 $event->getCodeLocation(),
                                 $event->getFunctionId(),
                             ),
@@ -93,7 +96,7 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
                         );
 
                         return null;
-                    } catch(ArgumentCountError $error) {
+                    } catch (ArgumentCountError $error) {
                         // PHP 8
                         if (count($dummy) >= $args_count) {
                             IssueBuffer::maybeAdd(
@@ -128,6 +131,7 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
 
                     /**
                      * PHP 7
+                     *
                      * @psalm-suppress DocblockTypeContradiction
                      */
                     if ($result === false && count($dummy) >= $args_count) {
@@ -145,6 +149,7 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
 
                     /**
                      * PHP 7
+                     *
                      * @psalm-suppress DocblockTypeContradiction
                      */
                     if ($result === false && count($dummy) + 1 !== $args_count) {
@@ -175,6 +180,7 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
 
                 /**
                  * PHP 7
+                 *
                  * @psalm-suppress RedundantConditionGivenDocblockType
                  */
                 if ($initial_result !== null && $initial_result !== false && $initial_result !== '') {
