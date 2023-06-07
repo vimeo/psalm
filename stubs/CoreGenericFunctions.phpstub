@@ -1317,6 +1317,7 @@ function wordwrap(string $string, int $width = 75, string $break = "\n", bool $c
 function printf(string $format, ...$values) {}
 
 /**
+ * @psalm-pure
  * @psalm-taint-specialize
  * @psalm-taint-sink html $format
  * @psalm-taint-sink html $values
