@@ -37,7 +37,7 @@ jobs:
 
       - run:
           name: Code Style Analysis with PHPCS
-          command: vendor/bin/phpcs
+          command: vendor/bin/phpcs -d memory_limit=512M
 
   phar-build:
     executor: php-74
