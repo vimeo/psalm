@@ -9967,7 +9967,7 @@ return [
     'dcgettext' => ['string', 'domain'=>'string', 'message'=>'string', 'category'=>'int'],
     'dcngettext' => ['string', 'domain'=>'string', 'singular'=>'string', 'plural'=>'string', 'count'=>'int', 'category'=>'int'],
     'deaggregate' => ['', 'object'=>'object', 'class_name='=>'string'],
-    'debug_backtrace' => ['list<array{file:string,line:int,function:string,class?:class-string,object?:object,type?:string,args?:list}>', 'options='=>'int', 'limit='=>'int'],
+    'debug_backtrace' => ['list<array{file?:string,line?:int,function:string,class?:class-string,object?:object,type?:string,args?:list}>', 'options='=>'int', 'limit='=>'int'],
     'debug_print_backtrace' => ['void', 'options='=>'int', 'limit='=>'int'],
     'debug_zval_dump' => ['void', 'value'=>'mixed', '...values='=>'mixed'],
     'debugger_connect' => [''],
