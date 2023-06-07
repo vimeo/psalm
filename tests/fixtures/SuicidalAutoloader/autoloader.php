@@ -16,6 +16,7 @@ spl_autoload_register(function (string $className) {
         'PHPUnit\Framework\DOMDocument',
         'PHPUnit\Framework\DOMElement',
         'Stringable',
+        'AllowDynamicProperties',
 
         // https://github.com/symfony/symfony/pull/40203
         // these are actually functions, referenced as `if (!function_exists(u::class))`
