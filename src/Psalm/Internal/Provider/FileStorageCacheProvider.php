@@ -112,9 +112,9 @@ class FileStorageCacheProvider
      */
     private function loadFromCache(string $file_path): ?FileStorage
     {
-        $cache = $this->cache->getItem($this->getCacheLocationForPath($file_path));
-        if ($cache instanceof FileStorage) {
-            return $cache;
+        $storage = $this->cache->getItem($this->getCacheLocationForPath($file_path));
+        if ($storage instanceof FileStorage) {
+            return $storage;
         }
 
         return null;
