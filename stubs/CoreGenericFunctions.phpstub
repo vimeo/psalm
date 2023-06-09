@@ -1289,6 +1289,7 @@ function sprintf(string $format, ...$values) {}
 
 /**
  * @psalm-pure
+ * @param array<string|int|float> $values
  * @return string|false
  * @psalm-ignore-falsable-return
  *
@@ -1308,6 +1309,7 @@ function wordwrap(string $string, int $width = 75, string $break = "\n", bool $c
  * @psalm-pure
  *
  * @param string|int|float $values
+ * @return int<0, max>
  *
  * @psalm-taint-specialize
  * @psalm-flow ($format, $values) -> return
@@ -1317,6 +1319,9 @@ function wordwrap(string $string, int $width = 75, string $break = "\n", bool $c
 function printf(string $format, ...$values) {}
 
 /**
+ * @param array<string|int|float> $values
+ * @return int<0, max>
+ *
  * @psalm-pure
  * @psalm-taint-specialize
  * @psalm-taint-sink html $format
