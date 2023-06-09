@@ -20,7 +20,8 @@ class Cache
 {
     private Config $config;
 
-    public bool $use_igbinary;
+    /** @var bool */
+    public $use_igbinary;
 
     public function __construct(Config $config)
     {
