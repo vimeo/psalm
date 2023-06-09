@@ -36,6 +36,13 @@ class Cache
         }
 
         $cache = Providers::safeFileGetContents($path);
+        if ($this->config->use_gzip) {
+            $inflated = @gzinflate($cache);
+            if ($inflated !== false) {
+                $cache = $inflated;
+            }
+        }
+
         if ($this->config->use_igbinary) {
             /** @var object|false $unserialized */
             $unserialized = igbinary_unserialize($cache);
@@ -57,10 +64,16 @@ class Cache
     public function saveItem(string $path, object $item): void
     {
         if ($this->config->use_igbinary) {
-            file_put_contents($path, igbinary_serialize($item), LOCK_EX);
+            $serialized = igbinary_serialize($item);
         } else {
-            file_put_contents($path, serialize($item), LOCK_EX);
+            $serialized = serialize($item);
         }
+
+        if ($this->config->use_gzip) {
+            $serialized = gzdeflate($serialized);
+        }
+
+        file_put_contents($path, $serialized, LOCK_EX);
     }
 
     public function getCacheDirectory(): ?string
