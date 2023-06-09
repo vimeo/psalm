@@ -9,6 +9,8 @@ use function file_exists;
 use function file_put_contents;
 use function gzdeflate;
 use function gzinflate;
+use function igbinary_serialize;
+use function igbinary_unserialize;
 use function serialize;
 use function unlink;
 use function unserialize;
