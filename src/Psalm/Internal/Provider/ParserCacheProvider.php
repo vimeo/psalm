@@ -127,11 +127,7 @@ class ParserCacheProvider
 
         $cache_location = $this->getCacheLocationForPath($file_path, self::FILE_CONTENTS_CACHE_DIRECTORY);
 
-        if (is_readable($cache_location)) {
-            return Providers::safeFileGetContents($cache_location);
-        }
-
-        return null;
+        return $this->cache->getItem($cache_location);
     }
 
     /**
@@ -284,8 +280,7 @@ class ParserCacheProvider
         }
 
         $cache_location = $this->getCacheLocationForPath($file_path, self::FILE_CONTENTS_CACHE_DIRECTORY, true);
-
-        file_put_contents($cache_location, $file_contents, LOCK_EX);
+        $this->cache->saveItem($cache_location, $file_contents);
     }
 
     public function deleteOldParserCaches(float $time_before): int

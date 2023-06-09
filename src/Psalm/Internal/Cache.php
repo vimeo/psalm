@@ -31,7 +31,7 @@ class Cache
     }
 
     /**
-     * @return array|object|null
+     * @return array|object|string|null
      */
     public function getItem(string $path)
     {
@@ -66,7 +66,7 @@ class Cache
     }
 
     /**
-     * @param array|object $item
+     * @param array|object|string $item
      */
     public function saveItem(string $path, $item): void
     {
