@@ -11,22 +11,16 @@ use UnexpectedValueException;
 use function array_merge;
 use function dirname;
 use function file_exists;
-use function file_put_contents;
 use function filemtime;
 use function get_class;
 use function hash;
-use function igbinary_serialize;
-use function igbinary_unserialize;
 use function is_dir;
 use function is_null;
 use function mkdir;
-use function serialize;
 use function strtolower;
 use function unlink;
-use function unserialize;
 
 use const DIRECTORY_SEPARATOR;
-use const LOCK_EX;
 use const PHP_VERSION_ID;
 
 /**

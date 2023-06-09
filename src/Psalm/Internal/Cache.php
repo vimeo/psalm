@@ -7,6 +7,8 @@ use Psalm\Internal\Provider\Providers;
 
 use function file_exists;
 use function file_put_contents;
+use function gzdeflate;
+use function gzinflate;
 use function serialize;
 use function unlink;
 use function unserialize;
@@ -20,8 +22,7 @@ class Cache
 {
     private Config $config;
 
-    /** @var bool */
-    public $use_igbinary;
+    public bool $use_igbinary;
 
     public function __construct(Config $config)
     {
@@ -30,8 +31,6 @@ class Cache
     }
 
     /**
-     * @param string $path
-     *
      * @return array|object|null
      */
     public function getItem(string $path)
