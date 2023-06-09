@@ -29,7 +29,12 @@ class Cache
         $this->use_igbinary = $config->use_igbinary;
     }
 
-    public function getItem(string $path): ?object
+    /**
+     * @param string $path
+     *
+     * @return array|object|null
+     */
+    public function getItem(string $path)
     {
         if (!file_exists($path)) {
             return null;
@@ -61,7 +66,10 @@ class Cache
         }
     }
 
-    public function saveItem(string $path, object $item): void
+    /**
+     * @param array|object $item
+     */
+    public function saveItem(string $path, $item): void
     {
         if ($this->config->use_igbinary) {
             $serialized = igbinary_serialize($item);
