@@ -109,9 +109,6 @@ class ClassLikeStorageCacheProvider
         return PHP_VERSION_ID >= 8_01_00 ? hash('xxh128', $data) : hash('md4', $data);
     }
 
-    /**
-     * @psalm-suppress MixedAssignment
-     */
     private function loadFromCache(string $fq_classlike_name_lc, ?string $file_path): ?ClassLikeStorage
     {
         $storage = $this->cache->getItem($this->getCacheLocationForClass($fq_classlike_name_lc, $file_path));

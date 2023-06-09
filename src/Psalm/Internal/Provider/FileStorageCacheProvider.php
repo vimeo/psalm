@@ -107,9 +107,6 @@ class FileStorageCacheProvider
         return PHP_VERSION_ID >= 8_01_00 ? hash('xxh128', $data) : hash('md4', $data);
     }
 
-    /**
-     * @psalm-suppress MixedAssignment
-     */
     private function loadFromCache(string $file_path): ?FileStorage
     {
         $storage = $this->cache->getItem($this->getCacheLocationForPath($file_path));

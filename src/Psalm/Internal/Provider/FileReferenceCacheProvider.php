@@ -64,129 +64,81 @@ class FileReferenceCacheProvider
         return $new_hash !== $this->getConfigHashCache();
     }
 
-    /**
-     * @psalm-suppress MixedAssignment
-     */
     public function getCachedFileReferences(): ?array
     {
         return $this->getCacheItem(self::REFERENCE_CACHE_NAME);
     }
 
-    /**
-     * @psalm-suppress MixedAssignment
-     */
     public function getCachedClassLikeFiles(): ?array
     {
         return $this->getCacheItem(self::CLASSLIKE_FILE_CACHE_NAME);
     }
 
-    /**
-     * @psalm-suppress MixedAssignment
-     */
     public function getCachedNonMethodClassReferences(): ?array
     {
         return $this->getCacheItem(self::NONMETHOD_CLASS_REFERENCE_CACHE_NAME);
     }
 
-    /**
-     * @psalm-suppress MixedAssignment
-     */
     public function getCachedMethodClassReferences(): ?array
     {
         return $this->getCacheItem(self::METHOD_CLASS_REFERENCE_CACHE_NAME);
     }
 
-    /**
-     * @psalm-suppress MixedAssignment
-     */
     public function getCachedMethodMemberReferences(): ?array
     {
         return $this->getCacheItem(self::CLASS_METHOD_CACHE_NAME);
     }
 
-    /**
-     * @psalm-suppress MixedAssignment
-     */
     public function getCachedMethodDependencies(): ?array
     {
         return $this->getCacheItem(self::METHOD_DEPENDENCIES_CACHE_NAME);
     }
 
-    /**
-     * @psalm-suppress MixedAssignment
-     */
     public function getCachedMethodPropertyReferences(): ?array
     {
         return $this->getCacheItem(self::CLASS_PROPERTY_CACHE_NAME);
     }
 
-    /**
-     * @psalm-suppress MixedAssignment
-     */
     public function getCachedMethodMethodReturnReferences(): ?array
     {
         return $this->getCacheItem(self::CLASS_METHOD_RETURN_CACHE_NAME);
     }
 
-    /**
-     * @psalm-suppress MixedAssignment
-     */
     public function getCachedMethodMissingMemberReferences(): ?array
     {
         return $this->getCacheItem(self::METHOD_MISSING_MEMBER_CACHE_NAME);
     }
 
-    /**
-     * @psalm-suppress MixedAssignment
-     */
     public function getCachedFileMemberReferences(): ?array
     {
         return $this->getCacheItem(self::FILE_CLASS_MEMBER_CACHE_NAME);
     }
 
-    /**
-     * @psalm-suppress MixedAssignment
-     */
     public function getCachedFilePropertyReferences(): ?array
     {
         return $this->getCacheItem(self::FILE_CLASS_PROPERTY_CACHE_NAME);
     }
 
-    /**
-     * @psalm-suppress MixedAssignment
-     */
     public function getCachedFileMethodReturnReferences(): ?array
     {
         return $this->getCacheItem(self::FILE_METHOD_RETURN_CACHE_NAME);
     }
 
-    /**
-     * @psalm-suppress MixedAssignment
-     */
     public function getCachedFileMissingMemberReferences(): ?array
     {
         return $this->getCacheItem(self::FILE_MISSING_MEMBER_CACHE_NAME);
     }
 
-    /**
-     * @psalm-suppress MixedAssignment
-     */
     public function getCachedMixedMemberNameReferences(): ?array
     {
         return $this->getCacheItem(self::UNKNOWN_MEMBER_CACHE_NAME);
     }
 
-    /**
-     * @psalm-suppress MixedAssignment
-     */
     public function getCachedMethodParamUses(): ?array
     {
         return $this->getCacheItem(self::METHOD_PARAM_USE_CACHE_NAME);
     }
 
-    /**
-     * @psalm-suppress MixedAssignment
-     */
     public function getCachedIssues(): ?array
     {
         return $this->getCacheItem(self::ISSUES_CACHE_NAME);
