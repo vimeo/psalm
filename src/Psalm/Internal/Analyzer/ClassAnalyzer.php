@@ -802,7 +802,20 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         $codebase,
                     );
 
-                    if ($property_storage->location
+                    if ($guide_property_storage->readonly
+                        && UnionTypeComparator::isContainedBy(
+                            $codebase,
+                            $property_type,
+                            $guide_property_type,
+                            false,
+                            false,
+                            null,
+                            false,
+                            false,
+                        )) {
+                        // if the original property is readonly, it cannot be written
+                        // therefore invariance is not a problem, if the parent type contains the child type
+                    } elseif ($property_storage->location
                         && !$property_type->equals($guide_property_type, false)
                         && $guide_class_storage->user_defined
                     ) {
