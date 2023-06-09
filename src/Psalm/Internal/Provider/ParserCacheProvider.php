@@ -127,7 +127,10 @@ class ParserCacheProvider
 
         $cache_location = $this->getCacheLocationForPath($file_path, self::FILE_CONTENTS_CACHE_DIRECTORY);
 
-        return $this->cache->getItem($cache_location);
+        /** @var string $cache_item */
+        $cache_item = $this->cache->getItem($cache_location);
+
+        return $cache_item;
     }
 
     /**
