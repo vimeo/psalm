@@ -3,6 +3,7 @@
 namespace Psalm\Internal\Provider;
 
 use Psalm\Config;
+use Psalm\Internal\Cache;
 use Psalm\Storage\FileStorage;
 use RuntimeException;
 use UnexpectedValueException;
@@ -10,21 +11,14 @@ use UnexpectedValueException;
 use function array_merge;
 use function dirname;
 use function file_exists;
-use function file_put_contents;
 use function filemtime;
 use function get_class;
 use function hash;
-use function igbinary_serialize;
-use function igbinary_unserialize;
 use function is_dir;
 use function mkdir;
-use function serialize;
 use function strtolower;
-use function unlink;
-use function unserialize;
 
 use const DIRECTORY_SEPARATOR;
-use const LOCK_EX;
 use const PHP_VERSION_ID;
 
 /**
@@ -34,13 +28,13 @@ class FileStorageCacheProvider
 {
     private string $modified_timestamps = '';
 
-    private Config $config;
+    private Cache $cache;
 
     private const FILE_STORAGE_CACHE_DIRECTORY = 'file_cache';
 
     public function __construct(Config $config)
     {
-        $this->config = $config;
+        $this->cache = new Cache($config);
 
         $storage_dir = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'Storage' . DIRECTORY_SEPARATOR;
 
@@ -64,7 +58,7 @@ class FileStorageCacheProvider
             $this->modified_timestamps .= ' ' . filemtime($dependent_file_path);
         }
 
-        $this->modified_timestamps .= $this->config->computeHash();
+        $this->modified_timestamps .= $config->computeHash();
     }
 
     public function writeToCache(FileStorage $storage, string $file_contents): void
@@ -73,11 +67,7 @@ class FileStorageCacheProvider
         $cache_location = $this->getCacheLocationForPath($file_path, true);
         $storage->hash = $this->getCacheHash($file_path, $file_contents);
 
-        if ($this->config->use_igbinary) {
-            file_put_contents($cache_location, igbinary_serialize($storage), LOCK_EX);
-        } else {
-            file_put_contents($cache_location, serialize($storage), LOCK_EX);
-        }
+        $this->cache->saveItem($cache_location, $storage);
     }
 
     public function getLatestFromCache(string $file_path, string $file_contents): ?FileStorage
@@ -105,11 +95,7 @@ class FileStorageCacheProvider
 
     public function removeCacheForFile(string $file_path): void
     {
-        $cache_path = $this->getCacheLocationForPath($file_path);
-
-        if (file_exists($cache_path)) {
-            unlink($cache_path);
-        }
+        $this->cache->deleteItem($this->getCacheLocationForPath($file_path));
     }
 
     private function getCacheHash(string $_unused_file_path, string $file_contents): string
@@ -126,26 +112,9 @@ class FileStorageCacheProvider
      */
     private function loadFromCache(string $file_path): ?FileStorage
     {
-        $cache_location = $this->getCacheLocationForPath($file_path);
-
-        if (file_exists($cache_location)) {
-            if ($this->config->use_igbinary) {
-                $storage = igbinary_unserialize(Providers::safeFileGetContents($cache_location));
-
-                if ($storage instanceof FileStorage) {
-                    return $storage;
-                }
-
-                return null;
-            }
-
-            $storage = unserialize(Providers::safeFileGetContents($cache_location));
-
-            if ($storage instanceof FileStorage) {
-                return $storage;
-            }
-
-            return null;
+        $cache = $this->cache->getItem($this->getCacheLocationForPath($file_path));
+        if ($cache instanceof FileStorage) {
+            return $cache;
         }
 
         return null;
@@ -153,7 +122,7 @@ class FileStorageCacheProvider
 
     private function getCacheLocationForPath(string $file_path, bool $create_directory = false): string
     {
-        $root_cache_directory = $this->config->getCacheDirectory();
+        $root_cache_directory = $this->cache->getCacheDirectory();
 
         if (!$root_cache_directory) {
             throw new UnexpectedValueException('No cache directory defined');
@@ -188,6 +157,6 @@ class FileStorageCacheProvider
         return $parser_cache_directory
             . DIRECTORY_SEPARATOR
             . $hash
-            . ($this->config->use_igbinary ? '-igbinary' : '');
+            . ($this->cache->use_igbinary ? '-igbinary' : '');
     }
 }
