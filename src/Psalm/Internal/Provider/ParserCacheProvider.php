@@ -290,7 +290,7 @@ class ParserCacheProvider
 
     public function deleteOldParserCaches(float $time_before): int
     {
-        $cache_directory = $this->config->getCacheDirectory();
+        $cache_directory = $this->cache->getCacheDirectory();
 
         $this->existing_file_content_hashes = null;
         $this->new_file_content_hashes = [];
