@@ -229,7 +229,10 @@ class FileReferenceCacheProvider
      */
     public function getAnalyzedMethodCache()
     {
-        return $this->getCacheItem(self::ANALYZED_METHODS_CACHE_NAME) ?? false;
+        /** @var null|array<string, array<string, int>> $cache_item */
+        $cache_item = $this->getCacheItem(self::ANALYZED_METHODS_CACHE_NAME);
+
+        return $cache_item ?? false;
     }
 
     /**
@@ -245,7 +248,10 @@ class FileReferenceCacheProvider
      */
     public function getFileMapCache()
     {
-        return $this->getCacheItem(self::FILE_MAPS_CACHE_NAME) ?? false;
+        /** @var array<string, FileMapType>|null $cache_item */
+        $cache_item = $this->getCacheItem(self::FILE_MAPS_CACHE_NAME);
+
+        return $cache_item ?? false;
     }
 
     /**
@@ -263,7 +269,10 @@ class FileReferenceCacheProvider
     public function getTypeCoverage()
     {
         //phpcs:enable -- Remove this once the phpstan phpdoc parser MR is merged
-        return $this->getCacheItem(self::TYPE_COVERAGE_CACHE_NAME) ?? false;
+        /** @var array<string, array{int, int}>|null $cache_item */
+        $cache_item = $this->getCacheItem(self::TYPE_COVERAGE_CACHE_NAME);
+
+        return $cache_item ?? false;
     }
 
     /**
