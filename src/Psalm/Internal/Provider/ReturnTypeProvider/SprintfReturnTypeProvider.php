@@ -101,7 +101,8 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
                             if ($result === $type->getSingleStringLiteral()->value) {
                                 IssueBuffer::maybeAdd(
                                     new InvalidArgument(
-                                        'Argument 1 of ' . $event->getFunctionId() . ' does not contain any placeholders',
+                                        'Argument 1 of ' . $event->getFunctionId()
+                                        . ' does not contain any placeholders',
                                         $event->getCodeLocation(),
                                         $event->getFunctionId(),
                                     ),
@@ -216,12 +217,8 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
                     return Type::getNonEmptyString();
                 }
 
-                /**
-                 * if we didn't have a valid result, the pattern is invalid or not yet supported by the return type provider
-                 * PHP 7 can have false here
-                 *
-                 * @psalm-suppress RedundantConditionGivenDocblockType
-                 */
+                // if we didn't have a valid result
+                // the pattern is invalid or not yet supported by the return type provider
                 if ($initial_result === null || $initial_result === false) {
                     return null;
                 }

@@ -140,7 +140,7 @@ class SprintfTest extends TestCase
                 '$val===' => 'string',
             ],
             'ignored_issues' => [
-                'InvalidArgument'
+                'InvalidArgument',
             ],
         ];
     }
