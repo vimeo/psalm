@@ -131,6 +131,57 @@ class SprintfTest extends TestCase
                 '$val===' => 'int<0, max>',
             ],
         ];
+
+        yield 'sprintfEmptyStringFormat' => [
+            'code' => '<?php
+                $val = sprintf("", "abc");
+            ',
+            'assertions' => [
+                '$val===' => '\'\'',
+            ],
+            'ignored_issues' => [
+                'InvalidArgument',
+            ],
+        ];
+
+        yield 'sprintfPaddedEmptyStringFormat' => [
+            'code' => '<?php
+                $val = sprintf("%0.0s", "abc");
+            ',
+            'assertions' => [
+                '$val===' => '\'\'',
+            ],
+            'ignored_issues' => [
+                'InvalidArgument',
+            ],
+        ];
+
+        yield 'sprintfComplexPlaceholderNotYetSupported1' => [
+            'code' => '<?php
+                $val = sprintf(\'%*.0s\', 0, "abc");
+            ',
+            'assertions' => [
+                '$val===' => 'string',
+            ],
+        ];
+
+        yield 'sprintfComplexPlaceholderNotYetSupported2' => [
+            'code' => '<?php
+                $val = sprintf(\'%0.*s\', 0, "abc");
+            ',
+            'assertions' => [
+                '$val===' => 'string',
+            ],
+        ];
+
+        yield 'sprintfComplexPlaceholderNotYetSupported3' => [
+            'code' => '<?php
+                $val = sprintf(\'%*.*s\', 0, 0, "abc");
+            ',
+            'assertions' => [
+                '$val===' => 'string',
+            ],
+        ];
     }
 
     public function providerInvalidCodeParse(): iterable
@@ -181,6 +232,24 @@ class SprintfTest extends TestCase
             'printfInvalidFormat' => [
                 'code' => '<?php
                     printf(\'"%" hello\', "a");
+                ',
+                'error_message' => 'InvalidArgument',
+            ],
+            'sprintfEmptyFormat' => [
+                'code' => '<?php
+                    $x = sprintf("", "abc");
+                ',
+                'error_message' => 'InvalidArgument',
+            ],
+            'sprintfFormatWithoutPlaceholders' => [
+                'code' => '<?php
+                    $x = sprintf("hello", "abc");
+                ',
+                'error_message' => 'InvalidArgument',
+            ],
+            'sprintfPaddedComplexEmptyStringFormat' => [
+                'code' => '<?php
+                    $x = sprintf("%1$+0.0s", "abc");
                 ',
                 'error_message' => 'InvalidArgument',
             ],

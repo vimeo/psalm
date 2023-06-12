@@ -22,6 +22,7 @@ use ValueError;
 use function array_fill;
 use function array_pop;
 use function count;
+use function preg_match;
 use function sprintf;
 
 /**
@@ -63,7 +64,7 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
         $node_type_provider = $statements_source->getNodeTypeProvider();
         foreach ($call_args as $index => $call_arg) {
             $type = $node_type_provider->getType($call_arg->value);
-            if ($type === null && $event->getFunctionId() === 'printf') {
+            if ($type === null && $index === 0 && $event->getFunctionId() === 'printf') {
                 break;
             }
 
@@ -72,6 +73,56 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
             }
 
             if ($index === 0 && $type->isSingleStringLiteral()) {
+                if ($type->getSingleStringLiteral()->value === '') {
+                    IssueBuffer::maybeAdd(
+                        new InvalidArgument(
+                            'Argument 1 of ' . $event->getFunctionId() . ' must not be an empty string',
+                            $event->getCodeLocation(),
+                            $event->getFunctionId(),
+                        ),
+                        $statements_source->getSuppressedIssues(),
+                    );
+
+                    if ($event->getFunctionId() === 'printf') {
+                        return Type::getInt(false, 0);
+                    }
+
+                    return Type::getString('');
+                }
+
+                // there are probably additional formats that return an empty string, this is just a starting point
+                if (preg_match('/^%(?:\d+\$)?[-+]?0(?:\.0)?s$/', $type->getSingleStringLiteral()->value) === 1) {
+                    IssueBuffer::maybeAdd(
+                        new InvalidArgument(
+                            'The pattern of argument 1 of ' . $event->getFunctionId()
+                            . ' will always return an empty string',
+                            $event->getCodeLocation(),
+                            $event->getFunctionId(),
+                        ),
+                        $statements_source->getSuppressedIssues(),
+                    );
+
+                    if ($event->getFunctionId() === 'printf') {
+                        return Type::getInt(false, 0);
+                    }
+
+                    return Type::getString('');
+                }
+
+                // these placeholders are too complex to handle for now
+                if (preg_match(
+                    '/%(?:\d+\$)?[-+]?(?:\d+|\*)(?:\.(?:\d+|\*))?[bcdouxXeEfFgGhHs]/',
+                    $type->getSingleStringLiteral()->value,
+                ) === 1) {
+                    if ($event->getFunctionId() === 'printf') {
+                        return null;
+                    }
+
+                    // the core stubs are wrong for these too, since these might be empty strings
+                    // e.g. sprintf(\'%0.*s\', 0, "abc")
+                    return Type::getString();
+                }
+
                 $args_count = count($call_args) - 1;
                 $dummy = array_fill(0, $args_count, '');
 
@@ -84,6 +135,20 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
                         $result = @sprintf($type->getSingleStringLiteral()->value, ...$dummy);
                         if ($initial_result === null) {
                             $initial_result = $result;
+
+                            if ($result === $type->getSingleStringLiteral()->value) {
+                                IssueBuffer::maybeAdd(
+                                    new InvalidArgument(
+                                        'Argument 1 of ' . $event->getFunctionId()
+                                        . ' does not contain any placeholders',
+                                        $event->getCodeLocation(),
+                                        $event->getFunctionId(),
+                                    ),
+                                    $statements_source->getSuppressedIssues(),
+                                );
+
+                                return null;
+                            }
                         }
                     } catch (ValueError $value_error) {
                         // PHP 8
@@ -188,6 +253,12 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
                  */
                 if ($initial_result !== null && $initial_result !== false && $initial_result !== '') {
                     return Type::getNonEmptyString();
+                }
+
+                // if we didn't have a valid result
+                // the pattern is invalid or not yet supported by the return type provider
+                if ($initial_result === null || $initial_result === false) {
+                    return null;
                 }
             }
 
