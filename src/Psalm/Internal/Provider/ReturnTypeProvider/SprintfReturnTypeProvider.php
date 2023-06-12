@@ -63,7 +63,7 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
         $node_type_provider = $statements_source->getNodeTypeProvider();
         foreach ($call_args as $index => $call_arg) {
             $type = $node_type_provider->getType($call_arg->value);
-            if ($type === null && $event->getFunctionId() === 'printf') {
+            if ($type === null && $index === 0 && $event->getFunctionId() === 'printf') {
                 break;
             }
 
