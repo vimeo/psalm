@@ -22,6 +22,7 @@ use ValueError;
 use function array_fill;
 use function array_pop;
 use function count;
+use function preg_match;
 use function sprintf;
 
 /**
@@ -93,7 +94,8 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
                 if (preg_match('/^%(?:\d+\$)?[-+]?0(?:\.0)?s$/', $type->getSingleStringLiteral()->value) === 1) {
                     IssueBuffer::maybeAdd(
                         new InvalidArgument(
-                            'The pattern of argument 1 of ' . $event->getFunctionId() . ' will always return an empty string',
+                            'The pattern of argument 1 of ' . $event->getFunctionId()
+                            . ' will always return an empty string',
                             $event->getCodeLocation(),
                             $event->getFunctionId(),
                         ),
@@ -107,13 +109,17 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
                     return Type::getString('');
                 }
 
-                // placeholders are too complex to handle for now
-                if (preg_match('/%(?:\d+\$)?[-+]?(?:\d+|\*)(?:\.(?:\d+|\*))?[bcdouxXeEfFgGhHs]/', $type->getSingleStringLiteral()->value) === 1) {
+                // these placeholders are too complex to handle for now
+                if (preg_match(
+                    '/%(?:\d+\$)?[-+]?(?:\d+|\*)(?:\.(?:\d+|\*))?[bcdouxXeEfFgGhHs]/',
+                    $type->getSingleStringLiteral()->value,
+                ) === 1) {
                     if ($event->getFunctionId() === 'printf') {
                         return null;
                     }
 
-                    // the core stubs are wrong for these too, since these might be empty strings, e.g. sprintf(\'%0.*s\', 0, "abc")
+                    // the core stubs are wrong for these too, since these might be empty strings
+                    // e.g. sprintf(\'%0.*s\', 0, "abc")
                     return Type::getString();
                 }
 
