@@ -137,7 +137,7 @@ class SprintfTest extends TestCase
                 $val = sprintf("", "abc");
             ',
             'assertions' => [
-                '$val===' => 'string',
+                '$val===' => '\'\'',
             ],
             'ignored_issues' => [
                 'InvalidArgument',
@@ -149,7 +149,7 @@ class SprintfTest extends TestCase
                 $val = sprintf("%0.0s", "abc");
             ',
             'assertions' => [
-                '$val===' => 'string',
+                '$val===' => '\'\'',
             ],
             'ignored_issues' => [
                 'InvalidArgument',
