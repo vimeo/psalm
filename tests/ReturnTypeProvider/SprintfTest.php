@@ -143,6 +143,18 @@ class SprintfTest extends TestCase
                 'InvalidArgument',
             ],
         ];
+
+        yield 'sprintfPaddedEmptyStringFormat' => [
+            'code' => '<?php
+                $val = sprintf("%0.0s", "abc");
+            ',
+            'assertions' => [
+                '$val===' => 'string',
+            ],
+            'ignored_issues' => [
+                'InvalidArgument',
+            ],
+        ];
     }
 
     public function providerInvalidCodeParse(): iterable
@@ -205,6 +217,12 @@ class SprintfTest extends TestCase
             'sprintfFormatWithoutPlaceholders' => [
                 'code' => '<?php
                     $x = sprintf("hello", "abc");
+                ',
+                'error_message' => 'InvalidArgument',
+            ],
+            'sprintfPaddedComplexEmptyStringFormat' => [
+                'code' => '<?php
+                    $x = sprintf("%1$+0.0s", "abc");
                 ',
                 'error_message' => 'InvalidArgument',
             ],

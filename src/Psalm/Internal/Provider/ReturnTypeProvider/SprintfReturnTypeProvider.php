@@ -82,7 +82,29 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
                         $statements_source->getSuppressedIssues(),
                     );
 
-                    return null;
+                    if ($event->getFunctionId() === 'printf') {
+                        return Type::getInt(false, 0);
+                    }
+
+                    return Type::getString('');
+                }
+
+                // there are probably additional formats that return an empty string, this is just a starting point
+                if (preg_match('/^%(?:\d+\$)?[-+]?0(\.0)?s$/', $type->getSingleStringLiteral()->value) === 1) {
+                    IssueBuffer::maybeAdd(
+                        new InvalidArgument(
+                            'The pattern of argument 1 of ' . $event->getFunctionId() . ' will always return an empty string',
+                            $event->getCodeLocation(),
+                            $event->getFunctionId(),
+                        ),
+                        $statements_source->getSuppressedIssues(),
+                    );
+
+                    if ($event->getFunctionId() === 'printf') {
+                        return Type::getInt(false, 0);
+                    }
+
+                    return Type::getString('');
                 }
 
                 $args_count = count($call_args) - 1;
