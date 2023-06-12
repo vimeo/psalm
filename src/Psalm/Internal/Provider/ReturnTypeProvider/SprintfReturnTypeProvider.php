@@ -72,6 +72,19 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
             }
 
             if ($index === 0 && $type->isSingleStringLiteral()) {
+                if ($type->getSingleStringLiteral()->value === '') {
+                    IssueBuffer::maybeAdd(
+                        new InvalidArgument(
+                            'Argument 1 of ' . $event->getFunctionId() . ' must not be an empty string',
+                            $event->getCodeLocation(),
+                            $event->getFunctionId(),
+                        ),
+                        $statements_source->getSuppressedIssues(),
+                    );
+
+                    return null;
+                }
+
                 $args_count = count($call_args) - 1;
                 $dummy = array_fill(0, $args_count, '');
 
@@ -84,6 +97,19 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
                         $result = @sprintf($type->getSingleStringLiteral()->value, ...$dummy);
                         if ($initial_result === null) {
                             $initial_result = $result;
+
+                            if ($result === $type->getSingleStringLiteral()->value) {
+                                IssueBuffer::maybeAdd(
+                                    new InvalidArgument(
+                                        'Argument 1 of ' . $event->getFunctionId() . ' does not contain any placeholders',
+                                        $event->getCodeLocation(),
+                                        $event->getFunctionId(),
+                                    ),
+                                    $statements_source->getSuppressedIssues(),
+                                );
+
+                                return null;
+                            }
                         }
                     } catch (ValueError $value_error) {
                         // PHP 8
@@ -188,6 +214,16 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
                  */
                 if ($initial_result !== null && $initial_result !== false && $initial_result !== '') {
                     return Type::getNonEmptyString();
+                }
+
+                /**
+                 * if we didn't have a valid result, the pattern is invalid or not yet supported by the return type provider
+                 * PHP 7 can have false here
+                 *
+                 * @psalm-suppress RedundantConditionGivenDocblockType
+                 */
+                if ($initial_result === null || $initial_result === false) {
+                    return null;
                 }
             }
 

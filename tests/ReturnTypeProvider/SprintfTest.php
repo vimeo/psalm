@@ -131,6 +131,18 @@ class SprintfTest extends TestCase
                 '$val===' => 'int<0, max>',
             ],
         ];
+
+        yield 'sprintfEmptyStringFormat' => [
+            'code' => '<?php
+                $val = sprintf("", "abc");
+            ',
+            'assertions' => [
+                '$val===' => 'string',
+            ],
+            'ignored_issues' => [
+                'InvalidArgument'
+            ],
+        ];
     }
 
     public function providerInvalidCodeParse(): iterable
@@ -181,6 +193,18 @@ class SprintfTest extends TestCase
             'printfInvalidFormat' => [
                 'code' => '<?php
                     printf(\'"%" hello\', "a");
+                ',
+                'error_message' => 'InvalidArgument',
+            ],
+            'sprintfEmptyFormat' => [
+                'code' => '<?php
+                    $x = sprintf("", "abc");
+                ',
+                'error_message' => 'InvalidArgument',
+            ],
+            'sprintfFormatWithoutPlaceholders' => [
+                'code' => '<?php
+                    $x = sprintf("hello", "abc");
                 ',
                 'error_message' => 'InvalidArgument',
             ],
