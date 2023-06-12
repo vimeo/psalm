@@ -60,7 +60,7 @@ class FakeFileReferenceCacheProvider extends FileReferenceCacheProvider
 
     public function __construct()
     {
-        $this->config = Config::getInstance();
+        parent::__construct(Config::getInstance());
     }
 
     public function getCachedFileReferences(): ?array

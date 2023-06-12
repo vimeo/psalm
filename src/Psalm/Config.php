@@ -68,6 +68,7 @@ use function file_exists;
 use function file_get_contents;
 use function flock;
 use function fopen;
+use function function_exists;
 use function get_class;
 use function get_defined_constants;
 use function get_defined_functions;
@@ -330,6 +331,9 @@ class Config
 
     /** @var bool */
     public $use_igbinary = false;
+
+    /** @var bool */
+    public $use_gzip = true;
 
     /**
      * @var bool
@@ -1190,6 +1194,10 @@ class Config
             $config->use_igbinary = $attribute_text === 'igbinary';
         } elseif ($igbinary_version = phpversion('igbinary')) {
             $config->use_igbinary = version_compare($igbinary_version, '2.0.5') >= 0;
+        }
+
+        if ($config->use_gzip) {
+            $config->use_gzip = function_exists('gzinflate');
         }
 
         if (!isset($config_xml['findUnusedBaselineEntry'])) {
