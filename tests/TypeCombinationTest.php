@@ -342,23 +342,23 @@ class TypeCombinationTest extends TestCase
                 'array<never, never>|false',
                 [
                     'array<never, never>',
-                    'false'
-                ]
+                    'false',
+                ],
             ],
             'emptyArrayAndTrue' => [
                 'array<never, never>|true',
                 [
                     'array<never, never>',
-                    'true'
-                ]
+                    'true',
+                ],
             ],
             'emptyArrayWithTrueAndFalse' => [
                 'array<never, never>|bool',
                 [
                     'array<never, never>',
                     'true',
-                    'false'
-                ]
+                    'false',
+                ],
             ],
             'falseDestruction' => [
                 'bool',
