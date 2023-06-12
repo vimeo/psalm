@@ -155,6 +155,33 @@ class SprintfTest extends TestCase
                 'InvalidArgument',
             ],
         ];
+
+        yield 'sprintfComplexPlaceholderNotYetSupported1' => [
+            'code' => '<?php
+                $val = sprintf(\'%*.0s\', 0, "abc");
+            ',
+            'assertions' => [
+                '$val===' => 'string',
+            ],
+        ];
+
+        yield 'sprintfComplexPlaceholderNotYetSupported2' => [
+            'code' => '<?php
+                $val = sprintf(\'%0.*s\', 0, "abc");
+            ',
+            'assertions' => [
+                '$val===' => 'string',
+            ],
+        ];
+
+        yield 'sprintfComplexPlaceholderNotYetSupported3' => [
+            'code' => '<?php
+                $val = sprintf(\'%*.*s\', 0, 0, "abc");
+            ',
+            'assertions' => [
+                '$val===' => 'string',
+            ],
+        ];
     }
 
     public function providerInvalidCodeParse(): iterable

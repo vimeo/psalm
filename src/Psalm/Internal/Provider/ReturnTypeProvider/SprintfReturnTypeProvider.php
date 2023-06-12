@@ -90,7 +90,7 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
                 }
 
                 // there are probably additional formats that return an empty string, this is just a starting point
-                if (preg_match('/^%(?:\d+\$)?[-+]?0(\.0)?s$/', $type->getSingleStringLiteral()->value) === 1) {
+                if (preg_match('/^%(?:\d+\$)?[-+]?0(?:\.0)?s$/', $type->getSingleStringLiteral()->value) === 1) {
                     IssueBuffer::maybeAdd(
                         new InvalidArgument(
                             'The pattern of argument 1 of ' . $event->getFunctionId() . ' will always return an empty string',
@@ -105,6 +105,16 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
                     }
 
                     return Type::getString('');
+                }
+
+                // placeholders are too complex to handle for now
+                if (preg_match('/%(?:\d+\$)?[-+]?(?:\d+|\*)(?:\.(?:\d+|\*))?[bcdouxXeEfFgGhHs]/', $type->getSingleStringLiteral()->value) === 1) {
+                    if ($event->getFunctionId() === 'printf') {
+                        return null;
+                    }
+
+                    // the core stubs are wrong for these too, since these might be empty strings, e.g. sprintf(\'%0.*s\', 0, "abc")
+                    return Type::getString();
                 }
 
                 $args_count = count($call_args) - 1;
