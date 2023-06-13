@@ -62,9 +62,9 @@ class DocblockParser
 
         $last = false;
         foreach ($lines as $k => $line) {
-            if (preg_match('/^[ \t]*\*?\s*@\w/i', $line)) {
+            if (strpos($line, '@') !== false && preg_match('/^[\t ]*\*?\s*@\w/', $line)) {
                 $last = $k;
-            } elseif (preg_match('/^\s*\r?$/', $line)) {
+            } elseif (trim($line) === '') {
                 $last = false;
             } elseif ($last !== false) {
                 $old_last_line = $lines[$last];
