@@ -259,7 +259,7 @@ class CommentAnalyzer
     public static function sanitizeDocblockType(string $docblock_type): string
     {
         $docblock_type = preg_replace('@^[ \t]*\*@m', '', $docblock_type);
-        $docblock_type = preg_replace('/,\n\s+\}/', '}', $docblock_type);
+        $docblock_type = preg_replace('/,\n\s+}/', '}', $docblock_type);
         return str_replace("\n", '', $docblock_type);
     }
 
@@ -377,7 +377,7 @@ class CommentAnalyzer
                 $remaining = trim(preg_replace('@^[ \t]*\* *@m', ' ', substr($return_block, $i + 1)));
 
                 if ($remaining) {
-                    return array_merge([rtrim($type)], preg_split('/[ \s]+/', $remaining) ?: []);
+                    return array_merge([rtrim($type)], preg_split('/\s+/', $remaining) ?: []);
                 }
 
                 return [$type];
