@@ -87,7 +87,9 @@ class DocblockParser
             if ($first_line_padding === null) {
                 $asterisk_pos = strpos($line, '*');
 
-                if ($asterisk_pos) {
+                if ($asterisk_pos === 0 || $asterisk_pos === 1) {
+                    $first_line_padding = '';
+                } elseif ($asterisk_pos > 1) {
                     $first_line_padding = substr($line, 0, $asterisk_pos - 1);
                 }
             }
@@ -99,7 +101,7 @@ class DocblockParser
                 [$type] = $type_info;
                 [$data, $data_offset] = $data_info;
 
-                if (strpos($data, '*')) {
+                if (strpos($data, '*') !== false) {
                     $data = rtrim(preg_replace('/^ *\*\s*$/m', '', $data));
                 }
 
