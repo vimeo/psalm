@@ -332,8 +332,8 @@ class Config
     /** @var bool */
     public $use_igbinary = false;
 
-    /** @var bool */
-    public $use_gzip = true;
+    /** @var 'lz4'|'deflate'|'off' */
+    public $compressor = 'off';
 
     /**
      * @var bool
@@ -1196,8 +1196,15 @@ class Config
             $config->use_igbinary = version_compare($igbinary_version, '2.0.5') >= 0;
         }
 
-        if ($config->use_gzip) {
-            $config->use_gzip = function_exists('gzinflate');
+        if (isset($config_xml['compressor'])) {
+            $compressor = (string) $config_xml['compressor'];
+            if ($compressor === 'lz4' && function_exists('lz4_uncompress')) {
+                $config->compressor = 'lz4';
+            } elseif ($compressor !== 'off' && function_exists('gzinflate')) {
+                $config->compressor = 'deflate';
+            }
+        } elseif (function_exists('gzinflate')) {
+            $config->compressor = 'deflate';
         }
 
         if (!isset($config_xml['findUnusedBaselineEntry'])) {
