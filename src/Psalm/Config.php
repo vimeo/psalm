@@ -1200,10 +1200,10 @@ class Config
             $compressor = (string) $config_xml['compressor'];
             if ($compressor === 'lz4' && function_exists('lz4_uncompress')) {
                 $config->compressor = 'lz4';
-            } elseif ($compressor !== 'off' && function_exists('gzinflate')) {
+            } elseif ($compressor !== 'off' && function_exists('gzdeflate')) {
                 $config->compressor = 'deflate';
             }
-        } elseif (function_exists('gzinflate')) {
+        } elseif (function_exists('gzdeflate')) {
             $config->compressor = 'deflate';
         }
 

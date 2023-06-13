@@ -59,6 +59,10 @@ class Cache
         if ($this->config->compressor === 'off') {
             $inflated = $cache;
         } elseif ($this->config->compressor === 'lz4') {
+            /**
+             * @psalm-suppress UndefinedFunction
+             * @var string|false $inflated
+             */
             $inflated = lz4_uncompress($cache);
         } else {
             $inflated = @gzinflate($cache);
@@ -109,7 +113,11 @@ class Cache
         if ($this->config->compressor === 'deflate') {
             $compressed = gzdeflate($serialized);
         } elseif ($this->config->compressor === 'lz4') {
-            $compressed = lz4_compress($serialized, 1);
+            /**
+             * @psalm-suppress UndefinedFunction
+             * @var string|false $compressed
+             */
+            $compressed = lz4_compress($serialized, 4);
         } else {
             $compressed = $serialized;
         }
