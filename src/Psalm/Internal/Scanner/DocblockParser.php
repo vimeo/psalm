@@ -122,13 +122,20 @@ class DocblockParser
 
         // Smush the whole docblock to the left edge.
         $min_indent = 80;
+        $reached_first_non_empty_line = false;
         foreach ($lines as $k => $line) {
             $indent = strspn($line, ' ');
             if ($indent === strlen($line)) {
                 // This line consists of only spaces. Trim it completely.
+                if ($reached_first_non_empty_line === false) {
+                    // remove any leading empty lines here, to avoid a preg_replace later
+                    unset($lines[$k]);
+                    continue;
+                }
                 $lines[$k] = '';
                 continue;
             }
+            $reached_first_non_empty_line = true;
             $min_indent = min($indent, $min_indent);
         }
         if ($min_indent > 0) {
@@ -141,10 +148,6 @@ class DocblockParser
         }
         $docblock = implode("\n", $lines);
         $docblock = rtrim($docblock);
-
-        // Trim any empty lines off the front, but leave the indent level if there
-        // is one.
-        $docblock = preg_replace('/^\s*\n/', '', $docblock, 1);
 
         $parsed = new ParsedDocblock($docblock, $special, $first_line_padding ?: '');
 
