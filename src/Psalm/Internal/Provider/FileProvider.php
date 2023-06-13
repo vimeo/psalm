@@ -10,6 +10,8 @@ use RecursiveIteratorIterator;
 use UnexpectedValueException;
 
 use function file_exists;
+use function file_get_contents;
+use function file_put_contents;
 use function filemtime;
 use function in_array;
 use function is_dir;
@@ -54,7 +56,7 @@ class FileProvider
             throw new UnexpectedValueException('File ' . $file_path . ' is a directory');
         }
 
-        $file_contents = Providers::safeFileGetContents($file_path);
+        $file_contents = (string) file_get_contents($file_path);
 
         self::$open_files[$file_path] = $file_contents;
 
@@ -74,7 +76,7 @@ class FileProvider
             ];
         }
 
-        Providers::safeFilePutContents($file_path, $file_contents);
+        file_put_contents($file_path, $file_contents);
     }
 
     public function setOpenContents(string $file_path, ?string $file_contents = null): void
