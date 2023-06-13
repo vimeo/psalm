@@ -4,9 +4,9 @@ namespace Psalm\Internal;
 
 use Psalm\Config;
 use Psalm\Internal\Provider\Providers;
+use RuntimeException;
 
 use function file_exists;
-use function file_put_contents;
 use function gzdeflate;
 use function gzinflate;
 use function igbinary_serialize;
@@ -14,10 +14,7 @@ use function igbinary_unserialize;
 use function lz4_compress;
 use function lz4_uncompress;
 use function serialize;
-use function unlink;
 use function unserialize;
-
-use const LOCK_EX;
 
 /**
  * @internal
@@ -82,9 +79,7 @@ class Cache
 
     public function deleteItem(string $path): void
     {
-        if (file_exists($path)) {
-            @unlink($path);
-        }
+        Providers::safeUnlink($path);
     }
 
     /**
@@ -99,12 +94,20 @@ class Cache
         }
 
         if ($this->config->compressor === 'deflate') {
-            $serialized = gzdeflate($serialized);
+            $compressed = gzdeflate($serialized);
         } elseif ($this->config->compressor === 'lz4') {
-            $serialized = lz4_compress($serialized, 1);
+            $compressed = lz4_compress($serialized, 1);
+        } else {
+            $compressed = $serialized;
         }
 
-        file_put_contents($path, $serialized, LOCK_EX);
+        if ($compressed === false) {
+            throw new RuntimeException(
+                'Failed to compress cache data'
+            );
+        }
+
+        Providers::safeFilePutContents($path, $compressed);
     }
 
     public function getCacheDirectory(): ?string

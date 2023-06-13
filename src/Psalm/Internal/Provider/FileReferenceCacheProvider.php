@@ -10,14 +10,12 @@ use RuntimeException;
 use UnexpectedValueException;
 
 use function file_exists;
-use function file_put_contents;
 use function is_array;
 use function is_dir;
 use function is_readable;
 use function mkdir;
 
 use const DIRECTORY_SEPARATOR;
-use const LOCK_EX;
 
 /**
  * Used to determine which files reference other files, necessary for using the --diff
@@ -333,11 +331,7 @@ class FileReferenceCacheProvider
 
         $config_hash_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::CONFIG_HASH_CACHE_NAME;
 
-        file_put_contents(
-            $config_hash_cache_location,
-            $hash,
-            LOCK_EX,
-        );
+        Providers::safeFilePutContents($config_hash_cache_location, $hash);
     }
 
     private function getCacheItem(string $type): ?array

@@ -5,7 +5,6 @@ namespace Psalm\Internal\Provider;
 use Psalm\Config;
 
 use function file_exists;
-use function file_put_contents;
 use function filemtime;
 use function hash;
 use function mkdir;
@@ -53,7 +52,7 @@ class ProjectCacheProvider
 
         $run_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::GOOD_RUN_NAME;
 
-        file_put_contents($run_cache_location, $psalm_version);
+        Providers::safeFilePutContents($run_cache_location, $psalm_version);
 
         touch($run_cache_location, (int)$start_time);
     }
@@ -115,7 +114,7 @@ class ProjectCacheProvider
 
         $lock_hash_location = $cache_directory . DIRECTORY_SEPARATOR . self::COMPOSER_LOCK_HASH;
 
-        file_put_contents($lock_hash_location, $this->composer_lock_hash);
+        Providers::safeFilePutContents($lock_hash_location, $this->composer_lock_hash);
     }
 
     protected function getComposerLockHash(): string
