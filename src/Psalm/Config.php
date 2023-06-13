@@ -1201,7 +1201,7 @@ class Config
         }
 
         if (!isset($config_xml['findUnusedBaselineEntry'])) {
-            $config->config_warnings[] = '"findUnusedBaselineEntry" will be defaulted to "true" in Psalm 6.'
+            $config->config_warnings[] = '"findUnusedBaselineEntry" will default to "true" in Psalm 6.'
                 . ' You should explicitly enable or disable this setting.';
         }
 
@@ -1210,7 +1210,7 @@ class Config
             $config->find_unused_code = $attribute_text === 'true' || $attribute_text === '1';
             $config->find_unused_variables = $config->find_unused_code;
         } else {
-            $config->config_warnings[] = '"findUnusedCode" will be defaulted to "true" in Psalm 6.'
+            $config->config_warnings[] = '"findUnusedCode" will default to "true" in Psalm 6.'
                 . ' You should explicitly enable or disable this setting.';
         }
 

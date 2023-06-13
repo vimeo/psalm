@@ -235,7 +235,7 @@ class PsalmEndToEndTest extends TestCase
         $this->runPsalmInit();
 
         $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
-        $psalmXml = preg_replace('/findUnusedCode="(true|false)"/', '', $psalmXml);
+        $psalmXml = preg_replace('/findUnusedCode="(true|false)"/', '', $psalmXml, 1);
         file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
 
         $result = $this->runPsalm(['--no-progress'], self::$tmpDir);
