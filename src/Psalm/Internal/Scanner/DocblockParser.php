@@ -12,6 +12,7 @@ use function count;
 use function explode;
 use function implode;
 use function is_string;
+use function ltrim;
 use function min;
 use function preg_match;
 use function preg_replace;
@@ -110,7 +111,9 @@ class DocblockParser
                 unset($lines[$k]);
             } else {
                 // Strip the leading *, if present.
-                $lines[$k] = preg_replace('/^ *\*/', '', $lines[$k], 1);
+                // technically only need to preg_replace('/^ *\*/', '', $lines[$k], 1)
+                // however it's slower and removing all spaces and * is fine
+                $lines[$k] = ltrim($lines[$k], ' *');
             }
 
             $line_offset += $original_line_length + 1;
