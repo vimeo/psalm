@@ -6,15 +6,17 @@ use RuntimeException;
 
 use function fclose;
 use function file_put_contents;
+use function file_exists;
 use function filesize;
 use function flock;
 use function fopen;
 use function fread;
+use function strlen;
 use function unlink;
 use function usleep;
 
-use const LOCK_SH;
 use const LOCK_EX;
+use const LOCK_SH;
 
 /**
  * @internal
@@ -96,7 +98,7 @@ class Providers
         $result = file_put_contents($path, $data, LOCK_EX);
         if ($result === false) {
             throw new RuntimeException(
-                'Failed to write cache data for unknown reasons'
+                'Failed to write cache data for unknown reasons',
             );
         }
 
@@ -104,7 +106,7 @@ class Providers
             // remove the invalid file again
             self::safeUnlink($path);
             throw new RuntimeException(
-                'Failed to write all cache data for unknown reasons'
+                'Failed to write all cache data for unknown reasons',
             );
         }
     }

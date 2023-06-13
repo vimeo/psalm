@@ -47,7 +47,7 @@ class Cache
         // however the impact on performance is minimal, therefore we ignore it
         if ($this->errors > 10) {
             throw new RuntimeException(
-                'The cache data is corrupted. Please delete the cache directory and run Psalm again'
+                'The cache data is corrupted. Please delete the cache directory and run Psalm again',
             );
         }
 
@@ -116,7 +116,7 @@ class Cache
 
         if ($compressed === false) {
             throw new RuntimeException(
-                'Failed to compress cache data'
+                'Failed to compress cache data',
             );
         }
 
