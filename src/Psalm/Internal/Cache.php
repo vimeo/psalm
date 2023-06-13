@@ -23,6 +23,8 @@ class Cache
 {
     private Config $config;
 
+    private int $errors = 0;
+
     public bool $use_igbinary;
 
     public function __construct(Config $config)
@@ -40,6 +42,15 @@ class Cache
             return null;
         }
 
+        // if 10 previous items were invalid, abort since the cache is invalid and inform the user
+        // we don't report it to the user immediately, since it can happen that a few files get corrupted somehow
+        // however the impact on performance is minimal, therefore we ignore it
+        if ($this->errors > 10) {
+            throw new RuntimeException(
+                'The cache data is corrupted. Please delete the cache directory and run Psalm again'
+            );
+        }
+
         $cache = Providers::safeFileGetContents($path);
         if ($cache === '') {
             return null;
@@ -55,6 +66,7 @@ class Cache
 
         // invalid cache data
         if ($inflated === false) {
+            $this->errors++;
             $this->deleteItem($path);
 
             return null;
@@ -69,6 +81,7 @@ class Cache
         }
 
         if ($unserialized === false) {
+            $this->errors++;
             $this->deleteItem($path);
 
             return null;
