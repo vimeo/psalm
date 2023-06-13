@@ -12,7 +12,6 @@ use UnexpectedValueException;
 
 use function clearstatcache;
 use function error_log;
-use function file_put_contents;
 use function filemtime;
 use function gettype;
 use function hash;
@@ -29,7 +28,6 @@ use function unlink;
 
 use const DIRECTORY_SEPARATOR;
 use const JSON_THROW_ON_ERROR;
-use const LOCK_EX;
 use const PHP_VERSION_ID;
 use const SCANDIR_SORT_NONE;
 
@@ -269,11 +267,7 @@ class ParserCacheProvider
 
         $file_hashes_path = $root_cache_directory . DIRECTORY_SEPARATOR . self::FILE_HASHES;
 
-        file_put_contents(
-            $file_hashes_path,
-            json_encode($file_content_hashes, JSON_THROW_ON_ERROR),
-            LOCK_EX,
-        );
+        Providers::safeFilePutContents($file_hashes_path, json_encode($file_content_hashes, JSON_THROW_ON_ERROR));
     }
 
     public function cacheFileContents(string $file_path, string $file_contents): void

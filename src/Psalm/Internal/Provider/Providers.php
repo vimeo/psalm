@@ -5,13 +5,16 @@ namespace Psalm\Internal\Provider;
 use RuntimeException;
 
 use function fclose;
+use function file_put_contents;
 use function filesize;
 use function flock;
 use function fopen;
 use function fread;
+use function unlink;
 use function usleep;
 
 use const LOCK_SH;
+use const LOCK_EX;
 
 /**
  * @internal
@@ -86,5 +89,30 @@ class Providers
         fclose($fp);
 
         return $content;
+    }
+
+    public static function safeFilePutContents(string $path, string $data): void
+    {
+        $result = file_put_contents($path, $data, LOCK_EX);
+        if ($result === false) {
+            throw new RuntimeException(
+                'Failed to write cache data for unknown reasons'
+            );
+        }
+
+        if (strlen($data) !== $result) {
+            // remove the invalid file again
+            self::safeUnlink($path);
+            throw new RuntimeException(
+                'Failed to write all cache data for unknown reasons'
+            );
+        }
+    }
+
+    public static function safeUnlink(string $path): void
+    {
+        if (file_exists($path)) {
+            @unlink($path);
+        }
     }
 }
