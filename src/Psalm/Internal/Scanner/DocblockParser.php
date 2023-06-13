@@ -56,6 +56,7 @@ class DocblockParser
 
         // Normalize multi-line @specials.
         $lines = explode("\n", str_replace("\t", ' ', $docblock));
+        $has_r = strpos($docblock, "\r") === false ? false : true;
 
         $special = [];
 
@@ -79,7 +80,9 @@ class DocblockParser
 
         foreach ($lines as $k => $line) {
             $original_line_length = strlen($line);
-            $line = str_replace("\r", '', $line);
+            if ($has_r === true) {
+                $line = str_replace("\r", '', $line);
+            }
 
             if ($first_line_padding === null) {
                 $asterisk_pos = strpos($line, '*');
