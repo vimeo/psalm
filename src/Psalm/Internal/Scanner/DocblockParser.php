@@ -54,7 +54,7 @@ class DocblockParser
         }
 
         // Normalize multi-line @specials.
-        $lines = explode("\n", $docblock);
+        $lines = explode("\n", str_replace("\t", ' ', $docblock));
 
         $special = [];
 
@@ -62,7 +62,7 @@ class DocblockParser
 
         $last = false;
         foreach ($lines as $k => $line) {
-            if (strpos($line, '@') !== false && preg_match('/^[\t ]*\*?\s*@\w/', $line)) {
+            if (strpos($line, '@') !== false && preg_match('/^ *\*?\s*@\w/', $line)) {
                 $last = $k;
             } elseif (trim($line) === '') {
                 $last = false;
@@ -78,7 +78,6 @@ class DocblockParser
 
         foreach ($lines as $k => $line) {
             $original_line_length = strlen($line);
-
             $line = str_replace("\r", '', $line);
 
             if ($first_line_padding === null) {
@@ -89,7 +88,7 @@ class DocblockParser
                 }
             }
 
-            if (preg_match('/^[ \t]*\*?\s*@([\w\-\\\:]+)[\t ]*(.*)$/sm', $line, $matches, PREG_OFFSET_CAPTURE)) {
+            if (preg_match('/^ *\*?\s*@([\w\-\\\:]+) *(.*)$/sm', $line, $matches, PREG_OFFSET_CAPTURE)) {
                 /** @var array<int, array{string, int}> $matches */
                 [, $type_info, $data_info] = $matches;
 
@@ -97,7 +96,7 @@ class DocblockParser
                 [$data, $data_offset] = $data_info;
 
                 if (strpos($data, '*')) {
-                    $data = rtrim(preg_replace('/^[ \t]*\*\s*$/m', '', $data));
+                    $data = rtrim(preg_replace('/^ *\*\s*$/m', '', $data));
                 }
 
                 if (empty($special[$type])) {
@@ -111,10 +110,7 @@ class DocblockParser
                 unset($lines[$k]);
             } else {
                 // Strip the leading *, if present.
-                $text = $lines[$k];
-                $text = str_replace("\t", ' ', $text);
-                $text = preg_replace('/^ *\*/', '', $text, 1);
-                $lines[$k] = $text;
+                $lines[$k] = preg_replace('/^ *\*/', '', $lines[$k], 1);
             }
 
             $line_offset += $original_line_length + 1;
