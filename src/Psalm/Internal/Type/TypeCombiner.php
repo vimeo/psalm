@@ -130,7 +130,9 @@ class TypeCombiner
         if (count($combination->value_types) === 1
             && !count($combination->objectlike_entries)
             && (!$combination->array_type_params
-                || $combination->array_type_params[1]->isNever()
+                || ( $overwrite_empty_array
+                    && $combination->array_type_params[1]->isNever()
+                )
             )
             && !$combination->builtin_type_params
             && !$combination->object_type_params
