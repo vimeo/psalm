@@ -1157,12 +1157,27 @@ class TypeParser
             return new TObject($from_docblock);
         }
 
-        $first_type = array_shift($keyed_intersection_types);
+        $first_object_or_keyed_array_type = null;
+        foreach ($keyed_intersection_types as $index => $intersection_type) {
+            if ($intersection_type->isArrayAccessibleWithIntOrStringKey($codebase)) {
+                $first_object_or_keyed_array_type = $intersection_type;
+                unset($keyed_intersection_types[$index]);
+                break;
+            }
+
+            if ($intersection_type instanceof TNamedObject && $codebase->classExists($intersection_type->value)) {
+                $first_object_or_keyed_array_type = $intersection_type;
+                unset($keyed_intersection_types[$index]);
+                break;
+            }
+        }
+
+        $first_object_or_keyed_array_type ??= array_shift($keyed_intersection_types);
 
         // Keyed array intersection are merged together and are not combinable with object-types
-        if ($first_type instanceof TKeyedArray) {
+        if ($first_object_or_keyed_array_type instanceof TKeyedArray) {
             // assume all types are keyed arrays
-            array_unshift($keyed_intersection_types, $first_type);
+            array_unshift($keyed_intersection_types, $first_object_or_keyed_array_type);
             /** @var TKeyedArray $last_type */
             $last_type = end($keyed_intersection_types);
 
@@ -1170,24 +1185,24 @@ class TypeParser
             return self::getTypeFromKeyedArrays(
                 $codebase,
                 $keyed_intersection_types,
-                $first_type,
+                $first_object_or_keyed_array_type,
                 $last_type,
                 $from_docblock,
             );
         }
 
         if ($intersect_static
-            && $first_type instanceof TNamedObject
+            && $first_object_or_keyed_array_type instanceof TNamedObject
         ) {
             $first_type->is_static = true;
         }
 
         if ($keyed_intersection_types) {
             /** @var non-empty-array<string,TIterable|TNamedObject|TCallableObject|TTemplateParam|TObjectWithProperties> $keyed_intersection_types */
-            return $first_type->setIntersectionTypes($keyed_intersection_types);
+            return $first_object_or_keyed_array_type->setIntersectionTypes($keyed_intersection_types);
         }
 
-        return $first_type;
+        return $first_object_or_keyed_array_type;
     }
 
     /**
@@ -1525,7 +1540,7 @@ class TypeParser
 
     /**
      * @param non-empty-array<Atomic> $intersection_types
-     * @return non-empty-array<string,TIterable|TNamedObject|TCallableObject|TObjectWithProperties|TKeyedArray>
+     * @return non-empty-array<string,TIterable|TNamedObject|TCallableObject|TObjectWithProperties|TKeyedArray|TTemplateParam>
      */
     private static function extractKeyedIntersectionTypes(
         Codebase $codebase,
@@ -1580,6 +1595,12 @@ class TypeParser
                     );
                 }
                 $callable_intersection = $intersection_type;
+                continue;
+            }
+
+            if ($intersection_type instanceof TTemplateParam) {
+                $object_from_docblock = $object_from_docblock || $intersection_type->isObjectType();
+                $keyed_intersection_types[self::extractIntersectionKey($intersection_type)] = $intersection_type;
                 continue;
             }
 

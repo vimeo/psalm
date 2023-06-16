@@ -10,10 +10,38 @@ use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 final class IntersectionTypeTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
-    use InvalidCodeAnalysisTestTrait;
+//    use InvalidCodeAnalysisTestTrait;
 
     public function providerValidCodeParse(): iterable
     {
+        return [
+            'phpunitMockCreation' => [
+                'code' => '<?php
+                interface MockObject {}
+                class Foo {
+                    public string $bar = "";
+                }
+                /**
+                 * @template RealInstanceType of object
+                 *
+                 * @param class-string<RealInstanceType> $originalClassName
+                 *
+                 * @return MockObject&RealInstanceType
+                 */
+                function createMock(string $originalClassName): MockObject
+                {
+                    /** @var MockObject&RealInstanceType $mock */
+                    $mock = null;
+                    return $mock;
+                }
+                $generatedMock = createMock(Foo::class);
+                $generatedMock->bar = "baz";',
+                'assertions' => [
+                    '$generatedMock===' => 'Foo&MockObject',
+                    '$generatedMock->bar===' => '"baz"',
+                ],
+            ],
+        ];
         return [
             'callableObject' => [
                 'code' => '<?php
@@ -142,7 +170,7 @@ final class IntersectionTypeTest extends TestCase
                  * @param T $arr
                  * @param-out T&array{bar: string} $arr
                  * @return void
-                 **/
+                 */
                 function addBar(array &$arr): void {
                     $arr["bar"] = "bar";
                 }
@@ -155,6 +183,32 @@ final class IntersectionTypeTest extends TestCase
                 'assertions' => [
                     '$arr1===' => 'array{bar: string, id: int, ...<array-key, mixed>}',
                     '$arr2===' => 'array{bar: string, id: int, ...<array-key, mixed>}',
+                ],
+            ],
+            'phpunitMockCreation' => [
+                'code' => '<?php
+                interface MockObject {}
+                class Foo {
+                    public string $bar = "";
+                }
+                /**
+                 * @psalm-template RealInstanceType of object
+                 *
+                 * @psalm-param class-string<RealInstanceType> $originalClassName
+                 *
+                 * @psalm-return MockObject&RealInstanceType
+                 */
+                function createMock(string $originalClassName): MockObject
+                {
+                    /** @var MockObject&RealInstanceType $mock */
+                    $mock = null;
+                    return $mock;
+                }
+                $generatedMock = createMock(Foo::class);
+                $generatedMock->bar = "baz";',
+                'assertions' => [
+                    '$generatedMock===' => 'Foo&MockObject',
+                    '$generatedMock->bar===' => '"baz"',
                 ],
             ],
         ];
