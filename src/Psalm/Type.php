@@ -193,6 +193,14 @@ abstract class Type
     /**
      * @psalm-pure
      */
+    public static function getIntRange(?int $min, ?int $max): Union
+    {
+        return new Union([new TIntRange($min, $max)]);
+    }
+
+    /**
+     * @psalm-pure
+     */
     public static function getLowercaseString(): Union
     {
         $type = new TLowercaseString();
@@ -495,7 +503,7 @@ abstract class Type
         if ($from_docblock) {
             return self::$listKeyFromDocblock ??= new Union([new TIntRange(0, null, true)]);
         }
-        return self::$listKey ??= new Union([new TIntRange(0, null)]);
+        return self::$listKey ??= self::getIntRange(0, null);
     }
 
     /**

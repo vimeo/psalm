@@ -383,7 +383,7 @@ class FunctionCallReturnTypeFetcher
                                     if ($min === $max) {
                                         return new Union([new TLiteralInt($max)]);
                                     }
-                                    return new Union([new TIntRange($min, $max)]);
+                                    return Type::getIntRange($min, $max);
                                 }
 
                                 if ($atomic_types['array'] instanceof TArray

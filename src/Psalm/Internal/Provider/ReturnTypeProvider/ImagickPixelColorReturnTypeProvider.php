@@ -6,7 +6,6 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\MethodReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\MethodReturnTypeProviderInterface;
 use Psalm\Type;
-use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Union;
@@ -57,10 +56,10 @@ class ImagickPixelColorReturnTypeProvider implements MethodReturnTypeProviderInt
         if (isset($formats[0])) {
             $types []= new Union([
                 new TKeyedArray([
-                    'r' => new Union([new TIntRange(0, 255)]),
-                    'g' => new Union([new TIntRange(0, 255)]),
-                    'b' => new Union([new TIntRange(0, 255)]),
-                    'a' => new Union([new TIntRange(0, 1)]),
+                    'r' => Type::getIntRange(0, 255),
+                    'g' => Type::getIntRange(0, 255),
+                    'b' => Type::getIntRange(0, 255),
+                    'a' => Type::getIntRange(0, 1),
                 ]),
             ]);
         }
@@ -77,10 +76,10 @@ class ImagickPixelColorReturnTypeProvider implements MethodReturnTypeProviderInt
         if (isset($formats[2])) {
             $types []= new Union([
                 new TKeyedArray([
-                    'r' => new Union([new TIntRange(0, 255)]),
-                    'g' => new Union([new TIntRange(0, 255)]),
-                    'b' => new Union([new TIntRange(0, 255)]),
-                    'a' => new Union([new TIntRange(0, 255)]),
+                    'r' => Type::getIntRange(0, 255),
+                    'g' => Type::getIntRange(0, 255),
+                    'b' => Type::getIntRange(0, 255),
+                    'a' => Type::getIntRange(0, 255),
                 ]),
             ]);
         }
