@@ -2226,28 +2226,27 @@ class Config
         $codebase->register_stub_files = true;
 
         $dir_lvl_2 = dirname(__DIR__, 2);
+        $stubsDir = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR;
         $this->internal_stubs = [
-            $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'CoreGenericFunctions.phpstub',
-            $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'CoreGenericClasses.phpstub',
-            $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'CoreGenericIterators.phpstub',
-            $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'CoreImmutableClasses.phpstub',
-            $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'Reflection.phpstub',
-            $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'SPL.phpstub',
+            $stubsDir . 'CoreGenericFunctions.phpstub',
+            $stubsDir . 'CoreGenericClasses.phpstub',
+            $stubsDir . 'CoreGenericIterators.phpstub',
+            $stubsDir . 'CoreImmutableClasses.phpstub',
+            $stubsDir . 'Reflection.phpstub',
+            $stubsDir . 'SPL.phpstub',
         ];
 
         if ($codebase->analysis_php_version_id >= 8_00_00) {
-            $stringable_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'Php80.phpstub';
-            $this->internal_stubs[] = $stringable_path;
+            $this->internal_stubs[] = $stubsDir . 'CoreGenericAttributes.phpstub';
+            $this->internal_stubs[] = $stubsDir . 'Php80.phpstub';
         }
 
         if ($codebase->analysis_php_version_id >= 8_01_00) {
-            $stringable_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'Php81.phpstub';
-            $this->internal_stubs[] = $stringable_path;
+            $this->internal_stubs[] = $stubsDir . 'Php81.phpstub';
         }
 
         if ($codebase->analysis_php_version_id >= 8_02_00) {
-            $stringable_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'Php82.phpstub';
-            $this->internal_stubs[] = $stringable_path;
+            $this->internal_stubs[] = $stubsDir . 'Php82.phpstub';
             $this->php_extensions['random'] = true; // random is a part of the PHP core starting from PHP 8.2
         }
 
