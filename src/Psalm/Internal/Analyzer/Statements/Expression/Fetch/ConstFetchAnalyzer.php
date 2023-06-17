@@ -16,7 +16,6 @@ use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Issue\UndefinedConstant;
 use Psalm\IssueBuffer;
 use Psalm\Type;
-use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Union;
 use ReflectionProperty;
 
@@ -175,7 +174,7 @@ class ConstFetchAnalyzer
                 case 'PHP_INT_SIZE':
                 case 'PHP_MAXPATHLEN':
                 case 'PHP_VERSION_ID':
-                    return new Union([new TIntRange(1, null)]);
+                    return Type::getIntRange(1, null);
 
                 case 'PHP_FLOAT_EPSILON':
                 case 'PHP_FLOAT_MAX':

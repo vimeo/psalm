@@ -287,7 +287,7 @@ class SimpleTypeInferer
         }
 
         if ($stmt instanceof PhpParser\Node\Scalar\MagicConst\Line) {
-            return Type::getInt();
+            return Type::getIntRange(1, null);
         }
 
         if ($stmt instanceof PhpParser\Node\Scalar\MagicConst\Class_

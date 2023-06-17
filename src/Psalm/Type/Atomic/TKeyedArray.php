@@ -310,7 +310,7 @@ class TKeyedArray extends Atomic
             if (count($this->properties) === 1) {
                 return new Union([new TLiteralInt(0)]);
             }
-            return new Union([new TIntRange(0, count($this->properties)-1)]);
+            return Type::getIntRange(0, count($this->properties)-1);
         }
 
         $key_types = [];

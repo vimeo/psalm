@@ -783,7 +783,7 @@ class VariableFetchAnalyzer
                 'type' => $str,
                 'tmp_name' => $str,
                 'size' => Type::getListKey(),
-                'error' => new Union([new TIntRange(0, 8)]),
+                'error' => Type::getIntRange(0, 8),
             ];
 
             if ($files_full_path) {
