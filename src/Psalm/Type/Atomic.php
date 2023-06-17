@@ -266,7 +266,7 @@ abstract class Atomic implements TypeNode
                     true,
                 );
                 $object = new TObject(true);
-                $string = new TString(true);
+                $string = new TNonEmptyString(true);
                 return new TCallableKeyedArray([
                     new Union([$classString, $object]),
                     new Union([$string]),

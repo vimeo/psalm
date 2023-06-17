@@ -2304,7 +2304,7 @@ class SimpleAssertionReconciler extends Reconciler
             } elseif ($type instanceof TCallable) {
                 $array_types[] = new TCallableKeyedArray([
                     new Union([new TClassString, new TObject]),
-                    Type::getString(),
+                    Type::getNonEmptyString(),
                 ]);
 
                 $redundant = false;
@@ -2428,7 +2428,7 @@ class SimpleAssertionReconciler extends Reconciler
             } elseif ($type instanceof TCallable) {
                 $array_types[] = new TCallableKeyedArray([
                     new Union([new TClassString, new TObject]),
-                    Type::getString(),
+                    Type::getNonEmptyString(),
                 ]);
 
                 $redundant = false;

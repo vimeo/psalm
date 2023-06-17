@@ -1190,7 +1190,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             } elseif ($type instanceof TCallable) {
                 $non_object_types[] = new TCallableKeyedArray([
                     new Union([new TClassString, new TObject]),
-                    Type::getString(),
+                    Type::getNonEmptyString(),
                 ]);
                 $non_object_types[] = new TCallableString();
                 $redundant = false;
@@ -1589,7 +1589,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
             } elseif ($type instanceof TCallable) {
                 $non_string_types[] = new TCallableKeyedArray([
                     new Union([new TClassString, new TObject]),
-                    Type::getString(),
+                    Type::getNonEmptyString(),
                 ]);
                 $non_string_types[] = new TCallableObject();
                 $redundant = false;
