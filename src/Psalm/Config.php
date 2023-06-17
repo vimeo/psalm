@@ -2236,6 +2236,8 @@ class Config
         ];
 
         if ($codebase->analysis_php_version_id >= 8_00_00) {
+            $stringable_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'CoreGenericAttributes.phpstub';
+            $this->internal_stubs[] = $stringable_path;
             $stringable_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'Php80.phpstub';
             $this->internal_stubs[] = $stringable_path;
         }
