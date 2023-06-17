@@ -18,6 +18,7 @@ use Psalm\Storage\ClassConstantStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralClassString;
@@ -287,7 +288,7 @@ class SimpleTypeInferer
         }
 
         if ($stmt instanceof PhpParser\Node\Scalar\MagicConst\Line) {
-            return Type::getInt();
+            return new Union([new TIntRange(1, null)]);
         }
 
         if ($stmt instanceof PhpParser\Node\Scalar\MagicConst\Class_

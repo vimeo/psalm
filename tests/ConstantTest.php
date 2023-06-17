@@ -122,7 +122,7 @@ class ConstantTest extends TestCase
                     $a = __LINE__;
                     $b = __file__;',
                 'assertions' => [
-                    '$a' => 'int',
+                    '$a' => 'int<1, max>',
                     '$b' => 'string',
                 ],
             ],
@@ -1184,7 +1184,7 @@ class ConstantTest extends TestCase
                     $line = C::LINE;
                 ',
                 'assertions' => [
-                    '$line' => 'int',
+                    '$line' => 'int<1, max>',
                 ],
             ],
             'classMethodTraitAndFunctionInConstInitializersAreStrings' => [
