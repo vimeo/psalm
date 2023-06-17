@@ -313,7 +313,7 @@ class InternalCallMapHandlerTest extends TestCase
     }
 
     /**
-     * @return iterable<string, array{0: callable-string, 1: array<int|string, string>}>
+     * @return iterable<string, array{string, array<int|string, string>}>
      */
     public function callMapEntryProvider(): iterable
     {
@@ -404,7 +404,7 @@ class InternalCallMapHandlerTest extends TestCase
      * @depends testGetcallmapReturnsAValidCallmap
      * @dataProvider callMapEntryProvider
      * @coversNothing
-     * @psalm-param callable-string $functionName
+     * @psalm-param string $functionName
      * @param array<int|string, string> $callMapEntry
      */
     public function testIgnoredFunctionsStillFail(string $functionName, array $callMapEntry): void
@@ -462,7 +462,7 @@ class InternalCallMapHandlerTest extends TestCase
      * @depends testGetcallmapReturnsAValidCallmap
      * @depends testIgnoresAreSortedAndUnique
      * @dataProvider callMapEntryProvider
-     * @psalm-param callable-string $functionName
+     * @psalm-param string $functionName
      * @param array<int|string, string> $callMapEntry
      */
     public function testCallMapCompliesWithReflection(string $functionName, array $callMapEntry): void
