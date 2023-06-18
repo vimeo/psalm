@@ -4,6 +4,7 @@ namespace Psalm\Internal;
 
 use Psalm\Config;
 use Psalm\Internal\Provider\Providers;
+use RuntimeException;
 
 use function file_exists;
 use function file_put_contents;
@@ -11,6 +12,8 @@ use function gzdeflate;
 use function gzinflate;
 use function igbinary_serialize;
 use function igbinary_unserialize;
+use function lz4_compress;
+use function lz4_uncompress;
 use function serialize;
 use function unlink;
 use function unserialize;
@@ -42,28 +45,50 @@ class Cache
         }
 
         $cache = Providers::safeFileGetContents($path);
-        if ($this->config->use_gzip) {
+        if ($cache === '') {
+            return null;
+        }
+
+        if ($this->config->compressor === 'deflate') {
             $inflated = @gzinflate($cache);
-            if ($inflated !== false) {
-                $cache = $inflated;
-            }
+        } elseif ($this->config->compressor === 'lz4') {
+            /**
+             * @psalm-suppress UndefinedFunction
+             * @var string|false $inflated
+             */
+            $inflated = lz4_uncompress($cache);
+        } else {
+            $inflated = $cache;
+        }
+
+        // invalid cache data
+        if ($inflated === false) {
+            $this->deleteItem($path);
+
+            return null;
         }
 
         if ($this->config->use_igbinary) {
             /** @var object|false $unserialized */
-            $unserialized = igbinary_unserialize($cache);
+            $unserialized = @igbinary_unserialize($inflated);
         } else {
             /** @var object|false $unserialized */
-            $unserialized = @unserialize($cache);
+            $unserialized = @unserialize($inflated);
         }
 
-        return $unserialized !== false ? $unserialized : null;
+        if ($unserialized === false) {
+            $this->deleteItem($path);
+
+            return null;
+        }
+
+        return $unserialized;
     }
 
     public function deleteItem(string $path): void
     {
         if (file_exists($path)) {
-            unlink($path);
+            @unlink($path);
         }
     }
 
@@ -78,11 +103,25 @@ class Cache
             $serialized = serialize($item);
         }
 
-        if ($this->config->use_gzip) {
-            $serialized = gzdeflate($serialized);
+        if ($this->config->compressor === 'deflate') {
+            $compressed = gzdeflate($serialized);
+        } elseif ($this->config->compressor === 'lz4') {
+            /**
+             * @psalm-suppress UndefinedFunction
+             * @var string|false $compressed
+             */
+            $compressed = lz4_compress($serialized, 4);
+        } else {
+            $compressed = $serialized;
         }
 
-        file_put_contents($path, $serialized, LOCK_EX);
+        if ($compressed === false) {
+            throw new RuntimeException(
+                'Failed to compress cache data',
+            );
+        }
+
+        file_put_contents($path, $compressed, LOCK_EX);
     }
 
     public function getCacheDirectory(): ?string
