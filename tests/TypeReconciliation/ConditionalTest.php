@@ -3052,6 +3052,23 @@ class ConditionalTest extends TestCase
                     '$int' => 'int<97, 122>',
                 ],
             ],
+            'short_circuited_conditional_test' => [
+                'code' => '<?php
+                    /** @var ?stdClass $existing */
+                    $existing = null;
+
+                    /** @var bool $foo */
+                    $foo = true;
+
+                    if ($foo) {
+                    } elseif ($existing === null) {
+                        throw new \RuntimeException();
+                    }
+                    ',
+                'assertions' => [
+                    '$existing' => 'null|stdClass',
+                ],
+            ],
         ];
     }
 
