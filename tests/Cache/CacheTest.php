@@ -119,5 +119,41 @@ class CacheTest extends TestCase
      */
     public static function provideCacheInteractions(): iterable
     {
+        yield 'deletedFileInvalidatesReferencingMethod' => [
+            [
+                [
+                    'files' => [
+                        '/src/A.php' => <<<'PHP'
+                            <?php
+                            class A {
+                                public function do(B $b): void
+                                {
+                                    $b->do();
+                                }
+                            }
+                            PHP,
+                        '/src/B.php' => <<<'PHP'
+                            <?php
+                            class B {
+                                public function do(): void
+                                {
+                                    echo 'B';
+                                }
+                            }
+                            PHP,
+                    ],
+                ],
+                [
+                    'files' => [
+                        '/src/B.php' => null,
+                    ],
+                    'issues' => [
+                        '/src/A.php' => [
+                            'UndefinedClass: Class, interface or enum named B does not exist',
+                        ],
+                    ],
+                ],
+            ],
+        ];
     }
 }
