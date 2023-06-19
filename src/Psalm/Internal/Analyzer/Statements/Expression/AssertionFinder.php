@@ -3475,56 +3475,53 @@ class AssertionFinder
             throw new UnexpectedValueException('$typed_value_position value');
         }
 
-        if ($var_name && $var_type) {
-            $identical = $conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
-                || ($other_type
-                    && (($var_type->isString(true) && $other_type->isString(true))
-                        || ($var_type->isInt(true) && $other_type->isInt(true))
-                        || ($var_type->isFloat() && $other_type->isFloat())
-                    )
-                );
+        //soit on a un === explicite, soit on compare des types strictement égaux
+        $identical = $conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
+            || ($other_type && $var_type
+                && (($var_type->isString(true) && $other_type->isString(true))
+                    || ($var_type->isInt(true) && $other_type->isInt(true))
+                    || ($var_type->isFloat() && $other_type->isFloat())
+                )
+            );
 
-            if (count($var_type->getAtomicTypes()) === 1) {
-                $orred_types = [];
+        if ($var_name
+            && $var_type
+            && !$var_type->isMixed()
+            && count($var_type->getAtomicTypes()) === 1
+        ) {
+            $orred_types = [];
 
-                foreach ($var_type->getAtomicTypes() as $atomic_var_type) {
-                    if ($identical) {
-                        $orred_types[] = new IsIdentical($atomic_var_type);
-                    } else {
-                        $orred_types[] = new IsLooselyEqual($atomic_var_type);
-                    }
+            foreach ($var_type->getAtomicTypes() as $atomic_var_type) {
+                if ($identical) {
+                    $orred_types[] = new IsIdentical($atomic_var_type);
+                } else {
+                    $orred_types[] = new IsLooselyEqual($atomic_var_type);
                 }
-
-                $if_types[$var_name] = [$orred_types];
             }
 
-            if ($other_var_name
-                && $other_type
-                && !$other_type->isMixed()
-                && count($other_type->getAtomicTypes()) === 1
-            ) {
-                $orred_types = [];
-
-                foreach ($other_type->getAtomicTypes() as $atomic_other_type) {
-                    if ($identical) {
-                        $orred_types[] = new IsIdentical($atomic_other_type);
-                    } else {
-                        $orred_types[] = new IsLooselyEqual($atomic_other_type);
-                    }
-                }
-
-                $if_types[$other_var_name] = [$orred_types];
-            }
+            $if_types[$var_name] = [$orred_types];
         }
 
-        if ($codebase
+        if ($other_var_name
             && $other_type
-            && $var_type
-            && ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
-                || ($other_type->isString()
-                    && $var_type->isString())
-            )
+            && !$other_type->isMixed()
+            && count($other_type->getAtomicTypes()) === 1
+            && $other_var_name[0] === '$' //don't try to assert on constant or other, it's too perf consuming
         ) {
+            $orred_types = [];
+
+            foreach ($other_type->getAtomicTypes() as $atomic_other_type) {
+                if ($identical) {
+                    $orred_types[] = new IsIdentical($atomic_other_type);
+                } else {
+                    $orred_types[] = new IsLooselyEqual($atomic_other_type);
+                }
+            }
+
+            $if_types[$other_var_name] = [$orred_types];
+        }
+
+        if ($codebase && $other_type && $var_type && $identical) {
             self::handleParadoxicalAssertions(
                 $source,
                 $var_type,
