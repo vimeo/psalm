@@ -1192,18 +1192,38 @@ class Config
         if (isset($config_xml['serializer'])) {
             $attribute_text = (string) $config_xml['serializer'];
             $config->use_igbinary = $attribute_text === 'igbinary';
+            if ($config->use_igbinary
+                && (
+                    !function_exists('igbinary_serialize')
+                    || !function_exists('igbinary_unserialize')
+                )
+            ) {
+                $config->use_igbinary = false;
+                $config->config_warnings[] = '"serializer" set to "igbinary" but ext-igbinary seems to be missing on ' .
+                    'the system. Using php\'s build-in serializer.';
+            }
         } elseif ($igbinary_version = phpversion('igbinary')) {
             $config->use_igbinary = version_compare($igbinary_version, '2.0.5') >= 0;
         }
 
         if (isset($config_xml['compressor'])) {
             $compressor = (string) $config_xml['compressor'];
-            if ($compressor === 'lz4' && function_exists('lz4_uncompress')) {
-                $config->compressor = 'lz4';
-            } elseif ($compressor !== 'off' && function_exists('gzdeflate')) {
-                $config->compressor = 'deflate';
+            if ($compressor === 'lz4') {
+                if (function_exists('lz4_compress') && function_exists('lz4_uncompress')) {
+                    $config->compressor = 'lz4';
+                } else {
+                    $config->config_warnings[] = '"compressor" set to "lz4" but ext-lz4 seems to be missing on the ' .
+                        'system. Disabling cache compressor.';
+                }
+            } elseif ($compressor === 'deflate') {
+                if (function_exists('gzinflate') && function_exists('gzdeflate')) {
+                    $config->compressor = 'deflate';
+                } else {
+                    $config->config_warnings[] = '"compressor" set to "deflate" but zlib seems to be missing on the ' .
+                        'system. Disabling cache compressor.';
+                }
             }
-        } elseif (function_exists('gzdeflate')) {
+        } elseif (function_exists('gzinflate') && function_exists('gzdeflate')) {
             $config->compressor = 'deflate';
         }
 
