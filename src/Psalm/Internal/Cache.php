@@ -4,7 +4,6 @@ namespace Psalm\Internal;
 
 use Psalm\Config;
 use Psalm\Internal\Provider\Providers;
-use RuntimeException;
 
 use function file_exists;
 use function file_put_contents;
@@ -115,13 +114,10 @@ class Cache
             $compressed = $serialized;
         }
 
-        if ($compressed === false) {
-            throw new RuntimeException(
-                'Failed to compress cache data',
-            );
+        if ($compressed !== false) {
+            file_put_contents($path, $compressed, LOCK_EX);
         }
-
-        file_put_contents($path, $compressed, LOCK_EX);
+        // TODO: Error handling
     }
 
     public function getCacheDirectory(): ?string
