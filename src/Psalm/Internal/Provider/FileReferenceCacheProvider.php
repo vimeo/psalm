@@ -353,7 +353,9 @@ class FileReferenceCacheProvider
         }
 
         $cache_item = $this->cache->getItem($cache_location);
-        if (!is_array($cache_item)) {
+        if ($cache_item === null) {
+            return null;
+        } elseif (!is_array($cache_item)) {
             throw new UnexpectedValueException('The reference cache must be an array');
         }
 

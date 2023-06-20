@@ -68,7 +68,7 @@ class Cache
             return null;
         }
 
-        if ($this->config->use_igbinary) {
+        if ($this->use_igbinary) {
             /** @var object|false $unserialized */
             $unserialized = @igbinary_unserialize($inflated);
         } else {
@@ -97,7 +97,7 @@ class Cache
      */
     public function saveItem(string $path, $item): void
     {
-        if ($this->config->use_igbinary) {
+        if ($this->use_igbinary) {
             $serialized = igbinary_serialize($item);
         } else {
             $serialized = serialize($item);
