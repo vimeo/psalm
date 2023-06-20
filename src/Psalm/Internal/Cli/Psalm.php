@@ -421,9 +421,7 @@ final class Psalm
 
     private static function initIsDiff(array $options): bool
     {
-        return !isset($options['no-diff'])
-            && !isset($options['set-baseline'])
-            && !isset($options['update-baseline']);
+        return !isset($options['no-diff']);
     }
 
     /**
