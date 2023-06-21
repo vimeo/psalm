@@ -19,6 +19,7 @@ use function hash;
 use function is_array;
 use function is_dir;
 use function is_readable;
+use function is_string;
 use function is_writable;
 use function json_decode;
 use function json_encode;
@@ -89,10 +90,12 @@ class ParserCacheProvider
             && is_readable($cache_location)
             && filemtime($cache_location) > $file_modified_time
         ) {
-            /** @var list<Stmt> $stmts */
             $stmts = $this->cache->getItem($cache_location);
 
-            return $stmts;
+            if (is_array($stmts)) {
+                /** @var list<Stmt> $stmts */
+                return $stmts;
+            }
         }
 
         return null;
@@ -110,10 +113,12 @@ class ParserCacheProvider
         $cache_location = $this->getCacheLocationForPath($file_path, self::PARSER_CACHE_DIRECTORY);
 
         if (is_readable($cache_location)) {
-            /** @var list<Stmt> $stmts */
             $stmts = $this->cache->getItem($cache_location);
 
-            return $stmts;
+            if (is_array($stmts)) {
+                /** @var list<Stmt> $stmts */
+                return $stmts;
+            }
         }
 
         return null;
@@ -127,8 +132,11 @@ class ParserCacheProvider
 
         $cache_location = $this->getCacheLocationForPath($file_path, self::FILE_CONTENTS_CACHE_DIRECTORY);
 
-        /** @var string $cache_item */
         $cache_item = $this->cache->getItem($cache_location);
+
+        if (!is_string($cache_item)) {
+            return null;
+        }
 
         return $cache_item;
     }

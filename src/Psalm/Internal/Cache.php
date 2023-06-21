@@ -4,7 +4,6 @@ namespace Psalm\Internal;
 
 use Psalm\Config;
 use Psalm\Internal\Provider\Providers;
-use RuntimeException;
 
 use function file_exists;
 use function file_put_contents;
@@ -68,7 +67,7 @@ class Cache
             return null;
         }
 
-        if ($this->config->use_igbinary) {
+        if ($this->use_igbinary) {
             /** @var object|false $unserialized */
             $unserialized = @igbinary_unserialize($inflated);
         } else {
@@ -97,7 +96,7 @@ class Cache
      */
     public function saveItem(string $path, $item): void
     {
-        if ($this->config->use_igbinary) {
+        if ($this->use_igbinary) {
             $serialized = igbinary_serialize($item);
         } else {
             $serialized = serialize($item);
@@ -115,13 +114,10 @@ class Cache
             $compressed = $serialized;
         }
 
-        if ($compressed === false) {
-            throw new RuntimeException(
-                'Failed to compress cache data',
-            );
+        if ($compressed !== false) {
+            file_put_contents($path, $compressed, LOCK_EX);
         }
-
-        file_put_contents($path, $compressed, LOCK_EX);
+        // TODO: Error handling
     }
 
     public function getCacheDirectory(): ?string
