@@ -64,6 +64,18 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
         $node_type_provider = $statements_source->getNodeTypeProvider();
         foreach ($call_args as $index => $call_arg) {
             $type = $node_type_provider->getType($call_arg->value);
+            if ($type === null) {
+                continue;
+            }
+
+            // if it's an array, used with splat operator, we cannot validate it reliably below and report false positive errors
+            if ($type->isArray()) {
+                return null;
+            }
+        }
+
+        foreach ($call_args as $index => $call_arg) {
+            $type = $node_type_provider->getType($call_arg->value);
             if ($type === null && $index === 0 && $event->getFunctionId() === 'printf') {
                 break;
             }

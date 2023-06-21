@@ -182,6 +182,16 @@ class SprintfTest extends TestCase
                 '$val===' => 'string',
             ],
         ];
+
+        yield 'sprintfSplatUnpackingArray' => [
+            'code' => '<?php
+                $a = ["a", "b", "c"];
+                $val = sprintf("%s %s %s", ...$a);
+            ',
+            'assertions' => [
+                '$val===' => 'string',
+            ],
+        ];
     }
 
     public function providerInvalidCodeParse(): iterable
