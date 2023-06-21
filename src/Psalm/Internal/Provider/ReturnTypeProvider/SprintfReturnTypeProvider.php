@@ -178,23 +178,6 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
 
                             break 2;
                         }
-
-                        // we are in the next iteration, so we have 1 placeholder less here
-                        // otherwise we would have reported an error above already
-                        if (count($dummy) + 1 === $provided_placeholders_count) {
-                            break;
-                        }
-
-                        IssueBuffer::maybeAdd(
-                            new TooManyArguments(
-                                'Too many arguments for the number of placeholders in ' . $event->getFunctionId(),
-                                $event->getCodeLocation(),
-                                $event->getFunctionId(),
-                            ),
-                            $statements_source->getSuppressedIssues(),
-                        );
-
-                        break;
                     }
 
                     /**
@@ -203,24 +186,34 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
                      * @psalm-suppress DocblockTypeContradiction
                      */
                     if ($result === false && count($dummy) === $provided_placeholders_count) {
-                        IssueBuffer::maybeAdd(
-                            new TooFewArguments(
-                                'Too few arguments for ' . $event->getFunctionId(),
-                                $event->getCodeLocation(),
-                                $event->getFunctionId(),
-                            ),
-                            $statements_source->getSuppressedIssues(),
-                        );
+                        // could be invalid format or too few arguments - we cannot distinguish this in PHP 7 without additional checks
+                        $max_dummy = array_fill(0, 100, '');
+                        $result = @sprintf($type->getSingleStringLiteral()->value, ...$max_dummy);
+                        if ($result === false) {
+                            // the format is invalid
+                            IssueBuffer::maybeAdd(
+                                new InvalidArgument(
+                                    'Argument 1 of ' . $event->getFunctionId() . ' is invalid',
+                                    $event->getCodeLocation(),
+                                    $event->getFunctionId(),
+                                ),
+                                $statements_source->getSuppressedIssues(),
+                            );
+                        } else {
+                            IssueBuffer::maybeAdd(
+                                new TooFewArguments(
+                                    'Too few arguments for ' . $event->getFunctionId(),
+                                    $event->getCodeLocation(),
+                                    $event->getFunctionId(),
+                                ),
+                                $statements_source->getSuppressedIssues(),
+                            );
+                        }
 
                         return Type::getFalse();
                     }
 
-                    /**
-                     * PHP 7
-                     *
-                     * @psalm-suppress DocblockTypeContradiction
-                     */
-                    if ($result === false && count($dummy) + 1 <= $provided_placeholders_count) {
+                    if (is_string($result) && count($dummy) + 1 <= $provided_placeholders_count) {
                         IssueBuffer::maybeAdd(
                             new TooManyArguments(
                                 'Too many arguments for the number of placeholders in ' . $event->getFunctionId(),
@@ -233,7 +226,10 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
                         break;
                     }
 
-                    // for PHP 7, since it doesn't throw above
+                    if (!is_string($result)) {
+                        break;
+                    }
+
                     // abort if it's empty, since we checked everything
                     if (array_pop($dummy) === null) {
                         break;
@@ -274,7 +270,6 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
 
             // if the function has more arguments than the pattern has placeholders, this could be a false positive
             // if the param is not used in the pattern
-            // however this is already reported above and returned, so this cannot happen
             if ($type->isNonEmptyString() || $type->isInt() || $type->isFloat()) {
                 return Type::getNonEmptyString();
             }
