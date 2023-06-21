@@ -62,8 +62,9 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
             return null;
         }
 
+        $has_splat_args = false;
         $node_type_provider = $statements_source->getNodeTypeProvider();
-        foreach ($call_args as $index => $call_arg) {
+        foreach ($call_args as $call_arg) {
             $type = $node_type_provider->getType($call_arg->value);
             if ($type === null) {
                 continue;
@@ -72,7 +73,8 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
             // if it's an array, used with splat operator
             // we cannot validate it reliably below and report false positive errors
             if ($type->isArray()) {
-                return null;
+                $has_splat_args = true;
+                break;
             }
         }
 
@@ -137,7 +139,8 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
                     return Type::getString();
                 }
 
-                $provided_placeholders_count = count($call_args) - 1;
+                // assume a random, high number for tests
+                $provided_placeholders_count = $has_splat_args === true ? 100 : count($call_args) - 1;
                 $dummy = array_fill(0, $provided_placeholders_count, '');
 
                 // check if we have enough/too many arguments and a valid format
@@ -227,6 +230,11 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
                         }
 
                         return Type::getFalse();
+                    }
+
+                    // we can only validate the format and arg 1 when using splat
+                    if ($has_splat_args === true) {
+                        break;
                     }
 
                     if (is_string($result) && count($dummy) + 1 <= $provided_placeholders_count) {

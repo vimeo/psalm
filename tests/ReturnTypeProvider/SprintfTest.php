@@ -186,10 +186,20 @@ class SprintfTest extends TestCase
         yield 'sprintfSplatUnpackingArray' => [
             'code' => '<?php
                 $a = ["a", "b", "c"];
-                $val = sprintf("%s %s %s", ...$a);
+                $val = sprintf("%s%s%s", ...$a);
             ',
             'assertions' => [
                 '$val===' => 'string',
+            ],
+        ];
+
+        yield 'sprintfSplatUnpackingArrayNonEmpty' => [
+            'code' => '<?php
+                $a = ["a", "b", "c"];
+                $val = sprintf("%s %s %s", ...$a);
+            ',
+            'assertions' => [
+                '$val===' => 'non-empty-string',
             ],
         ];
     }
