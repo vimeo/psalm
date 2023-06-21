@@ -123,8 +123,8 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
                     return Type::getString();
                 }
 
-                $args_count = count($call_args) - 1;
-                $dummy = array_fill(0, $args_count, '');
+                $provided_placeholders_count = count($call_args) - 1;
+                $dummy = array_fill(0, $provided_placeholders_count, '');
 
                 // check if we have enough/too many arguments and a valid format
                 $initial_result = null;
@@ -166,7 +166,7 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
                         break 2;
                     } catch (ArgumentCountError $error) {
                         // PHP 8
-                        if (count($dummy) >= $args_count) {
+                        if (count($dummy) === $provided_placeholders_count) {
                             IssueBuffer::maybeAdd(
                                 new TooFewArguments(
                                     'Too few arguments for ' . $event->getFunctionId(),
@@ -181,7 +181,7 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
 
                         // we are in the next iteration, so we have 1 placeholder less here
                         // otherwise we would have reported an error above already
-                        if (count($dummy) + 1 === $args_count) {
+                        if (count($dummy) + 1 === $provided_placeholders_count) {
                             break;
                         }
 
@@ -202,7 +202,7 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
                      *
                      * @psalm-suppress DocblockTypeContradiction
                      */
-                    if ($result === false && count($dummy) >= $args_count) {
+                    if ($result === false && count($dummy) === $provided_placeholders_count) {
                         IssueBuffer::maybeAdd(
                             new TooFewArguments(
                                 'Too few arguments for ' . $event->getFunctionId(),
@@ -220,7 +220,7 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
                      *
                      * @psalm-suppress DocblockTypeContradiction
                      */
-                    if ($result === false && count($dummy) + 1 !== $args_count) {
+                    if ($result === false && count($dummy) + 1 <= $provided_placeholders_count) {
                         IssueBuffer::maybeAdd(
                             new TooManyArguments(
                                 'Too many arguments for the number of placeholders in ' . $event->getFunctionId(),
