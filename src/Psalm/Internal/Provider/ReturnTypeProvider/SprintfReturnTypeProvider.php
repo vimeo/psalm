@@ -22,6 +22,7 @@ use ValueError;
 use function array_fill;
 use function array_pop;
 use function count;
+use function is_string;
 use function preg_match;
 use function sprintf;
 
@@ -68,7 +69,8 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
                 continue;
             }
 
-            // if it's an array, used with splat operator, we cannot validate it reliably below and report false positive errors
+            // if it's an array, used with splat operator
+            // we cannot validate it reliably below and report false positive errors
             if ($type->isArray()) {
                 return null;
             }
@@ -199,7 +201,8 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
                      * @psalm-suppress DocblockTypeContradiction
                      */
                     if ($result === false && count($dummy) === $provided_placeholders_count) {
-                        // could be invalid format or too few arguments - we cannot distinguish this in PHP 7 without additional checks
+                        // could be invalid format or too few arguments
+                        // we cannot distinguish this in PHP 7 without additional checks
                         $max_dummy = array_fill(0, 100, '');
                         $result = @sprintf($type->getSingleStringLiteral()->value, ...$max_dummy);
                         if ($result === false) {
