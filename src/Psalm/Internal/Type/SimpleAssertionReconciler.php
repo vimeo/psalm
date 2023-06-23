@@ -2441,7 +2441,9 @@ class SimpleAssertionReconciler extends Reconciler
 
                 $redundant = false;
             } elseif ($type instanceof TIterable) {
-                $array_types[] = Type::getListAtomic($type->type_params[1]);
+                $array_types[] = $is_non_empty
+                    ? Type::getNonEmptyListAtomic($type->type_params[1])
+                    : Type::getListAtomic($type->type_params[1]);
 
                 $redundant = false;
             } else {
