@@ -1279,9 +1279,8 @@ function preg_quote(string $str, ?string $delimiter = null) : string {}
  * @psalm-pure
  *
  * @param string|int|float $values
- * @return ($format is non-empty-string
- *      ? ($values is non-empty-string|int|float ? non-empty-string : string)
- *      : string)
+ * @return (PHP_MAJOR_VERSION is 8 ? string : string|false)
+ * @psalm-ignore-falsable-return
  *
  * @psalm-flow ($format, $values) -> return
  */
@@ -1290,7 +1289,7 @@ function sprintf(string $format, ...$values) {}
 /**
  * @psalm-pure
  * @param array<string|int|float> $values
- * @return string|false
+ * @return (PHP_MAJOR_VERSION is 8 ? string : string|false)
  * @psalm-ignore-falsable-return
  *
  * @psalm-flow ($format, $values) -> return
@@ -1309,7 +1308,8 @@ function wordwrap(string $string, int $width = 75, string $break = "\n", bool $c
  * @psalm-pure
  *
  * @param string|int|float $values
- * @return int<0, max>
+ * @return (PHP_MAJOR_VERSION is 8 ? int<0, max> : int<0, max>|false)
+ * @psalm-ignore-falsable-return
  *
  * @psalm-taint-specialize
  * @psalm-flow ($format, $values) -> return
@@ -1320,7 +1320,8 @@ function printf(string $format, ...$values) {}
 
 /**
  * @param array<string|int|float> $values
- * @return int<0, max>
+ * @return (PHP_MAJOR_VERSION is 8 ? int<0, max> : int<0, max>|false)
+ * @psalm-ignore-falsable-return
  *
  * @psalm-pure
  * @psalm-taint-specialize

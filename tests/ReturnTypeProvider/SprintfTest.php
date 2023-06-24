@@ -130,6 +130,8 @@ class SprintfTest extends TestCase
             'assertions' => [
                 '$val===' => 'int<0, max>',
             ],
+            'ignored_issues' => [],
+            'php_version' => '8.0',
         ];
 
         yield 'sprintfEmptyStringFormat' => [
@@ -163,6 +165,8 @@ class SprintfTest extends TestCase
             'assertions' => [
                 '$val===' => 'string',
             ],
+            'ignored_issues' => [],
+            'php_version' => '8.0',
         ];
 
         yield 'sprintfComplexPlaceholderNotYetSupported2' => [
@@ -172,6 +176,8 @@ class SprintfTest extends TestCase
             'assertions' => [
                 '$val===' => 'string',
             ],
+            'ignored_issues' => [],
+            'php_version' => '8.0',
         ];
 
         yield 'sprintfComplexPlaceholderNotYetSupported3' => [
@@ -181,6 +187,52 @@ class SprintfTest extends TestCase
             'assertions' => [
                 '$val===' => 'string',
             ],
+            'ignored_issues' => [],
+            'php_version' => '8.0',
+        ];
+
+        yield 'sprintfSplatUnpackingArray' => [
+            'code' => '<?php
+                $a = ["a", "b", "c"];
+                $val = sprintf("%s%s%s", ...$a);
+            ',
+            'assertions' => [
+                '$val===' => 'string',
+            ],
+            'ignored_issues' => [],
+            'php_version' => '8.0',
+        ];
+
+        yield 'sprintfSplatUnpackingArrayNonEmpty' => [
+            'code' => '<?php
+                $a = ["a", "b", "c"];
+                $val = sprintf("%s %s %s", ...$a);
+            ',
+            'assertions' => [
+                '$val===' => 'non-empty-string',
+            ],
+        ];
+
+        yield 'sprintfMultiplePlaceholdersNoErrorsIssue9941PHP7' => [
+            'code' => '<?php
+                $val = sprintf("Handling product %d => %d (%d)", 123, 456, 789);
+            ',
+            'assertions' => [
+                '$val===' => 'non-empty-string',
+            ],
+            'ignored_issues' => [],
+            'php_version' => '7.4',
+        ];
+
+        yield 'sprintfMultiplePlaceholdersNoErrorsIssue9941PHP8' => [
+            'code' => '<?php
+                $val = sprintf("Handling product %d => %d (%d)", 123, 456, 789);
+            ',
+            'assertions' => [
+                '$val===' => 'non-empty-string',
+            ],
+            'ignored_issues' => [],
+            'php_version' => '8.0',
         ];
     }
 

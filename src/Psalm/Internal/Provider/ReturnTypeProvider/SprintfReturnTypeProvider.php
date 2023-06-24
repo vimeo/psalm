@@ -22,6 +22,7 @@ use ValueError;
 use function array_fill;
 use function array_pop;
 use function count;
+use function is_string;
 use function preg_match;
 use function sprintf;
 
@@ -61,7 +62,24 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
             return null;
         }
 
+        $has_splat_args = false;
         $node_type_provider = $statements_source->getNodeTypeProvider();
+        foreach ($call_args as $call_arg) {
+            $type = $node_type_provider->getType($call_arg->value);
+            if ($type === null) {
+                continue;
+            }
+
+            // if it's an array, used with splat operator
+            // we cannot validate it reliably below and report false positive errors
+            if ($type->isArray()) {
+                $has_splat_args = true;
+                break;
+            }
+        }
+
+        // PHP 7 handling for formats that do not contain anything but placeholders
+        $is_falsable = true;
         foreach ($call_args as $index => $call_arg) {
             $type = $node_type_provider->getType($call_arg->value);
             if ($type === null && $index === 0 && $event->getFunctionId() === 'printf') {
@@ -114,21 +132,17 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
                     '/%(?:\d+\$)?[-+]?(?:\d+|\*)(?:\.(?:\d+|\*))?[bcdouxXeEfFgGhHs]/',
                     $type->getSingleStringLiteral()->value,
                 ) === 1) {
-                    if ($event->getFunctionId() === 'printf') {
-                        return null;
-                    }
-
-                    // the core stubs are wrong for these too, since these might be empty strings
-                    // e.g. sprintf(\'%0.*s\', 0, "abc")
-                    return Type::getString();
+                    return null;
                 }
 
-                $args_count = count($call_args) - 1;
-                $dummy = array_fill(0, $args_count, '');
+                // assume a random, high number for tests
+                $provided_placeholders_count = $has_splat_args === true ? 100 : count($call_args) - 1;
+                $dummy = array_fill(0, $provided_placeholders_count, '');
 
                 // check if we have enough/too many arguments and a valid format
                 $initial_result = null;
                 while (count($dummy) > -1) {
+                    $result = null;
                     try {
                         // before PHP 8, an uncatchable Warning is thrown if too few arguments are passed
                         // which is ignored and handled below instead
@@ -166,7 +180,7 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
                         break 2;
                     } catch (ArgumentCountError $error) {
                         // PHP 8
-                        if (count($dummy) >= $args_count) {
+                        if (count($dummy) === $provided_placeholders_count) {
                             IssueBuffer::maybeAdd(
                                 new TooFewArguments(
                                     'Too few arguments for ' . $event->getFunctionId(),
@@ -178,49 +192,43 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
 
                             break 2;
                         }
-
-                        // we are in the next iteration, so we have 1 placeholder less here
-                        // otherwise we would have reported an error above already
-                        if (count($dummy) + 1 === $args_count) {
-                            break;
-                        }
-
-                        IssueBuffer::maybeAdd(
-                            new TooManyArguments(
-                                'Too many arguments for the number of placeholders in ' . $event->getFunctionId(),
-                                $event->getCodeLocation(),
-                                $event->getFunctionId(),
-                            ),
-                            $statements_source->getSuppressedIssues(),
-                        );
-
-                        break;
                     }
 
-                    /**
-                     * PHP 7
-                     *
-                     * @psalm-suppress DocblockTypeContradiction
-                     */
-                    if ($result === false && count($dummy) >= $args_count) {
-                        IssueBuffer::maybeAdd(
-                            new TooFewArguments(
-                                'Too few arguments for ' . $event->getFunctionId(),
-                                $event->getCodeLocation(),
-                                $event->getFunctionId(),
-                            ),
-                            $statements_source->getSuppressedIssues(),
-                        );
+                    if ($result === false && count($dummy) === $provided_placeholders_count) {
+                        // could be invalid format or too few arguments
+                        // we cannot distinguish this in PHP 7 without additional checks
+                        $max_dummy = array_fill(0, 100, '');
+                        $result = @sprintf($type->getSingleStringLiteral()->value, ...$max_dummy);
+                        if ($result === false) {
+                            // the format is invalid
+                            IssueBuffer::maybeAdd(
+                                new InvalidArgument(
+                                    'Argument 1 of ' . $event->getFunctionId() . ' is invalid',
+                                    $event->getCodeLocation(),
+                                    $event->getFunctionId(),
+                                ),
+                                $statements_source->getSuppressedIssues(),
+                            );
+                        } else {
+                            IssueBuffer::maybeAdd(
+                                new TooFewArguments(
+                                    'Too few arguments for ' . $event->getFunctionId(),
+                                    $event->getCodeLocation(),
+                                    $event->getFunctionId(),
+                                ),
+                                $statements_source->getSuppressedIssues(),
+                            );
+                        }
 
                         return Type::getFalse();
                     }
 
-                    /**
-                     * PHP 7
-                     *
-                     * @psalm-suppress DocblockTypeContradiction
-                     */
-                    if ($result === false && count($dummy) + 1 !== $args_count) {
+                    // we can only validate the format and arg 1 when using splat
+                    if ($has_splat_args === true) {
+                        break;
+                    }
+
+                    if (is_string($result) && count($dummy) + 1 <= $provided_placeholders_count) {
                         IssueBuffer::maybeAdd(
                             new TooManyArguments(
                                 'Too many arguments for the number of placeholders in ' . $event->getFunctionId(),
@@ -233,7 +241,10 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
                         break;
                     }
 
-                    // for PHP 7, since it doesn't throw above
+                    if (!is_string($result)) {
+                        break;
+                    }
+
                     // abort if it's empty, since we checked everything
                     if (array_pop($dummy) === null) {
                         break;
@@ -246,20 +257,19 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
                     return null;
                 }
 
-                /**
-                 * PHP 7 can have false here
-                 *
-                 * @psalm-suppress RedundantConditionGivenDocblockType
-                 */
                 if ($initial_result !== null && $initial_result !== false && $initial_result !== '') {
                     return Type::getNonEmptyString();
                 }
 
-                // if we didn't have a valid result
+                // if we didn't have any valid result
                 // the pattern is invalid or not yet supported by the return type provider
                 if ($initial_result === null || $initial_result === false) {
                     return null;
                 }
+
+                // the initial result is an empty string
+                // which means the format is valid and it depends on the args, whether it is non-empty-string or not
+                $is_falsable = false;
             }
 
             if ($index === 0 && $event->getFunctionId() === 'printf') {
@@ -274,7 +284,6 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
 
             // if the function has more arguments than the pattern has placeholders, this could be a false positive
             // if the param is not used in the pattern
-            // however this is already reported above and returned, so this cannot happen
             if ($type->isNonEmptyString() || $type->isInt() || $type->isFloat()) {
                 return Type::getNonEmptyString();
             }
@@ -302,6 +311,10 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
             }
 
             return Type::getNonEmptyString();
+        }
+
+        if ($is_falsable === false) {
+            return Type::getString();
         }
 
         return null;
