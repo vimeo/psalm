@@ -78,6 +78,8 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
             }
         }
 
+        // PHP 7 handling for formats that do not contain anything but placeholders
+        $is_falsable = true;
         foreach ($call_args as $index => $call_arg) {
             $type = $node_type_provider->getType($call_arg->value);
             if ($type === null && $index === 0 && $event->getFunctionId() === 'printf') {
@@ -259,11 +261,15 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
                     return Type::getNonEmptyString();
                 }
 
-                // if we didn't have a valid result
+                // if we didn't have any valid result
                 // the pattern is invalid or not yet supported by the return type provider
                 if ($initial_result === null || $initial_result === false) {
                     return null;
                 }
+
+                // the initial result is an empty string
+                // which means the format is valid and it depends on the args, whether it is non-empty-string or not
+                $is_falsable = false;
             }
 
             if ($index === 0 && $event->getFunctionId() === 'printf') {
@@ -305,6 +311,10 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
             }
 
             return Type::getNonEmptyString();
+        }
+
+        if ( $is_falsable === false ) {
+            return Type::getString();
         }
 
         return null;
