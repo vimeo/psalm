@@ -192,11 +192,6 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
                         }
                     }
 
-                    /**
-                     * PHP 7
-                     *
-                     * @psalm-suppress DocblockTypeContradiction
-                     */
                     if ($result === false && count($dummy) === $provided_placeholders_count) {
                         // could be invalid format or too few arguments
                         // we cannot distinguish this in PHP 7 without additional checks
@@ -260,11 +255,6 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
                     return null;
                 }
 
-                /**
-                 * PHP 7 can have false here
-                 *
-                 * @psalm-suppress RedundantConditionGivenDocblockType
-                 */
                 if ($initial_result !== null && $initial_result !== false && $initial_result !== '') {
                     return Type::getNonEmptyString();
                 }
