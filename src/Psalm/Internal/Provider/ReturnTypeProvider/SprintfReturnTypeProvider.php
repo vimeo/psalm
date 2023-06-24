@@ -313,7 +313,7 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
             return Type::getNonEmptyString();
         }
 
-        if ( $is_falsable === false ) {
+        if ($is_falsable === false) {
             return Type::getString();
         }
 
