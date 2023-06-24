@@ -130,13 +130,7 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
                     '/%(?:\d+\$)?[-+]?(?:\d+|\*)(?:\.(?:\d+|\*))?[bcdouxXeEfFgGhHs]/',
                     $type->getSingleStringLiteral()->value,
                 ) === 1) {
-                    if ($event->getFunctionId() === 'printf') {
-                        return null;
-                    }
-
-                    // the core stubs are wrong for these too, since these might be empty strings
-                    // e.g. sprintf(\'%0.*s\', 0, "abc")
-                    return Type::getString();
+                    return null;
                 }
 
                 // assume a random, high number for tests
