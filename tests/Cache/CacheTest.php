@@ -19,6 +19,7 @@ use Psalm\Tests\Internal\Provider\ParserInstanceCacheProvider;
 use Psalm\Tests\Internal\Provider\ProjectCacheProvider;
 use Psalm\Tests\TestCase;
 
+use function microtime;
 use function str_replace;
 
 use const DIRECTORY_SEPARATOR;
@@ -101,8 +102,10 @@ class CacheTest extends TestCase
 
             RuntimeCaches::clearAll();
 
+            $start_time = microtime(true);
             $project_analyzer = new ProjectAnalyzer($config, $providers);
             $project_analyzer->check($config->base_dir, true);
+            $project_analyzer->finish($start_time, PSALM_VERSION);
 
             $issues = self::normalizeIssueData(IssueBuffer::getIssuesData());
             self::assertSame($interaction['issues'] ?? [], $issues);

@@ -1098,6 +1098,15 @@ class ProjectAnalyzer
         }
     }
 
+    public function finish(float $start_time, string $psalm_version): void
+    {
+        $this->codebase->file_reference_provider->removeDeletedFilesFromReferences();
+
+        if ($this->project_cache_provider) {
+            $this->project_cache_provider->processSuccessfulRun($start_time, $psalm_version);
+        }
+    }
+
     public function getConfig(): Config
     {
         return $this->config;

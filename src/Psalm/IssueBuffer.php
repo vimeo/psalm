@@ -792,11 +792,7 @@ final class IssueBuffer
         }
 
         if ($is_full && $start_time) {
-            $codebase->file_reference_provider->removeDeletedFilesFromReferences();
-
-            if ($project_analyzer->project_cache_provider) {
-                $project_analyzer->project_cache_provider->processSuccessfulRun($start_time, PSALM_VERSION);
-            }
+            $project_analyzer->finish($start_time, PSALM_VERSION);
         }
 
         if ($error_count
