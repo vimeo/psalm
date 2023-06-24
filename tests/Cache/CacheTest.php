@@ -158,5 +158,46 @@ class CacheTest extends TestCase
                 ],
             ],
         ];
+
+        yield 'classPropertyTypeChangeInvalidatesReferencingMethod' => [
+            [
+                [
+                    'files' => [
+                        '/src/A.php' => <<<'PHP'
+                            <?php
+                            class A {
+                                public function foo(B $b): int
+                                {
+                                    return $b->value;
+                                }
+                            }
+                            PHP,
+                        '/src/B.php' => <<<'PHP'
+                            <?php
+                            class B {
+                                public ?int $value = 0;
+                            }
+                            PHP,
+                    ],
+                    'issues' => [
+                        '/src/A.php' => [
+                            "NullableReturnStatement: The declared return type 'int' for A::foo is not nullable, but the function returns 'int|null'",
+                            "InvalidNullableReturnType: The declared return type 'int' for A::foo is not nullable, but 'int|null' contains null",
+                        ],
+                    ],
+                ],
+                [
+                    'files' => [
+                        '/src/B.php' => <<<'PHP'
+                            <?php
+                            class B {
+                                public int $value = 0;
+                            }
+                            PHP,
+                    ],
+                    'issues' => [],
+                ],
+            ],
+        ];
     }
 }
