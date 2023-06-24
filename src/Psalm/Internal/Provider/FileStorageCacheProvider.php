@@ -64,9 +64,17 @@ class FileStorageCacheProvider
     public function writeToCache(FileStorage $storage, string $file_contents): void
     {
         $file_path = strtolower($storage->file_path);
-        $cache_location = $this->getCacheLocationForPath($file_path, true);
         $storage->hash = $this->getCacheHash($file_path, $file_contents);
 
+        $this->storeInCache($file_path, $storage);
+    }
+
+    /**
+     * @param lowercase-string $file_path
+     */
+    protected function storeInCache(string $file_path, FileStorage  $storage): void
+    {
+        $cache_location = $this->getCacheLocationForPath($file_path, true);
         $this->cache->saveItem($cache_location, $storage);
     }
 
@@ -107,7 +115,10 @@ class FileStorageCacheProvider
         return PHP_VERSION_ID >= 8_01_00 ? hash('xxh128', $data) : hash('md4', $data);
     }
 
-    private function loadFromCache(string $file_path): ?FileStorage
+    /**
+     * @param lowercase-string $file_path
+     */
+    protected function loadFromCache(string $file_path): ?FileStorage
     {
         $storage = $this->cache->getItem($this->getCacheLocationForPath($file_path));
         if ($storage instanceof FileStorage) {

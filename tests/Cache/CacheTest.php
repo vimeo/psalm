@@ -19,6 +19,7 @@ use Psalm\Tests\Internal\Provider\ParserInstanceCacheProvider;
 use Psalm\Tests\Internal\Provider\ProjectCacheProvider;
 use Psalm\Tests\TestCase;
 
+use function microtime;
 use function str_replace;
 
 use const DIRECTORY_SEPARATOR;
@@ -101,8 +102,10 @@ class CacheTest extends TestCase
 
             RuntimeCaches::clearAll();
 
+            $start_time = microtime(true);
             $project_analyzer = new ProjectAnalyzer($config, $providers);
             $project_analyzer->check($config->base_dir, true);
+            $project_analyzer->finish($start_time, PSALM_VERSION);
 
             $issues = self::normalizeIssueData(IssueBuffer::getIssuesData());
             self::assertSame($interaction['issues'] ?? [], $issues);
@@ -152,6 +155,47 @@ class CacheTest extends TestCase
                             'UndefinedClass: Class, interface or enum named B does not exist',
                         ],
                     ],
+                ],
+            ],
+        ];
+
+        yield 'classPropertyTypeChangeInvalidatesReferencingMethod' => [
+            [
+                [
+                    'files' => [
+                        '/src/A.php' => <<<'PHP'
+                            <?php
+                            class A {
+                                public function foo(B $b): int
+                                {
+                                    return $b->value;
+                                }
+                            }
+                            PHP,
+                        '/src/B.php' => <<<'PHP'
+                            <?php
+                            class B {
+                                public ?int $value = 0;
+                            }
+                            PHP,
+                    ],
+                    'issues' => [
+                        '/src/A.php' => [
+                            "NullableReturnStatement: The declared return type 'int' for A::foo is not nullable, but the function returns 'int|null'",
+                            "InvalidNullableReturnType: The declared return type 'int' for A::foo is not nullable, but 'int|null' contains null",
+                        ],
+                    ],
+                ],
+                [
+                    'files' => [
+                        '/src/B.php' => <<<'PHP'
+                            <?php
+                            class B {
+                                public int $value = 0;
+                            }
+                            PHP,
+                    ],
+                    'issues' => [],
                 ],
             ],
         ];
