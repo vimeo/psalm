@@ -32,12 +32,9 @@ use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use ReflectionClass;
 use ReflectionFunction;
 
-use function array_merge;
-use function array_values;
 use function assert;
 use function class_exists;
 use function function_exists;
-use function get_defined_constants;
 use function implode;
 use function in_array;
 use function interface_exists;
@@ -521,13 +518,7 @@ class ExpressionResolver
             && isset($function->getArgs()[0])
             && $function->getArgs()[0]->value instanceof PhpParser\Node\Scalar\String_
         ) {
-            $predefined_constants = get_defined_constants(true);
-            if (isset($predefined_constants['user'])) {
-                unset($predefined_constants['user']);
-            }
-            $predefined_constants = array_merge(...array_values($predefined_constants));
-
-            return isset($predefined_constants[$function->getArgs()[0]->value->value]);
+            return isset($codebase->config->getPredefinedConstants()[$function->getArgs()[0]->value->value]);
         }
 
         return null;

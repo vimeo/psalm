@@ -54,6 +54,7 @@ use function array_merge;
 use function array_pad;
 use function array_pop;
 use function array_shift;
+use function array_values;
 use function assert;
 use function basename;
 use function chdir;
@@ -67,6 +68,7 @@ use function fclose;
 use function file_exists;
 use function file_get_contents;
 use function flock;
+use function floor;
 use function fopen;
 use function function_exists;
 use function get_class;
@@ -2391,9 +2393,32 @@ class Config
         return $this->predefined_constants;
     }
 
-    public function collectPredefinedConstants(): void
+    /**
+     * Collects all (non-user) predefined constants and changes the PHP_*_VERSION constants to
+     * match the $phpVersioId if given.
+     */
+    public function collectPredefinedConstants(?int $phpVersionId = null): void
     {
-        $this->predefined_constants = get_defined_constants();
+        $predefined_constants = get_defined_constants(true);
+        if (isset($predefined_constants['user'])) {
+            unset($predefined_constants['user']);
+        }
+        $predefined_constants = array_merge(...array_values($predefined_constants));
+
+        if (isset($phpVersionId)) {
+            $release = $phpVersionId % 100;
+            $minor = floor($phpVersionId / 100) % 100;
+            $major = floor($phpVersionId / 10_000) % 100;
+            $predefined_constants['PHP_VERSION'] =
+                $major . '.' . $minor . '.' . $release . ($predefined_constants['PHP_VERSION_EXTRA'] ?? '');
+            $predefined_constants['PHP_MAJOR_VERSION'] = $major;
+            $predefined_constants['PHP_MINOR_VERSION'] = $minor;
+            $predefined_constants['PHP_RELEASE_VERSION'] = $release;
+            $predefined_constants['PHP_VERSION_ID'] = $phpVersionId;
+        }
+
+
+        $this->predefined_constants = $predefined_constants;
     }
 
     /**
@@ -2459,7 +2484,7 @@ class Config
             );
         }
 
-        $this->collectPredefinedConstants();
+        $this->collectPredefinedConstants($project_analyzer->getCodebase()->analysis_php_version_id);
 
         $autoload_included_files = $this->include_collector->getFilteredIncludedFiles();
 
