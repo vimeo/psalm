@@ -56,10 +56,10 @@ class StaticCallAnalyzer extends CallAnalyzer
         if ($stmt->class instanceof PhpParser\Node\Name) {
             $fq_class_name = null;
 
-            if (count($stmt->class->parts) === 1
-                && in_array(strtolower($stmt->class->parts[0]), ['self', 'static', 'parent'], true)
+            if (count($stmt->class->getParts()) === 1
+                && in_array(strtolower($stmt->class->getFirst()), ['self', 'static', 'parent'], true)
             ) {
-                if ($stmt->class->parts[0] === 'parent') {
+                if ($stmt->class->getFirst() === 'parent') {
                     $child_fq_class_name = $context->self;
 
                     $class_storage = $child_fq_class_name
@@ -84,7 +84,7 @@ class StaticCallAnalyzer extends CallAnalyzer
 
                     $fq_class_name = $class_storage->name;
                 } elseif ($context->self) {
-                    if ($stmt->class->parts[0] === 'static' && isset($context->vars_in_scope['$this'])) {
+                    if ($stmt->class->getFirst() === 'static' && isset($context->vars_in_scope['$this'])) {
                         $fq_class_name = (string) $context->vars_in_scope['$this'];
                         $lhs_type = $context->vars_in_scope['$this'];
                     } else {
@@ -93,7 +93,7 @@ class StaticCallAnalyzer extends CallAnalyzer
                 } else {
                     return !IssueBuffer::accepts(
                         new NonStaticSelfCall(
-                            'Cannot use ' . $stmt->class->parts[0] . ' outside class context',
+                            'Cannot use ' . $stmt->class->getFirst() . ' outside class context',
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                         ),
                         $statements_analyzer->getSuppressedIssues(),
@@ -111,7 +111,7 @@ class StaticCallAnalyzer extends CallAnalyzer
                 ) {
                     $codebase->file_reference_provider->addMethodReferenceToClassMember(
                         $context->calling_method_id,
-                        'use:' . $stmt->class->parts[0] . ':' . md5($statements_analyzer->getFilePath()),
+                        'use:' . $stmt->class->getFirst() . ':' . md5($statements_analyzer->getFilePath()),
                         false,
                     );
                 }

@@ -40,7 +40,6 @@ use function array_search;
 use function count;
 use function explode;
 use function gettype;
-use function implode;
 use function in_array;
 use function preg_match;
 use function preg_replace;
@@ -421,15 +420,15 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         }
 
         if ($class_name instanceof PhpParser\Node\Name\FullyQualified) {
-            return implode('\\', $class_name->parts);
+            return $class_name->toString();
         }
 
-        if (in_array($class_name->parts[0], ['self', 'static', 'parent'], true)) {
-            return $class_name->parts[0];
+        if (in_array($class_name->getFirst(), ['self', 'static', 'parent'], true)) {
+            return $class_name->getFirst();
         }
 
         return Type::getFQCLNFromString(
-            implode('\\', $class_name->parts),
+            $class_name->toString(),
             $aliases,
         );
     }

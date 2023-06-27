@@ -23,7 +23,6 @@ use function assert;
 use function defined;
 use function dirname;
 use function explode;
-use function implode;
 use function in_array;
 use function preg_match;
 use function strpos;
@@ -80,7 +79,7 @@ class ExpressionScanner
                 $file_storage->referenced_classlikes[strtolower($fq_classlike_name)] = $fq_classlike_name;
             }
         } elseif ($node instanceof PhpParser\Node\Expr\FuncCall && $node->name instanceof PhpParser\Node\Name) {
-            $function_id = implode('\\', $node->name->parts);
+            $function_id = $node->name->toString();
 
             if (InternalCallMapHandler::inCallMap($function_id)) {
                 self::registerClassMapFunctionCall(

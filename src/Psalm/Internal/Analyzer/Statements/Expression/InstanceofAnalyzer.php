@@ -39,7 +39,7 @@ class InstanceofAnalyzer
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->class, $context) === false) {
                 return false;
             }
-        } elseif (!in_array(strtolower($stmt->class->parts[0]), ['self', 'static', 'parent'], true)) {
+        } elseif (!in_array(strtolower($stmt->class->getFirst()), ['self', 'static', 'parent'], true)) {
             if ($context->check_classes) {
                 $codebase = $statements_analyzer->getCodebase();
 
@@ -62,7 +62,7 @@ class InstanceofAnalyzer
                                 . ($stmt->class instanceof PhpParser\Node\Name\FullyQualified
                                     ? '\\'
                                     : $statements_analyzer->getNamespace() . '-')
-                                . implode('\\', $stmt->class->parts),
+                                . implode('\\', $stmt->class->getParts()),
                     );
                 }
 

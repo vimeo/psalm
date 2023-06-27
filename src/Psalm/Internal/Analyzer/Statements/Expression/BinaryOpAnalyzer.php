@@ -261,7 +261,7 @@ class BinaryOpAnalyzer
                     || $stmt instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical)
                 && $stmt->left instanceof PhpParser\Node\Expr\FuncCall
                 && $stmt->left->name instanceof PhpParser\Node\Name
-                && $stmt->left->name->parts === ['substr']
+                && $stmt->left->name->getParts() === ['substr']
                 && isset($stmt->left->getArgs()[1])
                 && $stmt_right_type
                 && $stmt_right_type->hasLiteralString()

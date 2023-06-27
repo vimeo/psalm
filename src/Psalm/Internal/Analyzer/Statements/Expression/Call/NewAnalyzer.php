@@ -58,7 +58,6 @@ use Psalm\Type\Union;
 
 use function array_map;
 use function array_values;
-use function implode;
 use function in_array;
 use function md5;
 use function preg_match;
@@ -94,7 +93,7 @@ class NewAnalyzer extends CallAnalyzer
         }
 
         if ($stmt->class instanceof PhpParser\Node\Name) {
-            if (!in_array(strtolower($stmt->class->parts[0]), ['self', 'static', 'parent'], true)) {
+            if (!in_array(strtolower($stmt->class->getFirst()), ['self', 'static', 'parent'], true)) {
                 $aliases = $statements_analyzer->getAliases();
 
                 if ($context->calling_method_id
@@ -102,7 +101,7 @@ class NewAnalyzer extends CallAnalyzer
                 ) {
                     $codebase->file_reference_provider->addMethodReferenceToClassMember(
                         $context->calling_method_id,
-                        'use:' . $stmt->class->parts[0] . ':' . md5($statements_analyzer->getFilePath()),
+                        'use:' . $stmt->class->getFirst() . ':' . md5($statements_analyzer->getFilePath()),
                         false,
                     );
                 }
@@ -114,7 +113,7 @@ class NewAnalyzer extends CallAnalyzer
 
                 $fq_class_name = $codebase->classlikes->getUnAliasedName($fq_class_name);
             } elseif ($context->self !== null) {
-                switch ($stmt->class->parts[0]) {
+                switch ($stmt->class->getFirst()) {
                     case 'self':
                         $class_storage = $codebase->classlike_storage_provider->get($context->self);
                         $fq_class_name = $class_storage->name;
@@ -152,7 +151,7 @@ class NewAnalyzer extends CallAnalyzer
                             . ($stmt->class instanceof PhpParser\Node\Name\FullyQualified
                                 ? '\\'
                                 : $statements_analyzer->getNamespace() . '-')
-                            . implode('\\', $stmt->class->parts),
+                            . $stmt->class->toString(),
                 );
             }
         } elseif ($stmt->class instanceof PhpParser\Node\Stmt\Class_) {
@@ -174,7 +173,7 @@ class NewAnalyzer extends CallAnalyzer
         if ($fq_class_name) {
             if ($codebase->alter_code
                 && $stmt->class instanceof PhpParser\Node\Name
-                && !in_array($stmt->class->parts[0], ['parent', 'static'])
+                && !in_array($stmt->class->getFirst(), ['parent', 'static'])
             ) {
                 $codebase->classlikes->handleClassLikeReferenceInMigration(
                     $codebase,
