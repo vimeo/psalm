@@ -406,6 +406,12 @@ class CoreStubsTest extends TestCase
                 takesList(glob( '' ));
                 PHP,
         ];
+        yield 'glob accepts GLOB_BRACE' => [
+            'code' => <<<'PHP'
+                <?php
+                $globBrace = glob('abc', GLOB_BRACE);
+                PHP,
+        ];
     }
 
     public function providerInvalidCodeParse(): iterable
