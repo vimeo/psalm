@@ -18,7 +18,6 @@ use function is_dir;
 use function is_null;
 use function mkdir;
 use function strtolower;
-use function unlink;
 
 use const DIRECTORY_SEPARATOR;
 use const PHP_VERSION_ID;
@@ -95,7 +94,7 @@ class ClassLikeStorageCacheProvider
         if (@get_class($cached_value) === '__PHP_Incomplete_Class'
             || $cache_hash !== $cached_value->hash
         ) {
-            unlink($this->getCacheLocationForClass($fq_classlike_name_lc, $file_path));
+            $this->cache->deleteItem($this->getCacheLocationForClass($fq_classlike_name_lc, $file_path));
 
             throw new UnexpectedValueException($fq_classlike_name_lc . ' should not be outdated');
         }
