@@ -64,7 +64,8 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
         }
 
         // there is only 1 array argument, fall back to the default handling
-        // eventually this could be refined to check if it's a literal array with literal string as first element for further checking
+        // eventually this could be refined
+        // to check if it's an array with literal string as first element for further checking
         if (count($call_args) === 1 && $has_splat_args === true) {
             return null;
         }
