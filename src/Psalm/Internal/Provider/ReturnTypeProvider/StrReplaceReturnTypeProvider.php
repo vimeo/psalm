@@ -6,13 +6,10 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
-use Psalm\Type\Atomic\TNull;
-use Psalm\Type\Atomic\TString;
 use Psalm\Type\Union;
 
 use function call_user_func;
 use function count;
-use function in_array;
 
 /**
  * @internal
@@ -43,7 +40,7 @@ class StrReplaceReturnTypeProvider implements FunctionReturnTypeProviderInterfac
         }
 
         if ($subject_type = $statements_source->node_data->getType($call_args[2]->value)) {
-            if ( !$subject_type->isSingleStringLiteral()) {
+            if (!$subject_type->isSingleStringLiteral()) {
                 return null;
             }
 
