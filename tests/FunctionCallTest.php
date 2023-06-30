@@ -501,6 +501,16 @@ class FunctionCallTest extends TestCase
                         return $s;
                     }',
             ],
+            'pregReplaceArrayValueType' => [
+                'code' => '<?php
+                    /**
+                     * @param string[] $s
+                     * @return string[]
+                     */
+                    function foo($s): string {
+                        return preg_replace("/hello/", "", $s);
+                    }',
+            ],
             'extractVarCheck' => [
                 'code' => '<?php
                     function takesString(string $str): void {}
