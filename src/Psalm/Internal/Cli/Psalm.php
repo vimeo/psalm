@@ -416,6 +416,10 @@ final class Psalm
             return Report::TYPE_PHP_STORM;
         }
 
+        if ('true' === getenv('GITHUB_ACTIONS')) {
+            return Report::TYPE_GITHUB_ACTIONS;
+        }
+
         return Report::TYPE_CONSOLE;
     }
 
