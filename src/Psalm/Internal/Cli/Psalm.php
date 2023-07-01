@@ -183,6 +183,11 @@ final class Psalm
             throw new RuntimeException('Failed to parse CLI options');
         }
 
+        // debug CI environment
+        if (!in_array('--debug', $option, true) && 'true' === getenv('GITHUB_ACTIONS') && '1' === getenv('RUNNER_DEBUG'))) {
+            array_unshift('--debug', $options);
+        }
+
         self::forwardCliCall($options, $argv);
 
         self::validateCliArguments($args);
