@@ -184,7 +184,7 @@ final class Psalm
         }
 
         // debug CI environment
-        if (!in_array('--debug', $option, true) && 'true' === getenv('GITHUB_ACTIONS') && '1' === getenv('RUNNER_DEBUG')) {
+        if (!in_array('--debug', $options, true) && 'true' === getenv('GITHUB_ACTIONS') && '1' === getenv('RUNNER_DEBUG')) {
             array_unshift('--debug', $options);
         }
 
