@@ -5,6 +5,8 @@ namespace Psalm\Tests\EndToEnd;
 use Symfony\Component\Process\Process;
 
 use function array_merge;
+use function array_unshift;
+use function in_array;
 
 trait PsalmRunnerTrait
 {
