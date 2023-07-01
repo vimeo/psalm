@@ -23,7 +23,7 @@ trait PsalmRunnerTrait
         bool $relyOnConfigDir = true
     ): array {
         // Ensure CI agnostic output
-        if (!in_array('--init', $args, true)) {
+        if (!in_array('--init', $args, true) && !in_array('--alter', $args, true)) {
             array_unshift($args, '--output-format=console');
         }
 
