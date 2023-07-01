@@ -23,7 +23,9 @@ trait PsalmRunnerTrait
         bool $relyOnConfigDir = true
     ): array {
         // Ensure CI agnostic output
-        array_unshift($args, '--output-format=console');
+        if (!in_array('--init', $args, true)) {
+            array_unshift($args, '--output-format=console');
+        }
 
         // As config files all contain `resolveFromConfigFile="true"` Psalm
         // shouldn't need to be run from the same directory that the code being
