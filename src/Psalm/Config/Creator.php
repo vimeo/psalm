@@ -23,6 +23,7 @@ use function glob;
 use function implode;
 use function is_array;
 use function is_dir;
+use function is_string;
 use function json_decode;
 use function ksort;
 use function max;

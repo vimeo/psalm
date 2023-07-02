@@ -329,7 +329,16 @@ class FileFilter
         if (isset($config['referencedFunction']) && is_iterable($config['referencedFunction'])) {
             /** @var array $referenced_function */
             foreach ($config['referencedFunction'] as $referenced_function) {
-                $filter->method_ids[] = strtolower((string) ($referenced_function['name'] ?? ''));
+                $function_id = $referenced_function['name'] ?? '';
+                if ($function_id === ''
+                    || !is_string($function_id)
+                    || !static::isRegularExpression($function_id)) {
+                    throw new ConfigException(
+                        'Invalid referencedFunction ' . ((string) $function_id),
+                    );
+                }
+
+                $filter->method_ids[] = strtolower($function_id);
             }
         }
 
@@ -441,6 +450,9 @@ class FileFilter
         return self::loadFromArray($config, $base_dir, $inclusive);
     }
 
+    /**
+     * @psalm-assert-if-true non-empty-string $string
+     */
     private static function isRegularExpression(string $string): bool
     {
         if ($string === '') {
