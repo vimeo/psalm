@@ -314,12 +314,16 @@ class FileFilter
         if (isset($config['referencedMethod']) && is_iterable($config['referencedMethod'])) {
             /** @var array $referenced_method */
             foreach ($config['referencedMethod'] as $referenced_method) {
-                $method_id = (string) ($referenced_method['name'] ?? '');
-
-                if (!preg_match('/^[^:]+::[^:]+$/', $method_id) && !static::isRegularExpression($method_id)) {
+                $method_id = $referenced_method['name'] ?? '';
+                if (!is_string($method_id)
+                    || (!preg_match('/^[^:]+::[^:]+$/', $method_id) && !static::isRegularExpression($method_id))) {
                     throw new ConfigException(
-                        'Invalid referencedMethod ' . $method_id,
+                        'Invalid referencedMethod ' . ((string) $method_id),
                     );
+                }
+
+                if ($method_id === '') {
+                    continue;
                 }
 
                 $filter->method_ids[] = strtolower($method_id);
@@ -330,12 +334,15 @@ class FileFilter
             /** @var array $referenced_function */
             foreach ($config['referencedFunction'] as $referenced_function) {
                 $function_id = $referenced_function['name'] ?? '';
-                if ($function_id === ''
-                    || !is_string($function_id)
-                    || !static::isRegularExpression($function_id)) {
+                if (!is_string($function_id)
+                    || (!preg_match('/^[a-zA-Z_\x80-\xff][a-zA-Z0-9_\x80-\xff]*$/', $function_id) && !static::isRegularExpression($function_id))) {
                     throw new ConfigException(
                         'Invalid referencedFunction ' . ((string) $function_id),
                     );
+                }
+
+                if ($function_id === '') {
+                    continue;
                 }
 
                 $filter->method_ids[] = strtolower($function_id);
