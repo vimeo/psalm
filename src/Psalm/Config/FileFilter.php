@@ -18,6 +18,7 @@ use function glob;
 use function in_array;
 use function is_dir;
 use function is_iterable;
+use function is_string;
 use function preg_match;
 use function preg_replace;
 use function preg_split;
@@ -335,7 +336,8 @@ class FileFilter
             foreach ($config['referencedFunction'] as $referenced_function) {
                 $function_id = $referenced_function['name'] ?? '';
                 if (!is_string($function_id)
-                    || (!preg_match('/^[a-zA-Z_\x80-\xff][a-zA-Z0-9_\x80-\xff]*$/', $function_id) && !static::isRegularExpression($function_id))) {
+                    || (!preg_match('/^[a-zA-Z_\x80-\xff][a-zA-Z0-9_\x80-\xff]*$/', $function_id)
+                        && !static::isRegularExpression($function_id))) {
                     throw new ConfigException(
                         'Invalid referencedFunction ' . ((string) $function_id),
                     );
