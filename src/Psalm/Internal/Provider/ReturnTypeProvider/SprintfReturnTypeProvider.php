@@ -47,21 +47,6 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
         $statements_source = $event->getStatementsSource();
         $call_args = $event->getCallArgs();
 
-        // it makes no sense to use sprintf/printf when there is only 1 arg (the format)
-        // as it wouldn't have any placeholders
-        if (count($call_args) === 1) {
-            IssueBuffer::maybeAdd(
-                new TooFewArguments(
-                    'Too few arguments for ' . $event->getFunctionId() . ', expecting at least 2 arguments',
-                    $event->getCodeLocation(),
-                    $event->getFunctionId(),
-                ),
-                $statements_source->getSuppressedIssues(),
-            );
-
-            return null;
-        }
-
         $has_splat_args = false;
         $node_type_provider = $statements_source->getNodeTypeProvider();
         foreach ($call_args as $call_arg) {
@@ -76,6 +61,28 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
                 $has_splat_args = true;
                 break;
             }
+        }
+
+        // there is only 1 array argument, fall back to the default handling
+        // eventually this could be refined
+        // to check if it's an array with literal string as first element for further checking
+        if (count($call_args) === 1 && $has_splat_args === true) {
+            return null;
+        }
+
+        // it makes no sense to use sprintf/printf when there is only 1 arg (the format)
+        // as it wouldn't have any placeholders
+        if (count($call_args) === 1) {
+            IssueBuffer::maybeAdd(
+                new TooFewArguments(
+                    'Too few arguments for ' . $event->getFunctionId() . ', expecting at least 2 arguments',
+                    $event->getCodeLocation(),
+                    $event->getFunctionId(),
+                ),
+                $statements_source->getSuppressedIssues(),
+            );
+
+            return null;
         }
 
         // PHP 7 handling for formats that do not contain anything but placeholders
