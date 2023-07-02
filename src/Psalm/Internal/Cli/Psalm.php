@@ -41,6 +41,7 @@ use function array_map;
 use function array_merge;
 use function array_slice;
 use function array_sum;
+use function array_unshift;
 use function array_values;
 use function chdir;
 use function count;
@@ -181,6 +182,14 @@ final class Psalm
         $options = getopt(implode('', self::SHORT_OPTIONS), self::LONG_OPTIONS);
         if (false === $options) {
             throw new RuntimeException('Failed to parse CLI options');
+        }
+
+        // debug CI environment
+        if (!in_array('--debug', $options, true)
+            && 'true' === getenv('GITHUB_ACTIONS')
+            && '1' === getenv('RUNNER_DEBUG')
+        ) {
+            array_unshift($options, '--debug');
         }
 
         self::forwardCliCall($options, $argv);
@@ -414,6 +423,10 @@ final class Psalm
         $emulator = getenv('TERMINAL_EMULATOR');
         if (is_string($emulator) && substr($emulator, 0, 9) === 'JetBrains') {
             return Report::TYPE_PHP_STORM;
+        }
+
+        if ('true' === getenv('GITHUB_ACTIONS')) {
+            return Report::TYPE_GITHUB_ACTIONS;
         }
 
         return Report::TYPE_CONSOLE;
