@@ -250,6 +250,10 @@ final class Creator
             }
 
             foreach ($paths as $path) {
+                if (!is_string($path)) {
+                    continue;
+                }
+
                 if ($path === '') {
                     $nodes = [...$nodes, ...self::guessPhpFileDirs($current_dir)];
 

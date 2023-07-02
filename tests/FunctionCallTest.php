@@ -473,7 +473,7 @@ class FunctionCallTest extends TestCase
                      */
                     function route($callback) {
                       if (!is_callable($callback)) {  }
-                      $a = preg_match("", "", $b);
+                      $a = preg_match("//", "", $b);
                       if ($b[0]) {}
                     }',
                 'assertions' => [],
@@ -507,7 +507,7 @@ class FunctionCallTest extends TestCase
                      * @param string[] $s
                      * @return string[]
                      */
-                    function foo($s): string {
+                    function foo($s): array {
                         return preg_replace("/hello/", "", $s);
                     }',
             ],
@@ -1689,7 +1689,7 @@ class FunctionCallTest extends TestCase
                      */
                     function(array $ids): array {
                         return \preg_replace_callback(
-                            "",
+                            "//",
                             fn (array $matches) => $matches[4],
                             $ids
                         );
@@ -1824,6 +1824,7 @@ class FunctionCallTest extends TestCase
             'writeArgsAllowed' => [
                 'code' => '<?php
                     /**
+                     * @param non-empty-string $pattern
                      * @param 0|256|512|768 $flags
                      * @return false|int
                      */

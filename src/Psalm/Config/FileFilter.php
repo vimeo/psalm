@@ -57,12 +57,12 @@ class FileFilter
     protected $fq_classlike_names = [];
 
     /**
-     * @var array<string>
+     * @var array<non-empty-string>
      */
     protected $fq_classlike_patterns = [];
 
     /**
-     * @var array<string>
+     * @var array<non-empty-string>
      */
     protected $method_ids = [];
 
@@ -443,6 +443,10 @@ class FileFilter
 
     private static function isRegularExpression(string $string): bool
     {
+        if ($string === '') {
+            return false;
+        }
+
         set_error_handler(
             static fn(): bool => true,
             E_WARNING,

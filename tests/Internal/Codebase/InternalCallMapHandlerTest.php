@@ -54,7 +54,7 @@ class InternalCallMapHandlerTest extends TestCase
      * large ignore list for extension functions have invalid reflection
      * or are not maintained.
      *
-     * @var list<string>
+     * @var list<non-empty-string>
      */
     private static array $skippedPatterns = [
         '/\'\d$/', // skip alternate signatures
