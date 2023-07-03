@@ -20,13 +20,11 @@ use function is_array;
 use function is_dir;
 use function is_readable;
 use function is_string;
-use function is_writable;
 use function json_decode;
 use function json_encode;
 use function mkdir;
 use function scandir;
 use function touch;
-use function unlink;
 
 use const DIRECTORY_SEPARATOR;
 use const JSON_THROW_ON_ERROR;
@@ -319,8 +317,8 @@ class ParserCacheProvider
                     continue;
                 }
 
-                if (filemtime($full_path) < $time_before && is_writable($full_path)) {
-                    unlink($full_path);
+                if (filemtime($full_path) < $time_before) {
+                    $this->cache->deleteItem($full_path);
                     ++$removed_count;
                 }
             }

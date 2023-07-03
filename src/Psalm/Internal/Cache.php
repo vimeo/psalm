@@ -11,6 +11,7 @@ use function gzdeflate;
 use function gzinflate;
 use function igbinary_serialize;
 use function igbinary_unserialize;
+use function is_writable;
 use function lz4_compress;
 use function lz4_uncompress;
 use function serialize;
@@ -86,7 +87,7 @@ class Cache
 
     public function deleteItem(string $path): void
     {
-        if (file_exists($path)) {
+        if (@is_writable($path)) {
             @unlink($path);
         }
     }
