@@ -70,9 +70,9 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
             return null;
         }
 
-        // it makes no sense to use sprintf/printf when there is only 1 arg (the format)
+        // it makes no sense to use sprintf when there is only 1 arg (the format)
         // as it wouldn't have any placeholders
-        if (count($call_args) === 1) {
+        if (count($call_args) === 1 && $event->getFunctionId() === 'sprintf') {
             IssueBuffer::maybeAdd(
                 new TooFewArguments(
                     'Too few arguments for ' . $event->getFunctionId() . ', expecting at least 2 arguments',

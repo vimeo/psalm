@@ -275,12 +275,6 @@ class SprintfTest extends TestCase
                 ',
                 'error_message' => 'InvalidArgument',
             ],
-            'printfOnlyFormat' => [
-                'code' => '<?php
-                    printf("hello");
-                ',
-                'error_message' => 'TooFewArguments',
-            ],
             'printfTooFewArguments' => [
                 'code' => '<?php
                     printf("%s hello %d", "a");
