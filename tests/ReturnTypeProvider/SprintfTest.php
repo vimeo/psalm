@@ -213,6 +213,18 @@ class SprintfTest extends TestCase
             ],
         ];
 
+        yield 'sprintfSplatUnpackingArraySingleArg' => [
+            'code' => '<?php
+                $a = ["Hello %s", "Sam"];
+                $val = sprintf(...$a);
+            ',
+            'assertions' => [
+                '$val===' => 'string',
+            ],
+            'ignored_issues' => [],
+            'php_version' => '8.0',
+        ];
+
         yield 'sprintfMultiplePlaceholdersNoErrorsIssue9941PHP7' => [
             'code' => '<?php
                 $val = sprintf("Handling product %d => %d (%d)", 123, 456, 789);

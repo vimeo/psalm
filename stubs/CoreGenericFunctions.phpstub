@@ -399,10 +399,10 @@ function array_fill_keys(array $keys, $value): array
  *
  * @psalm-template TKey
  *
- * @param string $pattern
- * @param array<TKey,string> $array
+ * @param non-empty-string $pattern
+ * @param array<TKey, string> $array
  * @param 0|1 $flags 1=PREG_GREP_INVERT
- * @return array<TKey,string>
+ * @return array<TKey, string>
  */
 function preg_grep($pattern, array $array, $flags = 0)
 {
@@ -619,7 +619,7 @@ function strtoupper(string $string) : string {}
  * @param int|array<int> $offset
  * @param null|int|array<int> $length
  *
- * @return ($string is array<string> ? array<string> : string)
+ * @return ($string is array ? array<string> : string)
  *
  * @psalm-flow ($string, $replace) -> return
  */
@@ -785,6 +785,8 @@ function explode(string $separator, string $string, int $limit = -1) : array {}
 
 /**
  * @psalm-pure
+ *
+ * @param non-empty-string $pattern
  *
  * @psalm-flow ($subject) -(array-assignment)-> return
  *
@@ -998,11 +1000,13 @@ function strlen(string $string) : int {}
 /**
  * @psalm-pure
  *
+ * @template TKey of array-key
+ *
  * @param string|array<string|int|float> $search
  * @param string|array<string|int|float> $replace
- * @param string|array<string|int|float> $subject
- * @param int $count
- * @return ($subject is array ? array<string> : string)
+ * @param string|array<TKey, string|int|float> $subject
+ * @param int<0, max> $count
+ * @return ($subject is array ? array<TKey, string> : string)
  *
  * @psalm-flow ($replace, $subject) -> return
  */
@@ -1011,11 +1015,13 @@ function str_replace($search, $replace, $subject, &$count = null) {}
 /**
  * @psalm-pure
  *
+ * @template TKey of array-key
+ *
  * @param string|array<string|int|float> $search
  * @param string|array<string|int|float> $replace
- * @param string|array<string|int|float> $subject
- * @param int $count
- * @return ($subject is array ? array<string> : string)
+ * @param string|array<TKey, string|int|float> $subject
+ * @param int<0, max> $count
+ * @return ($subject is array ? array<TKey, string> : string)
  *
  * @psalm-flow ($replace, $subject) -> return
  */
@@ -1169,10 +1175,10 @@ function str_word_count(string $string, int $format = 0, string|null $characters
 /**
  * @psalm-pure
  *
- * @param string|string[] $pattern
+ * @param non-empty-string|non-empty-string[] $pattern
  * @param string|array<string|int|float> $replacement
  * @param string|array<string|int|float> $subject
- * @param int $count
+ * @param int<0, max> $count
  * @return ($subject is array ? array<string> : string|null)
  *
  * @psalm-flow ($replacement, $subject) -> return
@@ -1182,22 +1188,30 @@ function preg_filter($pattern, $replacement, $subject, int $limit = -1, &$count 
 /**
  * @psalm-pure
  *
- * @param string|string[] $pattern
+ * @template TKey of array-key
+ *
+ * @param non-empty-string|non-empty-string[] $pattern
  * @param string|array<string|int|float> $replacement
- * @param string|array<string|int|float> $subject
- * @param int $count
- * @return ($subject is array ? array<string>|null : string|null)
+ * @param string|array<TKey, string|int|float> $subject
+ * @param int<0, max> $count
+ * @return ($subject is array ? array<TKey, string>|null : string|null)
+ *
+ * @psalm-ignore-nullable-return
  *
  * @psalm-flow ($replacement, $subject) -> return
  */
 function preg_replace($pattern, $replacement, $subject, int $limit = -1, &$count = null) {}
 
 /**
- * @param string|string[] $pattern
+ * @template TKey of array-key
+ *
+ * @param non-empty-string|non-empty-string[] $pattern
  * @param callable(string[]):string $callback
- * @param string|array<string|int|float> $subject
- * @param int $count
- * @return ($subject is array ? array<string>|null : string|null)
+ * @param string|array<TKey, string|int|float> $subject
+ * @param int<0, max> $count
+ * @return ($subject is array ? array<TKey, string>|null : string|null)
+ *
+ * @psalm-ignore-nullable-return
  *
  * @psalm-taint-specialize
  * @psalm-flow ($subject) -> return
@@ -1208,7 +1222,7 @@ function preg_replace_callback($pattern, $callback, $subject, int $limit = -1, &
  * @psalm-pure
  * @template TFlags as int
  *
- * @param string $pattern
+ * @param non-empty-string $pattern
  * @param string $subject
  * @param mixed $matches
  * @param TFlags $flags
@@ -1244,7 +1258,7 @@ function preg_match_all($pattern, $subject, &$matches = [], int $flags = 1, int 
  * @psalm-pure
  * @template TFlags as int-mask<0, 256, 512>
  *
- * @param string $pattern
+ * @param non-empty-string $pattern
  * @param string $subject
  * @param mixed $matches
  * @param TFlags $flags
@@ -1371,11 +1385,11 @@ function str_getcsv(string $string, string $separator = ',', string $enclosure =
 
 /**
  * @template TKey as array-key
- * @template TArray as array<mixed, TKey>
+ * @template TArray as array<TKey>
  *
  * @param TArray $array
  *
- * @return (TArray is non-empty-array ? non-empty-array<TKey, positive-int> : array<TKey, positive-int>)
+ * @return (TArray is non-empty-array ? non-empty-array<TKey, int<1, max>> : array<TKey, int<1, max>>)
  *
  * @psalm-pure
  */

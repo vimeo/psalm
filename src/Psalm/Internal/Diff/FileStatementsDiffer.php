@@ -129,7 +129,7 @@ class FileStatementsDiffer extends AstDiffer
                         if ($use->alias) {
                             $add_or_delete[] = 'use:' . (string) $use->alias;
                         } else {
-                            $name_parts = $use->name->parts;
+                            $name_parts = $use->name->getParts();
 
                             $add_or_delete[] = 'use:' . end($name_parts);
                         }
@@ -156,7 +156,7 @@ class FileStatementsDiffer extends AstDiffer
                         if ($use->alias) {
                             $add_or_delete[] = 'use:' . (string) $use->alias;
                         } else {
-                            $name_parts = $use->name->parts;
+                            $name_parts = $use->name->getParts();
 
                             $add_or_delete[] = 'use:' . end($name_parts);
                         }

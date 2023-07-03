@@ -304,7 +304,7 @@ class StatementsAnalyzer extends SourceAnalyzer
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Expression
                 && $stmt->expr instanceof PhpParser\Node\Expr\FuncCall
                 && $stmt->expr->name instanceof PhpParser\Node\Name
-                && $stmt->expr->name->parts === ['define']
+                && $stmt->expr->name->getParts() === ['define']
                 && isset($stmt->expr->getArgs()[1])
             ) {
                 $const_name = ConstFetchAnalyzer::getConstName(

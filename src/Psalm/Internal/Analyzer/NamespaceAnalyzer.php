@@ -14,7 +14,6 @@ use UnexpectedValueException;
 
 use function assert;
 use function count;
-use function implode;
 use function is_string;
 use function preg_replace;
 use function strpos;
@@ -49,7 +48,7 @@ class NamespaceAnalyzer extends SourceAnalyzer
     {
         $this->source = $source;
         $this->namespace = $namespace;
-        $this->namespace_name = $this->namespace->name ? implode('\\', $this->namespace->name->parts) : '';
+        $this->namespace_name = $this->namespace->name ? $this->namespace->name->toString() : '';
     }
 
     public function collectAnalyzableInformation(): void

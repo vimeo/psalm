@@ -93,6 +93,7 @@
         <MissingConstructor>
             <errorLevel type="suppress">
                 <directory name="tests"/>
+                <file name="vendor/nikic/php-parser/lib/PhpParser/Node/Name.php" />
             </errorLevel>
         </MissingConstructor>
 

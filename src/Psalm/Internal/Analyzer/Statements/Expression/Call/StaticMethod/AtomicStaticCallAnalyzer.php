@@ -99,8 +99,8 @@ class AtomicStaticCallAnalyzer
                 $statements_analyzer->getSuppressedIssues(),
                 new ClassLikeNameOptions(
                     $stmt->class instanceof PhpParser\Node\Name
-                        && count($stmt->class->parts) === 1
-                        && in_array(strtolower($stmt->class->parts[0]), ['self', 'static'], true),
+                        && count($stmt->class->getParts()) === 1
+                        && in_array(strtolower($stmt->class->getFirst()), ['self', 'static'], true),
                 ),
             )) {
                 return;
@@ -284,7 +284,7 @@ class AtomicStaticCallAnalyzer
             && $fq_class_name
             && !$moved_call
             && $stmt->class instanceof PhpParser\Node\Name
-            && !in_array($stmt->class->parts[0], ['parent', 'static'])
+            && !in_array($stmt->class->getFirst(), ['parent', 'static'])
         ) {
             $codebase->classlikes->handleClassLikeReferenceInMigration(
                 $codebase,
@@ -293,7 +293,7 @@ class AtomicStaticCallAnalyzer
                 $fq_class_name,
                 $context->calling_method_id,
                 false,
-                $stmt->class->parts[0] === 'self',
+                $stmt->class->getFirst() === 'self',
             );
         }
     }
@@ -718,7 +718,7 @@ class AtomicStaticCallAnalyzer
                 if ($pseudo_method_storage->return_type) {
                     return true;
                 }
-            } elseif ($stmt->class instanceof PhpParser\Node\Name && $stmt->class->parts[0] === 'parent'
+            } elseif ($stmt->class instanceof PhpParser\Node\Name && $stmt->class->getFirst() === 'parent'
                 && !$codebase->methodExists($method_id)
                 && !$statements_analyzer->isStatic()
             ) {
@@ -846,7 +846,7 @@ class AtomicStaticCallAnalyzer
         }
 
         if ((!$stmt->class instanceof PhpParser\Node\Name
-                || $stmt->class->parts[0] !== 'parent'
+                || $stmt->class->getFirst() !== 'parent'
                 || $statements_analyzer->isStatic())
             && (
                 !$context->self
@@ -857,7 +857,7 @@ class AtomicStaticCallAnalyzer
             MethodAnalyzer::checkStatic(
                 $method_id,
                 ($stmt->class instanceof PhpParser\Node\Name
-                    && strtolower($stmt->class->parts[0]) === 'self')
+                    && strtolower($stmt->class->getFirst()) === 'self')
                 || $context->self === $fq_class_name,
                 !$statements_analyzer->isStatic(),
                 $codebase,

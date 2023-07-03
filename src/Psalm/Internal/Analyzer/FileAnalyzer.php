@@ -32,7 +32,6 @@ use function array_combine;
 use function array_diff_key;
 use function array_keys;
 use function count;
-use function implode;
 use function strpos;
 use function strtolower;
 
@@ -283,7 +282,7 @@ class FileAnalyzer extends SourceAnalyzer
             } elseif ($stmt instanceof PhpParser\Node\Stmt\ClassLike) {
                 $this->populateClassLikeAnalyzers($stmt);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Namespace_) {
-                $namespace_name = $stmt->name ? implode('\\', $stmt->name->parts) : '';
+                $namespace_name = $stmt->name ? $stmt->name->toString() : '';
 
                 $namespace_analyzer = new NamespaceAnalyzer($stmt, $this);
                 $namespace_analyzer->collectAnalyzableInformation();
