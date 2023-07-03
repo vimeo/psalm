@@ -2021,7 +2021,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         . ($interface_name instanceof PhpParser\Node\Name\FullyQualified
                             ? '\\'
                             : $this->getNamespace() . '-')
-                        . implode('\\', $interface_name->parts),
+                        . $interface_name->toString(),
             );
 
             $interface_location = new CodeLocation($this, $interface_name);
@@ -2437,7 +2437,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                             . ($extended_class instanceof PhpParser\Node\Name\FullyQualified
                                 ? '\\'
                                 : $this->getNamespace() . '-')
-                            . implode('\\', $extended_class->parts),
+                            . $extended_class->toString(),
                 );
             }
 

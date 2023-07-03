@@ -15,7 +15,6 @@ use Psalm\Type\Union;
 use ReflectionProperty;
 
 use function count;
-use function implode;
 use function is_string;
 use function str_replace;
 use function strpos;
@@ -45,7 +44,7 @@ class PhpStormMetaScanner
 
         $map = [];
 
-        if ($args[1]->value->name->parts === ['map']
+        if ($args[1]->value->name->getParts() === ['map']
             && $args[1]->value->getArgs()
             && $args[1]->value->getArgs()[0]->value instanceof PhpParser\Node\Expr\Array_
         ) {
@@ -59,7 +58,7 @@ class PhpStormMetaScanner
                         && strtolower($array_item->value->name->name)
                     ) {
                         $map[$array_item->key->value] = new Union([
-                            new TNamedObject(implode('\\', $array_item->value->class->parts)),
+                            new TNamedObject($array_item->value->class->toString()),
                         ]);
                     } elseif ($array_item->value instanceof PhpParser\Node\Scalar\String_) {
                         $map[$array_item->key->value] = $array_item->value->value;
@@ -93,7 +92,7 @@ class PhpStormMetaScanner
                         && strtolower($array_item->value->name->name)
                     ) {
                         $map[$meta_key] = new Union([
-                            new TNamedObject(implode('\\', $array_item->value->class->parts)),
+                            new TNamedObject($array_item->value->class->toString()),
                         ]);
                     } elseif ($array_item->value instanceof PhpParser\Node\Scalar\String_) {
                         $map[$meta_key] = $array_item->value->value;
@@ -104,7 +103,7 @@ class PhpStormMetaScanner
 
         $type_offset = null;
 
-        if ($args[1]->value->name->parts === ['type']
+        if ($args[1]->value->name->getParts() === ['type']
             && $args[1]->value->getArgs()
             && $args[1]->value->getArgs()[0]->value instanceof PhpParser\Node\Scalar\LNumber
         ) {
@@ -113,7 +112,7 @@ class PhpStormMetaScanner
 
         $element_type_offset = null;
 
-        if ($args[1]->value->name->parts === ['elementType']
+        if ($args[1]->value->name->getParts() === ['elementType']
             && $args[1]->value->getArgs()
             && $args[1]->value->getArgs()[0]->value instanceof PhpParser\Node\Scalar\LNumber
         ) {
@@ -128,7 +127,7 @@ class PhpStormMetaScanner
                 || $identifier->getArgs()[0]->value instanceof PhpParser\Node\Scalar\LNumber
             )
         ) {
-            $meta_fq_classlike_name = implode('\\', $identifier->class->parts);
+            $meta_fq_classlike_name = $identifier->class->toString();
 
             $meta_method_name = strtolower($identifier->name->name);
 
@@ -280,7 +279,7 @@ class PhpStormMetaScanner
                 || $identifier->getArgs()[0]->value instanceof PhpParser\Node\Scalar\LNumber
             )
         ) {
-            $function_id = strtolower(implode('\\', $identifier->name->parts));
+            $function_id = strtolower($identifier->name->toString());
 
             if ($map) {
                 $offset = 0;

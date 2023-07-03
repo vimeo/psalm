@@ -57,7 +57,6 @@ use function array_search;
 use function count;
 use function end;
 use function explode;
-use function implode;
 use function in_array;
 use function is_string;
 use function spl_object_id;
@@ -371,7 +370,7 @@ class FunctionLikeNodeScanner
                     && $function_stmt->expr->expr instanceof PhpParser\Node\Expr\FuncCall
                     && $function_stmt->expr->expr->name instanceof PhpParser\Node\Name
                 ) {
-                    $inner_function_id = implode('\\', $function_stmt->expr->expr->name->parts);
+                    $inner_function_id = $function_stmt->expr->expr->name->toString();
 
                     if ($inner_function_id === 'func_get_arg'
                         || $inner_function_id === 'func_get_args'
@@ -385,7 +384,7 @@ class FunctionLikeNodeScanner
                     && $function_stmt->cond->left->left instanceof PhpParser\Node\Expr\FuncCall
                     && $function_stmt->cond->left->left->name instanceof PhpParser\Node\Name
                 ) {
-                    $inner_function_id = implode('\\', $function_stmt->cond->left->left->name->parts);
+                    $inner_function_id = $function_stmt->cond->left->left->name->toString();
 
                     if ($inner_function_id === 'func_get_arg'
                         || $inner_function_id === 'func_get_args'
@@ -806,7 +805,7 @@ class FunctionLikeNodeScanner
         $param_type = null;
 
         $is_nullable = $param->default instanceof PhpParser\Node\Expr\ConstFetch &&
-            strtolower($param->default->name->parts[0]) === 'null';
+            strtolower($param->default->name->getFirst()) === 'null';
 
         $param_typehint = $param->type;
 
