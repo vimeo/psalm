@@ -6,8 +6,10 @@ use PhpParser;
 use Psalm\Aliases;
 use Psalm\Codebase;
 use Psalm\Config;
+use Psalm\Exception\DocblockParseException;
 use Psalm\Exception\FileIncludeException;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\IncludeAnalyzer;
@@ -151,7 +153,29 @@ class ExpressionScanner
                         $type_provider,
                         $second_arg_value,
                         $aliases,
-                    ) ?? Type::getMixed();
+                    );
+
+                    // allow docblocks to override the declared value to make constants in stubs configurable
+                    $doc_comment = $second_arg_value->getDocComment();
+                    if ($doc_comment) {
+                        try {
+                            $var_comments = CommentAnalyzer::getTypeFromComment($doc_comment, $file_scanner, $aliases);
+                            foreach ($var_comments as $var_comment) {
+                                if ($var_comment->type) {
+                                    $const_type = $var_comment->type;
+                                }
+
+                                // only check the first @var comment
+                                break;
+                            }
+                        } catch (DocblockParseException $e) {
+                            // do nothing
+                        }
+                    }
+
+                    if ($const_type === null) {
+                        $const_type = Type::getMixed();
+                    }
 
                     $config = Config::getInstance();
 
