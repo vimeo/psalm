@@ -553,6 +553,8 @@ final class Codebase
             $this->classlikes->addFullyQualifiedTraitName($storage->name, $file_path);
         } elseif ($storage->is_interface) {
             $this->classlikes->addFullyQualifiedInterfaceName($storage->name, $file_path);
+        } elseif ($storage->is_enum) {
+            $this->classlikes->addFullyQualifiedEnumName($storage->name, $file_path);
         } else {
             $this->classlikes->addFullyQualifiedClassName($storage->name, $file_path);
         }
