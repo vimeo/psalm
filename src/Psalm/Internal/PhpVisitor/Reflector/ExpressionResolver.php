@@ -38,7 +38,6 @@ use function assert;
 use function class_exists;
 use function function_exists;
 use function get_defined_constants;
-use function implode;
 use function in_array;
 use function interface_exists;
 use function strtolower;
@@ -142,7 +141,7 @@ class ExpressionResolver
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\ConstFetch) {
-            $part0_lc = strtolower($stmt->name->parts[0]);
+            $part0_lc = strtolower($stmt->name->getFirst());
             if ($part0_lc === 'false') {
                 return new ScalarValue(false);
             }
@@ -160,7 +159,7 @@ class ExpressionResolver
             }
 
             return new Constant(
-                implode('\\', $stmt->name->parts),
+                $stmt->name->toString(),
                 $stmt->name instanceof PhpParser\Node\Name\FullyQualified,
             );
         }
@@ -193,13 +192,13 @@ class ExpressionResolver
             if ($stmt->class instanceof PhpParser\Node\Name
                 && $stmt->name instanceof PhpParser\Node\Identifier
                 && $fq_classlike_name
-                && $stmt->class->parts !== ['static']
-                && ($stmt->class->parts !== ['parent'] || $parent_fq_class_name !== null)
+                && $stmt->class->getParts() !== ['static']
+                && ($stmt->class->getParts() !== ['parent'] || $parent_fq_class_name !== null)
             ) {
-                if ($stmt->class->parts === ['self']) {
+                if ($stmt->class->getParts() === ['self']) {
                     $const_fq_class_name = $fq_classlike_name;
                 } else {
-                    if ($stmt->class->parts === ['parent']) {
+                    if ($stmt->class->getParts() === ['parent']) {
                         assert($parent_fq_class_name !== null);
                         $const_fq_class_name = $parent_fq_class_name;
                     } else {
@@ -309,15 +308,15 @@ class ExpressionResolver
             && $stmt->var->name instanceof PhpParser\Node\Identifier
             && $stmt->name instanceof PhpParser\Node\Identifier
             && in_array($stmt->name->name, ['name', 'value'], true)
-            && ($stmt->var->class->parts !== ['self'] || $fq_classlike_name !== null)
-            && $stmt->var->class->parts !== ['static']
-            && ($stmt->var->class->parts !== ['parent'] || $parent_fq_class_name !== null)
+            && ($stmt->var->class->getParts() !== ['self'] || $fq_classlike_name !== null)
+            && $stmt->var->class->getParts() !== ['static']
+            && ($stmt->var->class->getParts() !== ['parent'] || $parent_fq_class_name !== null)
         ) {
-            if ($stmt->var->class->parts === ['self']) {
+            if ($stmt->var->class->getParts() === ['self']) {
                 assert($fq_classlike_name !== null);
                 $enum_fq_class_name = $fq_classlike_name;
             } else {
-                if ($stmt->var->class->parts === ['parent']) {
+                if ($stmt->var->class->getParts() === ['parent']) {
                     assert($parent_fq_class_name !== null);
                     $enum_fq_class_name = $parent_fq_class_name;
                 } else {
@@ -371,18 +370,18 @@ class ExpressionResolver
                 ) && (
                     (
                         $expr->left instanceof PhpParser\Node\Expr\ConstFetch
-                        && $expr->left->name->parts === ['PHP_VERSION_ID']
+                        && $expr->left->name->getParts() === ['PHP_VERSION_ID']
                         && $expr->right instanceof PhpParser\Node\Scalar\LNumber
                     ) || (
                         $expr->right instanceof PhpParser\Node\Expr\ConstFetch
-                        && $expr->right->name->parts === ['PHP_VERSION_ID']
+                        && $expr->right->name->getParts() === ['PHP_VERSION_ID']
                         && $expr->left instanceof PhpParser\Node\Scalar\LNumber
                     )
                 )
             ) {
                 $php_version_id = $codebase->analysis_php_version_id;
                 $evaluator = new ConstExprEvaluator(static function (Expr $expr) use ($php_version_id) {
-                    if ($expr instanceof ConstFetch && $expr->name->parts === ['PHP_VERSION_ID']) {
+                    if ($expr instanceof ConstFetch && $expr->name->getParts() === ['PHP_VERSION_ID']) {
                         return $php_version_id;
                     }
                     throw new ConstExprEvaluationException('unexpected');
@@ -411,7 +410,7 @@ class ExpressionResolver
             return null;
         }
 
-        if ($function->name->parts === ['function_exists']
+        if ($function->name->getParts() === ['function_exists']
             && isset($function->getArgs()[0])
             && $function->getArgs()[0]->value instanceof PhpParser\Node\Scalar\String_
             && function_exists($function->getArgs()[0]->value->value)
@@ -425,7 +424,7 @@ class ExpressionResolver
             return false;
         }
 
-        if ($function->name->parts === ['class_exists']
+        if ($function->name->getParts() === ['class_exists']
             && isset($function->getArgs()[0])
         ) {
             $string_value = null;
@@ -455,7 +454,7 @@ class ExpressionResolver
             return false;
         }
 
-        if ($function->name->parts === ['interface_exists']
+        if ($function->name->getParts() === ['interface_exists']
             && isset($function->getArgs()[0])
         ) {
             $string_value = null;
@@ -485,7 +484,7 @@ class ExpressionResolver
             return false;
         }
 
-        if ($function->name->parts === ['enum_exists']
+        if ($function->name->getParts() === ['enum_exists']
             && isset($function->getArgs()[0])
         ) {
             $string_value = null;
@@ -517,7 +516,7 @@ class ExpressionResolver
             return false;
         }
 
-        if ($function->name->parts === ['defined']
+        if ($function->name->getParts() === ['defined']
             && isset($function->getArgs()[0])
             && $function->getArgs()[0]->value instanceof PhpParser\Node\Scalar\String_
         ) {

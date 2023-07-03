@@ -51,10 +51,10 @@ class StaticPropertyFetchAnalyzer
 
         $codebase = $statements_analyzer->getCodebase();
 
-        if (count($stmt->class->parts) === 1
-            && in_array(strtolower($stmt->class->parts[0]), ['self', 'static', 'parent'], true)
+        if (count($stmt->class->getParts()) === 1
+            && in_array(strtolower($stmt->class->getFirst()), ['self', 'static', 'parent'], true)
         ) {
-            if ($stmt->class->parts[0] === 'parent') {
+            if ($stmt->class->getFirst() === 'parent') {
                 $fq_class_name = $statements_analyzer->getParentFQCLN();
 
                 if ($fq_class_name === null) {
@@ -81,7 +81,7 @@ class StaticPropertyFetchAnalyzer
             ) {
                 $codebase->file_reference_provider->addMethodReferenceToClassMember(
                     $context->calling_method_id,
-                    'use:' . $stmt->class->parts[0] . ':' . md5($statements_analyzer->getFilePath()),
+                    'use:' . $stmt->class->getFirst() . ':' . md5($statements_analyzer->getFilePath()),
                     false,
                 );
             }

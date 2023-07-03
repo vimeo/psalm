@@ -21,7 +21,6 @@ use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
-use function implode;
 use function strtolower;
 
 /**
@@ -137,7 +136,7 @@ class TypeHintResolver
             $codebase->scanner->queueClassLikeForScanning($fq_type_string);
             $file_storage->referenced_classlikes[strtolower($fq_type_string)] = $fq_type_string;
         } else {
-            $lower_hint = strtolower($hint->parts[0]);
+            $lower_hint = strtolower($hint->getFirst());
 
             if ($classlike_storage
                 && ($lower_hint === 'self' || $lower_hint === 'static')
@@ -149,7 +148,7 @@ class TypeHintResolver
                     $fq_type_string .= '&static';
                 }
             } else {
-                $type_string = implode('\\', $hint->parts);
+                $type_string = $hint->toString();
                 $fq_type_string = ClassLikeAnalyzer::getFQCLNFromNameObject($hint, $aliases);
 
                 $codebase->scanner->queueClassLikeForScanning($fq_type_string);

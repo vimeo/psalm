@@ -35,7 +35,7 @@ class ConstFetchAnalyzer
         PhpParser\Node\Expr\ConstFetch $stmt,
         Context $context
     ): void {
-        $const_name = implode('\\', $stmt->name->parts);
+        $const_name = $stmt->name->toString();
 
         switch (strtolower($const_name)) {
             case 'null':

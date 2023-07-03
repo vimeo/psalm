@@ -41,7 +41,6 @@ use function array_map;
 use function array_merge;
 use function array_slice;
 use function array_sum;
-use function array_unshift;
 use function array_values;
 use function chdir;
 use function count;
@@ -167,6 +166,7 @@ final class Psalm
 
     /**
      * @param array<int,string> $argv
+     * @psalm-suppress ComplexMethod Maybe some of the option handling could be moved to its own function...
      */
     public static function run(array $argv): void
     {
@@ -185,11 +185,11 @@ final class Psalm
         }
 
         // debug CI environment
-        if (!in_array('--debug', $options, true)
+        if (!array_key_exists('debug', $options)
             && 'true' === getenv('GITHUB_ACTIONS')
             && '1' === getenv('RUNNER_DEBUG')
         ) {
-            array_unshift($options, '--debug');
+            $options['debug'] = false;
         }
 
         self::forwardCliCall($options, $argv);

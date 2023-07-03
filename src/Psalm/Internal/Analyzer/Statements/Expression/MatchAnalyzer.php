@@ -78,11 +78,11 @@ class MatchAnalyzer
         if (!$switch_var_id) {
             if ($stmt->cond instanceof PhpParser\Node\Expr\FuncCall
                 && $stmt->cond->name instanceof PhpParser\Node\Name
-                && ($stmt->cond->name->parts === ['get_class']
-                    || $stmt->cond->name->parts === ['gettype']
-                    || $stmt->cond->name->parts === ['get_debug_type']
-                    || $stmt->cond->name->parts === ['count']
-                    || $stmt->cond->name->parts === ['sizeof'])
+                && ($stmt->cond->name->getParts() === ['get_class']
+                    || $stmt->cond->name->getParts() === ['gettype']
+                    || $stmt->cond->name->getParts() === ['get_debug_type']
+                    || $stmt->cond->name->getParts() === ['count']
+                    || $stmt->cond->name->getParts() === ['sizeof'])
                 && $stmt->cond->getArgs()
             ) {
                 $first_arg = $stmt->cond->getArgs()[0];

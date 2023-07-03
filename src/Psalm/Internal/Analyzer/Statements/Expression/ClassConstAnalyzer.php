@@ -72,7 +72,7 @@ class ClassConstAnalyzer
         $statements_analyzer->node_data->setType($stmt, Type::getMixed());
 
         if ($stmt->class instanceof PhpParser\Node\Name) {
-            $first_part_lc = strtolower($stmt->class->parts[0]);
+            $first_part_lc = strtolower($stmt->class->getFirst());
 
             if ($first_part_lc === 'self' || $first_part_lc === 'static') {
                 if (!$context->self) {
@@ -128,7 +128,7 @@ class ClassConstAnalyzer
             $moved_class = false;
 
             if ($codebase->alter_code
-                && !in_array($stmt->class->parts[0], ['parent', 'static'])
+                && !in_array($stmt->class->getFirst(), ['parent', 'static'])
             ) {
                 $moved_class = $codebase->classlikes->handleClassLikeReferenceInMigration(
                     $codebase,
@@ -137,7 +137,7 @@ class ClassConstAnalyzer
                     $fq_class_name,
                     $context->calling_method_id,
                     false,
-                    $stmt->class->parts[0] === 'self',
+                    $stmt->class->getFirst() === 'self',
                 );
             }
 
@@ -259,7 +259,7 @@ class ClassConstAnalyzer
                     $class_visibility,
                     $statements_analyzer,
                     [],
-                    $stmt->class->parts[0] === "static",
+                    $stmt->class->getFirst() === "static",
                 );
             } catch (InvalidArgumentException $_) {
                 return true;
