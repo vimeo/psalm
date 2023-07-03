@@ -166,6 +166,7 @@ final class Psalm
 
     /**
      * @param array<int,string> $argv
+     * @psalm-suppress ComplexMethod Maybe some of the option handling could be moved to its own function...
      */
     public static function run(array $argv): void
     {
