@@ -260,6 +260,15 @@ class CommentAnalyzer
     {
         $docblock_type = preg_replace('@^[ \t]*\*@m', '', $docblock_type);
         $docblock_type = preg_replace('/,\n\s+}/', '}', $docblock_type);
+
+        // Strip out remainders of a line when inline comment is encountered inside curly braces.
+        if (preg_match('/{(?>[^{}]|(?R))*}/', $docblock_type, $braceMatches, PREG_OFFSET_CAPTURE)) {
+            $docblock_type =
+                mb_substr($docblock_type, 0, $braceMatches[0][1])
+                . preg_replace('%//.*$%m', '', $braceMatches[0][0])
+                . mb_substr($docblock_type, $braceMatches[0][1] + mb_strlen($braceMatches[0][0]));
+        }
+
         return str_replace("\n", '', $docblock_type);
     }
 

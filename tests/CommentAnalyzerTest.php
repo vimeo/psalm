@@ -75,4 +75,31 @@ class CommentAnalyzerTest extends BaseTestCase
         $comment_docblock = CommentAnalyzer::getTypeFromComment($php_parser_doc, new FileScanner('somefile.php', 'somefile.php', false), new Aliases);
         $this->assertSame('Use a string', $comment_docblock[0]->description);
     }
+
+    /**
+     * @dataProvider providerSanitizeDocblockType
+     */
+    public function testSanitizeDocblockType(string $doc_block_type, string $expected): void
+    {
+        $this->assertSame($expected, CommentAnalyzer::sanitizeDocblockType($doc_block_type));
+    }
+
+    public function providerSanitizeDocblockType(): iterable
+    {
+        return [
+            'arrayShapeComments' => [
+                'doc_block_type' => <<<EOT
+                    array{ // Comment
+                        // Comment
+                        key1: int, // Comment
+                        // Comment
+                        key2: {, // Comment
+                            key2_1: string, // Comment
+                        } // Comment
+                    }
+                    EOT,
+                'expected' => 'array{         key1: int,         key2: {,         key2_1: string,     } }',
+            ],
+        ];
+    }
 }
