@@ -78,7 +78,6 @@ class CommentAnalyzerTest extends BaseTestCase
 
     /**
      * @dataProvider providerSplitDocLine
-     * @param string $doc_line
      * @param string[] $expected
      */
     public function testSplitDocLine(string $doc_line, array $expected): void
@@ -108,7 +107,7 @@ class CommentAnalyzerTest extends BaseTestCase
                      *     a: int,
                      *     b: string,
                      * }',
-                ]
+                ],
             ],
             'arrayShapeWithSpace' => [
                 'doc_line' =>
@@ -121,7 +120,7 @@ class CommentAnalyzerTest extends BaseTestCase
                      *     a: int,
                      *     b: string,
                      * }',
-                ]
+                ],
             ],
             'func_num_args' => [
                 'doc_line' =>
@@ -135,8 +134,8 @@ class CommentAnalyzerTest extends BaseTestCase
                      *     func_num_args() is 1
                      *     ? array{dirname: string, basename: string, extension?: string, filename: string}
                      *     : string
-                     * )'
-                ]
+                     * )',
+                ],
             ],
         ];
     }
