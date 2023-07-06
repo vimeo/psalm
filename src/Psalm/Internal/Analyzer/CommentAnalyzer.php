@@ -38,6 +38,8 @@ use function substr;
 use function substr_count;
 use function trim;
 
+use const PREG_OFFSET_CAPTURE;
+
 /**
  * @internal
  */
@@ -264,9 +266,9 @@ class CommentAnalyzer
         // Strip out remainders of a line when inline comment is encountered inside curly braces.
         if (preg_match('/{(?>[^{}]|(?R))*}/', $docblock_type, $braceMatches, PREG_OFFSET_CAPTURE)) {
             $docblock_type =
-                mb_substr($docblock_type, 0, $braceMatches[0][1])
+                substr($docblock_type, 0, $braceMatches[0][1])
                 . preg_replace('%//.*$%m', '', $braceMatches[0][0])
-                . mb_substr($docblock_type, $braceMatches[0][1] + mb_strlen($braceMatches[0][0]));
+                . substr($docblock_type, $braceMatches[0][1] + strlen($braceMatches[0][0]));
         }
 
         return str_replace("\n", '', $docblock_type);
