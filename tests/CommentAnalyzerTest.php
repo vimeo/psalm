@@ -85,6 +85,9 @@ class CommentAnalyzerTest extends BaseTestCase
         $this->assertSame($expected, CommentAnalyzer::splitDocLine($doc_line));
     }
 
+    /**
+     * @return iterable<array<mixed>>
+     */
     public function providerSplitDocLine(): iterable
     {
         return [
