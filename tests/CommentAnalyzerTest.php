@@ -86,7 +86,7 @@ class CommentAnalyzerTest extends BaseTestCase
     }
 
     /**
-     * @return iterable<array<mixed>>
+     * @return iterable<array-key, array<mixed>>
      */
     public function providerSplitDocLine(): iterable
     {
