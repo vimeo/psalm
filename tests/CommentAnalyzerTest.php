@@ -75,4 +75,71 @@ class CommentAnalyzerTest extends BaseTestCase
         $comment_docblock = CommentAnalyzer::getTypeFromComment($php_parser_doc, new FileScanner('somefile.php', 'somefile.php', false), new Aliases);
         $this->assertSame('Use a string', $comment_docblock[0]->description);
     }
+
+    /**
+     * @dataProvider providerSplitDocLine
+     * @param string[] $expected
+     */
+    public function testSplitDocLine(string $doc_line, array $expected): void
+    {
+        $this->assertSame($expected, CommentAnalyzer::splitDocLine($doc_line));
+    }
+
+    /**
+     * @return iterable<array-key, array{doc_line: string, expected: string[]}>
+     */
+    public function providerSplitDocLine(): iterable
+    {
+        return [
+            'typeWithVar' => [
+                'doc_line' =>
+                    'TArray $array',
+                'expected' => [
+                    'TArray',
+                    '$array',
+                ],
+            ],
+            'arrayShape' => [
+                'doc_line' =>
+                    'array{
+                     *     a: int,
+                     *     b: string,
+                     * }',
+                'expected' => [
+                    'array{
+                     *     a: int,
+                     *     b: string,
+                     * }',
+                ],
+            ],
+            'arrayShapeWithSpace' => [
+                'doc_line' =>
+                    'array {
+                     *     a: int,
+                     *     b: string,
+                     * }',
+                'expected' => [
+                    'array {
+                     *     a: int,
+                     *     b: string,
+                     * }',
+                ],
+            ],
+            'func_num_args' => [
+                'doc_line' =>
+                    '(
+                     *     func_num_args() is 1
+                     *     ? array{dirname: string, basename: string, extension?: string, filename: string}
+                     *     : string
+                     * )',
+                'expected' => [
+                    '(
+                     *     func_num_args() is 1
+                     *     ? array{dirname: string, basename: string, extension?: string, filename: string}
+                     *     : string
+                     * )',
+                ],
+            ],
+        ];
+    }
 }
