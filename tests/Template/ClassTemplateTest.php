@@ -4207,6 +4207,68 @@ class ClassTemplateTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'inheritedConditionalsWithMatchingTypes' => [
+                'code' => '<?php
+                    /** @template InstanceType */
+                    interface PluginManagerInterface
+                    {
+                        /**
+                         * @template TRequestedInstance extends InstanceType
+                         * @param class-string<TRequestedInstance>|string $id
+                         * @return ($id is class-string ? TRequestedInstance : InstanceType)
+                         * @throws InvalidArgumentException
+                         */
+                        public function get(string $id): mixed;
+                    }
+
+                    interface PluginInterface
+                    {}
+
+                    class ConcretePlugin implements PluginInterface
+                    {}
+
+                    /**
+                     * @template InstanceType
+                     * @template-implements PluginManagerInterface<InstanceType>
+                     */
+                    abstract class AbstractPluginManager implements PluginManagerInterface
+                    {
+                        public function get(string $id): mixed
+                        {
+                            throw new InvalidArgumentException();
+                        }
+                    }
+
+                    /**
+                     * @template InstanceType of object
+                     * @template-extends AbstractPluginManager<InstanceType>
+                     */
+                    abstract class AbstractSingleInstancePluginManager extends AbstractPluginManager
+                    {
+                        /**
+                         * {@inheritDoc}
+                         */
+                        public function get(string $id): object
+                        {
+                            return parent::get($id);
+                        }
+                    }
+
+                    /** @template-extends AbstractSingleInstancePluginManager<PluginInterface> */
+                    class ConcretePluginManager extends AbstractSingleInstancePluginManager
+                    {}
+
+                    $plugins = new ConcretePluginManager();
+                    $classString = $plugins->get(ConcretePlugin::class);
+                    $string = $plugins->get("foo");
+                ',
+                'assertions' => [
+                    '$classString' => 'ConcretePlugin',
+                    '$string' => 'PluginInterface',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
