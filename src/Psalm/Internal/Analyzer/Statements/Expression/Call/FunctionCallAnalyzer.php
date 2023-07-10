@@ -235,7 +235,10 @@ class FunctionCallAnalyzer extends CallAnalyzer
             $function_call_info->function_id,
         );
 
-        $template_result->lower_bounds += $already_inferred_lower_bounds;
+        $template_result->lower_bounds = array_merge(
+            $template_result->lower_bounds,
+            $already_inferred_lower_bounds,
+        );
 
         if ($function_name instanceof PhpParser\Node\Name && $function_call_info->function_id) {
             $stmt_type = FunctionCallReturnTypeFetcher::fetch(
