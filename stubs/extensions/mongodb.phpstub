@@ -1,59 +1,251 @@
 <?php
 
-namespace MongoDB\Driver;
-
-use Iterator;
-use Traversable;
-
-/**
- * @template-covariant TKey
- * @template-covariant TValue
- *
- * @template-extends Traversable<TKey, TValue>
- */
-interface CursorInterface extends Traversable
+namespace MongoDB\BSON
 {
+    use IteratorAggregate;
+    use Serializable;
+
     /**
-     * @return array<TValue>
+     * @template TValue
+     * @template-implements IteratorAggregate<string, TValue>
      */
-    public function toArray();
+    final class Document implements IteratorAggregate, Serializable
+    {
+        private function __construct()
+        {
+        }
+
+        final static public function fromBSON(string $bson): Document
+        {
+        }
+
+        final static public function fromJSON(string $json): Document
+        {
+        }
+
+        /** @param array|object $value */
+        final static public function fromPHP($value): Document
+        {
+        }
+
+        /** @return TValue */
+        final public function get(string $key)
+        {
+        }
+
+        /** @return Iterator<string, TValue> */
+        final public function getIterator(): Iterator
+        {
+        }
+
+        final public function has(string $key): bool
+        {
+        }
+
+        /** @return array|object */
+        final public function toPHP(?array $typeMap = null)
+        {
+        }
+
+        final public function toCanonicalExtendedJSON(): string
+        {
+        }
+
+        final public function toRelaxedExtendedJSON(): string
+        {
+        }
+
+        final public function __toString(): string
+        {
+        }
+
+        final public static function __set_state(array $properties): Document
+        {
+        }
+
+        final public function serialize(): string
+        {
+        }
+
+        /** @param string $serialized */
+        final public function unserialize($serialized): void
+        {
+        }
+
+        final public function __unserialize(array $data): void
+        {
+        }
+
+        final public function __serialize(): array
+        {
+        }
+    }
+
+    /**
+     * @psalm-template TKey of int|string
+     * @psalm-template TValue
+     * $psalm-implements \Iterator<TKey, TValue>
+     */
+    final class Iterator implements \Iterator
+    {
+        final private function __construct()
+        {
+        }
+
+        /** @return TValue */
+        final public function current()
+        {
+        }
+
+        /** @return TKey */
+        final public function key()
+        {
+        }
+
+        final public function next(): void
+        {
+        }
+
+        final public function rewind(): void
+        {
+        }
+
+        final public function valid(): bool
+        {
+        }
+
+        final public function __wakeup(): void
+        {
+        }
+    }
+
+    /**
+     * @template TValue
+     * @template-implements IteratorAggregate<int, TValue>
+     */
+    final class PackedArray implements IteratorAggregate, Serializable
+    {
+        private function __construct()
+        {
+        }
+
+        final static public function fromPHP(array $value): PackedArray
+        {
+        }
+
+        /** @return TValue */
+        final public function get(int $index)
+        {
+        }
+
+        /** @return Iterator<int, TValue> */
+        final public function getIterator(): Iterator
+        {
+        }
+
+        final public function has(int $index): bool
+        {
+        }
+
+        /** @return array|object */
+        final public function toPHP(?array $typeMap = null)
+        {
+        }
+
+        final public function __toString(): string
+        {
+        }
+
+        final public static function __set_state(array $properties): PackedArray
+        {
+        }
+
+        final public function serialize(): string
+        {
+        }
+
+        /** @param string $serialized */
+        final public function unserialize($serialized): void
+        {
+        }
+
+        final public function __unserialize(array $data): void
+        {
+        }
+
+        final public function __serialize(): array
+        {
+        }
+    }
 }
 
-/**
- * @template-covariant TValue of array|object
- *
- * @template-implements Iterator<int, TValue>
- * @template-implements CursorInterface<int, TValue>
- */
-final class Cursor implements CursorInterface, Iterator
+namespace MongoDB\Driver
 {
-    /**
-     * @return TValue
-     */
-    public function current() {}
+    use Iterator;
+    use Traversable;
 
     /**
-     * @return void
+     * @template-covariant TKey
+     * @template-covariant TValue
+     *
+     * @template-extends Traversable<TKey, TValue>
      */
-    public function next() {}
+    interface CursorInterface extends Traversable
+    {
+        /**
+         * @return array<TValue>
+         */
+        public function toArray();
+    }
 
     /**
-     * @return int
+     * @template-covariant TValue of array|object
+     *
+     * @template-implements Iterator<int, TValue>
+     * @template-implements CursorInterface<int, TValue>
      */
-    public function key() {}
+    final class Cursor implements CursorInterface, Iterator
+    {
+        /**
+         * @return TValue
+         */
+        public function current()
+        {
+        }
 
-    /**
-     * @return bool
-     */
-    public function valid() {}
+        /**
+         * @return void
+         */
+        public function next()
+        {
+        }
 
-    /**
-     * @return void
-     */
-    public function rewind() {}
+        /**
+         * @return int
+         */
+        public function key()
+        {
+        }
 
-    /**
-     * @return array<TValue>
-     */
-    public function toArray() {}
+        /**
+         * @return bool
+         */
+        public function valid()
+        {
+        }
+
+        /**
+         * @return void
+         */
+        public function rewind()
+        {
+        }
+
+        /**
+         * @return array<TValue>
+         */
+        public function toArray()
+        {
+        }
+    }
 }
