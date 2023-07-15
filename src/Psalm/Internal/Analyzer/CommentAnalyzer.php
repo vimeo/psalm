@@ -357,6 +357,11 @@ class CommentAnalyzer
                     continue;
                 }
 
+                if ($next_char === '{') {
+                    $type .= ' ';
+                    continue;
+                }
+
                 if ($next_char === '|' || $next_char === '&') {
                     $nexter_char = $i < $l - 2 ? $return_block[$i + 2] : null;
 
