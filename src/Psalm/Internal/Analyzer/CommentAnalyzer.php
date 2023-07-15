@@ -263,14 +263,6 @@ class CommentAnalyzer
         $docblock_type = preg_replace('@^[ \t]*\*@m', '', $docblock_type);
         $docblock_type = preg_replace('/,\n\s+}/', '}', $docblock_type);
 
-        // Strip out remainders of a line when inline comment is encountered inside curly braces.
-        if (preg_match('/{(?>[^{}]|(?R))*}/', $docblock_type, $braceMatches, PREG_OFFSET_CAPTURE)) {
-            $docblock_type =
-                substr($docblock_type, 0, $braceMatches[0][1])
-                . preg_replace('%//.*$%m', '', $braceMatches[0][0])
-                . substr($docblock_type, $braceMatches[0][1] + strlen($braceMatches[0][0]));
-        }
-
         return str_replace("\n", '', $docblock_type);
     }
 
@@ -333,6 +325,17 @@ class CommentAnalyzer
                 $expects_callable_return = true;
 
                 $type .= $char;
+
+                continue;
+            }
+
+            if ($char === '/' && $next_char === '/') {
+                // Ignore the rest of the current line
+                $i = strpos($return_block, "\n", $i);
+
+                // Remove trailing whitespaces (needed for `sanitizeDocblockType`)
+                $type = rtrim($type);
+                $type .= "\n";
 
                 continue;
             }

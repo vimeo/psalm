@@ -76,32 +76,6 @@ class CommentAnalyzerTest extends BaseTestCase
         $this->assertSame('Use a string', $comment_docblock[0]->description);
     }
 
-    /**
-     * @dataProvider providerSanitizeDocblockType
-     */
-    public function testSanitizeDocblockType(string $doc_block_type, string $expected): void
-    {
-        $this->assertSame($expected, CommentAnalyzer::sanitizeDocblockType($doc_block_type));
-    }
-
-    public function providerSanitizeDocblockType(): iterable
-    {
-        return [
-            'arrayShapeComments' => [
-                'doc_block_type' => <<<EOT
-                    array{ // Comment
-                        // Comment
-                        key1: int, // Comment
-                        // Comment
-                        key2: {, // Comment
-                            key2_1: string, // Comment
-                        } // Comment
-                    }
-                    EOT,
-                'expected' => 'array{         key1: int,         key2: {,         key2_1: string,     } }',
-            ],
-        ];
-    }
 
     /**
      * @dataProvider providerSplitDocLine
@@ -150,6 +124,66 @@ class CommentAnalyzerTest extends BaseTestCase
                      *     a: int,
                      *     b: string,
                      * }',
+                ],
+            ],
+            'arrayShapeWithComments' => [
+                'doc_line' =>
+                    'array { // Comment
+                     *     // Comment
+                     *     a: int, // Comment
+                     *     // Comment
+                     *     b: string, // Comment
+                     *     // Comment
+                     * }',
+                'expected' => [
+                    "array {
+                     *
+                     *     a: int,
+                     *
+                     *     b: string,
+                     *
+                     * }",
+                ],
+            ],
+            'arrayShapeWithSlashesInKeys' => [
+                'doc_line' =>
+                    <<<EOT
+                    array {
+                    *     // Single quote keys
+                    *     array {
+                    *         'single_quote_key//1': int, // Comment with ' in it
+                    *         'single_quote_key//2': int, // Comment with ' in it
+                    *         'single_quote_key\'//\'3': int, // Comment with ' in it
+                    *         'single_quote_key"//"4': int, // Comment with ' in it
+                    *     },
+                    *     // Double quote keys
+                    *     array {
+                    *         "double_quote_key//1": int, // Comment with " in it
+                    *         "double_quote_key//2": int, // Comment with " in it
+                    *         "double_quote_key\"//\"3": int, // Comment with " in it
+                    *         "double_quote_key'//'4": int, // Comment with " in it
+                    *     }
+                    * }
+                    EOT,
+                'expected' => [
+                    <<<EOT
+                    array {
+                    *
+                    *     array {
+                    *         'single_quote_key//1': int,
+                    *         'single_quote_key//2': int,
+                    *         'single_quote_key\'//\'3': int,
+                    *         'single_quote_key"//"4': int,
+                    *     },
+                    *
+                    *     array {
+                    *         "double_quote_key//1": int,
+                    *         "double_quote_key//2": int,
+                    *         "double_quote_key\"//\"3": int,
+                    *         "double_quote_key'//'4": int,
+                    *     }
+                    * }
+                    EOT,
                 ],
             ],
             'func_num_args' => [
