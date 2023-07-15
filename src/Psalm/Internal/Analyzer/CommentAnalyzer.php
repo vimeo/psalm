@@ -333,7 +333,7 @@ class CommentAnalyzer
                 $i = strpos($return_block, "\n", $i);
                 if ($i === false) {
                     throw new IncorrectDocblockException(
-                        'Comment lines must be terminated with a new line character (\\n).'
+                        'Comment lines must be terminated with a new line character (\\n).',
                     );
                 }
 
