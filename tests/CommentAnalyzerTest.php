@@ -76,7 +76,6 @@ class CommentAnalyzerTest extends BaseTestCase
         $this->assertSame('Use a string', $comment_docblock[0]->description);
     }
 
-
     /**
      * @dataProvider providerSplitDocLine
      * @param string[] $expected

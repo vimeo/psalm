@@ -1269,9 +1269,9 @@ class AnnotationTest extends TestCase
             'multiLineArrayShapeWithComments' => [
                 'code' =>
                     <<<EOT
-                <?php
+                    <?php
                     /**
-                     * @return array {
+                     * @return array { // Array with comments
                      *     // Array with single quoted keys
                      *     'single quote keys': array {           // Single quoted key
                      *         'single_quote_key//1': int,        // Single quoted key with //
@@ -1317,7 +1317,7 @@ class AnnotationTest extends TestCase
                             ],
                         ];
                     }
-                EOT,
+                    EOT,
             ],
         ];
     }

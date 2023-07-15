@@ -133,7 +133,7 @@ You can use "one-line" comments (similar to PHP), e.g:
  *     // Comments can be placed on their own line. 
  *     foo: string, // An array key description.
  *     bar: array {, // Another array key description.
- *         bar: string, // Yet another array key description.
+ *         'foo//bar': string, // Array key with "//" in it's name.
  *     },
  * }
  */
