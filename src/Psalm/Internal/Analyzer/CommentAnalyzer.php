@@ -34,11 +34,10 @@ use function preg_split;
 use function rtrim;
 use function str_replace;
 use function strlen;
+use function strpos;
 use function substr;
 use function substr_count;
 use function trim;
-
-use const PREG_OFFSET_CAPTURE;
 
 /**
  * @internal
@@ -333,7 +332,9 @@ class CommentAnalyzer
                 // Ignore the rest of the current line
                 $i = strpos($return_block, "\n", $i);
                 if ($i === false) {
-                    Throw new IncorrectDocblockException('Comment lines must be terminated with a new line character (\\n).');
+                    throw new IncorrectDocblockException(
+                        'Comment lines must be terminated with a new line character (\\n).'
+                    );
                 }
 
                 // Remove trailing whitespaces (needed for `sanitizeDocblockType`)
