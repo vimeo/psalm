@@ -1281,6 +1281,8 @@ class AnnotationTest extends TestCase
                      *         'single_quote_key"//\'5': array {  // Single quoted key with ', " and //
                      *             'single_quote_key//5//1': int, // Single quoted key with 2x //
                      *         },
+                     *         // 'commented_out_array_element//1': int
+                     *         'single_quote_key//no_whitespace':int,//Single quoted key without whitespace
                      *     },
                      *     // Array with double quoted keys
                      *     "double quote keys": array {           // Double quoted key
@@ -1289,8 +1291,10 @@ class AnnotationTest extends TestCase
                      *         "double_quote_key\"//\"3": bool,   // Double quoted key with 2x ' and //
                      *         "double_quote_key'//'4": float,    // Double quoted key with 2x " and //
                      *         "double_quote_key\"//'5": array {  // Double quoted key with ', " and //
-                     *             'double_quote_key//5//1': int, // Double quoted key with 2x //
+                     *             "double_quote_key//5//1": int, // Double quoted key with 2x //
                      *         },
+                     *         // "commented_out_array_element//1": int
+                     *         "double_quote_key//no_whitespace":int,//Double quoted key without whitespace
                      *     },
                      * }
                      */
@@ -1305,6 +1309,7 @@ class AnnotationTest extends TestCase
                                 'single_quote_key"//\'5' => [
                                     'single_quote_key//5//1' => 1,
                                 ],
+                                'single_quote_key//no_whitespace' => 1
                             ],
                             "double quote keys" => [
                                 "double_quote_key//1" => 1,
@@ -1314,6 +1319,7 @@ class AnnotationTest extends TestCase
                                 "double_quote_key\"//'5" => [
                                     "double_quote_key//5//1" => 1,
                                 ],
+                                "double_quote_key//no_whitespace" => 1
                             ],
                         ];
                     }
