@@ -332,6 +332,9 @@ class CommentAnalyzer
             if ($char === '/' && $next_char === '/') {
                 // Ignore the rest of the current line
                 $i = strpos($return_block, "\n", $i);
+                if ($i === false) {
+                    Throw new IncorrectDocblockException('Comment lines must be terminated with a new line character (\\n).');
+                }
 
                 // Remove trailing whitespaces (needed for `sanitizeDocblockType`)
                 $type = rtrim($type);
