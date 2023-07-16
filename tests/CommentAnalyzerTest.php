@@ -125,6 +125,66 @@ class CommentAnalyzerTest extends BaseTestCase
                      * }',
                 ],
             ],
+            'arrayShapeWithComments' => [
+                'doc_line' =>
+                    'array { // Comment
+                     *     // Comment
+                     *     a: int, // Comment
+                     *     // Comment
+                     *     b: string, // Comment
+                     *     // Comment
+                     * }',
+                'expected' => [
+                    "array {
+                     *
+                     *     a: int,
+                     *
+                     *     b: string,
+                     *
+                     * }",
+                ],
+            ],
+            'arrayShapeWithSlashesInKeys' => [
+                'doc_line' =>
+                    <<<EOT
+                    array {
+                    *     // Single quote keys
+                    *     array {
+                    *         'single_quote_key//1': int, // Comment with ' in it
+                    *         'single_quote_key//2': int, // Comment with ' in it
+                    *         'single_quote_key\'//\'3': int, // Comment with ' in it
+                    *         'single_quote_key"//"4': int, // Comment with ' in it
+                    *     },
+                    *     // Double quote keys
+                    *     array {
+                    *         "double_quote_key//1": int, // Comment with " in it
+                    *         "double_quote_key//2": int, // Comment with " in it
+                    *         "double_quote_key\"//\"3": int, // Comment with " in it
+                    *         "double_quote_key'//'4": int, // Comment with " in it
+                    *     }
+                    * }
+                    EOT,
+                'expected' => [
+                    <<<EOT
+                    array {
+                    *
+                    *     array {
+                    *         'single_quote_key//1': int,
+                    *         'single_quote_key//2': int,
+                    *         'single_quote_key\'//\'3': int,
+                    *         'single_quote_key"//"4': int,
+                    *     },
+                    *
+                    *     array {
+                    *         "double_quote_key//1": int,
+                    *         "double_quote_key//2": int,
+                    *         "double_quote_key\"//\"3": int,
+                    *         "double_quote_key'//'4": int,
+                    *     }
+                    * }
+                    EOT,
+                ],
+            ],
             'func_num_args' => [
                 'doc_line' =>
                     '(

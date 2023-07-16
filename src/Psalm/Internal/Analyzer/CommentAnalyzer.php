@@ -34,6 +34,7 @@ use function preg_split;
 use function rtrim;
 use function str_replace;
 use function strlen;
+use function strpos;
 use function substr;
 use function substr_count;
 use function trim;
@@ -260,6 +261,7 @@ class CommentAnalyzer
     {
         $docblock_type = preg_replace('@^[ \t]*\*@m', '', $docblock_type);
         $docblock_type = preg_replace('/,\n\s+}/', '}', $docblock_type);
+
         return str_replace("\n", '', $docblock_type);
     }
 
@@ -322,6 +324,22 @@ class CommentAnalyzer
                 $expects_callable_return = true;
 
                 $type .= $char;
+
+                continue;
+            }
+
+            if ($char === '/' && $next_char === '/') {
+                // Ignore the rest of the current line
+                $i = strpos($return_block, "\n", $i);
+                if ($i === false) {
+                    throw new IncorrectDocblockException(
+                        'Comment lines must be terminated with a new line character (\\n).',
+                    );
+                }
+
+                // Remove trailing whitespaces (needed for `sanitizeDocblockType`)
+                $type = rtrim($type);
+                $type .= "\n";
 
                 continue;
             }
