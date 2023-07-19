@@ -76,6 +76,19 @@ trait ValidCodeAnalysisTestTrait
         $codebase->enterServerMode();
         $codebase->config->visitPreloadedStubFiles($codebase);
 
+        if (version_compare(PHP_VERSION, '8.2.0', '>=')) {
+            $this->addStubFile(
+                'stubOne.phpstub',
+                '<?php
+                    namespace {
+                        interface DateTimeInterface {
+                            public function __unserialize(mixed[] $data) {}
+                        }
+                    }
+                ',
+            );
+        }
+
         $file_path = self::$src_dir_path . 'somefile.php';
 
         $this->addFile($file_path, $code);
