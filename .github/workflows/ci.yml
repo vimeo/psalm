@@ -81,12 +81,11 @@ jobs:
       fail-fast: false
       matrix:
         php-version:
-          - "7.4"
           - "8.0"
           - "8.1"
           - "8.2"
           - "8.3"
-        operating-system: [ubuntu-latest, windows-latest]
+        operating-system: [ubuntu-latest]
         count: ${{ fromJson(needs.chunk-matrix.outputs.count) }}
         chunk: ${{ fromJson(needs.chunk-matrix.outputs.chunks) }}
 
