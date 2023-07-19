@@ -72,11 +72,10 @@ jobs:
   tests:
     name: "Unit Tests - ${{ matrix.chunk }}"
 
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.operating-system }}
     needs:
       - chunk-matrix
 
-    runs-on: ${{ matrix.operating-system }}
 
     strategy:
       fail-fast: false
