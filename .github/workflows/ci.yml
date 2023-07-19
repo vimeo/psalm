@@ -70,9 +70,9 @@ jobs:
           echo "chunks=$(php -r 'echo json_encode(range(1, ${{ env.CHUNK_COUNT }} ));')" >> $GITHUB_OUTPUT
 
   tests:
-    name: "Tests - ${{ matrix.php-version }} ${{ matrix.chunk }}/${{ matrix.count }} ${{ matrix.operating-system }}"
+    name: "Tests - PHP ${{ matrix.php-version }} ${{ matrix.chunk }}/${{ matrix.count }}"
 
-    runs-on: ${{ matrix.operating-system }}
+    runs-on: ubuntu-latest
     needs:
       - chunk-matrix
 
@@ -81,11 +81,11 @@ jobs:
       fail-fast: false
       matrix:
         php-version:
+          - "7.4"
           - "8.0"
           - "8.1"
           - "8.2"
           - "8.3"
-        operating-system: [ubuntu-latest]
         count: ${{ fromJson(needs.chunk-matrix.outputs.count) }}
         chunk: ${{ fromJson(needs.chunk-matrix.outputs.chunks) }}
 

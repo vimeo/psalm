@@ -2,11 +2,78 @@
 
 namespace Psalm\Tests;
 
+use Psalm\Context;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 class DateTimeTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
+
+    public function testModifyWithInvalidConstant(): void
+    {
+        $context = new Context();
+
+        if (version_compare(PHP_VERSION, '8.3', '>')) {
+            $this->expectException(\DateMalformedStringException::class);
+            $this->expectExceptionMessage('DateTime::modify(): Failed to parse time string (foo) at position 0 (f)');
+        }
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+
+                /**
+                 * @return "foo"|"bar"
+                 */
+                function getString(): string
+                {
+                    return "foo";
+                }
+
+                $datetime = new DateTime();
+                $dateTimeImmutable = new DateTimeImmutable();
+                $a = $datetime->modify(getString());
+                $b = $dateTimeImmutable->modify(getString());',
+        );
+
+        $this->analyzeFile('somefile.php', $context);
+
+        $this->assertSame('false', $context->vars_in_scope['$a']->getId(true));
+        $this->assertSame('false', $context->vars_in_scope['$b']->getId(true));
+    }
+
+    public function testModifyWithBothConstant(): void
+    {
+        $context = new Context();
+
+        if (version_compare(PHP_VERSION, '8.3', '>')) {
+            $this->expectException(\DateMalformedStringException::class);
+            $this->expectExceptionMessage('DateTime::modify(): Failed to parse time string (bar) at position 0 (b)');
+        }
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+
+                /**
+                 * @return "+1 day"|"bar"
+                 */
+                function getString(): string
+                {
+                    return "+1 day";
+                }
+
+                $datetime = new DateTime();
+                $dateTimeImmutable = new DateTimeImmutable();
+                $a = $datetime->modify(getString());
+                $b = $dateTimeImmutable->modify(getString());',
+        );
+
+        $this->analyzeFile('somefile.php', $context);
+
+        $this->assertSame('DateTime|false', $context->vars_in_scope['$a']->getId(false));
+        $this->assertSame('DateTimeImmutable|false', $context->vars_in_scope['$b']->getId(false));
+    }
 
     public function providerValidCodeParse(): iterable
     {
@@ -46,46 +113,6 @@ class DateTimeTest extends TestCase
                 'assertions' => [
                     '$a' => 'DateTime',
                     '$b' => 'DateTimeImmutable',
-                ],
-            ],
-            'modifyWithInvalidConstant' => [
-                'code' => '<?php
-                    /**
-                     * @return "foo"|"bar"
-                     */
-                    function getString(): string
-                    {
-                        return "foo";
-                    }
-
-                    $datetime = new DateTime();
-                    $dateTimeImmutable = new DateTimeImmutable();
-                    $a = $datetime->modify(getString());
-                    $b = $dateTimeImmutable->modify(getString());
-                    ',
-                'assertions' => [
-                    '$a' => 'false',
-                    '$b' => 'false',
-                ],
-            ],
-            'modifyWithBothConstant' => [
-                'code' => '<?php
-                    /**
-                     * @return "+1 day"|"bar"
-                     */
-                    function getString(): string
-                    {
-                        return "+1 day";
-                    }
-
-                    $datetime = new DateTime();
-                    $dateTimeImmutable = new DateTimeImmutable();
-                    $a = $datetime->modify(getString());
-                    $b = $dateTimeImmutable->modify(getString());
-                    ',
-                'assertions' => [
-                    '$a' => 'DateTime|false',
-                    '$b' => 'DateTimeImmutable|false',
                 ],
             ],
             'otherMethodAfterModify' => [
