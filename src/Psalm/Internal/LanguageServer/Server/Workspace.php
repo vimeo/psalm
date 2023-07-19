@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\LanguageServer\Server;
 
-use Amp\Promise;
-use Amp\Success;
 use InvalidArgumentException;
 use LanguageServerProtocol\FileChangeType;
 use LanguageServerProtocol\FileEvent;
@@ -126,7 +124,7 @@ class Workspace
      * @param mixed $arguments
      * @psalm-suppress PossiblyUnusedMethod
      */
-    public function executeCommand(string $command, $arguments): Promise
+    public function executeCommand(string $command, $arguments): void
     {
         $this->server->logDebug(
             'workspace/executeCommand',
@@ -155,7 +153,5 @@ class Workspace
                 $this->server->emitVersionedIssues([$file => $arguments['uri']]);
                 break;
         }
-
-        return new Success(null);
     }
 }
