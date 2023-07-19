@@ -70,7 +70,7 @@ jobs:
           echo "chunks=$(php -r 'echo json_encode(range(1, ${{ env.CHUNK_COUNT }} ));')" >> $GITHUB_OUTPUT
 
   tests:
-    name: "Unit Tests - ${{ matrix.chunk }}"
+    name: "Unit Tests - ${{ matrix.operating-system }} ${{ matrix.php-version }} ${{ matrix.chunk }}"
 
     runs-on: ${{ matrix.operating-system }}
     needs:
