@@ -56,7 +56,7 @@ jobs:
 
     runs-on: ubuntu-latest
     env:
-      CHUNK_COUNT: 1
+      CHUNK_COUNT: 8
 
     outputs:
       count: ${{ steps.chunk-matrix.outputs.count }}
@@ -70,7 +70,7 @@ jobs:
           echo "chunks=$(php -r 'echo json_encode(range(1, ${{ env.CHUNK_COUNT }} ));')" >> $GITHUB_OUTPUT
 
   tests:
-    name: "Unit Tests - ${{ matrix.operating-system }} ${{ matrix.php-version }} ${{ matrix.chunk }}"
+    name: "Tests - ${{ matrix.php-version }} ${{ matrix.chunk }}/${{ matrix.count }} ${{ matrix.operating-system }}"
 
     runs-on: ${{ matrix.operating-system }}
     needs:
