@@ -35,7 +35,7 @@ return [
     ],
     'posix_getrlimit' => [
       'old' => ['array{"soft core": string, "hard core": string, "soft data": string, "hard data": string, "soft stack": integer, "hard stack": string, "soft totalmem": string, "hard totalmem": string, "soft rss": string, "hard rss": string, "soft maxproc": integer, "hard maxproc": integer, "soft memlock": integer, "hard memlock": integer, "soft cpu": string, "hard cpu": string, "soft filesize": string, "hard filesize": string, "soft openfiles": integer, "hard openfiles": integer}|false'],
-      'new' => ['array{"resource": string, "soft core": string, "hard core": string, "soft data": string, "hard data": string, "soft stack": integer, "hard stack": string, "soft totalmem": string, "hard totalmem": string, "soft rss": string, "hard rss": string, "soft maxproc": integer, "hard maxproc": integer, "soft memlock": integer, "hard memlock": integer, "soft cpu": string, "hard cpu": string, "soft filesize": string, "hard filesize": string, "soft openfiles": integer, "hard openfiles": integer}|false'],
+      'new' => ['array{"soft core": string, "hard core": string, "soft data": string, "hard data": string, "soft stack": integer, "hard stack": string, "soft totalmem": string, "hard totalmem": string, "soft rss": string, "hard rss": string, "soft maxproc": integer, "hard maxproc": integer, "soft memlock": integer, "hard memlock": integer, "soft cpu": string, "hard cpu": string, "soft filesize": string, "hard filesize": string, "soft openfiles": integer, "hard openfiles": integer}|false', 'resource=' => '?int'],
     ],
     'natcasesort' => [
       'old' => ['bool', '&rw_array'=>'array'],
