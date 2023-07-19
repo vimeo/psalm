@@ -210,7 +210,6 @@ class LanguageServer extends Dispatcher
                     $this->protocolWriter->write(new Message($responseBody));
                 }
             },
-        ),
         );
 
         $this->protocolReader->on(
