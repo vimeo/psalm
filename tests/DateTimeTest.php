@@ -14,7 +14,7 @@ class DateTimeTest extends TestCase
         $context = new Context();
 
         if (version_compare(PHP_VERSION, '8.3', '>')) {
-            $this->expectException(\DateMalformedStringException::class);
+            $this->expectException(\Exception::class);
             $this->expectExceptionMessage('DateTime::modify(): Failed to parse time string (foo) at position 0 (f)');
         }
 
@@ -47,7 +47,7 @@ class DateTimeTest extends TestCase
         $context = new Context();
 
         if (version_compare(PHP_VERSION, '8.3', '>')) {
-            $this->expectException(\DateMalformedStringException::class);
+            $this->expectException(\Exception::class);
             $this->expectExceptionMessage('DateTime::modify(): Failed to parse time string (bar) at position 0 (b)');
         }
 

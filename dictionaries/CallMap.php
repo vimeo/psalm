@@ -3925,7 +3925,7 @@ return [
 'hash_hmac_algos' => ['list<string>'],
 'hash_hmac_file' => ['non-empty-string', 'algo'=>'string', 'filename'=>'string', 'key'=>'string', 'binary='=>'bool'],
 'hash_init' => ['HashContext', 'algo'=>'string', 'flags='=>'int', 'key='=>'string', 'options='=>'array{seed:scalar}'],
-'hash_pbkdf2' => ['non-empty-string', 'algo'=>'string', 'password'=>'string', 'salt'=>'string', 'iterations'=>'int', 'length='=>'int', 'binary='=>'bool'],
+'hash_pbkdf2' => ['non-empty-string', 'algo'=>'string', 'password'=>'string', 'salt'=>'string', 'iterations'=>'int', 'length='=>'int', 'binary='=>'bool', 'options=' => 'array'],
 'hash_update' => ['bool', 'context'=>'HashContext', 'data'=>'string'],
 'hash_update_file' => ['bool', 'context'=>'HashContext', 'filename'=>'string', 'stream_context='=>'?resource'],
 'hash_update_stream' => ['int', 'context'=>'HashContext', 'stream'=>'resource', 'length='=>'int'],
