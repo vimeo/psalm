@@ -142,6 +142,8 @@ class LanguageServer extends Dispatcher
      */
     protected JsonMapper $mapper;
 
+    protected ?string $clientRootPath = null;
+
     public function __construct(
         ProtocolReader $reader,
         ProtocolWriter $writer,
@@ -394,6 +396,11 @@ class LanguageServer extends Dispatcher
         $this->clientInfo = $clientInfo;
         $this->clientCapabilities = $capabilities;
         $this->trace = $trace;
+
+        if ($rootUri !== null) {
+            $this->clientRootPath = $this->getPathPart($rootUri);
+        }
+
         return call(
             /** @return Generator<int, true, mixed, InitializeResult> */
             function () {
@@ -948,12 +955,22 @@ class LanguageServer extends Dispatcher
 
     /**
      * Transforms an absolute file path into a URI as used by the language server protocol.
-     *
-     * @psalm-pure
      */
     public function pathToUri(string $filepath): string
     {
-        $filepath = trim(str_replace('\\', '/', $filepath), '/');
+        $filepath = str_replace('\\', '/', $filepath);
+
+        if ($this->clientRootPath !== null) {
+            $oldpath = $filepath;
+            $filepath = str_replace(
+                rtrim($this->codebase->config->base_dir, '/') . '/',
+                rtrim($this->clientRootPath, '/') . '/',
+                $filepath
+            );
+            $this->logDebug('Translated path to URI', ['from' => $oldpath, 'to' => $filepath]);
+        }
+
+        $filepath = trim($filepath, '/');
         $parts = explode('/', $filepath);
         // Don't %-encode the colon after a Windows drive letter
         $first = array_shift($parts);
@@ -972,16 +989,7 @@ class LanguageServer extends Dispatcher
      */
     public function uriToPath(string $uri): string
     {
-        $fragments = parse_url($uri);
-        if ($fragments === false
-            || !isset($fragments['scheme'])
-            || $fragments['scheme'] !== 'file'
-            || !isset($fragments['path'])
-        ) {
-            throw new InvalidArgumentException("Not a valid file URI: $uri");
-        }
-
-        $filepath = urldecode($fragments['path']);
+        $filepath = urldecode($this->getPathPart($uri));
 
         if (strpos($filepath, ':') !== false) {
             if ($filepath[0] === '/') {
@@ -990,11 +998,34 @@ class LanguageServer extends Dispatcher
             $filepath = str_replace('/', '\\', $filepath);
         }
 
+        if ($this->clientRootPath !== null) {
+            $oldpath = $filepath;
+            $filepath = str_replace(
+                rtrim($this->clientRootPath, '/') . '/',
+                rtrim($this->codebase->config->base_dir, '/') . '/',
+                $filepath
+            );
+            $this->logDebug('Translated URI to path', ['from' => $oldpath, 'to' => $filepath]);
+        }
+
         $realpath = realpath($filepath);
         if ($realpath !== false) {
             return $realpath;
         }
 
         return $filepath;
+    }
+
+    private function getPathPart(string $uri): string
+    {
+        $fragments = parse_url($uri);
+        if ($fragments === false
+            || !isset($fragments['scheme'])
+            || $fragments['scheme'] !== 'file'
+            || !isset($fragments['path'])
+        ) {
+            throw new InvalidArgumentException("Not a valid file URI: $uri");
+        }
+        return $fragments['path'];
     }
 }
