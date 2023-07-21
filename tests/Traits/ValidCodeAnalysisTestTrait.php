@@ -77,7 +77,7 @@ trait ValidCodeAnalysisTestTrait
         $codebase->config->visitPreloadedStubFiles($codebase);
 
         // avoid MethodSignatureMismatch for __unserialize/() when extending DateTime
-        if (version_compare(PHP_VERSION, '8.2', '>')) {
+        if (PHP_VERSION_ID >= 8_02_00) {
             $this->addStubFile(
                 'stubOne.phpstub',
                 '<?php
