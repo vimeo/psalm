@@ -14,6 +14,7 @@ use function version_compare;
 
 use const PHP_OS;
 use const PHP_VERSION;
+use const PHP_VERSION_ID;
 
 trait ValidCodeAnalysisTestTrait
 {
