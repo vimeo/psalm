@@ -12,7 +12,7 @@ jobs:
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '7.4'
+          php-version: '8.0'
           tools: composer:v2
           coverage: none
         env:
@@ -49,6 +49,51 @@ jobs:
 
       - run: |
           git ls-files | grep \\\.php$ | grep -v ^dictionaries/scripts/* | ./vendor/bin/parallel-lint --stdin
+
+  code-style:
+    name: Code Style Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.0'
+          tools: composer:v2
+          coverage: none
+        env:
+          fail-fast: true
+
+      - uses: actions/checkout@v3
+
+      - name: Get Composer Cache Directories
+        id: composer-cache
+        run: |
+          echo "files_cache=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+          echo "vcs_cache=$(composer config cache-vcs-dir)" >> $GITHUB_OUTPUT
+
+      - name: Generate composer.lock
+        run: composer update --no-install
+        env:
+          COMPOSER_ROOT_VERSION: dev-master
+
+      - name: Cache composer cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ${{ steps.composer-cache.outputs.files_cache }}
+            ${{ steps.composer-cache.outputs.vcs_cache }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: Run composer install
+        run: composer install -o
+        env:
+          COMPOSER_ROOT_VERSION: dev-master
+
+      - name: Code Style Analysis with PHPCS
+        run: vendor/bin/phpcs -d memory_limit=512M
+
   chunk-matrix:
     permissions:
       contents: none
