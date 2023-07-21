@@ -13,7 +13,7 @@ executors:
       - image: thecodingmachine/php:8.1-v4-cli
 jobs:
   "Code Style Analysis":
-    executor: php-80
+    executor: php-74
     steps:
       - checkout
 
@@ -41,7 +41,7 @@ jobs:
           command: vendor/bin/phpcs -d memory_limit=512M
 
   phar-build:
-    executor: php-80
+    executor: php-74
     steps:
       - attach_workspace:
           at: /home/docker/project/
