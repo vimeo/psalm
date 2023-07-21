@@ -97,23 +97,23 @@ return [
       'old' => ['false|null', 'formatter'=>'IntlDateFormatter', 'timezone'=>'IntlTimeZone|DateTimeZone|string|null'],
       'new' => ['bool', 'formatter'=>'IntlDateFormatter', 'timezone'=>'IntlTimeZone|DateTimeZone|string|null'],
     ],
-    'intlrulebasedbreakiterator::settext' => [
+    'IntlRuleBasedBreakIterator::setText' => [
       'old' => ['?bool', 'text'=>'string'],
       'new' => ['bool', 'text'=>'string'],
     ],
-    'intlcodepointbreakiterator::settext' => [
+    'IntlCodePointBreakIterator::setText' => [
       'old' => ['?bool', 'text'=>'string'],
       'new' => ['bool', 'text'=>'string'],
     ],
-    'intldateformatter::settimezone' => [
+    'IntlDateFormatter::setTimeZone' => [
       'old' => ['null|false', 'timezone'=>'IntlTimeZone|DateTimeZone|string|null'],
       'new' => ['bool', 'timezone'=>'IntlTimeZone|DateTimeZone|string|null'],
     ],
-    'intlchar::enumcharnames' => [
+    'IntlChar::enumCharNames' => [
       'old' => ['?bool', 'start'=>'string|int', 'end'=>'string|int', 'callback'=>'callable(int,int,int):void', 'type='=>'int'],
       'new' => ['bool', 'start'=>'string|int', 'end'=>'string|int', 'callback'=>'callable(int,int,int):void', 'type='=>'int'],
     ],
-    'intlbreakiterator::settext' => [
+    'IntlBreakIterator::setText' => [
       'old' => ['?bool', 'text'=>'string'],
       'new' => ['bool', 'text'=>'string'],
     ],
