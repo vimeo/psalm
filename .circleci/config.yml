@@ -1,4 +1,5 @@
 # Use the latest 2.1 version of CircleCI pipeline processing engine, see https://circleci.com/docs/2.0/configuration-reference/
+# See https://app.circleci.com/pipelines/github/vimeo/psalm
 version: 2.1
 executors:
   php-74:
@@ -12,7 +13,7 @@ executors:
       - image: thecodingmachine/php:8.1-v4-cli
 jobs:
   "Code Style Analysis":
-    executor: php-74
+    executor: php-80
     steps:
       - checkout
 
@@ -40,7 +41,7 @@ jobs:
           command: vendor/bin/phpcs -d memory_limit=512M
 
   phar-build:
-    executor: php-74
+    executor: php-80
     steps:
       - attach_workspace:
           at: /home/docker/project/
