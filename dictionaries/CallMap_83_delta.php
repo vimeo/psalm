@@ -53,8 +53,96 @@ return [
       'old' => ['non-empty-string', 'algo'=>'string', 'password'=>'string', 'salt'=>'string', 'iterations'=>'int', 'length='=>'int', 'binary='=>'bool'],
       'new' => ['non-empty-string', 'algo'=>'string', 'password'=>'string', 'salt'=>'string', 'iterations'=>'int', 'length='=>'int', 'binary='=>'bool', 'options=' => 'array'],
     ],
+    'imap_setflag_full' => [
+      'old' => ['bool', 'imap'=>'IMAP\Connection', 'sequence'=>'string', 'flag'=>'string', 'options='=>'int'],
+      'new' => ['true', 'imap'=>'IMAP\Connection', 'sequence'=>'string', 'flag'=>'string', 'options='=>'int'],
+    ],
+    'imap_expunge' => [
+      'old' => ['bool', 'imap'=>'IMAP\Connection'],
+      'new' => ['true', 'imap'=>'IMAP\Connection'],
+    ],
+    'imap_gc' => [
+      'old' => ['bool', 'imap'=>'IMAP\Connection', 'flags'=>'int'],
+      'new' => ['true', 'imap'=>'IMAP\Connection', 'flags'=>'int'],
+    ],
+    'imap_undelete' => [
+      'old' => ['bool', 'imap'=>'IMAP\Connection', 'message_nums'=>'string', 'flags='=>'int'],
+      'new' => ['true', 'imap'=>'IMAP\Connection', 'message_nums'=>'string', 'flags='=>'int'],
+    ],
+    'imap_delete' => [
+      'old' => ['bool', 'imap'=>'IMAP\Connection', 'message_nums'=>'string', 'flags='=>'int'],
+      'new' => ['true', 'imap'=>'IMAP\Connection', 'message_nums'=>'string', 'flags='=>'int'],
+    ],
+    'imap_clearflag_full' => [
+      'old' => ['bool', 'imap'=>'IMAP\Connection', 'sequence'=>'string', 'flag'=>'string', 'options='=>'int'],
+      'new' => ['true', 'imap'=>'IMAP\Connection', 'sequence'=>'string', 'flag'=>'string', 'options='=>'int'],
+    ],
+    'imap_close' => [
+      'old' => ['bool', 'imap'=>'IMAP\Connection', 'flags='=>'int'],
+      'new' => ['true', 'imap'=>'IMAP\Connection', 'flags='=>'int'],
+    ],
+    'intlcal_clear' => [
+      'old' => ['bool', 'calendar'=>'IntlCalendar', 'field='=>'?int'],
+      'new' => ['true', 'calendar'=>'IntlCalendar', 'field='=>'?int'],
+    ],
+    'intlcal_set_lenient' => [
+      'old' => ['bool', 'calendar'=>'IntlCalendar', 'lenient'=>'bool'],
+      'new' => ['true', 'calendar'=>'IntlCalendar', 'lenient'=>'bool'],
+    ],
+    'intlcal_set_first_day_of_week' => [
+      'old' => ['bool', 'calendar'=>'IntlCalendar', 'dayOfWeek'=>'int'],
+      'new' => ['true', 'calendar'=>'IntlCalendar', 'dayOfWeek'=>'int'],
+    ],
+    'datefmt_set_timezone' => [
+      'old' => ['false|null', 'formatter'=>'IntlDateFormatter', 'timezone'=>'IntlTimeZone|DateTimeZone|string|null'],
+      'new' => ['bool', 'formatter'=>'IntlDateFormatter', 'timezone'=>'IntlTimeZone|DateTimeZone|string|null'],
+    ],
+    'intlrulebasedbreakiterator::settext' => [
+      'old' => ['?bool', 'text'=>'string'],
+      'new' => ['bool', 'text'=>'string'],
+    ],
+    'intlcodepointbreakiterator::settext' => [
+      'old' => ['?bool', 'text'=>'string'],
+      'new' => ['bool', 'text'=>'string'],
+    ],
+    'intldateformatter::settimezone' => [
+      'old' => ['null|false', 'timezone'=>'IntlTimeZone|DateTimeZone|string|null'],
+      'new' => ['bool', 'timezone'=>'IntlTimeZone|DateTimeZone|string|null'],
+    ],
+    'intlchar::enumcharnames' => [
+      'old' => ['?bool', 'start'=>'string|int', 'end'=>'string|int', 'callback'=>'callable(int,int,int):void', 'type='=>'int'],
+      'new' => ['bool', 'start'=>'string|int', 'end'=>'string|int', 'callback'=>'callable(int,int,int):void', 'type='=>'int'],
+    ],
+    'intlbreakiterator::settext' => [
+      'old' => ['?bool', 'text'=>'string'],
+      'new' => ['bool', 'text'=>'string'],
+    ],
   ],
 
   'removed' => [
+    'OutOfBoundsException::__clone' => ['void'],
+    'ArgumentCountError::__clone' => ['void'],
+    'ArithmeticError::__clone' => ['void'],
+    'BadFunctionCallException::__clone' => ['void'],
+    'BadMethodCallException::__clone' => ['void'],
+    'ClosedGeneratorException::__clone' => ['void'],
+    'DomainException::__clone' => ['void'],
+    'ErrorException::__clone' => ['void'],
+    'IntlException::__clone' => ['void'],
+    'InvalidArgumentException::__clone' => ['void'],
+    'JsonException::__clone' => ['void'],
+    'LengthException::__clone' => ['void'],
+    'LogicException::__clone' => ['void'],
+    'OutOfRangeException::__clone' => ['void'],
+    'OverflowException::__clone' => ['void'],
+    'ParseError::__clone' => ['void'],
+    'RangeException::__clone' => ['void'],
+    'ReflectionNamedType::__clone' => ['void'],
+    'ReflectionObject::__clone' => ['void'],
+    'RuntimeException::__clone' => ['void'],
+    'TypeError::__clone' => ['void'],
+    'UnderflowException::__clone' => ['void'],
+    'UnexpectedValueException::__clone' => ['void'],
+    'IntlCodePointBreakIterator::__construct' => ['void'],
   ],
 ];
