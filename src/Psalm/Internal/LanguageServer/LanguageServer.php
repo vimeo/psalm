@@ -80,6 +80,7 @@ use function max;
 use function parse_url;
 use function rawurlencode;
 use function realpath;
+use function rtrim;
 use function str_replace;
 use function stream_set_blocking;
 use function stream_socket_accept;
@@ -965,7 +966,7 @@ class LanguageServer extends Dispatcher
             $filepath = str_replace(
                 rtrim($this->codebase->config->base_dir, '/') . '/',
                 rtrim($this->clientRootPath, '/') . '/',
-                $filepath
+                $filepath,
             );
             $this->logDebug('Translated path to URI', ['from' => $oldpath, 'to' => $filepath]);
         }
@@ -1003,7 +1004,7 @@ class LanguageServer extends Dispatcher
             $filepath = str_replace(
                 rtrim($this->clientRootPath, '/') . '/',
                 rtrim($this->codebase->config->base_dir, '/') . '/',
-                $filepath
+                $filepath,
             );
             $this->logDebug('Translated URI to path', ['from' => $oldpath, 'to' => $filepath]);
         }
