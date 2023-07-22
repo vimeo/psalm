@@ -145,6 +145,8 @@ class LanguageServer extends Dispatcher
 
     protected ?string $clientRootPath = null;
 
+    protected PathMapper $path_mapper;
+
     public function __construct(
         ProtocolReader $reader,
         ProtocolWriter $writer,
@@ -242,6 +244,8 @@ class LanguageServer extends Dispatcher
         );
 
         $this->client = new LanguageClient($reader, $writer, $this, $clientConfiguration);
+
+        $this->path_mapper = new PathMapper($codebase->config->base_dir, null);
 
         $this->logInfo("Psalm Language Server ".PSALM_VERSION." has started.");
     }
@@ -398,8 +402,9 @@ class LanguageServer extends Dispatcher
         $this->clientCapabilities = $capabilities;
         $this->trace = $trace;
 
+
         if ($rootUri !== null) {
-            $this->clientRootPath = $this->getPathPart($rootUri);
+            $this->path_mapper->configureClientRoot($this->getPathPart($rootUri));
         }
 
         return call(
@@ -961,15 +966,8 @@ class LanguageServer extends Dispatcher
     {
         $filepath = str_replace('\\', '/', $filepath);
 
-        if ($this->clientRootPath !== null) {
-            $oldpath = $filepath;
-            $filepath = str_replace(
-                rtrim($this->codebase->config->base_dir, '/') . '/',
-                rtrim($this->clientRootPath, '/') . '/',
-                $filepath,
-            );
-            $this->logDebug('Translated path to URI', ['from' => $oldpath, 'to' => $filepath]);
-        }
+        $filepath = $this->path_mapper->mapServerToClient($oldpath = $filepath);
+        $this->logDebug('Translated path to URI', ['from' => $oldpath, 'to' => $filepath]);
 
         $filepath = trim($filepath, '/');
         $parts = explode('/', $filepath);
@@ -999,15 +997,8 @@ class LanguageServer extends Dispatcher
             $filepath = str_replace('/', '\\', $filepath);
         }
 
-        if ($this->clientRootPath !== null) {
-            $oldpath = $filepath;
-            $filepath = str_replace(
-                rtrim($this->clientRootPath, '/') . '/',
-                rtrim($this->codebase->config->base_dir, '/') . '/',
-                $filepath,
-            );
-            $this->logDebug('Translated URI to path', ['from' => $oldpath, 'to' => $filepath]);
-        }
+        $filepath = $this->path_mapper->mapClientToServer($oldpath = $filepath);
+        $this->logDebug('Translated URI to path', ['from' => $oldpath, 'to' => $filepath]);
 
         $realpath = realpath($filepath);
         if ($realpath !== false) {
