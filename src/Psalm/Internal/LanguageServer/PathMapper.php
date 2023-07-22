@@ -5,45 +5,45 @@ namespace Psalm\Internal\LanguageServer;
 /** @internal */
 final class PathMapper
 {
-    private string $serverRoot;
-    private ?string $clientRoot;
+    private string $server_root;
+    private ?string $client_root;
 
-    public function __construct(string $serverRoot, ?string $clientRoot = null)
+    public function __construct(string $server_root, ?string $client_root = null)
     {
-        $this->serverRoot = $this->sanitizeFolderPath($serverRoot);
-        $this->clientRoot = $this->sanitizeFolderPath($clientRoot);
+        $this->server_root = $this->sanitizeFolderPath($server_root);
+        $this->client_root = $this->sanitizeFolderPath($client_root);
     }
 
-    public function configureClientRoot(string $clientRoot): void
+    public function configureClientRoot(string $client_root): void
     {
         // ignore if preconfigured
-        if ($this->clientRoot === null) {
-            $this->clientRoot = $this->sanitizeFolderPath($clientRoot);
+        if ($this->client_root === null) {
+            $this->client_root = $this->sanitizeFolderPath($client_root);
         }
     }
 
-    public function mapClientToServer(string $clientPath): string
+    public function mapClientToServer(string $client_path): string
     {
-        if ($this->clientRoot === null) {
-            return $clientPath;
+        if ($this->client_root === null) {
+            return $client_path;
         }
 
-        if (substr($clientPath, 0, strlen($this->clientRoot)) === $this->clientRoot) {
-            return $this->serverRoot . substr($clientPath, strlen($this->clientRoot));
+        if (substr($client_path, 0, strlen($this->client_root)) === $this->client_root) {
+            return $this->server_root . substr($client_path, strlen($this->client_root));
         }
 
-        return $clientPath;
+        return $client_path;
     }
 
-    public function mapServerToClient(string $serverPath): string
+    public function mapServerToClient(string $server_path): string
     {
-        if ($this->clientRoot === null) {
-            return $serverPath;
+        if ($this->client_root === null) {
+            return $server_path;
         }
-        if (substr($serverPath, 0, strlen($this->serverRoot)) === $this->serverRoot) {
-            return $this->clientRoot . substr($serverPath, strlen($this->serverRoot));
+        if (substr($server_path, 0, strlen($this->server_root)) === $this->server_root) {
+            return $this->client_root . substr($server_path, strlen($this->server_root));
         }
-        return $serverPath;
+        return $server_path;
     }
 
     /** @return ($path is null ? null : string) */

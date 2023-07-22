@@ -33,33 +33,33 @@ final class PathMapperTest extends TestCase
      * @dataProvider mappingProvider
      */
     public function testMapsClientToServer(
-        string $serverRoot,
-        ?string $clientRootPreconfigured,
-        string $clientRootProvidedLater,
-        string $clientPath,
-        string $serverPath
+        string $server_root,
+        ?string $client_root_reconfigured,
+        string $client_root_provided_later,
+        string $client_path,
+        string $server_ath
     ): void {
-        $mapper = new PathMapper($serverRoot, $clientRootPreconfigured);
-        $mapper->configureClientRoot($clientRootProvidedLater);
+        $mapper = new PathMapper($server_root, $client_root_reconfigured);
+        $mapper->configureClientRoot($client_root_provided_later);
         $this->assertSame(
-            $serverPath,
-            $mapper->mapClientToServer($clientPath)
+            $server_ath,
+            $mapper->mapClientToServer($client_path)
         );
     }
 
     /** @dataProvider mappingProvider */
     public function testMapsServerToClient(
-        string $serverRoot,
-        ?string $clientRootPreconfigured,
-        string $clientRootProvidedLater,
-        string $clientPath,
-        string $serverPath
+        string $server_root,
+        ?string $client_root_preconfigured,
+        string $client_root_provided_later,
+        string $client_path,
+        string $server_path
     ): void {
-        $mapper = new PathMapper($serverRoot, $clientRootPreconfigured);
-        $mapper->configureClientRoot($clientRootProvidedLater);
+        $mapper = new PathMapper($server_root, $client_root_preconfigured);
+        $mapper->configureClientRoot($client_root_provided_later);
         $this->assertSame(
-            $clientPath,
-            $mapper->mapServerToClient($serverPath)
+            $client_path,
+            $mapper->mapServerToClient($server_path)
         );
     }
 
