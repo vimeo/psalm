@@ -254,6 +254,8 @@ final class LanguageServer
             $current_dir = $root_path . DIRECTORY_SEPARATOR;
         }
 
+        $server_start_dir = $current_dir;
+
         $vendor_dir = CliUtils::getVendorDir($current_dir);
 
         $include_collector = new IncludeCollector();
@@ -394,6 +396,6 @@ final class LanguageServer
         $clientConfiguration->TCPServerAddress = $options['tcp'] ?? null;
         $clientConfiguration->TCPServerMode = isset($options['tcp-server']);
 
-        LanguageServerLanguageServer::run($config, $clientConfiguration, $current_dir, $inMemory);
+        LanguageServerLanguageServer::run($config, $clientConfiguration, $current_dir, $server_start_dir, $inMemory);
     }
 }

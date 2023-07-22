@@ -80,7 +80,6 @@ use function max;
 use function parse_url;
 use function rawurlencode;
 use function realpath;
-use function rtrim;
 use function str_replace;
 use function stream_set_blocking;
 use function stream_socket_accept;
@@ -153,7 +152,8 @@ class LanguageServer extends Dispatcher
         ProjectAnalyzer $project_analyzer,
         Codebase $codebase,
         ClientConfiguration $clientConfiguration,
-        Progress $progress
+        Progress $progress,
+        string $server_start_dir
     ) {
         parent::__construct($this, '/');
 
@@ -245,7 +245,7 @@ class LanguageServer extends Dispatcher
 
         $this->client = new LanguageClient($reader, $writer, $this, $clientConfiguration);
 
-        $this->path_mapper = new PathMapper($codebase->config->base_dir, null);
+        $this->path_mapper = new PathMapper($server_start_dir, null);
 
         $this->logInfo("Psalm Language Server ".PSALM_VERSION." has started.");
     }
@@ -257,6 +257,7 @@ class LanguageServer extends Dispatcher
         Config $config,
         ClientConfiguration $clientConfiguration,
         string $base_dir,
+        string $server_start_dir,
         bool $inMemory = false
     ): void {
         $progress = new Progress();
@@ -329,6 +330,7 @@ class LanguageServer extends Dispatcher
                 $codebase,
                 $clientConfiguration,
                 $progress,
+                $server_start_dir,
             );
             Loop::run();
         } elseif ($clientConfiguration->TCPServerMode && $clientConfiguration->TCPServerAddress) {
@@ -352,6 +354,7 @@ class LanguageServer extends Dispatcher
                     $codebase,
                     $clientConfiguration,
                     $progress,
+                    $server_start_dir,
                 );
                 Loop::run();
             }
@@ -365,6 +368,7 @@ class LanguageServer extends Dispatcher
                 $codebase,
                 $clientConfiguration,
                 $progress,
+                $server_start_dir,
             );
             Loop::run();
         }

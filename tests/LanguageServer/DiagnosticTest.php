@@ -85,6 +85,7 @@ class DiagnosticTest extends AsyncTestCase
             $this->codebase,
             $clientConfiguration,
             new Progress,
+            getcwd(),
         );
 
         $write->on('message', function (Message $message) use ($deferred, $server): void {
