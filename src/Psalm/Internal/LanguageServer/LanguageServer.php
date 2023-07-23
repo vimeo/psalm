@@ -153,7 +153,7 @@ class LanguageServer extends Dispatcher
         Codebase $codebase,
         ClientConfiguration $clientConfiguration,
         Progress $progress,
-        string $server_start_dir
+        PathMapper $path_mapper
     ) {
         parent::__construct($this, '/');
 
@@ -162,6 +162,8 @@ class LanguageServer extends Dispatcher
         $this->project_analyzer = $project_analyzer;
 
         $this->codebase = $codebase;
+
+        $this->path_mapper = $path_mapper;
 
         $this->protocolWriter = $writer;
 
@@ -245,7 +247,6 @@ class LanguageServer extends Dispatcher
 
         $this->client = new LanguageClient($reader, $writer, $this, $clientConfiguration);
 
-        $this->path_mapper = new PathMapper($server_start_dir, null);
 
         $this->logInfo("Psalm Language Server ".PSALM_VERSION." has started.");
     }
@@ -257,7 +258,7 @@ class LanguageServer extends Dispatcher
         Config $config,
         ClientConfiguration $clientConfiguration,
         string $base_dir,
-        string $server_start_dir,
+        PathMapper $path_mapper,
         bool $inMemory = false
     ): void {
         $progress = new Progress();
@@ -330,7 +331,7 @@ class LanguageServer extends Dispatcher
                 $codebase,
                 $clientConfiguration,
                 $progress,
-                $server_start_dir,
+                $path_mapper,
             );
             Loop::run();
         } elseif ($clientConfiguration->TCPServerMode && $clientConfiguration->TCPServerAddress) {
@@ -354,7 +355,7 @@ class LanguageServer extends Dispatcher
                     $codebase,
                     $clientConfiguration,
                     $progress,
-                    $server_start_dir,
+                    $path_mapper,
                 );
                 Loop::run();
             }
@@ -368,7 +369,7 @@ class LanguageServer extends Dispatcher
                 $codebase,
                 $clientConfiguration,
                 $progress,
-                $server_start_dir,
+                $path_mapper,
             );
             Loop::run();
         }
