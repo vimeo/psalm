@@ -2,6 +2,10 @@
 
 namespace Psalm\Internal\LanguageServer;
 
+use function rtrim;
+use function strlen;
+use function substr;
+
 /** @internal */
 final class PathMapper
 {

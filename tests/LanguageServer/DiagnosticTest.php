@@ -23,6 +23,7 @@ use Psalm\Tests\LanguageServer\MockProtocolStream;
 use Psalm\Tests\TestConfig;
 
 use function Amp\Promise\wait;
+use function getcwd;
 use function rand;
 
 class DiagnosticTest extends AsyncTestCase

@@ -13,7 +13,7 @@ final class PathMapperTest extends TestCase
         $mapper->configureClientRoot('/home/user/src/project');
         $this->assertSame(
             '/home/user/src/project/filename.php',
-            $mapper->mapServerToClient('/var/www/filename.php')
+            $mapper->mapServerToClient('/var/www/filename.php'),
         );
     }
 
@@ -25,7 +25,7 @@ final class PathMapperTest extends TestCase
 
         $this->assertSame(
             '/home/user/src/project/filename.php',
-            $mapper->mapServerToClient('/var/www/filename.php')
+            $mapper->mapServerToClient('/var/www/filename.php'),
         );
     }
 
@@ -43,7 +43,7 @@ final class PathMapperTest extends TestCase
         $mapper->configureClientRoot($client_root_provided_later);
         $this->assertSame(
             $server_ath,
-            $mapper->mapClientToServer($client_path)
+            $mapper->mapClientToServer($client_path),
         );
     }
 
@@ -59,7 +59,7 @@ final class PathMapperTest extends TestCase
         $mapper->configureClientRoot($client_root_provided_later);
         $this->assertSame(
             $client_path,
-            $mapper->mapServerToClient($server_path)
+            $mapper->mapServerToClient($server_path),
         );
     }
 
