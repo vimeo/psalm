@@ -538,11 +538,7 @@ class LanguageServer extends Dispatcher
                  *
                  * @since LSP 3.16.0
                  */
-                if ($this->clientCapabilities &&
-                    $this->clientCapabilities->textDocument &&
-                    $this->clientCapabilities->textDocument->publishDiagnostics &&
-                    $this->clientCapabilities->textDocument->publishDiagnostics->dataSupport
-                ) {
+                if ($this->clientCapabilities->textDocument->publishDiagnostics->dataSupport ?? false) {
                     $serverCapabilities->codeActionProvider = true;
                 }
 
@@ -757,11 +753,7 @@ class LanguageServer extends Dispatcher
                      *
                      * @since LSP 3.16.0
                      */
-                    if ($this->clientCapabilities !== null &&
-                        $this->clientCapabilities->textDocument &&
-                        $this->clientCapabilities->textDocument->publishDiagnostics &&
-                        $this->clientCapabilities->textDocument->publishDiagnostics->codeDescriptionSupport
-                    ) {
+                    if ($this->clientCapabilities->textDocument->publishDiagnostics->codeDescriptionSupport ?? false) {
                         $diagnostic->codeDescription = new CodeDescription($issue_data->link);
                     }
 
