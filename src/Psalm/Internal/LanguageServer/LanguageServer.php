@@ -142,8 +142,6 @@ class LanguageServer extends Dispatcher
      */
     protected JsonMapper $mapper;
 
-    protected ?string $clientRootPath = null;
-
     protected PathMapper $path_mapper;
 
     public function __construct(
