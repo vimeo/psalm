@@ -435,8 +435,8 @@ class TextDocument
             //$contents = $this->codebase->file_provider->getContents($file_path);
 
             $snippetRange = new Range(
-                new Position($data['line_from']-1),
-                new Position($data['line_to']),
+                new Position($data['line_from'] - 1, 0),
+                new Position($data['line_to'], 0),
             );
 
             $indentation = '';
