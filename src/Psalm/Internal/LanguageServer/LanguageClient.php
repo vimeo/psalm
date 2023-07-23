@@ -64,7 +64,7 @@ class LanguageClient
     public function refreshConfiguration(): void
     {
         $capabilities = $this->server->clientCapabilities;
-        if ($capabilities && $capabilities->workspace && $capabilities->workspace->configuration) {
+        if ($capabilities->workspace->configuration ?? false) {
             $this->workspace->requestConfiguration('psalm')->onResolve(function ($error, $value): void {
                 if ($error) {
                     $this->server->logError('There was an error getting configuration');
