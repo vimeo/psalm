@@ -83,19 +83,6 @@ final class Shepherd implements AfterAnalysisInterface
     }
 
     /**
-     * @psalm-pure
-     * @deprecated Will be removed in Psalm 6
-     */
-    private static function buildShepherdUrlFromHost(string $host): string
-    {
-        if (parse_url($host, PHP_URL_SCHEME) === null) {
-            $host = 'https://' . $host;
-        }
-
-        return $host . '/hooks/psalm';
-    }
-
-    /**
      * @return array{
      *     build: array,
      *     git: array,
@@ -203,28 +190,6 @@ final class Shepherd implements AfterAnalysisInterface
 
         $output .= sprintf("cURL Debug info:\n%s\n", var_export($curl_info, true));
         fwrite(STDERR, $output);
-    }
-
-    /**
-     * @param mixed $ch
-     * @psalm-pure
-     * @deprecated Will be removed in Psalm 6
-     */
-    public static function getCurlErrorMessage($ch): string
-    {
-        /**
-         * @psalm-suppress MixedArgument
-         * @var array
-         */
-        $curl_info = curl_getinfo($ch);
-
-        /** @psalm-suppress MixedAssignment */
-        $ssl_verify_result = $curl_info['ssl_verify_result'] ?? null;
-        if (is_int($ssl_verify_result) && $ssl_verify_result > 1) {
-            return self::getCurlSslErrorMessage($ssl_verify_result);
-        }
-
-        return '';
     }
 
     /**

@@ -173,13 +173,6 @@ abstract class FunctionLikeStorage implements HasAttributesInterface
     public $return_type_description;
 
     /**
-     * @psalm-suppress PossiblyUnusedProperty
-     * @var array<string, CodeLocation>|null
-     * @deprecated will be removed in Psalm 6. use {@see FunctionLikeStorage::$unused_docblock_parameters} instead
-     */
-    public $unused_docblock_params;
-
-    /**
      * @var array<string, CodeLocation>
      */
     public array $unused_docblock_parameters = [];
@@ -343,15 +336,6 @@ abstract class FunctionLikeStorage implements HasAttributesInterface
     }
 
     public function __toString(): string
-    {
-        return $this->getCompletionSignature();
-    }
-
-    /**
-     * @deprecated will be removed in Psalm 6. use {@see FunctionLikeStorage::getCompletionSignature()} instead
-     * @psalm-suppress PossiblyUnusedParam, PossiblyUnusedMethod
-     */
-    public function getSignature(bool $allow_newlines): string
     {
         return $this->getCompletionSignature();
     }

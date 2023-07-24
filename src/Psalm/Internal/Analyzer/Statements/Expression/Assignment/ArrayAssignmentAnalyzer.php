@@ -297,9 +297,6 @@ class ArrayAssignmentAnalyzer
         $changed = false;
         $types = [];
         foreach ($child_stmt_type->getAtomicTypes() as $type) {
-            if ($type instanceof TList) {
-                $type = $type->getKeyedArray();
-            }
             $old_type = $type;
             if ($type instanceof TTemplateParam) {
                 $type = $type->replaceAs(self::updateTypeWithKeyValues(

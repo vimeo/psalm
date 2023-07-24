@@ -137,10 +137,6 @@ final class TClassStringMap extends Atomic
         foreach ([Type::getString(), $this->value_param] as $offset => $type_param) {
             $input_type_param = null;
 
-            if ($input_type instanceof TList) {
-                $input_type = $input_type->getKeyedArray();
-            }
-
             if (($input_type instanceof TGenericObject
                     || $input_type instanceof TIterable
                     || $input_type instanceof TArray)

@@ -47,7 +47,6 @@ use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
@@ -472,11 +471,7 @@ class ForeachAnalyzer
 
             if ($iterator_atomic_type instanceof TArray
                 || $iterator_atomic_type instanceof TKeyedArray
-                || $iterator_atomic_type instanceof TList
             ) {
-                if ($iterator_atomic_type instanceof TList) {
-                    $iterator_atomic_type = $iterator_atomic_type->getKeyedArray();
-                }
                 if ($iterator_atomic_type instanceof TKeyedArray) {
                     if (!$iterator_atomic_type->isNonEmpty()) {
                         $always_non_empty_array = false;
