@@ -11,7 +11,6 @@ use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
-use UnexpectedValueException;
 
 use function addslashes;
 use function assert;

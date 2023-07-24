@@ -69,7 +69,6 @@ use function preg_replace;
 use function realpath;
 use function setlocale;
 use function str_repeat;
-use function str_replace;
 use function strlen;
 use function strpos;
 use function substr;

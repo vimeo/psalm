@@ -27,7 +27,6 @@ use function parse_url;
 use function sprintf;
 use function strip_tags;
 use function strlen;
-use function substr_compare;
 use function var_export;
 
 use const CURLINFO_HEADER_OUT;

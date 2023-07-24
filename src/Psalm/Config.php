@@ -62,7 +62,6 @@ use function clearstatcache;
 use function count;
 use function dirname;
 use function explode;
-use function extension_loaded;
 use function fclose;
 use function file_exists;
 use function file_get_contents;
