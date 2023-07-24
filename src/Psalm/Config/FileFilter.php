@@ -290,7 +290,11 @@ class FileFilter
 
                 $file_path = realpath($prospective_file_path);
 
-                if (!$file_path && !$allow_missing_files) {
+                if (!$file_path) {
+                    if ($allow_missing_files) {
+                        continue;
+                    }
+
                     throw new ConfigException(
                         'Could not resolve config path to ' . $prospective_file_path,
                     );
