@@ -63,21 +63,7 @@ final class Shepherd implements AfterAnalysisInterface
 
         $config = $event->getCodebase()->config;
 
-        /**
-         * Deprecated logic, in Psalm 6 just use $config->shepherd_endpoint
-         * '#' here is just a hack/marker to use a custom endpoint instead just a custom domain
-         * case 1: empty option                                         (use https://shepherd.dev/hooks/psalm/)
-         * case 2: custom domain (/hooks/psalm should be appended)      (use https://custom.domain/hooks/psalm)
-         * case 3: custom endpoint (/hooks/psalm should be appended)    (use custom endpoint)
-         */
-        if (substr_compare($config->shepherd_endpoint, '#', -1) === 0) {
-            $shepherd_endpoint = $config->shepherd_endpoint;
-        } else {
-            /** @psalm-suppress DeprecatedProperty, DeprecatedMethod */
-            $shepherd_endpoint = self::buildShepherdUrlFromHost($config->shepherd_host);
-        }
-
-        self::sendPayload($shepherd_endpoint, $rawPayload);
+        self::sendPayload($config->shepherd_endpoint, $rawPayload);
     }
 
     /**

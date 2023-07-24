@@ -182,6 +182,11 @@ abstract class FunctionLikeStorage implements HasAttributesInterface
     /**
      * @var bool
      */
+    public $is_static = false;
+
+    /**
+     * @var bool
+     */
     public $pure = false;
 
     /**
