@@ -997,4 +997,19 @@ class LanguageServer extends Dispatcher
 
         return $filepath;
     }
+
+    // the methods below forward special paths
+    // like `$/cancelRequest` to `$this->cancelRequest()`
+    // and `$/a/b/c` to `$this->a->b->c()`
+
+    public function __isset(string $prop_name): bool
+    {
+        return $prop_name === '$';
+    }
+
+    /** @return static */
+    public function __get(string $prop_name): self
+    {
+        return $this;
+    }
 }
