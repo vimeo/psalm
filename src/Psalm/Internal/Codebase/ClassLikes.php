@@ -369,8 +369,6 @@ class ClassLikes
                 && !$this->classlike_storage_provider->has($fq_class_name_lc)
             ) {
                 if (!isset($this->existing_classes_lc[$fq_class_name_lc])) {
-                    $this->existing_classes_lc[$fq_class_name_lc] = false;
-
                     return false;
                 }
 
