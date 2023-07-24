@@ -1038,11 +1038,6 @@ class TypeCombiner
                     && $type->value
                 ) {
                     // do nothing
-                } elseif (isset($combination->value_types['string'])
-                    && $combination->value_types['string'] instanceof TNonEmptyString
-                    && $type->value !== ''
-                ) {
-                    // do nothing
                 } else {
                     $combination->value_types['string'] = new TString();
                 }
