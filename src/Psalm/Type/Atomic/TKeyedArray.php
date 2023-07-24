@@ -686,20 +686,6 @@ class TKeyedArray extends Atomic
     }
 
     /**
-     * @deprecated Will be removed in Psalm v6 along with the TList type.
-     */
-    public function getList(): TList
-    {
-        if (!$this->is_list) {
-            throw new UnexpectedValueException('Object-like array must be a list for conversion');
-        }
-
-        return $this->isNonEmpty()
-            ? new TNonEmptyList($this->getGenericValueType())
-            : new TList($this->getGenericValueType());
-    }
-
-    /**
      * @param string|int $name
      * @return string|int
      */
