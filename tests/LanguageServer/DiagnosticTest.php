@@ -9,6 +9,7 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\LanguageServer\ClientConfiguration;
 use Psalm\Internal\LanguageServer\LanguageServer;
 use Psalm\Internal\LanguageServer\Message;
+use Psalm\Internal\LanguageServer\PathMapper;
 use Psalm\Internal\LanguageServer\Progress;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
@@ -22,6 +23,7 @@ use Psalm\Tests\LanguageServer\MockProtocolStream;
 use Psalm\Tests\TestConfig;
 
 use function Amp\Promise\wait;
+use function getcwd;
 use function rand;
 
 class DiagnosticTest extends AsyncTestCase
@@ -85,6 +87,7 @@ class DiagnosticTest extends AsyncTestCase
             $this->codebase,
             $clientConfiguration,
             new Progress,
+            new PathMapper(getcwd(), getcwd()),
         );
 
         $write->on('message', function (Message $message) use ($deferred, $server): void {
