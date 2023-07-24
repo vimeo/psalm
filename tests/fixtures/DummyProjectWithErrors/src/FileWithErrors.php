@@ -1,4 +1,4 @@
-<?php declare(strict_types=1);
+<?php
 namespace Acme\SampleProject;
 
 function foo(string $_s): int
