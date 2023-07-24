@@ -432,8 +432,7 @@ class Algebra
                         continue;
                     }
 
-                    if ($assertion->type instanceof TList
-                        || $assertion->type instanceof TArray
+                    if ($assertion->type instanceof TArray
                         || $assertion->type instanceof TKeyedArray) {
                         unset($truths[$var][$key][$index]);
                     }

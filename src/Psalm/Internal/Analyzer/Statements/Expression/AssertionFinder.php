@@ -3737,10 +3737,6 @@ class AssertionFinder
             && ($second_var_type = $source->node_data->getType($expr->getArgs()[1]->value))
         ) {
             foreach ($second_var_type->getAtomicTypes() as $atomic_type) {
-                if ($atomic_type instanceof TList) {
-                    $atomic_type = $atomic_type->getKeyedArray();
-                }
-
                 if ($atomic_type instanceof TArray
                     || $atomic_type instanceof TKeyedArray
                 ) {

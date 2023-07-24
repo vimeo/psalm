@@ -33,7 +33,6 @@ use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyArray;
@@ -359,9 +358,6 @@ class FunctionCallReturnTypeFetcher
 
                         if (count($atomic_types) === 1) {
                             if (isset($atomic_types['array'])) {
-                                if ($atomic_types['array'] instanceof TList) {
-                                    $atomic_types['array'] = $atomic_types['array']->getKeyedArray();
-                                }
                                 if ($atomic_types['array'] instanceof TCallableArray
                                     || $atomic_types['array'] instanceof TCallableKeyedArray
                                 ) {

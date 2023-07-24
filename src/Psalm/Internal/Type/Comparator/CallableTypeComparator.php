@@ -22,7 +22,6 @@ use Psalm\Type\Atomic\TCallableArray;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -142,9 +141,7 @@ class CallableTypeComparator
         TCallable $container_type_part,
         ?TypeComparisonResult $atomic_comparison_result
     ): bool {
-        if ($input_type_part instanceof TList) {
-            $input_type_part = $input_type_part->getKeyedArray();
-        }
+
         if ($input_type_part instanceof TArray) {
             if ($input_type_part->type_params[1]->isMixed()
                 || $input_type_part->type_params[1]->hasScalar()
@@ -222,9 +219,7 @@ class CallableTypeComparator
         ?StatementsAnalyzer $statements_analyzer = null,
         bool $expand_callable = false
     ): ?Atomic {
-        if ($input_type_part instanceof TList) {
-            $input_type_part = $input_type_part->getKeyedArray();
-        }
+
         if ($input_type_part instanceof TCallable || $input_type_part instanceof TClosure) {
             return $input_type_part;
         }

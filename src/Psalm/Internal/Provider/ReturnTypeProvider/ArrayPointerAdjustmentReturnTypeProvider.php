@@ -10,7 +10,6 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
@@ -74,9 +73,7 @@ class ArrayPointerAdjustmentReturnTypeProvider implements FunctionReturnTypeProv
                 continue;
             }
 
-            if ($atomic_type instanceof TList) {
-                $atomic_type = $atomic_type->getKeyedArray();
-            }
+
 
             if ($atomic_type instanceof TArray) {
                 $value_type = $atomic_type->type_params[1];
