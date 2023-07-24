@@ -121,8 +121,6 @@ class ArrayCombineReturnTypeProvider implements FunctionReturnTypeProviderInterf
             $values,
         );
 
-        assert($result !== false);
-
         if (!$result) {
             return Type::getEmptyArray();
         }

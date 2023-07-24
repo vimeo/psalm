@@ -244,7 +244,7 @@ class NamespaceAnalyzer extends SourceAnalyzer
         while (($pos = strpos($identifier, "\\")) !== false) {
             if ($pos > 0) {
                 $part = substr($identifier, 0, $pos);
-                assert(is_string($part) && $part !== "");
+                assert($part !== "");
                 $parts[] = $part;
             }
             $parts[] = "\\";
@@ -253,13 +253,13 @@ class NamespaceAnalyzer extends SourceAnalyzer
         if (($pos = strpos($identifier, "::")) !== false) {
             if ($pos > 0) {
                 $part = substr($identifier, 0, $pos);
-                assert(is_string($part) && $part !== "");
+                assert($part !== "");
                 $parts[] = $part;
             }
             $parts[] = "::";
             $identifier = substr($identifier, $pos + 2);
         }
-        if ($identifier !== "" && $identifier !== false) {
+        if ($identifier !== "") {
             $parts[] = $identifier;
         }
 
