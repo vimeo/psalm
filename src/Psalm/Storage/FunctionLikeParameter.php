@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Storage;
 
 use Psalm\CodeLocation;
@@ -115,7 +117,6 @@ final class FunctionLikeParameter implements HasAttributesInterface, TypeNode
 
     /**
      * @psalm-external-mutation-free
-     * @param Union|UnresolvedConstantComponent|null $default_type
      */
     public function __construct(
         string $name,
@@ -127,8 +128,8 @@ final class FunctionLikeParameter implements HasAttributesInterface, TypeNode
         bool $is_optional = true,
         bool $is_nullable = false,
         bool $is_variadic = false,
-        $default_type = null,
-        ?Union $out_type = null
+        Union|UnresolvedConstantComponent|null $default_type = null,
+        ?Union $out_type = null,
     ) {
         $this->name = $name;
         $this->by_ref = $by_ref;

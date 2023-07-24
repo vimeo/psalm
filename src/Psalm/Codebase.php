@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm;
 
 use Exception;
@@ -319,7 +321,7 @@ final class Codebase
     public function __construct(
         Config $config,
         Providers $providers,
-        ?Progress $progress = null
+        ?Progress $progress = null,
     ) {
         if ($progress === null) {
             $progress = new VoidProgress();
@@ -672,7 +674,7 @@ final class Codebase
         string $fq_class_name,
         ?CodeLocation $code_location = null,
         ?string $calling_fq_class_name = null,
-        ?string $calling_method_id = null
+        ?string $calling_method_id = null,
     ): bool {
         return $this->classlikes->classOrInterfaceExists(
             $fq_class_name,
@@ -689,7 +691,7 @@ final class Codebase
         string $fq_class_name,
         ?CodeLocation $code_location = null,
         ?string $calling_fq_class_name = null,
-        ?string $calling_method_id = null
+        ?string $calling_method_id = null,
     ): bool {
         return $this->classlikes->classOrInterfaceOrEnumExists(
             $fq_class_name,
@@ -712,7 +714,7 @@ final class Codebase
         string $fq_class_name,
         ?CodeLocation $code_location = null,
         ?string $calling_fq_class_name = null,
-        ?string $calling_method_id = null
+        ?string $calling_method_id = null,
     ): bool {
         return $this->classlikes->classExists(
             $fq_class_name,
@@ -745,7 +747,7 @@ final class Codebase
         string $fq_interface_name,
         ?CodeLocation $code_location = null,
         ?string $calling_fq_class_name = null,
-        ?string $calling_method_id = null
+        ?string $calling_method_id = null,
     ): bool {
         return $this->classlikes->interfaceExists(
             $fq_interface_name,
@@ -797,7 +799,7 @@ final class Codebase
      */
     public function getFunctionLikeStorage(
         StatementsAnalyzer $statements_analyzer,
-        string $function_id
+        string $function_id,
     ): FunctionLikeStorage {
         $doesMethodExist =
             MethodIdentifier::isValidMethodIdReference($function_id)
@@ -820,16 +822,13 @@ final class Codebase
 
     /**
      * Whether or not a given method exists
-     *
-     * @param  string|MethodIdentifier      $method_id
-     * @param  string|MethodIdentifier|null $calling_method_id
      */
     public function methodExists(
-        $method_id,
+        string|MethodIdentifier $method_id,
         ?CodeLocation $code_location = null,
-        $calling_method_id = null,
+        string|MethodIdentifier|null $calling_method_id = null,
         ?string $file_path = null,
-        bool $is_used = true
+        bool $is_used = true,
     ): bool {
         return $this->methods->methodExists(
             MethodIdentifier::wrap($method_id),
@@ -843,27 +842,22 @@ final class Codebase
     }
 
     /**
-     * @param  string|MethodIdentifier $method_id
      * @return array<int, FunctionLikeParameter>
      */
-    public function getMethodParams($method_id): array
+    public function getMethodParams(string|MethodIdentifier $method_id): array
     {
         return $this->methods->getMethodParams(MethodIdentifier::wrap($method_id));
     }
 
-    /**
-     * @param  string|MethodIdentifier $method_id
-     */
-    public function isVariadic($method_id): bool
+    public function isVariadic(string|MethodIdentifier $method_id): bool
     {
         return $this->methods->isVariadic(MethodIdentifier::wrap($method_id));
     }
 
     /**
-     * @param  string|MethodIdentifier $method_id
      * @param  list<Arg> $call_args
      */
-    public function getMethodReturnType($method_id, ?string &$self_class, array $call_args = []): ?Union
+    public function getMethodReturnType(string|MethodIdentifier $method_id, ?string &$self_class, array $call_args = []): ?Union
     {
         return $this->methods->getMethodReturnType(
             MethodIdentifier::wrap($method_id),
@@ -873,20 +867,14 @@ final class Codebase
         );
     }
 
-    /**
-     * @param  string|MethodIdentifier $method_id
-     */
-    public function getMethodReturnsByRef($method_id): bool
+    public function getMethodReturnsByRef(string|MethodIdentifier $method_id): bool
     {
         return $this->methods->getMethodReturnsByRef(MethodIdentifier::wrap($method_id));
     }
 
-    /**
-     * @param  string|MethodIdentifier $method_id
-     */
     public function getMethodReturnTypeLocation(
-        $method_id,
-        CodeLocation &$defined_location = null
+        string|MethodIdentifier $method_id,
+        CodeLocation &$defined_location = null,
     ): ?CodeLocation {
         return $this->methods->getMethodReturnTypeLocation(
             MethodIdentifier::wrap($method_id),
@@ -894,10 +882,7 @@ final class Codebase
         );
     }
 
-    /**
-     * @param  string|MethodIdentifier $method_id
-     */
-    public function getDeclaringMethodId($method_id): ?string
+    public function getDeclaringMethodId(string|MethodIdentifier $method_id): ?string
     {
         $new_method_id = $this->methods->getDeclaringMethodId(MethodIdentifier::wrap($method_id));
 
@@ -906,10 +891,8 @@ final class Codebase
 
     /**
      * Get the class this method appears in (vs is declared in, which could give a trait)
-     *
-     * @param  string|MethodIdentifier $method_id
      */
-    public function getAppearingMethodId($method_id): ?string
+    public function getAppearingMethodId(string|MethodIdentifier $method_id): ?string
     {
         $new_method_id = $this->methods->getAppearingMethodId(MethodIdentifier::wrap($method_id));
 
@@ -917,18 +900,14 @@ final class Codebase
     }
 
     /**
-     * @param  string|MethodIdentifier $method_id
      * @return array<string, MethodIdentifier>
      */
-    public function getOverriddenMethodIds($method_id): array
+    public function getOverriddenMethodIds(string|MethodIdentifier $method_id): array
     {
         return $this->methods->getOverriddenMethodIds(MethodIdentifier::wrap($method_id));
     }
 
-    /**
-     * @param  string|MethodIdentifier $method_id
-     */
-    public function getCasedMethodId($method_id): string
+    public function getCasedMethodId(string|MethodIdentifier $method_id): string
     {
         return $this->methods->getCasedMethodId(MethodIdentifier::wrap($method_id));
     }
@@ -985,7 +964,7 @@ final class Codebase
      * Get Markup content from Reference
      */
     public function getMarkupContentForSymbolByReference(
-        Reference $reference
+        Reference $reference,
     ): ?PHPMarkdownContent {
         //Direct Assignment
         if (is_numeric($reference->symbol[0])) {
@@ -1535,7 +1514,7 @@ final class Codebase
      */
     public function getReferenceAtPositionAsReference(
         string $file_path,
-        Position $position
+        Position $position,
     ): ?Reference {
         $is_open = $this->file_provider->isOpen($file_path);
 
@@ -1648,7 +1627,7 @@ final class Codebase
      */
     public function getSignatureInformation(
         string $function_symbol,
-        string $file_path = null
+        string $file_path = null,
     ): ?SignatureInformation {
         $signature_label = '';
         $signature_documentation = null;
@@ -1845,7 +1824,7 @@ final class Codebase
     public function getCompletionItemsForClassishThing(
         string $type_string,
         string $gap,
-        bool $snippets_supported = false
+        bool $snippets_supported = false,
     ): array {
         $completion_items = [];
 
@@ -1961,7 +1940,7 @@ final class Codebase
     public function getCompletionItemsForPartialSymbol(
         string $type_string,
         int $offset,
-        string $file_path
+        string $file_path,
     ): array {
         $fq_suggestion = false;
 
@@ -2184,7 +2163,7 @@ final class Codebase
      * @return list<CompletionItem>
      */
     public function getCompletionItemsForArrayKeys(
-        string $type_string
+        string $type_string,
     ): array {
         $completion_items = [];
         $type = Type::parseString($type_string);
@@ -2249,7 +2228,7 @@ final class Codebase
      */
     public function isTypeContainedByType(
         Union $input_type,
-        Union $container_type
+        Union $container_type,
     ): bool {
         return UnionTypeComparator::isContainedBy($this, $input_type, $container_type);
     }
@@ -2269,7 +2248,7 @@ final class Codebase
      */
     public function canTypeBeContainedByType(
         Union $input_type,
-        Union $container_type
+        Union $container_type,
     ): bool {
         return UnionTypeComparator::canBeContainedBy($this, $input_type, $container_type);
     }
@@ -2309,7 +2288,7 @@ final class Codebase
         string $fq_classlike_name,
         bool $analyze_too = false,
         bool $store_failure = true,
-        array $phantom_classes = []
+        array $phantom_classes = [],
     ): void {
         $this->scanner->queueClassLikeForScanning($fq_classlike_name, $analyze_too, $store_failure, $phantom_classes);
     }
@@ -2322,7 +2301,7 @@ final class Codebase
         Union $expr_type,
         string $taint_id,
         array $taints = TaintKindGroup::ALL_INPUT,
-        ?CodeLocation $code_location = null
+        ?CodeLocation $code_location = null,
     ): Union {
         if (!$this->taint_flow_graph) {
             return $expr_type;
@@ -2348,7 +2327,7 @@ final class Codebase
     public function addTaintSink(
         string $taint_id,
         array $taints = TaintKindGroup::ALL_INPUT,
-        ?CodeLocation $code_location = null
+        ?CodeLocation $code_location = null,
     ): void {
         if (!$this->taint_flow_graph) {
             return;

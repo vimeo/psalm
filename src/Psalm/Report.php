@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm;
 
 use Psalm\Internal\Analyzer\IssueData;
@@ -69,7 +71,7 @@ abstract class Report
         array $fixable_issue_counts,
         ReportOptions $report_options,
         int $mixed_expression_count = 1,
-        int $total_expression_count = 1
+        int $total_expression_count = 1,
     ) {
         if (!$report_options->show_info) {
             $this->issues_data = array_filter(

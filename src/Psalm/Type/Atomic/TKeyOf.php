@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type\Atomic;
 
 use Psalm\Type\Atomic\TList;
@@ -36,7 +38,7 @@ final class TKeyOf extends TArrayKey
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        int $analysis_php_version_id
+        int $analysis_php_version_id,
     ): ?string {
         return null;
     }
@@ -68,7 +70,7 @@ final class TKeyOf extends TArrayKey
 
     public static function getArrayKeyType(
         Union $type,
-        bool $keep_template_params = false
+        bool $keep_template_params = false,
     ): ?Union {
         $key_types = [];
 

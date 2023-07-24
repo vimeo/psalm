@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Storage;
 
 use Psalm\CodeLocation;
@@ -19,12 +21,9 @@ final class EnumCaseStorage
      */
     public $deprecated = false;
 
-    /**
-     * @param int|string|null  $value
-     */
     public function __construct(
-        $value,
-        CodeLocation $location
+        int|string|null $value,
+        CodeLocation $location,
     ) {
         $this->value = $value;
         $this->stmt_location = $location;

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type;
 
 use Psalm\Internal\DataFlow\DataFlowNode;
@@ -381,10 +383,8 @@ final class MutableUnion implements TypeNode
 
     /**
      * @psalm-external-mutation-free
-     * @param Union|MutableUnion $old_type
-     * @param Union|MutableUnion|null $new_type
      */
-    public function substitute($old_type, $new_type = null): self
+    public function substitute(Union|MutableUnion $old_type, Union|MutableUnion|null $new_type = null): self
     {
         if ($this->hasMixed() && !$this->isEmptyMixed()) {
             return $this;

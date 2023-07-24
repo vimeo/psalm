@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Type;
 
 use Psalm\Codebase;
@@ -55,20 +57,19 @@ class TypeExpander
 {
     /**
      * @psalm-suppress InaccessibleProperty We just created the type
-     * @param string|TNamedObject|TTemplateParam|null $static_class_type
      */
     public static function expandUnion(
         Codebase $codebase,
         Union $return_type,
         ?string $self_class,
-        $static_class_type,
+        string|TNamedObject|TTemplateParam|null $static_class_type,
         ?string $parent_class,
         bool $evaluate_class_constants = true,
         bool $evaluate_conditional_types = false,
         bool $final = false,
         bool $expand_generic = false,
         bool $expand_templates = false,
-        bool $throw_on_unresolvable_constant = false
+        bool $throw_on_unresolvable_constant = false,
     ): Union {
         $new_return_type_parts = [];
 
@@ -112,7 +113,6 @@ class TypeExpander
     }
 
     /**
-     * @param string|TNamedObject|TTemplateParam|null $static_class_type
      * @param-out Atomic $return_type
      * @return non-empty-list<Atomic>
      * @psalm-suppress ConflictingReferenceConstraint, ReferenceConstraintViolation The output type is always Atomic
@@ -122,14 +122,14 @@ class TypeExpander
         Codebase $codebase,
         Atomic &$return_type,
         ?string $self_class,
-        $static_class_type,
+        string|TNamedObject|TTemplateParam|null $static_class_type,
         ?string $parent_class,
         bool $evaluate_class_constants = true,
         bool $evaluate_conditional_types = false,
         bool $final = false,
         bool $expand_generic = false,
         bool $expand_templates = false,
-        bool $throw_on_unresolvable_constant = false
+        bool $throw_on_unresolvable_constant = false,
     ): array {
         if ($return_type instanceof TEnumCase) {
             return [$return_type];
@@ -606,19 +606,17 @@ class TypeExpander
     }
 
     /**
-     * @param string|TNamedObject|TTemplateParam|null $static_class_type
      * @param-out TNamedObject|TTemplateParam $return_type
-     * @return TNamedObject|TTemplateParam
      */
     private static function expandNamedObject(
         Codebase $codebase,
         TNamedObject &$return_type,
         ?string $self_class,
-        $static_class_type,
+        string|TNamedObject|TTemplateParam|null $static_class_type,
         ?string $parent_class,
         bool $final = false,
-        bool &$expand_generic = false
-    ) {
+        bool &$expand_generic = false,
+    ): TNamedObject|TTemplateParam {
         if ($expand_generic
             && get_class($return_type) === TNamedObject::class
             && !$return_type->extra_types
@@ -720,21 +718,20 @@ class TypeExpander
     }
 
     /**
-     * @param string|TNamedObject|TTemplateParam|null $static_class_type
      * @return non-empty-list<Atomic>
      */
     private static function expandConditional(
         Codebase $codebase,
         TConditional &$return_type,
         ?string $self_class,
-        $static_class_type,
+        string|TNamedObject|TTemplateParam|null $static_class_type,
         ?string $parent_class,
         bool $evaluate_class_constants = true,
         bool $evaluate_conditional_types = false,
         bool $final = false,
         bool $expand_generic = false,
         bool $expand_templates = false,
-        bool $throw_on_unresolvable_constant = false
+        bool $throw_on_unresolvable_constant = false,
     ): array {
         $new_as_type = self::expandUnion(
             $codebase,
@@ -932,14 +929,13 @@ class TypeExpander
     }
 
     /**
-     * @param string|TNamedObject|TTemplateParam|null $static_class_type
      * @return non-empty-list<Atomic>
      */
     private static function expandPropertiesOf(
         Codebase $codebase,
         TPropertiesOf &$return_type,
         ?string $self_class,
-        $static_class_type
+        string|TNamedObject|TTemplateParam|null $static_class_type,
     ): array {
         if ($self_class) {
             $return_type = $return_type->replaceClassLike(
@@ -1016,21 +1012,20 @@ class TypeExpander
 
     /**
      * @param TKeyOf|TValueOf $return_type
-     * @param string|TNamedObject|TTemplateParam|null $static_class_type
      * @return non-empty-list<Atomic>
      */
     private static function expandKeyOfValueOf(
         Codebase $codebase,
         Atomic &$return_type,
         ?string $self_class,
-        $static_class_type,
+        string|TNamedObject|TTemplateParam|null $static_class_type,
         ?string $parent_class,
         bool $evaluate_class_constants = true,
         bool $evaluate_conditional_types = false,
         bool $final = false,
         bool $expand_generic = false,
         bool $expand_templates = false,
-        bool $throw_on_unresolvable_constant = false
+        bool $throw_on_unresolvable_constant = false,
     ): array {
         // Expand class constants to their atomics
         $type_atomics = [];

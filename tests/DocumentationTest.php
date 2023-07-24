@@ -403,18 +403,12 @@ class DocumentationTest extends TestCase
                 return $this->inner->toString();
             }
 
-            /**
-             * @param mixed $other
-             */
-            protected function matches($other): bool
+            protected function matches(mixed $other): bool
             {
                 return $this->inner->matches($other);
             }
 
-            /**
-             * @param mixed $other
-             */
-            protected function failureDescription($other): string
+            protected function failureDescription(mixed $other): string
             {
                 return $this->exporter()->shortenedExport($other) . ' ' . $this->toString();
             }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Type;
 
 use InvalidArgumentException;
@@ -71,7 +73,7 @@ class TemplateStandinTypeReplacer
         bool $replace = true,
         bool $add_lower_bound = false,
         ?string $bound_equality_classlike = null,
-        int $depth = 1
+        int $depth = 1,
     ): void {
         self::replace(
             $union_type,
@@ -108,7 +110,7 @@ class TemplateStandinTypeReplacer
         bool $replace = true,
         bool $add_lower_bound = false,
         ?string $bound_equality_classlike = null,
-        int $depth = 1
+        int $depth = 1,
     ): Union {
         $atomic_types = [];
 
@@ -205,7 +207,7 @@ class TemplateStandinTypeReplacer
         ?string $bound_equality_classlike,
         int $depth,
         bool $was_single,
-        bool &$had_template
+        bool &$had_template,
     ): array {
         if ($bracket_pos = strpos($key, '<')) {
             $key = substr($key, 0, $bracket_pos);
@@ -470,7 +472,7 @@ class TemplateStandinTypeReplacer
         string $key,
         Codebase $codebase,
         ?StatementsAnalyzer $statements_analyzer,
-        Union $input_type
+        Union $input_type,
     ): array {
         $matching_atomic_types = [];
 
@@ -656,7 +658,7 @@ class TemplateStandinTypeReplacer
         bool $add_lower_bound,
         ?string $bound_equality_classlike,
         int $depth,
-        bool &$had_template
+        bool &$had_template,
     ): array {
         if ($atomic_type->defining_class === $calling_class) {
             return [$atomic_type];
@@ -1008,7 +1010,7 @@ class TemplateStandinTypeReplacer
         bool $add_lower_bound,
         ?string $bound_equality_classlike,
         int $depth,
-        bool $was_single
+        bool $was_single,
     ): array {
         if ($atomic_type->defining_class === $calling_class) {
             return [$atomic_type];
@@ -1153,7 +1155,7 @@ class TemplateStandinTypeReplacer
         string $param_name,
         string $defining_class,
         array $visited_classes,
-        ?Codebase $codebase
+        ?Codebase $codebase,
     ): ?Union {
         if (isset($visited_classes[$defining_class])) {
             return null;
@@ -1252,7 +1254,7 @@ class TemplateStandinTypeReplacer
         Codebase $codebase,
         Atomic $input_type_part,
         Atomic $container_type_part,
-        ?array &$container_type_params_covariant = null
+        ?array &$container_type_params_covariant = null,
     ): array {
         $_ = null;
         if ($input_type_part instanceof TGenericObject || $input_type_part instanceof TIterable) {

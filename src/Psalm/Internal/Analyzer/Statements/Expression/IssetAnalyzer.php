@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
@@ -16,7 +18,7 @@ class IssetAnalyzer
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\Isset_ $stmt,
-        Context $context
+        Context $context,
     ): void {
         foreach ($stmt->vars as $isset_var) {
             if ($isset_var instanceof PhpParser\Node\Expr\PropertyFetch
@@ -41,7 +43,7 @@ class IssetAnalyzer
     public static function analyzeIssetVar(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $stmt,
-        Context $context
+        Context $context,
     ): void {
         $context->inside_isset = true;
 

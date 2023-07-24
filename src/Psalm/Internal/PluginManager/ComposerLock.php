@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\PluginManager;
 
 use RuntimeException;
@@ -27,14 +29,13 @@ class ComposerLock
     }
 
     /**
-     * @param mixed $package
      * @psalm-assert-if-true array{
      *      name: string,
      *      extra: array{psalm: array{pluginClass: string}}
      * } $package
      * @psalm-pure
      */
-    public function isPlugin($package): bool
+    public function isPlugin(mixed $package): bool
     {
         return is_array($package)
             && isset($package['name'], $package['extra']['psalm']['pluginClass'])

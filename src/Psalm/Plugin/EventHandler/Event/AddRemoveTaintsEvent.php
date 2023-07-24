@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Plugin\EventHandler\Event;
 
 use PhpParser\Node\Expr;
@@ -23,7 +25,7 @@ final class AddRemoveTaintsEvent
         Expr $expr,
         Context $context,
         StatementsSource $statements_source,
-        Codebase $codebase
+        Codebase $codebase,
     ) {
         $this->expr = $expr;
         $this->context = $context;

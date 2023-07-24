@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Plugin\EventHandler\Event;
 
 use PhpParser\Node;
@@ -36,7 +38,7 @@ final class AfterFunctionLikeAnalysisEvent
         Codebase $codebase,
         array $file_replacements,
         NodeTypeProvider $node_type_provider,
-        Context $context
+        Context $context,
     ) {
         $this->stmt = $stmt;
         $this->functionlike_storage = $functionlike_storage;

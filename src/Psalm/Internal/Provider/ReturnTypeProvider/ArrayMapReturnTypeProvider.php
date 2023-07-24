@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use PhpParser;
@@ -295,7 +297,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $fake_call,
         Context $context,
-        ?array &$assertions = null
+        ?array &$assertions = null,
     ): ?Union {
         $old_data_provider = $statements_analyzer->node_data;
 
@@ -381,7 +383,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
         PhpParser\Node\Arg $function_call_arg,
         array $array_args,
         ?array &$assertions = null,
-        ?int $fake_var_discriminator = null
+        ?int $fake_var_discriminator = null,
     ): Union {
         $mapping_return_type = null;
 

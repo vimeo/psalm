@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal;
 
 use Psalm\Storage\Assertion;
@@ -89,7 +91,7 @@ class Clause
         bool $wedge = false,
         bool $reconcilable = true,
         bool $generated = false,
-        array $redefined_vars = []
+        array $redefined_vars = [],
     ) {
         if ($wedge || !$reconcilable) {
             $this->hash = ($wedge ? 'w' : '') . $creating_object_id;

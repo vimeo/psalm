@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\Fetch;
 
 use PhpParser;
@@ -42,7 +44,7 @@ class StaticPropertyFetchAnalyzer
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\StaticPropertyFetch $stmt,
-        Context $context
+        Context $context,
     ): bool {
         if (!$stmt->class instanceof PhpParser\Node\Name) {
             self::analyzeVariableStaticPropertyFetch($statements_analyzer, $stmt->class, $stmt, $context);
@@ -418,7 +420,7 @@ class StaticPropertyFetchAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $stmt_class,
         PhpParser\Node\Expr\StaticPropertyFetch $stmt,
-        Context $context
+        Context $context,
     ): void {
         $was_inside_general_use = $context->inside_general_use;
 

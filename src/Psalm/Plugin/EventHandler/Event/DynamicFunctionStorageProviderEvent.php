@@ -32,7 +32,7 @@ final class DynamicFunctionStorageProviderEvent
         string $function_id,
         PhpParser\Node\Expr\FuncCall $func_call,
         Context $context,
-        CodeLocation $code_location
+        CodeLocation $code_location,
     ) {
         $this->statement_source = $statements_source;
         $this->function_id = $function_id;

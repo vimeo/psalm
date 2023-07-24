@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Block;
 
 use PhpParser;
@@ -27,7 +29,7 @@ class ForAnalyzer
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\For_ $stmt,
-        Context $context
+        Context $context,
     ): ?bool {
         $pre_assigned_var_ids = $context->assigned_var_ids;
         $context->assigned_var_ids = [];

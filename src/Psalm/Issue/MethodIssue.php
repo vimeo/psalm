@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Issue;
 
 use Psalm\CodeLocation;
@@ -16,7 +18,7 @@ abstract class MethodIssue extends CodeIssue
     public function __construct(
         string $message,
         CodeLocation $code_location,
-        string $method_id
+        string $method_id,
     ) {
         parent::__construct($message, $code_location);
         $this->method_id = strtolower($method_id);

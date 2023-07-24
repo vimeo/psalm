@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm;
 
 final class Aliases
@@ -63,7 +65,7 @@ final class Aliases
         array $constants = [],
         array $uses_flipped = [],
         array $functions_flipped = [],
-        array $constants_flipped = []
+        array $constants_flipped = [],
     ) {
         $this->namespace = $namespace;
         $this->uses = $uses;

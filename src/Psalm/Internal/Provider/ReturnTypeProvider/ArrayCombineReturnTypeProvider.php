@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -13,7 +15,6 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Union;
 
 use function array_combine;
-use function assert;
 use function count;
 
 /**

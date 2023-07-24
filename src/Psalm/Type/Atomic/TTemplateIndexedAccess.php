@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type\Atomic;
 
 use Psalm\Type\Atomic;
@@ -28,7 +30,7 @@ final class TTemplateIndexedAccess extends Atomic
         string $array_param_name,
         string $offset_param_name,
         string $defining_class,
-        bool $from_docblock = false
+        bool $from_docblock = false,
     ) {
         $this->array_param_name = $array_param_name;
         $this->offset_param_name = $offset_param_name;
@@ -48,7 +50,7 @@ final class TTemplateIndexedAccess extends Atomic
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        int $analysis_php_version_id
+        int $analysis_php_version_id,
     ): ?string {
         return null;
     }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Storage;
 
 use Psalm\CodeLocation;
@@ -39,7 +41,7 @@ final class AttributeStorage
         string $fq_class_name,
         array $args,
         CodeLocation $location,
-        CodeLocation $name_location
+        CodeLocation $name_location,
     ) {
         $this->fq_class_name = $fq_class_name;
         $this->args = $args;

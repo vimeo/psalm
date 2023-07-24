@@ -22,7 +22,7 @@ trait PsalmRunnerTrait
         array $args,
         string $workingDir,
         bool $shouldFail = false,
-        bool $relyOnConfigDir = true
+        bool $relyOnConfigDir = true,
     ): array {
         // Ensure CI agnostic output
         if (!in_array('--init', $args, true) && !in_array('--alter', $args, true)) {

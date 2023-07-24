@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
@@ -49,7 +51,7 @@ class MatchAnalyzer
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\Match_ $stmt,
-        Context $context
+        Context $context,
     ): bool {
         $was_inside_call = $context->inside_call;
 
@@ -320,7 +322,7 @@ class MatchAnalyzer
     private static function convertCondsToConditional(
         array $conds,
         PhpParser\Node\Expr $match_condition,
-        array $attributes
+        array $attributes,
     ): PhpParser\Node\Expr {
         if (count($conds) === 1) {
             return new VirtualIdentical(

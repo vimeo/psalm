@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call\Method;
 
 use PhpParser;
@@ -72,7 +74,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
         ?string $lhs_var_id,
         MethodIdentifier $method_id,
         AtomicMethodCallAnalysisResult $result,
-        ?TemplateResult $inferred_template_result = null
+        ?TemplateResult $inferred_template_result = null,
     ): Union {
         $config = $codebase->config;
 
@@ -538,7 +540,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
         PhpParser\Node\Expr\MethodCall $stmt,
         PhpParser\Node\Identifier $stmt_name,
         Context $context,
-        string $fq_class_name
+        string $fq_class_name,
     ): ?Union {
         $method_name = strtolower($stmt_name->name);
         if (!in_array($method_name, ['__get', '__set'], true)) {

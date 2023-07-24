@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Scanner\UnresolvedConstant;
 
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
@@ -22,7 +24,7 @@ class UnresolvedTernary extends UnresolvedConstantComponent
     public function __construct(
         UnresolvedConstantComponent $cond,
         ?UnresolvedConstantComponent $if,
-        UnresolvedConstantComponent $else
+        UnresolvedConstantComponent $else,
     ) {
         $this->cond = $cond;
         $this->if = $if;

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type;
 
 use Psalm\Internal\DataFlow\DataFlowNode;
@@ -315,7 +317,7 @@ final class Union implements TypeNode
     }
 
     /** @return static */
-    public function setByRef(bool $by_ref)
+    public function setByRef(bool $by_ref): static
     {
         if ($by_ref === $this->by_ref) {
             return $this;

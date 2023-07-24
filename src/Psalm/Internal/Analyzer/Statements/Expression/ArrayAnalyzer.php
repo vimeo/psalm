@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
@@ -58,7 +60,7 @@ class ArrayAnalyzer
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\Array_ $stmt,
-        Context $context
+        Context $context,
     ): bool {
         // if the array is empty, this special type allows us to match any other array type against it
         if (count($stmt->items) === 0) {
@@ -242,7 +244,7 @@ class ArrayAnalyzer
         Context $context,
         ArrayCreationInfo $array_creation_info,
         PhpParser\Node\Expr\ArrayItem $item,
-        Codebase $codebase
+        Codebase $codebase,
     ): void {
         if ($item->unpack) {
             if (ExpressionAnalyzer::analyze($statements_analyzer, $item->value, $context) === false) {
@@ -520,7 +522,7 @@ class ArrayAnalyzer
         ArrayCreationInfo $array_creation_info,
         PhpParser\Node\Expr\ArrayItem $item,
         Union $unpacked_array_type,
-        Codebase $codebase
+        Codebase $codebase,
     ): void {
         $all_non_empty = true;
 

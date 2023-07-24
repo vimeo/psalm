@@ -49,7 +49,7 @@ trait InvalidCodeAnalysisTestTrait
         string $code,
         string $error_message,
         array  $error_levels = [],
-        string $php_version = '7.4'
+        string $php_version = '7.4',
     ): void {
         $test_name = $this->getTestName();
         if (strpos($test_name, 'PHP80-') !== false) {

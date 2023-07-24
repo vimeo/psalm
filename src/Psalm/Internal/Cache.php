@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal;
 
 use Psalm\Config;
@@ -35,10 +37,7 @@ class Cache
         $this->use_igbinary = $config->use_igbinary;
     }
 
-    /**
-     * @return array|object|string|null
-     */
-    public function getItem(string $path)
+    public function getItem(string $path): array|object|string|null
     {
         if (!file_exists($path)) {
             return null;
@@ -92,10 +91,7 @@ class Cache
         }
     }
 
-    /**
-     * @param array|object|string $item
-     */
-    public function saveItem(string $path, $item): void
+    public function saveItem(string $path, array|object|string $item): void
     {
         if ($this->use_igbinary) {
             $serialized = igbinary_serialize($item);

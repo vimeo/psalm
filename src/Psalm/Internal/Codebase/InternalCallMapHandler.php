@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Codebase;
 
 use PhpParser;
@@ -64,7 +66,7 @@ class InternalCallMapHandler
         Codebase $codebase,
         string $method_id,
         array $args,
-        ?NodeDataProvider $nodes
+        ?NodeDataProvider $nodes,
     ): TCallable {
         $possible_callables = self::getCallablesFromCallMap($method_id);
 
@@ -92,7 +94,7 @@ class InternalCallMapHandler
         array $callables,
         array $args,
         ?NodeTypeProvider $nodes,
-        string $method_id
+        string $method_id,
     ): TCallable {
         if (count($callables) === 1) {
             return $callables[0];

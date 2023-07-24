@@ -21,8 +21,7 @@ class ErrorBaselineTest extends TestCase
 {
     use MockeryPHPUnitIntegration;
 
-    /** @var FileProvider&MockInterface */
-    private $fileProvider;
+    private FileProvider&MockInterface $fileProvider;
 
     public function setUp(): void
     {

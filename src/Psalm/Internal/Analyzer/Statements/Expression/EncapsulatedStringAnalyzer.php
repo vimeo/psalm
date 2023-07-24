@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
@@ -31,7 +33,7 @@ class EncapsulatedStringAnalyzer
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Scalar\Encapsed $stmt,
-        Context $context
+        Context $context,
     ): bool {
         $parent_nodes = [];
 

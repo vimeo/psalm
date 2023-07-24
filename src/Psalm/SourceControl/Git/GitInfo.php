@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\SourceControl\Git;
 
 use Psalm\SourceControl\SourceControlInfo;

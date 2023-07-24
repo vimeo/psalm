@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Plugin\EventHandler\Event;
 
 use PhpParser\Node\Stmt\ClassLike;
@@ -28,7 +30,7 @@ final class AfterClassLikeVisitEvent
         ClassLikeStorage $storage,
         FileSource $statements_source,
         Codebase $codebase,
-        array $file_replacements = []
+        array $file_replacements = [],
     ) {
         $this->stmt = $stmt;
         $this->storage = $storage;

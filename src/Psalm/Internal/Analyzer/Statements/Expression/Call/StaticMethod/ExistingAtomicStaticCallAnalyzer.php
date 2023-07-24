@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call\StaticMethod;
 
 use PhpParser;
@@ -65,7 +67,7 @@ class ExistingAtomicStaticCallAnalyzer
         string $cased_method_id,
         ClassLikeStorage $class_storage,
         bool &$moved_call,
-        ?TemplateResult $inferred_template_result = null
+        ?TemplateResult $inferred_template_result = null,
     ): void {
         $fq_class_name = $method_id->fq_class_name;
         $method_name_lc = $method_id->method_name;
@@ -475,7 +477,7 @@ class ExistingAtomicStaticCallAnalyzer
         Context $context,
         string $fq_class_name,
         ClassLikeStorage $class_storage,
-        Config $config
+        Config $config,
     ): ?Union {
         $return_type_candidate = $codebase->methods->getMethodReturnType(
             $method_id,
@@ -616,7 +618,7 @@ class ExistingAtomicStaticCallAnalyzer
         StaticCall $stmt,
         ClassLikeStorage $class_storage,
         MethodIdentifier $method_id,
-        TTemplateParam $template_type
+        TTemplateParam $template_type,
     ): array {
         if ($template_type->param_name === 'TFunctionArgCount') {
             return [

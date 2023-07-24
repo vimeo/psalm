@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements;
 
 use PhpParser;
@@ -25,7 +27,7 @@ class GlobalAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Global_ $stmt,
         Context $context,
-        ?Context $global_context
+        ?Context $global_context,
     ): void {
         if (!$context->collect_initializations && !$global_context) {
             IssueBuffer::maybeAdd(

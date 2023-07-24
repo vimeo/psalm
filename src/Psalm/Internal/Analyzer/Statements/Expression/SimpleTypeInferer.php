@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use InvalidArgumentException;
@@ -57,7 +59,7 @@ class SimpleTypeInferer
         Aliases $aliases,
         FileSource $file_source = null,
         ?array $existing_class_constants = null,
-        ?string $fq_classlike_name = null
+        ?string $fq_classlike_name = null,
     ): ?Union {
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp) {
             if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat) {
@@ -517,7 +519,7 @@ class SimpleTypeInferer
         Aliases $aliases,
         FileSource $file_source = null,
         ?array $existing_class_constants = null,
-        ?string $fq_classlike_name = null
+        ?string $fq_classlike_name = null,
     ): ?Union {
         if (count($stmt->items) === 0) {
             return Type::getEmptyArray();
@@ -601,7 +603,7 @@ class SimpleTypeInferer
         Aliases $aliases,
         FileSource $file_source = null,
         ?array $existing_class_constants = null,
-        ?string $fq_classlike_name = null
+        ?string $fq_classlike_name = null,
     ): bool {
         if ($item->unpack) {
             $unpacked_array_type = self::infer(
@@ -753,7 +755,7 @@ class SimpleTypeInferer
 
     private static function handleUnpackedArray(
         ArrayCreationInfo $array_creation_info,
-        Union $unpacked_array_type
+        Union $unpacked_array_type,
     ): bool {
         foreach ($unpacked_array_type->getAtomicTypes() as $unpacked_atomic_type) {
             if ($unpacked_atomic_type instanceof TList) {

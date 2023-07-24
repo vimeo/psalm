@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\Fetch;
 
 use PhpParser;
@@ -105,7 +107,7 @@ class ArrayFetchAnalyzer
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
-        Context $context
+        Context $context,
     ): bool {
         $extended_var_id = ExpressionIdentifier::getExtendedVarId(
             $stmt->var,
@@ -365,7 +367,7 @@ class ArrayFetchAnalyzer
         ?string $keyed_array_var_id,
         Union &$stmt_type,
         Union &$offset_type,
-        ?Context $context = null
+        ?Context $context = null,
     ): void {
         if ($statements_analyzer->data_flow_graph
             && ($stmt_var_type = $statements_analyzer->node_data->getType($var))
@@ -466,7 +468,7 @@ class ArrayFetchAnalyzer
         ?string $extended_var_id,
         Context $context,
         PhpParser\Node\Expr $assign_value = null,
-        Union $replacement_type = null
+        Union $replacement_type = null,
     ): Union {
         $offset_type = $offset_type_original->getBuilder();
 
@@ -885,7 +887,7 @@ class ArrayFetchAnalyzer
         ?string $extended_var_id,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
         Context $context,
-        StatementsAnalyzer $statements_analyzer
+        StatementsAnalyzer $statements_analyzer,
     ): void {
         if ($context->inside_isset || $context->inside_unset) {
             return;
@@ -933,7 +935,7 @@ class ArrayFetchAnalyzer
         ?string $extended_var_id,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
         Context $context,
-        StatementsAnalyzer $statements_analyzer
+        StatementsAnalyzer $statements_analyzer,
     ): void {
         if ($context->inside_isset || $context->inside_unset) {
             return;
@@ -1017,7 +1019,7 @@ class ArrayFetchAnalyzer
         ?string $extended_var_id,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
         ?Union $array_access_type,
-        Atomic $type
+        Atomic $type,
     ): Union {
         if (!$context->collect_initializations
             && !$context->collect_mutations
@@ -1105,7 +1107,7 @@ class ArrayFetchAnalyzer
         array &$expected_offset_types,
         ?Union &$array_access_type,
         bool &$has_array_access,
-        bool &$has_valid_offset
+        bool &$has_valid_offset,
     ): void {
         $has_array_access = true;
 
@@ -1236,7 +1238,7 @@ class ArrayFetchAnalyzer
         array &$expected_offset_types,
         ?Union &$array_access_type,
         Atomic $original_type,
-        bool &$has_valid_offset
+        bool &$has_valid_offset,
     ): void {
         // if we're assigning to an empty array with a key offset, refashion that array
         if ($in_assignment) {
@@ -1400,7 +1402,7 @@ class ArrayFetchAnalyzer
         TClassStringMap &$type,
         MutableUnion $offset_type,
         ?Union $replacement_type,
-        ?Union &$array_access_type
+        ?Union &$array_access_type,
     ): void {
         $offset_type_parts = array_values($offset_type->getAtomicTypes());
 
@@ -1510,7 +1512,7 @@ class ArrayFetchAnalyzer
         TKeyedArray &$type,
         bool $hasMixed,
         array &$expected_offset_types,
-        bool &$has_valid_offset
+        bool &$has_valid_offset,
     ): void {
         $generic_key_type = $type->getGenericKeyType();
 
@@ -1735,7 +1737,7 @@ class ArrayFetchAnalyzer
         bool $in_assignment,
         ?PhpParser\Node\Expr $assign_value,
         ?Union &$array_access_type,
-        bool &$has_array_access
+        bool &$has_array_access,
     ): void {
         if (strtolower($type->value) === 'simplexmlelement') {
             $call_array_access_type = new Union([new TNamedObject('SimpleXMLElement')]);
@@ -1884,7 +1886,7 @@ class ArrayFetchAnalyzer
         MutableUnion $offset_type,
         array &$expected_offset_types,
         ?Union &$array_access_type,
-        bool &$has_valid_offset
+        bool &$has_valid_offset,
     ): void {
         if ($in_assignment && $replacement_type) {
             if ($replacement_type->hasMixed()) {
@@ -1967,7 +1969,7 @@ class ArrayFetchAnalyzer
     private static function checkArrayOffsetType(
         MutableUnion $offset_type,
         array $offset_types,
-        Codebase $codebase
+        Codebase $codebase,
     ): bool {
         $has_valid_absolute_offset = false;
         foreach ($offset_types as $atomic_offset_type) {

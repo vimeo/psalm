@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Diff;
 
 use PhpParser;
@@ -39,7 +41,7 @@ class ClassStatementsDiffer extends AstDiffer
                 PhpParser\Node\Stmt $b,
                 string $a_code,
                 string $b_code,
-                bool &$body_change = false
+                bool &$body_change = false,
             ) use (&$diff_map): bool {
                 if (get_class($a) !== get_class($b)) {
                     return false;

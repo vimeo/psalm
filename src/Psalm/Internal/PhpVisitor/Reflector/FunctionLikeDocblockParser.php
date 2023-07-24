@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\PhpVisitor\Reflector;
 
 use AssertionError;
@@ -47,7 +49,7 @@ class FunctionLikeDocblockParser
     public static function parse(
         PhpParser\Comment\Doc $comment,
         CodeLocation $code_location,
-        string $cased_function_id
+        string $cased_function_id,
     ): FunctionDocblockComment {
         $parsed_docblock = DocComment::parsePreservingLength($comment);
 
@@ -596,7 +598,7 @@ class FunctionLikeDocblockParser
         array $return_specials,
         FunctionDocblockComment $info,
         CodeLocation $code_location,
-        string $cased_function_id
+        string $cased_function_id,
     ): void {
         foreach ($return_specials as $offset => $return_block) {
             $return_lines = explode("\n", $return_block);
@@ -700,7 +702,7 @@ class FunctionLikeDocblockParser
     private static function checkUnexpectedTags(
         ParsedDocblock $parsed_docblock,
         FunctionDocblockComment $info,
-        PhpParser\Comment\Doc $comment
+        PhpParser\Comment\Doc $comment,
     ): void {
         if (isset($parsed_docblock->tags['psalm-import-type'])) {
             $info->unexpected_tags['psalm-import-type']['lines'] = self::tagOffsetsToLines(

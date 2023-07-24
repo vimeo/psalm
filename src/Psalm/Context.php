@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm;
 
 use InvalidArgumentException;
@@ -445,7 +447,7 @@ final class Context
         Context $end_context,
         bool $has_leaving_statements,
         array $vars_to_update,
-        array &$updated_vars
+        array &$updated_vars,
     ): void {
         foreach ($start_context->vars_in_scope as $var_id => $old_type) {
             // this is only true if there was some sort of type negation
@@ -494,7 +496,7 @@ final class Context
      */
     public function updateReferencesPossiblyFromConfusingScope(
         Context $confusing_scope_context,
-        StatementsAnalyzer $statements_analyzer
+        StatementsAnalyzer $statements_analyzer,
     ): void {
         $references = $confusing_scope_context->references_in_scope
             + $confusing_scope_context->references_to_external_scope;
@@ -669,7 +671,7 @@ final class Context
         string $remove_var_id,
         array $clauses,
         ?Union $new_type = null,
-        ?StatementsAnalyzer $statements_analyzer = null
+        ?StatementsAnalyzer $statements_analyzer = null,
     ): array {
         $new_type_string = $new_type ? $new_type->getId() : '';
         $clauses_to_keep = [];
@@ -735,7 +737,7 @@ final class Context
     public function removeVarFromConflictingClauses(
         string $remove_var_id,
         ?Union $new_type = null,
-        ?StatementsAnalyzer $statements_analyzer = null
+        ?StatementsAnalyzer $statements_analyzer = null,
     ): void {
         $this->clauses = self::filterClauses($remove_var_id, $this->clauses, $new_type, $statements_analyzer);
         $this->parent_remove_vars[$remove_var_id] = true;
@@ -749,7 +751,7 @@ final class Context
         string $remove_var_id,
         Union $existing_type,
         ?Union $new_type = null,
-        ?StatementsAnalyzer $statements_analyzer = null
+        ?StatementsAnalyzer $statements_analyzer = null,
     ): void {
         $this->removeVarFromConflictingClauses(
             $remove_var_id,
@@ -919,7 +921,7 @@ final class Context
 
     public function mergeFunctionExceptions(
         FunctionLikeStorage $function_storage,
-        CodeLocation $codelocation
+        CodeLocation $codelocation,
     ): void {
         $hash = $codelocation->getHash();
         foreach ($function_storage->throws as $possibly_thrown_exception => $_) {

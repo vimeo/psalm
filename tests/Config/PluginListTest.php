@@ -18,14 +18,11 @@ class PluginListTest extends TestCase
 {
     use MockeryPHPUnitIntegration;
 
-    /** @var ConfigFile&MockInterface */
-    private $config_file;
+    private ConfigFile&MockInterface $config_file;
 
-    /** @var Config&MockInterface */
-    private $config;
+    private Config&MockInterface $config;
 
-    /** @var ComposerLock&MockInterface */
-    private $composer_lock;
+    private ComposerLock&MockInterface $composer_lock;
 
     public function setUp(): void
     {

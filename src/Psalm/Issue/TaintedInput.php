@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Issue;
 
 use Psalm\CodeLocation;
@@ -30,7 +32,7 @@ abstract class TaintedInput extends CodeIssue
         string $message,
         CodeLocation $code_location,
         array $journey,
-        string $journey_text
+        string $journey_text,
     ) {
         parent::__construct($message, $code_location);
 
@@ -58,7 +60,7 @@ abstract class TaintedInput extends CodeIssue
 
     public static function nodeToDataFlowNodeData(
         CodeLocation $location,
-        string $label
+        string $label,
     ): DataFlowNodeData {
         $selection_bounds = $location->getSelectionBounds();
         $snippet_bounds = $location->getSnippetBounds();

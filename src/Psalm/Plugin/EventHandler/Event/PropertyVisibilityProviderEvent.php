@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Plugin\EventHandler\Event;
 
 use Psalm\CodeLocation;
@@ -22,7 +24,7 @@ final class PropertyVisibilityProviderEvent
         string $property_name,
         bool $read_mode,
         Context $context,
-        CodeLocation $code_location
+        CodeLocation $code_location,
     ) {
         $this->source = $source;
         $this->fq_classlike_name = $fq_classlike_name;

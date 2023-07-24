@@ -55,7 +55,7 @@ class ErrorFixTest extends TestCase
     public function testErrorFix(
         array $files,
         array $error_counts,
-        array $ignored_issues = []
+        array $ignored_issues = [],
     ): void {
         $this->project_analyzer->getCodebase()->diff_methods = true;
 

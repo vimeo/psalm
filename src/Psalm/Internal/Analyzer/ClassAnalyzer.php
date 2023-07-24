@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer;
 
 use Exception;
@@ -144,7 +146,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
     public function analyze(
         ?Context $class_context = null,
-        ?Context $global_context = null
+        ?Context $global_context = null,
     ): void {
         $class = $this->class;
 
@@ -671,7 +673,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         Context $class_context,
         string $fq_class_name,
         ?string $parent_fq_class_name,
-        array $stmts = []
+        array $stmts = [],
     ): void {
         $codebase = $statements_source->getCodebase();
 
@@ -1000,7 +1002,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         ClassLikeStorage $storage,
         Context $class_context,
         ?Context $global_context = null,
-        ?MethodAnalyzer $constructor_analyzer = null
+        ?MethodAnalyzer $constructor_analyzer = null,
     ): void {
         if (!$config->reportIssueInFile('PropertyNotSetInConstructor', $this->getFilePath())) {
             return;
@@ -1363,7 +1365,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         Context $class_context,
         ?Context $global_context = null,
         ?MethodAnalyzer &$constructor_analyzer = null,
-        ?TraitAnalyzer $previous_trait_analyzer = null
+        ?TraitAnalyzer $previous_trait_analyzer = null,
     ): ?bool {
         $codebase = $this->getCodebase();
 
@@ -1515,7 +1517,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
     private function analyzeProperty(
         SourceAnalyzer $source,
         PhpParser\Node\Stmt\Property $stmt,
-        Context $context
+        Context $context,
     ): void {
         $fq_class_name = $source->getFQCLN();
         $property_name = $stmt->props[0]->name->name;
@@ -1617,7 +1619,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         PhpParser\Node\Stmt\Property $property,
         Union $inferred_type,
         StatementsSource $source,
-        bool $docblock_only = false
+        bool $docblock_only = false,
     ): void {
         $manipulator = PropertyDocblockManipulator::getForProperty(
             $project_analyzer,
@@ -1661,7 +1663,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         SourceAnalyzer $source,
         Context $class_context,
         ?Context $global_context = null,
-        bool $is_fake = false
+        bool $is_fake = false,
     ): ?MethodAnalyzer {
         $config = Config::getInstance();
 
@@ -1836,7 +1838,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
     private static function getThisObjectType(
         ClassLikeStorage $class_storage,
-        string $original_fq_classlike_name
+        string $original_fq_classlike_name,
     ): TNamedObject {
         if ($class_storage->template_types) {
             $template_params = [];
@@ -1872,7 +1874,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         string $fq_classlike_name,
         MethodIdentifier $analyzed_method_id,
         MethodIdentifier $actual_method_id,
-        bool $did_explicitly_return
+        bool $did_explicitly_return,
     ): void {
         $secondary_return_type_location = null;
 
@@ -2000,7 +2002,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         PhpParser\Node\Stmt $class,
         Codebase $codebase,
         string $fq_class_name,
-        ClassLikeStorage $storage
+        ClassLikeStorage $storage,
     ): bool {
         $classlike_storage_provider = $codebase->classlike_storage_provider;
 
@@ -2303,7 +2305,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         string $parent_fq_class_name,
         ClassLikeStorage $storage,
         Codebase $codebase,
-        ?Context $class_context
+        ?Context $class_context,
     ): void {
         $classlike_storage_provider = $codebase->classlike_storage_provider;
 

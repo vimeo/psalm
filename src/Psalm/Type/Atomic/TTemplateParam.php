@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type\Atomic;
 
 use Psalm\Codebase;
@@ -42,7 +44,7 @@ final class TTemplateParam extends Atomic
         Union $extends,
         string $defining_class,
         array $extra_types = [],
-        bool $from_docblock = false
+        bool $from_docblock = false,
     ) {
         $this->param_name = $param_name;
         $this->as = $extends;
@@ -103,7 +105,7 @@ final class TTemplateParam extends Atomic
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        int $analysis_php_version_id
+        int $analysis_php_version_id,
     ): ?string {
         return null;
     }
@@ -115,7 +117,7 @@ final class TTemplateParam extends Atomic
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        bool $use_phpdoc_format
+        bool $use_phpdoc_format,
     ): string {
         if ($use_phpdoc_format) {
             return $this->as->toNamespacedString(
@@ -151,7 +153,7 @@ final class TTemplateParam extends Atomic
      */
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
-        ?Codebase $codebase
+        ?Codebase $codebase,
     ): self {
         $intersection = $this->replaceIntersectionTemplateTypesWithArgTypes($template_result, $codebase);
         if (!$intersection) {

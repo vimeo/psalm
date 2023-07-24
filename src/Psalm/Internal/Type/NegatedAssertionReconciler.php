@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Type;
 
 use Psalm\CodeLocation;
@@ -57,7 +59,7 @@ class NegatedAssertionReconciler extends Reconciler
         ?CodeLocation $code_location,
         array $suppressed_issues,
         int &$failed_reconciliation,
-        bool $inside_loop
+        bool $inside_loop,
     ): Union {
         $existing_var_type = ClosedInheritanceToUnion::map(
             $existing_var_type,
@@ -320,7 +322,7 @@ class NegatedAssertionReconciler extends Reconciler
         ?string $key,
         bool $negated,
         ?CodeLocation $code_location,
-        array $suppressed_issues
+        array $suppressed_issues,
     ): Union {
         $existing_var_type = $existing_var_type->getBuilder();
         $existing_var_atomic_types = $existing_var_type->getAtomicTypes();

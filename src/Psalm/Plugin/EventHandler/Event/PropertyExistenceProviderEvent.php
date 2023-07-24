@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Plugin\EventHandler\Event;
 
 use Psalm\CodeLocation;
@@ -28,7 +30,7 @@ final class PropertyExistenceProviderEvent
         bool $read_mode,
         ?StatementsSource $source = null,
         ?Context $context = null,
-        ?CodeLocation $code_location = null
+        ?CodeLocation $code_location = null,
     ) {
         $this->fq_classlike_name = $fq_classlike_name;
         $this->property_name = $property_name;

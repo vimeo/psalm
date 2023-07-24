@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm;
 
 use function sha1;
@@ -30,7 +32,7 @@ final class FileManipulation
         int $end,
         string $insertion_text,
         bool $preserve_indentation = false,
-        bool $remove_trailing_newline = false
+        bool $remove_trailing_newline = false,
     ) {
         $this->start = $start;
         $this->end = $end;

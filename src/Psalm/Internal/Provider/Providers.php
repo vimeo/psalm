@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Provider;
 
 use RuntimeException;
@@ -38,7 +40,7 @@ class Providers
         ?FileStorageCacheProvider $file_storage_cache_provider = null,
         ?ClassLikeStorageCacheProvider $classlike_storage_cache_provider = null,
         ?FileReferenceCacheProvider $file_reference_cache_provider = null,
-        ?ProjectCacheProvider $project_cache_provider = null
+        ?ProjectCacheProvider $project_cache_provider = null,
     ) {
         $this->file_provider = $file_provider;
         $this->parser_cache_provider = $parser_cache_provider;

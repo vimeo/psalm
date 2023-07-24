@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Scope;
 
 use Psalm\Context;
@@ -37,7 +39,7 @@ class IfConditionalScope
         Context $post_if_context,
         array $cond_referenced_var_ids,
         array $assigned_in_conditional_var_ids,
-        array $entry_clauses
+        array $entry_clauses,
     ) {
         $this->if_context = $if_context;
         $this->post_if_context = $post_if_context;

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type\Atomic;
 
 /**
@@ -15,7 +17,7 @@ final class TUnknownClassString extends TClassString
     public function __construct(
         ?TObject $as_unknown_type,
         bool $is_loaded = false,
-        bool $from_docblock = false
+        bool $from_docblock = false,
     ) {
         parent::__construct(
             'object',

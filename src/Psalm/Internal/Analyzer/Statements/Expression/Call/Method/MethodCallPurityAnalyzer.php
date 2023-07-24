@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call\Method;
 
 use PhpParser;
@@ -35,7 +37,7 @@ class MethodCallPurityAnalyzer
         ClassLikeStorage $class_storage,
         Context $context,
         Config $config,
-        AtomicMethodCallAnalysisResult $result
+        AtomicMethodCallAnalysisResult $result,
     ): void {
         $method_pure_compatible = $method_storage->external_mutation_free
             && $statements_analyzer->node_data->isPureCompatible($stmt->var);

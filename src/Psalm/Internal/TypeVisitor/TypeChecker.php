@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\TypeVisitor;
 
 use InvalidArgumentException;
@@ -80,7 +82,7 @@ class TypeChecker extends TypeVisitor
         bool $inferred = true,
         bool $inherited = false,
         bool $prevent_template_covariance = false,
-        ?string $calling_method_id = null
+        ?string $calling_method_id = null,
     ) {
         $this->source = $source;
         $this->code_location = $code_location;

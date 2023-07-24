@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Storage;
 
 use Psalm\Aliases;
@@ -494,7 +496,7 @@ final class ClassLikeStorage implements HasAttributesInterface
 
     public function hasAttributeIncludingParents(
         string $fq_class_name,
-        Codebase $codebase
+        Codebase $codebase,
     ): bool {
         if ($this->hasAttribute($fq_class_name)) {
             return true;

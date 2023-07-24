@@ -47,7 +47,7 @@ class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProviderInter
         Union $first_arg_type,
         SourceAnalyzer $statements_source,
         Context $context,
-        CodeLocation $location
+        CodeLocation $location,
     ): Atomic {
         self::$fallback ??= new TArray([Type::getString(), Type::getMixed()]);
 

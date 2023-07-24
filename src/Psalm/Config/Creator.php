@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Config;
 
 use JsonException;
@@ -65,7 +67,7 @@ final class Creator
         string $current_dir,
         ?string $suggested_dir,
         int $level,
-        string $vendor_dir
+        string $vendor_dir,
     ): string {
         $paths = self::getPaths($current_dir, $suggested_dir);
 
@@ -100,7 +102,7 @@ final class Creator
     public static function createBareConfig(
         string $current_dir,
         ?string $suggested_dir,
-        string $vendor_dir
+        string $vendor_dir,
     ): Config {
         $config_contents = self::getContents($current_dir, $suggested_dir, 1, $vendor_dir);
 

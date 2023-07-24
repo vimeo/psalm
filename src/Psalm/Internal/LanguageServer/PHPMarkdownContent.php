@@ -38,18 +38,16 @@ class PHPMarkdownContent extends MarkupContent implements JsonSerializable
         }
         parent::__construct(
             MarkupKind::MARKDOWN,
-            "$markdown```php\n<?php\n$code\n```",
+            "$markdown```php\n<?php declare(strict_types=1);\n$code\n```",
         );
     }
 
     /**
      * This is needed because VSCode Does not like nulls
      * meaning if a null is sent then this will not compute
-     *
-     * @return mixed
      */
     #[ReturnTypeWillChange]
-    public function jsonSerialize()
+    public function jsonSerialize(): mixed
     {
         $vars = get_object_vars($this);
         unset($vars['title'], $vars['description'], $vars['code']);

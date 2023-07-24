@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Config;
 
 use FilesystemIterator;
@@ -113,8 +115,8 @@ class FileFilter
     public static function loadFromArray(
         array $config,
         string $base_dir,
-        bool $inclusive
-    ) {
+        bool $inclusive,
+    ): static {
         $allow_missing_files = ($config['allowMissingFiles'] ?? false) === true;
 
         $filter = new static($inclusive);
@@ -375,14 +377,11 @@ class FileFilter
         return $filter;
     }
 
-    /**
-     * @return static
-     */
     public static function loadFromXMLElement(
         SimpleXMLElement $e,
         string $base_dir,
-        bool $inclusive
-    ) {
+        bool $inclusive,
+    ): static {
         $config = [];
         $config['allowMissingFiles'] = ((string) $e['allowMissingFiles']) === 'true';
 

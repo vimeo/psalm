@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Storage;
 
 use Psalm\Codebase;
@@ -24,10 +26,9 @@ final class Possibilities
     public $var_id;
 
     /**
-     * @param string|int $var_id
      * @param list<Assertion> $rule
      */
-    public function __construct($var_id, array $rule)
+    public function __construct(string|int $var_id, array $rule)
     {
         $this->rule = $rule;
         $this->var_id = $var_id;
@@ -36,7 +37,7 @@ final class Possibilities
     public function getUntemplatedCopy(
         TemplateResult $template_result,
         ?string $this_var_id,
-        ?Codebase $codebase
+        ?Codebase $codebase,
     ): self {
         $assertion_rules = [];
 

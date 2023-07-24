@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type\Atomic;
 
 use Psalm\Type\Atomic;
@@ -32,7 +34,7 @@ class TMixed extends Atomic
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        int $analysis_php_version_id
+        int $analysis_php_version_id,
     ): ?string {
         return $analysis_php_version_id >= 8_00_00 ? 'mixed' : null;
     }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Storage\Assertion;
 
 use Psalm\Storage\Assertion;

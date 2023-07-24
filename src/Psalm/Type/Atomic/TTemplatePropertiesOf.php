@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type\Atomic;
 
 use Psalm\Codebase;
@@ -40,7 +42,7 @@ final class TTemplatePropertiesOf extends Atomic
         string $defining_class,
         TTemplateParam $as,
         ?int $visibility_filter,
-        bool $from_docblock = false
+        bool $from_docblock = false,
     ) {
         $this->param_name = $param_name;
         $this->defining_class = $defining_class;
@@ -70,7 +72,7 @@ final class TTemplatePropertiesOf extends Atomic
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        int $analysis_php_version_id
+        int $analysis_php_version_id,
     ): string {
         return $this->getKey();
     }
@@ -85,7 +87,7 @@ final class TTemplatePropertiesOf extends Atomic
      */
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
-        ?Codebase $codebase
+        ?Codebase $codebase,
     ): self {
         $param = new TTemplateParam(
             $this->as->param_name,

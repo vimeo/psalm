@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
 use PhpParser;
@@ -102,7 +104,7 @@ class ArgumentAnalyzer
         array $class_generic_params,
         ?TemplateResult $template_result,
         bool $specialize_taint,
-        bool $in_call_map
+        bool $in_call_map,
     ): ?bool {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -240,7 +242,7 @@ class ArgumentAnalyzer
         ?array $class_generic_params,
         ?TemplateResult $template_result,
         bool $specialize_taint,
-        bool $in_call_map
+        bool $in_call_map,
     ): ?bool {
         if (!$function_param->type) {
             if (!$codebase->infer_types_from_usage && !$statements_analyzer->data_flow_graph) {
@@ -676,7 +678,7 @@ class ArgumentAnalyzer
         ?Atomic $unpacked_atomic_array,
         bool $specialize_taint,
         bool $in_call_map,
-        CodeLocation $function_call_location
+        CodeLocation $function_call_location,
     ): ?bool {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -1170,7 +1172,7 @@ class ArgumentAnalyzer
         Union $param_type,
         CodeLocation $arg_location,
         PhpParser\Node\Expr $input_expr,
-        Context $context
+        Context $context,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -1345,7 +1347,7 @@ class ArgumentAnalyzer
         ?Union $signature_param_type,
         Context $context,
         bool $unpack,
-        ?Atomic $unpacked_atomic_array
+        ?Atomic $unpacked_atomic_array,
     ): void {
         if ($param_type->hasMixed()) {
             return;
@@ -1471,7 +1473,7 @@ class ArgumentAnalyzer
         Union $input_type,
         PhpParser\Node\Expr $expr,
         Context $context,
-        bool $specialize_taint
+        bool $specialize_taint,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 

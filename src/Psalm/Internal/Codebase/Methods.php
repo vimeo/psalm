@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Codebase;
 
 use InvalidArgumentException;
@@ -74,7 +76,7 @@ class Methods
     public function __construct(
         ClassLikeStorageProvider $storage_provider,
         FileReferenceProvider $file_reference_provider,
-        ClassLikes $classlikes
+        ClassLikes $classlikes,
     ) {
         $this->classlike_storage_provider = $storage_provider;
         $this->file_reference_provider = $file_reference_provider;
@@ -99,7 +101,7 @@ class Methods
         ?StatementsSource $source = null,
         ?string $source_file_path = null,
         bool $use_method_existence_provider = true,
-        bool $is_used = false
+        bool $is_used = false,
     ): bool {
         $fq_class_name = $method_id->fq_class_name;
         $method_name = $method_id->method_name;
@@ -346,7 +348,7 @@ class Methods
         MethodIdentifier $method_id,
         ?StatementsSource $source = null,
         ?array $args = null,
-        ?Context $context = null
+        ?Context $context = null,
     ): array {
         $fq_class_name = $method_id->fq_class_name;
         $method_name = $method_id->method_name;
@@ -492,7 +494,7 @@ class Methods
         Codebase $codebase,
         Union $type,
         string $appearing_fq_class_name,
-        string $base_fq_class_name
+        string $base_fq_class_name,
     ): Union {
         $class_storage = $codebase->classlike_storage_provider->get($appearing_fq_class_name);
         $extends = $class_storage->template_extended_params;
@@ -515,7 +517,7 @@ class Methods
      */
     public static function getExtendedTemplatedTypes(
         TTemplateParam $atomic_type,
-        array $extends
+        array $extends,
     ): array {
         $extra_added_types = [];
 
@@ -557,7 +559,7 @@ class Methods
         MethodIdentifier $method_id,
         ?string &$self_class,
         ?SourceAnalyzer $source_analyzer = null,
-        ?array $args = null
+        ?array $args = null,
     ): ?Union {
         $original_fq_class_name = $method_id->fq_class_name;
         $original_method_name = $method_id->method_name;
@@ -926,7 +928,7 @@ class Methods
 
     public function getMethodReturnTypeLocation(
         MethodIdentifier $method_id,
-        CodeLocation &$defined_location = null
+        CodeLocation &$defined_location = null,
     ): ?CodeLocation {
         $method_id = $this->getDeclaringMethodId($method_id);
 
@@ -966,7 +968,7 @@ class Methods
         string $fq_class_name,
         string $method_name_lc,
         string $declaring_fq_class_name,
-        string $declaring_method_name_lc
+        string $declaring_method_name_lc,
     ): void {
         $class_storage = $this->classlike_storage_provider->get($fq_class_name);
 
@@ -984,7 +986,7 @@ class Methods
         string $fq_class_name,
         string $method_name_lc,
         string $appearing_fq_class_name,
-        string $appearing_method_name_lc
+        string $appearing_method_name_lc,
     ): void {
         $class_storage = $this->classlike_storage_provider->get($fq_class_name);
 
@@ -996,7 +998,7 @@ class Methods
 
     /** @psalm-mutation-free */
     public function getDeclaringMethodId(
-        MethodIdentifier $method_id
+        MethodIdentifier $method_id,
     ): ?MethodIdentifier {
         $fq_class_name = $this->classlikes->getUnAliasedName($method_id->fq_class_name);
 
@@ -1019,7 +1021,7 @@ class Methods
      * Get the class this method appears in (vs is declared in, which could give a trait
      */
     public function getAppearingMethodId(
-        MethodIdentifier $method_id
+        MethodIdentifier $method_id,
     ): ?MethodIdentifier {
         $fq_class_name = $this->classlikes->getUnAliasedName($method_id->fq_class_name);
 

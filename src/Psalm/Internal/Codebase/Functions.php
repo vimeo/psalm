@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Codebase;
 
 use Exception;
@@ -73,7 +75,7 @@ class Functions
         ?StatementsAnalyzer $statements_analyzer,
         string $function_id,
         ?string $root_file_path = null,
-        ?string $checked_file_path = null
+        ?string $checked_file_path = null,
     ): FunctionStorage {
         if ($function_id[0] === '\\') {
             $function_id = substr($function_id, 1);
@@ -184,7 +186,7 @@ class Functions
      */
     public function functionExists(
         StatementsAnalyzer $statements_analyzer,
-        string $function_id
+        string $function_id,
     ): bool {
         if ($this->existence_provider->has($function_id)) {
             $function_exists = $this->existence_provider->doesFunctionExist($statements_analyzer, $function_id);
@@ -278,7 +280,7 @@ class Functions
         string $stub,
         int $offset,
         string $file_path,
-        Codebase $codebase
+        Codebase $codebase,
     ): array {
         if ($stub[0] === '*') {
             $stub = substr($stub, 1);
@@ -403,7 +405,7 @@ class Functions
         ?NodeTypeProvider $type_provider,
         string $function_id,
         ?array $args,
-        bool &$must_use = true
+        bool &$must_use = true,
     ): bool {
         $impure_functions = [
             // file io

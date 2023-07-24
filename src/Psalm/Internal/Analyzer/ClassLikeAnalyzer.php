@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer;
 
 use InvalidArgumentException;
@@ -113,7 +115,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
 
     public function getMethodMutations(
         string $method_name,
-        Context $context
+        Context $context,
     ): void {
         $project_analyzer = $this->getFileAnalyzer()->project_analyzer;
         $codebase = $project_analyzer->getCodebase();
@@ -205,7 +207,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         ?string $calling_fq_class_name,
         ?string $calling_method_id,
         array $suppressed_issues,
-        ?ClassLikeNameOptions $options = null
+        ?ClassLikeNameOptions $options = null,
     ): ?bool {
         if ($options === null) {
             $options = new ClassLikeNameOptions();
@@ -410,7 +412,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
      */
     public static function getFQCLNFromNameObject(
         PhpParser\Node\Name $class_name,
-        Aliases $aliases
+        Aliases $aliases,
     ): string {
         /** @var string|null */
         $resolved_name = $class_name->getAttribute('resolvedName');
@@ -494,10 +496,8 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
 
     /**
      * Gets the Psalm type from a particular value
-     *
-     * @param  mixed $value
      */
-    public static function getTypeFromValue($value): Union
+    public static function getTypeFromValue(mixed $value): Union
     {
         switch (gettype($value)) {
             case 'boolean':
@@ -536,7 +536,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         SourceAnalyzer $source,
         CodeLocation $code_location,
         array $suppressed_issues,
-        bool $emit_issues = true
+        bool $emit_issues = true,
     ): ?bool {
         [$fq_class_name, $property_name] = explode('::$', $property_id);
 
@@ -649,7 +649,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         ClassLikeStorage $storage,
         ClassLikeStorage $parent_storage,
         CodeLocation $code_location,
-        int $given_param_count
+        int $given_param_count,
     ): void {
         $expected_param_count = $parent_storage->template_types === null
             ? 0

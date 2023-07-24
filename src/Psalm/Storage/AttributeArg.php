@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Storage;
 
 use Psalm\CodeLocation;
@@ -29,13 +31,10 @@ final class AttributeArg
      */
     public $location;
 
-    /**
-     * @param Union|UnresolvedConstantComponent $type
-     */
     public function __construct(
         ?string $name,
-        $type,
-        CodeLocation $location
+        Union|UnresolvedConstantComponent $type,
+        CodeLocation $location,
     ) {
         $this->name = $name;
         $this->type = $type;

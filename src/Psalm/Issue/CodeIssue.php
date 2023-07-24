@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Issue;
 
 use Psalm\CodeLocation;
@@ -34,7 +36,7 @@ abstract class CodeIssue
 
     public function __construct(
         string $message,
-        CodeLocation $code_location
+        CodeLocation $code_location,
     ) {
         $this->code_location = $code_location;
         $this->message = $message;

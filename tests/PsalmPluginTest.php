@@ -23,11 +23,9 @@ class PsalmPluginTest extends TestCase
 {
     use MockeryPHPUnitIntegration;
 
-    /** @var PluginList&MockInterface */
-    private $plugin_list;
+    private PluginList&MockInterface $plugin_list;
 
-    /** @var PluginListFactory&MockInterface */
-    private $plugin_list_factory;
+    private PluginListFactory&MockInterface $plugin_list_factory;
 
     private Application $app;
 

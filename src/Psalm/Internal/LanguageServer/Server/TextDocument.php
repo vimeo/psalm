@@ -47,7 +47,7 @@ class TextDocument
     public function __construct(
         LanguageServer $server,
         Codebase $codebase,
-        ProjectAnalyzer $project_analyzer
+        ProjectAnalyzer $project_analyzer,
     ) {
         $this->server = $server;
         $this->codebase = $codebase;

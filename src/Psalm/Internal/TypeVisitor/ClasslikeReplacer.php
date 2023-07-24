@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\TypeVisitor;
 
 use Psalm\Type\Atomic\TClassConstant;
@@ -21,7 +23,7 @@ class ClasslikeReplacer extends MutableTypeVisitor
 
     public function __construct(
         string $old,
-        string $new
+        string $new,
     ) {
         $this->old = strtolower($old);
         $this->new = $new;

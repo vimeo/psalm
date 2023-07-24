@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type\Atomic;
 
 use Psalm\Type;
@@ -47,7 +49,7 @@ final class TClassConstant extends Atomic
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        int $analysis_php_version_id
+        int $analysis_php_version_id,
     ): ?string {
         return null;
     }
@@ -64,7 +66,7 @@ final class TClassConstant extends Atomic
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        bool $use_phpdoc_format
+        bool $use_phpdoc_format,
     ): string {
         if ($this->fq_classlike_name === 'static') {
             return 'static::' . $this->const_name;

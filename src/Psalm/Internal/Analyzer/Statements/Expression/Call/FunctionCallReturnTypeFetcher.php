@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
 use InvalidArgumentException;
@@ -71,7 +73,7 @@ class FunctionCallReturnTypeFetcher
         ?FunctionLikeStorage $function_storage,
         ?TCallable $callmap_callable,
         TemplateResult $template_result,
-        Context $context
+        Context $context,
     ): Union {
         $stmt_type = null;
         $config = $codebase->config;
@@ -314,7 +316,7 @@ class FunctionCallReturnTypeFetcher
         string $function_id,
         array $call_args,
         TCallable $callmap_callable,
-        Context $context
+        Context $context,
     ): Union {
         $call_map_key = strtolower($function_id);
 
@@ -540,7 +542,7 @@ class FunctionCallReturnTypeFetcher
         FunctionLikeStorage $function_storage,
         Union &$stmt_type,
         TemplateResult $template_result,
-        Context $context
+        Context $context,
     ): ?DataFlowNode {
         if (!$statements_analyzer->data_flow_graph) {
             return null;
@@ -702,7 +704,7 @@ class FunctionCallReturnTypeFetcher
         CodeLocation $node_location,
         DataFlowNode $function_call_node,
         array $removed_taints,
-        array $added_taints = []
+        array $added_taints = [],
     ): void {
         foreach ($function_storage->return_source_params as $i => $path_type) {
             if (!isset($args[$i])) {

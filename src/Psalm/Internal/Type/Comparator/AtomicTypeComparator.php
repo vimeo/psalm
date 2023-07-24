@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Type\Comparator;
 
 use Psalm\Codebase;
@@ -63,7 +65,7 @@ class AtomicTypeComparator
         Atomic $container_type_part,
         bool $allow_interface_equality = false,
         bool $allow_float_int_equality = true,
-        ?TypeComparisonResult $atomic_comparison_result = null
+        ?TypeComparisonResult $atomic_comparison_result = null,
     ): bool {
         if ($input_type_part instanceof TList) {
             $input_type_part = $input_type_part->getKeyedArray();
@@ -842,7 +844,7 @@ class AtomicTypeComparator
         Codebase $codebase,
         Atomic $type1_part,
         Atomic $type2_part,
-        bool $allow_interface_equality = true
+        bool $allow_interface_equality = true,
     ): bool {
         if ($type1_part instanceof TList) {
             $type1_part = $type1_part->getKeyedArray();

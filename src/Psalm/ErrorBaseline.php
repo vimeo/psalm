@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm;
 
 use DOMDocument;
@@ -62,7 +64,7 @@ final class ErrorBaseline
         FileProvider $fileProvider,
         string $baselineFile,
         array $issues,
-        bool $include_php_versions
+        bool $include_php_versions,
     ): void {
         $groupedIssues = self::countIssueTypesByFile($issues);
 
@@ -141,7 +143,7 @@ final class ErrorBaseline
         FileProvider $fileProvider,
         string $baselineFile,
         array $issues,
-        bool $include_php_versions
+        bool $include_php_versions,
     ): array {
         $existingIssues = self::read($fileProvider, $baselineFile);
         $newIssues = self::countIssueTypesByFile($issues);
@@ -236,7 +238,7 @@ final class ErrorBaseline
         FileProvider $fileProvider,
         string $baselineFile,
         array $groupedIssues,
-        bool $include_php_versions
+        bool $include_php_versions,
     ): void {
         $baselineDoc = new DOMDocument('1.0', 'UTF-8');
         $filesNode = $baselineDoc->createElement('files');

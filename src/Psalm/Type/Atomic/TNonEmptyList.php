@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type\Atomic;
 
 use Psalm\Type;
@@ -41,7 +43,7 @@ class TNonEmptyList extends TList
         Union $type_param,
         ?int $count = null,
         ?int $min_count = null,
-        bool $from_docblock = false
+        bool $from_docblock = false,
     ) {
         $this->count = $count;
         $this->min_count = $min_count;

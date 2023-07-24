@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer;
 
 use PhpParser;
@@ -57,7 +59,7 @@ class CommentAnalyzer
         FileSource $source,
         Aliases $aliases,
         ?array $template_type_map = null,
-        ?array $type_aliases = null
+        ?array $type_aliases = null,
     ): array {
         $parsed_docblock = DocComment::parsePreservingLength($comment);
 
@@ -83,7 +85,7 @@ class CommentAnalyzer
         FileSource $source,
         Aliases $aliases,
         ?array $template_type_map = null,
-        ?array $type_aliases = null
+        ?array $type_aliases = null,
     ): array {
         $var_id = null;
 
@@ -218,7 +220,7 @@ class CommentAnalyzer
 
     private static function decorateVarDocblockComment(
         VarDocblockComment $var_comment,
-        ParsedDocblock $parsed_docblock
+        ParsedDocblock $parsed_docblock,
     ): void {
         $var_comment->deprecated = isset($parsed_docblock->tags['deprecated']);
         $var_comment->internal = isset($parsed_docblock->tags['internal']);
@@ -418,7 +420,7 @@ class CommentAnalyzer
     public static function getVarComments(
         PhpParser\Comment\Doc $doc_comment,
         StatementsAnalyzer $statements_analyzer,
-        PhpParser\Node\Expr\Variable $var
+        PhpParser\Node\Expr\Variable $var,
     ): array {
         $codebase = $statements_analyzer->getCodebase();
         $parsed_docblock = $statements_analyzer->getParsedDocblock();
@@ -465,7 +467,7 @@ class CommentAnalyzer
         array $var_comments,
         PhpParser\Node\Expr\Variable $var,
         Context $context,
-        StatementsAnalyzer $statements_analyzer
+        StatementsAnalyzer $statements_analyzer,
     ): ?Union {
         if (!is_string($var->name)) {
             return null;

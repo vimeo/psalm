@@ -27,7 +27,7 @@ class FileDiffTest extends TestCase
         array $same_signatures,
         array $changed_methods,
         array $diff_map_offsets,
-        array $deletion_ranges
+        array $deletion_ranges,
     ): void {
         if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
             $this->markTestSkipped();
@@ -84,7 +84,7 @@ class FileDiffTest extends TestCase
         array $same_methods,
         array $same_signatures,
         array $changed_methods,
-        array $diff_map_offsets
+        array $diff_map_offsets,
     ): void {
         if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
             $this->markTestSkipped();

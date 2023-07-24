@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type\Atomic;
 
 use Psalm\Codebase;
@@ -35,7 +37,7 @@ final class TClosure extends TNamedObject
         ?bool $is_pure = null,
         array $byref_uses = [],
         array $extra_types = [],
-        bool $from_docblock = false
+        bool $from_docblock = false,
     ) {
         $this->params = $params;
         $this->return_type = $return_type;
@@ -60,7 +62,7 @@ final class TClosure extends TNamedObject
      */
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
-        ?Codebase $codebase
+        ?Codebase $codebase,
     ): self {
         $replaced = $this->replaceCallableTemplateTypesWithArgTypes($template_result, $codebase);
         $intersection = $this->replaceIntersectionTemplateTypesWithArgTypes($template_result, $codebase);
@@ -90,7 +92,7 @@ final class TClosure extends TNamedObject
         ?string $calling_function = null,
         bool $replace = true,
         bool $add_lower_bound = false,
-        int $depth = 0
+        int $depth = 0,
     ): self {
         $replaced = $this->replaceCallableTemplateTypesWithStandins(
             $template_result,

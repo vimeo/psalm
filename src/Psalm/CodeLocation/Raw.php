@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\CodeLocation;
 
 use Psalm\CodeLocation;
@@ -15,7 +17,7 @@ class Raw extends CodeLocation
         string $file_path,
         string $file_name,
         int $file_start,
-        int $file_end
+        int $file_end,
     ) {
         $this->file_start = $file_start;
         $this->file_end = $file_end;

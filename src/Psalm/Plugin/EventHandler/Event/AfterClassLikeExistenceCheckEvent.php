@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Plugin\EventHandler\Event;
 
 use Psalm\CodeLocation;
@@ -27,7 +29,7 @@ final class AfterClassLikeExistenceCheckEvent
         CodeLocation $code_location,
         StatementsSource $statements_source,
         Codebase $codebase,
-        array $file_replacements = []
+        array $file_replacements = [],
     ) {
         $this->fq_class_name = $fq_class_name;
         $this->code_location = $code_location;

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer;
 
 use InvalidArgumentException;
@@ -14,7 +16,6 @@ use UnexpectedValueException;
 
 use function assert;
 use function count;
-use function is_string;
 use function preg_replace;
 use function strpos;
 use function strtolower;

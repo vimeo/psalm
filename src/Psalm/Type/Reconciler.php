@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type;
 
 use InvalidArgumentException;
@@ -110,7 +112,7 @@ class Reconciler
         array $template_type_map = [],
         bool $inside_loop = false,
         ?CodeLocation $code_location = null,
-        bool $negated = false
+        bool $negated = false,
     ): array {
         if (!$new_types) {
             return [$existing_types, $existing_references];
@@ -641,7 +643,7 @@ class Reconciler
         bool $has_inverted_isset,
         bool $has_empty,
         bool $inside_loop,
-        bool &$has_object_array_access
+        bool &$has_object_array_access,
     ): ?Union {
         $key_parts = self::breakUpPathIntoParts($key);
 
@@ -908,7 +910,7 @@ class Reconciler
     private static function getPropertyType(
         Codebase $codebase,
         string $fq_class_name,
-        string $property_name
+        string $property_name,
     ): ?Union {
         $property_id = $fq_class_name . '::$' . $property_name;
 
@@ -958,18 +960,17 @@ class Reconciler
     }
 
     /**
-     * @param Union|MutableUnion $existing_var_type
      * @param  string[]     $suppressed_issues
      */
     protected static function triggerIssueForImpossible(
-        $existing_var_type,
+        Union|MutableUnion $existing_var_type,
         string $old_var_type_string,
         string $key,
         Assertion $assertion,
         bool $redundant,
         bool $negated,
         CodeLocation $code_location,
-        array $suppressed_issues
+        array $suppressed_issues,
     ): void {
         $assertion_string = (string)$assertion;
         $not = $assertion_string[0] === '!';
@@ -1091,7 +1092,7 @@ class Reconciler
         array $key_parts,
         array &$existing_types,
         array &$changed_var_ids,
-        Union $result_type
+        Union $result_type,
     ): void {
         array_pop($key_parts);
         $array_key = array_pop($key_parts);

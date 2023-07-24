@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\BinaryOp;
 
 use PhpParser;
@@ -34,7 +36,7 @@ class AndAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\BinaryOp $stmt,
         Context $context,
-        bool $from_stmt = false
+        bool $from_stmt = false,
     ): bool {
         if ($from_stmt) {
             $fake_if_stmt = new VirtualIf(

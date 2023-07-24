@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
@@ -20,7 +22,7 @@ class BooleanNotAnalyzer
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\BooleanNot $stmt,
-        Context $context
+        Context $context,
     ): bool {
 
 

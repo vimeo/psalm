@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
 use PhpParser;
@@ -80,7 +82,7 @@ class ArgumentsAnalyzer
         ?string $method_id,
         bool $allow_named_args,
         Context $context,
-        ?TemplateResult $template_result = null
+        ?TemplateResult $template_result = null,
     ): ?bool {
         $last_param = $function_params
             ? $function_params[count($function_params) - 1]
@@ -312,7 +314,7 @@ class ArgumentsAnalyzer
         int $argument_offset,
         PhpParser\Node\Arg $arg,
         Context $context,
-        ?TemplateResult &$template_result
+        ?TemplateResult &$template_result,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -367,7 +369,7 @@ class ArgumentsAnalyzer
         TemplateResult $template_result,
         int $argument_offset,
         PhpParser\Node\Arg $arg,
-        FunctionLikeParameter $param
+        FunctionLikeParameter $param,
     ): void {
         if (!$param->type) {
             return;
@@ -528,7 +530,6 @@ class ArgumentsAnalyzer
 
     /**
      * @param   list<PhpParser\Node\Arg>  $args
-     * @param   string|MethodIdentifier|null  $method_id
      * @param   array<int,FunctionLikeParameter>        $function_params
      * @return  false|null
      * @psalm-suppress ComplexMethod there's just not much that can be done about this
@@ -536,13 +537,13 @@ class ArgumentsAnalyzer
     public static function checkArgumentsMatch(
         StatementsAnalyzer $statements_analyzer,
         array $args,
-        $method_id,
+        string|MethodIdentifier|null $method_id,
         array $function_params,
         ?FunctionLikeStorage $function_storage,
         ?ClassLikeStorage $class_storage,
         TemplateResult $template_result,
         CodeLocation $code_location,
-        Context $context
+        Context $context,
     ): ?bool {
         $in_call_map = $method_id ? InternalCallMapHandler::inCallMap((string) $method_id) : false;
 
@@ -985,7 +986,7 @@ class ArgumentsAnalyzer
         int $argument_offset,
         PhpParser\Node\Arg $arg,
         Context $context,
-        ?TemplateResult $template_result
+        ?TemplateResult $template_result,
     ): ?bool {
         if ($arg->value instanceof PhpParser\Node\Scalar
             || $arg->value instanceof PhpParser\Node\Expr\Cast
@@ -1130,7 +1131,7 @@ class ArgumentsAnalyzer
     private static function evaluateArbitraryParam(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Arg $arg,
-        Context $context
+        Context $context,
     ): ?bool {
         // there are a bunch of things we want to evaluate even when we don't
         // know what function/method is being called
@@ -1241,7 +1242,7 @@ class ArgumentsAnalyzer
         ?string $method_id,
         int $argument_offset,
         PhpParser\Node\Arg $arg,
-        Context $context
+        Context $context,
     ): ?bool {
         $var_id = ExpressionIdentifier::getVarId(
             $arg->value,
@@ -1378,7 +1379,7 @@ class ArgumentsAnalyzer
         ?TemplateResult $template_result,
         array $args,
         array $function_params,
-        ?FunctionLikeParameter $last_param
+        ?FunctionLikeParameter $last_param,
     ): ?TemplateResult {
         $template_types = CallAnalyzer::getTemplateTypesForCall(
             $codebase,
@@ -1458,7 +1459,6 @@ class ArgumentsAnalyzer
 
     /**
      * @param   array<int, PhpParser\Node\Arg>  $args
-     * @param   string|MethodIdentifier|null  $method_id
      * @param   array<int,FunctionLikeParameter>        $function_params
      */
     private static function checkArgCount(
@@ -1471,9 +1471,9 @@ class ArgumentsAnalyzer
         array $args,
         array $function_params,
         bool $in_call_map,
-        $method_id,
+        string|MethodIdentifier|null $method_id,
         ?string $cased_method_id,
-        CodeLocation $code_location
+        CodeLocation $code_location,
     ): void {
         if (!$is_variadic
             && count($args) > count($function_params)

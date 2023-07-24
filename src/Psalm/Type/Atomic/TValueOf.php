@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type\Atomic;
 
 use Psalm\Codebase;
@@ -68,7 +70,7 @@ final class TValueOf extends Atomic
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        int $analysis_php_version_id
+        int $analysis_php_version_id,
     ): ?string {
         return null;
     }
@@ -102,7 +104,7 @@ final class TValueOf extends Atomic
     public static function getValueType(
         Union $type,
         Codebase $codebase,
-        bool $keep_template_params = false
+        bool $keep_template_params = false,
     ): ?Union {
         $value_types = [];
 

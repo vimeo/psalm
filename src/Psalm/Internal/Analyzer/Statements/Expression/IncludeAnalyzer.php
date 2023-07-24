@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use AssertionError;
@@ -53,7 +55,7 @@ class IncludeAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\Include_ $stmt,
         Context $context,
-        ?Context $global_context = null
+        ?Context $global_context = null,
     ): bool {
         $codebase = $statements_analyzer->getCodebase();
         $config = $codebase->config;
@@ -283,7 +285,7 @@ class IncludeAnalyzer
         ?NodeDataProvider $type_provider,
         ?StatementsAnalyzer $statements_analyzer,
         string $file_name,
-        Config $config
+        Config $config,
     ): ?string {
         if (DIRECTORY_SEPARATOR === '/') {
             $is_path_relative = $file_name[0] !== DIRECTORY_SEPARATOR;

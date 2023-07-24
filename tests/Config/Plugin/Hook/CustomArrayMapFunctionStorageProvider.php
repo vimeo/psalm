@@ -108,7 +108,7 @@ class CustomArrayMapFunctionStorageProvider implements DynamicFunctionStoragePro
     private static function createExpectedCallable(
         Union $input_type,
         DynamicTemplateProvider $template_provider,
-        int $return_template_offset = 0
+        int $return_template_offset = 0,
     ): TCallable {
         return new TCallable(
             'callable',
@@ -124,7 +124,7 @@ class CustomArrayMapFunctionStorageProvider implements DynamicFunctionStoragePro
      */
     private static function createRestCallables(
         DynamicTemplateProvider $template_provider,
-        int $expected_callable_args_count
+        int $expected_callable_args_count,
     ): array {
         $rest_callable_params = [];
 
@@ -160,7 +160,7 @@ class CustomArrayMapFunctionStorageProvider implements DynamicFunctionStoragePro
      */
     private static function createTemplates(
         DynamicTemplateProvider $template_provider,
-        int $expected_callable_count
+        int $expected_callable_count,
     ): array {
         $template_params = [];
 

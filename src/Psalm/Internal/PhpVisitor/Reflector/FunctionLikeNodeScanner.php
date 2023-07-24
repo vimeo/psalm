@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\PhpVisitor\Reflector;
 
 use LogicException;
@@ -105,7 +107,7 @@ class FunctionLikeNodeScanner
         Aliases $aliases,
         array $type_aliases,
         ?ClassLikeStorage $classlike_storage,
-        array $existing_function_template_types
+        array $existing_function_template_types,
     ) {
         $this->codebase = $codebase;
         $this->file_storage = $file_storage;
@@ -120,9 +122,8 @@ class FunctionLikeNodeScanner
 
     /**
      * @param  bool $fake_method in the case of @method annotations we do something a little strange
-     * @return FunctionStorage|MethodStorage|false
      */
-    public function start(PhpParser\Node\FunctionLike $stmt, bool $fake_method = false)
+    public function start(PhpParser\Node\FunctionLike $stmt, bool $fake_method = false): FunctionStorage|MethodStorage|false
     {
         if ($stmt instanceof PhpParser\Node\Expr\Closure
             || $stmt instanceof PhpParser\Node\Expr\ArrowFunction
@@ -733,7 +734,7 @@ class FunctionLikeNodeScanner
     private function inferPropertyTypeFromConstructor(
         PhpParser\Node\Stmt\ClassMethod $stmt,
         MethodStorage $storage,
-        ClassLikeStorage $classlike_storage
+        ClassLikeStorage $classlike_storage,
     ): void {
         if (!$stmt->stmts) {
             return;
@@ -800,7 +801,7 @@ class FunctionLikeNodeScanner
         PhpParser\Node\Param $param,
         PhpParser\Node\FunctionLike $stmt,
         bool $fake_method,
-        ?string $fq_classlike_name
+        ?string $fq_classlike_name,
     ): FunctionLikeParameter {
         $param_type = null;
 

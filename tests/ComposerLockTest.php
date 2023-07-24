@@ -212,10 +212,9 @@ class ComposerLockTest extends TestCase
     }
 
     /**
-     * @param mixed $data
      * @psalm-pure
      */
-    private function jsonFile($data): string
+    private function jsonFile(mixed $data): string
     {
         return 'data:application/json,' . json_encode($data, JSON_THROW_ON_ERROR);
     }

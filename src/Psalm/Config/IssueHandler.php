@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Config;
 
 use Psalm\Config;
@@ -26,7 +28,7 @@ final class IssueHandler
      */
     private array $custom_levels = [];
 
-    public static function loadFromXMLElement(SimpleXMLElement $e, string $base_dir): IssueHandler
+    public static function loadFromXMLElement(SimpleXMLElement $e, string $base_dir): self
     {
         $handler = new self();
 

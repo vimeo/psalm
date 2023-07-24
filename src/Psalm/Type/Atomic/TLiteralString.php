@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type\Atomic;
 
 use InvalidArgumentException;
@@ -102,7 +104,7 @@ class TLiteralString extends TString
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        bool $use_phpdoc_format
+        bool $use_phpdoc_format,
     ): string {
         return $use_phpdoc_format ? 'string' : "'" . $this->value . "'";
     }

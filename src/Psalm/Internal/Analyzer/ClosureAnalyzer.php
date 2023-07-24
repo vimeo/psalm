@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer;
 
 use PhpParser;
@@ -70,7 +72,7 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
     public static function analyzeExpression(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\FunctionLike $stmt,
-        Context $context
+        Context $context,
     ): bool {
         $closure_analyzer = new ClosureAnalyzer($stmt, $statements_analyzer);
 
@@ -232,7 +234,7 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
     public static function analyzeClosureUses(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\Closure $stmt,
-        Context $context
+        Context $context,
     ): ?bool {
         $param_names = [];
 

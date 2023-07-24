@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type\Atomic;
 
 use Psalm\Type\Union;
@@ -37,7 +39,7 @@ class TNonEmptyArray extends TArray
         ?int $count = null,
         ?int $min_count = null,
         string $value = 'non-empty-array',
-        bool $from_docblock = false
+        bool $from_docblock = false,
     ) {
         $this->count = $count;
         $this->min_count = $min_count;

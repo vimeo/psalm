@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Config;
 
 use Psalm\Exception\ConfigException;
@@ -13,14 +15,11 @@ final class ProjectFileFilter extends FileFilter
 {
     private ?ProjectFileFilter $file_filter = null;
 
-    /**
-     * @return static
-     */
     public static function loadFromXMLElement(
         SimpleXMLElement $e,
         string $base_dir,
-        bool $inclusive
-    ): ProjectFileFilter {
+        bool $inclusive,
+    ): static {
         $filter = parent::loadFromXMLElement($e, $base_dir, $inclusive);
 
         if (isset($e->ignoreFiles)) {

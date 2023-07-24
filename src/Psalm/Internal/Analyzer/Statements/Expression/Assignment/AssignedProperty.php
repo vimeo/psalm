@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\Assignment;
 
 use Psalm\Type\Union;
@@ -18,7 +20,7 @@ class AssignedProperty
     public function __construct(
         Union $property_type,
         string $id,
-        Union $assignment_type
+        Union $assignment_type,
     ) {
         $this->property_type = $property_type;
         $this->id = $id;

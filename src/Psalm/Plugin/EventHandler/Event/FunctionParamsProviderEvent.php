@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Plugin\EventHandler\Event;
 
 use PhpParser;
@@ -27,7 +29,7 @@ final class FunctionParamsProviderEvent
         string $function_id,
         array $call_args,
         ?Context $context = null,
-        ?CodeLocation $code_location = null
+        ?CodeLocation $code_location = null,
     ) {
         $this->statements_source = $statements_source;
         $this->function_id = $function_id;

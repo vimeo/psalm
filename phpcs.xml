@@ -10,7 +10,7 @@
       *  Configuration                                                                                                *
       ************************************************************************************************************** -->
 
-    <config name="php_version" value="70400"/>
+    <config name="php_version" value="80100"/>
     <config name="installed_paths" value="../../slevomat/coding-standard"/>
 
     <arg name="basepath" value="."/>
@@ -260,4 +260,6 @@
     <rule ref="SlevomatCodingStandard.Functions.RequireTrailingCommaInCall"/>
     <rule ref="SlevomatCodingStandard.Functions.RequireTrailingCommaInClosureUse"/>
     <rule ref="SlevomatCodingStandard.Functions.RequireTrailingCommaInDeclaration"/>
+
+    <rule ref="SlevomatCodingStandard.TypeHints.DeclareStrictTypes"/>
 </ruleset>

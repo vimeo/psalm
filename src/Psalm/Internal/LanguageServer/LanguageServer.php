@@ -143,7 +143,7 @@ class LanguageServer extends Dispatcher
         ProjectAnalyzer $project_analyzer,
         Codebase $codebase,
         ClientConfiguration $clientConfiguration,
-        Progress $progress
+        Progress $progress,
     ) {
         parent::__construct($this, '/');
 
@@ -232,7 +232,7 @@ class LanguageServer extends Dispatcher
         Config $config,
         ClientConfiguration $clientConfiguration,
         string $base_dir,
-        bool $inMemory = false
+        bool $inMemory = false,
     ): void {
         $progress = new Progress();
 
@@ -357,7 +357,6 @@ class LanguageServer extends Dispatcher
      * in. This must not necessarily be the locale of the operating
      * system.
      * @param string|null $rootPath The rootPath of the workspace. Is null if no folder is open.
-     * @param mixed $initializationOptions
      * @param string|null $trace The initial trace setting. If omitted trace is disabled ('off').
      * @psalm-suppress PossiblyUnusedParam
      */
@@ -368,8 +367,8 @@ class LanguageServer extends Dispatcher
         ?string $locale = null,
         ?string $rootPath = null,
         ?string $rootUri = null,
-        $initializationOptions = null,
-        ?string $trace = null
+        mixed $initializationOptions = null,
+        ?string $trace = null,
         //?array $workspaceFolders = null //error in json-dispatcher
     ): InitializeResult {
         $this->clientInfo = $clientInfo;

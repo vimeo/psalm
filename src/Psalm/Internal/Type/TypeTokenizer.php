@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Type;
 
 use Psalm\Aliases;
@@ -312,7 +314,7 @@ class TypeTokenizer
      */
     public static function fixScalarTerms(
         string $type_string,
-        ?int $analysis_php_version_id = null
+        ?int $analysis_php_version_id = null,
     ): string {
         $type_string_lc = strtolower($type_string);
 
@@ -360,7 +362,7 @@ class TypeTokenizer
         ?array $type_aliases = null,
         ?string $self_fqcln = null,
         ?string $parent_fqcln = null,
-        bool $allow_assertions = false
+        bool $allow_assertions = false,
     ): array {
         $type_tokens = self::tokenize($string_type);
 

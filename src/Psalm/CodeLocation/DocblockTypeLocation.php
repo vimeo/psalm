@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\CodeLocation;
 
 use Psalm\CodeLocation;
@@ -12,7 +14,7 @@ class DocblockTypeLocation extends CodeLocation
         FileSource $file_source,
         int $file_start,
         int $file_end,
-        int $line_number
+        int $line_number,
     ) {
         $this->file_start = $file_start;
         // matches how CodeLocation works

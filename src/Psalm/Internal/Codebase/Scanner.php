@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Codebase;
 
 use Closure;
@@ -153,7 +155,7 @@ class Scanner
         FileProvider $file_provider,
         Reflection $reflection,
         FileReferenceProvider $file_reference_provider,
-        Progress $progress
+        Progress $progress,
     ) {
         $this->codebase = $codebase;
         $this->reflection = $reflection;
@@ -226,7 +228,7 @@ class Scanner
         string $fq_classlike_name,
         bool $analyze_too = false,
         bool $store_failure = true,
-        array $phantom_classes = []
+        array $phantom_classes = [],
     ): void {
         if ($fq_classlike_name[0] === '\\') {
             $fq_classlike_name = substr($fq_classlike_name, 1);
@@ -524,7 +526,7 @@ class Scanner
     private function scanFile(
         string $file_path,
         array $filetype_scanners,
-        bool $will_analyze = false
+        bool $will_analyze = false,
     ): void {
         $file_scanner = $this->getScannerForPath($file_path, $filetype_scanners, $will_analyze);
 
@@ -618,7 +620,7 @@ class Scanner
     private function getScannerForPath(
         string $file_path,
         array $filetype_scanners,
-        bool $will_analyze = false
+        bool $will_analyze = false,
     ): FileScanner {
         $path_parts = explode(DIRECTORY_SEPARATOR, $file_path);
         $file_name_parts = explode('.', array_pop($path_parts));

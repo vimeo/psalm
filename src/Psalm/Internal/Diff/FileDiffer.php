@@ -33,7 +33,7 @@ class FileDiffer
      */
     private static function calculateTrace(
         array $a,
-        array $b
+        array $b,
     ): array {
         $n = count($a);
         $m = count($b);

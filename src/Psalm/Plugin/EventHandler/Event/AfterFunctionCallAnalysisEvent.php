@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Plugin\EventHandler\Event;
 
 use PhpParser\Node\Expr\FuncCall;
@@ -37,7 +39,7 @@ final class AfterFunctionCallAnalysisEvent
         StatementsSource $statements_source,
         Codebase $codebase,
         Union $return_type_candidate,
-        array $file_replacements
+        array $file_replacements,
     ) {
         $this->expr = $expr;
         $this->function_id = $function_id;

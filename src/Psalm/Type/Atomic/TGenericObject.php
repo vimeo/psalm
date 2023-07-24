@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type\Atomic;
 
 use Psalm\Codebase;
@@ -45,7 +47,7 @@ final class TGenericObject extends TNamedObject
         bool $remapped_params = false,
         bool $is_static = false,
         array $extra_types = [],
-        bool $from_docblock = false
+        bool $from_docblock = false,
     ) {
         if ($value[0] === '\\') {
             $value = substr($value, 1);
@@ -91,7 +93,7 @@ final class TGenericObject extends TNamedObject
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        int $analysis_php_version_id
+        int $analysis_php_version_id,
     ): ?string {
         $result = $this->toNamespacedString($namespace, $aliased_classes, $this_class, true);
         $intersection = strrpos($result, '&');
@@ -143,7 +145,7 @@ final class TGenericObject extends TNamedObject
         ?string $calling_function = null,
         bool $replace = true,
         bool $add_lower_bound = false,
-        int $depth = 0
+        int $depth = 0,
     ): self {
         $types = $this->replaceTypeParamsTemplateTypesWithStandins(
             $template_result,

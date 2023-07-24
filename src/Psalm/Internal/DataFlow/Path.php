@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\DataFlow;
 
 use Psalm\Storage\ImmutableNonCloneableTrait;
@@ -30,7 +32,7 @@ class Path
         string $type,
         int $length,
         ?array $unescaped_taints = null,
-        ?array $escaped_taints = null
+        ?array $escaped_taints = null,
     ) {
         $this->type = $type;
         $this->length = $length;

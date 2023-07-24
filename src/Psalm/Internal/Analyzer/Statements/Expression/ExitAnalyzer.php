@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser\Node\Expr\Exit_;
@@ -29,7 +31,7 @@ class ExitAnalyzer
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         Exit_ $stmt,
-        Context $context
+        Context $context,
     ): bool {
         $expr_type = null;
 

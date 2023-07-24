@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type\Atomic;
 
 use Psalm\Codebase;
@@ -52,7 +54,7 @@ final class TConditional extends Atomic
         Union $conditional_type,
         Union $if_type,
         Union $else_type,
-        bool $from_docblock = false
+        bool $from_docblock = false,
     ) {
         $this->param_name = $param_name;
         $this->defining_class = $defining_class;
@@ -67,7 +69,7 @@ final class TConditional extends Atomic
         ?Union $as_type,
         ?Union $conditional_type = null,
         ?Union $if_type = null,
-        ?Union $else_type = null
+        ?Union $else_type = null,
     ): self {
         $as_type ??= $this->as_type;
         $conditional_type ??= $this->conditional_type;
@@ -117,7 +119,7 @@ final class TConditional extends Atomic
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        int $analysis_php_version_id
+        int $analysis_php_version_id,
     ): ?string {
         return null;
     }
@@ -129,7 +131,7 @@ final class TConditional extends Atomic
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        bool $use_phpdoc_format
+        bool $use_phpdoc_format,
     ): string {
         return '';
     }
@@ -149,7 +151,7 @@ final class TConditional extends Atomic
      */
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
-        ?Codebase $codebase
+        ?Codebase $codebase,
     ): self {
         $conditional = TemplateInferredTypeReplacer::replace(
             $this->conditional_type,

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Type;
 
 use Psalm\CodeLocation;
@@ -84,7 +86,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         array $suppressed_issues = [],
         int &$failed_reconciliation = Reconciler::RECONCILIATION_EMPTY,
         bool $is_equality = false,
-        bool $inside_loop = false
+        bool $inside_loop = false,
     ): ?Union {
         $old_var_type_string = $existing_var_type->getId();
 
@@ -423,7 +425,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
     }
 
     private static function reconcileCallable(
-        Union $existing_var_type
+        Union $existing_var_type,
     ): Union {
         $existing_var_type = $existing_var_type->getBuilder();
         foreach ($existing_var_type->getAtomicTypes() as $atomic_key => $type) {
@@ -453,7 +455,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         ?CodeLocation $code_location,
         array $suppressed_issues,
         int &$failed_reconciliation,
-        bool $is_equality
+        bool $is_equality,
     ): Union {
         $old_var_type_string = $existing_var_type->getId();
         $non_bool_types = [];
@@ -523,7 +525,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         ?CodeLocation $code_location,
         array $suppressed_issues,
         bool $is_equality,
-        ?int $count
+        ?int $count,
     ): Union {
         $existing_var_type = $existing_var_type->getBuilder();
         $old_var_type_string = $existing_var_type->getId();
@@ -643,7 +645,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         ?CodeLocation $code_location,
         array $suppressed_issues,
         int &$failed_reconciliation,
-        bool $is_equality
+        bool $is_equality,
     ): Union {
         $types = $existing_var_type->getAtomicTypes();
         $old_var_type_string = $existing_var_type->getId();
@@ -720,7 +722,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         ?CodeLocation $code_location,
         array $suppressed_issues,
         int &$failed_reconciliation,
-        bool $is_equality
+        bool $is_equality,
     ): Union {
         $types = $existing_var_type->getAtomicTypes();
         $old_var_type_string = $existing_var_type->getId();
@@ -802,7 +804,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         ?CodeLocation $code_location,
         array $suppressed_issues,
         int &$failed_reconciliation,
-        bool $is_equality
+        bool $is_equality,
     ): Union {
         $types = $existing_var_type->getAtomicTypes();
         $old_var_type_string = $existing_var_type->getId();
@@ -885,7 +887,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         ?CodeLocation $code_location,
         array $suppressed_issues,
         int &$failed_reconciliation,
-        bool $recursive_check
+        bool $recursive_check,
     ): Union {
         $existing_var_type = $existing_var_type->getBuilder();
         $old_var_type_string = $existing_var_type->getId();
@@ -1068,7 +1070,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         ?CodeLocation $code_location,
         array $suppressed_issues,
         int &$failed_reconciliation,
-        bool $is_equality
+        bool $is_equality,
     ): Union {
         $old_var_type_string = $existing_var_type->getId();
         $non_scalar_types = [];
@@ -1156,7 +1158,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         ?CodeLocation $code_location,
         array $suppressed_issues,
         int &$failed_reconciliation,
-        bool $is_equality
+        bool $is_equality,
     ): Union {
         $old_var_type_string = $existing_var_type->getId();
         $non_object_types = [];
@@ -1257,7 +1259,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         ?CodeLocation $code_location,
         array $suppressed_issues,
         int &$failed_reconciliation,
-        bool $is_equality
+        bool $is_equality,
     ): Union {
         $old_var_type_string = $existing_var_type->getId();
         $non_numeric_types = [];
@@ -1353,7 +1355,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         ?CodeLocation $code_location,
         array $suppressed_issues,
         int &$failed_reconciliation,
-        bool $is_equality
+        bool $is_equality,
     ): Union {
         $old_var_type_string = $existing_var_type->getId();
         $non_int_types = [];
@@ -1455,7 +1457,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         ?CodeLocation $code_location,
         array $suppressed_issues,
         int &$failed_reconciliation,
-        bool $is_equality
+        bool $is_equality,
     ): Union {
         $old_var_type_string = $existing_var_type->getId();
         $non_float_types = [];
@@ -1552,7 +1554,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         ?CodeLocation $code_location,
         array $suppressed_issues,
         int &$failed_reconciliation,
-        bool $is_equality
+        bool $is_equality,
     ): Union {
         $old_var_type_string = $existing_var_type->getId();
         $non_string_types = [];
@@ -1658,7 +1660,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         ?CodeLocation $code_location,
         array $suppressed_issues,
         int &$failed_reconciliation,
-        bool $is_equality
+        bool $is_equality,
     ): Union {
         $old_var_type_string = $existing_var_type->getId();
         $non_array_types = [];
@@ -1763,7 +1765,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         ?CodeLocation $code_location,
         array $suppressed_issues,
         int &$failed_reconciliation,
-        bool $is_equality
+        bool $is_equality,
     ): Union {
         $types = $existing_var_type->getAtomicTypes();
         $old_var_type_string = $existing_var_type->getId();
@@ -1834,7 +1836,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         ?string             $var_id,
         bool                $negated,
         ?CodeLocation       $code_location,
-        array               $suppressed_issues
+        array               $suppressed_issues,
     ): Union {
         $existing_var_type = $existing_var_type->getBuilder();
         $assertion_value = $assertion->value;
@@ -1941,7 +1943,7 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         ?string                $var_id,
         bool                   $negated,
         ?CodeLocation          $code_location,
-        array                  $suppressed_issues
+        array                  $suppressed_issues,
     ): Union {
         $existing_var_type = $existing_var_type->getBuilder();
         $assertion_value = $assertion->value;

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type\Atomic;
 
 use Psalm\Codebase;
@@ -94,7 +96,7 @@ final class TIterable extends Atomic
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        int $analysis_php_version_id
+        int $analysis_php_version_id,
     ): ?string {
         return $analysis_php_version_id >= 7_01_00 ? 'iterable' : null;
     }
@@ -160,7 +162,7 @@ final class TIterable extends Atomic
         ?string $calling_function = null,
         bool $replace = true,
         bool $add_lower_bound = false,
-        int $depth = 0
+        int $depth = 0,
     ): self {
         $types = $this->replaceTypeParamsTemplateTypesWithStandins(
             $template_result,

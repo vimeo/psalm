@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Type;
 
 use InvalidArgumentException;
@@ -48,7 +50,7 @@ class TemplateInferredTypeReplacer
     public static function replace(
         Union $union,
         TemplateResult $template_result,
-        ?Codebase $codebase
+        ?Codebase $codebase,
     ): Union {
         $new_types = [];
 
@@ -246,7 +248,7 @@ class TemplateInferredTypeReplacer
         ?Codebase $codebase,
         TTemplateParam $atomic_type,
         array $inferred_lower_bounds,
-        string $key
+        string $key,
     ): ?Union {
         $template_type = null;
 
@@ -335,7 +337,7 @@ class TemplateInferredTypeReplacer
     private static function replaceTemplateKeyOfValueOf(
         ?Codebase $codebase,
         Atomic $atomic_type,
-        array $inferred_lower_bounds
+        array $inferred_lower_bounds,
     ): ?Atomic {
         if (!isset($inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class])) {
             return null;
@@ -367,7 +369,7 @@ class TemplateInferredTypeReplacer
     private static function replaceTemplatePropertiesOf(
         ?Codebase $codebase,
         TTemplatePropertiesOf $atomic_type,
-        array $inferred_lower_bounds
+        array $inferred_lower_bounds,
     ): ?Atomic {
         if (!isset($inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class])) {
             return null;
@@ -396,7 +398,7 @@ class TemplateInferredTypeReplacer
         TemplateResult $template_result,
         Codebase $codebase,
         TConditional &$atomic_type,
-        array $inferred_lower_bounds
+        array $inferred_lower_bounds,
     ): Union {
         $template_type = isset($inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class])
             ? TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(

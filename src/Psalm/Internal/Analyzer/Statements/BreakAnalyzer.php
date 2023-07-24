@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements;
 
 use PhpParser;
@@ -18,7 +20,7 @@ class BreakAnalyzer
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Break_ $stmt,
-        Context $context
+        Context $context,
     ): void {
         $loop_scope = $context->loop_scope;
 

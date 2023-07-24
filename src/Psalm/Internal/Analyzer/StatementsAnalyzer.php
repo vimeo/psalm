@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer;
 
 use InvalidArgumentException;
@@ -174,7 +176,7 @@ class StatementsAnalyzer extends SourceAnalyzer
         array $stmts,
         Context $context,
         ?Context $global_context = null,
-        bool $root_scope = false
+        bool $root_scope = false,
     ): ?bool {
         if (!$stmts) {
             return null;
@@ -281,7 +283,7 @@ class StatementsAnalyzer extends SourceAnalyzer
     private static function hoistConstants(
         StatementsAnalyzer $statements_analyzer,
         array $stmts,
-        Context $context
+        Context $context,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -339,7 +341,7 @@ class StatementsAnalyzer extends SourceAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt $stmt,
         Context $context,
-        ?Context $global_context
+        ?Context $global_context,
     ): ?bool {
         if (self::dispatchBeforeStatementAnalysis($stmt, $context, $statements_analyzer) === false) {
             return false;
@@ -721,7 +723,7 @@ class StatementsAnalyzer extends SourceAnalyzer
     private static function dispatchAfterStatementAnalysis(
         PhpParser\Node\Stmt $stmt,
         Context $context,
-        StatementsAnalyzer $statements_analyzer
+        StatementsAnalyzer $statements_analyzer,
     ): ?bool {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -747,7 +749,7 @@ class StatementsAnalyzer extends SourceAnalyzer
     private static function dispatchBeforeStatementAnalysis(
         PhpParser\Node\Stmt $stmt,
         Context $context,
-        StatementsAnalyzer $statements_analyzer
+        StatementsAnalyzer $statements_analyzer,
     ): ?bool {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -773,7 +775,7 @@ class StatementsAnalyzer extends SourceAnalyzer
     private function parseStatementDocblock(
         PhpParser\Comment\Doc $docblock,
         PhpParser\Node\Stmt $stmt,
-        Context $context
+        Context $context,
     ): void {
         $codebase = $this->getCodebase();
 
@@ -970,7 +972,7 @@ class StatementsAnalyzer extends SourceAnalyzer
 
     public function registerPossiblyUndefinedVariable(
         string $undefined_var_id,
-        PhpParser\Node\Expr\Variable $stmt
+        PhpParser\Node\Expr\Variable $stmt,
     ): void {
         if (!$this->data_flow_graph) {
             return;

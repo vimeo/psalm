@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\PhpVisitor;
 
 use PhpParser;
@@ -53,7 +55,7 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
         Collecting $error_handler,
         array $offset_map,
         string $a_file_contents,
-        string $b_file_contents
+        string $b_file_contents,
     ) {
         $this->parser = $parser;
         $this->error_handler = $error_handler;
@@ -64,10 +66,7 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
         $this->non_method_changes = count($offset_map);
     }
 
-    /**
-     * @return null|int|PhpParser\Node
-     */
-    public function enterNode(PhpParser\Node $node, bool &$traverseChildren = true)
+    public function enterNode(PhpParser\Node $node, bool &$traverseChildren = true): int|PhpParser\Node|null
     {
         /** @var array{startFilePos: int, endFilePos: int, startLine: int} */
         $attrs = $node->getAttributes();

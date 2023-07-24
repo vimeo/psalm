@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type\Atomic;
 
 use Psalm\Codebase;
@@ -47,7 +49,7 @@ class TClassString extends TString
         bool $is_loaded = false,
         bool $is_interface = false,
         bool $is_enum = false,
-        bool $from_docblock = false
+        bool $from_docblock = false,
     ) {
         $this->as = $as;
         $this->as_type = $as_type;
@@ -107,7 +109,7 @@ class TClassString extends TString
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        int $analysis_php_version_id
+        int $analysis_php_version_id,
     ): ?string {
         return 'string';
     }
@@ -119,7 +121,7 @@ class TClassString extends TString
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        bool $use_phpdoc_format
+        bool $use_phpdoc_format,
     ): string {
         if ($this->as === 'object') {
             return 'class-string';
@@ -167,7 +169,7 @@ class TClassString extends TString
         ?string $calling_function = null,
         bool $replace = true,
         bool $add_lower_bound = false,
-        int $depth = 0
+        int $depth = 0,
     ): self {
         if (!$this->as_type) {
             return $this;

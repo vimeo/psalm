@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Codebase;
 
 use Psalm\Internal\DataFlow\DataFlowNode;
@@ -33,7 +35,7 @@ abstract class DataFlowGraph
         DataFlowNode $to,
         string $path_type,
         ?array $added_taints = null,
-        ?array $removed_taints = null
+        ?array $removed_taints = null,
     ): void {
         $from_id = $from->id;
         $to_id = $to->id;
@@ -63,7 +65,7 @@ abstract class DataFlowGraph
     protected static function shouldIgnoreFetch(
         string $path_type,
         string $expression_type,
-        array $previous_path_types
+        array $previous_path_types,
     ): bool {
         $el = strlen($expression_type);
 

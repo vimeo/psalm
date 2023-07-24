@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm;
 
 use Exception;
@@ -107,7 +109,7 @@ class CodeLocation
         bool $single_line = false,
         ?int $regex_type = null,
         ?string $selected_text = null,
-        ?int $comment_line = null
+        ?int $comment_line = null,
     ) {
         /** @psalm-suppress ImpureMethodCall Actually mutation-free just not marked */
         $this->file_start = (int)$stmt->getAttribute('startFilePos');

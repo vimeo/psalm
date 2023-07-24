@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer;
 
 use PhpParser;
@@ -156,7 +158,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         Context $context,
         NodeDataProvider $type_provider,
         ?Context $global_context = null,
-        bool $add_mutations = false
+        bool $add_mutations = false,
     ): ?bool {
         $storage = $this->storage;
 
@@ -872,7 +874,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         StatementsAnalyzer $statements_analyzer,
         FunctionLikeStorage $storage,
         ?ClassLikeStorage $class_storage,
-        Context $context
+        Context $context,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -973,7 +975,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         array $params,
         array $param_stmts,
         Context $context,
-        bool $has_template_types
+        bool $has_template_types,
     ): bool {
         $check_stmts = true;
         $codebase = $statements_analyzer->getCodebase();
@@ -1318,7 +1320,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         Codebase $codebase,
         FunctionLikeStorage $storage,
         array $params,
-        Context $context
+        Context $context,
     ): void {
         foreach ($this->function->params as $param) {
             $param_name_node = null;
@@ -1446,7 +1448,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         ?string $fq_class_name = null,
         ?CodeLocation $return_type_location = null,
         bool $did_explicitly_return = false,
-        bool $closure_inside_call = false
+        bool $closure_inside_call = false,
     ): void {
         ReturnTypeAnalyzer::verifyReturnType(
             $this->function,
@@ -1468,7 +1470,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         ProjectAnalyzer $project_analyzer,
         string $param_name,
         Union $inferred_return_type,
-        bool $docblock_only = false
+        bool $docblock_only = false,
     ): void {
         $manipulator = FunctionDocblockManipulator::getForFunction(
             $project_analyzer,
@@ -1545,7 +1547,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         StatementsAnalyzer $statements_analyzer,
         Context $context,
         Codebase $codebase,
-        PhpParser\Node $stmt = null
+        PhpParser\Node $stmt = null,
     ): void {
         $storage = $this->getFunctionLikeStorage($statements_analyzer);
 
@@ -1801,7 +1803,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         Codebase $codebase,
         NodeDataProvider $type_provider,
         FunctionLikeStorage $storage,
-        bool $add_mutations
+        bool $add_mutations,
     ): ?array {
         $classlike_storage_provider = $codebase->classlike_storage_provider;
         $real_method_id = null;
@@ -2048,7 +2050,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     private function detectUnusedParameters(
         StatementsAnalyzer $statements_analyzer,
         FunctionLikeStorage $storage,
-        Context $context
+        Context $context,
     ): array {
         $codebase = $statements_analyzer->getCodebase();
 

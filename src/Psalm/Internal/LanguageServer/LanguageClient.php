@@ -10,6 +10,7 @@ use LanguageServerProtocol\LogTrace;
 use Psalm\Internal\LanguageServer\Client\TextDocument as ClientTextDocument;
 use Psalm\Internal\LanguageServer\Client\Workspace as ClientWorkspace;
 use Revolt\EventLoop;
+use Throwable;
 
 use function is_null;
 use function json_decode;
@@ -49,7 +50,7 @@ class LanguageClient
         ProtocolReader $reader,
         ProtocolWriter $writer,
         LanguageServer $server,
-        ClientConfiguration $clientConfiguration
+        ClientConfiguration $clientConfiguration,
     ) {
         $this->handler = new ClientHandler($reader, $writer);
         $this->server = $server;
@@ -66,12 +67,12 @@ class LanguageClient
     {
         $capabilities = $this->server->clientCapabilities;
         if ($capabilities->workspace->configuration ?? false) {
-            EventLoop::queue(function () {
+            EventLoop::queue(function (): void {
                 try {
                     /** @var object $config */
                     [$config] = $this->workspace->requestConfiguration('psalm');
                     $this->configurationRefreshed((array) $config);
-                } catch (\Throwable) {
+                } catch (Throwable) {
                     $this->server->logError('There was an error getting configuration');
                 }
             });

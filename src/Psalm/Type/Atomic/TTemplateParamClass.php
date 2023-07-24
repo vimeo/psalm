@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type\Atomic;
 
 /**
@@ -24,7 +26,7 @@ final class TTemplateParamClass extends TClassString
         string $as,
         ?TNamedObject $as_type,
         string $defining_class,
-        bool $from_docblock = false
+        bool $from_docblock = false,
     ) {
         $this->param_name = $param_name;
         $this->defining_class = $defining_class;
@@ -61,7 +63,7 @@ final class TTemplateParamClass extends TClassString
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        bool $use_phpdoc_format
+        bool $use_phpdoc_format,
     ): string {
         return $this->param_name . '::class';
     }

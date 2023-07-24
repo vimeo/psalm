@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Block\IfElse;
 
 use PhpParser;
@@ -36,7 +38,7 @@ class ElseAnalyzer
         ?PhpParser\Node\Stmt\Else_ $else,
         IfScope $if_scope,
         Context $else_context,
-        Context $outer_context
+        Context $outer_context,
     ): ?bool {
         $codebase = $statements_analyzer->getCodebase();
 

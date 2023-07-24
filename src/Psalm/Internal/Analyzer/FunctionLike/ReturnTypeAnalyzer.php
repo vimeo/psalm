@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\FunctionLike;
 
 use PhpParser;
@@ -85,7 +87,7 @@ class ReturnTypeAnalyzer
         ?CodeLocation $return_type_location = null,
         array $compatible_method_ids = [],
         bool $did_explicitly_return = false,
-        bool $closure_inside_call = false
+        bool $closure_inside_call = false,
     ): ?bool {
         $suppressed_issues = $function_like_analyzer->getSuppressedIssues();
         $codebase = $source->getCodebase();
@@ -830,7 +832,7 @@ class ReturnTypeAnalyzer
         ProjectAnalyzer $project_analyzer,
         FunctionLikeAnalyzer $function_like_analyzer,
         FunctionLikeStorage $storage,
-        Context $context
+        Context $context,
     ): ?bool {
         $codebase = $project_analyzer->getCodebase();
 
@@ -1026,7 +1028,7 @@ class ReturnTypeAnalyzer
         Union $inferred_return_type,
         StatementsSource $source,
         bool $docblock_only = false,
-        ?FunctionLikeStorage $function_like_storage = null
+        ?FunctionLikeStorage $function_like_storage = null,
     ): void {
         $manipulator = FunctionDocblockManipulator::getForFunction(
             $project_analyzer,

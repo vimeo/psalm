@@ -49,7 +49,7 @@ class JsonOutputTest extends TestCase
         int $error_count,
         string $message,
         int $line_number,
-        string $error
+        string $error,
     ): void {
         $this->addFile('somefile.php', $code);
         $this->analyzeFile('somefile.php', new Context());

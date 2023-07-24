@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer;
 
 use Psalm\Storage\ImmutableNonCloneableTrait;
@@ -45,7 +47,7 @@ class DataFlowNodeData
         int $to,
         int $snippet_from,
         int $column_from,
-        int $column_to
+        int $column_to,
     ) {
         $this->label = $label;
         $this->line_from = $line_from;

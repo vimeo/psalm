@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Codebase;
 
 use Psalm\CodeLocation;
@@ -245,7 +247,7 @@ class TaintFlowGraph extends DataFlowGraph
         DataFlowNode $generated_source,
         array $source_taints,
         array $sinks,
-        array $visited_source_ids
+        array $visited_source_ids,
     ): array {
         $new_sources = [];
 

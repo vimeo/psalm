@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer;
 
 use LogicException;
@@ -51,7 +53,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
     public function __construct(
         PhpParser\Node\Stmt\ClassMethod $function,
         SourceAnalyzer $source,
-        ?MethodStorage $storage = null
+        ?MethodStorage $storage = null,
     ) {
         $codebase = $source->getCodebase();
 
@@ -99,7 +101,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
         Codebase $codebase,
         CodeLocation $code_location,
         array $suppressed_issues,
-        ?bool &$is_dynamic_this_method = false
+        ?bool &$is_dynamic_this_method = false,
     ): void {
         $codebase_methods = $codebase->methods;
 
@@ -165,7 +167,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
         MethodIdentifier $method_id,
         CodeLocation $code_location,
         array $suppressed_issues,
-        ?string $calling_method_id = null
+        ?string $calling_method_id = null,
     ): ?bool {
         if ($codebase->methods->methodExists(
             $method_id,
@@ -193,7 +195,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
     public static function isMethodVisible(
         MethodIdentifier $method_id,
         Context $context,
-        StatementsSource $source
+        StatementsSource $source,
     ): bool {
         $codebase = $source->getCodebase();
 
@@ -278,7 +280,7 @@ class MethodAnalyzer extends FunctionLikeAnalyzer
      */
     public static function checkMethodSignatureMustOmitReturnType(
         MethodStorage $method_storage,
-        CodeLocation $code_location
+        CodeLocation $code_location,
     ): void {
         if ($method_storage->signature_return_type === null) {
             return;

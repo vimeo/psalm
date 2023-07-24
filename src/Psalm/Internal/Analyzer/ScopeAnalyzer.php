@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer;
 
 use PhpParser;
@@ -38,7 +40,7 @@ class ScopeAnalyzer
         array $stmts,
         ?NodeDataProvider $nodes,
         array $break_types,
-        bool $return_is_exit = true
+        bool $return_is_exit = true,
     ): array {
         if (empty($stmts)) {
             return [self::ACTION_NONE];

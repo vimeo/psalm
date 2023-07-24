@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Type\Comparator;
 
 use Psalm\Codebase;
@@ -27,7 +29,7 @@ class ArrayTypeComparator
         Atomic $input_type_part,
         Atomic $container_type_part,
         bool $allow_interface_equality,
-        ?TypeComparisonResult $atomic_comparison_result
+        ?TypeComparisonResult $atomic_comparison_result,
     ): bool {
         $all_types_contain = true;
 

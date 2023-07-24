@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\CodeLocation;
 
 use PhpParser;
@@ -15,7 +17,7 @@ class ParseErrorLocation extends CodeLocation
         PhpParser\Error $error,
         string $file_contents,
         string $file_path,
-        string $file_name
+        string $file_name,
     ) {
         /** @psalm-suppress PossiblyUndefinedStringArrayOffset, ImpureMethodCall */
         $this->file_start = (int)$error->getAttributes()['startFilePos'];
