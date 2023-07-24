@@ -1008,7 +1008,7 @@ class LanguageServer extends Dispatcher
     }
 
     /** @return static */
-    public function __get(string $prop_name): self
+    public function __get(string $_prop_name): self
     {
         return $this;
     }
