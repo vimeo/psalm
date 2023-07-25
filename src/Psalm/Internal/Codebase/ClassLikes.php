@@ -2357,6 +2357,15 @@ class ClassLikes
         $this->existing_interfaces = self::mergeThreadData($existing_interfaces, $this->existing_interfaces);
         $this->existing_classes = self::mergeThreadData($existing_classes, $this->existing_classes);
     }
+
+    /**
+     * @template T as string|lowercase-string
+     *
+     * @param array<T, bool> $old
+     * @param array<T, bool> $new
+     *
+     * @return array<T, bool>
+     */
     private static function mergeThreadData(array $old, array $new): array
     {
         foreach ($new as $name => $value) {
