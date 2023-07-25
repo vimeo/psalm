@@ -366,13 +366,7 @@ class ClassLikes
                 )
                 && !$this->classlike_storage_provider->has($fq_class_name_lc)
             ) {
-                if (!isset($this->existing_classes_lc[$fq_class_name_lc])) {
-                    $this->existing_classes_lc[$fq_class_name_lc] = false;
-
-                    return false;
-                }
-
-                return $this->existing_classes_lc[$fq_class_name_lc];
+                return $this->existing_classes_lc[$fq_class_name_lc] = false;
             }
 
             return false;
@@ -406,13 +400,7 @@ class ClassLikes
                 )
                 && !$this->classlike_storage_provider->has($fq_class_name_lc)
             ) {
-                if (!isset($this->existing_interfaces_lc[$fq_class_name_lc])) {
-                    $this->existing_interfaces_lc[$fq_class_name_lc] = false;
-
-                    return false;
-                }
-
-                return $this->existing_interfaces_lc[$fq_class_name_lc];
+                return $this->existing_interfaces_lc[$fq_class_name_lc] = false;
             }
 
             return false;
@@ -473,13 +461,7 @@ class ClassLikes
                 )
                 && !$this->classlike_storage_provider->has($fq_class_name_lc)
             ) {
-                if (!isset($this->existing_enums_lc[$fq_class_name_lc])) {
-                    $this->existing_enums_lc[$fq_class_name_lc] = false;
-
-                    return false;
-                }
-
-                return $this->existing_enums_lc[$fq_class_name_lc];
+                return $this->existing_enums_lc[$fq_class_name_lc] = false;
             }
 
             return false;
