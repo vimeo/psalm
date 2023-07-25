@@ -63,7 +63,7 @@ class Workspace
         $realFiles = array_filter(
             array_map(function (FileEvent $change) {
                 try {
-                    return LanguageServer::uriToPath($change->uri);
+                    return $this->server->uriToPath($change->uri);
                 } catch (InvalidArgumentException $e) {
                     return null;
                 }
@@ -79,7 +79,7 @@ class Workspace
         }
 
         foreach ($changes as $change) {
-            $file_path = LanguageServer::uriToPath($change->uri);
+            $file_path = $this->server->uriToPath($change->uri);
 
             if ($composerLockFile === $file_path) {
                 continue;
@@ -140,7 +140,7 @@ class Workspace
             case 'psalm.analyze.uri':
                 /** @var array{uri: string} */
                 $arguments = (array) $arguments;
-                $file = LanguageServer::uriToPath($arguments['uri']);
+                $file = $this->server->uriToPath($arguments['uri']);
                 $this->codebase->reloadFiles(
                     $this->project_analyzer,
                     [$file],
