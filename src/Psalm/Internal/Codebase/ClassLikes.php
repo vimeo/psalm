@@ -360,7 +360,13 @@ class ClassLikes
 
         if (isset($this->existing_classes_lc[$fq_class_name_lc])) {
             return $this->existing_classes_lc[$fq_class_name_lc];
-        } elseif (!$this->classlike_storage_provider->has($fq_class_name_lc)) {
+        } elseif (!$this->classlike_storage_provider->has($fq_class_name_lc)
+            || !(
+                $this->classlike_storage_provider->get($fq_class_name_lc)->is_enum
+                || $this->classlike_storage_provider->get($fq_class_name_lc)->is_interface
+                || $this->classlike_storage_provider->get($fq_class_name_lc)->is_trait
+            )
+        ) {
             return $this->existing_classes_lc[$fq_class_name_lc] = false;
         }
 
@@ -384,7 +390,9 @@ class ClassLikes
 
         if (isset($this->existing_interfaces_lc[$fq_class_name_lc])) {
             return $this->existing_interfaces_lc[$fq_class_name_lc];
-        } elseif (!$this->classlike_storage_provider->has($fq_class_name_lc)) {
+        } elseif (!$this->classlike_storage_provider->has($fq_class_name_lc)
+            || !$this->classlike_storage_provider->get($fq_class_name_lc)->is_interface
+        ) {
             return $this->existing_interfaces_lc[$fq_class_name_lc] = false;
         }
 
@@ -435,7 +443,9 @@ class ClassLikes
 
         if (isset($this->existing_enums_lc[$fq_class_name_lc])) {
             return $this->existing_enums_lc[$fq_class_name_lc];
-        } elseif (!$this->classlike_storage_provider->has($fq_class_name_lc)) {
+        } elseif (!$this->classlike_storage_provider->has($fq_class_name_lc)
+            || !$this->classlike_storage_provider->get($fq_class_name_lc)->is_enum
+        ) {
             return $this->existing_enums_lc[$fq_class_name_lc] = false;
         }
 
@@ -480,10 +490,12 @@ class ClassLikes
     {
         $fq_class_name_lc = strtolower($this->getUnAliasedName($fq_class_name));
 
-        if (!isset($this->existing_traits_lc[$fq_class_name_lc]) ||
-            !$this->existing_traits_lc[$fq_class_name_lc]
+        if (isset($this->existing_enums_lc[$fq_class_name_lc])) {
+            return $this->existing_enums_lc[$fq_class_name_lc];
+        } elseif (!$this->classlike_storage_provider->has($fq_class_name_lc)
+            || !$this->classlike_storage_provider->get($fq_class_name_lc)->is_trait
         ) {
-            return false;
+            return $this->existing_enums_lc[$fq_class_name_lc] = false;
         }
 
         if ($this->collect_references && $code_location) {
