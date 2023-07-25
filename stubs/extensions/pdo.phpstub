@@ -111,11 +111,15 @@ class PDO
     public function lastInsertId(?string $name = null) {}
 
     /**
+     * @psalm-taint-sink sql $query
+     *
      * @return PDOStatement|false
      */
     public function prepare(string $query, array $options = []) {}
 
     /**
+     * @psalm-taint-sink sql $query
+     *
      * @return PDOStatement|false
      */
     public function query(string $query, ?int $fetchMode = null) {}
@@ -146,6 +150,10 @@ class PDOStatement implements Traversable
      * @return false|T
      */
     public function fetchObject($class = \stdclass::class, array $ctorArgs = array()) {}
+
+    public function bindValue(string|int $param, mixed $value, int $type = PDO::PARAM_STR): bool {}
+
+    public function bindParam(string|int $param, mixed &$var, int $type = PDO::PARAM_STR, int $maxLength = 0, mixed $driverOptions = null): bool {}
 }
 
  class PDOException extends RuntimeException {
