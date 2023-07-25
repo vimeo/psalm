@@ -2347,15 +2347,24 @@ class ClassLikes
             $existing_classes,
         ] = $thread_data;
 
-        $this->existing_classlikes_lc = array_merge($existing_classlikes_lc, $this->existing_classlikes_lc);
-        $this->existing_classes_lc = array_merge($existing_classes_lc, $this->existing_classes_lc);
-        $this->existing_traits_lc = array_merge($existing_traits_lc, $this->existing_traits_lc);
-        $this->existing_traits = array_merge($existing_traits, $this->existing_traits);
-        $this->existing_enums_lc = array_merge($existing_enums_lc, $this->existing_enums_lc);
-        $this->existing_enums = array_merge($existing_enums, $this->existing_enums);
-        $this->existing_interfaces_lc = array_merge($existing_interfaces_lc, $this->existing_interfaces_lc);
-        $this->existing_interfaces = array_merge($existing_interfaces, $this->existing_interfaces);
-        $this->existing_classes = array_merge($existing_classes, $this->existing_classes);
+        $this->existing_classlikes_lc = self::mergeThreadData($existing_classlikes_lc, $this->existing_classlikes_lc);
+        $this->existing_classes_lc = self::mergeThreadData($existing_classes_lc, $this->existing_classes_lc);
+        $this->existing_traits_lc = self::mergeThreadData($existing_traits_lc, $this->existing_traits_lc);
+        $this->existing_traits = self::mergeThreadData($existing_traits, $this->existing_traits);
+        $this->existing_enums_lc = self::mergeThreadData($existing_enums_lc, $this->existing_enums_lc);
+        $this->existing_enums = self::mergeThreadData($existing_enums, $this->existing_enums);
+        $this->existing_interfaces_lc = self::mergeThreadData($existing_interfaces_lc, $this->existing_interfaces_lc);
+        $this->existing_interfaces = self::mergeThreadData($existing_interfaces, $this->existing_interfaces);
+        $this->existing_classes = self::mergeThreadData($existing_classes, $this->existing_classes);
+    }
+    private static function mergeThreadData(array $old, array $new): array
+    {
+        foreach ($new as $name => $value) {
+            if (!isset($old[$name]) || (!$old[$name] && $value)) {
+                $old[$name] = $value;
+            }
+        }
+        return $old;
     }
 
     public function getStorageFor(string $fq_class_name): ?ClassLikeStorage
