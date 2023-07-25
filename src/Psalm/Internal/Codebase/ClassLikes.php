@@ -2360,10 +2360,8 @@ class ClassLikes
 
     /**
      * @template T as string|lowercase-string
-     *
      * @param array<T, bool> $old
      * @param array<T, bool> $new
-     *
      * @return array<T, bool>
      */
     private static function mergeThreadData(array $old, array $new): array
