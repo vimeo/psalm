@@ -419,7 +419,7 @@ class LanguageServer extends Dispatcher
                 $progress = $this->client->makeProgress($workDoneToken ?? uniqid('tkn', true));
 
                 $this->logInfo("Initializing...");
-                $progress->begin('Initialization', 'Starting');
+                $progress->begin('Psalm', 'initializing');
 
                 // Eventually, this might block on something. Leave it as a generator.
                 /** @psalm-suppress TypeDoesNotContainType */
@@ -430,14 +430,14 @@ class LanguageServer extends Dispatcher
                 $this->project_analyzer->serverMode($this);
 
                 $this->logInfo("Initializing: Getting code base...");
-                $progress->update('Getting code base');
+                $progress->update('getting code base');
 
                 $this->logInfo("Initializing: Scanning files ({$this->project_analyzer->threads} Threads)...");
-                $progress->update('Scanning files');
+                $progress->update('scanning files');
                 $this->codebase->scanFiles($this->project_analyzer->threads);
 
                 $this->logInfo("Initializing: Registering stub files...");
-                $progress->update('Registering stub files');
+                $progress->update('registering stub files');
                 $this->codebase->config->visitStubFiles($this->codebase, $this->project_analyzer->progress);
 
                 if ($this->textDocument === null) {
@@ -577,7 +577,7 @@ class LanguageServer extends Dispatcher
                 }
 
                 $this->logInfo("Initializing: Complete.");
-                $progress->end('Initialized');
+                $progress->end('initialized');
 
                 /**
                  * Information about the server.
