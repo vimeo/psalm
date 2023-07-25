@@ -2,6 +2,7 @@
 
 namespace Psalm\Tests\TypeReconciliation;
 
+use Countable;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -61,6 +62,7 @@ class ReconcilerTest extends TestCase
             class B {}
             interface SomeInterface {}
         ');
+        $this->project_analyzer->getCodebase()->queueClassLikeForScanning(Countable::class);
         $this->project_analyzer->getCodebase()->scanFiles();
     }
 
