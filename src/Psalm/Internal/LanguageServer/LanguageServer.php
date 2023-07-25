@@ -88,6 +88,7 @@ use function stream_socket_server;
 use function strpos;
 use function substr;
 use function trim;
+use function uniqid;
 use function urldecode;
 
 use const JSON_PRETTY_PRINT;
@@ -398,7 +399,8 @@ class LanguageServer extends Dispatcher
         ?string $rootPath = null,
         ?string $rootUri = null,
         $initializationOptions = null,
-        ?string $trace = null
+        ?string $trace = null,
+        ?string $workdDoneToken = null
         //?array $workspaceFolders = null //error in json-dispatcher
     ): Promise {
         $this->clientInfo = $clientInfo;
@@ -412,9 +414,11 @@ class LanguageServer extends Dispatcher
 
         return call(
             /** @return Generator<int, true, mixed, InitializeResult> */
-            function () {
+            function () use ($workdDoneToken) {
+                $progress = $this->client->makeProgress($workdDoneToken ?? uniqid('tkn', true));
+
                 $this->logInfo("Initializing...");
-                $this->clientStatus('initializing');
+                $progress->begin('Initialization', 'Starting');
 
                 // Eventually, this might block on something. Leave it as a generator.
                 /** @psalm-suppress TypeDoesNotContainType */
@@ -425,14 +429,14 @@ class LanguageServer extends Dispatcher
                 $this->project_analyzer->serverMode($this);
 
                 $this->logInfo("Initializing: Getting code base...");
-                $this->clientStatus('initializing', 'getting code base');
+                $progress->update('Getting code base');
 
                 $this->logInfo("Initializing: Scanning files ({$this->project_analyzer->threads} Threads)...");
-                $this->clientStatus('initializing', 'scanning files');
+                $progress->update('Scanning files');
                 $this->codebase->scanFiles($this->project_analyzer->threads);
 
                 $this->logInfo("Initializing: Registering stub files...");
-                $this->clientStatus('initializing', 'registering stub files');
+                $progress->update('Registering stub files');
                 $this->codebase->config->visitStubFiles($this->codebase, $this->project_analyzer->progress);
 
                 if ($this->textDocument === null) {
@@ -572,7 +576,7 @@ class LanguageServer extends Dispatcher
                 }
 
                 $this->logInfo("Initializing: Complete.");
-                $this->clientStatus('initialized');
+                $progress->end('Initialized');
 
                 /**
                  * Information about the server.
