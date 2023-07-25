@@ -388,6 +388,7 @@ class LanguageServer extends Dispatcher
      * @param string|null $rootPath The rootPath of the workspace. Is null if no folder is open.
      * @param mixed $initializationOptions
      * @param string|null $trace The initial trace setting. If omitted trace is disabled ('off').
+     * @param string|null $workDoneToken The token to be used to report progress during init.
      * @psalm-return Promise<InitializeResult>
      * @psalm-suppress PossiblyUnusedParam
      */
@@ -400,7 +401,7 @@ class LanguageServer extends Dispatcher
         ?string $rootUri = null,
         $initializationOptions = null,
         ?string $trace = null,
-        ?string $workdDoneToken = null
+        ?string $workDoneToken = null
         //?array $workspaceFolders = null //error in json-dispatcher
     ): Promise {
         $this->clientInfo = $clientInfo;
@@ -414,8 +415,8 @@ class LanguageServer extends Dispatcher
 
         return call(
             /** @return Generator<int, true, mixed, InitializeResult> */
-            function () use ($workdDoneToken) {
-                $progress = $this->client->makeProgress($workdDoneToken ?? uniqid('tkn', true));
+            function () use ($workDoneToken) {
+                $progress = $this->client->makeProgress($workDoneToken ?? uniqid('tkn', true));
 
                 $this->logInfo("Initializing...");
                 $progress->begin('Initialization', 'Starting');
