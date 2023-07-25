@@ -2817,7 +2817,6 @@ class ConditionalTest extends TestCase
                     $lilstring = "";
 
                     $n = new SimpleXMLElement($lilstring);
-                    /** @psalm-suppress MixedAssignment */
                     $n = $n->b;
 
                     if (!$n instanceof SimpleXMLElement) {
@@ -2905,7 +2904,11 @@ class ConditionalTest extends TestCase
                     $lilstring = "";
 
                     $n = new SimpleXMLElement($lilstring);
-                    $n = $n->children();
+                    $n = $n->b;
+
+                    if (!$n instanceof SimpleXMLIterator) {
+                        return;
+                    }
 
                     if (!$n) {
                         echo "false";

@@ -42,7 +42,6 @@ use Psalm\Progress\Progress;
 use Psalm\Progress\VoidProgress;
 use RuntimeException;
 use SimpleXMLElement;
-use SimpleXMLIterator;
 use Symfony\Component\Filesystem\Path;
 use Throwable;
 use UnexpectedValueException;
@@ -728,8 +727,6 @@ class Config
         $this->eventDispatcher = new EventDispatcher();
         $this->universal_object_crates = [
             strtolower(stdClass::class),
-            strtolower(SimpleXMLElement::class),
-            strtolower(SimpleXMLIterator::class),
         ];
     }
 
@@ -1030,7 +1027,6 @@ class Config
 
     /**
      * @param non-empty-string $file_contents
-     * @psalm-suppress MixedMethodCall
      * @psalm-suppress MixedAssignment
      * @psalm-suppress MixedArgument
      * @psalm-suppress MixedPropertyFetch
@@ -1161,12 +1157,13 @@ class Config
         }
 
         if (isset($config_xml['autoloader'])) {
-            $autoloader_path = $config->base_dir . DIRECTORY_SEPARATOR . $config_xml['autoloader'];
+            $autoloader = (string) $config_xml['autoloader'];
+            $autoloader_path = $config->base_dir . DIRECTORY_SEPARATOR . $autoloader;
 
             if (!file_exists($autoloader_path)) {
                 // in here for legacy reasons where people put absolute paths but psalm resolved it relative
-                if ($config_xml['autoloader']->__toString()[0] === '/') {
-                    $autoloader_path = $config_xml['autoloader']->__toString();
+                if ($autoloader[0] === '/') {
+                    $autoloader_path = $autoloader;
                 }
 
                 if (!file_exists($autoloader_path)) {
@@ -1312,7 +1309,7 @@ class Config
             );
         }
 
-        if (isset($config_xml->fileExtensions)) {
+        if (isset($config_xml->fileExtensions->extension)) {
             $config->file_extensions = [];
 
             $config->loadFileExtensions($config_xml->fileExtensions->extension);
@@ -1336,7 +1333,6 @@ class Config
 
         if (isset($config_xml->ignoreExceptions)) {
             if (isset($config_xml->ignoreExceptions->class)) {
-                /** @var SimpleXMLElement $exception_class */
                 foreach ($config_xml->ignoreExceptions->class as $exception_class) {
                     $exception_name = (string) $exception_class['name'];
                     $global_attribute_text = (string) $exception_class['onlyGlobalScope'];
@@ -1347,7 +1343,6 @@ class Config
                 }
             }
             if (isset($config_xml->ignoreExceptions->classAndDescendants)) {
-                /** @var SimpleXMLElement $exception_class */
                 foreach ($config_xml->ignoreExceptions->classAndDescendants as $exception_class) {
                     $exception_name = (string) $exception_class['name'];
                     $global_attribute_text = (string) $exception_class['onlyGlobalScope'];
@@ -1401,7 +1396,6 @@ class Config
         // this plugin loading system borrows heavily from etsy/phan
         if (isset($config_xml->plugins)) {
             if (isset($config_xml->plugins->plugin)) {
-                /** @var SimpleXMLElement $plugin */
                 foreach ($config_xml->plugins->plugin as $plugin) {
                     $plugin_file_name = (string) $plugin['filename'];
 
@@ -1413,7 +1407,6 @@ class Config
                 }
             }
             if (isset($config_xml->plugins->pluginClass)) {
-                /** @var SimpleXMLElement $plugin */
                 foreach ($config_xml->plugins->pluginClass as $plugin) {
                     $plugin_class_name = $plugin['class'];
                     // any child elements are used as plugin configuration
@@ -1429,21 +1422,23 @@ class Config
 
         if (isset($config_xml->issueHandlers)) {
             foreach ($config_xml->issueHandlers as $issue_handlers) {
-                /** @var SimpleXMLElement $issue_handler */
-                foreach ($issue_handlers->children() as $key => $issue_handler) {
-                    if ($key === 'PluginIssue') {
-                        $custom_class_name = (string) $issue_handler['name'];
-                        /** @var string $key */
-                        $config->issue_handlers[$custom_class_name] = IssueHandler::loadFromXMLElement(
-                            $issue_handler,
-                            $base_dir,
-                        );
-                    } else {
-                        /** @var string $key */
-                        $config->issue_handlers[$key] = IssueHandler::loadFromXMLElement(
-                            $issue_handler,
-                            $base_dir,
-                        );
+                $issue_handler_children = $issue_handlers->children();
+                if ($issue_handler_children) {
+                    foreach ($issue_handler_children as $key => $issue_handler) {
+                        if ($key === 'PluginIssue') {
+                            $custom_class_name = (string)$issue_handler['name'];
+                            /** @var string $key */
+                            $config->issue_handlers[$custom_class_name] = IssueHandler::loadFromXMLElement(
+                                $issue_handler,
+                                $base_dir,
+                            );
+                        } else {
+                            /** @var string $key */
+                            $config->issue_handlers[$key] = IssueHandler::loadFromXMLElement(
+                                $issue_handler,
+                                $base_dir,
+                            );
+                        }
                     }
                 }
             }

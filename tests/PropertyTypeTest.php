@@ -1375,18 +1375,23 @@ class PropertyTypeTest extends TestCase
                     /** @psalm-suppress UndefinedPropertyFetch */
                     if ($a->bar === null && rand(0, 1)) {}',
             ],
-            'setPropertiesOfSpecialObjects' => [
+            'setPropertiesOfStdClass' => [
                 'code' => '<?php
                     $a = new stdClass();
-                    $a->b = "c";
-
-                    $d = new SimpleXMLElement("<person><child role=\"son\"></child></person>");
-                    $d->e = "f";',
+                    $a->b = "c";',
                 'assertions' => [
                     '$a' => 'stdClass',
                     '$a->b' => 'string',
-                    '$d' => 'SimpleXMLElement',
-                    '$d->e' => 'mixed',
+                ],
+            ],
+            'getPropertiesOfSimpleXmlElement' => [
+                'code' => '<?php
+                    $a = new SimpleXMLElement("<person><child role=\"son\"></child></person>");
+                    $b = $a->b;',
+                'assertions' => [
+                    '$a' => 'SimpleXMLElement',
+                    '$a->b' => 'SimpleXMLElement|null',
+                    '$b' => 'SimpleXMLElement|null',
                 ],
             ],
             'allowLessSpecificReturnTypeForOverriddenMethod' => [
@@ -3817,6 +3822,22 @@ class PropertyTypeTest extends TestCase
                         public static $prop = 1;
                     }
                     (new A)->prop = 42;
+                ',
+                'error_message' => 'UndefinedPropertyAssignment',
+            ],
+            'setPropertiesOfSimpleXMLElement1' => [
+                'code' => '<?php
+                    $a = new SimpleXMLElement("<person><child role=\"son\"></child></person>");
+                    $a->b = "c";
+                ',
+                'error_message' => 'UndefinedPropertyAssignment',
+            ],
+            'setPropertiesOfSimpleXMLElement2' => [
+                'code' => '<?php
+                    $a = new SimpleXMLElement("<person><child role=\"son\"></child></person>");
+                    if (isset($a->b)) {
+                        $a->b = "c";
+                    }
                 ',
                 'error_message' => 'UndefinedPropertyAssignment',
             ],
