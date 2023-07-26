@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace Psalm\Internal\Codebase;
 
 use InvalidArgumentException;
@@ -154,7 +152,7 @@ class ClassLikes
         ClassLikeStorageProvider $storage_provider,
         FileReferenceProvider $file_reference_provider,
         StatementsProvider $statements_provider,
-        Scanner $scanner,
+        Scanner $scanner
     ) {
         $this->config = $config;
         $this->classlike_storage_provider = $storage_provider;
@@ -327,7 +325,7 @@ class ClassLikes
         string $fq_class_name,
         ?CodeLocation $code_location = null,
         ?string $calling_fq_class_name = null,
-        ?string $calling_method_id = null,
+        ?string $calling_method_id = null
     ): bool {
         $fq_class_name_lc = strtolower($this->getUnAliasedName($fq_class_name));
 
@@ -358,6 +356,28 @@ class ClassLikes
             }
         }
 
+        if (!isset($this->existing_classes_lc[$fq_class_name_lc])
+            || !$this->existing_classes_lc[$fq_class_name_lc]
+            || !$this->classlike_storage_provider->has($fq_class_name_lc)
+        ) {
+            if ((
+                !isset($this->existing_classes_lc[$fq_class_name_lc])
+                    || $this->existing_classes_lc[$fq_class_name_lc]
+                )
+                && !$this->classlike_storage_provider->has($fq_class_name_lc)
+            ) {
+                if (!isset($this->existing_classes_lc[$fq_class_name_lc])) {
+                    $this->existing_classes_lc[$fq_class_name_lc] = false;
+
+                    return false;
+                }
+
+                return $this->existing_classes_lc[$fq_class_name_lc];
+            }
+
+            return false;
+        }
+
         if ($this->collect_locations && $code_location) {
             $this->file_reference_provider->addCallingLocationForClass(
                 $code_location,
@@ -365,28 +385,38 @@ class ClassLikes
             );
         }
 
-        if (isset($this->existing_classes_lc[$fq_class_name_lc])) {
-            return $this->existing_classes_lc[$fq_class_name_lc];
-        } elseif (!$this->classlike_storage_provider->has($fq_class_name_lc)
-            || !(
-                $this->classlike_storage_provider->get($fq_class_name_lc)->is_enum
-                || $this->classlike_storage_provider->get($fq_class_name_lc)->is_interface
-                || $this->classlike_storage_provider->get($fq_class_name_lc)->is_trait
-            )
-        ) {
-            return $this->existing_classes_lc[$fq_class_name_lc] = false;
-        }
-
-        return $this->existing_classes_lc[$fq_class_name_lc] = true;
+        return true;
     }
 
     public function hasFullyQualifiedInterfaceName(
         string $fq_class_name,
         ?CodeLocation $code_location = null,
         ?string $calling_fq_class_name = null,
-        ?string $calling_method_id = null,
+        ?string $calling_method_id = null
     ): bool {
         $fq_class_name_lc = strtolower($this->getUnAliasedName($fq_class_name));
+
+        if (!isset($this->existing_interfaces_lc[$fq_class_name_lc])
+            || !$this->existing_interfaces_lc[$fq_class_name_lc]
+            || !$this->classlike_storage_provider->has($fq_class_name_lc)
+        ) {
+            if ((
+                !isset($this->existing_classes_lc[$fq_class_name_lc])
+                    || $this->existing_classes_lc[$fq_class_name_lc]
+                )
+                && !$this->classlike_storage_provider->has($fq_class_name_lc)
+            ) {
+                if (!isset($this->existing_interfaces_lc[$fq_class_name_lc])) {
+                    $this->existing_interfaces_lc[$fq_class_name_lc] = false;
+
+                    return false;
+                }
+
+                return $this->existing_interfaces_lc[$fq_class_name_lc];
+            }
+
+            return false;
+        }
 
         if ($this->collect_references && $code_location) {
             if ($calling_method_id) {
@@ -422,24 +452,38 @@ class ClassLikes
             );
         }
 
-        if (isset($this->existing_interfaces_lc[$fq_class_name_lc])) {
-            return $this->existing_interfaces_lc[$fq_class_name_lc];
-        } elseif (!$this->classlike_storage_provider->has($fq_class_name_lc)
-            || !$this->classlike_storage_provider->get($fq_class_name_lc)->is_interface
-        ) {
-            return $this->existing_interfaces_lc[$fq_class_name_lc] = false;
-        }
-
-        return $this->existing_interfaces_lc[$fq_class_name_lc] = true;
+        return true;
     }
 
     public function hasFullyQualifiedEnumName(
         string $fq_class_name,
         ?CodeLocation $code_location = null,
         ?string $calling_fq_class_name = null,
-        ?string $calling_method_id = null,
+        ?string $calling_method_id = null
     ): bool {
         $fq_class_name_lc = strtolower($this->getUnAliasedName($fq_class_name));
+
+        if (!isset($this->existing_enums_lc[$fq_class_name_lc])
+            || !$this->existing_enums_lc[$fq_class_name_lc]
+            || !$this->classlike_storage_provider->has($fq_class_name_lc)
+        ) {
+            if ((
+                !isset($this->existing_classes_lc[$fq_class_name_lc])
+                    || $this->existing_classes_lc[$fq_class_name_lc]
+                )
+                && !$this->classlike_storage_provider->has($fq_class_name_lc)
+            ) {
+                if (!isset($this->existing_enums_lc[$fq_class_name_lc])) {
+                    $this->existing_enums_lc[$fq_class_name_lc] = false;
+
+                    return false;
+                }
+
+                return $this->existing_enums_lc[$fq_class_name_lc];
+            }
+
+            return false;
+        }
 
         if ($this->collect_references && $code_location) {
             if ($calling_method_id) {
@@ -475,20 +519,18 @@ class ClassLikes
             );
         }
 
-        if (isset($this->existing_enums_lc[$fq_class_name_lc])) {
-            return $this->existing_enums_lc[$fq_class_name_lc];
-        } elseif (!$this->classlike_storage_provider->has($fq_class_name_lc)
-            || !$this->classlike_storage_provider->get($fq_class_name_lc)->is_enum
-        ) {
-            return $this->existing_enums_lc[$fq_class_name_lc] = false;
-        }
-
-        return $this->existing_enums_lc[$fq_class_name_lc] = true;
+        return true;
     }
 
     public function hasFullyQualifiedTraitName(string $fq_class_name, ?CodeLocation $code_location = null): bool
     {
         $fq_class_name_lc = strtolower($this->getUnAliasedName($fq_class_name));
+
+        if (!isset($this->existing_traits_lc[$fq_class_name_lc]) ||
+            !$this->existing_traits_lc[$fq_class_name_lc]
+        ) {
+            return false;
+        }
 
         if ($this->collect_references && $code_location) {
             $this->file_reference_provider->addNonMethodReferenceToClass(
@@ -497,15 +539,7 @@ class ClassLikes
             );
         }
 
-        if (isset($this->existing_traits_lc[$fq_class_name_lc])) {
-            return $this->existing_traits_lc[$fq_class_name_lc];
-        } elseif (!$this->classlike_storage_provider->has($fq_class_name_lc)
-            || !$this->classlike_storage_provider->get($fq_class_name_lc)->is_trait
-        ) {
-            return $this->existing_traits_lc[$fq_class_name_lc] = false;
-        }
-
-        return $this->existing_traits_lc[$fq_class_name_lc] = true;
+        return true;
     }
 
     /**
@@ -515,7 +549,7 @@ class ClassLikes
         string $fq_class_name,
         ?CodeLocation $code_location = null,
         ?string $calling_fq_class_name = null,
-        ?string $calling_method_id = null,
+        ?string $calling_method_id = null
     ): bool {
         return $this->classExists($fq_class_name, $code_location, $calling_fq_class_name, $calling_method_id)
             || $this->interfaceExists($fq_class_name, $code_location, $calling_fq_class_name, $calling_method_id);
@@ -528,7 +562,7 @@ class ClassLikes
         string $fq_class_name,
         ?CodeLocation $code_location = null,
         ?string $calling_fq_class_name = null,
-        ?string $calling_method_id = null,
+        ?string $calling_method_id = null
     ): bool {
         return $this->classExists($fq_class_name, $code_location, $calling_fq_class_name, $calling_method_id)
             || $this->interfaceExists($fq_class_name, $code_location, $calling_fq_class_name, $calling_method_id)
@@ -542,7 +576,7 @@ class ClassLikes
         string $fq_class_name,
         ?CodeLocation $code_location = null,
         ?string $calling_fq_class_name = null,
-        ?string $calling_method_id = null,
+        ?string $calling_method_id = null
     ): bool {
         if (isset(ClassLikeAnalyzer::SPECIAL_TYPES[$fq_class_name])) {
             return false;
@@ -639,7 +673,7 @@ class ClassLikes
         string $fq_interface_name,
         ?CodeLocation $code_location = null,
         ?string $calling_fq_class_name = null,
-        ?string $calling_method_id = null,
+        ?string $calling_method_id = null
     ): bool {
         if (isset(ClassLikeAnalyzer::SPECIAL_TYPES[strtolower($fq_interface_name)])) {
             return false;
@@ -657,7 +691,7 @@ class ClassLikes
         string $fq_enum_name,
         ?CodeLocation $code_location = null,
         ?string $calling_fq_class_name = null,
-        ?string $calling_method_id = null,
+        ?string $calling_method_id = null
     ): bool {
         if (isset(ClassLikeAnalyzer::SPECIAL_TYPES[strtolower($fq_enum_name)])) {
             return false;
@@ -881,7 +915,7 @@ class ClassLikes
     public static function makeImmutable(
         PhpParser\Node\Stmt\Class_ $class_stmt,
         ProjectAnalyzer $project_analyzer,
-        string $file_path,
+        string $file_path
     ): void {
         $manipulator = ClassDocblockManipulator::getForClass(
             $project_analyzer,
@@ -1157,7 +1191,7 @@ class ClassLikes
         string $fq_class_name,
         ?string $calling_method_id,
         bool $force_change = false,
-        bool $was_self = false,
+        bool $was_self = false
     ): bool {
         if ($class_name_node instanceof VirtualNode) {
             return false;
@@ -1339,7 +1373,7 @@ class ClassLikes
         StatementsSource $source,
         Union $type,
         CodeLocation $type_location,
-        ?string $calling_method_id,
+        ?string $calling_method_id
     ): void {
         $calling_fq_class_name = $source->getFQCLN();
         $fq_class_name_lc = strtolower($calling_fq_class_name ?? '');
@@ -1469,7 +1503,7 @@ class ClassLikes
         int $source_start,
         int $source_end,
         bool $add_class_constant = false,
-        bool $allow_self = false,
+        bool $allow_self = false
     ): void {
         $project_analyzer = ProjectAnalyzer::getInstance();
         $codebase = $project_analyzer->getCodebase();
@@ -1505,7 +1539,7 @@ class ClassLikes
         string $destination_fq_class_name,
         string $source_file_path,
         int $source_start,
-        int $source_end,
+        int $source_end
     ): void {
         $project_analyzer = ProjectAnalyzer::getInstance();
         $codebase = $project_analyzer->getCodebase();
@@ -1579,7 +1613,7 @@ class ClassLikes
         ?StatementsAnalyzer $statements_analyzer = null,
         array $visited_constant_ids = [],
         bool $late_static_binding = false,
-        bool $in_value_of_context = false,
+        bool $in_value_of_context = false
     ): ?Union {
         $class_name = strtolower($class_name);
 
@@ -2357,7 +2391,7 @@ class ClassLikes
         int $visibility,
         ?StatementsAnalyzer $statements_analyzer,
         array $visited_constant_ids,
-        bool $late_static_binding,
+        bool $late_static_binding
     ): ?Union {
         $constant_resolver = new StorageByPatternResolver();
         $resolved_constants = $constant_resolver->resolveConstants(
@@ -2419,7 +2453,7 @@ class ClassLikes
 
     private function getEnumType(
         ClassLikeStorage $class_like_storage,
-        string $constant_name,
+        string $constant_name
     ): ?Union {
         $constant_resolver = new StorageByPatternResolver();
         $resolved_enums = $constant_resolver->resolveEnums(
@@ -2441,7 +2475,7 @@ class ClassLikes
 
     private function filterConstantNameByVisibility(
         ClassConstantStorage $constant_storage,
-        int $visibility,
+        int $visibility
     ): bool {
 
         if ($visibility === ReflectionProperty::IS_PUBLIC
