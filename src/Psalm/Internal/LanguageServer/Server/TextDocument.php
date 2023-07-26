@@ -72,7 +72,7 @@ class TextDocument
             ['version' => $textDocument->version, 'uri' => $textDocument->uri],
         );
 
-        $file_path = LanguageServer::uriToPath($textDocument->uri);
+        $file_path = $this->server->uriToPath($textDocument->uri);
 
         $this->codebase->removeTemporaryFileChanges($file_path);
         $this->codebase->file_provider->openFile($file_path);
@@ -95,7 +95,7 @@ class TextDocument
             ['uri' => (array) $textDocument],
         );
 
-        $file_path = LanguageServer::uriToPath($textDocument->uri);
+        $file_path = $this->server->uriToPath($textDocument->uri);
 
         // reopen file
         $this->codebase->removeTemporaryFileChanges($file_path);
@@ -117,7 +117,7 @@ class TextDocument
             ['version' => $textDocument->version, 'uri' => $textDocument->uri],
         );
 
-        $file_path = LanguageServer::uriToPath($textDocument->uri);
+        $file_path = $this->server->uriToPath($textDocument->uri);
 
         if (count($contentChanges) === 1 && isset($contentChanges[0]) && $contentChanges[0]->range === null) {
             $new_content = $contentChanges[0]->text;
@@ -152,7 +152,7 @@ class TextDocument
             ['uri' => $textDocument->uri],
         );
 
-        $file_path = LanguageServer::uriToPath($textDocument->uri);
+        $file_path = $this->server->uriToPath($textDocument->uri);
 
         $this->codebase->file_provider->closeFile($file_path);
         $this->server->client->textDocument->publishDiagnostics($textDocument->uri, []);
@@ -175,7 +175,7 @@ class TextDocument
             'textDocument/definition',
         );
 
-        $file_path = LanguageServer::uriToPath($textDocument->uri);
+        $file_path = $this->server->uriToPath($textDocument->uri);
 
         //This currently doesnt work right with out of project files
         if (!$this->codebase->config->isInProjectDirs($file_path)) {
@@ -201,7 +201,7 @@ class TextDocument
         }
 
         return new Location(
-            LanguageServer::pathToUri($code_location->file_path),
+            $this->server->pathToUri($code_location->file_path),
             new Range(
                 new Position($code_location->getLineNumber() - 1, $code_location->getColumn() - 1),
                 new Position($code_location->getEndLineNumber() - 1, $code_location->getEndColumn() - 1),
@@ -226,7 +226,7 @@ class TextDocument
             'textDocument/hover',
         );
 
-        $file_path = LanguageServer::uriToPath($textDocument->uri);
+        $file_path = $this->server->uriToPath($textDocument->uri);
 
         //This currently doesnt work right with out of project files
         if (!$this->codebase->config->isInProjectDirs($file_path)) {
@@ -281,7 +281,7 @@ class TextDocument
             'textDocument/completion',
         );
 
-        $file_path = LanguageServer::uriToPath($textDocument->uri);
+        $file_path = $this->server->uriToPath($textDocument->uri);
 
         //This currently doesnt work right with out of project files
         if (!$this->codebase->config->isInProjectDirs($file_path)) {
@@ -349,7 +349,7 @@ class TextDocument
             'textDocument/signatureHelp',
         );
 
-        $file_path = LanguageServer::uriToPath($textDocument->uri);
+        $file_path = $this->server->uriToPath($textDocument->uri);
 
         //This currently doesnt work right with out of project files
         if (!$this->codebase->config->isInProjectDirs($file_path)) {
@@ -402,7 +402,7 @@ class TextDocument
             'textDocument/codeAction',
         );
 
-        $file_path = LanguageServer::uriToPath($textDocument->uri);
+        $file_path = $this->server->uriToPath($textDocument->uri);
 
         //Don't report code actions for files we arent watching
         if (!$this->codebase->config->isInProjectDirs($file_path)) {
@@ -418,7 +418,7 @@ class TextDocument
             /** @var array{type: string, snippet: string, line_from: int, line_to: int} */
             $data = (array)$diagnostic->data;
 
-            //$file_path = LanguageServer::uriToPath($textDocument->uri);
+            //$file_path = $this->server->uriToPath($textDocument->uri);
             //$contents = $this->codebase->file_provider->getContents($file_path);
 
             $snippetRange = new Range(
