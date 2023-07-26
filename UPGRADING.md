@@ -13,6 +13,10 @@
 
 - [BC] The return type of `Psalm\Internal\LanguageServer\ProtocolWriter#write() changed from `Amp\Promise` to `void` due to the switch to Amp v3
 
+- [BC] All parameters and return typehints are now strictly typed.
+
+- [BC] `strict_types` is now applied to all files of the Psalm codebase.
+
 # Upgrading from Psalm 4 to Psalm 5
 ## Changed
 
