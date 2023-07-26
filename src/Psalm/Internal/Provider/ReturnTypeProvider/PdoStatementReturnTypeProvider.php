@@ -116,6 +116,13 @@ class PdoStatementReturnTypeProvider implements MethodReturnTypeProviderInterfac
             case 6: // PDO::FETCH_BOUND - bool
                 return Type::getBool();
 
+            case 7: // PDO::FETCH_COLUMN - scalar|null|false
+                return new Union([
+                    new TScalar(),
+                    new TNull(),
+                    new TFalse(),
+                ]);
+
             case 8: // PDO::FETCH_CLASS - object|false
                 return new Union([
                     $fetch_class_name ? new TNamedObject($fetch_class_name) : new TObject(),
@@ -130,16 +137,33 @@ class PdoStatementReturnTypeProvider implements MethodReturnTypeProviderInterfac
                     new TFalse(),
                 ]);
 
-            case 11: // PDO::FETCH_NAMED - array<string, scalar|list<scalar>>|false
+            case 11: // PDO::FETCH_NAMED - array<string, scalar|null|list<scalar|null>>|false
                 return new Union([
                     new TArray([
                         Type::getString(),
                         new Union([
                             new TScalar(),
-                            Type::getListAtomic(Type::getScalar()),
+                            new TNull(),
+                            Type::getListAtomic(
+                                new Union([
+                                    new TScalar(),
+                                    new TNull(),
+                                ])
+                            ),
                         ]),
                     ]),
                     new TFalse(),
+                ]);
+
+            case 12: // PDO::FETCH_KEY_PAIR - array<array-key,scalar|null>
+                return new Union([
+                    new TArray([
+                        Type::getArrayKey(),
+                        new Union([
+                            new TScalar(),
+                            new TNull(),
+                        ]),
+                    ]),
                 ]);
 
             case 3: // PDO::FETCH_NUM - list<scalar|null>|false
@@ -199,7 +223,7 @@ class PdoStatementReturnTypeProvider implements MethodReturnTypeProviderInterfac
                                     new TNull(),
                                 ]),
                             ]),
-                        ]),
+                        ])
                     ),
                 ]);
 
@@ -214,7 +238,7 @@ class PdoStatementReturnTypeProvider implements MethodReturnTypeProviderInterfac
                                     new TNull(),
                                 ]),
                             ]),
-                        ]),
+                        ])
                     ),
                 ]);
 
@@ -225,27 +249,27 @@ class PdoStatementReturnTypeProvider implements MethodReturnTypeProviderInterfac
                     ),
                 ]);
 
+            case 7: // PDO::FETCH_COLUMN - scalar|null|false
+                return new Union([
+                    Type::getListAtomic(
+                        new Union([
+                            new TScalar(),
+                            new TNull(),
+                            new TFalse(),
+                        ])
+                    ),
+                ]);
+
             case 8: // PDO::FETCH_CLASS - list<object>
                 return new Union([
                     Type::getListAtomic(
                         new Union([
                             $fetch_class_name ? new TNamedObject($fetch_class_name) : new TObject()
-                        ]),
+                        ])
                     ),
                 ]);
 
-            case 1: // PDO::FETCH_LAZY - list<object>
-                // This actually returns a PDORow object, but that class is
-                // undocumented, and its attributes are all dynamic anyway
-                return new Union([
-                    Type::getListAtomic(
-                        new Union([
-                            new TObject()
-                        ]),
-                    ),
-                ]);
-
-            case 11: // PDO::FETCH_NAMED - list<array<string, scalar|list<scalar>>>
+            case 11: // PDO::FETCH_NAMED - list<array<string, scalar|null|list<scalar|null>>>
                 return new Union([
                     Type::getListAtomic(
                         new Union([
@@ -253,11 +277,28 @@ class PdoStatementReturnTypeProvider implements MethodReturnTypeProviderInterfac
                                 Type::getString(),
                                 new Union([
                                     new TScalar(),
-                                    Type::getListAtomic(Type::getScalar()),
+                                    new TNull(),
+                                    Type::getListAtomic(
+                                        new Union([
+                                            new TScalar(),
+                                            new TNull(),
+                                        ])
+                                    ),
                                 ]),
                             ]),
-                        ]),
+                        ])
                     ),
+                ]);
+
+            case 12: // PDO::FETCH_KEY_PAIR - array<array-key,scalar|null>
+                return new Union([
+                    new TArray([
+                        Type::getArrayKey(),
+                        new Union([
+                            new TScalar(),
+                            new TNull(),
+                        ]),
+                    ]),
                 ]);
 
             case 3: // PDO::FETCH_NUM - list<list<scalar|null>>
@@ -268,9 +309,9 @@ class PdoStatementReturnTypeProvider implements MethodReturnTypeProviderInterfac
                                 new Union([
                                     new TScalar(),
                                     new TNull(),
-                                ]),
+                                ])
                             ),
-                        ]),
+                        ])
                     ),
                 ]);
 
@@ -279,7 +320,7 @@ class PdoStatementReturnTypeProvider implements MethodReturnTypeProviderInterfac
                     Type::getListAtomic(
                         new Union([
                             new TNamedObject('stdClass')
-                        ]),
+                        ])
                     ),
                 ]);
         }
