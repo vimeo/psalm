@@ -48,7 +48,7 @@ class PdoStatementReturnTypeProvider implements MethodReturnTypeProviderInterfac
         return null;
     }
 
-    private static function handleSetFetchMode(MethodReturnTypeProviderEvent $event)
+    private static function handleSetFetchMode(MethodReturnTypeProviderEvent $event): ?Union
     {
         $source = $event->getSource();
         $call_args = $event->getCallArgs();
@@ -148,7 +148,7 @@ class PdoStatementReturnTypeProvider implements MethodReturnTypeProviderInterfac
                                 new Union([
                                     new TScalar(),
                                     new TNull(),
-                                ])
+                                ]),
                             ),
                         ]),
                     ]),
@@ -223,7 +223,7 @@ class PdoStatementReturnTypeProvider implements MethodReturnTypeProviderInterfac
                                     new TNull(),
                                 ]),
                             ]),
-                        ])
+                        ]),
                     ),
                 ]);
 
@@ -238,14 +238,14 @@ class PdoStatementReturnTypeProvider implements MethodReturnTypeProviderInterfac
                                     new TNull(),
                                 ]),
                             ]),
-                        ])
+                        ]),
                     ),
                 ]);
 
             case 6: // PDO::FETCH_BOUND - list<bool>
                 return new Union([
                     Type::getListAtomic(
-                        Type::getBool()
+                        Type::getBool(),
                     ),
                 ]);
 
@@ -256,7 +256,7 @@ class PdoStatementReturnTypeProvider implements MethodReturnTypeProviderInterfac
                             new TScalar(),
                             new TNull(),
                             new TFalse(),
-                        ])
+                        ]),
                     ),
                 ]);
 
@@ -264,8 +264,8 @@ class PdoStatementReturnTypeProvider implements MethodReturnTypeProviderInterfac
                 return new Union([
                     Type::getListAtomic(
                         new Union([
-                            $fetch_class_name ? new TNamedObject($fetch_class_name) : new TObject()
-                        ])
+                            $fetch_class_name ? new TNamedObject($fetch_class_name) : new TObject(),
+                        ]),
                     ),
                 ]);
 
@@ -282,11 +282,11 @@ class PdoStatementReturnTypeProvider implements MethodReturnTypeProviderInterfac
                                         new Union([
                                             new TScalar(),
                                             new TNull(),
-                                        ])
+                                        ]),
                                     ),
                                 ]),
                             ]),
-                        ])
+                        ]),
                     ),
                 ]);
 
@@ -309,9 +309,9 @@ class PdoStatementReturnTypeProvider implements MethodReturnTypeProviderInterfac
                                 new Union([
                                     new TScalar(),
                                     new TNull(),
-                                ])
+                                ]),
                             ),
-                        ])
+                        ]),
                     ),
                 ]);
 
@@ -319,8 +319,8 @@ class PdoStatementReturnTypeProvider implements MethodReturnTypeProviderInterfac
                 return new Union([
                     Type::getListAtomic(
                         new Union([
-                            new TNamedObject('stdClass')
-                        ])
+                            new TNamedObject('stdClass'),
+                        ]),
                     ),
                 ]);
         }
