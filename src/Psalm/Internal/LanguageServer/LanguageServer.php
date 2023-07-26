@@ -137,6 +137,8 @@ class LanguageServer extends Dispatcher
      */
     protected JsonMapper $mapper;
 
+    protected PathMapper $path_mapper;
+
     public function __construct(
         ProtocolReader $reader,
         ProtocolWriter $writer,
@@ -144,6 +146,7 @@ class LanguageServer extends Dispatcher
         Codebase $codebase,
         ClientConfiguration $clientConfiguration,
         Progress $progress,
+        PathMapper $path_mapper
     ) {
         parent::__construct($this, '/');
 
@@ -152,6 +155,8 @@ class LanguageServer extends Dispatcher
         $this->project_analyzer = $project_analyzer;
 
         $this->codebase = $codebase;
+
+        $this->path_mapper = $path_mapper;
 
         $this->protocolWriter = $writer;
 
@@ -222,6 +227,7 @@ class LanguageServer extends Dispatcher
 
         $this->client = new LanguageClient($reader, $writer, $this, $clientConfiguration);
 
+
         $this->logInfo("Psalm Language Server ".PSALM_VERSION." has started.");
     }
 
@@ -232,7 +238,8 @@ class LanguageServer extends Dispatcher
         Config $config,
         ClientConfiguration $clientConfiguration,
         string $base_dir,
-        bool $inMemory = false,
+        PathMapper $path_mapper,
+        bool $inMemory = false
     ): void {
         $progress = new Progress();
 
@@ -304,6 +311,7 @@ class LanguageServer extends Dispatcher
                 $codebase,
                 $clientConfiguration,
                 $progress,
+                $path_mapper,
             );
             EventLoop::run();
         } elseif ($clientConfiguration->TCPServerMode && $clientConfiguration->TCPServerAddress) {
@@ -327,6 +335,7 @@ class LanguageServer extends Dispatcher
                     $codebase,
                     $clientConfiguration,
                     $progress,
+                    $path_mapper,
                 );
                 EventLoop::run();
             }
@@ -340,6 +349,7 @@ class LanguageServer extends Dispatcher
                 $codebase,
                 $clientConfiguration,
                 $progress,
+                $path_mapper,
             );
             EventLoop::run();
         }
@@ -374,6 +384,10 @@ class LanguageServer extends Dispatcher
         $this->clientInfo = $clientInfo;
         $this->clientCapabilities = $capabilities;
         $this->trace = $trace;
+
+        if ($rootUri !== null) {
+            $this->path_mapper->configureClientRoot($this->getPathPart($rootUri));
+        }
 
         $this->logInfo("Initializing...");
         $this->clientStatus('initializing');
@@ -917,12 +931,15 @@ class LanguageServer extends Dispatcher
 
     /**
      * Transforms an absolute file path into a URI as used by the language server protocol.
-     *
-     * @psalm-pure
      */
-    public static function pathToUri(string $filepath): string
+    public function pathToUri(string $filepath): string
     {
-        $filepath = trim(str_replace('\\', '/', $filepath), '/');
+        $filepath = str_replace('\\', '/', $filepath);
+
+        $filepath = $this->path_mapper->mapServerToClient($oldpath = $filepath);
+        $this->logDebug('Translated path to URI', ['from' => $oldpath, 'to' => $filepath]);
+
+        $filepath = trim($filepath, '/');
         $parts = explode('/', $filepath);
         // Don't %-encode the colon after a Windows drive letter
         $first = array_shift($parts);
@@ -939,7 +956,29 @@ class LanguageServer extends Dispatcher
     /**
      * Transforms URI into file path
      */
-    public static function uriToPath(string $uri): string
+    public function uriToPath(string $uri): string
+    {
+        $filepath = urldecode($this->getPathPart($uri));
+
+        if (strpos($filepath, ':') !== false) {
+            if ($filepath[0] === '/') {
+                $filepath = substr($filepath, 1);
+            }
+            $filepath = str_replace('/', '\\', $filepath);
+        }
+
+        $filepath = $this->path_mapper->mapClientToServer($oldpath = $filepath);
+        $this->logDebug('Translated URI to path', ['from' => $oldpath, 'to' => $filepath]);
+
+        $realpath = realpath($filepath);
+        if ($realpath !== false) {
+            return $realpath;
+        }
+
+        return $filepath;
+    }
+
+    private function getPathPart(string $uri): string
     {
         $fragments = parse_url($uri);
         if ($fragments === false
@@ -949,21 +988,21 @@ class LanguageServer extends Dispatcher
         ) {
             throw new InvalidArgumentException("Not a valid file URI: $uri");
         }
+        return $fragments['path'];
+    }
 
-        $filepath = urldecode($fragments['path']);
+    // the methods below forward special paths
+    // like `$/cancelRequest` to `$this->cancelRequest()`
+    // and `$/a/b/c` to `$this->a->b->c()`
 
-        if (strpos($filepath, ':') !== false) {
-            if ($filepath[0] === '/') {
-                $filepath = substr($filepath, 1);
-            }
-            $filepath = str_replace('/', '\\', $filepath);
-        }
+    public function __isset(string $prop_name): bool
+    {
+        return $prop_name === '$';
+    }
 
-        $realpath = realpath($filepath);
-        if ($realpath !== false) {
-            return $realpath;
-        }
-
-        return $filepath;
+    /** @return static */
+    public function __get(string $_prop_name): self
+    {
+        return $this;
     }
 }

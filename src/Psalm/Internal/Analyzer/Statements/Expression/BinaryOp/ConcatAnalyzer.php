@@ -181,9 +181,6 @@ class ConcatAnalyzer
                     }
 
                     if ($literal_concat) {
-                        // Bypass opcache bug: https://github.com/php/php-src/issues/10635
-                        (function (int $_): void {
-                        })($combinations);
                         if (count($result_type_parts) === 0) {
                             throw new AssertionError("The number of parts cannot be 0!");
                         }
