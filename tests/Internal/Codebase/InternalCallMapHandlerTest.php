@@ -29,7 +29,6 @@ use function count;
 use function explode;
 use function function_exists;
 use function in_array;
-use function interface_exists;
 use function is_array;
 use function is_int;
 use function json_encode;
@@ -141,6 +140,7 @@ class InternalCallMapHandlerTest extends TestCase
         'oci_result',
         'ocigetbufferinglob',
         'ocisetbufferinglob',
+        'recursiveiteratoriterator::__construct', // Class used in CallMap does not exist: recursiveiterator
         'sqlsrv_fetch_array',
         'sqlsrv_fetch_object',
         'sqlsrv_get_field',
@@ -173,6 +173,7 @@ class InternalCallMapHandlerTest extends TestCase
     private static array $ignoredReturnTypeOnlyFunctions = [
         'appenditerator::getinneriterator' => ['8.1', '8.2'],
         'appenditerator::getiteratorindex' => ['8.1', '8.2'],
+        'arrayobject::getiterator' => ['8.1', '8.2'],
         'cachingiterator::getinneriterator' => ['8.1', '8.2'],
         'callbackfilteriterator::getinneriterator' => ['8.1', '8.2'],
         'curl_multi_getcontent',
@@ -630,7 +631,6 @@ class InternalCallMapHandlerTest extends TestCase
         } catch (InvalidArgumentException $e) {
             if (preg_match('/^Could not get class storage for (.*)$/', $e->getMessage(), $matches)
                 && !class_exists($matches[1])
-                && !interface_exists($matches[1])
             ) {
                 $this->fail("Class used in CallMap does not exist: {$matches[1]}");
             }
