@@ -378,31 +378,19 @@ class LanguageServer extends Dispatcher
      * The initialize request is sent as the first request from the client to the server.
      *
      * @param ClientCapabilities $capabilities The capabilities provided by the client (editor)
-     * @param int|null $processId The process Id of the parent process that started the server.
      * Is null if the process has not been started by another process. If the parent process is
      * not alive then the server should exit (see exit notification) its process.
      * @param ClientInfo|null $clientInfo Information about the client
-     * @param string|null $locale  The locale the client is currently showing the user interface
-     * in. This must not necessarily be the locale of the operating
-     * system.
-     * @param string|null $rootPath The rootPath of the workspace. Is null if no folder is open.
-     * @param mixed $initializationOptions
      * @param string|null $trace The initial trace setting. If omitted trace is disabled ('off').
      * @param string|null $workDoneToken The token to be used to report progress during init.
      * @psalm-return Promise<InitializeResult>
-     * @psalm-suppress PossiblyUnusedParam
      */
     public function initialize(
         ClientCapabilities $capabilities,
-        ?int $processId = null,
         ?ClientInfo $clientInfo = null,
-        ?string $locale = null,
-        ?string $rootPath = null,
         ?string $rootUri = null,
-        $initializationOptions = null,
         ?string $trace = null,
         ?string $workDoneToken = null
-        //?array $workspaceFolders = null //error in json-dispatcher
     ): Promise {
         $this->clientInfo = $clientInfo;
         $this->clientCapabilities = $capabilities;
