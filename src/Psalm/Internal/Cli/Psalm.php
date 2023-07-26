@@ -924,7 +924,7 @@ final class Psalm
 
         if (!function_exists('opcache_get_status')) {
             $progress->write(PHP_EOL
-                . 'Install the opcache extension to make use of JIT on PHP 8.0+ for a 20%+ performance boost!'
+                . 'Install the opcache extension to make use of JIT for a 20%+ performance boost!'
                 . PHP_EOL . PHP_EOL);
         }
     }

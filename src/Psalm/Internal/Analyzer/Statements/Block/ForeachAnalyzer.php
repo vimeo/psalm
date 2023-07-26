@@ -478,7 +478,6 @@ class ForeachAnalyzer
                     }
 
                     $iterator_atomic_type = $iterator_atomic_type->getGenericArrayType(
-                        true,
                         ExpressionIdentifier::getExtendedVarId(
                             $expr,
                             $statements_analyzer->getFQCLN(),
