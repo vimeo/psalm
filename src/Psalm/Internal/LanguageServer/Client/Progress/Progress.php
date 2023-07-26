@@ -8,10 +8,15 @@ use Psalm\Internal\LanguageServer\ClientHandler;
 /** @internal */
 final class Progress implements ProgressInterface
 {
+    private const STATUS_INACTIVE = 'inactive';
+    private const STATUS_ACTIVE = 'active';
+    private const STATUS_FINISHED = 'finished';
+
+    private string $status = self::STATUS_INACTIVE;
+
     private ClientHandler $handler;
     private string $token;
     private bool $withPercentage = false;
-    private bool $finished = false;
 
     public function __construct(ClientHandler $handler, string $token)
     {
@@ -24,7 +29,11 @@ final class Progress implements ProgressInterface
         ?string $message = null,
         ?int $percentage = null
     ): void {
-        if ($this->finished) {
+        if ($this->status === self::STATUS_ACTIVE) {
+            throw new LogicException('Progress has already been started');
+        }
+
+        if ($this->status === self::STATUS_FINISHED) {
             throw new LogicException('Progress has already been finished');
         }
 
@@ -46,12 +55,18 @@ final class Progress implements ProgressInterface
         }
 
         $this->handler->notify('$/progress', $notification);
+
+        $this->status = self::STATUS_ACTIVE;
     }
 
     public function end(?string $message = null): void
     {
-        if ($this->finished) {
+        if ($this->status === self::STATUS_FINISHED) {
             throw new LogicException('Progress has already been finished');
+        }
+
+        if ($this->status === self::STATUS_INACTIVE) {
+            throw new LogicException('Progress has not been started yet');
         }
 
         $notification = [
@@ -67,13 +82,17 @@ final class Progress implements ProgressInterface
 
         $this->handler->notify('$/progress', $notification);
 
-        $this->finished = true;
+        $this->status = self::STATUS_FINISHED;
     }
 
     public function update(?string $message = null, ?int $percentage = null): void
     {
-        if ($this->finished) {
+        if ($this->status === self::STATUS_FINISHED) {
             throw new LogicException('Progress has already been finished');
+        }
+
+        if ($this->status === self::STATUS_INACTIVE) {
+            throw new LogicException('Progress has not been started yet');
         }
 
         $notification = [

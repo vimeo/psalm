@@ -10,6 +10,12 @@ use Psalm\Internal\LanguageServer\ClientHandler;
 /** @internal */
 final class LegacyProgress implements ProgressInterface
 {
+    private const STATUS_INACTIVE = 'inactive';
+    private const STATUS_ACTIVE = 'active';
+    private const STATUS_FINISHED = 'finished';
+
+    private string $status = self::STATUS_INACTIVE;
+
     private ClientHandler $handler;
     private ?string $title = null;
 
@@ -20,19 +26,30 @@ final class LegacyProgress implements ProgressInterface
 
     public function begin(string $title, ?string $message = null, ?int $percentage = null): void
     {
-        if ($this->title !== null) {
+
+        if ($this->status === self::STATUS_ACTIVE) {
             throw new LogicException('Progress has already been started');
+        }
+
+        if ($this->status === self::STATUS_FINISHED) {
+            throw new LogicException('Progress has already been finished');
         }
 
         $this->title = $title;
 
         $this->notify($message);
+
+        $this->status = self::STATUS_ACTIVE;
     }
 
     public function update(?string $message = null, ?int $percentage = null): void
     {
-        if ($this->title === null) {
-            throw new LogicException('The progress has not been started yet');
+        if ($this->status === self::STATUS_FINISHED) {
+            throw new LogicException('Progress has already been finished');
+        }
+
+        if ($this->status === self::STATUS_INACTIVE) {
+            throw new LogicException('Progress has not been started yet');
         }
 
         $this->notify($message);
@@ -40,11 +57,17 @@ final class LegacyProgress implements ProgressInterface
 
     public function end(?string $message = null): void
     {
-        if ($this->title === null) {
-            throw new LogicException('The progress has not been started yet');
+        if ($this->status === self::STATUS_FINISHED) {
+            throw new LogicException('Progress has already been finished');
+        }
+
+        if ($this->status === self::STATUS_INACTIVE) {
+            throw new LogicException('Progress has not been started yet');
         }
 
         $this->notify($message);
+
+        $this->status = self::STATUS_FINISHED;
     }
 
     private function notify(?string $message): void
