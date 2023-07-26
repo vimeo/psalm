@@ -54,14 +54,14 @@ class PdoStatementReturnTypeProvider implements MethodReturnTypeProviderInterfac
         $call_args = $event->getCallArgs();
         $context = $event->getContext();
 
-        $context->references_in_scope['fetch_mode'] = null;
-        $context->references_in_scope['fetch_class'] = null;
+        unset($context->references_in_scope['fetch_mode']);
+        unset($context->references_in_scope['fetch_class']);
 
         if (isset($call_args[0])
             && ($first_arg_type = $source->getNodeTypeProvider()->getType($call_args[0]->value))
             && $first_arg_type->isSingleIntLiteral()
         ) {
-            $context->references_in_scope['fetch_mode'] = $first_arg_type->getSingleIntLiteral()->value;
+            $context->references_in_scope['fetch_mode'] = (string) $first_arg_type->getSingleIntLiteral()->value;
         }
 
         if (isset($call_args[1])
