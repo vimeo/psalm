@@ -171,62 +171,62 @@ class InternalCallMapHandlerTest extends TestCase
      * @var array<int|string, string|list<string>>
      */
     private static array $ignoredReturnTypeOnlyFunctions = [
-        'appenditerator::getinneriterator' => ['8.1', '8.2'],
-        'appenditerator::getiteratorindex' => ['8.1', '8.2'],
-        'arrayobject::getiterator' => ['8.1', '8.2'],
-        'cachingiterator::getinneriterator' => ['8.1', '8.2'],
-        'callbackfilteriterator::getinneriterator' => ['8.1', '8.2'],
+        'appenditerator::getinneriterator' => ['8.1', '8.2', '8.3'],
+        'appenditerator::getiteratorindex' => ['8.1', '8.2', '8.3'],
+        'arrayobject::getiterator' => ['8.1', '8.2', '8.3'],
+        'cachingiterator::getinneriterator' => ['8.1', '8.2', '8.3'],
+        'callbackfilteriterator::getinneriterator' => ['8.1', '8.2', '8.3'],
         'curl_multi_getcontent',
-        'datetime::add' => ['8.1', '8.2'], // DateTime does not contain static
-        'datetime::modify' => ['8.1', '8.2'], // DateTime does not contain static
-        'datetime::createfromformat' => ['8.1', '8.2'], // DateTime does not contain static
+        'datetime::add' => ['8.1', '8.2', '8.3'], // DateTime does not contain static
+        'datetime::modify' => ['8.1', '8.2', '8.3'], // DateTime does not contain static
+        'datetime::createfromformat' => ['8.1', '8.2', '8.3'], // DateTime does not contain static
         'datetime::createfromimmutable' => ['8.1'],
         'datetime::createfrominterface',
-        'datetime::setdate' => ['8.1', '8.2'], // DateTime does not contain static
-        'datetime::setisodate' => ['8.1', '8.2'], // DateTime does not contain static
-        'datetime::settime' => ['8.1', '8.2'], // DateTime does not contain static
-        'datetime::settimestamp' => ['8.1', '8.2'], // DateTime does not contain static
-        'datetime::settimezone' => ['8.1', '8.2'], // DateTime does not contain static
-        'datetime::sub' => ['8.1', '8.2'], // DateTime does not contain static
+        'datetime::setdate' => ['8.1', '8.2', '8.3'], // DateTime does not contain static
+        'datetime::setisodate' => ['8.1', '8.2', '8.3'], // DateTime does not contain static
+        'datetime::settime' => ['8.1', '8.2', '8.3'], // DateTime does not contain static
+        'datetime::settimestamp' => ['8.1', '8.2', '8.3'], // DateTime does not contain static
+        'datetime::settimezone' => ['8.1', '8.2', '8.3'], // DateTime does not contain static
+        'datetime::sub' => ['8.1', '8.2', '8.3'], // DateTime does not contain static
         'datetimeimmutable::createfrominterface',
         'fiber::getcurrent',
-        'filteriterator::getinneriterator' => ['8.1', '8.2'],
+        'filteriterator::getinneriterator' => ['8.1', '8.2', '8.3'],
         'get_cfg_var', // Ignore array return type
-        'infiniteiterator::getinneriterator' => ['8.1', '8.2'],
-        'iteratoriterator::getinneriterator' => ['8.1', '8.2'],
-        'limititerator::getinneriterator' => ['8.1', '8.2'],
-        'locale::canonicalize' => ['8.1', '8.2'],
-        'locale::getallvariants' => ['8.1', '8.2'],
-        'locale::getkeywords' => ['8.1', '8.2'],
-        'locale::getprimarylanguage' => ['8.1', '8.2'],
-        'locale::getregion' => ['8.1', '8.2'],
-        'locale::getscript' => ['8.1', '8.2'],
-        'locale::parselocale' => ['8.1', '8.2'],
-        'messageformatter::create' => ['8.1', '8.2'],
-        'multipleiterator::current' => ['8.1', '8.2'],
-        'mysqli::get_charset' => ['8.1', '8.2'],
-        'mysqli_stmt::get_warnings' => ['8.1', '8.2'],
+        'infiniteiterator::getinneriterator' => ['8.1', '8.2', '8.3'],
+        'iteratoriterator::getinneriterator' => ['8.1', '8.2', '8.3'],
+        'limititerator::getinneriterator' => ['8.1', '8.2', '8.3'],
+        'locale::canonicalize' => ['8.1', '8.2', '8.3'],
+        'locale::getallvariants' => ['8.1', '8.2', '8.3'],
+        'locale::getkeywords' => ['8.1', '8.2', '8.3'],
+        'locale::getprimarylanguage' => ['8.1', '8.2', '8.3'],
+        'locale::getregion' => ['8.1', '8.2', '8.3'],
+        'locale::getscript' => ['8.1', '8.2', '8.3'],
+        'locale::parselocale' => ['8.1', '8.2', '8.3'],
+        'messageformatter::create' => ['8.1', '8.2', '8.3'],
+        'multipleiterator::current' => ['8.1', '8.2', '8.3'],
+        'mysqli::get_charset' => ['8.1', '8.2', '8.3'],
+        'mysqli_stmt::get_warnings' => ['8.1', '8.2', '8.3'],
         'mysqli_stmt_get_warnings',
         'mysqli_stmt_insert_id',
-        'norewinditerator::getinneriterator' => ['8.1', '8.2'],
+        'norewinditerator::getinneriterator' => ['8.1', '8.2', '8.3'],
         'passthru',
-        'recursivecachingiterator::getinneriterator' => ['8.1', '8.2'],
-        'recursivecallbackfilteriterator::getinneriterator' => ['8.1', '8.2'],
-        'recursivefilteriterator::getinneriterator' => ['8.1', '8.2'],
-        'recursiveregexiterator::getinneriterator' => ['8.1', '8.2'],
+        'recursivecachingiterator::getinneriterator' => ['8.1', '8.2', '8.3'],
+        'recursivecallbackfilteriterator::getinneriterator' => ['8.1', '8.2', '8.3'],
+        'recursivefilteriterator::getinneriterator' => ['8.1', '8.2', '8.3'],
+        'recursiveregexiterator::getinneriterator' => ['8.1', '8.2', '8.3'],
         'reflectionclass::getstaticproperties' => ['8.1', '8.2'],
-        'reflectionclass::newinstanceargs' => ['8.1', '8.2'],
-        'reflectionfunction::getclosurescopeclass' => ['8.1', '8.2'],
-        'reflectionfunction::getclosurethis' => ['8.1', '8.2'],
-        'reflectionmethod::getclosurescopeclass' => ['8.1', '8.2'],
-        'reflectionmethod::getclosurethis' => ['8.1', '8.2'],
+        'reflectionclass::newinstanceargs' => ['8.1', '8.2', '8.3'],
+        'reflectionfunction::getclosurescopeclass' => ['8.1', '8.2', '8.3'],
+        'reflectionfunction::getclosurethis' => ['8.1', '8.2', '8.3'],
+        'reflectionmethod::getclosurescopeclass' => ['8.1', '8.2', '8.3'],
+        'reflectionmethod::getclosurethis' => ['8.1', '8.2', '8.3'],
         'reflectionobject::getstaticproperties' => ['8.1', '8.2'],
-        'reflectionobject::newinstanceargs' => ['8.1', '8.2'],
-        'regexiterator::getinneriterator' => ['8.1', '8.2'],
+        'reflectionobject::newinstanceargs' => ['8.1', '8.2', '8.3'],
+        'regexiterator::getinneriterator' => ['8.1', '8.2', '8.3'],
         'register_shutdown_function' => ['8.0', '8.1'],
-        'splfileobject::fscanf' => ['8.1', '8.2'],
-        'spltempfileobject::fscanf' => ['8.1', '8.2'],
-        'xsltprocessor::transformtoxml' => ['8.1', '8.2'],
+        'splfileobject::fscanf' => ['8.1', '8.2', '8.3'],
+        'spltempfileobject::fscanf' => ['8.1', '8.2', '8.3'],
+        'xsltprocessor::transformtoxml' => ['8.1', '8.2', '8.3'],
     ];
 
     /**
