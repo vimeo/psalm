@@ -216,13 +216,12 @@ class PdoStatementReturnTypeProvider implements MethodReturnTypeProviderInterfac
                     ),
                 ]);
 
-            case 7: // PDO::FETCH_COLUMN - scalar|null|false
+            case 7: // PDO::FETCH_COLUMN - list<scalar|null>
                 return new Union([
                     Type::getListAtomic(
                         new Union([
                             new TScalar(),
                             new TNull(),
-                            new TFalse(),
                         ]),
                     ),
                 ]);
