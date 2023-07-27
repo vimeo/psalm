@@ -509,22 +509,35 @@ class MethodCallTest extends TestCase
                     $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
                     $stmt = $db->prepare("select \"a\" as a");
                     $stmt->setFetchMode(PDO::FETCH_CLASS, A::class);
+                    $stmt2 = $db->prepare("select \"a\" as a");
+                    $stmt2->setFetchMode(PDO::FETCH_ASSOC);
                     $stmt->execute();
+                    $stmt2->execute();
+                    /** @psalm-suppress MixedAssignment */
                     $a = $stmt->fetch();
                     $b = $stmt->fetchAll();
                     $c = $stmt->fetch(PDO::FETCH_CLASS);
                     $d = $stmt->fetchAll(PDO::FETCH_CLASS);
                     $e = $stmt->fetchAll(PDO::FETCH_CLASS, B::class);
                     $f = $stmt->fetch(PDO::FETCH_ASSOC);
-                    $g = $stmt->fetchAll(PDO::FETCH_ASSOC);',
+                    $g = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                    /** @psalm-suppress MixedAssignment */
+                    $h = $stmt2->fetch();
+                    $i = $stmt2->fetchAll();
+                    $j = $stmt2->fetch(PDO::FETCH_BOTH);
+                    $k = $stmt2->fetchAll(PDO::FETCH_BOTH);',
                 'assertions' => [
-                    '$a' => 'A|false',
-                    '$b' => 'list<A>',
-                    '$c' => 'A|false',
-                    '$d' => 'list<A>',
+                    '$a' => 'mixed',
+                    '$b' => 'array<array-key, mixed>|false',
+                    '$c' => 'false|object',
+                    '$d' => 'list<object>',
                     '$e' => 'list<B>',
                     '$f' => 'array<string, null|scalar>|false',
                     '$g' => 'list<array<string, null|scalar>>',
+                    '$h' => 'mixed',
+                    '$i' => 'array<array-key, mixed>|false',
+                    '$j' => 'array<array-key, null|scalar>|false',
+                    '$k' => 'list<array<array-key, null|scalar>>',
                 ],
             ],
             'datePeriodConstructor' => [

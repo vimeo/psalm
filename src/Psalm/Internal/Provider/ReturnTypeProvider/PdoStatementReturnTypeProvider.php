@@ -33,10 +33,6 @@ class PdoStatementReturnTypeProvider implements MethodReturnTypeProviderInterfac
             return null;
         }
 
-        if ($method_name_lowercase === 'setfetchmode') {
-            return self::handleSetFetchMode($event);
-        }
-
         if ($method_name_lowercase === 'fetch') {
             return self::handleFetch($event);
         }
@@ -48,39 +44,11 @@ class PdoStatementReturnTypeProvider implements MethodReturnTypeProviderInterfac
         return null;
     }
 
-    private static function handleSetFetchMode(MethodReturnTypeProviderEvent $event): ?Union
-    {
-        $source = $event->getSource();
-        $call_args = $event->getCallArgs();
-        $context = $event->getContext();
-
-        unset($context->references_in_scope['fetch_mode']);
-        unset($context->references_in_scope['fetch_class']);
-
-        if (isset($call_args[0])
-            && ($first_arg_type = $source->getNodeTypeProvider()->getType($call_args[0]->value))
-            && $first_arg_type->isSingleIntLiteral()
-        ) {
-            $context->references_in_scope['fetch_mode'] = (string) $first_arg_type->getSingleIntLiteral()->value;
-        }
-
-        if (isset($call_args[1])
-            && ($second_arg_type = $source->getNodeTypeProvider()->getType($call_args[1]->value))
-            && $second_arg_type->isSingleStringLiteral()
-        ) {
-            $context->references_in_scope['fetch_class'] = $second_arg_type->getSingleStringLiteral()->value;
-        }
-
-        return null;
-    }
-
     private static function handleFetch(MethodReturnTypeProviderEvent $event): ?Union
     {
         $source = $event->getSource();
         $call_args = $event->getCallArgs();
-        $context = $event->getContext();
-
-        $fetch_mode = $context->references_in_scope['fetch_mode'] ?? null;
+        $fetch_mode = 0;
 
         if (isset($call_args[0])
             && ($first_arg_type = $source->getNodeTypeProvider()->getType($call_args[0]->value))
@@ -88,8 +56,6 @@ class PdoStatementReturnTypeProvider implements MethodReturnTypeProviderInterfac
         ) {
             $fetch_mode = $first_arg_type->getSingleIntLiteral()->value;
         }
-
-        $fetch_class_name = $context->references_in_scope['fetch_class'] ?? null;
 
         switch ($fetch_mode) {
             case 2: // PDO::FETCH_ASSOC - array<string,scalar|null>|false
@@ -128,7 +94,7 @@ class PdoStatementReturnTypeProvider implements MethodReturnTypeProviderInterfac
 
             case 8: // PDO::FETCH_CLASS - object|false
                 return new Union([
-                    $fetch_class_name ? new TNamedObject($fetch_class_name) : new TObject(),
+                    new TObject(),
                     new TFalse(),
                 ]);
 
@@ -194,9 +160,7 @@ class PdoStatementReturnTypeProvider implements MethodReturnTypeProviderInterfac
     {
         $source = $event->getSource();
         $call_args = $event->getCallArgs();
-        $context = $event->getContext();
-
-        $fetch_mode = $context->references_in_scope['fetch_mode'] ?? null;
+        $fetch_mode = 0;
 
         if (isset($call_args[0])
             && ($first_arg_type = $source->getNodeTypeProvider()->getType($call_args[0]->value))
@@ -205,7 +169,7 @@ class PdoStatementReturnTypeProvider implements MethodReturnTypeProviderInterfac
             $fetch_mode = $first_arg_type->getSingleIntLiteral()->value;
         }
 
-        $fetch_class_name = $context->references_in_scope['fetch_class'] ?? null;
+        $fetch_class_name = null;
 
         if (isset($call_args[1])
             && ($second_arg_type = $source->getNodeTypeProvider()->getType($call_args[1]->value))
