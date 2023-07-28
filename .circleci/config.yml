@@ -1,4 +1,5 @@
 # Use the latest 2.1 version of CircleCI pipeline processing engine, see https://circleci.com/docs/2.0/configuration-reference/
+# See https://app.circleci.com/pipelines/github/vimeo/psalm
 version: 2.1
 executors:
   php-81:
