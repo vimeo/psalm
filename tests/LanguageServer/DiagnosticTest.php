@@ -90,10 +90,21 @@ class DiagnosticTest extends AsyncTestCase
         );
 
         $write->on('message', function (Message $message) use ($deferred, $server): void {
-            /** @psalm-suppress PossiblyNullPropertyFetch,UndefinedPropertyFetch,MixedPropertyFetch */
-            if ($message->body->method === 'telemetry/event' && $message->body->params->message === 'initialized') {
+            /** @psalm-suppress NullPropertyFetch,PossiblyNullPropertyFetch,UndefinedPropertyFetch */
+            if ($message->body->method === 'telemetry/event' && ($message->body->params->message ?? null) === 'initialized') {
                 $this->assertFalse($server->clientCapabilities->textDocument->completion->completionItem->snippetSupport);
                 $deferred->complete(null);
+                return;
+            }
+
+            /** @psalm-suppress NullPropertyFetch,PossiblyNullPropertyFetch */
+            if ($message->body->method === '$/progress'
+                && ($message->body->params->value->kind ?? null) === 'end'
+                && ($message->body->params->value->message ?? null) === 'initialized'
+            ) {
+                $this->assertFalse($server->clientCapabilities->textDocument->completion->completionItem->snippetSupport);
+                $deferred->complete(null);
+                return;
             }
         });
 

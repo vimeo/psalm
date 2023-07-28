@@ -83,6 +83,7 @@ use function stream_socket_server;
 use function strpos;
 use function substr;
 use function trim;
+use function uniqid;
 use function urldecode;
 
 use const JSON_PRETTY_PRINT;
@@ -359,28 +360,19 @@ class LanguageServer extends Dispatcher
      * The initialize request is sent as the first request from the client to the server.
      *
      * @param ClientCapabilities $capabilities The capabilities provided by the client (editor)
-     * @param int|null $processId The process Id of the parent process that started the server.
      * Is null if the process has not been started by another process. If the parent process is
      * not alive then the server should exit (see exit notification) its process.
      * @param ClientInfo|null $clientInfo Information about the client
-     * @param string|null $locale  The locale the client is currently showing the user interface
-     * in. This must not necessarily be the locale of the operating
-     * system.
-     * @param string|null $rootPath The rootPath of the workspace. Is null if no folder is open.
-     * @param mixed $initializationOptions
      * @param string|null $trace The initial trace setting. If omitted trace is disabled ('off').
-     * @psalm-suppress PossiblyUnusedParam
+     * @param string|null $workDoneToken The token to be used to report progress during init.
+     * @psalm-return InitializeResult
      */
     public function initialize(
         ClientCapabilities $capabilities,
-        ?int $processId = null,
         ?ClientInfo $clientInfo = null,
-        ?string $locale = null,
-        ?string $rootPath = null,
         ?string $rootUri = null,
-        $initializationOptions = null,
-        ?string $trace = null
-        //?array $workspaceFolders = null //error in json-dispatcher
+        ?string $trace = null,
+        ?string $workDoneToken = null
     ): InitializeResult {
         $this->clientInfo = $clientInfo;
         $this->clientCapabilities = $capabilities;
@@ -390,29 +382,26 @@ class LanguageServer extends Dispatcher
             $this->path_mapper->configureClientRoot($this->getPathPart($rootUri));
         }
 
+        $progress = $this->client->makeProgress($workDoneToken ?? uniqid('tkn', true));
+
         $this->logInfo("Initializing...");
-        $this->clientStatus('initializing');
+        $progress->begin('Psalm', 'initializing');
 
         $this->project_analyzer->serverMode($this);
 
         $this->logInfo("Initializing: Getting code base...");
         $this->clientStatus('initializing', 'getting code base');
 
+        $this->logInfo("Initializing: Getting code base...");
+        $progress->update('getting code base');
+
         $this->logInfo("Initializing: Scanning files ({$this->project_analyzer->threads} Threads)...");
-        $this->clientStatus('initializing', 'scanning files');
+        $progress->update('scanning files');
         $this->codebase->scanFiles($this->project_analyzer->threads);
 
         $this->logInfo("Initializing: Registering stub files...");
-        $this->clientStatus('initializing', 'registering stub files');
+        $progress->update('registering stub files');
         $this->codebase->config->visitStubFiles($this->codebase, $this->project_analyzer->progress);
-
-        if ($this->textDocument === null) {
-            $this->textDocument = new ServerTextDocument(
-                $this,
-                $this->codebase,
-                $this->project_analyzer,
-            );
-        }
 
         if ($this->workspace === null) {
             $this->workspace = new ServerWorkspace(
@@ -545,12 +534,8 @@ class LanguageServer extends Dispatcher
         $this->logInfo("Initializing: Complete.");
         $this->clientStatus('initialized');
 
-        /**
-         * Information about the server.
-         *
-         * @since LSP 3.15.0
-         */
-        $initializeResultServerInfo = new InitializeResultServerInfo('Psalm Language Server', PSALM_VERSION);
+        $this->logInfo("Initializing: Complete.");
+        $progress->end('initialized');
 
         return new InitializeResult($serverCapabilities, $initializeResultServerInfo);
     }
