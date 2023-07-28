@@ -535,6 +535,10 @@ class LanguageServer extends Dispatcher
                 $this->client->clientConfiguration->baseline,
             );
         }
+
+        $this->logInfo("Initializing: Complete.");
+        $progress->end('initialized');
+
         /**
          * Information about the server.
          *
