@@ -398,10 +398,8 @@ class TextDocument
      * The code action request is sent from the client to the server to compute commands
      * for a given text document and range. These commands are typically code fixes to
      * either fix problems or to beautify/refactor code.
-     *
-     * @psalm-suppress PossiblyUnusedParam
      */
-    public function codeAction(TextDocumentIdentifier $textDocument, Range $range, CodeActionContext $context): Promise
+    public function codeAction(TextDocumentIdentifier $textDocument, CodeActionContext $context): Promise
     {
         if (!$this->server->client->clientConfiguration->provideCodeActions) {
             return new Success(null);
