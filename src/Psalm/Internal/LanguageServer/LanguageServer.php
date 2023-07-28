@@ -390,9 +390,6 @@ class LanguageServer extends Dispatcher
         $this->project_analyzer->serverMode($this);
 
         $this->logInfo("Initializing: Getting code base...");
-        $this->clientStatus('initializing', 'getting code base');
-
-        $this->logInfo("Initializing: Getting code base...");
         $progress->update('getting code base');
 
         $this->logInfo("Initializing: Scanning files ({$this->project_analyzer->threads} Threads)...");
@@ -402,6 +399,14 @@ class LanguageServer extends Dispatcher
         $this->logInfo("Initializing: Registering stub files...");
         $progress->update('registering stub files');
         $this->codebase->config->visitStubFiles($this->codebase, $this->project_analyzer->progress);
+
+        if ($this->textDocument === null) {
+            $this->textDocument = new ServerTextDocument(
+                $this,
+                $this->codebase,
+                $this->project_analyzer,
+            );
+        }
 
         if ($this->workspace === null) {
             $this->workspace = new ServerWorkspace(
@@ -530,12 +535,12 @@ class LanguageServer extends Dispatcher
                 $this->client->clientConfiguration->baseline,
             );
         }
-
-        $this->logInfo("Initializing: Complete.");
-        $this->clientStatus('initialized');
-
-        $this->logInfo("Initializing: Complete.");
-        $progress->end('initialized');
+        /**
+         * Information about the server.
+         *
+         * @since LSP 3.15.0
+         */
+        $initializeResultServerInfo = new InitializeResultServerInfo('Psalm Language Server', PSALM_VERSION);
 
         return new InitializeResult($serverCapabilities, $initializeResultServerInfo);
     }
