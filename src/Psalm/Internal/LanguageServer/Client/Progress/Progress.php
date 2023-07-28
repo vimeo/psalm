@@ -27,7 +27,7 @@ final class Progress implements ProgressInterface
     public function begin(
         string $title,
         ?string $message = null,
-        ?int $percentage = null
+        ?int $percentage = null,
     ): void {
         if ($this->status === self::STATUS_ACTIVE) {
             throw new LogicException('Progress has already been started');

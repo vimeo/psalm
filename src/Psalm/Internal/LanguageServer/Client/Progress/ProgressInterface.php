@@ -8,7 +8,7 @@ interface ProgressInterface
     public function begin(
         string $title,
         ?string $message = null,
-        ?int $percentage = null
+        ?int $percentage = null,
     ): void;
 
     public function update(?string $message = null, ?int $percentage = null): void;
