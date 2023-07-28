@@ -2,7 +2,7 @@
 
 namespace Psalm\Tests\LanguageServer;
 
-use Amp\Deferred;
+use Amp\DeferredFuture;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
@@ -22,7 +22,6 @@ use Psalm\Tests\LanguageServer\Message as MessageBody;
 use Psalm\Tests\LanguageServer\MockProtocolStream;
 use Psalm\Tests\TestConfig;
 
-use function Amp\Promise\wait;
 use function getcwd;
 use function rand;
 
@@ -67,7 +66,7 @@ class DiagnosticTest extends AsyncTestCase
     public function testSnippetSupportDisabled(): void
     {
         // Create a new promisor
-        $deferred = new Deferred;
+        $deferred = new DeferredFuture;
 
         $this->setTimeout(5000);
         $clientConfiguration = new ClientConfiguration();
@@ -94,7 +93,7 @@ class DiagnosticTest extends AsyncTestCase
             /** @psalm-suppress NullPropertyFetch,PossiblyNullPropertyFetch,UndefinedPropertyFetch */
             if ($message->body->method === 'telemetry/event' && ($message->body->params->message ?? null) === 'initialized') {
                 $this->assertFalse($server->clientCapabilities->textDocument->completion->completionItem->snippetSupport);
-                $deferred->resolve(null);
+                $deferred->complete(null);
                 return;
             }
 
@@ -104,12 +103,12 @@ class DiagnosticTest extends AsyncTestCase
                 && ($message->body->params->value->message ?? null) === 'initialized'
             ) {
                 $this->assertFalse($server->clientCapabilities->textDocument->completion->completionItem->snippetSupport);
-                $deferred->resolve(null);
+                $deferred->complete(null);
                 return;
             }
         });
 
-        wait($deferred->promise());
+        $deferred->getFuture()->await();
     }
 
     /**

@@ -606,7 +606,6 @@ class InternalCallMapHandlerTest extends TestCase
     public function assertEntryReturnType(ReflectionFunctionAbstract $function, string $entryReturnType): void
     {
         if (version_compare(PHP_VERSION, '8.1.0', '>=')) {
-            /** @var ReflectionType|null $expectedType */
             $expectedType = $function->hasTentativeReturnType() ? $function->getTentativeReturnType() : $function->getReturnType();
         } else {
             $expectedType = $function->getReturnType();
