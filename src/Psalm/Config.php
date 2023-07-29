@@ -62,7 +62,6 @@ use function clearstatcache;
 use function count;
 use function dirname;
 use function explode;
-use function extension_loaded;
 use function fclose;
 use function file_exists;
 use function file_get_contents;
@@ -451,11 +450,9 @@ class Config
     public $forbidden_functions = [];
 
     /**
-     * TODO: Psalm 6: Update default to be true and remove warning.
-     *
      * @var bool
      */
-    public $find_unused_code = false;
+    public $find_unused_code = true;
 
     /**
      * @var bool
@@ -467,10 +464,7 @@ class Config
      */
     public $find_unused_psalm_suppress = false;
 
-    /**
-     * TODO: Psalm 6: Update default to be true and remove warning.
-     */
-    public bool $find_unused_baseline_entry = false;
+    public bool $find_unused_baseline_entry = true;
 
     /**
      * @var bool
@@ -553,15 +547,9 @@ class Config
 
     /**
      * @var string
-     * @deprecated Please use {@see self::$shepherd_endpoint} instead. Property will be removed in Psalm 6.
-     */
-    public $shepherd_host = 'shepherd.dev';
-
-    /**
-     * @var string
      * @internal
      */
-    public $shepherd_endpoint = 'https://shepherd.dev/hooks/psalm/';
+    public $shepherd_endpoint = 'https://shepherd.dev/hooks/psalm';
 
     /**
      * @var array<string, string>
@@ -1227,18 +1215,10 @@ class Config
             $config->compressor = 'deflate';
         }
 
-        if (!isset($config_xml['findUnusedBaselineEntry'])) {
-            $config->config_warnings[] = '"findUnusedBaselineEntry" will default to "true" in Psalm 6.'
-                . ' You should explicitly enable or disable this setting.';
-        }
-
         if (isset($config_xml['findUnusedCode'])) {
             $attribute_text = (string) $config_xml['findUnusedCode'];
             $config->find_unused_code = $attribute_text === 'true' || $attribute_text === '1';
             $config->find_unused_variables = $config->find_unused_code;
-        } else {
-            $config->config_warnings[] = '"findUnusedCode" will default to "true" in Psalm 6.'
-                . ' You should explicitly enable or disable this setting.';
         }
 
         if (isset($config_xml['findUnusedVariablesAndParams'])) {
@@ -2281,19 +2261,6 @@ class Config
         foreach ($this->php_extensions as $ext => $enabled) {
             if ($enabled) {
                 $this->internal_stubs[] = $ext_stubs_dir . DIRECTORY_SEPARATOR . "$ext.phpstub";
-            }
-        }
-
-        /** @deprecated Will be removed in Psalm 6 */
-        $extensions_to_load_stubs_using_deprecated_way = ['apcu', 'random', 'redis'];
-        foreach ($extensions_to_load_stubs_using_deprecated_way as $ext_name) {
-            $ext_stub_path = $ext_stubs_dir . DIRECTORY_SEPARATOR . "$ext_name.phpstub";
-            $is_stub_already_loaded = in_array($ext_stub_path, $this->internal_stubs, true);
-            $is_ext_explicitly_disabled = ($this->php_extensions[$ext_name] ?? null) === false;
-            if (! $is_stub_already_loaded && ! $is_ext_explicitly_disabled && extension_loaded($ext_name)) {
-                $this->internal_stubs[] = $ext_stub_path;
-                $this->config_warnings[] = "Psalm 6 will not automatically load stubs for ext-$ext_name."
-                    . " You should explicitly enable or disable this ext in composer.json or Psalm config.";
             }
         }
 

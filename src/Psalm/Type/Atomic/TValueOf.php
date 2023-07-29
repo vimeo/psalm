@@ -6,7 +6,6 @@ use Psalm\Codebase;
 use Psalm\Internal\Codebase\ConstantTypeResolver;
 use Psalm\Storage\EnumCaseStorage;
 use Psalm\Type\Atomic;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Union;
 
 use function array_map;
@@ -89,7 +88,6 @@ final class TValueOf extends Atomic
             if (!$type instanceof TArray
                 && !$type instanceof TClassConstant
                 && !$type instanceof TKeyedArray
-                && !$type instanceof TList
                 && !$type instanceof TPropertiesOf
                 && !$type instanceof TNamedObject
             ) {
@@ -109,8 +107,6 @@ final class TValueOf extends Atomic
         foreach ($type->getAtomicTypes() as $atomic_type) {
             if ($atomic_type instanceof TArray) {
                 $value_atomics = $atomic_type->type_params[1];
-            } elseif ($atomic_type instanceof TList) {
-                $value_atomics = $atomic_type->type_param;
             } elseif ($atomic_type instanceof TKeyedArray) {
                 $value_atomics = $atomic_type->getGenericValueType();
             } elseif ($atomic_type instanceof TTemplateParam) {

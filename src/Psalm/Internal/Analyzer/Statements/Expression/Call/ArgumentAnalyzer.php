@@ -55,7 +55,6 @@ use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
@@ -331,10 +330,6 @@ class ArgumentAnalyzer
                 $arg_type_param = null;
 
                 foreach ($arg_value_type->getAtomicTypes() as $arg_atomic_type) {
-                    if ($arg_atomic_type instanceof TList) {
-                        $arg_atomic_type = $arg_atomic_type->getKeyedArray();
-                    }
-
                     if ($arg_atomic_type instanceof TArray
                         || $arg_atomic_type instanceof TKeyedArray
                     ) {
@@ -903,10 +898,6 @@ class ArgumentAnalyzer
             $potential_method_ids = [];
 
             foreach ($input_type->getAtomicTypes() as $input_type_part) {
-                if ($input_type_part instanceof TList) {
-                    $input_type_part = $input_type_part->getKeyedArray();
-                }
-
                 if ($input_type_part instanceof TKeyedArray) {
                     $potential_method_id = CallableTypeComparator::getCallableMethodIdFromTKeyedArray(
                         $input_type_part,

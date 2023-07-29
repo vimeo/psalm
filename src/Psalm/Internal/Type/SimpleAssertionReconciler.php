@@ -48,7 +48,6 @@ use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TLowercaseString;
@@ -366,9 +365,7 @@ class SimpleAssertionReconciler extends Reconciler
             );
         }
 
-        if ($assertion_type instanceof TList) {
-            $assertion_type = $assertion_type->getKeyedArray();
-        }
+
 
         if ($assertion_type instanceof TKeyedArray
             && $assertion_type->is_list
@@ -1945,9 +1942,6 @@ class SimpleAssertionReconciler extends Reconciler
         $assertion = $assertion->key;
         $types = $existing_var_type->getAtomicTypes();
         foreach ($types as &$atomic_type) {
-            if ($atomic_type instanceof TList) {
-                $atomic_type = $atomic_type->getKeyedArray();
-            }
             if ($atomic_type instanceof TKeyedArray) {
                 assert(strpos($assertion, '::class') === (strlen($assertion)-7));
                 [$assertion] = explode('::', $assertion);
@@ -2287,9 +2281,6 @@ class SimpleAssertionReconciler extends Reconciler
         $redundant = true;
 
         foreach ($existing_var_atomic_types as $type) {
-            if ($type instanceof TList) {
-                $type = $type->getKeyedArray();
-            }
             if ($type instanceof TArray) {
                 if ($atomic_assertion_type instanceof TNonEmptyArray) {
                     $array_types[] = new TNonEmptyArray(
@@ -2398,9 +2389,6 @@ class SimpleAssertionReconciler extends Reconciler
         $redundant = true;
 
         foreach ($existing_var_atomic_types as $type) {
-            if ($type instanceof TList) {
-                $type = $type->getKeyedArray();
-            }
             if ($type instanceof TKeyedArray && $type->is_list) {
                 if ($is_non_empty && !$type->isNonEmpty()) {
                     $properties = $type->properties;
@@ -2510,9 +2498,6 @@ class SimpleAssertionReconciler extends Reconciler
         $array_types = [];
 
         foreach ($existing_var_atomic_types as $type) {
-            if ($type instanceof TList) {
-                $type = $type->getKeyedArray();
-            }
             if ($type->isArrayAccessibleWithStringKey($codebase)) {
                 if (get_class($type) === TArray::class) {
                     $array_types[] = new TNonEmptyArray($type->type_params);
@@ -2640,9 +2625,6 @@ class SimpleAssertionReconciler extends Reconciler
         $redundant = true;
 
         foreach ($existing_var_atomic_types as $type) {
-            if ($type instanceof TList) {
-                $type = $type->getKeyedArray();
-            }
             if ($type->isCallableType()) {
                 $callable_types[] = $type;
             } elseif ($type instanceof TObject) {
@@ -2808,9 +2790,7 @@ class SimpleAssertionReconciler extends Reconciler
 
         if (isset($types['array'])) {
             $array_atomic_type = $types['array'];
-            if ($array_atomic_type instanceof TList) {
-                $array_atomic_type = $array_atomic_type->getKeyedArray();
-            }
+
 
             if ($array_atomic_type instanceof TArray
                 && !$array_atomic_type instanceof TNonEmptyArray

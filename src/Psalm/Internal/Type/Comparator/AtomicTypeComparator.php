@@ -22,7 +22,6 @@ use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyOf;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
@@ -65,12 +64,8 @@ class AtomicTypeComparator
         bool $allow_float_int_equality = true,
         ?TypeComparisonResult $atomic_comparison_result = null
     ): bool {
-        if ($input_type_part instanceof TList) {
-            $input_type_part = $input_type_part->getKeyedArray();
-        }
-        if ($container_type_part instanceof TList) {
-            $container_type_part = $container_type_part->getKeyedArray();
-        }
+
+
         if (($container_type_part instanceof TTemplateParam
                 || ($container_type_part instanceof TNamedObject
                     && $container_type_part->extra_types))
@@ -844,12 +839,8 @@ class AtomicTypeComparator
         Atomic $type2_part,
         bool $allow_interface_equality = true
     ): bool {
-        if ($type1_part instanceof TList) {
-            $type1_part = $type1_part->getKeyedArray();
-        }
-        if ($type2_part instanceof TList) {
-            $type2_part = $type2_part->getKeyedArray();
-        }
+
+
         if ((self::isLegacyTListLike($type1_part)
                 && self::isLegacyTNonEmptyListLike($type2_part))
             || (self::isLegacyTListLike($type2_part)
