@@ -5,6 +5,7 @@ namespace Psalm\Plugin;
 use BadMethodCallException;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\IssueData;
+use Psalm\Internal\VersionUtils;
 use Psalm\Plugin\EventHandler\AfterAnalysisInterface;
 use Psalm\Plugin\EventHandler\Event\AfterAnalysisEvent;
 
@@ -95,7 +96,14 @@ final class Shepherd implements AfterAnalysisInterface
     }
 
     /**
-     * @return array{build: array, git: array, issues: array, coverage: list<int>, level: int<1,8>}|null
+     * @return array{
+     *     build: array,
+     *     git: array,
+     *     issues: array,
+     *     coverage: list<int>,
+     *     level: int<1, 8>,
+     *     versions: array<string, string>
+     * }|null
      */
     private static function collectPayloadToSend(AfterAnalysisEvent $event): ?array
     {
@@ -120,11 +128,11 @@ final class Shepherd implements AfterAnalysisInterface
             return null;
         }
 
-        $issues = $event->getIssues();
-        $normalized_data = $issues === [] ? [] : array_filter(
-            array_merge(...array_values($issues)),
-            static fn(IssueData $i): bool => $i->severity === 'error',
-        );
+        $issues_grouped_by_filename = $event->getIssues();
+        $normalized_data = $issues_grouped_by_filename === [] ? [] : array_values(array_filter(
+            array_merge(...array_values($issues_grouped_by_filename)), // flatten an array
+            static fn(IssueData $i): bool => $i->severity === IssueData::SEVERITY_ERROR,
+        ));
 
         $codebase = $event->getCodebase();
 
@@ -134,6 +142,10 @@ final class Shepherd implements AfterAnalysisInterface
             'issues' => $normalized_data,
             'coverage' => $codebase->analyzer->getTotalTypeCoverage($codebase),
             'level' => Config::getInstance()->level,
+            'versions' => [
+                'psalm' => VersionUtils::getPsalmVersion(),
+                'parser' => VersionUtils::getPhpParserVersion(),
+            ],
         ];
     }
 

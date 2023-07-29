@@ -268,7 +268,12 @@ class ArgumentsAnalyzer
 
             $inferred_arg_type = $statements_analyzer->node_data->getType($arg->value);
 
-            if (null !== $inferred_arg_type && null !== $template_result && null !== $param && null !== $param->type) {
+            if (null !== $inferred_arg_type
+                && null !== $template_result
+                && null !== $param
+                && null !== $param->type
+                && !$arg->unpack
+            ) {
                 $codebase = $statements_analyzer->getCodebase();
 
                 TemplateStandinTypeReplacer::fillTemplateResult(

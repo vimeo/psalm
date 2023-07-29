@@ -687,6 +687,16 @@ class Analyzer
             }
         }
 
+        // This could be optimized by storing method references to files
+        foreach ($file_reference_provider->getDeletedReferencedFiles() as $deleted_file) {
+            foreach ($file_reference_provider->getFilesReferencingFile($deleted_file) as $file_referencing_deleted) {
+                $methods_referencing_deleted = $this->analyzed_methods[$file_referencing_deleted] ?? [];
+                foreach ($methods_referencing_deleted as $method_referencing_deleted => $_) {
+                    $newly_invalidated_methods[$method_referencing_deleted] = true;
+                }
+            }
+        }
+
         foreach ($newly_invalidated_methods as $method_id => $_) {
             foreach ($method_references_to_class_members as $i => $_) {
                 unset($method_references_to_class_members[$i][$method_id]);
@@ -1552,13 +1562,13 @@ class Analyzer
         $has_info = false;
 
         foreach ($issues as $issue) {
-            if ($issue->severity === 'error') {
-                $has_error = true;
-                break;
-            }
-
-            if ($issue->severity === 'info') {
-                $has_info = true;
+            switch ($issue->severity) {
+                case IssueData::SEVERITY_INFO:
+                    $has_info = true;
+                    break;
+                default:
+                    $has_error = true;
+                    break;
             }
         }
 

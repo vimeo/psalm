@@ -63,6 +63,6 @@ class RandReturnTypeProvider implements FunctionReturnTypeProviderInterface
             }
         }
 
-        return new Union([new TIntRange($min_value, $max_value)]);
+        return Type::getIntRange($min_value, $max_value);
     }
 }

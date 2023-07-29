@@ -26,7 +26,7 @@ function echoVar(string $str) : void {
 echoVar($_GET["text"]);
 ```
 
-## Conditional escaping tainted input
+## Conditionally escaping tainted input
 
 A slightly modified version of the previous example is using a condition to determine whether the return value
 is considered secure. Only in case function argument `$escape` is true, the corresponding annotation
@@ -48,6 +48,23 @@ function processVar(string $str, bool $escape = true) : string {
 
 echo processVar($_GET['text'], false); // detects tainted HTML
 echo processVar($_GET['text'], true); // considered secure
+```
+
+## Sanitizing HTML user input
+
+Whenever possible, applications should be designed to accept & store user input as discrete text fields, rather than blocks of HTML.  This allows user input to be fully escaped via `htmlspecialchars` or `htmlentities`.  In cases where HTML user input is required (e.g. rich text editors like [TinyMCE](https://www.tiny.cloud/)), a library designed specifically to filter out risky HTML is highly recommended.  For example, [HTML Purifier](http://htmlpurifier.org/docs) could be used as follows:
+
+```php
+<?php
+
+/**
+ * @psalm-taint-escape html
+ * @psalm-taint-escape has_quotes
+ */
+function sanitizeHTML($html){
+    $purifier = new HTMLPurifier();
+    return $purifier->purify($html);
+}
 ```
 
 ## Specializing taints in functions

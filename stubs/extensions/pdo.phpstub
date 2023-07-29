@@ -150,6 +150,16 @@ class PDOStatement implements Traversable
      * @return false|T
      */
     public function fetchObject($class = \stdclass::class, array $ctorArgs = array()) {}
+
+    /**
+     * @psalm-taint-sink sql $value
+     */
+    public function bindValue(string|int $param, mixed $value, int $type = PDO::PARAM_STR): bool {}
+
+    /**
+     * @psalm-taint-sink sql $var
+     */
+    public function bindParam(string|int $param, mixed &$var, int $type = PDO::PARAM_STR, int $maxLength = 0, mixed $driverOptions = null): bool {}
 }
 
  class PDOException extends RuntimeException {

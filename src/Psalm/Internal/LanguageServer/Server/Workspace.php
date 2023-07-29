@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\LanguageServer\Server;
 
-use Amp\Promise;
-use Amp\Success;
 use InvalidArgumentException;
 use LanguageServerProtocol\FileChangeType;
 use LanguageServerProtocol\FileEvent;
@@ -63,7 +61,7 @@ class Workspace
         $realFiles = array_filter(
             array_map(function (FileEvent $change) {
                 try {
-                    return LanguageServer::uriToPath($change->uri);
+                    return $this->server->uriToPath($change->uri);
                 } catch (InvalidArgumentException $e) {
                     return null;
                 }
@@ -79,7 +77,7 @@ class Workspace
         }
 
         foreach ($changes as $change) {
-            $file_path = LanguageServer::uriToPath($change->uri);
+            $file_path = $this->server->uriToPath($change->uri);
 
             if ($composerLockFile === $file_path) {
                 continue;
@@ -108,10 +106,9 @@ class Workspace
     /**
      * A notification sent from the client to the server to signal the change of configuration settings.
      *
-     * @param mixed $settings
-     * @psalm-suppress PossiblyUnusedMethod, PossiblyUnusedParam
+     * @psalm-suppress PossiblyUnusedMethod
      */
-    public function didChangeConfiguration($settings): void
+    public function didChangeConfiguration(): void
     {
         $this->server->logDebug(
             'workspace/didChangeConfiguration',
@@ -126,7 +123,7 @@ class Workspace
      * @param mixed $arguments
      * @psalm-suppress PossiblyUnusedMethod
      */
-    public function executeCommand(string $command, $arguments): Promise
+    public function executeCommand(string $command, $arguments): void
     {
         $this->server->logDebug(
             'workspace/executeCommand',
@@ -140,7 +137,7 @@ class Workspace
             case 'psalm.analyze.uri':
                 /** @var array{uri: string} */
                 $arguments = (array) $arguments;
-                $file = LanguageServer::uriToPath($arguments['uri']);
+                $file = $this->server->uriToPath($arguments['uri']);
                 $this->codebase->reloadFiles(
                     $this->project_analyzer,
                     [$file],
@@ -155,7 +152,5 @@ class Workspace
                 $this->server->emitVersionedIssues([$file => $arguments['uri']]);
                 break;
         }
-
-        return new Success(null);
     }
 }

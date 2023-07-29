@@ -68,6 +68,12 @@ class FakeFileProvider extends FileProvider
         $this->fake_file_times[$file_path] = (int)microtime(true);
     }
 
+    public function deleteFile(string $file_path): void
+    {
+        unset($this->fake_files[$file_path]);
+        unset($this->fake_file_times[$file_path]);
+    }
+
     /**
      * @param array<string> $file_extensions
      * @param null|callable(string):bool $filter

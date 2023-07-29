@@ -158,6 +158,22 @@ class ClassStatementsDiffer extends AstDiffer
                         return false;
                     }
 
+                    if ($a->type xor $b->type) {
+                        return false;
+                    }
+
+                    if ($a->type && $b->type) {
+                        $a_type_start = (int) $a->type->getAttribute('startFilePos');
+                        $a_type_end = (int) $a->type->getAttribute('endFilePos');
+                        $b_type_start = (int) $b->type->getAttribute('startFilePos');
+                        $b_type_end = (int) $b->type->getAttribute('endFilePos');
+                        if (substr($a_code, $a_type_start, $a_type_end - $a_type_start + 1)
+                            !== substr($b_code, $b_type_start, $b_type_end - $b_type_start + 1)
+                        ) {
+                            return false;
+                        }
+                    }
+
                     $body_change = substr($a_code, $a_comments_end, $a_end - $a_comments_end)
                         !== substr($b_code, $b_comments_end, $b_end - $b_comments_end);
                 } else {

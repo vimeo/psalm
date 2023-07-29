@@ -29,7 +29,7 @@ class MagicConstAnalyzer
         Context $context
     ): void {
         if ($stmt instanceof PhpParser\Node\Scalar\MagicConst\Line) {
-            $statements_analyzer->node_data->setType($stmt, Type::getInt());
+            $statements_analyzer->node_data->setType($stmt, Type::getIntRange(1, null));
         } elseif ($stmt instanceof PhpParser\Node\Scalar\MagicConst\Class_) {
             $codebase = $statements_analyzer->getCodebase();
 

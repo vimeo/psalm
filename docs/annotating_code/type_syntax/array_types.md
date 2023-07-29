@@ -126,6 +126,19 @@ Optional keys can be denoted by a trailing `?`, e.g.:
 /** @return array{optional?: string, bar: int} */
 ```
 
+You can use "one-line" comments (similar to PHP), e.g:
+
+```php
+/** @return array { // Array with comments.
+ *     // Comments can be placed on their own line. 
+ *     foo: string, // An array key description.
+ *     bar: array {, // Another array key description.
+ *         'foo//bar': string, // Array key with "//" in it's name.
+ *     },
+ * }
+ */
+```
+
 Tip: if you find yourself copying the same complex array shape over and over again to avoid `InvalidArgument` issues, try using [type aliases](utility_types.md#type-aliases), instead.
 
 ### Validating array shapes
@@ -201,6 +214,17 @@ function handleOptions(array $options): float {
 $options = get_opt(/* some code */);
 $options['verbose'] = isset($options['verbose']);
 handleOptions($options);
+```
+
+`...` is a shorthand for `...<array-key, mixed>` you can use other array generic types to provide more information about the open shape.
+
+```php
+// This is an open array
+/** @param array{someKey: string, ...} */ 
+// Which is the same as
+/** @param array{someKey: string, ...<array-key, mixed>} */ 
+// But it can be further locked down with a shape ...<TKey, TValue>
+/** @return array{someKey: string, ...<int, bool>} */
 ```
 
 ## Callable arrays

@@ -58,9 +58,12 @@ class FakeFileReferenceCacheProvider extends FileReferenceCacheProvider
      */
     private array $cached_file_maps = [];
 
+    /** @var array<string, array{int, int}> */
+    private array $cached_type_coverage = [];
+
     public function __construct()
     {
-        $this->config = Config::getInstance();
+        parent::__construct(Config::getInstance());
     }
 
     public function getCachedFileReferences(): ?array
@@ -270,9 +273,18 @@ class FakeFileReferenceCacheProvider extends FileReferenceCacheProvider
     }
 
     /**
+     * @return array<string, array{int, int}>
+     */
+    public function getTypeCoverage(): array
+    {
+        return $this->cached_type_coverage;
+    }
+
+    /**
      * @param array<string, array{int, int}> $mixed_counts
      */
     public function setTypeCoverage(array $mixed_counts): void
     {
+        $this->cached_type_coverage = $mixed_counts;
     }
 }

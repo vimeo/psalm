@@ -544,6 +544,63 @@ class FileDiffTest extends TestCase
                 [],
                 [[84, 133]],
             ],
+            'propertyTypeAddition' => [
+                '<?php
+                namespace Foo;
+
+                class A {
+                    public $a;
+                }',
+                '<?php
+                namespace Foo;
+
+                class A {
+                    public string $a;
+                }',
+                [],
+                [],
+                ['foo\a::$a', 'foo\a::$a'],
+                [],
+                [[84, 93]],
+            ],
+            'propertyTypeRemoval' => [
+                '<?php
+                namespace Foo;
+
+                class A {
+                    public string $a;
+                }',
+                '<?php
+                namespace Foo;
+
+                class A {
+                    public $a;
+                }',
+                [],
+                [],
+                ['foo\a::$a', 'foo\a::$a'],
+                [],
+                [[84, 100]],
+            ],
+            'propertyTypeChange' => [
+                '<?php
+                namespace Foo;
+
+                class A {
+                    public string $a;
+                }',
+                '<?php
+                namespace Foo;
+
+                class A {
+                    public ?string $a;
+                }',
+                [],
+                [],
+                ['foo\a::$a', 'foo\a::$a'],
+                [],
+                [[84, 100]],
+            ],
             'addDocblockToFirst' => [
                 '<?php
                 namespace Foo;

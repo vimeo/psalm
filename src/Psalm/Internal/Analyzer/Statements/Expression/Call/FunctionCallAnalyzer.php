@@ -102,7 +102,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
             && isset($stmt->getArgs()[0])
             && !$stmt->getArgs()[0]->unpack
         ) {
-            $original_function_id = implode('\\', $function_name->parts);
+            $original_function_id = implode('\\', $function_name->getParts());
 
             if ($original_function_id === 'call_user_func') {
                 $other_args = array_slice($stmt->getArgs(), 1);
@@ -160,7 +160,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
         $set_inside_conditional = false;
 
         if ($function_name instanceof PhpParser\Node\Name
-            && $function_name->parts === ['assert']
+            && $function_name->getParts() === ['assert']
             && !$context->inside_conditional
         ) {
             $context->inside_conditional = true;
@@ -235,7 +235,10 @@ class FunctionCallAnalyzer extends CallAnalyzer
             $function_call_info->function_id,
         );
 
-        $template_result->lower_bounds += $already_inferred_lower_bounds;
+        $template_result->lower_bounds = array_merge(
+            $template_result->lower_bounds,
+            $already_inferred_lower_bounds,
+        );
 
         if ($function_name instanceof PhpParser\Node\Name && $function_call_info->function_id) {
             $stmt_type = FunctionCallReturnTypeFetcher::fetch(
@@ -319,7 +322,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
         }
 
         if ($function_name instanceof PhpParser\Node\Name
-            && $function_name->parts === ['assert']
+            && $function_name->getParts() === ['assert']
             && isset($stmt->getArgs()[0])
         ) {
             self::processAssertFunctionEffects(
@@ -437,7 +440,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
         $codebase = $statements_analyzer->getCodebase();
         $codebase_functions = $codebase->functions;
 
-        $original_function_id = implode('\\', $function_name->parts);
+        $original_function_id = $function_name->toString();
 
         if (!$function_name instanceof PhpParser\Node\Name\FullyQualified) {
             $function_call_info->function_id = $codebase_functions->getFullyQualifiedFunctionNameFromString(
@@ -487,7 +490,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
         $is_predefined = true;
 
         $is_maybe_root_function = !$function_name instanceof PhpParser\Node\Name\FullyQualified
-            && count($function_name->parts) === 1;
+            && count($function_name->getParts()) === 1;
 
         $args = $stmt->isFirstClassCallable() ? [] : $stmt->getArgs();
 

@@ -14,13 +14,12 @@ use function array_keys;
 use function array_merge;
 use function array_unique;
 use function explode;
-use function file_exists;
 
 /**
- * @psalm-import-type FileMapType from Analyzer
- *
  * Used to determine which files reference other files, necessary for using the --diff
  * option from the command line.
+ *
+ * @psalm-import-type FileMapType from Analyzer
  * @internal
  */
 class FileReferenceProvider
@@ -164,10 +163,12 @@ class FileReferenceProvider
      */
     private static array $method_param_uses = [];
 
+    private FileProvider $file_provider;
     public ?FileReferenceCacheProvider $cache = null;
 
-    public function __construct(?FileReferenceCacheProvider $cache = null)
+    public function __construct(FileProvider $file_provider, ?FileReferenceCacheProvider $cache = null)
     {
+        $this->file_provider = $file_provider;
         $this->cache = $cache;
     }
 
@@ -179,7 +180,7 @@ class FileReferenceProvider
         if (self::$deleted_files === null) {
             self::$deleted_files = array_filter(
                 array_keys(self::$file_references),
-                static fn(string $file_name): bool => !file_exists($file_name)
+                fn(string $file_name): bool => !$this->file_provider->fileExists($file_name)
             );
         }
 

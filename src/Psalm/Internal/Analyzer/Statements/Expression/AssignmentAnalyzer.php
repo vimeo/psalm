@@ -56,6 +56,7 @@ use Psalm\Issue\PossiblyUndefinedIntArrayOffset;
 use Psalm\Issue\ReferenceConstraintViolation;
 use Psalm\Issue\ReferenceReusedFromConfusingScope;
 use Psalm\Issue\UnnecessaryVarAnnotation;
+use Psalm\Issue\UnsupportedPropertyReferenceUsage;
 use Psalm\IssueBuffer;
 use Psalm\Node\Expr\BinaryOp\VirtualBitwiseAnd;
 use Psalm\Node\Expr\BinaryOp\VirtualBitwiseOr;
@@ -980,9 +981,23 @@ class AssignmentAnalyzer
             $context->references_to_external_scope[$lhs_var_id] = true;
         }
         if (strpos($rhs_var_id, '->') !== false) {
+            IssueBuffer::maybeAdd(
+                new UnsupportedPropertyReferenceUsage(
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                ),
+                $statements_analyzer->getSuppressedIssues(),
+            );
             // Reference to object property, we always consider object properties to be an external scope for references
             // TODO handle differently so it's detected as unused if the object is unused?
             $context->references_to_external_scope[$lhs_var_id] = true;
+        }
+        if (strpos($rhs_var_id, '::') !== false) {
+            IssueBuffer::maybeAdd(
+                new UnsupportedPropertyReferenceUsage(
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                ),
+                $statements_analyzer->getSuppressedIssues(),
+            );
         }
 
         $lhs_location = new CodeLocation($statements_analyzer->getSource(), $stmt->var);

@@ -6,8 +6,10 @@ use PhpParser;
 use Psalm\Aliases;
 use Psalm\Codebase;
 use Psalm\Config;
+use Psalm\Exception\DocblockParseException;
 use Psalm\Exception\FileIncludeException;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\IncludeAnalyzer;
@@ -23,7 +25,6 @@ use function assert;
 use function defined;
 use function dirname;
 use function explode;
-use function implode;
 use function in_array;
 use function preg_match;
 use function strpos;
@@ -80,7 +81,7 @@ class ExpressionScanner
                 $file_storage->referenced_classlikes[strtolower($fq_classlike_name)] = $fq_classlike_name;
             }
         } elseif ($node instanceof PhpParser\Node\Expr\FuncCall && $node->name instanceof PhpParser\Node\Name) {
-            $function_id = implode('\\', $node->name->parts);
+            $function_id = $node->name->toString();
 
             if (InternalCallMapHandler::inCallMap($function_id)) {
                 self::registerClassMapFunctionCall(
@@ -152,7 +153,29 @@ class ExpressionScanner
                         $type_provider,
                         $second_arg_value,
                         $aliases,
-                    ) ?? Type::getMixed();
+                    );
+
+                    // allow docblocks to override the declared value to make constants in stubs configurable
+                    $doc_comment = $second_arg_value->getDocComment();
+                    if ($doc_comment) {
+                        try {
+                            $var_comments = CommentAnalyzer::getTypeFromComment($doc_comment, $file_scanner, $aliases);
+                            foreach ($var_comments as $var_comment) {
+                                if ($var_comment->type) {
+                                    $const_type = $var_comment->type;
+                                }
+
+                                // only check the first @var comment
+                                break;
+                            }
+                        } catch (DocblockParseException $e) {
+                            // do nothing
+                        }
+                    }
+
+                    if ($const_type === null) {
+                        $const_type = Type::getMixed();
+                    }
 
                     $config = Config::getInstance();
 

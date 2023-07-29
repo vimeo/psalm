@@ -4138,6 +4138,75 @@ class ClassTemplateTest extends TestCase
                     }
                 ',
             ],
+            'typesOrderInsideImplementsNotMatter' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface I {}
+
+                    /**
+                     * @template T
+                     * @extends I<T>
+                     */
+                    interface ExtendedI extends I {}
+
+                    /**
+                     * @template T
+                     * @implements ExtendedI<T|null>
+                     */
+                    final class TWithNull implements ExtendedI
+                    {
+                        /** @param T $_value */
+                        public function __construct($_value) {}
+                    }
+
+                    /**
+                     * @template T
+                     * @implements ExtendedI<null|T>
+                     */
+                    final class NullWithT implements ExtendedI
+                    {
+                        /** @param T $_value */
+                        public function __construct($_value) {}
+                    }
+
+                    /** @param I<null|int> $_type */
+                    function nullWithInt(I $_type): void {}
+
+                    /** @param I<int|null> $_type */
+                    function intWithNull(I $_type): void {}
+
+                    nullWithInt(new TWithNull(1));
+                    nullWithInt(new NullWithT(1));
+                    intWithNull(new TWithNull(1));
+                    intWithNull(new NullWithT(1));',
+            ],
+            'intersectParentTemplateReturnWithConcreteChildReturn' => [
+                'code' => '<?php
+                    /**  @template T  */
+                    interface Aggregator
+                    {
+                        /**
+                         * @psalm-param T ...$values
+                         * @psalm-return T
+                         */
+                        public function aggregate(...$values): mixed;
+                    }
+
+                    /** @implements Aggregator<int|float|null> */
+                    final class AverageAggregator implements Aggregator
+                    {
+                        public function aggregate(...$values): null|int|float
+                        {
+                            if (!$values) {
+                                return null;
+                            }
+                            return array_sum($values) / count($values);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 

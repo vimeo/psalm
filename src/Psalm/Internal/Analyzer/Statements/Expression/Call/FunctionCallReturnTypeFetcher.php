@@ -358,10 +358,44 @@ class FunctionCallReturnTypeFetcher
                     if (($first_arg_type = $statements_analyzer->node_data->getType($call_args[0]->value))) {
                         $atomic_types = $first_arg_type->getAtomicTypes();
 
-                        $result = [];
-                        foreach ($atomic_types as $t) {
-                            if ($t instanceof TList) {
-                                $t = $t->getKeyedArray();
+                        if (count($atomic_types) === 1) {
+                            if (isset($atomic_types['array'])) {
+                                if ($atomic_types['array'] instanceof TList) {
+                                    $atomic_types['array'] = $atomic_types['array']->getKeyedArray();
+                                }
+                                if ($atomic_types['array'] instanceof TCallableArray
+                                    || $atomic_types['array'] instanceof TCallableKeyedArray
+                                ) {
+                                    return Type::getInt(false, 2);
+                                }
+
+                                if ($atomic_types['array'] instanceof TNonEmptyArray) {
+                                    return new Union([
+                                        $atomic_types['array']->count !== null
+                                            ? new TLiteralInt($atomic_types['array']->count)
+                                            : new TIntRange(1, null),
+                                    ]);
+                                }
+
+                                if ($atomic_types['array'] instanceof TKeyedArray) {
+                                    $min = $atomic_types['array']->getMinCount();
+                                    $max = $atomic_types['array']->getMaxCount();
+
+                                    if ($min === $max) {
+                                        return new Union([new TLiteralInt($max)]);
+                                    }
+                                    return Type::getIntRange($min, $max);
+                                }
+
+                                if ($atomic_types['array'] instanceof TArray
+                                    && $atomic_types['array']->isEmptyArray()
+                                ) {
+                                    return Type::getInt(false, 0);
+                                }
+
+                                return new Union([
+                                    new TIntRange(0, null),
+                                ]);
                             }
                             if ($t instanceof TCallableArray
                                     || $t instanceof TCallableKeyedArray

@@ -57,15 +57,12 @@ use function getopt;
 use function implode;
 use function in_array;
 use function ini_get;
-use function ini_set;
 use function is_array;
 use function is_numeric;
-use function is_scalar;
 use function is_string;
 use function json_encode;
 use function max;
 use function microtime;
-use function opcache_get_status;
 use function parse_url;
 use function preg_match;
 use function preg_replace;
@@ -169,6 +166,7 @@ final class Psalm
 
     /**
      * @param array<int,string> $argv
+     * @psalm-suppress ComplexMethod Maybe some of the option handling could be moved to its own function...
      */
     public static function run(array $argv): void
     {
@@ -186,11 +184,19 @@ final class Psalm
             throw new RuntimeException('Failed to parse CLI options');
         }
 
+        // debug CI environment
+        if (!array_key_exists('debug', $options)
+            && 'true' === getenv('GITHUB_ACTIONS')
+            && '1' === getenv('RUNNER_DEBUG')
+        ) {
+            $options['debug'] = false;
+        }
+
         self::forwardCliCall($options, $argv);
 
         self::validateCliArguments($args);
 
-        self::setMemoryLimit($options);
+        CliUtils::setMemoryLimit($options);
 
         self::syncShortOptions($options);
 
@@ -406,7 +412,24 @@ final class Psalm
     {
         return isset($options['output-format']) && is_string($options['output-format'])
             ? $options['output-format']
-            : Report::TYPE_CONSOLE;
+            : self::findDefaultOutputFormat();
+    }
+
+    /**
+     * @return Report::TYPE_*
+     */
+    private static function findDefaultOutputFormat(): string
+    {
+        $emulator = getenv('TERMINAL_EMULATOR');
+        if (is_string($emulator) && substr($emulator, 0, 9) === 'JetBrains') {
+            return Report::TYPE_PHP_STORM;
+        }
+
+        if ('true' === getenv('GITHUB_ACTIONS')) {
+            return Report::TYPE_GITHUB_ACTIONS;
+        }
+
+        return Report::TYPE_CONSOLE;
     }
 
     private static function initShowInfo(array $options): bool
@@ -461,29 +484,6 @@ final class Psalm
             },
             $args,
         );
-    }
-
-    /**
-     * @param array<string,string|false|list<mixed>> $options
-     */
-    private static function setMemoryLimit(array $options): void
-    {
-        if (!array_key_exists('use-ini-defaults', $options)) {
-            ini_set('display_errors', 'stderr');
-            ini_set('display_startup_errors', '1');
-
-            $memoryLimit = (8 * 1_024 * 1_024 * 1_024);
-
-            if (array_key_exists('memory-limit', $options)) {
-                $memoryLimit = $options['memory-limit'];
-
-                if (!is_scalar($memoryLimit)) {
-                    throw new ConfigException('Invalid memory limit specified.');
-                }
-            }
-
-            ini_set('memory_limit', (string) $memoryLimit);
-        }
     }
 
     /**
@@ -923,11 +923,7 @@ final class Psalm
         // If Xdebug is enabled, restart without it
         $ini_handler->check();
 
-        if (!function_exists('opcache_get_status')
-            || !($opcache_status = opcache_get_status(false))
-            || !isset($opcache_status['opcache_enabled'])
-            || !$opcache_status['opcache_enabled']
-        ) {
+        if (!function_exists('opcache_get_status')) {
             $progress->write(PHP_EOL
                 . 'Install the opcache extension to make use of JIT on PHP 8.0+ for a 20%+ performance boost!'
                 . PHP_EOL . PHP_EOL);

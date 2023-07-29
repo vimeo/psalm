@@ -4,6 +4,9 @@ namespace Psalm\Internal;
 
 use Psalm\Exception\ComplicatedExpressionException;
 use Psalm\Storage\Assertion;
+use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TList;
 use UnexpectedValueException;
 
 use function array_filter;
@@ -322,6 +325,9 @@ class Algebra
     /**
      * Look for clauses with only one possible value
      *
+     * doesn't infer the "unset" correctly
+     *
+     * @psalm-suppress MoreSpecificReturnType
      * @param  list<Clause>  $clauses
      * @param  array<string, bool> $cond_referenced_var_ids
      * @param  array<string, array<int, array<int, Assertion>>> $active_truths
@@ -388,6 +394,72 @@ class Algebra
             }
         }
 
+        foreach ($truths as $var => $anded_types) {
+            $has_list_or_array = false;
+            foreach ($anded_types as $orred_types) {
+                foreach ($orred_types as $assertion) {
+                    if ($assertion->isNegation()) {
+                        continue;
+                    }
+
+                    if (!isset($assertion->type)) {
+                        continue;
+                    }
+
+                    if ($assertion->type instanceof TList
+                        || $assertion->type instanceof TArray
+                        || $assertion->type instanceof TKeyedArray) {
+                        $has_list_or_array = true;
+                        // list/array are collapsed, therefore there can only be 1 and we can abort
+                        // otherwise we would have to remove them all individually
+                        // e.g. array<string, string> cannot be array<int, float>
+                        break 2;
+                    }
+                }
+            }
+
+            if ($has_list_or_array === false) {
+                continue;
+            }
+
+            foreach ($anded_types as $key => $orred_types) {
+                foreach ($orred_types as $index => $assertion) {
+                    // we only need to check negations
+                    // due to type collapsing, any negations for arrays are irrelevant
+                    if (!$assertion->isNegation()) {
+                        continue;
+                    }
+
+                    if (!isset($assertion->type)) {
+                        continue;
+                    }
+
+                    if ($assertion->type instanceof TList
+                        || $assertion->type instanceof TArray
+                        || $assertion->type instanceof TKeyedArray) {
+                        unset($truths[$var][$key][$index]);
+                    }
+                }
+
+                /**
+                 * doesn't infer the "unset" correctly
+                 *
+                 * @psalm-suppress DocblockTypeContradiction
+                 */
+                if ($truths[$var][$key] === []) {
+                    unset($truths[$var][$key]);
+                } else {
+                    /**
+                     * doesn't infer the "unset" correctly
+                     *
+                     * @psalm-suppress RedundantFunctionCallGivenDocblockType
+                     */
+                    $truths[$var][$key] = array_values($truths[$var][$key]);
+                }
+            }
+        }
+
+        /** @psalm-suppress LessSpecificReturnStatement */
         return $truths;
     }
 

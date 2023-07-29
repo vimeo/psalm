@@ -19,21 +19,12 @@ class FileStorageCacheProvider extends InternalFileStorageCacheProvider
     {
     }
 
-    public function writeToCache(FileStorage $storage, string $file_contents): void
+    /**
+     * @param lowercase-string $file_path
+     */
+    protected function storeInCache(string $file_path, FileStorage $storage): void
     {
-        $file_path = strtolower($storage->file_path);
         $this->cache[$file_path] = $storage;
-    }
-
-    public function getLatestFromCache(string $file_path, string $file_contents): ?FileStorage
-    {
-        $cached_value = $this->loadFromCache(strtolower($file_path));
-
-        if (!$cached_value) {
-            return null;
-        }
-
-        return $cached_value;
     }
 
     public function removeCacheForFile(string $file_path): void
@@ -41,8 +32,11 @@ class FileStorageCacheProvider extends InternalFileStorageCacheProvider
         unset($this->cache[strtolower($file_path)]);
     }
 
-    private function loadFromCache(string $file_path): ?FileStorage
+    /**
+     * @param lowercase-string $file_path
+     */
+    protected function loadFromCache(string $file_path): ?FileStorage
     {
-        return $this->cache[strtolower($file_path)] ?? null;
+        return $this->cache[$file_path] ?? null;
     }
 }

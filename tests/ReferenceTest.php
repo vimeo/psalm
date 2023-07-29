@@ -209,6 +209,7 @@ class ReferenceTest extends TestCase
                 'assertions' => [
                     '$bar===' => "'bar'",
                 ],
+                'ignored_issues' => ['UnsupportedPropertyReferenceUsage'],
             ],
             'referenceReassignedInLoop' => [
                 'code' => '<?php

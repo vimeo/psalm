@@ -7,9 +7,9 @@ use Psalm\Type;
 use function array_fill;
 
 /**
- * @deprecated Will be removed in Psalm v6, please use TCallableKeyedArrays with is_list=true instead.
- *
  * Denotes a list that is _also_ `callable`.
+ *
+ * @deprecated Will be removed in Psalm v6, please use TCallableKeyedArrays with is_list=true instead.
  * @psalm-immutable
  */
 final class TCallableList extends TNonEmptyList

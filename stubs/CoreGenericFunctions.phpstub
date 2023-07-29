@@ -399,10 +399,10 @@ function array_fill_keys(array $keys, $value): array
  *
  * @psalm-template TKey
  *
- * @param string $pattern
- * @param array<TKey,string> $array
+ * @param non-empty-string $pattern
+ * @param array<TKey, string> $array
  * @param 0|1 $flags 1=PREG_GREP_INVERT
- * @return array<TKey,string>
+ * @return array<TKey, string>
  */
 function preg_grep($pattern, array $array, $flags = 0)
 {
@@ -619,7 +619,7 @@ function strtoupper(string $string) : string {}
  * @param int|array<int> $offset
  * @param null|int|array<int> $length
  *
- * @return ($string is array<string> ? array<string> : string)
+ * @return ($string is array ? array<string> : string)
  *
  * @psalm-flow ($string, $replace) -> return
  */
@@ -627,12 +627,23 @@ function substr_replace($string, $replace, $offset, $length = null) {}
 
 /**
  * @psalm-pure
- *
  * @param string $haystack
- *
+ * @param string $needle
+ * @param int $offset
+ * @psalm-assert-if-true =non-empty-string $haystack
  * @psalm-return positive-int|0|false
  */
-function strpos($haystack, $needle, int $offset = 0) : int|false {}
+function strpos(string $haystack, string $needle, int $offset = 0) {}
+
+/**
+ * @psalm-pure
+ * @param string $haystack
+ * @param string $needle
+ * @param int $offset
+ * @psalm-assert-if-true =non-empty-string $haystack
+ * @psalm-return positive-int|0|false
+ */
+function stripos(string $haystack, string $needle, int $offset = 0) {}
 
 /**
  * @psalm-pure
@@ -774,6 +785,8 @@ function explode(string $separator, string $string, int $limit = -1) : array {}
 
 /**
  * @psalm-pure
+ *
+ * @param non-empty-string $pattern
  *
  * @psalm-flow ($subject) -(array-assignment)-> return
  *
@@ -987,11 +1000,13 @@ function strlen(string $string) : int {}
 /**
  * @psalm-pure
  *
+ * @template TKey of array-key
+ *
  * @param string|array<string|int|float> $search
  * @param string|array<string|int|float> $replace
- * @param string|array<string|int|float> $subject
- * @param int $count
- * @return ($subject is array ? array<string> : string)
+ * @param string|array<TKey, string|int|float> $subject
+ * @param int<0, max> $count
+ * @return ($subject is array ? array<TKey, string> : string)
  *
  * @psalm-flow ($replace, $subject) -> return
  */
@@ -1000,11 +1015,13 @@ function str_replace($search, $replace, $subject, &$count = null) {}
 /**
  * @psalm-pure
  *
+ * @template TKey of array-key
+ *
  * @param string|array<string|int|float> $search
  * @param string|array<string|int|float> $replace
- * @param string|array<string|int|float> $subject
- * @param int $count
- * @return ($subject is array ? array<string> : string)
+ * @param string|array<TKey, string|int|float> $subject
+ * @param int<0, max> $count
+ * @return ($subject is array ? array<TKey, string> : string)
  *
  * @psalm-flow ($replace, $subject) -> return
  */
@@ -1158,10 +1175,10 @@ function str_word_count(string $string, int $format = 0, string|null $characters
 /**
  * @psalm-pure
  *
- * @param string|string[] $pattern
+ * @param non-empty-string|non-empty-string[] $pattern
  * @param string|array<string|int|float> $replacement
  * @param string|array<string|int|float> $subject
- * @param int $count
+ * @param int<0, max> $count
  * @return ($subject is array ? array<string> : string|null)
  *
  * @psalm-flow ($replacement, $subject) -> return
@@ -1171,22 +1188,30 @@ function preg_filter($pattern, $replacement, $subject, int $limit = -1, &$count 
 /**
  * @psalm-pure
  *
- * @param string|string[] $pattern
+ * @template TKey of array-key
+ *
+ * @param non-empty-string|non-empty-string[] $pattern
  * @param string|array<string|int|float> $replacement
- * @param string|array<string|int|float> $subject
- * @param int $count
- * @return ($subject is array ? array<string>|null : string|null)
+ * @param string|array<TKey, string|int|float> $subject
+ * @param int<0, max> $count
+ * @return ($subject is array ? array<TKey, string>|null : string|null)
+ *
+ * @psalm-ignore-nullable-return
  *
  * @psalm-flow ($replacement, $subject) -> return
  */
 function preg_replace($pattern, $replacement, $subject, int $limit = -1, &$count = null) {}
 
 /**
- * @param string|string[] $pattern
+ * @template TKey of array-key
+ *
+ * @param non-empty-string|non-empty-string[] $pattern
  * @param callable(string[]):string $callback
- * @param string|array<string|int|float> $subject
- * @param int $count
- * @return ($subject is array ? array<string>|null : string|null)
+ * @param string|array<TKey, string|int|float> $subject
+ * @param int<0, max> $count
+ * @return ($subject is array ? array<TKey, string>|null : string|null)
+ *
+ * @psalm-ignore-nullable-return
  *
  * @psalm-taint-specialize
  * @psalm-flow ($subject) -> return
@@ -1197,7 +1222,7 @@ function preg_replace_callback($pattern, $callback, $subject, int $limit = -1, &
  * @psalm-pure
  * @template TFlags as int
  *
- * @param string $pattern
+ * @param non-empty-string $pattern
  * @param string $subject
  * @param mixed $matches
  * @param TFlags $flags
@@ -1233,7 +1258,7 @@ function preg_match_all($pattern, $subject, &$matches = [], int $flags = 1, int 
  * @psalm-pure
  * @template TFlags as int-mask<0, 256, 512>
  *
- * @param string $pattern
+ * @param non-empty-string $pattern
  * @param string $subject
  * @param mixed $matches
  * @param TFlags $flags
@@ -1268,17 +1293,17 @@ function preg_quote(string $str, ?string $delimiter = null) : string {}
  * @psalm-pure
  *
  * @param string|int|float $values
- * @return ($format is non-empty-string
- *      ? ($values is non-empty-string|int|float ? non-empty-string : string)
- *      : string)
+ * @return (PHP_MAJOR_VERSION is 8 ? string : string|false)
+ * @psalm-ignore-falsable-return
  *
  * @psalm-flow ($format, $values) -> return
  */
-function sprintf(string $format, ...$values) : string {}
+function sprintf(string $format, ...$values) {}
 
 /**
  * @psalm-pure
- * @return string|false
+ * @param array<string|int|float> $values
+ * @return (PHP_MAJOR_VERSION is 8 ? string : string|false)
  * @psalm-ignore-falsable-return
  *
  * @psalm-flow ($format, $values) -> return
@@ -1297,20 +1322,27 @@ function wordwrap(string $string, int $width = 75, string $break = "\n", bool $c
  * @psalm-pure
  *
  * @param string|int|float $values
+ * @return (PHP_MAJOR_VERSION is 8 ? int<0, max> : int<0, max>|false)
+ * @psalm-ignore-falsable-return
  *
  * @psalm-taint-specialize
  * @psalm-flow ($format, $values) -> return
  * @psalm-taint-sink html $format
  * @psalm-taint-sink html $values
  */
-function printf(string $format, ...$values) : string {}
+function printf(string $format, ...$values) {}
 
 /**
+ * @param array<string|int|float> $values
+ * @return (PHP_MAJOR_VERSION is 8 ? int<0, max> : int<0, max>|false)
+ * @psalm-ignore-falsable-return
+ *
+ * @psalm-pure
  * @psalm-taint-specialize
  * @psalm-taint-sink html $format
  * @psalm-taint-sink html $values
  */
-function vprintf(string $format, array $values) : int {}
+function vprintf(string $format, array $values) {}
 
 /**
  * @psalm-pure
@@ -1353,11 +1385,11 @@ function str_getcsv(string $string, string $separator = ',', string $enclosure =
 
 /**
  * @template TKey as array-key
- * @template TArray as array<mixed, TKey>
+ * @template TArray as array<TKey>
  *
  * @param TArray $array
  *
- * @return (TArray is non-empty-array ? non-empty-array<TKey, positive-int> : array<TKey, positive-int>)
+ * @return (TArray is non-empty-array ? non-empty-array<TKey, int<1, max>> : array<TKey, int<1, max>>)
  *
  * @psalm-pure
  */
@@ -1497,7 +1529,7 @@ function ldap_escape(string $value, string $ignore = "", int $flags = 0) : strin
 function json_decode(string $json, ?bool $associative = null, int $depth = 512, int $flags = 0) {}
 
 /**
- * The conditional return type below relies on the fact that JSON_THROW_ON_ERROR is 
+ * The conditional return type below relies on the fact that JSON_THROW_ON_ERROR is
  * the highest-valued of JSON constants
  * @psalm-pure
  *
@@ -1531,6 +1563,8 @@ function sapi_windows_cp_conv($in_codepage, $out_codepage, string $subject) : ?s
 /**
  * @psalm-pure
  *
+ * @return non-empty-string
+ *
  * @psalm-flow ($prefix) -> return
  */
 function uniqid(string $prefix = "", bool $more_entropy = false) : string {}
@@ -1548,7 +1582,10 @@ function unpack(string $format, string $string, int $offset = 0) {}
 /**
  * @psalm-pure
  *
+ * @template T of bool
+ * @param T $strict
  * @return string|false
+ * @psalm-return (T is false ? string : string|false)
  *
  * @psalm-flow ($string) -> return
  * @psalm-ignore-falsable-return
@@ -1693,3 +1730,58 @@ function pg_escape_literal($string1, $string2 = null) {}
  * @psalm-flow ($string1, $string2) -> return
  */
 function pg_escape_string($string1, $string2 = null) {}
+
+if (defined('GLOB_BRACE')) {
+    /**
+     * @psalm-template P of string
+     * @psalm-template F of int-mask<GLOB_MARK, GLOB_NOSORT, GLOB_NOCHECK, GLOB_NOESCAPE, GLOB_BRACE, GLOB_ONLYDIR, GLOB_ERR>
+     * @psalm-param P $pattern
+     * @psalm-param F $flags
+     * @psalm-return (
+     *     P is ''
+     *       ? (F is int-mask<GLOB_MARK, GLOB_NOSORT, GLOB_NOESCAPE, GLOB_BRACE, GLOB_ONLYDIR, GLOB_ERR>
+     *             ? false|list<never>
+     *         : (F is int-mask<GLOB_MARK, GLOB_NOSORT, GLOB_NOCHECK, GLOB_NOESCAPE, GLOB_BRACE, GLOB_ERR>
+     *             ? false|list{0:''}
+     *             : false|list<never>
+     *           )
+     *         )
+     *       : (F is int-mask<GLOB_MARK, GLOB_NOSORT, GLOB_NOESCAPE, GLOB_BRACE, GLOB_ONLYDIR, GLOB_ERR>
+     *             ? false|list<non-empty-string>
+     *         : (F is int-mask<GLOB_MARK, GLOB_NOSORT, GLOB_NOCHECK, GLOB_NOESCAPE, GLOB_BRACE, GLOB_ERR>
+     *             ? false|list{0:non-empty-string, ...<non-empty-string>}
+     *             : false|list<non-empty-string>
+     *           )
+     *         )
+     * )
+     * @psalm-ignore-falsable-return
+     */
+    function glob (string $pattern, int $flags = 0): array|false {}
+} else {
+    /**
+     * @psalm-template P of string
+     * @psalm-template F of int-mask<GLOB_MARK, GLOB_NOSORT, GLOB_NOCHECK, GLOB_NOESCAPE, GLOB_ONLYDIR, GLOB_ERR>
+     * @psalm-param P $pattern
+     * @psalm-param F $flags
+     * @psalm-return (
+     *     P is ''
+     *       ? (F is int-mask<GLOB_MARK, GLOB_NOSORT, GLOB_NOESCAPE, GLOB_ONLYDIR, GLOB_ERR>
+     *             ? false|list<never>
+     *         : (F is int-mask<GLOB_MARK, GLOB_NOSORT, GLOB_NOCHECK, GLOB_NOESCAPE, GLOB_ERR>
+     *             ? false|list{0:''}
+     *             : false|list<never>
+     *           )
+     *         )
+     *       : (F is int-mask<GLOB_MARK, GLOB_NOSORT, GLOB_NOESCAPE, GLOB_ONLYDIR, GLOB_ERR>
+     *             ? false|list<non-empty-string>
+     *         : (F is int-mask<GLOB_MARK, GLOB_NOSORT, GLOB_NOCHECK, GLOB_NOESCAPE, GLOB_ERR>
+     *             ? false|list{0:non-empty-string, ...<non-empty-string>}
+     *             : false|list<non-empty-string>
+     *           )
+     *         )
+     * )
+     * @psalm-ignore-falsable-return
+     */
+    function glob (string $pattern, int $flags = 0): array|false {}
+}
+

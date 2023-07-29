@@ -179,6 +179,7 @@ class ReconcilerTest extends TestCase
             'IsNotAClassReconciliation' => ['int', new Assertion\IsNotAClass(new TNamedObject('IDObject'), true), 'int|IDObject'],
             'nonEmptyArray' => ['non-empty-array<array-key, mixed>', new IsType(Atomic::create('non-empty-array')), 'array'],
             'nonEmptyList' => ['non-empty-list<mixed>', new IsType(Atomic::create('non-empty-list')), 'array'],
+            'ListOfInts' => ['list<int>', new IsType(new TIterable([Type::getMixed(), Type::getInt()])), 'list<mixed>'],
         ];
     }
 

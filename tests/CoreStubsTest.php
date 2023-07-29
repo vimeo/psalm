@@ -211,14 +211,39 @@ class CoreStubsTest extends TestCase
                     }
                     throw new RuntimeException();
                 }
+
+                /** @return non-empty-string */
+                function after_strpos(): string
+                {
+                    $string = uniqid();
+                    if (strpos($string, "foo") !== false) {
+                        return $string;
+                    }
+                    throw new RuntimeException();
+                }
+
+                /** @return non-empty-string */
+                function after_stripos(): string
+                {
+                    $string = uniqid();
+                    if (stripos($string, "foo") !== false) {
+                        return $string;
+                    }
+                    throw new RuntimeException();
+                }
+
                 $a = after_str_contains();
                 $b = after_str_starts_with();
                 $c = after_str_ends_with();
+                $d = after_strpos();
+                $e = after_stripos();
             ',
             'assertions' => [
                 '$a===' => 'non-empty-string',
                 '$b===' => 'non-empty-string',
                 '$c===' => 'non-empty-string',
+                '$d===' => 'non-empty-string',
+                '$e===' => 'non-empty-string',
             ],
         ];
         yield "PHP8 str_* function doesn't subtract string after assertion" => [
@@ -267,6 +292,125 @@ class CoreStubsTest extends TestCase
                 $d = __DIR__;
                 echo str_contains($d, "psalm");
             ',
+        ];
+        yield 'glob return types' => [
+            'code' => <<<'PHP'
+                <?php
+                /** @var int-mask<GLOB_NOCHECK> */
+                $maybeNocheckFlag = 0;
+                /** @var int-mask<GLOB_ONLYDIR> */
+                $maybeOnlydirFlag = 0;
+
+                /** @var string */
+                $string = '';
+
+                $emptyPatternNoFlags = glob( '' );
+                $emptyPatternWithoutNocheckFlag1 = glob( '', GLOB_MARK );
+                $emptyPatternWithoutNocheckFlag2 = glob( '' , GLOB_NOSORT | GLOB_NOESCAPE);
+                $emptyPatternWithoutNocheckFlag3 = glob( '' , GLOB_MARK | GLOB_NOSORT  | GLOB_NOESCAPE | GLOB_BRACE | GLOB_ONLYDIR | GLOB_ERR);
+                $emptyPatternWithNocheckFlag1 = glob( ''  , GLOB_NOCHECK);
+                $emptyPatternWithNocheckFlag2 = glob( '' , GLOB_NOCHECK | GLOB_MARK);
+                $emptyPatternWithNocheckFlag3 = glob( '' , GLOB_NOCHECK | GLOB_MARK | GLOB_NOSORT | GLOB_NOESCAPE | GLOB_BRACE | GLOB_ERR);
+                $emptyPatternWithNocheckAndOnlydirFlag1 = glob( '' , GLOB_NOCHECK | GLOB_ONLYDIR);
+                $emptyPatternWithNocheckAndOnlydirFlag2 = glob( '' , GLOB_NOCHECK | GLOB_ONLYDIR | GLOB_MARK);
+                $emptyPatternWithNocheckAndOnlydirFlag3 = glob( '' , GLOB_NOCHECK | GLOB_ONLYDIR | GLOB_MARK | GLOB_NOSORT | GLOB_NOESCAPE | GLOB_BRACE | GLOB_ERR);
+                $emptyPatternWithNocheckFlagAndMaybeOnlydir = glob( '' , GLOB_NOCHECK | $maybeOnlydirFlag);
+                $emptyPatternMaybeWithNocheckFlag = glob( '' , $maybeNocheckFlag);
+                $emptyPatternMaybeWithNocheckFlagAndOnlydir = glob( '' , $maybeNocheckFlag | GLOB_ONLYDIR);
+                $emptyPatternMaybeWithNocheckFlagAndMaybeOnlydir = glob( '' , $maybeNocheckFlag | $maybeOnlydirFlag);
+
+                $nonEmptyPatternNoFlags = glob( 'pattern' );
+                $nonEmptyPatternWithoutNocheckFlag1 = glob( 'pattern', GLOB_MARK );
+                $nonEmptyPatternWithoutNocheckFlag2 = glob( 'pattern' , GLOB_NOSORT | GLOB_NOESCAPE);
+                $nonEmptyPatternWithoutNocheckFlag3 = glob( 'pattern' , GLOB_MARK | GLOB_NOSORT  | GLOB_NOESCAPE | GLOB_BRACE | GLOB_ONLYDIR | GLOB_ERR);
+                $nonEmptyPatternWithNocheckFlag1 = glob( 'pattern'  , GLOB_NOCHECK);
+                $nonEmptyPatternWithNocheckFlag2 = glob( 'pattern' , GLOB_NOCHECK | GLOB_MARK);
+                $nonEmptyPatternWithNocheckFlag3 = glob( 'pattern' , GLOB_NOCHECK | GLOB_MARK | GLOB_NOSORT | GLOB_NOESCAPE | GLOB_BRACE | GLOB_ERR);
+                $nonEmptyPatternWithNocheckAndOnlydirFlag1 = glob( 'pattern' , GLOB_NOCHECK | GLOB_ONLYDIR);
+                $nonEmptyPatternWithNocheckAndOnlydirFlag2 = glob( 'pattern' , GLOB_NOCHECK | GLOB_ONLYDIR | GLOB_MARK);
+                $nonEmptyPatternWithNocheckAndOnlydirFlag3 = glob( 'pattern' , GLOB_NOCHECK | GLOB_ONLYDIR | GLOB_MARK | GLOB_NOSORT | GLOB_NOESCAPE | GLOB_BRACE | GLOB_ERR);
+                $nonEmptyPatternWithNocheckFlagAndMaybeOnlydir = glob( 'pattern' , GLOB_NOCHECK | $maybeOnlydirFlag);
+                $nonEmptyPatternMaybeWithNocheckFlag = glob( 'pattern' , $maybeNocheckFlag);
+                $nonEmptyPatternMaybeWithNocheckFlagAndOnlydir = glob( 'pattern' , $maybeNocheckFlag | GLOB_ONLYDIR);
+                $nonEmptyPatternMaybeWithNocheckFlagAndMaybeOnlydir = glob( 'pattern' , $maybeNocheckFlag | $maybeOnlydirFlag);
+
+                $stringPatternNoFlags = glob( $string );
+                $stringPatternWithoutNocheckFlag1 = glob( $string, GLOB_MARK );
+                $stringPatternWithoutNocheckFlag2 = glob( $string , GLOB_NOSORT | GLOB_NOESCAPE);
+                $stringPatternWithoutNocheckFlag3 = glob( $string , GLOB_MARK | GLOB_NOSORT  | GLOB_NOESCAPE | GLOB_BRACE | GLOB_ONLYDIR | GLOB_ERR);
+                $stringPatternWithNocheckFlag1 = glob( $string  , GLOB_NOCHECK);
+                $stringPatternWithNocheckFlag2 = glob( $string , GLOB_NOCHECK | GLOB_MARK);
+                $stringPatternWithNocheckFlag3 = glob( $string , GLOB_NOCHECK | GLOB_MARK | GLOB_NOSORT | GLOB_NOESCAPE | GLOB_BRACE | GLOB_ERR);
+                $stringPatternWithNocheckAndOnlydirFlag1 = glob( $string , GLOB_NOCHECK | GLOB_ONLYDIR);
+                $stringPatternWithNocheckAndOnlydirFlag2 = glob( $string , GLOB_NOCHECK | GLOB_ONLYDIR | GLOB_MARK);
+                $stringPatternWithNocheckAndOnlydirFlag3 = glob( $string , GLOB_NOCHECK | GLOB_ONLYDIR | GLOB_MARK | GLOB_NOSORT | GLOB_NOESCAPE | GLOB_BRACE | GLOB_ERR);
+                $stringPatternWithNocheckFlagAndMaybeOnlydir = glob( $string , GLOB_NOCHECK | $maybeOnlydirFlag);
+                $stringPatternMaybeWithNocheckFlag = glob( $string , $maybeNocheckFlag);
+                $stringPatternMaybeWithNocheckFlagAndOnlydir = glob( $string , $maybeNocheckFlag | GLOB_ONLYDIR);
+                $stringPatternMaybeWithNocheckFlagAndMaybeOnlydir = glob( $string , $maybeNocheckFlag | $maybeOnlydirFlag);
+                PHP,
+            'assertions' => [
+                '$emptyPatternNoFlags===' => 'false|list<never>',
+                '$emptyPatternWithoutNocheckFlag1===' => 'false|list<never>',
+                '$emptyPatternWithoutNocheckFlag2===' => 'false|list<never>',
+                '$emptyPatternWithoutNocheckFlag3===' => 'false|list<never>',
+                '$emptyPatternWithNocheckFlag1===' => 'false|list{\'\'}',
+                '$emptyPatternWithNocheckFlag2===' => 'false|list{\'\'}',
+                '$emptyPatternWithNocheckFlag3===' => 'false|list{\'\'}',
+                '$emptyPatternWithNocheckAndOnlydirFlag1===' => 'false|list<never>',
+                '$emptyPatternWithNocheckAndOnlydirFlag2===' => 'false|list<never>',
+                '$emptyPatternWithNocheckAndOnlydirFlag3===' => 'false|list<never>',
+                '$emptyPatternWithNocheckFlagAndMaybeOnlydir===' => 'false|list{0?: \'\', ...<never>}',
+                '$emptyPatternMaybeWithNocheckFlag===' => 'false|list{0?: \'\', ...<never>}',
+                '$emptyPatternMaybeWithNocheckFlagAndOnlydir===' => 'false|list<never>',
+                '$emptyPatternMaybeWithNocheckFlagAndMaybeOnlydir===' => 'false|list{0?: \'\', ...<never>}',
+
+                '$nonEmptyPatternNoFlags===' => 'false|list<non-empty-string>',
+                '$nonEmptyPatternWithoutNocheckFlag1===' => 'false|list<non-empty-string>',
+                '$nonEmptyPatternWithoutNocheckFlag2===' => 'false|list<non-empty-string>',
+                '$nonEmptyPatternWithoutNocheckFlag3===' => 'false|list<non-empty-string>',
+                '$nonEmptyPatternWithNocheckFlag1===' => 'false|non-empty-list<non-empty-string>',
+                '$nonEmptyPatternWithNocheckFlag2===' => 'false|non-empty-list<non-empty-string>',
+                '$nonEmptyPatternWithNocheckFlag3===' => 'false|non-empty-list<non-empty-string>',
+                '$nonEmptyPatternWithNocheckAndOnlydirFlag1===' => 'false|list<non-empty-string>',
+                '$nonEmptyPatternWithNocheckAndOnlydirFlag2===' => 'false|list<non-empty-string>',
+                '$nonEmptyPatternWithNocheckAndOnlydirFlag3===' => 'false|list<non-empty-string>',
+                '$nonEmptyPatternWithNocheckFlagAndMaybeOnlydir===' => 'false|list<non-empty-string>',
+                '$nonEmptyPatternMaybeWithNocheckFlag===' => 'false|list<non-empty-string>',
+                '$nonEmptyPatternMaybeWithNocheckFlagAndOnlydir===' => 'false|list<non-empty-string>',
+                '$nonEmptyPatternMaybeWithNocheckFlagAndMaybeOnlydir===' => 'false|list<non-empty-string>',
+
+                '$stringPatternNoFlags===' => 'false|list<non-empty-string>',
+                '$stringPatternWithoutNocheckFlag1===' => 'false|list<non-empty-string>',
+                '$stringPatternWithoutNocheckFlag2===' => 'false|list<non-empty-string>',
+                '$stringPatternWithoutNocheckFlag3===' => 'false|list<non-empty-string>',
+                '$stringPatternWithNocheckFlag1===' => 'false|list{string, ...<non-empty-string>}',
+                '$stringPatternWithNocheckFlag2===' => 'false|list{string, ...<non-empty-string>}',
+                '$stringPatternWithNocheckFlag3===' => 'false|list{string, ...<non-empty-string>}',
+                '$stringPatternWithNocheckAndOnlydirFlag1===' => 'false|list<non-empty-string>',
+                '$stringPatternWithNocheckAndOnlydirFlag2===' => 'false|list<non-empty-string>',
+                '$stringPatternWithNocheckAndOnlydirFlag3===' => 'false|list<non-empty-string>',
+                '$stringPatternWithNocheckFlagAndMaybeOnlydir===' => 'false|list{0?: string, ...<non-empty-string>}',
+                '$stringPatternMaybeWithNocheckFlag===' => 'false|list{0?: string, ...<non-empty-string>}',
+                '$stringPatternMaybeWithNocheckFlagAndOnlydir===' => 'false|list<non-empty-string>',
+                '$stringPatternMaybeWithNocheckFlagAndMaybeOnlydir===' => 'false|list{0?: string, ...<non-empty-string>}',
+            ],
+        ];
+        yield 'glob return ignores false' => [
+            'code' => <<<'PHP'
+                <?php
+                /**
+                 * @param list $list
+                 */
+                function takesList(array $list): void {}
+                takesList(glob( '' ));
+                PHP,
+        ];
+        yield 'glob accepts GLOB_BRACE' => [
+            'code' => <<<'PHP'
+                <?php
+                $globBrace = glob('abc', GLOB_BRACE);
+                PHP,
         ];
     }
 

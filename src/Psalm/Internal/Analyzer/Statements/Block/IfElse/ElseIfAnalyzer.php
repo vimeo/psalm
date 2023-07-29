@@ -358,16 +358,6 @@ class ElseIfAnalyzer
                         $elseif_context->inside_loop,
                         new CodeLocation($statements_analyzer->getSource(), $elseif, $outer_context->include_location),
                     );
-
-                $updated_vars = [];
-
-                $outer_context->update(
-                    $elseif_context,
-                    $implied_outer_context,
-                    false,
-                    array_keys($negated_elseif_types),
-                    $updated_vars,
-                );
             }
         }
 

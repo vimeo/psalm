@@ -12,6 +12,7 @@ use function count;
 use function explode;
 use function implode;
 use function is_string;
+use function ltrim;
 use function min;
 use function preg_match;
 use function preg_replace;
@@ -54,7 +55,8 @@ class DocblockParser
         }
 
         // Normalize multi-line @specials.
-        $lines = explode("\n", $docblock);
+        $lines = explode("\n", str_replace("\t", ' ', $docblock));
+        $has_r = strpos($docblock, "\r") === false ? false : true;
 
         $special = [];
 
@@ -62,9 +64,9 @@ class DocblockParser
 
         $last = false;
         foreach ($lines as $k => $line) {
-            if (preg_match('/^[ \t]*\*?\s*@\w/i', $line)) {
+            if (strpos($line, '@') !== false && preg_match('/^ *\*?\s*@\w/', $line)) {
                 $last = $k;
-            } elseif (preg_match('/^\s*\r?$/', $line)) {
+            } elseif (trim($line) === '') {
                 $last = false;
             } elseif ($last !== false) {
                 $old_last_line = $lines[$last];
@@ -78,26 +80,29 @@ class DocblockParser
 
         foreach ($lines as $k => $line) {
             $original_line_length = strlen($line);
-
-            $line = str_replace("\r", '', $line);
+            if ($has_r === true) {
+                $line = str_replace("\r", '', $line);
+            }
 
             if ($first_line_padding === null) {
                 $asterisk_pos = strpos($line, '*');
 
-                if ($asterisk_pos) {
+                if ($asterisk_pos === 0 || $asterisk_pos === 1) {
+                    $first_line_padding = '';
+                } elseif ($asterisk_pos > 1) {
                     $first_line_padding = substr($line, 0, $asterisk_pos - 1);
                 }
             }
 
-            if (preg_match('/^[ \t]*\*?\s*@([\w\-\\\:]+)[\t ]*(.*)$/sm', $line, $matches, PREG_OFFSET_CAPTURE)) {
+            if (preg_match('/^ *\*?\s*@([\w\-\\\:]+) *(.*)$/sm', $line, $matches, PREG_OFFSET_CAPTURE)) {
                 /** @var array<int, array{string, int}> $matches */
                 [, $type_info, $data_info] = $matches;
 
                 [$type] = $type_info;
                 [$data, $data_offset] = $data_info;
 
-                if (strpos($data, '*')) {
-                    $data = rtrim(preg_replace('/^[ \t]*\*\s*$/m', '', $data));
+                if (strpos($data, '*') !== false) {
+                    $data = rtrim(preg_replace('/^ *\*\s*$/m', '', $data));
                 }
 
                 if (empty($special[$type])) {
@@ -111,10 +116,9 @@ class DocblockParser
                 unset($lines[$k]);
             } else {
                 // Strip the leading *, if present.
-                $text = $lines[$k];
-                $text = str_replace("\t", ' ', $text);
-                $text = preg_replace('/^ *\*/', '', $text, 1);
-                $lines[$k] = $text;
+                // technically only need to preg_replace('/^ *\*/', '', $lines[$k], 1)
+                // however it's slower and removing all spaces and * is fine
+                $lines[$k] = ltrim($lines[$k], ' *');
             }
 
             $line_offset += $original_line_length + 1;
@@ -122,13 +126,20 @@ class DocblockParser
 
         // Smush the whole docblock to the left edge.
         $min_indent = 80;
+        $reached_first_non_empty_line = false;
         foreach ($lines as $k => $line) {
             $indent = strspn($line, ' ');
             if ($indent === strlen($line)) {
                 // This line consists of only spaces. Trim it completely.
+                if ($reached_first_non_empty_line === false) {
+                    // remove any leading empty lines here, to avoid a preg_replace later
+                    unset($lines[$k]);
+                    continue;
+                }
                 $lines[$k] = '';
                 continue;
             }
+            $reached_first_non_empty_line = true;
             $min_indent = min($indent, $min_indent);
         }
         if ($min_indent > 0) {
@@ -141,10 +152,6 @@ class DocblockParser
         }
         $docblock = implode("\n", $lines);
         $docblock = rtrim($docblock);
-
-        // Trim any empty lines off the front, but leave the indent level if there
-        // is one.
-        $docblock = preg_replace('/^\s*\n/', '', $docblock, 1);
 
         $parsed = new ParsedDocblock($docblock, $special, $first_line_padding ?: '');
 

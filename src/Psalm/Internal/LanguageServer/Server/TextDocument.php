@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\LanguageServer\Server;
 
-use Amp\Promise;
-use Amp\Success;
 use LanguageServerProtocol\CodeAction;
 use LanguageServerProtocol\CodeActionContext;
 use LanguageServerProtocol\CodeActionKind;
@@ -74,7 +72,7 @@ class TextDocument
             ['version' => $textDocument->version, 'uri' => $textDocument->uri],
         );
 
-        $file_path = LanguageServer::uriToPath($textDocument->uri);
+        $file_path = $this->server->uriToPath($textDocument->uri);
 
         $this->codebase->removeTemporaryFileChanges($file_path);
         $this->codebase->file_provider->openFile($file_path);
@@ -97,7 +95,7 @@ class TextDocument
             ['uri' => (array) $textDocument],
         );
 
-        $file_path = LanguageServer::uriToPath($textDocument->uri);
+        $file_path = $this->server->uriToPath($textDocument->uri);
 
         // reopen file
         $this->codebase->removeTemporaryFileChanges($file_path);
@@ -119,7 +117,7 @@ class TextDocument
             ['version' => $textDocument->version, 'uri' => $textDocument->uri],
         );
 
-        $file_path = LanguageServer::uriToPath($textDocument->uri);
+        $file_path = $this->server->uriToPath($textDocument->uri);
 
         if (count($contentChanges) === 1 && isset($contentChanges[0]) && $contentChanges[0]->range === null) {
             $new_content = $contentChanges[0]->text;
@@ -154,7 +152,7 @@ class TextDocument
             ['uri' => $textDocument->uri],
         );
 
-        $file_path = LanguageServer::uriToPath($textDocument->uri);
+        $file_path = $this->server->uriToPath($textDocument->uri);
 
         $this->codebase->file_provider->closeFile($file_path);
         $this->server->client->textDocument->publishDiagnostics($textDocument->uri, []);
@@ -166,50 +164,47 @@ class TextDocument
      *
      * @param TextDocumentIdentifier $textDocument The text document
      * @param Position $position The position inside the text document
-     * @psalm-return Promise<Location>|Promise<null>
      */
-    public function definition(TextDocumentIdentifier $textDocument, Position $position): Promise
+    public function definition(TextDocumentIdentifier $textDocument, Position $position): ?Location
     {
         if (!$this->server->client->clientConfiguration->provideDefinition) {
-            return new Success(null);
+            return null;
         }
 
         $this->server->logDebug(
             'textDocument/definition',
         );
 
-        $file_path = LanguageServer::uriToPath($textDocument->uri);
+        $file_path = $this->server->uriToPath($textDocument->uri);
 
         //This currently doesnt work right with out of project files
         if (!$this->codebase->config->isInProjectDirs($file_path)) {
-            return new Success(null);
+            return null;
         }
 
         try {
             $reference = $this->codebase->getReferenceAtPositionAsReference($file_path, $position);
         } catch (UnanalyzedFileException $e) {
             $this->server->logThrowable($e);
-            return new Success(null);
+            return null;
         }
 
         if ($reference === null) {
-            return new Success(null);
+            return null;
         }
 
 
         $code_location = $this->codebase->getSymbolLocationByReference($reference);
 
         if (!$code_location) {
-            return new Success(null);
+            return null;
         }
 
-        return new Success(
-            new Location(
-                LanguageServer::pathToUri($code_location->file_path),
-                new Range(
-                    new Position($code_location->getLineNumber() - 1, $code_location->getColumn() - 1),
-                    new Position($code_location->getEndLineNumber() - 1, $code_location->getEndColumn() - 1),
-                ),
+        return new Location(
+            $this->server->pathToUri($code_location->file_path),
+            new Range(
+                new Position($code_location->getLineNumber() - 1, $code_location->getColumn() - 1),
+                new Position($code_location->getEndLineNumber() - 1, $code_location->getEndColumn() - 1),
             ),
         );
     }
@@ -220,48 +215,47 @@ class TextDocument
      *
      * @param TextDocumentIdentifier $textDocument The text document
      * @param Position $position The position inside the text document
-     * @psalm-return Promise<Hover>|Promise<null>
      */
-    public function hover(TextDocumentIdentifier $textDocument, Position $position): Promise
+    public function hover(TextDocumentIdentifier $textDocument, Position $position): ?Hover
     {
         if (!$this->server->client->clientConfiguration->provideHover) {
-            return new Success(null);
+            return null;
         }
 
         $this->server->logDebug(
             'textDocument/hover',
         );
 
-        $file_path = LanguageServer::uriToPath($textDocument->uri);
+        $file_path = $this->server->uriToPath($textDocument->uri);
 
         //This currently doesnt work right with out of project files
         if (!$this->codebase->config->isInProjectDirs($file_path)) {
-            return new Success(null);
+            return null;
         }
 
         try {
             $reference = $this->codebase->getReferenceAtPositionAsReference($file_path, $position);
         } catch (UnanalyzedFileException $e) {
             $this->server->logThrowable($e);
-            return new Success(null);
+            return null;
         }
 
         if ($reference === null) {
-            return new Success(null);
+            return null;
         }
 
         try {
             $markup = $this->codebase->getMarkupContentForSymbolByReference($reference);
         } catch (UnexpectedValueException $e) {
             $this->server->logThrowable($e);
-            return new Success(null);
+            return null;
         }
 
         if ($markup === null) {
-            return new Success(null);
+            return null;
         }
 
-        return new Success(new Hover($markup, $reference->range));
+        return new Hover($markup, $reference->range);
     }
 
     /**
@@ -276,23 +270,22 @@ class TextDocument
      *
      * @param TextDocumentIdentifier $textDocument The text document
      * @param Position $position The position
-     * @psalm-return Promise<array<empty, empty>>|Promise<CompletionList>|Promise<null>
      */
-    public function completion(TextDocumentIdentifier $textDocument, Position $position): Promise
+    public function completion(TextDocumentIdentifier $textDocument, Position $position): ?CompletionList
     {
         if (!$this->server->client->clientConfiguration->provideCompletion) {
-            return new Success(null);
+            return null;
         }
 
         $this->server->logDebug(
             'textDocument/completion',
         );
 
-        $file_path = LanguageServer::uriToPath($textDocument->uri);
+        $file_path = $this->server->uriToPath($textDocument->uri);
 
         //This currently doesnt work right with out of project files
         if (!$this->codebase->config->isInProjectDirs($file_path)) {
-            return new Success(null);
+            return null;
         }
 
         try {
@@ -301,12 +294,8 @@ class TextDocument
                 [$recent_type, $gap, $offset] = $completion_data;
 
                 if ($gap === '->' || $gap === '::') {
-                    $snippetSupport = ($this->server->clientCapabilities &&
-                        $this->server->clientCapabilities->textDocument &&
-                        $this->server->clientCapabilities->textDocument->completion &&
-                        $this->server->clientCapabilities->textDocument->completion->completionItem &&
-                        $this->server->clientCapabilities->textDocument->completion->completionItem->snippetSupport)
-                        ? true : false;
+                    $snippetSupport = $this->server->clientCapabilities
+                        ->textDocument->completion->completionItem->snippetSupport ?? false;
                     $completion_items =
                         $this->codebase->getCompletionItemsForClassishThing($recent_type, $gap, $snippetSupport);
                 } elseif ($gap === '[') {
@@ -318,83 +307,81 @@ class TextDocument
                         $file_path,
                     );
                 }
-                return new Success(new CompletionList($completion_items, false));
+                return new CompletionList($completion_items, false);
             }
         } catch (UnanalyzedFileException $e) {
             $this->server->logThrowable($e);
-            return new Success(null);
+            return null;
         } catch (TypeParseTreeException $e) {
             $this->server->logThrowable($e);
-            return new Success(null);
+            return null;
         }
 
         try {
             $type_context = $this->codebase->getTypeContextAtPosition($file_path, $position);
             if ($type_context) {
                 $completion_items = $this->codebase->getCompletionItemsForType($type_context);
-                return new Success(new CompletionList($completion_items, false));
+                return new CompletionList($completion_items, false);
             }
         } catch (UnexpectedValueException $e) {
             $this->server->logThrowable($e);
-            return new Success(null);
+            return null;
         } catch (TypeParseTreeException $e) {
             $this->server->logThrowable($e);
-            return new Success(null);
+            return null;
         }
 
         $this->server->logError('completion not found at ' . $position->line . ':' . $position->character);
-        return new Success(null);
+        return null;
     }
 
     /**
      * The signature help request is sent from the client to the server to request signature
      * information at a given cursor position.
      */
-    public function signatureHelp(TextDocumentIdentifier $textDocument, Position $position): Promise
+    public function signatureHelp(TextDocumentIdentifier $textDocument, Position $position): ?SignatureHelp
     {
         if (!$this->server->client->clientConfiguration->provideSignatureHelp) {
-            return new Success(null);
+            return null;
         }
 
         $this->server->logDebug(
             'textDocument/signatureHelp',
         );
 
-        $file_path = LanguageServer::uriToPath($textDocument->uri);
+        $file_path = $this->server->uriToPath($textDocument->uri);
 
         //This currently doesnt work right with out of project files
         if (!$this->codebase->config->isInProjectDirs($file_path)) {
-            return new Success(null);
+            return null;
         }
 
         try {
             $argument_location = $this->codebase->getFunctionArgumentAtPosition($file_path, $position);
         } catch (UnanalyzedFileException $e) {
             $this->server->logThrowable($e);
-            return new Success(null);
+            return null;
         }
 
         if ($argument_location === null) {
-            return new Success(null);
+            return null;
         }
 
         try {
             $signature_information = $this->codebase->getSignatureInformation($argument_location[0], $file_path);
         } catch (UnexpectedValueException $e) {
             $this->server->logThrowable($e);
-            return new Success(null);
+            return null;
         }
 
         if (!$signature_information) {
-            return new Success(null);
+            return null;
         }
 
-        return new Success(
-            new SignatureHelp(
-                [$signature_information],
-                0,
-                $argument_location[1],
-            ),
+        return new SignatureHelp(
+            [$signature_information],
+            0,
+            $argument_location[1],
         );
     }
 
@@ -402,24 +389,22 @@ class TextDocument
      * The code action request is sent from the client to the server to compute commands
      * for a given text document and range. These commands are typically code fixes to
      * either fix problems or to beautify/refactor code.
-     *
-     * @psalm-suppress PossiblyUnusedParam
      */
-    public function codeAction(TextDocumentIdentifier $textDocument, Range $range, CodeActionContext $context): Promise
+    public function codeAction(TextDocumentIdentifier $textDocument, CodeActionContext $context): ?array
     {
         if (!$this->server->client->clientConfiguration->provideCodeActions) {
-            return new Success(null);
+            return null;
         }
 
         $this->server->logDebug(
             'textDocument/codeAction',
         );
 
-        $file_path = LanguageServer::uriToPath($textDocument->uri);
+        $file_path = $this->server->uriToPath($textDocument->uri);
 
         //Don't report code actions for files we arent watching
         if (!$this->codebase->config->isInProjectDirs($file_path)) {
-            return new Success(null);
+            return null;
         }
 
         $fixers = [];
@@ -431,12 +416,12 @@ class TextDocument
             /** @var array{type: string, snippet: string, line_from: int, line_to: int} */
             $data = (array)$diagnostic->data;
 
-            //$file_path = LanguageServer::uriToPath($textDocument->uri);
+            //$file_path = $this->server->uriToPath($textDocument->uri);
             //$contents = $this->codebase->file_provider->getContents($file_path);
 
             $snippetRange = new Range(
-                new Position($data['line_from']-1),
-                new Position($data['line_to']),
+                new Position($data['line_from'] - 1, 0),
+                new Position($data['line_to'], 0),
             );
 
             $indentation = '';
@@ -483,11 +468,9 @@ class TextDocument
         }
 
         if (empty($fixers)) {
-            return new Success(null);
+            return null;
         }
 
-        return new Success(
-            array_values($fixers),
-        );
+        return array_values($fixers);
     }
 }

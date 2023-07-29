@@ -2433,7 +2433,7 @@ class ConditionalTest extends TestCase
 
                                 if ($remaining) {
                                     /** @var array<string> */
-                                    return array_merge([rtrim($type)], preg_split(\'/[ \s]+/\', $remaining));
+                                    return array_merge([rtrim($type)], preg_split(\'/\s+/\', $remaining));
                                 }
 
                                 return [$type];
@@ -3050,6 +3050,23 @@ class ConditionalTest extends TestCase
                     ',
                 'assertions' => [
                     '$int' => 'int<97, 122>',
+                ],
+            ],
+            'short_circuited_conditional_test' => [
+                'code' => '<?php
+                    /** @var ?stdClass $existing */
+                    $existing = null;
+
+                    /** @var bool $foo */
+                    $foo = true;
+
+                    if ($foo) {
+                    } elseif ($existing === null) {
+                        throw new \RuntimeException();
+                    }
+                    ',
+                'assertions' => [
+                    '$existing' => 'null|stdClass',
                 ],
             ],
         ];

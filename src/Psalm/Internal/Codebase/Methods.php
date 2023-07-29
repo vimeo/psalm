@@ -8,6 +8,7 @@ use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\SourceAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\MethodIdentifier;
@@ -18,6 +19,8 @@ use Psalm\Internal\Provider\MethodParamsProvider;
 use Psalm\Internal\Provider\MethodReturnTypeProvider;
 use Psalm\Internal\Provider\MethodVisibilityProvider;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
+use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\TypeVisitor\TypeLocalizer;
 use Psalm\StatementsSource;
@@ -768,11 +771,26 @@ class Methods
                     $candidate_type,
                 );
 
-                if (((!$old_contained_by_new && !$new_contained_by_old)
-                    || ($old_contained_by_new && $new_contained_by_old))
-                    && !$candidate_type->hasTemplate()
-                    && !$overridden_storage_return_type->hasTemplate()
+                if ((!$old_contained_by_new && !$new_contained_by_old)
+                    || ($old_contained_by_new && $new_contained_by_old)
                 ) {
+                    $found_generic_params = ClassTemplateParamCollector::collect(
+                        $source_analyzer->getCodebase(),
+                        $appearing_fq_class_storage,
+                        $appearing_fq_class_storage,
+                        $appearing_method_name,
+                        null,
+                        true,
+                    );
+
+                    if ($found_generic_params) {
+                        $overridden_storage_return_type = TemplateInferredTypeReplacer::replace(
+                            $overridden_storage_return_type,
+                            new TemplateResult([], $found_generic_params),
+                            $source_analyzer->getCodebase(),
+                        );
+                    }
+
                     $attempted_intersection = null;
                     if ($old_contained_by_new) { //implicitly $new_contained_by_old as well
                         try {

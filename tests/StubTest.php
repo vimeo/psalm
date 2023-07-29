@@ -696,6 +696,48 @@ class StubTest extends TestCase
     /**
      * @runInSeparateProcess
      */
+    public function testStubbedConstantVarCommentType(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/constant_var_comment.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+
+        $file_path = getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /**
+                 * @param non-empty-string $arg
+                 * @return void
+                 */
+                function hello($arg) {
+                    echo $arg;
+                }
+
+                hello(FOO_BAR);',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    /**
+     * @runInSeparateProcess
+     */
     public function testClassAlias(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(

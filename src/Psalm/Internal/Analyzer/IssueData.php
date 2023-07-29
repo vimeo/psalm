@@ -11,6 +11,12 @@ use const STR_PAD_LEFT;
  */
 class IssueData
 {
+    public const SEVERITY_INFO = 'info';
+    public const SEVERITY_ERROR = 'error';
+
+    /**
+     * @var self::SEVERITY_*
+     */
     public string $severity;
 
     public int $line_from;
@@ -93,6 +99,7 @@ class IssueData
     public ?string $dupe_key = null;
 
     /**
+     * @param self::SEVERITY_* $severity
      * @param ?list<DataFlowNodeData|array{label: string, entry_path_type: string}> $taint_trace
      * @param ?list<DataFlowNodeData> $other_references
      */
