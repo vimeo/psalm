@@ -63,7 +63,6 @@ use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
@@ -563,10 +562,6 @@ class ArrayFetchAnalyzer
         $types = $array_type->getAtomicTypes();
         $changed = false;
         foreach ($types as $type_string => $type) {
-            if ($type instanceof TList) {
-                $type = $type->getKeyedArray();
-            }
-
             $original_type_real = $type;
             $original_type = $type;
 

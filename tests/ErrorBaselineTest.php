@@ -42,7 +42,6 @@ class ErrorBaselineTest extends TestCase
                   <code>foo</code>
                   <code>bar</code>
                 </MixedAssignment>
-                <InvalidReturnStatement occurrences="1"/>
               </file>
               <file src="sample\sample-file2.php">
                 <PossiblyUnusedMethod>
@@ -56,7 +55,6 @@ class ErrorBaselineTest extends TestCase
         $expectedParsedBaseline = [
             'sample/sample-file.php' => [
                 'MixedAssignment' => ['o' => 2, 's' => ['foo', 'bar']],
-                'InvalidReturnStatement' => ['o' => 1, 's' => []],
             ],
             'sample/sample-file2.php' => [
                 'PossiblyUnusedMethod' => ['o' => 2, 's' => ['foo', 'bar']],
@@ -392,11 +390,18 @@ bar&#13;
                     <code>bar</code>
                     <code>bat</code>
                 </MixedAssignment>
-                <MixedOperand occurrences="1"/>
+                <MixedOperand>
+                    <code>Test</code>
+                </MixedOperand>
               </file>
               <file src="sample/sample-file2.php">
-                <MixedAssignment occurrences="2"/>
-                <TypeCoercion occurrences="1"/>
+                <MixedAssignment>
+                    <code>bar</code>
+                    <code>baz</code>
+                </MixedAssignment>
+                <TypeCoercion>
+                    <code>bar</code>
+                </TypeCoercion>
               </file>
               <file src="sample/sample-file3.php">
                 <MixedAssignment occurrences="1"/>
@@ -530,7 +535,6 @@ bar&#13;
                   <code>foo</code>
                   <code>bar</code>
                 </MixedAssignment>
-                <InvalidReturnStatement occurrences="1"/>
               </file>
               <!-- And another one ! //-->
               <file src="sample\sample-file2.php">
@@ -545,7 +549,6 @@ bar&#13;
         $expectedParsedBaseline = [
             'sample/sample-file.php' => [
                 'MixedAssignment' => ['o' => 2, 's' => ['foo', 'bar']],
-                'InvalidReturnStatement' => ['o' => 1, 's' => []],
             ],
             'sample/sample-file2.php' => [
                 'PossiblyUnusedMethod' => ['o' => 2, 's' => ['foo', 'bar']],

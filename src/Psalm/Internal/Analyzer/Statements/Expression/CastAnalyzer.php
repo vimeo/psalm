@@ -31,7 +31,6 @@ use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
@@ -202,9 +201,6 @@ class CastAnalyzer
                 $all_permissible = true;
 
                 foreach ($stmt_expr_type->getAtomicTypes() as $type) {
-                    if ($type instanceof TList) {
-                        $type = $type->getKeyedArray();
-                    }
                     if ($type instanceof Scalar) {
                         $objWithProps = new TObjectWithProperties(['scalar' => new Union([$type])]);
                         $permissible_atomic_types[] = $objWithProps;
@@ -249,9 +245,6 @@ class CastAnalyzer
                 $all_permissible = true;
 
                 foreach ($stmt_expr_type->getAtomicTypes() as $type) {
-                    if ($type instanceof TList) {
-                        $type = $type->getKeyedArray();
-                    }
                     if ($type instanceof Scalar) {
                         $keyed_array = new TKeyedArray([new Union([$type])], null, null, true);
                         $permissible_atomic_types[] = $keyed_array;
@@ -338,10 +331,6 @@ class CastAnalyzer
 
         while ($atomic_types) {
             $atomic_type = array_pop($atomic_types);
-
-            if ($atomic_type instanceof TList) {
-                $atomic_type = $atomic_type->getKeyedArray();
-            }
 
             if ($atomic_type instanceof TInt) {
                 $valid_ints[] = $atomic_type;
@@ -528,10 +517,6 @@ class CastAnalyzer
 
         while ($atomic_types) {
             $atomic_type = array_pop($atomic_types);
-
-            if ($atomic_type instanceof TList) {
-                $atomic_type = $atomic_type->getKeyedArray();
-            }
 
             if ($atomic_type instanceof TFloat) {
                 $valid_floats[] = $atomic_type;

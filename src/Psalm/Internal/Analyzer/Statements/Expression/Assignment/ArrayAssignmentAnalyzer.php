@@ -24,10 +24,8 @@ use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TClassStringMap;
-use Psalm\Type\Atomic\TDependentListKey;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
@@ -299,9 +297,6 @@ class ArrayAssignmentAnalyzer
         $changed = false;
         $types = [];
         foreach ($child_stmt_type->getAtomicTypes() as $type) {
-            if ($type instanceof TList) {
-                $type = $type->getKeyedArray();
-            }
             $old_type = $type;
             if ($type instanceof TTemplateParam) {
                 $type = $type->replaceAs(self::updateTypeWithKeyValues(
@@ -481,8 +476,6 @@ class ArrayAssignmentAnalyzer
 
                     if (($key_type_type instanceof TIntRange
                         && $key_type_type->dependent_list_key === $parent_var_id
-                    ) || ($key_type_type instanceof TDependentListKey
-                        && $key_type_type->var_id === $parent_var_id
                     )) {
                         $offset_already_existed = true;
                     }
@@ -586,9 +579,7 @@ class ArrayAssignmentAnalyzer
 
             if (isset($atomic_root_types['array'])) {
                 $atomic_root_type_array = $atomic_root_types['array'];
-                if ($atomic_root_type_array instanceof TList) {
-                    $atomic_root_type_array = $atomic_root_type_array->getKeyedArray();
-                }
+
 
                 if ($array_atomic_type_class_string) {
                     $array_atomic_type = new TNonEmptyArray([
@@ -710,9 +701,7 @@ class ArrayAssignmentAnalyzer
 
             if (isset($atomic_root_types['array'])) {
                 $atomic_root_type_array = $atomic_root_types['array'];
-                if ($atomic_root_type_array instanceof TList) {
-                    $atomic_root_type_array = $atomic_root_type_array->getKeyedArray();
-                }
+
 
                 if ($atomic_root_type_array instanceof TNonEmptyArray
                     && $atomic_root_type_array->count !== null

@@ -15,7 +15,6 @@ use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 
@@ -267,10 +266,6 @@ class ReturnTypeCollector
         $yield_type = Type::combineUnionTypeArray($yield_types, null);
 
         foreach ($yield_type->getAtomicTypes() as $type) {
-            if ($type instanceof TList) {
-                $type = $type->getKeyedArray();
-            }
-
             if ($type instanceof TKeyedArray) {
                 $type = $type->getGenericArrayType();
             }

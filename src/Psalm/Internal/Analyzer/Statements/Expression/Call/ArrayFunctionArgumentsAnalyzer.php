@@ -38,7 +38,6 @@ use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Union;
 use UnexpectedValueException;
@@ -637,10 +636,6 @@ class ArrayFunctionArgumentsAnalyzer
                 $array_atomic_types = [];
 
                 foreach ($context->vars_in_scope[$var_id]->getAtomicTypes() as $array_atomic_type) {
-                    if ($array_atomic_type instanceof TList) {
-                        $array_atomic_type = $array_atomic_type->getKeyedArray();
-                    }
-
                     if ($array_atomic_type instanceof TKeyedArray) {
                         if ($is_array_shift && $array_atomic_type->is_list
                             && !$context->inside_loop

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Psalm\Type\Atomic;
 
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Union;
 
 use function array_merge;
@@ -59,7 +58,6 @@ final class TKeyOf extends TArrayKey
             if (!$type instanceof TArray
                 && !$type instanceof TClassConstant
                 && !$type instanceof TKeyedArray
-                && !$type instanceof TList
                 && !$type instanceof TPropertiesOf
             ) {
                 return false;
@@ -75,10 +73,6 @@ final class TKeyOf extends TArrayKey
         $key_types = [];
 
         foreach ($type->getAtomicTypes() as $atomic_type) {
-            if ($atomic_type instanceof TList) {
-                $atomic_type = $atomic_type->getKeyedArray();
-            }
-
             if ($atomic_type instanceof TArray) {
                 $array_key_atomics = $atomic_type->type_params[0];
             } elseif ($atomic_type instanceof TKeyedArray) {

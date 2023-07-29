@@ -71,7 +71,6 @@ use function preg_replace;
 use function realpath;
 use function setlocale;
 use function str_repeat;
-use function str_replace;
 use function strlen;
 use function strpos;
 use function substr;
@@ -925,7 +924,7 @@ final class Psalm
 
         if (!function_exists('opcache_get_status')) {
             $progress->write(PHP_EOL
-                . 'Install the opcache extension to make use of JIT on PHP 8.0+ for a 20%+ performance boost!'
+                . 'Install the opcache extension to make use of JIT for a 20%+ performance boost!'
                 . PHP_EOL . PHP_EOL);
         }
     }
@@ -1173,16 +1172,6 @@ final class Psalm
 
     private static function configureShepherd(Config $config, array $options, array &$plugins): void
     {
-        if (is_string(getenv('PSALM_SHEPHERD_HOST'))) { // remove this block in Psalm 6
-            fwrite(
-                STDERR,
-                'Warning: PSALM_SHEPHERD_HOST env variable will be removed in Psalm 6.'
-                .' Please use "--shepherd" cli option or PSALM_SHEPHERD env variable'
-                .' to specify a custom Shepherd host/endpoint.'
-                . PHP_EOL,
-            );
-        }
-
         $is_shepherd_enabled = isset($options['shepherd']) || getenv('PSALM_SHEPHERD');
         if (! $is_shepherd_enabled) {
             return;
@@ -1197,24 +1186,9 @@ final class Psalm
                 $custom_shepherd_endpoint = 'https://' . $custom_shepherd_endpoint;
             }
 
-            /** @psalm-suppress DeprecatedProperty */
-            $config->shepherd_host = str_replace('/hooks/psalm', '', $custom_shepherd_endpoint);
             $config->shepherd_endpoint = $custom_shepherd_endpoint;
 
             return;
-        }
-
-        // Legacy part, will be removed in Psalm 6
-        $custom_shepherd_host = getenv('PSALM_SHEPHERD_HOST');
-
-        if (is_string($custom_shepherd_host)) {
-            if (parse_url($custom_shepherd_host, PHP_URL_SCHEME) === null) {
-                $custom_shepherd_host = 'https://' . $custom_shepherd_host;
-            }
-
-            /** @psalm-suppress DeprecatedProperty */
-            $config->shepherd_host = $custom_shepherd_host;
-            $config->shepherd_endpoint = $custom_shepherd_host . '/hooks/psalm';
         }
     }
 

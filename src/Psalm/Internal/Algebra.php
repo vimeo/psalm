@@ -8,7 +8,6 @@ use Psalm\Exception\ComplicatedExpressionException;
 use Psalm\Storage\Assertion;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use UnexpectedValueException;
 
 use function array_filter;
@@ -408,8 +407,7 @@ class Algebra
                         continue;
                     }
 
-                    if ($assertion->type instanceof TList
-                        || $assertion->type instanceof TArray
+                    if ($assertion->type instanceof TArray
                         || $assertion->type instanceof TKeyedArray) {
                         $has_list_or_array = true;
                         // list/array are collapsed, therefore there can only be 1 and we can abort
@@ -436,8 +434,7 @@ class Algebra
                         continue;
                     }
 
-                    if ($assertion->type instanceof TList
-                        || $assertion->type instanceof TArray
+                    if ($assertion->type instanceof TArray
                         || $assertion->type instanceof TKeyedArray) {
                         unset($truths[$var][$key][$index]);
                     }

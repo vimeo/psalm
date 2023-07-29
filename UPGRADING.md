@@ -11,6 +11,22 @@
 
 - [BC] The `TDependentListKey` type was removed and replaced with an optional property of the `TIntRange` type.
 
+- [BC] Property `Config::$shepherd_host` was replaced with `Config::$shepherd_endpoint`
+
+- [BC] Methods `Codebase::getSymbolLocation()` and `Codebase::getSymbolInformation()` were replaced with `Codebase::getSymbolLocationByReference()`
+
+- [BC] Method `Psalm\Type\Atomic\TKeyedArray::getList()` was removed
+
+- [BC] Method `Psalm\Storage\FunctionLikeStorage::getSignature()` was replaced with `FunctionLikeStorage::getCompletionSignature()`
+
+- [BC] Property `Psalm\Storage\FunctionLikeStorage::$unused_docblock_params` was replaced with `FunctionLikeStorage::$unused_docblock_parameters`
+
+- [BC] Method `Plugin\Shepherd::getCurlErrorMessage()` was removed
+
+- [BC] Property `Config::$find_unused_code` changed default value from false to true
+
+- [BC] Property `Config::$find_unused_baseline_entry` changed default value from false to true
+
 - [BC] The return type of `Psalm\Internal\LanguageServer\ProtocolWriter#write() changed from `Amp\Promise` to `void` due to the switch to Amp v3
 
 - [BC] All parameters and return typehints are now strictly typed.
