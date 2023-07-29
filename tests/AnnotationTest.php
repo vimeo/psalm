@@ -25,17 +25,28 @@ class AnnotationTest extends TestCase
     public function testLessSpecificImplementedReturnTypeWithDocblockOnMultipleLines(): void
     {
         $this->expectException(CodeException::class);
-        $this->expectExceptionMessage('LessSpecificImplementedReturnType - somefile.php:5:');
+        $this->expectExceptionMessage('LessSpecificImplementedReturnType - somefile.php:16:');
 
         $this->addFile(
             'somefile.php',
             '<?php
 
+                class ParentClass
+                {
+                    /**
+                     * @return $this
+                     */
+                    public function execute()
+                    {
+                        return $this;
+                    }
+                }
+
                 /**
                  * @method int test()
-                 * @method \DateTime modify($modify)
+                 * @method self execute()
                  */
-                class WTF extends \DateTime { }',
+                class BreakingThings extends ParentClass { }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -50,23 +61,23 @@ class AnnotationTest extends TestCase
             'somefile.php',
             '<?php
 
-            class ParentClass
-            {
-                /**
-                 * @return $this
-                 */
-                public function execute()
+                class ParentClass
                 {
-                    return $this;
+                    /**
+                     * @return $this
+                     */
+                    public function execute()
+                    {
+                        return $this;
+                    }
                 }
-            }
 
-            /**
-             * @method self execute()
-             */
-            class BreakingThings extends ParentClass
-            {
-            }',
+                /**
+                 * @method self execute()
+                 */
+                class BreakingThings extends ParentClass
+                {
+                }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -75,19 +86,31 @@ class AnnotationTest extends TestCase
     public function testLessSpecificImplementedReturnTypeWithDescription(): void
     {
         $this->expectException(CodeException::class);
-        $this->expectExceptionMessage('LessSpecificImplementedReturnType - somefile.php:7:');
+        $this->expectExceptionMessage('LessSpecificImplementedReturnType - somefile.php:19:');
 
         $this->addFile(
             'somefile.php',
             '<?php
+
+                class ParentClass
+                {
+                    /**
+                     * @return $this
+                     */
+                    public function execute()
+                    {
+                        return $this;
+                    }
+                }
+
                 /**
                  * test test test
                  * test rambling text
                  * test test text
                  *
-                 * @method \DateTime modify($modify)
+                 * @method self execute()
                  */
-                class WTF extends \DateTime { }',
+                class BreakingThings extends ParentClass { }',
         );
 
         $this->analyzeFile('somefile.php', new Context());

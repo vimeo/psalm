@@ -426,7 +426,6 @@ class Reflection
         if ($reflection_type instanceof ReflectionNamedType) {
             $type = $reflection_type->getName();
         } elseif ($reflection_type instanceof ReflectionUnionType) {
-            /** @psalm-suppress MixedArgument */
             $type = implode(
                 '|',
                 array_map(

@@ -201,35 +201,6 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
                         }
                     }
 
-                    if ($result === false && count($dummy) === $provided_placeholders_count) {
-                        // could be invalid format or too few arguments
-                        // we cannot distinguish this in PHP 7 without additional checks
-                        $max_dummy = array_fill(0, 100, '');
-                        $result = @sprintf($type->getSingleStringLiteral()->value, ...$max_dummy);
-                        if ($result === false) {
-                            // the format is invalid
-                            IssueBuffer::maybeAdd(
-                                new InvalidArgument(
-                                    'Argument 1 of ' . $event->getFunctionId() . ' is invalid',
-                                    $event->getCodeLocation(),
-                                    $event->getFunctionId(),
-                                ),
-                                $statements_source->getSuppressedIssues(),
-                            );
-                        } else {
-                            IssueBuffer::maybeAdd(
-                                new TooFewArguments(
-                                    'Too few arguments for ' . $event->getFunctionId(),
-                                    $event->getCodeLocation(),
-                                    $event->getFunctionId(),
-                                ),
-                                $statements_source->getSuppressedIssues(),
-                            );
-                        }
-
-                        return Type::getFalse();
-                    }
-
                     // we can only validate the format and arg 1 when using splat
                     if ($has_splat_args === true) {
                         break;
@@ -264,13 +235,13 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
                     return null;
                 }
 
-                if ($initial_result !== null && $initial_result !== false && $initial_result !== '') {
+                if ($initial_result !== null && $initial_result !== '') {
                     return Type::getNonEmptyString();
                 }
 
                 // if we didn't have any valid result
                 // the pattern is invalid or not yet supported by the return type provider
-                if ($initial_result === null || $initial_result === false) {
+                if ($initial_result === null) {
                     return null;
                 }
 

@@ -282,6 +282,19 @@
       <code><![CDATA[$stmt->props[0]]]></code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
+  <file src="src/Psalm/Internal/LanguageServer/LanguageClient.php">
+    <InvalidArrayAccess>
+      <code>$config</code>
+    </InvalidArrayAccess>
+    <InvalidArrayOffset>
+      <code>[$config]</code>
+    </InvalidArrayOffset>
+  </file>
+  <file src="src/Psalm/Internal/LanguageServer/LanguageServer.php">
+    <MixedAssignment>
+      <code>$result</code>
+    </MixedAssignment>
+  </file>
   <file src="src/Psalm/Internal/MethodIdentifier.php">
     <PossiblyUndefinedIntArrayOffset>
       <code>$method_id_parts[1]</code>

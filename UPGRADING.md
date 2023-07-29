@@ -1,6 +1,8 @@
 # Upgrading from Psalm 5 to Psalm 6
 ## Changed
 
+- The minimum PHP version was raised to PHP 8.1.17.
+
 - [BC] Switched the internal representation of `list<T>` and `non-empty-list<T>` from the TList and TNonEmptyList classes to an unsealed list shape: the TList, TNonEmptyList and TCallableList classes were removed.
   Nothing will change for users: the `list<T>` and `non-empty-list<T>` syntax will remain supported and its semantics unchanged.
   Psalm 5 already deprecates the `TList`, `TNonEmptyList` and `TCallableList` classes: use `\Psalm\Type::getListAtomic`, `\Psalm\Type::getNonEmptyListAtomic` and `\Psalm\Type::getCallableListAtomic` to instantiate list atomics, or directly instantiate TKeyedArray objects with `is_list=true` where appropriate.
@@ -24,6 +26,8 @@
 - [BC] Property `Config::$find_unused_code` changed default value from false to true
 
 - [BC] Property `Config::$find_unused_baseline_entry` changed default value from false to true
+
+- [BC] The return type of `Psalm\Internal\LanguageServer\ProtocolWriter#write() changed from `Amp\Promise` to `void` due to the switch to Amp v3
 
 # Upgrading from Psalm 4 to Psalm 5
 ## Changed

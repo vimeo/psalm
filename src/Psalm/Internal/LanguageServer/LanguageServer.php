@@ -11,10 +11,6 @@ use AdvancedJsonRpc\ErrorResponse;
 use AdvancedJsonRpc\Request;
 use AdvancedJsonRpc\Response;
 use AdvancedJsonRpc\SuccessResponse;
-use Amp\Loop;
-use Amp\Promise;
-use Amp\Success;
-use Generator;
 use InvalidArgumentException;
 use JsonMapper;
 use LanguageServerProtocol\ClientCapabilities;
@@ -56,10 +52,9 @@ use Psalm\Internal\Provider\ParserCacheProvider;
 use Psalm\Internal\Provider\ProjectCacheProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\IssueBuffer;
+use Revolt\EventLoop;
 use Throwable;
 
-use function Amp\asyncCoroutine;
-use function Amp\call;
 use function array_combine;
 use function array_filter;
 use function array_keys;
@@ -88,6 +83,7 @@ use function stream_socket_server;
 use function strpos;
 use function substr;
 use function trim;
+use function uniqid;
 use function urldecode;
 
 use const JSON_PRETTY_PRINT;
@@ -142,13 +138,16 @@ class LanguageServer extends Dispatcher
      */
     protected JsonMapper $mapper;
 
+    protected PathMapper $path_mapper;
+
     public function __construct(
         ProtocolReader $reader,
         ProtocolWriter $writer,
         ProjectAnalyzer $project_analyzer,
         Codebase $codebase,
         ClientConfiguration $clientConfiguration,
-        Progress $progress
+        Progress $progress,
+        PathMapper $path_mapper
     ) {
         parent::__construct($this, '/');
 
@@ -157,6 +156,8 @@ class LanguageServer extends Dispatcher
         $this->project_analyzer = $project_analyzer;
 
         $this->codebase = $codebase;
+
+        $this->path_mapper = $path_mapper;
 
         $this->protocolWriter = $writer;
 
@@ -170,64 +171,51 @@ class LanguageServer extends Dispatcher
         );
         $this->protocolReader->on(
             'message',
-            asyncCoroutine(
+            function (Message $msg): void {
+                if (!$msg->body) {
+                    return;
+                }
+
+                // Ignore responses, this is the handler for requests and notifications
+                if (Response::isResponse($msg->body)) {
+                    return;
+                }
+
+                $result = null;
+                $error = null;
+                try {
+                    // Invoke the method handler to get a result
+                    $result = $this->dispatch($msg->body);
+                } catch (Error $e) {
+                    // If a ResponseError is thrown, send it back in the Response
+                    $error = $e;
+                } catch (Throwable $e) {
+                    // If an unexpected error occurred, send back an INTERNAL_ERROR error response
+                    $error = new Error(
+                        (string) $e,
+                        ErrorCode::INTERNAL_ERROR,
+                        null,
+                        $e,
+                    );
+                }
+                if ($error !== null) {
+                    $this->logError($error->message);
+                }
+                // Only send a Response for a Request
+                // Notifications do not send Responses
                 /**
-                 * @return Generator<int, Promise, mixed, void>
+                 * @psalm-suppress UndefinedPropertyFetch
+                 * @psalm-suppress MixedArgument
                  */
-                function (Message $msg): Generator {
-                    if (!$msg->body) {
-                        return;
-                    }
-
-                    // Ignore responses, this is the handler for requests and notifications
-                    if (Response::isResponse($msg->body)) {
-                        return;
-                    }
-
-                    $result = null;
-                    $error = null;
-                    try {
-                        // Invoke the method handler to get a result
-                        /**
-                         * @var Promise|null
-                         */
-                        $dispatched = $this->dispatch($msg->body);
-                        if ($dispatched !== null) {
-                            $result = yield $dispatched;
-                        } else {
-                            $result = null;
-                        }
-                    } catch (Error $e) {
-                        // If a ResponseError is thrown, send it back in the Response
-                        $error = $e;
-                    } catch (Throwable $e) {
-                        // If an unexpected error occurred, send back an INTERNAL_ERROR error response
-                        $error = new Error(
-                            (string) $e,
-                            ErrorCode::INTERNAL_ERROR,
-                            null,
-                            $e,
-                        );
-                    }
+                if (Request::isRequest($msg->body)) {
                     if ($error !== null) {
-                        $this->logError($error->message);
+                        $responseBody = new ErrorResponse($msg->body->id, $error);
+                    } else {
+                        $responseBody = new SuccessResponse($msg->body->id, $result);
                     }
-                    // Only send a Response for a Request
-                    // Notifications do not send Responses
-                    /**
-                     * @psalm-suppress UndefinedPropertyFetch
-                     * @psalm-suppress MixedArgument
-                     */
-                    if (Request::isRequest($msg->body)) {
-                        if ($error !== null) {
-                            $responseBody = new ErrorResponse($msg->body->id, $error);
-                        } else {
-                            $responseBody = new SuccessResponse($msg->body->id, $result);
-                        }
-                        yield $this->protocolWriter->write(new Message($responseBody));
-                    }
-                },
-            ),
+                    $this->protocolWriter->write(new Message($responseBody));
+                }
+            },
         );
 
         $this->protocolReader->on(
@@ -240,6 +228,7 @@ class LanguageServer extends Dispatcher
 
         $this->client = new LanguageClient($reader, $writer, $this, $clientConfiguration);
 
+
         $this->logInfo("Psalm Language Server ".PSALM_VERSION." has started.");
     }
 
@@ -250,6 +239,7 @@ class LanguageServer extends Dispatcher
         Config $config,
         ClientConfiguration $clientConfiguration,
         string $base_dir,
+        PathMapper $path_mapper,
         bool $inMemory = false
     ): void {
         $progress = new Progress();
@@ -322,8 +312,9 @@ class LanguageServer extends Dispatcher
                 $codebase,
                 $clientConfiguration,
                 $progress,
+                $path_mapper,
             );
-            Loop::run();
+            EventLoop::run();
         } elseif ($clientConfiguration->TCPServerMode && $clientConfiguration->TCPServerAddress) {
             // Run a TCP Server
             $tcpServer = stream_socket_server('tcp://' . $clientConfiguration->TCPServerAddress, $errno, $errstr);
@@ -345,8 +336,9 @@ class LanguageServer extends Dispatcher
                     $codebase,
                     $clientConfiguration,
                     $progress,
+                    $path_mapper,
                 );
-                Loop::run();
+                EventLoop::run();
             }
         } else {
             // Use STDIO
@@ -358,8 +350,9 @@ class LanguageServer extends Dispatcher
                 $codebase,
                 $clientConfiguration,
                 $progress,
+                $path_mapper,
             );
-            Loop::run();
+            EventLoop::run();
         }
     }
 
@@ -367,207 +360,193 @@ class LanguageServer extends Dispatcher
      * The initialize request is sent as the first request from the client to the server.
      *
      * @param ClientCapabilities $capabilities The capabilities provided by the client (editor)
-     * @param int|null $processId The process Id of the parent process that started the server.
      * Is null if the process has not been started by another process. If the parent process is
      * not alive then the server should exit (see exit notification) its process.
      * @param ClientInfo|null $clientInfo Information about the client
-     * @param string|null $locale  The locale the client is currently showing the user interface
-     * in. This must not necessarily be the locale of the operating
-     * system.
-     * @param string|null $rootPath The rootPath of the workspace. Is null if no folder is open.
-     * @param mixed $initializationOptions
      * @param string|null $trace The initial trace setting. If omitted trace is disabled ('off').
-     * @psalm-return Promise<InitializeResult>
-     * @psalm-suppress PossiblyUnusedParam
+     * @param string|null $workDoneToken The token to be used to report progress during init.
+     * @psalm-return InitializeResult
      */
     public function initialize(
         ClientCapabilities $capabilities,
-        ?int $processId = null,
         ?ClientInfo $clientInfo = null,
-        ?string $locale = null,
-        ?string $rootPath = null,
         ?string $rootUri = null,
-        $initializationOptions = null,
-        ?string $trace = null
-        //?array $workspaceFolders = null //error in json-dispatcher
-    ): Promise {
+        ?string $trace = null,
+        ?string $workDoneToken = null
+    ): InitializeResult {
         $this->clientInfo = $clientInfo;
         $this->clientCapabilities = $capabilities;
         $this->trace = $trace;
-        return call(
-            /** @return Generator<int, true, mixed, InitializeResult> */
-            function () {
-                $this->logInfo("Initializing...");
-                $this->clientStatus('initializing');
 
-                // Eventually, this might block on something. Leave it as a generator.
-                /** @psalm-suppress TypeDoesNotContainType */
-                if (false) {
-                    yield true;
-                }
+        if ($rootUri !== null) {
+            $this->path_mapper->configureClientRoot($this->getPathPart($rootUri));
+        }
 
-                $this->project_analyzer->serverMode($this);
+        $progress = $this->client->makeProgress($workDoneToken ?? uniqid('tkn', true));
 
-                $this->logInfo("Initializing: Getting code base...");
-                $this->clientStatus('initializing', 'getting code base');
+        $this->logInfo("Initializing...");
+        $progress->begin('Psalm', 'initializing');
 
-                $this->logInfo("Initializing: Scanning files ({$this->project_analyzer->threads} Threads)...");
-                $this->clientStatus('initializing', 'scanning files');
-                $this->codebase->scanFiles($this->project_analyzer->threads);
+        $this->project_analyzer->serverMode($this);
 
-                $this->logInfo("Initializing: Registering stub files...");
-                $this->clientStatus('initializing', 'registering stub files');
-                $this->codebase->config->visitStubFiles($this->codebase, $this->project_analyzer->progress);
+        $this->logInfo("Initializing: Getting code base...");
+        $progress->update('getting code base');
 
-                if ($this->textDocument === null) {
-                    $this->textDocument = new ServerTextDocument(
-                        $this,
-                        $this->codebase,
-                        $this->project_analyzer,
-                    );
-                }
+        $this->logInfo("Initializing: Scanning files ({$this->project_analyzer->threads} Threads)...");
+        $progress->update('scanning files');
+        $this->codebase->scanFiles($this->project_analyzer->threads);
 
-                if ($this->workspace === null) {
-                    $this->workspace = new ServerWorkspace(
-                        $this,
-                        $this->codebase,
-                        $this->project_analyzer,
-                    );
-                }
+        $this->logInfo("Initializing: Registering stub files...");
+        $progress->update('registering stub files');
+        $this->codebase->config->visitStubFiles($this->codebase, $this->project_analyzer->progress);
 
-                $serverCapabilities = new ServerCapabilities();
+        if ($this->textDocument === null) {
+            $this->textDocument = new ServerTextDocument(
+                $this,
+                $this->codebase,
+                $this->project_analyzer,
+            );
+        }
 
-                //The server provides execute command support.
-                $serverCapabilities->executeCommandProvider = new ExecuteCommandOptions(['test']);
+        if ($this->workspace === null) {
+            $this->workspace = new ServerWorkspace(
+                $this,
+                $this->codebase,
+                $this->project_analyzer,
+            );
+        }
 
-                $textDocumentSyncOptions = new TextDocumentSyncOptions();
+        $serverCapabilities = new ServerCapabilities();
 
-                //Open and close notifications are sent to the server.
-                $textDocumentSyncOptions->openClose = true;
+        //The server provides execute command support.
+        $serverCapabilities->executeCommandProvider = new ExecuteCommandOptions(['test']);
 
-                $saveOptions = new SaveOptions();
-                //The client is supposed to include the content on save.
-                $saveOptions->includeText = true;
-                $textDocumentSyncOptions->save = $saveOptions;
+        $textDocumentSyncOptions = new TextDocumentSyncOptions();
 
-                /**
-                 * Change notifications are sent to the server. See
-                 * TextDocumentSyncKind.None, TextDocumentSyncKind.Full and
-                 * TextDocumentSyncKind.Incremental. If omitted it defaults to
-                 * TextDocumentSyncKind.None.
-                 */
-                if ($this->project_analyzer->onchange_line_limit === 0) {
-                    /**
-                     * Documents should not be synced at all.
-                     */
-                    $textDocumentSyncOptions->change = TextDocumentSyncKind::NONE;
-                } else {
-                    /**
-                     * Documents are synced by always sending the full content
-                     * of the document.
-                     */
-                    $textDocumentSyncOptions->change = TextDocumentSyncKind::FULL;
-                }
+        //Open and close notifications are sent to the server.
+        $textDocumentSyncOptions->openClose = true;
 
-                /**
-                 * Defines how text documents are synced. Is either a detailed structure
-                 * defining each notification or for backwards compatibility the
-                 * TextDocumentSyncKind number. If omitted it defaults to
-                 * `TextDocumentSyncKind.None`.
-                 */
-                $serverCapabilities->textDocumentSync = $textDocumentSyncOptions;
+        $saveOptions = new SaveOptions();
+        //The client is supposed to include the content on save.
+        $saveOptions->includeText = true;
+        $textDocumentSyncOptions->save = $saveOptions;
 
-                /**
-                 * The server provides document symbol support.
-                 * Support "Find all symbols"
-                 */
-                $serverCapabilities->documentSymbolProvider = false;
-                /**
-                 * The server provides workspace symbol support.
-                 * Support "Find all symbols in workspace"
-                 */
-                $serverCapabilities->workspaceSymbolProvider = false;
-                /**
-                 * The server provides goto definition support.
-                 * Support "Go to definition"
-                 */
-                $serverCapabilities->definitionProvider = true;
-                /**
-                 * The server provides find references support.
-                 * Support "Find all references"
-                 */
-                $serverCapabilities->referencesProvider = false;
-                /**
-                 * The server provides hover support.
-                 * Support "Hover"
-                 */
-                $serverCapabilities->hoverProvider = true;
+        /**
+         * Change notifications are sent to the server. See
+         * TextDocumentSyncKind.None, TextDocumentSyncKind.Full and
+         * TextDocumentSyncKind.Incremental. If omitted it defaults to
+         * TextDocumentSyncKind.None.
+         */
+        if ($this->project_analyzer->onchange_line_limit === 0) {
+            /**
+             * Documents should not be synced at all.
+             */
+            $textDocumentSyncOptions->change = TextDocumentSyncKind::NONE;
+        } else {
+            /**
+             * Documents are synced by always sending the full content
+             * of the document.
+             */
+            $textDocumentSyncOptions->change = TextDocumentSyncKind::FULL;
+        }
 
-                /**
-                 * The server provides completion support.
-                 * Support "Completion"
-                 */
-                if ($this->project_analyzer->provide_completion) {
-                    $serverCapabilities->completionProvider = new CompletionOptions();
-                    /**
-                     * The server provides support to resolve additional
-                     * information for a completion item.
-                     */
-                    $serverCapabilities->completionProvider->resolveProvider = false;
-                    /**
-                     * Most tools trigger completion request automatically without explicitly
-                     * requesting it using a keyboard shortcut (e.g. Ctrl+Space). Typically they
-                     * do so when the user starts to type an identifier. For example if the user
-                     * types `c` in a JavaScript file code complete will automatically pop up
-                     * present `console` besides others as a completion item. Characters that
-                     * make up identifiers don't need to be listed here.
-                     *
-                     * If code complete should automatically be trigger on characters not being
-                     * valid inside an identifier (for example `.` in JavaScript) list them in
-                     * `triggerCharacters`.
-                     */
-                    $serverCapabilities->completionProvider->triggerCharacters = ['$', '>', ':',"[", "(", ",", " "];
-                }
+        /**
+         * Defines how text documents are synced. Is either a detailed structure
+         * defining each notification or for backwards compatibility the
+         * TextDocumentSyncKind number. If omitted it defaults to
+         * `TextDocumentSyncKind.None`.
+         */
+        $serverCapabilities->textDocumentSync = $textDocumentSyncOptions;
 
-                /**
-                 * Whether code action supports the `data` property which is
-                 * preserved between a `textDocument/codeAction` and a
-                 * `codeAction/resolve` request.
-                 *
-                 * Support "Code Actions" if we support data
-                 *
-                 * @since LSP 3.16.0
-                 */
-                if ($this->clientCapabilities->textDocument->publishDiagnostics->dataSupport ?? false) {
-                    $serverCapabilities->codeActionProvider = true;
-                }
+        /**
+         * The server provides document symbol support.
+         * Support "Find all symbols"
+         */
+        $serverCapabilities->documentSymbolProvider = false;
+        /**
+         * The server provides workspace symbol support.
+         * Support "Find all symbols in workspace"
+         */
+        $serverCapabilities->workspaceSymbolProvider = false;
+        /**
+         * The server provides goto definition support.
+         * Support "Go to definition"
+         */
+        $serverCapabilities->definitionProvider = true;
+        /**
+         * The server provides find references support.
+         * Support "Find all references"
+         */
+        $serverCapabilities->referencesProvider = false;
+        /**
+         * The server provides hover support.
+         * Support "Hover"
+         */
+        $serverCapabilities->hoverProvider = true;
 
-                /**
-                 * The server provides signature help support.
-                 */
-                $serverCapabilities->signatureHelpProvider = new SignatureHelpOptions(['(', ',']);
+        /**
+         * The server provides completion support.
+         * Support "Completion"
+         */
+        if ($this->project_analyzer->provide_completion) {
+            $serverCapabilities->completionProvider = new CompletionOptions();
+            /**
+             * The server provides support to resolve additional
+             * information for a completion item.
+             */
+            $serverCapabilities->completionProvider->resolveProvider = false;
+            /**
+             * Most tools trigger completion request automatically without explicitly
+             * requesting it using a keyboard shortcut (e.g. Ctrl+Space). Typically they
+             * do so when the user starts to type an identifier. For example if the user
+             * types `c` in a JavaScript file code complete will automatically pop up
+             * present `console` besides others as a completion item. Characters that
+             * make up identifiers don't need to be listed here.
+             *
+             * If code complete should automatically be trigger on characters not being
+             * valid inside an identifier (for example `.` in JavaScript) list them in
+             * `triggerCharacters`.
+             */
+            $serverCapabilities->completionProvider->triggerCharacters = ['$', '>', ':',"[", "(", ",", " "];
+        }
 
-                if ($this->client->clientConfiguration->baseline !== null) {
-                    $this->logInfo('Utilizing Baseline: '.$this->client->clientConfiguration->baseline);
-                    $this->issue_baseline= ErrorBaseline::read(
-                        new FileProvider,
-                        $this->client->clientConfiguration->baseline,
-                    );
-                }
+        /**
+         * Whether code action supports the `data` property which is
+         * preserved between a `textDocument/codeAction` and a
+         * `codeAction/resolve` request.
+         *
+         * Support "Code Actions" if we support data
+         *
+         * @since LSP 3.16.0
+         */
+        if ($this->clientCapabilities->textDocument->publishDiagnostics->dataSupport ?? false) {
+            $serverCapabilities->codeActionProvider = true;
+        }
 
-                $this->logInfo("Initializing: Complete.");
-                $this->clientStatus('initialized');
+        /**
+         * The server provides signature help support.
+         */
+        $serverCapabilities->signatureHelpProvider = new SignatureHelpOptions(['(', ',']);
 
-                /**
-                 * Information about the server.
-                 *
-                 * @since LSP 3.15.0
-                 */
-                $initializeResultServerInfo = new InitializeResultServerInfo('Psalm Language Server', PSALM_VERSION);
+        if ($this->client->clientConfiguration->baseline !== null) {
+            $this->logInfo('Utilizing Baseline: '.$this->client->clientConfiguration->baseline);
+            $this->issue_baseline= ErrorBaseline::read(
+                new FileProvider,
+                $this->client->clientConfiguration->baseline,
+            );
+        }
 
-                return new InitializeResult($serverCapabilities, $initializeResultServerInfo);
-            },
-        );
+        $this->logInfo("Initializing: Complete.");
+        $progress->end('initialized');
+
+        /**
+         * Information about the server.
+         *
+         * @since LSP 3.15.0
+         */
+        $initializeResultServerInfo = new InitializeResultServerInfo('Psalm Language Server', PSALM_VERSION);
+
+        return new InitializeResult($serverCapabilities, $initializeResultServerInfo);
     }
 
     /**
@@ -647,12 +626,12 @@ class LanguageServer extends Dispatcher
      */
     public function doVersionedAnalysisDebounce(array $files, ?int $version = null): void
     {
-        Loop::cancel($this->versionedAnalysisDelayToken);
+        EventLoop::cancel($this->versionedAnalysisDelayToken);
         if ($this->client->clientConfiguration->onChangeDebounceMs === null) {
             $this->doVersionedAnalysis($files, $version);
         } else {
             /** @psalm-suppress MixedAssignment,UnusedPsalmSuppress */
-            $this->versionedAnalysisDelayToken = Loop::delay(
+            $this->versionedAnalysisDelayToken = EventLoop::delay(
                 $this->client->clientConfiguration->onChangeDebounceMs,
                 fn() => $this->doVersionedAnalysis($files, $version),
             );
@@ -666,7 +645,7 @@ class LanguageServer extends Dispatcher
      */
     public function doVersionedAnalysis(array $files, ?int $version = null): void
     {
-        Loop::cancel($this->versionedAnalysisDelayToken);
+        EventLoop::cancel($this->versionedAnalysisDelayToken);
         try {
             $this->logDebug("Doing Analysis from version: $version");
             $this->codebase->reloadFiles(
@@ -819,7 +798,7 @@ class LanguageServer extends Dispatcher
      * which they have sent a shutdown request. Clients should also wait with sending the exit notification until they
      * have received a response from the shutdown request.
      */
-    public function shutdown(): Promise
+    public function shutdown(): void
     {
         $this->clientStatus('closing');
         $this->logInfo("Shutting down...");
@@ -830,7 +809,6 @@ class LanguageServer extends Dispatcher
             $scanned_files,
         );
         $this->clientStatus('closed');
-        return new Success(null);
     }
 
     /**
@@ -948,12 +926,15 @@ class LanguageServer extends Dispatcher
 
     /**
      * Transforms an absolute file path into a URI as used by the language server protocol.
-     *
-     * @psalm-pure
      */
-    public static function pathToUri(string $filepath): string
+    public function pathToUri(string $filepath): string
     {
-        $filepath = trim(str_replace('\\', '/', $filepath), '/');
+        $filepath = str_replace('\\', '/', $filepath);
+
+        $filepath = $this->path_mapper->mapServerToClient($oldpath = $filepath);
+        $this->logDebug('Translated path to URI', ['from' => $oldpath, 'to' => $filepath]);
+
+        $filepath = trim($filepath, '/');
         $parts = explode('/', $filepath);
         // Don't %-encode the colon after a Windows drive letter
         $first = array_shift($parts);
@@ -970,7 +951,29 @@ class LanguageServer extends Dispatcher
     /**
      * Transforms URI into file path
      */
-    public static function uriToPath(string $uri): string
+    public function uriToPath(string $uri): string
+    {
+        $filepath = urldecode($this->getPathPart($uri));
+
+        if (strpos($filepath, ':') !== false) {
+            if ($filepath[0] === '/') {
+                $filepath = substr($filepath, 1);
+            }
+            $filepath = str_replace('/', '\\', $filepath);
+        }
+
+        $filepath = $this->path_mapper->mapClientToServer($oldpath = $filepath);
+        $this->logDebug('Translated URI to path', ['from' => $oldpath, 'to' => $filepath]);
+
+        $realpath = realpath($filepath);
+        if ($realpath !== false) {
+            return $realpath;
+        }
+
+        return $filepath;
+    }
+
+    private function getPathPart(string $uri): string
     {
         $fragments = parse_url($uri);
         if ($fragments === false
@@ -980,21 +983,21 @@ class LanguageServer extends Dispatcher
         ) {
             throw new InvalidArgumentException("Not a valid file URI: $uri");
         }
+        return $fragments['path'];
+    }
 
-        $filepath = urldecode($fragments['path']);
+    // the methods below forward special paths
+    // like `$/cancelRequest` to `$this->cancelRequest()`
+    // and `$/a/b/c` to `$this->a->b->c()`
 
-        if (strpos($filepath, ':') !== false) {
-            if ($filepath[0] === '/') {
-                $filepath = substr($filepath, 1);
-            }
-            $filepath = str_replace('/', '\\', $filepath);
-        }
+    public function __isset(string $prop_name): bool
+    {
+        return $prop_name === '$';
+    }
 
-        $realpath = realpath($filepath);
-        if ($realpath !== false) {
-            return $realpath;
-        }
-
-        return $filepath;
+    /** @return static */
+    public function __get(string $_prop_name): self
+    {
+        return $this;
     }
 }
