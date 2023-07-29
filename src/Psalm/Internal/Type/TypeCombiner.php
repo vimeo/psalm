@@ -1034,13 +1034,11 @@ class TypeCombiner
                 ) {
                     // do nothing
                 } elseif (isset($combination->value_types['string'])
-                    && $combination->value_types['string'] instanceof TNonFalsyString
-                    && $type->value
-                ) {
-                    // do nothing
-                } elseif (isset($combination->value_types['string'])
                     && $combination->value_types['string'] instanceof TNonEmptyString
-                    && $type->value !== ''
+                    && ($combination->value_types['string'] instanceof TNonFalsyString
+                        ? $type->value
+                        : $type->value !== ''
+                    )
                 ) {
                     // do nothing
                 } else {
