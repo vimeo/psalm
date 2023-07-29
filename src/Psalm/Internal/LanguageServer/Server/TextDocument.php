@@ -74,7 +74,7 @@ class TextDocument
             ['version' => $textDocument->version, 'uri' => $textDocument->uri],
         );
 
-        $file_path = LanguageServer::uriToPath($textDocument->uri);
+        $file_path = $this->server->uriToPath($textDocument->uri);
 
         $this->codebase->removeTemporaryFileChanges($file_path);
         $this->codebase->file_provider->openFile($file_path);
@@ -97,7 +97,7 @@ class TextDocument
             ['uri' => (array) $textDocument],
         );
 
-        $file_path = LanguageServer::uriToPath($textDocument->uri);
+        $file_path = $this->server->uriToPath($textDocument->uri);
 
         // reopen file
         $this->codebase->removeTemporaryFileChanges($file_path);
@@ -119,7 +119,7 @@ class TextDocument
             ['version' => $textDocument->version, 'uri' => $textDocument->uri],
         );
 
-        $file_path = LanguageServer::uriToPath($textDocument->uri);
+        $file_path = $this->server->uriToPath($textDocument->uri);
 
         if (count($contentChanges) === 1 && isset($contentChanges[0]) && $contentChanges[0]->range === null) {
             $new_content = $contentChanges[0]->text;
@@ -154,7 +154,7 @@ class TextDocument
             ['uri' => $textDocument->uri],
         );
 
-        $file_path = LanguageServer::uriToPath($textDocument->uri);
+        $file_path = $this->server->uriToPath($textDocument->uri);
 
         $this->codebase->file_provider->closeFile($file_path);
         $this->server->client->textDocument->publishDiagnostics($textDocument->uri, []);
@@ -178,7 +178,7 @@ class TextDocument
             'textDocument/definition',
         );
 
-        $file_path = LanguageServer::uriToPath($textDocument->uri);
+        $file_path = $this->server->uriToPath($textDocument->uri);
 
         //This currently doesnt work right with out of project files
         if (!$this->codebase->config->isInProjectDirs($file_path)) {
@@ -205,7 +205,7 @@ class TextDocument
 
         return new Success(
             new Location(
-                LanguageServer::pathToUri($code_location->file_path),
+                $this->server->pathToUri($code_location->file_path),
                 new Range(
                     new Position($code_location->getLineNumber() - 1, $code_location->getColumn() - 1),
                     new Position($code_location->getEndLineNumber() - 1, $code_location->getEndColumn() - 1),
@@ -232,7 +232,7 @@ class TextDocument
             'textDocument/hover',
         );
 
-        $file_path = LanguageServer::uriToPath($textDocument->uri);
+        $file_path = $this->server->uriToPath($textDocument->uri);
 
         //This currently doesnt work right with out of project files
         if (!$this->codebase->config->isInProjectDirs($file_path)) {
@@ -288,7 +288,7 @@ class TextDocument
             'textDocument/completion',
         );
 
-        $file_path = LanguageServer::uriToPath($textDocument->uri);
+        $file_path = $this->server->uriToPath($textDocument->uri);
 
         //This currently doesnt work right with out of project files
         if (!$this->codebase->config->isInProjectDirs($file_path)) {
@@ -301,12 +301,8 @@ class TextDocument
                 [$recent_type, $gap, $offset] = $completion_data;
 
                 if ($gap === '->' || $gap === '::') {
-                    $snippetSupport = ($this->server->clientCapabilities &&
-                        $this->server->clientCapabilities->textDocument &&
-                        $this->server->clientCapabilities->textDocument->completion &&
-                        $this->server->clientCapabilities->textDocument->completion->completionItem &&
-                        $this->server->clientCapabilities->textDocument->completion->completionItem->snippetSupport)
-                        ? true : false;
+                    $snippetSupport = $this->server->clientCapabilities
+                        ->textDocument->completion->completionItem->snippetSupport ?? false;
                     $completion_items =
                         $this->codebase->getCompletionItemsForClassishThing($recent_type, $gap, $snippetSupport);
                 } elseif ($gap === '[') {
@@ -360,7 +356,7 @@ class TextDocument
             'textDocument/signatureHelp',
         );
 
-        $file_path = LanguageServer::uriToPath($textDocument->uri);
+        $file_path = $this->server->uriToPath($textDocument->uri);
 
         //This currently doesnt work right with out of project files
         if (!$this->codebase->config->isInProjectDirs($file_path)) {
@@ -402,10 +398,8 @@ class TextDocument
      * The code action request is sent from the client to the server to compute commands
      * for a given text document and range. These commands are typically code fixes to
      * either fix problems or to beautify/refactor code.
-     *
-     * @psalm-suppress PossiblyUnusedParam
      */
-    public function codeAction(TextDocumentIdentifier $textDocument, Range $range, CodeActionContext $context): Promise
+    public function codeAction(TextDocumentIdentifier $textDocument, CodeActionContext $context): Promise
     {
         if (!$this->server->client->clientConfiguration->provideCodeActions) {
             return new Success(null);
@@ -415,7 +409,7 @@ class TextDocument
             'textDocument/codeAction',
         );
 
-        $file_path = LanguageServer::uriToPath($textDocument->uri);
+        $file_path = $this->server->uriToPath($textDocument->uri);
 
         //Don't report code actions for files we arent watching
         if (!$this->codebase->config->isInProjectDirs($file_path)) {
@@ -431,12 +425,12 @@ class TextDocument
             /** @var array{type: string, snippet: string, line_from: int, line_to: int} */
             $data = (array)$diagnostic->data;
 
-            //$file_path = LanguageServer::uriToPath($textDocument->uri);
+            //$file_path = $this->server->uriToPath($textDocument->uri);
             //$contents = $this->codebase->file_provider->getContents($file_path);
 
             $snippetRange = new Range(
-                new Position($data['line_from']-1),
-                new Position($data['line_to']),
+                new Position($data['line_from'] - 1, 0),
+                new Position($data['line_to'], 0),
             );
 
             $indentation = '';

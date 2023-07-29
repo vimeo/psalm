@@ -7,6 +7,9 @@ namespace Psalm\Internal\LanguageServer;
 use JsonMapper;
 use LanguageServerProtocol\LogMessage;
 use LanguageServerProtocol\LogTrace;
+use Psalm\Internal\LanguageServer\Client\Progress\LegacyProgress;
+use Psalm\Internal\LanguageServer\Client\Progress\Progress;
+use Psalm\Internal\LanguageServer\Client\Progress\ProgressInterface;
 use Psalm\Internal\LanguageServer\Client\TextDocument as ClientTextDocument;
 use Psalm\Internal\LanguageServer\Client\Workspace as ClientWorkspace;
 
@@ -64,7 +67,7 @@ class LanguageClient
     public function refreshConfiguration(): void
     {
         $capabilities = $this->server->clientCapabilities;
-        if ($capabilities && $capabilities->workspace && $capabilities->workspace->configuration) {
+        if ($capabilities->workspace->configuration ?? false) {
             $this->workspace->requestConfiguration('psalm')->onResolve(function ($error, $value): void {
                 if ($error) {
                     $this->server->logError('There was an error getting configuration');
@@ -129,6 +132,15 @@ class LanguageClient
             'telemetry/event',
             $logMessage,
         );
+    }
+
+    public function makeProgress(string $token): ProgressInterface
+    {
+        if ($this->server->clientCapabilities->window->workDoneProgress ?? false) {
+            return new Progress($this->handler, $token);
+        } else {
+            return new LegacyProgress($this->handler);
+        }
     }
 
     /**

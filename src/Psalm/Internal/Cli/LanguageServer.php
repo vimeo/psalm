@@ -10,6 +10,7 @@ use Psalm\Internal\Fork\PsalmRestarter;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\LanguageServer\ClientConfiguration;
 use Psalm\Internal\LanguageServer\LanguageServer as LanguageServerLanguageServer;
+use Psalm\Internal\LanguageServer\PathMapper;
 use Psalm\Report;
 
 use function array_key_exists;
@@ -18,6 +19,7 @@ use function array_search;
 use function array_slice;
 use function chdir;
 use function error_log;
+use function explode;
 use function fwrite;
 use function gc_disable;
 use function getcwd;
@@ -31,6 +33,7 @@ use function is_string;
 use function preg_replace;
 use function realpath;
 use function setlocale;
+use function strlen;
 use function strpos;
 use function strtolower;
 use function substr;
@@ -75,6 +78,7 @@ final class LanguageServer
             'find-dead-code',
             'help',
             'root:',
+            'map-folder::',
             'use-ini-defaults',
             'version',
             'tcp:',
@@ -127,6 +131,14 @@ final class LanguageServer
 
         // get options from command line
         $options = getopt(implode('', $valid_short_options), $valid_long_options);
+        if ($options === false) {
+            // shouldn't really happen, but just in case
+            fwrite(
+                STDERR,
+                'Failed to get CLI args' . PHP_EOL,
+            );
+            exit(1);
+        }
 
         if (!array_key_exists('use-ini-defaults', $options)) {
             ini_set('display_errors', '1');
@@ -168,6 +180,14 @@ final class LanguageServer
 
                 -r, --root
                     If running Psalm globally you'll need to specify a project root. Defaults to cwd
+
+                --map-folder[=SERVER_FOLDER:CLIENT_FOLDER]
+                    Specify folder to map between the client and the server. Use this when the client
+                    and server have different views of the filesystem (e.g. in a docker container).
+                    Defaults to mapping the rootUri provided by the client to the server's cwd,
+                    or `-r` if provided.
+
+                    No mapping is done when this option is not specified.
 
                 --find-dead-code
                     Look for dead code
@@ -291,6 +311,8 @@ final class LanguageServer
 
         setlocale(LC_CTYPE, 'C');
 
+        $path_mapper = self::createPathMapper($options, $current_dir);
+
         $path_to_config = CliUtils::getPathToConfig($options);
 
         if (isset($options['tcp'])) {
@@ -394,6 +416,49 @@ final class LanguageServer
         $clientConfiguration->TCPServerAddress = $options['tcp'] ?? null;
         $clientConfiguration->TCPServerMode = isset($options['tcp-server']);
 
-        LanguageServerLanguageServer::run($config, $clientConfiguration, $current_dir, $inMemory);
+        LanguageServerLanguageServer::run($config, $clientConfiguration, $current_dir, $path_mapper, $inMemory);
+    }
+
+    /** @param array<string,string|false|list<string|false>> $options */
+    private static function createPathMapper(array $options, string $server_start_dir): PathMapper
+    {
+        if (!isset($options['map-folder'])) {
+            // dummy no-op mapper
+            return new PathMapper('/', '/');
+        }
+
+        $map_folder = $options['map-folder'];
+
+        if ($map_folder === false) {
+            // autoconfigured mapper
+            return new PathMapper($server_start_dir, null);
+        }
+
+        if (is_string($map_folder)) {
+            if (strpos($map_folder, ':') === false) {
+                fwrite(
+                    STDERR,
+                    'invalid format for --map-folder option' . PHP_EOL,
+                );
+                exit(1);
+            }
+            /** @psalm-suppress PossiblyUndefinedArrayOffset we just checked that we have the separator*/
+            [$server_dir, $client_dir] = explode(':', $map_folder, 2);
+            if (!strlen($server_dir) || !strlen($client_dir)) {
+                fwrite(
+                    STDERR,
+                    'invalid format for --map-folder option, '
+                    . 'neither SERVER_FOLDER nor CLIENT_FOLDER can be empty' . PHP_EOL,
+                );
+                exit(1);
+            }
+            return new PathMapper($server_dir, $client_dir);
+        }
+
+        fwrite(
+            STDERR,
+            '--map-folder option can only be specified once' . PHP_EOL,
+        );
+        exit(1);
     }
 }

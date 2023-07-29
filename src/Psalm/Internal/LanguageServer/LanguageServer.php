@@ -88,6 +88,7 @@ use function stream_socket_server;
 use function strpos;
 use function substr;
 use function trim;
+use function uniqid;
 use function urldecode;
 
 use const JSON_PRETTY_PRINT;
@@ -142,13 +143,16 @@ class LanguageServer extends Dispatcher
      */
     protected JsonMapper $mapper;
 
+    protected PathMapper $path_mapper;
+
     public function __construct(
         ProtocolReader $reader,
         ProtocolWriter $writer,
         ProjectAnalyzer $project_analyzer,
         Codebase $codebase,
         ClientConfiguration $clientConfiguration,
-        Progress $progress
+        Progress $progress,
+        PathMapper $path_mapper
     ) {
         parent::__construct($this, '/');
 
@@ -157,6 +161,8 @@ class LanguageServer extends Dispatcher
         $this->project_analyzer = $project_analyzer;
 
         $this->codebase = $codebase;
+
+        $this->path_mapper = $path_mapper;
 
         $this->protocolWriter = $writer;
 
@@ -240,6 +246,7 @@ class LanguageServer extends Dispatcher
 
         $this->client = new LanguageClient($reader, $writer, $this, $clientConfiguration);
 
+
         $this->logInfo("Psalm Language Server ".PSALM_VERSION." has started.");
     }
 
@@ -250,6 +257,7 @@ class LanguageServer extends Dispatcher
         Config $config,
         ClientConfiguration $clientConfiguration,
         string $base_dir,
+        PathMapper $path_mapper,
         bool $inMemory = false
     ): void {
         $progress = new Progress();
@@ -322,6 +330,7 @@ class LanguageServer extends Dispatcher
                 $codebase,
                 $clientConfiguration,
                 $progress,
+                $path_mapper,
             );
             Loop::run();
         } elseif ($clientConfiguration->TCPServerMode && $clientConfiguration->TCPServerAddress) {
@@ -345,6 +354,7 @@ class LanguageServer extends Dispatcher
                     $codebase,
                     $clientConfiguration,
                     $progress,
+                    $path_mapper,
                 );
                 Loop::run();
             }
@@ -358,6 +368,7 @@ class LanguageServer extends Dispatcher
                 $codebase,
                 $clientConfiguration,
                 $progress,
+                $path_mapper,
             );
             Loop::run();
         }
@@ -367,38 +378,36 @@ class LanguageServer extends Dispatcher
      * The initialize request is sent as the first request from the client to the server.
      *
      * @param ClientCapabilities $capabilities The capabilities provided by the client (editor)
-     * @param int|null $processId The process Id of the parent process that started the server.
      * Is null if the process has not been started by another process. If the parent process is
      * not alive then the server should exit (see exit notification) its process.
      * @param ClientInfo|null $clientInfo Information about the client
-     * @param string|null $locale  The locale the client is currently showing the user interface
-     * in. This must not necessarily be the locale of the operating
-     * system.
-     * @param string|null $rootPath The rootPath of the workspace. Is null if no folder is open.
-     * @param mixed $initializationOptions
      * @param string|null $trace The initial trace setting. If omitted trace is disabled ('off').
+     * @param string|null $workDoneToken The token to be used to report progress during init.
      * @psalm-return Promise<InitializeResult>
-     * @psalm-suppress PossiblyUnusedParam
      */
     public function initialize(
         ClientCapabilities $capabilities,
-        ?int $processId = null,
         ?ClientInfo $clientInfo = null,
-        ?string $locale = null,
-        ?string $rootPath = null,
         ?string $rootUri = null,
-        $initializationOptions = null,
-        ?string $trace = null
-        //?array $workspaceFolders = null //error in json-dispatcher
+        ?string $trace = null,
+        ?string $workDoneToken = null
     ): Promise {
         $this->clientInfo = $clientInfo;
         $this->clientCapabilities = $capabilities;
         $this->trace = $trace;
+
+
+        if ($rootUri !== null) {
+            $this->path_mapper->configureClientRoot($this->getPathPart($rootUri));
+        }
+
         return call(
             /** @return Generator<int, true, mixed, InitializeResult> */
-            function () {
+            function () use ($workDoneToken) {
+                $progress = $this->client->makeProgress($workDoneToken ?? uniqid('tkn', true));
+
                 $this->logInfo("Initializing...");
-                $this->clientStatus('initializing');
+                $progress->begin('Psalm', 'initializing');
 
                 // Eventually, this might block on something. Leave it as a generator.
                 /** @psalm-suppress TypeDoesNotContainType */
@@ -409,14 +418,14 @@ class LanguageServer extends Dispatcher
                 $this->project_analyzer->serverMode($this);
 
                 $this->logInfo("Initializing: Getting code base...");
-                $this->clientStatus('initializing', 'getting code base');
+                $progress->update('getting code base');
 
                 $this->logInfo("Initializing: Scanning files ({$this->project_analyzer->threads} Threads)...");
-                $this->clientStatus('initializing', 'scanning files');
+                $progress->update('scanning files');
                 $this->codebase->scanFiles($this->project_analyzer->threads);
 
                 $this->logInfo("Initializing: Registering stub files...");
-                $this->clientStatus('initializing', 'registering stub files');
+                $progress->update('registering stub files');
                 $this->codebase->config->visitStubFiles($this->codebase, $this->project_analyzer->progress);
 
                 if ($this->textDocument === null) {
@@ -538,11 +547,7 @@ class LanguageServer extends Dispatcher
                  *
                  * @since LSP 3.16.0
                  */
-                if ($this->clientCapabilities &&
-                    $this->clientCapabilities->textDocument &&
-                    $this->clientCapabilities->textDocument->publishDiagnostics &&
-                    $this->clientCapabilities->textDocument->publishDiagnostics->dataSupport
-                ) {
+                if ($this->clientCapabilities->textDocument->publishDiagnostics->dataSupport ?? false) {
                     $serverCapabilities->codeActionProvider = true;
                 }
 
@@ -560,7 +565,7 @@ class LanguageServer extends Dispatcher
                 }
 
                 $this->logInfo("Initializing: Complete.");
-                $this->clientStatus('initialized');
+                $progress->end('initialized');
 
                 /**
                  * Information about the server.
@@ -757,11 +762,7 @@ class LanguageServer extends Dispatcher
                      *
                      * @since LSP 3.16.0
                      */
-                    if ($this->clientCapabilities !== null &&
-                        $this->clientCapabilities->textDocument &&
-                        $this->clientCapabilities->textDocument->publishDiagnostics &&
-                        $this->clientCapabilities->textDocument->publishDiagnostics->codeDescriptionSupport
-                    ) {
+                    if ($this->clientCapabilities->textDocument->publishDiagnostics->codeDescriptionSupport ?? false) {
                         $diagnostic->codeDescription = new CodeDescription($issue_data->link);
                     }
 
@@ -956,12 +957,15 @@ class LanguageServer extends Dispatcher
 
     /**
      * Transforms an absolute file path into a URI as used by the language server protocol.
-     *
-     * @psalm-pure
      */
-    public static function pathToUri(string $filepath): string
+    public function pathToUri(string $filepath): string
     {
-        $filepath = trim(str_replace('\\', '/', $filepath), '/');
+        $filepath = str_replace('\\', '/', $filepath);
+
+        $filepath = $this->path_mapper->mapServerToClient($oldpath = $filepath);
+        $this->logDebug('Translated path to URI', ['from' => $oldpath, 'to' => $filepath]);
+
+        $filepath = trim($filepath, '/');
         $parts = explode('/', $filepath);
         // Don't %-encode the colon after a Windows drive letter
         $first = array_shift($parts);
@@ -978,7 +982,29 @@ class LanguageServer extends Dispatcher
     /**
      * Transforms URI into file path
      */
-    public static function uriToPath(string $uri): string
+    public function uriToPath(string $uri): string
+    {
+        $filepath = urldecode($this->getPathPart($uri));
+
+        if (strpos($filepath, ':') !== false) {
+            if ($filepath[0] === '/') {
+                $filepath = substr($filepath, 1);
+            }
+            $filepath = str_replace('/', '\\', $filepath);
+        }
+
+        $filepath = $this->path_mapper->mapClientToServer($oldpath = $filepath);
+        $this->logDebug('Translated URI to path', ['from' => $oldpath, 'to' => $filepath]);
+
+        $realpath = realpath($filepath);
+        if ($realpath !== false) {
+            return $realpath;
+        }
+
+        return $filepath;
+    }
+
+    private function getPathPart(string $uri): string
     {
         $fragments = parse_url($uri);
         if ($fragments === false
@@ -988,21 +1014,21 @@ class LanguageServer extends Dispatcher
         ) {
             throw new InvalidArgumentException("Not a valid file URI: $uri");
         }
+        return $fragments['path'];
+    }
 
-        $filepath = urldecode($fragments['path']);
+    // the methods below forward special paths
+    // like `$/cancelRequest` to `$this->cancelRequest()`
+    // and `$/a/b/c` to `$this->a->b->c()`
 
-        if (strpos($filepath, ':') !== false) {
-            if ($filepath[0] === '/') {
-                $filepath = substr($filepath, 1);
-            }
-            $filepath = str_replace('/', '\\', $filepath);
-        }
+    public function __isset(string $prop_name): bool
+    {
+        return $prop_name === '$';
+    }
 
-        $realpath = realpath($filepath);
-        if ($realpath !== false) {
-            return $realpath;
-        }
-
-        return $filepath;
+    /** @return static */
+    public function __get(string $_prop_name): self
+    {
+        return $this;
     }
 }
