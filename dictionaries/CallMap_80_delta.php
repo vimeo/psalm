@@ -100,6 +100,22 @@ return [
       'old' => ['DOMNodeList', 'namespace'=>'string', 'localName'=>'string'],
       'new' => ['DOMNodeList', 'namespace'=>'?string', 'localName'=>'string'],
     ],
+    'DOMDocument::load' => [
+      'old' => ['DOMDocument|bool', 'filename'=>'string', 'options='=>'int'],
+      'new' => ['bool', 'filename'=>'string', 'options='=>'int'],
+    ],
+    'DOMDocument::loadXML' => [
+      'old' => ['DOMDocument|bool', 'source'=>'non-empty-string', 'options='=>'int'],
+      'new' => ['bool', 'source'=>'non-empty-string', 'options='=>'int'],
+    ],
+    'DOMDocument::loadHTML' => [
+      'old' => ['DOMDocument|bool', 'source'=>'non-empty-string', 'options='=>'int'],
+      'new' => ['bool', 'source'=>'non-empty-string', 'options='=>'int'],
+    ],
+    'DOMDocument::loadHTMLFile' => [
+      'old' => ['DOMDocument|bool', 'filename'=>'string', 'options='=>'int'],
+      'new' => ['bool', 'filename'=>'string', 'options='=>'int'],
+    ],
     'DOMImplementation::createDocument' => [
       'old' => ['DOMDocument|false', 'namespace='=>'string', 'qualifiedName='=>'string', 'doctype='=>'DOMDocumentType'],
       'new' => ['DOMDocument|false', 'namespace='=>'?string', 'qualifiedName='=>'string', 'doctype='=>'?DOMDocumentType'],
