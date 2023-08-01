@@ -337,6 +337,7 @@ class FileFilter
                 $function_id = $referenced_function['name'] ?? '';
                 if (!is_string($function_id)
                     || (!preg_match('/^[a-zA-Z_\x80-\xff][a-zA-Z0-9_\x80-\xff]*$/', $function_id)
+                        && !preg_match('/^[^:]+::[^:]+$/', $function_id) // methods are also allowed
                         && !static::isRegularExpression($function_id))) {
                     throw new ConfigException(
                         'Invalid referencedFunction ' . ((string) $function_id),
