@@ -4,6 +4,7 @@ namespace Psalm\Tests\Config;
 
 use Composer\Autoload\ClassLoader;
 use ErrorException;
+use Psalm\CodeLocation\Raw;
 use Psalm\Config;
 use Psalm\Config\IssueHandler;
 use Psalm\Context;
@@ -16,6 +17,7 @@ use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\Internal\Scanner\FileScanner;
+use Psalm\Issue\TooManyArguments;
 use Psalm\Tests\Config\Plugin\FileTypeSelfRegisteringPlugin;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Tests\TestCase;
@@ -1822,6 +1824,36 @@ class ConfigTest extends TestCase
         $this->assertNotContains(
             'Psalm 6 will not automatically load stubs for ext-apcu. You should explicitly enable or disable this ext in composer.json or Psalm config.',
             $config->internal_stubs,
+        );
+    }
+
+    public function testReferencedFunctionAllowsMethods(): void
+    {
+        $config_xml = Config::loadFromXML(
+            (string) getcwd(),
+            <<<XML
+            <?xml version="1.0"?>
+            <psalm>
+                <issueHandlers>
+                    <TooManyArguments>
+                        <errorLevel type="suppress">
+                            <referencedFunction name="Foo\Bar::baz" />
+                        </errorLevel>
+                    </TooManyArguments>
+                </issueHandlers>
+            </psalm>
+            XML,
+        );
+
+        $this->assertSame(
+            Config::REPORT_SUPPRESS,
+            $config_xml->getReportingLevelForIssue(
+                new TooManyArguments(
+                    'too many',
+                    new Raw('aaa', 'aaa.php', 'aaa.php', 1, 2),
+                    'Foo\Bar::baZ',
+                ),
+            ),
         );
     }
 }
