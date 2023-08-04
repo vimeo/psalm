@@ -142,7 +142,7 @@ class SprintfTest extends TestCase
                 '$val===' => '\'\'',
             ],
             'ignored_issues' => [
-                'InvalidArgument',
+                'RedundantFunctionCall',
             ],
         ];
 
@@ -221,7 +221,9 @@ class SprintfTest extends TestCase
             'assertions' => [
                 '$val===' => 'string',
             ],
-            'ignored_issues' => [],
+            'ignored_issues' => [
+                'RedundantFunctionCall',
+            ],
             'php_version' => '8.0',
         ];
 
@@ -297,10 +299,7 @@ class SprintfTest extends TestCase
                 'code' => '<?php
                     printf(\'"%" hello\', "a");
                 ',
-                'error_message' => [
-                    'RedundantFunctionCall',
-                    'TooManyArguments',
-                ],
+                'error_message' => 'InvalidArgument',
             ],
             'sprintfEmptyFormat' => [
                 'code' => '<?php
@@ -312,9 +311,9 @@ class SprintfTest extends TestCase
                 'code' => '<?php
                     $x = sprintf("hello", "abc");
                 ',
-                'error_message' => [
+                'error_message' => 'TooManyArguments',
+                'ignored_issues' => [
                     'RedundantFunctionCall',
-                    'TooManyArguments',
                 ],
             ],
             'sprintfPaddedComplexEmptyStringFormat' => [

@@ -26,6 +26,7 @@ use function count;
 use function is_string;
 use function preg_match;
 use function sprintf;
+use function strlen;
 
 /**
  * @internal
@@ -77,7 +78,7 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
                 new RedundantFunctionCall(
                     'Using the splat operator is redundant, as v' . $event->getFunctionId()
                     . ' without splat operator can be used instead of ' . $event->getFunctionId(),
-                    $event->getCodeLocation()
+                    $event->getCodeLocation(),
                 ),
                 $statements_source->getSuppressedIssues(),
             );
@@ -95,7 +96,7 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
                 new RedundantFunctionCall(
                     'Using ' . $event->getFunctionId()
                     . ' with a single argument is redundant, since there are no placeholder params to be substituted',
-                    $event->getCodeLocation()
+                    $event->getCodeLocation(),
                 ),
                 $statements_source->getSuppressedIssues(),
             );
@@ -122,8 +123,8 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
                 if ($type->getSingleStringLiteral()->value === '') {
                     IssueBuffer::maybeAdd(
                         new RedundantFunctionCall(
-                            'Argument 1 of ' . $event->getFunctionId() . ' must not be an empty string',
-                            $event->getCodeLocation()
+                            'Calling ' . $event->getFunctionId() . ' with an empty first argument does nothing',
+                            $event->getCodeLocation(),
                         ),
                         $statements_source->getSuppressedIssues(),
                     );
@@ -180,10 +181,12 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
                             if ($result === $type->getSingleStringLiteral()->value) {
                                 if (count($call_args) > 1) {
                                     // we need to report this here too, since we return early without further validation
-                                    // otherwise people who have suspended RedundantFunctionCall errors will not get an error for this
+                                    // otherwise people who have suspended RedundantFunctionCall errors
+                                    // will not get an error for this
                                     IssueBuffer::maybeAdd(
                                         new TooManyArguments(
-                                            'Too many arguments for the number of placeholders in ' . $event->getFunctionId(),
+                                            'Too many arguments for the number of placeholders in '
+                                            . $event->getFunctionId(),
                                             $event->getCodeLocation(),
                                             $event->getFunctionId(),
                                         ),
@@ -196,8 +199,9 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
                                     IssueBuffer::maybeAdd(
                                         new RedundantFunctionCall(
                                             'Using ' . $event->getFunctionId()
-                                            . ' with a single argument is redundant, since there are no placeholder params to be substituted',
-                                            $event->getCodeLocation()
+                                            . ' with a single argument is redundant,'
+                                            . ' since there are no placeholder params to be substituted',
+                                            $event->getCodeLocation(),
                                         ),
                                         $statements_source->getSuppressedIssues(),
                                     );
@@ -206,7 +210,7 @@ class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
                                         new RedundantFunctionCall(
                                             'Argument 1 of ' . $event->getFunctionId()
                                             . ' does not contain any placeholders',
-                                            $event->getCodeLocation()
+                                            $event->getCodeLocation(),
                                         ),
                                         $statements_source->getSuppressedIssues(),
                                     );
