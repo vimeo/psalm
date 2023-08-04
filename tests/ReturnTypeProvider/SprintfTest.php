@@ -251,11 +251,17 @@ class SprintfTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
-            'sprintfOnlyFormat' => [
+            'sprintfOnlyFormatWithoutPlaceholders' => [
                 'code' => '<?php
                     $x = sprintf("hello");
                 ',
-                'error_message' => 'TooFewArguments',
+                'error_message' => 'RedundantFunctionCall',
+            ],
+            'printfOnlyFormatWithoutPlaceholders' => [
+                'code' => '<?php
+                    $x = sprintf("hello");
+                ',
+                'error_message' => 'RedundantFunctionCall',
             ],
             'sprintfTooFewArguments' => [
                 'code' => '<?php
@@ -291,25 +297,38 @@ class SprintfTest extends TestCase
                 'code' => '<?php
                     printf(\'"%" hello\', "a");
                 ',
-                'error_message' => 'InvalidArgument',
+                'error_message' => [
+                    'RedundantFunctionCall',
+                    'TooManyArguments',
+                ],
             ],
             'sprintfEmptyFormat' => [
                 'code' => '<?php
                     $x = sprintf("", "abc");
                 ',
-                'error_message' => 'InvalidArgument',
+                'error_message' => 'RedundantFunctionCall',
             ],
             'sprintfFormatWithoutPlaceholders' => [
                 'code' => '<?php
                     $x = sprintf("hello", "abc");
                 ',
-                'error_message' => 'InvalidArgument',
+                'error_message' => [
+                    'RedundantFunctionCall',
+                    'TooManyArguments',
+                ],
             ],
             'sprintfPaddedComplexEmptyStringFormat' => [
                 'code' => '<?php
                     $x = sprintf("%1$+0.0s", "abc");
                 ',
                 'error_message' => 'InvalidArgument',
+            ],
+            'printfVariableFormat' => [
+                'code' => '<?php
+                    /** @var string $bar */
+                    printf($bar);
+                ',
+                'error_message' => 'RedundantFunctionCall',
             ],
         ];
     }
