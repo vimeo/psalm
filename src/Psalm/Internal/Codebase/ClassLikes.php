@@ -597,6 +597,7 @@ class ClassLikes
     /**
      * Determine whether or not a class extends a parent
      *
+     * @psalm-mutation-free
      * @throws UnpopulatedClasslikeException when called on unpopulated class
      * @throws InvalidArgumentException when class does not exist
      */
@@ -620,6 +621,8 @@ class ClassLikes
 
     /**
      * Check whether a class implements an interface
+     *
+     * @psalm-mutation-free
      */
     public function classImplements(string $fq_class_name, string $interface): bool
     {

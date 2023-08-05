@@ -323,7 +323,7 @@ abstract class Atomic implements TypeNode
                 return $analysis_php_version_id !== null ? new TNamedObject($value) : new TScalar();
 
             case 'null':
-                if ($analysis_php_version_id === null || $analysis_php_version_id >= 8_00_00) {
+                if ($analysis_php_version_id === null || $analysis_php_version_id >= 7_00_00) {
                     return new TNull();
                 }
 

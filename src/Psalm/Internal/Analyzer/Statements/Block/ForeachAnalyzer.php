@@ -755,20 +755,6 @@ class ForeachAnalyzer
 
             $has_valid_iterator = true;
 
-            if ($iterator_atomic_type instanceof TNamedObject
-                && strtolower($iterator_atomic_type->value) === 'simplexmlelement'
-            ) {
-                $value_type = Type::combineUnionTypes(
-                    $value_type,
-                    new Union([$iterator_atomic_type]),
-                );
-
-                $key_type = Type::combineUnionTypes(
-                    $key_type,
-                    Type::getString(),
-                );
-            }
-
             if ($iterator_atomic_type instanceof TIterable
                 || (strtolower($iterator_atomic_type->value) === 'traversable'
                     || $codebase->classImplements(
