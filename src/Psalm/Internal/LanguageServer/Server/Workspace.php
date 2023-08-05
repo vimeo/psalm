@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\LanguageServer\Server;
 
-use Amp\Promise;
-use Amp\Success;
 use InvalidArgumentException;
 use LanguageServerProtocol\FileChangeType;
 use LanguageServerProtocol\FileEvent;
@@ -108,10 +106,9 @@ class Workspace
     /**
      * A notification sent from the client to the server to signal the change of configuration settings.
      *
-     * @param mixed $settings
-     * @psalm-suppress PossiblyUnusedMethod, PossiblyUnusedParam
+     * @psalm-suppress PossiblyUnusedMethod
      */
-    public function didChangeConfiguration($settings): void
+    public function didChangeConfiguration(): void
     {
         $this->server->logDebug(
             'workspace/didChangeConfiguration',
@@ -126,7 +123,7 @@ class Workspace
      * @param mixed $arguments
      * @psalm-suppress PossiblyUnusedMethod
      */
-    public function executeCommand(string $command, $arguments): Promise
+    public function executeCommand(string $command, $arguments): void
     {
         $this->server->logDebug(
             'workspace/executeCommand',
@@ -155,7 +152,5 @@ class Workspace
                 $this->server->emitVersionedIssues([$file => $arguments['uri']]);
                 break;
         }
-
-        return new Success(null);
     }
 }

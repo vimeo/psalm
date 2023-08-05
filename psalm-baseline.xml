@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<files psalm-version="dev-master@841cccd693a15da70c034a55eb05ee7ed8fdbc22">
+<files psalm-version="dev-master@f799b68a3cbc91e9056bb972cfe66b7ae0da3f76">
   <file src="examples/TemplateChecker.php">
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$comment_block->tags['variablesfrom'][0]]]></code>
@@ -10,14 +10,6 @@
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$comment_block->tags['variablesfrom'][0]]]></code>
       <code>$matches[1]</code>
-    </PossiblyUndefinedIntArrayOffset>
-  </file>
-  <file src="src/Psalm/Codebase.php">
-    <PossiblyUndefinedIntArrayOffset>
-      <code>$const_name</code>
-      <code>$const_name</code>
-      <code>$symbol_name</code>
-      <code>$symbol_parts[1]</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Config/FileFilter.php">
@@ -290,6 +282,19 @@
       <code><![CDATA[$stmt->props[0]]]></code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
+  <file src="src/Psalm/Internal/LanguageServer/LanguageClient.php">
+    <InvalidArrayAccess>
+      <code>$config</code>
+    </InvalidArrayAccess>
+    <InvalidArrayOffset>
+      <code>[$config]</code>
+    </InvalidArrayOffset>
+  </file>
+  <file src="src/Psalm/Internal/LanguageServer/LanguageServer.php">
+    <MixedAssignment>
+      <code>$result</code>
+    </MixedAssignment>
+  </file>
   <file src="src/Psalm/Internal/MethodIdentifier.php">
     <PossiblyUndefinedIntArrayOffset>
       <code>$method_id_parts[1]</code>
@@ -366,9 +371,6 @@
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Type/Comparator/AtomicTypeComparator.php">
-    <ComplexMethod>
-      <code>isContainedBy</code>
-    </ComplexMethod>
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$array->properties[0]]]></code>
       <code><![CDATA[$array->properties[0]]]></code>
@@ -489,11 +491,6 @@
       <code>getMostSpecificTypeFromBounds</code>
     </ImpureMethodCall>
   </file>
-  <file src="src/Psalm/Type/Atomic/TCallableList.php">
-    <DeprecatedClass>
-      <code>TNonEmptyList</code>
-    </DeprecatedClass>
-  </file>
   <file src="src/Psalm/Type/Atomic/TClassString.php">
     <ImpureMethodCall>
       <code>replace</code>
@@ -515,17 +512,7 @@
       <code>replace</code>
     </ImpureMethodCall>
   </file>
-  <file src="src/Psalm/Type/Atomic/TDependentListKey.php">
-    <PossiblyUnusedMethod>
-      <code>__construct</code>
-    </PossiblyUnusedMethod>
-  </file>
   <file src="src/Psalm/Type/Atomic/TKeyedArray.php">
-    <DeprecatedClass>
-      <code>TList</code>
-      <code><![CDATA[new TList($this->getGenericValueType())]]></code>
-      <code><![CDATA[new TNonEmptyList($this->getGenericValueType())]]></code>
-    </DeprecatedClass>
     <ImpureMethodCall>
       <code>combine</code>
       <code>combine</code>
@@ -548,26 +535,6 @@
       <code><![CDATA[$this->properties[0]]]></code>
       <code><![CDATA[$this->properties[0]]]></code>
     </PossiblyUndefinedIntArrayOffset>
-    <PossiblyUnusedMethod>
-      <code>getList</code>
-    </PossiblyUnusedMethod>
-  </file>
-  <file src="src/Psalm/Type/Atomic/TList.php">
-    <ImpureMethodCall>
-      <code>replace</code>
-      <code>replace</code>
-    </ImpureMethodCall>
-    <ImpurePropertyAssignment>
-      <code><![CDATA[$cloned->type_param]]></code>
-    </ImpurePropertyAssignment>
-  </file>
-  <file src="src/Psalm/Type/Atomic/TNonEmptyList.php">
-    <DeprecatedClass>
-      <code>TList</code>
-    </DeprecatedClass>
-    <PossiblyUnusedMethod>
-      <code>setCount</code>
-    </PossiblyUnusedMethod>
   </file>
   <file src="src/Psalm/Type/Atomic/TObjectWithProperties.php">
     <ImpureMethodCall>

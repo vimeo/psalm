@@ -860,6 +860,13 @@ class TypeCombinationTest extends TestCase
                     'non-empty-literal-string',
                 ],
             ],
+            'nonFalsyStringAndFalsyLiteral' => [
+                'string',
+                [
+                    'non-falsy-string',
+                    '"0"',
+                ],
+            ],
         ];
     }
 

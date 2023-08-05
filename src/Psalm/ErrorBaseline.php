@@ -120,12 +120,6 @@ final class ErrorBaseline
                     $files[$fileName][$issueType]['o'] += 1;
                     $files[$fileName][$issueType]['s'][] = str_replace("\r\n", "\n", trim($codeSample->textContent));
                 }
-
-                // TODO: Remove in Psalm 6
-                $occurrencesAttr = $issue->getAttribute('occurrences');
-                if ($occurrencesAttr !== '') {
-                    $files[$fileName][$issueType]['o'] = (int) $occurrencesAttr;
-                }
             }
         }
 

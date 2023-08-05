@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\LanguageServer\Client;
 
-use Amp\Promise;
 use JsonMapper;
 use Psalm\Internal\LanguageServer\ClientHandler;
 use Psalm\Internal\LanguageServer\LanguageServer;
@@ -42,11 +41,11 @@ class Workspace
      * @param string $section The configuration section asked for.
      * @param string|null $scopeUri The scope to get the configuration section for.
      */
-    public function requestConfiguration(string $section, ?string $scopeUri = null): Promise
+    public function requestConfiguration(string $section, ?string $scopeUri = null): object
     {
         $this->server->logDebug("workspace/configuration");
 
-        /** @var Promise<object> */
+        /** @var object */
         return $this->handler->request('workspace/configuration', [
             'items' => [
                 [
