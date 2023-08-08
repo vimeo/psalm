@@ -1514,4 +1514,48 @@ class StubTest extends TestCase
 
         $this->analyzeFile($file_path, new Context());
     }
+
+    /**
+     * This covers the following case encountered by mmcev106:
+     * - A function was defined without a docblock
+     * - The autoloader defined a global containing the path to that file
+     * - The code being scanned required the path specified by the autoloader defined global
+     * - A docblock was added via a stub that marked the function as a taint source
+     * - The stub docblock was incorrectly ignored, causing the the taint source to be ignored. 
+     */
+    public function testAutoloadDefinedRequirePath(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                    autoloader="tests/fixtures/stubs/define_custom_require_path.php"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/custom_taint_source.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+
+        $this->project_analyzer->trackTaintedInputs();
+
+        $file_path = getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                require_once CUSTOM_REQUIRE_PATH;
+                echo custom_taint_source();',
+        );
+
+        $this->expectExceptionMessage('TaintedHtml - /src/somefile.php');
+        $this->analyzeFile($file_path, new Context());
+    }
 }
