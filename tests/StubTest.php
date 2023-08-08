@@ -1521,7 +1521,7 @@ class StubTest extends TestCase
      * - The autoloader defined a global containing the path to that file
      * - The code being scanned required the path specified by the autoloader defined global
      * - A docblock was added via a stub that marked the function as a taint source
-     * - The stub docblock was incorrectly ignored, causing the the taint source to be ignored. 
+     * - The stub docblock was incorrectly ignored, causing the the taint source to be ignored
      */
     public function testAutoloadDefinedRequirePath(): void
     {
