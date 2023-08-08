@@ -28,7 +28,7 @@ class ReflectionAttribute
 
     /**
      * @psalm-pure
-     * @return int-mask-of<Attribute::TARGET_*>
+     * @return Attribute::TARGET_*
      */
     public function getTarget() : int
     {
