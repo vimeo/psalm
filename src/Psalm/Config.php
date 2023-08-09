@@ -2706,7 +2706,42 @@ class Config
     /** @internal */
     public function requireAutoloader(): void
     {
-        /** @psalm-suppress UnresolvableInclude */
-        require $this->autoloader;
+        $autoloaderInProgress = true;
+
+        register_shutdown_function(function() use (&$autoloaderInProgress){
+            if(!$autoloaderInProgress){
+                /**
+                 * The autoloader has succeeded, and we are exiting at some later point.
+                 * Do nothing.
+                 */
+                return;
+            }
+
+            fwrite(
+                STDERR,
+
+                // Leave a little room between any output from the autoloader, and our output.
+                PHP_EOL
+
+                // Simulate the output format of a missing autoloader path.
+                . "Problem running $this->autoloader:" . PHP_EOL
+                . "  The autoloader failed with the above output and a die() or exit() call" . PHP_EOL
+            );
+
+            /**
+             * A die() or exit() call was made from within an autoloader.
+             * The call might have been made with a zero status (we have no way of knowing).
+             * We exit with a non-zero status to ensure that any calling scripts do not misinterpret
+             * a zero exit status from an autoloader as Psalm succeeding when it did not.
+             */
+            die(2);
+        });
+
+        try {
+            /** @psalm-suppress UnresolvableInclude */
+            require $this->autoloader;
+        } finally {
+            $autoloaderInProgress = false;
+        }
     }
 }
