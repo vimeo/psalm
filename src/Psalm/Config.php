@@ -69,6 +69,7 @@ use function file_get_contents;
 use function flock;
 use function fopen;
 use function function_exists;
+use function fwrite;
 use function get_class;
 use function get_defined_constants;
 use function get_defined_functions;
@@ -92,6 +93,7 @@ use function preg_match;
 use function preg_quote;
 use function preg_replace;
 use function realpath;
+use function register_shutdown_function;
 use function reset;
 use function rmdir;
 use function rtrim;
@@ -122,6 +124,7 @@ use const PHP_EOL;
 use const PHP_VERSION_ID;
 use const PSALM_VERSION;
 use const SCANDIR_SORT_NONE;
+use const STDERR;
 
 /**
  * @psalm-suppress PropertyNotSetInConstructor
@@ -2710,8 +2713,8 @@ class Config
     {
         $this->autoloaderInProgress = true;
 
-        register_shutdown_function(function(){
-            if(!$this->autoloaderInProgress){
+        register_shutdown_function(function (): void {
+            if (!$this->autoloaderInProgress) {
                 /**
                  * The autoloader has succeeded, and we are exiting at some later point.
                  * Do nothing.
@@ -2721,13 +2724,11 @@ class Config
 
             fwrite(
                 STDERR,
-
                 // Leave a little room between any output from the autoloader, and our output.
                 PHP_EOL
-
                 // Simulate the output format of a missing autoloader path.
                 . "Problem running $this->autoloader:" . PHP_EOL
-                . "  The autoloader failed with the above output and a die() or exit() call" . PHP_EOL
+                . "  The autoloader failed with the above output and a die() or exit() call" . PHP_EOL,
             );
 
             /**

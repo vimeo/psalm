@@ -4,6 +4,8 @@ namespace Psalm\Tests\EndToEnd;
 
 use PHPUnit\Framework\TestCase;
 
+use const PHP_EOL;
+
 class AutoloaderExitStatusTest extends TestCase
 {
     use PsalmRunnerTrait;
