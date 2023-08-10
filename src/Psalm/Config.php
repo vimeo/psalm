@@ -721,6 +721,8 @@ class Config
     /** @var list<string> */
     public array $config_warnings = [];
 
+    private bool $autoloaderInProgress = false;
+
     /** @internal */
     protected function __construct()
     {
@@ -2706,10 +2708,10 @@ class Config
     /** @internal */
     public function requireAutoloader(): void
     {
-        $autoloaderInProgress = true;
+        $this->autoloaderInProgress = true;
 
-        register_shutdown_function(function() use (&$autoloaderInProgress){
-            if(!$autoloaderInProgress){
+        register_shutdown_function(function(){
+            if(!$this->autoloaderInProgress){
                 /**
                  * The autoloader has succeeded, and we are exiting at some later point.
                  * Do nothing.
@@ -2741,7 +2743,7 @@ class Config
             /** @psalm-suppress UnresolvableInclude */
             require $this->autoloader;
         } finally {
-            $autoloaderInProgress = false;
+            $this->autoloaderInProgress = false;
         }
     }
 }
