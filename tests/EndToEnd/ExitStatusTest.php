@@ -8,12 +8,10 @@ use Psalm\Internal\Cli\Psalm;
 use function array_pop;
 use function array_shift;
 use function explode;
-use function implode;
 use function realpath;
 use function strlen;
 use function substr;
-
-use const PHP_EOL;
+use function trim;
 
 class ExitStatusTest extends TestCase
 {
@@ -39,8 +37,8 @@ class ExitStatusTest extends TestCase
     {
         $output = $this->runPsalm(['--no-cache'], $this->getFixturePath(), true);
 
-        $this->assertSame($expectedSTDOUT, $output['STDOUT']);
-        $this->assertSame($expectedSTDERR, $this->handleSTDERR($output['STDERR']));
+        $this->assertSame($this->getLines($expectedSTDOUT), $this->getLines($output['STDOUT']));
+        $this->assertSame($this->getLines($expectedSTDERR), $this->handleSTDERR($this->getLines($output['STDERR'])));
         $this->assertSame(2, $output['CODE']);
     }
 
@@ -55,9 +53,27 @@ class ExitStatusTest extends TestCase
         return __DIR__ . "/../fixtures/$fixture/";
     }
 
-    private function handleSTDERR(string $stderr): string
+    /**
+     * @return array<string>
+     */
+    private function getLines(string $output): array
     {
-        $lines = explode(PHP_EOL, $stderr);
+        $lines = explode("\n", $output);
+
+        $newLines = [];
+        foreach ($lines as $line) {
+            // Trim any carriages returns on Windows
+            $newLines[] = trim($line);
+        }
+
+        return $newLines;
+    }
+
+    /**
+     * @param array<string> $lines
+     */
+    private function handleSTDERR(array $lines): array
+    {
         $this->assertStringStartsWith('Target PHP version: ', array_shift($lines));
         $this->assertStringStartsWith('Scanning files...', array_shift($lines));
 
@@ -68,6 +84,6 @@ class ExitStatusTest extends TestCase
         $this->assertSame('', array_shift($lines));
         $this->assertSame('', array_pop($lines));
 
-        return implode(PHP_EOL, $lines);
+        return $lines;
     }
 }
