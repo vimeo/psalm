@@ -1,6 +1,5 @@
 <?xml version="1.0"?>
 <psalm
-    autoloader="autoloader.php"
     resolveFromConfigFile="true"
     findUnusedCode="true"
     findUnusedBaselineEntry="true"
@@ -11,4 +10,7 @@
     <projectFiles>
         <file name="file.php" />
     </projectFiles>
+    <plugins>
+        <plugin filename="ExitStatusPlugin.php" />
+    </plugins>
 </psalm>

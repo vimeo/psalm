@@ -69,7 +69,6 @@ use function file_get_contents;
 use function flock;
 use function fopen;
 use function function_exists;
-use function fwrite;
 use function get_class;
 use function get_defined_constants;
 use function get_defined_functions;
@@ -93,7 +92,6 @@ use function preg_match;
 use function preg_quote;
 use function preg_replace;
 use function realpath;
-use function register_shutdown_function;
 use function reset;
 use function rmdir;
 use function rtrim;
@@ -124,7 +122,6 @@ use const PHP_EOL;
 use const PHP_VERSION_ID;
 use const PSALM_VERSION;
 use const SCANDIR_SORT_NONE;
-use const STDERR;
 
 /**
  * @psalm-suppress PropertyNotSetInConstructor
@@ -723,8 +720,6 @@ class Config
 
     /** @var list<string> */
     public array $config_warnings = [];
-
-    private bool $autoloaderInProgress = false;
 
     /** @internal */
     protected function __construct()
@@ -2711,40 +2706,7 @@ class Config
     /** @internal */
     public function requireAutoloader(): void
     {
-        $this->autoloaderInProgress = true;
-
-        register_shutdown_function(function (): void {
-            if (!$this->autoloaderInProgress) {
-                /**
-                 * The autoloader has succeeded, and we are exiting at some later point.
-                 * Do nothing.
-                 */
-                return;
-            }
-
-            fwrite(
-                STDERR,
-                // Leave a little room between any output from the autoloader, and our output.
-                PHP_EOL
-                // Simulate the output format of a missing autoloader path.
-                . "Problem running $this->autoloader:" . PHP_EOL
-                . "  The autoloader failed with the above output and a die() or exit() call" . PHP_EOL,
-            );
-
-            /**
-             * A die() or exit() call was made from within an autoloader.
-             * The call might have been made with a zero status (we have no way of knowing).
-             * We exit with a non-zero status to ensure that any calling scripts do not misinterpret
-             * a zero exit status from an autoloader as Psalm succeeding when it did not.
-             */
-            die(2);
-        });
-
-        try {
-            /** @psalm-suppress UnresolvableInclude */
-            require $this->autoloader;
-        } finally {
-            $this->autoloaderInProgress = false;
-        }
+        /** @psalm-suppress UnresolvableInclude */
+        require $this->autoloader;
     }
 }

@@ -5,6 +5,7 @@ namespace Psalm\Internal\Fork;
 use Closure;
 use Exception;
 use Psalm\Config;
+use Psalm\Internal\Cli\Psalm;
 use Throwable;
 
 use function array_fill_keys;
@@ -268,6 +269,8 @@ class Pool
         }
 
         fclose($write_stream);
+
+        Psalm::disableExitDetection();
 
         // Children exit after completing their work
         exit(self::EXIT_SUCCESS);

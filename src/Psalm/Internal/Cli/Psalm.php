@@ -67,6 +67,7 @@ use function parse_url;
 use function preg_match;
 use function preg_replace;
 use function realpath;
+use function register_shutdown_function;
 use function setlocale;
 use function str_repeat;
 use function str_replace;
@@ -163,6 +164,8 @@ final class Psalm
         'find-unused-psalm-suppress',
         'error-level:',
     ];
+
+    private static ?bool $exitDetectionEnabled = null;
 
     /**
      * @param array<int,string> $argv
@@ -375,10 +378,15 @@ final class Psalm
             $config->addPluginPath($plugin_path);
         }
 
-        if ($paths_to_check === null) {
-            $project_analyzer->check($current_dir, $is_diff);
-        } elseif ($paths_to_check) {
-            $project_analyzer->checkPaths($paths_to_check);
+        self::enableExitDetection();
+        try {
+            if ($paths_to_check === null) {
+                $project_analyzer->check($current_dir, $is_diff);
+            } elseif ($paths_to_check) {
+                $project_analyzer->checkPaths($paths_to_check);
+            }
+        } finally {
+            self::disableExitDetection();
         }
 
         if ($find_references_to) {
@@ -406,6 +414,54 @@ final class Psalm
         } else {
             self::autoGenerateConfig($project_analyzer, $current_dir, $init_source_dir, $vendor_dir);
         }
+    }
+
+    private static function enableExitDetection(): void
+    {
+        if (self::$exitDetectionEnabled === null) {
+            register_shutdown_function(function (): void {
+                if (!self::$exitDetectionEnabled) {
+                    return;
+                }
+
+                $config = Config::getInstance();
+                if (empty($config->getPredefinedConstants())) {
+                    $message = PHP_EOL . self::getAutoloaderExitMessage($config->autoloader);
+                } else {
+                    $message = self::getUnexpectedExitMessage();
+                }
+
+                fwrite(STDERR, $message . PHP_EOL);
+
+                /**
+                 * A die() or exit() call was made at an unexpected time
+                 * (e.g., within an autoloader or plugin).
+                 * That call might have been made with a zero status (we have no way of knowing for sure).
+                 * We exit with a non-zero status instead to ensure that any calling scripts do not misinterpret
+                 * the zero exit status as Psalm succeeding when it did not.
+                 * A code of 2 is required per PsalmRunnerTrait::runPsalm().
+                 */
+                die(2);
+            });
+        }
+
+        self::$exitDetectionEnabled = true;
+    }
+
+    public static function disableExitDetection(): void
+    {
+        self::$exitDetectionEnabled = false;
+    }
+
+    public static function getAutoloaderExitMessage(?string $autoloaderPath): string
+    {
+        return "Problem running $autoloaderPath:" . PHP_EOL
+        . "  The autoloader failed with the above output and a die() or exit() call.";
+    }
+
+    public static function getUnexpectedExitMessage(): string
+    {
+        return 'Psalm ended unexpectedly.  This could be caused by a die() or exit() in a plugin.';
     }
 
     private static function initOutputFormat(array $options): string
