@@ -29,6 +29,7 @@ use Psalm\Issue\UndefinedMethod;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
@@ -412,7 +413,7 @@ class MethodCallAnalyzer extends CallAnalyzer
             $types = $class_type->getAtomicTypes();
 
             foreach ($types as $key => &$type) {
-                if (!$type instanceof TNamedObject) {
+                if (!$type instanceof TNamedObject && !$type instanceof TObject) {
                     unset($types[$key]);
                 } else {
                     $type = $type->setFromDocblock(false);
