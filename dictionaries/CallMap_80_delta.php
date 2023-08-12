@@ -240,6 +240,14 @@ return [
       'old' => ['string', 'locale'=>'string', 'displayLocale='=>'string'],
       'new' => ['string', 'locale'=>'string', 'displayLocale='=>'?string'],
     ],
+    'mysqli_field_seek' => [
+      'old' => ['bool', 'result'=>'mysqli_result', 'index'=>'int'],
+      'new' => ['true', 'result'=>'mysqli_result', 'index'=>'int'],
+    ],
+    'mysqli_result::field_seek' => [
+      'old' => ['bool', 'index'=>'int'],
+      'new' => ['true', 'index'=>'int'],
+    ],
     'mysqli_stmt::__construct' => [
       'old' => ['void', 'mysql'=>'mysqli', 'query='=>'string'],
       'new' => ['void', 'mysql'=>'mysqli', 'query='=>'?string'],
