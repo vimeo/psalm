@@ -1359,9 +1359,10 @@ function realpath(string $path) {}
  *
  * @param numeric-string $num1
  * @param numeric-string $num2
+ * @param int|null $scale
  * @return (PHP_MAJOR_VERSION is 8 ? numeric-string : ($num2 is "0" ? null : numeric-string))
  */
-function bcdiv(string $num1, string $num2, int $scale = 0): ?string {}
+function bcdiv(string $num1, string $num2, ?int $scale = null): ?string {}
 
 /**
  * @psalm-pure
