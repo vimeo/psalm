@@ -574,6 +574,42 @@ class EnumTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'nameTypeOnKnownCases' => [
+                'code' => <<<'PHP'
+                    <?php
+                    enum Transport: string {
+                        case CAR = 'car';
+                        case BIKE = 'bike';
+                        case BOAT = 'boat';
+                    }
+
+                    $val = Transport::from(uniqid());
+                    $_name = $val->name;
+                    PHP,
+                'assertions' => [
+                    '$_name===' => "'BIKE'|'BOAT'|'CAR'",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'nameTypeOnUnknownCases' => [
+                'code' => <<<'PHP'
+                    <?php
+                    enum Transport: string {
+                        case CAR = 'car';
+                        case BIKE = 'bike';
+                        case BOAT = 'boat';
+                    }
+
+                    function f(Transport $e): void {
+                        $_name = $e->name;
+                        /** @psalm-check-type-exact $_name='BIKE'|'BOAT'|'CAR' */;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
