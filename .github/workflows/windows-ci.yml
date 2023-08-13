@@ -62,6 +62,11 @@ jobs:
         env:
           fail-fast: true
 
+      - name: PHP Version
+        run: |
+          php -v
+          php -r 'var_dump(PHP_VERSION_ID);'
+
       - uses: actions/checkout@v3
 
       - name: Get Composer Cache Directories
