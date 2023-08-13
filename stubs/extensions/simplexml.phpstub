@@ -25,6 +25,7 @@ function simplexml_import_dom(SimpleXMLElement|DOMNode $node, ?string $class_nam
 
 /**
  * @implements Traversable<string, SimpleXMLElement>
+ * @psalm-no-seal-properties
  */
 class SimpleXMLElement implements Traversable, Countable
 {
@@ -63,6 +64,8 @@ class SimpleXMLElement implements Traversable, Countable
     public function __toString(): string {}
 
     public function count(): int {}
+
+    public function __get(string $name): SimpleXMLElement|SimpleXMLIterator|null {}
 }
 
 /**

@@ -228,7 +228,7 @@ class AtomicPropertyFetchAnalyzer
                 self::handleEnumValue($statements_analyzer, $stmt, $stmt_var_type, $class_storage);
             } elseif ($prop_name === 'name') {
                 $has_valid_fetch_type = true;
-                self::handleEnumName($statements_analyzer, $stmt, $lhs_type_part);
+                self::handleEnumName($statements_analyzer, $stmt, $stmt_var_type, $class_storage);
             } else {
                 self::handleNonExistentProperty(
                     $statements_analyzer,
@@ -979,16 +979,31 @@ class AtomicPropertyFetchAnalyzer
     private static function handleEnumName(
         StatementsAnalyzer $statements_analyzer,
         PropertyFetch $stmt,
-        Atomic $lhs_type_part
+        Union $stmt_var_type,
+        ClassLikeStorage $class_storage
     ): void {
-        if ($lhs_type_part instanceof TEnumCase) {
-            $statements_analyzer->node_data->setType(
-                $stmt,
-                new Union([Type::getAtomicStringFromLiteral($lhs_type_part->case_name)]),
-            );
-        } else {
-            $statements_analyzer->node_data->setType($stmt, Type::getNonEmptyString());
+        $relevant_enum_cases = array_filter(
+            $stmt_var_type->getAtomicTypes(),
+            static fn(Atomic $type): bool => $type instanceof TEnumCase,
+        );
+        $relevant_enum_case_names = array_map(
+            static fn(TEnumCase $enumCase): string => $enumCase->case_name,
+            $relevant_enum_cases,
+        );
+
+        if (empty($relevant_enum_case_names)) {
+            $relevant_enum_case_names = array_keys($class_storage->enum_cases);
         }
+
+        $statements_analyzer->node_data->setType(
+            $stmt,
+            empty($relevant_enum_case_names)
+                ? Type::getNonEmptyString()
+                : new Union(array_map(
+                    fn(string $name): TString => Type::getAtomicStringFromLiteral($name),
+                    $relevant_enum_case_names,
+                )),
+        );
     }
 
     private static function handleEnumValue(

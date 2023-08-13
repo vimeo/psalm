@@ -699,6 +699,7 @@ final class Codebase
         );
     }
 
+    /** @psalm-mutation-free */
     public function classExtendsOrImplements(string $fq_class_name, string $possible_parent): bool
     {
         return $this->classlikes->classExtends($fq_class_name, $possible_parent)

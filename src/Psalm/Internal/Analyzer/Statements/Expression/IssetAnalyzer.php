@@ -3,9 +3,12 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
+use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Issue\InvalidArgument;
+use Psalm\IssueBuffer;
 use Psalm\Type;
 
 /**
@@ -30,6 +33,15 @@ class IssetAnalyzer
                     $context->vars_in_scope[$var_id] = Type::getMixed();
                     $context->vars_possibly_in_scope[$var_id] = true;
                 }
+            } elseif (!self::isValidStatement($isset_var)) {
+                IssueBuffer::maybeAdd(
+                    new InvalidArgument(
+                        'Isset only works with variables and array elements',
+                        new CodeLocation($statements_analyzer->getSource(), $isset_var),
+                        'empty',
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
             }
 
             self::analyzeIssetVar($statements_analyzer, $isset_var, $context);
@@ -48,5 +60,16 @@ class IssetAnalyzer
         ExpressionAnalyzer::analyze($statements_analyzer, $stmt, $context);
 
         $context->inside_isset = false;
+    }
+
+    private static function isValidStatement(PhpParser\Node\Expr $stmt): bool
+    {
+        return $stmt instanceof PhpParser\Node\Expr\Variable
+            || $stmt instanceof PhpParser\Node\Expr\ArrayDimFetch
+            || $stmt instanceof PhpParser\Node\Expr\PropertyFetch
+            || $stmt instanceof PhpParser\Node\Expr\StaticPropertyFetch
+            || $stmt instanceof PhpParser\Node\Expr\NullsafePropertyFetch
+            || $stmt instanceof PhpParser\Node\Expr\ClassConstFetch
+            || $stmt instanceof PhpParser\Node\Expr\AssignRef;
     }
 }

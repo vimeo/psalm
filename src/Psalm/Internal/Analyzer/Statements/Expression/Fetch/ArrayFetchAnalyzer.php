@@ -1732,8 +1732,10 @@ class ArrayFetchAnalyzer
         ?Union &$array_access_type,
         bool &$has_array_access
     ): void {
-        if (strtolower($type->value) === 'simplexmlelement') {
-            $call_array_access_type = new Union([new TNamedObject('SimpleXMLElement')]);
+        if (strtolower($type->value) === 'simplexmlelement'
+            || $statements_analyzer->getCodebase()->classExtendsOrImplements($type->value, 'SimpleXMLElement')
+        ) {
+            $call_array_access_type = new Union([new TNull(), new TNamedObject('SimpleXMLElement')]);
         } elseif (strtolower($type->value) === 'domnodelist' && $stmt->dim) {
             $old_data_provider = $statements_analyzer->node_data;
 

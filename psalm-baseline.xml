@@ -448,9 +448,6 @@
   </file>
   <file src="src/Psalm/Type/Atomic.php">
     <ImpureMethodCall>
-      <code>classExtendsOrImplements</code>
-      <code>classExtendsOrImplements</code>
-      <code>classExtendsOrImplements</code>
       <code>classOrInterfaceExists</code>
       <code>classOrInterfaceExists</code>
       <code>classOrInterfaceExists</code>

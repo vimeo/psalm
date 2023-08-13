@@ -19,7 +19,6 @@ use LanguageServerProtocol\CodeDescription;
 use LanguageServerProtocol\CompletionOptions;
 use LanguageServerProtocol\Diagnostic;
 use LanguageServerProtocol\DiagnosticSeverity;
-use LanguageServerProtocol\ExecuteCommandOptions;
 use LanguageServerProtocol\InitializeResult;
 use LanguageServerProtocol\InitializeResultServerInfo;
 use LanguageServerProtocol\LogMessage;
@@ -417,9 +416,6 @@ class LanguageServer extends Dispatcher
         }
 
         $serverCapabilities = new ServerCapabilities();
-
-        //The server provides execute command support.
-        $serverCapabilities->executeCommandProvider = new ExecuteCommandOptions(['test']);
 
         $textDocumentSyncOptions = new TextDocumentSyncOptions();
 

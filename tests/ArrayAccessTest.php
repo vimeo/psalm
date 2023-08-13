@@ -1013,7 +1013,7 @@ class ArrayAccessTest extends TestCase
             ],
             'simpleXmlArrayFetch' => [
                 'code' => '<?php
-                    function foo(SimpleXMLElement $s) : SimpleXMLElement {
+                    function foo(SimpleXMLElement $s) : ?SimpleXMLElement {
                         return $s["a"];
                     }',
             ],

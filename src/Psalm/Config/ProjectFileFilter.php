@@ -28,7 +28,6 @@ final class ProjectFileFilter extends FileFilter
                 throw new ConfigException('Cannot nest ignoreFiles inside itself');
             }
 
-            /** @var SimpleXMLElement $e->ignoreFiles */
             $filter->file_filter = static::loadFromXMLElement($e->ignoreFiles, $base_dir, false);
         }
 
