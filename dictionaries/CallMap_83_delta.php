@@ -49,10 +49,6 @@ return [
       'old' => ['bool', '&rw_array'=>'array', 'flags='=>'int'],
       'new' => ['true', '&rw_array'=>'array', 'flags='=>'int'],
     ],
-    'hash_pbkdf2' => [
-      'old' => ['non-empty-string', 'algo'=>'string', 'password'=>'string', 'salt'=>'string', 'iterations'=>'int', 'length='=>'int', 'binary='=>'bool'],
-      'new' => ['non-empty-string', 'algo'=>'string', 'password'=>'string', 'salt'=>'string', 'iterations'=>'int', 'length='=>'int', 'binary='=>'bool', 'options=' => 'array'],
-    ],
     'imap_setflag_full' => [
       'old' => ['bool', 'imap'=>'IMAP\Connection', 'sequence'=>'string', 'flag'=>'string', 'options='=>'int'],
       'new' => ['true', 'imap'=>'IMAP\Connection', 'sequence'=>'string', 'flag'=>'string', 'options='=>'int'],

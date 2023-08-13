@@ -39,6 +39,9 @@
         "symfony/console": "^4.1.6 || ^5.0 || ^6.0",
         "symfony/filesystem": "^5.4 || ^6.0"
     },
+    "conflict": {
+      "nikic/php-parser": "4.17.0"
+    },
     "provide": {
         "psalm/psalm": "self.version"
     },
