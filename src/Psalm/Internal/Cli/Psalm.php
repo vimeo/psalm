@@ -401,7 +401,7 @@ final class Psalm
                 !$paths_to_check,
                 $start_time,
                 isset($options['stats']),
-                self::initBaseline($options, $config, $current_dir, $path_to_config),
+                self::initBaseline($options, $config, $current_dir, $path_to_config, $paths_to_check),
             );
         } else {
             self::autoGenerateConfig($project_analyzer, $current_dir, $init_source_dir, $vendor_dir);
@@ -1036,13 +1036,15 @@ final class Psalm
     }
 
     /**
+     * @param ?list<string> $paths_to_check
      * @return array<string,array<string,array{o:int, s: list<string>}>>
      */
     private static function initBaseline(
         array $options,
         Config $config,
         string $current_dir,
-        ?string $path_to_config
+        ?string $path_to_config,
+        ?array $paths_to_check
     ): array {
         $issue_baseline = [];
 
@@ -1076,6 +1078,17 @@ final class Psalm
                 fwrite(STDERR, 'Error while reading baseline: ' . $exception->getMessage() . PHP_EOL);
                 exit(1);
             }
+        }
+
+        if ($paths_to_check !== null) {
+            $filtered_issue_baseline = [];
+            foreach ($paths_to_check as $path_to_check) {
+                $path_to_check = substr($path_to_check, strlen($config->base_dir));
+                if (isset($issue_baseline[$path_to_check])) {
+                    $filtered_issue_baseline[$path_to_check] = $issue_baseline[$path_to_check];
+                }
+            }
+            $issue_baseline = $filtered_issue_baseline;
         }
 
         return $issue_baseline;
