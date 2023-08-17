@@ -424,6 +424,10 @@ class Reconciler
     {
         foreach ($new_types as $nk => $type) {
             if (strpos($nk, '[') || strpos($nk, '->')) {
+                $type = array_values($type);
+                if (!isset($type[0][0])) {
+                    continue;
+                }
                 if ($type[0][0] instanceof IsEqualIsset
                     || $type[0][0] instanceof IsIsset
                     || $type[0][0] instanceof NonEmpty
