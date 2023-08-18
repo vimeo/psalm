@@ -1184,25 +1184,16 @@ class ProjectAnalyzer
     public function setPhpVersion(string $version, string $source): void
     {
         if (!preg_match('/' . self::PHP_VERSION_REGEX . '/', $version)) {
-            fwrite(
-                STDERR,
-                'Expecting a version number in the format x.y or x.y.z'
-                . PHP_EOL,
-            );
-            exit(1);
+            throw new UnexpectedValueException('Expecting a version number in the format x.y or x.y.z');
         }
 
         if (!preg_match('/' . self::PHP_SUPPORTED_VERSIONS_REGEX . '/', $version)) {
-            fwrite(
-                STDERR,
+            throw new UnexpectedValueException(
                 'Psalm supports PHP version ">=5.4". The specified version '
                 . $version
-                . " is either not supported or doesn't exist."
-                . PHP_EOL,
+                . " is either not supported or doesn't exist.",
             );
-            exit(1);
         }
-
 
         [$php_major_version, $php_minor_version] = explode('.', $version);
 
