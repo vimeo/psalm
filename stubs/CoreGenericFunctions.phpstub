@@ -1786,3 +1786,14 @@ if (defined('GLOB_BRACE')) {
     function glob (string $pattern, int $flags = 0): array|false {}
 }
 
+/**
+ * @psalm-template TOutput of array|null
+ *
+ * @param TOutput $output
+ * @param-out (TOutput is null ? list<string> : array) $output
+ * @param-out int $result_code
+ *
+ * @psalm-taint-specialize
+ * @psalm-taint-sink shell $command
+ */
+function exec(string $command, &$output = null, int &$result_code = null): string|false {}
