@@ -58,7 +58,7 @@ jobs:
           ini-values: zend.assertions=1, assert.exception=1, opcache.enable_cli=1, opcache.jit=function, opcache.jit_buffer_size=512M
           tools: composer:v2
           coverage: none
-          extensions: none, curl, dom, filter, intl, json, libxml, mbstring, openssl, opcache, pcre, phar, reflection, simplexml, spl, tokenizer, xml, xmlwriter
+          extensions: none, curl, dom, filter, intl, json, libxml, mbstring, opcache, openssl, pcre, phar, reflection, simplexml, spl, tokenizer, xml, xmlwriter, soap, xdebug
         env:
           fail-fast: true
 
