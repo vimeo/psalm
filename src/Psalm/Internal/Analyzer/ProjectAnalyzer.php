@@ -202,7 +202,7 @@ class ProjectAnalyzer
 
     private const PHP_VERSION_REGEX = '^(0|[1-9]\d*)\.(0|[1-9]\d*)(?:\..*)?$';
 
-    private const PHP_SUPPORTED_VERSIONS_REGEX = '^(7\.4|8\.[012])(\..*)?$';
+    private const PHP_SUPPORTED_VERSIONS_REGEX = '^(5\.[456]|7\.[01234]|8\.[012])(\..*)?$';
 
     /**
      * @param array<ReportOptions> $generated_report_options
@@ -1195,7 +1195,7 @@ class ProjectAnalyzer
         if (!preg_match('/' . self::PHP_SUPPORTED_VERSIONS_REGEX . '/', $version)) {
             fwrite(
                 STDERR,
-                'Psalm requires PHP version ">7.4". The specified version '
+                'Psalm supports PHP version ">=5.4". The specified version '
                 . $version
                 . " is either not supported or doesn't exist."
                 . PHP_EOL,
