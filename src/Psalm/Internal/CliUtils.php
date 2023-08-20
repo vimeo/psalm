@@ -493,7 +493,7 @@ final class CliUtils
                     STDERR,
                     $e->getMessage() . PHP_EOL,
                 );
-                exit(2);
+                exit(1);
             }
         }
     }
