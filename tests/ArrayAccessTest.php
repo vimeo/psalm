@@ -1199,6 +1199,27 @@ class ArrayAccessTest extends TestCase
                 ',
                 'assertions' => ['$a===' => "array{1: 'b'}"],
             ],
+            'noCrashOnUnknownClassArrayAccess' => [
+                'code' => <<<'PHP'
+                <?php
+
+                namespace Psalmtest\Psalmtest;
+
+                use SomeMissingClass;
+
+                class Test
+                {
+                    public function f(): void {
+                        /** @var SomeMissingClass */
+                        $result = null;
+
+                        if ($result['errors'] === true) {}
+                    }
+                }
+                PHP,
+                'assertions' => [],
+                'ignored_issues' => ['UndefinedDocblockClass'],
+            ],
         ];
     }
 
