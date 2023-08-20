@@ -2238,6 +2238,10 @@ class Config
             $stubsDir . 'SPL.phpstub',
         ];
 
+        if ($codebase->analysis_php_version_id >= 7_04_00) {
+            $this->internal_stubs[] = $stubsDir . 'Php74.phpstub';
+        }
+
         if ($codebase->analysis_php_version_id >= 8_00_00) {
             $this->internal_stubs[] = $stubsDir . 'CoreGenericAttributes.phpstub';
             $this->internal_stubs[] = $stubsDir . 'Php80.phpstub';

@@ -568,8 +568,6 @@
   <file src="src/Psalm/Type/Reconciler.php">
     <PossiblyUndefinedIntArrayOffset>
       <code>$const_name</code>
-      <code>$type[0]</code>
-      <code>$type[0][0]</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Type/TypeNode.php">
