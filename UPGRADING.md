@@ -29,6 +29,8 @@
 
 - [BC] The return type of `Psalm\Internal\LanguageServer\ProtocolWriter#write() changed from `Amp\Promise` to `void` due to the switch to Amp v3
 
+- [BC] Properties `Psalm\Type\Atomic\TLiteralFloat::$value` and `Psalm\Type\Atomic\TLiteralInt::$value` became typed (`float` and `int` respectively)
+
 # Upgrading from Psalm 4 to Psalm 5
 ## Changed
 
