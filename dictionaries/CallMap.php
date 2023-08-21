@@ -2942,7 +2942,7 @@ return [
 'gc_enable' => ['void'],
 'gc_enabled' => ['bool'],
 'gc_mem_caches' => ['int'],
-'gc_status' => ['array{runs:int,collected:int,threshold:int,roots:int,running:bool,protected:bool,full:bool,buffer_size:int}'],
+'gc_status' => ['array{runs:int,collected:int,threshold:int,roots:int,running:bool,protected:bool,full:bool,buffer_size:int,application_time:float,collector_time:float,destructor_time:float,free_time:float}'],
 'gd_info' => ['array'],
 'gearman_bugreport' => [''],
 'gearman_client_add_options' => ['', 'client_object'=>'', 'option'=>''],
