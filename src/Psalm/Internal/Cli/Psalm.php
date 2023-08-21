@@ -1049,6 +1049,10 @@ final class Psalm
         $issue_baseline = [];
 
         if (isset($options['set-baseline']) && is_string($options['set-baseline'])) {
+            if ($paths_to_check !== null) {
+                fwrite(STDERR, PHP_EOL . 'Cannot generate baseline when checking specific files' . PHP_EOL);
+                exit(1);
+            }
             $issue_baseline = self::generateBaseline($options, $config, $current_dir, $path_to_config);
         }
 
@@ -1065,6 +1069,10 @@ final class Psalm
         }
 
         if (isset($options['update-baseline'])) {
+            if ($paths_to_check !== null) {
+                fwrite(STDERR, PHP_EOL . 'Cannot update baseline when checking specific files' . PHP_EOL);
+                exit(1);
+            }
             $issue_baseline = self::updateBaseline($options, $config);
         }
 
