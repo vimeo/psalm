@@ -2373,6 +2373,20 @@ class TaintTest extends TestCase
                     new $a($b);',
                 'error_message' => 'TaintedCallable',
             ],
+            'taintedReflectionClass' => [
+                'code' => '<?php
+                    $name = $_GET["name"];
+                    $reflector = new ReflectionClass($name);
+                    $reflector->newInstance();',
+                'error_message' => 'TaintedCallable',
+            ],
+            'taintedReflectionFunction' => [
+                'code' => '<?php
+                    $name = $_GET["name"];
+                    $function = new ReflectionFunction($name);
+                    $function->invoke();',
+                'error_message' => 'TaintedCallable',
+            ],
         ];
     }
 
