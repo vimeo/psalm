@@ -113,6 +113,10 @@ return [
       'old' => ['?bool', 'text'=>'string'],
       'new' => ['bool', 'text'=>'string'],
     ],
+    'strrchr' => [
+      'old' => ['string|false', 'haystack'=>'string', 'needle'=>'string'],
+      'new' => ['string|false', 'haystack'=>'string', 'needle'=>'string', 'before_needle='=>'bool'],
+    ],
   ],
 
   'removed' => [
