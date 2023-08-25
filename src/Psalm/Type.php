@@ -269,7 +269,7 @@ abstract class Type
             return new TLiteralInt($value);
         }
 
-        return new TLiteralString($value);
+        return TLiteralString::make($value);
     }
 
     public static function getString(?string $value = null): Union
