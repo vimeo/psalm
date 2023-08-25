@@ -2991,7 +2991,10 @@ class SimpleAssertionReconciler extends Reconciler
             // For value-of<MyBackedEnum>, the assertion is meant to return *ANY* value of *ANY* enum case
             if ($enum_case_to_assert === null) {
                 foreach ($class_storage->enum_cases as $enum_case) {
-                    assert($enum_case->value !== null, 'Verified enum type above, value can not contain `null` anymore.');
+                    assert(
+                        $enum_case->value !== null,
+                        'Verified enum type above, value can not contain `null` anymore.',
+                    );
                     $reconciled_types[] = Type::getLiteral($enum_case->value);
                 }
 
