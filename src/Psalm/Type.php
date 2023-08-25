@@ -263,7 +263,7 @@ abstract class Type
      * @param int|string $value
      * @return TLiteralString|TLiteralInt
      */
-    public static function getLiteral($value)
+    public static function getLiteral($value): Atomic
     {
         if (is_int($value)) {
             return new TLiteralInt($value);
