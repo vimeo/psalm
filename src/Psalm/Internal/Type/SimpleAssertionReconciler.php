@@ -537,6 +537,7 @@ class SimpleAssertionReconciler extends Reconciler
             return self::reconcileValueOf(
                 $codebase,
                 $assertion_type,
+                $failed_reconciliation,
             );
         }
 
@@ -2957,7 +2958,8 @@ class SimpleAssertionReconciler extends Reconciler
 
     private static function reconcileValueOf(
         Codebase $codebase,
-        TValueOf $assertion_type
+        TValueOf $assertion_type,
+        int &$failed_reconciliation
     ): ?Union {
         $reconciled_types = [];
 
@@ -3003,6 +3005,11 @@ class SimpleAssertionReconciler extends Reconciler
 
             assert($enum_case->value !== null, 'Verified enum type above, value can not contain `null` anymore.');
             $reconciled_types[] = Type::getLiteral($enum_case->value);
+        }
+
+        if ($reconciled_types === []) {
+            $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
+            return Type::getNever();
         }
 
         return TypeCombiner::combine($reconciled_types, $codebase, false, false);
