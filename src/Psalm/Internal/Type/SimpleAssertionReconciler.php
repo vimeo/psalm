@@ -83,6 +83,7 @@ use function assert;
 use function count;
 use function explode;
 use function get_class;
+use function in_array;
 use function is_int;
 use function min;
 use function strlen;
@@ -533,7 +534,11 @@ class SimpleAssertionReconciler extends Reconciler
         }
 
         if ($assertion_type instanceof TValueOf) {
-            return $assertion_type->type;
+            return self::reconcileValueOf(
+                $codebase,
+                $assertion_type,
+                $failed_reconciliation,
+            );
         }
 
         return null;
@@ -2949,6 +2954,71 @@ class SimpleAssertionReconciler extends Reconciler
         }
 
         return TypeCombiner::combine(array_values($matched_class_constant_types), $codebase);
+    }
+
+    /**
+     * @param Reconciler::RECONCILIATION_* $failed_reconciliation
+     */
+    private static function reconcileValueOf(
+        Codebase $codebase,
+        TValueOf $assertion_type,
+        int &$failed_reconciliation
+    ): ?Union {
+        $reconciled_types = [];
+
+        // For now, only enums are supported here
+        foreach ($assertion_type->type->getAtomicTypes() as $atomic_type) {
+            $enum_case_to_assert = null;
+            if ($atomic_type instanceof TClassConstant) {
+                $class_name = $atomic_type->fq_classlike_name;
+                $enum_case_to_assert = $atomic_type->const_name;
+            } elseif ($atomic_type instanceof TNamedObject) {
+                $class_name = $atomic_type->value;
+            } else {
+                return null;
+            }
+
+            if (!$codebase->classOrInterfaceOrEnumExists($class_name)) {
+                return null;
+            }
+
+            $class_storage = $codebase->classlike_storage_provider->get($class_name);
+            if (!$class_storage->is_enum) {
+                return null;
+            }
+
+            if (!in_array($class_storage->enum_type, ['string', 'int'], true)) {
+                return null;
+            }
+
+            // For value-of<MyBackedEnum>, the assertion is meant to return *ANY* value of *ANY* enum case
+            if ($enum_case_to_assert === null) {
+                foreach ($class_storage->enum_cases as $enum_case) {
+                    assert(
+                        $enum_case->value !== null,
+                        'Verified enum type above, value can not contain `null` anymore.',
+                    );
+                    $reconciled_types[] = Type::getLiteral($enum_case->value);
+                }
+
+                continue;
+            }
+
+            $enum_case = $class_storage->enum_cases[$atomic_type->const_name] ?? null;
+            if ($enum_case === null) {
+                return null;
+            }
+
+            assert($enum_case->value !== null, 'Verified enum type above, value can not contain `null` anymore.');
+            $reconciled_types[] = Type::getLiteral($enum_case->value);
+        }
+
+        if ($reconciled_types === []) {
+            $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
+            return Type::getNever();
+        }
+
+        return TypeCombiner::combine($reconciled_types, $codebase, false, false);
     }
 
     /**

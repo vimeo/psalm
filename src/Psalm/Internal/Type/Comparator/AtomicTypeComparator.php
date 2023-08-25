@@ -4,7 +4,6 @@ namespace Psalm\Internal\Type\Comparator;
 
 use Psalm\Codebase;
 use Psalm\Internal\MethodIdentifier;
-use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
@@ -18,12 +17,10 @@ use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TEmptyMixed;
 use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TGenericObject;
-use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyOf;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
-use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
@@ -46,7 +43,6 @@ use function array_values;
 use function assert;
 use function count;
 use function get_class;
-use function is_int;
 use function strtolower;
 
 /**
@@ -632,40 +628,6 @@ class AtomicTypeComparator
 
             if ($input_type_part->hasTraversableInterface($codebase)) {
                 return true;
-            }
-        }
-
-        if ($input_type_part instanceof TEnumCase
-            && $codebase->classlike_storage_provider->has($input_type_part->value)
-        ) {
-            if ($container_type_part instanceof TString || $container_type_part instanceof TInt) {
-                $input_type_classlike_storage = $codebase->classlike_storage_provider->get($input_type_part->value);
-                if ($input_type_classlike_storage->enum_type === null
-                    || !isset($input_type_classlike_storage->enum_cases[$input_type_part->case_name])
-                ) {
-                    // Not a backed enum or non-existent enum case
-                    return false;
-                }
-
-                $input_type_enum_case_storage = $input_type_classlike_storage->enum_cases[$input_type_part->case_name];
-                assert(
-                    $input_type_enum_case_storage->value !== null,
-                    'Backed enums cannot have values without a value.',
-                );
-
-                if (is_int($input_type_enum_case_storage->value)) {
-                    return self::isContainedBy(
-                        $codebase,
-                        new TLiteralInt($input_type_enum_case_storage->value),
-                        $container_type_part,
-                    );
-                }
-
-                return self::isContainedBy(
-                    $codebase,
-                    Type::getAtomicStringFromLiteral($input_type_enum_case_storage->value),
-                    $container_type_part,
-                );
             }
         }
 

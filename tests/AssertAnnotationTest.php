@@ -2194,6 +2194,10 @@ class AssertAnnotationTest extends TestCase
                     function assertSomeInt(int $foo): void
                     {}
 
+                    /** @psalm-assert value-of<StringEnum|IntEnum> $foo */
+                    function assertAnyEnumValue(string|int $foo): void
+                    {}
+
                     /** @param "foo"|"bar" $foo */
                     function takesSomeStringFromEnum(string $foo): StringEnum
                     {
@@ -2216,8 +2220,14 @@ class AssertAnnotationTest extends TestCase
 
                     assertSomeInt($int);
                     takesSomeIntFromEnum($int);
+
+                    /** @var string|int $potentialEnumValue */
+                    $potentialEnumValue = null;
+                    assertAnyEnumValue($potentialEnumValue);
                 ',
-                'assertions' => [],
+                'assertions' => [
+                    '$potentialEnumValue===' => "'bar'|'baz'|'foo'|1|2|3",
+                ],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
