@@ -631,12 +631,6 @@ class AtomicTypeComparator
             }
         }
 
-        if ($input_type_part instanceof TEnumCase
-            && !$container_type_part instanceof TEnumCase
-        ) {
-            return false;
-        }
-
         if ($container_type_part instanceof TString || $container_type_part instanceof TScalar) {
             if ($input_type_part instanceof TNamedObject) {
                 // check whether the object has a __toString method
