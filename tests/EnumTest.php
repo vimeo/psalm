@@ -1015,6 +1015,21 @@ class EnumTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'backedEnumDoesNotPassNativeType' => [
+                'code' => '<?php
+                    enum State: string
+                    {
+                        case A = "A";
+                        case B = "B";
+                        case C = "C";
+                    }
+                    function f(string $state): void {}
+                    f(State::A);
+                ',
+                'error_message' => 'InvalidArgument',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 }
