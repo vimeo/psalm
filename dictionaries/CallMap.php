@@ -12987,7 +12987,7 @@ return [
 'strpbrk' => ['string|false', 'string'=>'string', 'characters'=>'string'],
 'strpos' => ['int|false', 'haystack'=>'string', 'needle'=>'string', 'offset='=>'int'],
 'strptime' => ['array|false', 'timestamp'=>'string', 'format'=>'string'],
-'strrchr' => ['string|false', 'haystack'=>'string', 'needle'=>'string'],
+'strrchr' => ['string|false', 'haystack'=>'string', 'needle'=>'string', 'before_needle='=>'bool'],
 'strrev' => ['string', 'string'=>'string'],
 'strripos' => ['int|false', 'haystack'=>'string', 'needle'=>'string', 'offset='=>'int'],
 'strrpos' => ['int|false', 'haystack'=>'string', 'needle'=>'string', 'offset='=>'int'],

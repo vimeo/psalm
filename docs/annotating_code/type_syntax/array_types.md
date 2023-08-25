@@ -14,7 +14,7 @@ $a = [1, 2, 3, 4, 5];
 ```php
 <?php
 $a = [0 => 'hello', 5 => 'goodbye'];
-$b = ['a' => 'AA', 'b' => 'BB', 'c' => 'CC']
+$b = ['a' => 'AA', 'b' => 'BB', 'c' => 'CC'];
 ```
 
 Makeshift [Structs](https://en.wikipedia.org/wiki/Struct_(C_programming_language)):
