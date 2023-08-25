@@ -536,7 +536,7 @@ class SimpleAssertionReconciler extends Reconciler
         if ($assertion_type instanceof TValueOf) {
             return self::reconcileValueOf(
                 $codebase,
-                $assertion_type
+                $assertion_type,
             );
         }
 
