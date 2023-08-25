@@ -2956,6 +2956,9 @@ class SimpleAssertionReconciler extends Reconciler
         return TypeCombiner::combine(array_values($matched_class_constant_types), $codebase);
     }
 
+    /**
+     * @param Reconciler::RECONCILIATION_* $failed_reconciliation
+     */
     private static function reconcileValueOf(
         Codebase $codebase,
         TValueOf $assertion_type,
