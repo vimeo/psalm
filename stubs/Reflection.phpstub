@@ -413,11 +413,6 @@ abstract class ReflectionFunctionAbstract implements Reflector
     public function getClosure(): Closure {}
 
     /**
-     * @psalm-taint-sink callable $function
-     */
-    public function __construct(callable $function) {}
-
-    /**
      * @since 8.0
      * @template TClass as object
      * @param class-string<TClass>|null $name
@@ -430,7 +425,7 @@ class ReflectionFunction extends ReflectionFunctionAbstract
 {
     /**
      * @param callable-string|Closure $function
-     *
+     * @psalm-taint-sink callable $function
      * @psalm-pure
      */
     public function __construct(callable $function) {}
