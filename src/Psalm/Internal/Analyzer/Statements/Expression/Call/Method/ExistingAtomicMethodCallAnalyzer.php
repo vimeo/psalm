@@ -778,7 +778,9 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
 
                 $replacement->rule[] = new Assertion\IsType(new TTemplateParam(
                     $assertion->type->param_name,
-                    reset($potential_assertion_providing_classlike_storage->template_types[$assertion->type->param_name]),
+                    reset(
+                        $potential_assertion_providing_classlike_storage->template_types[$assertion->type->param_name],
+                    ),
                     $potential_assertion_providing_class,
                 ));
 
