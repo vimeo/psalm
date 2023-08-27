@@ -684,6 +684,8 @@ final class Codebase
 
     /**
      * Check whether a class/interface exists
+     *
+     * @psalm-assert-if-true class-string|interface-string|enum-string $fq_class_name
      */
     public function classOrInterfaceOrEnumExists(
         string $fq_class_name,
