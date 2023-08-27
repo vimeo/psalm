@@ -15,6 +15,7 @@ class ReflectionClass implements Reflector {
     /**
      * @param T|class-string<T>|interface-string<T>|trait-string|enum-string<T> $argument
      * @psalm-pure
+     * @psalm-taint-sink callable $argument
      */
     public function __construct($argument) {}
 
@@ -424,7 +425,7 @@ class ReflectionFunction extends ReflectionFunctionAbstract
 {
     /**
      * @param callable-string|Closure $function
-     *
+     * @psalm-taint-sink callable $function
      * @psalm-pure
      */
     public function __construct(callable $function) {}
