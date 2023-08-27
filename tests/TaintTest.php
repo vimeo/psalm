@@ -2489,6 +2489,20 @@ class TaintTest extends TestCase
                     echo pg_escape_string($conn, $_GET["a"]);',
                 'error_message' => 'TaintedHtml',
             ],
+            'taintedReflectionClass' => [
+                'code' => '<?php
+                    $name = $_GET["name"];
+                    $reflector = new ReflectionClass($name);
+                    $reflector->newInstance();',
+                'error_message' => 'TaintedCallable',
+            ],
+            'taintedReflectionFunction' => [
+                'code' => '<?php
+                    $name = $_GET["name"];
+                    $function = new ReflectionFunction($name);
+                    $function->invoke();',
+                'error_message' => 'TaintedCallable',
+            ],
         ];
     }
 
