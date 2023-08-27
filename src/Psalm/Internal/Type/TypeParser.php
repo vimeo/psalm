@@ -1643,7 +1643,7 @@ class TypeParser
                 true,
             );
 
-            $modified = $expanded_intersection_type[0] !== $intersection_type;
+            $modified = $modified || $expanded_intersection_type[0] !== $intersection_type;
             $normalized_intersection_types[] = $expanded_intersection_type;
         }
 
