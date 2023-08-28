@@ -2883,6 +2883,90 @@ class AssertAnnotationTest extends TestCase
                     '$iterable===' => 'non-empty-list<string>',
                 ],
             ],
+            'assertFromInheritedDocBlock' => [
+                'code' => '<?php
+                    namespace Namespace1 {
+
+                    /** @template InstanceType */
+                    interface PluginManagerInterface
+                    {
+                        /** @return InstanceType */
+                        public function get(): mixed;
+
+                        /** @psalm-assert InstanceType $value */
+                        public function validate(mixed $value): void;
+                    }
+
+                    /**
+                     * @template InstanceType
+                     * @template-implements PluginManagerInterface<InstanceType>
+                     */
+                    abstract class AbstractPluginManager implements PluginManagerInterface
+                    {
+                        /** @param InstanceType $value */
+                        public function __construct(private readonly mixed $value)
+                        {}
+
+                        /** {@inheritDoc} */
+                        public function get(): mixed
+                        {
+                            return $this->value;
+                        }
+                    }
+
+                    /**
+                     * @template InstanceType of object
+                     * @template-extends AbstractPluginManager<InstanceType>
+                     */
+                    abstract class AbstractSingleInstancePluginManager extends AbstractPluginManager
+                    {
+                        /**
+                         * An object type that the created instance must be instanced of
+                         *
+                         * @var class-string<InstanceType>
+                         */
+                        protected string $instanceOf;
+
+                        /** {@inheritDoc} */
+                        public function get(): object
+                        {
+                            return parent::get();
+                        }
+
+
+                        /** {@inheritDoc} */
+                        public function validate(mixed $value): void
+                        {
+                        }
+                    }
+                }
+
+                namespace Namespace2 {
+                    use Namespace1\AbstractSingleInstancePluginManager;
+                    use stdClass;
+
+                    /** @template-extends AbstractSingleInstancePluginManager<stdClass> */
+                    final class Qoo extends AbstractSingleInstancePluginManager
+                    {
+                        /** @var class-string<stdClass> */
+                        protected string $instanceOf = stdClass::class;
+                    }
+                }
+
+                namespace {
+                    $baz = new \Namespace2\Qoo(new stdClass);
+
+                    /** @var mixed $object */
+                    $object = null;
+                    $baz->validate($object);
+                }
+                ',
+                'assertions' => [
+                    '$object===' => 'stdClass',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
