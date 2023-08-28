@@ -15,6 +15,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
+use Psalm\Internal\Codebase\AssertionsFromInheritanceResolver;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
@@ -34,8 +35,6 @@ use Psalm\Issue\UndefinedThisPropertyFetch;
 use Psalm\IssueBuffer;
 use Psalm\Node\Expr\VirtualFuncCall;
 use Psalm\Plugin\EventHandler\Event\AfterMethodCallAnalysisEvent;
-use Psalm\Storage\Assertion;
-use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\Possibilities;
 use Psalm\Type;
 use Psalm\Type\Atomic;
@@ -46,13 +45,10 @@ use UnexpectedValueException;
 
 use function array_filter;
 use function array_map;
-use function array_merge;
-use function array_values;
 use function count;
 use function explode;
 use function in_array;
 use function is_string;
-use function reset;
 use function strpos;
 use function strtolower;
 
@@ -420,39 +416,8 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                 }
             }
 
-            $assertions = $method_storage->assertions;
-            if ($method_storage->inheritdoc) {
-                $inherited_classes_and_interfaces = array_values(array_filter(array_merge(
-                    $class_storage->parent_classes,
-                    $class_storage->class_implements,
-                ), fn(string $classOrInterface) => $codebase->classOrInterfaceOrEnumExists($classOrInterface)));
-
-                foreach ($inherited_classes_and_interfaces as $potential_assertion_providing_class) {
-                    $potential_assertion_providing_classlike_storage = $codebase->classlike_storage_provider->get(
-                        $potential_assertion_providing_class,
-                    );
-                    if (!isset($potential_assertion_providing_classlike_storage->methods[$method_name_lc])) {
-                        continue;
-                    }
-
-                    $potential_assertion_providing_method_storage = $potential_assertion_providing_classlike_storage
-                        ->methods[$method_name_lc];
-
-                    /**
-                     * Since the inheritance does not provide its own assertions, we have to detect those
-                     * from inherited classes
-                     */
-                    $assertions += array_map(
-                        static fn(Possibilities $possibilities) => self::modifyAssertionsForInheritance(
-                            $possibilities,
-                            $codebase,
-                            $class_storage,
-                            $inherited_classes_and_interfaces,
-                        ),
-                        $potential_assertion_providing_method_storage->assertions,
-                    );
-                }
-            }
+            $assertionsResolver = new AssertionsFromInheritanceResolver($codebase);
+            $assertions = $assertionsResolver->resolve($method_storage, $class_storage);
 
             if ($assertions) {
                 self::applyAssertionsToContext(
@@ -728,68 +693,5 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
         }
 
         return null;
-    }
-
-    /**
-     * In case the called class is either implementing or extending a class/interface which does also has the
-     * template we are searching for, we assume that the called method has the same assertions.
-     *
-     * @param list<class-string> $potential_assertion_providing_classes
-     */
-    private static function modifyAssertionsForInheritance(
-        Possibilities $possibilities,
-        Codebase $codebase,
-        ClassLikeStorage $called_class,
-        array $potential_assertion_providing_classes
-    ): Possibilities {
-        $replacement = new Possibilities($possibilities->var_id, []);
-        $extended_params = $called_class->template_extended_params;
-        foreach ($possibilities->rule as $assertion) {
-            if (!$assertion instanceof Assertion\IsType
-                || !$assertion->type instanceof TTemplateParam) {
-                $replacement->rule[] = $assertion;
-                continue;
-            }
-
-            /** Called class does not extend the template parameter */
-            $extended_templates = $called_class->template_extended_params;
-            if (!isset($extended_templates[$assertion->type->defining_class][$assertion->type->param_name])) {
-                $replacement->rule[] = $assertion;
-                continue;
-            }
-
-            foreach ($potential_assertion_providing_classes as $potential_assertion_providing_class) {
-                if (!isset($extended_params[$potential_assertion_providing_class][$assertion->type->param_name])) {
-                    continue;
-                }
-
-                if (!$codebase->classlike_storage_provider->has($potential_assertion_providing_class)) {
-                    continue;
-                }
-
-                $potential_assertion_providing_classlike_storage = $codebase->classlike_storage_provider->get(
-                    $potential_assertion_providing_class,
-                );
-                if (!isset(
-                    $potential_assertion_providing_classlike_storage->template_types[$assertion->type->param_name],
-                )) {
-                    continue;
-                }
-
-                $replacement->rule[] = new Assertion\IsType(new TTemplateParam(
-                    $assertion->type->param_name,
-                    reset(
-                        $potential_assertion_providing_classlike_storage->template_types[$assertion->type->param_name],
-                    ),
-                    $potential_assertion_providing_class,
-                ));
-
-                continue 2;
-            }
-
-            $replacement->rule[] = $assertion;
-        }
-
-        return $replacement;
     }
 }
