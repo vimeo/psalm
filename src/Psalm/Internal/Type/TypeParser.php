@@ -1629,9 +1629,7 @@ class TypeParser
                 continue;
             }
 
-            $modified = true;
-
-            $normalized_intersection_types[] = TypeExpander::expandAtomic(
+            $expanded_intersection_type = TypeExpander::expandAtomic(
                 $codebase,
                 $intersection_type,
                 null,
@@ -1644,6 +1642,9 @@ class TypeParser
                 true,
                 true,
             );
+
+            $modified = $modified || $expanded_intersection_type[0] !== $intersection_type;
+            $normalized_intersection_types[] = $expanded_intersection_type;
         }
 
         if ($modified === false) {
