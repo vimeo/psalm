@@ -1050,4 +1050,12 @@ final class IssueBuffer
     {
         self::$server = $server;
     }
+    /**
+     * @internal
+     * @return array<array-key,mixed>
+     */
+    final public static function getServer(): array
+    {
+        return self::$server;
+    }
 }

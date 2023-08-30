@@ -63,16 +63,13 @@ use function array_merge;
 use function array_shift;
 use function clearstatcache;
 use function count;
-use function defined;
 use function dirname;
 use function end;
 use function explode;
-use function extension_loaded;
 use function file_exists;
 use function fwrite;
 use function implode;
 use function in_array;
-use function ini_get;
 use function is_dir;
 use function is_file;
 use function microtime;
@@ -86,11 +83,8 @@ use function strpos;
 use function strtolower;
 use function substr;
 use function usort;
-use function version_compare;
 
 use const PHP_EOL;
-use const PHP_OS;
-use const PHP_VERSION;
 use const PSALM_VERSION;
 use const STDERR;
 

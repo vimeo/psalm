@@ -561,6 +561,11 @@ final class Codebase
         }
     }
 
+    /** @internal */
+    public function getProgress(): Progress
+    {
+        return $this->progress;
+    }
     public static function getPsalmTypeFromReflection(?ReflectionType $type): Union
     {
         return Reflection::getPsalmTypeFromReflectionType($type);

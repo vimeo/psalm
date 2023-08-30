@@ -2,14 +2,14 @@
 
 namespace Psalm\Internal\Codebase;
 
-use Closure;
 use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\IssueData;
-use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\ErrorHandler;
+use Psalm\Internal\Fork\InitScannerTask;
 use Psalm\Internal\Fork\Pool;
-use Psalm\Internal\Provider\ClassLikeStorageProvider;
+use Psalm\Internal\Fork\ScannerTask;
+use Psalm\Internal\Fork\ShutdownScannerTask;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
@@ -316,72 +316,17 @@ class Scanner
         }
 
         if ($pool_size > 1) {
-            $process_file_paths = [];
-
-            $i = 0;
-
-            foreach ($files_to_scan as $file_path) {
-                $process_file_paths[$i % $pool_size][] = $file_path;
-                ++$i;
-            }
-
             $this->progress->debug('Forking process for scanning' . PHP_EOL);
 
             // Run scanning one file at a time, splitting the set of
             // files up among a given number of child processes.
-            $pool = new Pool(
-                $this->config,
-                $process_file_paths,
-                function (): void {
-                    $this->progress->debug('Initialising forked process for scanning' . PHP_EOL);
-
-                    $project_analyzer = ProjectAnalyzer::getInstance();
-                    $codebase = $project_analyzer->getCodebase();
-                    $statements_provider = $codebase->statements_provider;
-
-                    $codebase->scanner->isForked();
-                    FileStorageProvider::deleteAll();
-                    ClassLikeStorageProvider::deleteAll();
-
-                    $statements_provider->resetDiffs();
-
-                    $this->progress->debug('Have initialised forked process for scanning' . PHP_EOL);
-                },
-                Closure::fromCallable([$this, 'scanAPath']),
-                /**
-                 * @return PoolData
-                 */
-                function () {
-                    $this->progress->debug('Collecting data from forked scanner process' . PHP_EOL);
-
-                    $project_analyzer = ProjectAnalyzer::getInstance();
-                    $codebase = $project_analyzer->getCodebase();
-                    $statements_provider = $codebase->statements_provider;
-
-                    return [
-                        'classlikes_data' => $codebase->classlikes->getThreadData(),
-                        'scanner_data' => $codebase->scanner->getThreadData(),
-                        'issues' => IssueBuffer::getIssuesData(),
-                        'changed_members' => $statements_provider->getChangedMembers(),
-                        'unchanged_signature_members' => $statements_provider->getUnchangedSignatureMembers(),
-                        'diff_map' => $statements_provider->getDiffMap(),
-                        'deletion_ranges' => $statements_provider->getDeletionRanges(),
-                        'errors' => $statements_provider->getErrors(),
-                        'classlike_storage' => $codebase->classlike_storage_provider->getAll(),
-                        'file_storage' => $codebase->file_storage_provider->getAll(),
-                        'new_file_content_hashes' => $statements_provider->parser_cache_provider
-                            ? $statements_provider->parser_cache_provider->getNewFileContentHashes()
-                            : [],
-                        'taint_data' => $codebase->taint_flow_graph,
-                    ];
-                },
+            $forked_pool_data = Pool::run(
+                $pool_size,
+                $files_to_scan,
+                new InitScannerTask(),
+                ScannerTask::class,
+                new ShutdownScannerTask,
             );
-
-            // Wait for all tasks to complete and collect the results.
-            /**
-             * @var array<int, PoolData>
-             */
-            $forked_pool_data = $pool->wait();
 
             foreach ($forked_pool_data as $pool_data) {
                 IssueBuffer::addIssues($pool_data['issues']);
@@ -417,15 +362,11 @@ class Scanner
                     );
                 }
             }
-
-            if ($pool->didHaveError()) {
-                exit(1);
-            }
         } else {
             $i = 0;
 
             foreach ($files_to_scan as $file_path => $_) {
-                $this->scanAPath($i, $file_path);
+                $this->scanAPath($file_path);
                 ++$i;
             }
         }
@@ -777,7 +718,8 @@ class Scanner
         $this->is_forked = true;
     }
 
-    private function scanAPath(int $_, string $file_path): void
+    /** @internal */
+    public function scanAPath(string $file_path): void
     {
         $this->scanFile(
             $file_path,

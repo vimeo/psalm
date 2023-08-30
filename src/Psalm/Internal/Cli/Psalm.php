@@ -268,8 +268,6 @@ final class Psalm
 
         $progress = self::initProgress($options, $config);
 
-        self::emitMacPcreWarning($options, $threads);
-
         self::restart($options, $threads, $progress);
 
         if (isset($options['debug-emitted-issues'])) {
@@ -862,24 +860,6 @@ final class Psalm
         }
 
         return $current_dir;
-    }
-
-    private static function emitMacPcreWarning(array $options, int $threads): void
-    {
-        if (!isset($options['threads'])
-            && !isset($options['debug'])
-            && $threads === 1
-            && ini_get('pcre.jit') === '1'
-            && PHP_OS === 'Darwin'
-            && version_compare(PHP_VERSION, '7.3.0') >= 0
-            && version_compare(PHP_VERSION, '7.4.0') < 0
-        ) {
-            echo(
-                'If you want to run Psalm as a language server, or run Psalm with' . PHP_EOL
-                    . 'multiple processes (--threads=4), beware:' . PHP_EOL
-                    . Pool::MAC_PCRE_MESSAGE . PHP_EOL . PHP_EOL
-            );
-        }
     }
 
     private static function restart(array $options, int $threads, Progress $progress): void
