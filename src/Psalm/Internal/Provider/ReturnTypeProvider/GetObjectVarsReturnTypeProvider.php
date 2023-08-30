@@ -17,14 +17,14 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Union;
 use UnitEnum;
 use stdClass;
 
-use function is_int;
-use function is_string;
 use function reset;
 use function strtolower;
 
@@ -63,11 +63,12 @@ class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProviderInter
                     return new TKeyedArray($properties);
                 }
                 $enum_case_storage = $enum_classlike_storage->enum_cases[$object_type->case_name];
-                if (is_int($enum_case_storage->value)) {
-                    $properties['value'] = new Union([new Atomic\TLiteralInt($enum_case_storage->value)]);
-                } elseif (is_string($enum_case_storage->value)) {
-                    $properties['value'] = new Union([Type::getAtomicStringFromLiteral($enum_case_storage->value)]);
+
+                if ($enum_case_storage->value instanceof TLiteralString
+                    || $enum_case_storage->value instanceof TLiteralInt) {
+                    $properties['value'] = new Union([$enum_case_storage->value]);
                 }
+
                 return new TKeyedArray($properties);
             }
 

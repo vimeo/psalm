@@ -52,6 +52,7 @@ use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
@@ -67,8 +68,6 @@ use function array_map;
 use function array_search;
 use function count;
 use function in_array;
-use function is_int;
-use function is_string;
 use function strtolower;
 
 use const ARRAY_FILTER_USE_KEY;
@@ -1034,10 +1033,9 @@ class AtomicPropertyFetchAnalyzer
         $case_values = [];
 
         foreach ($enum_cases as $enum_case) {
-            if (is_string($enum_case->value)) {
-                $case_values[] = Type::getAtomicStringFromLiteral($enum_case->value);
-            } elseif (is_int($enum_case->value)) {
-                $case_values[] = new TLiteralInt($enum_case->value);
+            if ($enum_case->value instanceof TLiteralString
+                || $enum_case->value instanceof TLiteralInt) {
+                $case_values[] = $enum_case->value;
             } else {
                 // this should never happen
                 $case_values[] = new TMixed();

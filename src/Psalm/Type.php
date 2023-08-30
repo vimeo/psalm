@@ -260,6 +260,7 @@ abstract class Type
     }
 
     /**
+     * @psalm-suppress PossiblyUnusedMethod
      * @param int|string $value
      * @return TLiteralString|TLiteralInt
      */

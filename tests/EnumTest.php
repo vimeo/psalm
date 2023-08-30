@@ -610,6 +610,31 @@ class EnumTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'nameTypeOnUnknownCases1' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Foo {}
+
+                    enum FooEnum: string {
+                        case Foo = Foo::class;
+                    }
+
+                    /**
+                     * @param class-string $s
+                     */
+                    function noop(string $s): string
+                    {
+                        return $s;
+                    }
+
+                    $foo = FooEnum::Foo->value;
+                    noop($foo);
+                    noop(FooEnum::Foo->value);
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
