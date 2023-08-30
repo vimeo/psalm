@@ -139,5 +139,10 @@
         "phpunit-std": "Runs unit tests.",
         "psalm": "Runs static analysis.",
         "tests": "Runs all available tests."
+    },
+    "support": {
+      "docs": "https://psalm.dev/docs",
+      "issues": "https://github.com/vimeo/psalm/issues",
+      "source": "https://github.com/vimeo/psalm"
     }
 }
