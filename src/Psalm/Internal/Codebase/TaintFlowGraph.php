@@ -24,6 +24,7 @@ use Psalm\Issue\TaintedSystemSecret;
 use Psalm\Issue\TaintedTextWithQuotes;
 use Psalm\Issue\TaintedUnserialize;
 use Psalm\Issue\TaintedUserSecret;
+use Psalm\Issue\TaintedXpath;
 use Psalm\IssueBuffer;
 use Psalm\Type\TaintKind;
 
@@ -443,6 +444,15 @@ class TaintFlowGraph extends DataFlowGraph
                             case TaintKind::INPUT_HEADER:
                                 $issue = new TaintedHeader(
                                     'Detected tainted header',
+                                    $issue_location,
+                                    $issue_trace,
+                                    $path,
+                                );
+                                break;
+
+                            case TaintKind::INPUT_XPATH:
+                                $issue = new TaintedXpath(
+                                    'Detected tainted xpath query',
                                     $issue_location,
                                     $issue_trace,
                                     $path,
