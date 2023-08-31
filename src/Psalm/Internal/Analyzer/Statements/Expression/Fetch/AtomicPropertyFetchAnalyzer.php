@@ -51,8 +51,6 @@ use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TInt;
-use Psalm\Type\Atomic\TLiteralInt;
-use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
@@ -1033,13 +1031,7 @@ class AtomicPropertyFetchAnalyzer
         $case_values = [];
 
         foreach ($enum_cases as $enum_case) {
-            if ($enum_case->value instanceof TLiteralString
-                || $enum_case->value instanceof TLiteralInt) {
-                $case_values[] = $enum_case->value;
-            } else {
-                // this should never happen
-                $case_values[] = new TMixed();
-            }
+            $case_values[] = $enum_case->value ?? new TMixed();
         }
 
         /** @psalm-suppress ArgumentTypeCoercion */

@@ -17,8 +17,6 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TLiteralInt;
-use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Union;
@@ -64,8 +62,7 @@ class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProviderInter
                 }
                 $enum_case_storage = $enum_classlike_storage->enum_cases[$object_type->case_name];
 
-                if ($enum_case_storage->value instanceof TLiteralString
-                    || $enum_case_storage->value instanceof TLiteralInt) {
+                if ($enum_case_storage->value !== null) {
                     $properties['value'] = new Union([$enum_case_storage->value]);
                 }
 
