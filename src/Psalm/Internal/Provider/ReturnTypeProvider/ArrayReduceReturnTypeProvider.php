@@ -16,7 +16,6 @@ use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Union;
 
@@ -72,14 +71,11 @@ class ArrayReduceReturnTypeProvider implements FunctionReturnTypeProviderInterfa
 
         if (isset($array_arg_types['array'])
             && ($array_arg_types['array'] instanceof TArray
-                || $array_arg_types['array'] instanceof TList
                 || $array_arg_types['array'] instanceof TKeyedArray)
         ) {
             $array_arg_atomic_type = $array_arg_types['array'];
 
-            if ($array_arg_atomic_type instanceof TList) {
-                $array_arg_atomic_type = $array_arg_atomic_type->getKeyedArray();
-            }
+
 
             if ($array_arg_atomic_type instanceof TKeyedArray) {
                 $array_arg_atomic_type = $array_arg_atomic_type->getGenericArrayType();

@@ -619,7 +619,6 @@ class AssertionReconciler extends Reconciler
         }
 
         /*if ($type_2_atomic instanceof TKeyedArray
-            && $type_1_atomic instanceof \Psalm\Type\Atomic\TList
         ) {
             $type_2_key = $type_2_atomic->getGenericKeyType();
             $type_2_value = $type_2_atomic->getGenericValueType();

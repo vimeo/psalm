@@ -9,8 +9,7 @@ namespace Psalm\Type\Atomic;
  */
 final class TLiteralFloat extends TFloat
 {
-    /** @var float */
-    public $value;
+    public float $value;
 
     public function __construct(float $value, bool $from_docblock = false)
     {

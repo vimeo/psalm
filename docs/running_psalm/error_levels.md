@@ -297,6 +297,7 @@ Level 5 and above allows a more non-verifiable code, and higher levels are even 
  - [TaintedSystemSecret](issues/TaintedSystemSecret.md)
  - [TaintedUnserialize](issues/TaintedUnserialize.md)
  - [TaintedUserSecret](issues/TaintedUserSecret.md)
+ - [TaintedXpath](issues/TaintedXpath.md)
  - [UncaughtThrowInGlobalScope](issues/UncaughtThrowInGlobalScope.md)
  - [UnevaluatedCode](issues/UnevaluatedCode.md)
  - [UnnecessaryVarAnnotation](issues/UnnecessaryVarAnnotation.md)

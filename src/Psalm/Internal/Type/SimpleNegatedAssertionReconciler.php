@@ -39,7 +39,6 @@ use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
@@ -1665,9 +1664,6 @@ class SimpleNegatedAssertionReconciler extends Reconciler
         $redundant = !$existing_var_type->hasScalar();
 
         foreach ($existing_var_type->getAtomicTypes() as $type) {
-            if ($type instanceof TList) {
-                $type = $type->getKeyedArray();
-            }
             if ($type instanceof TTemplateParam) {
                 if (!$is_equality && !$type->as->isMixed()) {
                     $template_did_fail = 0;

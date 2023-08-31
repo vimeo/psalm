@@ -19,7 +19,6 @@ use Psalm\Type\Atomic\TDependentGetClass;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
@@ -293,9 +292,7 @@ class TemplateStandinTypeReplacer
                         $array_template_type = $array_template_type->getSingleAtomic();
                         $offset_template_type = $offset_template_type->getSingleAtomic();
 
-                        if ($array_template_type instanceof TList) {
-                            $array_template_type = $array_template_type->getKeyedArray();
-                        }
+
                         if ($array_template_type instanceof TKeyedArray
                             && ($offset_template_type instanceof TLiteralString
                                 || $offset_template_type instanceof TLiteralInt)
@@ -345,9 +342,6 @@ class TemplateStandinTypeReplacer
 
             if ($template_type) {
                 foreach ($template_type->getAtomicTypes() as $template_atomic) {
-                    if ($template_atomic instanceof TList) {
-                        $template_atomic = $template_atomic->getKeyedArray();
-                    }
                     if (!$template_atomic instanceof TKeyedArray
                         && !$template_atomic instanceof TArray
                     ) {
@@ -475,10 +469,6 @@ class TemplateStandinTypeReplacer
         $matching_atomic_types = [];
 
         foreach ($input_type->getAtomicTypes() as $input_key => $atomic_input_type) {
-            if ($atomic_input_type instanceof TList) {
-                $atomic_input_type = $atomic_input_type->getKeyedArray();
-            }
-
             if ($bracket_pos = strpos($input_key, '<')) {
                 $input_key = substr($input_key, 0, $bracket_pos);
             }
@@ -759,9 +749,6 @@ class TemplateStandinTypeReplacer
 
                         if ($keyed_template->isSingle()) {
                             $keyed_template = $keyed_template->getSingleAtomic();
-                        }
-                        if ($keyed_template instanceof \Psalm\Type\Atomic\TList) {
-                            $keyed_template = $keyed_template->getKeyedArray();
                         }
 
                         if ($keyed_template instanceof TKeyedArray

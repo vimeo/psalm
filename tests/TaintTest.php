@@ -750,6 +750,19 @@ class TaintTest extends TestCase
 
                     $mysqli->query("$a$b$c$d");',
             ],
+            'querySimpleXMLElement' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-taint-escape xpath
+                     */
+                    function my_escaping_function_for_xpath(string input) : string {};
+
+                    function queryExpression(SimpleXMLElement $xml) : array|false|null {
+                        $expression = $_GET["expression"];
+                        $expression = my_escaping_function_for_xpath($expression);
+                        return $xml->xpath($expression);
+                    }',
+            ],
         ];
     }
 
@@ -2502,6 +2515,30 @@ class TaintTest extends TestCase
                     $function = new ReflectionFunction($name);
                     $function->invoke();',
                 'error_message' => 'TaintedCallable',
+            ],
+            'querySimpleXMLElement' => [
+                'code' => '<?php
+                    function queryExpression(SimpleXMLElement $xml) : array|false|null {
+                        $expression = $_GET["expression"];
+                        return $xml->xpath($expression);
+                    }',
+                'error_message' => 'TaintedXpath',
+            ],
+            'queryDOMXPath' => [
+                'code' => '<?php
+                    function queryExpression(DOMXPath $xpath) : mixed {
+                        $expression = $_GET["expression"];
+                        return $xpath->query($expression);
+                    }',
+                'error_message' => 'TaintedXpath',
+            ],
+            'evaluateDOMXPath' => [
+                'code' => '<?php
+                    function evaluateExpression(DOMXPath $xpath) : mixed {
+                        $expression = $_GET["expression"];
+                        return $xpath->evaluate($expression);
+                    }',
+                'error_message' => 'TaintedXpath',
             ],
         ];
     }
