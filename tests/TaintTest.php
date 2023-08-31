@@ -749,7 +749,7 @@ class TaintTest extends TestCase
                     $d = mysqli_real_escape_string($_GET["d"]);
 
                     $mysqli->query("$a$b$c$d");',
-            ],            
+            ],
             'querySimpleXMLElement' => [
                 'code' => '<?php
                     /**
@@ -2521,7 +2521,7 @@ class TaintTest extends TestCase
                     function queryExpression(SimpleXMLElement $xml) : array|false|null {
                         $expression = $_GET["expression"];
                         return $xml->xpath($expression);
-                    }',                
+                    }',
                 'error_message' => 'TaintedXpath',
             ],
             'queryDOMXPath' => [
@@ -2529,7 +2529,7 @@ class TaintTest extends TestCase
                     function queryExpression(DOMXPath $xpath) : mixed {
                         $expression = $_GET["expression"];
                         return $xpath->query($expression);
-                    }',                
+                    }',
                 'error_message' => 'TaintedXpath',
             ],
             'evaluateDOMXPath' => [
@@ -2537,7 +2537,7 @@ class TaintTest extends TestCase
                     function evaluateExpression(DOMXPath $xpath) : mixed {
                         $expression = $_GET["expression"];
                         return $xpath->evaluate($expression);
-                    }',                
+                    }',
                 'error_message' => 'TaintedXpath',
             ],
         ];

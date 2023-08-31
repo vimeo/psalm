@@ -1,4 +1,4 @@
-# TaintedSql
+# TaintedXpath
 
 Emitted when user-controlled input can be passed into to a xpath query.
 
