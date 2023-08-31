@@ -710,6 +710,15 @@ class Scanner
 
     public function isForked(): void
     {
+        $this->files_to_scan = [];
+        $this->files_to_deep_scan = [];
+        $this->classes_to_scan = [];
+        $this->classes_to_deep_scan = [];
+        $this->store_scan_failure = [];
+        $this->classlike_files = [];
+        $this->deep_scanned_classlike_files = [];
+        $this->scanned_files = [];
+        $this->reflected_classlikes_lc = [];
         $this->is_forked = true;
     }
 
