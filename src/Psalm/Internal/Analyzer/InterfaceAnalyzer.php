@@ -11,9 +11,13 @@ use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\Statements\Expression\ClassConstAnalyzer;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\Provider\NodeDataProvider;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Issue\InheritorViolation;
 use Psalm\Issue\ParseError;
 use Psalm\Issue\UndefinedInterface;
 use Psalm\IssueBuffer;
+use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function strtolower;
@@ -106,6 +110,23 @@ class InterfaceAnalyzer extends ClassLikeAnalyzer
                     $code_location,
                     $class_storage->template_type_extends_count[$extended_interface_name] ?? 0,
                 );
+            }
+        }
+
+        $class_union = new Union([new TNamedObject($fq_interface_name)]);
+        foreach ($class_storage->direct_interface_parents as $parent_interface) {
+            $parent_storage = $codebase->classlikes->getStorageFor($parent_interface);
+            if ($parent_storage && $parent_storage->inheritors) {
+                if (!UnionTypeComparator::isContainedBy($codebase, $class_union, $parent_storage->inheritors)) {
+                    IssueBuffer::maybeAdd(
+                        new InheritorViolation(
+                            'Interface ' . $fq_interface_name . '
+                             is not an allowed inheritor of parent interface ' . $parent_interface,
+                            new CodeLocation($this, $this->class),
+                        ),
+                        $this->getSuppressedIssues(),
+                    );
+                }
             }
         }
 

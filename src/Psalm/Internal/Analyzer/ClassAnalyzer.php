@@ -36,6 +36,7 @@ use Psalm\Issue\DuplicateEnumCaseValue;
 use Psalm\Issue\ExtensionRequirementViolation;
 use Psalm\Issue\ImplementationRequirementViolation;
 use Psalm\Issue\InaccessibleMethod;
+use Psalm\Issue\InheritorViolation;
 use Psalm\Issue\InternalClass;
 use Psalm\Issue\InvalidEnumCaseValue;
 use Psalm\Issue\InvalidExtendClass;
@@ -269,6 +270,22 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 $codebase,
                 $class_context,
             );
+        }
+
+        $class_union = new Union([new TNamedObject($fq_class_name)]);
+        foreach ($storage->parent_classes + $storage->direct_class_interfaces as $parent_class) {
+            $parent_storage = $codebase->classlikes->getStorageFor($parent_class);
+            if ($parent_storage && $parent_storage->inheritors) {
+                if (!UnionTypeComparator::isContainedBy($codebase, $class_union, $parent_storage->inheritors)) {
+                    IssueBuffer::maybeAdd(
+                        new InheritorViolation(
+                            'Class ' . $fq_class_name . ' is not an allowed inheritor of parent class ' . $parent_class,
+                            new CodeLocation($this, $this->class),
+                        ),
+                        $this->getSuppressedIssues(),
+                    );
+                }
+            }
         }
 
 
