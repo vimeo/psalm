@@ -23,8 +23,6 @@ use Psalm\Type\Union;
 use UnitEnum;
 use stdClass;
 
-use function is_int;
-use function is_string;
 use function reset;
 use function strtolower;
 
@@ -63,11 +61,11 @@ class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProviderInter
                     return new TKeyedArray($properties);
                 }
                 $enum_case_storage = $enum_classlike_storage->enum_cases[$object_type->case_name];
-                if (is_int($enum_case_storage->value)) {
-                    $properties['value'] = new Union([new Atomic\TLiteralInt($enum_case_storage->value)]);
-                } elseif (is_string($enum_case_storage->value)) {
-                    $properties['value'] = new Union([Type::getAtomicStringFromLiteral($enum_case_storage->value)]);
+
+                if ($enum_case_storage->value !== null) {
+                    $properties['value'] = new Union([$enum_case_storage->value]);
                 }
+
                 return new TKeyedArray($properties);
             }
 

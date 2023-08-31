@@ -33,6 +33,8 @@
 
 - [BC] Properties `Psalm\Type\Atomic\TLiteralFloat::$value` and `Psalm\Type\Atomic\TLiteralInt::$value` became typed (`float` and `int` respectively)
 
+- [BC] Property `Psalm\Storage\EnumCaseStorage::$value` changed from `int|string|null` to `TLiteralInt|TLiteralString|null`
+
 # Upgrading from Psalm 4 to Psalm 5
 ## Changed
 

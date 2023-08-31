@@ -35,6 +35,7 @@ use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 use UnexpectedValueException;
@@ -44,7 +45,6 @@ use function assert;
 use function count;
 use function explode;
 use function in_array;
-use function is_int;
 use function reset;
 use function strtolower;
 
@@ -629,9 +629,7 @@ class Methods
                 foreach ($original_class_storage->enum_cases as $case_name => $case_storage) {
                     if (UnionTypeComparator::isContainedBy(
                         $source_analyzer->getCodebase(),
-                        is_int($case_storage->value) ?
-                            Type::getInt(false, $case_storage->value) :
-                            Type::getString($case_storage->value),
+                        new Union([$case_storage->value ?? new TString()]),
                         $first_arg_type,
                     )) {
                         $types[] = new TEnumCase($original_fq_class_name, $case_name);

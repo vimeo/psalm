@@ -2978,7 +2978,7 @@ class SimpleAssertionReconciler extends Reconciler
                         $enum_case->value !== null,
                         'Verified enum type above, value can not contain `null` anymore.',
                     );
-                    $reconciled_types[] = Type::getLiteral($enum_case->value);
+                    $reconciled_types[] = $enum_case->value;
                 }
 
                 continue;
@@ -2990,7 +2990,7 @@ class SimpleAssertionReconciler extends Reconciler
             }
 
             assert($enum_case->value !== null, 'Verified enum type above, value can not contain `null` anymore.');
-            $reconciled_types[] = Type::getLiteral($enum_case->value);
+            $reconciled_types[] = $enum_case->value;
         }
 
         if ($reconciled_types === []) {
