@@ -10,7 +10,6 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNever;
@@ -64,9 +63,6 @@ class UnsetAnalyzer
                     $root_types = [];
 
                     foreach ($context->vars_in_scope[$root_var_id]->getAtomicTypes() as $atomic_root_type) {
-                        if ($atomic_root_type instanceof TList) {
-                            $atomic_root_type = $atomic_root_type->getKeyedArray();
-                        }
                         if ($atomic_root_type instanceof TKeyedArray) {
                             $key_value = null;
                             if ($key_type->isSingleIntLiteral()) {

@@ -31,7 +31,6 @@ use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
@@ -510,15 +509,7 @@ class ArithmeticOpAnalyzer
             || $right_type_part instanceof TArray
             || $left_type_part instanceof TKeyedArray
             || $right_type_part instanceof TKeyedArray
-            || $left_type_part instanceof TList
-            || $right_type_part instanceof TList
         ) {
-            if ($left_type_part instanceof TList) {
-                $left_type_part = $left_type_part->getKeyedArray();
-            }
-            if ($right_type_part instanceof TList) {
-                $right_type_part = $right_type_part->getKeyedArray();
-            }
             if ((!$right_type_part instanceof TArray
                     && !$right_type_part instanceof TKeyedArray)
                 || (!$left_type_part instanceof TArray

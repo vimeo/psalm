@@ -5,12 +5,10 @@ declare(strict_types=1);
 namespace Psalm\Internal\LanguageServer;
 
 use AdvancedJsonRpc\Message as MessageBody;
-use Amp\ByteStream\ResourceInputStream;
-use Amp\Promise;
+use Amp\ByteStream\ReadableResourceStream;
 use Exception;
-use Generator;
+use Revolt\EventLoop;
 
-use function Amp\asyncCall;
 use function explode;
 use function strlen;
 use function substr;
@@ -45,16 +43,11 @@ class ProtocolStreamReader implements ProtocolReader
      */
     public function __construct($input)
     {
-        $input = new ResourceInputStream($input);
-        asyncCall(
-            /**
-             * @return Generator<int, Promise<?string>, ?string, void>
-             */
-            function () use ($input): Generator {
+        $input = new ReadableResourceStream($input);
+        EventLoop::queue(
+            function () use ($input): void {
                 while ($this->is_accepting_new_requests) {
-                    $read_promise = $input->read();
-
-                    $chunk = yield $read_promise;
+                    $chunk = $input->read();
 
                     if ($chunk === null) {
                         break;

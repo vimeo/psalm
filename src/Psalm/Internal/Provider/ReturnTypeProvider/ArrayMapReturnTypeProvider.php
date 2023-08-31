@@ -25,7 +25,6 @@ use Psalm\Storage\Assertion;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -144,9 +143,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
 
             if (isset($arg_types['array'])) {
                 $array_arg_atomic_type = $arg_types['array'];
-                if ($array_arg_atomic_type instanceof TList) {
-                    $array_arg_atomic_type = $array_arg_atomic_type->getKeyedArray();
-                }
+
                 $array_arg_type = ArrayType::infer($array_arg_atomic_type);
             }
         }

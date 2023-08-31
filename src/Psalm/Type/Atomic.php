@@ -18,7 +18,6 @@ use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCallableArray;
 use Psalm\Type\Atomic\TCallableKeyedArray;
-use Psalm\Type\Atomic\TCallableList;
 use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TClassString;
@@ -36,7 +35,6 @@ use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
@@ -462,7 +460,6 @@ abstract class Atomic implements TypeNode
             || $this instanceof TCallableObject
             || $this instanceof TCallableString
             || $this instanceof TCallableArray
-            || $this instanceof TCallableList
             || $this instanceof TCallableKeyedArray
             || $this instanceof TClosure;
     }
@@ -472,7 +469,6 @@ abstract class Atomic implements TypeNode
         return $this instanceof TIterable
             || $this->hasTraversableInterface($codebase)
             || $this instanceof TArray
-            || $this instanceof TList
             || $this instanceof TKeyedArray;
     }
 
@@ -518,8 +514,7 @@ abstract class Atomic implements TypeNode
     {
         return $this->hasCountableInterface($codebase)
             || $this instanceof TArray
-            || $this instanceof TKeyedArray
-            || $this instanceof TList;
+            || $this instanceof TKeyedArray;
     }
 
     /**

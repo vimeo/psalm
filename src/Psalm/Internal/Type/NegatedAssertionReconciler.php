@@ -21,7 +21,6 @@ use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
@@ -204,8 +203,7 @@ class NegatedAssertionReconciler extends Reconciler
             // fall through
         } elseif ($existing_var_type->isArray()
             && ($assertion->getAtomicType() instanceof TArray
-                || $assertion->getAtomicType() instanceof TKeyedArray
-                || $assertion->getAtomicType() instanceof TList)
+                || $assertion->getAtomicType() instanceof TKeyedArray)
         ) {
             //if both types are arrays, try to combine them
             $combined_type = TypeCombiner::combine(

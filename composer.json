@@ -15,7 +15,7 @@
         }
     ],
     "require": {
-        "php": "^7.4 || ~8.0.0 || ~8.1.0 || ~8.2.0 || ~8.3.0",
+        "php": "~8.1.17 || ~8.2.4 || ~8.3.0",
         "ext-SimpleXML": "*",
         "ext-ctype": "*",
         "ext-dom": "*",
@@ -24,8 +24,8 @@
         "ext-mbstring": "*",
         "ext-tokenizer": "*",
         "composer-runtime-api": "^2",
-        "amphp/amp": "^2.4.2",
-        "amphp/byte-stream": "^1.5",
+        "amphp/amp": "^3",
+        "amphp/byte-stream": "^2",
         "composer/semver": "^1.4 || ^2.0 || ^3.0",
         "composer/xdebug-handler": "^2.0 || ^3.0",
         "dnoegel/php-xdg-base-dir": "^0.1.1",
@@ -47,7 +47,7 @@
     },
     "require-dev": {
         "ext-curl": "*",
-        "amphp/phpunit-util": "^2.0",
+        "amphp/phpunit-util": "^3",
         "bamarni/composer-bin-plugin": "^1.4",
         "brianium/paratest": "^6.9",
         "mockery/mockery": "^1.5",
@@ -77,7 +77,8 @@
     },
     "extra": {
         "branch-alias": {
-            "dev-master": "5.x-dev",
+            "dev-master": "6.x-dev",
+            "dev-5.x": "5.x-dev",
             "dev-4.x": "4.x-dev",
             "dev-3.x": "3.x-dev",
             "dev-2.x": "2.x-dev",
