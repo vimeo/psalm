@@ -9,6 +9,8 @@
 
 - [BC] The `TDependentListKey` type was removed and replaced with an optional property of the `TIntRange` type.
 
+- [BC] Value of constant `Psalm\Type\TaintKindGroup::ALL_INPUT` changed to reflect a new `TaintKind::INPUT_XPATH` have been added. Accordingly, default values for `$taint` parameters of `Psalm\Codebase::addTaintSource()` and `Psalm\Codebase::addTaintSink()` have been changed as well.
+
 # Upgrading from Psalm 4 to Psalm 5
 ## Changed
 
