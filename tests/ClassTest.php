@@ -1393,7 +1393,6 @@ class ClassTest extends TestCase
                      */
                     class BaseClass {}
                     class BazClass extends BaseClass {} // this is an error
-                    $a = new BazClass();
                     PHP,
                 'error_message' => 'InheritorViolation',
                 'ignored_issues' => [],
@@ -1406,7 +1405,6 @@ class ClassTest extends TestCase
                      */
                     interface BaseInterface {}
                     class BazClass implements BaseInterface {}
-                    $a = new BazClass();
                     PHP,
                 'error_message' => 'InheritorViolation',
                 'ignored_issues' => [],
@@ -1423,7 +1421,6 @@ class ClassTest extends TestCase
                      */
                     interface InterfaceB {}
                     class BazClass implements InterFaceA, InterFaceB {}
-                    $a = new BazClass();
                     PHP,
                 'error_message' => 'InheritorViolation',
                 'ignored_issues' => [],
