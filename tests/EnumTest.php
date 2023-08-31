@@ -610,7 +610,7 @@ class EnumTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
-            'nameTypeOnUnknownCases1' => [
+            'classStringAsBackedEnumValue' => [
                 'code' => <<<'PHP'
                     <?php
                     class Foo {}
