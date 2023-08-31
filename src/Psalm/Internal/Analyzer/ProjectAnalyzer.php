@@ -13,6 +13,7 @@ use Psalm\Exception\UnsupportedIssueToFixException;
 use Psalm\FileManipulation;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
+use Psalm\Internal\Fork\Pool;
 use Psalm\Internal\LanguageServer\LanguageServer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
@@ -76,6 +77,7 @@ use function microtime;
 use function mkdir;
 use function number_format;
 use function preg_match;
+use function Psl\Type\array_key;
 use function rename;
 use function sprintf;
 use function strlen;
@@ -123,8 +125,6 @@ class ProjectAnalyzer
 
     public bool $show_issues = true;
 
-    public int $threads;
-
     /**
      * @var array<string, bool>
      */
@@ -167,6 +167,11 @@ class ProjectAnalyzer
      */
     public array $generated_report_options;
 
+    /** @internal */
+    public Pool $pool;
+
+    /** @internal */
+    public int $threads;
     /**
      * @var array<int, class-string<CodeIssue>>
      */
@@ -271,6 +276,10 @@ class ProjectAnalyzer
         }
 
         self::$instance = $this;
+
+        if ($threads > 1) {
+            $this->pool = new Pool($threads);
+        }
     }
 
     private function clearCacheDirectoryIfConfigOrComposerLockfileChanged(): void
@@ -392,6 +401,7 @@ class ProjectAnalyzer
 
         if ($usable_cpus > 1) {
             $this->threads = $usable_cpus;
+            $this->pool = new Pool($usable_cpus);
         }
 
         $server->logInfo("Initializing: Initialize Plugins...");
@@ -413,6 +423,12 @@ class ProjectAnalyzer
     public function canReportIssues(string $file_path): bool
     {
         return isset($this->project_files[$file_path]);
+    }
+    public function __sleep(): array
+    {
+        $vars = get_object_vars($this);
+        unset($vars['pool']);
+        return array_keys($vars);
     }
 
     private function generatePHPVersionMessage(): string
@@ -505,7 +521,7 @@ class ProjectAnalyzer
 
             $this->config->initializePlugins($this);
 
-            $this->codebase->scanFiles($this->threads);
+            $this->codebase->scanFiles();
 
             $this->codebase->infer_types_from_usage = true;
         } else {
@@ -528,7 +544,7 @@ class ProjectAnalyzer
 
                     $this->config->initializePlugins($this);
 
-                    $this->codebase->scanFiles($this->threads);
+                    $this->codebase->scanFiles();
                 } else {
                     $diff_no_files = true;
                 }
@@ -549,7 +565,6 @@ class ProjectAnalyzer
 
         $this->codebase->analyzer->analyzeFiles(
             $this,
-            $this->threads,
             $this->codebase->alter_code,
             true,
         );
@@ -905,7 +920,7 @@ class ProjectAnalyzer
 
         $this->config->initializePlugins($this);
 
-        $this->codebase->scanFiles($this->threads);
+        $this->codebase->scanFiles();
 
         $this->config->visitStubFiles($this->codebase, $this->progress);
 
@@ -913,7 +928,6 @@ class ProjectAnalyzer
 
         $this->codebase->analyzer->analyzeFiles(
             $this,
-            $this->threads,
             $this->codebase->alter_code,
             $this->codebase->find_unused_code === 'always',
         );
@@ -1015,7 +1029,7 @@ class ProjectAnalyzer
 
         $this->config->initializePlugins($this);
 
-        $this->codebase->scanFiles($this->threads);
+        $this->codebase->scanFiles();
 
         $this->config->visitStubFiles($this->codebase, $this->progress);
 
@@ -1023,7 +1037,6 @@ class ProjectAnalyzer
 
         $this->codebase->analyzer->analyzeFiles(
             $this,
-            $this->threads,
             $this->codebase->alter_code,
             $this->codebase->find_unused_code === 'always',
         );
@@ -1059,7 +1072,7 @@ class ProjectAnalyzer
         $this->config->initializePlugins($this);
 
 
-        $this->codebase->scanFiles($this->threads);
+        $this->codebase->scanFiles();
 
         $this->config->visitStubFiles($this->codebase, $this->progress);
 
@@ -1067,7 +1080,6 @@ class ProjectAnalyzer
 
         $this->codebase->analyzer->analyzeFiles(
             $this,
-            $this->threads,
             $this->codebase->alter_code,
             $this->codebase->find_unused_code === 'always',
         );

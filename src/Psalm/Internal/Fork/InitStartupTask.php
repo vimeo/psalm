@@ -5,41 +5,47 @@ namespace Psalm\Internal\Fork;
 use Amp\Cancellation;
 use Amp\Parallel\Worker\Task;
 use Amp\Sync\Channel;
-use AssertionError;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\CliUtils;
 use Psalm\Internal\ErrorHandler;
-use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Internal\VersionUtils;
 use Psalm\IssueBuffer;
 
+use function cli_get_process_title;
+use function cli_set_process_title;
+use function define;
+use function function_exists;
+use function gc_collect_cycles;
+use function gc_disable;
+use function ini_get;
+use function ini_set;
+
 use const PHP_EOL;
 
-/** @internal */
-abstract class InitTask implements Task
+final class InitStartupTask implements Task
 {
     private readonly ProjectAnalyzer $analyzer;
     private readonly Config $config;
     private readonly string $memoryLimit;
     private readonly array $server;
-    public static bool $ran = false;
+    private readonly ?string $processTitle;
     final public function __construct()
     {
         $this->analyzer = ProjectAnalyzer::getInstance();
         $this->config = Config::getInstance();
         $this->memoryLimit = ini_get('memory_limit');
         $this->server = IssueBuffer::getServer();
+        if (function_exists('cli_get_process_title')) {
+            $this->processTitle = cli_get_process_title();
+        } else {
+            $this->processTitle = null;
+        }
     }
     final public function run(Channel $channel, Cancellation $cancellation): mixed
     {
-        if (self::$ran) {
-            throw new AssertionError("Already inited!");
-        }
-        self::$ran = true;
-
         define('PSALM_VERSION', VersionUtils::getPsalmVersion());
         define('PHP_PARSER_VERSION', VersionUtils::getPhpParserVersion());
 
@@ -58,9 +64,10 @@ abstract class InitTask implements Task
         ProjectAnalyzer::$instance = $this->analyzer;
         Config::setInstance($this->config);
 
-        static::init();
+        if (function_exists('cli_set_process_title') && $this->processTitle !== null) {
+            @cli_set_process_title($this->processTitle);
+        }
 
         return null;
     }
-    abstract protected function init(): void;
 }

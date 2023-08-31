@@ -116,6 +116,14 @@ class PsalmRestarter extends XdebugHandler
         return $value;
     }
 
+    public const OPCACHE_OPTIONS = [
+        '-dopcache.enable_cli=true',
+        '-dopcache.jit_buffer_size=512M',
+        '-dopcache.jit=1205',
+        '-dopcache.optimization_level=0x7FFEBFFF',
+        '-dopcache.preload=',
+        '-dopcache.log_verbosity_level=0',
+    ];
 
     /**
      * No type hint to allow xdebug-handler v1 and v2 usage
@@ -141,15 +149,8 @@ class PsalmRestarter extends XdebugHandler
         // if it wasn't loaded then we apparently don't have opcache installed and there's no point trying
         // to tweak it
         // If we're running on 7.4 there's no JIT available
-        if (PHP_VERSION_ID >= 8_00_00 && $opcache_loaded) {
-            $additional_options = [
-                '-dopcache.enable_cli=true',
-                '-dopcache.jit_buffer_size=512M',
-                '-dopcache.jit=1205',
-                '-dopcache.optimization_level=0x7FFEBFFF',
-                '-dopcache.preload=',
-                '-dopcache.log_verbosity_level=0',
-            ];
+        if ($opcache_loaded) {
+            $additional_options = self::OPCACHE_OPTIONS;
         }
 
         array_splice(

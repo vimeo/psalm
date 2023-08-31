@@ -8,9 +8,9 @@ use Amp\Sync\Channel;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 
-final class InitAnalyzerTask extends InitTask
+final class InitAnalyzerTask implements Task
 {
-    public function init(): void
+    public function run(Channel $channel, Cancellation $cancellation): mixed
     {
         $project_analyzer = ProjectAnalyzer::getInstance();
         $codebase = $project_analyzer->getCodebase();
@@ -30,5 +30,7 @@ final class InitAnalyzerTask extends InitTask
         $file_reference_provider->setFileReferencesToMissingClassMembers([]);
         $file_reference_provider->setReferencesToMixedMemberNames([]);
         $file_reference_provider->setMethodParamUses([]);
+
+        return null;
     }
 }

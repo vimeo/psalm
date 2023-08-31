@@ -2,6 +2,7 @@
 
 namespace Psalm;
 
+use Amp\Parallel\Worker\WorkerPool;
 use Exception;
 use InvalidArgumentException;
 use LanguageServerProtocol\Command;
@@ -37,6 +38,7 @@ use Psalm\Internal\Codebase\Scanner;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\TaintSink;
 use Psalm\Internal\DataFlow\TaintSource;
+use Psalm\Internal\Fork\Pool;
 use Psalm\Internal\LanguageServer\PHPMarkdownContent;
 use Psalm\Internal\LanguageServer\Reference;
 use Psalm\Internal\MethodIdentifier;
@@ -500,9 +502,9 @@ final class Codebase
     /**
      * Scans all files their related files
      */
-    public function scanFiles(int $threads = 1): void
+    public function scanFiles(): void
     {
-        $has_changes = $this->scanner->scanFiles($this->classlikes, $threads);
+        $has_changes = $this->scanner->scanFiles($this->classlikes);
 
         if ($has_changes) {
             $this->populator->populateCodebase();

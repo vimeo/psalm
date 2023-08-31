@@ -16,9 +16,6 @@ final class ScannerTask implements Task
     }
     public function run(Channel $channel, Cancellation $cancellation): mixed
     {
-        if (!isset(ProjectAnalyzer::$instance)) {
-            throw new AssertionError(InitTask::$ran ? 'ran' : 'did not run');
-        }
         return ProjectAnalyzer::getInstance()->getCodebase()->scanner->scanAPath($this->file);
     }
 }

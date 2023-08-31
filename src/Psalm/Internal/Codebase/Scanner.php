@@ -5,6 +5,7 @@ namespace Psalm\Internal\Codebase;
 use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\IssueData;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\ErrorHandler;
 use Psalm\Internal\Fork\InitScannerTask;
 use Psalm\Internal\Fork\Pool;
@@ -272,12 +273,12 @@ class Scanner
         }
     }
 
-    public function scanFiles(ClassLikes $classlikes, int $pool_size = 1): bool
+    public function scanFiles(ClassLikes $classlikes): bool
     {
         $has_changes = false;
         while ($this->files_to_scan || $this->classes_to_scan) {
             if ($this->files_to_scan) {
-                if ($this->scanFilePaths($pool_size)) {
+                if ($this->scanFilePaths()) {
                     $has_changes = true;
                 }
             } else {
@@ -296,7 +297,7 @@ class Scanner
                 || (isset($this->files_to_deep_scan[$file_path]) && !$this->scanned_files[$file_path]));
     }
 
-    private function scanFilePaths(int $pool_size): bool
+    private function scanFilePaths(): bool
     {
         $files_to_scan = array_filter(
             $this->files_to_scan,
@@ -309,19 +310,16 @@ class Scanner
             return false;
         }
 
-        if (!$this->is_forked && $pool_size > 1 && count($files_to_scan) > 512) {
-            $pool_size = ceil(min($pool_size, count($files_to_scan) / 256));
-        } else {
-            $pool_size = 1;
-        }
+        $project_analyzer = ProjectAnalyzer::getInstance();
+        $pool_size = $this->is_forked ? 1 : $project_analyzer->threads;
 
         if ($pool_size > 1) {
             $this->progress->debug('Forking process for scanning' . PHP_EOL);
 
+
             // Run scanning one file at a time, splitting the set of
             // files up among a given number of child processes.
-            $forked_pool_data = Pool::run(
-                $pool_size,
+            $forked_pool_data = ProjectAnalyzer::getInstance()->pool->run(
                 $files_to_scan,
                 new InitScannerTask(),
                 ScannerTask::class,

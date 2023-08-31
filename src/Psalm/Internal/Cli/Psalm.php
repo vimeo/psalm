@@ -13,7 +13,6 @@ use Psalm\Internal\CliUtils;
 use Psalm\Internal\Codebase\ReferenceMapGenerator;
 use Psalm\Internal\Composer;
 use Psalm\Internal\ErrorHandler;
-use Psalm\Internal\Fork\Pool;
 use Psalm\Internal\Fork\PsalmRestarter;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\Provider\ClassLikeStorageCacheProvider;
@@ -72,15 +71,12 @@ use function str_repeat;
 use function strlen;
 use function strpos;
 use function substr;
-use function version_compare;
 
 use const DIRECTORY_SEPARATOR;
 use const JSON_THROW_ON_ERROR;
 use const LC_CTYPE;
 use const PHP_EOL;
-use const PHP_OS;
 use const PHP_URL_SCHEME;
-use const PHP_VERSION;
 use const STDERR;
 
 // phpcs:disable PSR1.Files.SideEffects

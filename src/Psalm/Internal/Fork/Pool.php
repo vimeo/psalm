@@ -2,20 +2,22 @@
 
 namespace Psalm\Internal\Fork;
 
-use Amp\Cancellation;
 use Amp\Future;
+use Amp\Parallel\Context\ProcessContextFactory;
 use Amp\Parallel\Worker\ContextWorkerFactory;
 use Amp\Parallel\Worker\ContextWorkerPool;
 use Amp\Parallel\Worker\Task;
 use Amp\Parallel\Worker\Worker;
-use Amp\Parallel\Worker\WorkerFactory;
 use Amp\Parallel\Worker\WorkerPool;
 use AssertionError;
 use Closure;
 
 use function Amp\Future\await;
-use function assert;
-use function count;
+use function array_map;
+use function extension_loaded;
+use function gc_collect_cycles;
+
+use const PHP_BINARY;
 
 /**
  * Adapted with relatively few changes from
@@ -30,10 +32,34 @@ use function count;
  */
 final class Pool
 {
+    private readonly WorkerPool $pool;
+    /**
+     * @param int<2, max> $threads
+     */
+    public function __construct(private readonly int $threads)
+    {
+        // TODO: disable xdebug
+        $additional_options = [];
+        $opcache_loaded = extension_loaded('opcache') || extension_loaded('Zend OPcache');
+
+        if ($opcache_loaded) {
+            $additional_options = PsalmRestarter::OPCACHE_OPTIONS;
+        }
+
+        $this->pool = new ContextWorkerPool(
+            $threads,
+            new ContextWorkerFactory(
+                contextFactory: new ProcessContextFactory(
+                    binary: [PHP_BINARY, ...$additional_options],
+                ),
+            ),
+        );
+
+        $this->runAll(new InitStartupTask);
+    }
     /**
      * @template TFinalResult
      * @template TResult as array
-     * @param int<2, max> $pool_size
      * @param list<mixed> $process_task_data_iterator
      * An array of task data items to be divided up among the
      * workers. The size of this is the number of forked processes.
@@ -48,30 +74,25 @@ final class Pool
      * @return list<TFinalResult>
      * @psalm-suppress MixedAssignment
      */
-    public static function run(
-        int $pool_size,
+    public function run(
         array $process_task_data_iterator,
         Task $startup_task,
         string $main_task,
         Task $shutdown_task,
         ?Closure $task_done_closure = null
     ): array {
-        $pool = new ContextWorkerPool(
-            $pool_size,
-        );
-
-        self::runAll($pool_size, $pool, $startup_task);
+        $this->runAll($startup_task);
 
         $results = [];
         foreach ($process_task_data_iterator as $file) {
-            $results []= $f = $pool->submit(new $main_task($file))->getFuture();
+            $results []= $f = $this->pool->submit(new $main_task($file))->getFuture();
             if ($task_done_closure) {
                 $f->map($task_done_closure);
             }
         }
         await($results);
 
-        return self::runAll($pool_size, $pool, $shutdown_task);
+        return $this->runAll($shutdown_task);
     }
 
     /**
@@ -79,18 +100,19 @@ final class Pool
      * @param Task<void, void, T> $task
      * @return list<T>
      */
-    private static function runAll(int $pool_size, WorkerPool $pool, Task $task): array
+    private function runAll(Task $task): array
     {
-        if ($pool->getIdleWorkerCount() !== $pool->getWorkerCount()) {
+        if ($this->pool->getIdleWorkerCount() !== $this->pool->getWorkerCount()) {
             throw new AssertionError("Some workers are busy!");
         }
 
+        gc_collect_cycles();
         $workers = [];
-        for ($x = 0; $x < $pool_size; $x++) {
-            $workers []= $pool->getWorker();
+        for ($x = 0; $x < $this->threads; $x++) {
+            $workers []= $this->pool->getWorker();
         }
         return await(
-            array_map(fn (Worker $w): Future => $w->submit($task)->getFuture(), $workers)
+            array_map(fn(Worker $w): Future => $w->submit($task)->getFuture(), $workers),
         );
     }
 }

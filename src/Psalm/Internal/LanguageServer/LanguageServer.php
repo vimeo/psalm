@@ -393,7 +393,7 @@ class LanguageServer extends Dispatcher
 
         $this->logInfo("Initializing: Scanning files ({$this->project_analyzer->threads} Threads)...");
         $progress->update('scanning files');
-        $this->codebase->scanFiles($this->project_analyzer->threads);
+        $this->codebase->scanFiles();
 
         $this->logInfo("Initializing: Registering stub files...");
         $progress->update('registering stub files');

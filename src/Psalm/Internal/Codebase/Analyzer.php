@@ -231,7 +231,6 @@ class Analyzer
 
     public function analyzeFiles(
         ProjectAnalyzer $project_analyzer,
-        int $pool_size,
         bool $alter_code,
         bool $consolidate_analyzed_data = false
     ): void {
@@ -248,7 +247,7 @@ class Analyzer
             [$this->file_provider, 'fileExists'],
         );
 
-        $this->doAnalysis($project_analyzer, $pool_size);
+        $this->doAnalysis($project_analyzer);
 
         $scanned_files = $codebase->scanner->getScannedFiles();
 
@@ -300,7 +299,7 @@ class Analyzer
         }
     }
 
-    private function doAnalysis(ProjectAnalyzer $project_analyzer, int $pool_size): void
+    private function doAnalysis(ProjectAnalyzer $project_analyzer): void
     {
         $this->progress->start(count($this->files_to_analyze));
 
@@ -308,8 +307,8 @@ class Analyzer
 
         $codebase = $project_analyzer->getCodebase();
 
-        if ($pool_size > 1 && count($this->files_to_analyze) > $pool_size) {
-            $shuffle_count = $pool_size + 1;
+        if ($project_analyzer->threads > 1 && count($this->files_to_analyze) > $project_analyzer->threads) {
+            $shuffle_count = $project_analyzer->threads + 1;
 
             $file_paths = array_values($this->files_to_analyze);
 
@@ -338,8 +337,7 @@ class Analyzer
 
             $this->progress->debug('Forking analysis' . "\n");
 
-            $forked_pool_data = Pool::run(
-                $pool_size,
+            $forked_pool_data = $project_analyzer->pool->run(
                 $new_file_paths,
                 new InitAnalyzerTask(),
                 AnalyzerTask::class,
