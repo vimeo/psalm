@@ -11,6 +11,7 @@ use Amp\Parallel\Worker\Worker;
 use Amp\Parallel\Worker\WorkerPool;
 use AssertionError;
 use Closure;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 
 use function Amp\Future\await;
 use function array_map;
@@ -36,7 +37,7 @@ final class Pool
     /**
      * @param int<2, max> $threads
      */
-    public function __construct(private readonly int $threads)
+    public function __construct(private readonly int $threads, ProjectAnalyzer $project_analyzer)
     {
         // TODO: disable xdebug
         $additional_options = [];
@@ -55,7 +56,7 @@ final class Pool
             ),
         );
 
-        $this->runAll(new InitStartupTask);
+        $this->runAll(new InitStartupTask($project_analyzer));
     }
     /**
      * @template TFinalResult

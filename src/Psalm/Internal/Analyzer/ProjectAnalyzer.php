@@ -278,7 +278,7 @@ class ProjectAnalyzer
         self::$instance = $this;
 
         if ($threads > 1) {
-            $this->pool = new Pool($threads);
+            $this->pool = new Pool($threads, $this);
         }
     }
 
@@ -401,7 +401,7 @@ class ProjectAnalyzer
 
         if ($usable_cpus > 1) {
             $this->threads = $usable_cpus;
-            $this->pool = new Pool($usable_cpus);
+            $this->pool = new Pool($usable_cpus, $this);
         }
 
         $server->logInfo("Initializing: Initialize Plugins...");

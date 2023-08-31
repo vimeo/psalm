@@ -27,15 +27,11 @@ use const PHP_EOL;
 
 final class InitStartupTask implements Task
 {
-    private readonly ProjectAnalyzer $analyzer;
-    private readonly Config $config;
     private readonly string $memoryLimit;
     private readonly array $server;
     private readonly ?string $processTitle;
-    final public function __construct()
+    final public function __construct(private ProjectAnalyzer $analyzer)
     {
-        $this->analyzer = ProjectAnalyzer::getInstance();
-        $this->config = Config::getInstance();
         $this->memoryLimit = ini_get('memory_limit');
         $this->server = IssueBuffer::getServer();
         if (function_exists('cli_get_process_title')) {
@@ -62,7 +58,7 @@ final class InitStartupTask implements Task
         // More initialization is needed but doing just this for now...
 
         ProjectAnalyzer::$instance = $this->analyzer;
-        Config::setInstance($this->config);
+        Config::setInstance($this->analyzer->getConfig());
 
         if (function_exists('cli_set_process_title') && $this->processTitle !== null) {
             @cli_set_process_title($this->processTitle);
