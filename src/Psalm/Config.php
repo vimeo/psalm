@@ -2426,9 +2426,7 @@ class Config
             // as they might be autoloadable once we require the autoloader below
             $codebase->classlikes->forgetMissingClassLikes();
 
-            $this->include_collector->runAndCollect(
-                [$this, 'requireAutoloader'],
-            );
+            $this->include_collector->runAndCollect($this->requireAutoloader(...));
         }
 
         $this->collectPredefinedConstants();

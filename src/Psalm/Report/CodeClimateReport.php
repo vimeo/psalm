@@ -26,7 +26,7 @@ final class CodeClimateReport extends Report
         $options = $this->pretty ? Json::PRETTY : Json::DEFAULT;
 
         $issues_data = array_map(
-            [$this, 'mapToNewStructure'],
+            $this->mapToNewStructure(...),
             $this->issues_data,
         );
 

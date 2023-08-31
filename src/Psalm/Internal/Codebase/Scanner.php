@@ -301,7 +301,7 @@ class Scanner
     {
         $files_to_scan = array_filter(
             $this->files_to_scan,
-            [$this, 'shouldScan'],
+            $this->shouldScan(...),
         );
 
         $this->files_to_scan = [];
@@ -316,9 +316,6 @@ class Scanner
         if ($pool_size > 1) {
             $this->progress->debug('Forking process for scanning' . PHP_EOL);
 
-
-            // Run scanning one file at a time, splitting the set of
-            // files up among a given number of child processes.
             $forked_pool_data = ProjectAnalyzer::getInstance()->pool->run(
                 $files_to_scan,
                 new InitScannerTask(),
