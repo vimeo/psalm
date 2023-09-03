@@ -1,6 +1,6 @@
 {
     "name": "vimeo/psalm",
-    "type": "library",
+    "type": "project",
     "description": "A static analysis tool for finding errors in PHP applications",
     "keywords": [
         "php",
@@ -135,10 +135,15 @@
     "scripts-descriptions": {
         "cs": "Checks that the code conforms to the coding standard.",
         "cs-fix": "Automatically correct coding standard violations.",
-        "lint": "Runs unit tests.",
+        "lint": "Lint php files.",
         "phpunit": "Runs unit tests in parallel.",
         "phpunit-std": "Runs unit tests.",
         "psalm": "Runs static analysis.",
         "tests": "Runs all available tests."
+    },
+    "support": {
+      "docs": "https://psalm.dev/docs",
+      "issues": "https://github.com/vimeo/psalm/issues",
+      "source": "https://github.com/vimeo/psalm"
     }
 }
