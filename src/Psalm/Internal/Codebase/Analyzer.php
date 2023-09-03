@@ -16,8 +16,6 @@ use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\FileManipulation\FunctionDocblockManipulator;
 use Psalm\Internal\FileManipulation\PropertyDocblockManipulator;
 use Psalm\Internal\Fork\AnalyzerTask;
-use Psalm\Internal\Fork\InitAnalyzerTask;
-use Psalm\Internal\Fork\Pool;
 use Psalm\Internal\Fork\ShutdownAnalyzerTask;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
@@ -337,13 +335,13 @@ class Analyzer
 
             $this->progress->debug('Forking analysis' . "\n");
 
-            $forked_pool_data = $project_analyzer->pool->run(
+            $project_analyzer->pool->run(
                 $new_file_paths,
-                new InitAnalyzerTask(),
                 AnalyzerTask::class,
-                new ShutdownAnalyzerTask,
                 $this->taskDoneClosure(...),
             );
+
+            $forked_pool_data = $project_analyzer->pool->runAll(new ShutdownAnalyzerTask);
 
             $this->progress->debug('Collecting forked analysis results' . "\n");
 

@@ -2,7 +2,6 @@
 
 namespace Psalm;
 
-use Amp\Parallel\Worker\WorkerPool;
 use Exception;
 use InvalidArgumentException;
 use LanguageServerProtocol\Command;
@@ -38,7 +37,6 @@ use Psalm\Internal\Codebase\Scanner;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\TaintSink;
 use Psalm\Internal\DataFlow\TaintSource;
-use Psalm\Internal\Fork\Pool;
 use Psalm\Internal\LanguageServer\PHPMarkdownContent;
 use Psalm\Internal\LanguageServer\Reference;
 use Psalm\Internal\MethodIdentifier;
@@ -98,6 +96,7 @@ use function substr_count;
 
 use const PHP_VERSION_ID;
 
+/** @psalm-import-type PoolData from Scanner */
 final class Codebase
 {
     /**
@@ -394,6 +393,43 @@ final class Codebase
         );
     }
 
+    /**
+     * @internal
+     * @param PoolData $pool_data
+     */
+    public function addThreadData(array $pool_data): void
+    {
+        IssueBuffer::addIssues($pool_data['issues']);
+
+        $this->statements_provider->addChangedMembers(
+            $pool_data['changed_members'],
+        );
+        $this->statements_provider->addUnchangedSignatureMembers(
+            $pool_data['unchanged_signature_members'],
+        );
+        $this->statements_provider->addDiffMap(
+            $pool_data['diff_map'],
+        );
+        $this->statements_provider->addDeletionRanges(
+            $pool_data['deletion_ranges'],
+        );
+        $this->statements_provider->addErrors($pool_data['errors']);
+
+        if ($this->taint_flow_graph && $pool_data['taint_data']) {
+            $this->taint_flow_graph->addGraph($pool_data['taint_data']);
+        }
+
+        $this->file_storage_provider->addMore($pool_data['file_storage']);
+        $this->classlike_storage_provider->addMore($pool_data['classlike_storage']);
+
+        $this->classlikes->addThreadData($pool_data['classlikes_data']);
+
+        if ($this->statements_provider->parser_cache_provider) {
+            $this->statements_provider->parser_cache_provider->addNewFileContentHashes(
+                $pool_data['new_file_content_hashes'],
+            );
+        }
+    }
     /**
      * @param array<string> $candidate_files
      */

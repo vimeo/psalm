@@ -12,13 +12,17 @@ use Amp\Parallel\Worker\WorkerPool;
 use AssertionError;
 use Closure;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Progress\Progress;
+use Throwable;
 
 use function Amp\Future\await;
 use function array_map;
+use function count;
 use function extension_loaded;
 use function gc_collect_cycles;
 
 use const PHP_BINARY;
+use const PHP_EOL;
 
 /**
  * Adapted with relatively few changes from
@@ -34,6 +38,7 @@ use const PHP_BINARY;
 final class Pool
 {
     private readonly WorkerPool $pool;
+    private readonly Progress $progress;
     /**
      * @param int<2, max> $threads
      */
@@ -57,6 +62,9 @@ final class Pool
         );
 
         $this->runAll(new InitStartupTask($project_analyzer));
+        $this->runAll(new InitScannerTask());
+
+        $this->progress = $project_analyzer->progress;
     }
     /**
      * @template TFinalResult
@@ -77,12 +85,13 @@ final class Pool
      */
     public function run(
         array $process_task_data_iterator,
-        Task $startup_task,
         string $main_task,
-        Task $shutdown_task,
         ?Closure $task_done_closure = null
-    ): array {
-        $this->runAll($startup_task);
+    ): void {
+        $total = count($process_task_data_iterator);
+        $this->progress->debug("Processing ".$total." tasks...");
+
+        $cnt = 0;
 
         $results = [];
         foreach ($process_task_data_iterator as $file) {
@@ -90,10 +99,16 @@ final class Pool
             if ($task_done_closure) {
                 $f->map($task_done_closure);
             }
+            $f->catch(fn(Throwable $e) => throw $e);
+            $f->map(function () use (&$cnt, $total): void {
+                $cnt++;
+                if (!($cnt % 10)) {
+                    $percent = (int) (($cnt*100) / $total);
+                    $this->progress->debug("Processing tasks: $cnt/$total ($percent%)...".PHP_EOL);
+                }
+            });
         }
         await($results);
-
-        return $this->runAll($shutdown_task);
     }
 
     /**
@@ -101,7 +116,7 @@ final class Pool
      * @param Task<void, void, T> $task
      * @return list<T>
      */
-    private function runAll(Task $task): array
+    public function runAll(Task $task): array
     {
         if ($this->pool->getIdleWorkerCount() !== $this->pool->getWorkerCount()) {
             throw new AssertionError("Some workers are busy!");

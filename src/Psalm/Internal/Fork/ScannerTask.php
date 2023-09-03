@@ -5,7 +5,6 @@ namespace Psalm\Internal\Fork;
 use Amp\Cancellation;
 use Amp\Parallel\Worker\Task;
 use Amp\Sync\Channel;
-use AssertionError;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 
 /** @internal */

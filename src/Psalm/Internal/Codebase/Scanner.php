@@ -8,14 +8,12 @@ use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\ErrorHandler;
 use Psalm\Internal\Fork\InitScannerTask;
-use Psalm\Internal\Fork\Pool;
 use Psalm\Internal\Fork\ScannerTask;
 use Psalm\Internal\Fork\ShutdownScannerTask;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Internal\Scanner\FileScanner;
-use Psalm\IssueBuffer;
 use Psalm\Progress\Progress;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
@@ -27,12 +25,10 @@ use UnexpectedValueException;
 use function array_filter;
 use function array_merge;
 use function array_pop;
-use function ceil;
 use function count;
 use function error_reporting;
 use function explode;
 use function file_exists;
-use function min;
 use function realpath;
 use function strtolower;
 use function substr;
@@ -314,48 +310,21 @@ class Scanner
         $pool_size = $this->is_forked ? 1 : $project_analyzer->threads;
 
         if ($pool_size > 1) {
-            $this->progress->debug('Forking process for scanning' . PHP_EOL);
+            $cnt = count($files_to_scan);
+            $this->progress->debug("Sending {$cnt} files to pool for scanning" . PHP_EOL);
 
-            $forked_pool_data = ProjectAnalyzer::getInstance()->pool->run(
+            $pool = ProjectAnalyzer::getInstance()->pool;
+            $pool->runAll(new InitScannerTask);
+
+            $pool->run(
                 $files_to_scan,
-                new InitScannerTask(),
                 ScannerTask::class,
-                new ShutdownScannerTask,
             );
 
+            $forked_pool_data = $pool->runAll(new ShutdownScannerTask);
             foreach ($forked_pool_data as $pool_data) {
-                IssueBuffer::addIssues($pool_data['issues']);
-
-                $this->codebase->statements_provider->addChangedMembers(
-                    $pool_data['changed_members'],
-                );
-                $this->codebase->statements_provider->addUnchangedSignatureMembers(
-                    $pool_data['unchanged_signature_members'],
-                );
-                $this->codebase->statements_provider->addDiffMap(
-                    $pool_data['diff_map'],
-                );
-                $this->codebase->statements_provider->addDeletionRanges(
-                    $pool_data['deletion_ranges'],
-                );
-                $this->codebase->statements_provider->addErrors($pool_data['errors']);
-
-                if ($this->codebase->taint_flow_graph && $pool_data['taint_data']) {
-                    $this->codebase->taint_flow_graph->addGraph($pool_data['taint_data']);
-                }
-
-                $this->codebase->file_storage_provider->addMore($pool_data['file_storage']);
-                $this->codebase->classlike_storage_provider->addMore($pool_data['classlike_storage']);
-
-                $this->codebase->classlikes->addThreadData($pool_data['classlikes_data']);
-
+                $this->codebase->addThreadData($pool_data);
                 $this->addThreadData($pool_data['scanner_data']);
-
-                if ($this->codebase->statements_provider->parser_cache_provider) {
-                    $this->codebase->statements_provider->parser_cache_provider->addNewFileContentHashes(
-                        $pool_data['new_file_content_hashes'],
-                    );
-                }
             }
         } else {
             $i = 0;

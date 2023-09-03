@@ -521,7 +521,7 @@ class TaintFlowGraph extends DataFlowGraph
 
         return array_filter(
             $generated_sources,
-            fn ($new_source) => isset($this->forward_edges[$new_source->id])
+            fn($new_source) => isset($this->forward_edges[$new_source->id])
         );
     }
 }
