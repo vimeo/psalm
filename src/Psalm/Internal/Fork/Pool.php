@@ -2,7 +2,10 @@
 
 namespace Psalm\Internal\Fork;
 
+use Amp\Cancellation;
 use Amp\Future;
+use Amp\Parallel\Context\Context;
+use Amp\Parallel\Context\ContextFactory;
 use Amp\Parallel\Context\ProcessContextFactory;
 use Amp\Parallel\Worker\ContextWorkerFactory;
 use Amp\Parallel\Worker\ContextWorkerPool;
@@ -15,6 +18,10 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Progress\Progress;
 use Throwable;
 
+use function Amp\async;
+use function Amp\ByteStream\getStderr;
+use function Amp\ByteStream\getStdout;
+use function Amp\ByteStream\pipe;
 use function Amp\Future\await;
 use function array_map;
 use function count;
@@ -55,9 +62,22 @@ final class Pool
         $this->pool = new ContextWorkerPool(
             $threads,
             new ContextWorkerFactory(
-                contextFactory: new ProcessContextFactory(
-                    binary: [PHP_BINARY, ...$additional_options],
-                ),
+                contextFactory: new class($additional_options) implements ContextFactory {
+                    private ProcessContextFactory $factory;
+                    public function __construct(array $additional_options)
+                    {
+                        $this->factory = new ProcessContextFactory(
+                            binary: [PHP_BINARY, ...$additional_options],
+                        );
+                    }
+                    public function start(string|array $script, ?Cancellation $cancellation = null): Context
+                    {
+                        $context = $this->factory->start($script, $cancellation);
+                        async(pipe(...), $context->getStdout(), getStdout())->ignore();
+                        async(pipe(...), $context->getStderr(), getStderr())->ignore();
+                        return $context;
+                    }
+                }
             ),
         );
 
@@ -89,7 +109,7 @@ final class Pool
         ?Closure $task_done_closure = null
     ): void {
         $total = count($process_task_data_iterator);
-        $this->progress->debug("Processing ".$total." tasks...");
+        $this->progress->debug("Processing ".$total." tasks...".PHP_EOL);
 
         $cnt = 0;
 
