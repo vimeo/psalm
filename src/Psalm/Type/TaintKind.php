@@ -21,6 +21,7 @@ final class TaintKind
     public const INPUT_COOKIE = 'cookie';
     public const INPUT_HEADER = 'header';
     public const INPUT_XPATH = 'xpath';
+    public const INPUT_SLEEP = 'sleep';
     public const USER_SECRET = 'user_secret';
     public const SYSTEM_SECRET = 'system_secret';
 }
