@@ -2890,9 +2890,6 @@ class AssertAnnotationTest extends TestCase
                     /** @template InstanceType */
                     interface PluginManagerInterface
                     {
-                        /** @return InstanceType */
-                        public function get(): mixed;
-
                         /** @psalm-assert InstanceType $value */
                         public function validate(mixed $value): void;
                     }
@@ -2903,15 +2900,6 @@ class AssertAnnotationTest extends TestCase
                      */
                     abstract class AbstractPluginManager implements PluginManagerInterface
                     {
-                        /** @param InstanceType $value */
-                        public function __construct(private readonly mixed $value)
-                        {}
-
-                        /** {@inheritDoc} */
-                        public function get(): mixed
-                        {
-                            return $this->value;
-                        }
                     }
 
                     /**
@@ -2920,21 +2908,6 @@ class AssertAnnotationTest extends TestCase
                      */
                     abstract class AbstractSingleInstancePluginManager extends AbstractPluginManager
                     {
-                        /**
-                         * An object type that the created instance must be instanced of
-                         *
-                         * @var class-string<InstanceType>
-                         */
-                        protected string $instanceOf;
-
-                        /** {@inheritDoc} */
-                        public function get(): object
-                        {
-                            return parent::get();
-                        }
-
-
-                        /** {@inheritDoc} */
                         public function validate(mixed $value): void
                         {
                         }
@@ -2949,8 +2922,6 @@ class AssertAnnotationTest extends TestCase
                     /** @template-extends AbstractSingleInstancePluginManager<stdClass> */
                     final class Qoo extends AbstractSingleInstancePluginManager
                     {
-                        /** @var class-string<stdClass> */
-                        protected string $instanceOf = stdClass::class;
                     }
 
                     /** @template-extends AbstractPluginManager<callable> */
@@ -2963,13 +2934,13 @@ class AssertAnnotationTest extends TestCase
                 }
 
                 namespace {
-                    $baz = new \Namespace2\Qoo(new stdClass);
+                    $baz = new \Namespace2\Qoo();
 
                     /** @var mixed $object */
                     $object = null;
                     $baz->validate($object);
 
-                    $ooq = new \Namespace2\Ooq(function (): void {});
+                    $ooq = new \Namespace2\Ooq();
                     /** @var mixed $callable */
                     $callable = null;
                     $ooq->validate($callable);
