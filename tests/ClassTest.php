@@ -640,7 +640,7 @@ class ClassTest extends TestCase
                 'code' => '<?php
 
                     /**
-                     * @template TTKey
+                     * @template TTKey of array-key
                      * @template TTValue
                      *
                      * @extends ArrayObject<TTKey, TTValue>
@@ -675,7 +675,7 @@ class ClassTest extends TestCase
             'preventDoubleStaticResolution2' => [
                 'code' => '<?php
                     /**
-                     * @template TTKey
+                     * @template TTKey of array-key
                      * @template TTValue
                      *
                      * @extends ArrayObject<TTKey, TTValue>
@@ -712,7 +712,7 @@ class ClassTest extends TestCase
             'preventDoubleStaticResolution3' => [
                 'code' => '<?php
                     /**
-                     * @template TTKey
+                     * @template TTKey of array-key
                      * @template TTValue
                      *
                      * @extends ArrayObject<TTKey, TTValue>
