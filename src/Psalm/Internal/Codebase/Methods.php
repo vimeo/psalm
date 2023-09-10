@@ -557,7 +557,8 @@ class Methods
         MethodIdentifier $method_id,
         ?string &$self_class,
         ?SourceAnalyzer $source_analyzer = null,
-        ?array $args = null
+        ?array $args = null,
+        ?TemplateResult $template_result = null
     ): ?Union {
         $original_fq_class_name = $method_id->fq_class_name;
         $original_method_name = $method_id->method_name;
@@ -784,9 +785,18 @@ class Methods
                     );
 
                     if ($found_generic_params) {
+                        $passed_template_result = $template_result;
+                        $template_result = new TemplateResult(
+                            [],
+                            $found_generic_params,
+                        );
+                        if ($passed_template_result !== null) {
+                            $template_result = $template_result->merge($passed_template_result);
+                        }
+
                         $overridden_storage_return_type = TemplateInferredTypeReplacer::replace(
                             $overridden_storage_return_type,
-                            new TemplateResult([], $found_generic_params),
+                            $template_result,
                             $source_analyzer->getCodebase(),
                         );
                     }
