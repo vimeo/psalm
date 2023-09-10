@@ -2942,7 +2942,8 @@ class AssertAnnotationTest extends TestCase
                 }
 
                 namespace Namespace2 {
-                    use Namespace1\AbstractSingleInstancePluginManager;
+                    use InvalidArgumentException;use Namespace1\AbstractSingleInstancePluginManager;
+                    use Namespace1\AbstractPluginManager;
                     use stdClass;
 
                     /** @template-extends AbstractSingleInstancePluginManager<stdClass> */
@@ -2950,6 +2951,14 @@ class AssertAnnotationTest extends TestCase
                     {
                         /** @var class-string<stdClass> */
                         protected string $instanceOf = stdClass::class;
+                    }
+
+                    /** @template-extends AbstractPluginManager<callable> */
+                    final class Ooq extends AbstractPluginManager
+                    {
+                        public function validate(mixed $value): void
+                        {
+                        }
                     }
                 }
 
@@ -2959,10 +2968,16 @@ class AssertAnnotationTest extends TestCase
                     /** @var mixed $object */
                     $object = null;
                     $baz->validate($object);
+
+                    $ooq = new \Namespace2\Ooq(function (): void {});
+                    /** @var mixed $callable */
+                    $callable = null;
+                    $ooq->validate($callable);
                 }
                 ',
                 'assertions' => [
                     '$object===' => 'stdClass',
+                    '$callable===' => 'callable',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
