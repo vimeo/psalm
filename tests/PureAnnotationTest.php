@@ -152,7 +152,10 @@ class PureAnnotationTest extends TestCase
                 'code' => '<?php
                     final class Date
                     {
-                        /** @psalm-pure */
+                        /**
+                         * @param non-empty-string $tzString
+                         * @psalm-pure
+                         */
                         public static function timeZone(string $tzString) : DateTimeZone
                         {
                             return new \DateTimeZone($tzString);
