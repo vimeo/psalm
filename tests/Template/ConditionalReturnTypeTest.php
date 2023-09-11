@@ -943,10 +943,10 @@ class ConditionalReturnTypeTest extends TestCase
                     $specificObject = $container->build(stdClass::class);
                 ',
                 'assertions' => [
-                    '$object' => 'SpecificObject',
-                    '$nonSpecificObject' => 'stdClass',
-                    '$justObject' => 'object',
-                    '$specificObject' => 'stdClass',
+                    '$object===' => 'SpecificObject',
+                    '$nonSpecificObject===' => 'stdClass',
+                    '$justObject===' => 'object',
+                    '$specificObject===' => 'stdClass',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
