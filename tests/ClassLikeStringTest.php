@@ -879,6 +879,27 @@ class ClassLikeStringTest extends TestCase
                     $foo->baz = TypeTwo::class;
                     $foo->baz = TypeTwo::class;',
             ],
+            'classStringOfUnionTypeParameter' => [
+                'code' => '<?php
+
+                    class A {}
+                    class B {}
+
+                    /**
+                     * @template T as A|B
+                     *
+                     * @param class-string<T> $class
+                     * @return class-string<T>
+                     */
+                    function test(string $class): string {
+                        return $class;
+                    }
+
+                    $r = test(A::class);',
+                'assertions' => [
+                    '$r' => 'class-string<A>',
+                ],
+            ],
         ];
     }
 
