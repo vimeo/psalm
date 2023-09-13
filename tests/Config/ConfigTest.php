@@ -979,6 +979,124 @@ class ConfigTest extends TestCase
         );
     }
 
+    public function testIssueHandlerOverride(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            Config::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                        <directory name="tests" />
+                    </projectFiles>
+                    <issueHandlers>
+                            <MissingReturnType errorLevel="error">
+                                <errorLevel type="info">
+                                    <directory name="tests" />
+                                </errorLevel>
+                                <errorLevel type="info">
+                                    <directory name="src/Psalm/Internal/Analyzer" />
+                                </errorLevel>
+                            </MissingReturnType>
+                            <UndefinedClass errorLevel="error"></UndefinedClass>
+                    </issueHandlers>
+                </psalm>',
+            ),
+        );
+
+        $config = $this->project_analyzer->getConfig();
+        $config->setAdvancedErrorLevel('MissingReturnType', [
+            [
+                'type' => 'error',
+                'directory' => [['name' => 'src/Psalm/Internal/Analyzer']],
+            ],
+        ], 'info');
+        $config->setCustomErrorLevel('UndefinedClass', 'suppress');
+
+        $this->assertSame(
+            'info',
+            $config->getReportingLevelForFile(
+                'MissingReturnType',
+                realpath('src/Psalm/Type.php'),
+            ),
+        );
+
+        $this->assertSame(
+            'error',
+            $config->getReportingLevelForFile(
+                'MissingReturnType',
+                realpath('src/Psalm/Internal/Analyzer/FileAnalyzer.php'),
+            ),
+        );
+        $this->assertSame(
+            'suppress',
+            $config->getReportingLevelForFile(
+                'UndefinedClass',
+                realpath('src/Psalm/Internal/Analyzer/FileAnalyzer.php'),
+            ),
+        );
+    }
+
+    public function testIssueHandlerSafeOverride(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            Config::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                        <directory name="tests" />
+                    </projectFiles>
+                    <issueHandlers>
+                            <MissingReturnType errorLevel="error">
+                                <errorLevel type="info">
+                                    <directory name="tests" />
+                                </errorLevel>
+                                <errorLevel type="info">
+                                    <directory name="src/Psalm/Internal/Analyzer" />
+                                </errorLevel>
+                            </MissingReturnType>
+                            <UndefinedClass errorLevel="info"></UndefinedClass>
+                    </issueHandlers>
+                </psalm>',
+            ),
+        );
+
+        $config = $this->project_analyzer->getConfig();
+        $config->safeSetAdvancedErrorLevel('MissingReturnType', [
+            [
+                'type' => 'error',
+                'directory' => [['name' => 'src/Psalm/Internal/Analyzer']],
+            ],
+        ], 'info');
+        $config->safeSetCustomErrorLevel('UndefinedClass', 'suppress');
+
+        $this->assertSame(
+            'error',
+            $config->getReportingLevelForFile(
+                'MissingReturnType',
+                realpath('src/Psalm/Type.php'),
+            ),
+        );
+
+        $this->assertSame(
+            'info',
+            $config->getReportingLevelForFile(
+                'MissingReturnType',
+                realpath('src/Psalm/Internal/Analyzer/FileAnalyzer.php'),
+            ),
+        );
+        $this->assertSame(
+            'info',
+            $config->getReportingLevelForFile(
+                'UndefinedClass',
+                realpath('src/Psalm/Internal/Analyzer/FileAnalyzer.php'),
+            ),
+        );
+    }
+
     public function testAllPossibleIssues(): void
     {
         $all_possible_handlers = implode(
