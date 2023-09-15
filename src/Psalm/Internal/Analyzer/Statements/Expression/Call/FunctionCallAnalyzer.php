@@ -864,11 +864,9 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     );
                 }
 
-                if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
-                    $taint_source = TaintSource::fromNode($custom_call_sink);
-                    $statements_analyzer->data_flow_graph->addSource($taint_source);
-                    $stmt_name_type = $stmt_name_type->addParentNodes([$taint_source->id => $taint_source]);
-                }
+                $taint_source = TaintSource::fromNode($custom_call_sink);
+                $statements_analyzer->data_flow_graph->addSource($taint_source);
+                $stmt_name_type = $stmt_name_type->addParentNodes([$taint_source->id => $taint_source]);
             }
         }
 

@@ -145,11 +145,9 @@ final class IncludeAnalyzer
                 );
             }
 
-            if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
-                $taint_source = TaintSource::fromNode($include_param_sink);
-                $statements_analyzer->data_flow_graph->addSource($taint_source);
-                $stmt_expr_type = $stmt_expr_type->addParentNodes([$taint_source->id => $taint_source]);
-            }
+            $taint_source = TaintSource::fromNode($include_param_sink);
+            $statements_analyzer->data_flow_graph->addSource($taint_source);
+            $stmt_expr_type = $stmt_expr_type->addParentNodes([$taint_source->id => $taint_source]);
         }
 
         if ($path_to_file) {

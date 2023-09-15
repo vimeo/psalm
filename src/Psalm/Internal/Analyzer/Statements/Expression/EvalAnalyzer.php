@@ -73,11 +73,9 @@ final class EvalAnalyzer
                     );
                 }
 
-                if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
-                    $taint_source = TaintSource::fromNode($eval_param_sink);
-                    $statements_analyzer->data_flow_graph->addSource($taint_source);
-                    $expr_type = $expr_type->addParentNodes([$taint_source->id => $taint_source]);
-                }
+                $taint_source = TaintSource::fromNode($eval_param_sink);
+                $statements_analyzer->data_flow_graph->addSource($taint_source);
+                $expr_type = $expr_type->addParentNodes([$taint_source->id => $taint_source]);
             }
         }
 
