@@ -11,7 +11,9 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Internal\DataFlow\TaintSource;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type;
 use Psalm\Type\Atomic\TLiteralFloat;
@@ -116,6 +118,12 @@ final class EncapsulatedStringAnalyzer
                                 $removed_taints,
                             );
                         }
+                    }
+
+                    if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+                        $taint_source = TaintSource::fromNode($new_parent_node);
+                        $statements_analyzer->data_flow_graph->addSource($taint_source);
+                        $casted_part_type = $casted_part_type->addParentNodes([$taint_source->id => $taint_source]);
                     }
                 }
             } else {

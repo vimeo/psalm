@@ -14,6 +14,7 @@ use Psalm\Internal\Codebase\ConstantTypeResolver;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Internal\DataFlow\TaintSource;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Issue\DuplicateArrayKey;
@@ -453,6 +454,12 @@ final class ArrayAnalyzer
                     }
 
                     $array_creation_info->parent_taint_nodes += [$new_parent_node->id => $new_parent_node];
+
+                    if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+                        $taint_source = TaintSource::fromNode($new_parent_node);
+                        $statements_analyzer->data_flow_graph->addSource($taint_source);
+                        $item_value_type = $item_value_type->addParentNodes([$taint_source->id => $taint_source]);
+                    }
                 }
 
                 if ($item_key_type
@@ -487,6 +494,12 @@ final class ArrayAnalyzer
                     }
 
                     $array_creation_info->parent_taint_nodes += [$new_parent_node->id => $new_parent_node];
+
+                    if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+                        $taint_source = TaintSource::fromNode($new_parent_node);
+                        $statements_analyzer->data_flow_graph->addSource($taint_source);
+                        $item_value_type = $item_value_type->addParentNodes([$taint_source->id => $taint_source]);
+                    }
                 }
             }
         }

@@ -24,6 +24,7 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Internal\DataFlow\TaintSource;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
@@ -898,6 +899,12 @@ final class AtomicPropertyFetchAnalyzer
                 }
 
                 $type = $type->setParentNodes([$property_node->id => $property_node], true);
+
+                if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+                    $taint_source = TaintSource::fromNode($var_node);
+                    $statements_analyzer->data_flow_graph->addSource($taint_source);
+                    $type = $type->addParentNodes([$taint_source->id => $taint_source]);
+                }
             }
         } else {
             self::processUnspecialTaints(
@@ -974,6 +981,12 @@ final class AtomicPropertyFetchAnalyzer
         }
 
         $type = $type->setParentNodes([$localized_property_node->id => $localized_property_node], true);
+
+        if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+            $taint_source = TaintSource::fromNode($localized_property_node);
+            $statements_analyzer->data_flow_graph->addSource($taint_source);
+            $type = $type->addParentNodes([$taint_source->id => $taint_source]);
+        }
     }
 
     private static function handleEnumName(

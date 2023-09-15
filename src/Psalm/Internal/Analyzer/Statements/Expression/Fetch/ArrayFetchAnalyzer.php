@@ -19,6 +19,7 @@ use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Internal\DataFlow\TaintSource;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
@@ -462,6 +463,12 @@ final class ArrayFetchAnalyzer
             }
 
             $stmt_type = $stmt_type->setParentNodes([$new_parent_node->id => $new_parent_node]);
+
+            if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+                $taint_source = TaintSource::fromNode($new_parent_node);
+                $statements_analyzer->data_flow_graph->addSource($taint_source);
+                $stmt_type = $stmt_type->addParentNodes([$taint_source->id => $taint_source]);
+            }
 
             if ($array_key_node) {
                 $offset_type = $offset_type->setParentNodes([$array_key_node->id => $array_key_node]);

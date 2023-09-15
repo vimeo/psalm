@@ -16,6 +16,7 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\TaintSink;
+use Psalm\Internal\DataFlow\TaintSource;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Issue\MissingFile;
 use Psalm\Issue\UnresolvableInclude;
@@ -142,6 +143,12 @@ final class IncludeAnalyzer
                     $added_taints,
                     $removed_taints,
                 );
+            }
+
+            if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+                $taint_source = TaintSource::fromNode($include_param_sink);
+                $statements_analyzer->data_flow_graph->addSource($taint_source);
+                $stmt_expr_type = $stmt_expr_type->addParentNodes([$taint_source->id => $taint_source]);
             }
         }
 

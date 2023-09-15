@@ -33,6 +33,7 @@ use Psalm\Internal\Codebase\DataFlowGraph;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Internal\DataFlow\TaintSource;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\ReferenceConstraint;
 use Psalm\Internal\Scanner\VarDocblockComment;
@@ -834,6 +835,12 @@ final class AssignmentAnalyzer
         }
 
         $type = $type->setParentNodes($new_parent_nodes, false);
+
+        if ($data_flow_graph instanceof TaintFlowGraph) {
+            $taint_source = TaintSource::fromNode($new_parent_node);
+            $data_flow_graph->addSource($taint_source);
+            $type = $type->addParentNodes([$taint_source->id => $taint_source]);
+        }
     }
 
     public static function analyzeAssignmentOperation(
