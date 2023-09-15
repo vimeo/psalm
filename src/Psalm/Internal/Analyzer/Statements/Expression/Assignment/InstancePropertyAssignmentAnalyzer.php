@@ -26,6 +26,7 @@ use Psalm\Internal\Codebase\Methods;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Internal\DataFlow\TaintSource;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
@@ -518,6 +519,12 @@ final class InstancePropertyAssignmentAnalyzer
                     }
                 }
 
+                if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+                    $taint_source = TaintSource::fromNode($property_node);
+                    $statements_analyzer->data_flow_graph->addSource($taint_source);
+                    $assignment_value_type = $assignment_value_type->addParentNodes([$taint_source->id => $taint_source]);
+                }
+
                 if (isset($context->vars_in_scope[$var_id])) {
                     $stmt_var_type = $context->vars_in_scope[$var_id]->setParentNodes(
                         [$var_node->id => $var_node],
@@ -616,6 +623,12 @@ final class InstancePropertyAssignmentAnalyzer
                     $removed_taints,
                 );
             }
+        }
+
+        if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+            $taint_source = TaintSource::fromNode($property_node);
+            $statements_analyzer->data_flow_graph->addSource($taint_source);
+            $assignment_value_type = $assignment_value_type->addParentNodes([$taint_source->id => $taint_source]);
         }
 
         $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(
