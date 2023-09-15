@@ -61,6 +61,7 @@ use function array_keys;
 use function array_map;
 use function array_merge;
 use function array_shift;
+use function assert;
 use function clearstatcache;
 use function count;
 use function defined;
@@ -1201,6 +1202,7 @@ class ProjectAnalyzer
         $php_minor_version = (int) $php_minor_version;
 
         $analysis_php_version_id = $php_major_version * 10_000 + $php_minor_version * 100;
+        assert($analysis_php_version_id >= 5_04_00 && $analysis_php_version_id < 8_03_00);
 
         if ($this->codebase->analysis_php_version_id !== $analysis_php_version_id) {
             // reset lexer and parser when php version changes

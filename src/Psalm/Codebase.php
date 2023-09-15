@@ -73,6 +73,7 @@ use function array_merge;
 use function array_pop;
 use function array_reverse;
 use function array_values;
+use function assert;
 use function count;
 use function dirname;
 use function error_log;
@@ -304,8 +305,8 @@ final class Codebase
      */
     public $allow_backwards_incompatible_changes = true;
 
-    /** @var int */
-    public $analysis_php_version_id = PHP_VERSION_ID;
+    /** @var int<50400,80299> */
+    public $analysis_php_version_id;
 
     /** @var 'cli'|'config'|'composer'|'tests'|'runtime' */
     public $php_version_source = 'runtime';
@@ -321,6 +322,10 @@ final class Codebase
         Providers $providers,
         ?Progress $progress = null
     ) {
+        $php_version = PHP_VERSION_ID;
+        assert($php_version >= 5_04_00 && $php_version < 8_03_00);
+        $this->analysis_php_version_id = $php_version;
+
         if ($progress === null) {
             $progress = new VoidProgress();
         }
