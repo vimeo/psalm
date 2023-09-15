@@ -522,7 +522,9 @@ final class InstancePropertyAssignmentAnalyzer
                 if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
                     $taint_source = TaintSource::fromNode($property_node);
                     $statements_analyzer->data_flow_graph->addSource($taint_source);
-                    $assignment_value_type = $assignment_value_type->addParentNodes([$taint_source->id => $taint_source]);
+                    $assignment_value_type = $assignment_value_type->addParentNodes([
+                        $taint_source->id => $taint_source,
+                    ]);
                 }
 
                 if (isset($context->vars_in_scope[$var_id])) {
@@ -628,7 +630,9 @@ final class InstancePropertyAssignmentAnalyzer
         if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
             $taint_source = TaintSource::fromNode($property_node);
             $statements_analyzer->data_flow_graph->addSource($taint_source);
-            $assignment_value_type = $assignment_value_type->addParentNodes([$taint_source->id => $taint_source]);
+            $assignment_value_type = $assignment_value_type->addParentNodes([
+                $taint_source->id => $taint_source,
+            ]);
         }
 
         $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(
