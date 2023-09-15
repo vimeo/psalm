@@ -2967,6 +2967,22 @@ class AssertAnnotationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'objectShapeAssertion' => [
+                'code' => '<?php
+                    /** @psalm-assert object{foo:string,bar:int} $value */
+                    function assertObjectShape(mixed $value): void
+                    {}
+
+                    /** @var mixed $value */
+                    $value = null;
+                    assertObjectShape($value);
+                ',
+                'assertions' => [
+                    '$value===' => 'object{foo:string, bar:int}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
