@@ -1022,6 +1022,58 @@ class BinaryOperationTest extends TestCase
                     '$a===' => 'float(9.2233720368548E+18)',
                 ],
             ],
+            'invalidArrayOperations' => [
+                'code' => <<<'PHP'
+                    <?php
+
+                    $a1 = 1 + [];
+                    $a2 = [] + 1;
+                    // This is the one exception to this rule
+                    $a3 = [] + [];
+
+                    $b1 = 1 - [];
+                    $b2 = [] - 1;
+                    $b3 = [] - [];
+
+                    $c1 = 1 * [];
+                    $c2 = [] * 1;
+                    $c3 = [] * [];
+
+                    $d1 = 1 / [];
+                    $d2 = [] / 1;
+                    $d3 = [] / [];
+
+                    $e1 = 1 ** [];
+                    $e2 = [] ** 1;
+                    $e3 = [] ** [];
+
+                    $f1 = 1 % [];
+                    $f2 = [] % 1;
+                    $f3 = [] % [];
+
+                    PHP,
+                'assertions' => [
+                    '$a1' => 'float|int',
+                    '$a2' => 'float|int',
+                    '$a3' => 'array<never, never>',
+                    '$b1' => 'float|int',
+                    '$b2' => 'float|int',
+                    '$b3' => 'float|int',
+                    '$c1' => 'float|int',
+                    '$c2' => 'float|int',
+                    '$c3' => 'float|int',
+                    '$d1' => 'float|int',
+                    '$d2' => 'float|int',
+                    '$d3' => 'float|int',
+                    '$e1' => 'float|int',
+                    '$e2' => 'float|int',
+                    '$e3' => 'float|int',
+                    '$f1' => 'float|int',
+                    '$f2' => 'float|int',
+                    '$f3' => 'float|int',
+                ],
+                'ignored_issues' => ['InvalidOperand'],
+            ],
         ];
     }
 
