@@ -247,4 +247,9 @@ return [
     'hash_update_stream' => true,
     // unserialize
     'unserialize' => true,
+    // openssl
+    'openssl_csr_export_to_file' => true,
+    'openssl_pkcs12_export_to_file' => true,
+    'openssl_pkey_export_to_file' => true,
+    'openssl_x509_export_to_file' => true,
 ];
