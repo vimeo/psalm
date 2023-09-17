@@ -401,12 +401,12 @@ class Config
     /**
      * @var bool
      */
-    public $ignore_internal_falsable_issues = true;
+    public $ignore_internal_falsable_issues = false;
 
     /**
      * @var bool
      */
-    public $ignore_internal_nullable_issues = true;
+    public $ignore_internal_nullable_issues = false;
 
     /**
      * @var array<string, bool>
