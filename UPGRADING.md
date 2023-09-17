@@ -3,6 +3,8 @@
 
 - The minimum PHP version was raised to PHP 8.1.17.
 
+- [BC] The configuration settings `ignoreInternalFunctionFalseReturn` and `ignoreInternalFunctionNullReturn` are now defaulted to `false`
+
 - [BC] Switched the internal representation of `list<T>` and `non-empty-list<T>` from the TList and TNonEmptyList classes to an unsealed list shape: the TList, TNonEmptyList and TCallableList classes were removed.
   Nothing will change for users: the `list<T>` and `non-empty-list<T>` syntax will remain supported and its semantics unchanged.
   Psalm 5 already deprecates the `TList`, `TNonEmptyList` and `TCallableList` classes: use `\Psalm\Type::getListAtomic`, `\Psalm\Type::getNonEmptyListAtomic` and `\Psalm\Type::getCallableListAtomic` to instantiate list atomics, or directly instantiate TKeyedArray objects with `is_list=true` where appropriate.
