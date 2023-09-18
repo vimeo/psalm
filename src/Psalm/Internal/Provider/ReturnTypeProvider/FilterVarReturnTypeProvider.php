@@ -3,30 +3,19 @@
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
-use Psalm\Type\Atomic\TFalse;
-use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TLiteralInt;
-use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
-use function in_array;
+use function is_array;
+use function is_int;
 
-use const FILTER_NULL_ON_FAILURE;
-use const FILTER_SANITIZE_URL;
-use const FILTER_VALIDATE_BOOLEAN;
-use const FILTER_VALIDATE_DOMAIN;
-use const FILTER_VALIDATE_EMAIL;
-use const FILTER_VALIDATE_FLOAT;
-use const FILTER_VALIDATE_INT;
-use const FILTER_VALIDATE_IP;
-use const FILTER_VALIDATE_MAC;
+use const FILTER_CALLBACK;
+use const FILTER_DEFAULT;
+use const FILTER_FLAG_NONE;
 use const FILTER_VALIDATE_REGEXP;
-use const FILTER_VALIDATE_URL;
 
 /**
  * @internal
@@ -41,135 +30,124 @@ final class FilterVarReturnTypeProvider implements FunctionReturnTypeProviderInt
         return ['filter_var'];
     }
 
-    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Union
+    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): ?Union
     {
-        $statements_source = $event->getStatementsSource();
-        $call_args = $event->getCallArgs();
-        $function_id = $event->getFunctionId();
-        $code_location = $event->getCodeLocation();
-        if (!$statements_source instanceof StatementsAnalyzer) {
+        $statements_analyzer = $event->getStatementsSource();
+        if (!$statements_analyzer instanceof StatementsAnalyzer) {
             throw new UnexpectedValueException();
         }
 
-        $filter_type = null;
+        $call_args = $event->getCallArgs();
+        $function_id = $event->getFunctionId();
+        $code_location = $event->getCodeLocation();
+        $codebase      = $statements_analyzer->getCodebase();
 
-        if (isset($call_args[1])
-            && ($second_arg_type = $statements_source->node_data->getType($call_args[1]->value))
-            && $second_arg_type->isSingleIntLiteral()
-        ) {
-            $filter_type_type = $second_arg_type->getSingleIntLiteral();
+        if (! isset($call_args[0])) {
+            return FilterUtils::missingFirstArg($codebase);
+        }
 
-            switch ($filter_type_type->value) {
-                case FILTER_VALIDATE_INT:
-                    $filter_type = Type::getInt();
-                    break;
+        $filter_int_used = FILTER_DEFAULT;
+        if (isset($call_args[1])) {
+            $filter_int_used = FilterUtils::getFilterArgValueOrError(
+                $call_args[1],
+                $statements_analyzer,
+                $codebase,
+            );
 
-                case FILTER_VALIDATE_FLOAT:
-                    $filter_type = Type::getFloat();
-                    break;
-
-                case FILTER_VALIDATE_BOOLEAN:
-                    $filter_type = Type::getBool();
-
-                    break;
-
-                case FILTER_VALIDATE_IP:
-                case FILTER_VALIDATE_MAC:
-                case FILTER_VALIDATE_REGEXP:
-                case FILTER_VALIDATE_URL:
-                case FILTER_VALIDATE_EMAIL:
-                case FILTER_VALIDATE_DOMAIN:
-                case FILTER_SANITIZE_URL:
-                    $filter_type = Type::getString();
-                    break;
-            }
-
-            $has_object_like = false;
-            $filter_null = false;
-
-            if (isset($call_args[2])
-                && ($third_arg_type = $statements_source->node_data->getType($call_args[2]->value))
-                && $filter_type
-            ) {
-                foreach ($third_arg_type->getAtomicTypes() as $atomic_type) {
-                    if ($atomic_type instanceof TKeyedArray) {
-                        $has_object_like = true;
-
-                        if (isset($atomic_type->properties['options'])
-                            && $atomic_type->properties['options']->hasArray()
-                            && ($options_array = $atomic_type->properties['options']->getArray())
-                            && $options_array instanceof TKeyedArray
-                            && isset($options_array->properties['default'])
-                        ) {
-                            $filter_type = Type::combineUnionTypes(
-                                $filter_type,
-                                $options_array->properties['default'],
-                            );
-                        } else {
-                            $filter_type = $filter_type->getBuilder()->addType(new TFalse)->freeze();
-                        }
-
-                        if (isset($atomic_type->properties['flags'])
-                            && $atomic_type->properties['flags']->isSingleIntLiteral()
-                        ) {
-                            $filter_flag_type =
-                                $atomic_type->properties['flags']->getSingleIntLiteral();
-
-                            if ($filter_type->hasBool()
-                                && $filter_flag_type->value === FILTER_NULL_ON_FAILURE
-                            ) {
-                                $filter_type = $filter_type->getBuilder()->addType(new TNull)->freeze();
-                            }
-                        }
-                    } elseif ($atomic_type instanceof TLiteralInt) {
-                        if ($atomic_type->value === FILTER_NULL_ON_FAILURE) {
-                            $filter_null = true;
-                            $filter_type = $filter_type->getBuilder()->addType(new TNull)->freeze();
-                        }
-                    }
-                }
-            }
-
-            if (!$has_object_like && !$filter_null && $filter_type) {
-                $filter_type = $filter_type->getBuilder()->addType(new TFalse)->freeze();
+            if (!is_int($filter_int_used)) {
+                return $filter_int_used;
             }
         }
 
-        if (!$filter_type) {
-            $filter_type = Type::getMixed();
-        }
-
-        if ($statements_source->data_flow_graph
-            && !in_array('TaintedInput', $statements_source->getSuppressedIssues())
-        ) {
-            $function_return_sink = DataFlowNode::getForMethodReturn(
-                $function_id,
-                $function_id,
-                null,
+        $options = null;
+        $flags_int_used = FILTER_FLAG_NONE;
+        if (isset($call_args[2])) {
+            $helper = FilterUtils::getOptionsArgValueOrError(
+                $call_args[2],
+                $statements_analyzer,
+                $codebase,
                 $code_location,
-            );
-
-            $statements_source->data_flow_graph->addNode($function_return_sink);
-
-            $function_param_sink = DataFlowNode::getForMethodArgument(
                 $function_id,
-                $function_id,
-                0,
-                null,
-                $code_location,
+                $filter_int_used,
             );
 
-            $statements_source->data_flow_graph->addNode($function_param_sink);
+            if (!is_array($helper)) {
+                return $helper;
+            }
 
-            $statements_source->data_flow_graph->addPath(
-                $function_param_sink,
-                $function_return_sink,
-                'arg',
-            );
-
-            return $filter_type->setParentNodes([$function_return_sink->id => $function_return_sink]);
+            $flags_int_used = $helper['flags_int_used'];
+            $options = $helper['options'];
         }
 
-        return $filter_type;
+        // if we reach this point with callback, the callback is missing
+        if ($filter_int_used === FILTER_CALLBACK) {
+            return FilterUtils::missingFilterCallbackCallable(
+                $function_id,
+                $code_location,
+                $statements_analyzer,
+                $codebase,
+            );
+        }
+
+        [$default, $min_range, $max_range, $has_range, $regexp] = FilterUtils::getOptions(
+            $filter_int_used,
+            $flags_int_used,
+            $options,
+            $statements_analyzer,
+            $code_location,
+            $codebase,
+            $function_id,
+        );
+
+        if (!$default) {
+            [$fails_type] = FilterUtils::getFailsNotSetType($flags_int_used);
+        } else {
+            $fails_type = $default;
+        }
+
+        if ($filter_int_used === FILTER_VALIDATE_REGEXP && $regexp === null) {
+            if ($codebase->analysis_php_version_id >= 8_00_00) {
+                // throws
+                return Type::getNever();
+            }
+
+            // any "array" flags are ignored by this filter!
+            return $fails_type;
+        }
+
+        $input_type = $statements_analyzer->node_data->getType($call_args[0]->value);
+
+        // only return now, as we still want to report errors above
+        if (!$input_type) {
+            return null;
+        }
+
+        $redundant_error_return_type = FilterUtils::checkRedundantFlags(
+            $filter_int_used,
+            $flags_int_used,
+            $fails_type,
+            $statements_analyzer,
+            $code_location,
+            $codebase,
+        );
+        if ($redundant_error_return_type !== null) {
+            return $redundant_error_return_type;
+        }
+
+        return FilterUtils::getReturnType(
+            $filter_int_used,
+            $flags_int_used,
+            $input_type,
+            $fails_type,
+            null,
+            $statements_analyzer,
+            $code_location,
+            $codebase,
+            $function_id,
+            $has_range,
+            $min_range,
+            $max_range,
+            $regexp,
+        );
     }
 }
