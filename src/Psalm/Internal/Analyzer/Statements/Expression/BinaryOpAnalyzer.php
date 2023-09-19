@@ -172,10 +172,9 @@ final class BinaryOpAnalyzer
                 $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
                 $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
 
-                if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+                if ($added_taints !== [] && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
                     $taint_source = TaintSource::fromNode($new_parent_node);
                     $statements_analyzer->data_flow_graph->addSource($taint_source);
-                    $stmt_type = $stmt_type->addParentNodes([$taint_source->id => $taint_source]);
                 }
 
                 if ($stmt_left_type && $stmt_left_type->parent_nodes) {

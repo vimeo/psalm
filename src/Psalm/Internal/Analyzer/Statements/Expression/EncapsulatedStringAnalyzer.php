@@ -108,6 +108,11 @@ final class EncapsulatedStringAnalyzer
                     $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
                     $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
 
+                    if ($added_taints !== [] && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+                        $taint_source = TaintSource::fromNode($new_parent_node);
+                        $statements_analyzer->data_flow_graph->addSource($taint_source);
+                    }
+
                     if ($casted_part_type->parent_nodes) {
                         foreach ($casted_part_type->parent_nodes as $parent_node) {
                             $statements_analyzer->data_flow_graph->addPath(
@@ -118,12 +123,6 @@ final class EncapsulatedStringAnalyzer
                                 $removed_taints,
                             );
                         }
-                    }
-
-                    if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
-                        $taint_source = TaintSource::fromNode($new_parent_node);
-                        $statements_analyzer->data_flow_graph->addSource($taint_source);
-                        $casted_part_type = $casted_part_type->addParentNodes([$taint_source->id => $taint_source]);
                     }
                 }
             } else {

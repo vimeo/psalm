@@ -63,6 +63,11 @@ final class EvalAnalyzer
                 $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
                 $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
 
+                if ($added_taints !== []) {
+                    $taint_source = TaintSource::fromNode($eval_param_sink);
+                    $statements_analyzer->data_flow_graph->addSource($taint_source);
+                }
+
                 foreach ($expr_type->parent_nodes as $parent_node) {
                     $statements_analyzer->data_flow_graph->addPath(
                         $parent_node,
@@ -72,10 +77,6 @@ final class EvalAnalyzer
                         $removed_taints,
                     );
                 }
-
-                $taint_source = TaintSource::fromNode($eval_param_sink);
-                $statements_analyzer->data_flow_graph->addSource($taint_source);
-                $expr_type = $expr_type->addParentNodes([$taint_source->id => $taint_source]);
             }
         }
 

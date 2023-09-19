@@ -442,6 +442,11 @@ final class ArrayAnalyzer
                     $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
                     $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
 
+                    if ($added_taints !== [] && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+                        $taint_source = TaintSource::fromNode($new_parent_node);
+                        $statements_analyzer->data_flow_graph->addSource($taint_source);
+                    }
+
                     foreach ($item_value_type->parent_nodes as $parent_node) {
                         $data_flow_graph->addPath(
                             $parent_node,
@@ -454,12 +459,6 @@ final class ArrayAnalyzer
                     }
 
                     $array_creation_info->parent_taint_nodes += [$new_parent_node->id => $new_parent_node];
-
-                    if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
-                        $taint_source = TaintSource::fromNode($new_parent_node);
-                        $statements_analyzer->data_flow_graph->addSource($taint_source);
-                        $item_value_type = $item_value_type->addParentNodes([$taint_source->id => $taint_source]);
-                    }
                 }
 
                 if ($item_key_type
@@ -483,6 +482,11 @@ final class ArrayAnalyzer
                     $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
                     $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
 
+                    if ($added_taints !== [] && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+                        $taint_source = TaintSource::fromNode($new_parent_node);
+                        $statements_analyzer->data_flow_graph->addSource($taint_source);
+                    }
+
                     foreach ($item_key_type->parent_nodes as $parent_node) {
                         $data_flow_graph->addPath(
                             $parent_node,
@@ -494,12 +498,6 @@ final class ArrayAnalyzer
                     }
 
                     $array_creation_info->parent_taint_nodes += [$new_parent_node->id => $new_parent_node];
-
-                    if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
-                        $taint_source = TaintSource::fromNode($new_parent_node);
-                        $statements_analyzer->data_flow_graph->addSource($taint_source);
-                        $item_value_type = $item_value_type->addParentNodes([$taint_source->id => $taint_source]);
-                    }
                 }
             }
         }

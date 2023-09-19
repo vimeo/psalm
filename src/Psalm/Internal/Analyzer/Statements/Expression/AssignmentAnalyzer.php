@@ -824,6 +824,11 @@ final class AssignmentAnalyzer
         $data_flow_graph->addNode($new_parent_node);
         $new_parent_nodes = [$new_parent_node->id => $new_parent_node];
 
+        if ($added_taints !== [] && $data_flow_graph instanceof TaintFlowGraph) {
+            $taint_source = TaintSource::fromNode($new_parent_node);
+            $data_flow_graph->addSource($taint_source);
+        }
+
         foreach ($parent_nodes as $parent_node) {
             $data_flow_graph->addPath(
                 $parent_node,
@@ -835,12 +840,6 @@ final class AssignmentAnalyzer
         }
 
         $type = $type->setParentNodes($new_parent_nodes, false);
-
-        if ($data_flow_graph instanceof TaintFlowGraph) {
-            $taint_source = TaintSource::fromNode($new_parent_node);
-            $data_flow_graph->addSource($taint_source);
-            $type = $type->addParentNodes([$taint_source->id => $taint_source]);
-        }
     }
 
     public static function analyzeAssignmentOperation(

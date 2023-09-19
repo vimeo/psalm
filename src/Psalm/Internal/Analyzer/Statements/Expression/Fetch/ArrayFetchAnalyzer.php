@@ -464,10 +464,9 @@ final class ArrayFetchAnalyzer
 
             $stmt_type = $stmt_type->setParentNodes([$new_parent_node->id => $new_parent_node]);
 
-            if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+            if ($added_taints !== [] && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
                 $taint_source = TaintSource::fromNode($new_parent_node);
                 $statements_analyzer->data_flow_graph->addSource($taint_source);
-                $stmt_type = $stmt_type->addParentNodes([$taint_source->id => $taint_source]);
             }
 
             if ($array_key_node) {

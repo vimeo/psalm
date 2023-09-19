@@ -1894,10 +1894,9 @@ final class ArgumentAnalyzer
             );
         }
 
-        if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+        if ($added_taints !== [] && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
             $taint_source = TaintSource::fromNode($argument_value_node);
             $statements_analyzer->data_flow_graph->addSource($taint_source);
-            $input_type = $input_type->addParentNodes([$taint_source->id => $taint_source]);
         }
     }
 }

@@ -506,6 +506,11 @@ final class InstancePropertyAssignmentAnalyzer
                 $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
                 $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
 
+                if ($added_taints !== [] && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+                    $taint_source = TaintSource::fromNode($property_node);
+                    $statements_analyzer->data_flow_graph->addSource($taint_source);
+                }
+
                 $data_flow_graph->addPath(
                     $property_node,
                     $var_node,
@@ -519,14 +524,6 @@ final class InstancePropertyAssignmentAnalyzer
                     foreach ($assignment_value_type->parent_nodes as $parent_node) {
                         $data_flow_graph->addPath($parent_node, $property_node, '=', $added_taints, $removed_taints);
                     }
-                }
-
-                if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
-                    $taint_source = TaintSource::fromNode($property_node);
-                    $statements_analyzer->data_flow_graph->addSource($taint_source);
-                    $assignment_value_type = $assignment_value_type->addParentNodes([
-                        $taint_source->id => $taint_source,
-                    ]);
                 }
 
                 if (isset($context->vars_in_scope[$var_id])) {
@@ -609,6 +606,11 @@ final class InstancePropertyAssignmentAnalyzer
         $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
         $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
 
+        if ($added_taints !== [] && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+            $taint_source = TaintSource::fromNode($property_node);
+            $statements_analyzer->data_flow_graph->addSource($taint_source);
+        }
+
         $data_flow_graph->addPath(
             $localized_property_node,
             $property_node,
@@ -627,14 +629,6 @@ final class InstancePropertyAssignmentAnalyzer
                     $removed_taints,
                 );
             }
-        }
-
-        if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
-            $taint_source = TaintSource::fromNode($property_node);
-            $statements_analyzer->data_flow_graph->addSource($taint_source);
-            $assignment_value_type = $assignment_value_type->addParentNodes([
-                $taint_source->id => $taint_source,
-            ]);
         }
 
         $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(
