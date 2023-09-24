@@ -100,6 +100,7 @@ Level 5 and above allows a more non-verifiable code, and higher levels are even 
 - [ContinueOutsideLoop](issues/ContinueOutsideLoop.md)
 - [InvalidTypeImport](issues/InvalidTypeImport.md)
 - [MethodSignatureMismatch](issues/MethodSignatureMismatch.md)
+- [NonVariableReferenceReturn](issues/NonVariableReferenceReturn.md)
 - [OverriddenMethodAccess](issues/OverriddenMethodAccess.md)
 - [ParamNameMismatch](issues/ParamNameMismatch.md)
 - [ReservedWord](issues/ReservedWord.md)

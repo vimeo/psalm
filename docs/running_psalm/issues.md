@@ -151,6 +151,7 @@
  - [NonInvariantDocblockPropertyType](issues/NonInvariantDocblockPropertyType.md)
  - [NonInvariantPropertyType](issues/NonInvariantPropertyType.md)
  - [NonStaticSelfCall](issues/NonStaticSelfCall.md)
+ - [NonVariableReferenceReturn](issues/NonVariableReferenceReturn.md)
  - [NoValue](issues/NoValue.md)
  - [NullableReturnStatement](issues/NullableReturnStatement.md)
  - [NullArgument](issues/NullArgument.md)
