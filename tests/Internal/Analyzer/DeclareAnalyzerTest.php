@@ -33,9 +33,25 @@ final class DeclareAnalyzerTest extends TestCase
             PHP,
         ];
 
+        yield 'declareTicksBlockMode' => [
+            'code' => <<<'PHP'
+            <?php declare(ticks=5) {
+                $foo = 'bar';
+            }
+            PHP,
+        ];
+
         yield 'declareEncoding' => [
             'code' => <<<'PHP'
             <?php declare(encoding='ISO-8859-1');
+            PHP,
+        ];
+
+        yield 'declareEncodingBlockMode' => [
+            'code' => <<<'PHP'
+            <?php declare(encoding='ISO-8859-1') {
+                $foo = 'bar';
+            }
             PHP,
         ];
     }
@@ -52,6 +68,15 @@ final class DeclareAnalyzerTest extends TestCase
         yield 'declareUnknownValueForStrictTypes' => [
             'code' => <<<'PHP'
             <?php declare(strict_types='forty-two');
+            PHP,
+            'error_message' => 'UnrecognizedStatement',
+        ];
+
+        yield 'declareStrictTypesBlockMode' => [
+            'code' => <<<'PHP'
+            <?php declare(strict_types=1) {
+                $foo = 'bar';
+            }
             PHP,
             'error_message' => 'UnrecognizedStatement',
         ];
