@@ -25,6 +25,16 @@ final class DeclareAnalyzer
             $declaration_key = (string) $declaration->key;
 
             if ($declaration_key === 'strict_types') {
+                if ($stmt->stmts !== null) {
+                    IssueBuffer::maybeAdd(
+                        new UnrecognizedStatement(
+                            'strict_types declaration must not use block mode',
+                            new CodeLocation($statements_analyzer, $stmt),
+                        ),
+                        $statements_analyzer->getSuppressedIssues(),
+                    );
+                }
+
                 self::analyzeStrictTypesDeclaration($statements_analyzer, $declaration, $context);
             } elseif ($declaration_key === 'ticks') {
                 self::analyzeTicksDeclaration($statements_analyzer, $declaration);
