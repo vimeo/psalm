@@ -479,6 +479,17 @@ class ArrayFetchAnalyzer
 
         $key_values = [];
 
+        if ($codebase->store_node_types
+            && !$context->collect_initializations
+            && !$context->collect_mutations
+        ) {
+            $codebase->analyzer->addNodeType(
+                $statements_analyzer->getFilePath(),
+                $stmt->var,
+                $array_type->getId(),
+            );
+        }
+
         if ($stmt->dim instanceof PhpParser\Node\Scalar\String_) {
             $value_type = Type::getAtomicStringFromLiteral($stmt->dim->value);
             if ($value_type instanceof TLiteralString) {
