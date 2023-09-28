@@ -18,6 +18,7 @@ use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Issue\TooManyArguments;
+use Psalm\Issue\UndefinedFunction;
 use Psalm\Tests\Config\Plugin\FileTypeSelfRegisteringPlugin;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Tests\TestCase;
@@ -1852,6 +1853,36 @@ class ConfigTest extends TestCase
                     'too many',
                     new Raw('aaa', 'aaa.php', 'aaa.php', 1, 2),
                     'Foo\Bar::baZ',
+                ),
+            ),
+        );
+    }
+
+    public function testReferencedFunctionAllowsNamespacedFunctions(): void
+    {
+        $config_xml = Config::loadFromXML(
+            (string) getcwd(),
+            <<<XML
+            <?xml version="1.0"?>
+            <psalm>
+                <issueHandlers>
+                    <UndefinedFunction>
+                        <errorLevel type="suppress">
+                            <referencedFunction name="Foo\Bar\baz" />
+                        </errorLevel>
+                    </UndefinedFunction>
+                </issueHandlers>
+            </psalm>
+            XML,
+        );
+
+        $this->assertSame(
+            Config::REPORT_SUPPRESS,
+            $config_xml->getReportingLevelForIssue(
+                new UndefinedFunction(
+                    'Function Foo\Bar\baz does not exist',
+                    new Raw('aaa', 'aaa.php', 'aaa.php', 1, 2),
+                    'foo\bar\baz',
                 ),
             ),
         );

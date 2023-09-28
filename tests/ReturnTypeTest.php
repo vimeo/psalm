@@ -1279,6 +1279,40 @@ class ReturnTypeTest extends TestCase
                         return $t;
                     }',
             ],
+            'returnByReferenceVariableInStaticMethod' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Foo {
+                        private static string $foo = "foo";
+
+                        public static function &foo(): string {
+                            return self::$foo;
+                        }
+                    }
+                    PHP,
+            ],
+            'returnByReferenceVariableInInstanceMethod' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Foo {
+                        private float $foo = 3.3;
+
+                        public function &foo(): float {
+                            return $this->foo;
+                        }
+                    }
+                    PHP,
+            ],
+            'returnByReferenceVariableInFunction' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function &foo(): array {
+                        /** @var array $x */
+                        static $x = [1, 2, 3];
+                        return $x;
+                    }
+                    PHP,
+            ],
         ];
     }
 
@@ -1806,6 +1840,37 @@ class ReturnTypeTest extends TestCase
                 'error_message' => 'InvalidReturnStatement',
                 'ignored_issues' => [],
                 'php_version' => '8.0',
+            ],
+            'returnByReferenceNonVariableInStaticMethod' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Foo {
+                        public static function &foo(string $x): string {
+                            return $x . "bar";
+                        }
+                    }
+                    PHP,
+                'error_message' => 'NonVariableReferenceReturn',
+            ],
+            'returnByReferenceNonVariableInInstanceMethod' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Foo {
+                        public function &foo(): iterable {
+                            return [] + [1, 2];
+                        }
+                    }
+                    PHP,
+                'error_message' => 'NonVariableReferenceReturn',
+            ],
+            'returnByReferenceNonVariableInFunction' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function &foo(): array {
+                        return [1, 2, 3];
+                    }
+                    PHP,
+                'error_message' => 'NonVariableReferenceReturn',
             ],
         ];
     }

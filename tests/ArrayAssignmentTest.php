@@ -1297,7 +1297,6 @@ class ArrayAssignmentTest extends TestCase
 
                         /**
                          * @psalm-suppress MixedAssignment
-                         * @psalm-suppress MixedArrayOffset
                          */
                         foreach ($a as $k => $v) {
                             $arr[$k] = $v;
