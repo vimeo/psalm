@@ -1600,7 +1600,7 @@ class SimpleAssertionReconciler extends Reconciler
         bool $is_equality
     ): Union {
         if ($existing_var_type->hasMixed()) {
-            return Type::getObject();
+            return new Union([$assertion_type]);
         }
 
         $old_var_type_string = $existing_var_type->getId();
