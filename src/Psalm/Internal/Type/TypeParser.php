@@ -462,12 +462,6 @@ class TypeParser
             );
         }
 
-        if (!$as->isSingle()) {
-            throw new TypeParseTreeException(
-                'Invalid templated classname \'' . $as . '\'',
-            );
-        }
-
         foreach ($as->getAtomicTypes() as $t) {
             if ($t instanceof TObject) {
                 return new TTemplateParamClass(
