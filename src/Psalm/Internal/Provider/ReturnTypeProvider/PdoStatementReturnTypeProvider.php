@@ -53,9 +53,9 @@ class PdoStatementReturnTypeProvider implements MethodReturnTypeProviderInterfac
         foreach ($call_args as $call_arg) {
             $arg_name = $call_arg->name;
             if (!isset($arg_name) || $arg_name->name === "mode") {
-                $first_arg_type = $source->getNodeTypeProvider()->getType($call_arg->value);
-                if ($first_arg_type->isSingleIntLiteral()) {
-                    $fetch_mode = $first_arg_type->getSingleIntLiteral()->value;
+                $arg_type = $source->getNodeTypeProvider()->getType($call_arg->value);
+                if (isset($arg_type) && $arg_type->isSingleIntLiteral()) {
+                    $fetch_mode = $arg_type->getSingleIntLiteral()->value;
                 }
                 break;
             }
