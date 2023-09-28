@@ -247,17 +247,6 @@ function get_headers(string $url, bool $associative = false, $context = null) : 
  */
 function pack(string $format, mixed ...$values): string {}
 
-/**
- * @psalm-pure
- *
- * @param string|Stringable|int|float $values
- * @return (PHP_MAJOR_VERSION is 8 ? string : string|false)
- * @psalm-ignore-falsable-return
- *
- * @psalm-flow ($format, $values) -> return
- */
-function sprintf(string $format, ...$values) {}
-
 final class CurlHandle
 {
     private function __construct()
