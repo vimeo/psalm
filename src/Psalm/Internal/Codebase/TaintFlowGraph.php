@@ -19,6 +19,7 @@ use Psalm\Issue\TaintedInclude;
 use Psalm\Issue\TaintedLdap;
 use Psalm\Issue\TaintedSSRF;
 use Psalm\Issue\TaintedShell;
+use Psalm\Issue\TaintedSleep;
 use Psalm\Issue\TaintedSql;
 use Psalm\Issue\TaintedSystemSecret;
 use Psalm\Issue\TaintedTextWithQuotes;
@@ -453,6 +454,15 @@ class TaintFlowGraph extends DataFlowGraph
                             case TaintKind::INPUT_XPATH:
                                 $issue = new TaintedXpath(
                                     'Detected tainted xpath query',
+                                    $issue_location,
+                                    $issue_trace,
+                                    $path,
+                                );
+                                break;
+
+                            case TaintKind::INPUT_SLEEP:
+                                $issue = new TaintedSleep(
+                                    'Detected tainted sleep',
                                     $issue_location,
                                     $issue_trace,
                                     $path,

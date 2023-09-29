@@ -241,6 +241,7 @@
  - [TaintedInput](issues/TaintedInput.md)
  - [TaintedLdap](issues/TaintedLdap.md)
  - [TaintedShell](issues/TaintedShell.md)
+ - [TaintedSleep](issues/TaintedSleep.md)
  - [TaintedSql](issues/TaintedSql.md)
  - [TaintedSSRF](issues/TaintedSSRF.md)
  - [TaintedSystemSecret](issues/TaintedSystemSecret.md)

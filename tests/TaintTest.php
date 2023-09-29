@@ -755,13 +755,23 @@ class TaintTest extends TestCase
                     /**
                      * @psalm-taint-escape xpath
                      */
-                    function my_escaping_function_for_xpath(string input) : string {};
+                    function my_escaping_function_for_xpath(string $input) : string {};
 
                     function queryExpression(SimpleXMLElement $xml) : array|false|null {
                         $expression = $_GET["expression"];
                         $expression = my_escaping_function_for_xpath($expression);
                         return $xml->xpath($expression);
                     }',
+            ],
+            'escapeSeconds' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-taint-escape sleep
+                     */
+                    function my_escaping_function_for_seconds(mixed $input) : int {};
+
+                    $seconds = my_escaping_function_for_seconds($_GET["seconds"]);
+                    sleep($seconds);',
             ],
         ];
     }
@@ -2539,6 +2549,31 @@ class TaintTest extends TestCase
                         return $xpath->evaluate($expression);
                     }',
                 'error_message' => 'TaintedXpath',
+            ],
+            'taintedSleep' => [
+                'code' => '<?php
+                    sleep($_GET["seconds"]);',
+                'error_message' => 'TaintedSleep',
+            ],
+            'taintedUsleep' => [
+                'code' => '<?php
+                    usleep($_GET["microseconds"]);',
+                'error_message' => 'TaintedSleep',
+            ],
+            'taintedTimeNanosleepSeconds' => [
+                'code' => '<?php
+                    time_nanosleep($_GET["seconds"], 42);',
+                'error_message' => 'TaintedSleep',
+            ],
+            'taintedTimeNanosleepNanoseconds' => [
+                'code' => '<?php
+                    time_nanosleep(42, $_GET["nanoseconds"]);',
+                'error_message' => 'TaintedSleep',
+            ],
+            'taintedTimeSleepUntil' => [
+                'code' => '<?php
+                    time_sleep_until($_GET["timestamp"]);',
+                'error_message' => 'TaintedSleep',
             ],
         ];
     }
