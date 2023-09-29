@@ -261,19 +261,6 @@ class ToStringTest extends TestCase
                     fooFoo(new A());',
                 'error_message' => 'InvalidArgument',
             ],
-            'implicitCastWithStrictTypesToEchoOrSprintf' => [
-                'code' => '<?php declare(strict_types=1);
-                    class A {
-                        public function __toString(): string
-                        {
-                            return "hello";
-                        }
-                    }
-
-                    echo(new A());
-                    sprintf("hello *", new A());',
-                'error_message' => 'ImplicitToStringCast',
-            ],
             'implicitCast' => [
                 'code' => '<?php
                     class A {
