@@ -4,5 +4,5 @@ namespace Psalm\Issue;
 
 final class TaintedSleep extends TaintedInput
 {
-    public const SHORTCODE = 323;
+    public const SHORTCODE = 324;
 }
