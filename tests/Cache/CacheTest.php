@@ -199,5 +199,54 @@ class CacheTest extends TestCase
                 ],
             ],
         ];
+
+        yield 'classDocblockChange' => [
+            [
+                [
+                    'files' => [
+                        '/src/A.php' => <<<'PHP'
+                            <?php
+
+                            /**
+                             * @template T
+                             */
+                            class A {
+                                /**
+                                 * @param T $baz
+                                 */
+                                public function foo($baz): void
+                                {
+                                }
+                            }
+                        PHP,
+                    ],
+                    'issues' => [],
+                ],
+                [
+                    'files' => [
+                        '/src/A.php' => <<<'PHP'
+                            <?php
+
+                            /**
+                             * @template K
+                             */
+                            class A {
+                                /**
+                                 * @param T $baz
+                                 */
+                                public function foo($baz): void
+                                {
+                                }
+                            }
+                        PHP,
+                    ],
+                    'issues' => [
+                        '/src/A.php' => [
+                            "UndefinedDocblockClass: Docblock-defined class, interface or enum named T does not exist",
+                        ],
+                    ],
+                ],
+            ],
+        ];
     }
 }
