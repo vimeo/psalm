@@ -61,6 +61,7 @@ use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 
+use function array_merge;
 use function count;
 use function explode;
 use function implode;

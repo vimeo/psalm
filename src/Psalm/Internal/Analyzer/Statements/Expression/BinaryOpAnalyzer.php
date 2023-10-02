@@ -32,6 +32,7 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_merge;
 use function in_array;
 use function strlen;
 
@@ -170,7 +171,6 @@ class BinaryOpAnalyzer
                 $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
 
                 if ($stmt_left_type && $stmt_left_type->parent_nodes) {
-
                     // numeric types can't be tainted html or has_quotes, neither can bool
                     if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
                         && $stmt_left_type->isSingle()
@@ -191,7 +191,6 @@ class BinaryOpAnalyzer
                 }
 
                 if ($stmt_right_type && $stmt_right_type->parent_nodes) {
-
                     // numeric types can't be tainted html or has_quotes, neither can bool
                     if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
                         && $stmt_right_type->isSingle()
