@@ -142,14 +142,9 @@ class CastAnalyzer
                 }
             }
 
-            if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph
-            ) {
-                $type = new Union([new TBool()], [
-                    'parent_nodes' => $maybe_type->parent_nodes ?? [],
-                ]);
-            } else {
-                $type = Type::getBool();
-            }
+            $type = new Union([new TBool()], [
+                'parent_nodes' => $maybe_type->parent_nodes ?? [],
+            ]);
 
             $statements_analyzer->node_data->setType($stmt, $type);
 
@@ -330,9 +325,7 @@ class CastAnalyzer
 
         $parent_nodes = [];
 
-        if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
-            $parent_nodes = $stmt_type->parent_nodes;
-        }
+        $parent_nodes = $stmt_type->parent_nodes;
 
         while ($atomic_types) {
             $atomic_type = array_pop($atomic_types);
@@ -520,9 +513,7 @@ class CastAnalyzer
 
         $parent_nodes = [];
 
-        if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
-            $parent_nodes = $stmt_type->parent_nodes;
-        }
+        $parent_nodes = $stmt_type->parent_nodes;
 
         while ($atomic_types) {
             $atomic_type = array_pop($atomic_types);
