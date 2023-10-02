@@ -323,8 +323,6 @@ class CastAnalyzer
 
         $atomic_types = $stmt_type->getAtomicTypes();
 
-        $parent_nodes = [];
-
         $parent_nodes = $stmt_type->parent_nodes;
 
         while ($atomic_types) {
@@ -510,8 +508,6 @@ class CastAnalyzer
         $castable_types = [];
 
         $atomic_types = $stmt_type->getAtomicTypes();
-
-        $parent_nodes = [];
 
         $parent_nodes = $stmt_type->parent_nodes;
 
