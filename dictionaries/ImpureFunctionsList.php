@@ -95,7 +95,6 @@ return [
     'mcrypt_generic_deinit' => true,
     'mcrypt_module_close' => true,
     // internal optimisation
-    'opcache_compile_file' => true,
     'clearstatcache' => true,
     // process-related
     'pcntl_signal' => true,
