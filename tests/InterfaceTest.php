@@ -736,6 +736,14 @@ class InterfaceTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'interfacePropertyIssetCheck' => [
+                'code' => '<?php
+                    interface X {}
+
+                    function foo(X $x): void {
+                        isset($x->x);
+                    }',
+            ],
         ];
     }
 

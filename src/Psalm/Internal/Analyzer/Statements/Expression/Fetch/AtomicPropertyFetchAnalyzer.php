@@ -192,6 +192,7 @@ class AtomicPropertyFetchAnalyzer
                 $statements_analyzer,
                 $codebase,
                 $stmt,
+                $context,
                 $lhs_type_part,
                 $intersection_types,
                 $class_exists,
@@ -1127,6 +1128,7 @@ class AtomicPropertyFetchAnalyzer
         StatementsAnalyzer $statements_analyzer,
         Codebase $codebase,
         PhpParser\Node\Expr\PropertyFetch $stmt,
+        Context $context,
         TNamedObject $lhs_type_part,
         array $intersection_types,
         bool &$class_exists,
@@ -1150,10 +1152,11 @@ class AtomicPropertyFetchAnalyzer
                 }
             }
 
-            if (!$class_exists &&
+            if (!$class_exists
                 //interfaces can't have properties. Except when they do... In PHP Core, they can
-                !in_array($fq_class_name, ['UnitEnum', 'BackedEnum'], true) &&
-                !in_array('UnitEnum', $codebase->getParentInterfaces($fq_class_name))
+                && !in_array($fq_class_name, ['UnitEnum', 'BackedEnum'], true)
+                && !in_array('UnitEnum', $codebase->getParentInterfaces($fq_class_name))
+                && !$context->inside_isset
             ) {
                 if (IssueBuffer::accepts(
                     new NoInterfaceProperties(
