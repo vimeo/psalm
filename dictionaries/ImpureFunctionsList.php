@@ -67,6 +67,8 @@ return [
     'socket_set_block' => true,
     'socket_set_nonblock' => true,
     'socket_listen' => true,
+    'stream_socket_shutdown' => true,
+    'socket_shutdown' => true,
     // meta calls
     'call_user_func' => true,
     'call_user_func_array' => true,
