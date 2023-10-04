@@ -223,7 +223,7 @@ class ReturnTypeAnalyzer
         ) {
             if (IssueBuffer::accepts(
                 new InvalidReturnType(
-                    $cased_method_id . ' is not expected to return any values but it does, '
+                    $cased_method_id . ' is not expected to return, but it does, '
                         . 'either implicitly or explicitly',
                     $return_type_location,
                 ),
