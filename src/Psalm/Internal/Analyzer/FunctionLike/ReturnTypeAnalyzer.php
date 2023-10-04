@@ -197,6 +197,7 @@ class ReturnTypeAnalyzer
                 )
             )
             && !$return_type->isVoid()
+            && !$return_type->isNever()
             && !$inferred_yield_types
             && (!$function_like_storage || !$function_like_storage->has_yield)
             && $function_returns_implicitly
