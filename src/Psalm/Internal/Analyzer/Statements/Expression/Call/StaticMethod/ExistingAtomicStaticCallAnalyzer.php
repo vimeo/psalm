@@ -15,6 +15,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallProhibit
 use Psalm\Internal\Analyzer\Statements\Expression\Call\StaticCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\AssertionsFromInheritanceResolver;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
@@ -156,7 +157,7 @@ class ExistingAtomicStaticCallAnalyzer
 
         if ($found_generic_params
             && $stmt->class instanceof PhpParser\Node\Name
-            && $stmt->class->parts === ['parent']
+            && $stmt->class->getParts() === ['parent']
             && $context->self
             && ($self_class_storage = $codebase->classlike_storage_provider->get($context->self))
             && $self_class_storage->template_extended_params
@@ -201,7 +202,7 @@ class ExistingAtomicStaticCallAnalyzer
             return;
         }
 
-        $fq_class_name = $stmt->class instanceof PhpParser\Node\Name && $stmt->class->parts === ['parent']
+        $fq_class_name = $stmt->class instanceof PhpParser\Node\Name && $stmt->class->getParts() === ['parent']
             ? (string) $statements_analyzer->getFQCLN()
             : $fq_class_name;
 
@@ -317,11 +318,17 @@ class ExistingAtomicStaticCallAnalyzer
                 }
             }
 
-            if ($method_storage->assertions) {
+            $assertionsResolver = new AssertionsFromInheritanceResolver($codebase);
+            $assertions = $assertionsResolver->resolve(
+                $method_storage,
+                $class_storage,
+            );
+
+            if ($assertions) {
                 CallAnalyzer::applyAssertionsToContext(
                     $stmt_name,
                     null,
-                    $method_storage->assertions,
+                    $assertions,
                     $stmt->getArgs(),
                     $template_result,
                     $context,
@@ -371,7 +378,7 @@ class ExistingAtomicStaticCallAnalyzer
                             $new_fq_class_name,
                             $context->calling_method_id,
                             strtolower($old_declaring_fq_class_name) !== strtolower($new_fq_class_name),
-                            $stmt->class->parts[0] === 'self',
+                            $stmt->class->getFirst() === 'self',
                         )) {
                             $moved_call = true;
                         }
@@ -519,8 +526,8 @@ class ExistingAtomicStaticCallAnalyzer
                     $lhs_type_part->defining_class,
                 );
             } elseif ($stmt->class instanceof PhpParser\Node\Name
-                && count($stmt->class->parts) === 1
-                && in_array(strtolower($stmt->class->parts[0]), ['self', 'static', 'parent'], true)
+                && count($stmt->class->getParts()) === 1
+                && in_array(strtolower($stmt->class->getFirst()), ['self', 'static', 'parent'], true)
                 && $lhs_type_part instanceof TNamedObject
                 && $context->self
             ) {

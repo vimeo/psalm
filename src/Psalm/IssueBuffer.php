@@ -302,7 +302,7 @@ final class IssueBuffer
 
         if ($reporting_level === Config::REPORT_INFO) {
             if ($is_tainted || !self::alreadyEmitted($emitted_key)) {
-                self::$issues_data[$e->getFilePath()][] = $e->toIssueData(Config::REPORT_INFO);
+                self::$issues_data[$e->getFilePath()][] = $e->toIssueData(IssueData::SEVERITY_INFO);
 
                 if ($is_fixable) {
                     self::addFixableIssue($issue_type);
@@ -331,7 +331,7 @@ final class IssueBuffer
 
         if ($is_tainted || !self::alreadyEmitted($emitted_key)) {
             ++self::$error_count;
-            self::$issues_data[$e->getFilePath()][] = $e->toIssueData(Config::REPORT_ERROR);
+            self::$issues_data[$e->getFilePath()][] = $e->toIssueData(IssueData::SEVERITY_ERROR);
 
             if ($is_fixable) {
                 self::addFixableIssue($issue_type);
@@ -570,9 +570,8 @@ final class IssueBuffer
             foreach (self::$issues_data as $file_path => $file_issues) {
                 usort(
                     $file_issues,
-                    static fn(IssueData $d1, IssueData $d2): int =>
-                        [$d1->file_path, $d1->line_from, $d1->column_from]
-                            <=>
+                    static fn(IssueData $d1, IssueData $d2): int => [$d1->file_path, $d1->line_from, $d1->column_from]
+                        <=>
                         [$d2->file_path, $d2->line_from, $d2->column_from]
                 );
                 self::$issues_data[$file_path] = $file_issues;
@@ -580,68 +579,68 @@ final class IssueBuffer
 
             // make a copy so what gets saved in cache is unaffected by baseline
             $issues_data = self::$issues_data;
+        }
 
-            if (!empty($issue_baseline)) {
-                // Set severity for issues in baseline to INFO
-                foreach ($issues_data as $file_path => $file_issues) {
-                    foreach ($file_issues as $key => $issue_data) {
-                        $file = $issue_data->file_name;
-                        $file = str_replace('\\', '/', $file);
-                        $type = $issue_data->type;
+        if (!empty($issue_baseline)) {
+            // Set severity for issues in baseline to INFO
+            foreach ($issues_data as $file_path => $file_issues) {
+                foreach ($file_issues as $key => $issue_data) {
+                    $file = $issue_data->file_name;
+                    $file = str_replace('\\', '/', $file);
+                    $type = $issue_data->type;
 
-                        if (isset($issue_baseline[$file][$type]) && $issue_baseline[$file][$type]['o'] > 0) {
-                            if ($issue_baseline[$file][$type]['o'] === count($issue_baseline[$file][$type]['s'])) {
-                                $position = array_search(
-                                    str_replace("\r\n", "\n", trim($issue_data->selected_text)),
-                                    $issue_baseline[$file][$type]['s'],
-                                    true,
-                                );
+                    if (isset($issue_baseline[$file][$type]) && $issue_baseline[$file][$type]['o'] > 0) {
+                        if ($issue_baseline[$file][$type]['o'] === count($issue_baseline[$file][$type]['s'])) {
+                            $position = array_search(
+                                str_replace("\r\n", "\n", trim($issue_data->selected_text)),
+                                $issue_baseline[$file][$type]['s'],
+                                true,
+                            );
 
-                                if ($position !== false) {
-                                    $issue_data->severity = Config::REPORT_INFO;
-                                    array_splice($issue_baseline[$file][$type]['s'], $position, 1);
-                                    $issue_baseline[$file][$type]['o']--;
-                                }
-                            } else {
-                                $issue_baseline[$file][$type]['s'] = [];
-                                $issue_data->severity = Config::REPORT_INFO;
+                            if ($position !== false) {
+                                $issue_data->severity = IssueData::SEVERITY_INFO;
+                                array_splice($issue_baseline[$file][$type]['s'], $position, 1);
                                 $issue_baseline[$file][$type]['o']--;
                             }
+                        } else {
+                            $issue_baseline[$file][$type]['s'] = [];
+                            $issue_data->severity = IssueData::SEVERITY_INFO;
+                            $issue_baseline[$file][$type]['o']--;
                         }
-
-                        $issues_data[$file_path][$key] = $issue_data;
                     }
-                }
 
-                if ($codebase->config->find_unused_baseline_entry) {
-                    foreach ($issue_baseline as $file_path => $issues) {
-                        foreach ($issues as $issue_name => $issue) {
-                            if ($issue['o'] !== 0) {
-                                $issues_data[$file_path][] = new IssueData(
-                                    Config::REPORT_ERROR,
-                                    0,
-                                    0,
-                                    UnusedBaselineEntry::getIssueType(),
-                                    sprintf(
-                                        'Baseline for issue "%s" has %d extra %s.',
-                                        $issue_name,
-                                        $issue['o'],
-                                        $issue['o'] === 1 ? 'entry' : 'entries',
-                                    ),
-                                    $file_path,
-                                    '',
-                                    '',
-                                    '',
-                                    0,
-                                    0,
-                                    0,
-                                    0,
-                                    0,
-                                    0,
-                                    UnusedBaselineEntry::SHORTCODE,
-                                    UnusedBaselineEntry::ERROR_LEVEL,
-                                );
-                            }
+                    $issues_data[$file_path][$key] = $issue_data;
+                }
+            }
+
+            if ($codebase->config->find_unused_baseline_entry) {
+                foreach ($issue_baseline as $file_path => $issues) {
+                    foreach ($issues as $issue_name => $issue) {
+                        if ($issue['o'] !== 0) {
+                            $issues_data[$file_path][] = new IssueData(
+                                IssueData::SEVERITY_ERROR,
+                                0,
+                                0,
+                                UnusedBaselineEntry::getIssueType(),
+                                sprintf(
+                                    'Baseline for issue "%s" has %d extra %s.',
+                                    $issue_name,
+                                    $issue['o'],
+                                    $issue['o'] === 1 ? 'entry' : 'entries',
+                                ),
+                                $file_path,
+                                '',
+                                '',
+                                '',
+                                0,
+                                0,
+                                0,
+                                0,
+                                0,
+                                0,
+                                UnusedBaselineEntry::SHORTCODE,
+                                UnusedBaselineEntry::ERROR_LEVEL,
+                            );
                         }
                     }
                 }
@@ -707,7 +706,7 @@ final class IssueBuffer
 
         if (in_array(
             $project_analyzer->stdout_report_options->format,
-            [Report::TYPE_CONSOLE, Report::TYPE_PHP_STORM],
+            [Report::TYPE_CONSOLE, Report::TYPE_PHP_STORM, Report::TYPE_GITHUB_ACTIONS],
         )) {
             echo str_repeat('-', 30) . "\n";
 
@@ -792,11 +791,7 @@ final class IssueBuffer
         }
 
         if ($is_full && $start_time) {
-            $codebase->file_reference_provider->removeDeletedFilesFromReferences();
-
-            if ($project_analyzer->project_cache_provider) {
-                $project_analyzer->project_cache_provider->processSuccessfulRun($start_time, PSALM_VERSION);
-            }
+            $project_analyzer->finish($start_time, PSALM_VERSION);
         }
 
         if ($error_count

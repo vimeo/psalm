@@ -338,6 +338,28 @@ class TypeCombinationTest extends TestCase
                     'ArrayObject<int, string>',
                 ],
             ],
+            'emptyArrayAndFalse' => [
+                'array<never, never>|false',
+                [
+                    'array<never, never>',
+                    'false',
+                ],
+            ],
+            'emptyArrayAndTrue' => [
+                'array<never, never>|true',
+                [
+                    'array<never, never>',
+                    'true',
+                ],
+            ],
+            'emptyArrayWithTrueAndFalse' => [
+                'array<never, never>|bool',
+                [
+                    'array<never, never>',
+                    'true',
+                    'false',
+                ],
+            ],
             'falseDestruction' => [
                 'bool',
                 [
@@ -836,6 +858,13 @@ class TypeCombinationTest extends TestCase
                 [
                     'non-empty-string',
                     'non-empty-literal-string',
+                ],
+            ],
+            'nonFalsyStringAndFalsyLiteral' => [
+                'string',
+                [
+                    'non-falsy-string',
+                    '"0"',
                 ],
             ],
         ];

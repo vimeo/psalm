@@ -833,7 +833,7 @@ class ReportOutputTest extends TestCase
     {
         $issues_data = [
             22 => new IssueData(
-                'info',
+                IssueData::SEVERITY_INFO,
                 15,
                 15,
                 'PossiblyUndefinedGlobalVariable',

@@ -33,11 +33,11 @@ class ExpressionIdentifier
             && $stmt->name instanceof PhpParser\Node\Identifier
             && $stmt->class instanceof PhpParser\Node\Name
         ) {
-            if (count($stmt->class->parts) === 1
-                && in_array(strtolower($stmt->class->parts[0]), ['self', 'static', 'parent'], true)
+            if (count($stmt->class->getParts()) === 1
+                && in_array(strtolower($stmt->class->getFirst()), ['self', 'static', 'parent'], true)
             ) {
                 if (!$this_class_name) {
-                    $fq_class_name = $stmt->class->parts[0];
+                    $fq_class_name = $stmt->class->getFirst();
                 } else {
                     $fq_class_name = $this_class_name;
                 }
@@ -47,7 +47,7 @@ class ExpressionIdentifier
                         $stmt->class,
                         $source->getAliases(),
                     )
-                    : implode('\\', $stmt->class->parts);
+                    : implode('\\', $stmt->class->getParts());
             }
 
             return $fq_class_name . '::$' . $stmt->name->name;
@@ -124,7 +124,7 @@ class ExpressionIdentifier
                 ) {
                     $offset = '$' . $stmt->dim->name;
                 } elseif ($stmt->dim instanceof PhpParser\Node\Expr\ConstFetch) {
-                    $offset = implode('\\', $stmt->dim->name->parts);
+                    $offset = implode('\\', $stmt->dim->name->getParts());
                 } elseif ($stmt->dim instanceof PhpParser\Node\Expr\PropertyFetch) {
                     $object_id = self::getExtendedVarId($stmt->dim->var, $this_class_name, $source);
 
@@ -134,7 +134,7 @@ class ExpressionIdentifier
                 } elseif ($stmt->dim instanceof PhpParser\Node\Expr\ClassConstFetch
                     && $stmt->dim->name instanceof PhpParser\Node\Identifier
                     && $stmt->dim->class instanceof PhpParser\Node\Name
-                    && $stmt->dim->class->parts[0] === 'static'
+                    && $stmt->dim->class->getFirst() === 'static'
                 ) {
                     $offset = 'static::' . $stmt->dim->name;
                 } elseif ($stmt->dim

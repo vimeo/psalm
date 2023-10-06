@@ -78,20 +78,19 @@ class ProjectCacheProvider
 
     public function hasLockfileChanged(): bool
     {
-        if (!file_exists($this->composer_lock_location)) {
-            return true;
-        }
+        if (file_exists($this->composer_lock_location)) {
+            $lockfile_contents = Providers::safeFileGetContents($this->composer_lock_location);
+            if (!$lockfile_contents) {
+                return true;
+            }
 
-        $lockfile_contents = Providers::safeFileGetContents($this->composer_lock_location);
-
-        if (!$lockfile_contents) {
-            return true;
-        }
-
-        if (PHP_VERSION_ID >= 8_01_00) {
-            $hash = hash('xxh128', $lockfile_contents);
+            if (PHP_VERSION_ID >= 8_01_00) {
+                $hash = hash('xxh128', $lockfile_contents);
+            } else {
+                $hash = hash('md4', $lockfile_contents);
+            }
         } else {
-            $hash = hash('md4', $lockfile_contents);
+            $hash = '';
         }
 
         $changed = $hash !== $this->getComposerLockHash();

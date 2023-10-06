@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace Psalm\Tests\Internal\Analyzer\Statements\Expression\Fetch;
 
 use Psalm\Tests\TestCase;
+use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 final class AtomicPropertyFetchAnalyzerTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
+    use InvalidCodeAnalysisTestTrait;
 
     public function providerValidCodeParse(): iterable
     {
@@ -69,6 +71,23 @@ final class AtomicPropertyFetchAnalyzerTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.2',
+            ],
+        ];
+    }
+
+    public function providerInvalidCodeParse(): iterable
+    {
+        return [
+            'undefinedPropertyAccessOnMissingDependency' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class A extends Missing {}
+                    function make(): A { return new A; }
+
+                    make()->prop;
+                    PHP,
+                'error_message' => 'UndefinedPropertyFetch',
+                'ignored_issues' => ['MissingDependency'],
             ],
         ];
     }

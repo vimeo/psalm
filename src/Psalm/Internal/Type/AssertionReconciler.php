@@ -619,7 +619,6 @@ class AssertionReconciler extends Reconciler
         }
 
         /*if ($type_2_atomic instanceof TKeyedArray
-            && $type_1_atomic instanceof \Psalm\Type\Atomic\TList
         ) {
             $type_2_key = $type_2_atomic->getGenericKeyType();
             $type_2_value = $type_2_atomic->getGenericValueType();
@@ -771,12 +770,25 @@ class AssertionReconciler extends Reconciler
                 }
 
                 if ($type_1_param->getId() !== $type_2_param->getId()) {
-                    $type_1_param = $type_2_param;
+                    $type_1_param = $type_2_param->setPossiblyUndefined($type_1_param->possibly_undefined);
                 }
             }
             unset($type_1_param);
 
-            $matching_atomic_type = $type_1_atomic->setProperties($type_1_properties);
+            if ($type_1_atomic->fallback_params === null) {
+                $fallback_types = null;
+            } else {
+                //any fallback type is now the value of iterable
+                $fallback_types = [$type_1_atomic->fallback_params[0], $type_2_param];
+            }
+
+            $matching_atomic_type = new TKeyedArray(
+                $type_1_properties,
+                $type_1_atomic->class_strings,
+                $fallback_types,
+                $type_1_atomic->is_list,
+                $type_1_atomic->from_docblock,
+            );
             $atomic_comparison_results->type_coerced = true;
         }
 

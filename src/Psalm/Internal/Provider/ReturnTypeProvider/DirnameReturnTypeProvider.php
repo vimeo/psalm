@@ -9,6 +9,7 @@ use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
 use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Union;
 
 use function array_values;
@@ -60,6 +61,16 @@ class DirnameReturnTypeProvider implements FunctionReturnTypeProviderInterface
             $statements_source->getFileName(),
             $statements_source->getCodebase()->config,
         );
+
+        if ($evaled_path === null) {
+            $type = $node_type_provider->getType($call_args[0]->value);
+            if ($type !== null && $type->isSingle()) {
+                $atomic_type = array_values($type->getAtomicTypes())[0];
+                if ($atomic_type instanceof TNonEmptyString) {
+                    return Type::getNonEmptyString();
+                }
+            }
+        }
 
         if ($evaled_path === null) {
             return Type::getString();

@@ -23,6 +23,7 @@ use function glob;
 use function implode;
 use function is_array;
 use function is_dir;
+use function is_string;
 use function json_decode;
 use function ksort;
 use function max;
@@ -46,6 +47,7 @@ final class Creator
     xmlns="https://getpsalm.org/schema/config"
     xsi:schemaLocation="https://getpsalm.org/schema/config vendor/vimeo/psalm/config.xsd"
     findUnusedBaselineEntry="true"
+    findUnusedCode="true"
 >
     <projectFiles>
         <directory name="src" />
@@ -249,6 +251,10 @@ final class Creator
             }
 
             foreach ($paths as $path) {
+                if (!is_string($path)) {
+                    continue;
+                }
+
                 if ($path === '') {
                     $nodes = [...$nodes, ...self::guessPhpFileDirs($current_dir)];
 

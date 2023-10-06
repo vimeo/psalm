@@ -6,7 +6,9 @@ It currently supports diagnostics (i.e. finding errors and warnings), go-to-defi
 
 It works well in a variety of editors (listed alphabetically):
 
-## Emacs
+## Client configuration
+
+### Emacs
 
 I got it working with [eglot](https://github.com/joaotavora/eglot)
 
@@ -27,13 +29,13 @@ This is the config I used:
   )
 ```
 
-## PhpStorm
+### PhpStorm
 
-### Native Support
+#### Native Support
 
 As of PhpStorm 2020.3 support for psalm is supported and on by default, you can read more about that [here](https://www.jetbrains.com/help/phpstorm/using-psalm.html)
 
-### With LSP
+#### With LSP
 
 Alternatively, psalm works with `gtache/intellij-lsp` plugin ([Jetbrains-approved version](https://plugins.jetbrains.com/plugin/10209-lsp-support), [latest version](https://github.com/gtache/intellij-lsp/releases/tag/v1.6.0)).
 
@@ -51,7 +53,7 @@ In the "Server definitions" tab you should add a definition for Psalm:
 
 In the "Timeouts" tab you can adjust the initialization timeout. This is important if you have a large project. You should set the "Init" value to the number of milliseconds you allow Psalm to scan your entire project and your project's dependencies. For opening a couple of projects that use large PHP frameworks, on a high-end business laptop, try `240000` milliseconds for Init.
 
-## Sublime Text
+### Sublime Text
 
 I use the excellent Sublime [LSP plugin](https://github.com/tomv564/LSP) with the following config(Package Settings > LSP > Settings):
 ```json
@@ -64,7 +66,7 @@ I use the excellent Sublime [LSP plugin](https://github.com/tomv564/LSP) with th
     }
 ```
 
-## Vim & Neovim
+### Vim & Neovim
 
 **ALE**
 
@@ -105,6 +107,15 @@ Add settings to `coc-settings.json`:
   }
 ```
 
-## VS Code
+### VS Code
 
 [Get the Psalm plugin here](https://marketplace.visualstudio.com/items?itemName=getpsalm.psalm-vscode-plugin) (Requires VS Code 1.26+):
+
+## Running the server in a docker container
+
+Make sure you use `--map-folder` option. Using it without argument will map the server's CWD to the host's project root folder. You can also specify a custom mapping. For example:
+```bash
+docker-compose exec php /usr/share/php/psalm/psalm-language-server \
+   -r=/var/www/html \
+   --map-folder=/var/www/html:$PWD
+```

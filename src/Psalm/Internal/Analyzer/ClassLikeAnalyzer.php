@@ -14,7 +14,6 @@ use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Issue\InaccessibleProperty;
-use Psalm\Issue\InheritorViolation;
 use Psalm\Issue\InvalidClass;
 use Psalm\Issue\InvalidTemplateParam;
 use Psalm\Issue\MissingDependency;
@@ -29,7 +28,6 @@ use Psalm\Plugin\EventHandler\Event\AfterClassLikeExistenceCheckEvent;
 use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
-use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 use UnexpectedValueException;
@@ -40,7 +38,6 @@ use function array_search;
 use function count;
 use function explode;
 use function gettype;
-use function implode;
 use function in_array;
 use function preg_match;
 use function preg_replace;
@@ -333,23 +330,6 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
             return null;
         }
 
-
-        $classUnion = new Union([new TNamedObject($fq_class_name)]);
-        foreach ($class_storage->parent_classes + $class_storage->direct_class_interfaces as $parent_class) {
-            $parent_storage = $codebase->classlikes->getStorageFor($parent_class);
-            if ($parent_storage && $parent_storage->inheritors) {
-                if (!UnionTypeComparator::isContainedBy($codebase, $classUnion, $parent_storage->inheritors)) {
-                    IssueBuffer::maybeAdd(
-                        new InheritorViolation(
-                            'Class ' . $fq_class_name . ' is not an allowed inheritor of parent class ' . $parent_class,
-                            $code_location,
-                        ),
-                        $suppressed_issues,
-                    );
-                }
-            }
-        }
-
         foreach ($class_storage->invalid_dependencies as $dependency_class_name => $_) {
             // if the implemented/extended class is stubbed, it may not yet have
             // been hydrated
@@ -421,15 +401,15 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         }
 
         if ($class_name instanceof PhpParser\Node\Name\FullyQualified) {
-            return implode('\\', $class_name->parts);
+            return $class_name->toString();
         }
 
-        if (in_array($class_name->parts[0], ['self', 'static', 'parent'], true)) {
-            return $class_name->parts[0];
+        if (in_array($class_name->getFirst(), ['self', 'static', 'parent'], true)) {
+            return $class_name->getFirst();
         }
 
         return Type::getFQCLNFromString(
-            implode('\\', $class_name->parts),
+            $class_name->toString(),
             $aliases,
         );
     }

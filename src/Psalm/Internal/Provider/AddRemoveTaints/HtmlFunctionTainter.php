@@ -32,13 +32,13 @@ class HtmlFunctionTainter implements AddTaintsInterface, RemoveTaintsInterface
             || !$item instanceof PhpParser\Node\Expr\FuncCall
             || $item->isFirstClassCallable()
             || !$item->name instanceof PhpParser\Node\Name
-            || count($item->name->parts) !== 1
+            || count($item->name->getParts()) !== 1
             || count($item->getArgs()) === 0
         ) {
             return [];
         }
 
-        $function_id = strtolower($item->name->parts[0]);
+        $function_id = strtolower($item->name->getFirst());
 
         if ($function_id === 'html_entity_decode'
             || $function_id === 'htmlspecialchars_decode'
@@ -84,13 +84,13 @@ class HtmlFunctionTainter implements AddTaintsInterface, RemoveTaintsInterface
             || !$item instanceof PhpParser\Node\Expr\FuncCall
             || $item->isFirstClassCallable()
             || !$item->name instanceof PhpParser\Node\Name
-            || count($item->name->parts) !== 1
+            || count($item->name->getParts()) !== 1
             || count($item->getArgs()) === 0
         ) {
             return [];
         }
 
-        $function_id = strtolower($item->name->parts[0]);
+        $function_id = strtolower($item->name->getFirst());
 
         if ($function_id === 'htmlentities'
             || $function_id === 'htmlspecialchars'

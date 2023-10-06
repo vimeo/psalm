@@ -19,7 +19,6 @@ use Psalm\Type\Atomic\TDependentGetClass;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
@@ -36,6 +35,7 @@ use Psalm\Type\Atomic\TTemplateValueOf;
 use Psalm\Type\Union;
 
 use function array_fill;
+use function array_filter;
 use function array_keys;
 use function array_merge;
 use function array_search;
@@ -292,9 +292,7 @@ class TemplateStandinTypeReplacer
                         $array_template_type = $array_template_type->getSingleAtomic();
                         $offset_template_type = $offset_template_type->getSingleAtomic();
 
-                        if ($array_template_type instanceof TList) {
-                            $array_template_type = $array_template_type->getKeyedArray();
-                        }
+
                         if ($array_template_type instanceof TKeyedArray
                             && ($offset_template_type instanceof TLiteralString
                                 || $offset_template_type instanceof TLiteralInt)
@@ -344,9 +342,6 @@ class TemplateStandinTypeReplacer
 
             if ($template_type) {
                 foreach ($template_type->getAtomicTypes() as $template_atomic) {
-                    if ($template_atomic instanceof TList) {
-                        $template_atomic = $template_atomic->getKeyedArray();
-                    }
                     if (!$template_atomic instanceof TKeyedArray
                         && !$template_atomic instanceof TArray
                     ) {
@@ -474,10 +469,6 @@ class TemplateStandinTypeReplacer
         $matching_atomic_types = [];
 
         foreach ($input_type->getAtomicTypes() as $input_key => $atomic_input_type) {
-            if ($atomic_input_type instanceof TList) {
-                $atomic_input_type = $atomic_input_type->getKeyedArray();
-            }
-
             if ($bracket_pos = strpos($input_key, '<')) {
                 $input_key = substr($input_key, 0, $bracket_pos);
             }
@@ -758,9 +749,6 @@ class TemplateStandinTypeReplacer
 
                         if ($keyed_template->isSingle()) {
                             $keyed_template = $keyed_template->getSingleAtomic();
-                        }
-                        if ($keyed_template instanceof \Psalm\Type\Atomic\TList) {
-                            $keyed_template = $keyed_template->getKeyedArray();
                         }
 
                         if ($keyed_template instanceof TKeyedArray
@@ -1253,6 +1241,7 @@ class TemplateStandinTypeReplacer
         Atomic $container_type_part,
         ?array &$container_type_params_covariant = null
     ): array {
+        $_ = null;
         if ($input_type_part instanceof TGenericObject || $input_type_part instanceof TIterable) {
             $input_type_params = $input_type_part->type_params;
         } elseif ($codebase->classlike_storage_provider->has($input_type_part->value)) {
@@ -1316,40 +1305,43 @@ class TemplateStandinTypeReplacer
                 foreach ($params as $extended_input_param_type) {
                     $new_input_param = null;
 
-                    foreach ($extended_input_param_type->getAtomicTypes() as $et) {
-                        if ($et instanceof TTemplateParam) {
-                            $ets = Methods::getExtendedTemplatedTypes(
-                                $et,
-                                $template_extends,
-                            );
-                        } else {
-                            $ets = [];
-                        }
-
-                        if ($ets
-                            && $ets[0] instanceof TTemplateParam
-                            && isset(
-                                $input_class_storage->template_types
-                                    [$ets[0]->param_name]
-                                    [$ets[0]->defining_class],
+                    foreach ($extended_input_param_type->getAtomicTypes() as $extended_template) {
+                        $extended_templates = $extended_template instanceof TTemplateParam
+                            ? array_values(
+                                array_filter(
+                                    Methods::getExtendedTemplatedTypes($extended_template, $template_extends),
+                                    static fn(Atomic $a) => $a instanceof TTemplateParam,
+                                ),
                             )
-                        ) {
-                            $old_params_offset = (int) array_search(
-                                $ets[0]->param_name,
-                                array_keys($input_class_storage->template_types),
-                            );
+                            : [];
 
-                            $candidate_param_type = $input_type_params[$old_params_offset] ?? Type::getMixed();
-                            $candidate_param_type = $candidate_param_type->setProperties([
-                                'from_template_default' => true,
-                            ]);
-                        } else {
-                            $candidate_param_type = new Union([$et], ['from_template_default' => true]);
+                        $candidate_param_types = [];
+
+                        if ($extended_templates) {
+                            foreach ($extended_templates as $template) {
+                                if (!isset(
+                                    $input_class_storage->template_types
+                                        [$template->param_name]
+                                        [$template->defining_class],
+                                )) {
+                                    continue;
+                                }
+
+                                $old_params_offset = (int) array_search(
+                                    $template->param_name,
+                                    array_keys($input_class_storage->template_types),
+                                );
+
+                                $candidate_param_types[] = ($input_type_params[$old_params_offset] ?? Type::getMixed())
+                                    ->setProperties(['from_template_default' => true]);
+                            }
                         }
 
                         $new_input_param = Type::combineUnionTypes(
                             $new_input_param,
-                            $candidate_param_type,
+                            $candidate_param_types
+                                ? Type::combineUnionTypeArray($candidate_param_types, $codebase)
+                                : new Union([$extended_template], ['from_template_default' => true]),
                         );
                     }
 

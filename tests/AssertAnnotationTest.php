@@ -2194,6 +2194,10 @@ class AssertAnnotationTest extends TestCase
                     function assertSomeInt(int $foo): void
                     {}
 
+                    /** @psalm-assert value-of<StringEnum|IntEnum> $foo */
+                    function assertAnyEnumValue(string|int $foo): void
+                    {}
+
                     /** @param "foo"|"bar" $foo */
                     function takesSomeStringFromEnum(string $foo): StringEnum
                     {
@@ -2216,8 +2220,14 @@ class AssertAnnotationTest extends TestCase
 
                     assertSomeInt($int);
                     takesSomeIntFromEnum($int);
+
+                    /** @var string|int $potentialEnumValue */
+                    $potentialEnumValue = null;
+                    assertAnyEnumValue($potentialEnumValue);
                 ',
-                'assertions' => [],
+                'assertions' => [
+                    '$potentialEnumValue===' => "'bar'|'baz'|'foo'|1|2|3",
+                ],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
@@ -2510,6 +2520,454 @@ class AssertAnnotationTest extends TestCase
                     {
                         $either->isLeft() ? testLeft($either) : testRight($either);
                     }',
+            ],
+            'assertArrayListIfTrueFalseCompareTrue' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, string|int|float>|list<string> $arg
+                     * @return bool
+                     *
+                     * @psalm-assert-if-false array<string, string|int|float> $arg
+                     * @psalm-assert-if-true list<string> $arg
+                     */
+                    function is_array_or_list($arg) {
+                        // should be array_is_list($arg), but tests run in non-PHP 8 environment
+                        if (array_values($arg) === $arg) {
+                            return true;
+                        }
+                        return false;
+                    }
+                    /**
+                     * @param list<string> $arg
+                     * @return void
+                     */
+                    function takesAList($arg) {}
+                    /**
+                     * @param array<string, string|int|float> $arg
+                     * @return void
+                     */
+                    function takesAnArray($arg) {}
+                    /**
+                     * @var array<string, string|int|float>|list<string> $foo
+                     */
+                    $foo;
+                    if (is_array_or_list($foo) === true) {
+                        takesAList($foo);
+                    } else {
+                        takesAnArray($foo);
+                    }',
+            ],
+            'assertArrayListIfTrueFalseCompareTruthy' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, string|int|float>|list<string> $arg
+                     * @return bool
+                     *
+                     * @psalm-assert-if-false array<string, string|int|float> $arg
+                     * @psalm-assert-if-true list<string> $arg
+                     */
+                    function is_array_or_list($arg) {
+                        // should be array_is_list($arg), but tests run in non-PHP 8 environment
+                        if (array_values($arg) === $arg) {
+                            return true;
+                        }
+                        return false;
+                    }
+                    /**
+                     * @param list<string> $arg
+                     * @return void
+                     */
+                    function takesAList($arg) {}
+                    /**
+                     * @param array<string, string|int|float> $arg
+                     * @return void
+                     */
+                    function takesAnArray($arg) {}
+                    /**
+                     * @var array<string, string|int|float>|list<string> $foo
+                     */
+                    $foo;
+                    if (is_array_or_list($foo)) {
+                        takesAList($foo);
+                    } else {
+                        takesAnArray($foo);
+                    }',
+            ],
+            'assertArrayListIfTrueFalseCompareNotTrue' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, string|int|float>|list<string> $arg
+                     * @return bool
+                     *
+                     * @psalm-assert-if-false array<string, string|int|float> $arg
+                     * @psalm-assert-if-true list<string> $arg
+                     */
+                    function is_array_or_list($arg) {
+                        if (array_values($arg) === $arg) {
+                            return true;
+                        }
+                        return false;
+                    }
+                    /**
+                     * @param list<string> $arg
+                     * @return void
+                     */
+                    function takesAList($arg) {}
+                    /**
+                     * @param array<string, string|int|float> $arg
+                     * @return void
+                     */
+                    function takesAnArray($arg) {}
+                    /**
+                     * @var array<string, string|int|float>|list<string> $foo
+                     */
+                    $foo;
+                    if (is_array_or_list($foo) !== true) {
+                        takesAnArray($foo);
+                    } else {
+                        takesAList($foo);
+                    }',
+            ],
+            'assertArrayListIfTrueFalseCompareFalse' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, string|int|float>|list<string> $arg
+                     * @return bool
+                     *
+                     * @psalm-assert-if-false array<string, string|int|float> $arg
+                     * @psalm-assert-if-true list<string> $arg
+                     */
+                    function is_array_or_list($arg) {
+                        if (array_values($arg) === $arg) {
+                            return true;
+                        }
+                        return false;
+                    }
+                    /**
+                     * @param list<string> $arg
+                     * @return void
+                     */
+                    function takesAList($arg) {}
+                    /**
+                     * @param array<string, string|int|float> $arg
+                     * @return void
+                     */
+                    function takesAnArray($arg) {}
+                    /**
+                     * @var array<string, string|int|float>|list<string> $foo
+                     */
+                    $foo;
+                    if (is_array_or_list($foo) === false) {
+                        takesAnArray($foo);
+                    } else {
+                        takesAList($foo);
+                    }',
+            ],
+            'assertArrayListIfTrueFalseCompareNotFalse' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, string|int|float>|list<string> $arg
+                     * @return bool
+                     *
+                     * @psalm-assert-if-false array<string, string|int|float> $arg
+                     * @psalm-assert-if-true list<string> $arg
+                     */
+                    function is_array_or_list($arg) {
+                        if (array_values($arg) === $arg) {
+                            return true;
+                        }
+                        return false;
+                    }
+                    /**
+                     * @param list<string> $arg
+                     * @return void
+                     */
+                    function takesAList($arg) {}
+                    /**
+                     * @param array<string, string|int|float> $arg
+                     * @return void
+                     */
+                    function takesAnArray($arg) {}
+                    /**
+                     * @var array<string, string|int|float>|list<string> $foo
+                     */
+                    $foo;
+                    if (is_array_or_list($foo) !== false) {
+                        takesAList($foo);
+                    } else {
+                        takesAnArray($foo);
+                    }',
+            ],
+            'assertArrayListIfTrueFalseCompareFalsy' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, string|int|float>|list<string> $arg
+                     * @return bool
+                     *
+                     * @psalm-assert-if-false array<string, string|int|float> $arg
+                     * @psalm-assert-if-true list<string> $arg
+                     */
+                    function is_array_or_list($arg) {
+                        if (array_values($arg) === $arg) {
+                            return true;
+                        }
+                        return false;
+                    }
+                    /**
+                     * @param list<string> $arg
+                     * @return void
+                     */
+                    function takesAList($arg) {}
+                    /**
+                     * @param array<string, string|int|float> $arg
+                     * @return void
+                     */
+                    function takesAnArray($arg) {}
+                    /**
+                     * @var array<string, string|int|float>|list<string> $foo
+                     */
+                    $foo;
+                    if (!is_array_or_list($foo)) {
+                        takesAnArray($foo);
+                    } else {
+                        takesAList($foo);
+                    }',
+            ],
+            'assertArrayArrayIfTrueFalseCompareFalsy' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, string>|array<int, float> $arg
+                     * @return bool
+                     *
+                     * @psalm-suppress InvalidReturnType
+                     *
+                     * @psalm-assert-if-false array<string, string> $arg
+                     * @psalm-assert-if-true array<int, float> $arg
+                     */
+                    function is_array_a_or_b($arg) {}
+                    /**
+                     * @param array<string, string> $arg
+                     * @return void
+                     */
+                    function takesAnArrayA($arg) {}
+                    /**
+                     * @param array<int, float> $arg
+                     * @return void
+                     */
+                    function takesAnArrayB($arg) {}
+                    /**
+                     * @var array<string, string>|array<int, float> $foo
+                     */
+                    $foo;
+                    if (!is_array_a_or_b($foo)) {
+                        takesAnArrayA($foo);
+                    } else {
+                        takesAnArrayB($foo);
+                    }',
+            ],
+            'assertListListIfTrueFalseCompareFalsy' => [
+                'code' => '<?php
+                    /**
+                     * @param list<string>|list<int> $arg
+                     * @return bool
+                     *
+                     * @psalm-suppress InvalidReturnType
+                     *
+                     * @psalm-assert-if-false list<string> $arg
+                     * @psalm-assert-if-true list<int> $arg
+                     */
+                    function is_list_string_or_int($arg) {}
+                    /**
+                     * @param list<string> $arg
+                     * @return void
+                     */
+                    function takesAListString($arg) {}
+                    /**
+                     * @param list<int> $arg
+                     * @return void
+                     */
+                    function takesAListInt($arg) {}
+                    /**
+                     * @var list<string>|list<int> $foo
+                     */
+                    $foo;
+                    if (!is_list_string_or_int($foo)) {
+                        takesAListString($foo);
+                    } else {
+                        takesAListInt($foo);
+                    }',
+            ],
+            'assertKeyedArrayKeyedArrayIfTrueFalseCompareFalsy' => [
+                'code' => '<?php
+                    /**
+                     * @param array{hello: string}|array{world: string} $arg
+                     * @return bool
+                     *
+                     * @psalm-suppress InvalidReturnType
+                     *
+                     * @psalm-assert-if-false array{hello: string} $arg
+                     * @psalm-assert-if-true array{world: string} $arg
+                     */
+                    function is_array_a_or_b($arg) {}
+                    /**
+                     * @param array{hello: string} $arg
+                     * @return void
+                     */
+                    function takesAnArrayA($arg) {}
+                    /**
+                     * @param array{world: string} $arg
+                     * @return void
+                     */
+                    function takesAnArrayB($arg) {}
+                    /**
+                     * @var array{hello: string}|array{world: string} $foo
+                     */
+                    $foo;
+                    if (!is_array_a_or_b($foo)) {
+                        takesAnArrayA($foo);
+                    } else {
+                        takesAnArrayB($foo);
+                    }',
+            ],
+            'assertTemplateKeyedArrayTemplateKeyedArrayIfTrueFalseCompareFalsy' => [
+                'code' => '<?php
+                    /**
+                     * @template Ta of array{hello: string}
+                     * @template Tb of array{world: string}
+                     * @param Ta|Tb $arg
+                     * @return bool
+                     *
+                     * @psalm-suppress InvalidReturnType
+                     *
+                     * @psalm-assert-if-false Ta $arg
+                     * @psalm-assert-if-true Tb $arg
+                     */
+                    function is_array_a_or_b($arg) {}
+                    /**
+                     * @param array{hello: string} $arg
+                     * @return void
+                     */
+                    function takesAnArrayA($arg) {}
+                    /**
+                     * @param array{world: string} $arg
+                     * @return void
+                     */
+                    function takesAnArrayB($arg) {}
+                    /**
+                     * @var array{hello: string}|array{world: string} $foo
+                     */
+                    $foo;
+                    if (!is_array_a_or_b($foo)) {
+                        takesAnArrayA($foo);
+                    } else {
+                        takesAnArrayB($foo);
+                    }',
+            ],
+            'iterableToNonEmptyList' => [
+                'code' => '<?php
+                final class WhateverAssert
+                {
+                    /**
+                     * @param mixed $value
+                     * @psalm-assert non-empty-list $value
+                     */
+                    public static function doAssert($value): void
+                    {}
+                }
+
+                /** @var iterable<mixed,string> $iterable */
+                $iterable = [];
+
+                WhateverAssert::doAssert($iterable);',
+                'assertions' => [
+                    '$iterable===' => 'non-empty-list<string>',
+                ],
+            ],
+            'assertFromInheritedDocBlock' => [
+                'code' => '<?php
+                    namespace Namespace1 {
+
+                    /** @template InstanceType */
+                    interface PluginManagerInterface
+                    {
+                        /** @psalm-assert InstanceType $value */
+                        public function validate(mixed $value): void;
+                    }
+
+                    /**
+                     * @template InstanceType
+                     * @template-implements PluginManagerInterface<InstanceType>
+                     */
+                    abstract class AbstractPluginManager implements PluginManagerInterface
+                    {
+                    }
+
+                    /**
+                     * @template InstanceType of object
+                     * @template-extends AbstractPluginManager<InstanceType>
+                     */
+                    abstract class AbstractSingleInstancePluginManager extends AbstractPluginManager
+                    {
+                        public function validate(mixed $value): void
+                        {
+                        }
+                    }
+                }
+
+                namespace Namespace2 {
+                    use InvalidArgumentException;use Namespace1\AbstractSingleInstancePluginManager;
+                    use Namespace1\AbstractPluginManager;
+                    use stdClass;
+
+                    /** @template-extends AbstractSingleInstancePluginManager<stdClass> */
+                    final class Qoo extends AbstractSingleInstancePluginManager
+                    {
+                    }
+
+                    /** @template-extends AbstractPluginManager<callable> */
+                    final class Ooq extends AbstractPluginManager
+                    {
+                        public function validate(mixed $value): void
+                        {
+                        }
+                    }
+                }
+
+                namespace {
+                    $baz = new \Namespace2\Qoo();
+
+                    /** @var mixed $object */
+                    $object = null;
+                    $baz->validate($object);
+
+                    $ooq = new \Namespace2\Ooq();
+                    /** @var mixed $callable */
+                    $callable = null;
+                    $ooq->validate($callable);
+                }
+                ',
+                'assertions' => [
+                    '$object===' => 'stdClass',
+                    '$callable===' => 'callable',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'objectShapeAssertion' => [
+                'code' => '<?php
+                    /** @psalm-assert object{foo:string,bar:int} $value */
+                    function assertObjectShape(mixed $value): void
+                    {}
+
+                    /** @var mixed $value */
+                    $value = null;
+                    assertObjectShape($value);
+                ',
+                'assertions' => [
+                    '$value===' => 'object{foo:string, bar:int}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
         ];
     }

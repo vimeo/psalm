@@ -2,13 +2,14 @@
 
 namespace Psalm\Tests\LanguageServer;
 
-use Amp\Deferred;
+use Amp\DeferredFuture;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\LanguageServer\ClientConfiguration;
 use Psalm\Internal\LanguageServer\LanguageServer;
 use Psalm\Internal\LanguageServer\Message;
+use Psalm\Internal\LanguageServer\PathMapper;
 use Psalm\Internal\LanguageServer\Progress;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
@@ -21,7 +22,7 @@ use Psalm\Tests\LanguageServer\Message as MessageBody;
 use Psalm\Tests\LanguageServer\MockProtocolStream;
 use Psalm\Tests\TestConfig;
 
-use function Amp\Promise\wait;
+use function getcwd;
 use function rand;
 
 class DiagnosticTest extends AsyncTestCase
@@ -65,7 +66,7 @@ class DiagnosticTest extends AsyncTestCase
     public function testSnippetSupportDisabled(): void
     {
         // Create a new promisor
-        $deferred = new Deferred;
+        $deferred = new DeferredFuture;
 
         $this->setTimeout(5000);
         $clientConfiguration = new ClientConfiguration();
@@ -85,17 +86,29 @@ class DiagnosticTest extends AsyncTestCase
             $this->codebase,
             $clientConfiguration,
             new Progress,
+            new PathMapper(getcwd(), getcwd()),
         );
 
         $write->on('message', function (Message $message) use ($deferred, $server): void {
-            /** @psalm-suppress PossiblyNullPropertyFetch,UndefinedPropertyFetch,MixedPropertyFetch */
-            if ($message->body->method === 'telemetry/event' && $message->body->params->message === 'initialized') {
+            /** @psalm-suppress NullPropertyFetch,PossiblyNullPropertyFetch,UndefinedPropertyFetch */
+            if ($message->body->method === 'telemetry/event' && ($message->body->params->message ?? null) === 'initialized') {
                 $this->assertFalse($server->clientCapabilities->textDocument->completion->completionItem->snippetSupport);
-                $deferred->resolve(null);
+                $deferred->complete(null);
+                return;
+            }
+
+            /** @psalm-suppress NullPropertyFetch,PossiblyNullPropertyFetch */
+            if ($message->body->method === '$/progress'
+                && ($message->body->params->value->kind ?? null) === 'end'
+                && ($message->body->params->value->message ?? null) === 'initialized'
+            ) {
+                $this->assertFalse($server->clientCapabilities->textDocument->completion->completionItem->snippetSupport);
+                $deferred->complete(null);
+                return;
             }
         });
 
-        wait($deferred->promise());
+        $deferred->getFuture()->await();
     }
 
     /**

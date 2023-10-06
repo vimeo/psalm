@@ -94,6 +94,10 @@ return [
       'old' => ['int|false', 'fields'=>'array<array-key, null|scalar|Stringable>', 'separator='=>'string', 'enclosure='=>'string', 'escape='=>'string'],
       'new' => ['int|false', 'fields'=>'array<array-key, null|scalar|Stringable>', 'separator='=>'string', 'enclosure='=>'string', 'escape='=>'string', 'eol='=>'string'],
     ],
+    'hash_pbkdf2' => [
+      'old' => ['non-empty-string', 'algo'=>'string', 'password'=>'string', 'salt'=>'string', 'iterations'=>'int', 'length='=>'int', 'binary='=>'bool'],
+      'new' => ['non-empty-string', 'algo'=>'string', 'password'=>'string', 'salt'=>'string', 'iterations'=>'int', 'length='=>'int', 'binary='=>'bool', 'options=' => 'array'],
+    ],
     'finfo_buffer' => [
        'old' => ['string|false', 'finfo'=>'resource', 'string'=>'string', 'flags='=>'int', 'context='=>'resource'],
        'new' => ['string|false', 'finfo'=>'finfo', 'string'=>'string', 'flags='=>'int', 'context='=>'resource'],

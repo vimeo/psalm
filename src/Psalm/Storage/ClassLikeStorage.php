@@ -501,6 +501,10 @@ final class ClassLikeStorage implements HasAttributesInterface
         }
 
         foreach ($this->parent_classes as $parent_class) {
+            // skip missing dependencies
+            if (!$codebase->classlike_storage_provider->has($parent_class)) {
+                continue;
+            }
             $parent_class_storage = $codebase->classlike_storage_provider->get($parent_class);
             if ($parent_class_storage->hasAttribute($fq_class_name)) {
                 return true;

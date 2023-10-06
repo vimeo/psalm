@@ -11,7 +11,6 @@ use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
-use UnexpectedValueException;
 
 use function addslashes;
 use function assert;
@@ -310,7 +309,7 @@ class TKeyedArray extends Atomic
             if (count($this->properties) === 1) {
                 return new Union([new TLiteralInt(0)]);
             }
-            return new Union([new TIntRange(0, count($this->properties)-1)]);
+            return Type::getIntRange(0, count($this->properties)-1);
         }
 
         $key_types = [];
@@ -360,7 +359,7 @@ class TKeyedArray extends Atomic
     /**
      * @return TArray|TNonEmptyArray
      */
-    public function getGenericArrayType(bool $allow_non_empty = true, ?string $list_var_id = null): TArray
+    public function getGenericArrayType(?string $list_var_id = null): TArray
     {
         $key_types = [];
         $value_type = null;
@@ -399,7 +398,7 @@ class TKeyedArray extends Atomic
                 $key_type = new Union([new TIntRange(0, null, false, $list_var_id)]);
             }
 
-            if ($has_defined_keys && $allow_non_empty) {
+            if ($has_defined_keys) {
                 return new TNonEmptyArray([$key_type, $value_type]);
             }
             return new TArray([$key_type, $value_type]);
@@ -415,7 +414,7 @@ class TKeyedArray extends Atomic
 
         $value_type = $value_type->setPossiblyUndefined(false);
 
-        if ($allow_non_empty && ($has_defined_keys || $this->fallback_params !== null)) {
+        if ($has_defined_keys || $this->fallback_params !== null) {
             return new TNonEmptyArray([$key_type, $value_type]);
         }
         return new TArray([$key_type, $value_type]);
@@ -683,20 +682,6 @@ class TKeyedArray extends Atomic
     public function getAssertionString(): string
     {
         return $this->is_list ? 'list' : 'array';
-    }
-
-    /**
-     * @deprecated Will be removed in Psalm v6 along with the TList type.
-     */
-    public function getList(): TList
-    {
-        if (!$this->is_list) {
-            throw new UnexpectedValueException('Object-like array must be a list for conversion');
-        }
-
-        return $this->isNonEmpty()
-            ? new TNonEmptyList($this->getGenericValueType())
-            : new TList($this->getGenericValueType());
     }
 
     /**

@@ -20,3 +20,21 @@ abstract class CallLike extends Expr {
      */
     public function getArgs(): array {}
 }
+
+
+namespace PhpParser\Node;
+
+use PhpParser\NodeAbstract;
+
+class Name extends NodeAbstract {
+    /**
+     * @param string|string[]|self $name
+     * @param array                $attributes
+     */
+    public function __construct($name, array $attributes = []) {}
+
+    /**
+     * @return non-empty-string
+     */
+    public function toString(): string {}
+}

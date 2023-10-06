@@ -42,7 +42,6 @@ use Psalm\Progress\Progress;
 use Psalm\Progress\VoidProgress;
 use RuntimeException;
 use SimpleXMLElement;
-use SimpleXMLIterator;
 use Symfony\Component\Filesystem\Path;
 use Throwable;
 use UnexpectedValueException;
@@ -62,12 +61,12 @@ use function clearstatcache;
 use function count;
 use function dirname;
 use function explode;
-use function extension_loaded;
 use function fclose;
 use function file_exists;
 use function file_get_contents;
 use function flock;
 use function fopen;
+use function function_exists;
 use function get_class;
 use function get_defined_constants;
 use function get_defined_functions;
@@ -331,6 +330,9 @@ class Config
     /** @var bool */
     public $use_igbinary = false;
 
+    /** @var 'lz4'|'deflate'|'off' */
+    public $compressor = 'off';
+
     /**
      * @var bool
      */
@@ -447,11 +449,9 @@ class Config
     public $forbidden_functions = [];
 
     /**
-     * TODO: Psalm 6: Update default to be true and remove warning.
-     *
      * @var bool
      */
-    public $find_unused_code = false;
+    public $find_unused_code = true;
 
     /**
      * @var bool
@@ -463,10 +463,7 @@ class Config
      */
     public $find_unused_psalm_suppress = false;
 
-    /**
-     * TODO: Psalm 6: Update default to be true and remove warning.
-     */
-    public bool $find_unused_baseline_entry = false;
+    public bool $find_unused_baseline_entry = true;
 
     /**
      * @var bool
@@ -549,15 +546,9 @@ class Config
 
     /**
      * @var string
-     * @deprecated Please use {@see self::$shepherd_endpoint} instead. Property will be removed in Psalm 6.
-     */
-    public $shepherd_host = 'shepherd.dev';
-
-    /**
-     * @var string
      * @internal
      */
-    public $shepherd_endpoint = 'https://shepherd.dev/hooks/psalm/';
+    public $shepherd_endpoint = 'https://shepherd.dev/hooks/psalm';
 
     /**
      * @var array<string, string>
@@ -724,8 +715,6 @@ class Config
         $this->eventDispatcher = new EventDispatcher();
         $this->universal_object_crates = [
             strtolower(stdClass::class),
-            strtolower(SimpleXMLElement::class),
-            strtolower(SimpleXMLIterator::class),
         ];
     }
 
@@ -1026,7 +1015,6 @@ class Config
 
     /**
      * @param non-empty-string $file_contents
-     * @psalm-suppress MixedMethodCall
      * @psalm-suppress MixedAssignment
      * @psalm-suppress MixedArgument
      * @psalm-suppress MixedPropertyFetch
@@ -1157,12 +1145,13 @@ class Config
         }
 
         if (isset($config_xml['autoloader'])) {
-            $autoloader_path = $config->base_dir . DIRECTORY_SEPARATOR . $config_xml['autoloader'];
+            $autoloader = (string) $config_xml['autoloader'];
+            $autoloader_path = $config->base_dir . DIRECTORY_SEPARATOR . $autoloader;
 
             if (!file_exists($autoloader_path)) {
                 // in here for legacy reasons where people put absolute paths but psalm resolved it relative
-                if ($config_xml['autoloader']->__toString()[0] === '/') {
-                    $autoloader_path = $config_xml['autoloader']->__toString();
+                if ($autoloader[0] === '/') {
+                    $autoloader_path = $autoloader;
                 }
 
                 if (!file_exists($autoloader_path)) {
@@ -1188,22 +1177,45 @@ class Config
         if (isset($config_xml['serializer'])) {
             $attribute_text = (string) $config_xml['serializer'];
             $config->use_igbinary = $attribute_text === 'igbinary';
+            if ($config->use_igbinary
+                && (
+                    !function_exists('igbinary_serialize')
+                    || !function_exists('igbinary_unserialize')
+                )
+            ) {
+                $config->use_igbinary = false;
+                $config->config_warnings[] = '"serializer" set to "igbinary" but ext-igbinary seems to be missing on ' .
+                    'the system. Using php\'s build-in serializer.';
+            }
         } elseif ($igbinary_version = phpversion('igbinary')) {
             $config->use_igbinary = version_compare($igbinary_version, '2.0.5') >= 0;
         }
 
-        if (!isset($config_xml['findUnusedBaselineEntry'])) {
-            $config->config_warnings[] = '"findUnusedBaselineEntry" will be defaulted to "true" in Psalm 6.'
-                . ' You should explicitly enable or disable this setting.';
+        if (isset($config_xml['compressor'])) {
+            $compressor = (string) $config_xml['compressor'];
+            if ($compressor === 'lz4') {
+                if (function_exists('lz4_compress') && function_exists('lz4_uncompress')) {
+                    $config->compressor = 'lz4';
+                } else {
+                    $config->config_warnings[] = '"compressor" set to "lz4" but ext-lz4 seems to be missing on the ' .
+                        'system. Disabling cache compressor.';
+                }
+            } elseif ($compressor === 'deflate') {
+                if (function_exists('gzinflate') && function_exists('gzdeflate')) {
+                    $config->compressor = 'deflate';
+                } else {
+                    $config->config_warnings[] = '"compressor" set to "deflate" but zlib seems to be missing on the ' .
+                        'system. Disabling cache compressor.';
+                }
+            }
+        } elseif (function_exists('gzinflate') && function_exists('gzdeflate')) {
+            $config->compressor = 'deflate';
         }
 
         if (isset($config_xml['findUnusedCode'])) {
             $attribute_text = (string) $config_xml['findUnusedCode'];
             $config->find_unused_code = $attribute_text === 'true' || $attribute_text === '1';
             $config->find_unused_variables = $config->find_unused_code;
-        } else {
-            $config->config_warnings[] = '"findUnusedCode" will be defaulted to "true" in Psalm 6.'
-                . ' You should explicitly enable or disable this setting.';
         }
 
         if (isset($config_xml['findUnusedVariablesAndParams'])) {
@@ -1277,7 +1289,7 @@ class Config
             );
         }
 
-        if (isset($config_xml->fileExtensions)) {
+        if (isset($config_xml->fileExtensions->extension)) {
             $config->file_extensions = [];
 
             $config->loadFileExtensions($config_xml->fileExtensions->extension);
@@ -1301,7 +1313,6 @@ class Config
 
         if (isset($config_xml->ignoreExceptions)) {
             if (isset($config_xml->ignoreExceptions->class)) {
-                /** @var SimpleXMLElement $exception_class */
                 foreach ($config_xml->ignoreExceptions->class as $exception_class) {
                     $exception_name = (string) $exception_class['name'];
                     $global_attribute_text = (string) $exception_class['onlyGlobalScope'];
@@ -1312,7 +1323,6 @@ class Config
                 }
             }
             if (isset($config_xml->ignoreExceptions->classAndDescendants)) {
-                /** @var SimpleXMLElement $exception_class */
                 foreach ($config_xml->ignoreExceptions->classAndDescendants as $exception_class) {
                     $exception_name = (string) $exception_class['name'];
                     $global_attribute_text = (string) $exception_class['onlyGlobalScope'];
@@ -1366,7 +1376,6 @@ class Config
         // this plugin loading system borrows heavily from etsy/phan
         if (isset($config_xml->plugins)) {
             if (isset($config_xml->plugins->plugin)) {
-                /** @var SimpleXMLElement $plugin */
                 foreach ($config_xml->plugins->plugin as $plugin) {
                     $plugin_file_name = (string) $plugin['filename'];
 
@@ -1378,7 +1387,6 @@ class Config
                 }
             }
             if (isset($config_xml->plugins->pluginClass)) {
-                /** @var SimpleXMLElement $plugin */
                 foreach ($config_xml->plugins->pluginClass as $plugin) {
                     $plugin_class_name = $plugin['class'];
                     // any child elements are used as plugin configuration
@@ -1394,21 +1402,23 @@ class Config
 
         if (isset($config_xml->issueHandlers)) {
             foreach ($config_xml->issueHandlers as $issue_handlers) {
-                /** @var SimpleXMLElement $issue_handler */
-                foreach ($issue_handlers->children() as $key => $issue_handler) {
-                    if ($key === 'PluginIssue') {
-                        $custom_class_name = (string) $issue_handler['name'];
-                        /** @var string $key */
-                        $config->issue_handlers[$custom_class_name] = IssueHandler::loadFromXMLElement(
-                            $issue_handler,
-                            $base_dir,
-                        );
-                    } else {
-                        /** @var string $key */
-                        $config->issue_handlers[$key] = IssueHandler::loadFromXMLElement(
-                            $issue_handler,
-                            $base_dir,
-                        );
+                $issue_handler_children = $issue_handlers->children();
+                if ($issue_handler_children) {
+                    foreach ($issue_handler_children as $key => $issue_handler) {
+                        if ($key === 'PluginIssue') {
+                            $custom_class_name = (string)$issue_handler['name'];
+                            /** @var string $key */
+                            $config->issue_handlers[$custom_class_name] = IssueHandler::loadFromXMLElement(
+                                $issue_handler,
+                                $base_dir,
+                            );
+                        } else {
+                            /** @var string $key */
+                            $config->issue_handlers[$key] = IssueHandler::loadFromXMLElement(
+                                $issue_handler,
+                                $base_dir,
+                            );
+                        }
                     }
                 }
             }
@@ -1451,10 +1461,27 @@ class Config
         $this->issue_handlers[$issue_key]->setCustomLevels($config, $this->base_dir);
     }
 
+    public function safeSetAdvancedErrorLevel(
+        string $issue_key,
+        array $config,
+        ?string $default_error_level = null
+    ): void {
+        if (!isset($this->issue_handlers[$issue_key])) {
+            $this->setAdvancedErrorLevel($issue_key, $config, $default_error_level);
+        }
+    }
+
     public function setCustomErrorLevel(string $issue_key, string $error_level): void
     {
         $this->issue_handlers[$issue_key] = new IssueHandler();
         $this->issue_handlers[$issue_key]->setErrorLevel($error_level);
+    }
+
+    public function safeSetCustomErrorLevel(string $issue_key, string $error_level): void
+    {
+        if (!isset($this->issue_handlers[$issue_key])) {
+            $this->setCustomErrorLevel($issue_key, $error_level);
+        }
     }
 
     /**
@@ -2218,28 +2245,31 @@ class Config
         $codebase->register_stub_files = true;
 
         $dir_lvl_2 = dirname(__DIR__, 2);
+        $stubsDir = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR;
         $this->internal_stubs = [
-            $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'CoreGenericFunctions.phpstub',
-            $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'CoreGenericClasses.phpstub',
-            $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'CoreGenericIterators.phpstub',
-            $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'CoreImmutableClasses.phpstub',
-            $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'Reflection.phpstub',
-            $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'SPL.phpstub',
+            $stubsDir . 'CoreGenericFunctions.phpstub',
+            $stubsDir . 'CoreGenericClasses.phpstub',
+            $stubsDir . 'CoreGenericIterators.phpstub',
+            $stubsDir . 'CoreImmutableClasses.phpstub',
+            $stubsDir . 'Reflection.phpstub',
+            $stubsDir . 'SPL.phpstub',
         ];
 
+        if ($codebase->analysis_php_version_id >= 7_04_00) {
+            $this->internal_stubs[] = $stubsDir . 'Php74.phpstub';
+        }
+
         if ($codebase->analysis_php_version_id >= 8_00_00) {
-            $stringable_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'Php80.phpstub';
-            $this->internal_stubs[] = $stringable_path;
+            $this->internal_stubs[] = $stubsDir . 'CoreGenericAttributes.phpstub';
+            $this->internal_stubs[] = $stubsDir . 'Php80.phpstub';
         }
 
         if ($codebase->analysis_php_version_id >= 8_01_00) {
-            $stringable_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'Php81.phpstub';
-            $this->internal_stubs[] = $stringable_path;
+            $this->internal_stubs[] = $stubsDir . 'Php81.phpstub';
         }
 
         if ($codebase->analysis_php_version_id >= 8_02_00) {
-            $stringable_path = $dir_lvl_2 . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'Php82.phpstub';
-            $this->internal_stubs[] = $stringable_path;
+            $this->internal_stubs[] = $stubsDir . 'Php82.phpstub';
             $this->php_extensions['random'] = true; // random is a part of the PHP core starting from PHP 8.2
         }
 
@@ -2247,19 +2277,6 @@ class Config
         foreach ($this->php_extensions as $ext => $enabled) {
             if ($enabled) {
                 $this->internal_stubs[] = $ext_stubs_dir . DIRECTORY_SEPARATOR . "$ext.phpstub";
-            }
-        }
-
-        /** @deprecated Will be removed in Psalm 6 */
-        $extensions_to_load_stubs_using_deprecated_way = ['apcu', 'random', 'redis'];
-        foreach ($extensions_to_load_stubs_using_deprecated_way as $ext_name) {
-            $ext_stub_path = $ext_stubs_dir . DIRECTORY_SEPARATOR . "$ext_name.phpstub";
-            $is_stub_already_loaded = in_array($ext_stub_path, $this->internal_stubs, true);
-            $is_ext_explicitly_disabled = ($this->php_extensions[$ext_name] ?? null) === false;
-            if (! $is_stub_already_loaded && ! $is_ext_explicitly_disabled && extension_loaded($ext_name)) {
-                $this->internal_stubs[] = $ext_stub_path;
-                $this->config_warnings[] = "Psalm 6 will not automatically load stubs for ext-$ext_name."
-                    . " You should explicitly enable or disable this ext in composer.json or Psalm config.";
             }
         }
 

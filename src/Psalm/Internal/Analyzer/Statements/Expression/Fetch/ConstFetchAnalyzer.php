@@ -16,7 +16,6 @@ use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Issue\UndefinedConstant;
 use Psalm\IssueBuffer;
 use Psalm\Type;
-use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Union;
 use ReflectionProperty;
 
@@ -36,7 +35,7 @@ class ConstFetchAnalyzer
         PhpParser\Node\Expr\ConstFetch $stmt,
         Context $context
     ): void {
-        $const_name = implode('\\', $stmt->name->parts);
+        $const_name = $stmt->name->toString();
 
         switch (strtolower($const_name)) {
             case 'null':
@@ -175,7 +174,7 @@ class ConstFetchAnalyzer
                 case 'PHP_INT_SIZE':
                 case 'PHP_MAXPATHLEN':
                 case 'PHP_VERSION_ID':
-                    return new Union([new TIntRange(1, null)]);
+                    return Type::getIntRange(1, null);
 
                 case 'PHP_FLOAT_EPSILON':
                 case 'PHP_FLOAT_MAX':

@@ -14,7 +14,7 @@ $a = [1, 2, 3, 4, 5];
 ```php
 <?php
 $a = [0 => 'hello', 5 => 'goodbye'];
-$b = ['a' => 'AA', 'b' => 'BB', 'c' => 'CC']
+$b = ['a' => 'AA', 'b' => 'BB', 'c' => 'CC'];
 ```
 
 Makeshift [Structs](https://en.wikipedia.org/wiki/Struct_(C_programming_language)):
@@ -124,6 +124,19 @@ Optional keys can be denoted by a trailing `?`, e.g.:
 
 ```php
 /** @return array{optional?: string, bar: int} */
+```
+
+You can use "one-line" comments (similar to PHP), e.g:
+
+```php
+/** @return array { // Array with comments.
+ *     // Comments can be placed on their own line. 
+ *     foo: string, // An array key description.
+ *     bar: array {, // Another array key description.
+ *         'foo//bar': string, // Array key with "//" in it's name.
+ *     },
+ * }
+ */
 ```
 
 Tip: if you find yourself copying the same complex array shape over and over again to avoid `InvalidArgument` issues, try using [type aliases](utility_types.md#type-aliases), instead.

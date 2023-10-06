@@ -8,6 +8,7 @@ use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\SourceAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\MethodIdentifier;
@@ -18,6 +19,8 @@ use Psalm\Internal\Provider\MethodParamsProvider;
 use Psalm\Internal\Provider\MethodReturnTypeProvider;
 use Psalm\Internal\Provider\MethodVisibilityProvider;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
+use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\TypeVisitor\TypeLocalizer;
 use Psalm\StatementsSource;
@@ -32,6 +35,7 @@ use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 use UnexpectedValueException;
@@ -41,7 +45,6 @@ use function assert;
 use function count;
 use function explode;
 use function in_array;
-use function is_int;
 use function reset;
 use function strtolower;
 
@@ -554,7 +557,8 @@ class Methods
         MethodIdentifier $method_id,
         ?string &$self_class,
         ?SourceAnalyzer $source_analyzer = null,
-        ?array $args = null
+        ?array $args = null,
+        ?TemplateResult $template_result = null
     ): ?Union {
         $original_fq_class_name = $method_id->fq_class_name;
         $original_method_name = $method_id->method_name;
@@ -626,9 +630,7 @@ class Methods
                 foreach ($original_class_storage->enum_cases as $case_name => $case_storage) {
                     if (UnionTypeComparator::isContainedBy(
                         $source_analyzer->getCodebase(),
-                        is_int($case_storage->value) ?
-                            Type::getInt(false, $case_storage->value) :
-                            Type::getString($case_storage->value),
+                        new Union([$case_storage->value ?? new TString()]),
                         $first_arg_type,
                     )) {
                         $types[] = new TEnumCase($original_fq_class_name, $case_name);
@@ -768,11 +770,35 @@ class Methods
                     $candidate_type,
                 );
 
-                if (((!$old_contained_by_new && !$new_contained_by_old)
-                    || ($old_contained_by_new && $new_contained_by_old))
-                    && !$candidate_type->hasTemplate()
-                    && !$overridden_storage_return_type->hasTemplate()
+                if ((!$old_contained_by_new && !$new_contained_by_old)
+                    || ($old_contained_by_new && $new_contained_by_old)
                 ) {
+                    $found_generic_params = ClassTemplateParamCollector::collect(
+                        $source_analyzer->getCodebase(),
+                        $appearing_fq_class_storage,
+                        $appearing_fq_class_storage,
+                        $appearing_method_name,
+                        null,
+                        true,
+                    );
+
+                    if ($found_generic_params) {
+                        $passed_template_result = $template_result;
+                        $template_result = new TemplateResult(
+                            [],
+                            $found_generic_params,
+                        );
+                        if ($passed_template_result !== null) {
+                            $template_result = $template_result->merge($passed_template_result);
+                        }
+
+                        $overridden_storage_return_type = TemplateInferredTypeReplacer::replace(
+                            $overridden_storage_return_type,
+                            $template_result,
+                            $source_analyzer->getCodebase(),
+                        );
+                    }
+
                     $attempted_intersection = null;
                     if ($old_contained_by_new) { //implicitly $new_contained_by_old as well
                         try {

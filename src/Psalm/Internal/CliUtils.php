@@ -12,6 +12,7 @@ use Psalm\Exception\ConfigNotFoundException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Report;
 use RuntimeException;
+use UnexpectedValueException;
 
 use function array_filter;
 use function array_key_exists;
@@ -485,7 +486,15 @@ final class CliUtils
         }
 
         if ($version !== null && $source !== null) {
-            $project_analyzer->setPhpVersion($version, $source);
+            try {
+                $project_analyzer->setPhpVersion($version, $source);
+            } catch (UnexpectedValueException $e) {
+                fwrite(
+                    STDERR,
+                    $e->getMessage() . PHP_EOL,
+                );
+                exit(1);
+            }
         }
     }
 

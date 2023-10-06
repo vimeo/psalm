@@ -21,6 +21,7 @@ use Psalm\Internal\Analyzer\Statements\Block\TryAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\WhileAnalyzer;
 use Psalm\Internal\Analyzer\Statements\BreakAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ContinueAnalyzer;
+use Psalm\Internal\Analyzer\Statements\DeclareAnalyzer;
 use Psalm\Internal\Analyzer\Statements\EchoAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
@@ -304,7 +305,7 @@ class StatementsAnalyzer extends SourceAnalyzer
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Expression
                 && $stmt->expr instanceof PhpParser\Node\Expr\FuncCall
                 && $stmt->expr->name instanceof PhpParser\Node\Name
-                && $stmt->expr->name->parts === ['define']
+                && $stmt->expr->name->getParts() === ['define']
                 && isset($stmt->expr->getArgs()[1])
             ) {
                 $const_name = ConstFetchAnalyzer::getConstName(
@@ -597,14 +598,7 @@ class StatementsAnalyzer extends SourceAnalyzer
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Label) {
             // do nothing
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Declare_) {
-            foreach ($stmt->declares as $declaration) {
-                if ((string) $declaration->key === 'strict_types'
-                    && $declaration->value instanceof PhpParser\Node\Scalar\LNumber
-                    && $declaration->value->value === 1
-                ) {
-                    $context->strict_types = true;
-                }
-            }
+            DeclareAnalyzer::analyze($statements_analyzer, $stmt, $context);
         } elseif ($stmt instanceof PhpParser\Node\Stmt\HaltCompiler) {
             $context->has_returned = true;
         } else {

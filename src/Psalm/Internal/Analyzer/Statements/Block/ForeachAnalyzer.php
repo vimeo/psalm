@@ -47,7 +47,6 @@ use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
@@ -472,18 +471,13 @@ class ForeachAnalyzer
 
             if ($iterator_atomic_type instanceof TArray
                 || $iterator_atomic_type instanceof TKeyedArray
-                || $iterator_atomic_type instanceof TList
             ) {
-                if ($iterator_atomic_type instanceof TList) {
-                    $iterator_atomic_type = $iterator_atomic_type->getKeyedArray();
-                }
                 if ($iterator_atomic_type instanceof TKeyedArray) {
                     if (!$iterator_atomic_type->isNonEmpty()) {
                         $always_non_empty_array = false;
                     }
 
                     $iterator_atomic_type = $iterator_atomic_type->getGenericArrayType(
-                        true,
                         ExpressionIdentifier::getExtendedVarId(
                             $expr,
                             $statements_analyzer->getFQCLN(),
@@ -754,20 +748,6 @@ class ForeachAnalyzer
 
 
             $has_valid_iterator = true;
-
-            if ($iterator_atomic_type instanceof TNamedObject
-                && strtolower($iterator_atomic_type->value) === 'simplexmlelement'
-            ) {
-                $value_type = Type::combineUnionTypes(
-                    $value_type,
-                    new Union([$iterator_atomic_type]),
-                );
-
-                $key_type = Type::combineUnionTypes(
-                    $key_type,
-                    Type::getString(),
-                );
-            }
 
             if ($iterator_atomic_type instanceof TIterable
                 || (strtolower($iterator_atomic_type->value) === 'traversable'

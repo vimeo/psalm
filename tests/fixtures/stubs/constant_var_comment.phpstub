@@ -1,0 +1,3 @@
+<?php
+
+define('FOO_BAR', /** @var non-empty-string */ 'world');

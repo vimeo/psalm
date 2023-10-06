@@ -6,10 +6,10 @@ use PhpParser;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNever;
@@ -63,9 +63,6 @@ class UnsetAnalyzer
                     $root_types = [];
 
                     foreach ($context->vars_in_scope[$root_var_id]->getAtomicTypes() as $atomic_root_type) {
-                        if ($atomic_root_type instanceof TList) {
-                            $atomic_root_type = $atomic_root_type->getKeyedArray();
-                        }
                         if ($atomic_root_type instanceof TKeyedArray) {
                             $key_value = null;
                             if ($key_type->isSingleIntLiteral()) {
@@ -90,7 +87,7 @@ class UnsetAnalyzer
 
                                 if ($atomic_root_type->is_list && !$is_list && is_int($key_value)) {
                                     if ($key_value === 0) {
-                                        $list_key = new Union([new TIntRange(1, null)]);
+                                        $list_key = Type::getIntRange(1, null);
                                     } elseif ($key_value === 1) {
                                         $list_key = new Union([
                                             new TLiteralInt(0),

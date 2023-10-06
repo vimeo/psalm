@@ -505,7 +505,7 @@ class CallAnalyzer
                 && $callable_arg->left->class instanceof Name
                 && $callable_arg->left->name instanceof Identifier
                 && strtolower($callable_arg->left->name->name) === 'class'
-                && !in_array(strtolower($callable_arg->left->class->parts[0]), ['self', 'static', 'parent'])
+                && !in_array(strtolower($callable_arg->left->class->getFirst()), ['self', 'static', 'parent'])
                 && $callable_arg->right instanceof PhpParser\Node\Scalar\String_
                 && preg_match('/^::[A-Za-z0-9]+$/', $callable_arg->right->value)
             ) {

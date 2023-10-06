@@ -122,7 +122,7 @@ class ConstantTest extends TestCase
                     $a = __LINE__;
                     $b = __file__;',
                 'assertions' => [
-                    '$a' => 'int',
+                    '$a' => 'int<1, max>',
                     '$b' => 'string',
                 ],
             ],
@@ -1184,7 +1184,7 @@ class ConstantTest extends TestCase
                     $line = C::LINE;
                 ',
                 'assertions' => [
-                    '$line' => 'int',
+                    '$line' => 'int<1, max>',
                 ],
             ],
             'classMethodTraitAndFunctionInConstInitializersAreStrings' => [
@@ -1656,7 +1656,7 @@ class ConstantTest extends TestCase
                 'php_version' => '8.2',
             ],
             'constantEnumSelfReference' => [
-                'code' => '<?php<?php
+                'code' => '<?php
                     enum Bar: string {
                         case A = "a";
                         case B = "b";

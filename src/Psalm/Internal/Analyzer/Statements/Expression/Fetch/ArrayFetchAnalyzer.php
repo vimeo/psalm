@@ -61,7 +61,6 @@ use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
@@ -480,6 +479,17 @@ class ArrayFetchAnalyzer
 
         $key_values = [];
 
+        if ($codebase->store_node_types
+            && !$context->collect_initializations
+            && !$context->collect_mutations
+        ) {
+            $codebase->analyzer->addNodeType(
+                $statements_analyzer->getFilePath(),
+                $stmt->var,
+                $array_type->getId(),
+            );
+        }
+
         if ($stmt->dim instanceof PhpParser\Node\Scalar\String_) {
             $value_type = Type::getAtomicStringFromLiteral($stmt->dim->value);
             if ($value_type instanceof TLiteralString) {
@@ -561,10 +571,6 @@ class ArrayFetchAnalyzer
         $types = $array_type->getAtomicTypes();
         $changed = false;
         foreach ($types as $type_string => $type) {
-            if ($type instanceof TList) {
-                $type = $type->getKeyedArray();
-            }
-
             $original_type_real = $type;
             $original_type = $type;
 
@@ -1737,8 +1743,12 @@ class ArrayFetchAnalyzer
         ?Union &$array_access_type,
         bool &$has_array_access
     ): void {
-        if (strtolower($type->value) === 'simplexmlelement') {
-            $call_array_access_type = new Union([new TNamedObject('SimpleXMLElement')]);
+        $codebase = $statements_analyzer->getCodebase();
+        if (strtolower($type->value) === 'simplexmlelement'
+            || ($codebase->classExists($type->value)
+                && $codebase->classExtendsOrImplements($type->value, 'SimpleXMLElement'))
+        ) {
+            $call_array_access_type = new Union([new TNull(), new TNamedObject('SimpleXMLElement')]);
         } elseif (strtolower($type->value) === 'domnodelist' && $stmt->dim) {
             $old_data_provider = $statements_analyzer->node_data;
 

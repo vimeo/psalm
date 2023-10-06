@@ -34,6 +34,7 @@ use function preg_split;
 use function rtrim;
 use function str_replace;
 use function strlen;
+use function strpos;
 use function substr;
 use function substr_count;
 use function trim;
@@ -259,7 +260,8 @@ class CommentAnalyzer
     public static function sanitizeDocblockType(string $docblock_type): string
     {
         $docblock_type = preg_replace('@^[ \t]*\*@m', '', $docblock_type);
-        $docblock_type = preg_replace('/,\n\s+\}/', '}', $docblock_type);
+        $docblock_type = preg_replace('/,\n\s+}/', '}', $docblock_type);
+
         return str_replace("\n", '', $docblock_type);
     }
 
@@ -326,6 +328,22 @@ class CommentAnalyzer
                 continue;
             }
 
+            if ($char === '/' && $next_char === '/') {
+                // Ignore the rest of the current line
+                $i = strpos($return_block, "\n", $i);
+                if ($i === false) {
+                    throw new IncorrectDocblockException(
+                        'Comment lines must be terminated with a new line character (\\n).',
+                    );
+                }
+
+                // Remove trailing whitespaces (needed for `sanitizeDocblockType`)
+                $type = rtrim($type);
+                $type .= "\n";
+
+                continue;
+            }
+
             if ($char === '[' || $char === '{' || $char === '(' || $char === '<') {
                 $brackets .= $char;
             } elseif ($char === ']' || $char === '}' || $char === ')' || $char === '>') {
@@ -342,6 +360,11 @@ class CommentAnalyzer
             } elseif ($char === ' ') {
                 if ($brackets) {
                     $expects_callable_return = false;
+                    $type .= ' ';
+                    continue;
+                }
+
+                if ($next_char === '{') {
                     $type .= ' ';
                     continue;
                 }
@@ -377,7 +400,7 @@ class CommentAnalyzer
                 $remaining = trim(preg_replace('@^[ \t]*\* *@m', ' ', substr($return_block, $i + 1)));
 
                 if ($remaining) {
-                    return array_merge([rtrim($type)], preg_split('/[ \s]+/', $remaining) ?: []);
+                    return array_merge([rtrim($type)], preg_split('/\s+/', $remaining) ?: []);
                 }
 
                 return [$type];

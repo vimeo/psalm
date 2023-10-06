@@ -335,7 +335,7 @@ class IncludeAnalyzer
             }
         } elseif ($stmt instanceof PhpParser\Node\Expr\FuncCall &&
             $stmt->name instanceof PhpParser\Node\Name &&
-            $stmt->name->parts === ['dirname']
+            $stmt->name->getParts() === ['dirname']
         ) {
             if ($stmt->getArgs()) {
                 $dir_level = 1;
@@ -369,10 +369,14 @@ class IncludeAnalyzer
                     return null;
                 }
 
+                if ($dir_level < 1) {
+                    return null;
+                }
+
                 return dirname($evaled_path, $dir_level);
             }
         } elseif ($stmt instanceof PhpParser\Node\Expr\ConstFetch) {
-            $const_name = implode('', $stmt->name->parts);
+            $const_name = implode('', $stmt->name->getParts());
 
             if (defined($const_name)) {
                 $constant_value = constant($const_name);

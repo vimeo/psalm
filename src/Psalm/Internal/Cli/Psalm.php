@@ -69,7 +69,6 @@ use function preg_replace;
 use function realpath;
 use function setlocale;
 use function str_repeat;
-use function str_replace;
 use function strlen;
 use function strpos;
 use function substr;
@@ -166,6 +165,7 @@ final class Psalm
 
     /**
      * @param array<int,string> $argv
+     * @psalm-suppress ComplexMethod Maybe some of the option handling could be moved to its own function...
      */
     public static function run(array $argv): void
     {
@@ -181,6 +181,14 @@ final class Psalm
         $options = getopt(implode('', self::SHORT_OPTIONS), self::LONG_OPTIONS);
         if (false === $options) {
             throw new RuntimeException('Failed to parse CLI options');
+        }
+
+        // debug CI environment
+        if (!array_key_exists('debug', $options)
+            && 'true' === getenv('GITHUB_ACTIONS')
+            && '1' === getenv('RUNNER_DEBUG')
+        ) {
+            $options['debug'] = false;
         }
 
         self::forwardCliCall($options, $argv);
@@ -392,7 +400,7 @@ final class Psalm
                 !$paths_to_check,
                 $start_time,
                 isset($options['stats']),
-                self::initBaseline($options, $config, $current_dir, $path_to_config),
+                self::initBaseline($options, $config, $current_dir, $path_to_config, $paths_to_check),
             );
         } else {
             self::autoGenerateConfig($project_analyzer, $current_dir, $init_source_dir, $vendor_dir);
@@ -403,7 +411,24 @@ final class Psalm
     {
         return isset($options['output-format']) && is_string($options['output-format'])
             ? $options['output-format']
-            : Report::TYPE_CONSOLE;
+            : self::findDefaultOutputFormat();
+    }
+
+    /**
+     * @return Report::TYPE_*
+     */
+    private static function findDefaultOutputFormat(): string
+    {
+        $emulator = getenv('TERMINAL_EMULATOR');
+        if (is_string($emulator) && substr($emulator, 0, 9) === 'JetBrains') {
+            return Report::TYPE_PHP_STORM;
+        }
+
+        if ('true' === getenv('GITHUB_ACTIONS')) {
+            return Report::TYPE_GITHUB_ACTIONS;
+        }
+
+        return Report::TYPE_CONSOLE;
     }
 
     private static function initShowInfo(array $options): bool
@@ -899,7 +924,7 @@ final class Psalm
 
         if (!function_exists('opcache_get_status')) {
             $progress->write(PHP_EOL
-                . 'Install the opcache extension to make use of JIT on PHP 8.0+ for a 20%+ performance boost!'
+                . 'Install the opcache extension to make use of JIT for a 20%+ performance boost!'
                 . PHP_EOL . PHP_EOL);
         }
     }
@@ -1010,17 +1035,23 @@ final class Psalm
     }
 
     /**
+     * @param ?list<string> $paths_to_check
      * @return array<string,array<string,array{o:int, s: list<string>}>>
      */
     private static function initBaseline(
         array $options,
         Config $config,
         string $current_dir,
-        ?string $path_to_config
+        ?string $path_to_config,
+        ?array $paths_to_check
     ): array {
         $issue_baseline = [];
 
         if (isset($options['set-baseline']) && is_string($options['set-baseline'])) {
+            if ($paths_to_check !== null) {
+                fwrite(STDERR, PHP_EOL . 'Cannot generate baseline when checking specific files' . PHP_EOL);
+                exit(1);
+            }
             $issue_baseline = self::generateBaseline($options, $config, $current_dir, $path_to_config);
         }
 
@@ -1037,6 +1068,10 @@ final class Psalm
         }
 
         if (isset($options['update-baseline'])) {
+            if ($paths_to_check !== null) {
+                fwrite(STDERR, PHP_EOL . 'Cannot update baseline when checking specific files' . PHP_EOL);
+                exit(1);
+            }
             $issue_baseline = self::updateBaseline($options, $config);
         }
 
@@ -1050,6 +1085,17 @@ final class Psalm
                 fwrite(STDERR, 'Error while reading baseline: ' . $exception->getMessage() . PHP_EOL);
                 exit(1);
             }
+        }
+
+        if ($paths_to_check !== null) {
+            $filtered_issue_baseline = [];
+            foreach ($paths_to_check as $path_to_check) {
+                $path_to_check = substr($path_to_check, strlen($config->base_dir));
+                if (isset($issue_baseline[$path_to_check])) {
+                    $filtered_issue_baseline[$path_to_check] = $issue_baseline[$path_to_check];
+                }
+            }
+            $issue_baseline = $filtered_issue_baseline;
         }
 
         return $issue_baseline;
@@ -1148,16 +1194,6 @@ final class Psalm
 
     private static function configureShepherd(Config $config, array $options, array &$plugins): void
     {
-        if (is_string(getenv('PSALM_SHEPHERD_HOST'))) { // remove this block in Psalm 6
-            fwrite(
-                STDERR,
-                'Warning: PSALM_SHEPHERD_HOST env variable will be removed in Psalm 6.'
-                .' Please use "--shepherd" cli option or PSALM_SHEPHERD env variable'
-                .' to specify a custom Shepherd host/endpoint.'
-                . PHP_EOL,
-            );
-        }
-
         $is_shepherd_enabled = isset($options['shepherd']) || getenv('PSALM_SHEPHERD');
         if (! $is_shepherd_enabled) {
             return;
@@ -1172,24 +1208,9 @@ final class Psalm
                 $custom_shepherd_endpoint = 'https://' . $custom_shepherd_endpoint;
             }
 
-            /** @psalm-suppress DeprecatedProperty */
-            $config->shepherd_host = str_replace('/hooks/psalm', '', $custom_shepherd_endpoint);
             $config->shepherd_endpoint = $custom_shepherd_endpoint;
 
             return;
-        }
-
-        // Legacy part, will be removed in Psalm 6
-        $custom_shepherd_host = getenv('PSALM_SHEPHERD_HOST');
-
-        if (is_string($custom_shepherd_host)) {
-            if (parse_url($custom_shepherd_host, PHP_URL_SCHEME) === null) {
-                $custom_shepherd_host = 'https://' . $custom_shepherd_host;
-            }
-
-            /** @psalm-suppress DeprecatedProperty */
-            $config->shepherd_host = $custom_shepherd_host;
-            $config->shepherd_endpoint = $custom_shepherd_host . '/hooks/psalm';
         }
     }
 

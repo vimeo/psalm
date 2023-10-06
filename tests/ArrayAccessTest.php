@@ -1013,7 +1013,7 @@ class ArrayAccessTest extends TestCase
             ],
             'simpleXmlArrayFetch' => [
                 'code' => '<?php
-                    function foo(SimpleXMLElement $s) : SimpleXMLElement {
+                    function foo(SimpleXMLElement $s) : ?SimpleXMLElement {
                         return $s["a"];
                     }',
             ],
@@ -1198,6 +1198,27 @@ class ArrayAccessTest extends TestCase
                 unset($a[0]);
                 ',
                 'assertions' => ['$a===' => "array{1: 'b'}"],
+            ],
+            'noCrashOnUnknownClassArrayAccess' => [
+                'code' => <<<'PHP'
+                <?php
+
+                namespace Psalmtest\Psalmtest;
+
+                use SomeMissingClass;
+
+                class Test
+                {
+                    public function f(): void {
+                        /** @var SomeMissingClass */
+                        $result = null;
+
+                        if ($result['errors'] === true) {}
+                    }
+                }
+                PHP,
+                'assertions' => [],
+                'ignored_issues' => ['UndefinedDocblockClass'],
             ],
         ];
     }

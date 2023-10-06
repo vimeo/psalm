@@ -19,7 +19,6 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
@@ -260,7 +259,7 @@ class SimpleTypeInferer
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\ConstFetch) {
-            $name = strtolower($stmt->name->parts[0]);
+            $name = strtolower($stmt->name->getFirst());
             if ($name === 'false') {
                 return Type::getFalse();
             }
@@ -273,7 +272,7 @@ class SimpleTypeInferer
                 return Type::getNull();
             }
 
-            if ($stmt->name->parts[0] === '__NAMESPACE__') {
+            if ($stmt->name->getFirst() === '__NAMESPACE__') {
                 return Type::getString($aliases->namespace);
             }
 
@@ -287,7 +286,7 @@ class SimpleTypeInferer
         }
 
         if ($stmt instanceof PhpParser\Node\Scalar\MagicConst\Line) {
-            return Type::getInt();
+            return Type::getIntRange(1, null);
         }
 
         if ($stmt instanceof PhpParser\Node\Scalar\MagicConst\Class_
@@ -306,18 +305,18 @@ class SimpleTypeInferer
             if ($stmt->class instanceof PhpParser\Node\Name
                 && $stmt->name instanceof PhpParser\Node\Identifier
                 && $fq_classlike_name
-                && $stmt->class->parts !== ['static']
-                && $stmt->class->parts !== ['parent']
+                && $stmt->class->getParts() !== ['static']
+                && $stmt->class->getParts() !== ['parent']
             ) {
                 if (isset($existing_class_constants[$stmt->name->name])
                     && $existing_class_constants[$stmt->name->name]->type
                 ) {
-                    if ($stmt->class->parts === ['self']) {
+                    if ($stmt->class->getParts() === ['self']) {
                         return $existing_class_constants[$stmt->name->name]->type;
                     }
                 }
 
-                if ($stmt->class->parts === ['self']) {
+                if ($stmt->class->getParts() === ['self']) {
                     $const_fq_class_name = $fq_classlike_name;
                 } else {
                     $const_fq_class_name = ClassLikeAnalyzer::getFQCLNFromNameObject(
@@ -756,9 +755,6 @@ class SimpleTypeInferer
         Union $unpacked_array_type
     ): bool {
         foreach ($unpacked_array_type->getAtomicTypes() as $unpacked_atomic_type) {
-            if ($unpacked_atomic_type instanceof TList) {
-                $unpacked_atomic_type = $unpacked_atomic_type->getKeyedArray();
-            }
             if ($unpacked_atomic_type instanceof TKeyedArray) {
                 foreach ($unpacked_atomic_type->properties as $key => $property_value) {
                     if (is_string($key)) {

@@ -1,7 +1,7 @@
 <?php
 namespace Acme\SampleProject;
 
-function foo(string $s): int
+function foo(string $_s): int
 {
     return 'bar';
 }

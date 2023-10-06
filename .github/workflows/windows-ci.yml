@@ -54,7 +54,7 @@ jobs:
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.0'
+          php-version: '8.1'
           ini-values: zend.assertions=1, assert.exception=1, opcache.enable_cli=1, opcache.jit=function, opcache.jit_buffer_size=512M
           tools: composer:v2
           coverage: none
@@ -62,7 +62,12 @@ jobs:
         env:
           fail-fast: true
 
-      - uses: actions/checkout@v3
+      - name: PHP Version
+        run: |
+          php -v
+          php -r 'var_dump(PHP_VERSION_ID);'
+
+      - uses: actions/checkout@v4
 
       - name: Get Composer Cache Directories
         id: composer-cache

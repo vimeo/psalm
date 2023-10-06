@@ -62,7 +62,7 @@ class FileReferenceCacheProvider extends InternalFileReferenceCacheProvider
 
     public function __construct(Config $config)
     {
-        $this->config = $config;
+        parent::__construct($config);
     }
 
     public function getCachedFileReferences(): ?array

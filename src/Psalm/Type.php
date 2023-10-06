@@ -58,6 +58,7 @@ use function array_values;
 use function explode;
 use function get_class;
 use function implode;
+use function is_int;
 use function preg_quote;
 use function preg_replace;
 use function stripos;
@@ -193,6 +194,14 @@ abstract class Type
     /**
      * @psalm-pure
      */
+    public static function getIntRange(?int $min, ?int $max): Union
+    {
+        return new Union([new TIntRange($min, $max)]);
+    }
+
+    /**
+     * @psalm-pure
+     */
     public static function getLowercaseString(): Union
     {
         $type = new TLowercaseString();
@@ -248,6 +257,20 @@ abstract class Type
         $type = new TNumericString;
 
         return new Union([$type]);
+    }
+
+    /**
+     * @psalm-suppress PossiblyUnusedMethod
+     * @param int|string $value
+     * @return TLiteralString|TLiteralInt
+     */
+    public static function getLiteral($value): Atomic
+    {
+        if (is_int($value)) {
+            return new TLiteralInt($value);
+        }
+
+        return TLiteralString::make($value);
     }
 
     public static function getString(?string $value = null): Union
@@ -495,7 +518,7 @@ abstract class Type
         if ($from_docblock) {
             return self::$listKeyFromDocblock ??= new Union([new TIntRange(0, null, true)]);
         }
-        return self::$listKey ??= new Union([new TIntRange(0, null)]);
+        return self::$listKey ??= self::getIntRange(0, null);
     }
 
     /**

@@ -3,11 +3,13 @@
 namespace Psalm\Storage;
 
 use Psalm\CodeLocation;
+use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TLiteralString;
 
 final class EnumCaseStorage
 {
     /**
-     * @var int|string|null
+     * @var TLiteralString|TLiteralInt|null
      */
     public $value;
 
@@ -20,7 +22,7 @@ final class EnumCaseStorage
     public $deprecated = false;
 
     /**
-     * @param int|string|null  $value
+     * @param TLiteralString|TLiteralInt|null $value
      */
     public function __construct(
         $value,

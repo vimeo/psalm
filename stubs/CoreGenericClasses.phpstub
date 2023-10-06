@@ -125,7 +125,7 @@ interface ArrayAccess {
  * This class allows objects to work as arrays.
  * @link http://php.net/manual/en/class.arrayobject.php
  *
- * @template TKey
+ * @template TKey of array-key
  * @template TValue
  * @template-implements IteratorAggregate<TKey, TValue>
  * @template-implements ArrayAccess<TKey, TValue>
@@ -586,7 +586,6 @@ class DateInterval
     /**
      * Is 1 if the interval is inverted and 0 otherwise
      * @var int
-     * @readonly
      */
     public $invert;
 
