@@ -27,6 +27,8 @@ class TestConfig extends Config
         $this->use_docblock_types = true;
         $this->level = 1;
         $this->cache_directory = null;
+        $this->ignore_internal_falsable_issues = true;
+        $this->ignore_internal_nullable_issues = true;
 
         $this->base_dir = getcwd() . DIRECTORY_SEPARATOR;
 
