@@ -679,6 +679,56 @@ class TypeAnnotationTest extends TestCase
                     '$output===' => 'callable():int',
                 ],
             ],
+            'callableFormats' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type A callable(int, int): string
+                     * @psalm-type B callable(int, int=): string
+                     * @psalm-type C callable(int $a, string $b): void
+                     * @psalm-type D callable(string $c): mixed
+                     * @psalm-type E callable(float...): (int|null)
+                     * @psalm-type F callable(float ...$d): (int|null)
+                     * @psalm-type G callable(array<int>): array<string>
+                     * @psalm-type H callable(array<string, int> $e): array<int, string>
+                     * @psalm-type I \Closure(int, int): string
+                     *
+                     * @method ma(): A
+                     * @method mb(): B
+                     * @method mc(): C
+                     * @method md(): D
+                     * @method me(): E
+                     * @method mf(): F
+                     * @method mg(): G
+                     * @method mh(): H
+                     * @method mi(): I
+                     */
+                    class Foo {
+                        public function __call(string $method, array $params) { return 1; }
+                    }
+
+                    $foo = new \Foo();
+                    $output_ma = $foo->ma();
+                    $output_mb = $foo->mb();
+                    $output_mc = $foo->mc();
+                    $output_md = $foo->md();
+                    $output_me = $foo->me();
+                    $output_mf = $foo->mf();
+                    $output_mg = $foo->mg();
+                    $output_mh = $foo->mh();
+                    $output_mi = $foo->mi();
+                ',
+                'assertions' => [
+                    '$output_ma===' => 'callable(int, int):string',
+                    '$output_mb===' => 'callable(int, int=):string',
+                    '$output_mc===' => 'callable(int, string):void',
+                    '$output_md===' => 'callable(string):mixed',
+                    '$output_me===' => 'callable(float...):(int|null)',
+                    '$output_mf===' => 'callable(float...):(int|null)',
+                    '$output_mg===' => 'callable(array<array-key, int>):array<array-key, string>',
+                    '$output_mh===' => 'callable(array<string, int>):array<int, string>',
+                    '$output_mi===' => 'Closure(int, int):string',
+                ],
+            ],
             'unionOfStringsContainingBraceChar' => [
                 'code' => '<?php
                     /** @psalm-type T \'{\'|\'}\' */
