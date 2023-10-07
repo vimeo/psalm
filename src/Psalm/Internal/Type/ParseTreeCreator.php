@@ -553,24 +553,23 @@ class ParseTreeCreator
 
         $current_parent = $this->current_leaf->parent;
 
-        if ($current_parent instanceof CallableTree) {
-            return;
-        }
-
-        while ($current_parent && !$current_parent instanceof MethodTree) {
+        //while ($current_parent && !$method_or_callable_parent) {
+        while ($current_parent && !$current_parent instanceof MethodTree && !$current_parent instanceof CallableTree) {
             $this->current_leaf = $current_parent;
             $current_parent = $current_parent->parent;
         }
 
         $next_token = $this->t + 1 < $this->type_token_count ? $this->type_tokens[$this->t + 1] : null;
 
-        if (!$current_parent instanceof MethodTree || !$next_token) {
+        if (!($current_parent instanceof MethodTree || $current_parent instanceof CallableTree) || !$next_token) {
             throw new TypeParseTreeException('Unexpected space');
         }
 
         ++$this->t;
 
-        $this->createMethodParam($next_token, $current_parent);
+        if ($current_parent instanceof MethodTree) {
+            $this->createMethodParam($next_token, $current_parent);
+        }
     }
 
     private function handleQuestionMark(): void
