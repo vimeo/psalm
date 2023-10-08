@@ -1469,6 +1469,17 @@ class ClassTest extends TestCase
                 'error_message' => 'DuplicateProperty',
                 'ignored_issues' => [],
             ],
+            'duplicatePropertiesDifferentVisibility' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Foo {
+                        public bool $bar;
+                        private string $bar;
+                    }
+                    PHP,
+                'error_message' => 'DuplicateProperty',
+                'ignored_issues' => [],
+            ],
         ];
     }
 }

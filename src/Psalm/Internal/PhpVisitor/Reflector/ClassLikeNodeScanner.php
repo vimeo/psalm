@@ -1617,7 +1617,7 @@ class ClassLikeNodeScanner
             if (isset($storage->properties[$property->name->name])) {
                 IssueBuffer::maybeAdd(
                     new DuplicateProperty(
-                        'Property ' . $fq_classlike_name . '::$' . $property->name->name . ' has already been declared',
+                        'Property ' . $fq_classlike_name . '::$' . $property->name->name . ' has already been defined',
                         new CodeLocation($this->file_scanner, $stmt, null, true),
                         $fq_classlike_name . '::$' . $property->name->name,
                     ),
