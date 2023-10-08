@@ -611,6 +611,18 @@ class ClassLikeStringTest extends TestCase
                         new \RuntimeException();
                     }',
             ],
+            'convertToStringClassExistsNegated' => [
+                'code' => '<?php
+                    /** @param class-string $className */
+                    $className = stdClass::class;
+                    if (class_exists($className)) {
+                        throw new \RuntimeException($className);
+                    }',
+                'assertions' => [
+                    '$className===' => 'string',
+                ],
+
+            ],
             'createNewObjectFromGetClass' => [
                 'code' => '<?php
                     /**
