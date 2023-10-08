@@ -24,6 +24,8 @@ use Psalm\Issue\PossiblyInvalidOperand;
 use Psalm\Issue\PossiblyNullOperand;
 use Psalm\Issue\StringIncrement;
 use Psalm\IssueBuffer;
+use Psalm\Node\Expr\BinaryOp\VirtualMinus;
+use Psalm\Node\Expr\BinaryOp\VirtualPlus;
 use Psalm\StatementsSource;
 use Psalm\Type;
 use Psalm\Type\Atomic;
@@ -821,10 +823,15 @@ final class ArithmeticOpAnalyzer
                                 $result_type = Type::getInt();
                             }
                         }
-                    } else {
+                    } elseif ($parent instanceof VirtualPlus) {
                         $start = $left_type_part instanceof TLiteralInt ? $left_type_part->value : 1;
+                        $result_type = Type::combineUnionTypes(Type::getIntRange($start, null), $result_type);
+                    } elseif ($parent instanceof VirtualMinus) {
+                        $start = $left_type_part instanceof TLiteralInt ? $left_type_part->value : 1;
+                        $result_type = Type::combineUnionTypes(Type::getIntRange(null, $start), $result_type);
+                    } else {
                         $result_type = Type::combineUnionTypes(
-                            $always_positive ? Type::getIntRange($start, null) : Type::getInt(true),
+                            $always_positive ? Type::getIntRange(1, null) : Type::getInt(true),
                             $result_type,
                         );
                     }
