@@ -822,8 +822,9 @@ final class ArithmeticOpAnalyzer
                             }
                         }
                     } else {
+                        $start = $left_type_part instanceof TLiteralInt ? $left_type_part->value : 1;
                         $result_type = Type::combineUnionTypes(
-                            $always_positive ? Type::getIntRange(1, null) : Type::getInt(true),
+                            $always_positive ? Type::getIntRange($start, null) : Type::getInt(true),
                             $result_type,
                         );
                     }
