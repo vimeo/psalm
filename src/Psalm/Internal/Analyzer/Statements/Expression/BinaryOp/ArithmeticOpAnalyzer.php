@@ -823,12 +823,28 @@ final class ArithmeticOpAnalyzer
                                 $result_type = Type::getInt();
                             }
                         }
-                    } elseif ($parent instanceof VirtualPlus) {
-                        $start = $left_type_part instanceof TLiteralInt ? $left_type_part->value : 1;
-                        $result_type = Type::combineUnionTypes(Type::getIntRange($start, null), $result_type);
-                    } elseif ($parent instanceof VirtualMinus) {
-                        $start = $left_type_part instanceof TLiteralInt ? $left_type_part->value : 1;
-                        $result_type = Type::combineUnionTypes(Type::getIntRange(null, $start), $result_type);
+                    } elseif ($parent instanceof VirtualPlus || $parent instanceof VirtualMinus) {
+                        $sum = $parent instanceof VirtualPlus ? 1 : -1;
+                        if ($context && $context->inside_loop && $left_type_part instanceof TLiteralInt) {
+                            if ($parent instanceof VirtualPlus) {
+                                $new_type = new TIntRange($left_type_part->value + $sum, null);
+                            } else {
+                                $new_type = new TIntRange(null, $left_type_part->value + $sum);
+                            }
+                        } elseif ($left_type_part instanceof TLiteralInt) {
+                            $new_type = new TLiteralInt($left_type_part->value + $sum);
+                        } elseif ($left_type_part instanceof TIntRange) {
+                            $start = $left_type_part->min_bound === null ? null : $left_type_part->min_bound + $sum;
+                            $end = $left_type_part->max_bound === null ? null : $left_type_part->max_bound + $sum;
+                            $new_type = new TIntRange($start, $end);
+                        } else {
+                            $new_type = new TInt();
+                        }
+
+                        $result_type = Type::combineUnionTypes(
+                            new Union([$new_type], ['from_calculation' => true]),
+                            $result_type,
+                        );
                     } else {
                         $result_type = Type::combineUnionTypes(
                             $always_positive ? Type::getIntRange(1, null) : Type::getInt(true),
