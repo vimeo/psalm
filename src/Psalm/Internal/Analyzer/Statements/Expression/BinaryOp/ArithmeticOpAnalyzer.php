@@ -625,6 +625,11 @@ class ArithmeticOpAnalyzer
                 return null;
             }
         }
+        /**
+         * @var Atomic $left_type_part
+         * @var Atomic $right_type_part
+         * // Todo remove this hint reset after fixing #10267
+         */
 
         if (($left_type_part instanceof TNamedObject && strtolower($left_type_part->value) === 'gmp')
             || ($right_type_part instanceof TNamedObject && strtolower($right_type_part->value) === 'gmp')
