@@ -31,6 +31,7 @@
  - [DuplicateFunction](issues/DuplicateFunction.md)
  - [DuplicateMethod](issues/DuplicateMethod.md)
  - [DuplicateParam](issues/DuplicateParam.md)
+ - [DuplicateProperty](issues/DuplicateProperty.md)
  - [EmptyArrayAccess](issues/EmptyArrayAccess.md)
  - [ExtensionRequirementViolation](issues/ExtensionRequirementViolation.md)
  - [FalsableReturnStatement](issues/FalsableReturnStatement.md)
