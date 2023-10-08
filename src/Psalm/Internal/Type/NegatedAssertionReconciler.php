@@ -122,6 +122,11 @@ class NegatedAssertionReconciler extends Reconciler
             $existing_var_type->removeType('array');
         }
 
+        if ($assertion instanceof IsNotType && $assertion_type instanceof TClassString) {
+            $existing_var_type->removeType(TClassString::class);
+            $existing_var_type->addType(new TString);
+        }
+
         if (!$is_equality
             && isset($existing_var_atomic_types['int'])
             && $existing_var_type->from_calculation
