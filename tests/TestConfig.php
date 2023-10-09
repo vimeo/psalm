@@ -30,7 +30,7 @@ class TestConfig extends Config
         $this->ignore_internal_falsable_issues = true;
         $this->ignore_internal_nullable_issues = true;
 
-        $this->base_dir = getcwd() . DIRECTORY_SEPARATOR;
+        $this->base_dir = (string) getcwd() . DIRECTORY_SEPARATOR;
 
         if (!self::$cached_project_files) {
             self::$cached_project_files = ProjectFileFilter::loadFromXMLElement(

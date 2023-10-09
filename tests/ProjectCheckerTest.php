@@ -225,7 +225,7 @@ class ProjectCheckerTest extends TestCase
             ),
         );
 
-        $bat_file_path = getcwd()
+        $bat_file_path = (string) getcwd()
             . DIRECTORY_SEPARATOR . 'tests'
             . DIRECTORY_SEPARATOR . 'fixtures'
             . DIRECTORY_SEPARATOR . 'DummyProject'
@@ -318,8 +318,8 @@ class Bat
         // checkPaths expects absolute paths,
         // otherwise it's unable to match them against configured folders
         $this->project_analyzer->checkPaths([
-            realpath(getcwd() . '/tests/fixtures/DummyProject/Bar.php'),
-            realpath(getcwd() . '/tests/fixtures/DummyProject/SomeTrait.php'),
+            realpath((string) getcwd() . '/tests/fixtures/DummyProject/Bar.php'),
+            realpath((string) getcwd() . '/tests/fixtures/DummyProject/SomeTrait.php'),
         ]);
         $output = ob_get_clean();
 
@@ -359,8 +359,8 @@ class Bat
         // checkPaths expects absolute paths,
         // otherwise it's unable to match them against configured folders
         $this->project_analyzer->checkPaths([
-            realpath(getcwd() . '/tests/fixtures/DummyProject/Bar.php'),
-            realpath(getcwd() . '/tests/fixtures/DummyProject/SomeTrait.php'),
+            realpath((string) getcwd() . '/tests/fixtures/DummyProject/Bar.php'),
+            realpath((string) getcwd() . '/tests/fixtures/DummyProject/SomeTrait.php'),
         ]);
         $output = ob_get_clean();
 

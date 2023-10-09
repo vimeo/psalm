@@ -111,7 +111,7 @@ class StubTest extends TestCase
             ),
         );
 
-        $file_path = getcwd() . '/src/somefile.php';
+        $file_path = (string) getcwd() . '/src/somefile.php';
 
         $this->addFile(
             $file_path,
@@ -198,7 +198,7 @@ class StubTest extends TestCase
             ),
         );
 
-        $file_path = getcwd() . '/src/somefile.php';
+        $file_path = (string) getcwd() . '/src/somefile.php';
 
         $this->addFile(
             $file_path,
@@ -236,7 +236,7 @@ class StubTest extends TestCase
             ),
         );
 
-        $file_path = getcwd() . '/src/somefile.php';
+        $file_path = (string) getcwd() . '/src/somefile.php';
 
         $this->addFile(
             $file_path,
@@ -278,7 +278,7 @@ class StubTest extends TestCase
             ),
         );
 
-        $file_path = getcwd() . '/src/somefile.php';
+        $file_path = (string) getcwd() . '/src/somefile.php';
 
         $this->addFile(
             $file_path,
@@ -310,17 +310,17 @@ class StubTest extends TestCase
             ),
         );
 
-        $file_path = getcwd() . '/src/somefile.php';
+        $file_path = (string) getcwd() . '/src/somefile.php';
 
         $this->addFile(
             $file_path,
             '<?php
                 namespace Ns {
                     class MyClass {
-                    
+
                         public const OBJECT = "object";
                         private const EXCEPTION = "exception";
-                        
+
                         /**
                          * @return mixed
                          * @psalm-suppress InvalidReturnType
@@ -332,7 +332,7 @@ class StubTest extends TestCase
                          * @psalm-suppress InvalidReturnType
                          */
                         public function create2(string $s) {}
-                        
+
                         /**
                          * @return mixed
                          * @psalm-suppress InvalidReturnType
@@ -384,7 +384,7 @@ class StubTest extends TestCase
 
                     $y1 = (new \Ns\MyClass)->creAte2("object");
                     $y2 = (new \Ns\MyClass)->creaTe2("exception");
-                    
+
                     $const1 = (new \Ns\MyClass)->creAte3(\Ns\MyClass::OBJECT);
                     $const2 = (new \Ns\MyClass)->creaTe3("exception");
 
@@ -484,7 +484,7 @@ class StubTest extends TestCase
             ),
         );
 
-        $file_path = getcwd() . '/src/somefile.php';
+        $file_path = (string) getcwd() . '/src/somefile.php';
 
         $this->addFile(
             $file_path,
@@ -521,7 +521,7 @@ class StubTest extends TestCase
             ),
         );
 
-        $file_path = getcwd() . '/src/somefile.php';
+        $file_path = (string) getcwd() . '/src/somefile.php';
 
         $this->addFile(
             $file_path,
@@ -552,7 +552,7 @@ class StubTest extends TestCase
             ),
         );
 
-        $file_path = getcwd() . '/src/somefile.php';
+        $file_path = (string) getcwd() . '/src/somefile.php';
 
         $this->addFile(
             $file_path,
@@ -585,7 +585,7 @@ class StubTest extends TestCase
             ),
         );
 
-        $file_path = getcwd() . '/src/somefile.php';
+        $file_path = (string) getcwd() . '/src/somefile.php';
 
         $this->addFile(
             $file_path,
@@ -614,7 +614,7 @@ class StubTest extends TestCase
             ),
         );
 
-        $file_path = getcwd() . '/src/somefile.php';
+        $file_path = (string) getcwd() . '/src/somefile.php';
 
         $this->addFile(
             $file_path,
@@ -649,7 +649,7 @@ class StubTest extends TestCase
             ),
         );
 
-        $file_path = getcwd() . '/src/somefile.php';
+        $file_path = (string) getcwd() . '/src/somefile.php';
 
         $this->addFile(
             $file_path,
@@ -681,7 +681,7 @@ class StubTest extends TestCase
             ),
         );
 
-        $file_path = getcwd() . '/src/somefile.php';
+        $file_path = (string) getcwd() . '/src/somefile.php';
 
         $this->addFile(
             $file_path,
@@ -716,7 +716,7 @@ class StubTest extends TestCase
             ),
         );
 
-        $file_path = getcwd() . '/src/somefile.php';
+        $file_path = (string) getcwd() . '/src/somefile.php';
 
         $this->addFile(
             $file_path,
@@ -755,7 +755,7 @@ class StubTest extends TestCase
             ),
         );
 
-        $file_path = getcwd() . '/src/somefile.php';
+        $file_path = (string) getcwd() . '/src/somefile.php';
 
         $this->addFile(
             $file_path,
@@ -816,7 +816,7 @@ class StubTest extends TestCase
             ),
         );
 
-        $file_path = getcwd() . '/src/somefile.php';
+        $file_path = (string) getcwd() . '/src/somefile.php';
 
         $this->addFile(
             $file_path,
@@ -848,7 +848,7 @@ class StubTest extends TestCase
             ),
         );
 
-        $file_path = getcwd() . '/src/somefile.php';
+        $file_path = (string) getcwd() . '/src/somefile.php';
 
         $this->addFile(
             $file_path,
@@ -879,7 +879,7 @@ class StubTest extends TestCase
             ),
         );
 
-        $file_path = getcwd() . '/src/somefile.php';
+        $file_path = (string) getcwd() . '/src/somefile.php';
 
         $this->addFile(
             $file_path,
@@ -910,7 +910,7 @@ class StubTest extends TestCase
             ),
         );
 
-        $file_path = getcwd() . '/src/somefile.php';
+        $file_path = (string) getcwd() . '/src/somefile.php';
 
         $this->addFile(
             $file_path,
@@ -941,7 +941,7 @@ class StubTest extends TestCase
             ),
         );
 
-        $file_path = getcwd() . '/src/somefile.php';
+        $file_path = (string) getcwd() . '/src/somefile.php';
 
         $this->addFile(
             $file_path,
@@ -972,7 +972,7 @@ class StubTest extends TestCase
             ),
         );
 
-        $file_path = getcwd() . '/src/somefile.php';
+        $file_path = (string) getcwd() . '/src/somefile.php';
 
         $this->addFile(
             $file_path,
@@ -1019,7 +1019,7 @@ class StubTest extends TestCase
             ),
         );
 
-        $file_path = getcwd() . '/src/somefile.php';
+        $file_path = (string) getcwd() . '/src/somefile.php';
 
         $this->addFile(
             $file_path,
@@ -1069,7 +1069,7 @@ class StubTest extends TestCase
         );
         $this->project_analyzer->setPhpVersion($php_version, 'tests');
 
-        $file_path = getcwd() . '/src/somefile.php';
+        $file_path = (string) getcwd() . '/src/somefile.php';
 
         $this->addFile($file_path, $code);
 
@@ -1096,7 +1096,7 @@ class StubTest extends TestCase
             ),
         );
 
-        $file_path = getcwd() . '/src/somefile.php';
+        $file_path = (string) getcwd() . '/src/somefile.php';
 
         $this->addFile(
             $file_path,
@@ -1144,7 +1144,7 @@ class StubTest extends TestCase
             ),
         );
 
-        $file_path = getcwd() . '/src/somefile.php';
+        $file_path = (string) getcwd() . '/src/somefile.php';
 
         $this->addFile(
             $file_path,
@@ -1179,7 +1179,7 @@ class StubTest extends TestCase
             ),
         );
 
-        $file_path = getcwd() . '/src/somefile.php';
+        $file_path = (string) getcwd() . '/src/somefile.php';
 
         $this->addFile(
             $file_path,
@@ -1216,7 +1216,7 @@ class StubTest extends TestCase
             ),
         );
 
-        $file_path = getcwd() . '/src/somefile.php';
+        $file_path = (string) getcwd() . '/src/somefile.php';
 
         $this->addFile(
             $file_path,
@@ -1261,7 +1261,7 @@ class StubTest extends TestCase
             ),
         );
 
-        $file_path = getcwd() . '/src/somefile.php';
+        $file_path = (string) getcwd() . '/src/somefile.php';
 
         $this->addFile(
             $file_path,
@@ -1302,7 +1302,7 @@ class StubTest extends TestCase
             ),
         );
 
-        $file_path = getcwd() . '/src/somefile.php';
+        $file_path = (string) getcwd() . '/src/somefile.php';
 
         $this->addFile(
             $file_path,
@@ -1353,7 +1353,7 @@ class StubTest extends TestCase
 
         $this->project_analyzer->getCodebase()->reportUnusedCode();
 
-        $vendor_file_path = getcwd() . '/vendor/vendor_class.php';
+        $vendor_file_path = (string) getcwd() . '/vendor/vendor_class.php';
 
         $this->addFile(
             $vendor_file_path,
@@ -1369,7 +1369,7 @@ class StubTest extends TestCase
                 }',
         );
 
-        $file_path = getcwd() . '/src/somefile.php';
+        $file_path = (string) getcwd() . '/src/somefile.php';
 
         $this->addFile(
             $file_path,
@@ -1403,7 +1403,7 @@ class StubTest extends TestCase
             ),
         );
 
-        $file_path = getcwd() . '/src/somefile.php';
+        $file_path = (string) getcwd() . '/src/somefile.php';
 
         $this->addFile(
             $file_path,
@@ -1434,7 +1434,7 @@ class StubTest extends TestCase
             ),
         );
 
-        $file_path = getcwd() . '/src/somefile.php';
+        $file_path = (string) getcwd() . '/src/somefile.php';
 
         $this->addFile(
             $file_path,
@@ -1466,7 +1466,7 @@ class StubTest extends TestCase
         );
 
         $this->addFile(
-            getcwd() . '/vendor/doctrine/import.php',
+            (string) getcwd() . '/vendor/doctrine/import.php',
             '<?php
                 namespace Doctrine\ORM;
 
@@ -1495,7 +1495,7 @@ class StubTest extends TestCase
                 }',
         );
 
-        $file_path = getcwd() . '/src/somefile.php';
+        $file_path = (string) getcwd() . '/src/somefile.php';
 
         $this->addFile(
             $file_path,
@@ -1546,7 +1546,7 @@ class StubTest extends TestCase
 
         $this->project_analyzer->trackTaintedInputs();
 
-        $file_path = getcwd() . '/src/somefile.php';
+        $file_path = (string) getcwd() . '/src/somefile.php';
 
         $this->addFile(
             $file_path,

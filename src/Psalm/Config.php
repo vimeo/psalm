@@ -840,6 +840,7 @@ class Config
         $dom_document->loadXML($file_contents, LIBXML_NONET);
         $dom_document->xinclude(LIBXML_NOWARNING | LIBXML_NONET);
 
+        /** @psalm-suppress PossiblyFalseArgument */
         chdir($oldpwd);
         return $dom_document;
     }

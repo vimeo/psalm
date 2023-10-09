@@ -48,7 +48,7 @@ class AsyncTestCase extends BaseAsyncTestCase
         }
 
         parent::setUpBeforeClass();
-        self::$src_dir_path = getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR;
+        self::$src_dir_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR;
     }
 
     protected function makeConfig(): Config
