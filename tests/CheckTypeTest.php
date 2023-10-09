@@ -18,6 +18,26 @@ class CheckTypeTest extends TestCase
                 $foo = 1;
             ',
         ];
+        yield 'allowNamespace' => [
+            'code' => '<?php
+
+                namespace X;
+
+                final class A {}
+
+                $_a = new A();
+                /** @psalm-check-type-exact $_a = A */',
+        ];
+        yield 'allowImport' => [
+            'code' => '<?php
+
+                namespace X;
+
+                use \stdClass;
+
+                $_a = new stdClass();
+                /** @psalm-check-type-exact $_a = \stdClass */',
+        ];
     }
 
     public function providerInvalidCodeParse(): iterable

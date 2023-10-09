@@ -313,6 +313,16 @@ class MethodComparator
             );
         }
 
+        if ($guide_method_storage->returns_by_ref && !$implementer_method_storage->returns_by_ref) {
+            IssueBuffer::maybeAdd(
+                new MethodSignatureMismatch(
+                    'Method ' . $cased_implementer_method_id . ' must return by-reference',
+                    $code_location,
+                ),
+                $suppressed_issues + $implementer_classlike_storage->suppressed_issues,
+            );
+        }
+
         if ($guide_method_storage->external_mutation_free
             && !$implementer_method_storage->external_mutation_free
             && !$guide_method_storage->mutation_free_inferred
