@@ -211,7 +211,7 @@ class Pool
 
                 $task_done_message = new ForkTaskDoneMessage($task_result);
                 if ($this->config->use_igbinary) {
-                    $encoded_message = base64_encode(igbinary_serialize($task_done_message));
+                    $encoded_message = base64_encode((string) igbinary_serialize($task_done_message));
                 } else {
                     $encoded_message = base64_encode(serialize($task_done_message));
                 }
@@ -248,7 +248,7 @@ class Pool
         }
 
         if ($this->config->use_igbinary) {
-            $encoded_message = base64_encode(igbinary_serialize($process_done_message));
+            $encoded_message = base64_encode((string) igbinary_serialize($process_done_message));
         } else {
             $encoded_message = base64_encode(serialize($process_done_message));
         }
