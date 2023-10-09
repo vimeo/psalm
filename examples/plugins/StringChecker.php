@@ -35,6 +35,7 @@ class StringChecker implements AfterExpressionAnalysisInterface
                 && strpos($expr->value, 'TestController') === false
                 && preg_match($class_or_class_method, $expr->value)
             ) {
+                /** @psalm-suppress PossiblyInvalidArrayAccess */
                 $absolute_class = preg_split('/[:]/', $expr->value)[0];
                 IssueBuffer::maybeAdd(
                     new InvalidClass(

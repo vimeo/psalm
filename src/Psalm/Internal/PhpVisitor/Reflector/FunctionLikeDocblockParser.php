@@ -422,6 +422,7 @@ class FunctionLikeDocblockParser
 
         if (isset($parsed_docblock->tags['throws'])) {
             foreach ($parsed_docblock->tags['throws'] as $offset => $throws_entry) {
+                /** @psalm-suppress PossiblyInvalidArrayAccess */
                 $throws_class = preg_split('/[\s]+/', $throws_entry)[0];
 
                 if (!$throws_class) {
