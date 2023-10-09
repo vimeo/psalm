@@ -224,7 +224,11 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
                             }
 
                             // changes "): {" to ") {"
-                            $hacky_class_fix = preg_replace('/(\)[\s]*):([\s]*\{)/', '$1 $2', $hacky_class_fix);
+                            $hacky_class_fix = (string) preg_replace(
+                                '/(\)[\s]*):([\s]*\{)/',
+                                '$1 $2',
+                                $hacky_class_fix,
+                            );
 
                             if ($hacky_class_fix !== $fake_class) {
                                 $replacement_stmts = $this->parser->parse(

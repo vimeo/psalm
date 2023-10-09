@@ -938,7 +938,7 @@ class ClassLikeNodeScanner
                     $this->useTemplatedType(
                         $storage,
                         $node,
-                        trim(preg_replace('@^[ \t]*\*@m', '', $template_line)),
+                        trim((string) preg_replace('@^[ \t]*\*@m', '', $template_line)),
                     );
                 }
             }
@@ -1910,8 +1910,8 @@ class ClassLikeNodeScanner
                 continue;
             }
 
-            $var_line = preg_replace('/[ \t]+/', ' ', preg_replace('@^[ \t]*\*@m', '', $var_line));
-            $var_line = preg_replace('/,\n\s+\}/', '}', $var_line);
+            $var_line = (string) preg_replace('/[ \t]+/', ' ', (string) preg_replace('@^[ \t]*\*@m', '', $var_line));
+            $var_line = (string) preg_replace('/,\n\s+\}/', '}', $var_line);
             $var_line = str_replace("\n", '', $var_line);
 
             $var_line_parts = preg_split('/( |=)/', $var_line, -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY);

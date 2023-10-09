@@ -448,7 +448,7 @@ final class Psalter
         array_map(
             static function (string $arg): void {
                 if (strpos($arg, '--') === 0 && $arg !== '--') {
-                    $arg_name = preg_replace('/=.*$/', '', substr($arg, 2), 1);
+                    $arg_name = (string) preg_replace('/=.*$/', '', substr($arg, 2), 1);
 
                     if ($arg_name === 'alter') {
                         // valid option for psalm, ignored by psalter

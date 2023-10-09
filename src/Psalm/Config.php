@@ -1491,7 +1491,7 @@ class Config
     private function loadFileExtensions(SimpleXMLElement $extensions): void
     {
         foreach ($extensions as $extension) {
-            $extension_name = preg_replace('/^\.?/', '', (string)$extension['name'], 1);
+            $extension_name = (string) preg_replace('/^\.?/', '', (string)$extension['name'], 1);
             $this->file_extensions[] = $extension_name;
 
             if (isset($extension['scanner'])) {
@@ -1726,7 +1726,7 @@ class Config
     public function shortenFileName(string $to): string
     {
         if (!is_file($to)) {
-            return preg_replace('/^' . preg_quote($this->base_dir, '/') . '/', '', $to, 1);
+            return (string) preg_replace('/^' . preg_quote($this->base_dir, '/') . '/', '', $to, 1);
         }
 
         $from = $this->base_dir;
@@ -1908,7 +1908,7 @@ class Config
         }
 
         if (strpos($issue_type, 'Possibly') === 0) {
-            $stripped_issue_type = preg_replace('/^Possibly(False|Null)?/', '', $issue_type, 1);
+            $stripped_issue_type = (string) preg_replace('/^Possibly(False|Null)?/', '', $issue_type, 1);
 
             if (strpos($stripped_issue_type, 'Invalid') === false && strpos($stripped_issue_type, 'Un') !== 0) {
                 $stripped_issue_type = 'Invalid' . $stripped_issue_type;
@@ -2050,7 +2050,7 @@ class Config
             if ($level === null && $issue_type === 'UndefinedFunction') {
                 // undefined functions trigger global namespace fallback
                 // so we should also check reporting levels for the symbol in global scope
-                $root_function_id = preg_replace('/.*\\\/', '', $function_id);
+                $root_function_id = (string) preg_replace('/.*\\\/', '', $function_id);
                 if ($root_function_id !== $function_id) {
                     /** @psalm-suppress PossiblyUndefinedStringArrayOffset https://github.com/vimeo/psalm/issues/7656 */
                     $level = $this->issue_handlers[$issue_type]->getReportingLevelForFunction($root_function_id);

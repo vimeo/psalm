@@ -401,7 +401,7 @@ final class CliUtils
         $config_file_contents = file_get_contents($config_file);
 
         if ($config->error_baseline) {
-            $amended_config_file_contents = preg_replace(
+            $amended_config_file_contents = (string) preg_replace(
                 '/errorBaseline=".*?"/',
                 "errorBaseline=\"{$baseline_path}\"",
                 $config_file_contents,

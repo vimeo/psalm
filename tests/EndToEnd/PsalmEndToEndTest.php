@@ -216,7 +216,7 @@ class PsalmEndToEndTest extends TestCase
         $this->runPsalmInit(1);
         $psalmXmlContent = file_get_contents(self::$tmpDir . '/psalm.xml');
         $count = 0;
-        $psalmXmlContent = preg_replace('/resolveFromConfigFile="true"/', 'resolveFromConfigFile="false"', $psalmXmlContent, -1, $count);
+        $psalmXmlContent = (string) preg_replace('/resolveFromConfigFile="true"/', 'resolveFromConfigFile="false"', $psalmXmlContent, -1, $count);
         $this->assertEquals(1, $count);
 
         file_put_contents(self::$tmpDir . '/src/psalm.xml', $psalmXmlContent);
@@ -232,7 +232,7 @@ class PsalmEndToEndTest extends TestCase
         $this->runPsalmInit();
 
         $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
-        $psalmXml = preg_replace('/findUnusedCode="(true|false)"/', '', $psalmXml, 1);
+        $psalmXml = (string) preg_replace('/findUnusedCode="(true|false)"/', '', $psalmXml, 1);
         file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
 
         $result = $this->runPsalm(['--no-progress'], self::$tmpDir);

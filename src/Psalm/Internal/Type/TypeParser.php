@@ -1229,7 +1229,7 @@ class TypeParser
                 $is_optional = $child_tree->has_default;
             } else {
                 if ($child_tree instanceof Value && strpos($child_tree->value, '$') > 0) {
-                    $child_tree->value = preg_replace('/(.+)\$.*/', '$1', $child_tree->value);
+                    $child_tree->value = (string) preg_replace('/(.+)\$.*/', '$1', $child_tree->value);
                 }
 
                 $tree_type = self::getTypeFromTree(

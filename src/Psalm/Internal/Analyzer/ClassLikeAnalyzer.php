@@ -225,7 +225,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
             return null;
         }
 
-        $fq_class_name = preg_replace('/^\\\/', '', $fq_class_name, 1);
+        $fq_class_name = (string) preg_replace('/^\\\/', '', $fq_class_name, 1);
 
         if (in_array($fq_class_name, ['callable', 'iterable', 'self', 'static', 'parent'], true)) {
             return true;

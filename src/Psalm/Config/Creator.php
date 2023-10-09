@@ -261,7 +261,7 @@ final class Creator
                     continue;
                 }
 
-                $path = preg_replace('@[/\\\]$@', '', $path, 1);
+                $path = (string) preg_replace('@[/\\\]$@', '', $path, 1);
 
                 if ($path !== 'tests') {
                     $nodes[] = '<directory name="' . $path . '" />';

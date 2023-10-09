@@ -142,7 +142,7 @@ abstract class Type
         }
 
         if ($namespace && stripos($value, $namespace . '\\') === 0) {
-            $candidate = preg_replace(
+            $candidate = (string) preg_replace(
                 '/^' . preg_quote($namespace . '\\') . '/i',
                 '',
                 $value,

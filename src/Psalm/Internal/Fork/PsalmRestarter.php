@@ -129,7 +129,7 @@ class PsalmRestarter extends XdebugHandler
             $regex = '/^\s*(extension\s*=.*(' . implode('|', $this->disabled_extensions) . ').*)$/mi';
             $content = file_get_contents($this->tmpIni);
 
-            $content = preg_replace($regex, ';$1', $content);
+            $content = (string) preg_replace($regex, ';$1', $content);
 
             file_put_contents($this->tmpIni, $content);
         }

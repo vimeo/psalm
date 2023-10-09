@@ -2429,7 +2429,7 @@ class ConditionalTest extends TestCase
                                     continue;
                                 }
 
-                                $remaining = trim(preg_replace(\'@^[ \t]*\* *@m\', \' \', substr($return_block, $i + 1)));
+                                $remaining = trim((string) preg_replace(\'@^[ \t]*\* *@m\', \' \', substr($return_block, $i + 1)));
 
                                 if ($remaining) {
                                     /** @var array<string> */

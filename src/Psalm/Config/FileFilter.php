@@ -136,7 +136,11 @@ class FileFilter
 
                 if (strpos($prospective_directory_path, '*') !== false) {
                     // Strip meaningless trailing recursive wildcard like "path/**/" or "path/**"
-                    $prospective_directory_path = preg_replace('#(\/\*\*)+\/?$#', '/', $prospective_directory_path);
+                    $prospective_directory_path = (string) preg_replace(
+                        '#(\/\*\*)+\/?$#',
+                        '/',
+                        $prospective_directory_path,
+                    );
                     // Split by /**/, allow duplicated wildcards like "path/**/**/path" and any leading dir separator.
                     /** @var non-empty-list<non-empty-string> $path_parts */
                     $path_parts = preg_split('#(\/|\\\)(\*\*\/)+#', $prospective_directory_path);
