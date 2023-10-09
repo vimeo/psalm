@@ -230,6 +230,7 @@
             <xs:element name="DuplicateFunction" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="DuplicateMethod" type="MethodIssueHandlerType" minOccurs="0" />
             <xs:element name="DuplicateParam" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="DuplicateProperty" type="PropertyIssueHandlerType" minOccurs="0" />
             <xs:element name="EmptyArrayAccess" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ExtensionRequirementViolation" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="FalsableReturnStatement" type="IssueHandlerType" minOccurs="0" />

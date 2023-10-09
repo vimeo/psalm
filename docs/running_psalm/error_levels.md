@@ -29,6 +29,7 @@ Level 5 and above allows a more non-verifiable code, and higher levels are even 
  - [DuplicateFunction](issues/DuplicateFunction.md)
  - [DuplicateMethod](issues/DuplicateMethod.md)
  - [DuplicateParam](issues/DuplicateParam.md)
+ - [DuplicateProperty](issues/DuplicateProperty.md)
  - [EmptyArrayAccess](issues/EmptyArrayAccess.md)
  - [ExtensionRequirementViolation](issues/ExtensionRequirementViolation.md)
  - [ImplementationRequirementViolation](issues/ImplementationRequirementViolation.md)

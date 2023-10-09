@@ -42,6 +42,7 @@ use Psalm\Issue\ConstantDeclarationInTrait;
 use Psalm\Issue\DuplicateClass;
 use Psalm\Issue\DuplicateConstant;
 use Psalm\Issue\DuplicateEnumCase;
+use Psalm\Issue\DuplicateProperty;
 use Psalm\Issue\InvalidAttribute;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidEnumBackingType;
@@ -1612,6 +1613,16 @@ class ClassLikeNodeScanner
 
         foreach ($stmt->props as $property) {
             $doc_var_location = null;
+
+            if (isset($storage->properties[$property->name->name])) {
+                IssueBuffer::maybeAdd(
+                    new DuplicateProperty(
+                        'Property ' . $fq_classlike_name . '::$' . $property->name->name . ' has already been defined',
+                        new CodeLocation($this->file_scanner, $stmt, null, true),
+                        $fq_classlike_name . '::$' . $property->name->name,
+                    ),
+                );
+            }
 
             $property_storage = $storage->properties[$property->name->name] = new PropertyStorage();
             $property_storage->is_static = $stmt->isStatic();

@@ -1436,6 +1436,50 @@ class ClassTest extends TestCase
                 'error_message' => 'InheritorViolation',
                 'ignored_issues' => [],
             ],
+            'duplicateInstanceProperties' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Foo {
+                        public mixed $bar;
+                        public int $bar;
+                    }
+                    PHP,
+                'error_message' => 'DuplicateProperty',
+                'ignored_issues' => [],
+            ],
+            'duplicateStaticProperties' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Foo {
+                        public static mixed $bar = null;
+                        public static string $bar = 'bar';
+                    }
+                    PHP,
+                'error_message' => 'DuplicateProperty',
+                'ignored_issues' => [],
+            ],
+            'duplicateMixedProperties' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Foo {
+                        public bool $bar = true;
+                        public static bool $bar = false;
+                    }
+                    PHP,
+                'error_message' => 'DuplicateProperty',
+                'ignored_issues' => [],
+            ],
+            'duplicatePropertiesDifferentVisibility' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Foo {
+                        public bool $bar;
+                        private string $bar;
+                    }
+                    PHP,
+                'error_message' => 'DuplicateProperty',
+                'ignored_issues' => [],
+            ],
         ];
     }
 }
