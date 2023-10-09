@@ -85,6 +85,9 @@ final class Refactor
 
         // get options from command line
         $options = getopt(implode('', $valid_short_options), $valid_long_options);
+        if ($options === false) {
+            die('Failed to parse cli options' . PHP_EOL);
+        }
 
         array_map(
             static function (string $arg) use ($valid_long_options): void {

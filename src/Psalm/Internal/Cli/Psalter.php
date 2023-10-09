@@ -104,6 +104,9 @@ final class Psalter
 
         // get options from command line
         $options = getopt(implode('', self::SHORT_OPTIONS), self::LONG_OPTIONS);
+        if ($options === false) {
+            die('Failed to parse cli options' . PHP_EOL);
+        }
 
         self::validateCliArguments($args);
 

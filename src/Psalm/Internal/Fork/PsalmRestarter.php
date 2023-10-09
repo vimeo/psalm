@@ -74,7 +74,7 @@ class PsalmRestarter extends XdebugHandler
                 'log_verbosity_level' => (int) ini_get('opcache.log_verbosity_level'),
                 'optimization_level' => (string) ini_get('opcache.optimization_level'),
                 'preload' => (string) ini_get('opcache.preload'),
-                'jit_buffer_size' => self::toBytes(ini_get('opcache.jit_buffer_size')),
+                'jit_buffer_size' => self::toBytes((string) ini_get('opcache.jit_buffer_size')),
             ];
 
             foreach (self::REQUIRED_OPCACHE_SETTINGS as $ini_name => $required_value) {
