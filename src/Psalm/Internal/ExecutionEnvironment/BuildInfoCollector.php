@@ -300,7 +300,7 @@ class BuildInfoCollector
                             ->setCommitterName($head_commit_data['committer']['name'])
                             ->setCommitterEmail($head_commit_data['committer']['email'])
                             ->setMessage($head_commit_data['message'])
-                            ->setDate(strtotime($head_commit_data['timestamp'])),
+                            ->setDate((int) strtotime($head_commit_data['timestamp'])),
                         [],
                     );
 
