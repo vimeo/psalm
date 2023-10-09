@@ -15,6 +15,7 @@ use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 
+use function assert;
 use function define;
 use function defined;
 use function dirname;
@@ -153,6 +154,7 @@ class StubTest extends TestCase
 
         $path = $this->getOperatingSystemStyledPath('tests/fixtures/stubs/systemclass.phpstub');
         $stub_files = $this->project_analyzer->getConfig()->getStubFiles();
+        assert(!empty($stub_files));
         $this->assertStringContainsString($path, reset($stub_files));
     }
 
@@ -175,6 +177,7 @@ class StubTest extends TestCase
 
         $path = $this->getOperatingSystemStyledPath('tests/fixtures/stubs/systemclass.phpstub');
         $stub_files = $this->project_analyzer->getConfig()->getStubFiles();
+        assert(!empty($stub_files));
         $this->assertStringContainsString($path, reset($stub_files));
     }
 

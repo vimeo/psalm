@@ -391,7 +391,7 @@ class FunctionLikeDocblockParser
         }
 
         if (isset($parsed_docblock->tags['since'])) {
-            $since = trim(reset($parsed_docblock->tags['since']));
+            $since = trim((string) reset($parsed_docblock->tags['since']));
             if (preg_match('/^[4578]\.\d(\.\d+)?$/', $since)) {
                 $since_parts = explode('.', $since);
 

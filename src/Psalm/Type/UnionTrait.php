@@ -1211,6 +1211,7 @@ trait UnionTrait
     /**
      * @psalm-mutation-free
      * @return TLiteralInt|TLiteralString|TLiteralFloat
+     * @psalm-suppress InvalidFalsableReturnType
      */
     public function getSingleLiteral()
     {

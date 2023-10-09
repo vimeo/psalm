@@ -195,7 +195,7 @@ class ClassLikeDocblockParser
         }
 
         if (isset($parsed_docblock->tags['psalm-yield'])) {
-            $yield = reset($parsed_docblock->tags['psalm-yield']);
+            $yield = (string) reset($parsed_docblock->tags['psalm-yield']);
 
             $info->yield = trim((string) preg_replace('@^[ \t]*\*@m', '', $yield));
         }

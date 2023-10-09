@@ -6,6 +6,7 @@ use PhpParser;
 use PhpParser\ErrorHandler\Collecting;
 use PhpParser\Parser;
 
+use function assert;
 use function count;
 use function preg_match_all;
 use function preg_replace;
@@ -294,6 +295,8 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
                         $error_handler->clearErrors();
 
                         $traverseChildren = false;
+
+                        assert(!empty($replacement_stmts));
 
                         return reset($replacement_stmts);
                     }

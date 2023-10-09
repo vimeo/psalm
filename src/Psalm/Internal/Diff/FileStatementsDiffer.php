@@ -4,6 +4,7 @@ namespace Psalm\Internal\Diff;
 
 use PhpParser;
 
+use function assert;
 use function end;
 use function get_class;
 use function substr;
@@ -130,6 +131,7 @@ class FileStatementsDiffer extends AstDiffer
                             $add_or_delete[] = 'use:' . (string) $use->alias;
                         } else {
                             $name_parts = $use->name->getParts();
+                            assert(!empty($name_parts));
 
                             $add_or_delete[] = 'use:' . end($name_parts);
                         }
@@ -157,6 +159,7 @@ class FileStatementsDiffer extends AstDiffer
                             $add_or_delete[] = 'use:' . (string) $use->alias;
                         } else {
                             $name_parts = $use->name->getParts();
+                            assert(!empty($name_parts));
 
                             $add_or_delete[] = 'use:' . end($name_parts);
                         }

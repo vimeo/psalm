@@ -1160,6 +1160,7 @@ class TypeParser
         }
 
         $first_type = array_shift($keyed_intersection_types);
+        assert($first_type !== null);
 
         // Keyed array intersection are merged together and are not combinable with object-types
         if ($first_type instanceof TKeyedArray) {
