@@ -372,9 +372,9 @@ class Pool
 
                     foreach ($serialized_messages as $serialized_message) {
                         if ($this->config->use_igbinary) {
-                            $message = igbinary_unserialize(base64_decode($serialized_message, true));
+                            $message = igbinary_unserialize((string) base64_decode($serialized_message, true));
                         } else {
-                            $message = unserialize(base64_decode($serialized_message, true));
+                            $message = unserialize((string) base64_decode($serialized_message, true));
                         }
 
                         if ($message instanceof ForkProcessDoneMessage) {
