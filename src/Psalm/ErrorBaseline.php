@@ -244,7 +244,7 @@ final class ErrorBaseline
             $filesNode->setAttribute('php-version', implode(';' . "\n\t", [...[
                 ('php:' . PHP_VERSION),
             ], ...array_map(
-                static fn(string $extension): string => $extension . ':' . phpversion($extension),
+                static fn(string $extension): string => $extension . ':' . (string) phpversion($extension),
                 $extensions,
             )]));
         }
