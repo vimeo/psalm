@@ -8,6 +8,7 @@ use SimpleXMLElement;
 
 use function array_filter;
 use function array_map;
+use function assert;
 use function dirname;
 use function in_array;
 use function scandir;
@@ -157,10 +158,12 @@ final class IssueHandler
      */
     public static function getAllIssueTypes(): array
     {
+        $scan = scandir(dirname(__DIR__) . '/Issue', SCANDIR_SORT_NONE);
+        assert($scan !== false);
         return array_filter(
             array_map(
                 static fn(string $file_name): string => substr($file_name, 0, -4),
-                scandir(dirname(__DIR__) . '/Issue', SCANDIR_SORT_NONE),
+                $scan,
             ),
             static fn(string $issue_name): bool => $issue_name !== ''
                 && $issue_name !== 'MethodIssue'

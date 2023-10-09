@@ -1104,7 +1104,9 @@ class Config
 
         $composer_json = null;
         if (file_exists($composer_json_path)) {
-            $composer_json = json_decode(file_get_contents($composer_json_path), true);
+            $composer_json_contents = file_get_contents($composer_json_path);
+            assert($composer_json_contents !== false);
+            $composer_json = json_decode($composer_json_contents, true);
             if (!is_array($composer_json)) {
                 throw new UnexpectedValueException('Invalid composer.json at ' . $composer_json_path);
             }
@@ -1160,7 +1162,7 @@ class Config
                 }
             }
 
-            $config->autoloader = realpath($autoloader_path);
+            $config->autoloader = (string) realpath($autoloader_path);
         }
 
         if (isset($config_xml['cacheDirectory'])) {
@@ -2295,9 +2297,10 @@ class Config
             if (is_file($phpstorm_meta_path)) {
                 $stub_files[] = $phpstorm_meta_path;
             } elseif (is_dir($phpstorm_meta_path)) {
-                $phpstorm_meta_path = realpath($phpstorm_meta_path);
+                $phpstorm_meta_path = (string) realpath($phpstorm_meta_path);
+                $phpstorm_meta_files = glob($phpstorm_meta_path . '/*.meta.php', GLOB_NOSORT);
 
-                foreach (glob($phpstorm_meta_path . '/*.meta.php', GLOB_NOSORT) as $glob) {
+                foreach ($phpstorm_meta_files ?: [] as $glob) {
                     if (is_file($glob) && realpath(dirname($glob)) === $phpstorm_meta_path) {
                         $stub_files[] = $glob;
                     }
@@ -2508,7 +2511,7 @@ class Config
                         && $this->isInProjectDirs($dir . DIRECTORY_SEPARATOR . 'testdummy.php')
                     ) {
                         $maxDepth = $depth;
-                        $candidate_path = realpath($dir) . $pathEnd;
+                        $candidate_path = (string) realpath($dir) . $pathEnd;
                     }
                 }
             }
@@ -2643,7 +2646,9 @@ class Config
 
         if (file_exists($composer_json_path)) {
             try {
-                $composer_json = json_decode(file_get_contents($composer_json_path), true, 512, JSON_THROW_ON_ERROR);
+                $composer_json_contents = file_get_contents($composer_json_path);
+                assert($composer_json_contents !== false);
+                $composer_json = json_decode($composer_json_contents, true, 512, JSON_THROW_ON_ERROR);
             } catch (JsonException $e) {
                 $composer_json = null;
             }

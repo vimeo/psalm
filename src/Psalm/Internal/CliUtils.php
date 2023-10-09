@@ -17,6 +17,7 @@ use UnexpectedValueException;
 use function array_filter;
 use function array_key_exists;
 use function array_slice;
+use function assert;
 use function count;
 use function define;
 use function dirname;
@@ -172,7 +173,9 @@ final class CliUtils
             return 'vendor';
         }
         try {
-            $composer_json = json_decode(file_get_contents($composer_json_path), true, 512, JSON_THROW_ON_ERROR);
+            $composer_file_contents = file_get_contents($composer_json_path);
+            assert($composer_file_contents !== false);
+            $composer_json = json_decode($composer_file_contents, true, 512, JSON_THROW_ON_ERROR);
         } catch (JsonException $e) {
             fwrite(
                 STDERR,
@@ -399,6 +402,7 @@ final class CliUtils
         }
 
         $config_file_contents = file_get_contents($config_file);
+        assert($config_file_contents !== false);
 
         if ($config->error_baseline) {
             $amended_config_file_contents = (string) preg_replace(

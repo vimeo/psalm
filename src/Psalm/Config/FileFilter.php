@@ -12,6 +12,7 @@ use function array_filter;
 use function array_map;
 use function array_merge;
 use function array_shift;
+use function assert;
 use function count;
 use function explode;
 use function glob;
@@ -210,7 +211,7 @@ class FileFilter
 
                     while ($iterator->valid()) {
                         if ($iterator->isLink()) {
-                            $linked_path = readlink($iterator->getPathname());
+                            $linked_path = (string) readlink($iterator->getPathname());
 
                             if (stripos($linked_path, $directory_path) !== 0) {
                                 if ($ignore_type_stats && $filter instanceof ProjectFileFilter) {
@@ -290,7 +291,7 @@ class FileFilter
                     continue;
                 }
 
-                $file_path = realpath($prospective_file_path);
+                $file_path = (string) realpath($prospective_file_path);
 
                 if (!$file_path && !$allow_missing_files) {
                     throw new ConfigException(
@@ -496,6 +497,7 @@ class FileFilter
 
         $first_dir = self::slashify($parts[0]);
         $paths = glob($first_dir . '*', GLOB_ONLYDIR | GLOB_NOSORT);
+        assert($paths !== false);
         $result = [];
         foreach ($paths as $path) {
             $parts[0] = $path;

@@ -318,8 +318,8 @@ class Bat
         // checkPaths expects absolute paths,
         // otherwise it's unable to match them against configured folders
         $this->project_analyzer->checkPaths([
-            realpath((string) getcwd() . '/tests/fixtures/DummyProject/Bar.php'),
-            realpath((string) getcwd() . '/tests/fixtures/DummyProject/SomeTrait.php'),
+            (string) realpath((string) getcwd() . '/tests/fixtures/DummyProject/Bar.php'),
+            (string) realpath((string) getcwd() . '/tests/fixtures/DummyProject/SomeTrait.php'),
         ]);
         $output = (string) ob_get_clean();
 
@@ -359,8 +359,8 @@ class Bat
         // checkPaths expects absolute paths,
         // otherwise it's unable to match them against configured folders
         $this->project_analyzer->checkPaths([
-            realpath((string) getcwd() . '/tests/fixtures/DummyProject/Bar.php'),
-            realpath((string) getcwd() . '/tests/fixtures/DummyProject/SomeTrait.php'),
+            (string) realpath((string) getcwd() . '/tests/fixtures/DummyProject/Bar.php'),
+            (string) realpath((string) getcwd() . '/tests/fixtures/DummyProject/SomeTrait.php'),
         ]);
         $output = (string) ob_get_clean();
 

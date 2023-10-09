@@ -30,6 +30,7 @@ use function array_key_exists;
 use function array_map;
 use function array_shift;
 use function array_slice;
+use function assert;
 use function chdir;
 use function count;
 use function explode;
@@ -502,16 +503,17 @@ final class Psalter
     private static function loadCodeowners(Providers $providers): array
     {
         if (file_exists('CODEOWNERS')) {
-            $codeowners_file_path = realpath('CODEOWNERS');
+            $codeowners_file_path = (string) realpath('CODEOWNERS');
         } elseif (file_exists('.github/CODEOWNERS')) {
-            $codeowners_file_path = realpath('.github/CODEOWNERS');
+            $codeowners_file_path = (string) realpath('.github/CODEOWNERS');
         } elseif (file_exists('docs/CODEOWNERS')) {
-            $codeowners_file_path = realpath('docs/CODEOWNERS');
+            $codeowners_file_path = (string) realpath('docs/CODEOWNERS');
         } else {
             die('Cannot use --codeowner without a CODEOWNERS file' . PHP_EOL);
         }
 
         $codeowners_file = file_get_contents($codeowners_file_path);
+        assert($codeowners_file != false);
 
         $codeowner_lines = array_map(
             static function (string $line): array {

@@ -218,7 +218,7 @@ class Pool
                 $serialized_message = $task_done_buffer . $encoded_message . "\n";
 
                 if (strlen($serialized_message) > 200) {
-                    $bytes_written = @fwrite($write_stream, $serialized_message);
+                    $bytes_written = (int) @fwrite($write_stream, $serialized_message);
 
                     if (strlen($serialized_message) !== $bytes_written) {
                         $task_done_buffer = substr($serialized_message, $bytes_written);
@@ -259,7 +259,7 @@ class Pool
 
         while ($bytes_written < $bytes_to_write && !feof($write_stream)) {
             // attempt to write the remaining unsent part
-            $bytes_written += @fwrite($write_stream, substr($serialized_message, $bytes_written));
+            $bytes_written += (int) @fwrite($write_stream, substr($serialized_message, $bytes_written));
 
             if ($bytes_written < $bytes_to_write) {
                 // wait a bit

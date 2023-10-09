@@ -7,6 +7,7 @@ use Composer\XdebugHandler\XdebugHandler;
 use function array_filter;
 use function array_merge;
 use function array_splice;
+use function assert;
 use function extension_loaded;
 use function file_get_contents;
 use function file_put_contents;
@@ -128,6 +129,7 @@ class PsalmRestarter extends XdebugHandler
         if ($this->required && $this->tmpIni) {
             $regex = '/^\s*(extension\s*=.*(' . implode('|', $this->disabled_extensions) . ').*)$/mi';
             $content = file_get_contents($this->tmpIni);
+            assert($content !== false);
 
             $content = (string) preg_replace($regex, ';$1', $content);
 
