@@ -350,7 +350,7 @@ class InternalCallMapHandlerTest extends TestCase
                 continue;
             }
 
-            yield "$function: " . json_encode($entry) => [$function, $entry];
+            yield "$function: " . (string) json_encode($entry) => [$function, $entry];
         }
     }
 
