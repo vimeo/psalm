@@ -197,6 +197,7 @@ class ReturnTypeAnalyzer
                 )
             )
             && !$return_type->isVoid()
+            && !$return_type->isNever()
             && !$inferred_yield_types
             && (!$function_like_storage || !$function_like_storage->has_yield)
             && $function_returns_implicitly
@@ -222,7 +223,7 @@ class ReturnTypeAnalyzer
         ) {
             if (IssueBuffer::accepts(
                 new InvalidReturnType(
-                    $cased_method_id . ' is not expected to return any values but it does, '
+                    $cased_method_id . ' is not expected to return, but it does, '
                         . 'either implicitly or explicitly',
                     $return_type_location,
                 ),
