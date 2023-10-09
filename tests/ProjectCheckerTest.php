@@ -93,7 +93,7 @@ class ProjectCheckerTest extends TestCase
 
         ob_start();
         $this->project_analyzer->check('tests/fixtures/DummyProject');
-        $output = ob_get_clean();
+        $output = (string) ob_get_clean();
 
         $this->assertStringContainsString('Target PHP version: 8.1 (set by tests)', $output);
         $this->assertStringContainsString('Scanning files...', $output);
@@ -280,7 +280,7 @@ class Bat
 
         ob_start();
         $this->project_analyzer->checkDir('tests/fixtures/DummyProject');
-        $output = ob_get_clean();
+        $output = (string) ob_get_clean();
 
         $this->assertStringContainsString('Target PHP version: 8.1 (set by tests)', $output);
         $this->assertStringContainsString('Scanning files...', $output);
@@ -321,7 +321,7 @@ class Bat
             realpath((string) getcwd() . '/tests/fixtures/DummyProject/Bar.php'),
             realpath((string) getcwd() . '/tests/fixtures/DummyProject/SomeTrait.php'),
         ]);
-        $output = ob_get_clean();
+        $output = (string) ob_get_clean();
 
         $this->assertStringContainsString('Target PHP version: 8.1 (set by tests)', $output);
         $this->assertStringContainsString('Scanning files...', $output);
@@ -362,7 +362,7 @@ class Bat
             realpath((string) getcwd() . '/tests/fixtures/DummyProject/Bar.php'),
             realpath((string) getcwd() . '/tests/fixtures/DummyProject/SomeTrait.php'),
         ]);
-        $output = ob_get_clean();
+        $output = (string) ob_get_clean();
 
         $this->assertStringContainsString('Target PHP version: 8.1 (set by tests)', $output);
         $this->assertStringContainsString('Scanning files...', $output);
