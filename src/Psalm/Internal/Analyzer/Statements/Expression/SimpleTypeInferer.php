@@ -337,15 +337,13 @@ class SimpleTypeInferer
                     return Type::getLiteralClassString($const_fq_class_name, true);
                 }
 
-                if ($existing_class_constants === null
-                    && $file_source instanceof StatementsAnalyzer
-                ) {
+                if ($existing_class_constants === null || $existing_class_constants === []) {
                     try {
                         $foreign_class_constant = $codebase->classlikes->getClassConstantType(
                             $const_fq_class_name,
                             $stmt->name->name,
                             ReflectionProperty::IS_PRIVATE,
-                            $file_source,
+                            $file_source instanceof StatementsAnalyzer ? $file_source : null,
                         );
 
                         if ($foreign_class_constant) {
