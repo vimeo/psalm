@@ -337,7 +337,10 @@ class SimpleTypeInferer
                     return Type::getLiteralClassString($const_fq_class_name, true);
                 }
 
-                if ($existing_class_constants === null || $existing_class_constants === []) {
+                if ($existing_class_constants === null
+                    || $existing_class_constants === []
+                    && $file_source !== null
+                ) {
                     try {
                         $foreign_class_constant = $codebase->classlikes->getClassConstantType(
                             $const_fq_class_name,
