@@ -2,7 +2,7 @@
 namespace Decimal;
 
 /**
- * Copied from https://github.com/php-decimal/stubs/blob/master/Decimal.php
+ * Initially copied from https://github.com/php-decimal/stubs/blob/master/Decimal.php and updated for Psalm.
  *
  * The MIT License (MIT)
  * Copyright (c) 2018 Rudi Theunissen
@@ -52,7 +52,7 @@ final class Decimal implements \JsonSerializable
      *
      * Initializes a new instance using a given value and minimum precision.
      *
-     * @param Decimal|string|int $value
+     * @param Decimal|numeric-string|int $value
      * @param int                $precision
      *
      * @throws \BadMethodCallException if already constructed.
@@ -119,7 +119,7 @@ final class Decimal implements \JsonSerializable
      * The precision of the result will be the max of this decimal's precision
      * and the given value's precision, where scalar values assume the default.
      *
-     * @param Decimal|string|int $value
+     * @param Decimal|numeric-string|int $value
      *
      * @return Decimal the result of adding this decimal to the given value.
      *
@@ -135,7 +135,7 @@ final class Decimal implements \JsonSerializable
      * The precision of the result will be the max of this decimal's precision
      * and the given value's precision, where scalar values assume the default.
      *
-     * @param Decimal|string|int $value
+     * @param Decimal|numeric-string|int $value
      *
      * @return Decimal the result of subtracting a given value from this decimal.
      *
@@ -151,7 +151,7 @@ final class Decimal implements \JsonSerializable
      * The precision of the result will be the max of this decimal's precision
      * and the given value's precision, where scalar values assume the default.
      *
-     * @param Decimal|string|int $value
+     * @param Decimal|numeric-string|int $value
      *
      * @return Decimal the result of multiplying this decimal by the given value.
      *
@@ -167,7 +167,7 @@ final class Decimal implements \JsonSerializable
      * The precision of the result will be the max of this decimal's precision
      * and the given value's precision, where scalar values assume the default.
      *
-     * @param Decimal|string|int $value
+     * @param Decimal|numeric-string|int $value
      *
      * @return Decimal the result of dividing this decimal by the given value.
      *
@@ -187,7 +187,7 @@ final class Decimal implements \JsonSerializable
      *
      * @see Decimal::rem for the decimal remainder.
      *
-     * @param Decimal|string|int $value
+     * @param Decimal|numeric-string|int $value
      *
      * @return Decimal the remainder after dividing the integer value of this
      *                 decimal by the integer value of the given value
@@ -204,7 +204,7 @@ final class Decimal implements \JsonSerializable
      * The precision of the result will be the max of this decimal's precision
      * and the given value's precision, where scalar values assume the default.
      *
-     * @param Decimal|string|int $value
+     * @param Decimal|numeric-string|int $value
      *
      * @return Decimal the remainder after dividing this decimal by a given value.
      *
@@ -222,7 +222,7 @@ final class Decimal implements \JsonSerializable
      * The precision of the result will be the max of this decimal's precision
      * and the given value's precision, where scalar values assume the default.
      *
-     * @param Decimal|string|int $exponent The power to raise this decimal to.
+     * @param Decimal|numeric-string|int $exponent The power to raise this decimal to.
      *
      * @return Decimal the result of raising this decimal to a given power.
      *
@@ -399,7 +399,7 @@ final class Decimal implements \JsonSerializable
      * @param bool $commas   TRUE if thousands should be separated by a comma.
      * @param int  $rounding
      *
-     * @return string the value of this decimal formatted to a fixed number of
+     * @return numeric-string the value of this decimal formatted to a fixed number of
      *                decimal places, optionally with thousands comma-separated,
      *                using a given rounding mode.
      */
@@ -415,7 +415,7 @@ final class Decimal implements \JsonSerializable
      * this method does guarantee that a decimal instantiated by its output with
      * the same precision will be exactly equal to this decimal.
      *
-     * @return string the value of this decimal represented exactly, in either
+     * @return numeric-string the value of this decimal represented exactly, in either
      *                fixed or scientific form, depending on the value.
      */
     public function toString(): string {}
@@ -474,7 +474,7 @@ final class Decimal implements \JsonSerializable
      *
      * This method is equivalent to a cast to string, as well as `toString`.
      *
-     * @return string the value of this decimal represented exactly, in either
+     * @return numeric-string the value of this decimal represented exactly, in either
      *                fixed or scientific form, depending on the value.
      */
     public function __toString(): string {}
@@ -486,7 +486,13 @@ final class Decimal implements \JsonSerializable
      * `toString`. JSON does not have a decimal type so all decimals are encoded
      * as strings in the same format as `toString`.
      *
-     * @return string
+     * @return numeric-string
      */
     public function jsonSerialize() {}
+
+    /**
+     * @param Decimal|numeric-string|int $op1
+     * @param Decimal|numeric-string|int $op2
+     */
+    public function between($op1, $op2): bool {}
 }
