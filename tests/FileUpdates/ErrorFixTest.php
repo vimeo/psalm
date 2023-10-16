@@ -110,7 +110,7 @@ class ErrorFixTest extends TestCase
             'fixMissingColonSyntaxError' => [
                 'files' => [
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -121,7 +121,7 @@ class ErrorFixTest extends TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -132,7 +132,7 @@ class ErrorFixTest extends TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -148,7 +148,7 @@ class ErrorFixTest extends TestCase
             'addReturnTypesToSingleMethod' => [
                 'files' => [
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -162,7 +162,7 @@ class ErrorFixTest extends TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -176,7 +176,7 @@ class ErrorFixTest extends TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -198,7 +198,7 @@ class ErrorFixTest extends TestCase
             'traitMethodRenameFirstCorrect' => [
                 'files' => [
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -207,7 +207,7 @@ class ErrorFixTest extends TestCase
                                     echo $this->bar();
                                 }
                             }',
-                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'T.php' => '<?php
                             namespace Foo;
 
                             trait T {
@@ -217,7 +217,7 @@ class ErrorFixTest extends TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -226,7 +226,7 @@ class ErrorFixTest extends TestCase
                                     echo $this->bar();
                                 }
                             }',
-                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'T.php' => '<?php
                             namespace Foo;
 
                             trait T {
@@ -236,7 +236,7 @@ class ErrorFixTest extends TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -245,7 +245,7 @@ class ErrorFixTest extends TestCase
                                     echo $this->bar();
                                 }
                             }',
-                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'T.php' => '<?php
                             namespace Foo;
 
                             trait T {
@@ -260,7 +260,7 @@ class ErrorFixTest extends TestCase
             'traitMethodRenameFirstError' => [
                 'files' => [
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -269,7 +269,7 @@ class ErrorFixTest extends TestCase
                                     echo $this->bar();
                                 }
                             }',
-                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'T.php' => '<?php
                             namespace Foo;
 
                             trait T {
@@ -279,7 +279,7 @@ class ErrorFixTest extends TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -288,7 +288,7 @@ class ErrorFixTest extends TestCase
                                     echo $this->bar();
                                 }
                             }',
-                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'T.php' => '<?php
                             namespace Foo;
 
                             trait T {
@@ -298,7 +298,7 @@ class ErrorFixTest extends TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -307,7 +307,7 @@ class ErrorFixTest extends TestCase
                                     echo $this->bar();
                                 }
                             }',
-                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'T.php' => '<?php
                             namespace Foo;
 
                             trait T {
@@ -322,7 +322,7 @@ class ErrorFixTest extends TestCase
             'addSuppressions' => [
                 'files' => [
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             class C {
                                 public function foo(array $a) : void {
                                     foreach ($a as $b) {
@@ -332,7 +332,7 @@ class ErrorFixTest extends TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             class C {
                                 public function foo(array $a) : void {
                                     /**
@@ -345,7 +345,7 @@ class ErrorFixTest extends TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             class C {
                                 public function foo(array $a) : void {
                                     /**
@@ -366,14 +366,14 @@ class ErrorFixTest extends TestCase
             'fixDefault' => [
                 'files' => [
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             class C {
                                 /** @var string */
                                 public $foo = 5;
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             class C {
                                 /** @var string */
                                 public $foo = "hello";
@@ -385,26 +385,26 @@ class ErrorFixTest extends TestCase
             'changeContent' => [
                 'files' => [
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             function add(int $a, int $b): int {
                                 return $a + $b;
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'B.php' => '<?php
                             function hasMethod(object $input, string $method): bool {
                                 return (new ReflectionClass($input))
                                     ->hasMethod($method);
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'C.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'C.php' => '<?php
                             function add(int $a, int $b): int {
                                 return $a + $b;
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'D.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'D.php' => '<?php
                             function hasMethod(object $input, string $method): bool {
                                 return (new ReflectionClass($input))
                                     ->hasMethod($method);
@@ -416,14 +416,14 @@ class ErrorFixTest extends TestCase
             'missingConstructorForTwoVars' => [
                 'files' => [
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             class A {
                                 protected int $x;
                                 protected int $y;
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             class A {
                                 protected int $x = 0;
                                 protected int $y;
@@ -435,7 +435,7 @@ class ErrorFixTest extends TestCase
             'missingConstructorForInheritedProperties' => [
                 'files' => [
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             abstract class A {
                                 public int $x;
                                 public int $y;
@@ -446,7 +446,7 @@ class ErrorFixTest extends TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             abstract class A {
                                 public int $x = 0;
                                 public int $y;
@@ -457,7 +457,7 @@ class ErrorFixTest extends TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             abstract class A {
                                 public int $x = 0;
                                 public int $y = 0;

@@ -33,6 +33,7 @@ use UnexpectedValueException;
 use function array_merge;
 use function array_shift;
 use function array_values;
+use function assert;
 use function strpos;
 
 /**
@@ -279,6 +280,7 @@ class TemplateInferredTypeReplacer
                         ));
                     } elseif ($atomic_template_type instanceof TObject) {
                         $first_atomic_type = array_shift($atomic_type->extra_types);
+                        assert($first_atomic_type !== null);
 
                         if ($atomic_type->extra_types) {
                             $first_atomic_type = $first_atomic_type->setIntersectionTypes($atomic_type->extra_types);

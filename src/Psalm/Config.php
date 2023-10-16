@@ -401,12 +401,12 @@ class Config
     /**
      * @var bool
      */
-    public $ignore_internal_falsable_issues = true;
+    public $ignore_internal_falsable_issues = false;
 
     /**
      * @var bool
      */
-    public $ignore_internal_nullable_issues = true;
+    public $ignore_internal_nullable_issues = false;
 
     /**
      * @var array<string, bool>
@@ -840,6 +840,7 @@ class Config
         $dom_document->loadXML($file_contents, LIBXML_NONET);
         $dom_document->xinclude(LIBXML_NOWARNING | LIBXML_NONET);
 
+        /** @psalm-suppress PossiblyFalseArgument */
         chdir($oldpwd);
         return $dom_document;
     }
@@ -1103,7 +1104,9 @@ class Config
 
         $composer_json = null;
         if (file_exists($composer_json_path)) {
-            $composer_json = json_decode(file_get_contents($composer_json_path), true);
+            $composer_json_contents = file_get_contents($composer_json_path);
+            assert($composer_json_contents !== false);
+            $composer_json = json_decode($composer_json_contents, true);
             if (!is_array($composer_json)) {
                 throw new UnexpectedValueException('Invalid composer.json at ' . $composer_json_path);
             }
@@ -1159,7 +1162,7 @@ class Config
                 }
             }
 
-            $config->autoloader = realpath($autoloader_path);
+            $config->autoloader = (string) realpath($autoloader_path);
         }
 
         if (isset($config_xml['cacheDirectory'])) {
@@ -1490,7 +1493,7 @@ class Config
     private function loadFileExtensions(SimpleXMLElement $extensions): void
     {
         foreach ($extensions as $extension) {
-            $extension_name = preg_replace('/^\.?/', '', (string)$extension['name'], 1);
+            $extension_name = (string) preg_replace('/^\.?/', '', (string)$extension['name'], 1);
             $this->file_extensions[] = $extension_name;
 
             if (isset($extension['scanner'])) {
@@ -1725,7 +1728,7 @@ class Config
     public function shortenFileName(string $to): string
     {
         if (!is_file($to)) {
-            return preg_replace('/^' . preg_quote($this->base_dir, '/') . '/', '', $to, 1);
+            return (string) preg_replace('/^' . preg_quote($this->base_dir, '/') . '/', '', $to, 1);
         }
 
         $from = $this->base_dir;
@@ -1907,7 +1910,7 @@ class Config
         }
 
         if (strpos($issue_type, 'Possibly') === 0) {
-            $stripped_issue_type = preg_replace('/^Possibly(False|Null)?/', '', $issue_type, 1);
+            $stripped_issue_type = (string) preg_replace('/^Possibly(False|Null)?/', '', $issue_type, 1);
 
             if (strpos($stripped_issue_type, 'Invalid') === false && strpos($stripped_issue_type, 'Un') !== 0) {
                 $stripped_issue_type = 'Invalid' . $stripped_issue_type;
@@ -2049,7 +2052,7 @@ class Config
             if ($level === null && $issue_type === 'UndefinedFunction') {
                 // undefined functions trigger global namespace fallback
                 // so we should also check reporting levels for the symbol in global scope
-                $root_function_id = preg_replace('/.*\\\/', '', $function_id);
+                $root_function_id = (string) preg_replace('/.*\\\/', '', $function_id);
                 if ($root_function_id !== $function_id) {
                     /** @psalm-suppress PossiblyUndefinedStringArrayOffset https://github.com/vimeo/psalm/issues/7656 */
                     $level = $this->issue_handlers[$issue_type]->getReportingLevelForFunction($root_function_id);
@@ -2294,9 +2297,10 @@ class Config
             if (is_file($phpstorm_meta_path)) {
                 $stub_files[] = $phpstorm_meta_path;
             } elseif (is_dir($phpstorm_meta_path)) {
-                $phpstorm_meta_path = realpath($phpstorm_meta_path);
+                $phpstorm_meta_path = (string) realpath($phpstorm_meta_path);
+                $phpstorm_meta_files = glob($phpstorm_meta_path . '/*.meta.php', GLOB_NOSORT);
 
-                foreach (glob($phpstorm_meta_path . '/*.meta.php', GLOB_NOSORT) as $glob) {
+                foreach ($phpstorm_meta_files ?: [] as $glob) {
                     if (is_file($glob) && realpath(dirname($glob)) === $phpstorm_meta_path) {
                         $stub_files[] = $glob;
                     }
@@ -2507,7 +2511,7 @@ class Config
                         && $this->isInProjectDirs($dir . DIRECTORY_SEPARATOR . 'testdummy.php')
                     ) {
                         $maxDepth = $depth;
-                        $candidate_path = realpath($dir) . $pathEnd;
+                        $candidate_path = (string) realpath($dir) . $pathEnd;
                     }
                 }
             }
@@ -2642,7 +2646,9 @@ class Config
 
         if (file_exists($composer_json_path)) {
             try {
-                $composer_json = json_decode(file_get_contents($composer_json_path), true, 512, JSON_THROW_ON_ERROR);
+                $composer_json_contents = file_get_contents($composer_json_path);
+                assert($composer_json_contents !== false);
+                $composer_json = json_decode($composer_json_contents, true, 512, JSON_THROW_ON_ERROR);
             } catch (JsonException $e) {
                 $composer_json = null;
             }

@@ -843,7 +843,7 @@ class LanguageServer extends Dispatcher
         }
 
         if (!empty($context)) {
-            $message .= "\n" . json_encode($context, JSON_PRETTY_PRINT);
+            $message .= "\n" . (string) json_encode($context, JSON_PRETTY_PRINT);
         }
         try {
             $this->client->logMessage(

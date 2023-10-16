@@ -588,6 +588,7 @@ class Methods
 
             if ($class_storage->abstract && isset($class_storage->overridden_method_ids[$original_method_name])) {
                 $appearing_method_id = reset($class_storage->overridden_method_ids[$original_method_name]);
+                assert($appearing_method_id !== false);
             } else {
                 return null;
             }
@@ -1017,6 +1018,8 @@ class Methods
         }
 
         if ($class_storage->abstract && isset($class_storage->overridden_method_ids[$method_name])) {
+            assert(!empty($class_storage->overridden_method_ids[$method_name]));
+
             return reset($class_storage->overridden_method_ids[$method_name]);
         }
 

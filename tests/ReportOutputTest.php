@@ -1367,6 +1367,6 @@ class ReportOutputTest extends TestCase
      */
     private function toUnixLineEndings(string $output): string
     {
-        return preg_replace('~\r\n?~', "\n", $output);
+        return (string) preg_replace('~\r\n?~', "\n", $output);
     }
 }

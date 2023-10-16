@@ -80,7 +80,7 @@ trait InvalidCodeAnalysisTestTrait
 
         $file_path = self::$src_dir_path . 'somefile.php';
 
-        // $error_message = preg_replace('/ src[\/\\\\]somefile\.php/', ' src/somefile.php', $error_message);
+        // $error_message = (string) preg_replace('/ src[\/\\\\]somefile\.php/', ' src/somefile.php', $error_message);
 
         $this->expectException(CodeException::class);
 

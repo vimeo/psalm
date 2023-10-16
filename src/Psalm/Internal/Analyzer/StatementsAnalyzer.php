@@ -787,6 +787,7 @@ class StatementsAnalyzer extends SourceAnalyzer
         $comments = $this->parsed_docblock;
 
         if (isset($comments->tags['psalm-scope-this'])) {
+            assert(count($comments->tags['psalm-scope-this']));
             $trimmed = trim(reset($comments->tags['psalm-scope-this']));
             $scope_fqcn = Type::getFQCLNFromString($trimmed, $this->getAliases());
 
