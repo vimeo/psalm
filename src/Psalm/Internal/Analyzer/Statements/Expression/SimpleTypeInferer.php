@@ -338,14 +338,15 @@ class SimpleTypeInferer
                 }
 
                 if ($existing_class_constants === null
-                    && $file_source instanceof StatementsAnalyzer
+                    || $existing_class_constants === []
+                    && $file_source !== null
                 ) {
                     try {
                         $foreign_class_constant = $codebase->classlikes->getClassConstantType(
                             $const_fq_class_name,
                             $stmt->name->name,
                             ReflectionProperty::IS_PRIVATE,
-                            $file_source,
+                            $file_source instanceof StatementsAnalyzer ? $file_source : null,
                         );
 
                         if ($foreign_class_constant) {
