@@ -248,5 +248,51 @@ class CacheTest extends TestCase
                 ],
             ],
         ];
+
+        yield 'constructorPropertyPromotionChange' => [
+            [
+                [
+                    'files' => [
+                        '/src/A.php' => <<<'PHP'
+                            <?php
+                            class A {
+                                public function __construct(private string $foo)
+                                {
+                                }
+                                public function bar(): string
+                                {
+                                    return $this->foo;
+                                }
+                            }
+                            PHP,
+                    ],
+                    'issues' => [],
+                ],
+                [
+                    'files' => [
+                        '/src/A.php' => <<<'PHP'
+                            <?php
+                            class A
+                            {
+                                public function __construct()
+                                {
+                                }
+                                public function bar(): string
+                                {
+                                    return $this->foo;
+                                }
+                            }
+                            PHP,
+                    ],
+                    'issues' => [
+                        '/src/A.php' => [
+                            "UndefinedThisPropertyFetch: Instance property A::\$foo is not defined",
+                            "MixedReturnStatement: Could not infer a return type",
+                            "MixedInferredReturnType: Could not verify return type 'string' for A::bar",
+                        ],
+                    ],
+                ],
+            ],
+        ];
     }
 }
