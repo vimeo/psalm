@@ -219,6 +219,16 @@ class CacheTest extends TestCase
                                 }
                             }
                         PHP,
+                        '/src/B.php' => <<<'PHP'
+                            <?php
+
+                            class B {
+                                public function foo(): void
+                                {
+                                    (new A)->foo(1);
+                                }
+                            }
+                        PHP,
                     ],
                     'issues' => [],
                 ],
@@ -243,6 +253,9 @@ class CacheTest extends TestCase
                     'issues' => [
                         '/src/A.php' => [
                             "UndefinedDocblockClass: Docblock-defined class, interface or enum named T does not exist",
+                        ],
+                        '/src/B.php' => [
+                            "InvalidArgument: Argument 1 of A::foo expects T, but 1 provided",
                         ],
                     ],
                 ],
