@@ -26,7 +26,7 @@ class AtomicMethodCallAnalysisResult
     public array $invalid_method_call_types = [];
 
     /**
-     * @var array<string>
+     * @var array<string, bool>
      */
     public array $existent_method_ids = [];
 
