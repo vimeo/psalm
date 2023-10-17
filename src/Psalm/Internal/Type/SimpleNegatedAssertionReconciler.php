@@ -26,9 +26,10 @@ use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
-use Psalm\Type\Atomic\TCallableArray;
+use Psalm\Type\Atomic\TCallableKeyedArray;
 use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TCallableString;
+use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TEmptyMixed;
 use Psalm\Type\Atomic\TEmptyNumeric;
 use Psalm\Type\Atomic\TEmptyScalar;
@@ -1187,9 +1188,9 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                     $non_object_types[] = $type;
                 }
             } elseif ($type instanceof TCallable) {
-                $non_object_types[] = new TCallableArray([
-                    Type::getArrayKey(),
-                    Type::getMixed(),
+                $non_object_types[] = new TCallableKeyedArray([
+                    new Union([new TClassString, new TObject]),
+                    Type::getNonEmptyString(),
                 ]);
                 $non_object_types[] = new TCallableString();
                 $redundant = false;
@@ -1586,9 +1587,9 @@ class SimpleNegatedAssertionReconciler extends Reconciler
                 $non_string_types[] = new TInt();
                 $redundant = false;
             } elseif ($type instanceof TCallable) {
-                $non_string_types[] = new TCallableArray([
-                    Type::getArrayKey(),
-                    Type::getMixed(),
+                $non_string_types[] = new TCallableKeyedArray([
+                    new Union([new TClassString, new TObject]),
+                    Type::getNonEmptyString(),
                 ]);
                 $non_string_types[] = new TCallableObject();
                 $redundant = false;

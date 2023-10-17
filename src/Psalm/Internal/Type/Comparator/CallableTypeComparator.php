@@ -18,7 +18,6 @@ use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
-use Psalm\Type\Atomic\TCallableArray;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TKeyedArray;
@@ -186,15 +185,6 @@ class CallableTypeComparator
             }
 
             if (!$input_type_part->type_params[1]->hasString()) {
-                return false;
-            }
-
-            if (!$input_type_part instanceof TCallableArray) {
-                if ($atomic_comparison_result) {
-                    $atomic_comparison_result->type_coerced_from_mixed = true;
-                    $atomic_comparison_result->type_coerced = true;
-                }
-
                 return false;
             }
         } elseif ($input_type_part instanceof TKeyedArray) {

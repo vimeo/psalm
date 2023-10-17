@@ -16,7 +16,6 @@ use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
-use Psalm\Type\Atomic\TCallableArray;
 use Psalm\Type\Atomic\TCallableKeyedArray;
 use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TCallableString;
@@ -258,9 +257,19 @@ abstract class Atomic implements TypeNode
                 ]);
 
             case 'callable-array':
-                return new TCallableArray([
-                    new Union([new TArrayKey($from_docblock)]),
-                    new Union([new TMixed(false, $from_docblock)]),
+                $classString = new TClassString(
+                    'object',
+                    null,
+                    false,
+                    false,
+                    false,
+                    true,
+                );
+                $object = new TObject(true);
+                $string = new TNonEmptyString(true);
+                return new TCallableKeyedArray([
+                    new Union([$classString, $object]),
+                    new Union([$string]),
                 ]);
 
             case 'list':
@@ -459,7 +468,6 @@ abstract class Atomic implements TypeNode
         return $this instanceof TCallable
             || $this instanceof TCallableObject
             || $this instanceof TCallableString
-            || $this instanceof TCallableArray
             || $this instanceof TCallableKeyedArray
             || $this instanceof TClosure;
     }
