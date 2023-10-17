@@ -87,7 +87,8 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
 
         $cased_method_id = $fq_class_name . '::' . $stmt_name->name;
 
-        $result->existent_method_ids[] = $method_id->__toString();
+
+        $result->existent_method_ids[$method_id->__toString()] = true;
 
         if ($context->collect_initializations && $context->calling_method_id) {
             [$calling_method_class] = explode('::', $context->calling_method_id);
