@@ -118,7 +118,7 @@ class FileStatementsDiffer extends AstDiffer
                     if ($diff_elem->old->getDocComment() === $diff_elem->new->getDocComment()) {
                         $keep = [...$keep, ...$class_keep[0]];
                     } else {
-                        $keep_signature = [...$keep_signature, ...$class_keep[0]];
+                        $add_or_delete = [...$add_or_delete, ...$class_keep[0]];
                     }
                     $keep_signature = [...$keep_signature, ...$class_keep[1]];
                     $add_or_delete = [...$add_or_delete, ...$class_keep[2]];
