@@ -21,7 +21,6 @@ use function mkdir;
 use function strtolower;
 
 use const DIRECTORY_SEPARATOR;
-use const PHP_VERSION_ID;
 
 /**
  * @internal

@@ -14,7 +14,6 @@ use function mkdir;
 use function touch;
 
 use const DIRECTORY_SEPARATOR;
-use const PHP_VERSION_ID;
 
 /**
  * Used to determine which files reference other files, necessary for using the --diff

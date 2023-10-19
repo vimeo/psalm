@@ -536,7 +536,7 @@ final class ExpressionAnalyzer
             !$from_stmt ? $stmt : null,
         );
 
-        if ($assignment_type === false) {
+        if ($assignment_type === null) {
             return false;
         }
 

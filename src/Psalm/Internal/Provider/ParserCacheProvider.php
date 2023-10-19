@@ -32,7 +32,6 @@ use function touch;
 use const DIRECTORY_SEPARATOR;
 use const JSON_THROW_ON_ERROR;
 use const LOCK_EX;
-use const PHP_VERSION_ID;
 use const SCANDIR_SORT_NONE;
 
 /**

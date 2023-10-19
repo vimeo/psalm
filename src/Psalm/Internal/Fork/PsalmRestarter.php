@@ -20,8 +20,6 @@ use function preg_replace;
 use function strlen;
 use function strtolower;
 
-use const PHP_VERSION_ID;
-
 /**
  * @internal
  */

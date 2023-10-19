@@ -46,8 +46,6 @@ use function spl_object_id;
 use function strpos;
 use function strtolower;
 
-use const PHP_VERSION_ID;
-
 /**
  * @internal
  */

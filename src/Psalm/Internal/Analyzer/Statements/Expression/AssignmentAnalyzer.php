@@ -114,7 +114,7 @@ final class AssignmentAnalyzer
         ?PhpParser\Comment\Doc $doc_comment,
         array $not_ignored_docblock_var_ids = [],
         ?PhpParser\Node\Expr $assign_expr = null,
-    ): false|Union {
+    ): ?Union {
         $var_id = ExpressionIdentifier::getVarId(
             $assign_var,
             $statements_analyzer->getFQCLN(),
@@ -680,7 +680,7 @@ final class AssignmentAnalyzer
                     $assign_value,
                     $assign_value_type,
                     $context,
-                ) === false) {
+                ) === null) {
                     return false;
                 }
             }

@@ -1386,10 +1386,11 @@ final class AssertionFinder
 
     /**
      * @param Identical|Equal|NotIdentical|NotEqual $conditional
+     * @return false|int
      */
     private static function hasGetTypeCheck(
         PhpParser\Node\Expr\BinaryOp $conditional,
-    ): false|int {
+    ): bool|int {
         if ($conditional->right instanceof PhpParser\Node\Expr\FuncCall
             && $conditional->right->name instanceof PhpParser\Node\Name
             && strtolower($conditional->right->name->getFirst()) === 'gettype'
@@ -1413,10 +1414,11 @@ final class AssertionFinder
 
     /**
      * @param Identical|Equal|NotIdentical|NotEqual $conditional
+     * @return false|int
      */
     private static function hasGetDebugTypeCheck(
         PhpParser\Node\Expr\BinaryOp $conditional,
-    ): false|int {
+    ): bool|int {
         if ($conditional->right instanceof PhpParser\Node\Expr\FuncCall
             && $conditional->right->name instanceof PhpParser\Node\Name
             && strtolower($conditional->right->name->getFirst()) === 'get_debug_type'
@@ -1442,11 +1444,12 @@ final class AssertionFinder
 
     /**
      * @param Identical|Equal|NotIdentical|NotEqual $conditional
+     * @return false|int
      */
     private static function hasGetClassCheck(
         PhpParser\Node\Expr\BinaryOp $conditional,
         FileSource $source,
-    ): false|int {
+    ): bool|int {
         if (!$source instanceof StatementsAnalyzer) {
             return false;
         }
@@ -1534,11 +1537,12 @@ final class AssertionFinder
 
     /**
      * @param Greater|GreaterOrEqual|Smaller|SmallerOrEqual $conditional
+     * @return false|int
      */
     private static function hasNonEmptyCountEqualityCheck(
         PhpParser\Node\Expr\BinaryOp $conditional,
         ?int &$min_count,
-    ): false|int {
+    ): bool|int {
         if ($conditional->left instanceof PhpParser\Node\Expr\FuncCall
             && $conditional->left->name instanceof PhpParser\Node\Name
             && in_array(strtolower($conditional->left->name->getFirst()), ['count', 'sizeof'])
@@ -1575,11 +1579,12 @@ final class AssertionFinder
 
     /**
      * @param Greater|GreaterOrEqual|Smaller|SmallerOrEqual $conditional
+     * @return false|int
      */
     private static function hasLessThanCountEqualityCheck(
         PhpParser\Node\Expr\BinaryOp $conditional,
         ?int &$max_count,
-    ): false|int {
+    ): bool|int {
         $left_count = $conditional->left instanceof PhpParser\Node\Expr\FuncCall
             && $conditional->left->name instanceof PhpParser\Node\Name
             && in_array(strtolower($conditional->left->name->getFirst()), ['count', 'sizeof'])
@@ -1623,11 +1628,12 @@ final class AssertionFinder
 
     /**
      * @param Equal|Identical|NotEqual|NotIdentical $conditional
+     * @return false|int
      */
     private static function hasCountEqualityCheck(
         PhpParser\Node\Expr\BinaryOp $conditional,
         ?int &$count,
-    ): false|int {
+    ): bool|int {
         $left_count = $conditional->left instanceof PhpParser\Node\Expr\FuncCall
             && $conditional->left->name instanceof PhpParser\Node\Name
             && in_array(strtolower($conditional->left->name->getFirst()), ['count', 'sizeof'])
@@ -1655,12 +1661,13 @@ final class AssertionFinder
 
     /**
      * @param PhpParser\Node\Expr\BinaryOp\Greater|PhpParser\Node\Expr\BinaryOp\GreaterOrEqual $conditional
+     * @return false|int
      */
     private static function hasSuperiorNumberCheck(
         FileSource $source,
         PhpParser\Node\Expr\BinaryOp $conditional,
         ?int &$literal_value_comparison,
-    ): false|int {
+    ): bool|int {
         $right_assignment = false;
         $value_right = null;
         if ($source instanceof StatementsAnalyzer
@@ -1714,12 +1721,13 @@ final class AssertionFinder
 
     /**
      * @param PhpParser\Node\Expr\BinaryOp\Smaller|PhpParser\Node\Expr\BinaryOp\SmallerOrEqual $conditional
+     * @return false|int
      */
     private static function hasInferiorNumberCheck(
         FileSource $source,
         PhpParser\Node\Expr\BinaryOp $conditional,
         ?int &$literal_value_comparison,
-    ): false|int {
+    ): bool|int {
         $right_assignment = false;
         $value_right = null;
         if ($source instanceof StatementsAnalyzer
@@ -1773,10 +1781,11 @@ final class AssertionFinder
 
     /**
      * @param PhpParser\Node\Expr\BinaryOp\Greater|PhpParser\Node\Expr\BinaryOp\GreaterOrEqual $conditional
+     * @return false|int
      */
     private static function hasReconcilableNonEmptyCountEqualityCheck(
         PhpParser\Node\Expr\BinaryOp $conditional,
-    ): false|int {
+    ): bool|int {
         $left_count = $conditional->left instanceof PhpParser\Node\Expr\FuncCall
             && $conditional->left->name instanceof PhpParser\Node\Name
             && in_array(strtolower($conditional->left->name->getFirst()), ['count', 'sizeof']);
@@ -1794,11 +1803,12 @@ final class AssertionFinder
 
     /**
      * @param Identical|Equal|NotIdentical|NotEqual $conditional
+     * @return false|int
      */
     private static function hasTypedValueComparison(
         PhpParser\Node\Expr\BinaryOp $conditional,
         FileSource $source,
-    ): false|int {
+    ): bool|int {
         if (!$source instanceof StatementsAnalyzer) {
             return false;
         }

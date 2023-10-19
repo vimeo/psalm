@@ -1118,7 +1118,7 @@ final class Psalm
     }
 
     /** @return false|'always'|'auto' */
-    private static function shouldFindUnusedCode(array $options, Config $config): false|string
+    private static function shouldFindUnusedCode(array $options, Config $config): bool|string
     {
         $find_unused_code = false;
         if (isset($options['find-dead-code'])) {

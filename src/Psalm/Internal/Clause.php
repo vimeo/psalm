@@ -24,8 +24,6 @@ use function reset;
 use function serialize;
 use function substr;
 
-use const PHP_VERSION_ID;
-
 /**
  * @internal
  * @psalm-immutable

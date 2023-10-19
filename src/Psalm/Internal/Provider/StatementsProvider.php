@@ -37,8 +37,6 @@ use function str_starts_with;
 use function strlen;
 use function strpos;
 
-use const PHP_VERSION_ID;
-
 /**
  * @internal
  */
