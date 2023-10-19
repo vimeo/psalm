@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace Psalm\Tests\Config;
 
 use InvalidArgumentException;
@@ -30,6 +28,7 @@ use stdClass;
 use function define;
 use function defined;
 use function dirname;
+use function get_class;
 use function getcwd;
 use function microtime;
 use function ob_end_clean;
@@ -505,10 +504,10 @@ class PluginTest extends TestCase
 
         $config = $codebase->config;
 
-        (new PluginRegistrationSocket($config, $codebase))->registerHooksFromClass($hook::class);
+        (new PluginRegistrationSocket($config, $codebase))->registerHooksFromClass(get_class($hook));
 
         $this->assertContains(
-            $hook::class,
+            get_class($hook),
             $this->project_analyzer->getCodebase()->config->eventDispatcher->after_codebase_populated,
         );
     }
@@ -887,7 +886,7 @@ class PluginTest extends TestCase
         };
 
         $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
-        $this->project_analyzer->getCodebase()->config->eventDispatcher->after_every_function_checks[] = $plugin::class;
+        $this->project_analyzer->getCodebase()->config->eventDispatcher->after_every_function_checks[] = get_class($plugin);
 
         $file_path = (string) getcwd() . '/src/somefile.php';
 

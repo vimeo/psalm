@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace Psalm\Tests;
 
 use DOMDocument;
@@ -23,7 +21,8 @@ class ErrorBaselineTest extends TestCase
 {
     use MockeryPHPUnitIntegration;
 
-    private FileProvider&MockInterface $fileProvider;
+    /** @var FileProvider&MockInterface */
+    private $fileProvider;
 
     public function setUp(): void
     {

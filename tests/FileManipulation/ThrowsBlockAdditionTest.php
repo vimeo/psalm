@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace Psalm\Tests\FileManipulation;
 
 class ThrowsBlockAdditionTest extends FileManipulationTestCase

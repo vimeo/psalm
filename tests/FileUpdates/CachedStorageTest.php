@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace Psalm\Tests\FileUpdates;
 
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
@@ -17,7 +15,7 @@ use Psalm\Tests\TestConfig;
 
 use function array_keys;
 use function getcwd;
-use function str_contains;
+use function strpos;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -50,7 +48,7 @@ class CachedStorageTest extends TestCase
     public function testValidInclude(): void
     {
         $test_name = $this->getTestName();
-        if (str_contains($test_name, 'SKIPPED-')) {
+        if (strpos($test_name, 'SKIPPED-') !== false) {
             $this->markTestSkipped('Skipped due to a bug.');
         }
 

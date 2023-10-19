@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace Psalm\Tests\Progress;
 
 use Psalm\Progress\DefaultProgress;

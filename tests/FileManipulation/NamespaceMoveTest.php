@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace Psalm\Tests\FileManipulation;
 
 use Psalm\Context;
@@ -13,7 +11,7 @@ use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
 
-use function str_contains;
+use function strpos;
 
 class NamespaceMoveTest extends TestCase
 {
@@ -33,10 +31,10 @@ class NamespaceMoveTest extends TestCase
     public function testValidCode(
         string $input_code,
         string $output_code,
-        array $namespaces_to_move,
+        array $namespaces_to_move
     ): void {
         $test_name = $this->getTestName();
-        if (str_contains($test_name, 'SKIPPED-')) {
+        if (strpos($test_name, 'SKIPPED-') !== false) {
             $this->markTestSkipped('Skipped due to a bug.');
         }
 

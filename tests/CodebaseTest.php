@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace Psalm\Tests;
 
 use PhpParser\Node\Name;
@@ -22,6 +20,7 @@ use Psalm\Type;
 
 use function array_map;
 use function array_values;
+use function get_class;
 
 class CodebaseTest extends TestCase
 {
@@ -172,7 +171,7 @@ class CodebaseTest extends TestCase
             }
         };
         (new PluginRegistrationSocket($this->codebase->config, $this->codebase))
-            ->registerHooksFromClass($hook::class);
+            ->registerHooksFromClass(get_class($hook));
         $this->codebase->classlike_storage_provider->cache = new ClassLikeStorageInstanceCacheProvider;
 
         $this->analyzeFile('somefile.php', new Context);
@@ -242,7 +241,7 @@ class CodebaseTest extends TestCase
         };
 
         (new PluginRegistrationSocket($this->codebase->config, $this->codebase))
-            ->registerHooksFromClass($eventHandler::class);
+            ->registerHooksFromClass(get_class($eventHandler));
 
         $this->analyzeFile('somefile.php', new Context);
         self::assertSame(0, IssueBuffer::getErrorCount());

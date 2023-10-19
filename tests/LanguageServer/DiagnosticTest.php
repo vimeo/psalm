@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace Psalm\Tests\LanguageServer;
 
 use Amp\DeferredFuture;
@@ -25,8 +23,7 @@ use Psalm\Tests\LanguageServer\MockProtocolStream;
 use Psalm\Tests\TestConfig;
 
 use function getcwd;
-use function mt_getrandmax;
-use function random_int;
+use function rand;
 
 class DiagnosticTest extends AsyncTestCase
 {
@@ -287,7 +284,7 @@ class DiagnosticTest extends AsyncTestCase
         return [
           'method' => 'initialize',
           'params' => [
-              'processId' => random_int(0, mt_getrandmax()),
+              'processId' => rand(),
               'locale' => 'en-us',
               'capabilities' => [
                 'workspace' => [

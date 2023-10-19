@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace Psalm\Tests\LanguageServer;
 
 use AdvancedJsonRpc\Error;
@@ -19,6 +17,8 @@ abstract class Message extends AdvancedJsonRpcMessage
 {
     /**
      * Returns the appropriate Message subclass
+     *
+     * @param array $msg
      */
     public static function parseArray(array $msg): AdvancedJsonRpcMessage
     {

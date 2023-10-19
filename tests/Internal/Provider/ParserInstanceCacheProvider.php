@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace Psalm\Tests\Internal\Provider;
 
 use PhpParser;
@@ -52,7 +50,11 @@ class ParserInstanceCacheProvider extends ParserCacheProvider
      */
     public function loadExistingStatementsFromCache(string $file_path): ?array
     {
-        return $this->statements_cache[$file_path] ?? null;
+        if (isset($this->statements_cache[$file_path])) {
+            return $this->statements_cache[$file_path];
+        }
+
+        return null;
     }
 
     /**
@@ -67,7 +69,11 @@ class ParserInstanceCacheProvider extends ParserCacheProvider
 
     public function loadExistingFileContentsFromCache(string $file_path): ?string
     {
-        return $this->file_contents_cache[$file_path] ?? null;
+        if (isset($this->file_contents_cache[$file_path])) {
+            return $this->file_contents_cache[$file_path];
+        }
+
+        return null;
     }
 
     public function cacheFileContents(string $file_path, string $file_contents): void

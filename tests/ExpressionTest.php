@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace Psalm\Tests;
 
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
@@ -26,16 +24,15 @@ class ExpressionTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         yield 'maxIntegerInArrayKey' => [
-            'code' => <<<'PHP_WRAP'
-<?php
-// PHP_INT_MAX
-$s = ['9223372036854775807' => 1];
-$i = [9223372036854775807 => 1];
+            'code' => <<<'PHP'
+                <?php
+                // PHP_INT_MAX
+                $s = ['9223372036854775807' => 1];
+                $i = [9223372036854775807 => 1];
 
-// PHP_INT_MAX + 1
-$so = ['9223372036854775808' => 1];
-PHP_WRAP
-,
+                // PHP_INT_MAX + 1
+                $so = ['9223372036854775808' => 1];
+                PHP,
             'assertions' => [
                 '$s===' => 'array{9223372036854775807: 1}',
                 '$i===' => 'array{9223372036854775807: 1}',
@@ -43,14 +40,13 @@ PHP_WRAP
             ],
         ];
         yield 'autoincrementAlmostOverflow' => [
-            'code' => <<<'PHP_WRAP'
-<?php
-$a = [
-  9223372036854775806 => 0,
-  1, // expected key = PHP_INT_MAX
-];
-PHP_WRAP
-,
+            'code' => <<<'PHP'
+                <?php
+                $a = [
+                  9223372036854775806 => 0,
+                  1, // expected key = PHP_INT_MAX
+                ];
+                PHP,
             'assertions' => [
                 '$a===' => 'array{9223372036854775806: 0, 9223372036854775807: 1}',
             ],
@@ -71,12 +67,11 @@ PHP_WRAP
     public function providerInvalidCodeParse(): iterable
     {
         yield 'integerOverflowInArrayKey' => [
-            'code' => <<<'PHP_WRAP'
-<?php
-// PHP_INT_MAX + 1
-[9223372036854775808 => 1];
-PHP_WRAP
-,
+            'code' => <<<'PHP'
+                <?php
+                // PHP_INT_MAX + 1
+                [9223372036854775808 => 1];
+                PHP,
             'error_message' => 'InvalidArrayOffset',
         ];
 

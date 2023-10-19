@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace Psalm\Tests;
 
 use DOMAttr;
@@ -40,9 +38,7 @@ use function preg_match;
 use function preg_quote;
 use function scandir;
 use function sort;
-use function str_contains;
 use function str_replace;
-use function str_starts_with;
 use function strlen;
 use function strpos;
 use function substr;
@@ -119,14 +115,14 @@ class DocumentationTest extends TestCase
             for ($i = 0, $j = count($file_lines); $i < $j; ++$i) {
                 $current_line = $file_lines[$i];
 
-                if (str_starts_with($current_line, '```php') && $current_issue) {
+                if (substr($current_line, 0, 6) === '```php' && $current_issue) {
                     $current_block = '';
                     ++$i;
 
                     do {
                         $current_block .= $file_lines[$i] . "\n";
                         ++$i;
-                    } while (!str_starts_with($file_lines[$i], '```') && $i < $j);
+                    } while (substr($file_lines[$i], 0, 3) !== '```' && $i < $j);
 
                     $issue_code[$current_issue][] = trim($current_block);
 
@@ -211,7 +207,7 @@ class DocumentationTest extends TestCase
      */
     public function testInvalidCode(string $code, string $error_message, array $ignored_issues = [], bool $check_references = false, string $php_version = '8.0'): void
     {
-        if (str_contains($this->getTestName(), 'SKIPPED-')) {
+        if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
             $this->markTestSkipped();
         }
 
@@ -222,9 +218,9 @@ class DocumentationTest extends TestCase
             $this->project_analyzer->trackUnusedSuppressions();
         }
 
-        $is_taint_test = str_contains($error_message, 'Tainted');
+        $is_taint_test = strpos($error_message, 'Tainted') !== false;
 
-        $is_array_offset_test = strpos($error_message, 'ArrayOffset') && str_contains($error_message, 'PossiblyUndefined');
+        $is_array_offset_test = strpos($error_message, 'ArrayOffset') && strpos($error_message, 'PossiblyUndefined') !== false;
 
         $this->project_analyzer->getConfig()->ensure_array_string_offsets_exist = $is_array_offset_test;
         $this->project_analyzer->getConfig()->ensure_array_int_offsets_exist = $is_array_offset_test;
@@ -325,9 +321,9 @@ class DocumentationTest extends TestCase
                 $blocks[0],
                 $issue_name,
                 $ignored_issues,
-                str_contains($issue_name, 'Unused')
-                    || str_contains($issue_name, 'Unevaluated')
-                    || str_contains($issue_name, 'Unnecessary'),
+                strpos($issue_name, 'Unused') !== false
+                    || strpos($issue_name, 'Unevaluated') !== false
+                    || strpos($issue_name, 'Unnecessary') !== false,
                 $php_version,
             ];
         }
@@ -401,8 +397,11 @@ class DocumentationTest extends TestCase
     {
         return new class ($inner) extends Constraint
         {
-            public function __construct(private readonly Constraint $inner)
+            private Constraint $inner;
+
+            public function __construct(Constraint $inner)
             {
+                $this->inner = $inner;
             }
 
             public function toString(): string
@@ -410,12 +409,18 @@ class DocumentationTest extends TestCase
                 return $this->inner->toString();
             }
 
-            protected function matches(mixed $other): bool
+            /**
+             * @param mixed $other
+             */
+            protected function matches($other): bool
             {
                 return $this->inner->matches($other);
             }
 
-            protected function failureDescription(mixed $other): string
+            /**
+             * @param mixed $other
+             */
+            protected function failureDescription($other): string
             {
                 return $this->exporter()->shortenedExport($other) . ' ' . $this->toString();
             }

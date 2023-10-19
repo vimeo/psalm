@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace Psalm\Tests;
 
 use Psalm\Config;
@@ -10,7 +8,7 @@ use Psalm\Internal\Analyzer\FileAnalyzer;
 
 use function getcwd;
 use function preg_quote;
-use function str_contains;
+use function strpos;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -26,7 +24,7 @@ class IncludeTest extends TestCase
         array $files,
         array $files_to_check,
         bool $hoist_constants = false,
-        array $ignored_issues = [],
+        array $ignored_issues = []
     ): void {
         $codebase = $this->project_analyzer->getCodebase();
 
@@ -66,9 +64,9 @@ class IncludeTest extends TestCase
         array $files,
         array $files_to_check,
         string $error_message,
-        array $directories = [],
+        array $directories = []
     ): void {
-        if (str_contains($this->getTestName(), 'SKIPPED-')) {
+        if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
             $this->markTestSkipped();
         }
 

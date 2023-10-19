@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace Psalm\Tests\TypeReconciliation;
 
 use Psalm\Internal\Analyzer\ProjectAnalyzer;

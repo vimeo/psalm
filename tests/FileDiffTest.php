@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace Psalm\Tests;
 
 use PhpParser;
@@ -12,7 +10,8 @@ use Psalm\Internal\Provider\StatementsProvider;
 
 use function array_map;
 use function count;
-use function str_contains;
+use function get_class;
+use function strpos;
 use function var_export;
 
 class FileDiffTest extends TestCase
@@ -28,9 +27,9 @@ class FileDiffTest extends TestCase
         array $same_signatures,
         array $changed_methods,
         array $diff_map_offsets,
-        array $deletion_ranges,
+        array $deletion_ranges
     ): void {
-        if (str_contains($this->getTestName(), 'SKIPPED-')) {
+        if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
             $this->markTestSkipped();
         }
 
@@ -85,9 +84,9 @@ class FileDiffTest extends TestCase
         array $same_methods,
         array $same_signatures,
         array $changed_methods,
-        array $diff_map_offsets,
+        array $diff_map_offsets
     ): void {
-        if (str_contains($this->getTestName(), 'SKIPPED-')) {
+        if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
             $this->markTestSkipped();
         }
 
@@ -154,12 +153,12 @@ class FileDiffTest extends TestCase
 
             $this->assertNotSame($a_stmt, $b_stmt);
 
-            $this->assertSame($a_stmt::class, $b_stmt::class);
+            $this->assertSame(get_class($a_stmt), get_class($b_stmt));
 
             if ($a_stmt instanceof PhpParser\Node\Stmt\Expression
                 && $b_stmt instanceof PhpParser\Node\Stmt\Expression
             ) {
-                $this->assertSame($a_stmt->expr::class, $b_stmt->expr::class);
+                $this->assertSame(get_class($a_stmt->expr), get_class($b_stmt->expr));
             }
 
             if ($a_doc = $a_stmt->getDocComment()) {
@@ -180,8 +179,8 @@ class FileDiffTest extends TestCase
                 $a_stmt->getAttribute('endFilePos'),
                 $b_stmt->getAttribute('endFilePos'),
                 ($a_stmt instanceof PhpParser\Node\Stmt\Expression
-                    ? $a_stmt->expr::class
-                    : $a_stmt::class)
+                    ? get_class($a_stmt->expr)
+                    : get_class($a_stmt))
                     . ' on line ' . $a_stmt->getLine(),
             );
             $this->assertSame($a_stmt->getLine(), $b_stmt->getLine());

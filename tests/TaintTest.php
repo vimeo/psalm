@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace Psalm\Tests;
 
 use Psalm\Context;
@@ -11,7 +9,7 @@ use Psalm\IssueBuffer;
 
 use function array_map;
 use function preg_quote;
-use function str_contains;
+use function strpos;
 use function trim;
 
 use const DIRECTORY_SEPARATOR;
@@ -24,7 +22,7 @@ class TaintTest extends TestCase
     public function testValidCode(string $code): void
     {
         $test_name = $this->getTestName();
-        if (str_contains($test_name, 'SKIPPED-')) {
+        if (strpos($test_name, 'SKIPPED-') !== false) {
             $this->markTestSkipped('Skipped due to a bug.');
         }
 
@@ -47,7 +45,7 @@ class TaintTest extends TestCase
      */
     public function testInvalidCode(string $code, string $error_message): void
     {
-        if (str_contains($this->getTestName(), 'SKIPPED-')) {
+        if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
             $this->markTestSkipped();
         }
 
@@ -2587,7 +2585,7 @@ class TaintTest extends TestCase
      */
     public function multipleTaintIssuesAreDetected(string $code, array $expectedIssuesTypes): void
     {
-        if (str_contains($this->getTestName(), 'SKIPPED-')) {
+        if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
             $this->markTestSkipped();
         }
 

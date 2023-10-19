@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace Psalm\Tests;
 
 use Psalm\Context;
@@ -1875,21 +1873,20 @@ class ConstantTest extends TestCase
                     PHP,
             ],
             'maxIntegerInArrayKey' => [
-                'code' => <<<'PHP_WRAP'
-<?php
-class A {
-    // PHP_INT_MAX
-    public const S = ['9223372036854775807' => 1];
-    public const I = [9223372036854775807 => 1];
+                'code' => <<<'PHP'
+                    <?php
+                    class A {
+                        // PHP_INT_MAX
+                        public const S = ['9223372036854775807' => 1];
+                        public const I = [9223372036854775807 => 1];
 
-    // PHP_INT_MAX + 1
-    public const SO = ['9223372036854775808' => 1];
-}
-$s = A::S;
-$i = A::I;
-$so = A::SO;
-PHP_WRAP
-,
+                        // PHP_INT_MAX + 1
+                        public const SO = ['9223372036854775808' => 1];
+                    }
+                    $s = A::S;
+                    $i = A::I;
+                    $so = A::SO;
+                    PHP,
                 'assertions' => [
                     '$s===' => 'array{9223372036854775807: 1}',
                     '$i===' => 'array{9223372036854775807: 1}',
@@ -1897,17 +1894,16 @@ PHP_WRAP
                 ],
             ],
             'autoincrementAlmostOverflow' => [
-                'code' => <<<'PHP_WRAP'
-<?php
-class A {
-    public const I = [
-        9223372036854775806 => 0,
-        1, // expected key = PHP_INT_MAX
-    ];
-}
-$s = A::I;
-PHP_WRAP
-,
+                'code' => <<<'PHP'
+                    <?php
+                    class A {
+                        public const I = [
+                            9223372036854775806 => 0,
+                            1, // expected key = PHP_INT_MAX
+                        ];
+                    }
+                    $s = A::I;
+                    PHP,
                 'assertions' => [
                     '$s===' => 'array{9223372036854775806: 0, 9223372036854775807: 1}',
                 ],
@@ -2447,14 +2443,13 @@ PHP_WRAP
                 'error_message' => 'InvalidStringClass',
             ],
             'integerOverflowInArrayKey' => [
-                'code' => <<<'PHP_WRAP'
-<?php
-class A {
-    // PHP_INT_MAX + 1
-    public const IO = [9223372036854775808 => 1];
-}
-PHP_WRAP
-,
+                'code' => <<<'PHP'
+                    <?php
+                    class A {
+                        // PHP_INT_MAX + 1
+                        public const IO = [9223372036854775808 => 1];
+                    }
+                    PHP,
                 'error_message' => 'InvalidArrayOffset',
             ],
             'autoincrementOverflow' => [

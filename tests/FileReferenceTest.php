@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace Psalm\Tests;
 
 use Psalm\Context;
@@ -13,7 +11,7 @@ use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use UnexpectedValueException;
 
 use function count;
-use function str_contains;
+use function strpos;
 
 class FileReferenceTest extends TestCase
 {
@@ -44,7 +42,7 @@ class FileReferenceTest extends TestCase
     public function testReferenceLocations(string $input_code, string $symbol, array $expected_locations): void
     {
         $test_name = $this->getTestName();
-        if (str_contains($test_name, 'SKIPPED-')) {
+        if (strpos($test_name, 'SKIPPED-') !== false) {
             $this->markTestSkipped('Skipped due to a bug.');
         }
 
@@ -87,10 +85,10 @@ class FileReferenceTest extends TestCase
         array $expected_method_references_to_members,
         array $expected_method_references_to_missing_members,
         array $expected_file_references_to_members,
-        array $expected_file_references_to_missing_members,
+        array $expected_file_references_to_missing_members
     ): void {
         $test_name = $this->getTestName();
-        if (str_contains($test_name, 'SKIPPED-')) {
+        if (strpos($test_name, 'SKIPPED-') !== false) {
             $this->markTestSkipped('Skipped due to a bug.');
         }
 

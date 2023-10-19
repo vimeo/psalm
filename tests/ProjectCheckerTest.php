@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace Psalm\Tests;
 
 use Psalm\Config;
@@ -24,6 +22,7 @@ use Psalm\Tests\Progress\EchoProgress;
 
 use function define;
 use function defined;
+use function get_class;
 use function getcwd;
 use function microtime;
 use function ob_end_clean;
@@ -141,7 +140,7 @@ class ProjectCheckerTest extends TestCase
             ),
         );
 
-        $hook_class = $hook::class;
+        $hook_class = get_class($hook);
 
         $this->project_analyzer->getCodebase()->config->eventDispatcher->after_codebase_populated[] = $hook_class;
 

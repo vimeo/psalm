@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace Psalm\Tests\FileUpdates;
 
 use Psalm\Codebase;
@@ -73,7 +71,7 @@ class TemporaryUpdateTest extends TestCase
         array $error_positions,
         array $ignored_issues = [],
         bool $test_save = true,
-        bool $check_unused_code = false,
+        bool $check_unused_code = false
     ): void {
         $codebase = $this->codebase;
         $codebase->diff_methods = true;

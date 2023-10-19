@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace Psalm\Tests\FileUpdates;
 
 use Psalm\Config;
@@ -16,7 +14,7 @@ use Psalm\Tests\TestConfig;
 
 use function array_keys;
 use function getcwd;
-use function str_contains;
+use function strpos;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -57,10 +55,10 @@ class AnalyzedMethodTest extends TestCase
         array $end_files,
         array $initial_analyzed_methods,
         array $unaffected_analyzed_methods,
-        array $ignored_issues = [],
+        array $ignored_issues = []
     ): void {
         $test_name = $this->getTestName();
-        if (str_contains($test_name, 'SKIPPED-')) {
+        if (strpos($test_name, 'SKIPPED-') !== false) {
             $this->markTestSkipped('Skipped due to a bug.');
         }
 

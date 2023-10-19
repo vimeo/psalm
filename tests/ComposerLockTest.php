@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace Psalm\Tests;
 
 use Psalm\Internal\PluginManager\ComposerLock;
@@ -214,9 +212,10 @@ class ComposerLockTest extends TestCase
     }
 
     /**
+     * @param mixed $data
      * @psalm-pure
      */
-    private function jsonFile(mixed $data): string
+    private function jsonFile($data): string
     {
         return 'data:application/json,' . json_encode($data, JSON_THROW_ON_ERROR);
     }

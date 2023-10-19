@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace Psalm\Tests\Traits;
 
 use Psalm\Config;
@@ -9,8 +7,8 @@ use Psalm\Context;
 use Psalm\Exception\CodeException;
 
 use function preg_quote;
-use function str_contains;
 use function str_replace;
+use function strpos;
 use function strtoupper;
 use function substr;
 use function version_compare;
@@ -51,19 +49,19 @@ trait InvalidCodeAnalysisTestTrait
         string $code,
         string $error_message,
         array  $error_levels = [],
-        string $php_version = '7.4',
+        string $php_version = '7.4'
     ): void {
         $test_name = $this->getTestName();
-        if (str_contains((string) $test_name, 'PHP80-')) {
+        if (strpos($test_name, 'PHP80-') !== false) {
             if (version_compare(PHP_VERSION, '8.0.0', '<')) {
                 $this->markTestSkipped('Test case requires PHP 8.0.');
             }
-        } elseif (str_contains((string) $test_name, 'SKIPPED-')) {
+        } elseif (strpos($test_name, 'SKIPPED-') !== false) {
             $this->markTestSkipped('Skipped due to a bug.');
         }
 
         // sanity check - do we have a PHP tag?
-        if (!str_contains($code, '<?php')) {
+        if (strpos($code, '<?php') === false) {
             $this->fail('Test case must have a <?php tag');
         }
 

@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace Psalm\Tests;
 
 use InvalidArgumentException;
@@ -25,9 +23,11 @@ class PsalmPluginTest extends TestCase
 {
     use MockeryPHPUnitIntegration;
 
-    private PluginList&MockInterface $plugin_list;
+    /** @var PluginList&MockInterface */
+    private $plugin_list;
 
-    private PluginListFactory&MockInterface $plugin_list_factory;
+    /** @var PluginListFactory&MockInterface */
+    private $plugin_list_factory;
 
     private Application $app;
 

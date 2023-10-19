@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace Psalm\Tests\Internal\Scanner;
 
 use Psalm\Aliases;
@@ -23,7 +21,7 @@ class FileScannerTest extends TestCase
     public function testScan(
         Config $config,
         string $file_contents,
-        FileStorage $expected_file_storage,
+        FileStorage $expected_file_storage
     ): void {
         $file_provider = new FakeFileProvider();
         $codebase = new Codebase(

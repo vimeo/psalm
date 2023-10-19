@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace Psalm\Tests\Config\Plugin;
 
 use Psalm\Plugin\FileExtensionsInterface;
@@ -11,11 +9,11 @@ use stdClass;
 
 class FileTypeSelfRegisteringPlugin implements PluginFileExtensionsInterface
 {
-    final public const FLAG_SCANNER_TWICE = 1;
-    final public const FLAG_ANALYZER_TWICE = 2;
+    public const FLAG_SCANNER_TWICE = 1;
+    public const FLAG_ANALYZER_TWICE = 2;
 
-    final public const FLAG_SCANNER_INVALID = 4;
-    final public const FLAG_ANALYZER_INVALID = 8;
+    public const FLAG_SCANNER_INVALID = 4;
+    public const FLAG_ANALYZER_INVALID = 8;
 
     /**
      * @var array<string, string>

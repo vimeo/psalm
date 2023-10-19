@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace Psalm\Tests\FileManipulation;
 
 use Psalm\Context;
@@ -13,7 +11,6 @@ use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
 
-use function str_contains;
 use function strpos;
 
 abstract class FileManipulationTestCase extends TestCase
@@ -37,10 +34,10 @@ abstract class FileManipulationTestCase extends TestCase
         string $php_version,
         array $issues_to_fix,
         bool $safe_types,
-        bool $allow_backwards_incompatible_changes = true,
+        bool $allow_backwards_incompatible_changes = true
     ): void {
         $test_name = $this->getTestName();
-        if (str_contains($test_name, 'SKIPPED-')) {
+        if (strpos($test_name, 'SKIPPED-') !== false) {
             $this->markTestSkipped('Skipped due to a bug.');
         }
 

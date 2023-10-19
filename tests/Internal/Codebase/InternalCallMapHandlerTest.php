@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace Psalm\Tests\Internal\Codebase;
 
 use InvalidArgumentException;
@@ -36,15 +34,12 @@ use function is_int;
 use function json_encode;
 use function preg_match;
 use function print_r;
-use function str_contains;
-use function str_ends_with;
-use function str_starts_with;
 use function strcmp;
+use function strncmp;
 use function strpos;
 use function substr;
 use function version_compare;
 
-use const JSON_THROW_ON_ERROR;
 use const PHP_MAJOR_VERSION;
 use const PHP_MINOR_VERSION;
 use const PHP_VERSION;
@@ -355,7 +350,7 @@ class InternalCallMapHandlerTest extends TestCase
                 continue;
             }
 
-            yield "$function: " . (string) json_encode($entry, JSON_THROW_ON_ERROR) => [$function, $entry];
+            yield "$function: " . (string) json_encode($entry) => [$function, $entry];
         }
     }
 
@@ -438,7 +433,10 @@ class InternalCallMapHandlerTest extends TestCase
                 /** @var array<string, string> $callMapEntry */
                 $this->assertEntryParameters($function, $callMapEntry);
                 $this->assertEntryReturnType($function, $entryReturnType);
-            } catch (AssertionFailedError|ExpectationFailedException) {
+            } catch (AssertionFailedError $e) {
+                $this->assertTrue(true);
+                return;
+            } catch (ExpectationFailedException $e) {
                 $this->assertTrue(true);
                 return;
             }
@@ -447,7 +445,10 @@ class InternalCallMapHandlerTest extends TestCase
 
         try {
             $this->assertEntryReturnType($function, $entryReturnType);
-        } catch (AssertionFailedError|ExpectationFailedException) {
+        } catch (AssertionFailedError $e) {
+            $this->assertTrue(true);
+            return;
+        } catch (ExpectationFailedException $e) {
             $this->assertTrue(true);
             return;
         }
@@ -495,13 +496,13 @@ class InternalCallMapHandlerTest extends TestCase
     private function getReflectionFunction(string $functionName): ?ReflectionFunctionAbstract
     {
         try {
-            if (str_contains($functionName, '::')) {
+            if (strpos($functionName, '::') !== false) {
                 return new ReflectionMethod($functionName);
             }
 
             /** @var callable-string $functionName */
             return new ReflectionFunction($functionName);
-        } catch (ReflectionException) {
+        } catch (ReflectionException $e) {
             return null;
         }
     }
@@ -529,12 +530,12 @@ class InternalCallMapHandlerTest extends TestCase
                 'optional' => false,
                 'type' => $entry,
             ];
-            if (str_starts_with($normalizedKey, '&')) {
+            if (strncmp($normalizedKey, '&', 1) === 0) {
                 $normalizedEntry['byRef'] = true;
                 $normalizedKey = substr($normalizedKey, 1);
             }
 
-            if (str_starts_with($normalizedKey, '...')) {
+            if (strncmp($normalizedKey, '...', 3) === 0) {
                 $normalizedEntry['variadic'] = true;
                 $normalizedKey = substr($normalizedKey, 3);
             }
@@ -554,7 +555,7 @@ class InternalCallMapHandlerTest extends TestCase
             }
 
             // Strip prefixes.
-            if (str_ends_with($normalizedKey, "=")) {
+            if (substr($normalizedKey, -1, 1) === "=") {
                 $normalizedEntry['optional'] = true;
                 $normalizedKey = substr($normalizedKey, 0, -1);
             }
