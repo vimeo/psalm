@@ -332,11 +332,7 @@ class ParserCacheProvider
 
     private function getParserCacheKey(string $file_path): string
     {
-        if (PHP_VERSION_ID >= 8_01_00) {
-            $hash = hash('xxh128', $file_path);
-        } else {
-            $hash = hash('md4', $file_path);
-        }
+        $hash = hash('xxh128', $file_path);
 
         return $hash . ($this->cache->use_igbinary ? '-igbinary' : '') . '-r';
     }

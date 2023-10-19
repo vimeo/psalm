@@ -84,11 +84,7 @@ class ProjectCacheProvider
                 return true;
             }
 
-            if (PHP_VERSION_ID >= 8_01_00) {
-                $hash = hash('xxh128', $lockfile_contents);
-            } else {
-                $hash = hash('md4', $lockfile_contents);
-            }
+            $hash = hash('xxh128', $lockfile_contents);
         } else {
             $hash = '';
         }

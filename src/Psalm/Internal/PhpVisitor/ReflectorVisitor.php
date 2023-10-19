@@ -210,9 +210,7 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
                     $classlike_storage->class_implements['stringable'] = 'Stringable';
                 }
 
-                if (PHP_VERSION_ID >= 8_00_00) {
-                    $this->codebase->scanner->queueClassLikeForScanning('Stringable');
-                }
+                $this->codebase->scanner->queueClassLikeForScanning('Stringable');
             }
 
             if (!$this->scan_deep) {

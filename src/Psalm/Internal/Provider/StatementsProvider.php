@@ -111,11 +111,7 @@ final class StatementsProvider
 
         $config = Config::getInstance();
 
-        if (PHP_VERSION_ID >= 8_01_00) {
-            $file_content_hash = hash('xxh128', $version . $file_contents);
-        } else {
-            $file_content_hash = hash('md4', $version . $file_contents);
-        }
+        $file_content_hash = hash('xxh128', $version . $file_contents);
 
         if (!$this->parser_cache_provider
             || (!$config->isInProjectDirs($file_path) && strpos($file_path, 'vendor'))
