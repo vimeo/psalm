@@ -76,7 +76,7 @@ use function strtolower;
 /**
  * @internal
  */
-class CallAnalyzer
+abstract class CallAnalyzer
 {
     public static function collectSpecialInformation(
         FunctionLikeAnalyzer $source,

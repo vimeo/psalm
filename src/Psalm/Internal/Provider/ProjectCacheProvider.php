@@ -22,7 +22,7 @@ use const PHP_VERSION_ID;
  *
  * @internal
  */
-class ProjectCacheProvider
+final class ProjectCacheProvider
 {
     private const GOOD_RUN_NAME = 'good_run';
     private const COMPOSER_LOCK_HASH = 'composer_lock_hash';
@@ -116,7 +116,7 @@ class ProjectCacheProvider
         file_put_contents($lock_hash_location, $this->composer_lock_hash);
     }
 
-    protected function getComposerLockHash(): string
+    private function getComposerLockHash(): string
     {
         if ($this->composer_lock_hash === null) {
             $cache_directory = Config::getInstance()->getCacheDirectory();

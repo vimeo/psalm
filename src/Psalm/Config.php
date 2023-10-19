@@ -128,7 +128,7 @@ use const SCANDIR_SORT_NONE;
  * @psalm-suppress PropertyNotSetInConstructor
  * @psalm-consistent-constructor
  */
-class Config
+final class Config
 {
     private const DEFAULT_FILE_NAME = 'psalm.xml';
     final public const CONFIG_NAMESPACE = 'https://getpsalm.org/schema/config';
@@ -173,7 +173,7 @@ class Config
      *
      * @var array<int, lowercase-string>
      */
-    protected array $universal_object_crates;
+    private array $universal_object_crates;
 
     /**
      * @var static|null
@@ -223,7 +223,7 @@ class Config
 
     protected ?ProjectFileFilter $project_files = null;
 
-    protected ?ProjectFileFilter $extra_files = null;
+    private ?ProjectFileFilter $extra_files = null;
 
     /**
      * The base directory of this config file
@@ -427,7 +427,7 @@ class Config
 
     private ?IncludeCollector $include_collector = null;
 
-    protected ?TaintAnalysisFileFilter $taint_analysis_ignored_files = null;
+    private ?TaintAnalysisFileFilter $taint_analysis_ignored_files = null;
 
     /**
      * @var bool whether to emit a backtrace of emitted issues to stderr
@@ -567,7 +567,7 @@ class Config
     public array $config_warnings = [];
 
     /** @internal */
-    protected function __construct()
+    private function __construct()
     {
         self::$instance = $this;
         $this->eventDispatcher = new EventDispatcher();

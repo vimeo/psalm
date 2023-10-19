@@ -9,7 +9,7 @@ use function microtime;
 use function str_repeat;
 use function strlen;
 
-class DefaultProgress extends LongProgress
+final class DefaultProgress extends LongProgress
 {
     private const TOO_MANY_FILES = 1_500;
 

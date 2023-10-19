@@ -18,7 +18,7 @@ use const JSON_THROW_ON_ERROR;
 /**
  * @internal
  */
-class PluginListFactory
+final class PluginListFactory
 {
     public function __construct(private readonly string $project_root, private readonly string $psalm_root)
     {

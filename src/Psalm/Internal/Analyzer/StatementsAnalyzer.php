@@ -96,9 +96,9 @@ use const STDERR;
  */
 final class StatementsAnalyzer extends SourceAnalyzer
 {
-    protected FileAnalyzer $file_analyzer;
+    private readonly FileAnalyzer $file_analyzer;
 
-    protected Codebase $codebase;
+    private readonly Codebase $codebase;
 
     /**
      * @var array<string, CodeLocation>

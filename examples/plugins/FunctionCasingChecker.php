@@ -21,7 +21,7 @@ use function strtolower;
 /**
  * Checks that functions and methods are correctly-cased
  */
-class FunctionCasingChecker implements AfterFunctionCallAnalysisInterface, AfterMethodCallAnalysisInterface
+final class FunctionCasingChecker implements AfterFunctionCallAnalysisInterface, AfterMethodCallAnalysisInterface
 {
     public static function afterMethodCallAnalysis(AfterMethodCallAnalysisEvent $event): void
     {
@@ -99,6 +99,6 @@ class FunctionCasingChecker implements AfterFunctionCallAnalysisInterface, After
     }
 }
 
-class IncorrectFunctionCasing extends PluginIssue
+final class IncorrectFunctionCasing extends PluginIssue
 {
 }

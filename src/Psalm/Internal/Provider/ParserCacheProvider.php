@@ -38,7 +38,7 @@ use const SCANDIR_SORT_NONE;
 /**
  * @internal
  */
-class ParserCacheProvider
+final class ParserCacheProvider
 {
     private const FILE_HASHES = 'file_hashes_json';
     private const PARSER_CACHE_DIRECTORY = 'php-parser';
@@ -51,14 +51,14 @@ class ParserCacheProvider
      *
      * @var array<string, string>|null
      */
-    protected ?array $existing_file_content_hashes = null;
+    private ?array $existing_file_content_hashes = null;
 
     /**
      * A map of recently-added filename hashes to contents hashes
      *
      * @var array<string, string>
      */
-    protected array $new_file_content_hashes = [];
+    private array $new_file_content_hashes = [];
 
     public function __construct(Config $config, private readonly bool $use_file_cache = true)
     {

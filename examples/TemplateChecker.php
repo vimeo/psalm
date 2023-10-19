@@ -30,7 +30,7 @@ use function str_replace;
 use function strtolower;
 use function trim;
 
-class TemplateAnalyzer extends Psalm\Internal\Analyzer\FileAnalyzer
+final class TemplateAnalyzer extends Psalm\Internal\Analyzer\FileAnalyzer
 {
     final public const VIEW_CLASS = 'Your\\View\\Class';
 
@@ -148,7 +148,7 @@ class TemplateAnalyzer extends Psalm\Internal\Analyzer\FileAnalyzer
     /**
      * @param  array<PhpParser\Node\Stmt> $stmts
      */
-    protected function checkWithViewClass(Context $context, array $stmts): void
+    private function checkWithViewClass(Context $context, array $stmts): void
     {
         $pseudo_method_stmts = [];
 

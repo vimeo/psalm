@@ -957,7 +957,7 @@ final class ProjectAnalyzer
     /**
      * @return list<string>
      */
-    protected function getDiffFiles(): array
+    private function getDiffFiles(): array
     {
         if (!$this->parser_cache_provider || !$this->project_cache_provider) {
             throw new UnexpectedValueException('Parser cache provider cannot be null here');

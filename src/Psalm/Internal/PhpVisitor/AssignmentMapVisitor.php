@@ -20,7 +20,7 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
     /**
      * @var array<string, array<string, bool>>
      */
-    protected array $assignment_map = [];
+    private array $assignment_map = [];
 
     public function __construct(protected ?string $this_class_name)
     {

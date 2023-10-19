@@ -16,7 +16,7 @@ use function str_contains;
 /**
  * @internal
  */
-class PluginList
+final class PluginList
 {
     /** @var ?array<string,string> [pluginClass => packageName] */
     private ?array $all_plugins = null;

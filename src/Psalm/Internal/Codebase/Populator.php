@@ -865,7 +865,7 @@ final class Populator
         }
     }
 
-    protected function inheritMethodsFromParent(
+    private function inheritMethodsFromParent(
         ClassLikeStorage $storage,
         ClassLikeStorage $parent_storage,
     ): void {

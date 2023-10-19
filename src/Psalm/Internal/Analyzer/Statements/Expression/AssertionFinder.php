@@ -928,7 +928,7 @@ final class AssertionFinder
      * @param  PhpParser\Node\Expr\FuncCall|PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall $expr
      * @return list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>
      */
-    protected static function processCustomAssertion(
+    private static function processCustomAssertion(
         PhpParser\Node\Expr $expr,
         ?string $this_class_name,
         FileSource $source,
@@ -1230,7 +1230,7 @@ final class AssertionFinder
     /**
      * @return list<Assertion>
      */
-    protected static function getInstanceOfAssertions(
+    private static function getInstanceOfAssertions(
         PhpParser\Node\Expr\Instanceof_ $stmt,
         ?string $this_class_name,
         FileSource $source,
@@ -1295,7 +1295,7 @@ final class AssertionFinder
     /**
      * @param Identical|Equal|NotIdentical|NotEqual $conditional
      */
-    protected static function hasNullVariable(
+    private static function hasNullVariable(
         PhpParser\Node\Expr\BinaryOp $conditional,
         FileSource $source,
     ): ?int {
@@ -1366,7 +1366,7 @@ final class AssertionFinder
     /**
      * @param Identical|Equal|NotIdentical|NotEqual $conditional
      */
-    protected static function hasEmptyArrayVariable(
+    private static function hasEmptyArrayVariable(
         PhpParser\Node\Expr\BinaryOp $conditional,
     ): ?int {
         if ($conditional->right instanceof PhpParser\Node\Expr\Array_
@@ -1387,7 +1387,7 @@ final class AssertionFinder
     /**
      * @param Identical|Equal|NotIdentical|NotEqual $conditional
      */
-    protected static function hasGetTypeCheck(
+    private static function hasGetTypeCheck(
         PhpParser\Node\Expr\BinaryOp $conditional,
     ): false|int {
         if ($conditional->right instanceof PhpParser\Node\Expr\FuncCall
@@ -1414,7 +1414,7 @@ final class AssertionFinder
     /**
      * @param Identical|Equal|NotIdentical|NotEqual $conditional
      */
-    protected static function hasGetDebugTypeCheck(
+    private static function hasGetDebugTypeCheck(
         PhpParser\Node\Expr\BinaryOp $conditional,
     ): false|int {
         if ($conditional->right instanceof PhpParser\Node\Expr\FuncCall
@@ -1443,7 +1443,7 @@ final class AssertionFinder
     /**
      * @param Identical|Equal|NotIdentical|NotEqual $conditional
      */
-    protected static function hasGetClassCheck(
+    private static function hasGetClassCheck(
         PhpParser\Node\Expr\BinaryOp $conditional,
         FileSource $source,
     ): false|int {
@@ -1535,7 +1535,7 @@ final class AssertionFinder
     /**
      * @param Greater|GreaterOrEqual|Smaller|SmallerOrEqual $conditional
      */
-    protected static function hasNonEmptyCountEqualityCheck(
+    private static function hasNonEmptyCountEqualityCheck(
         PhpParser\Node\Expr\BinaryOp $conditional,
         ?int &$min_count,
     ): false|int {
@@ -1576,7 +1576,7 @@ final class AssertionFinder
     /**
      * @param Greater|GreaterOrEqual|Smaller|SmallerOrEqual $conditional
      */
-    protected static function hasLessThanCountEqualityCheck(
+    private static function hasLessThanCountEqualityCheck(
         PhpParser\Node\Expr\BinaryOp $conditional,
         ?int &$max_count,
     ): false|int {
@@ -1624,7 +1624,7 @@ final class AssertionFinder
     /**
      * @param Equal|Identical|NotEqual|NotIdentical $conditional
      */
-    protected static function hasCountEqualityCheck(
+    private static function hasCountEqualityCheck(
         PhpParser\Node\Expr\BinaryOp $conditional,
         ?int &$count,
     ): false|int {
@@ -1656,7 +1656,7 @@ final class AssertionFinder
     /**
      * @param PhpParser\Node\Expr\BinaryOp\Greater|PhpParser\Node\Expr\BinaryOp\GreaterOrEqual $conditional
      */
-    protected static function hasSuperiorNumberCheck(
+    private static function hasSuperiorNumberCheck(
         FileSource $source,
         PhpParser\Node\Expr\BinaryOp $conditional,
         ?int &$literal_value_comparison,
@@ -1715,7 +1715,7 @@ final class AssertionFinder
     /**
      * @param PhpParser\Node\Expr\BinaryOp\Smaller|PhpParser\Node\Expr\BinaryOp\SmallerOrEqual $conditional
      */
-    protected static function hasInferiorNumberCheck(
+    private static function hasInferiorNumberCheck(
         FileSource $source,
         PhpParser\Node\Expr\BinaryOp $conditional,
         ?int &$literal_value_comparison,
@@ -1774,7 +1774,7 @@ final class AssertionFinder
     /**
      * @param PhpParser\Node\Expr\BinaryOp\Greater|PhpParser\Node\Expr\BinaryOp\GreaterOrEqual $conditional
      */
-    protected static function hasReconcilableNonEmptyCountEqualityCheck(
+    private static function hasReconcilableNonEmptyCountEqualityCheck(
         PhpParser\Node\Expr\BinaryOp $conditional,
     ): false|int {
         $left_count = $conditional->left instanceof PhpParser\Node\Expr\FuncCall
@@ -1795,7 +1795,7 @@ final class AssertionFinder
     /**
      * @param Identical|Equal|NotIdentical|NotEqual $conditional
      */
-    protected static function hasTypedValueComparison(
+    private static function hasTypedValueComparison(
         PhpParser\Node\Expr\BinaryOp $conditional,
         FileSource $source,
     ): false|int {
@@ -1829,7 +1829,7 @@ final class AssertionFinder
         return false;
     }
 
-    protected static function hasIsACheck(
+    private static function hasIsACheck(
         PhpParser\Node\Expr\FuncCall $stmt,
         StatementsAnalyzer $source,
     ): bool {
@@ -1925,7 +1925,7 @@ final class AssertionFinder
         return $if_types;
     }
 
-    protected static function hasCallableCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
+    private static function hasCallableCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
     {
         return $stmt->name instanceof PhpParser\Node\Name && strtolower($stmt->name->getFirst()) === 'is_callable';
     }
@@ -1933,7 +1933,7 @@ final class AssertionFinder
     /**
      * @return Reconciler::RECONCILIATION_*
      */
-    protected static function hasClassExistsCheck(PhpParser\Node\Expr\FuncCall $stmt): int
+    private static function hasClassExistsCheck(PhpParser\Node\Expr\FuncCall $stmt): int
     {
         if ($stmt->name instanceof PhpParser\Node\Name
             && strtolower($stmt->name->getFirst()) === 'class_exists'
@@ -1959,7 +1959,7 @@ final class AssertionFinder
     /**
      * @return  0|1|2
      */
-    protected static function hasTraitExistsCheck(PhpParser\Node\Expr\FuncCall $stmt): int
+    private static function hasTraitExistsCheck(PhpParser\Node\Expr\FuncCall $stmt): int
     {
         if ($stmt->name instanceof PhpParser\Node\Name
             && strtolower($stmt->name->getFirst()) === 'trait_exists'
@@ -1982,22 +1982,22 @@ final class AssertionFinder
         return 0;
     }
 
-    protected static function hasEnumExistsCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
+    private static function hasEnumExistsCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
     {
         return $stmt->name instanceof PhpParser\Node\Name && strtolower($stmt->name->getFirst()) === 'enum_exists';
     }
 
-    protected static function hasInterfaceExistsCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
+    private static function hasInterfaceExistsCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
     {
         return $stmt->name instanceof PhpParser\Node\Name && strtolower($stmt->name->getFirst()) === 'interface_exists';
     }
 
-    protected static function hasFunctionExistsCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
+    private static function hasFunctionExistsCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
     {
         return $stmt->name instanceof PhpParser\Node\Name && strtolower($stmt->name->getFirst()) === 'function_exists';
     }
 
-    protected static function hasInArrayCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
+    private static function hasInArrayCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
     {
         if ($stmt->name instanceof PhpParser\Node\Name
             && strtolower($stmt->name->getFirst()) === 'in_array'
@@ -2015,13 +2015,13 @@ final class AssertionFinder
         return false;
     }
 
-    protected static function hasNonEmptyCountCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
+    private static function hasNonEmptyCountCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
     {
         return $stmt->name instanceof PhpParser\Node\Name &&
             in_array(strtolower($stmt->name->getFirst()), ['count', 'sizeof']);
     }
 
-    protected static function hasArrayKeyExistsCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
+    private static function hasArrayKeyExistsCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
     {
         return $stmt->name instanceof PhpParser\Node\Name && strtolower($stmt->name->getFirst()) === 'array_key_exists';
     }

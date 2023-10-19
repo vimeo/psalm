@@ -118,10 +118,10 @@ final class LanguageServer extends Dispatcher
     /**
      * The AMP Delay token
      */
-    protected string $versionedAnalysisDelayToken = '';
+    private string $versionedAnalysisDelayToken = '';
 
     /** @var array<string,array<string,array{o:int, s: list<string>}>> */
-    protected array $issue_baseline = [];
+    private array $issue_baseline = [];
 
     /**
      * This should actually be a private property on `parent`

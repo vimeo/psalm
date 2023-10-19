@@ -35,7 +35,7 @@ final class NamespaceAnalyzer extends SourceAnalyzer
      *
      * @var array<string, array<string, Union>>
      */
-    protected static array $public_namespace_constants = [];
+    private static array $public_namespace_constants = [];
 
     public function __construct(
         private readonly Namespace_ $namespace, /**

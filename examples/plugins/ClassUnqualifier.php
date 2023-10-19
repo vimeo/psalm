@@ -12,7 +12,7 @@ use function implode;
 use function strpos;
 use function strtolower;
 
-class ClassUnqualifier implements AfterClassLikeExistenceCheckInterface
+final class ClassUnqualifier implements AfterClassLikeExistenceCheckInterface
 {
     public static function afterClassLikeExistenceCheck(
         AfterClassLikeExistenceCheckEvent $event

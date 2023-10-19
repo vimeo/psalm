@@ -21,7 +21,7 @@ use function count;
  *
  * @internal
  */
-class AstDiffer
+final class AstDiffer
 {
     /**
      * @param Closure(Stmt, Stmt, string, string, bool=): bool $is_equal
@@ -29,7 +29,7 @@ class AstDiffer
      * @param array<int, Stmt> $b
      * @return array{0:non-empty-list<array<int, int>>, 1: int, 2: int, 3: array<int, bool>}
      */
-    protected static function calculateTrace(
+    private static function calculateTrace(
         Closure $is_equal,
         array $a,
         array $b,
@@ -81,7 +81,7 @@ class AstDiffer
      * @return list<DiffElem>
      * @psalm-pure
      */
-    protected static function extractDiff(array $trace, int $x, int $y, array $a, array $b, array $bc): array
+    private static function extractDiff(array $trace, int $x, int $y, array $a, array $b, array $bc): array
     {
         $result = [];
         for ($d = count($trace) - 1; $d >= 0; --$d) {

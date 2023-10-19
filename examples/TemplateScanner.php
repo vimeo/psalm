@@ -14,7 +14,7 @@ use function explode;
 use function preg_match;
 use function trim;
 
-class TemplateScanner extends Psalm\Internal\Scanner\FileScanner
+final class TemplateScanner extends Psalm\Internal\Scanner\FileScanner
 {
     final public const VIEW_CLASS = 'Your\\View\\Class';
 

@@ -26,7 +26,7 @@ use const PHP_VERSION_ID;
 /**
  * @internal
  */
-class ClassLikeStorageCacheProvider
+final class ClassLikeStorageCacheProvider
 {
     private readonly Cache $cache;
 

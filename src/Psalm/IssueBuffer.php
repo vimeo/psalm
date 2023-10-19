@@ -86,39 +86,39 @@ final class IssueBuffer
     /**
      * @var array<string, list<IssueData>>
      */
-    protected static array $issues_data = [];
+    private static array $issues_data = [];
 
     /**
      * @var array<int, array>
      */
-    protected static array $console_issues = [];
+    private static array $console_issues = [];
 
     /**
      * @var array<string, int>
      */
-    protected static array $fixable_issue_counts = [];
+    private static array $fixable_issue_counts = [];
 
-    protected static int $error_count = 0;
+    private static int $error_count = 0;
 
     /**
      * @var array<string, bool>
      */
-    protected static array $emitted = [];
+    private static array $emitted = [];
 
-    protected static int $recording_level = 0;
+    private static int $recording_level = 0;
 
     /** @var array<int, array<int, CodeIssue>> */
-    protected static array $recorded_issues = [];
+    private static array $recorded_issues = [];
 
     /**
      * @var array<string, array<int, int>>
      */
-    protected static array $unused_suppressions = [];
+    private static array $unused_suppressions = [];
 
     /**
      * @var array<string, array<int, bool>>
      */
-    protected static array $used_suppressions = [];
+    private static array $used_suppressions = [];
 
     /** @var array<array-key,mixed> */
     private static array $server = [];
@@ -887,7 +887,7 @@ final class IssueBuffer
         return $output->create();
     }
 
-    protected static function alreadyEmitted(string $message): bool
+    private static function alreadyEmitted(string $message): bool
     {
         $sham = sha1($message);
 

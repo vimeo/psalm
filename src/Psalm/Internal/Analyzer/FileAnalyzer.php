@@ -41,13 +41,13 @@ use function strtolower;
  * @internal
  * @psalm-consistent-constructor
  */
-class FileAnalyzer extends SourceAnalyzer
+final class FileAnalyzer extends SourceAnalyzer
 {
     use CanAlias;
 
-    protected ?string $root_file_path = null;
+    private ?string $root_file_path = null;
 
-    protected ?string $root_file_name = null;
+    private ?string $root_file_name = null;
 
     /**
      * @var array<string, bool>
