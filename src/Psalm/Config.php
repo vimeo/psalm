@@ -1468,7 +1468,7 @@ class Config
     public function safeSetAdvancedErrorLevel(
         string $issue_key,
         array $config,
-        ?string $default_error_level = null
+        ?string $default_error_level = null,
     ): void {
         if (!isset($this->issue_handlers[$issue_key])) {
             $this->setAdvancedErrorLevel($issue_key, $config, $default_error_level);

@@ -27,7 +27,7 @@ final class TCallableKeyedArray extends TKeyedArray
         array $properties,
         ?array $class_strings = null,
         ?array $fallback_params = null,
-        bool $from_docblock = false
+        bool $from_docblock = false,
     ) {
         parent::__construct(
             $properties,

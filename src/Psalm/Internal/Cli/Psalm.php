@@ -1043,7 +1043,7 @@ final class Psalm
         Config $config,
         string $current_dir,
         ?string $path_to_config,
-        ?array $paths_to_check
+        ?array $paths_to_check,
     ): array {
         $issue_baseline = [];
 

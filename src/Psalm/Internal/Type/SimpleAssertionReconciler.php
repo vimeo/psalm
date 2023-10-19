@@ -2943,7 +2943,7 @@ class SimpleAssertionReconciler extends Reconciler
     private static function reconcileValueOf(
         Codebase $codebase,
         TValueOf $assertion_type,
-        int &$failed_reconciliation
+        int &$failed_reconciliation,
     ): ?Union {
         $reconciled_types = [];
 
