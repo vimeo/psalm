@@ -860,8 +860,11 @@ final class Codebase
     /**
      * @param  list<Arg> $call_args
      */
-    public function getMethodReturnType(string|MethodIdentifier $method_id, ?string &$self_class, array $call_args = []): ?Union
-    {
+    public function getMethodReturnType(
+        string|MethodIdentifier $method_id,
+        ?string &$self_class,
+        array $call_args = [],
+    ): ?Union {
         return $this->methods->getMethodReturnType(
             MethodIdentifier::wrap($method_id),
             $self_class,

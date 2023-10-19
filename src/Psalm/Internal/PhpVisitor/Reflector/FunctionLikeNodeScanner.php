@@ -123,8 +123,10 @@ final class FunctionLikeNodeScanner
     /**
      * @param  bool $fake_method in the case of @method annotations we do something a little strange
      */
-    public function start(PhpParser\Node\FunctionLike $stmt, bool $fake_method = false): FunctionStorage|MethodStorage|false
-    {
+    public function start(
+        PhpParser\Node\FunctionLike $stmt,
+        bool $fake_method = false,
+    ): FunctionStorage|MethodStorage|false {
         if ($stmt instanceof PhpParser\Node\Expr\Closure
             || $stmt instanceof PhpParser\Node\Expr\ArrowFunction
         ) {
