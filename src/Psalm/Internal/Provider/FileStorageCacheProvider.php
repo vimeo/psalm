@@ -73,7 +73,7 @@ class FileStorageCacheProvider
     /**
      * @param lowercase-string $file_path
      */
-    private function storeInCache(string $file_path, FileStorage  $storage): void
+    protected function storeInCache(string $file_path, FileStorage  $storage): void
     {
         $cache_location = $this->getCacheLocationForPath($file_path, true);
         $this->cache->saveItem($cache_location, $storage);
@@ -119,7 +119,7 @@ class FileStorageCacheProvider
     /**
      * @param lowercase-string $file_path
      */
-    private function loadFromCache(string $file_path): ?FileStorage
+    protected function loadFromCache(string $file_path): ?FileStorage
     {
         $storage = $this->cache->getItem($this->getCacheLocationForPath($file_path));
         if ($storage instanceof FileStorage) {

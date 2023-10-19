@@ -131,7 +131,7 @@ final class IfAnalyzer
 
                 foreach ($changed_var_ids as $changed_var_id => $_) {
                     foreach ($if_context->vars_in_scope as $var_id => $_) {
-                        if (preg_match('/' . preg_quote((string) $changed_var_id, '/') . '[\]\[\-]/', $var_id)
+                        if (preg_match('/' . preg_quote($changed_var_id, '/') . '[\]\[\-]/', $var_id)
                             && !array_key_exists($var_id, $changed_var_ids)
                             && !array_key_exists($var_id, $cond_referenced_var_ids)
                         ) {

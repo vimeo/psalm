@@ -219,7 +219,7 @@ trait UnionTrait
 
         if (count($types) > 1) {
             foreach ($types as $i => $type) {
-                if (strpos((string) $type, ' as ') && !str_contains((string) $type, '(')) {
+                if (strpos($type, ' as ') && !str_contains($type, '(')) {
                     $types[$i] = '(' . $type . ')';
                 }
             }

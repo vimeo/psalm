@@ -51,14 +51,14 @@ class ParserCacheProvider
      *
      * @var array<string, string>|null
      */
-    private ?array $existing_file_content_hashes = null;
+    protected ?array $existing_file_content_hashes = null;
 
     /**
      * A map of recently-added filename hashes to contents hashes
      *
      * @var array<string, string>
      */
-    private array $new_file_content_hashes = [];
+    protected array $new_file_content_hashes = [];
 
     public function __construct(
         Config $config,

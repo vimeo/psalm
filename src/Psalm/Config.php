@@ -820,7 +820,7 @@ final class Config
         assert($line > 0);
 
         $offset = self::lineNumberToByteOffset($file_contents, $line);
-        $element_start = strpos($file_contents, (string) $deprecated_element_xml->localName, $offset) ?: 0;
+        $element_start = strpos($file_contents, $deprecated_element_xml->localName, $offset) ?: 0;
         $element_end = $element_start + strlen($deprecated_element_xml->localName) - 1;
 
         $config->config_issues[] = new ConfigIssue(
@@ -875,7 +875,6 @@ final class Config
     /**
      * @param non-empty-string $file_contents
      * @psalm-suppress MixedAssignment
-     * @psalm-suppress MixedArgument
      * @psalm-suppress MixedPropertyFetch
      * @throws ConfigException
      */

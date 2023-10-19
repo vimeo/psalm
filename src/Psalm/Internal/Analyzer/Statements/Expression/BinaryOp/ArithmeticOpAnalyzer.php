@@ -687,7 +687,7 @@ final class ArithmeticOpAnalyzer
                         && strtolower($non_decimal_type->value) === "decimal\\decimal"
                 ) {
                     $result_type = Type::combineUnionTypes(
-                        new Union([new TNamedObject(Decimal::class)]),
+                        new Union([new TNamedObject("Decimal\\Decimal")]),
                         $result_type,
                     );
                 } else {

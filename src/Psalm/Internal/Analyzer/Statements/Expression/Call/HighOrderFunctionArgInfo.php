@@ -26,7 +26,6 @@ final class HighOrderFunctionArgInfo
      * @psalm-param HighOrderFunctionArgInfo::TYPE_* $type
      */
     public function __construct(
-        /** @psalm-var HighOrderFunctionArgInfo::TYPE_* */
         private readonly string $type,
         private readonly FunctionLikeStorage $function_storage,
         private readonly ?ClassLikeStorage $class_storage = null,

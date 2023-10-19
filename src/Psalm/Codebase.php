@@ -99,6 +99,9 @@ use function substr_count;
 
 use const PHP_VERSION_ID;
 
+/**
+ * @api
+ */
 final class Codebase
 {
     /**
@@ -1206,7 +1209,6 @@ final class Codebase
     }
 
     /**
-     * @psalm-suppress PossiblyUnusedMethod
      * @return array{0: string, 1: Range}|null
      */
     public function getReferenceAtPosition(string $file_path, Position $position): ?array
@@ -2003,7 +2005,6 @@ final class Codebase
 
     /**
      * @param array<string> $taints
-     * @psalm-suppress PossiblyUnusedMethod
      */
     public function addTaintSource(
         Union $expr_type,
@@ -2030,7 +2031,6 @@ final class Codebase
 
     /**
      * @param array<string> $taints
-     * @psalm-suppress PossiblyUnusedMethod
      */
     public function addTaintSink(
         string $taint_id,

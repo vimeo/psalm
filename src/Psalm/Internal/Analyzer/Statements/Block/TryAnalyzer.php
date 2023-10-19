@@ -239,7 +239,7 @@ final class TryAnalyzer
                     $fq_catch_class_lower = strtolower($fq_catch_class);
 
                     foreach ($catch_context->possibly_thrown_exceptions as $exception_fqcln => $_) {
-                        $exception_fqcln_lower = strtolower((string) $exception_fqcln);
+                        $exception_fqcln_lower = strtolower($exception_fqcln);
 
                         if ($exception_fqcln_lower === $fq_catch_class_lower
                             || ($codebase->classExists($exception_fqcln)

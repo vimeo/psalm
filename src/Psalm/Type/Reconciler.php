@@ -346,7 +346,7 @@ class Reconciler
                         }
 
                         if (!isset($new_types[$new_key])
-                            && preg_match('/' . preg_quote($key, '/') . '[\]\[\-]/', (string) $new_key)
+                            && preg_match('/' . preg_quote($key, '/') . '[\]\[\-]/', $new_key)
                             && $is_real
                         ) {
                             // Fix any references to the type before removing it.
