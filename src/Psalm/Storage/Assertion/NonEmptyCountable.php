@@ -11,11 +11,8 @@ use Psalm\Storage\Assertion;
  */
 final class NonEmptyCountable extends Assertion
 {
-    public $is_negatable;
-
-    public function __construct(bool $is_negatable)
+    public function __construct(public readonly bool $is_negatable)
     {
-        $this->is_negatable = $is_negatable;
     }
 
     public function getNegation(): Assertion

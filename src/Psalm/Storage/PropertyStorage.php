@@ -17,7 +17,7 @@ final class PropertyStorage implements HasAttributesInterface
     /**
      * @var ClassLikeAnalyzer::VISIBILITY_*
      */
-    public $visibility = ClassLikeAnalyzer::VISIBILITY_PUBLIC;
+    public int $visibility = ClassLikeAnalyzer::VISIBILITY_PUBLIC;
 
     public ?CodeLocation $location = null;
 

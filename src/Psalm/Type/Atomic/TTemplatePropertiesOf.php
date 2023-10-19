@@ -23,7 +23,7 @@ final class TTemplatePropertiesOf extends Atomic
     /**
      * @var TPropertiesOf::VISIBILITY_*|null
      */
-    public $visibility_filter;
+    public ?int $visibility_filter;
 
     /**
      * @param TPropertiesOf::VISIBILITY_*|null $visibility_filter

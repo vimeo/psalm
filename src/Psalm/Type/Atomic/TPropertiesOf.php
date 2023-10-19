@@ -26,7 +26,7 @@ final class TPropertiesOf extends Atomic
     /**
      * @var self::VISIBILITY_*|null
      */
-    public $visibility_filter;
+    public ?int $visibility_filter;
 
     /**
      * @return list<TokenName>

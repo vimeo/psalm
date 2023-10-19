@@ -12,11 +12,8 @@ use UnexpectedValueException;
  */
 final class HasArrayKey extends Assertion
 {
-    public $key;
-
-    public function __construct(string $key)
+    public function __construct(public readonly string $key)
     {
-        $this->key = $key;
     }
 
     public function getNegation(): Assertion
