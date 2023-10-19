@@ -47,10 +47,9 @@ final class Union implements TypeNode
     use UnionTrait;
 
     /**
-     * @psalm-readonly
      * @var non-empty-array<string, Atomic>
      */
-    private array $types;
+    private readonly array $types;
 
     /**
      * Whether the type originated in a docblock

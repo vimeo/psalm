@@ -94,7 +94,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     /**
      * @var TFunction
      */
-    protected $function;
+    protected Closure|Function_|ClassMethod|ArrowFunction $function;
 
     protected Codebase $codebase;
 
