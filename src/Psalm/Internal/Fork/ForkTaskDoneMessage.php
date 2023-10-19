@@ -14,10 +14,7 @@ final class ForkTaskDoneMessage implements ForkMessage
 {
     use ImmutableNonCloneableTrait;
 
-    public mixed $data;
-
-    public function __construct(mixed $data)
+    public function __construct(public mixed $data)
     {
-        $this->data = $data;
     }
 }

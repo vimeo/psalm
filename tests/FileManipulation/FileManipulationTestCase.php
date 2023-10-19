@@ -13,6 +13,7 @@ use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
 
+use function str_contains;
 use function strpos;
 
 abstract class FileManipulationTestCase extends TestCase
@@ -39,7 +40,7 @@ abstract class FileManipulationTestCase extends TestCase
         bool $allow_backwards_incompatible_changes = true,
     ): void {
         $test_name = $this->getTestName();
-        if (strpos($test_name, 'SKIPPED-') !== false) {
+        if (str_contains($test_name, 'SKIPPED-')) {
             $this->markTestSkipped('Skipped due to a bug.');
         }
 

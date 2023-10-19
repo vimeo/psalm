@@ -6,6 +6,6 @@ namespace Psalm\Issue;
 
 class RiskyCast extends CodeIssue
 {
-    public const ERROR_LEVEL = 3;
-    public const SHORTCODE = 313;
+    final public const ERROR_LEVEL = 3;
+    final public const SHORTCODE = 313;
 }

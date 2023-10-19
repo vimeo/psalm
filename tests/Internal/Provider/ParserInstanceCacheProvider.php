@@ -52,11 +52,7 @@ class ParserInstanceCacheProvider extends ParserCacheProvider
      */
     public function loadExistingStatementsFromCache(string $file_path): ?array
     {
-        if (isset($this->statements_cache[$file_path])) {
-            return $this->statements_cache[$file_path];
-        }
-
-        return null;
+        return $this->statements_cache[$file_path] ?? null;
     }
 
     /**
@@ -71,11 +67,7 @@ class ParserInstanceCacheProvider extends ParserCacheProvider
 
     public function loadExistingFileContentsFromCache(string $file_path): ?string
     {
-        if (isset($this->file_contents_cache[$file_path])) {
-            return $this->file_contents_cache[$file_path];
-        }
-
-        return null;
+        return $this->file_contents_cache[$file_path] ?? null;
     }
 
     public function cacheFileContents(string $file_path, string $file_contents): void

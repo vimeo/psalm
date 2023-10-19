@@ -15,26 +15,17 @@ use function implode;
 final class TTypeAlias extends Atomic
 {
     /**
-     * @var array<string, TTypeAlias>|null
-     * @deprecated type aliases are resolved within {@see TypeParser::resolveTypeAliases()} and therefore the
-     *             referencing type(s) are part of other intersection types. The intersection types are not set anymore
-     *             and with v6 this property along with its related methods will get removed.
-     */
-    public ?array $extra_types = null;
-
-    public string $declaring_fq_classlike_name;
-
-    public string $alias_name;
-
-    /**
      * @param array<string, TTypeAlias>|null $extra_types
      */
-    public function __construct(string $declaring_fq_classlike_name, string $alias_name, ?array $extra_types = null)
-    {
-        $this->declaring_fq_classlike_name = $declaring_fq_classlike_name;
-        $this->alias_name = $alias_name;
-        /** @psalm-suppress DeprecatedProperty For backwards compatibility, we have to keep this here. */
-        $this->extra_types = $extra_types;
+    public function __construct(
+        public string $declaring_fq_classlike_name,
+        public string $alias_name, /**
+         * @deprecated type aliases are resolved within {@see TypeParser::resolveTypeAliases()} and therefore the
+         *             referencing type(s) are part of other intersection types. The intersection types are not set anymore
+         *             and with v6 this property along with its related methods will get removed.
+         */
+        public ?array $extra_types = null,
+    ) {
         parent::__construct(true);
     }
     /**

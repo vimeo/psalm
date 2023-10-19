@@ -31,7 +31,6 @@ use function define;
 use function defined;
 use function dirname;
 use function error_get_last;
-use function get_class;
 use function getcwd;
 use function implode;
 use function in_array;
@@ -1728,8 +1727,8 @@ class ConfigTest extends TestCase
         }
 
         self::assertContains($extension, $config->getFileExtensions());
-        self::assertSame(get_class($scannerMock), $config->getFiletypeScanners()[$extension] ?? null);
-        self::assertSame(get_class($analyzerMock), $config->getFiletypeAnalyzers()[$extension] ?? null);
+        self::assertSame($scannerMock::class, $config->getFiletypeScanners()[$extension] ?? null);
+        self::assertSame($analyzerMock::class, $config->getFiletypeAnalyzers()[$extension] ?? null);
         self::assertNull($expectedExceptionCode, 'Expected exception code was not thrown');
     }
 

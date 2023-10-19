@@ -26,14 +26,7 @@ class TNamedObject extends Atomic
 
     public string $value;
 
-    public bool $is_static = false;
-
     public bool $is_static_resolved = false;
-
-    /**
-     * Whether or not this type can represent a child of the class named in $value
-     */
-    public bool $definite_class = false;
 
     /**
      * @param string $value the name of the object
@@ -41,8 +34,11 @@ class TNamedObject extends Atomic
      */
     public function __construct(
         string $value,
-        bool $is_static = false,
-        bool $definite_class = false,
+        public bool $is_static = false,
+        /**
+         * Whether or not this type can represent a child of the class named in $value
+         */
+        public bool $definite_class = false,
         array $extra_types = [],
         bool $from_docblock = false,
     ) {
@@ -51,8 +47,6 @@ class TNamedObject extends Atomic
         }
 
         $this->value = $value;
-        $this->is_static = $is_static;
-        $this->definite_class = $definite_class;
         $this->extra_types = $extra_types;
         parent::__construct($from_docblock);
     }

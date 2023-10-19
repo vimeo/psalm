@@ -31,11 +31,8 @@ class ProjectCacheProvider
 
     private ?string $composer_lock_hash = null;
 
-    private string $composer_lock_location;
-
-    public function __construct(string $composer_lock_location)
+    public function __construct(private readonly string $composer_lock_location)
     {
-        $this->composer_lock_location = $composer_lock_location;
     }
 
     public function canDiffFiles(): bool

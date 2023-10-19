@@ -36,7 +36,7 @@ use function array_merge;
 use function array_shift;
 use function array_values;
 use function assert;
-use function strpos;
+use function str_starts_with;
 
 /**
  * @internal
@@ -229,7 +229,7 @@ final class TemplateInferredTypeReplacer
             )->freeze();
         }
 
-        $atomic_types = array_merge($types, $new_types);
+        $atomic_types = [...$types, ...$new_types];
         if (!$atomic_types) {
             throw new UnexpectedValueException('This array should be full');
         }
@@ -298,7 +298,7 @@ final class TemplateInferredTypeReplacer
         } elseif ($codebase) {
             foreach ($inferred_lower_bounds as $template_type_map) {
                 foreach ($template_type_map as $template_class => $_) {
-                    if (strpos($template_class, 'fn-') === 0) {
+                    if (str_starts_with($template_class, 'fn-')) {
                         continue;
                     }
 
@@ -323,7 +323,7 @@ final class TemplateInferredTypeReplacer
                                 }
                             }
                         }
-                    } catch (InvalidArgumentException $e) {
+                    } catch (InvalidArgumentException) {
                     }
                 }
             }

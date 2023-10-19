@@ -11,11 +11,8 @@ use Psalm\Storage\Assertion;
  */
 final class HasMethod extends Assertion
 {
-    public string $method;
-
-    public function __construct(string $method)
+    public function __construct(public string $method)
     {
-        $this->method = $method;
     }
 
     public function getNegation(): Assertion

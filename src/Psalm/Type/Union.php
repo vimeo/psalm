@@ -176,7 +176,7 @@ final class Union implements TypeNode
     /**
      * This is a cache of getId on exact mode
      */
-    private ?string $exact_id;
+    private ?string $exact_id = null;
 
 
     /**

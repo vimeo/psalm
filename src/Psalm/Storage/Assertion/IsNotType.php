@@ -12,11 +12,8 @@ use Psalm\Type\Atomic;
  */
 final class IsNotType extends Assertion
 {
-    public Atomic $type;
-
-    public function __construct(Atomic $type)
+    public function __construct(public Atomic $type)
     {
-        $this->type = $type;
     }
 
     public function isNegation(): bool

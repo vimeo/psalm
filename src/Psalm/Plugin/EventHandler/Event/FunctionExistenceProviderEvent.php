@@ -8,9 +8,6 @@ use Psalm\StatementsSource;
 
 final class FunctionExistenceProviderEvent
 {
-    private StatementsSource $statements_source;
-    private string $function_id;
-
     /**
      * Use this hook for informing whether or not a global function exists. If you know the function does
      * not exist, return false. If you aren't sure if it exists or not, return null and the default analysis
@@ -18,12 +15,8 @@ final class FunctionExistenceProviderEvent
      *
      * @internal
      */
-    public function __construct(
-        StatementsSource $statements_source,
-        string $function_id,
-    ) {
-        $this->statements_source = $statements_source;
-        $this->function_id = $function_id;
+    public function __construct(private readonly StatementsSource $statements_source, private readonly string $function_id)
+    {
     }
 
     public function getStatementsSource(): StatementsSource

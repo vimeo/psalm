@@ -6,11 +6,10 @@ class Bar
     use SomeTrait;
 
     /** @var string */
-    public $x;
+    public $x = 'hello';
 
     public function __construct()
     {
-        $this->x = 'hello';
     }
 }
 

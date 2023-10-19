@@ -33,8 +33,6 @@ final class FileStorage
      */
     public array $required_interfaces = [];
 
-    public string $file_path;
-
     /**
      * @var array<string, FunctionStorage>
      */
@@ -87,8 +85,7 @@ final class FileStorage
     /** @var Aliases[] */
     public array $namespace_aliases = [];
 
-    public function __construct(string $file_path)
+    public function __construct(public string $file_path)
     {
-        $this->file_path = $file_path;
     }
 }

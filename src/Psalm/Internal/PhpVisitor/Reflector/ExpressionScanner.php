@@ -29,7 +29,7 @@ use function dirname;
 use function explode;
 use function in_array;
 use function preg_match;
-use function strpos;
+use function str_contains;
 use function strtolower;
 use function substr;
 
@@ -170,7 +170,7 @@ final class ExpressionScanner
                                 // only check the first @var comment
                                 break;
                             }
-                        } catch (DocblockParseException $e) {
+                        } catch (DocblockParseException) {
                             // do nothing
                         }
                     }
@@ -215,7 +215,7 @@ final class ExpressionScanner
             }
 
             foreach ($mapping_function_ids as $potential_method_id) {
-                if (strpos($potential_method_id, '::') === false) {
+                if (!str_contains($potential_method_id, '::')) {
                     continue;
                 }
 

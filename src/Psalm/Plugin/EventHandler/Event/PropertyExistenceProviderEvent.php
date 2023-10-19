@@ -10,13 +10,6 @@ use Psalm\StatementsSource;
 
 final class PropertyExistenceProviderEvent
 {
-    private string $fq_classlike_name;
-    private string $property_name;
-    private bool $read_mode;
-    private ?StatementsSource $source;
-    private ?Context $context;
-    private ?CodeLocation $code_location;
-
     /**
      * Use this hook for informing whether or not a property exists on a given object. If you know the property does
      * not exist, return false. If you aren't sure if it exists or not, return null and the default analysis will
@@ -24,20 +17,8 @@ final class PropertyExistenceProviderEvent
      *
      * @internal
      */
-    public function __construct(
-        string $fq_classlike_name,
-        string $property_name,
-        bool $read_mode,
-        ?StatementsSource $source = null,
-        ?Context $context = null,
-        ?CodeLocation $code_location = null,
-    ) {
-        $this->fq_classlike_name = $fq_classlike_name;
-        $this->property_name = $property_name;
-        $this->read_mode = $read_mode;
-        $this->source = $source;
-        $this->context = $context;
-        $this->code_location = $code_location;
+    public function __construct(private readonly string $fq_classlike_name, private readonly string $property_name, private readonly bool $read_mode, private readonly ?StatementsSource $source = null, private readonly ?Context $context = null, private readonly ?CodeLocation $code_location = null)
+    {
     }
 
     public function getFqClasslikeName(): string

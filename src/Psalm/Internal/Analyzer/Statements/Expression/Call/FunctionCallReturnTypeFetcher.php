@@ -47,8 +47,9 @@ use function array_values;
 use function count;
 use function explode;
 use function in_array;
+use function str_contains;
+use function str_ends_with;
 use function strlen;
-use function strpos;
 use function strtolower;
 use function substr;
 
@@ -232,7 +233,7 @@ final class FunctionCallReturnTypeFetcher
                             );
                         }
                     }
-                } catch (InvalidArgumentException $e) {
+                } catch (InvalidArgumentException) {
                     // this can happen when the function was defined in the Config startup script
                     $stmt_type = Type::getMixed();
                 }
@@ -278,7 +279,7 @@ final class FunctionCallReturnTypeFetcher
 
                 $fake_call_factory = new BuilderFactory();
 
-                if (strpos($proxy_call['fqn'], '::') !== false) {
+                if (str_contains($proxy_call['fqn'], '::')) {
                     [$fqcn, $method] = explode('::', $proxy_call['fqn']);
                     $fake_call = $fake_call_factory->staticCall($fqcn, $method, $fake_call_arguments);
                 } else {
@@ -634,7 +635,7 @@ final class FunctionCallReturnTypeFetcher
 
                     if ($pattern[0] === '['
                         && $pattern[1] === '^'
-                        && substr($pattern, -1) === ']'
+                        && str_ends_with($pattern, ']')
                     ) {
                         $pattern = substr($pattern, 2, -1);
 

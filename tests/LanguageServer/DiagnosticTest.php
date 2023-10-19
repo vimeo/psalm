@@ -25,7 +25,8 @@ use Psalm\Tests\LanguageServer\MockProtocolStream;
 use Psalm\Tests\TestConfig;
 
 use function getcwd;
-use function rand;
+use function mt_getrandmax;
+use function random_int;
 
 class DiagnosticTest extends AsyncTestCase
 {
@@ -286,7 +287,7 @@ class DiagnosticTest extends AsyncTestCase
         return [
           'method' => 'initialize',
           'params' => [
-              'processId' => rand(),
+              'processId' => random_int(0, mt_getrandmax()),
               'locale' => 'en-us',
               'capabilities' => [
                 'workspace' => [

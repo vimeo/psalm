@@ -6,32 +6,27 @@ namespace Psalm\Internal;
 
 use InvalidArgumentException;
 use Psalm\Storage\ImmutableNonCloneableTrait;
+use Stringable;
 
 use function explode;
 use function is_string;
 use function ltrim;
-use function strpos;
+use function str_contains;
 use function strtolower;
 
 /**
  * @psalm-immutable
  * @internal
  */
-final class MethodIdentifier
+final class MethodIdentifier implements Stringable
 {
     use ImmutableNonCloneableTrait;
-
-    public string $fq_class_name;
-    /** @var lowercase-string  */
-    public string $method_name;
 
     /**
      * @param lowercase-string $method_name
      */
-    public function __construct(string $fq_class_name, string $method_name)
+    public function __construct(public string $fq_class_name, public string $method_name)
     {
-        $this->fq_class_name = $fq_class_name;
-        $this->method_name = $method_name;
     }
 
     /**
@@ -50,7 +45,7 @@ final class MethodIdentifier
      */
     public static function isValidMethodIdReference(string $method_id): bool
     {
-        return strpos($method_id, '::') !== false;
+        return str_contains($method_id, '::');
     }
 
     /**

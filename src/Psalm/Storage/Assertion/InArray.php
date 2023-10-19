@@ -12,11 +12,8 @@ use Psalm\Type\Union;
  */
 final class InArray extends Assertion
 {
-    public Union $type;
-
-    public function __construct(Union $type)
+    public function __construct(public Union $type)
     {
-        $this->type = $type;
     }
 
     public function getNegation(): Assertion

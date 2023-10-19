@@ -52,6 +52,7 @@ use function array_map;
 use function extension_loaded;
 use function in_array;
 use function is_string;
+use function str_starts_with;
 use function strpos;
 use function strtolower;
 
@@ -392,7 +393,7 @@ final class NamedFunctionCallHandler
 
         if ($first_arg
             && $function_id
-            && strpos($function_id, 'is_') === 0
+            && str_starts_with($function_id, 'is_')
             && $function_id !== 'is_a'
             && !$context->inside_negation
         ) {

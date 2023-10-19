@@ -22,7 +22,6 @@ use Psalm\Type;
 
 use function array_map;
 use function array_values;
-use function get_class;
 
 class CodebaseTest extends TestCase
 {
@@ -173,7 +172,7 @@ class CodebaseTest extends TestCase
             }
         };
         (new PluginRegistrationSocket($this->codebase->config, $this->codebase))
-            ->registerHooksFromClass(get_class($hook));
+            ->registerHooksFromClass($hook::class);
         $this->codebase->classlike_storage_provider->cache = new ClassLikeStorageInstanceCacheProvider;
 
         $this->analyzeFile('somefile.php', new Context);
@@ -243,7 +242,7 @@ class CodebaseTest extends TestCase
         };
 
         (new PluginRegistrationSocket($this->codebase->config, $this->codebase))
-            ->registerHooksFromClass(get_class($eventHandler));
+            ->registerHooksFromClass($eventHandler::class);
 
         $this->analyzeFile('somefile.php', new Context);
         self::assertSame(0, IssueBuffer::getErrorCount());

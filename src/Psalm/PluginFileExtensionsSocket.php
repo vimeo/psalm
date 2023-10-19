@@ -16,8 +16,6 @@ use function sprintf;
 
 final class PluginFileExtensionsSocket implements FileExtensionsInterface
 {
-    private Config $config;
-
     /**
      * @var array<string, class-string<FileScanner>>
      */
@@ -36,9 +34,8 @@ final class PluginFileExtensionsSocket implements FileExtensionsInterface
     /**
      * @internal
      */
-    public function __construct(Config $config)
+    public function __construct(private readonly Config $config)
     {
-        $this->config = $config;
     }
 
     /**

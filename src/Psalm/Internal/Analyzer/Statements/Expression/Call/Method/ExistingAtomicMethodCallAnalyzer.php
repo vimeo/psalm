@@ -51,7 +51,7 @@ use function count;
 use function explode;
 use function in_array;
 use function is_string;
-use function strpos;
+use function str_starts_with;
 use function strtolower;
 
 /**
@@ -205,7 +205,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
 
         try {
             $method_storage = $codebase->methods->getStorage($declaring_method_id ?? $method_id);
-        } catch (UnexpectedValueException $e) {
+        } catch (UnexpectedValueException) {
             $method_storage = null;
         }
 
@@ -446,7 +446,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                     $possibilities = array_filter(
                         $possibilities,
                         static fn(Possibilities $assertion): bool => !(is_string($assertion->var_id)
-                            && strpos($assertion->var_id, '$this->') === 0
+                            && str_starts_with($assertion->var_id, '$this->')
                         )
                     );
                 }
@@ -469,7 +469,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                     $possibilities = array_filter(
                         $possibilities,
                         static fn(Possibilities $assertion): bool => !(is_string($assertion->var_id)
-                            && strpos($assertion->var_id, '$this->') === 0
+                            && str_starts_with($assertion->var_id, '$this->')
                         )
                     );
                 }

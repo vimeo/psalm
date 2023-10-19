@@ -13,7 +13,7 @@ use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
 
-use function strpos;
+use function str_contains;
 
 class MethodMoveTest extends TestCase
 {
@@ -36,7 +36,7 @@ class MethodMoveTest extends TestCase
         array $methods_to_move,
     ): void {
         $test_name = $this->getTestName();
-        if (strpos($test_name, 'SKIPPED-') !== false) {
+        if (str_contains($test_name, 'SKIPPED-')) {
             $this->markTestSkipped('Skipped due to a bug.');
         }
 

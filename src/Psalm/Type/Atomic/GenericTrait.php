@@ -105,9 +105,9 @@ trait GenericTrait
             return $value_type_string . '[]';
         }
 
-        $intersection_pos = strpos($base_value, '&');
+        $intersection_pos = strpos((string) $base_value, '&');
         if ($intersection_pos !== false) {
-            $base_value = substr($base_value, 0, $intersection_pos);
+            $base_value = substr((string) $base_value, 0, $intersection_pos);
         }
         $type_params = $this->type_params;
 

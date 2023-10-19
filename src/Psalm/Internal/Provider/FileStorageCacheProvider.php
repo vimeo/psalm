@@ -14,7 +14,6 @@ use function array_merge;
 use function dirname;
 use function file_exists;
 use function filemtime;
-use function get_class;
 use function hash;
 use function is_dir;
 use function mkdir;
@@ -30,7 +29,7 @@ class FileStorageCacheProvider
 {
     private string $modified_timestamps = '';
 
-    private Cache $cache;
+    private readonly Cache $cache;
 
     private const FILE_STORAGE_CACHE_DIRECTORY = 'file_cache';
 
@@ -92,7 +91,7 @@ class FileStorageCacheProvider
         $cache_hash = $this->getCacheHash($file_path, $file_contents);
 
         /** @psalm-suppress TypeDoesNotContainType */
-        if (@get_class($cached_value) === '__PHP_Incomplete_Class'
+        if (@$cached_value::class === '__PHP_Incomplete_Class'
             || $cache_hash !== $cached_value->hash
         ) {
             $this->removeCacheForFile($file_path);
@@ -113,7 +112,7 @@ class FileStorageCacheProvider
         // do not concatenate, as $file_contents can be big and performance will be bad
         // the timestamp is only needed if we don't have file contents
         // as same contents should give same results, independent of when file was modified
-        $data = $file_contents ? $file_contents : $this->modified_timestamps;
+        $data = $file_contents ?: $this->modified_timestamps;
         return PHP_VERSION_ID >= 8_01_00 ? hash('xxh128', $data) : hash('md4', $data);
     }
 

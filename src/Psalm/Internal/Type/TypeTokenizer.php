@@ -317,37 +317,15 @@ final class TypeTokenizer
         ?int $analysis_php_version_id = null,
     ): string {
         $type_string_lc = strtolower($type_string);
-
-        switch ($type_string_lc) {
-            case 'int':
-            case 'void':
-            case 'float':
-            case 'string':
-            case 'bool':
-            case 'callable':
-            case 'iterable':
-            case 'array':
-            case 'object':
-            case 'true':
-            case 'false':
-            case 'null':
-            case 'mixed':
-                return $type_string_lc;
-        }
-
-        switch ($type_string) {
-            case 'boolean':
-                return $analysis_php_version_id !== null ? $type_string : 'bool';
-
-            case 'integer':
-                return $analysis_php_version_id !== null ? $type_string : 'int';
-
-            case 'double':
-            case 'real':
-                return $analysis_php_version_id !== null ? $type_string : 'float';
-        }
-
-        return $type_string;
+        return match ($type_string_lc) {
+            'int', 'void', 'float', 'string', 'bool', 'callable', 'iterable', 'array', 'object', 'true', 'false', 'null', 'mixed' => $type_string_lc,
+            default => match ($type_string) {
+                'boolean' => $analysis_php_version_id !== null ? $type_string : 'bool',
+                'integer' => $analysis_php_version_id !== null ? $type_string : 'int',
+                'double', 'real' => $analysis_php_version_id !== null ? $type_string : 'float',
+                default => $type_string,
+            },
+        };
     }
 
     /**

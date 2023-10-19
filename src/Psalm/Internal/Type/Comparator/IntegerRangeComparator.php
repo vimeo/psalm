@@ -13,7 +13,6 @@ use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function count;
-use function get_class;
 
 /**
  * @internal
@@ -59,11 +58,11 @@ final class IntegerRangeComparator
         );
 
         if (isset($container_atomic_types['int'])) {
-            if (get_class($container_atomic_types['int']) === TInt::class) {
+            if ($container_atomic_types['int']::class === TInt::class) {
                 return true;
             }
 
-            if (get_class($container_atomic_types['int']) === TNonspecificLiteralInt::class) {
+            if ($container_atomic_types['int']::class === TNonspecificLiteralInt::class) {
                 return true;
             }
 

@@ -53,7 +53,6 @@ use Psalm\Type\Union;
 use function array_merge;
 use function array_pop;
 use function array_values;
-use function get_class;
 use function strtolower;
 
 /**
@@ -299,7 +298,7 @@ final class CastAnalyzer
 
         IssueBuffer::maybeAdd(
             new UnrecognizedExpression(
-                'Psalm does not understand the cast ' . get_class($stmt),
+                'Psalm does not understand the cast ' . $stmt::class,
                 new CodeLocation($statements_analyzer->getSource(), $stmt),
             ),
             $statements_analyzer->getSuppressedIssues(),
@@ -394,7 +393,7 @@ final class CastAnalyzer
                 $intersection_types = [$atomic_type];
 
                 if ($atomic_type->extra_types) {
-                    $intersection_types = array_merge($intersection_types, $atomic_type->extra_types);
+                    $intersection_types = [...$intersection_types, ...$atomic_type->extra_types];
                 }
 
                 foreach ($intersection_types as $intersection_type) {
@@ -476,7 +475,7 @@ final class CastAnalyzer
             // todo: emit error here
         }
 
-        $valid_types = array_merge($valid_ints, $castable_types);
+        $valid_types = [...$valid_ints, ...$castable_types];
 
         if (!$valid_types) {
             $int_type = Type::getInt();
@@ -579,7 +578,7 @@ final class CastAnalyzer
                 $intersection_types = [$atomic_type];
 
                 if ($atomic_type->extra_types) {
-                    $intersection_types = array_merge($intersection_types, $atomic_type->extra_types);
+                    $intersection_types = [...$intersection_types, ...$atomic_type->extra_types];
                 }
 
                 foreach ($intersection_types as $intersection_type) {
@@ -661,7 +660,7 @@ final class CastAnalyzer
             // todo: emit error here
         }
 
-        $valid_types = array_merge($valid_floats, $castable_types);
+        $valid_types = [...$valid_floats, ...$castable_types];
 
         if (!$valid_types) {
             $float_type = Type::getFloat();
@@ -804,10 +803,7 @@ final class CastAnalyzer
                                 $parent_nodes = array_merge($return_type->parent_nodes, $parent_nodes);
                             }
 
-                            $castable_types = array_merge(
-                                $castable_types,
-                                array_values($return_type->getAtomicTypes()),
-                            );
+                            $castable_types = [...$castable_types, ...array_values($return_type->getAtomicTypes())];
 
                             continue 2;
                         }

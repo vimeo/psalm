@@ -82,7 +82,7 @@ final class ElseAnalyzer
 
             foreach ($changed_var_ids as $changed_var_id => $_) {
                 foreach ($else_context->vars_in_scope as $var_id => $_) {
-                    if (preg_match('/' . preg_quote($changed_var_id, '/') . '[\]\[\-]/', $var_id)
+                    if (preg_match('/' . preg_quote((string) $changed_var_id, '/') . '[\]\[\-]/', $var_id)
                         && !array_key_exists($var_id, $changed_var_ids)
                     ) {
                         $else_context->removePossibleReference($var_id);
@@ -200,22 +200,13 @@ final class ElseAnalyzer
             if ($has_leaving_statements) {
                 if ($else_context->loop_scope) {
                     if (!$has_continue_statement && !$has_break_statement) {
-                        $if_scope->new_vars_possibly_in_scope = array_merge(
-                            $vars_possibly_in_scope,
-                            $if_scope->new_vars_possibly_in_scope,
-                        );
+                        $if_scope->new_vars_possibly_in_scope = [...$vars_possibly_in_scope, ...$if_scope->new_vars_possibly_in_scope];
                     }
 
-                    $else_context->loop_scope->vars_possibly_in_scope = array_merge(
-                        $vars_possibly_in_scope,
-                        $else_context->loop_scope->vars_possibly_in_scope,
-                    );
+                    $else_context->loop_scope->vars_possibly_in_scope = [...$vars_possibly_in_scope, ...$else_context->loop_scope->vars_possibly_in_scope];
                 }
             } else {
-                $if_scope->new_vars_possibly_in_scope = array_merge(
-                    $vars_possibly_in_scope,
-                    $if_scope->new_vars_possibly_in_scope,
-                );
+                $if_scope->new_vars_possibly_in_scope = [...$vars_possibly_in_scope, ...$if_scope->new_vars_possibly_in_scope];
 
                 $if_scope->possibly_assigned_var_ids = array_merge(
                     $possibly_assigned_var_ids,

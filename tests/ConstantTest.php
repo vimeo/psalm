@@ -1875,20 +1875,21 @@ class ConstantTest extends TestCase
                     PHP,
             ],
             'maxIntegerInArrayKey' => [
-                'code' => <<<'PHP'
-                    <?php
-                    class A {
-                        // PHP_INT_MAX
-                        public const S = ['9223372036854775807' => 1];
-                        public const I = [9223372036854775807 => 1];
+                'code' => <<<'PHP_WRAP'
+<?php
+class A {
+    // PHP_INT_MAX
+    public const S = ['9223372036854775807' => 1];
+    public const I = [9223372036854775807 => 1];
 
-                        // PHP_INT_MAX + 1
-                        public const SO = ['9223372036854775808' => 1];
-                    }
-                    $s = A::S;
-                    $i = A::I;
-                    $so = A::SO;
-                    PHP,
+    // PHP_INT_MAX + 1
+    public const SO = ['9223372036854775808' => 1];
+}
+$s = A::S;
+$i = A::I;
+$so = A::SO;
+PHP_WRAP
+,
                 'assertions' => [
                     '$s===' => 'array{9223372036854775807: 1}',
                     '$i===' => 'array{9223372036854775807: 1}',
@@ -1896,16 +1897,17 @@ class ConstantTest extends TestCase
                 ],
             ],
             'autoincrementAlmostOverflow' => [
-                'code' => <<<'PHP'
-                    <?php
-                    class A {
-                        public const I = [
-                            9223372036854775806 => 0,
-                            1, // expected key = PHP_INT_MAX
-                        ];
-                    }
-                    $s = A::I;
-                    PHP,
+                'code' => <<<'PHP_WRAP'
+<?php
+class A {
+    public const I = [
+        9223372036854775806 => 0,
+        1, // expected key = PHP_INT_MAX
+    ];
+}
+$s = A::I;
+PHP_WRAP
+,
                 'assertions' => [
                     '$s===' => 'array{9223372036854775806: 0, 9223372036854775807: 1}',
                 ],
@@ -2445,13 +2447,14 @@ class ConstantTest extends TestCase
                 'error_message' => 'InvalidStringClass',
             ],
             'integerOverflowInArrayKey' => [
-                'code' => <<<'PHP'
-                    <?php
-                    class A {
-                        // PHP_INT_MAX + 1
-                        public const IO = [9223372036854775808 => 1];
-                    }
-                    PHP,
+                'code' => <<<'PHP_WRAP'
+<?php
+class A {
+    // PHP_INT_MAX + 1
+    public const IO = [9223372036854775808 => 1];
+}
+PHP_WRAP
+,
                 'error_message' => 'InvalidArrayOffset',
             ],
             'autoincrementOverflow' => [

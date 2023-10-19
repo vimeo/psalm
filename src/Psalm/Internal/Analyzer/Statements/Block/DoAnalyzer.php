@@ -20,7 +20,6 @@ use UnexpectedValueException;
 use function array_diff;
 use function array_filter;
 use function array_keys;
-use function array_merge;
 use function array_values;
 use function in_array;
 use function preg_match;
@@ -158,10 +157,7 @@ final class DoAnalyzer
 
         $do_context->loop_scope = null;
 
-        $context->vars_possibly_in_scope = array_merge(
-            $context->vars_possibly_in_scope,
-            $do_context->vars_possibly_in_scope,
-        );
+        $context->vars_possibly_in_scope = [...$context->vars_possibly_in_scope, ...$do_context->vars_possibly_in_scope];
 
         if ($context->collect_exceptions) {
             $context->mergeExceptions($inner_loop_context);

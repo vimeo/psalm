@@ -15,20 +15,14 @@ use const PHP_EOL;
 
 class LongProgress extends Progress
 {
-    public const NUMBER_OF_COLUMNS = 60;
+    final public const NUMBER_OF_COLUMNS = 60;
 
     protected ?int $number_of_tasks = null;
 
     protected int $progress = 0;
 
-    protected bool $print_errors = false;
-
-    protected bool $print_infos = false;
-
-    public function __construct(bool $print_errors = true, bool $print_infos = true)
+    public function __construct(protected bool $print_errors = true, protected bool $print_infos = true)
     {
-        $this->print_errors = $print_errors;
-        $this->print_infos = $print_infos;
     }
 
     public function startScanningFiles(): void

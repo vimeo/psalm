@@ -14,7 +14,8 @@ use function array_unique;
 use function count;
 use function explode;
 use function range;
-use function strpos;
+use function str_contains;
+use function str_starts_with;
 use function trim;
 
 /**
@@ -62,7 +63,7 @@ final class GitInfoCollector
         $branchesResult = $this->executor->execute('git branch');
 
         foreach ($branchesResult as $result) {
-            if (strpos($result, '* ') === 0) {
+            if (str_starts_with($result, '* ')) {
                 $exploded = explode('* ', $result, 2);
 
                 return $exploded[1];
@@ -115,7 +116,7 @@ final class GitInfoCollector
         $results = [];
 
         foreach ($remotesResult as $result) {
-            if (strpos($result, ' ') !== false) {
+            if (str_contains($result, ' ')) {
                 [$remote] = explode(' ', $result, 2);
 
                 $results[] = $remote;
@@ -129,7 +130,7 @@ final class GitInfoCollector
         $remotes = [];
 
         foreach ($results as $result) {
-            if (strpos($result, "\t") !== false) {
+            if (str_contains($result, "\t")) {
                 [$name, $url] = explode("\t", $result, 2);
 
                 $remote = new RemoteInfo();

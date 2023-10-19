@@ -15,20 +15,14 @@ use Psalm\Internal\LanguageServer\LanguageServer;
  */
 final class Workspace
 {
-    private ClientHandler $handler;
-
-    /**
-     * @psalm-suppress UnusedProperty
-     */
-    private JsonMapper $mapper;
-
-    private LanguageServer $server;
-
-    public function __construct(ClientHandler $handler, JsonMapper $mapper, LanguageServer $server)
-    {
-        $this->handler = $handler;
-        $this->mapper = $mapper;
-        $this->server = $server;
+    public function __construct(
+        private readonly ClientHandler $handler,
+        /**
+         * @psalm-suppress UnusedProperty
+         */
+        private readonly JsonMapper $mapper,
+        private readonly LanguageServer $server,
+    ) {
     }
 
     /**

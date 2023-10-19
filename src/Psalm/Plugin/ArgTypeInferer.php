@@ -13,16 +13,11 @@ use Psalm\Type\Union;
 
 final class ArgTypeInferer
 {
-    private Context $context;
-    private StatementsAnalyzer $statements_analyzer;
-
     /**
      * @internal
      */
-    public function __construct(Context $context, StatementsAnalyzer $statements_analyzer)
+    public function __construct(private readonly Context $context, private readonly StatementsAnalyzer $statements_analyzer)
     {
-        $this->context = $context;
-        $this->statements_analyzer = $statements_analyzer;
     }
 
     public function infer(PhpParser\Node\Arg $arg): false|Union

@@ -67,18 +67,11 @@ final class PropertyStorage implements HasAttributesInterface
 
     public function getInfo(): string
     {
-        switch ($this->visibility) {
-            case ClassLikeAnalyzer::VISIBILITY_PRIVATE:
-                $visibility_text = 'private';
-                break;
-
-            case ClassLikeAnalyzer::VISIBILITY_PROTECTED:
-                $visibility_text = 'protected';
-                break;
-
-            default:
-                $visibility_text = 'public';
-        }
+        $visibility_text = match ($this->visibility) {
+            ClassLikeAnalyzer::VISIBILITY_PRIVATE => 'private',
+            ClassLikeAnalyzer::VISIBILITY_PROTECTED => 'protected',
+            default => 'public',
+        };
 
         return $visibility_text . ' ' . ($this->type ? $this->type->getId() : 'mixed');
     }

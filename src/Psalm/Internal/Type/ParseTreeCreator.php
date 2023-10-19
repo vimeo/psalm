@@ -42,19 +42,15 @@ final class ParseTreeCreator
 
     private ParseTree $current_leaf;
 
-    /** @var array<int, array{0: string, 1: int, 2?: string}> */
-    private array $type_tokens;
-
-    private int $type_token_count;
+    private readonly int $type_token_count;
 
     private int $t = 0;
 
     /**
      * @param list<array{0: string, 1: int, 2?: string}> $type_tokens
      */
-    public function __construct(array $type_tokens)
+    public function __construct(private array $type_tokens)
     {
-        $this->type_tokens = $type_tokens;
         $this->type_token_count = count($type_tokens);
         $this->parse_tree = new Root();
         $this->current_leaf = $this->parse_tree;

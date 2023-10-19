@@ -246,7 +246,7 @@ final class NewAnalyzer extends CallAnalyzer
                 new Union([$result_atomic_type]),
             );
 
-            if (strtolower($fq_class_name) !== 'stdclass' &&
+            if (strtolower((string) $fq_class_name) !== 'stdclass' &&
                 $codebase->classlikes->classExists($fq_class_name)
             ) {
                 self::analyzeNamedConstructor(

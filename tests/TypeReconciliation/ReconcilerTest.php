@@ -87,7 +87,7 @@ class ReconcilerTest extends TestCase
             $reconciled->getId(),
         );
 
-        $this->assertContainsOnlyInstancesOf('Psalm\Type\Atomic', $reconciled->getAtomicTypes());
+        $this->assertContainsOnlyInstancesOf(Atomic::class, $reconciled->getAtomicTypes());
     }
 
     /**

@@ -92,6 +92,8 @@ use function in_array;
 use function is_string;
 use function reset;
 use function spl_object_id;
+use function str_contains;
+use function str_starts_with;
 use function strpos;
 use function strtolower;
 
@@ -400,7 +402,7 @@ final class AssignmentAnalyzer
             if (!$assign_var instanceof PhpParser\Node\Expr\PropertyFetch
                 && !strpos($root_var_id ?? '', '->')
                 && !$comment_type
-                && strpos($var_id ?? '', '$_') !== 0
+                && !str_starts_with($var_id ?? '', '$_')
             ) {
                 $origin_locations = [];
 
@@ -962,7 +964,7 @@ final class AssignmentAnalyzer
             // Remove old reference parent node so previously referenced variable usage doesn't count as reference usage
             $old_type = $context->vars_in_scope[$lhs_var_id];
             foreach ($old_type->parent_nodes as $old_parent_node_id => $_) {
-                if (strpos($old_parent_node_id, "$lhs_var_id-") === 0) {
+                if (str_starts_with($old_parent_node_id, "$lhs_var_id-")) {
                     unset($old_type->parent_nodes[$old_parent_node_id]);
                 }
             }
@@ -975,12 +977,12 @@ final class AssignmentAnalyzer
         $context->hasVariable($lhs_var_id);
         $context->references_in_scope[$lhs_var_id] = $rhs_var_id;
         $context->referenced_counts[$rhs_var_id] = ($context->referenced_counts[$rhs_var_id] ?? 0) + 1;
-        if (strpos($rhs_var_id, '[') !== false) {
+        if (str_contains($rhs_var_id, '[')) {
             // Reference to array item, we always consider array items to be an external scope for references
             // TODO handle differently so it's detected as unused if the array is unused?
             $context->references_to_external_scope[$lhs_var_id] = true;
         }
-        if (strpos($rhs_var_id, '->') !== false) {
+        if (str_contains($rhs_var_id, '->')) {
             IssueBuffer::maybeAdd(
                 new UnsupportedPropertyReferenceUsage(
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
@@ -991,7 +993,7 @@ final class AssignmentAnalyzer
             // TODO handle differently so it's detected as unused if the object is unused?
             $context->references_to_external_scope[$lhs_var_id] = true;
         }
-        if (strpos($rhs_var_id, '::') !== false) {
+        if (str_contains($rhs_var_id, '::')) {
             IssueBuffer::maybeAdd(
                 new UnsupportedPropertyReferenceUsage(
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
@@ -1370,7 +1372,7 @@ final class AssignmentAnalyzer
 
                     $already_in_scope = isset($context->vars_in_scope[$list_var_id]);
 
-                    if (strpos($list_var_id, '-') === false && strpos($list_var_id, '[') === false) {
+                    if (!str_contains($list_var_id, '-') && !str_contains($list_var_id, '[')) {
                         $location = new CodeLocation($statements_analyzer, $var);
 
                         if (!$statements_analyzer->hasVariable($list_var_id)) {

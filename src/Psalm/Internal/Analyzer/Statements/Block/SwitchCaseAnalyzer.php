@@ -49,7 +49,7 @@ use function count;
 use function in_array;
 use function is_string;
 use function spl_object_id;
-use function strpos;
+use function str_starts_with;
 use function substr;
 
 /**
@@ -92,7 +92,7 @@ final class SwitchCaseAnalyzer
 
         $fake_switch_condition = false;
 
-        if ($switch_var_id && strpos($switch_var_id, '$__tmp_switch__') === 0) {
+        if ($switch_var_id && str_starts_with($switch_var_id, '$__tmp_switch__')) {
             $switch_condition = new VirtualVariable(
                 substr($switch_var_id, 1),
                 $stmt->cond->getAttributes(),
@@ -439,7 +439,7 @@ final class SwitchCaseAnalyzer
         if ($case_clauses && $case_equality_expr) {
             try {
                 $negated_case_clauses = Algebra::negateFormula($case_clauses);
-            } catch (ComplicatedExpressionException $e) {
+            } catch (ComplicatedExpressionException) {
                 $case_equality_expr_id = spl_object_id($case_equality_expr);
 
                 try {
@@ -453,7 +453,7 @@ final class SwitchCaseAnalyzer
                         false,
                         false,
                     );
-                } catch (ComplicatedExpressionException $e) {
+                } catch (ComplicatedExpressionException) {
                     $negated_case_clauses = [];
                 }
             }
@@ -636,13 +636,10 @@ final class SwitchCaseAnalyzer
                     }
                 }
 
-                $switch_scope->new_vars_possibly_in_scope = array_merge(
-                    array_diff_key(
-                        $case_context->vars_possibly_in_scope,
-                        $context->vars_possibly_in_scope,
-                    ),
-                    $switch_scope->new_vars_possibly_in_scope,
-                );
+                $switch_scope->new_vars_possibly_in_scope = [...array_diff_key(
+                    $case_context->vars_possibly_in_scope,
+                    $context->vars_possibly_in_scope,
+                ), ...$switch_scope->new_vars_possibly_in_scope];
             }
         }
 

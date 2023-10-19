@@ -12,10 +12,7 @@ use Psalm\Internal\Scanner\UnresolvedConstantComponent;
  */
 final class ScalarValue extends UnresolvedConstantComponent
 {
-    public string|int|float|bool|null $value = null;
-
-    public function __construct(string|int|float|bool|null $value)
+    public function __construct(public string|int|float|bool|null $value)
     {
-        $this->value = $value;
     }
 }

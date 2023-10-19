@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Tests;
 
+use Decimal\Decimal;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
@@ -112,25 +113,25 @@ class BinaryOperationTest extends TestCase
         );
 
         $assertions = [
-            '$a' => 'Decimal\\Decimal',
-            '$b' => 'Decimal\\Decimal',
-            '$c' => 'Decimal\\Decimal',
-            '$d' => 'Decimal\\Decimal',
-            '$f' => 'Decimal\\Decimal',
-            '$g' => 'Decimal\\Decimal',
-            '$h' => 'Decimal\\Decimal',
-            '$i' => 'Decimal\\Decimal',
-            '$j' => 'Decimal\\Decimal',
-            '$k' => 'Decimal\\Decimal',
-            '$l' => 'Decimal\\Decimal',
-            '$m' => 'Decimal\\Decimal',
-            '$n' => 'Decimal\\Decimal',
-            '$o' => 'Decimal\\Decimal',
-            '$p' => 'Decimal\\Decimal',
-            '$q' => 'Decimal\\Decimal',
-            '$r' => 'Decimal\\Decimal',
-            '$s' => 'Decimal\\Decimal',
-            '$t' => 'Decimal\\Decimal',
+            '$a' => Decimal::class,
+            '$b' => Decimal::class,
+            '$c' => Decimal::class,
+            '$d' => Decimal::class,
+            '$f' => Decimal::class,
+            '$g' => Decimal::class,
+            '$h' => Decimal::class,
+            '$i' => Decimal::class,
+            '$j' => Decimal::class,
+            '$k' => Decimal::class,
+            '$l' => Decimal::class,
+            '$m' => Decimal::class,
+            '$n' => Decimal::class,
+            '$o' => Decimal::class,
+            '$p' => Decimal::class,
+            '$q' => Decimal::class,
+            '$r' => Decimal::class,
+            '$s' => Decimal::class,
+            '$t' => Decimal::class,
         ];
 
         $context = new Context();

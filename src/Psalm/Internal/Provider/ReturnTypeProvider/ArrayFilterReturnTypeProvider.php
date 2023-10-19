@@ -270,7 +270,7 @@ final class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderI
                                 $statements_source,
                                 $codebase,
                             );
-                        } catch (ComplicatedExpressionException $e) {
+                        } catch (ComplicatedExpressionException) {
                             $filter_clauses = [];
                         }
 

@@ -9,7 +9,6 @@ use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\DataFlow\Path;
 
 use function abs;
-use function array_merge;
 use function count;
 
 /**
@@ -85,10 +84,7 @@ final class VariableUseGraph extends DataFlowGraph
                     return true;
                 }
 
-                $new_child_nodes = array_merge(
-                    $new_child_nodes,
-                    $child_nodes,
-                );
+                $new_child_nodes = [...$new_child_nodes, ...$child_nodes];
             }
 
             $sources = $new_child_nodes;

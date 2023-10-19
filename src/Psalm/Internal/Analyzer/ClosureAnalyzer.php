@@ -22,7 +22,7 @@ use Psalm\Type\Union;
 use function in_array;
 use function is_string;
 use function preg_match;
-use function strpos;
+use function str_starts_with;
 use function strtolower;
 
 /**
@@ -104,7 +104,7 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
         }
 
         foreach ($context->vars_in_scope as $var => $type) {
-            if (strpos($var, '$this->') === 0) {
+            if (str_starts_with($var, '$this->')) {
                 $use_context->vars_in_scope[$var] = $type;
             }
         }
@@ -122,7 +122,7 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
         }
 
         foreach ($context->vars_possibly_in_scope as $var => $_) {
-            if (strpos($var, '$this->') === 0) {
+            if (str_starts_with($var, '$this->')) {
                 $use_context->vars_possibly_in_scope[$var] = true;
             }
         }

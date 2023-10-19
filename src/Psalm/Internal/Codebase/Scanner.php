@@ -35,6 +35,7 @@ use function explode;
 use function file_exists;
 use function min;
 use function realpath;
+use function str_ends_with;
 use function strtolower;
 use function substr;
 
@@ -87,8 +88,6 @@ use const PHP_EOL;
  */
 final class Scanner
 {
-    private Codebase $codebase;
-
     /**
      * @var array<string, string>
      */
@@ -134,36 +133,10 @@ final class Scanner
      */
     private array $reflected_classlikes_lc = [];
 
-    private Reflection $reflection;
-
-    private Config $config;
-
-    private Progress $progress;
-
-    private FileStorageProvider $file_storage_provider;
-
-    private FileProvider $file_provider;
-
-    private FileReferenceProvider $file_reference_provider;
-
     private bool $is_forked = false;
 
-    public function __construct(
-        Codebase $codebase,
-        Config $config,
-        FileStorageProvider $file_storage_provider,
-        FileProvider $file_provider,
-        Reflection $reflection,
-        FileReferenceProvider $file_reference_provider,
-        Progress $progress,
-    ) {
-        $this->codebase = $codebase;
-        $this->reflection = $reflection;
-        $this->file_provider = $file_provider;
-        $this->progress = $progress;
-        $this->file_storage_provider = $file_storage_provider;
-        $this->config = $config;
-        $this->file_reference_provider = $file_reference_provider;
+    public function __construct(private readonly Codebase $codebase, private readonly Config $config, private readonly FileStorageProvider $file_storage_provider, private readonly FileProvider $file_provider, private readonly Reflection $reflection, private readonly FileReferenceProvider $file_reference_provider, private readonly Progress $progress)
+    {
     }
 
     /**
@@ -241,7 +214,7 @@ final class Scanner
         }
 
         // avoid checking classes that we know will just end in failure
-        if ($fq_classlike_name_lc === 'null' || substr($fq_classlike_name_lc, -5) === '\null') {
+        if ($fq_classlike_name_lc === 'null' || str_ends_with($fq_classlike_name_lc, '\null')) {
             return;
         }
 
@@ -302,7 +275,7 @@ final class Scanner
     {
         $files_to_scan = array_filter(
             $this->files_to_scan,
-            [$this, 'shouldScan'],
+            $this->shouldScan(...),
         );
 
         $this->files_to_scan = [];
@@ -349,7 +322,7 @@ final class Scanner
 
                     $this->progress->debug('Have initialised forked process for scanning' . PHP_EOL);
                 },
-                Closure::fromCallable([$this, 'scanAPath']),
+                Closure::fromCallable($this->scanAPath(...)),
                 /**
                  * @return PoolData
                  */
@@ -682,7 +655,7 @@ final class Scanner
 
                     /** @psalm-suppress ArgumentTypeCoercion */
                     return new ReflectionClass($fq_class_name);
-                } catch (Throwable $e) {
+                } catch (Throwable) {
                     // do not cache any results here (as case-sensitive filenames can screw things up)
 
                     return null;

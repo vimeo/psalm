@@ -24,7 +24,6 @@ use Psalm\Tests\Progress\EchoProgress;
 
 use function define;
 use function defined;
-use function get_class;
 use function getcwd;
 use function microtime;
 use function ob_end_clean;
@@ -142,7 +141,7 @@ class ProjectCheckerTest extends TestCase
             ),
         );
 
-        $hook_class = get_class($hook);
+        $hook_class = $hook::class;
 
         $this->project_analyzer->getCodebase()->config->eventDispatcher->after_codebase_populated[] = $hook_class;
 

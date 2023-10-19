@@ -30,7 +30,6 @@ use stdClass;
 use function define;
 use function defined;
 use function dirname;
-use function get_class;
 use function getcwd;
 use function microtime;
 use function ob_end_clean;
@@ -506,10 +505,10 @@ class PluginTest extends TestCase
 
         $config = $codebase->config;
 
-        (new PluginRegistrationSocket($config, $codebase))->registerHooksFromClass(get_class($hook));
+        (new PluginRegistrationSocket($config, $codebase))->registerHooksFromClass($hook::class);
 
         $this->assertContains(
-            get_class($hook),
+            $hook::class,
             $this->project_analyzer->getCodebase()->config->eventDispatcher->after_codebase_populated,
         );
     }
@@ -888,7 +887,7 @@ class PluginTest extends TestCase
         };
 
         $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
-        $this->project_analyzer->getCodebase()->config->eventDispatcher->after_every_function_checks[] = get_class($plugin);
+        $this->project_analyzer->getCodebase()->config->eventDispatcher->after_every_function_checks[] = $plugin::class;
 
         $file_path = (string) getcwd() . '/src/somefile.php';
 

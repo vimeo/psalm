@@ -26,15 +26,16 @@ class ExpressionTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         yield 'maxIntegerInArrayKey' => [
-            'code' => <<<'PHP'
-                <?php
-                // PHP_INT_MAX
-                $s = ['9223372036854775807' => 1];
-                $i = [9223372036854775807 => 1];
+            'code' => <<<'PHP_WRAP'
+<?php
+// PHP_INT_MAX
+$s = ['9223372036854775807' => 1];
+$i = [9223372036854775807 => 1];
 
-                // PHP_INT_MAX + 1
-                $so = ['9223372036854775808' => 1];
-                PHP,
+// PHP_INT_MAX + 1
+$so = ['9223372036854775808' => 1];
+PHP_WRAP
+,
             'assertions' => [
                 '$s===' => 'array{9223372036854775807: 1}',
                 '$i===' => 'array{9223372036854775807: 1}',
@@ -42,13 +43,14 @@ class ExpressionTest extends TestCase
             ],
         ];
         yield 'autoincrementAlmostOverflow' => [
-            'code' => <<<'PHP'
-                <?php
-                $a = [
-                  9223372036854775806 => 0,
-                  1, // expected key = PHP_INT_MAX
-                ];
-                PHP,
+            'code' => <<<'PHP_WRAP'
+<?php
+$a = [
+  9223372036854775806 => 0,
+  1, // expected key = PHP_INT_MAX
+];
+PHP_WRAP
+,
             'assertions' => [
                 '$a===' => 'array{9223372036854775806: 0, 9223372036854775807: 1}',
             ],
@@ -69,11 +71,12 @@ class ExpressionTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         yield 'integerOverflowInArrayKey' => [
-            'code' => <<<'PHP'
-                <?php
-                // PHP_INT_MAX + 1
-                [9223372036854775808 => 1];
-                PHP,
+            'code' => <<<'PHP_WRAP'
+<?php
+// PHP_INT_MAX + 1
+[9223372036854775808 => 1];
+PHP_WRAP
+,
             'error_message' => 'InvalidArrayOffset',
         ];
 

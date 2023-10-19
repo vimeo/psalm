@@ -15,23 +15,16 @@ use function str_replace;
 final class Possibilities
 {
     /**
-     * @var list<Assertion> the rule being asserted
-     */
-    public array $rule;
-
-    /**
-     * @var int|string the id of the property/variable, or
-     *  the parameter offset of the affected arg
-     */
-    public int|string $var_id;
-
-    /**
      * @param list<Assertion> $rule
      */
-    public function __construct(string|int $var_id, array $rule)
-    {
-        $this->rule = $rule;
-        $this->var_id = $var_id;
+    public function __construct(
+        /**
+         * @var int|string the id of the property/variable, or
+         *  the parameter offset of the affected arg
+         */
+        public int|string $var_id,
+        public array $rule,
+    ) {
     }
 
     public function getUntemplatedCopy(

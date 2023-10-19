@@ -12,8 +12,7 @@ use Psalm\Internal\Provider\StatementsProvider;
 
 use function array_map;
 use function count;
-use function get_class;
-use function strpos;
+use function str_contains;
 use function var_export;
 
 class FileDiffTest extends TestCase
@@ -31,7 +30,7 @@ class FileDiffTest extends TestCase
         array $diff_map_offsets,
         array $deletion_ranges,
     ): void {
-        if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
+        if (str_contains($this->getTestName(), 'SKIPPED-')) {
             $this->markTestSkipped();
         }
 
@@ -88,7 +87,7 @@ class FileDiffTest extends TestCase
         array $changed_methods,
         array $diff_map_offsets,
     ): void {
-        if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
+        if (str_contains($this->getTestName(), 'SKIPPED-')) {
             $this->markTestSkipped();
         }
 
@@ -155,12 +154,12 @@ class FileDiffTest extends TestCase
 
             $this->assertNotSame($a_stmt, $b_stmt);
 
-            $this->assertSame(get_class($a_stmt), get_class($b_stmt));
+            $this->assertSame($a_stmt::class, $b_stmt::class);
 
             if ($a_stmt instanceof PhpParser\Node\Stmt\Expression
                 && $b_stmt instanceof PhpParser\Node\Stmt\Expression
             ) {
-                $this->assertSame(get_class($a_stmt->expr), get_class($b_stmt->expr));
+                $this->assertSame($a_stmt->expr::class, $b_stmt->expr::class);
             }
 
             if ($a_doc = $a_stmt->getDocComment()) {
@@ -181,8 +180,8 @@ class FileDiffTest extends TestCase
                 $a_stmt->getAttribute('endFilePos'),
                 $b_stmt->getAttribute('endFilePos'),
                 ($a_stmt instanceof PhpParser\Node\Stmt\Expression
-                    ? get_class($a_stmt->expr)
-                    : get_class($a_stmt))
+                    ? $a_stmt->expr::class
+                    : $a_stmt::class)
                     . ' on line ' . $a_stmt->getLine(),
             );
             $this->assertSame($a_stmt->getLine(), $b_stmt->getLine());

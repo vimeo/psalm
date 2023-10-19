@@ -66,24 +66,28 @@ use Psalm\Type\Atomic\TTraitString;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Atomic\TTypeAlias;
 use Psalm\Type\Atomic\TVoid;
+use Stringable;
 
 use function array_filter;
 use function array_keys;
 use function count;
-use function get_class;
 use function is_array;
 use function is_numeric;
+use function str_starts_with;
 use function strpos;
 use function strtolower;
 
 /**
  * @psalm-immutable
  */
-abstract class Atomic implements TypeNode
+abstract class Atomic implements TypeNode, Stringable
 {
-    public function __construct(bool $from_docblock = false)
-    {
-        $this->from_docblock = $from_docblock;
+    public function __construct(
+        /**
+         * Whether or not the type comes from a docblock
+         */
+        public bool $from_docblock = false,
+    ) {
     }
     protected function __clone()
     {
@@ -93,11 +97,6 @@ abstract class Atomic implements TypeNode
      * Whether or not the type has been checked yet
      */
     public bool $checked = false;
-
-    /**
-     * Whether or not the type comes from a docblock
-     */
-    public bool $from_docblock = false;
 
     public ?int $offset_start = null;
 
@@ -385,7 +384,7 @@ abstract class Atomic implements TypeNode
                 return new TClosure('Closure');
         }
 
-        if (strpos($value, '-') && strpos($value, 'OCI-') !== 0) {
+        if (strpos($value, '-') && !str_starts_with($value, 'OCI-')) {
             throw new TypeParseTreeException('Unrecognized type ' . $value);
         }
 
@@ -767,7 +766,7 @@ abstract class Atomic implements TypeNode
 
     public function equals(Atomic $other_type, bool $ensure_source_equality): bool
     {
-        return get_class($other_type) === get_class($this);
+        return $other_type::class === static::class;
     }
 
     public function isTruthy(): bool

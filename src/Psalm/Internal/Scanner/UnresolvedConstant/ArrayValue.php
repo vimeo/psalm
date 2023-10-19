@@ -12,12 +12,8 @@ use Psalm\Internal\Scanner\UnresolvedConstantComponent;
  */
 final class ArrayValue extends UnresolvedConstantComponent
 {
-    /** @var array<int, KeyValuePair|ArraySpread> */
-    public array $entries;
-
     /** @param list<KeyValuePair|ArraySpread> $entries */
-    public function __construct(array $entries)
+    public function __construct(public array $entries)
     {
-        $this->entries = $entries;
     }
 }

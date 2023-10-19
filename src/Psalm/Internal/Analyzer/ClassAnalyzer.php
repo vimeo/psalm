@@ -582,7 +582,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
 
                     try {
                         $trait_file_analyzer = $project_analyzer->getFileAnalyzerForClassLike($fq_trait_name);
-                    } catch (Exception $e) {
+                    } catch (Exception) {
                         continue;
                     }
 
@@ -945,7 +945,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                         try {
                             $docBlock = DocComment::parsePreservingLength($docComment);
                             $suppressed = $docBlock->tags['psalm-suppress'] ?? [];
-                        } catch (DocblockParseException $e) {
+                        } catch (DocblockParseException) {
                             // do nothing to keep original behavior
                         }
                     }
@@ -2077,7 +2077,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
 
             try {
                 $interface_storage = $classlike_storage_provider->get($fq_interface_name);
-            } catch (InvalidArgumentException $e) {
+            } catch (InvalidArgumentException) {
                 return false;
             }
 
@@ -2111,7 +2111,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         foreach ($storage->class_implements as $fq_interface_name_lc => $fq_interface_name) {
             try {
                 $interface_storage = $classlike_storage_provider->get($fq_interface_name_lc);
-            } catch (InvalidArgumentException $e) {
+            } catch (InvalidArgumentException) {
                 return false;
             }
 
@@ -2474,7 +2474,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 $code_location,
                 $storage->template_type_extends_count[$parent_fq_class_name] ?? 0,
             );
-        } catch (InvalidArgumentException $e) {
+        } catch (InvalidArgumentException) {
             // do nothing
         }
     }

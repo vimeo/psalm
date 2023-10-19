@@ -250,7 +250,7 @@ final class FileDiffer
                 $b_offset += $new_text_length;
             } else {
                 /** @psalm-suppress MixedArgument */
-                $same_text_length = strlen($diff_elem->new) + 1;
+                $same_text_length = strlen((string) $diff_elem->new) + 1;
 
                 $a_offset += $same_text_length;
                 $b_offset += $same_text_length;

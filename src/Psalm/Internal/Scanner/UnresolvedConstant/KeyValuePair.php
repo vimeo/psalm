@@ -12,13 +12,7 @@ use Psalm\Internal\Scanner\UnresolvedConstantComponent;
  */
 final class KeyValuePair extends UnresolvedConstantComponent
 {
-    public ?UnresolvedConstantComponent $key = null;
-
-    public UnresolvedConstantComponent $value;
-
-    public function __construct(?UnresolvedConstantComponent $key, UnresolvedConstantComponent $value)
+    public function __construct(public ?UnresolvedConstantComponent $key, public UnresolvedConstantComponent $value)
     {
-        $this->key = $key;
-        $this->value = $value;
     }
 }

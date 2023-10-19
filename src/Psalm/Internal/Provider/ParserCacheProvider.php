@@ -44,7 +44,7 @@ class ParserCacheProvider
     private const PARSER_CACHE_DIRECTORY = 'php-parser';
     private const FILE_CONTENTS_CACHE_DIRECTORY = 'file-caches';
 
-    private Cache $cache;
+    private readonly Cache $cache;
 
     /**
      * A map of filename hashes to contents hashes
@@ -60,12 +60,9 @@ class ParserCacheProvider
      */
     protected array $new_file_content_hashes = [];
 
-    private bool $use_file_cache;
-
-    public function __construct(Config $config, bool $use_file_cache = true)
+    public function __construct(Config $config, private readonly bool $use_file_cache = true)
     {
         $this->cache = new Cache($config);
-        $this->use_file_cache = $use_file_cache;
     }
 
     /**
@@ -202,7 +199,7 @@ class ParserCacheProvider
             }
 
             /** @psalm-suppress MixedAssignment */
-            $hashes_decoded = json_decode($hashes_encoded, true);
+            $hashes_decoded = json_decode($hashes_encoded, true, 512, JSON_THROW_ON_ERROR);
 
             if (!is_array($hashes_decoded)) {
                 throw new UnexpectedValueException(

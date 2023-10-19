@@ -12,15 +12,9 @@ use Psalm\Type\Atomic;
  */
 final class IsNotAClass extends Assertion
 {
-    /** @var Atomic\TTemplateParamClass|Atomic\TNamedObject */
-    public Atomic $type;
-    public bool $allow_string;
-
     /** @param Atomic\TTemplateParamClass|Atomic\TNamedObject $type */
-    public function __construct(Atomic $type, bool $allow_string)
+    public function __construct(public Atomic $type, public bool $allow_string)
     {
-        $this->type = $type;
-        $this->allow_string = $allow_string;
     }
 
     public function isNegation(): bool

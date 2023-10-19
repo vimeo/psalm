@@ -10,7 +10,7 @@ use Psalm\Internal\Analyzer\FileAnalyzer;
 
 use function getcwd;
 use function preg_quote;
-use function strpos;
+use function str_contains;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -68,7 +68,7 @@ class IncludeTest extends TestCase
         string $error_message,
         array $directories = [],
     ): void {
-        if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
+        if (str_contains($this->getTestName(), 'SKIPPED-')) {
             $this->markTestSkipped();
         }
 

@@ -289,11 +289,7 @@ final class Creator
         $nodes = [];
 
         /** @var string[] */
-        $php_files = array_merge(
-            glob($current_dir . DIRECTORY_SEPARATOR . '*.php', GLOB_NOSORT) ?: [],
-            glob($current_dir . DIRECTORY_SEPARATOR . '**/*.php', GLOB_NOSORT) ?: [],
-            glob($current_dir . DIRECTORY_SEPARATOR . '**/**/*.php', GLOB_NOSORT) ?: [],
-        );
+        $php_files = [...glob($current_dir . DIRECTORY_SEPARATOR . '*.php', GLOB_NOSORT) ?: [], ...glob($current_dir . DIRECTORY_SEPARATOR . '**/*.php', GLOB_NOSORT) ?: [], ...glob($current_dir . DIRECTORY_SEPARATOR . '**/**/*.php', GLOB_NOSORT) ?: []];
 
         foreach ($php_files as $php_file) {
             $php_file = str_replace($current_dir . DIRECTORY_SEPARATOR, '', $php_file);

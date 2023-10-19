@@ -12,15 +12,6 @@ use Psalm\StatementsSource;
 
 final class FunctionReturnTypeProviderEvent
 {
-    private StatementsSource $statements_source;
-    /**
-     * @var non-empty-string
-     */
-    private string $function_id;
-    private FuncCall $stmt;
-    private Context $context;
-    private CodeLocation $code_location;
-
     /**
      * Use this hook for providing custom return type logic. If this plugin does not know what a function should
      * return but another plugin may be able to determine the type, return null. Otherwise return a mixed union type
@@ -29,18 +20,8 @@ final class FunctionReturnTypeProviderEvent
      * @param non-empty-string $function_id
      * @internal
      */
-    public function __construct(
-        StatementsSource $statements_source,
-        string $function_id,
-        FuncCall $stmt,
-        Context $context,
-        CodeLocation $code_location,
-    ) {
-        $this->statements_source = $statements_source;
-        $this->function_id = $function_id;
-        $this->stmt = $stmt;
-        $this->context = $context;
-        $this->code_location = $code_location;
+    public function __construct(private readonly StatementsSource $statements_source, private readonly string $function_id, private readonly FuncCall $stmt, private readonly Context $context, private readonly CodeLocation $code_location)
+    {
     }
 
     public function getStatementsSource(): StatementsSource

@@ -32,7 +32,7 @@ use function trim;
 
 class TemplateAnalyzer extends Psalm\Internal\Analyzer\FileAnalyzer
 {
-    const VIEW_CLASS = 'Your\\View\\Class';
+    final public const VIEW_CLASS = 'Your\\View\\Class';
 
     public function analyze(?Context $file_context = null, ?Context $global_context = null): void
     {

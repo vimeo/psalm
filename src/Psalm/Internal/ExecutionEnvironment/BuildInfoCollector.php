@@ -11,8 +11,8 @@ use function assert;
 use function explode;
 use function file_get_contents;
 use function json_decode;
+use function str_contains;
 use function str_replace;
-use function strpos;
 use function strtotime;
 
 use const JSON_THROW_ON_ERROR;
@@ -26,20 +26,18 @@ use const JSON_THROW_ON_ERROR;
 final class BuildInfoCollector
 {
     /**
-     * Environment variables.
-     *
-     * Overwritten through collection process.
-     */
-    protected array $env;
-
-    /**
      * Read environment variables.
      */
     protected array $readEnv = [];
 
-    public function __construct(array $env)
-    {
-        $this->env = $env;
+    public function __construct(
+        /**
+         * Environment variables.
+         *
+         * Overwritten through collection process.
+         */
+        protected array $env,
+    ) {
     }
 
     // API
@@ -260,9 +258,9 @@ final class BuildInfoCollector
             $this->env['CI_JOB_ID'] = $this->env['GITHUB_ACTIONS'];
 
             $githubRef = (string) $this->env['GITHUB_REF'];
-            if (strpos($githubRef, 'refs/heads/') !== false) {
+            if (str_contains($githubRef, 'refs/heads/')) {
                 $githubRef = str_replace('refs/heads/', '', $githubRef);
-            } elseif (strpos($githubRef, 'refs/tags/') !== false) {
+            } elseif (str_contains($githubRef, 'refs/tags/')) {
                 $githubRef = str_replace('refs/tags/', '', $githubRef);
             }
 

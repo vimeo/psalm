@@ -59,7 +59,7 @@ use function array_values;
 use function count;
 use function implode;
 use function in_array;
-use function strpos;
+use function str_starts_with;
 use function strtolower;
 
 /**
@@ -127,7 +127,7 @@ final class ReturnTypeAnalyzer
         $is_to_string = $function instanceof ClassMethod && strtolower($function->name->name) === '__tostring';
 
         if ($function instanceof ClassMethod
-            && strpos($function->name->name, '__') === 0
+            && str_starts_with($function->name->name, '__')
             && !$is_to_string
             && !$return_type
         ) {

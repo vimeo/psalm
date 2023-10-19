@@ -62,7 +62,8 @@ use function explode;
 use function in_array;
 use function is_string;
 use function spl_object_id;
-use function strpos;
+use function str_contains;
+use function str_starts_with;
 use function strtolower;
 
 /**
@@ -70,29 +71,9 @@ use function strtolower;
  */
 final class FunctionLikeNodeScanner
 {
-    private FileScanner $file_scanner;
+    private readonly string $file_path;
 
-    private Codebase $codebase;
-
-    private string $file_path;
-
-    private Config $config;
-
-    private FileStorage $file_storage;
-
-    private ?ClassLikeStorage $classlike_storage = null;
-
-    /**
-     * @var array<string, non-empty-array<string, Union>>
-     */
-    private array $existing_function_template_types;
-
-    private Aliases $aliases;
-
-    /**
-     * @var array<string, TypeAlias>
-     */
-    private array $type_aliases;
+    private readonly Config $config;
 
     public ?FunctionLikeStorage $storage = null;
 
@@ -101,23 +82,16 @@ final class FunctionLikeNodeScanner
      * @param array<string, TypeAlias> $type_aliases
      */
     public function __construct(
-        Codebase $codebase,
-        FileScanner $file_scanner,
-        FileStorage $file_storage,
-        Aliases $aliases,
-        array $type_aliases,
-        ?ClassLikeStorage $classlike_storage,
-        array $existing_function_template_types,
+        private readonly Codebase $codebase,
+        private readonly FileScanner $file_scanner,
+        private readonly FileStorage $file_storage,
+        private readonly Aliases $aliases,
+        private readonly array $type_aliases,
+        private ?ClassLikeStorage $classlike_storage,
+        private readonly array $existing_function_template_types,
     ) {
-        $this->codebase = $codebase;
-        $this->file_storage = $file_storage;
-        $this->file_scanner = $file_scanner;
         $this->file_path = $file_storage->file_path;
-        $this->aliases = $aliases;
-        $this->type_aliases = $type_aliases;
         $this->config = Config::getInstance();
-        $this->classlike_storage = $classlike_storage;
-        $this->existing_function_template_types = $existing_function_template_types;
     }
 
     /**
@@ -271,7 +245,7 @@ final class FunctionLikeNodeScanner
 
                     $classlike_storage->properties[$property_name]->getter_method = strtolower($stmt->name->name);
                 }
-            } elseif (strpos($stmt->name->name, 'assert') === 0
+            } elseif (str_starts_with($stmt->name->name, 'assert')
                 && $stmt->stmts
             ) {
                 $var_assertions = [];
@@ -303,7 +277,7 @@ final class FunctionLikeNodeScanner
 
                         try {
                             $negated_formula = Algebra::negateFormula($if_clauses);
-                        } catch (ComplicatedExpressionException $e) {
+                        } catch (ComplicatedExpressionException) {
                             $var_assertions = [];
                             break;
                         }
@@ -329,7 +303,7 @@ final class FunctionLikeNodeScanner
                                         $param_offset,
                                         $rule_part,
                                     );
-                                } elseif (strpos($var_id, '$this->') === 0) {
+                                } elseif (str_starts_with($var_id, '$this->')) {
                                     $var_assertions[] = new Possibilities(
                                         $var_id,
                                         $rule_part,
@@ -1044,7 +1018,7 @@ final class FunctionLikeNodeScanner
                             $code_location,
                             $cased_function_id,
                         );
-                    } catch (IncorrectDocblockException|DocblockParseException $e) {
+                    } catch (IncorrectDocblockException|DocblockParseException) {
                     }
                     if ($docblock_info) {
                         if ($docblock_info->since_php_major_version && !$this->aliases->namespace) {
@@ -1079,7 +1053,7 @@ final class FunctionLikeNodeScanner
 
             if ($method_name_lc === strtolower($class_name)
                 && !isset($classlike_storage->methods['__construct'])
-                && strpos($fq_classlike_name, '\\') === false
+                && !str_contains($fq_classlike_name, '\\')
                 && $this->codebase->analysis_php_version_id <= 7_04_00
             ) {
                 $this->codebase->methods->setDeclaringMethodId(

@@ -10,7 +10,6 @@ use Psalm\Storage\MethodStorage;
 use Psalm\Storage\Possibilities;
 
 use function array_filter;
-use function array_merge;
 use function array_values;
 use function strtolower;
 
@@ -19,12 +18,8 @@ use function strtolower;
  */
 final class AssertionsFromInheritanceResolver
 {
-    private Codebase $codebase;
-
-    public function __construct(
-        Codebase $codebase,
-    ) {
-        $this->codebase = $codebase;
+    public function __construct(private readonly Codebase $codebase)
+    {
     }
 
     /**
@@ -37,10 +32,7 @@ final class AssertionsFromInheritanceResolver
         $method_name_lc = strtolower($method_storage->cased_name ?? '');
 
         $assertions = $method_storage->assertions;
-        $inherited_classes_and_interfaces = array_values(array_filter(array_merge(
-            $called_class->parent_classes,
-            $called_class->class_implements,
-        ), fn(string $classOrInterface) => $this->codebase->classOrInterfaceOrEnumExists($classOrInterface)));
+        $inherited_classes_and_interfaces = array_values(array_filter([...$called_class->parent_classes, ...$called_class->class_implements], fn(string $classOrInterface) => $this->codebase->classOrInterfaceOrEnumExists($classOrInterface)));
 
         foreach ($inherited_classes_and_interfaces as $potential_assertion_providing_class) {
             $potential_assertion_providing_classlike_storage = $this->codebase->classlike_storage_provider->get(

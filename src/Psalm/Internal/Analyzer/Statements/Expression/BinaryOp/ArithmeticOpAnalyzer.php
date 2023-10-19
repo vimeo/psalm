@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Analyzer\Statements\Expression\BinaryOp;
 
+use Decimal\Decimal;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
@@ -48,7 +49,6 @@ use Psalm\Type\Union;
 use function array_diff_key;
 use function array_values;
 use function count;
-use function get_class;
 use function is_int;
 use function is_numeric;
 use function max;
@@ -321,7 +321,7 @@ final class ArithmeticOpAnalyzer
             // get_class is fine here because both classes are final.
             if ($statements_source !== null
                 && $config->strict_binary_operands
-                && get_class($left_type_part) !== get_class($right_type_part)
+                && $left_type_part::class !== $right_type_part::class
             ) {
                 IssueBuffer::maybeAdd(
                     new InvalidOperand(
@@ -687,7 +687,7 @@ final class ArithmeticOpAnalyzer
                         && strtolower($non_decimal_type->value) === "decimal\\decimal"
                 ) {
                     $result_type = Type::combineUnionTypes(
-                        new Union([new TNamedObject("Decimal\\Decimal")]),
+                        new Union([new TNamedObject(Decimal::class)]),
                         $result_type,
                     );
                 } else {

@@ -11,11 +11,11 @@ use stdClass;
 
 class FileTypeSelfRegisteringPlugin implements PluginFileExtensionsInterface
 {
-    public const FLAG_SCANNER_TWICE = 1;
-    public const FLAG_ANALYZER_TWICE = 2;
+    final public const FLAG_SCANNER_TWICE = 1;
+    final public const FLAG_ANALYZER_TWICE = 2;
 
-    public const FLAG_SCANNER_INVALID = 4;
-    public const FLAG_ANALYZER_INVALID = 8;
+    final public const FLAG_SCANNER_INVALID = 4;
+    final public const FLAG_ANALYZER_INVALID = 8;
 
     /**
      * @var array<string, string>

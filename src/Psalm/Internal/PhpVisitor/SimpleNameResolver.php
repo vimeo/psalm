@@ -21,7 +21,7 @@ use PhpParser\NodeVisitorAbstract;
  */
 final class SimpleNameResolver extends NodeVisitorAbstract
 {
-    private NameContext $nameContext;
+    private readonly NameContext $nameContext;
 
     private ?int $start_change = null;
 

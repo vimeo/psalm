@@ -11,11 +11,8 @@ use Psalm\Storage\Assertion;
  */
 final class IsGreaterThanOrEqualTo extends Assertion
 {
-    public int $value;
-
-    public function __construct(int $value)
+    public function __construct(public int $value)
     {
-        $this->value = $value;
     }
 
     public function isNegation(): bool

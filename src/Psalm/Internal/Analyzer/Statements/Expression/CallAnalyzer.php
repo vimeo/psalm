@@ -68,8 +68,9 @@ use function mt_rand;
 use function preg_match;
 use function preg_replace;
 use function spl_object_id;
+use function str_contains;
 use function str_replace;
-use function strpos;
+use function str_starts_with;
 use function strtolower;
 
 /**
@@ -227,7 +228,7 @@ class CallAnalyzer
                 $local_vars_in_scope = [];
 
                 foreach ($context->vars_in_scope as $var_id => $type) {
-                    if (strpos($var_id, '$this->') === 0) {
+                    if (str_starts_with($var_id, '$this->')) {
                         if ($type->initialized) {
                             $local_vars_in_scope[$var_id] = $context->vars_in_scope[$var_id];
 
@@ -675,16 +676,16 @@ class CallAnalyzer
                 }
             } elseif ($var_possibilities->var_id === '$this' && $thisName !== null) {
                 $assertion_var_id = $thisName;
-            } elseif (strpos($var_possibilities->var_id, '$this->') === 0 && $thisName !== null) {
+            } elseif (str_starts_with($var_possibilities->var_id, '$this->') && $thisName !== null) {
                 $assertion_var_id = $thisName . str_replace('$this->', '->', $var_possibilities->var_id);
-            } elseif (strpos($var_possibilities->var_id, 'self::') === 0 && $context->self) {
+            } elseif (str_starts_with($var_possibilities->var_id, 'self::') && $context->self) {
                 $assertion_var_id = $context->self . str_replace('self::', '::', $var_possibilities->var_id);
-            } elseif (strpos($var_possibilities->var_id, '::$') !== false) {
+            } elseif (str_contains($var_possibilities->var_id, '::$')) {
                 // allow assertions to bring external static props into scope
                 $assertion_var_id = $var_possibilities->var_id;
             } elseif (isset($context->vars_in_scope[$var_possibilities->var_id])) {
                 $assertion_var_id = $var_possibilities->var_id;
-            } elseif (strpos($var_possibilities->var_id, '->') !== false) {
+            } elseif (str_contains($var_possibilities->var_id, '->')) {
                 $exploded = explode('->', $var_possibilities->var_id);
 
                 if (count($exploded) < 2) {
@@ -881,7 +882,7 @@ class CallAnalyzer
                     $simplified_clauses,
                 );
 
-                $type_assertions = array_merge($type_assertions, $assert_type_assertions);
+                $type_assertions = [...$type_assertions, ...$assert_type_assertions];
             }
         }
 

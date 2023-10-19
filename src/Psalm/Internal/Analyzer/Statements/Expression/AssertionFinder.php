@@ -109,7 +109,9 @@ use function is_int;
 use function is_numeric;
 use function is_string;
 use function sprintf;
+use function str_ends_with;
 use function str_replace;
+use function str_starts_with;
 use function strpos;
 use function strtolower;
 use function substr;
@@ -1015,7 +1017,7 @@ final class AssertionFinder
                         $if_types[$var_id] = [[$assertion->rule[0]]];
                     }
                 } elseif (is_string($assertion->var_id)) {
-                    $is_function = substr($assertion->var_id, -2) === '()';
+                    $is_function = str_ends_with($assertion->var_id, '()');
                     $exploded_id = explode('->', $assertion->var_id);
                     $var_id   = $exploded_id[0] ?? null;
                     $property = $exploded_id[1] ?? null;
@@ -1071,7 +1073,7 @@ final class AssertionFinder
                     } elseif (!$expr instanceof PhpParser\Node\Expr\FuncCall) {
                         $assertion_var_id = $assertion->var_id;
 
-                        if (strpos($assertion_var_id, 'self::') === 0) {
+                        if (str_starts_with($assertion_var_id, 'self::')) {
                             $assertion_var_id = $this_class_name.'::'.substr($assertion_var_id, 6);
                         }
                     } else {
@@ -1145,7 +1147,7 @@ final class AssertionFinder
                         $if_types[$var_id] = [[$assertion->rule[0]->getNegation()]];
                     }
                 } elseif (is_string($assertion->var_id)) {
-                    $is_function = substr($assertion->var_id, -2) === '()';
+                    $is_function = str_ends_with($assertion->var_id, '()');
                     $exploded_id = explode('->', $assertion->var_id);
                     $var_id   = $exploded_id[0] ?? null;
                     $property = $exploded_id[1] ?? null;
@@ -1202,7 +1204,7 @@ final class AssertionFinder
                         $if_types[$assertion_var_id] = [[$rule]];
                     } elseif (!$expr instanceof PhpParser\Node\Expr\FuncCall) {
                         $var_id = $assertion->var_id;
-                        if (strpos($var_id, 'self::') === 0) {
+                        if (str_starts_with($var_id, 'self::')) {
                             $var_id = $this_class_name.'::'.substr($var_id, 6);
                         }
                         $if_types[$var_id] = [[$assertion->rule[0]->getNegation()]];
@@ -1857,44 +1859,24 @@ final class AssertionFinder
 
     private static function getIsAssertion(string $function_name): ?Assertion
     {
-        switch ($function_name) {
-            case 'is_string':
-                return new IsType(new Atomic\TString());
-            case 'is_int':
-            case 'is_integer':
-            case 'is_long':
-                return new IsType(new Atomic\TInt());
-            case 'is_float':
-            case 'is_double':
-            case 'is_real':
-                return new IsType(new Atomic\TFloat());
-            case 'is_scalar':
-                return new IsType(new Atomic\TScalar());
-            case 'is_bool':
-                return new IsType(new Atomic\TBool());
-            case 'is_resource':
-                return new IsType(new Atomic\TResource());
-            case 'is_object':
-                return new IsType(new Atomic\TObject());
-            case 'array_is_list':
-                return new IsType(Type::getListAtomic(Type::getMixed()));
-            case 'is_array':
-                return new IsType(new Atomic\TArray([Type::getArrayKey(), Type::getMixed()]));
-            case 'is_numeric':
-                return new IsType(new Atomic\TNumeric());
-            case 'is_null':
-                return new IsType(new Atomic\TNull());
-            case 'is_iterable':
-                return new IsType(new Atomic\TIterable());
-            case 'is_countable':
-                return new IsCountable();
-            case 'ctype_digit':
-                return new IsType(new Atomic\TNumericString);
-            case 'ctype_lower':
-                return new IsType(new Atomic\TNonEmptyLowercaseString);
-        }
-
-        return null;
+        return match ($function_name) {
+            'is_string' => new IsType(new Atomic\TString()),
+            'is_int', 'is_integer', 'is_long' => new IsType(new Atomic\TInt()),
+            'is_float', 'is_double', 'is_real' => new IsType(new Atomic\TFloat()),
+            'is_scalar' => new IsType(new Atomic\TScalar()),
+            'is_bool' => new IsType(new Atomic\TBool()),
+            'is_resource' => new IsType(new Atomic\TResource()),
+            'is_object' => new IsType(new Atomic\TObject()),
+            'array_is_list' => new IsType(Type::getListAtomic(Type::getMixed())),
+            'is_array' => new IsType(new Atomic\TArray([Type::getArrayKey(), Type::getMixed()])),
+            'is_numeric' => new IsType(new Atomic\TNumeric()),
+            'is_null' => new IsType(new Atomic\TNull()),
+            'is_iterable' => new IsType(new Atomic\TIterable()),
+            'is_countable' => new IsCountable(),
+            'ctype_digit' => new IsType(new Atomic\TNumericString),
+            'ctype_lower' => new IsType(new Atomic\TNonEmptyLowercaseString),
+            default => null,
+        };
     }
 
     /**
@@ -2531,7 +2513,7 @@ final class AssertionFinder
                     $if_types[$var_name] = [[new IsNotIdentical(new TObject())]];
                 } elseif ($var_type === 'resource (closed)') {
                     $if_types[$var_name] = [[new IsNotType(new TClosedResource())]];
-                } elseif (strpos($var_type, 'resource (') === 0) {
+                } elseif (str_starts_with($var_type, 'resource (')) {
                     $if_types[$var_name] = [[new IsNotIdentical(new TResource())]];
                 } else {
                     $if_types[$var_name] = [[new IsNotType(Atomic::create($var_type))]];
@@ -2589,7 +2571,7 @@ final class AssertionFinder
                 $if_types[$var_name] = [[new IsNotIdentical(new TObject())]];
             } elseif ($var_type === 'resource (closed)') {
                 $if_types[$var_name] = [[new IsNotType(new TClosedResource())]];
-            } elseif (strpos($var_type, 'resource (') === 0) {
+            } elseif (str_starts_with($var_type, 'resource (')) {
                 $if_types[$var_name] = [[new IsNotIdentical(new TResource())]];
             } else {
                 $if_types[$var_name] = [[new IsNotType(Atomic::create($var_type))]];
@@ -3244,7 +3226,7 @@ final class AssertionFinder
                     $if_types[$var_name] = [[new IsIdentical(new TObject())]];
                 } elseif ($var_type === 'resource (closed)') {
                     $if_types[$var_name] = [[new IsType(new TClosedResource())]];
-                } elseif (strpos($var_type, 'resource (') === 0) {
+                } elseif (str_starts_with($var_type, 'resource (')) {
                     $if_types[$var_name] = [[new IsIdentical(new TResource())]];
                 } elseif ($var_type === 'integer') {
                     $if_types[$var_name] = [[new IsType(new Atomic\TInt())]];
@@ -3308,7 +3290,7 @@ final class AssertionFinder
                 $if_types[$var_name] = [[new IsIdentical(new TObject())]];
             } elseif ($var_type === 'resource (closed)') {
                 $if_types[$var_name] = [[new IsType(new TClosedResource())]];
-            } elseif (strpos($var_type, 'resource (') === 0) {
+            } elseif (str_starts_with($var_type, 'resource (')) {
                 $if_types[$var_name] = [[new IsIdentical(new TResource())]];
             } elseif ($var_type === 'integer') {
                 $if_types[$var_name] = [[new IsType(new Atomic\TInt())]];

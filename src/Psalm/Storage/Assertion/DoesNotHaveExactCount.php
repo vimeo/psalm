@@ -11,13 +11,9 @@ use Psalm\Storage\Assertion;
  */
 final class DoesNotHaveExactCount extends Assertion
 {
-    /** @var positive-int */
-    public int $count;
-
     /** @param positive-int $count */
-    public function __construct(int $count)
+    public function __construct(public int $count)
     {
-        $this->count = $count;
     }
 
     public function isNegation(): bool

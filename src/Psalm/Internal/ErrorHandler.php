@@ -31,7 +31,7 @@ final class ErrorHandler
     /**
      * @param array<int,string> $argv
      */
-    public static function install(array $argv = array()): void
+    public static function install(array $argv = []): void
     {
         self::$args = implode(' ', $argv);
         self::setErrorReporting();
@@ -93,7 +93,7 @@ final class ErrorHandler
          * then print more of the backtrace than is done by default to stderr,
          * then exit with a non-zero exit code to indicate failure.
          */
-        set_exception_handler(static function (Throwable $throwable): void {
+        set_exception_handler(static function (Throwable $throwable): never {
             fwrite(STDERR, "Uncaught $throwable\n");
             $version = defined('PSALM_VERSION') ? PSALM_VERSION : '(unknown version)';
             fwrite(STDERR, "(Psalm $version crashed due to an uncaught Throwable)\n");

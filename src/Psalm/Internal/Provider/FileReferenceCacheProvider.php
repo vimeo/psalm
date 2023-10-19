@@ -50,13 +50,10 @@ class FileReferenceCacheProvider
     private const FILE_MISSING_MEMBER_CACHE_NAME = 'file_missing_member';
     private const UNKNOWN_MEMBER_CACHE_NAME = 'unknown_member_references';
     private const METHOD_PARAM_USE_CACHE_NAME = 'method_param_uses';
-
-    protected Config $config;
     protected Cache $cache;
 
-    public function __construct(Config $config)
+    public function __construct(protected Config $config)
     {
-        $this->config = $config;
         $this->cache = new Cache($config);
     }
 

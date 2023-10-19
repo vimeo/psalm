@@ -27,7 +27,6 @@ use Psalm\IssueBuffer;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
-use function array_merge;
 use function count;
 use function is_string;
 use function preg_match;
@@ -139,7 +138,7 @@ final class CommentAnalyzer
                             $template_type_map,
                             $type_aliases,
                         );
-                    } catch (TypeParseTreeException $e) {
+                    } catch (TypeParseTreeException) {
                         throw new DocblockParseException($line_parts[0] . ' is not a valid type');
                     }
 
@@ -402,7 +401,7 @@ final class CommentAnalyzer
                 $remaining = trim((string) preg_replace('@^[ \t]*\* *@m', ' ', substr($return_block, $i + 1)));
 
                 if ($remaining) {
-                    return array_merge([rtrim($type)], preg_split('/\s+/', $remaining) ?: []);
+                    return [rtrim($type), ...preg_split('/\s+/', $remaining) ?: []];
                 }
 
                 return [$type];

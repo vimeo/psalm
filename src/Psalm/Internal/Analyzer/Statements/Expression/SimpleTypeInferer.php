@@ -354,7 +354,7 @@ final class SimpleTypeInferer
                         }
 
                         return null;
-                    } catch (InvalidArgumentException | CircularReferenceException $e) {
+                    } catch (InvalidArgumentException | CircularReferenceException) {
                         return null;
                     }
                 }
@@ -482,11 +482,7 @@ final class SimpleTypeInferer
 
                     foreach ($array_type->getAtomicTypes() as $array_atomic_type) {
                         if ($array_atomic_type instanceof TKeyedArray) {
-                            if (isset($array_atomic_type->properties[$dim_value])) {
-                                return $array_atomic_type->properties[$dim_value];
-                            }
-
-                            return null;
+                            return $array_atomic_type->properties[$dim_value] ?? null;
                         }
                     }
                 }
