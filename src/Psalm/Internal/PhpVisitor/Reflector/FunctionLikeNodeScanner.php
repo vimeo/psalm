@@ -244,6 +244,7 @@ final class FunctionLikeNodeScanner
         if ($stmt instanceof PhpParser\Node\Stmt\Function_
             || $stmt instanceof PhpParser\Node\Stmt\ClassMethod
         ) {
+            /** @psalm-suppress RedundantCondition See https://github.com/vimeo/psalm/issues/10296 */
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod
                 && $storage instanceof MethodStorage
                 && $classlike_storage
