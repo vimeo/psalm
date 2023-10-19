@@ -17,7 +17,7 @@ final class ReportOptions
     /**
      * @var Report::TYPE_*
      */
-    public $format = Report::TYPE_CONSOLE;
+    public string $format = Report::TYPE_CONSOLE;
 
     public bool $pretty = false;
 
