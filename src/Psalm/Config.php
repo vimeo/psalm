@@ -567,7 +567,7 @@ final class Config
     public array $config_warnings = [];
 
     /** @internal */
-    private function __construct()
+    protected function __construct()
     {
         self::$instance = $this;
         $this->eventDispatcher = new EventDispatcher();
