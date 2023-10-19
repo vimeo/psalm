@@ -106,7 +106,7 @@ final class Workspace
     /**
      * A notification sent from the client to the server to signal the change of configuration settings.
      *
-     * @psalm-suppress PossiblyUnusedMethod, PossiblyUnusedParam
+     * @psalm-suppress PossiblyUnusedMethod, UnusedParam
      */
     public function didChangeConfiguration(mixed $settings): void
     {
