@@ -122,21 +122,6 @@ class MethodCallAnalyzer extends CallAnalyzer
             $statements_analyzer->node_data->setType($stmt, Type::getMixed());
         }
 
-        if (!$context->check_classes) {
-            if (ArgumentsAnalyzer::analyze(
-                $statements_analyzer,
-                $stmt->getArgs(),
-                null,
-                null,
-                true,
-                $context,
-            ) === false) {
-                return false;
-            }
-
-            return true;
-        }
-
         if ($class_type
             && $stmt->name instanceof PhpParser\Node\Identifier
             && ($class_type->isNull() || $class_type->isVoid())

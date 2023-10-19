@@ -184,6 +184,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                 $context->calling_method_id,
                 $statements_analyzer->getSuppressedIssues(),
                 new ClassLikeNameOptions(true, false, true, true, $lhs_type_part->from_docblock),
+                $context->check_classes,
             );
         }
 
