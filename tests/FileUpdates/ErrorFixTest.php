@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests\FileUpdates;
 
 use Psalm\Config;
@@ -55,7 +57,7 @@ class ErrorFixTest extends TestCase
     public function testErrorFix(
         array $files,
         array $error_counts,
-        array $ignored_issues = []
+        array $ignored_issues = [],
     ): void {
         $this->project_analyzer->getCodebase()->diff_methods = true;
 

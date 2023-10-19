@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests\FileUpdates;
 
 use Psalm\Config;
@@ -55,7 +57,7 @@ class AnalyzedMethodTest extends TestCase
         array $end_files,
         array $initial_analyzed_methods,
         array $unaffected_analyzed_methods,
-        array $ignored_issues = []
+        array $ignored_issues = [],
     ): void {
         $test_name = $this->getTestName();
         if (strpos($test_name, 'SKIPPED-') !== false) {

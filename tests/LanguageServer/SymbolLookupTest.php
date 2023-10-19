@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests\LanguageServer;
 
 use LanguageServerProtocol\Position;
@@ -626,7 +628,7 @@ class SymbolLookupTest extends TestCase
         Position $position,
         ?string $expected_symbol,
         ?int $expected_argument_number,
-        ?int $expected_param_count
+        ?int $expected_param_count,
     ): void {
         $config = $this->codebase->config;
         $config->throw_exception = false;
