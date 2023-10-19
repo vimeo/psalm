@@ -2324,7 +2324,8 @@ final class Config
         }
     }
 
-    public function getComposerFilePathForClassLike(string $fq_classlike_name): string|false
+    /** @return string|false */
+    public function getComposerFilePathForClassLike(string $fq_classlike_name): string|bool
     {
         if (!$this->composer_class_loader) {
             return false;
