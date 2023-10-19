@@ -12,20 +12,15 @@ use function trim;
 
 final class FileManipulation
 {
-    /** @var int */
-    public $start;
+    public int $start;
 
-    /** @var int */
-    public $end;
+    public int $end;
 
-    /** @var string */
-    public $insertion_text;
+    public string $insertion_text;
 
-    /** @var bool */
-    public $preserve_indentation;
+    public bool $preserve_indentation;
 
-    /** @var bool */
-    public $remove_trailing_newline;
+    public bool $remove_trailing_newline;
 
     public function __construct(
         int $start,

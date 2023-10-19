@@ -36,24 +36,24 @@ class TKeyedArray extends Atomic
     /**
      * @var non-empty-array<string|int, Union>
      */
-    public $properties;
+    public array $properties;
 
     /**
      * @var array<string, bool>|null
      */
-    public $class_strings;
+    public ?array $class_strings = null;
 
     /**
      * If the shape has fallback params then they are here
      *
      * @var array{Union, Union}|null
      */
-    public $fallback_params;
+    public ?array $fallback_params = null;
 
     /**
      * @var bool - if this is a list of sequential elements
      */
-    public $is_list = false;
+    public bool $is_list = false;
 
     /** @var non-empty-lowercase-string */
     protected const NAME_ARRAY = 'array';

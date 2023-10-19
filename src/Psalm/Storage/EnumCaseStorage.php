@@ -10,18 +10,11 @@ use Psalm\Type\Atomic\TLiteralString;
 
 final class EnumCaseStorage
 {
-    /**
-     * @var TLiteralString|TLiteralInt|null
-     */
-    public $value;
+    public TLiteralString|TLiteralInt|null $value = null;
 
-    /** @var CodeLocation */
-    public $stmt_location;
+    public CodeLocation $stmt_location;
 
-    /**
-     * @var bool
-     */
-    public $deprecated = false;
+    public bool $deprecated = false;
 
     public function __construct(
         TLiteralString|TLiteralInt|null $value,

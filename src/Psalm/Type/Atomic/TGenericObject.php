@@ -34,7 +34,7 @@ final class TGenericObject extends TNamedObject
     public array $type_params;
 
     /** @var bool if the parameters have been remapped to another class */
-    public $remapped_params = false;
+    public bool $remapped_params = false;
 
     /**
      * @param string                $value the name of the object

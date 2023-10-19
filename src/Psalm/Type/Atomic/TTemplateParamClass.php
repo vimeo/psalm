@@ -11,15 +11,9 @@ namespace Psalm\Type\Atomic;
  */
 final class TTemplateParamClass extends TClassString
 {
-    /**
-     * @var string
-     */
-    public $param_name;
+    public string $param_name;
 
-    /**
-     * @var string
-     */
-    public $defining_class;
+    public string $defining_class;
 
     public function __construct(
         string $param_name,

@@ -14,11 +14,9 @@ use Psalm\Type\Atomic;
  */
 final class TClassConstant extends Atomic
 {
-    /** @var string */
-    public $fq_classlike_name;
+    public string $fq_classlike_name;
 
-    /** @var string */
-    public $const_name;
+    public string $const_name;
 
     public function __construct(string $fq_classlike_name, string $const_name, bool $from_docblock = false)
     {

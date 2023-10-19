@@ -48,62 +48,59 @@ class FileFilter
     /**
      * @var array<string>
      */
-    protected $directories = [];
+    protected array $directories = [];
 
     /**
      * @var array<string>
      */
-    protected $files = [];
+    protected array $files = [];
 
     /**
      * @var array<string>
      */
-    protected $fq_classlike_names = [];
+    protected array $fq_classlike_names = [];
 
     /**
      * @var array<non-empty-string>
      */
-    protected $fq_classlike_patterns = [];
+    protected array $fq_classlike_patterns = [];
 
     /**
      * @var array<non-empty-string>
      */
-    protected $method_ids = [];
+    protected array $method_ids = [];
 
     /**
      * @var array<string>
      */
-    protected $property_ids = [];
+    protected array $property_ids = [];
 
     /**
      * @var array<string>
      */
-    protected $class_constant_ids = [];
+    protected array $class_constant_ids = [];
 
     /**
      * @var array<string>
      */
-    protected $var_names = [];
+    protected array $var_names = [];
 
     /**
      * @var array<string>
      */
-    protected $files_lowercase = [];
+    protected array $files_lowercase = [];
 
-    /**
-     * @var bool
-     */
-    protected $inclusive;
+    protected bool $inclusive;
 
     /**
      * @var array<string, bool>
      */
-    protected $ignore_type_stats = [];
+    protected array $ignore_type_stats = [];
 
     /**
      * @var array<string, bool>
      */
-    protected $declare_strict_types = [];
+    protected array $declare_strict_types = [];
 
     public function __construct(bool $inclusive)
     {

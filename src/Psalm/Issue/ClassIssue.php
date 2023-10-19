@@ -8,10 +8,7 @@ use Psalm\CodeLocation;
 
 abstract class ClassIssue extends CodeIssue
 {
-    /**
-     * @var string
-     */
-    public $fq_classlike_name;
+    public string $fq_classlike_name;
 
     public function __construct(
         string $message,

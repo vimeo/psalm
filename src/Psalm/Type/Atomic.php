@@ -91,32 +91,19 @@ abstract class Atomic implements TypeNode
 
     /**
      * Whether or not the type has been checked yet
-     *
-     * @var bool
      */
-    public $checked = false;
+    public bool $checked = false;
 
     /**
      * Whether or not the type comes from a docblock
-     *
-     * @var bool
      */
-    public $from_docblock = false;
+    public bool $from_docblock = false;
 
-    /**
-     * @var ?int
-     */
-    public $offset_start;
+    public ?int $offset_start = null;
 
-    /**
-     * @var ?int
-     */
-    public $offset_end;
+    public ?int $offset_end = null;
 
-    /**
-     * @var ?string
-     */
-    public $text;
+    public ?string $text = null;
 
     /**
      * @return static

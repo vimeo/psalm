@@ -23,17 +23,11 @@ use function get_class;
  */
 final class TClassStringMap extends Atomic
 {
-    /**
-     * @var string
-     */
-    public $param_name;
+    public string $param_name;
 
     public ?TNamedObject $as_type;
 
-    /**
-     * @var Union
-     */
-    public $value_param;
+    public Union $value_param;
 
     /**
      * Constructs a new instance of a list

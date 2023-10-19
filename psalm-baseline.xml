@@ -251,6 +251,16 @@
       <code>$stub</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
+  <file src="src/Psalm/Internal/Codebase/Methods.php">
+    <InvalidArgument>
+      <code><![CDATA[$class_storage->methods[$declaring_method_name]->stubbed]]></code>
+    </InvalidArgument>
+  </file>
+  <file src="src/Psalm/Internal/Codebase/Populator.php">
+    <InvalidArgument>
+      <code><![CDATA[$storage->methods[$implementing_method_id->method_name]->abstract]]></code>
+    </InvalidArgument>
+  </file>
   <file src="src/Psalm/Internal/Codebase/Properties.php">
     <PossiblyUndefinedIntArrayOffset>
       <code>$property_name</code>

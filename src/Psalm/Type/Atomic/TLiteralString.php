@@ -19,8 +19,7 @@ use function strlen;
  */
 class TLiteralString extends TString
 {
-    /** @var string */
-    public $value;
+    public string $value;
 
     /**
      * Creates a literal string with a known value.

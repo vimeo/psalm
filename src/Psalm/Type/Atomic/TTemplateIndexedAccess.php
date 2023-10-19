@@ -11,20 +11,11 @@ use Psalm\Type\Atomic;
  */
 final class TTemplateIndexedAccess extends Atomic
 {
-    /**
-     * @var string
-     */
-    public $array_param_name;
+    public string $array_param_name;
 
-    /**
-     * @var string
-     */
-    public $offset_param_name;
+    public string $offset_param_name;
 
-    /**
-     * @var string
-     */
-    public $defining_class;
+    public string $defining_class;
 
     public function __construct(
         string $array_param_name,

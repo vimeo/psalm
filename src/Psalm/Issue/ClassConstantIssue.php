@@ -8,10 +8,7 @@ use Psalm\CodeLocation;
 
 abstract class ClassConstantIssue extends CodeIssue
 {
-    /**
-     * @var string
-     */
-    public $const_id;
+    public string $const_id;
 
     public function __construct(
         string $message,

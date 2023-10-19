@@ -33,15 +33,9 @@ final class TIterable extends Atomic
      */
     public array $type_params;
 
-    /**
-     * @var string
-     */
-    public $value = 'iterable';
+    public string $value = 'iterable';
 
-    /**
-     * @var bool
-     */
-    public $has_docblock_params = false;
+    public bool $has_docblock_params = false;
 
     /**
      * @param array{Union, Union}|array<never, never> $type_params

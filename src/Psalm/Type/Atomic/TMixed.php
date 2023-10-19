@@ -13,8 +13,7 @@ use Psalm\Type\Atomic;
  */
 class TMixed extends Atomic
 {
-    /** @var bool */
-    public $from_loop_isset = false;
+    public bool $from_loop_isset = false;
 
     public function __construct(bool $from_loop_isset = false, bool $from_docblock = false)
     {

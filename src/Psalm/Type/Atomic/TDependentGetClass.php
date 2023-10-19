@@ -15,15 +15,10 @@ final class TDependentGetClass extends TString implements DependentType
 {
     /**
      * Used to hold information as to what this refers to
-     *
-     * @var string
      */
-    public $typeof;
+    public string $typeof;
 
-    /**
-     * @var Union
-     */
-    public $as_type;
+    public Union $as_type;
 
     /**
      * @param string $typeof the variable id

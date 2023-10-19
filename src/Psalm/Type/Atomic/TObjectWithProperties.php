@@ -29,15 +29,14 @@ final class TObjectWithProperties extends TObject
     /**
      * @var array<string|int, Union>
      */
-    public $properties;
+    public array $properties;
 
     /**
      * @var array<lowercase-string, string>
      */
-    public $methods;
+    public array $methods;
 
-    /** @var bool */
-    public $is_stringable_object_only = false;
+    public bool $is_stringable_object_only = false;
 
     /**
      * Constructs a new instance of a generic type

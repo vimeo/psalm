@@ -249,10 +249,6 @@
     </rule>
     <rule ref="SlevomatCodingStandard.TypeHints.PropertyTypeHint">
         <exclude name="SlevomatCodingStandard.TypeHints.PropertyTypeHint.MissingTraversableTypeHintSpecification"/>
-        <!-- TODO: Remove in Psalm 6 -->
-        <include-pattern>bin/*</include-pattern>
-        <include-pattern>src/Psalm/Internal/*</include-pattern>
-        <include-pattern>tests/*</include-pattern>
     </rule>
     <rule ref="SlevomatCodingStandard.Arrays.TrailingArrayComma"/>
     <rule ref="SlevomatCodingStandard.Functions.RequireTrailingCommaInCall"/>

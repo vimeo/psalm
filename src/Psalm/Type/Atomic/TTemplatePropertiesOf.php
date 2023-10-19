@@ -17,18 +17,9 @@ use Psalm\Type\Union;
  */
 final class TTemplatePropertiesOf extends Atomic
 {
-    /**
-     * @var string
-     */
-    public $param_name;
-    /**
-     * @var string
-     */
-    public $defining_class;
-    /**
-     * @var TTemplateParam
-     */
-    public $as;
+    public string $param_name;
+    public string $defining_class;
+    public TTemplateParam $as;
     /**
      * @var TPropertiesOf::VISIBILITY_*|null
      */

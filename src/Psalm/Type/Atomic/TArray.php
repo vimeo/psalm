@@ -30,10 +30,7 @@ class TArray extends Atomic
      */
     public array $type_params;
 
-    /**
-     * @var string
-     */
-    public $value = 'array';
+    public string $value = 'array';
 
     /**
      * Constructs a new instance of a generic type

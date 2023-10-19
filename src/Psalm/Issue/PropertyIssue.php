@@ -8,10 +8,7 @@ use Psalm\CodeLocation;
 
 abstract class PropertyIssue extends CodeIssue
 {
-    /**
-     * @var string
-     */
-    public $property_id;
+    public string $property_id;
 
     public function __construct(
         string $message,

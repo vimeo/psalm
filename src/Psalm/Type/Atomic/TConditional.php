@@ -17,35 +17,17 @@ use Psalm\Type\Union;
  */
 final class TConditional extends Atomic
 {
-    /**
-     * @var string
-     */
-    public $param_name;
+    public string $param_name;
 
-    /**
-     * @var string
-     */
-    public $defining_class;
+    public string $defining_class;
 
-    /**
-     * @var Union
-     */
-    public $as_type;
+    public Union $as_type;
 
-    /**
-     * @var Union
-     */
-    public $conditional_type;
+    public Union $conditional_type;
 
-    /**
-     * @var Union
-     */
-    public $if_type;
+    public Union $if_type;
 
-    /**
-     * @var Union
-     */
-    public $else_type;
+    public Union $else_type;
 
     public function __construct(
         string $param_name,

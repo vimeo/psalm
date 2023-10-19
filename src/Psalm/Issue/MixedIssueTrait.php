@@ -9,10 +9,9 @@ use Psalm\CodeLocation;
 trait MixedIssueTrait
 {
     /**
-     * @var ?CodeLocation
      * @readonly
      */
-    public $origin_location;
+    public ?CodeLocation $origin_location = null;
 
     public function __construct(
         string $message,

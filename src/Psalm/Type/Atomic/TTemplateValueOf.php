@@ -17,20 +17,11 @@ use Psalm\Type\Union;
  */
 final class TTemplateValueOf extends Atomic
 {
-    /**
-     * @var string
-     */
-    public $param_name;
+    public string $param_name;
 
-    /**
-     * @var string
-     */
-    public $defining_class;
+    public string $defining_class;
 
-    /**
-     * @var Union
-     */
-    public $as;
+    public Union $as;
 
     public function __construct(
         string $param_name,

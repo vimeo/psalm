@@ -24,17 +24,11 @@ trait CallableTrait
     /**
      * @var list<FunctionLikeParameter>|null
      */
-    public $params = [];
+    public ?array $params = [];
 
-    /**
-     * @var Union|null
-     */
-    public $return_type;
+    public ?Union $return_type = null;
 
-    /**
-     * @var ?bool
-     */
-    public $is_pure;
+    public ?bool $is_pure = null;
 
     /**
      * Constructs a new instance of a generic type

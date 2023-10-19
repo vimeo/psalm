@@ -20,10 +20,7 @@ final class TCallable extends Atomic
 {
     use CallableTrait;
 
-    /**
-     * @var string
-     */
-    public $value;
+    public string $value;
 
     /**
      * Constructs a new instance of a generic type

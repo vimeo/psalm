@@ -10,10 +10,7 @@ use function strtolower;
 
 abstract class ArgumentIssue extends CodeIssue
 {
-    /**
-     * @var ?string
-     */
-    public $function_id;
+    public ?string $function_id = null;
 
     public function __construct(
         string $message,

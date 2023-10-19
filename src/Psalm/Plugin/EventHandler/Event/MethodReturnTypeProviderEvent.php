@@ -20,10 +20,7 @@ final class MethodReturnTypeProviderEvent
     private string $method_name_lowercase;
     private Context $context;
     private CodeLocation $code_location;
-    /**
-     * @var PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall
-     */
-    private $stmt;
+    private PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall $stmt;
     /** @var non-empty-list<Union>|null */
     private ?array $template_type_parameters;
     private ?string $called_fq_classlike_name;

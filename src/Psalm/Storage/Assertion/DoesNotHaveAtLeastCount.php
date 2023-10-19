@@ -12,7 +12,7 @@ use Psalm\Storage\Assertion;
 final class DoesNotHaveAtLeastCount extends Assertion
 {
     /** @var positive-int */
-    public $count;
+    public int $count;
 
     /** @param positive-int $count */
     public function __construct(int $count)

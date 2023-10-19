@@ -17,17 +17,10 @@ final class TIntRange extends TInt
     public const BOUND_MIN = 'min';
     public const BOUND_MAX = 'max';
 
-    /**
-     * @var int|null
-     */
-    public $min_bound;
-    /**
-     * @var int|null
-     */
-    public $max_bound;
+    public ?int $min_bound = null;
+    public ?int $max_bound = null;
 
-    /** @var string|null */
-    public $dependent_list_key;
+    public ?string $dependent_list_key = null;
 
     public function __construct(
         ?int $min_bound,

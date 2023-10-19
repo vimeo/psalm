@@ -10,10 +10,7 @@ use function strtolower;
 
 abstract class VariableIssue extends CodeIssue
 {
-    /**
-     * @var string
-     */
-    public $var_name;
+    public string $var_name;
 
     public function __construct(
         string $message,

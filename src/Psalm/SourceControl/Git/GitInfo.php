@@ -33,24 +33,20 @@ final class GitInfo extends SourceControlInfo
 {
     /**
      * Branch name.
-     *
-     * @var string
      */
-    protected $branch;
+    protected string $branch;
 
     /**
      * Head.
-     *
-     * @var CommitInfo
      */
-    protected $head;
+    protected CommitInfo $head;
 
     /**
      * Remote.
      *
      * @var RemoteInfo[]
      */
-    protected $remotes;
+    protected array $remotes;
 
     /**
      * Constructor.

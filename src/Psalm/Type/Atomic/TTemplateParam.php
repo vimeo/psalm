@@ -21,20 +21,11 @@ final class TTemplateParam extends Atomic
 {
     use HasIntersectionTrait;
 
-    /**
-     * @var string
-     */
-    public $param_name;
+    public string $param_name;
 
-    /**
-     * @var Union
-     */
-    public $as;
+    public Union $as;
 
-    /**
-     * @var string
-     */
-    public $defining_class;
+    public string $defining_class;
 
     /**
      * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties> $extra_types

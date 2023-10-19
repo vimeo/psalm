@@ -17,13 +17,13 @@ final class Possibilities
     /**
      * @var list<Assertion> the rule being asserted
      */
-    public $rule;
+    public array $rule;
 
     /**
      * @var int|string the id of the property/variable, or
      *  the parameter offset of the affected arg
      */
-    public $var_id;
+    public int|string $var_id;
 
     /**
      * @param list<Assertion> $rule

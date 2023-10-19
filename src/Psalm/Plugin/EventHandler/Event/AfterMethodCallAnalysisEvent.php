@@ -15,10 +15,7 @@ use Psalm\Type\Union;
 
 final class AfterMethodCallAnalysisEvent
 {
-    /**
-     * @var MethodCall|StaticCall
-     */
-    private $expr;
+    private MethodCall|StaticCall $expr;
     private string $method_id;
     private string $appearing_method_id;
     private string $declaring_method_id;

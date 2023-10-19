@@ -23,7 +23,7 @@ final class TClosure extends TNamedObject
     use CallableTrait;
 
     /** @var array<string, bool> */
-    public $byref_uses = [];
+    public array $byref_uses = [];
 
     /**
      * @param list<FunctionLikeParameter> $params

@@ -16,8 +16,7 @@ use function array_values;
  */
 final class TKeyOf extends TArrayKey
 {
-    /** @var Union */
-    public $type;
+    public Union $type;
 
     public function __construct(Union $type, bool $from_docblock = false)
     {

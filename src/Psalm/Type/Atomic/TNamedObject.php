@@ -24,27 +24,16 @@ class TNamedObject extends Atomic
 {
     use HasIntersectionTrait;
 
-    /**
-     * @var string
-     */
-    public $value;
+    public string $value;
 
-    /**
-     * @var bool
-     */
-    public $is_static = false;
+    public bool $is_static = false;
 
-    /**
-     * @var bool
-     */
-    public $is_static_resolved = false;
+    public bool $is_static_resolved = false;
 
     /**
      * Whether or not this type can represent a child of the class named in $value
-     *
-     * @var bool
      */
-    public $definite_class = false;
+    public bool $definite_class = false;
 
     /**
      * @param string $value the name of the object

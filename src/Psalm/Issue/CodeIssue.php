@@ -18,21 +18,16 @@ abstract class CodeIssue
     public const SHORTCODE = 0;
 
     /**
-     * @var CodeLocation
      * @readonly
      */
-    public $code_location;
+    public CodeLocation $code_location;
 
     /**
-     * @var string
      * @readonly
      */
-    public $message;
+    public string $message;
 
-    /**
-     * @var ?string
-     */
-    public $dupe_key;
+    public ?string $dupe_key = null;
 
     public function __construct(
         string $message,

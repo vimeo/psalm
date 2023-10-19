@@ -100,10 +100,7 @@ use const PHP_VERSION_ID;
 
 final class Codebase
 {
-    /**
-     * @var Config
-     */
-    public $config;
+    public Config $config;
 
     /**
      * A map of fully-qualified use declarations to the files
@@ -111,211 +108,138 @@ final class Codebase
      *
      * @var array<lowercase-string, array<int, CodeLocation>>
      */
-    public $use_referencing_locations = [];
+    public array $use_referencing_locations = [];
 
-    /**
-     * @var FileStorageProvider
-     */
-    public $file_storage_provider;
+    public FileStorageProvider $file_storage_provider;
 
-    /**
-     * @var ClassLikeStorageProvider
-     */
-    public $classlike_storage_provider;
+    public ClassLikeStorageProvider $classlike_storage_provider;
 
-    /**
-     * @var bool
-     */
-    public $collect_references = false;
+    public bool $collect_references = false;
 
-    /**
-     * @var bool
-     */
-    public $collect_locations = false;
+    public bool $collect_locations = false;
 
     /**
      * @var null|'always'|'auto'
      */
-    public $find_unused_code;
+    public ?string $find_unused_code = null;
 
-    /**
-     * @var FileProvider
-     */
-    public $file_provider;
+    public FileProvider $file_provider;
 
-    /**
-     * @var FileReferenceProvider
-     */
-    public $file_reference_provider;
+    public FileReferenceProvider $file_reference_provider;
 
-    /**
-     * @var StatementsProvider
-     */
-    public $statements_provider;
+    public StatementsProvider $statements_provider;
 
     private Progress $progress;
 
     /**
      * @var array<string, Union>
      */
-    private static $stubbed_constants = [];
+    private static array $stubbed_constants = [];
 
     /**
      * Whether to register autoloaded information
-     *
-     * @var bool
      */
-    public $register_autoload_files = false;
+    public bool $register_autoload_files = false;
 
     /**
      * Whether to log functions just at the file level or globally (for stubs)
-     *
-     * @var bool
      */
-    public $register_stub_files = false;
+    public bool $register_stub_files = false;
 
-    /**
-     * @var bool
-     */
-    public $find_unused_variables = false;
+    public bool $find_unused_variables = false;
 
-    /**
-     * @var Scanner
-     */
-    public $scanner;
+    public Scanner $scanner;
 
-    /**
-     * @var Analyzer
-     */
-    public $analyzer;
+    public Analyzer $analyzer;
 
-    /**
-     * @var Functions
-     */
-    public $functions;
+    public Functions $functions;
 
-    /**
-     * @var ClassLikes
-     */
-    public $classlikes;
+    public ClassLikes $classlikes;
 
-    /**
-     * @var Methods
-     */
-    public $methods;
+    public Methods $methods;
 
-    /**
-     * @var Properties
-     */
-    public $properties;
+    public Properties $properties;
 
-    /**
-     * @var Populator
-     */
-    public $populator;
+    public Populator $populator;
 
-    /**
-     * @var ?TaintFlowGraph
-     */
-    public $taint_flow_graph;
+    public ?TaintFlowGraph $taint_flow_graph = null;
 
-    /**
-     * @var bool
-     */
-    public $server_mode = false;
+    public bool $server_mode = false;
 
-    /**
-     * @var bool
-     */
-    public $store_node_types = false;
+    public bool $store_node_types = false;
 
     /**
      * Whether or not to infer types from usage. Computationally expensive, so turned off by default
-     *
-     * @var bool
      */
-    public $infer_types_from_usage = false;
+    public bool $infer_types_from_usage = false;
 
-    /**
-     * @var bool
-     */
-    public $alter_code = false;
+    public bool $alter_code = false;
 
-    /**
-     * @var bool
-     */
-    public $diff_methods = false;
+    public bool $diff_methods = false;
 
     /**
      * @var array<lowercase-string, string>
      */
-    public $methods_to_move = [];
+    public array $methods_to_move = [];
 
     /**
      * @var array<lowercase-string, string>
      */
-    public $methods_to_rename = [];
+    public array $methods_to_rename = [];
 
     /**
      * @var array<string, string>
      */
-    public $properties_to_move = [];
+    public array $properties_to_move = [];
 
     /**
      * @var array<string, string>
      */
-    public $properties_to_rename = [];
+    public array $properties_to_rename = [];
 
     /**
      * @var array<string, string>
      */
-    public $class_constants_to_move = [];
+    public array $class_constants_to_move = [];
 
     /**
      * @var array<string, string>
      */
-    public $class_constants_to_rename = [];
+    public array $class_constants_to_rename = [];
 
     /**
      * @var array<lowercase-string, string>
      */
-    public $classes_to_move = [];
+    public array $classes_to_move = [];
 
     /**
      * @var array<lowercase-string, string>
      */
-    public $call_transforms = [];
+    public array $call_transforms = [];
 
     /**
      * @var array<string, string>
      */
-    public $property_transforms = [];
+    public array $property_transforms = [];
 
     /**
      * @var array<string, string>
      */
-    public $class_constant_transforms = [];
+    public array $class_constant_transforms = [];
 
     /**
      * @var array<lowercase-string, string>
      */
-    public $class_transforms = [];
+    public array $class_transforms = [];
 
-    /**
-     * @var bool
-     */
-    public $allow_backwards_incompatible_changes = true;
+    public bool $allow_backwards_incompatible_changes = true;
 
-    /** @var int */
-    public $analysis_php_version_id = PHP_VERSION_ID;
+    public int $analysis_php_version_id = PHP_VERSION_ID;
 
     /** @var 'cli'|'config'|'composer'|'tests'|'runtime' */
-    public $php_version_source = 'runtime';
+    public string $php_version_source = 'runtime';
 
-    /**
-     * @var bool
-     */
-    public $track_unused_suppressions = false;
+    public bool $track_unused_suppressions = false;
 
     /** @internal */
     public function __construct(

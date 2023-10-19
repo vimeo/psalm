@@ -27,21 +27,15 @@ use function strtolower;
  */
 class TClassString extends TString
 {
-    /**
-     * @var string
-     */
-    public $as;
+    public string $as;
 
     public ?TNamedObject $as_type;
 
-    /** @var bool */
-    public $is_loaded = false;
+    public bool $is_loaded = false;
 
-    /** @var bool */
-    public $is_interface = false;
+    public bool $is_interface = false;
 
-    /** @var bool */
-    public $is_enum = false;
+    public bool $is_enum = false;
 
     public function __construct(
         string $as = 'object',

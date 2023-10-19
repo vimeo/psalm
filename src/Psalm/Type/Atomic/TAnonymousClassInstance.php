@@ -11,10 +11,7 @@ namespace Psalm\Type\Atomic;
  */
 final class TAnonymousClassInstance extends TNamedObject
 {
-    /**
-     * @var string|null
-     */
-    public $extends;
+    public ?string $extends = null;
 
     /**
      * @param string $value the name of the object

@@ -14,16 +14,15 @@ abstract class TaintedInput extends CodeIssue
     public const SHORTCODE = 205;
 
     /**
-     * @var string
      * @readonly
      */
-    public $journey_text;
+    public string $journey_text;
 
     /**
      * @var list<array{location: ?CodeLocation, label: string, entry_path_type: string}>
      * @readonly
      */
-    public $journey = [];
+    public array $journey = [];
 
     /**
      * @param list<array{location: ?CodeLocation, label: string, entry_path_type: string}> $journey

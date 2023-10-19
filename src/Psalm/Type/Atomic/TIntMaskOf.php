@@ -15,8 +15,7 @@ use Psalm\Type\Atomic;
  */
 final class TIntMaskOf extends TInt
 {
-    /** @var TClassConstant|TKeyOf|TValueOf */
-    public $value;
+    public TClassConstant|TKeyOf|TValueOf $value;
 
     /**
      * @param TClassConstant|TKeyOf|TValueOf $value

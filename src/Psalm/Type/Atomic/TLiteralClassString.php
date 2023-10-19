@@ -19,10 +19,8 @@ final class TLiteralClassString extends TLiteralString
 {
     /**
      * Whether or not this type can represent a child of the class named in $value
-     *
-     * @var bool
      */
-    public $definite_class = false;
+    public bool $definite_class = false;
 
     public function __construct(string $value, bool $definite_class = false, bool $from_docblock = false)
     {
