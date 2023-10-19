@@ -507,7 +507,7 @@ final class AssignmentAnalyzer
             $extended_var_id,
             $var_comments,
             $removed_taints,
-        ) === null
+        ) === false
         ) {
             return null;
         }
@@ -670,7 +670,7 @@ final class AssignmentAnalyzer
             $assign_var->class instanceof PhpParser\Node\Name
         ) {
             if (ExpressionAnalyzer::analyze($statements_analyzer, $assign_var, $context) === false) {
-                return null;
+                return false;
             }
 
             if ($context->check_classes) {
@@ -680,8 +680,8 @@ final class AssignmentAnalyzer
                     $assign_value,
                     $assign_value_type,
                     $context,
-                ) === null) {
-                    return null;
+                ) === false) {
+                    return false;
                 }
             }
 
