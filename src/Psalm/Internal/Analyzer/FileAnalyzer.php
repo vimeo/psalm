@@ -41,7 +41,7 @@ use function strtolower;
  * @internal
  * @psalm-consistent-constructor
  */
-final class FileAnalyzer extends SourceAnalyzer
+class FileAnalyzer extends SourceAnalyzer
 {
     use CanAlias;
 

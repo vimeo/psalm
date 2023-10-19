@@ -881,7 +881,6 @@ final class IssueBuffer
             Report::TYPE_SARIF => new SarifReport($normalized_data, self::$fixable_issue_counts, $report_options),
             Report::TYPE_CODECLIMATE => new CodeClimateReport($normalized_data, self::$fixable_issue_counts, $report_options),
             Report::TYPE_COUNT => new CountReport($normalized_data, self::$fixable_issue_counts, $report_options),
-            default => throw new RuntimeException('Unexpected report format: ' . $report_options->format),
         };
 
         return $output->create();

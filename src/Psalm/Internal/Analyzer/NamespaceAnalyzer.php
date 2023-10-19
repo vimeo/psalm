@@ -38,7 +38,7 @@ final class NamespaceAnalyzer extends SourceAnalyzer
     private static array $public_namespace_constants = [];
 
     public function __construct(
-        private readonly Namespace_ $namespace, 
+        private readonly Namespace_ $namespace,
         /**
          * @var FileAnalyzer
          * @psalm-suppress NonInvariantDocblockPropertyType

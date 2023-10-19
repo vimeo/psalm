@@ -8,6 +8,7 @@ use Psalm\CodeLocation;
 
 /**
  * @psalm-immutable
+ * @api
  */
 final class AttributeStorage
 {
@@ -19,13 +20,7 @@ final class AttributeStorage
     public function __construct(
         public string $fq_class_name,
         public array $args,
-        /**
-         * @psalm-suppress PossiblyUnusedProperty part of public API
-         */
         public CodeLocation $location,
-        /**
-         * @psalm-suppress PossiblyUnusedProperty part of public API
-         */
         public CodeLocation $name_location,
     ) {
     }

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Analyzer\Statements\Expression\BinaryOp;
 
-use Decimal\Decimal;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Codebase;

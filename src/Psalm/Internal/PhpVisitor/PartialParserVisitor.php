@@ -35,7 +35,7 @@ final class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
 {
     private bool $must_rescan = false;
 
-    private readonly int $non_method_changes;
+    private int $non_method_changes;
 
     private readonly int $a_file_contents_length;
 
