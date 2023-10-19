@@ -25,7 +25,7 @@ use const LOCK_EX;
 /**
  * @internal
  */
-class Cache
+final class Cache
 {
     private Config $config;
 

@@ -18,7 +18,7 @@ use function get_class;
 /**
  * @internal
  */
-class IntegerRangeComparator
+final class IntegerRangeComparator
 {
     /**
      * This method is used to check if an integer range can be contained in another

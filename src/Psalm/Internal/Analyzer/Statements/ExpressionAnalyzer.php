@@ -67,7 +67,7 @@ use function strtolower;
 /**
  * @internal
  */
-class ExpressionAnalyzer
+final class ExpressionAnalyzer
 {
     /**
      * @param bool $assigned_to_reference This is set to true when the expression being analyzed

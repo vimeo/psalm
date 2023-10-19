@@ -44,7 +44,7 @@ use function trim;
 /**
  * @internal
  */
-class CommentAnalyzer
+final class CommentAnalyzer
 {
     public const TYPE_REGEX = '(\??\\\?[\(\)A-Za-z0-9_&\<\.=,\>\[\]\-\{\}:|?\\\\]*|\$[a-zA-Z_0-9_]+)';
 

@@ -11,7 +11,7 @@ use const STR_PAD_LEFT;
 /**
  * @internal
  */
-class IssueData
+final class IssueData
 {
     public const SEVERITY_INFO = 'info';
     public const SEVERITY_ERROR = 'error';

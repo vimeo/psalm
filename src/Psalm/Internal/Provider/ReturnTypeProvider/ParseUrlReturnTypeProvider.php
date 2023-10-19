@@ -31,7 +31,7 @@ use const PHP_URL_USER;
 /**
  * @internal
  */
-class ParseUrlReturnTypeProvider implements FunctionReturnTypeProviderInterface
+final class ParseUrlReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
      * @return array<lowercase-string>

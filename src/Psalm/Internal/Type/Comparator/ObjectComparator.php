@@ -25,7 +25,7 @@ use function substr;
 /**
  * @internal
  */
-class ObjectComparator
+final class ObjectComparator
 {
     /**
      * @param  TNamedObject|TTemplateParam|TIterable  $input_type_part

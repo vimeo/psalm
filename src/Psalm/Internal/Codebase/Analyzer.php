@@ -97,7 +97,7 @@ use const PHP_INT_MAX;
  *
  * Called in the analysis phase of Psalm's execution
  */
-class Analyzer
+final class Analyzer
 {
     private Config $config;
 

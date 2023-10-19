@@ -11,7 +11,7 @@ use Psalm\Type\Union;
 /**
  * @internal
  */
-class ArrayCreationInfo
+final class ArrayCreationInfo
 {
     /**
      * @var list<Atomic>

@@ -38,7 +38,7 @@ use function spl_object_id;
 /**
  * @internal
  */
-class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterface
+final class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
      * @return array<lowercase-string>

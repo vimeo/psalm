@@ -9,7 +9,7 @@ use PhpParser;
 /**
  * @internal
  */
-class CheckTrivialExprVisitor extends PhpParser\NodeVisitorAbstract
+final class CheckTrivialExprVisitor extends PhpParser\NodeVisitorAbstract
 {
     /**
      * @var array<int, PhpParser\Node\Expr>

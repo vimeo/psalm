@@ -11,7 +11,7 @@ use Psalm\Type\Union;
 /**
  * @internal
  */
-class SwitchScope
+final class SwitchScope
 {
     /**
      * @var array<string, Union>|null

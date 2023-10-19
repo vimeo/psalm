@@ -28,7 +28,7 @@ use function in_array;
 /**
  * @internal
  */
-class EncapsulatedStringAnalyzer
+final class EncapsulatedStringAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,

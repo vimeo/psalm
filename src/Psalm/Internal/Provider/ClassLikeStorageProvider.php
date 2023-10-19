@@ -14,7 +14,7 @@ use function strtolower;
 /**
  * @internal
  */
-class ClassLikeStorageProvider
+final class ClassLikeStorageProvider
 {
     /**
      * Storing this statically is much faster (at least in PHP 7.2.1)

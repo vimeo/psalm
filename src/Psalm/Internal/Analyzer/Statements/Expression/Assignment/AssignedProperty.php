@@ -9,7 +9,7 @@ use Psalm\Type\Union;
 /**
  * @internal
  */
-class AssignedProperty
+final class AssignedProperty
 {
     public Union $property_type;
 

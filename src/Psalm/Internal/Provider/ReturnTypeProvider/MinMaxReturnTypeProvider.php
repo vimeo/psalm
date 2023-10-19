@@ -27,7 +27,7 @@ use function min;
 /**
  * @internal
  */
-class MinMaxReturnTypeProvider implements FunctionReturnTypeProviderInterface
+final class MinMaxReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
      * @return array<lowercase-string>

@@ -30,7 +30,7 @@ use function spl_object_id;
 /**
  * @internal
  */
-class AndAnalyzer
+final class AndAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,

@@ -19,7 +19,7 @@ use function substr;
 /**
  * @internal
  */
-class ConfigFile
+final class ConfigFile
 {
     private string $path;
 

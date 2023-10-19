@@ -30,7 +30,7 @@ use function spl_object_id;
 /**
  * @internal
  */
-class LoopAnalyzer
+final class LoopAnalyzer
 {
     /**
      * Checks an array of statements in a loop

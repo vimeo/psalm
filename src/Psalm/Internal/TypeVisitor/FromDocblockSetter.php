@@ -14,7 +14,7 @@ use Psalm\Type\Union;
 /**
  * @internal
  */
-class FromDocblockSetter extends MutableTypeVisitor
+final class FromDocblockSetter extends MutableTypeVisitor
 {
     private bool $from_docblock;
     public function __construct(bool $from_docblock)

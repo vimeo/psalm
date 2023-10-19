@@ -16,7 +16,7 @@ use function strtolower;
 /**
  * @internal
  */
-class PropertyVisibilityProvider
+final class PropertyVisibilityProvider
 {
     /**
      * @var array<

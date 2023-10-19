@@ -19,7 +19,7 @@ use function strtolower;
 /**
  * @internal
  */
-class InstanceofAnalyzer
+final class InstanceofAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,

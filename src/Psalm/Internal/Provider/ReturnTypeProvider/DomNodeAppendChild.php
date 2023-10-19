@@ -13,7 +13,7 @@ use Psalm\Type\Union;
 /**
  * @internal
  */
-class DomNodeAppendChild implements MethodReturnTypeProviderInterface
+final class DomNodeAppendChild implements MethodReturnTypeProviderInterface
 {
     public static function getClassLikeNames(): array
     {

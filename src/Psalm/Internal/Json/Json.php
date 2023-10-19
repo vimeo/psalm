@@ -18,7 +18,7 @@ use const JSON_UNESCAPED_UNICODE;
  *
  * @internal
  */
-class Json
+final class Json
 {
     public const PRETTY = JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE;
 

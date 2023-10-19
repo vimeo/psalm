@@ -23,7 +23,7 @@ use function trim;
  * @author Kitamura Satoshi <with.no.parachute@gmail.com>
  * @internal
  */
-class GitInfoCollector
+final class GitInfoCollector
 {
     /**
      * Git command.

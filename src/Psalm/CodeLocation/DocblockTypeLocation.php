@@ -8,7 +8,7 @@ use Psalm\CodeLocation;
 use Psalm\FileSource;
 
 /** @psalm-immutable */
-class DocblockTypeLocation extends CodeLocation
+final class DocblockTypeLocation extends CodeLocation
 {
     public function __construct(
         FileSource $file_source,

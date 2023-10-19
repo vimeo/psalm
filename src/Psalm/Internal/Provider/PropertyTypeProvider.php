@@ -18,7 +18,7 @@ use function strtolower;
 /**
  * @internal
  */
-class PropertyTypeProvider
+final class PropertyTypeProvider
 {
     /**
      * @var array<

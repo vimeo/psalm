@@ -16,7 +16,7 @@ use Psalm\Type\TypeVisitor;
 /**
  * @internal
  */
-class ContainsLiteralVisitor extends TypeVisitor
+final class ContainsLiteralVisitor extends TypeVisitor
 {
     private bool $contains_literal = false;
 

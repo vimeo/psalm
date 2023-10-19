@@ -19,7 +19,7 @@ use function in_array;
 /**
  * @internal
  */
-class ScopeAnalyzer
+final class ScopeAnalyzer
 {
     public const ACTION_END = 'END';
     public const ACTION_BREAK = 'BREAK';

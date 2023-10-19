@@ -15,7 +15,7 @@ use function strtolower;
 /**
  * @internal
  */
-class ContainsClassLikeVisitor extends TypeVisitor
+final class ContainsClassLikeVisitor extends TypeVisitor
 {
     /**
      * @var lowercase-string

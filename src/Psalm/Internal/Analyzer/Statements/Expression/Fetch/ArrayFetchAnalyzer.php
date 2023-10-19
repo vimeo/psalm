@@ -101,7 +101,7 @@ use function strtolower;
 /**
  * @internal
  */
-class ArrayFetchAnalyzer
+final class ArrayFetchAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,

@@ -23,7 +23,7 @@ use function in_array;
 /**
  * @internal
  */
-class SwitchAnalyzer
+final class SwitchAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,

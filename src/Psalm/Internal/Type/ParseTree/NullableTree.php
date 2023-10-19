@@ -9,6 +9,6 @@ use Psalm\Internal\Type\ParseTree;
 /**
  * @internal
  */
-class NullableTree extends ParseTree
+final class NullableTree extends ParseTree
 {
 }

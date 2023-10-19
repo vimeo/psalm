@@ -70,7 +70,7 @@ use function is_string;
 /**
  * @internal
  */
-class AssertionReconciler extends Reconciler
+final class AssertionReconciler extends Reconciler
 {
     /**
      * Reconciles types

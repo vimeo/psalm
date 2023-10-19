@@ -7,6 +7,6 @@ namespace Psalm\Internal\DataFlow;
 /**
  * @internal
  */
-class TaintSink extends DataFlowNode
+final class TaintSink extends DataFlowNode
 {
 }

@@ -16,7 +16,7 @@ use function get_class;
 /**
  * @internal
  */
-class ClassLikeStringComparator
+final class ClassLikeStringComparator
 {
     /**
      * @param TClassString|TLiteralClassString $input_type_part

@@ -18,7 +18,7 @@ use function count;
 /**
  * @internal
  */
-class PowReturnTypeProvider implements FunctionReturnTypeProviderInterface
+final class PowReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
      * @return array<lowercase-string>

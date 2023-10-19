@@ -10,7 +10,7 @@ use Psalm\Storage\ImmutableNonCloneableTrait;
  * @psalm-immutable
  * @internal
  */
-class UnresolvedSubtractionOp extends UnresolvedBinaryOp
+final class UnresolvedSubtractionOp extends UnresolvedBinaryOp
 {
     use ImmutableNonCloneableTrait;
 }

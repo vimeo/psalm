@@ -26,7 +26,7 @@ use Psalm\Type\Union;
 /**
  * @internal
  */
-class ExitAnalyzer
+final class ExitAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,

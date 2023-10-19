@@ -108,7 +108,7 @@ use function substr;
 /**
  * @internal
  */
-class ClassAnalyzer extends ClassLikeAnalyzer
+final class ClassAnalyzer extends ClassLikeAnalyzer
 {
     /**
      * @var array<string, Union>

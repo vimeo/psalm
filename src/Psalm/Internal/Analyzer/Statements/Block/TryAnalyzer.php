@@ -34,7 +34,7 @@ use const PHP_VERSION;
 /**
  * @internal
  */
-class TryAnalyzer
+final class TryAnalyzer
 {
     /**
      * @return  false|null

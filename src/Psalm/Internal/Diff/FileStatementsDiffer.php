@@ -14,7 +14,7 @@ use function substr;
 /**
  * @internal
  */
-class FileStatementsDiffer extends AstDiffer
+final class FileStatementsDiffer extends AstDiffer
 {
     /**
      * Calculate diff (edit script) from $a to $b.

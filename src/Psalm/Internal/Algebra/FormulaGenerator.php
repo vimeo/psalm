@@ -23,7 +23,7 @@ use function substr;
 /**
  * @internal
  */
-class FormulaGenerator
+final class FormulaGenerator
 {
      /**
      * @return list<Clause>

@@ -75,7 +75,7 @@ use function strtolower;
 /**
  * @internal
  */
-class ForeachAnalyzer
+final class ForeachAnalyzer
 {
     /**
      * @return  false|null

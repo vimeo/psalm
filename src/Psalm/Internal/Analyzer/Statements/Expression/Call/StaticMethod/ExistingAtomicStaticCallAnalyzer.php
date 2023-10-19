@@ -52,7 +52,7 @@ use function substr;
 /**
  * @internal
  */
-class ExistingAtomicStaticCallAnalyzer
+final class ExistingAtomicStaticCallAnalyzer
 {
     /**
      * @param  list<PhpParser\Node\Arg> $args

@@ -18,7 +18,7 @@ use Psalm\Type\Union;
 /**
  * @internal
  */
-class ThrowAnalyzer
+final class ThrowAnalyzer
 {
     /**
      * @param PhpParser\Node\Stmt\Throw_|PhpParser\Node\Expr\Throw_ $stmt

@@ -18,7 +18,7 @@ use Psalm\Type\Union;
 /**
  * @internal
  */
-class YieldTypeCollector extends NodeVisitorAbstract
+final class YieldTypeCollector extends NodeVisitorAbstract
 {
     /** @var list<Union> */
     private array $yield_types = [];

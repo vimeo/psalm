@@ -10,7 +10,7 @@ use Psalm\Internal\Clause;
 /**
  * @internal
  */
-class IfConditionalScope
+final class IfConditionalScope
 {
     public Context $if_context;
 

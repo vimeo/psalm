@@ -17,7 +17,7 @@ use Psalm\Type\Union;
 /**
  * @internal
  */
-class ArrayPopReturnTypeProvider implements FunctionReturnTypeProviderInterface
+final class ArrayPopReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
      * @return array<lowercase-string>

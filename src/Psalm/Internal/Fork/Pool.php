@@ -72,7 +72,7 @@ use const STREAM_SOCK_STREAM;
  *
  * @internal
  */
-class Pool
+final class Pool
 {
     private const EXIT_SUCCESS = 0;
     private const EXIT_FAILURE = 1;

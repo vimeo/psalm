@@ -75,7 +75,7 @@ use const ARRAY_FILTER_USE_KEY;
 /**
  * @internal
  */
-class AtomicPropertyFetchAnalyzer
+final class AtomicPropertyFetchAnalyzer
 {
     /**
      * @param array<string> $invalid_fetch_types $invalid_fetch_types

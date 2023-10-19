@@ -16,7 +16,7 @@ use Psalm\Type\Union;
 /**
  * @internal
  */
-class NonComparisonOpAnalyzer
+final class NonComparisonOpAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,

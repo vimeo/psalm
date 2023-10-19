@@ -11,7 +11,7 @@ use Psalm\Storage\ImmutableNonCloneableTrait;
  * @psalm-immutable
  * @internal
  */
-class UnresolvedTernary extends UnresolvedConstantComponent
+final class UnresolvedTernary extends UnresolvedConstantComponent
 {
     use ImmutableNonCloneableTrait;
 

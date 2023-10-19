@@ -17,7 +17,7 @@ use function in_array;
 /**
  * @internal
  */
-class StrTrReturnTypeProvider implements FunctionReturnTypeProviderInterface
+final class StrTrReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
      * @return array<lowercase-string>

@@ -11,7 +11,7 @@ use Psalm\Internal\Provider\NodeDataProvider;
 /**
  * @internal
  */
-class TypeMappingVisitor extends NodeVisitorAbstract
+final class TypeMappingVisitor extends NodeVisitorAbstract
 {
     private NodeDataProvider $fake_type_provider;
     private NodeDataProvider $real_type_provider;

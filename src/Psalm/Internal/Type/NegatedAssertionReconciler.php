@@ -42,7 +42,7 @@ use function strtolower;
 /**
  * @internal
  */
-class NegatedAssertionReconciler extends Reconciler
+final class NegatedAssertionReconciler extends Reconciler
 {
     /**
      * @param  string[]   $suppressed_issues

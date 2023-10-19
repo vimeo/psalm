@@ -13,7 +13,7 @@ use Amp\DeferredFuture;
 /**
  * @internal
  */
-class ClientHandler
+final class ClientHandler
 {
     public ProtocolReader $protocolReader;
 

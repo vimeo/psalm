@@ -26,7 +26,7 @@ use function array_replace_recursive;
  *
  * @internal
  */
-class TemplateResult
+final class TemplateResult
 {
     /**
      * @var array<string, array<string, Union>>

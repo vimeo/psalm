@@ -11,7 +11,7 @@ use function substr;
 use function substr_count;
 
 /** @psalm-immutable */
-class ParseErrorLocation extends CodeLocation
+final class ParseErrorLocation extends CodeLocation
 {
     public function __construct(
         PhpParser\Error $error,

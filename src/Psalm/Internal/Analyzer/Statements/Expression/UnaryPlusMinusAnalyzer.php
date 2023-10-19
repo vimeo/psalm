@@ -27,7 +27,7 @@ use function is_int;
 /**
  * @internal
  */
-class UnaryPlusMinusAnalyzer
+final class UnaryPlusMinusAnalyzer
 {
     /**
      * @param PhpParser\Node\Expr\UnaryMinus|PhpParser\Node\Expr\UnaryPlus $stmt

@@ -9,7 +9,7 @@ use Psalm\Type\Union;
 /**
  * @internal
  */
-class FinallyScope
+final class FinallyScope
 {
     /**
      * @var array<string, Union>

@@ -39,7 +39,7 @@ use function strtolower;
  *
  * Handles information gleaned from class and function reflection
  */
-class Reflection
+final class Reflection
 {
     private ClassLikeStorageProvider $storage_provider;
 

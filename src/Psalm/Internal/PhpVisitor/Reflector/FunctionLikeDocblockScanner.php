@@ -71,7 +71,7 @@ use function trim;
 /**
  * @internal
  */
-class FunctionLikeDocblockScanner
+final class FunctionLikeDocblockScanner
 {
     /**
      * @param array<string, non-empty-array<string, Union>> $existing_function_template_types

@@ -12,7 +12,7 @@ use Psalm\Type\TypeVisitor;
 use Psalm\Type\Union;
 
 /** @internal */
-class CanContainObjectTypeVisitor extends TypeVisitor
+final class CanContainObjectTypeVisitor extends TypeVisitor
 {
     private bool $contains_object_type = false;
 

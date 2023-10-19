@@ -10,7 +10,7 @@ use Psalm\Storage\ImmutableNonCloneableTrait;
  * @psalm-immutable
  * @internal
  */
-class ForkProcessDoneMessage implements ForkMessage
+final class ForkProcessDoneMessage implements ForkMessage
 {
     use ImmutableNonCloneableTrait;
     public mixed $data;

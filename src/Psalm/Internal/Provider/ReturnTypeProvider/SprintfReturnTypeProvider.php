@@ -33,7 +33,7 @@ use function strlen;
 /**
  * @internal
  */
-class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
+final class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
      * @return array<lowercase-string>

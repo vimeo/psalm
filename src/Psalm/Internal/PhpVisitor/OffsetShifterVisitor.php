@@ -11,7 +11,7 @@ use PhpParser;
  *
  * @internal
  */
-class OffsetShifterVisitor extends PhpParser\NodeVisitorAbstract
+final class OffsetShifterVisitor extends PhpParser\NodeVisitorAbstract
 {
     private int $file_offset;
 

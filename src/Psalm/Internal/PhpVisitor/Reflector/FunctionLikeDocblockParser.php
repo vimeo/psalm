@@ -41,7 +41,7 @@ use function trim;
 /**
  * @internal
  */
-class FunctionLikeDocblockParser
+final class FunctionLikeDocblockParser
 {
     /**
      * @throws DocblockParseException if there was a problem parsing the docblock

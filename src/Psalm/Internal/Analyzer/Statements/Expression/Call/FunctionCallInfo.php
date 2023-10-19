@@ -12,7 +12,7 @@ use Psalm\Type\Union;
 /**
  * @internal
  */
-class FunctionCallInfo
+final class FunctionCallInfo
 {
     public ?string $function_id = null;
 

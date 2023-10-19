@@ -14,7 +14,7 @@ use Psalm\Type\Atomic\TNamedObject;
 /**
  * @internal
  */
-class GenericTypeComparator
+final class GenericTypeComparator
 {
     /**
      * @param TGenericObject|TIterable $container_type_part

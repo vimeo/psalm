@@ -19,7 +19,7 @@ use function count;
 /**
  * @internal
  */
-class VersionCompareReturnTypeProvider implements FunctionReturnTypeProviderInterface
+final class VersionCompareReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
      * @return array<lowercase-string>

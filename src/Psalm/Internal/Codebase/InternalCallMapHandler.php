@@ -35,7 +35,7 @@ use function version_compare;
  *
  * Gets values from the call map array, which stores data about native functions and methods
  */
-class InternalCallMapHandler
+final class InternalCallMapHandler
 {
     private const PHP_MAJOR_VERSION = 8;
     private const PHP_MINOR_VERSION = 3;

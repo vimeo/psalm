@@ -18,7 +18,7 @@ use Psalm\Type\Union;
 /**
  * @internal
  */
-class ArrayTypeComparator
+final class ArrayTypeComparator
 {
     /**
      * @param TArray|TKeyedArray|TClassStringMap $input_type_part

@@ -38,7 +38,7 @@ use function spl_object_id;
 /**
  * @internal
  */
-class OrAnalyzer
+final class OrAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,

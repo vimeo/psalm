@@ -9,6 +9,6 @@ use Psalm\Internal\Type\ParseTree;
 /**
  * @internal
  */
-class FieldEllipsis extends ParseTree
+final class FieldEllipsis extends ParseTree
 {
 }

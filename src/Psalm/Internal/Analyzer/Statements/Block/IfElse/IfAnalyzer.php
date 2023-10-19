@@ -48,7 +48,7 @@ use function substr;
 /**
  * @internal
  */
-class IfAnalyzer
+final class IfAnalyzer
 {
     /**
      * @param  array<string, Union> $pre_assignment_else_redefined_vars

@@ -10,7 +10,7 @@ use Psalm\Type\Union;
 /**
  * @internal
  */
-class LoopScope
+final class LoopScope
 {
     public int $iteration_count = 0;
 

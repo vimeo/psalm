@@ -10,7 +10,7 @@ use Psalm\Internal\MethodIdentifier;
 /**
  * @internal
  */
-class AtomicCallContext
+final class AtomicCallContext
 {
     public MethodIdentifier $method_id;
 

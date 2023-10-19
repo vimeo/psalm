@@ -9,6 +9,6 @@ use Psalm\Internal\Type\ParseTree;
 /**
  * @internal
  */
-class MethodWithReturnTypeTree extends ParseTree
+final class MethodWithReturnTypeTree extends ParseTree
 {
 }

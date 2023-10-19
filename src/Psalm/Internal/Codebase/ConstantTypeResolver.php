@@ -55,7 +55,7 @@ use function spl_object_id;
 /**
  * @internal
  */
-class ConstantTypeResolver
+final class ConstantTypeResolver
 {
     public static function resolve(
         ClassLikes $classlikes,

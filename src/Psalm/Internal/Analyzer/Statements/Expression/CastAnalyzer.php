@@ -59,7 +59,7 @@ use function strtolower;
 /**
  * @internal
  */
-class CastAnalyzer
+final class CastAnalyzer
 {
     /** @var string[] */
     private const PSEUDO_CASTABLE_CLASSES = [

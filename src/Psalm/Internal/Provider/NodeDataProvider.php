@@ -22,7 +22,7 @@ use SplObjectStorage;
 /**
  * @internal
  */
-class NodeDataProvider implements NodeTypeProvider
+final class NodeDataProvider implements NodeTypeProvider
 {
     /** @var SplObjectStorage<Node, Union> */
     private SplObjectStorage $node_types;

@@ -10,7 +10,7 @@ use Psalm\Internal\Scanner\UnresolvedConstantComponent;
  * @psalm-immutable
  * @internal
  */
-class Constant extends UnresolvedConstantComponent
+final class Constant extends UnresolvedConstantComponent
 {
     public string $name;
 

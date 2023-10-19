@@ -57,7 +57,7 @@ use function strtolower;
 /**
  * @internal
  */
-class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
+final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
 {
     /**
      * @param  TNamedObject|TTemplateParam|null  $static_type

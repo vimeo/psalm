@@ -30,7 +30,7 @@ use function array_values;
 /**
  * @internal
  */
-class YieldAnalyzer
+final class YieldAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,

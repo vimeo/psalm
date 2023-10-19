@@ -29,7 +29,7 @@ use function strtolower;
  * @internal
  * @extends FunctionLikeAnalyzer<PhpParser\Node\Stmt\ClassMethod>
  */
-class MethodAnalyzer extends FunctionLikeAnalyzer
+final class MethodAnalyzer extends FunctionLikeAnalyzer
 {
     // https://github.com/php/php-src/blob/a83923044c48982c80804ae1b45e761c271966d3/Zend/zend_enum.c#L77-L95
     private const FORBIDDEN_ENUM_METHODS = [

@@ -9,7 +9,7 @@ use Psalm\Internal\Type\ParseTree;
 /**
  * @internal
  */
-class TemplateAsTree extends ParseTree
+final class TemplateAsTree extends ParseTree
 {
     public string $param_name;
 

@@ -31,7 +31,7 @@ use const PREG_SET_ORDER;
  *
  * @internal
  */
-class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
+final class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
 {
     /** @var array<int, array{0: int, 1: int, 2: int, 3: int, 4: int, 5: string}> */
     private array $offset_map;

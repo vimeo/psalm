@@ -13,7 +13,7 @@ use function strtolower;
 /**
  * @internal
  */
-class FileStorageProvider
+final class FileStorageProvider
 {
     /**
      * A list of data useful to analyse files

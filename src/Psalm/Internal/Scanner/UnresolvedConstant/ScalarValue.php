@@ -10,7 +10,7 @@ use Psalm\Internal\Scanner\UnresolvedConstantComponent;
  * @psalm-immutable
  * @internal
  */
-class ScalarValue extends UnresolvedConstantComponent
+final class ScalarValue extends UnresolvedConstantComponent
 {
     public string|int|float|bool|null $value = null;
 

@@ -10,7 +10,7 @@ use Psalm\Internal\Scanner\UnresolvedConstantComponent;
  * @psalm-immutable
  * @internal
  */
-class ClassConstant extends UnresolvedConstantComponent
+final class ClassConstant extends UnresolvedConstantComponent
 {
     public string $fqcln;
 

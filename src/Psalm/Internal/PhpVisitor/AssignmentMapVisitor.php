@@ -15,7 +15,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
  * With this map we can calculate how many times the loop analysis must
  * be run before all variables have the correct types
  */
-class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
+final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
 {
     /**
      * @var array<string, array<string, bool>>

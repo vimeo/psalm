@@ -9,7 +9,7 @@ use LanguageServerProtocol\Range;
 /**
  * @internal
  */
-class Reference
+final class Reference
 {
     public string $file_path;
     public string $symbol;

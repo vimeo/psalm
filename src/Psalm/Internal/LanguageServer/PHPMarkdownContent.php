@@ -15,7 +15,7 @@ use function get_object_vars;
  * @psalm-api
  * @internal
  */
-class PHPMarkdownContent extends MarkupContent implements JsonSerializable
+final class PHPMarkdownContent extends MarkupContent implements JsonSerializable
 {
     public string $code;
 

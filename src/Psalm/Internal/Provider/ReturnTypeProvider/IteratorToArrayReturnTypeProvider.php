@@ -24,7 +24,7 @@ use function assert;
 /**
  * @internal
  */
-class IteratorToArrayReturnTypeProvider implements FunctionReturnTypeProviderInterface
+final class IteratorToArrayReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
      * @return array<lowercase-string>

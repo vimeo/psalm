@@ -49,7 +49,7 @@ use function strtolower;
 /**
  * @internal
  */
-class AtomicTypeComparator
+final class AtomicTypeComparator
 {
     /**
      * Does the input param atomic type match the given param atomic type

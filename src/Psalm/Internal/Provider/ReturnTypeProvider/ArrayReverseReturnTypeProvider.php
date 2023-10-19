@@ -17,7 +17,7 @@ use function array_reverse;
 /**
  * @internal
  */
-class ArrayReverseReturnTypeProvider implements FunctionReturnTypeProviderInterface
+final class ArrayReverseReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
      * @return array<lowercase-string>

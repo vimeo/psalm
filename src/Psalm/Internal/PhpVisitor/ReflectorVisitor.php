@@ -53,7 +53,7 @@ use const PHP_VERSION_ID;
 /**
  * @internal
  */
-class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSource
+final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSource
 {
     private Aliases $aliases;
 

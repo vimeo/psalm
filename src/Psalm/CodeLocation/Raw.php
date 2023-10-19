@@ -10,7 +10,7 @@ use function substr;
 use function substr_count;
 
 /** @psalm-immutable */
-class Raw extends CodeLocation
+final class Raw extends CodeLocation
 {
     public function __construct(
         string $file_contents,

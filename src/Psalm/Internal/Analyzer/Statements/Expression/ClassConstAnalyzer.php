@@ -58,7 +58,7 @@ use function strtolower;
 /**
  * @internal
  */
-class ClassConstAnalyzer
+final class ClassConstAnalyzer
 {
     /**
      * @psalm-suppress ComplexMethod to be refactored. We should probably regroup the two big if about $stmt->class and

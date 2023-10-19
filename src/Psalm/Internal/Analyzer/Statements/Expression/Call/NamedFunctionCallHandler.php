@@ -58,7 +58,7 @@ use function strtolower;
 /**
  * @internal
  */
-class NamedFunctionCallHandler
+final class NamedFunctionCallHandler
 {
     /**
      * @param lowercase-string $function_id

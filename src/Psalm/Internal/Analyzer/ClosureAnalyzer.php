@@ -29,7 +29,7 @@ use function strtolower;
  * @internal
  * @extends FunctionLikeAnalyzer<PhpParser\Node\Expr\Closure|PhpParser\Node\Expr\ArrowFunction>
  */
-class ClosureAnalyzer extends FunctionLikeAnalyzer
+final class ClosureAnalyzer extends FunctionLikeAnalyzer
 {
     /**
      * @param PhpParser\Node\Expr\Closure|PhpParser\Node\Expr\ArrowFunction $function

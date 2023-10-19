@@ -12,7 +12,7 @@ use Psalm\Type\Union;
  *
  * @psalm-immutable
  */
-class TNonEmptyArray extends TArray
+final class TNonEmptyArray extends TArray
 {
     /**
      * @var positive-int|null

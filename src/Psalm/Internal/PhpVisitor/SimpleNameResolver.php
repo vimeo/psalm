@@ -19,7 +19,7 @@ use PhpParser\NodeVisitorAbstract;
 /**
  * @internal
  */
-class SimpleNameResolver extends NodeVisitorAbstract
+final class SimpleNameResolver extends NodeVisitorAbstract
 {
     private NameContext $nameContext;
 

@@ -52,7 +52,7 @@ use function strtolower;
 /**
  * @internal
  */
-class TypeExpander
+final class TypeExpander
 {
     /**
      * @psalm-suppress InaccessibleProperty We just created the type

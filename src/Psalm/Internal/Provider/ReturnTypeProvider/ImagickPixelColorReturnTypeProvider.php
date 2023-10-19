@@ -18,7 +18,7 @@ use function in_array;
 /**
  * @internal
  */
-class ImagickPixelColorReturnTypeProvider implements MethodReturnTypeProviderInterface
+final class ImagickPixelColorReturnTypeProvider implements MethodReturnTypeProviderInterface
 {
     public static function getClassLikeNames(): array
     {

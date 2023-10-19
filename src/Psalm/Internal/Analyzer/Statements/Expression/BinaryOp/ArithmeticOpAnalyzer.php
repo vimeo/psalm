@@ -59,7 +59,7 @@ use function strtolower;
 /**
  * @internal
  */
-class ArithmeticOpAnalyzer
+final class ArithmeticOpAnalyzer
 {
     public static function analyze(
         ?StatementsSource $statements_source,

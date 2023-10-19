@@ -54,7 +54,7 @@ use const PHP_INT_MAX;
 /**
  * @internal
  */
-class ArrayAnalyzer
+final class ArrayAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,

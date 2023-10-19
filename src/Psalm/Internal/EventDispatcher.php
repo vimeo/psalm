@@ -50,7 +50,7 @@ use function is_subclass_of;
 /**
  * @internal
  */
-class EventDispatcher
+final class EventDispatcher
 {
     /**
      * Static methods to be called after method checks have completed

@@ -15,7 +15,7 @@ use Psalm\Type\Union;
 /**
  * @internal
  */
-class MktimeReturnTypeProvider implements FunctionReturnTypeProviderInterface
+final class MktimeReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
      * @return array<lowercase-string>

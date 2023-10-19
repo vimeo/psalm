@@ -103,7 +103,7 @@ use function substr;
  * @psalm-suppress InaccessibleProperty Allowed during construction
  * @internal
  */
-class TypeParser
+final class TypeParser
 {
     /**
      * Parses a string type representation

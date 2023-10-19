@@ -10,7 +10,7 @@ use Psalm\Internal\Scanner\UnresolvedConstantComponent;
  * @psalm-immutable
  * @internal
  */
-class ArrayValue extends UnresolvedConstantComponent
+final class ArrayValue extends UnresolvedConstantComponent
 {
     /** @var array<int, KeyValuePair|ArraySpread> */
     public array $entries;

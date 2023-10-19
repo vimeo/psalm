@@ -52,7 +52,7 @@ use function strlen;
 /**
  * @internal
  */
-class ConcatAnalyzer
+final class ConcatAnalyzer
 {
     private const MAX_LITERALS = 64;
 

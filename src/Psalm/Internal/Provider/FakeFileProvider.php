@@ -10,7 +10,7 @@ use function strpos;
 /**
  * @internal
  */
-class FakeFileProvider extends FileProvider
+final class FakeFileProvider extends FileProvider
 {
     /**
      * @var array<string, string>

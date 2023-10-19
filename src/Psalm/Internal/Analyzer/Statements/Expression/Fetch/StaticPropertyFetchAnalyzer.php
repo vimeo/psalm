@@ -39,7 +39,7 @@ use function strtolower;
 /**
  * @internal
  */
-class StaticPropertyFetchAnalyzer
+final class StaticPropertyFetchAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,

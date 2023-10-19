@@ -10,7 +10,7 @@ use Psalm\Type\Union;
 /**
  * @internal
  */
-class TypeComparisonResult
+final class TypeComparisonResult
 {
     /**
      * This is used to trigger `InvalidScalarArgument` in situations where we know PHP

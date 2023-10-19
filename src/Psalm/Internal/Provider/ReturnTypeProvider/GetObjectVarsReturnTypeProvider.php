@@ -29,7 +29,7 @@ use function strtolower;
 /**
  * @internal
  */
-class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProviderInterface
+final class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     public static function getFunctionIds(): array
     {

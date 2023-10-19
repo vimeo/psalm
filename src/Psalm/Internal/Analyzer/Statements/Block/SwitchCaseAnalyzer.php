@@ -55,7 +55,7 @@ use function substr;
 /**
  * @internal
  */
-class SwitchCaseAnalyzer
+final class SwitchCaseAnalyzer
 {
     /**
      * @return null|false

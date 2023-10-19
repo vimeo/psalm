@@ -17,7 +17,7 @@ use Psalm\Type\Union;
 /**
  * @internal
  */
-class BooleanNotAnalyzer
+final class BooleanNotAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,

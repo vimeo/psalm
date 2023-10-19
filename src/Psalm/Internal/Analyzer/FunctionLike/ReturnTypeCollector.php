@@ -25,7 +25,7 @@ use function array_merge;
  *
  * @internal
  */
-class ReturnTypeCollector
+final class ReturnTypeCollector
 {
     /**
      * Gets the return types from a list of statements

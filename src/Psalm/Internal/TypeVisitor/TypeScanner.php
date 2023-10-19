@@ -17,7 +17,7 @@ use function strtolower;
 /**
  * @internal
  */
-class TypeScanner extends TypeVisitor
+final class TypeScanner extends TypeVisitor
 {
     private Scanner $scanner;
 

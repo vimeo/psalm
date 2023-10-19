@@ -19,7 +19,7 @@ use function strtolower;
 /**
  * @internal
  */
-class ExpressionIdentifier
+final class ExpressionIdentifier
 {
     public static function getVarId(
         PhpParser\Node\Expr $stmt,

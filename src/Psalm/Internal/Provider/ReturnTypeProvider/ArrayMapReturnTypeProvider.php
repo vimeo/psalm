@@ -50,7 +50,7 @@ use function substr;
 /**
  * @internal
  */
-class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
+final class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
      * @return array<lowercase-string>

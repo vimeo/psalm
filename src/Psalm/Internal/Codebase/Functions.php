@@ -37,7 +37,7 @@ use function substr;
 /**
  * @internal
  */
-class Functions
+final class Functions
 {
     private FileStorageProvider $file_storage_provider;
 

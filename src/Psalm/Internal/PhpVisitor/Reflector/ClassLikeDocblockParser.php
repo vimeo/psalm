@@ -50,7 +50,7 @@ use const PREG_OFFSET_CAPTURE;
 /**
  * @internal
  */
-class ClassLikeDocblockParser
+final class ClassLikeDocblockParser
 {
     /**
      * @throws DocblockParseException if there was a problem parsing the docblock

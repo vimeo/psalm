@@ -24,7 +24,7 @@ use function substr;
 /**
  * @internal
  */
-class NamespaceAnalyzer extends SourceAnalyzer
+final class NamespaceAnalyzer extends SourceAnalyzer
 {
     use CanAlias;
 

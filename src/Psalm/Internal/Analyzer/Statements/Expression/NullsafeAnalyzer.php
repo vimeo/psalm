@@ -20,7 +20,7 @@ use Psalm\Type;
 /**
  * @internal
  */
-class NullsafeAnalyzer
+final class NullsafeAnalyzer
 {
     /**
      * @param PhpParser\Node\Expr\NullsafePropertyFetch|PhpParser\Node\Expr\NullsafeMethodCall $stmt

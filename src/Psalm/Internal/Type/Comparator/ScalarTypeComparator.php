@@ -47,7 +47,7 @@ use function strtolower;
 /**
  * @internal
  */
-class ScalarTypeComparator
+final class ScalarTypeComparator
 {
     public static function isContainedBy(
         Codebase $codebase,

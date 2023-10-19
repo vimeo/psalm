@@ -13,7 +13,7 @@ use Psalm\Type\Union;
 /**
  * @internal
  */
-class GetClassMethodsReturnTypeProvider implements FunctionReturnTypeProviderInterface
+final class GetClassMethodsReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
      * @return array<lowercase-string>

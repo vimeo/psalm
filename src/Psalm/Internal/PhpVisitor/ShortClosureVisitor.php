@@ -11,7 +11,7 @@ use function is_string;
 /**
  * @internal
  */
-class ShortClosureVisitor extends PhpParser\NodeVisitorAbstract
+final class ShortClosureVisitor extends PhpParser\NodeVisitorAbstract
 {
     /**
      * @var array<string, bool>

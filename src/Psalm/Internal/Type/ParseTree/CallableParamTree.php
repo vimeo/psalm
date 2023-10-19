@@ -9,7 +9,7 @@ use Psalm\Internal\Type\ParseTree;
 /**
  * @internal
  */
-class CallableParamTree extends ParseTree
+final class CallableParamTree extends ParseTree
 {
     public bool $variadic = false;
 

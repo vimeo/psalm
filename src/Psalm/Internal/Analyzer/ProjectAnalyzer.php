@@ -99,7 +99,7 @@ use const STDERR;
 /**
  * @internal
  */
-class ProjectAnalyzer
+final class ProjectAnalyzer
 {
     /**
      * Cached config

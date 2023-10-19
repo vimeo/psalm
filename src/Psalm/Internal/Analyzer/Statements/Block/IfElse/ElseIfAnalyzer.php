@@ -42,7 +42,7 @@ use function spl_object_id;
 /**
  * @internal
  */
-class ElseIfAnalyzer
+final class ElseIfAnalyzer
 {
     /**
      * @return false|null

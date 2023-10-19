@@ -26,7 +26,7 @@ use Psalm\Type\Union;
 /**
  * @internal
  */
-class BitwiseNotAnalyzer
+final class BitwiseNotAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,

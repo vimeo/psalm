@@ -71,7 +71,7 @@ use const PHP_EOL;
  *
  * Handles information about classes, interfaces and traits
  */
-class ClassLikes
+final class ClassLikes
 {
     private ClassLikeStorageProvider $classlike_storage_provider;
 

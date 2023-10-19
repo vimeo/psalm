@@ -24,7 +24,7 @@ use function is_string;
 /**
  * @internal
  */
-class TypeCombination
+final class TypeCombination
 {
     /** @var array<string, Atomic> */
     public array $value_types = [];

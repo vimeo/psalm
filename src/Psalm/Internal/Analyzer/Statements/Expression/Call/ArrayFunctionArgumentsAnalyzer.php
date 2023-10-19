@@ -58,7 +58,7 @@ use function substr;
 /**
  * @internal
  */
-class ArrayFunctionArgumentsAnalyzer
+final class ArrayFunctionArgumentsAnalyzer
 {
     /**
      * @param   array<int, PhpParser\Node\Arg> $args

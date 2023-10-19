@@ -80,7 +80,7 @@ use const PREG_SPLIT_NO_EMPTY;
 /**
  * @internal
  */
-class ArgumentAnalyzer
+final class ArgumentAnalyzer
 {
     /**
      * @param  array<string, array<string, Union>> $class_generic_params

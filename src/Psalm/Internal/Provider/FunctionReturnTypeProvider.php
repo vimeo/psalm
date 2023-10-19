@@ -57,7 +57,7 @@ use function strtolower;
 /**
  * @internal
  */
-class FunctionReturnTypeProvider
+final class FunctionReturnTypeProvider
 {
     /**
      * @var array<

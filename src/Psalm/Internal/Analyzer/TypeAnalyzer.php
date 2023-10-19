@@ -13,7 +13,7 @@ use function array_unique;
 /**
  * @internal
  */
-class TypeAnalyzer
+final class TypeAnalyzer
 {
     /**
      * Takes two arrays of types and merges them

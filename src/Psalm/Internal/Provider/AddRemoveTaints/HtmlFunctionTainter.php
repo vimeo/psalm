@@ -18,7 +18,7 @@ use const ENT_QUOTES;
 /**
  * @internal
  */
-class HtmlFunctionTainter implements AddTaintsInterface, RemoveTaintsInterface
+final class HtmlFunctionTainter implements AddTaintsInterface, RemoveTaintsInterface
 {
     /**
      * Called to see what taints should be added

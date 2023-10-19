@@ -19,7 +19,7 @@ use function substr;
 /**
  * @internal
  */
-class ClassDocblockManipulator
+final class ClassDocblockManipulator
 {
     /**
      * @var array<string, array<int, self>>

@@ -23,7 +23,7 @@ use Psalm\Type\TaintKind;
 /**
  * @internal
  */
-class EchoAnalyzer
+final class EchoAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,

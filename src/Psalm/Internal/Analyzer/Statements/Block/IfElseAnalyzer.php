@@ -43,7 +43,7 @@ use function substr;
 /**
  * @internal
  */
-class IfElseAnalyzer
+final class IfElseAnalyzer
 {
     /**
      * System of type substitution and deletion

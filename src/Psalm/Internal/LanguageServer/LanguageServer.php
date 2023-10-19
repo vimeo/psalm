@@ -94,7 +94,7 @@ use const STDOUT;
  * @psalm-api
  * @internal
  */
-class LanguageServer extends Dispatcher
+final class LanguageServer extends Dispatcher
 {
     /**
      * Handles textDocument/* method calls

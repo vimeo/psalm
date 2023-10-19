@@ -24,7 +24,7 @@ use Psalm\Type;
 /**
  * @internal
  */
-class MethodCallPurityAnalyzer
+final class MethodCallPurityAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,

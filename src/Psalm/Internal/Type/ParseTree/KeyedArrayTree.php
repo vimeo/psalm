@@ -9,7 +9,7 @@ use Psalm\Internal\Type\ParseTree;
 /**
  * @internal
  */
-class KeyedArrayTree extends ParseTree
+final class KeyedArrayTree extends ParseTree
 {
     public string $value;
 

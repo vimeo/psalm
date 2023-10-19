@@ -23,7 +23,7 @@ use function count;
 /**
  * @internal
  */
-class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderInterface
+final class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
      * @return array<lowercase-string>

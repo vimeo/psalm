@@ -13,7 +13,7 @@ use Psalm\Type\Union;
 /**
  * @internal
  */
-class HexdecReturnTypeProvider implements FunctionReturnTypeProviderInterface
+final class HexdecReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
      * @return array<lowercase-string>

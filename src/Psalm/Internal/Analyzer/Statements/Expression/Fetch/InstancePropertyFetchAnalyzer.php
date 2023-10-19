@@ -35,7 +35,7 @@ use function strtolower;
 /**
  * @internal
  */
-class InstancePropertyFetchAnalyzer
+final class InstancePropertyFetchAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,

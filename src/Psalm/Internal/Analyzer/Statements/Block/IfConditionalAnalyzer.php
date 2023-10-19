@@ -31,7 +31,7 @@ use function count;
 /**
  * @internal
  */
-class IfConditionalAnalyzer
+final class IfConditionalAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,

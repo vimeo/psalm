@@ -10,7 +10,7 @@ use function trim;
 /**
  * @internal
  */
-class ParsedDocblock
+final class ParsedDocblock
 {
     public string $description;
 

@@ -21,7 +21,7 @@ use function in_array;
 /**
  * @internal
  */
-class EvalAnalyzer
+final class EvalAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,

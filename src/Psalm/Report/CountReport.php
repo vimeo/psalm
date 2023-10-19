@@ -9,7 +9,7 @@ use Psalm\Report;
 use function array_key_exists;
 use function uksort;
 
-class CountReport extends Report
+final class CountReport extends Report
 {
     public function create(): string
     {

@@ -74,7 +74,7 @@ use function substr;
 /**
  * @internal
  */
-class TypeCombiner
+final class TypeCombiner
 {
     /**
      * Combines types together

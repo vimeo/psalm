@@ -23,7 +23,7 @@ use const JSON_THROW_ON_ERROR;
  * @author Kitamura Satoshi <with.no.parachute@gmail.com>
  * @internal
  */
-class BuildInfoCollector
+final class BuildInfoCollector
 {
     /**
      * Environment variables.

@@ -23,7 +23,7 @@ use function array_search;
 /**
  * @internal
  */
-class ClassTemplateParamCollector
+final class ClassTemplateParamCollector
 {
     /**
      * @param lowercase-string $method_name

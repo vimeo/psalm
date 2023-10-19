@@ -10,7 +10,7 @@ use Psalm\Storage\ImmutableNonCloneableTrait;
  * @psalm-immutable
  * @internal
  */
-class Path
+final class Path
 {
     use ImmutableNonCloneableTrait;
 

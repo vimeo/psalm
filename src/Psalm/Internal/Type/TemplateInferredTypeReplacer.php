@@ -41,7 +41,7 @@ use function strpos;
 /**
  * @internal
  */
-class TemplateInferredTypeReplacer
+final class TemplateInferredTypeReplacer
 {
     /**
      * This replaces template types in unions with the inferred types they should be

@@ -25,7 +25,7 @@ use function strtolower;
  *
  * Handles information about class properties
  */
-class Properties
+final class Properties
 {
     private ClassLikeStorageProvider $classlike_storage_provider;
 

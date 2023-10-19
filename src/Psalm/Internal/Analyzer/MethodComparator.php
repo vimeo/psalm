@@ -46,7 +46,7 @@ use function strtolower;
 /**
  * @internal
  */
-class MethodComparator
+final class MethodComparator
 {
     /**
      * @param  string[]         $suppressed_issues

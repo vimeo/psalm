@@ -95,7 +95,7 @@ use const STDERR;
 /**
  * @internal
  */
-class StatementsAnalyzer extends SourceAnalyzer
+final class StatementsAnalyzer extends SourceAnalyzer
 {
     protected SourceAnalyzer $source;
 

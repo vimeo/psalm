@@ -28,7 +28,7 @@ use function strtolower;
 /**
  * @internal
  */
-class TypeHintResolver
+final class TypeHintResolver
 {
     /**
      * @param Identifier|IntersectionType|Name|NullableType|UnionType $hint

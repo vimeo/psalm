@@ -22,7 +22,7 @@ use function strtolower;
 /**
  * @internal
  */
-class MethodVisibilityAnalyzer
+final class MethodVisibilityAnalyzer
 {
     /**
      * @param  string[]         $suppressed_issues

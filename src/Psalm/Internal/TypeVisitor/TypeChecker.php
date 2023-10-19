@@ -44,7 +44,7 @@ use function strtolower;
 /**
  * @internal
  */
-class TypeChecker extends TypeVisitor
+final class TypeChecker extends TypeVisitor
 {
     private StatementsSource $source;
 

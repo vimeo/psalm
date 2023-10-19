@@ -23,7 +23,7 @@ use function token_get_all;
 /**
  * @internal
  */
-class ArgumentMapPopulator
+final class ArgumentMapPopulator
 {
     /**
      * @param MethodCall|StaticCall|FuncCall|New_ $stmt

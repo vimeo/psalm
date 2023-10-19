@@ -11,7 +11,7 @@ use Psalm\Storage\ImmutableNonCloneableTrait;
  * @psalm-immutable
  * @internal
  */
-class InlineTypeAlias implements TypeAlias
+final class InlineTypeAlias implements TypeAlias
 {
     use ImmutableNonCloneableTrait;
 

@@ -9,7 +9,7 @@ use Psalm\Internal\Type\ParseTree;
 /**
  * @internal
  */
-class EncapsulationTree extends ParseTree
+final class EncapsulationTree extends ParseTree
 {
     public bool $terminated = false;
 }

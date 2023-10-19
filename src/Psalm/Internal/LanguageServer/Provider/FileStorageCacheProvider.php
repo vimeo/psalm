@@ -12,7 +12,7 @@ use function strtolower;
 /**
  * @internal
  */
-class FileStorageCacheProvider extends InternalFileStorageCacheProvider
+final class FileStorageCacheProvider extends InternalFileStorageCacheProvider
 {
     /** @var array<lowercase-string, FileStorage> */
     private array $cache = [];

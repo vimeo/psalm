@@ -22,7 +22,7 @@ use function json_encode;
 /**
  * @internal
  */
-class LanguageClient
+final class LanguageClient
 {
     /**
      * Handles textDocument/* methods

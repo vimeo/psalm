@@ -40,7 +40,7 @@ use function strlen;
 /**
  * @internal
  */
-class BinaryOpAnalyzer
+final class BinaryOpAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,

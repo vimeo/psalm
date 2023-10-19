@@ -33,7 +33,7 @@ use const FILTER_VALIDATE_URL;
 /**
  * @internal
  */
-class FilterVarReturnTypeProvider implements FunctionReturnTypeProviderInterface
+final class FilterVarReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
      * @return array<lowercase-string>

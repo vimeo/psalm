@@ -40,7 +40,7 @@ use function spl_object_id;
 /**
  * @internal
  */
-class TernaryAnalyzer
+final class TernaryAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,

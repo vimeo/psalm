@@ -25,7 +25,7 @@ use function strtolower;
 /**
  * @internal
  */
-class PhpStormMetaScanner
+final class PhpStormMetaScanner
 {
     /**
      * @param  list<PhpParser\Node\Arg> $args

@@ -7,7 +7,7 @@ namespace Psalm\Internal\Scanner;
 /**
  * @internal
  */
-class FunctionDocblockComment
+final class FunctionDocblockComment
 {
     public ?string $return_type = null;
 

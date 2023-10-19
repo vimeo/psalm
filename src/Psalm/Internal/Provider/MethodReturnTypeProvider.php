@@ -24,7 +24,7 @@ use function strtolower;
 /**
  * @internal
  */
-class MethodReturnTypeProvider
+final class MethodReturnTypeProvider
 {
     /**
      * @var array<

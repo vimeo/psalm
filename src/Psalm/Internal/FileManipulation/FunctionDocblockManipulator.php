@@ -36,7 +36,7 @@ use function substr;
 /**
  * @internal
  */
-class FunctionDocblockManipulator
+final class FunctionDocblockManipulator
 {
     /**
      * Manipulators ordered by line number

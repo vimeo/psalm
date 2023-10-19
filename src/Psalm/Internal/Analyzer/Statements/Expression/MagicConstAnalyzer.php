@@ -23,7 +23,7 @@ use function dirname;
 /**
  * @internal
  */
-class MagicConstAnalyzer
+final class MagicConstAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,

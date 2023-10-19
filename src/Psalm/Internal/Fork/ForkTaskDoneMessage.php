@@ -10,7 +10,7 @@ use Psalm\Storage\ImmutableNonCloneableTrait;
  * @psalm-immutable
  * @internal
  */
-class ForkTaskDoneMessage implements ForkMessage
+final class ForkTaskDoneMessage implements ForkMessage
 {
     use ImmutableNonCloneableTrait;
 

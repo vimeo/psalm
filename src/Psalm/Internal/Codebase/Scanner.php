@@ -85,7 +85,7 @@ use const PHP_EOL;
  *
  * Contains methods that aid in the scanning of Psalm's codebase
  */
-class Scanner
+final class Scanner
 {
     private Codebase $codebase;
 

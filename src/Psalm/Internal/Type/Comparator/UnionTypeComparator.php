@@ -31,7 +31,7 @@ use const PHP_INT_MAX;
 /**
  * @internal
  */
-class UnionTypeComparator
+final class UnionTypeComparator
 {
     /**
      * Does the input param type match the given param type

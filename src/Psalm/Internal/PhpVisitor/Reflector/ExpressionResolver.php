@@ -47,7 +47,7 @@ use function strtolower;
 /**
  * @internal
  */
-class ExpressionResolver
+final class ExpressionResolver
 {
     public static function getUnresolvedClassConstExpr(
         PhpParser\Node\Expr $stmt,

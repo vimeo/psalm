@@ -51,7 +51,7 @@ use function strpos;
 /**
  * @internal
  */
-class StubsGenerator
+final class StubsGenerator
 {
     public static function getAll(
         Codebase $codebase,
