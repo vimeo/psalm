@@ -37,7 +37,7 @@ $order = array_map(
 );
 array_multisort($order, $files);
 
-$chunks = array_chunk($files, ceil(count($files) / $number_of_chunks));
+$chunks = array_chunk($files, (int) ceil(count($files) / $number_of_chunks));
 
 $phpunit_config = new DOMDocument('1.0', 'UTF-8');
 $phpunit_config->preserveWhiteSpace = false;

@@ -16,7 +16,7 @@ use function strpos;
 /**
  * @internal
  */
-final class PluginList
+class PluginList
 {
     private ?ConfigFile $config_file = null;
 
