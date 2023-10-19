@@ -1459,7 +1459,7 @@ class ClassLikeNodeScanner
 
         if (!isset($storage->enum_cases[$stmt->name->name])) {
             $case = new EnumCaseStorage(
-                $enum_value?->value,
+                $enum_value,
                 $case_location,
             );
 
