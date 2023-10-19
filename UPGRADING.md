@@ -42,6 +42,8 @@
 
 - [BC] Property `Psalm\Storage\EnumCaseStorage::$value` changed from `int|string|null` to `TLiteralInt|TLiteralString|null`
 
+- [BC] `Psalm\CodeLocation\Raw`, `Psalm\CodeLocation\ParseErrorLocation`, `Psalm\CodeLocation\DocblockTypeLocation`, `Psalm\Report\CountReport`, `Psalm\Type\Atomic\TNonEmptyArray` are now all final.
+
 # Upgrading from Psalm 4 to Psalm 5
 ## Changed
 

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Psalm\Config\IssueHandler;
 use Psalm\Issue\CodeIssue;
 

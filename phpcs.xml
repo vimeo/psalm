@@ -91,8 +91,6 @@
             <property name="linesCountAfterDeclare" value="1"/>
             <property name="spacesCountAroundEqualsSign" value="0"/>
         </properties>
-
-        <exclude name="SlevomatCodingStandard.TypeHints.DeclareStrictTypes.DeclareStrictTypesMissing"/>
     </rule>
 
     <!--

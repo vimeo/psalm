@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Test\Config\Plugin\Hook;
 
 use Psalm\Plugin\EventHandler\AfterFileAnalysisInterface;

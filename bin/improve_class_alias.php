@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 $vendor_path = 'vendor-bin/box/vendor/humbug/php-scoper/src/PhpParser/NodeVisitor/ClassAliasStmtAppender.php';
 
 if (!file_exists($vendor_path)) {
