@@ -20,8 +20,15 @@ final class AfterFunctionLikeAnalysisEvent
      * @param  FileManipulation[]   $file_replacements
      * @internal
      */
-    public function __construct(private readonly Node\FunctionLike $stmt, private readonly FunctionLikeStorage $functionlike_storage, private readonly StatementsSource $statements_source, private readonly Codebase $codebase, private array $file_replacements, private readonly NodeTypeProvider $node_type_provider, private readonly Context $context)
-    {
+    public function __construct(
+        private readonly Node\FunctionLike $stmt,
+        private readonly FunctionLikeStorage $functionlike_storage,
+        private readonly StatementsSource $statements_source,
+        private readonly Codebase $codebase,
+        private array $file_replacements,
+        private readonly NodeTypeProvider $node_type_provider,
+        private readonly Context $context,
+    ) {
     }
 
     public function getStmt(): Node\FunctionLike

@@ -16,8 +16,12 @@ final class BeforeFileAnalysisEvent
      *
      * @internal
      */
-    public function __construct(private readonly StatementsSource $statements_source, private readonly Context $file_context, private readonly FileStorage $file_storage, private readonly Codebase $codebase)
-    {
+    public function __construct(
+        private readonly StatementsSource $statements_source,
+        private readonly Context $file_context,
+        private readonly FileStorage $file_storage,
+        private readonly Codebase $codebase,
+    ) {
     }
 
     public function getStatementsSource(): StatementsSource

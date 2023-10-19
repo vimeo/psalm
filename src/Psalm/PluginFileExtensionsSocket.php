@@ -34,8 +34,9 @@ final class PluginFileExtensionsSocket implements FileExtensionsInterface
     /**
      * @internal
      */
-    public function __construct(private readonly Config $config)
-    {
+    public function __construct(
+        private readonly Config $config,
+    ) {
     }
 
     /**

@@ -18,8 +18,9 @@ use function strtolower;
  */
 final class AssertionsFromInheritanceResolver
 {
-    public function __construct(private readonly Codebase $codebase)
-    {
+    public function __construct(
+        private readonly Codebase $codebase,
+    ) {
     }
 
     /**

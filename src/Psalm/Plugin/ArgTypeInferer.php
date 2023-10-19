@@ -16,8 +16,10 @@ final class ArgTypeInferer
     /**
      * @internal
      */
-    public function __construct(private readonly Context $context, private readonly StatementsAnalyzer $statements_analyzer)
-    {
+    public function __construct(
+        private readonly Context $context,
+        private readonly StatementsAnalyzer $statements_analyzer,
+    ) {
     }
 
     public function infer(PhpParser\Node\Arg $arg): false|Union

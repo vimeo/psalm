@@ -16,8 +16,9 @@ use Psalm\Type\Union;
  */
 final class FromDocblockSetter extends MutableTypeVisitor
 {
-    public function __construct(private readonly bool $from_docblock)
-    {
+    public function __construct(
+        private readonly bool $from_docblock,
+    ) {
     }
     /**
      * @return self::STOP_TRAVERSAL|self::DONT_TRAVERSE_CHILDREN|null

@@ -45,8 +45,10 @@ final class Reflection
      */
     private static array $builtin_functions = [];
 
-    public function __construct(private readonly ClassLikeStorageProvider $storage_provider, private readonly Codebase $codebase)
-    {
+    public function __construct(
+        private readonly ClassLikeStorageProvider $storage_provider,
+        private readonly Codebase $codebase,
+    ) {
         self::$builtin_functions = [];
     }
 

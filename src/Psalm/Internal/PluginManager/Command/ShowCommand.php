@@ -26,8 +26,9 @@ use const DIRECTORY_SEPARATOR;
  */
 final class ShowCommand extends Command
 {
-    public function __construct(private readonly PluginListFactory $plugin_list_factory)
-    {
+    public function __construct(
+        private readonly PluginListFactory $plugin_list_factory,
+    ) {
         parent::__construct();
     }
 

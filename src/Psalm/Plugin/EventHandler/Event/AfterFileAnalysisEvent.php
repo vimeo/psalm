@@ -18,8 +18,13 @@ final class AfterFileAnalysisEvent
      * @param array<Stmt> $stmts
      * @internal
      */
-    public function __construct(private readonly StatementsSource $statements_source, private readonly Context $file_context, private readonly FileStorage $file_storage, private readonly Codebase $codebase, private readonly array $stmts)
-    {
+    public function __construct(
+        private readonly StatementsSource $statements_source,
+        private readonly Context $file_context,
+        private readonly FileStorage $file_storage,
+        private readonly Codebase $codebase,
+        private readonly array $stmts,
+    ) {
     }
 
     public function getStatementsSource(): StatementsSource

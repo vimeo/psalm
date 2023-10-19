@@ -13,8 +13,9 @@ final class AfterCodebasePopulatedEvent
      *
      * @internal
      */
-    public function __construct(private readonly Codebase $codebase)
-    {
+    public function __construct(
+        private readonly Codebase $codebase,
+    ) {
     }
 
     public function getCodebase(): Codebase

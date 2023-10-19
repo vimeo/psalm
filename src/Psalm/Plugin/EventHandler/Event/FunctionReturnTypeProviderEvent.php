@@ -20,8 +20,13 @@ final class FunctionReturnTypeProviderEvent
      * @param non-empty-string $function_id
      * @internal
      */
-    public function __construct(private readonly StatementsSource $statements_source, private readonly string $function_id, private readonly FuncCall $stmt, private readonly Context $context, private readonly CodeLocation $code_location)
-    {
+    public function __construct(
+        private readonly StatementsSource $statements_source,
+        private readonly string $function_id,
+        private readonly FuncCall $stmt,
+        private readonly Context $context,
+        private readonly CodeLocation $code_location,
+    ) {
     }
 
     public function getStatementsSource(): StatementsSource

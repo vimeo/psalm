@@ -181,8 +181,12 @@ final class Analyzer
      */
     public array $mutable_classes = [];
 
-    public function __construct(private readonly Config $config, private readonly FileProvider $file_provider, private readonly FileStorageProvider $file_storage_provider, private readonly Progress $progress)
-    {
+    public function __construct(
+        private readonly Config $config,
+        private readonly FileProvider $file_provider,
+        private readonly FileStorageProvider $file_storage_provider,
+        private readonly Progress $progress,
+    ) {
     }
 
     /**

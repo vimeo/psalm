@@ -165,8 +165,10 @@ final class FileReferenceProvider
      */
     private static array $method_param_uses = [];
 
-    public function __construct(private readonly FileProvider $file_provider, public ?FileReferenceCacheProvider $cache = null)
-    {
+    public function __construct(
+        private readonly FileProvider $file_provider,
+        public ?FileReferenceCacheProvider $cache = null,
+    ) {
     }
 
     /**

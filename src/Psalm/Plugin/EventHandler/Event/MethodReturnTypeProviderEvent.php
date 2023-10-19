@@ -22,8 +22,17 @@ final class MethodReturnTypeProviderEvent
      * @param lowercase-string $called_method_name_lowercase
      * @internal
      */
-    public function __construct(private readonly StatementsSource $source, private readonly string $fq_classlike_name, private readonly string $method_name_lowercase, private readonly PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall $stmt, private readonly Context $context, private readonly CodeLocation $code_location, private readonly ?array $template_type_parameters = null, private readonly ?string $called_fq_classlike_name = null, private readonly ?string $called_method_name_lowercase = null)
-    {
+    public function __construct(
+        private readonly StatementsSource $source,
+        private readonly string $fq_classlike_name,
+        private readonly string $method_name_lowercase,
+        private readonly PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall $stmt,
+        private readonly Context $context,
+        private readonly CodeLocation $code_location,
+        private readonly ?array $template_type_parameters = null,
+        private readonly ?string $called_fq_classlike_name = null,
+        private readonly ?string $called_method_name_lowercase = null,
+    ) {
     }
 
     public function getSource(): StatementsSource

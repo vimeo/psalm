@@ -15,8 +15,13 @@ final class FunctionParamsProviderEvent
      * @param  list<PhpParser\Node\Arg>    $call_args
      * @internal
      */
-    public function __construct(private readonly StatementsSource $statements_source, private readonly string $function_id, private readonly array $call_args, private readonly ?Context $context = null, private readonly ?CodeLocation $code_location = null)
-    {
+    public function __construct(
+        private readonly StatementsSource $statements_source,
+        private readonly string $function_id,
+        private readonly array $call_args,
+        private readonly ?Context $context = null,
+        private readonly ?CodeLocation $code_location = null,
+    ) {
     }
 
     public function getStatementsSource(): StatementsSource

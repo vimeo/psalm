@@ -135,8 +135,15 @@ final class Scanner
 
     private bool $is_forked = false;
 
-    public function __construct(private readonly Codebase $codebase, private readonly Config $config, private readonly FileStorageProvider $file_storage_provider, private readonly FileProvider $file_provider, private readonly Reflection $reflection, private readonly FileReferenceProvider $file_reference_provider, private readonly Progress $progress)
-    {
+    public function __construct(
+        private readonly Codebase $codebase,
+        private readonly Config $config,
+        private readonly FileStorageProvider $file_storage_provider,
+        private readonly FileProvider $file_provider,
+        private readonly Reflection $reflection,
+        private readonly FileReferenceProvider $file_reference_provider,
+        private readonly Progress $progress,
+    ) {
     }
 
     /**

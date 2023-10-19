@@ -23,8 +23,9 @@ final class YieldTypeCollector extends NodeVisitorAbstract
     /** @var list<Union> */
     private array $yield_types = [];
 
-    public function __construct(private readonly NodeDataProvider $nodes)
-    {
+    public function __construct(
+        private readonly NodeDataProvider $nodes,
+    ) {
     }
 
     public function enterNode(Node $node): ?int

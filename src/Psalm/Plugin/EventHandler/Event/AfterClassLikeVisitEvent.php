@@ -16,8 +16,13 @@ final class AfterClassLikeVisitEvent
      * @param  FileManipulation[] $file_replacements
      * @internal
      */
-    public function __construct(private readonly ClassLike $stmt, private readonly ClassLikeStorage $storage, private readonly FileSource $statements_source, private readonly Codebase $codebase, private array $file_replacements = [])
-    {
+    public function __construct(
+        private readonly ClassLike $stmt,
+        private readonly ClassLikeStorage $storage,
+        private readonly FileSource $statements_source,
+        private readonly Codebase $codebase,
+        private array $file_replacements = [],
+    ) {
     }
 
     public function getStmt(): ClassLike

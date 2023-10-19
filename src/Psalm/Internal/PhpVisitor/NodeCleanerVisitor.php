@@ -12,8 +12,9 @@ use Psalm\Internal\Provider\NodeDataProvider;
  */
 final class NodeCleanerVisitor extends PhpParser\NodeVisitorAbstract
 {
-    public function __construct(private readonly NodeDataProvider $type_provider)
-    {
+    public function __construct(
+        private readonly NodeDataProvider $type_provider,
+    ) {
     }
 
     public function enterNode(PhpParser\Node $node): ?int

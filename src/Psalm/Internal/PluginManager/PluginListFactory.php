@@ -20,8 +20,10 @@ use const JSON_THROW_ON_ERROR;
  */
 final class PluginListFactory
 {
-    public function __construct(private readonly string $project_root, private readonly string $psalm_root)
-    {
+    public function __construct(
+        private readonly string $project_root,
+        private readonly string $psalm_root,
+    ) {
     }
 
     public function __invoke(string $current_dir, ?string $config_file_path = null): PluginList

@@ -17,8 +17,10 @@ final class Progress implements ProgressInterface
     private string $status = self::STATUS_INACTIVE;
     private bool $withPercentage = false;
 
-    public function __construct(private readonly ClientHandler $handler, private readonly string $token)
-    {
+    public function __construct(
+        private readonly ClientHandler $handler,
+        private readonly string $token,
+    ) {
     }
 
     public function begin(

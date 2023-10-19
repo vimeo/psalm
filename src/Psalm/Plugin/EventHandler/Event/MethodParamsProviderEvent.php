@@ -15,8 +15,14 @@ final class MethodParamsProviderEvent
      * @param  list<PhpParser\Node\Arg>    $call_args
      * @internal
      */
-    public function __construct(private readonly string $fq_classlike_name, private readonly string $method_name_lowercase, private readonly ?array $call_args = null, private readonly ?StatementsSource $statements_source = null, private readonly ?Context $context = null, private readonly ?CodeLocation $code_location = null)
-    {
+    public function __construct(
+        private readonly string $fq_classlike_name,
+        private readonly string $method_name_lowercase,
+        private readonly ?array $call_args = null,
+        private readonly ?StatementsSource $statements_source = null,
+        private readonly ?Context $context = null,
+        private readonly ?CodeLocation $code_location = null,
+    ) {
     }
 
     public function getFqClasslikeName(): string

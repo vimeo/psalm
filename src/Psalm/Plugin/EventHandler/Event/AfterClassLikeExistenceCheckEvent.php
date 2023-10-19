@@ -15,8 +15,13 @@ final class AfterClassLikeExistenceCheckEvent
      * @param FileManipulation[] $file_replacements
      * @internal
      */
-    public function __construct(private readonly string $fq_class_name, private readonly CodeLocation $code_location, private readonly StatementsSource $statements_source, private readonly Codebase $codebase, private array $file_replacements = [])
-    {
+    public function __construct(
+        private readonly string $fq_class_name,
+        private readonly CodeLocation $code_location,
+        private readonly StatementsSource $statements_source,
+        private readonly Codebase $codebase,
+        private array $file_replacements = [],
+    ) {
     }
 
     public function getFqClassName(): string

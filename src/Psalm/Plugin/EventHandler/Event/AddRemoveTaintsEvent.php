@@ -16,8 +16,12 @@ final class AddRemoveTaintsEvent
      *
      * @internal
      */
-    public function __construct(private readonly Expr $expr, private readonly Context $context, private readonly StatementsSource $statements_source, private readonly Codebase $codebase)
-    {
+    public function __construct(
+        private readonly Expr $expr,
+        private readonly Context $context,
+        private readonly StatementsSource $statements_source,
+        private readonly Codebase $codebase,
+    ) {
     }
 
     public function getExpr(): Expr

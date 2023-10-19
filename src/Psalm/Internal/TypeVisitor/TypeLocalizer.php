@@ -24,8 +24,10 @@ final class TypeLocalizer extends MutableTypeVisitor
     /**
      * @param array<string, array<string, Union>> $extends
      */
-    public function __construct(private array $extends, private readonly string $base_fq_class_name)
-    {
+    public function __construct(
+        private array $extends,
+        private readonly string $base_fq_class_name,
+    ) {
     }
 
     protected function enterNode(TypeNode &$type): ?int

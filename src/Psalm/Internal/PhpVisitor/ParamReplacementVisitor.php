@@ -25,8 +25,10 @@ final class ParamReplacementVisitor extends PhpParser\NodeVisitorAbstract
 
     private bool $new_new_name_used = false;
 
-    public function __construct(private readonly string $old_name, private readonly string $new_name)
-    {
+    public function __construct(
+        private readonly string $old_name,
+        private readonly string $new_name,
+    ) {
     }
 
     public function enterNode(PhpParser\Node $node): ?int

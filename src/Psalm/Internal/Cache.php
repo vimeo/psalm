@@ -29,8 +29,9 @@ final class Cache
 {
     public bool $use_igbinary;
 
-    public function __construct(private readonly Config $config)
-    {
+    public function __construct(
+        private readonly Config $config,
+    ) {
         $this->use_igbinary = $config->use_igbinary;
     }
 

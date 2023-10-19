@@ -24,8 +24,9 @@ final class TraitFinder extends PhpParser\NodeVisitorAbstract
     /** @var list<PhpParser\Node\Stmt\Trait_> */
     private array $matching_trait_nodes = [];
 
-    public function __construct(private readonly string $fq_trait_name)
-    {
+    public function __construct(
+        private readonly string $fq_trait_name,
+    ) {
     }
 
     public function enterNode(PhpParser\Node $node, bool &$traverseChildren = true): ?int

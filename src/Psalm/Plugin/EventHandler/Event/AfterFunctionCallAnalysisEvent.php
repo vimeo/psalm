@@ -18,8 +18,15 @@ final class AfterFunctionCallAnalysisEvent
      * @param FileManipulation[] $file_replacements
      * @internal
      */
-    public function __construct(private readonly FuncCall $expr, private readonly string $function_id, private readonly Context $context, private readonly StatementsSource $statements_source, private readonly Codebase $codebase, private readonly Union $return_type_candidate, private array $file_replacements)
-    {
+    public function __construct(
+        private readonly FuncCall $expr,
+        private readonly string $function_id,
+        private readonly Context $context,
+        private readonly StatementsSource $statements_source,
+        private readonly Codebase $codebase,
+        private readonly Union $return_type_candidate,
+        private array $file_replacements,
+    ) {
     }
 
     public function getExpr(): FuncCall

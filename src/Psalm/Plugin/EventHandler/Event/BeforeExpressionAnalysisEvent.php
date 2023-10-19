@@ -18,8 +18,13 @@ final class BeforeExpressionAnalysisEvent
      * @param  list<FileManipulation> $file_replacements
      * @internal
      */
-    public function __construct(private readonly Expr $expr, private readonly Context $context, private readonly StatementsSource $statements_source, private readonly Codebase $codebase, private array $file_replacements = [])
-    {
+    public function __construct(
+        private readonly Expr $expr,
+        private readonly Context $context,
+        private readonly StatementsSource $statements_source,
+        private readonly Codebase $codebase,
+        private array $file_replacements = [],
+    ) {
     }
 
     public function getExpr(): Expr

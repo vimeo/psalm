@@ -16,8 +16,12 @@ final class MethodExistenceProviderEvent
      *
      * @internal
      */
-    public function __construct(private readonly string $fq_classlike_name, private readonly string $method_name_lowercase, private readonly ?StatementsSource $source = null, private readonly ?CodeLocation $code_location = null)
-    {
+    public function __construct(
+        private readonly string $fq_classlike_name,
+        private readonly string $method_name_lowercase,
+        private readonly ?StatementsSource $source = null,
+        private readonly ?CodeLocation $code_location = null,
+    ) {
     }
 
     public function getFqClasslikeName(): string

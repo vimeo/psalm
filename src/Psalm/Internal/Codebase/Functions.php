@@ -54,8 +54,10 @@ final class Functions
 
     public DynamicFunctionStorageProvider $dynamic_storage_provider;
 
-    public function __construct(private readonly FileStorageProvider $file_storage_provider, private readonly Reflection $reflection)
-    {
+    public function __construct(
+        private readonly FileStorageProvider $file_storage_provider,
+        private readonly Reflection $reflection,
+    ) {
         $this->return_type_provider = new FunctionReturnTypeProvider();
         $this->existence_provider = new FunctionExistenceProvider();
         $this->params_provider = new FunctionParamsProvider();

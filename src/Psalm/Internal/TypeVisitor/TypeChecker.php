@@ -53,8 +53,16 @@ final class TypeChecker extends TypeVisitor
      * @param  array<string>    $suppressed_issues
      * @param  array<string, bool> $phantom_classes
      */
-    public function __construct(private readonly StatementsSource $source, private readonly CodeLocation $code_location, private readonly array $suppressed_issues, private array $phantom_classes = [], private readonly bool $inferred = true, private readonly bool $inherited = false, private bool $prevent_template_covariance = false, private readonly ?string $calling_method_id = null)
-    {
+    public function __construct(
+        private readonly StatementsSource $source,
+        private readonly CodeLocation $code_location,
+        private readonly array $suppressed_issues,
+        private array $phantom_classes = [],
+        private readonly bool $inferred = true,
+        private readonly bool $inherited = false,
+        private bool $prevent_template_covariance = false,
+        private readonly ?string $calling_method_id = null,
+    ) {
     }
 
     /**

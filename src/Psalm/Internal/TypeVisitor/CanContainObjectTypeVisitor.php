@@ -16,8 +16,9 @@ final class CanContainObjectTypeVisitor extends TypeVisitor
 {
     private bool $contains_object_type = false;
 
-    public function __construct(private readonly Codebase $codebase)
-    {
+    public function __construct(
+        private readonly Codebase $codebase,
+    ) {
     }
 
     protected function enterNode(TypeNode $type): ?int

@@ -22,8 +22,11 @@ final class TypeScanner extends TypeVisitor
     /**
      * @param  array<string, mixed> $phantom_classes
      */
-    public function __construct(private readonly Scanner $scanner, private readonly ?FileStorage $file_storage, private array $phantom_classes)
-    {
+    public function __construct(
+        private readonly Scanner $scanner,
+        private readonly ?FileStorage $file_storage,
+        private array $phantom_classes,
+    ) {
     }
 
     protected function enterNode(TypeNode $type): ?int

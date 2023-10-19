@@ -10,8 +10,11 @@ use Psalm\Issue\CodeIssue;
 final class BeforeAddIssueEvent
 {
     /** @internal */
-    public function __construct(private readonly CodeIssue $issue, private readonly bool $fixable, private readonly Codebase $codebase)
-    {
+    public function __construct(
+        private readonly CodeIssue $issue,
+        private readonly bool $fixable,
+        private readonly Codebase $codebase,
+    ) {
     }
 
     public function getIssue(): CodeIssue

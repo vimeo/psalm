@@ -23,8 +23,9 @@ final class ContainsClassLikeVisitor extends TypeVisitor
      * @psalm-external-mutation-free
      * @param lowercase-string $fq_classlike_name
      */
-    public function __construct(private readonly string $fq_classlike_name)
-    {
+    public function __construct(
+        private readonly string $fq_classlike_name,
+    ) {
     }
 
     /**

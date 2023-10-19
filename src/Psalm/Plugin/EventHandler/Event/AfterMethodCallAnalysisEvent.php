@@ -19,8 +19,17 @@ final class AfterMethodCallAnalysisEvent
      * @param  FileManipulation[] $file_replacements
      * @internal
      */
-    public function __construct(private readonly MethodCall|StaticCall $expr, private readonly string $method_id, private readonly string $appearing_method_id, private readonly string $declaring_method_id, private readonly Context $context, private readonly StatementsSource $statements_source, private readonly Codebase $codebase, private array $file_replacements = [], private ?Union $return_type_candidate = null)
-    {
+    public function __construct(
+        private readonly MethodCall|StaticCall $expr,
+        private readonly string $method_id,
+        private readonly string $appearing_method_id,
+        private readonly string $declaring_method_id,
+        private readonly Context $context,
+        private readonly StatementsSource $statements_source,
+        private readonly Codebase $codebase,
+        private array $file_replacements = [],
+        private ?Union $return_type_candidate = null,
+    ) {
     }
 
     /**

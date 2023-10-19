@@ -17,8 +17,15 @@ final class DynamicFunctionStorageProviderEvent
     /**
      * @internal
      */
-    public function __construct(private readonly ArgTypeInferer $arg_type_inferer, private readonly DynamicTemplateProvider $template_provider, private readonly StatementsSource $statement_source, private readonly string $function_id, private readonly PhpParser\Node\Expr\FuncCall $func_call, private readonly Context $context, private readonly CodeLocation $code_location)
-    {
+    public function __construct(
+        private readonly ArgTypeInferer $arg_type_inferer,
+        private readonly DynamicTemplateProvider $template_provider,
+        private readonly StatementsSource $statement_source,
+        private readonly string $function_id,
+        private readonly PhpParser\Node\Expr\FuncCall $func_call,
+        private readonly Context $context,
+        private readonly CodeLocation $code_location,
+    ) {
     }
 
     public function getArgTypeInferer(): ArgTypeInferer

@@ -17,8 +17,9 @@ final class ClassConstantByWildcardResolver
 {
     private readonly StorageByPatternResolver $resolver;
 
-    public function __construct(private readonly Codebase $codebase)
-    {
+    public function __construct(
+        private readonly Codebase $codebase,
+    ) {
         $this->resolver = new StorageByPatternResolver();
     }
 

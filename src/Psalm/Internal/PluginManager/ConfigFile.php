@@ -27,8 +27,10 @@ final class ConfigFile
 
     private ?int $psalm_tag_end_pos = null;
 
-    public function __construct(private readonly string $current_dir, ?string $explicit_path)
-    {
+    public function __construct(
+        private readonly string $current_dir,
+        ?string $explicit_path,
+    ) {
         if ($explicit_path) {
             $this->path = $explicit_path;
         } else {

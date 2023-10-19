@@ -15,8 +15,10 @@ final class FunctionExistenceProviderEvent
      *
      * @internal
      */
-    public function __construct(private readonly StatementsSource $statements_source, private readonly string $function_id)
-    {
+    public function __construct(
+        private readonly StatementsSource $statements_source,
+        private readonly string $function_id,
+    ) {
     }
 
     public function getStatementsSource(): StatementsSource

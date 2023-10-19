@@ -16,8 +16,11 @@ final class OffsetShifterVisitor extends PhpParser\NodeVisitorAbstract
     /**
      * @param array<int, int> $extra_offsets
      */
-    public function __construct(private readonly int $file_offset, private readonly int $line_offset, private array $extra_offsets)
-    {
+    public function __construct(
+        private readonly int $file_offset,
+        private readonly int $line_offset,
+        private array $extra_offsets,
+    ) {
     }
 
     public function enterNode(PhpParser\Node $node): ?int

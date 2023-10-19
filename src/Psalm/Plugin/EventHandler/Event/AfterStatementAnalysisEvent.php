@@ -18,8 +18,13 @@ final class AfterStatementAnalysisEvent
      * @param  FileManipulation[]   $file_replacements
      * @internal
      */
-    public function __construct(private readonly Stmt $stmt, private readonly Context $context, private readonly StatementsSource $statements_source, private readonly Codebase $codebase, private array $file_replacements = [])
-    {
+    public function __construct(
+        private readonly Stmt $stmt,
+        private readonly Context $context,
+        private readonly StatementsSource $statements_source,
+        private readonly Codebase $codebase,
+        private array $file_replacements = [],
+    ) {
     }
 
     public function getStmt(): Stmt

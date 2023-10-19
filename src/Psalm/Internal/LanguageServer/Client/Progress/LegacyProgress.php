@@ -19,8 +19,9 @@ final class LegacyProgress implements ProgressInterface
     private string $status = self::STATUS_INACTIVE;
     private ?string $title = null;
 
-    public function __construct(private readonly ClientHandler $handler)
-    {
+    public function __construct(
+        private readonly ClientHandler $handler,
+    ) {
     }
 
     public function begin(string $title, ?string $message = null, ?int $percentage = null): void

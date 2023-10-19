@@ -60,8 +60,10 @@ final class ParserCacheProvider
      */
     private array $new_file_content_hashes = [];
 
-    public function __construct(Config $config, private readonly bool $use_file_cache = true)
-    {
+    public function __construct(
+        Config $config,
+        private readonly bool $use_file_cache = true,
+    ) {
         $this->cache = new Cache($config);
     }
 

@@ -12,8 +12,13 @@ use Psalm\StatementsSource;
 final class AfterEveryFunctionCallAnalysisEvent
 {
     /** @internal */
-    public function __construct(private readonly FuncCall $expr, private readonly string $function_id, private readonly Context $context, private readonly StatementsSource $statements_source, private readonly Codebase $codebase)
-    {
+    public function __construct(
+        private readonly FuncCall $expr,
+        private readonly string $function_id,
+        private readonly Context $context,
+        private readonly StatementsSource $statements_source,
+        private readonly Codebase $codebase,
+    ) {
     }
 
     public function getExpr(): FuncCall

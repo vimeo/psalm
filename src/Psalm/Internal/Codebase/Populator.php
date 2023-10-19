@@ -51,8 +51,13 @@ final class Populator
      */
     private array $invalid_class_storages = [];
 
-    public function __construct(private ClassLikeStorageProvider $classlike_storage_provider, private readonly FileStorageProvider $file_storage_provider, private readonly ClassLikes $classlikes, private readonly FileReferenceProvider $file_reference_provider, private readonly Progress $progress)
-    {
+    public function __construct(
+        private ClassLikeStorageProvider $classlike_storage_provider,
+        private readonly FileStorageProvider $file_storage_provider,
+        private readonly ClassLikes $classlikes,
+        private readonly FileReferenceProvider $file_reference_provider,
+        private readonly Progress $progress,
+    ) {
     }
 
     public function populateCodebase(): void

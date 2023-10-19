@@ -14,8 +14,10 @@ final class StringInterpreterEvent
      * @psalm-external-mutation-free
      * @internal
      */
-    public function __construct(private readonly string $value, private readonly Codebase $codebase)
-    {
+    public function __construct(
+        private readonly string $value,
+        private readonly Codebase $codebase,
+    ) {
     }
 
     public function getValue(): string

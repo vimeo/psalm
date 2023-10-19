@@ -21,8 +21,9 @@ use function json_last_error_msg;
 final class ComposerLock
 {
     /** @param string[] $file_names */
-    public function __construct(private readonly array $file_names)
-    {
+    public function __construct(
+        private readonly array $file_names,
+    ) {
     }
 
     /**

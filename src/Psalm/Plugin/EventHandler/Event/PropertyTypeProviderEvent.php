@@ -10,8 +10,13 @@ use Psalm\StatementsSource;
 final class PropertyTypeProviderEvent
 {
     /** @internal */
-    public function __construct(private readonly string $fq_classlike_name, private readonly string $property_name, private readonly bool $read_mode, private readonly ?StatementsSource $source = null, private readonly ?Context $context = null)
-    {
+    public function __construct(
+        private readonly string $fq_classlike_name,
+        private readonly string $property_name,
+        private readonly bool $read_mode,
+        private readonly ?StatementsSource $source = null,
+        private readonly ?Context $context = null,
+    ) {
     }
 
     public function getFqClasslikeName(): string

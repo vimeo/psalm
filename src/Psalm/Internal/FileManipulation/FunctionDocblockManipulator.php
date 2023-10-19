@@ -107,8 +107,11 @@ final class FunctionDocblockManipulator
         return $manipulator;
     }
 
-    private function __construct(string $file_path, private readonly Closure|Function_|ClassMethod|ArrowFunction $stmt, ProjectAnalyzer $project_analyzer)
-    {
+    private function __construct(
+        string $file_path,
+        private readonly Closure|Function_|ClassMethod|ArrowFunction $stmt,
+        ProjectAnalyzer $project_analyzer,
+    ) {
         $docblock = $stmt->getDocComment();
         $this->docblock_start = $docblock ? $docblock->getStartFilePos() : (int)$stmt->getAttribute('startFilePos');
         $this->docblock_end = $function_start = (int)$stmt->getAttribute('startFilePos');

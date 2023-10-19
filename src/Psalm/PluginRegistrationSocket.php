@@ -26,8 +26,10 @@ final class PluginRegistrationSocket implements RegistrationInterface
     /**
      * @internal
      */
-    public function __construct(private readonly Config $config, private readonly Codebase $codebase)
-    {
+    public function __construct(
+        private readonly Config $config,
+        private readonly Codebase $codebase,
+    ) {
     }
 
     public function addStubFile(string $file_name): void

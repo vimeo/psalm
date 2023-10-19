@@ -11,8 +11,14 @@ use Psalm\StatementsSource;
 final class PropertyVisibilityProviderEvent
 {
     /** @internal */
-    public function __construct(private readonly StatementsSource $source, private readonly string $fq_classlike_name, private readonly string $property_name, private readonly bool $read_mode, private readonly Context $context, private readonly CodeLocation $code_location)
-    {
+    public function __construct(
+        private readonly StatementsSource $source,
+        private readonly string $fq_classlike_name,
+        private readonly string $property_name,
+        private readonly bool $read_mode,
+        private readonly Context $context,
+        private readonly CodeLocation $code_location,
+    ) {
     }
 
     public function getSource(): StatementsSource

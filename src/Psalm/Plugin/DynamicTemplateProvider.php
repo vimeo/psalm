@@ -13,8 +13,9 @@ final class DynamicTemplateProvider
     /**
      * @internal
      */
-    public function __construct(private readonly string $defining_class)
-    {
+    public function __construct(
+        private readonly string $defining_class,
+    ) {
     }
 
     /**
