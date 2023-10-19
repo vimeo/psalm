@@ -22,7 +22,7 @@ use const PHP_VERSION_ID;
  *
  * @internal
  */
-final class ProjectCacheProvider
+class ProjectCacheProvider
 {
     private const GOOD_RUN_NAME = 'good_run';
     private const COMPOSER_LOCK_HASH = 'composer_lock_hash';

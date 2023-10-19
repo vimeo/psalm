@@ -6,6 +6,6 @@ namespace Psalm\Exception;
 
 use Exception;
 
-final class DocblockParseException extends Exception
+class DocblockParseException extends Exception
 {
 }

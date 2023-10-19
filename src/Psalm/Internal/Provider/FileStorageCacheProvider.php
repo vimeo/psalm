@@ -25,7 +25,7 @@ use const PHP_VERSION_ID;
 /**
  * @internal
  */
-final class FileStorageCacheProvider
+class FileStorageCacheProvider
 {
     private string $modified_timestamps = '';
 

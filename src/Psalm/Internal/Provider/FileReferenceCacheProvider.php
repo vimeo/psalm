@@ -28,7 +28,7 @@ use const LOCK_EX;
  * @psalm-import-type FileMapType from Analyzer
  * @internal
  */
-final class FileReferenceCacheProvider
+class FileReferenceCacheProvider
 {
     private const REFERENCE_CACHE_NAME = 'references';
     private const CLASSLIKE_FILE_CACHE_NAME = 'classlike_files';
@@ -50,10 +50,13 @@ final class FileReferenceCacheProvider
     private const FILE_MISSING_MEMBER_CACHE_NAME = 'file_missing_member';
     private const UNKNOWN_MEMBER_CACHE_NAME = 'unknown_member_references';
     private const METHOD_PARAM_USE_CACHE_NAME = 'method_param_uses';
-    private readonly Cache $cache;
 
-    public function __construct(protected Config $config)
+    protected Config $config;
+    protected Cache $cache;
+
+    public function __construct(Config $config)
     {
+        $this->config = $config;
         $this->cache = new Cache($config);
     }
 

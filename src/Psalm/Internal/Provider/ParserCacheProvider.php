@@ -38,7 +38,7 @@ use const SCANDIR_SORT_NONE;
 /**
  * @internal
  */
-final class ParserCacheProvider
+class ParserCacheProvider
 {
     private const FILE_HASHES = 'file_hashes_json';
     private const PARSER_CACHE_DIRECTORY = 'php-parser';
