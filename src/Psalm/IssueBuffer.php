@@ -831,7 +831,7 @@ final class IssueBuffer
         $foreground = "30";
 
         // text style, 1 = bold
-        $style = "1";
+        $style = "2";
 
         if ($project_analyzer->stdout_report_options->use_color) {
             echo "\e[{$background};{$style}m{$paddingTop}\e[0m" . "\n";
