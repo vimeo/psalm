@@ -258,7 +258,7 @@ final class AssignmentAnalyzer
                     $context->vars_in_scope[$var_id] = $comment_type ?? Type::getMixed();
                 }
 
-                return false;
+                return null;
             }
 
             $context->inside_general_use = $was_inside_general_use;
@@ -480,7 +480,7 @@ final class AssignmentAnalyzer
             ),
             $statements_analyzer->getSuppressedIssues(),
         )) {
-            return false;
+            return null;
         }
 
         if (isset($context->protected_var_ids[$var_id])
@@ -507,9 +507,9 @@ final class AssignmentAnalyzer
             $extended_var_id,
             $var_comments,
             $removed_taints,
-        ) === false
+        ) === null
         ) {
-            return false;
+            return null;
         }
 
         if ($var_id && isset($context->vars_in_scope[$var_id])) {
@@ -537,7 +537,7 @@ final class AssignmentAnalyzer
                     ),
                     $statements_analyzer->getSuppressedIssues(),
                 )) {
-                    return false;
+                    return null;
                 }
 
                 $context->vars_in_scope[$var_id] = Type::getNever();
@@ -670,7 +670,7 @@ final class AssignmentAnalyzer
             $assign_var->class instanceof PhpParser\Node\Name
         ) {
             if (ExpressionAnalyzer::analyze($statements_analyzer, $assign_var, $context) === false) {
-                return false;
+                return null;
             }
 
             if ($context->check_classes) {
@@ -681,7 +681,7 @@ final class AssignmentAnalyzer
                     $assign_value_type,
                     $context,
                 ) === null) {
-                    return false;
+                    return null;
                 }
             }
 
