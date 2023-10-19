@@ -44,6 +44,7 @@ use Psalm\Issue\ConstantDeclarationInTrait;
 use Psalm\Issue\DuplicateClass;
 use Psalm\Issue\DuplicateConstant;
 use Psalm\Issue\DuplicateEnumCase;
+use Psalm\Issue\DuplicateProperty;
 use Psalm\Issue\InvalidAttribute;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidEnumBackingType;
@@ -78,8 +79,6 @@ use function assert;
 use function count;
 use function get_class;
 use function implode;
-use function is_int;
-use function is_string;
 use function preg_match;
 use function preg_replace;
 use function preg_split;
@@ -739,14 +738,11 @@ class ClassLikeNodeScanner
         if ($storage->is_enum) {
             $name_types = [];
             $values_types = [];
-            foreach ($storage->enum_cases as $name => $enumCaseStorage) {
+            foreach ($storage->enum_cases as $name => $enum_case_storage) {
                 $name_types[] = Type::getAtomicStringFromLiteral($name);
-                if ($storage->enum_type !== null) {
-                    if (is_string($enumCaseStorage->value)) {
-                        $values_types[] = Type::getAtomicStringFromLiteral($enumCaseStorage->value);
-                    } elseif (is_int($enumCaseStorage->value)) {
-                        $values_types[] = new Type\Atomic\TLiteralInt($enumCaseStorage->value);
-                    }
+                if ($storage->enum_type !== null
+                    && $enum_case_storage->value !== null) {
+                    $values_types[] = $enum_case_storage->value;
                 }
             }
             if ($name_types !== []) {
@@ -944,7 +940,7 @@ class ClassLikeNodeScanner
                     $this->useTemplatedType(
                         $storage,
                         $node,
-                        trim(preg_replace('@^[ \t]*\*@m', '', $template_line)),
+                        trim((string) preg_replace('@^[ \t]*\*@m', '', $template_line)),
                     );
                 }
             }
@@ -1443,9 +1439,9 @@ class ClassLikeNodeScanner
 
             if ($case_type) {
                 if ($case_type->isSingleIntLiteral()) {
-                    $enum_value = $case_type->getSingleIntLiteral()->value;
+                    $enum_value = $case_type->getSingleIntLiteral();
                 } elseif ($case_type->isSingleStringLiteral()) {
-                    $enum_value = $case_type->getSingleStringLiteral()->value;
+                    $enum_value = $case_type->getSingleStringLiteral();
                 } else {
                     IssueBuffer::maybeAdd(
                         new InvalidEnumCaseValue(
@@ -1463,7 +1459,7 @@ class ClassLikeNodeScanner
 
         if (!isset($storage->enum_cases[$stmt->name->name])) {
             $case = new EnumCaseStorage(
-                $enum_value,
+                $enum_value?->value,
                 $case_location,
             );
 
@@ -1619,6 +1615,16 @@ class ClassLikeNodeScanner
 
         foreach ($stmt->props as $property) {
             $doc_var_location = null;
+
+            if (isset($storage->properties[$property->name->name])) {
+                IssueBuffer::maybeAdd(
+                    new DuplicateProperty(
+                        'Property ' . $fq_classlike_name . '::$' . $property->name->name . ' has already been defined',
+                        new CodeLocation($this->file_scanner, $stmt, null, true),
+                        $fq_classlike_name . '::$' . $property->name->name,
+                    ),
+                );
+            }
 
             $property_storage = $storage->properties[$property->name->name] = new PropertyStorage();
             $property_storage->is_static = $stmt->isStatic();
@@ -1906,8 +1912,8 @@ class ClassLikeNodeScanner
                 continue;
             }
 
-            $var_line = preg_replace('/[ \t]+/', ' ', preg_replace('@^[ \t]*\*@m', '', $var_line));
-            $var_line = preg_replace('/,\n\s+\}/', '}', $var_line);
+            $var_line = (string) preg_replace('/[ \t]+/', ' ', (string) preg_replace('@^[ \t]*\*@m', '', $var_line));
+            $var_line = (string) preg_replace('/,\n\s+\}/', '}', $var_line);
             $var_line = str_replace("\n", '', $var_line);
 
             $var_line_parts = preg_split('/( |=)/', $var_line, -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY);

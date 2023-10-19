@@ -480,7 +480,7 @@ class TypeParseTest extends TestCase
     public function testTKeyedCallableArrayNonList(): void
     {
         $this->assertSame(
-            'callable-array{0: class-string, 1: string}',
+            'callable-array{class-string, string}',
             (string)Type::parseString('callable-array{0: class-string, 1: string}'),
         );
     }

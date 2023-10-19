@@ -38,6 +38,7 @@ use Psalm\Issue\DuplicateEnumCaseValue;
 use Psalm\Issue\ExtensionRequirementViolation;
 use Psalm\Issue\ImplementationRequirementViolation;
 use Psalm\Issue\InaccessibleMethod;
+use Psalm\Issue\InheritorViolation;
 use Psalm\Issue\InternalClass;
 use Psalm\Issue\InvalidEnumCaseValue;
 use Psalm\Issue\InvalidExtendClass;
@@ -76,6 +77,8 @@ use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
@@ -95,8 +98,6 @@ use function count;
 use function explode;
 use function implode;
 use function in_array;
-use function is_int;
-use function is_string;
 use function preg_match;
 use function preg_replace;
 use function reset;
@@ -271,6 +272,22 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 $codebase,
                 $class_context,
             );
+        }
+
+        $class_union = new Union([new TNamedObject($fq_class_name)]);
+        foreach ($storage->parent_classes + $storage->direct_class_interfaces as $parent_class) {
+            $parent_storage = $codebase->classlikes->getStorageFor($parent_class);
+            if ($parent_storage && $parent_storage->inheritors) {
+                if (!UnionTypeComparator::isContainedBy($codebase, $class_union, $parent_storage->inheritors)) {
+                    IssueBuffer::maybeAdd(
+                        new InheritorViolation(
+                            'Class ' . $fq_class_name . ' is not an allowed inheritor of parent class ' . $parent_class,
+                            new CodeLocation($this, $this->class),
+                        ),
+                        $this->getSuppressedIssues(),
+                    );
+                }
+            }
         }
 
 
@@ -2485,8 +2502,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     ),
                 );
             } elseif ($case_storage->value !== null) {
-                if ((is_int($case_storage->value) && $storage->enum_type === 'string')
-                    || (is_string($case_storage->value) && $storage->enum_type === 'int')
+                if (($case_storage->value instanceof TLiteralInt && $storage->enum_type === 'string')
+                    || ($case_storage->value instanceof TLiteralString && $storage->enum_type === 'int')
                 ) {
                     IssueBuffer::maybeAdd(
                         new InvalidEnumCaseValue(
@@ -2499,7 +2516,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             }
 
             if ($case_storage->value !== null) {
-                if (in_array($case_storage->value, $seen_values, true)) {
+                if (in_array($case_storage->value->value, $seen_values, true)) {
                     IssueBuffer::maybeAdd(
                         new DuplicateEnumCaseValue(
                             'Enum case values should be unique',
@@ -2508,7 +2525,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         ),
                     );
                 } else {
-                    $seen_values[] = $case_storage->value;
+                    $seen_values[] = $case_storage->value->value;
                 }
             }
         }

@@ -1236,6 +1236,15 @@ class TraitTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'duplicateTraitProperty' => [
+                'code' => '<?php
+                    trait T {
+                        public mixed $foo = 5;
+                        protected static mixed $foo;
+                    }
+                    ',
+                'error_message' => 'DuplicateProperty',
+            ],
         ];
     }
 }

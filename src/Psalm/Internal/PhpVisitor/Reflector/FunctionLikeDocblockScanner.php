@@ -1087,7 +1087,7 @@ class FunctionLikeDocblockScanner
                         $path_type = $matches[1];
                     }
 
-                    $flow = preg_replace($fancy_path_regex, '->', $flow);
+                    $flow = (string) preg_replace($fancy_path_regex, '->', $flow);
                 }
 
                 $flow_parts = explode('->', $flow);

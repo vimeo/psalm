@@ -11,8 +11,7 @@ namespace Psalm\Type\Atomic;
  */
 final class TLiteralInt extends TInt
 {
-    /** @var int */
-    public $value;
+    public int $value;
 
     public function __construct(int $value, bool $from_docblock = false)
     {

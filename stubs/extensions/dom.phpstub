@@ -471,13 +471,13 @@ class DOMDocument extends DOMNode implements DOMParentNode
     public function importNode(DOMNode $node, bool $deep = false) {}
 
     /**
-     * @return DOMDocument|false
+     * @return bool
      * @psalm-ignore-falsable-return
      **/
     public function load(string $filename, int $options = 0) {}
 
     /**
-     * @return DOMDocument|false
+     * @return bool
      * @psalm-ignore-falsable-return
      */
     public function loadXML(string $source, int $options = 0) {}
@@ -492,10 +492,10 @@ class DOMDocument extends DOMNode implements DOMParentNode
      */
     public function save(string $filename, int $options = 0) {}
 
-    /** @return DOMDocument|bool */
+    /** @return bool */
     public function loadHTML(string $source, int $options = 0) {}
 
-    /** @return DOMDocument|bool */
+    /** @return bool */
     public function loadHTMLFile(string $filename, int $options = 0) {}
 
     /**
@@ -972,10 +972,15 @@ class DOMXPath
 
     public function __construct(DOMDocument $document, bool $registerNodeNS = true) {}
 
+    /**
+     * @return DOMNodeList<DOMNode>|false
+     * @psalm-taint-sink xpath $expression
+     */
     public function evaluate(string $expression, ?DOMNode $contextNode = null, bool $registerNodeNS = true): mixed {}
 
     /**
      * @return DOMNodeList<DOMNode>|false
+     * @psalm-taint-sink xpath $expression
      */
     public function query(string $expression, ?DOMNode $contextNode = null, bool $registerNodeNS = true): mixed {}
 

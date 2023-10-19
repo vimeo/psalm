@@ -104,7 +104,7 @@ class DocblockParser
                 [$data, $data_offset] = $data_info;
 
                 if (strpos($data, '*') !== false) {
-                    $data = rtrim(preg_replace('/^ *\*\s*$/m', '', $data));
+                    $data = rtrim((string) preg_replace('/^ *\*\s*$/m', '', $data));
                 }
 
                 if (empty($special[$type])) {

@@ -1359,9 +1359,10 @@ function realpath(string $path) {}
  *
  * @param numeric-string $num1
  * @param numeric-string $num2
+ * @param int|null $scale
  * @return (PHP_MAJOR_VERSION is 8 ? numeric-string : ($num2 is "0" ? null : numeric-string))
  */
-function bcdiv(string $num1, string $num2, int $scale = 0): ?string {}
+function bcdiv(string $num1, string $num2, ?int $scale = null): ?string {}
 
 /**
  * @psalm-pure
@@ -1785,3 +1786,36 @@ if (defined('GLOB_BRACE')) {
     function glob (string $pattern, int $flags = 0): array|false {}
 }
 
+/**
+ * @psalm-template TOutput of array|null
+ *
+ * @param TOutput $output
+ * @param-out (TOutput is null ? list<string> : array) $output
+ * @param-out int $result_code
+ *
+ * @psalm-taint-specialize
+ * @psalm-taint-sink shell $command
+ */
+function exec(string $command, &$output = null, int &$result_code = null): string|false {}
+
+/**
+ * @psalm-taint-specialize
+ * @psalm-taint-sink sleep $seconds
+ */
+function sleep(int $seconds): int {}
+
+/**
+ * @psalm-taint-sink sleep $microseconds
+ */
+function usleep(int $microseconds): void {}
+
+/**
+ * @psalm-taint-sink sleep $seconds
+ * @psalm-taint-sink sleep $nanoseconds
+ */
+function time_nanosleep(int $seconds, int $nanoseconds): array|bool {}
+
+/**
+ * @psalm-taint-sink sleep $timestamp
+ */
+function time_sleep_until(float $timestamp): bool {}

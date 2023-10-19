@@ -8,24 +8,11 @@ use Psalm\CodeLocation;
 
 final class EnumCaseStorage
 {
-    /**
-     * @var int|string|null
-     */
-    public $value;
-
-    /** @var CodeLocation */
-    public $stmt_location;
-
-    /**
-     * @var bool
-     */
-    public $deprecated = false;
+    public bool $deprecated = false;
 
     public function __construct(
-        int|string|null $value,
-        CodeLocation $location,
+        public int|string|null $value,
+        public CodeLocation $location,
     ) {
-        $this->value = $value;
-        $this->stmt_location = $location;
     }
 }

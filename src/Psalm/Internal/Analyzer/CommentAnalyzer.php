@@ -154,7 +154,7 @@ class CommentAnalyzer
                         } else {
                             $description = trim(substr($var_line, strlen($line_parts[0]) + 1));
                         }
-                        $description = preg_replace('/\\n \\*\\s+/um', ' ', $description);
+                        $description = (string) preg_replace('/\\n \\*\\s+/um', ' ', $description);
                     }
                 }
 
@@ -261,8 +261,8 @@ class CommentAnalyzer
      */
     public static function sanitizeDocblockType(string $docblock_type): string
     {
-        $docblock_type = preg_replace('@^[ \t]*\*@m', '', $docblock_type);
-        $docblock_type = preg_replace('/,\n\s+}/', '}', $docblock_type);
+        $docblock_type = (string) preg_replace('@^[ \t]*\*@m', '', $docblock_type);
+        $docblock_type = (string) preg_replace('/,\n\s+}/', '}', $docblock_type);
 
         return str_replace("\n", '', $docblock_type);
     }
@@ -399,7 +399,7 @@ class CommentAnalyzer
                     continue;
                 }
 
-                $remaining = trim(preg_replace('@^[ \t]*\* *@m', ' ', substr($return_block, $i + 1)));
+                $remaining = trim((string) preg_replace('@^[ \t]*\* *@m', ' ', substr($return_block, $i + 1)));
 
                 if ($remaining) {
                     return array_merge([rtrim($type)], preg_split('/\s+/', $remaining) ?: []);

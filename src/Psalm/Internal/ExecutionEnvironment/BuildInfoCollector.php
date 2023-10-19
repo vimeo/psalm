@@ -7,6 +7,7 @@ namespace Psalm\Internal\ExecutionEnvironment;
 use Psalm\SourceControl\Git\CommitInfo;
 use Psalm\SourceControl\Git\GitInfo;
 
+use function assert;
 use function explode;
 use function file_get_contents;
 use function json_decode;
@@ -279,6 +280,7 @@ class BuildInfoCollector
 
             if (isset($this->env['GITHUB_EVENT_PATH'])) {
                 $event_json = file_get_contents((string) $this->env['GITHUB_EVENT_PATH']);
+                assert($event_json !== false);
                 /** @var array */
                 $event_data = json_decode($event_json, true, 512, JSON_THROW_ON_ERROR);
 
@@ -302,7 +304,7 @@ class BuildInfoCollector
                             ->setCommitterName($head_commit_data['committer']['name'])
                             ->setCommitterEmail($head_commit_data['committer']['email'])
                             ->setMessage($head_commit_data['message'])
-                            ->setDate(strtotime($head_commit_data['timestamp'])),
+                            ->setDate((int) strtotime($head_commit_data['timestamp'])),
                         [],
                     );
 

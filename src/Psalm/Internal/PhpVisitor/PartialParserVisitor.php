@@ -8,6 +8,7 @@ use PhpParser;
 use PhpParser\ErrorHandler\Collecting;
 use PhpParser\Parser;
 
+use function assert;
 use function count;
 use function preg_match_all;
 use function preg_replace;
@@ -223,7 +224,11 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
                             }
 
                             // changes "): {" to ") {"
-                            $hacky_class_fix = preg_replace('/(\)[\s]*):([\s]*\{)/', '$1 $2', $hacky_class_fix);
+                            $hacky_class_fix = (string) preg_replace(
+                                '/(\)[\s]*):([\s]*\{)/',
+                                '$1 $2',
+                                $hacky_class_fix,
+                            );
 
                             if ($hacky_class_fix !== $fake_class) {
                                 $replacement_stmts = $this->parser->parse(
@@ -289,6 +294,8 @@ class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
                         $error_handler->clearErrors();
 
                         $traverseChildren = false;
+
+                        assert(!empty($replacement_stmts));
 
                         return reset($replacement_stmts);
                     }

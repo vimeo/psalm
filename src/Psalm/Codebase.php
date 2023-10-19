@@ -686,6 +686,8 @@ final class Codebase
 
     /**
      * Check whether a class/interface exists
+     *
+     * @psalm-assert-if-true class-string|interface-string|enum-string $fq_class_name
      */
     public function classOrInterfaceOrEnumExists(
         string $fq_class_name,
@@ -701,6 +703,7 @@ final class Codebase
         );
     }
 
+    /** @psalm-mutation-free */
     public function classExtendsOrImplements(string $fq_class_name, string $possible_parent): bool
     {
         return $this->classlikes->classExtends($fq_class_name, $possible_parent)
@@ -969,7 +972,7 @@ final class Codebase
         //Direct Assignment
         if (is_numeric($reference->symbol[0])) {
             return new PHPMarkdownContent(
-                preg_replace(
+                (string) preg_replace(
                     '/^[^:]*:/',
                     '',
                     $reference->symbol,
@@ -1008,7 +1011,7 @@ final class Codebase
 
             //Class Property
             if (strpos($reference->symbol, '$') !== false) {
-                $property_id = preg_replace('/^\\\\/', '', $reference->symbol);
+                $property_id = (string) preg_replace('/^\\\\/', '', $reference->symbol);
                 /** @psalm-suppress PossiblyUndefinedIntArrayOffset */
                 [$fq_class_name, $property_name] = explode('::$', $property_id);
                 $class_storage = $this->classlikes->getStorageFor($fq_class_name);
@@ -1180,7 +1183,7 @@ final class Codebase
     public function getSymbolLocationByReference(Reference $reference): ?CodeLocation
     {
         if (is_numeric($reference->symbol[0])) {
-            $symbol = preg_replace('/:.*/', '', $reference->symbol);
+            $symbol = (string) preg_replace('/:.*/', '', $reference->symbol);
             $symbol_parts = explode('-', $symbol);
 
             if (!isset($symbol_parts[0]) || !isset($symbol_parts[1])) {
@@ -1788,7 +1791,7 @@ final class Codebase
             ) {
                 $file_contents = $this->getFileContents($file_path);
 
-                $class_name = preg_replace('/^.*\\\/', '', $fq_class_name, 1);
+                $class_name = (string) preg_replace('/^.*\\\/', '', $fq_class_name, 1);
 
                 if ($aliases->uses_end) {
                     $position = self::getPositionFromOffset($aliases->uses_end, $file_contents);

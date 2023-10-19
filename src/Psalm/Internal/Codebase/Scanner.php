@@ -666,7 +666,7 @@ class Scanner
 
             $classlikes->addFullyQualifiedClassLikeName(
                 $fq_class_name_lc,
-                realpath($composer_file_path),
+                (string) realpath($composer_file_path),
             );
 
             return true;

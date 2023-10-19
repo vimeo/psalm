@@ -17,6 +17,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallProhibit
 use Psalm\Internal\Analyzer\Statements\Expression\Call\StaticCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\AssertionsFromInheritanceResolver;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
@@ -319,11 +320,17 @@ class ExistingAtomicStaticCallAnalyzer
                 }
             }
 
-            if ($method_storage->assertions) {
+            $assertionsResolver = new AssertionsFromInheritanceResolver($codebase);
+            $assertions = $assertionsResolver->resolve(
+                $method_storage,
+                $class_storage,
+            );
+
+            if ($assertions) {
                 CallAnalyzer::applyAssertionsToContext(
                     $stmt_name,
                     null,
-                    $method_storage->assertions,
+                    $assertions,
                     $stmt->getArgs(),
                     $template_result,
                     $context,

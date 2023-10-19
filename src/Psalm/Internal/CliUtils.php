@@ -14,10 +14,12 @@ use Psalm\Exception\ConfigNotFoundException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Report;
 use RuntimeException;
+use UnexpectedValueException;
 
 use function array_filter;
 use function array_key_exists;
 use function array_slice;
+use function assert;
 use function count;
 use function define;
 use function dirname;
@@ -173,7 +175,9 @@ final class CliUtils
             return 'vendor';
         }
         try {
-            $composer_json = json_decode(file_get_contents($composer_json_path), true, 512, JSON_THROW_ON_ERROR);
+            $composer_file_contents = file_get_contents($composer_json_path);
+            assert($composer_file_contents !== false);
+            $composer_json = json_decode($composer_file_contents, true, 512, JSON_THROW_ON_ERROR);
         } catch (JsonException $e) {
             fwrite(
                 STDERR,
@@ -399,9 +403,10 @@ final class CliUtils
         }
 
         $config_file_contents = file_get_contents($config_file);
+        assert($config_file_contents !== false);
 
         if ($config->error_baseline) {
-            $amended_config_file_contents = preg_replace(
+            $amended_config_file_contents = (string) preg_replace(
                 '/errorBaseline=".*?"/',
                 "errorBaseline=\"{$baseline_path}\"",
                 $config_file_contents,
@@ -486,7 +491,15 @@ final class CliUtils
         }
 
         if ($version !== null && $source !== null) {
-            $project_analyzer->setPhpVersion($version, $source);
+            try {
+                $project_analyzer->setPhpVersion($version, $source);
+            } catch (UnexpectedValueException $e) {
+                fwrite(
+                    STDERR,
+                    $e->getMessage() . PHP_EOL,
+                );
+                exit(1);
+            }
         }
     }
 

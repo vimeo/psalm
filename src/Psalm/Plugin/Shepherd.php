@@ -15,6 +15,7 @@ use function array_filter;
 use function array_key_exists;
 use function array_merge;
 use function array_values;
+use function assert;
 use function curl_close;
 use function curl_exec;
 use function curl_getinfo;
@@ -127,6 +128,7 @@ final class Shepherd implements AfterAnalysisInterface
 
         // Prepare new cURL resource
         $ch = curl_init($endpoint);
+        assert($ch !== false);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
         curl_setopt($ch, CURLINFO_HEADER_OUT, true);

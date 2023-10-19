@@ -202,6 +202,10 @@ class ProjectAnalyzer
         UnnecessaryVarAnnotation::class,
     ];
 
+    private const PHP_VERSION_REGEX = '^(0|[1-9]\d*)\.(0|[1-9]\d*)(?:\..*)?$';
+
+    private const PHP_SUPPORTED_VERSIONS_REGEX = '^(5\.[456]|7\.[01234]|8\.[0123])(\..*)?$';
+
     /**
      * @param array<ReportOptions> $generated_report_options
      */
@@ -1181,8 +1185,16 @@ class ProjectAnalyzer
      */
     public function setPhpVersion(string $version, string $source): void
     {
-        if (!preg_match('/^(5\.[456]|7\.[01234]|8\.[012])(\..*)?$/', $version)) {
-            throw new UnexpectedValueException('Expecting a version number in the format x.y');
+        if (!preg_match('/' . self::PHP_VERSION_REGEX . '/', $version)) {
+            throw new UnexpectedValueException('Expecting a version number in the format x.y or x.y.z');
+        }
+
+        if (!preg_match('/' . self::PHP_SUPPORTED_VERSIONS_REGEX . '/', $version)) {
+            throw new UnexpectedValueException(
+                'Psalm supports PHP version ">=5.4". The specified version '
+                . $version
+                . " is either not supported or doesn't exist.",
+            );
         }
 
         [$php_major_version, $php_minor_version] = explode('.', $version);

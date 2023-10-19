@@ -19,7 +19,6 @@ use LanguageServerProtocol\CodeDescription;
 use LanguageServerProtocol\CompletionOptions;
 use LanguageServerProtocol\Diagnostic;
 use LanguageServerProtocol\DiagnosticSeverity;
-use LanguageServerProtocol\ExecuteCommandOptions;
 use LanguageServerProtocol\InitializeResult;
 use LanguageServerProtocol\InitializeResultServerInfo;
 use LanguageServerProtocol\LogMessage;
@@ -417,9 +416,6 @@ class LanguageServer extends Dispatcher
         }
 
         $serverCapabilities = new ServerCapabilities();
-
-        //The server provides execute command support.
-        $serverCapabilities->executeCommandProvider = new ExecuteCommandOptions(['test']);
 
         $textDocumentSyncOptions = new TextDocumentSyncOptions();
 
@@ -847,7 +843,7 @@ class LanguageServer extends Dispatcher
         }
 
         if (!empty($context)) {
-            $message .= "\n" . json_encode($context, JSON_PRETTY_PRINT);
+            $message .= "\n" . (string) json_encode($context, JSON_PRETTY_PRINT);
         }
         try {
             $this->client->logMessage(

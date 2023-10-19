@@ -520,7 +520,7 @@ class CallAnalyzer
         }
 
         if ($callable_arg instanceof PhpParser\Node\Scalar\String_) {
-            $potential_id = preg_replace('/^\\\/', '', $callable_arg->value, 1);
+            $potential_id = (string) preg_replace('/^\\\/', '', $callable_arg->value, 1);
 
             if (preg_match('/^[A-Za-z0-9_]+(\\\[A-Za-z0-9_]+)*(::[A-Za-z0-9_]+)?$/', $potential_id)) {
                 assert($potential_id !== '');
@@ -614,7 +614,7 @@ class CallAnalyzer
 
         if (!$codebase->functions->functionExists($statements_analyzer, $function_id)) {
             /** @var non-empty-lowercase-string */
-            $root_function_id = preg_replace('/.*\\\/', '', $function_id);
+            $root_function_id = (string) preg_replace('/.*\\\/', '', $function_id);
 
             if ($can_be_in_root_scope
                 && $function_id !== $root_function_id

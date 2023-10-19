@@ -1821,6 +1821,41 @@ class CallableTest extends TestCase
                         use TestTrait;
                     }',
             ],
+            'variadicClosureAssignability' => [
+                'code' => '<?php
+                    function withVariadic(int $a, int $b, int ...$rest): int
+                    {
+                        return 0;
+                    }
+
+                    /** @param Closure(int, int): int $f */
+                    function int_int(Closure $f): void {}
+
+                    /** @param Closure(int, int, int): int $f */
+                    function int_int_int(Closure $f): void {}
+
+                    /** @param Closure(int, int, int, int): int $f */
+                    function int_int_int_int(Closure $f): void {}
+
+                    int_int(withVariadic(...));
+                    int_int_int(withVariadic(...));
+                    int_int_int_int(withVariadic(...));',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'callableArrayTypes' => [
+                'code' => '<?php
+                    /** @var callable-array $c */
+                    $c;
+                    [$a, $b] = $c;
+                    ',
+                'assertions' => [
+                    '$a' => 'class-string|object',
+                    '$b' => 'string',
+                    '$c' => 'list{class-string|object, string}',
+                ],
+            ],
         ];
     }
 
@@ -2261,6 +2296,29 @@ class CallableTest extends TestCase
                 'error_message' => 'InvalidArgument',
                 'ignored_issues' => [],
                 'php_version' => '8.1',
+            ],
+            'variadicClosureAssignability' => [
+                'code' => '<?php
+                    function add(int $a, int $b, int ...$rest): int
+                    {
+                        return 0;
+                    }
+
+                    /** @param Closure(int, int, string, int, int): int $f */
+                    function int_int_string_int_int(Closure $f): void {}
+
+                    /** @param Closure(int, int, int, string, int): int $f */
+                    function int_int_int_string_int(Closure $f): void {}
+
+                    /** @param Closure(int, int, int, int, string): int $f */
+                    function int_int_int_int_string(Closure $f): void {}
+
+                    int_int_string_int_int(add(...));
+                    int_int_int_string_int(add(...));
+                    int_int_int_int_string(add(...));',
+                'error_message' => 'InvalidScalarArgument',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
         ];
     }

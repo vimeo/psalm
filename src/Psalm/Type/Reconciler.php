@@ -356,7 +356,7 @@ class Reconciler
                                 }
                                 // Set references pointing to $new_key to point
                                 // to the first other reference from the same group
-                                $new_primary_reference = key($reference_graph[$references_to_fix[0]]);
+                                $new_primary_reference = (string) key($reference_graph[$references_to_fix[0]]);
                                 unset($existing_references[$new_primary_reference]);
                                 foreach ($existing_references as $existing_reference => $existing_referenced) {
                                     if ($existing_referenced === $new_key) {
@@ -425,6 +425,10 @@ class Reconciler
     {
         foreach ($new_types as $nk => $type) {
             if (strpos($nk, '[') || strpos($nk, '->')) {
+                $type = array_values($type);
+                if (!isset($type[0][0])) {
+                    continue;
+                }
                 if ($type[0][0] instanceof IsEqualIsset
                     || $type[0][0] instanceof IsIsset
                     || $type[0][0] instanceof NonEmpty
@@ -450,7 +454,7 @@ class Reconciler
                         $divider = array_shift($key_parts);
 
                         if ($divider === '[') {
-                            $array_key = array_shift($key_parts);
+                            $array_key = (string) array_shift($key_parts);
                             array_shift($key_parts);
 
                             $new_base_key = $base_key . '[' . $array_key . ']';
@@ -686,7 +690,7 @@ class Reconciler
             $divider = array_shift($key_parts);
 
             if ($divider === '[') {
-                $array_key = array_shift($key_parts);
+                $array_key = (string) array_shift($key_parts);
                 array_shift($key_parts);
 
                 $new_base_key = $base_key . '[' . $array_key . ']';
@@ -790,7 +794,7 @@ class Reconciler
 
                 $base_key = $new_base_key;
             } elseif ($divider === '->' || $divider === '::$') {
-                $property_name = array_shift($key_parts);
+                $property_name = (string) array_shift($key_parts);
                 $new_base_key = $base_key . $divider . $property_name;
 
                 if (!isset($existing_keys[$new_base_key])) {

@@ -159,7 +159,7 @@ class LanguageClient
         }
 
         /** @var array */
-        $array = json_decode(json_encode($config), true);
+        $array = json_decode((string) json_encode($config), true);
 
         if (isset($array['hideWarnings'])) {
             $this->clientConfiguration->hideWarnings = (bool) $array['hideWarnings'];

@@ -84,7 +84,7 @@ class FunctionLikeDocblockParser
                     ) {
                         $line_parts[1] = str_replace('&', '', $line_parts[1]);
 
-                        $line_parts[1] = preg_replace('/,$/', '', $line_parts[1], 1);
+                        $line_parts[1] = (string) preg_replace('/,$/', '', $line_parts[1], 1);
 
                         $end = $offset + strlen($line_parts[0]);
 
@@ -114,7 +114,7 @@ class FunctionLikeDocblockParser
                             $description = substr($param, strlen($line_parts[0]) + strlen($line_parts[1]) + 2);
                             $info_param['description'] = trim($description);
                             // Handle multiline description.
-                            $info_param['description'] = preg_replace(
+                            $info_param['description'] = (string) preg_replace(
                                 '/\\n \\*\\s+/um',
                                 ' ',
                                 $info_param['description'],
@@ -151,7 +151,11 @@ class FunctionLikeDocblockParser
                             $line_parts[1] = substr($line_parts[1], 1);
                         }
 
-                        $line_parts[0] = str_replace("\n", '', preg_replace('@^[ \t]*\*@m', '', $line_parts[0]));
+                        $line_parts[0] = str_replace(
+                            "\n",
+                            '',
+                            (string) preg_replace('@^[ \t]*\*@m', '', $line_parts[0]),
+                        );
 
                         if ($line_parts[0] === ''
                             || ($line_parts[0][0] === '$'
@@ -160,7 +164,7 @@ class FunctionLikeDocblockParser
                             throw new IncorrectDocblockException('Misplaced variable');
                         }
 
-                        $line_parts[1] = preg_replace('/,$/', '', $line_parts[1], 1);
+                        $line_parts[1] = (string) preg_replace('/,$/', '', $line_parts[1], 1);
 
                         $info->params_out[] = [
                             'name' => trim($line_parts[1]),
@@ -190,7 +194,11 @@ class FunctionLikeDocblockParser
                     $line_parts = CommentAnalyzer::splitDocLine($param);
 
                     if (count($line_parts) > 0) {
-                        $line_parts[0] = str_replace("\n", '', preg_replace('@^[ \t]*\*@m', '', $line_parts[0]));
+                        $line_parts[0] = str_replace(
+                            "\n",
+                            '',
+                            (string) preg_replace('@^[ \t]*\*@m', '', $line_parts[0]),
+                        );
 
                         $info->self_out = [
                             'type' => str_replace("\n", '', $line_parts[0]),
@@ -217,7 +225,7 @@ class FunctionLikeDocblockParser
             foreach ($parsed_docblock->tags['psalm-if-this-is'] as $offset => $param) {
                 $line_parts = CommentAnalyzer::splitDocLine($param);
 
-                $line_parts[0] = str_replace("\n", '', preg_replace('@^[ \t]*\*@m', '', $line_parts[0]));
+                $line_parts[0] = str_replace("\n", '', (string) preg_replace('@^[ \t]*\*@m', '', $line_parts[0]));
 
                 $info->if_this_is = [
                     'type' => str_replace("\n", '', $line_parts[0]),
@@ -360,7 +368,7 @@ class FunctionLikeDocblockParser
                             throw new IncorrectDocblockException('Misplaced variable');
                         }
 
-                        $line_parts[1] = preg_replace('/,$/', '', $line_parts[1], 1);
+                        $line_parts[1] = (string) preg_replace('/,$/', '', $line_parts[1], 1);
 
                         $info->globals[] = [
                             'name' => $line_parts[1],
@@ -385,7 +393,7 @@ class FunctionLikeDocblockParser
         }
 
         if (isset($parsed_docblock->tags['since'])) {
-            $since = trim(reset($parsed_docblock->tags['since']));
+            $since = trim((string) reset($parsed_docblock->tags['since']));
             if (preg_match('/^[4578]\.\d(\.\d+)?$/', $since)) {
                 $since_parts = explode('.', $since);
 
@@ -416,6 +424,7 @@ class FunctionLikeDocblockParser
 
         if (isset($parsed_docblock->tags['throws'])) {
             foreach ($parsed_docblock->tags['throws'] as $offset => $throws_entry) {
+                /** @psalm-suppress PossiblyInvalidArrayAccess */
                 $throws_class = preg_split('/[\s]+/', $throws_entry)[0];
 
                 if (!$throws_class) {
@@ -445,7 +454,7 @@ class FunctionLikeDocblockParser
         $templates = [];
         if (isset($parsed_docblock->combined_tags['template'])) {
             foreach ($parsed_docblock->combined_tags['template'] as $offset => $template_line) {
-                $template_type = preg_split('/[\s]+/', preg_replace('@^[ \t]*\*@m', '', $template_line));
+                $template_type = preg_split('/[\s]+/', (string) preg_replace('@^[ \t]*\*@m', '', $template_line));
                 if ($template_type === false) {
                     throw new AssertionError(preg_last_error_msg());
                 }

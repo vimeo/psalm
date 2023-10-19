@@ -23,7 +23,7 @@ return [
   'changed' => [
     'gc_status' => [
       'old' => ['array{runs:int,collected:int,threshold:int,roots:int}'],
-      'new' => ['array{runs:int,collected:int,threshold:int,roots:int,running:bool,protected:bool,full:bool,buffer_size:int}'],
+      'new' => ['array{runs:int,collected:int,threshold:int,roots:int,running:bool,protected:bool,full:bool,buffer_size:int,application_time:float,collector_time:float,destructor_time:float,free_time:float}'],
     ],
     'srand' => [
       'old' => ['void', 'seed='=>'int', 'mode='=>'int'],
@@ -48,10 +48,6 @@ return [
     'rsort' => [
       'old' => ['bool', '&rw_array'=>'array', 'flags='=>'int'],
       'new' => ['true', '&rw_array'=>'array', 'flags='=>'int'],
-    ],
-    'hash_pbkdf2' => [
-      'old' => ['non-empty-string', 'algo'=>'string', 'password'=>'string', 'salt'=>'string', 'iterations'=>'int', 'length='=>'int', 'binary='=>'bool'],
-      'new' => ['non-empty-string', 'algo'=>'string', 'password'=>'string', 'salt'=>'string', 'iterations'=>'int', 'length='=>'int', 'binary='=>'bool', 'options=' => 'array'],
     ],
     'imap_setflag_full' => [
       'old' => ['bool', 'imap'=>'IMAP\Connection', 'sequence'=>'string', 'flag'=>'string', 'options='=>'int'],
@@ -116,6 +112,10 @@ return [
     'IntlBreakIterator::setText' => [
       'old' => ['?bool', 'text'=>'string'],
       'new' => ['bool', 'text'=>'string'],
+    ],
+    'strrchr' => [
+      'old' => ['string|false', 'haystack'=>'string', 'needle'=>'string'],
+      'new' => ['string|false', 'haystack'=>'string', 'needle'=>'string', 'before_needle='=>'bool'],
     ],
   ],
 

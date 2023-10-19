@@ -38,6 +38,7 @@ use function array_map;
 use function array_shift;
 use function array_slice;
 use function array_values;
+use function assert;
 use function count;
 use function explode;
 use function in_array;
@@ -163,6 +164,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
             if ($function_call_type->hasCallableType()) {
                 $closure_types = $function_call_type->getClosureTypes() ?: $function_call_type->getCallableTypes();
                 $closure_atomic_type = reset($closure_types);
+                assert($closure_atomic_type !== false);
 
                 $closure_return_type = $closure_atomic_type->return_type ?: Type::getMixed();
 

@@ -1380,6 +1380,39 @@ class CompletionTest extends TestCase
         $this->assertCount(2, $completion_items);
     }
 
+    public function testCompletionOnNestedArrayKey(): void
+    {
+        $codebase = $this->codebase;
+        $config = $codebase->config;
+        $config->throw_exception = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                $my_array = ["foo" => ["bar" => 1]];
+                $my_array["foo"][]
+                ',
+        );
+
+        $codebase->file_provider->openFile('somefile.php');
+        $codebase->scanFiles();
+        $this->analyzeFile('somefile.php', new Context());
+
+        $completion_data = $codebase->getCompletionDataAtPosition('somefile.php', new Position(2, 33));
+        $this->assertSame(
+            [
+                'array{bar: 1}',
+                '[',
+                92,
+            ],
+            $completion_data,
+        );
+
+        $completion_items = $codebase->getCompletionItemsForArrayKeys($completion_data[0]);
+
+        $this->assertCount(1, $completion_items);
+    }
+
     public function testTypeContextForFunctionArgument(): void
     {
 

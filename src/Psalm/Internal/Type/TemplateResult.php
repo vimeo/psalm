@@ -6,6 +6,9 @@ namespace Psalm\Internal\Type;
 
 use Psalm\Type\Union;
 
+use function array_merge;
+use function array_replace_recursive;
+
 /**
  * This class captures the result of running Psalm's argument analysis with
  * regard to generic parameters.
@@ -64,5 +67,20 @@ class TemplateResult
                 $this->lower_bounds[$key1][$key2] = [new TemplateBound($bound)];
             }
         }
+    }
+
+    public function merge(TemplateResult $result): TemplateResult
+    {
+        if ($result === $this) {
+            return $this;
+        }
+
+        $instance = clone $this;
+        /** @var array<string, array<string, non-empty-list<TemplateBound>>> $lower_bounds */
+        $lower_bounds = array_replace_recursive($instance->lower_bounds, $result->lower_bounds);
+        $instance->lower_bounds = $lower_bounds;
+        $instance->template_types = array_merge($instance->template_types, $result->template_types);
+
+        return $instance;
     }
 }

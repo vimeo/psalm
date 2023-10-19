@@ -12,6 +12,7 @@ use Psalm\Internal\Cache;
 use RuntimeException;
 use UnexpectedValueException;
 
+use function assert;
 use function clearstatcache;
 use function error_log;
 use function file_put_contents;
@@ -311,6 +312,7 @@ class ParserCacheProvider
 
         if (is_dir($cache_directory)) {
             $directory_files = scandir($cache_directory, SCANDIR_SORT_NONE);
+            assert($directory_files !== false);
 
             foreach ($directory_files as $directory_file) {
                 $full_path = $cache_directory . DIRECTORY_SEPARATOR . $directory_file;

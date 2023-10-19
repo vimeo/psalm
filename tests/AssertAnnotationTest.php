@@ -2194,6 +2194,10 @@ class AssertAnnotationTest extends TestCase
                     function assertSomeInt(int $foo): void
                     {}
 
+                    /** @psalm-assert value-of<StringEnum|IntEnum> $foo */
+                    function assertAnyEnumValue(string|int $foo): void
+                    {}
+
                     /** @param "foo"|"bar" $foo */
                     function takesSomeStringFromEnum(string $foo): StringEnum
                     {
@@ -2216,8 +2220,14 @@ class AssertAnnotationTest extends TestCase
 
                     assertSomeInt($int);
                     takesSomeIntFromEnum($int);
+
+                    /** @var string|int $potentialEnumValue */
+                    $potentialEnumValue = null;
+                    assertAnyEnumValue($potentialEnumValue);
                 ',
-                'assertions' => [],
+                'assertions' => [
+                    '$potentialEnumValue===' => "'bar'|'baz'|'foo'|1|2|3",
+                ],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
@@ -2872,6 +2882,92 @@ class AssertAnnotationTest extends TestCase
                 'assertions' => [
                     '$iterable===' => 'non-empty-list<string>',
                 ],
+            ],
+            'assertFromInheritedDocBlock' => [
+                'code' => '<?php
+                    namespace Namespace1 {
+
+                    /** @template InstanceType */
+                    interface PluginManagerInterface
+                    {
+                        /** @psalm-assert InstanceType $value */
+                        public function validate(mixed $value): void;
+                    }
+
+                    /**
+                     * @template InstanceType
+                     * @template-implements PluginManagerInterface<InstanceType>
+                     */
+                    abstract class AbstractPluginManager implements PluginManagerInterface
+                    {
+                    }
+
+                    /**
+                     * @template InstanceType of object
+                     * @template-extends AbstractPluginManager<InstanceType>
+                     */
+                    abstract class AbstractSingleInstancePluginManager extends AbstractPluginManager
+                    {
+                        public function validate(mixed $value): void
+                        {
+                        }
+                    }
+                }
+
+                namespace Namespace2 {
+                    use InvalidArgumentException;use Namespace1\AbstractSingleInstancePluginManager;
+                    use Namespace1\AbstractPluginManager;
+                    use stdClass;
+
+                    /** @template-extends AbstractSingleInstancePluginManager<stdClass> */
+                    final class Qoo extends AbstractSingleInstancePluginManager
+                    {
+                    }
+
+                    /** @template-extends AbstractPluginManager<callable> */
+                    final class Ooq extends AbstractPluginManager
+                    {
+                        public function validate(mixed $value): void
+                        {
+                        }
+                    }
+                }
+
+                namespace {
+                    $baz = new \Namespace2\Qoo();
+
+                    /** @var mixed $object */
+                    $object = null;
+                    $baz->validate($object);
+
+                    $ooq = new \Namespace2\Ooq();
+                    /** @var mixed $callable */
+                    $callable = null;
+                    $ooq->validate($callable);
+                }
+                ',
+                'assertions' => [
+                    '$object===' => 'stdClass',
+                    '$callable===' => 'callable',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'objectShapeAssertion' => [
+                'code' => '<?php
+                    /** @psalm-assert object{foo:string,bar:int} $value */
+                    function assertObjectShape(mixed $value): void
+                    {}
+
+                    /** @var mixed $value */
+                    $value = null;
+                    assertObjectShape($value);
+                ',
+                'assertions' => [
+                    '$value===' => 'object{foo:string, bar:int}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
         ];
     }

@@ -57,7 +57,7 @@ class ClassLikeStorageCacheProvider
                 throw new UnexpectedValueException($dependent_file_path . ' must exist');
             }
 
-            $this->modified_timestamps .= ' ' . filemtime($dependent_file_path);
+            $this->modified_timestamps .= ' ' . (int) filemtime($dependent_file_path);
         }
 
         $this->modified_timestamps .= $config->computeHash();

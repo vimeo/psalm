@@ -60,6 +60,7 @@ use function array_values;
 use function explode;
 use function get_class;
 use function implode;
+use function is_int;
 use function preg_quote;
 use function preg_replace;
 use function stripos;
@@ -143,7 +144,7 @@ abstract class Type
         }
 
         if ($namespace && stripos($value, $namespace . '\\') === 0) {
-            $candidate = preg_replace(
+            $candidate = (string) preg_replace(
                 '/^' . preg_quote($namespace . '\\') . '/i',
                 '',
                 $value,
@@ -258,6 +259,20 @@ abstract class Type
         $type = new TNumericString;
 
         return new Union([$type]);
+    }
+
+    /**
+     * @psalm-suppress PossiblyUnusedMethod
+     * @param int|string $value
+     * @return TLiteralString|TLiteralInt
+     */
+    public static function getLiteral($value): Atomic
+    {
+        if (is_int($value)) {
+            return new TLiteralInt($value);
+        }
+
+        return TLiteralString::make($value);
     }
 
     public static function getString(?string $value = null): Union

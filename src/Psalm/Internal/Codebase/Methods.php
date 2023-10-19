@@ -37,6 +37,7 @@ use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 use UnexpectedValueException;
@@ -46,7 +47,6 @@ use function assert;
 use function count;
 use function explode;
 use function in_array;
-use function is_int;
 use function reset;
 use function strtolower;
 
@@ -560,6 +560,7 @@ class Methods
         ?string &$self_class,
         ?SourceAnalyzer $source_analyzer = null,
         ?array $args = null,
+        ?TemplateResult $template_result = null
     ): ?Union {
         $original_fq_class_name = $method_id->fq_class_name;
         $original_method_name = $method_id->method_name;
@@ -589,6 +590,7 @@ class Methods
 
             if ($class_storage->abstract && isset($class_storage->overridden_method_ids[$original_method_name])) {
                 $appearing_method_id = reset($class_storage->overridden_method_ids[$original_method_name]);
+                assert($appearing_method_id !== false);
             } else {
                 return null;
             }
@@ -631,9 +633,7 @@ class Methods
                 foreach ($original_class_storage->enum_cases as $case_name => $case_storage) {
                     if (UnionTypeComparator::isContainedBy(
                         $source_analyzer->getCodebase(),
-                        is_int($case_storage->value) ?
-                            Type::getInt(false, $case_storage->value) :
-                            Type::getString($case_storage->value),
+                        new Union([$case_storage->value ?? new TString()]),
                         $first_arg_type,
                     )) {
                         $types[] = new TEnumCase($original_fq_class_name, $case_name);
@@ -786,9 +786,18 @@ class Methods
                     );
 
                     if ($found_generic_params) {
+                        $passed_template_result = $template_result;
+                        $template_result = new TemplateResult(
+                            [],
+                            $found_generic_params,
+                        );
+                        if ($passed_template_result !== null) {
+                            $template_result = $template_result->merge($passed_template_result);
+                        }
+
                         $overridden_storage_return_type = TemplateInferredTypeReplacer::replace(
                             $overridden_storage_return_type,
-                            new TemplateResult([], $found_generic_params),
+                            $template_result,
                             $source_analyzer->getCodebase(),
                         );
                     }
@@ -1011,6 +1020,8 @@ class Methods
         }
 
         if ($class_storage->abstract && isset($class_storage->overridden_method_ids[$method_name])) {
+            assert(!empty($class_storage->overridden_method_ids[$method_name]));
+
             return reset($class_storage->overridden_method_ids[$method_name]);
         }
 

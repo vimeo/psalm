@@ -169,7 +169,7 @@ class ClassLikes
         $predefined_classes = get_declared_classes();
 
         foreach ($predefined_classes as $predefined_class) {
-            $predefined_class = preg_replace('/^\\\/', '', $predefined_class, 1);
+            $predefined_class = (string) preg_replace('/^\\\/', '', $predefined_class, 1);
             /** @psalm-suppress ArgumentTypeCoercion */
             $reflection_class = new ReflectionClass($predefined_class);
 
@@ -185,7 +185,7 @@ class ClassLikes
         $predefined_interfaces = get_declared_interfaces();
 
         foreach ($predefined_interfaces as $predefined_interface) {
-            $predefined_interface = preg_replace('/^\\\/', '', $predefined_interface, 1);
+            $predefined_interface = (string) preg_replace('/^\\\/', '', $predefined_interface, 1);
             /** @psalm-suppress ArgumentTypeCoercion */
             $reflection_class = new ReflectionClass($predefined_interface);
 
@@ -597,6 +597,7 @@ class ClassLikes
     /**
      * Determine whether or not a class extends a parent
      *
+     * @psalm-mutation-free
      * @throws UnpopulatedClasslikeException when called on unpopulated class
      * @throws InvalidArgumentException when class does not exist
      */
@@ -620,6 +621,8 @@ class ClassLikes
 
     /**
      * Check whether a class implements an interface
+     *
+     * @psalm-mutation-free
      */
     public function classImplements(string $fq_class_name, string $interface): bool
     {

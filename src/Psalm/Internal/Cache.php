@@ -94,7 +94,7 @@ class Cache
     public function saveItem(string $path, array|object|string $item): void
     {
         if ($this->use_igbinary) {
-            $serialized = igbinary_serialize($item);
+            $serialized = (string) igbinary_serialize($item);
         } else {
             $serialized = serialize($item);
         }

@@ -86,7 +86,7 @@ class DiagnosticTest extends AsyncTestCase
             $this->codebase,
             $clientConfiguration,
             new Progress,
-            new PathMapper(getcwd(), getcwd()),
+            new PathMapper((string) getcwd(), (string) getcwd()),
         );
 
         $write->on('message', function (Message $message) use ($deferred, $server): void {

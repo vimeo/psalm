@@ -7,6 +7,7 @@ namespace Psalm\Internal\PluginManager;
 use RuntimeException;
 
 use function array_merge;
+use function assert;
 use function file_get_contents;
 use function is_array;
 use function is_string;
@@ -61,7 +62,10 @@ class ComposerLock
 
     private function read(string $file_name): array
     {
-        $contents = json_decode(file_get_contents($file_name), true);
+        $file_contents = file_get_contents($file_name);
+        assert($file_contents !== false);
+
+        $contents = json_decode($file_contents, true);
 
         if ($error = json_last_error()) {
             throw new RuntimeException(json_last_error_msg(), $error);

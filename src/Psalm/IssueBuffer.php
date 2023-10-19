@@ -708,7 +708,7 @@ final class IssueBuffer
 
         if (in_array(
             $project_analyzer->stdout_report_options->format,
-            [Report::TYPE_CONSOLE, Report::TYPE_PHP_STORM],
+            [Report::TYPE_CONSOLE, Report::TYPE_PHP_STORM, Report::TYPE_GITHUB_ACTIONS],
         )) {
             echo str_repeat('-', 30) . "\n";
 

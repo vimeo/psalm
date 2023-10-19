@@ -14,6 +14,7 @@ use Psalm\Type\Atomic\TLiteralString;
 
 use function array_diff;
 use function array_keys;
+use function assert;
 use function count;
 use function hash;
 use function implode;
@@ -189,6 +190,7 @@ class Clause
             if (count($var_id_clauses) > 1) {
                 $clause_strings[] = '('.implode(') || (', $var_id_clauses).')';
             } else {
+                assert(!empty($var_id_clauses));
                 $clause_strings[] = reset($var_id_clauses);
             }
         }
@@ -196,6 +198,8 @@ class Clause
         if (count($clause_strings) > 1) {
             return '(' . implode(') || (', $clause_strings) . ')';
         }
+
+        assert(!empty($clause_strings));
 
         return reset($clause_strings);
     }

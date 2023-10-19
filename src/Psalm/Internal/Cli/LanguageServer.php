@@ -112,7 +112,7 @@ final class LanguageServer
         array_map(
             static function (string $arg) use ($valid_long_options): void {
                 if (strpos($arg, '--') === 0 && $arg !== '--') {
-                    $arg_name = preg_replace('/=.*$/', '', substr($arg, 2), 1);
+                    $arg_name = (string) preg_replace('/=.*$/', '', substr($arg, 2), 1);
 
                     if (!in_array($arg_name, $valid_long_options, true)
                         && !in_array($arg_name . ':', $valid_long_options, true)

@@ -409,7 +409,7 @@ class TypeTokenizer
             }
 
             if (strpos($string_type_token[0], '$')) {
-                $string_type_token[0] = preg_replace('/(.+)\$.*/', '$1', $string_type_token[0]);
+                $string_type_token[0] = (string) preg_replace('/(.+)\$.*/', '$1', $string_type_token[0]);
             }
 
             $fixed_token = !isset($type_tokens[$i + 1]) || $type_tokens[$i + 1][0] !== '('

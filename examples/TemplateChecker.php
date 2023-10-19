@@ -160,7 +160,7 @@ class TemplateAnalyzer extends Psalm\Internal\Analyzer\FileAnalyzer
             }
         }
 
-        $pseudo_method_name = preg_replace('/[^a-zA-Z0-9_]+/', '_', $this->file_name);
+        $pseudo_method_name = (string) preg_replace('/[^a-zA-Z0-9_]+/', '_', $this->file_name);
 
         $class_method = new VirtualClassMethod($pseudo_method_name, ['stmts' => []]);
 

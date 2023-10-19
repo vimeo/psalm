@@ -464,12 +464,6 @@ class TypeParser
             );
         }
 
-        if (!$as->isSingle()) {
-            throw new TypeParseTreeException(
-                'Invalid templated classname \'' . $as . '\'',
-            );
-        }
-
         foreach ($as->getAtomicTypes() as $t) {
             if ($t instanceof TObject) {
                 return new TTemplateParamClass(
@@ -1167,6 +1161,7 @@ class TypeParser
         }
 
         $first_type = array_shift($keyed_intersection_types);
+        assert($first_type !== null);
 
         // Keyed array intersection are merged together and are not combinable with object-types
         if ($first_type instanceof TKeyedArray) {
@@ -1235,7 +1230,7 @@ class TypeParser
                 $is_optional = $child_tree->has_default;
             } else {
                 if ($child_tree instanceof Value && strpos($child_tree->value, '$') > 0) {
-                    $child_tree->value = preg_replace('/(.+)\$.*/', '$1', $child_tree->value);
+                    $child_tree->value = (string) preg_replace('/(.+)\$.*/', '$1', $child_tree->value);
                 }
 
                 $tree_type = self::getTypeFromTree(
@@ -1628,9 +1623,7 @@ class TypeParser
                 continue;
             }
 
-            $modified = true;
-
-            $normalized_intersection_types[] = TypeExpander::expandAtomic(
+            $expanded_intersection_type = TypeExpander::expandAtomic(
                 $codebase,
                 $intersection_type,
                 null,
@@ -1643,6 +1636,9 @@ class TypeParser
                 true,
                 true,
             );
+
+            $modified = $modified || $expanded_intersection_type[0] !== $intersection_type;
+            $normalized_intersection_types[] = $expanded_intersection_type;
         }
 
         if ($modified === false) {

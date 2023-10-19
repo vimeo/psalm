@@ -44,7 +44,6 @@ use Psalm\Progress\Progress;
 use Psalm\Progress\VoidProgress;
 use RuntimeException;
 use SimpleXMLElement;
-use SimpleXMLIterator;
 use Symfony\Component\Filesystem\Path;
 use Throwable;
 use UnexpectedValueException;
@@ -404,12 +403,12 @@ class Config
     /**
      * @var bool
      */
-    public $ignore_internal_falsable_issues = true;
+    public $ignore_internal_falsable_issues = false;
 
     /**
      * @var bool
      */
-    public $ignore_internal_nullable_issues = true;
+    public $ignore_internal_nullable_issues = false;
 
     /**
      * @var array<string, bool>
@@ -718,8 +717,6 @@ class Config
         $this->eventDispatcher = new EventDispatcher();
         $this->universal_object_crates = [
             strtolower(stdClass::class),
-            strtolower(SimpleXMLElement::class),
-            strtolower(SimpleXMLIterator::class),
         ];
     }
 
@@ -845,6 +842,7 @@ class Config
         $dom_document->loadXML($file_contents, LIBXML_NONET);
         $dom_document->xinclude(LIBXML_NOWARNING | LIBXML_NONET);
 
+        /** @psalm-suppress PossiblyFalseArgument */
         chdir($oldpwd);
         return $dom_document;
     }
@@ -1020,7 +1018,6 @@ class Config
 
     /**
      * @param non-empty-string $file_contents
-     * @psalm-suppress MixedMethodCall
      * @psalm-suppress MixedAssignment
      * @psalm-suppress MixedArgument
      * @psalm-suppress MixedPropertyFetch
@@ -1109,7 +1106,9 @@ class Config
 
         $composer_json = null;
         if (file_exists($composer_json_path)) {
-            $composer_json = json_decode(file_get_contents($composer_json_path), true);
+            $composer_json_contents = file_get_contents($composer_json_path);
+            assert($composer_json_contents !== false);
+            $composer_json = json_decode($composer_json_contents, true);
             if (!is_array($composer_json)) {
                 throw new UnexpectedValueException('Invalid composer.json at ' . $composer_json_path);
             }
@@ -1151,12 +1150,13 @@ class Config
         }
 
         if (isset($config_xml['autoloader'])) {
-            $autoloader_path = $config->base_dir . DIRECTORY_SEPARATOR . $config_xml['autoloader'];
+            $autoloader = (string) $config_xml['autoloader'];
+            $autoloader_path = $config->base_dir . DIRECTORY_SEPARATOR . $autoloader;
 
             if (!file_exists($autoloader_path)) {
                 // in here for legacy reasons where people put absolute paths but psalm resolved it relative
-                if ($config_xml['autoloader']->__toString()[0] === '/') {
-                    $autoloader_path = $config_xml['autoloader']->__toString();
+                if ($autoloader[0] === '/') {
+                    $autoloader_path = $autoloader;
                 }
 
                 if (!file_exists($autoloader_path)) {
@@ -1164,7 +1164,7 @@ class Config
                 }
             }
 
-            $config->autoloader = realpath($autoloader_path);
+            $config->autoloader = (string) realpath($autoloader_path);
         }
 
         if (isset($config_xml['cacheDirectory'])) {
@@ -1294,7 +1294,7 @@ class Config
             );
         }
 
-        if (isset($config_xml->fileExtensions)) {
+        if (isset($config_xml->fileExtensions->extension)) {
             $config->file_extensions = [];
 
             $config->loadFileExtensions($config_xml->fileExtensions->extension);
@@ -1317,7 +1317,6 @@ class Config
 
         if (isset($config_xml->ignoreExceptions)) {
             if (isset($config_xml->ignoreExceptions->class)) {
-                /** @var SimpleXMLElement $exception_class */
                 foreach ($config_xml->ignoreExceptions->class as $exception_class) {
                     $exception_name = (string) $exception_class['name'];
                     $global_attribute_text = (string) $exception_class['onlyGlobalScope'];
@@ -1328,7 +1327,6 @@ class Config
                 }
             }
             if (isset($config_xml->ignoreExceptions->classAndDescendants)) {
-                /** @var SimpleXMLElement $exception_class */
                 foreach ($config_xml->ignoreExceptions->classAndDescendants as $exception_class) {
                     $exception_name = (string) $exception_class['name'];
                     $global_attribute_text = (string) $exception_class['onlyGlobalScope'];
@@ -1382,7 +1380,6 @@ class Config
         // this plugin loading system borrows heavily from etsy/phan
         if (isset($config_xml->plugins)) {
             if (isset($config_xml->plugins->plugin)) {
-                /** @var SimpleXMLElement $plugin */
                 foreach ($config_xml->plugins->plugin as $plugin) {
                     $plugin_file_name = (string) $plugin['filename'];
 
@@ -1394,7 +1391,6 @@ class Config
                 }
             }
             if (isset($config_xml->plugins->pluginClass)) {
-                /** @var SimpleXMLElement $plugin */
                 foreach ($config_xml->plugins->pluginClass as $plugin) {
                     $plugin_class_name = $plugin['class'];
                     // any child elements are used as plugin configuration
@@ -1410,21 +1406,23 @@ class Config
 
         if (isset($config_xml->issueHandlers)) {
             foreach ($config_xml->issueHandlers as $issue_handlers) {
-                /** @var SimpleXMLElement $issue_handler */
-                foreach ($issue_handlers->children() as $key => $issue_handler) {
-                    if ($key === 'PluginIssue') {
-                        $custom_class_name = (string) $issue_handler['name'];
-                        /** @var string $key */
-                        $config->issue_handlers[$custom_class_name] = IssueHandler::loadFromXMLElement(
-                            $issue_handler,
-                            $base_dir,
-                        );
-                    } else {
-                        /** @var string $key */
-                        $config->issue_handlers[$key] = IssueHandler::loadFromXMLElement(
-                            $issue_handler,
-                            $base_dir,
-                        );
+                $issue_handler_children = $issue_handlers->children();
+                if ($issue_handler_children) {
+                    foreach ($issue_handler_children as $key => $issue_handler) {
+                        if ($key === 'PluginIssue') {
+                            $custom_class_name = (string)$issue_handler['name'];
+                            /** @var string $key */
+                            $config->issue_handlers[$custom_class_name] = IssueHandler::loadFromXMLElement(
+                                $issue_handler,
+                                $base_dir,
+                            );
+                        } else {
+                            /** @var string $key */
+                            $config->issue_handlers[$key] = IssueHandler::loadFromXMLElement(
+                                $issue_handler,
+                                $base_dir,
+                            );
+                        }
                     }
                 }
             }
@@ -1467,10 +1465,27 @@ class Config
         $this->issue_handlers[$issue_key]->setCustomLevels($config, $this->base_dir);
     }
 
+    public function safeSetAdvancedErrorLevel(
+        string $issue_key,
+        array $config,
+        ?string $default_error_level = null
+    ): void {
+        if (!isset($this->issue_handlers[$issue_key])) {
+            $this->setAdvancedErrorLevel($issue_key, $config, $default_error_level);
+        }
+    }
+
     public function setCustomErrorLevel(string $issue_key, string $error_level): void
     {
         $this->issue_handlers[$issue_key] = new IssueHandler();
         $this->issue_handlers[$issue_key]->setErrorLevel($error_level);
+    }
+
+    public function safeSetCustomErrorLevel(string $issue_key, string $error_level): void
+    {
+        if (!isset($this->issue_handlers[$issue_key])) {
+            $this->setCustomErrorLevel($issue_key, $error_level);
+        }
     }
 
     /**
@@ -1479,7 +1494,7 @@ class Config
     private function loadFileExtensions(SimpleXMLElement $extensions): void
     {
         foreach ($extensions as $extension) {
-            $extension_name = preg_replace('/^\.?/', '', (string)$extension['name'], 1);
+            $extension_name = (string) preg_replace('/^\.?/', '', (string)$extension['name'], 1);
             $this->file_extensions[] = $extension_name;
 
             if (isset($extension['scanner'])) {
@@ -1714,7 +1729,7 @@ class Config
     public function shortenFileName(string $to): string
     {
         if (!is_file($to)) {
-            return preg_replace('/^' . preg_quote($this->base_dir, '/') . '/', '', $to, 1);
+            return (string) preg_replace('/^' . preg_quote($this->base_dir, '/') . '/', '', $to, 1);
         }
 
         $from = $this->base_dir;
@@ -1896,7 +1911,7 @@ class Config
         }
 
         if (strpos($issue_type, 'Possibly') === 0) {
-            $stripped_issue_type = preg_replace('/^Possibly(False|Null)?/', '', $issue_type, 1);
+            $stripped_issue_type = (string) preg_replace('/^Possibly(False|Null)?/', '', $issue_type, 1);
 
             if (strpos($stripped_issue_type, 'Invalid') === false && strpos($stripped_issue_type, 'Un') !== 0) {
                 $stripped_issue_type = 'Invalid' . $stripped_issue_type;
@@ -2038,7 +2053,7 @@ class Config
             if ($level === null && $issue_type === 'UndefinedFunction') {
                 // undefined functions trigger global namespace fallback
                 // so we should also check reporting levels for the symbol in global scope
-                $root_function_id = preg_replace('/.*\\\/', '', $function_id);
+                $root_function_id = (string) preg_replace('/.*\\\/', '', $function_id);
                 if ($root_function_id !== $function_id) {
                     /** @psalm-suppress PossiblyUndefinedStringArrayOffset https://github.com/vimeo/psalm/issues/7656 */
                     $level = $this->issue_handlers[$issue_type]->getReportingLevelForFunction($root_function_id);
@@ -2244,6 +2259,10 @@ class Config
             $stubsDir . 'SPL.phpstub',
         ];
 
+        if ($codebase->analysis_php_version_id >= 7_04_00) {
+            $this->internal_stubs[] = $stubsDir . 'Php74.phpstub';
+        }
+
         if ($codebase->analysis_php_version_id >= 8_00_00) {
             $this->internal_stubs[] = $stubsDir . 'CoreGenericAttributes.phpstub';
             $this->internal_stubs[] = $stubsDir . 'Php80.phpstub';
@@ -2279,9 +2298,10 @@ class Config
             if (is_file($phpstorm_meta_path)) {
                 $stub_files[] = $phpstorm_meta_path;
             } elseif (is_dir($phpstorm_meta_path)) {
-                $phpstorm_meta_path = realpath($phpstorm_meta_path);
+                $phpstorm_meta_path = (string) realpath($phpstorm_meta_path);
+                $phpstorm_meta_files = glob($phpstorm_meta_path . '/*.meta.php', GLOB_NOSORT);
 
-                foreach (glob($phpstorm_meta_path . '/*.meta.php', GLOB_NOSORT) as $glob) {
+                foreach ($phpstorm_meta_files ?: [] as $glob) {
                     if (is_file($glob) && realpath(dirname($glob)) === $phpstorm_meta_path) {
                         $stub_files[] = $glob;
                     }
@@ -2489,7 +2509,7 @@ class Config
                         && $this->isInProjectDirs($dir . DIRECTORY_SEPARATOR . 'testdummy.php')
                     ) {
                         $maxDepth = $depth;
-                        $candidate_path = realpath($dir) . $pathEnd;
+                        $candidate_path = (string) realpath($dir) . $pathEnd;
                     }
                 }
             }
@@ -2624,7 +2644,9 @@ class Config
 
         if (file_exists($composer_json_path)) {
             try {
-                $composer_json = json_decode(file_get_contents($composer_json_path), true, 512, JSON_THROW_ON_ERROR);
+                $composer_json_contents = file_get_contents($composer_json_path);
+                assert($composer_json_contents !== false);
+                $composer_json = json_decode($composer_json_contents, true, 512, JSON_THROW_ON_ERROR);
             } catch (JsonException $e) {
                 $composer_json = null;
             }

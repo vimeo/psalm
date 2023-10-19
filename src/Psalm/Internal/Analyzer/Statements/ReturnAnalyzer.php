@@ -34,6 +34,7 @@ use Psalm\Issue\LessSpecificReturnStatement;
 use Psalm\Issue\MixedReturnStatement;
 use Psalm\Issue\MixedReturnTypeCoercion;
 use Psalm\Issue\NoValue;
+use Psalm\Issue\NonVariableReferenceReturn;
 use Psalm\Issue\NullableReturnStatement;
 use Psalm\IssueBuffer;
 use Psalm\Storage\FunctionLikeStorage;
@@ -228,6 +229,23 @@ class ReturnAnalyzer
             $source->examineParamTypes($statements_analyzer, $context, $codebase, $stmt);
 
             $storage = $source->getFunctionLikeStorage($statements_analyzer);
+
+            if ($storage->signature_return_type
+                && $storage->signature_return_type->by_ref
+                && $stmt->expr !== null
+                && !($stmt->expr instanceof PhpParser\Node\Expr\Variable
+                    || $stmt->expr instanceof PhpParser\Node\Expr\PropertyFetch
+                    || $stmt->expr instanceof PhpParser\Node\Expr\StaticPropertyFetch
+                )
+            ) {
+                IssueBuffer::maybeAdd(
+                    new NonVariableReferenceReturn(
+                        'Only variable references should be returned by reference',
+                        new CodeLocation($source, $stmt->expr),
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            }
 
             $cased_method_id = $source->getCorrectlyCasedMethodId();
 

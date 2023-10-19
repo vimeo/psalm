@@ -50,9 +50,6 @@ class ClassTemplateParamCollector
         if ($static_class_storage->template_extended_params
             && $method_name
             && !empty($non_trait_class_storage->overridden_method_ids[$method_name])
-            && isset($class_storage->methods[$method_name])
-            && (!isset($non_trait_class_storage->methods[$method_name]->return_type)
-                || $class_storage->methods[$method_name]->inherited_return_type)
         ) {
             foreach ($non_trait_class_storage->overridden_method_ids[$method_name] as $overridden_method_id) {
                 $overridden_storage = $codebase->methods->getStorage($overridden_method_id);

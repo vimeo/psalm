@@ -342,10 +342,9 @@ class ConstantTypeResolver
                 if (isset($enum_storage->enum_cases[$c->case])) {
                     if ($c instanceof EnumValueFetch) {
                         $value = $enum_storage->enum_cases[$c->case]->value;
-                        if (is_string($value)) {
-                            return Type::getString($value)->getSingleAtomic();
-                        } elseif (is_int($value)) {
-                            return Type::getInt(false, $value)->getSingleAtomic();
+
+                        if ($value !== null) {
+                            return $value;
                         }
                     } elseif ($c instanceof EnumNameFetch) {
                         return Type::getString($c->case)->getSingleAtomic();

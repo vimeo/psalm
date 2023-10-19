@@ -640,7 +640,7 @@ class ClassTest extends TestCase
                 'code' => '<?php
 
                     /**
-                     * @template TTKey
+                     * @template TTKey of array-key
                      * @template TTValue
                      *
                      * @extends ArrayObject<TTKey, TTValue>
@@ -675,7 +675,7 @@ class ClassTest extends TestCase
             'preventDoubleStaticResolution2' => [
                 'code' => '<?php
                     /**
-                     * @template TTKey
+                     * @template TTKey of array-key
                      * @template TTValue
                      *
                      * @extends ArrayObject<TTKey, TTValue>
@@ -712,7 +712,7 @@ class ClassTest extends TestCase
             'preventDoubleStaticResolution3' => [
                 'code' => '<?php
                     /**
-                     * @template TTKey
+                     * @template TTKey of array-key
                      * @template TTValue
                      *
                      * @extends ArrayObject<TTKey, TTValue>
@@ -857,7 +857,6 @@ class ClassTest extends TestCase
                      */
                     class BaseClass {}
                     class FooClass extends BaseClass {}
-                    $a = new FooClass();
                     PHP,
             ],
             'unionInheritorIsAllowed' => [
@@ -868,9 +867,7 @@ class ClassTest extends TestCase
                      */
                     class BaseClass {}
                     class FooClass extends BaseClass {}
-                    $a = new FooClass();
                     class BarClass extends FooClass {}
-                    $b = new BarClass();
                     PHP,
             ],
             'multiInheritorIsAllowed' => [
@@ -881,9 +878,7 @@ class ClassTest extends TestCase
                      */
                     class BaseClass {}
                     class FooClass extends BaseClass {}
-                    $a = new FooClass();
                     class BarClass extends FooClass {}
-                    $b = new BarClass();
                     PHP,
             ],
             'skippedInheritorIsAllowed' => [
@@ -894,9 +889,7 @@ class ClassTest extends TestCase
                      */
                     class BaseClass {}
                     class FooClass extends BaseClass {}
-                    $a = new FooClass();
                     class BarClass extends FooClass {}
-                    $b = new BarClass();
                     PHP,
             ],
             'CompositeInheritorIsAllowed' => [
@@ -908,7 +901,6 @@ class ClassTest extends TestCase
                     class BaseClass {}
                     interface FooInterface {}
                     class BarClass extends BaseClass implements FooInterface {}
-                    $b = new BarClass();
                     PHP,
             ],
             'InterfaceInheritorIsAllowed' => [
@@ -919,12 +911,10 @@ class ClassTest extends TestCase
                      */
                     interface BaseInterface {}
                     class FooClass implements BaseInterface {}
-                    $a = new FooClass();
                     class BarClass implements BaseInterface {}
-                    $b = new BarClass();
                     PHP,
-                ],
-                'MultiInterfaceInheritorIsAllowed' => [
+            ],
+            'MultiInterfaceInheritorIsAllowed' => [
                     'code' => <<<'PHP'
                     <?php
                     /**
@@ -936,7 +926,16 @@ class ClassTest extends TestCase
                      */
                     interface InterfaceB {}
                     class FooClass implements InterfaceA, InterfaceB {}
-                    $a = new FooClass();
+                    PHP,
+                ],
+            'InterfaceOfInterfaceInheritorIsAllowed' => [
+                        'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @psalm-inheritors InterfaceB
+                     */
+                    interface InterfaceA {}
+                    interface InterfaceB extends InterfaceA {}
                     PHP,
             ],
         ];
@@ -1393,7 +1392,6 @@ class ClassTest extends TestCase
                      */
                     class BaseClass {}
                     class BazClass extends BaseClass {} // this is an error
-                    $a = new BazClass();
                     PHP,
                 'error_message' => 'InheritorViolation',
                 'ignored_issues' => [],
@@ -1406,7 +1404,18 @@ class ClassTest extends TestCase
                      */
                     interface BaseInterface {}
                     class BazClass implements BaseInterface {}
-                    $a = new BazClass();
+                    PHP,
+                'error_message' => 'InheritorViolation',
+                'ignored_issues' => [],
+            ],
+            'interfaceCannotImplementIfNotInInheritors' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @psalm-inheritors FooClass|BarClass
+                     */
+                    interface BaseInterface {}
+                    interface BazInterface extends BaseInterface {}
                     PHP,
                 'error_message' => 'InheritorViolation',
                 'ignored_issues' => [],
@@ -1423,9 +1432,52 @@ class ClassTest extends TestCase
                      */
                     interface InterfaceB {}
                     class BazClass implements InterFaceA, InterFaceB {}
-                    $a = new BazClass();
                     PHP,
                 'error_message' => 'InheritorViolation',
+                'ignored_issues' => [],
+            ],
+            'duplicateInstanceProperties' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Foo {
+                        public mixed $bar;
+                        public int $bar;
+                    }
+                    PHP,
+                'error_message' => 'DuplicateProperty',
+                'ignored_issues' => [],
+            ],
+            'duplicateStaticProperties' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Foo {
+                        public static mixed $bar = null;
+                        public static string $bar = 'bar';
+                    }
+                    PHP,
+                'error_message' => 'DuplicateProperty',
+                'ignored_issues' => [],
+            ],
+            'duplicateMixedProperties' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Foo {
+                        public bool $bar = true;
+                        public static bool $bar = false;
+                    }
+                    PHP,
+                'error_message' => 'DuplicateProperty',
+                'ignored_issues' => [],
+            ],
+            'duplicatePropertiesDifferentVisibility' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Foo {
+                        public bool $bar;
+                        private string $bar;
+                    }
+                    PHP,
+                'error_message' => 'DuplicateProperty',
                 'ignored_issues' => [],
             ],
         ];

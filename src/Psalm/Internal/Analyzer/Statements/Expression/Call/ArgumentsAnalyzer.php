@@ -41,7 +41,6 @@ use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
-use Psalm\Type\Atomic\TCallableArray;
 use Psalm\Type\Atomic\TCallableKeyedArray;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TKeyedArray;
@@ -1528,9 +1527,7 @@ class ArgumentsAnalyzer
 
                         foreach ($arg_value_type->getAtomicTypes() as $atomic_arg_type) {
                             $packed_var_definite_args_tmp = [];
-                            if ($atomic_arg_type instanceof TCallableArray ||
-                                $atomic_arg_type instanceof TCallableKeyedArray
-                            ) {
+                            if ($atomic_arg_type instanceof TCallableKeyedArray) {
                                 $packed_var_definite_args_tmp[] = 2;
                             } elseif ($atomic_arg_type instanceof TKeyedArray) {
                                 if ($atomic_arg_type->fallback_params !== null) {

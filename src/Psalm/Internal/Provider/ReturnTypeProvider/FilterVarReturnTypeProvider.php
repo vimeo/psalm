@@ -19,6 +19,7 @@ use UnexpectedValueException;
 use function in_array;
 
 use const FILTER_NULL_ON_FAILURE;
+use const FILTER_SANITIZE_URL;
 use const FILTER_VALIDATE_BOOLEAN;
 use const FILTER_VALIDATE_DOMAIN;
 use const FILTER_VALIDATE_EMAIL;
@@ -80,6 +81,7 @@ class FilterVarReturnTypeProvider implements FunctionReturnTypeProviderInterface
                 case FILTER_VALIDATE_URL:
                 case FILTER_VALIDATE_EMAIL:
                 case FILTER_VALIDATE_DOMAIN:
+                case FILTER_SANITIZE_URL:
                     $filter_type = Type::getString();
                     break;
             }

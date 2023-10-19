@@ -105,7 +105,7 @@ class UnusedCodeTest extends TestCase
     public function testSeesClassesUsedAfterUnevaluatedCodeIssue(): void
     {
         $this->project_analyzer->getConfig()->throw_exception = false;
-        $file_path = getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php';
+        $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php';
 
         $this->addFile(
             $file_path,
@@ -137,7 +137,7 @@ class UnusedCodeTest extends TestCase
     public function testSeesUnusedClassReferencedByUnevaluatedCode(): void
     {
         $this->project_analyzer->getConfig()->throw_exception = false;
-        $file_path = getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php';
+        $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php';
 
         $this->addFile(
             $file_path,

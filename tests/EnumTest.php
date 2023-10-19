@@ -574,6 +574,67 @@ class EnumTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'nameTypeOnKnownCases' => [
+                'code' => <<<'PHP'
+                    <?php
+                    enum Transport: string {
+                        case CAR = 'car';
+                        case BIKE = 'bike';
+                        case BOAT = 'boat';
+                    }
+
+                    $val = Transport::from(uniqid());
+                    $_name = $val->name;
+                    PHP,
+                'assertions' => [
+                    '$_name===' => "'BIKE'|'BOAT'|'CAR'",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'nameTypeOnUnknownCases' => [
+                'code' => <<<'PHP'
+                    <?php
+                    enum Transport: string {
+                        case CAR = 'car';
+                        case BIKE = 'bike';
+                        case BOAT = 'boat';
+                    }
+
+                    function f(Transport $e): void {
+                        $_name = $e->name;
+                        /** @psalm-check-type-exact $_name='BIKE'|'BOAT'|'CAR' */;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'classStringAsBackedEnumValue' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Foo {}
+
+                    enum FooEnum: string {
+                        case Foo = Foo::class;
+                    }
+
+                    /**
+                     * @param class-string $s
+                     */
+                    function noop(string $s): string
+                    {
+                        return $s;
+                    }
+
+                    $foo = FooEnum::Foo->value;
+                    noop($foo);
+                    noop(FooEnum::Foo->value);
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
@@ -974,6 +1035,21 @@ class EnumTest extends TestCase
                     // Should be issue here. But nothing
                     // Argument 1 of withA expects WithState<enum(State::A)>, WithState<enum(State::C)> provided
                     withA(new WithState(State::C));
+                ',
+                'error_message' => 'InvalidArgument',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'backedEnumDoesNotPassNativeType' => [
+                'code' => '<?php
+                    enum State: string
+                    {
+                        case A = "A";
+                        case B = "B";
+                        case C = "C";
+                    }
+                    function f(string $state): void {}
+                    f(State::A);
                 ',
                 'error_message' => 'InvalidArgument',
                 'ignored_issues' => [],

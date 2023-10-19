@@ -136,7 +136,7 @@ class Pool
             exit(1);
         }
 
-        $disabled_functions = array_map('trim', explode(',', ini_get('disable_functions')));
+        $disabled_functions = array_map('trim', explode(',', (string) ini_get('disable_functions')));
         if (in_array('pcntl_fork', $disabled_functions)) {
             echo "pcntl_fork() is disabled by php configuration (disable_functions directive).\n"
                 . "Please enable it or run Psalm single-threaded with --threads=1 cli switch.\n";
@@ -213,14 +213,14 @@ class Pool
 
                 $task_done_message = new ForkTaskDoneMessage($task_result);
                 if ($this->config->use_igbinary) {
-                    $encoded_message = base64_encode(igbinary_serialize($task_done_message));
+                    $encoded_message = base64_encode((string) igbinary_serialize($task_done_message));
                 } else {
                     $encoded_message = base64_encode(serialize($task_done_message));
                 }
                 $serialized_message = $task_done_buffer . $encoded_message . "\n";
 
                 if (strlen($serialized_message) > 200) {
-                    $bytes_written = @fwrite($write_stream, $serialized_message);
+                    $bytes_written = (int) @fwrite($write_stream, $serialized_message);
 
                     if (strlen($serialized_message) !== $bytes_written) {
                         $task_done_buffer = substr($serialized_message, $bytes_written);
@@ -250,7 +250,7 @@ class Pool
         }
 
         if ($this->config->use_igbinary) {
-            $encoded_message = base64_encode(igbinary_serialize($process_done_message));
+            $encoded_message = base64_encode((string) igbinary_serialize($process_done_message));
         } else {
             $encoded_message = base64_encode(serialize($process_done_message));
         }
@@ -261,7 +261,7 @@ class Pool
 
         while ($bytes_written < $bytes_to_write && !feof($write_stream)) {
             // attempt to write the remaining unsent part
-            $bytes_written += @fwrite($write_stream, substr($serialized_message, $bytes_written));
+            $bytes_written += (int) @fwrite($write_stream, substr($serialized_message, $bytes_written));
 
             if ($bytes_written < $bytes_to_write) {
                 // wait a bit
@@ -374,9 +374,9 @@ class Pool
 
                     foreach ($serialized_messages as $serialized_message) {
                         if ($this->config->use_igbinary) {
-                            $message = igbinary_unserialize(base64_decode($serialized_message, true));
+                            $message = igbinary_unserialize((string) base64_decode($serialized_message, true));
                         } else {
-                            $message = unserialize(base64_decode($serialized_message, true));
+                            $message = unserialize((string) base64_decode($serialized_message, true));
                         }
 
                         if ($message instanceof ForkProcessDoneMessage) {

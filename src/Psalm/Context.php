@@ -14,7 +14,8 @@ use Psalm\Internal\Scope\LoopScope;
 use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type\Atomic\DependentType;
-use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TIntRange;
+use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Union;
 use RuntimeException;
 
@@ -845,7 +846,7 @@ final class Context
             return false;
         }
 
-        $stripped_var = preg_replace('/(->|\[).*$/', '', $var_name, 1);
+        $stripped_var = (string) preg_replace('/(->|\[).*$/', '', $var_name, 1);
 
         if ($stripped_var !== '$this' || $var_name !== $stripped_var) {
             $this->cond_referenced_var_ids[$var_name] = true;
@@ -870,10 +871,19 @@ final class Context
     public function defineGlobals(): void
     {
         $globals = [
+            // not sure why this is declared here again, see VariableFetchAnalyzer
             '$argv' => new Union([
-                new TArray([Type::getInt(), Type::getString()]),
+                Type::getNonEmptyListAtomic(Type::getString()),
+                new TNull(),
+            ], [
+                'ignore_nullable_issues' => true,
             ]),
-            '$argc' => Type::getInt(),
+            '$argc' => new Union([
+                new TIntRange(1, null),
+                new TNull(),
+            ], [
+                'ignore_nullable_issues' => true,
+            ]),
         ];
 
         $config = Config::getInstance();

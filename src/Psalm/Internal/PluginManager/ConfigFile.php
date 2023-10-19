@@ -113,6 +113,7 @@ class ConfigFile
         $doc = new DOMDocument();
 
         $file_contents = file_get_contents($this->path);
+        assert($file_contents !== false);
 
         if (($tag_start = strpos($file_contents, '<psalm')) !== false) {
             $tag_end = strpos($file_contents, '>', $tag_start + 1);

@@ -224,7 +224,7 @@ class CodeLocation
 
             $indentation = (int)strpos($key_line, '@');
 
-            $key_line = trim(preg_replace('@\**/\s*@', '', mb_strcut($key_line, $indentation)));
+            $key_line = trim((string) preg_replace('@\**/\s*@', '', mb_strcut($key_line, $indentation)));
 
             $this->selection_start = $preview_offset + $indentation + $this->preview_start;
             $this->selection_end = $this->selection_start + strlen($key_line);

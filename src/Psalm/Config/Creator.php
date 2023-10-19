@@ -17,6 +17,7 @@ use function array_shift;
 use function array_sum;
 use function array_unique;
 use function array_values;
+use function assert;
 use function count;
 use function explode;
 use function file_exists;
@@ -198,8 +199,10 @@ final class Creator
                 );
             }
             try {
+                $composer_json_contents = file_get_contents($composer_json_location);
+                assert($composer_json_contents !== false);
                 $composer_json = json_decode(
-                    file_get_contents($composer_json_location),
+                    $composer_json_contents,
                     true,
                     512,
                     JSON_THROW_ON_ERROR,
@@ -263,7 +266,7 @@ final class Creator
                     continue;
                 }
 
-                $path = preg_replace('@[/\\\]$@', '', $path, 1);
+                $path = (string) preg_replace('@[/\\\]$@', '', $path, 1);
 
                 if ($path !== 'tests') {
                     $nodes[] = '<directory name="' . $path . '" />';
@@ -287,9 +290,9 @@ final class Creator
 
         /** @var string[] */
         $php_files = array_merge(
-            glob($current_dir . DIRECTORY_SEPARATOR . '*.php', GLOB_NOSORT),
-            glob($current_dir . DIRECTORY_SEPARATOR . '**/*.php', GLOB_NOSORT),
-            glob($current_dir . DIRECTORY_SEPARATOR . '**/**/*.php', GLOB_NOSORT),
+            glob($current_dir . DIRECTORY_SEPARATOR . '*.php', GLOB_NOSORT) ?: [],
+            glob($current_dir . DIRECTORY_SEPARATOR . '**/*.php', GLOB_NOSORT) ?: [],
+            glob($current_dir . DIRECTORY_SEPARATOR . '**/**/*.php', GLOB_NOSORT) ?: [],
         );
 
         foreach ($php_files as $php_file) {
