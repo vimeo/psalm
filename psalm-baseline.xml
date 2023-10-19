@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<files psalm-version="dev-master@77650e7b153ee3a96507ba6902ce2807def23221">
+<files psalm-version="dev-master@973a3fa554b4a2016e2a551dce2206fb47084050">
   <file src="examples/TemplateChecker.php">
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$comment_block->tags['variablesfrom'][0]]]></code>
@@ -346,9 +346,6 @@
     <PossiblyUndefinedIntArrayOffset>
       <code>$since_parts[1]</code>
     </PossiblyUndefinedIntArrayOffset>
-    <RedundantCondition>
-      <code><![CDATA[count($line_parts) > 0]]></code>
-    </RedundantCondition>
   </file>
   <file src="src/Psalm/Internal/PhpVisitor/Reflector/FunctionLikeDocblockScanner.php">
     <PossiblyUndefinedArrayOffset>
