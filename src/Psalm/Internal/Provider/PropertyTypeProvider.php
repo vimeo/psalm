@@ -41,7 +41,7 @@ final class PropertyTypeProvider
     public function registerClass(string $class): void
     {
         if (is_subclass_of($class, PropertyTypeProviderInterface::class, true)) {
-            $callable = Closure::fromCallable([$class, 'getPropertyType']);
+            $callable = $class::getPropertyType(...);
 
             foreach ($class::getClassLikeNames() as $fq_classlike_name) {
                 $this->registerClosure($fq_classlike_name, $callable);

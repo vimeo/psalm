@@ -117,7 +117,7 @@ final class FunctionReturnTypeProvider
     public function registerClass(string $class): void
     {
         if (is_subclass_of($class, FunctionReturnTypeProviderInterface::class, true)) {
-            $callable = Closure::fromCallable([$class, 'getFunctionReturnType']);
+            $callable = $class::getFunctionReturnType(...);
 
             foreach ($class::getFunctionIds() as $function_id) {
                 $this->registerClosure($function_id, $callable);

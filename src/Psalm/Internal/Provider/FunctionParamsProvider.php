@@ -38,7 +38,7 @@ final class FunctionParamsProvider
      */
     public function registerClass(string $class): void
     {
-        $callable = Closure::fromCallable([$class, 'getFunctionParams']);
+        $callable = $class::getFunctionParams(...);
 
         foreach ($class::getFunctionIds() as $function_id) {
             $this->registerClosure($function_id, $callable);

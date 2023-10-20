@@ -51,7 +51,7 @@ final class MethodReturnTypeProvider
     public function registerClass(string $class): void
     {
         if (is_subclass_of($class, MethodReturnTypeProviderInterface::class, true)) {
-            $callable = Closure::fromCallable([$class, 'getMethodReturnType']);
+            $callable = $class::getMethodReturnType(...);
 
             foreach ($class::getClassLikeNames() as $fq_classlike_name) {
                 $this->registerClosure($fq_classlike_name, $callable);
