@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Codebase;
 
-use Closure;
 use InvalidArgumentException;
 use PhpParser;
 use Psalm\CodeLocation;

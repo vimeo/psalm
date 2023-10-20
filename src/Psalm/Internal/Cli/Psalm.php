@@ -15,7 +15,6 @@ use Psalm\Internal\CliUtils;
 use Psalm\Internal\Codebase\ReferenceMapGenerator;
 use Psalm\Internal\Composer;
 use Psalm\Internal\ErrorHandler;
-use Psalm\Internal\Fork\Pool;
 use Psalm\Internal\Fork\PsalmRestarter;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\Provider\ClassLikeStorageCacheProvider;
@@ -74,15 +73,12 @@ use function str_repeat;
 use function str_starts_with;
 use function strlen;
 use function substr;
-use function version_compare;
 
 use const DIRECTORY_SEPARATOR;
 use const JSON_THROW_ON_ERROR;
 use const LC_CTYPE;
 use const PHP_EOL;
-use const PHP_OS;
 use const PHP_URL_SCHEME;
-use const PHP_VERSION;
 use const STDERR;
 
 // phpcs:disable PSR1.Files.SideEffects
@@ -269,8 +265,6 @@ final class Psalm
         $threads = self::detectThreads($options, $config, $in_ci);
 
         $progress = self::initProgress($options, $config);
-
-        self::emitMacPcreWarning($options, $threads);
 
         self::restart($options, $threads, $progress);
 
@@ -862,24 +856,6 @@ final class Psalm
         }
 
         return $current_dir;
-    }
-
-    private static function emitMacPcreWarning(array $options, int $threads): void
-    {
-        if (!isset($options['threads'])
-            && !isset($options['debug'])
-            && $threads === 1
-            && ini_get('pcre.jit') === '1'
-            && PHP_OS === 'Darwin'
-            && version_compare(PHP_VERSION, '7.3.0') >= 0
-            && version_compare(PHP_VERSION, '7.4.0') < 0
-        ) {
-            echo(
-                'If you want to run Psalm as a language server, or run Psalm with' . PHP_EOL
-                    . 'multiple processes (--threads=4), beware:' . PHP_EOL
-                    . Pool::MAC_PCRE_MESSAGE . PHP_EOL . PHP_EOL
-            );
-        }
     }
 
     private static function restart(array $options, int $threads, Progress $progress): void
