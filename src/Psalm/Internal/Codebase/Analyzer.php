@@ -321,9 +321,9 @@ final class Analyzer
 
         $codebase = $project_analyzer->getCodebase();
 
-        $analysis_worker = Closure::fromCallable($this->analysisWorker(...));
+        $analysis_worker = $this->analysisWorker(...);
 
-        $task_done_closure = Closure::fromCallable($this->taskDoneClosure(...));
+        $task_done_closure = $this->taskDoneClosure(...);
 
         if ($pool_size > 1 && count($this->files_to_analyze) > $pool_size) {
             $shuffle_count = $pool_size + 1;
@@ -385,7 +385,7 @@ final class Analyzer
                     $file_reference_provider->setMethodParamUses([]);
                 },
                 $analysis_worker,
-                Closure::fromCallable($this->getWorkerData(...)),
+                $this->getWorkerData(...),
                 $task_done_closure,
             );
 

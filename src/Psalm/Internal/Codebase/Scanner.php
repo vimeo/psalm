@@ -329,7 +329,7 @@ final class Scanner
 
                     $this->progress->debug('Have initialised forked process for scanning' . PHP_EOL);
                 },
-                Closure::fromCallable($this->scanAPath(...)),
+                $this->scanAPath(...),
                 /**
                  * @return PoolData
                  */
