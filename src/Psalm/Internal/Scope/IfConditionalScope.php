@@ -22,7 +22,7 @@ final class IfConditionalScope
         public Context $post_if_context,
         public array $cond_referenced_var_ids,
         public array $assigned_in_conditional_var_ids,
-        public array $entry_clauses
+        public array $entry_clauses,
     ) {
     }
 }

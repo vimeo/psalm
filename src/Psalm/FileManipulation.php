@@ -12,8 +12,13 @@ use function trim;
 
 final class FileManipulation
 {
-    public function __construct(public int $start, public int $end, public string $insertion_text, public bool $preserve_indentation = false, public bool $remove_trailing_newline = false)
-    {
+    public function __construct(
+        public int $start,
+        public int $end,
+        public string $insertion_text,
+        public bool $preserve_indentation = false,
+        public bool $remove_trailing_newline = false,
+    ) {
     }
 
     public function getKey(): string
