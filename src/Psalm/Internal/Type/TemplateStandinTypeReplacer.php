@@ -1343,6 +1343,7 @@ class TemplateStandinTypeReplacer
                                 $old_params_offset = (int) array_search(
                                     $template->param_name,
                                     array_keys($input_class_storage->template_types),
+                                    true,
                                 );
 
                                 $candidate_param_types[] = ($input_type_params[$old_params_offset] ?? Type::getMixed())

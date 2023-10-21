@@ -958,7 +958,7 @@ class TypeParser
             }
             assert(count($parse_tree->children) === 2);
 
-            $get_int_range_bound = function (ParseTree $parse_tree, Union $generic_param, string $bound_name): ?int {
+            $get_int_range_bound = static function (ParseTree $parse_tree, Union $generic_param, string $bound_name) : ?int {
                 if (!$parse_tree instanceof Value
                     || count($generic_param->getAtomicTypes()) > 1
                     || (!$generic_param->getSingleAtomic() instanceof TLiteralInt
@@ -970,7 +970,6 @@ class TypeParser
                         "Invalid type \"{$generic_param->getId()}\" as int $bound_name boundary",
                     );
                 }
-
                 $generic_param_atomic = $generic_param->getSingleAtomic();
                 return $generic_param_atomic instanceof TLiteralInt ? $generic_param_atomic->value : null;
             };

@@ -237,7 +237,7 @@ class LanguageServer extends Dispatcher
 
         $this->protocolReader->on(
             'readMessageGroup',
-            function (): void {
+            static function () : void {
                 //$this->verboseLog('Received message group');
                 //$this->doAnalysis();
             },
@@ -765,7 +765,7 @@ class LanguageServer extends Dispatcher
                     return $diagnostic;
                 },
                 array_filter(
-                    array_map(function (IssueData $issue_data) use (&$issue_baseline) {
+                    array_map(static function (IssueData $issue_data) use (&$issue_baseline) {
                         if (empty($issue_baseline)) {
                             return $issue_data;
                         }
