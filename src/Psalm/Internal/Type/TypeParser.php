@@ -960,7 +960,11 @@ final class TypeParser
             }
             assert(count($parse_tree->children) === 2);
 
-            $get_int_range_bound = static function (ParseTree $parse_tree, Union $generic_param, string $bound_name): ?int {
+            $get_int_range_bound = static function (
+                ParseTree $parse_tree,
+                Union $generic_param,
+                string $bound_name,
+            ): ?int {
                 if (!$parse_tree instanceof Value
                     || count($generic_param->getAtomicTypes()) > 1
                     || (!$generic_param->getSingleAtomic() instanceof TLiteralInt
