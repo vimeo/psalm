@@ -157,7 +157,10 @@ final class DoAnalyzer
 
         $do_context->loop_scope = null;
 
-        $context->vars_possibly_in_scope = [...$context->vars_possibly_in_scope, ...$do_context->vars_possibly_in_scope];
+        $context->vars_possibly_in_scope = [
+            ...$context->vars_possibly_in_scope,
+            ...$do_context->vars_possibly_in_scope,
+        ];
 
         if ($context->collect_exceptions) {
             $context->mergeExceptions($inner_loop_context);

@@ -210,7 +210,10 @@ final class TernaryAnalyzer
                 return false;
             }
 
-            $context->cond_referenced_var_ids = [...$context->cond_referenced_var_ids, ...$if_context->cond_referenced_var_ids];
+            $context->cond_referenced_var_ids = [
+                ...$context->cond_referenced_var_ids,
+                ...$if_context->cond_referenced_var_ids,
+            ];
         }
 
         $t_else_context->clauses = Algebra::simplifyCNF(
@@ -286,9 +289,16 @@ final class TernaryAnalyzer
             }
         }
 
-        $context->vars_possibly_in_scope = [...$context->vars_possibly_in_scope, ...$if_context->vars_possibly_in_scope, ...$t_else_context->vars_possibly_in_scope];
+        $context->vars_possibly_in_scope = [
+            ...$context->vars_possibly_in_scope,
+            ...$if_context->vars_possibly_in_scope,
+            ...$t_else_context->vars_possibly_in_scope,
+        ];
 
-        $context->cond_referenced_var_ids = [...$context->cond_referenced_var_ids, ...$t_else_context->cond_referenced_var_ids];
+        $context->cond_referenced_var_ids = [
+            ...$context->cond_referenced_var_ids,
+            ...$t_else_context->cond_referenced_var_ids,
+        ];
 
         $lhs_type = null;
         $stmt_cond_type = $statements_analyzer->node_data->getType($stmt->cond);

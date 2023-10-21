@@ -132,10 +132,16 @@ final class OrAnalyzer
             }
 
             $left_referenced_var_ids = $left_context->cond_referenced_var_ids;
-            $left_context->cond_referenced_var_ids = [...$pre_referenced_var_ids, ...$left_referenced_var_ids];
+            $left_context->cond_referenced_var_ids = [
+                ...$pre_referenced_var_ids,
+                ...$left_referenced_var_ids,
+            ];
 
             $left_assigned_var_ids = array_diff_key($left_context->assigned_var_ids, $pre_assigned_var_ids);
-            $left_context->assigned_var_ids = [...$pre_assigned_var_ids, ...$left_context->assigned_var_ids];
+            $left_context->assigned_var_ids = [
+                ...$pre_assigned_var_ids,
+                ...$left_context->assigned_var_ids,
+            ];
 
             $left_referenced_var_ids = array_diff_key($left_referenced_var_ids, $left_assigned_var_ids);
         }

@@ -139,7 +139,10 @@ final class LoopAnalyzer
                 }
             }
 
-            $loop_parent_context->vars_possibly_in_scope = [...$continue_context->vars_possibly_in_scope, ...$loop_parent_context->vars_possibly_in_scope];
+            $loop_parent_context->vars_possibly_in_scope = [
+                ...$continue_context->vars_possibly_in_scope,
+                ...$loop_parent_context->vars_possibly_in_scope,
+            ];
         } else {
             $original_parent_context = clone $loop_parent_context;
 
@@ -267,7 +270,10 @@ final class LoopAnalyzer
 
                 $continue_context->has_returned = false;
 
-                $loop_parent_context->vars_possibly_in_scope = [...$continue_context->vars_possibly_in_scope, ...$loop_parent_context->vars_possibly_in_scope];
+                $loop_parent_context->vars_possibly_in_scope = [
+                    ...$continue_context->vars_possibly_in_scope,
+                    ...$loop_parent_context->vars_possibly_in_scope,
+                ];
 
                 // if there are no changes to the types, no need to re-examine
                 if (!$has_changes) {
@@ -547,7 +553,10 @@ final class LoopAnalyzer
         }
 
         // merge vars possibly in scope at the end of each loop
-        $loop_context->vars_possibly_in_scope = [...$loop_context->vars_possibly_in_scope, ...$loop_scope->vars_possibly_in_scope];
+        $loop_context->vars_possibly_in_scope = [
+            ...$loop_context->vars_possibly_in_scope,
+            ...$loop_scope->vars_possibly_in_scope,
+        ];
     }
 
     /**

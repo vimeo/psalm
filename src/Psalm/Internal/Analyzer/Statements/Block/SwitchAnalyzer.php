@@ -219,7 +219,10 @@ final class SwitchAnalyzer
             $context->assigned_var_ids += $switch_scope->new_assigned_var_ids;
         }
 
-        $context->vars_possibly_in_scope = [...$context->vars_possibly_in_scope, ...$switch_scope->new_vars_possibly_in_scope];
+        $context->vars_possibly_in_scope = [
+            ...$context->vars_possibly_in_scope,
+            ...$switch_scope->new_vars_possibly_in_scope,
+        ];
 
         //a switch can't return in all options without a default
         $context->has_returned = $all_options_returned && $has_default;

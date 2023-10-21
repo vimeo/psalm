@@ -200,13 +200,22 @@ final class ElseAnalyzer
             if ($has_leaving_statements) {
                 if ($else_context->loop_scope) {
                     if (!$has_continue_statement && !$has_break_statement) {
-                        $if_scope->new_vars_possibly_in_scope = [...$vars_possibly_in_scope, ...$if_scope->new_vars_possibly_in_scope];
+                        $if_scope->new_vars_possibly_in_scope = [
+                            ...$vars_possibly_in_scope,
+                            ...$if_scope->new_vars_possibly_in_scope,
+                        ];
                     }
 
-                    $else_context->loop_scope->vars_possibly_in_scope = [...$vars_possibly_in_scope, ...$else_context->loop_scope->vars_possibly_in_scope];
+                    $else_context->loop_scope->vars_possibly_in_scope = [
+                        ...$vars_possibly_in_scope,
+                        ...$else_context->loop_scope->vars_possibly_in_scope,
+                    ];
                 }
             } else {
-                $if_scope->new_vars_possibly_in_scope = [...$vars_possibly_in_scope, ...$if_scope->new_vars_possibly_in_scope];
+                $if_scope->new_vars_possibly_in_scope = [
+                    ...$vars_possibly_in_scope,
+                    ...$if_scope->new_vars_possibly_in_scope,
+                ];
 
                 $if_scope->possibly_assigned_var_ids = array_merge(
                     $possibly_assigned_var_ids,

@@ -146,7 +146,10 @@ final class IfAnalyzer
 
         $if_context->reconciled_expression_clauses = [];
 
-        $outer_context->vars_possibly_in_scope = [...$if_context->vars_possibly_in_scope, ...$outer_context->vars_possibly_in_scope];
+        $outer_context->vars_possibly_in_scope = [
+            ...$if_context->vars_possibly_in_scope,
+            ...$outer_context->vars_possibly_in_scope,
+        ];
 
         $old_if_context = clone $if_context;
 
@@ -305,7 +308,10 @@ final class IfAnalyzer
                     $if_scope->new_vars_possibly_in_scope = $vars_possibly_in_scope;
                 }
 
-                $if_context->loop_scope->vars_possibly_in_scope = [...$vars_possibly_in_scope, ...$if_context->loop_scope->vars_possibly_in_scope];
+                $if_context->loop_scope->vars_possibly_in_scope = [
+                    ...$vars_possibly_in_scope,
+                    ...$if_context->loop_scope->vars_possibly_in_scope,
+                ];
             } elseif (!$has_leaving_statements) {
                 $if_scope->new_vars_possibly_in_scope = $vars_possibly_in_scope;
             }

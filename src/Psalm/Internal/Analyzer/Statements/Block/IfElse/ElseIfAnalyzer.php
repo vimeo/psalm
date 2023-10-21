@@ -373,16 +373,25 @@ final class ElseIfAnalyzer
 
             if ($has_leaving_statements && $elseif_context->loop_scope) {
                 if (!$has_continue_statement && !$has_break_statement) {
-                    $if_scope->new_vars_possibly_in_scope = [...$vars_possibly_in_scope, ...$if_scope->new_vars_possibly_in_scope];
+                    $if_scope->new_vars_possibly_in_scope = [
+                        ...$vars_possibly_in_scope,
+                        ...$if_scope->new_vars_possibly_in_scope,
+                    ];
                     $if_scope->possibly_assigned_var_ids = array_merge(
                         $possibly_assigned_var_ids,
                         $if_scope->possibly_assigned_var_ids,
                     );
                 }
 
-                $elseif_context->loop_scope->vars_possibly_in_scope = [...$vars_possibly_in_scope, ...$elseif_context->loop_scope->vars_possibly_in_scope];
+                $elseif_context->loop_scope->vars_possibly_in_scope = [
+                    ...$vars_possibly_in_scope,
+                    ...$elseif_context->loop_scope->vars_possibly_in_scope,
+                ];
             } elseif (!$has_leaving_statements) {
-                $if_scope->new_vars_possibly_in_scope = [...$vars_possibly_in_scope, ...$if_scope->new_vars_possibly_in_scope];
+                $if_scope->new_vars_possibly_in_scope = [
+                    ...$vars_possibly_in_scope,
+                    ...$if_scope->new_vars_possibly_in_scope,
+                ];
                 $if_scope->possibly_assigned_var_ids = array_merge(
                     $possibly_assigned_var_ids,
                     $if_scope->possibly_assigned_var_ids,

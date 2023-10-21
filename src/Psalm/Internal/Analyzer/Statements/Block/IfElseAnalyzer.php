@@ -363,9 +363,15 @@ final class IfElseAnalyzer
             );
         }
 
-        $context->vars_possibly_in_scope = [...$context->vars_possibly_in_scope, ...$if_scope->new_vars_possibly_in_scope];
+        $context->vars_possibly_in_scope = [
+            ...$context->vars_possibly_in_scope,
+            ...$if_scope->new_vars_possibly_in_scope,
+        ];
 
-        $context->possibly_assigned_var_ids = [...$context->possibly_assigned_var_ids, ...$if_scope->possibly_assigned_var_ids ?: []];
+        $context->possibly_assigned_var_ids = [
+            ...$context->possibly_assigned_var_ids,
+            ...$if_scope->possibly_assigned_var_ids ?: [],
+        ];
 
         // vars can only be defined/redefined if there was an else (defined in every block)
         $context->assigned_var_ids = array_merge(
