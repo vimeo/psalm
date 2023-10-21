@@ -560,7 +560,10 @@ final class Populator
                 => $constant->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC,
         ), ...$storage->constants];
 
-        $storage->invalid_dependencies = [...$storage->invalid_dependencies, ...$interface_storage->invalid_dependencies];
+        $storage->invalid_dependencies = [
+            ...$storage->invalid_dependencies,
+            ...$interface_storage->invalid_dependencies,
+        ];
 
         self::extendTemplateParams($storage, $interface_storage, false);
 
@@ -711,7 +714,10 @@ final class Populator
             $dependent_classlikes,
         );
 
-        $storage->class_implements = [...$storage->class_implements, ...$implemented_interface_storage->parent_interfaces];
+        $storage->class_implements = [
+            ...$storage->class_implements,
+            ...$implemented_interface_storage->parent_interfaces,
+        ];
     }
 
     /**
@@ -752,9 +758,15 @@ final class Populator
                 continue;
             }
 
-            $storage->declaring_function_ids = [...$included_file_storage->declaring_function_ids, ...$storage->declaring_function_ids];
+            $storage->declaring_function_ids = [
+                ...$included_file_storage->declaring_function_ids,
+                ...$storage->declaring_function_ids,
+            ];
 
-            $storage->declaring_constants = [...$included_file_storage->declaring_constants, ...$storage->declaring_constants];
+            $storage->declaring_constants = [
+                ...$included_file_storage->declaring_constants,
+                ...$storage->declaring_constants,
+            ];
         }
 
         foreach ($storage->referenced_classlikes as $fq_class_name) {
@@ -793,10 +805,16 @@ final class Populator
                     continue;
                 }
 
-                $storage->declaring_function_ids = [...$included_trait_file_storage->declaring_function_ids, ...$storage->declaring_function_ids];
+                $storage->declaring_function_ids = [
+                    ...$included_trait_file_storage->declaring_function_ids,
+                    ...$storage->declaring_function_ids,
+                ];
             }
 
-            $storage->declaring_function_ids = [...$included_file_storage->declaring_function_ids, ...$storage->declaring_function_ids];
+            $storage->declaring_function_ids = [
+                ...$included_file_storage->declaring_function_ids,
+                ...$storage->declaring_function_ids,
+            ];
         }
 
         $storage->required_file_paths = $all_required_file_paths;
@@ -888,7 +906,10 @@ final class Populator
             if ($parent_storage->is_trait
                 && $storage->trait_alias_map
             ) {
-                $aliased_method_names = [...$aliased_method_names, ...array_keys($storage->trait_alias_map, $method_name_lc, true)];
+                $aliased_method_names = [
+                    ...$aliased_method_names,
+                    ...array_keys($storage->trait_alias_map, $method_name_lc, true),
+                ];
             }
 
             foreach ($aliased_method_names as $aliased_method_name) {
@@ -955,7 +976,10 @@ final class Populator
             if ($parent_storage->is_trait
                 && $storage->trait_alias_map
             ) {
-                $aliased_method_names = [...$aliased_method_names, ...array_keys($storage->trait_alias_map, $method_name_lc, true)];
+                $aliased_method_names = [
+                    ...$aliased_method_names,
+                    ...array_keys($storage->trait_alias_map, $method_name_lc, true),
+                ];
             }
 
             foreach ($aliased_method_names as $aliased_method_name) {

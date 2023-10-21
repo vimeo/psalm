@@ -354,7 +354,10 @@ final class OrAnalyzer
             $context->updateChecks($right_context);
         }
 
-        $context->cond_referenced_var_ids = [...$right_context->cond_referenced_var_ids, ...$context->cond_referenced_var_ids];
+        $context->cond_referenced_var_ids = [
+            ...$right_context->cond_referenced_var_ids,
+            ...$context->cond_referenced_var_ids,
+        ];
 
         $context->assigned_var_ids = [...$context->assigned_var_ids, ...$right_context->assigned_var_ids];
 
@@ -377,14 +380,23 @@ final class OrAnalyzer
                 }
             }
 
-            $if_body_context->cond_referenced_var_ids = [...$context->cond_referenced_var_ids, ...$if_body_context->cond_referenced_var_ids];
+            $if_body_context->cond_referenced_var_ids = [
+                ...$context->cond_referenced_var_ids,
+                ...$if_body_context->cond_referenced_var_ids,
+            ];
 
-            $if_body_context->assigned_var_ids = [...$context->assigned_var_ids, ...$if_body_context->assigned_var_ids];
+            $if_body_context->assigned_var_ids = [
+                ...$context->assigned_var_ids,
+                ...$if_body_context->assigned_var_ids,
+            ];
 
             $if_body_context->updateChecks($context);
         }
 
-        $context->vars_possibly_in_scope = [...$right_context->vars_possibly_in_scope, ...$context->vars_possibly_in_scope];
+        $context->vars_possibly_in_scope = [
+            ...$right_context->vars_possibly_in_scope,
+            ...$context->vars_possibly_in_scope,
+        ];
 
         return true;
     }

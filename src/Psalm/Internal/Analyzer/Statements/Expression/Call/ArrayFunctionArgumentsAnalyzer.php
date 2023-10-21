@@ -459,8 +459,11 @@ final class ArrayFunctionArgumentsAnalyzer
                         $length_min = (int) $length_literal->value;
                     }
                 } else {
-                    $literals = [...$length_arg_type->getLiteralStrings(), ...$length_arg_type->getLiteralInts(), ...$length_arg_type->getLiteralFloats()];
-                    foreach ($literals as $literal) {
+                    foreach ([
+                        ...$length_arg_type->getLiteralStrings(),
+                        ...$length_arg_type->getLiteralInts(),
+                        ...$length_arg_type->getLiteralFloats(),
+                    ] as $literal) {
                         if ($literal->isNumericType()
                             && ($literal_val = (int) $literal->value)
                             && ((isset($length_min) && $length_min> $literal_val) || !isset($length_min))) {

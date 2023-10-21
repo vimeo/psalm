@@ -858,11 +858,31 @@ final class IssueBuffer
         $format = $report_options->format;
 
         $output = match ($format) {
-            Report::TYPE_COMPACT => new CompactReport($normalized_data, self::$fixable_issue_counts, $report_options),
-            Report::TYPE_EMACS => new EmacsReport($normalized_data, self::$fixable_issue_counts, $report_options),
-            Report::TYPE_TEXT => new TextReport($normalized_data, self::$fixable_issue_counts, $report_options),
-            Report::TYPE_JSON => new JsonReport($normalized_data, self::$fixable_issue_counts, $report_options),
-            Report::TYPE_BY_ISSUE_LEVEL => new ByIssueLevelAndTypeReport($normalized_data, self::$fixable_issue_counts, $report_options),
+            Report::TYPE_COMPACT => new CompactReport(
+                $normalized_data,
+                self::$fixable_issue_counts,
+                $report_options,
+            ),
+            Report::TYPE_EMACS => new EmacsReport(
+                $normalized_data,
+                self::$fixable_issue_counts,
+                $report_options,
+            ),
+            Report::TYPE_TEXT => new TextReport(
+                $normalized_data,
+                self::$fixable_issue_counts,
+                $report_options,
+            ),
+            Report::TYPE_JSON => new JsonReport(
+                $normalized_data,
+                self::$fixable_issue_counts,
+                $report_options,
+            ),
+            Report::TYPE_BY_ISSUE_LEVEL => new ByIssueLevelAndTypeReport(
+                $normalized_data,
+                self::$fixable_issue_counts,
+                $report_options,
+            ),
             Report::TYPE_JSON_SUMMARY => new JsonSummaryReport(
                 $normalized_data,
                 self::$fixable_issue_counts,
@@ -870,17 +890,61 @@ final class IssueBuffer
                 $mixed_expression_count,
                 $total_expression_count,
             ),
-            Report::TYPE_SONARQUBE => new SonarqubeReport($normalized_data, self::$fixable_issue_counts, $report_options),
-            Report::TYPE_PYLINT => new PylintReport($normalized_data, self::$fixable_issue_counts, $report_options),
-            Report::TYPE_CHECKSTYLE => new CheckstyleReport($normalized_data, self::$fixable_issue_counts, $report_options),
-            Report::TYPE_XML => new XmlReport($normalized_data, self::$fixable_issue_counts, $report_options),
-            Report::TYPE_JUNIT => new JunitReport($normalized_data, self::$fixable_issue_counts, $report_options),
-            Report::TYPE_CONSOLE => new ConsoleReport($normalized_data, self::$fixable_issue_counts, $report_options),
-            Report::TYPE_GITHUB_ACTIONS => new GithubActionsReport($normalized_data, self::$fixable_issue_counts, $report_options),
-            Report::TYPE_PHP_STORM => new PhpStormReport($normalized_data, self::$fixable_issue_counts, $report_options),
-            Report::TYPE_SARIF => new SarifReport($normalized_data, self::$fixable_issue_counts, $report_options),
-            Report::TYPE_CODECLIMATE => new CodeClimateReport($normalized_data, self::$fixable_issue_counts, $report_options),
-            Report::TYPE_COUNT => new CountReport($normalized_data, self::$fixable_issue_counts, $report_options),
+            Report::TYPE_SONARQUBE => new SonarqubeReport(
+                $normalized_data,
+                self::$fixable_issue_counts,
+                $report_options,
+            ),
+            Report::TYPE_PYLINT => new PylintReport(
+                $normalized_data,
+                self::$fixable_issue_counts,
+                $report_options,
+            ),
+            Report::TYPE_CHECKSTYLE => new CheckstyleReport(
+                $normalized_data,
+                self::$fixable_issue_counts,
+                $report_options,
+            ),
+            Report::TYPE_XML => new XmlReport(
+                $normalized_data,
+                self::$fixable_issue_counts,
+                $report_options,
+            ),
+            Report::TYPE_JUNIT => new JunitReport(
+                $normalized_data,
+                self::$fixable_issue_counts,
+                $report_options,
+            ),
+            Report::TYPE_CONSOLE => new ConsoleReport(
+                $normalized_data,
+                self::$fixable_issue_counts,
+                $report_options,
+            ),
+            Report::TYPE_GITHUB_ACTIONS => new GithubActionsReport(
+                $normalized_data,
+                self::$fixable_issue_counts,
+                $report_options,
+            ),
+            Report::TYPE_PHP_STORM => new PhpStormReport(
+                $normalized_data,
+                self::$fixable_issue_counts,
+                $report_options,
+            ),
+            Report::TYPE_SARIF => new SarifReport(
+                $normalized_data,
+                self::$fixable_issue_counts,
+                $report_options,
+            ),
+            Report::TYPE_CODECLIMATE => new CodeClimateReport(
+                $normalized_data,
+                self::$fixable_issue_counts,
+                $report_options,
+            ),
+            Report::TYPE_COUNT => new CountReport(
+                $normalized_data,
+                self::$fixable_issue_counts,
+                $report_options,
+            ),
         };
 
         return $output->create();
