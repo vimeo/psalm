@@ -13,7 +13,7 @@ use Psalm\Type\Atomic;
 final class IsAClass extends Assertion
 {
     /** @param Atomic\TTemplateParamClass|Atomic\TNamedObject $type */
-    public function __construct(public Atomic $type, public bool $allow_string)
+    public function __construct(public readonly Atomic $type, public readonly bool $allow_string)
     {
     }
 

@@ -16,7 +16,7 @@ use const JSON_THROW_ON_ERROR;
 final class NotNestedAssertions extends Assertion
 {
     /** @param array<string, list<list<Assertion>>> $assertions */
-    public function __construct(public array $assertions)
+    public function __construct(public readonly array $assertions)
     {
     }
 

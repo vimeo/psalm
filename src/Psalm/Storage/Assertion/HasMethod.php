@@ -11,7 +11,7 @@ use Psalm\Storage\Assertion;
  */
 final class HasMethod extends Assertion
 {
-    public function __construct(public string $method)
+    public function __construct(public readonly string $method)
     {
     }
 

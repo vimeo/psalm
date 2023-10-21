@@ -12,7 +12,7 @@ use Psalm\Type\Union;
  */
 final class InArray extends Assertion
 {
-    public function __construct(public Union $type)
+    public function __construct(public readonly Union $type)
     {
     }
 

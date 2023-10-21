@@ -11,7 +11,7 @@ use Psalm\Storage\Assertion;
  */
 final class IsClassEqual extends Assertion
 {
-    public function __construct(public string $type)
+    public function __construct(public readonly string $type)
     {
     }
 

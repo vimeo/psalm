@@ -11,7 +11,7 @@ use Psalm\Storage\Assertion;
  */
 final class IsNotCountable extends Assertion
 {
-    public function __construct(public readonly bool $is_negatable)
+    public function __construct(public readonly readonly bool $is_negatable)
     {
     }
 

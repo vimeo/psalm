@@ -11,7 +11,7 @@ use Psalm\Storage\Assertion;
  */
 final class IsLessThan extends Assertion
 {
-    public function __construct(public int $value)
+    public function __construct(public readonly int $value)
     {
     }
 

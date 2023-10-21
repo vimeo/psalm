@@ -12,7 +12,7 @@ use Psalm\Type\Atomic;
  */
 final class IsLooselyEqual extends Assertion
 {
-    public function __construct(public Atomic $type)
+    public function __construct(public readonly Atomic $type)
     {
     }
 
