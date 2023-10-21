@@ -403,7 +403,6 @@ trait UnionTrait
         foreach ($this->types as $t) {
             if ($t instanceof TArray
                 || $t instanceof TKeyedArray
-                || $t instanceof TList
                 || $t instanceof TClassStringMap
             ) {
                 return true;
@@ -1090,7 +1089,6 @@ trait UnionTrait
         foreach ($this->types as $t) {
             if (!$t instanceof TKeyedArray
                 && !$t instanceof TArray
-                && !$t instanceof TList
             ) {
                 return false;
             }

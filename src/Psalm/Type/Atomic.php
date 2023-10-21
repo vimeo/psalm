@@ -472,7 +472,6 @@ abstract class Atomic implements TypeNode, Stringable
     public function isArray(): bool
     {
         return $this instanceof TArray
-            || $this instanceof TList
             || $this instanceof TKeyedArray;
     }
 
