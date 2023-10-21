@@ -33,7 +33,10 @@ final class AssertionsFromInheritanceResolver
         $method_name_lc = strtolower($method_storage->cased_name ?? '');
 
         $assertions = $method_storage->assertions;
-        $inherited_classes_and_interfaces = array_values(array_filter([...$called_class->parent_classes, ...$called_class->class_implements], fn(string $classOrInterface) => $this->codebase->classOrInterfaceOrEnumExists($classOrInterface)));
+        $inherited_classes_and_interfaces = array_values(array_filter([
+            ...$called_class->parent_classes,
+            ...$called_class->class_implements,
+        ], fn(string $classOrInterface) => $this->codebase->classOrInterfaceOrEnumExists($classOrInterface)));
 
         foreach ($inherited_classes_and_interfaces as $potential_assertion_providing_class) {
             $potential_assertion_providing_classlike_storage = $this->codebase->classlike_storage_provider->get(

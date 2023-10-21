@@ -14,8 +14,11 @@ use Psalm\Type\Atomic;
  */
 final class TClassConstant extends Atomic
 {
-    public function __construct(public string $fq_classlike_name, public string $const_name, bool $from_docblock = false)
-    {
+    public function __construct(
+        public string $fq_classlike_name,
+        public string $const_name,
+        bool $from_docblock = false,
+    ) {
         parent::__construct($from_docblock);
     }
 

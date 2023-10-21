@@ -318,7 +318,9 @@ final class TypeTokenizer
     ): string {
         $type_string_lc = strtolower($type_string);
         return match ($type_string_lc) {
-            'int', 'void', 'float', 'string', 'bool', 'callable', 'iterable', 'array', 'object', 'true', 'false', 'null', 'mixed' => $type_string_lc,
+            'int', 'void', 'float', 'string', 'bool',
+            'callable', 'iterable', 'array', 'object',
+            'true', 'false', 'null', 'mixed' => $type_string_lc,
             default => match ($type_string) {
                 'boolean' => $analysis_php_version_id !== null ? $type_string : 'bool',
                 'integer' => $analysis_php_version_id !== null ? $type_string : 'int',

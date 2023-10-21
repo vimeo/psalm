@@ -442,7 +442,10 @@ final class LoopAnalyzer
                     $loop_parent_context->removeVarFromConflictingClauses($var_id);
                 } else {
                     $loop_parent_context->vars_in_scope[$var_id] =
-                        $loop_parent_context->vars_in_scope[$var_id]->setParentNodes([...$loop_parent_context->vars_in_scope[$var_id]->parent_nodes, ...$continue_context->vars_in_scope[$var_id]->parent_nodes])
+                        $loop_parent_context->vars_in_scope[$var_id]->setParentNodes([
+                            ...$loop_parent_context->vars_in_scope[$var_id]->parent_nodes,
+                            ...$continue_context->vars_in_scope[$var_id]->parent_nodes,
+                        ])
                     ;
                 }
             }

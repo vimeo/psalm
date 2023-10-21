@@ -38,8 +38,11 @@ use function substr_count;
  */
 final class TextDocument
 {
-    public function __construct(protected LanguageServer $server, protected Codebase $codebase, protected ProjectAnalyzer $project_analyzer)
-    {
+    public function __construct(
+        protected LanguageServer $server,
+        protected Codebase $codebase,
+        protected ProjectAnalyzer $project_analyzer,
+    ) {
     }
 
     /**
