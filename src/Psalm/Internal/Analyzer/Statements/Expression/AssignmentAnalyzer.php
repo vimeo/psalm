@@ -528,17 +528,17 @@ final class AssignmentAnalyzer
             }
 
             if ($context->vars_in_scope[$var_id]->isNever()) {
-                if (IssueBuffer::accepts(
+                if (!IssueBuffer::accepts(
                     new NoValue(
                         'All possible types for this assignment were invalidated - This may be dead code',
                         new CodeLocation($statements_analyzer->getSource(), $assign_var),
                     ),
                     $statements_analyzer->getSuppressedIssues(),
                 )) {
-                    return false;
+                    // if the error is suppressed, do not treat it as never anymore
+                    $context->vars_in_scope[$var_id] = Type::getMixed();
+                    $context->has_returned = false;
                 }
-
-                $context->vars_in_scope[$var_id] = Type::getNever();
 
                 $context->inside_assignment = $was_in_assignment;
 
