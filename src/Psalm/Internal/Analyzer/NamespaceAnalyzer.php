@@ -41,7 +41,6 @@ final class NamespaceAnalyzer extends SourceAnalyzer
         private readonly Namespace_ $namespace,
         /**
          * @var FileAnalyzer
-         * @psalm-suppress NonInvariantDocblockPropertyType
          */
         protected SourceAnalyzer $source,
     ) {

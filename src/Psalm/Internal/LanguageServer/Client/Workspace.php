@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\LanguageServer\Client;
 
-use JsonMapper;
 use Psalm\Internal\LanguageServer\ClientHandler;
 use Psalm\Internal\LanguageServer\LanguageServer;
 
@@ -17,10 +16,6 @@ final class Workspace
 {
     public function __construct(
         private readonly ClientHandler $handler,
-        /**
-         * @psalm-suppress UnusedProperty
-         */
-        private readonly JsonMapper $mapper,
         private readonly LanguageServer $server,
     ) {
     }

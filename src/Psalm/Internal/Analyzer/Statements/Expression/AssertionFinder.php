@@ -1465,7 +1465,7 @@ final class AssertionFinder
             && strtolower($conditional->right->name->name) === 'class';
 
         $right_variable_class_const = $conditional->right instanceof PhpParser\Node\Expr\ClassConstFetch
-            && $conditional->right->class instanceof PhpParser\Node\Expr\Variable
+            && !$conditional->right->class instanceof PhpParser\Node\Name
             && $conditional->right->name instanceof PhpParser\Node\Identifier
             && strtolower($conditional->right->name->name) === 'class';
 
@@ -1474,15 +1474,22 @@ final class AssertionFinder
             && $conditional->left->name instanceof PhpParser\Node\Identifier
             && strtolower($conditional->left->name->name) === 'class';
 
-        $left_type = $source->node_data->getType($conditional->left);
+        $left_variable_class_const = $conditional->left instanceof PhpParser\Node\Expr\ClassConstFetch
+            && !$conditional->left->class instanceof PhpParser\Node\Name
+            && $conditional->left->name instanceof PhpParser\Node\Identifier
+            && strtolower($conditional->left->name->name) === 'class';
 
         $left_class_string_t = false;
 
-        if ($left_type && $left_type->isSingle()) {
-            foreach ($left_type->getAtomicTypes() as $type_part) {
-                if ($type_part instanceof TClassString) {
-                    $left_class_string_t = true;
-                    break;
+        if (!$left_variable_class_const) {
+            $left_type = $source->node_data->getType($conditional->left);
+
+            if ($left_type && $left_type->isSingle()) {
+                foreach ($left_type->getAtomicTypes() as $type_part) {
+                    if ($type_part instanceof TClassString) {
+                        $left_class_string_t = true;
+                        break;
+                    }
                 }
             }
         }
@@ -1503,29 +1510,26 @@ final class AssertionFinder
             && $conditional->left->name instanceof PhpParser\Node\Identifier
             && strtolower($conditional->left->name->name) === 'class';
 
-        $left_variable_class_const = $conditional->left instanceof PhpParser\Node\Expr\ClassConstFetch
-            && $conditional->left->class instanceof PhpParser\Node\Expr\Variable
-            && $conditional->left->name instanceof PhpParser\Node\Identifier
-            && strtolower($conditional->left->name->name) === 'class';
-
         $right_class_string = $conditional->right instanceof PhpParser\Node\Expr\ClassConstFetch
             && $conditional->right->class instanceof PhpParser\Node\Name
             && $conditional->right->name instanceof PhpParser\Node\Identifier
             && strtolower($conditional->right->name->name) === 'class';
 
-        $right_type = $source->node_data->getType($conditional->right);
-
         $right_class_string_t = false;
 
-        if ($right_type && $right_type->isSingle()) {
-            foreach ($right_type->getAtomicTypes() as $type_part) {
-                if ($type_part instanceof TClassString) {
-                    $right_class_string_t = true;
-                    break;
+        if (!$right_variable_class_const) {
+            $right_type = $source->node_data->getType($conditional->right);
+
+            if ($right_type && $right_type->isSingle()) {
+                foreach ($right_type->getAtomicTypes() as $type_part) {
+                    if ($type_part instanceof TClassString) {
+                        $right_class_string_t = true;
+                        break;
+                    }
                 }
             }
         }
-
+        
         if (($left_get_class || $left_static_class || $left_variable_class_const)
             && ($right_class_string || $right_class_string_t)
         ) {

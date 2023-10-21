@@ -90,7 +90,7 @@ final class PsalmRestarter extends XdebugHandler
                 } elseif ($ini_name === 'enable_cli') {
                     $value = in_array($value, ['1', 'true', true, 1]) ? 1 : 0;
                 } elseif (is_int($required_value)) {
-                    $required_value = (int) $required_value;
+                    $value = (int) $value;
                 }
                 if ($value !== $required_value) {
                     return true;
