@@ -134,8 +134,11 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     /**
      * @param TFunction $function
      */
-    public function __construct(protected Closure|Function_|ClassMethod|ArrowFunction $function, SourceAnalyzer $source, protected FunctionLikeStorage $storage)
-    {
+    public function __construct(
+        protected Closure|Function_|ClassMethod|ArrowFunction $function,
+        SourceAnalyzer $source,
+        protected FunctionLikeStorage $storage,
+    ) {
         $this->source = $source;
         $this->suppressed_issues = $source->getSuppressedIssues();
         $this->codebase = $source->getCodebase();

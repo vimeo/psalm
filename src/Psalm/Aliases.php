@@ -22,7 +22,14 @@ final class Aliases
      * @internal
      * @psalm-mutation-free
      */
-    public function __construct(public ?string $namespace = null, public array $uses = [], public array $functions = [], public array $constants = [], public array $uses_flipped = [], public array $functions_flipped = [], public array $constants_flipped = [])
-    {
+    public function __construct(
+        public ?string $namespace = null,
+        public array $uses = [],
+        public array $functions = [],
+        public array $constants = [],
+        public array $uses_flipped = [],
+        public array $functions_flipped = [],
+        public array $constants_flipped = [],
+    ) {
     }
 }

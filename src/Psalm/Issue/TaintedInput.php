@@ -19,14 +19,8 @@ abstract class TaintedInput extends CodeIssue
     public function __construct(
         string $message,
         CodeLocation $code_location,
-        /**
-         * @readonly
-         */
-        public array $journey,
-        /**
-         * @readonly
-         */
-        public string $journey_text,
+        public readonly array $journey,
+        public readonly string $journey_text,
     ) {
         parent::__construct($message, $code_location);
     }

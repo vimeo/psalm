@@ -99,8 +99,11 @@ class FileAnalyzer extends SourceAnalyzer
 
     private ?Union $return_type = null;
 
-    public function __construct(public ProjectAnalyzer $project_analyzer, protected string $file_path, protected string $file_name)
-    {
+    public function __construct(
+        public ProjectAnalyzer $project_analyzer,
+        protected string $file_path,
+        protected string $file_name,
+    ) {
         $this->source = $this;
         $this->codebase = $project_analyzer->getCodebase();
     }

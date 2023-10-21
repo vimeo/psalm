@@ -8,9 +8,7 @@ use PhpParser;
 use UnexpectedValueException;
 
 use function count;
-use function get_class;
 use function is_string;
-use function strpos;
 use function str_contains;
 use function strtolower;
 use function substr;

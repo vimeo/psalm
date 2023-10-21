@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\LanguageServer;
 
-use JsonMapper;
 use LanguageServerProtocol\LogMessage;
 use LanguageServerProtocol\LogTrace;
 use Psalm\Internal\LanguageServer\Client\Progress\LegacyProgress;

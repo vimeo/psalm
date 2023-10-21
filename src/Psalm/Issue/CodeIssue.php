@@ -20,14 +20,8 @@ abstract class CodeIssue
     public ?string $dupe_key = null;
 
     public function __construct(
-        /**
-         * @readonly
-         */
-        public string $message,
-        /**
-         * @readonly
-         */
-        public CodeLocation $code_location,
+        public readonly string $message,
+        public readonly CodeLocation $code_location,
     ) {
     }
 
