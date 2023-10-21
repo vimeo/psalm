@@ -56,7 +56,7 @@ final class LanguageClient
         $this->handler = new ClientHandler($reader, $writer);
 
         $this->textDocument = new ClientTextDocument($this->handler, $this->server);
-        $this->workspace = new ClientWorkspace($this->handler, new JsonMapper, $this->server);
+        $this->workspace = new ClientWorkspace($this->handler, $this->server);
     }
 
     /**
