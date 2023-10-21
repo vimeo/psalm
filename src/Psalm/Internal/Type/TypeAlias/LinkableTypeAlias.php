@@ -16,11 +16,11 @@ final class LinkableTypeAlias implements TypeAlias
     use ImmutableNonCloneableTrait;
 
     public function __construct(
-        public string $declaring_fq_classlike_name,
-        public string $alias_name,
-        public int $line_number,
-        public int $start_offset,
-        public int $end_offset,
+        public readonly string $declaring_fq_classlike_name,
+        public readonly string $alias_name,
+        public readonly int $line_number,
+        public readonly int $start_offset,
+        public readonly int $end_offset,
     ) {
     }
 }

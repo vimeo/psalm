@@ -264,7 +264,7 @@ final class AttributesAnalyzer
                     return self::TARGET_ALL; // Defaults to TARGET_ALL
                 }
 
-                $first_arg = reset($attribute_attribute->args);
+                $first_arg = $attribute_attribute->args[array_key_first($attribute_attribute->args)];
 
                 $first_arg_type = $first_arg->type;
 

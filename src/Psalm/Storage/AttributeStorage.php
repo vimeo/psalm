@@ -18,10 +18,10 @@ final class AttributeStorage
      * @param list<AttributeArg> $args
      */
     public function __construct(
-        public string $fq_class_name,
-        public array $args,
-        public CodeLocation $location,
-        public CodeLocation $name_location,
+        public readonly string $fq_class_name,
+        public readonly array $args,
+        public readonly CodeLocation $location,
+        public readonly CodeLocation $name_location,
     ) {
     }
 }

@@ -13,7 +13,7 @@ use Psalm\Type\Union;
 final class NotInArray extends Assertion
 {
     public function __construct(
-        public readonly readonly Union $type,
+        public readonly Union $type,
     ) {
     }
 

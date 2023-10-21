@@ -36,16 +36,16 @@ final class ClassConstantStorage
          * The type inferred from the value.
          */
         public ?Union $inferred_type,
-        public int $visibility,
-        public ?CodeLocation $location,
-        public ?CodeLocation $type_location = null,
-        public ?CodeLocation $stmt_location = null,
-        public bool $deprecated = false,
-        public bool $final = false,
-        public ?UnresolvedConstantComponent $unresolved_node = null,
-        public array $attributes = [],
-        public array $suppressed_issues = [],
-        public ?string $description = null,
+        public readonly int $visibility,
+        public readonly ?CodeLocation $location,
+        public readonly ?CodeLocation $type_location = null,
+        public readonly ?CodeLocation $stmt_location = null,
+        public readonly bool $deprecated = false,
+        public readonly bool $final = false,
+        public readonly ?UnresolvedConstantComponent $unresolved_node = null,
+        public readonly array $attributes = [],
+        public readonly array $suppressed_issues = [],
+        public readonly ?string $description = null,
     ) {
     }
 

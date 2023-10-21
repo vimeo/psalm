@@ -18,7 +18,7 @@ final class InlineTypeAlias implements TypeAlias
     /**
      * @param list<array{0: string, 1: int, 2?: string}> $replacement_tokens
      */
-    public function __construct(public array $replacement_tokens)
+    public function __construct(public readonly array $replacement_tokens)
     {
     }
 }

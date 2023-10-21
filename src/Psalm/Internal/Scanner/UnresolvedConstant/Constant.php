@@ -12,7 +12,7 @@ use Psalm\Internal\Scanner\UnresolvedConstantComponent;
  */
 final class Constant extends UnresolvedConstantComponent
 {
-    public function __construct(public string $name, public bool $is_fully_qualified)
+    public function __construct(public readonly string $name, public readonly bool $is_fully_qualified)
     {
     }
 }

@@ -13,7 +13,7 @@ use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 final class ArrayValue extends UnresolvedConstantComponent
 {
     /** @param list<KeyValuePair|ArraySpread> $entries */
-    public function __construct(public array $entries)
+    public function __construct(public readonly array $entries)
     {
     }
 }

@@ -17,9 +17,9 @@ final class AttributeArg
     use ImmutableNonCloneableTrait;
 
     public function __construct(
-        public ?string $name,
-        public Union|UnresolvedConstantComponent $type,
-        public CodeLocation $location,
+        public readonly ?string $name,
+        public readonly Union|UnresolvedConstantComponent $type,
+        public readonly CodeLocation $location,
     ) {
     }
 }

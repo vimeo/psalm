@@ -19,10 +19,10 @@ final class Path
      * @param ?array<string> $escaped_taints
      */
     public function __construct(
-        public string $type,
-        public int $length,
-        public ?array $unescaped_taints = null,
-        public ?array $escaped_taints = null,
+        public readonly string $type,
+        public readonly int $length,
+        public readonly ?array $unescaped_taints = null,
+        public readonly ?array $escaped_taints = null,
     ) {
     }
 }

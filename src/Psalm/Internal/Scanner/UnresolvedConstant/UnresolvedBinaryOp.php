@@ -15,7 +15,7 @@ abstract class UnresolvedBinaryOp extends UnresolvedConstantComponent
 {
     use ImmutableNonCloneableTrait;
 
-    public function __construct(public UnresolvedConstantComponent $left, public UnresolvedConstantComponent $right)
+    public function __construct(public readonly UnresolvedConstantComponent $left, public readonly UnresolvedConstantComponent $right)
     {
     }
 }

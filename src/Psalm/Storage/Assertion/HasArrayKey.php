@@ -12,7 +12,7 @@ use UnexpectedValueException;
  */
 final class HasArrayKey extends Assertion
 {
-    public function __construct(public readonly readonly string $key)
+    public function __construct(public readonly string $key)
     {
     }
 

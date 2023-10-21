@@ -22,11 +22,11 @@ final class DiffElem
 
     public function __construct(
         /** @var int One of the TYPE_* constants */
-        public int $type,
+        public readonly int $type,
         /** @var mixed Is null for add operations */
-        public mixed $old,
+        public readonly mixed $old,
         /** @var mixed Is null for remove operations */
-        public mixed $new,
+        public readonly mixed $new,
     ) {
     }
 }

@@ -12,7 +12,7 @@ use Psalm\Internal\Scanner\UnresolvedConstantComponent;
  */
 final class ClassConstant extends UnresolvedConstantComponent
 {
-    public function __construct(public string $fqcln, public string $name)
+    public function __construct(public readonly string $fqcln, public readonly string $name)
     {
     }
 }
