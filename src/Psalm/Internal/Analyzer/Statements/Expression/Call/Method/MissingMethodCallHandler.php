@@ -54,7 +54,7 @@ final class MissingMethodCallHandler
         if ($stmt->isFirstClassCallable()) {
             if (isset($class_storage->pseudo_methods[$method_name_lc])) {
                 $result->has_valid_method_call_type = true;
-                $result->existent_method_ids[] = $method_id->__toString();
+                $result->existent_method_ids[$method_id->__toString()] = true;
                 $result->return_type = self::createFirstClassCallableReturnType(
                     $class_storage->pseudo_methods[$method_name_lc],
                 );
@@ -112,7 +112,7 @@ final class MissingMethodCallHandler
 
         if ($found_method_and_class_storage) {
             $result->has_valid_method_call_type = true;
-            $result->existent_method_ids[] = $method_id->__toString();
+            $result->existent_method_ids[$method_id->__toString()] = true;
 
             [$pseudo_method_storage, $defining_class_storage] = $found_method_and_class_storage;
 
@@ -200,7 +200,7 @@ final class MissingMethodCallHandler
         }
 
         $result->has_valid_method_call_type = true;
-        $result->existent_method_ids[] = $method_id->__toString();
+        $result->existent_method_ids[$method_id->__toString()] = true;
 
         $array_values = array_map(
             static fn(PhpParser\Node\Arg $arg): PhpParser\Node\Expr\ArrayItem => new VirtualArrayItem(
@@ -237,7 +237,7 @@ final class MissingMethodCallHandler
     }
 
     /**
-     * @param array<string> $all_intersection_existent_method_ids
+     * @param array<string, bool> $all_intersection_existent_method_ids
      */
     public static function handleMissingOrMagicMethod(
         StatementsAnalyzer $statements_analyzer,
@@ -269,7 +269,7 @@ final class MissingMethodCallHandler
             && $found_method_and_class_storage
         ) {
             $result->has_valid_method_call_type = true;
-            $result->existent_method_ids[] = $method_id->__toString();
+            $result->existent_method_ids[$method_id->__toString()] = true;
 
             [$pseudo_method_storage, $defining_class_storage] = $found_method_and_class_storage;
 

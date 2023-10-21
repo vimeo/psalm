@@ -186,6 +186,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                 $context->calling_method_id,
                 $statements_analyzer->getSuppressedIssues(),
                 new ClassLikeNameOptions(true, false, true, true, $lhs_type_part->from_docblock),
+                $context->check_classes,
             );
         }
 
@@ -340,7 +341,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
         $all_intersection_return_type = null;
         $all_intersection_existent_method_ids = [];
 
-        // insersection types are also fun, they also complicate matters
+        // intersection types are also fun, they also complicate matters
         if ($intersection_types) {
             [$all_intersection_return_type, $all_intersection_existent_method_ids]
                 = self::getIntersectionReturnType(
@@ -527,7 +528,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
     /**
      * @param  TNamedObject|TTemplateParam $lhs_type_part
      * @param   array<string, Atomic> $intersection_types
-     * @return  array{?Union, array<string>}
+     * @return  array{?Union, array<string, bool>}
      */
     private static function getIntersectionReturnType(
         StatementsAnalyzer $statements_analyzer,
@@ -648,7 +649,8 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                     && $stmt->name instanceof PhpParser\Node\Identifier
                     && isset($lhs_type_part->methods[strtolower($stmt->name->name)])
                 ) {
-                    $result->existent_method_ids[] = $lhs_type_part->methods[strtolower($stmt->name->name)];
+                    $method_id = $lhs_type_part->methods[strtolower($stmt->name->name)];
+                    $result->existent_method_ids[$method_id] = true;
                 } elseif (!$is_intersection) {
                     if ($stmt->name instanceof PhpParser\Node\Identifier) {
                         $codebase->analyzer->addMixedMemberName(
@@ -917,7 +919,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
         ?TemplateResult $inferred_template_result = null,
     ): void {
         $method_id = 'object::__invoke';
-        $result->existent_method_ids[] = $method_id;
+        $result->existent_method_ids[$method_id] = true;
         $result->has_valid_method_call_type = true;
 
         if ($lhs_type_part_callable !== null) {

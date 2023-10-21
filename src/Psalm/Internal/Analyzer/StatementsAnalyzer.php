@@ -680,7 +680,11 @@ final class StatementsAnalyzer extends SourceAnalyzer
                 } else {
                     try {
                         $checked_type = $context->vars_in_scope[$checked_var_id];
-                        $check_type = Type::parseString($check_type_string);
+                        $fq_check_type_string = Type::getFQCLNFromString(
+                            $check_type_string,
+                            $statements_analyzer->getAliases(),
+                        );
+                        $check_type = Type::parseString($fq_check_type_string);
                         /** @psalm-suppress InaccessibleProperty We just created this type */
                         $check_type->possibly_undefined = $possibly_undefined;
 

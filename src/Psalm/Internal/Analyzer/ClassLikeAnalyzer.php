@@ -206,6 +206,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         ?string $calling_method_id,
         array $suppressed_issues,
         ?ClassLikeNameOptions $options = null,
+        bool $check_classes = true
     ): ?bool {
         if ($options === null) {
             $options = new ClassLikeNameOptions();
@@ -278,6 +279,9 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
             && !($interface_exists && $options->allow_interface)
             && !($enum_exists && $options->allow_enum)
         ) {
+            if (!$check_classes) {
+                return null;
+            }
             if (!$options->allow_trait || !$codebase->classlikes->traitExists($fq_class_name, $code_location)) {
                 if ($options->from_docblock) {
                     if (IssueBuffer::accepts(

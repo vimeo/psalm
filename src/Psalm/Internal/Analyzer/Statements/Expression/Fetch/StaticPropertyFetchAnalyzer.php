@@ -156,7 +156,6 @@ final class StaticPropertyFetchAnalyzer
         }
 
         if (!$fq_class_name
-            || !$context->check_classes
             || !$context->check_variables
             || ExpressionAnalyzer::isMock($fq_class_name)
         ) {
@@ -251,7 +250,7 @@ final class StaticPropertyFetchAnalyzer
                 : null,
         )
         ) {
-            if ($context->inside_isset) {
+            if ($context->inside_isset || !$context->check_classes) {
                 return true;
             }
 

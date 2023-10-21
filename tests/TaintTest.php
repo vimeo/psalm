@@ -179,23 +179,6 @@ class TaintTest extends TestCase
                         }
                     }',
             ],
-            'untaintedInputAfterIntCast' => [
-                'code' => '<?php
-                    class A {
-                        public function getUserId() : int {
-                            return (int) $_GET["user_id"];
-                        }
-
-                        public function getAppendedUserId() : string {
-                            return "aaaa" . $this->getUserId();
-                        }
-
-                        public function deleteUser(PDO $pdo) : void {
-                            $userId = $this->getAppendedUserId();
-                            $pdo->exec("delete from users where user_id = " . $userId);
-                        }
-                    }',
-            ],
             'specializedCoreFunctionCall' => [
                 'code' => '<?php
                     $a = (string) ($data["user_id"] ?? "");
@@ -700,21 +683,6 @@ class TaintTest extends TestCase
                     $value = $_GET["value"];
                     $result = fetch($value);',
             ],
-            'NoTaintForIntTypeCastUsingAnnotatedSink' => [
-                'code' => '<?php // --taint-analysis
-                    function fetch($id): string
-                    {
-                        return query("SELECT * FROM table WHERE id=" . (int)$id);
-                    }
-                    /**
-                     * @return string
-                     * @psalm-taint-sink sql $sql
-                     * @psalm-taint-specialize
-                     */
-                    function query(string $sql) {}
-                    $value = $_GET["value"];
-                    $result = fetch($value);',
-            ],
             'dontTaintArrayWithDifferentOffsetUpdated' => [
                 'code' => '<?php
                     function foo() {
@@ -907,6 +875,40 @@ class TaintTest extends TestCase
                             $pdo->exec("delete from users where user_id = " . $userId);
                         }
                     }',
+                'error_message' => 'TaintedSql',
+            ],
+            'taintedInputAfterIntCast' => [
+                'code' => '<?php
+                    class A {
+                        public function getUserId() : int {
+                            return (int) $_GET["user_id"];
+                        }
+
+                        public function getAppendedUserId() : string {
+                            return "aaaa" . $this->getUserId();
+                        }
+
+                        public function deleteUser(PDO $pdo) : void {
+                            $userId = $this->getAppendedUserId();
+                            $pdo->exec("delete from users where user_id = " . $userId);
+                        }
+                    }',
+                'error_message' => 'TaintedSql',
+            ],
+            'TaintForIntTypeCastUsingAnnotatedSink' => [
+                'code' => '<?php // --taint-analysis
+                    function fetch($id): string
+                    {
+                        return query("SELECT * FROM table WHERE id=" . (int)$id);
+                    }
+                    /**
+                     * @return string
+                     * @psalm-taint-sink sql $sql
+                     * @psalm-taint-specialize
+                     */
+                    function query(string $sql) {}
+                    $value = $_GET["value"];
+                    $result = fetch($value);',
                 'error_message' => 'TaintedSql',
             ],
             'taintedInputFromReturnTypeWithBranch' => [

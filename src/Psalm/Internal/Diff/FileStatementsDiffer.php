@@ -118,7 +118,11 @@ final class FileStatementsDiffer extends AstDiffer
                         $b_code,
                     );
 
-                    $keep = [...$keep, ...$class_keep[0]];
+                    if ($diff_elem->old->getDocComment() === $diff_elem->new->getDocComment()) {
+                        $keep = [...$keep, ...$class_keep[0]];
+                    } else {
+                        $add_or_delete = [...$add_or_delete, ...$class_keep[0]];
+                    }
                     $keep_signature = [...$keep_signature, ...$class_keep[1]];
                     $add_or_delete = [...$add_or_delete, ...$class_keep[2]];
                     $diff_map = [...$diff_map, ...$class_keep[3]];
