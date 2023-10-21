@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type;
 
 use InvalidArgumentException;
@@ -245,7 +247,7 @@ trait UnionTrait
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        bool $use_phpdoc_format
+        bool $use_phpdoc_format,
     ): string {
         $other_types = [];
 
@@ -295,7 +297,7 @@ trait UnionTrait
         ?string $namespace,
         array   $aliased_classes,
         ?string $this_class,
-        int     $analysis_php_version_id
+        int     $analysis_php_version_id,
     ): ?string {
         if (!$this->isSingleAndMaybeNullable()) {
             if ($analysis_php_version_id < 8_00_00) {
@@ -1210,10 +1212,9 @@ trait UnionTrait
 
     /**
      * @psalm-mutation-free
-     * @return TLiteralInt|TLiteralString|TLiteralFloat
      * @psalm-suppress InvalidFalsableReturnType
      */
-    public function getSingleLiteral()
+    public function getSingleLiteral(): TLiteralInt|TLiteralString|TLiteralFloat
     {
         if (!$this->isSingleLiteral()) {
             throw new InvalidArgumentException("Not a single literal");
@@ -1278,7 +1279,7 @@ trait UnionTrait
         bool $inferred = true,
         bool $inherited = false,
         bool $prevent_template_covariance = false,
-        ?string $calling_method_id = null
+        ?string $calling_method_id = null,
     ): bool {
         if ($this->checked) {
             return true;
@@ -1309,7 +1310,7 @@ trait UnionTrait
     public function queueClassLikesForScanning(
         Codebase $codebase,
         ?FileStorage $file_storage = null,
-        array $phantom_classes = []
+        array $phantom_classes = [],
     ): void {
         $scanner_visitor = new TypeScanner(
             $codebase->scanner,
@@ -1380,7 +1381,7 @@ trait UnionTrait
         self $other_type,
         bool $ensure_source_equality = true,
         bool $ensure_parent_node_equality = true,
-        bool $ensure_possibly_undefined_equality = true
+        bool $ensure_possibly_undefined_equality = true,
     ): bool {
         if ($other_type === $this) {
             return true;

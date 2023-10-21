@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
@@ -22,7 +24,7 @@ use function in_array;
 /**
  * @internal
  */
-class ArrayPointerAdjustmentReturnTypeProvider implements FunctionReturnTypeProviderInterface
+final class ArrayPointerAdjustmentReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
      * These functions are already handled by the CoreGenericFunctions stub

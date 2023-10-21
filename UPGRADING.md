@@ -34,9 +34,15 @@
 
 - [BC] The return type of `Psalm\Internal\LanguageServer\ProtocolWriter#write() changed from `Amp\Promise` to `void` due to the switch to Amp v3
 
+- [BC] All parameters, properties and return typehints are now strictly typed.
+
+- [BC] `strict_types` is now applied to all files of the Psalm codebase.
+
 - [BC] Properties `Psalm\Type\Atomic\TLiteralFloat::$value` and `Psalm\Type\Atomic\TLiteralInt::$value` became typed (`float` and `int` respectively)
 
 - [BC] Property `Psalm\Storage\EnumCaseStorage::$value` changed from `int|string|null` to `TLiteralInt|TLiteralString|null`
+
+- [BC] `Psalm\CodeLocation\Raw`, `Psalm\CodeLocation\ParseErrorLocation`, `Psalm\CodeLocation\DocblockTypeLocation`, `Psalm\Report\CountReport`, `Psalm\Type\Atomic\TNonEmptyArray` are now all final.
 
 # Upgrading from Psalm 4 to Psalm 5
 ## Changed

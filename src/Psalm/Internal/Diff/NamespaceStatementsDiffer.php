@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Diff;
 
 use PhpParser;
@@ -12,7 +14,7 @@ use function substr;
 /**
  * @internal
  */
-class NamespaceStatementsDiffer extends AstDiffer
+final class NamespaceStatementsDiffer extends AstDiffer
 {
     /**
      * Calculate diff (edit script) from $a to $b.
@@ -34,7 +36,7 @@ class NamespaceStatementsDiffer extends AstDiffer
                 PhpParser\Node\Stmt $a,
                 PhpParser\Node\Stmt $b,
                 string $a_code,
-                string $b_code
+                string $b_code,
             ): bool {
                 if (get_class($a) !== get_class($b)) {
                     return false;

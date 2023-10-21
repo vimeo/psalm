@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
 use AssertionError;
@@ -56,7 +58,7 @@ use function substr;
 /**
  * @internal
  */
-class ArrayFunctionArgumentsAnalyzer
+final class ArrayFunctionArgumentsAnalyzer
 {
     /**
      * @param   array<int, PhpParser\Node\Arg> $args
@@ -66,7 +68,7 @@ class ArrayFunctionArgumentsAnalyzer
         Context $context,
         array $args,
         string $method_id,
-        bool $check_functions
+        bool $check_functions,
     ): void {
         $closure_index = $method_id === 'array_map' ? 0 : 1;
 
@@ -142,7 +144,7 @@ class ArrayFunctionArgumentsAnalyzer
         StatementsAnalyzer $statements_analyzer,
         array $args,
         Context $context,
-        string $method_id
+        string $method_id,
     ): ?bool {
         $array_arg = $args[0]->value;
         $nb_args = count($args);
@@ -335,7 +337,7 @@ class ArrayFunctionArgumentsAnalyzer
     public static function handleSplice(
         StatementsAnalyzer $statements_analyzer,
         array $args,
-        Context $context
+        Context $context,
     ): ?bool {
         $context->inside_call = true;
         $array_arg = $args[0]->value;
@@ -619,7 +621,7 @@ class ArrayFunctionArgumentsAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Arg $arg,
         Context $context,
-        bool $is_array_shift
+        bool $is_array_shift,
     ): void {
         $var_id = ExpressionIdentifier::getVarId(
             $arg->value,
@@ -738,7 +740,7 @@ class ArrayFunctionArgumentsAnalyzer
         int $min_closure_param_count,
         int $max_closure_param_count,
         array $array_arg_types,
-        bool $check_functions
+        bool $check_functions,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -903,7 +905,7 @@ class ArrayFunctionArgumentsAnalyzer
         PhpParser\Node\Arg $closure_arg,
         int $min_closure_param_count,
         int $max_closure_param_count,
-        array $array_arg_types
+        array $array_arg_types,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 

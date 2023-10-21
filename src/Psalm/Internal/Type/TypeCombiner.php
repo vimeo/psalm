@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Type;
 
 use InvalidArgumentException;
@@ -72,7 +74,7 @@ use function substr;
 /**
  * @internal
  */
-class TypeCombiner
+final class TypeCombiner
 {
     /**
      * Combines types together
@@ -94,7 +96,7 @@ class TypeCombiner
         ?Codebase $codebase = null,
         bool $overwrite_empty_array = false,
         bool $allow_mixed_union = true,
-        int $literal_limit = 500
+        int $literal_limit = 500,
     ): Union {
         if (count($types) === 1) {
             return new Union([$types[0]]);
@@ -397,7 +399,7 @@ class TypeCombiner
         ?Codebase $codebase,
         bool $overwrite_empty_array,
         bool $allow_mixed_union,
-        int $literal_limit
+        int $literal_limit,
     ): ?Union {
         if ($type instanceof TMixed) {
             if ($type->from_loop_isset) {
@@ -969,7 +971,7 @@ class TypeCombiner
         Atomic $type,
         TypeCombination $combination,
         ?Codebase $codebase,
-        int $literal_limit
+        int $literal_limit,
     ): void {
         if ($type instanceof TCallableString && isset($combination->value_types['callable'])) {
             return;
@@ -1166,7 +1168,7 @@ class TypeCombiner
         string $type_key,
         Atomic $type,
         TypeCombination $combination,
-        int $literal_limit
+        int $literal_limit,
     ): void {
         if (isset($combination->value_types['array-key'])) {
             return;
@@ -1336,7 +1338,7 @@ class TypeCombiner
     private static function handleKeyedArrayEntries(
         TypeCombination $combination,
         bool $overwrite_empty_array,
-        bool $from_docblock
+        bool $from_docblock,
     ): array {
         $new_types = [];
 
@@ -1453,7 +1455,7 @@ class TypeCombiner
         bool $allow_mixed_union,
         Atomic $type,
         array $generic_type_params,
-        bool $from_docblock
+        bool $from_docblock,
     ): Atomic {
         if ($combination->objectlike_entries) {
             $objectlike_generic_type = null;

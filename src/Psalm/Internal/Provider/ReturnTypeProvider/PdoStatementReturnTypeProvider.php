@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use Psalm\Config;
@@ -17,7 +19,7 @@ use Psalm\Type\Union;
 /**
  * @internal
  */
-class PdoStatementReturnTypeProvider implements MethodReturnTypeProviderInterface
+final class PdoStatementReturnTypeProvider implements MethodReturnTypeProviderInterface
 {
     public static function getClassLikeNames(): array
     {

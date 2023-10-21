@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements;
 
 use PhpParser;
@@ -65,7 +67,7 @@ use function strtolower;
 /**
  * @internal
  */
-class ExpressionAnalyzer
+final class ExpressionAnalyzer
 {
     /**
      * @param bool $assigned_to_reference This is set to true when the expression being analyzed
@@ -79,7 +81,7 @@ class ExpressionAnalyzer
         ?Context $global_context = null,
         bool $from_stmt = false,
         ?TemplateResult $template_result = null,
-        bool $assigned_to_reference = false
+        bool $assigned_to_reference = false,
     ): bool {
         if (self::dispatchBeforeExpressionAnalysis($stmt, $context, $statements_analyzer) === false) {
             return false;
@@ -150,7 +152,7 @@ class ExpressionAnalyzer
         ?Context $global_context,
         bool $from_stmt,
         ?TemplateResult $template_result = null,
-        bool $assigned_to_reference = false
+        bool $assigned_to_reference = false,
     ): bool {
         if ($stmt instanceof PhpParser\Node\Expr\Variable) {
             return VariableFetchAnalyzer::analyze(
@@ -522,7 +524,7 @@ class ExpressionAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $stmt,
         Context $context,
-        bool $from_stmt
+        bool $from_stmt,
     ): bool {
         $assignment_type = AssignmentAnalyzer::analyze(
             $statements_analyzer,
@@ -549,7 +551,7 @@ class ExpressionAnalyzer
     private static function dispatchBeforeExpressionAnalysis(
         PhpParser\Node\Expr $expr,
         Context $context,
-        StatementsAnalyzer $statements_analyzer
+        StatementsAnalyzer $statements_analyzer,
     ): ?bool {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -577,7 +579,7 @@ class ExpressionAnalyzer
     private static function dispatchAfterExpressionAnalysis(
         PhpParser\Node\Expr $expr,
         Context $context,
-        StatementsAnalyzer $statements_analyzer
+        StatementsAnalyzer $statements_analyzer,
     ): ?bool {
         $codebase = $statements_analyzer->getCodebase();
 

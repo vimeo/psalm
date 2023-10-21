@@ -29,7 +29,7 @@ use function strtolower;
 /**
  * @internal
  */
-class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProviderInterface
+final class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     public static function getFunctionIds(): array
     {
@@ -45,7 +45,7 @@ class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProviderInter
         Union $first_arg_type,
         SourceAnalyzer $statements_source,
         Context $context,
-        CodeLocation $location
+        CodeLocation $location,
     ): Atomic {
         self::$fallback ??= new TArray([Type::getString(), Type::getMixed()]);
 

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Storage;
 
 use Psalm\CodeLocation;
@@ -10,102 +12,58 @@ final class PropertyStorage implements HasAttributesInterface
 {
     use CustomMetadataTrait;
 
-    /**
-     * @var ?bool
-     */
-    public $is_static;
+    public ?bool $is_static = null;
 
     /**
      * @var ClassLikeAnalyzer::VISIBILITY_*
      */
-    public $visibility = ClassLikeAnalyzer::VISIBILITY_PUBLIC;
+    public int $visibility = ClassLikeAnalyzer::VISIBILITY_PUBLIC;
 
-    /**
-     * @var CodeLocation|null
-     */
-    public $location;
+    public ?CodeLocation $location = null;
 
-    /**
-     * @var CodeLocation|null
-     */
-    public $stmt_location;
+    public ?CodeLocation $stmt_location = null;
 
-    /**
-     * @var CodeLocation|null
-     */
-    public $type_location;
+    public ?CodeLocation $type_location = null;
 
-    /**
-     * @var CodeLocation|null
-     */
-    public $signature_type_location;
+    public ?CodeLocation $signature_type_location = null;
 
-    /**
-     * @var Union|null
-     */
-    public $type;
+    public ?Union $type = null;
 
-    /**
-     * @var Union|null
-     */
-    public $signature_type;
+    public ?Union $signature_type = null;
 
-    /**
-     * @var Union|null
-     */
-    public $suggested_type;
+    public ?Union $suggested_type = null;
 
-    /**
-     * @var bool
-     */
-    public $has_default = false;
+    public bool $has_default = false;
 
-    /**
-     * @var bool
-     */
-    public $deprecated = false;
+    public bool $deprecated = false;
 
-    /**
-     * @var bool
-     */
-    public $readonly = false;
+    public bool $readonly = false;
 
     /**
      * Whether or not to allow mutation by internal methods
-     *
-     * @var bool
      */
-    public $allow_private_mutation = false;
+    public bool $allow_private_mutation = false;
 
     /**
      * @var list<non-empty-string>
      */
-    public $internal = [];
+    public array $internal = [];
 
-    /**
-     * @var ?string
-     */
-    public $getter_method;
+    public ?string $getter_method = null;
 
-    /**
-     * @var bool
-     */
-    public $is_promoted = false;
+    public bool $is_promoted = false;
 
     /**
      * @var list<AttributeStorage>
      */
-    public $attributes = [];
+    public array $attributes = [];
 
     /**
      * @var array<int, string>
      */
-    public $suppressed_issues = [];
+    public array $suppressed_issues = [];
 
-    /**
-     * @var ?string
-     */
-    public $description;
+    public ?string $description = null;
 
     public function getInfo(): string
     {

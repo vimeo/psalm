@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\PhpVisitor\Reflector;
 
 use Exception;
@@ -48,7 +50,7 @@ use const PREG_OFFSET_CAPTURE;
 /**
  * @internal
  */
-class ClassLikeDocblockParser
+final class ClassLikeDocblockParser
 {
     /**
      * @throws DocblockParseException if there was a problem parsing the docblock
@@ -56,7 +58,7 @@ class ClassLikeDocblockParser
     public static function parse(
         Node $node,
         Doc $comment,
-        Aliases $aliases
+        Aliases $aliases,
     ): ClassLikeDocblockComment {
         $parsed_docblock = DocComment::parsePreservingLength($comment);
         $codebase = ProjectAnalyzer::getInstance()->getCodebase();
@@ -529,7 +531,7 @@ class ClassLikeDocblockParser
         Doc $comment,
         ClassLikeDocblockComment $info,
         array $specials,
-        string $property_tag
+        string $property_tag,
     ): void {
         $magic_property_comments = $specials[$property_tag] ?? [];
 

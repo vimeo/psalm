@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type\Atomic;
 
 use function preg_quote;
@@ -17,10 +19,8 @@ final class TLiteralClassString extends TLiteralString
 {
     /**
      * Whether or not this type can represent a child of the class named in $value
-     *
-     * @var bool
      */
-    public $definite_class = false;
+    public bool $definite_class = false;
 
     public function __construct(string $value, bool $definite_class = false, bool $from_docblock = false)
     {
@@ -40,7 +40,7 @@ final class TLiteralClassString extends TLiteralString
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        int $analysis_php_version_id
+        int $analysis_php_version_id,
     ): string {
         return 'string';
     }
@@ -71,7 +71,7 @@ final class TLiteralClassString extends TLiteralString
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        bool $use_phpdoc_format
+        bool $use_phpdoc_format,
     ): string {
         if ($use_phpdoc_format) {
             return 'string';

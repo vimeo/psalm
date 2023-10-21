@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
@@ -57,7 +59,7 @@ use function strtolower;
 /**
  * @internal
  */
-class CastAnalyzer
+final class CastAnalyzer
 {
     /** @var string[] */
     private const PSEUDO_CASTABLE_CLASSES = [
@@ -70,7 +72,7 @@ class CastAnalyzer
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\Cast $stmt,
-        Context $context
+        Context $context,
     ): bool {
         if ($stmt instanceof PhpParser\Node\Expr\Cast\Int_) {
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context) === false) {
@@ -310,7 +312,7 @@ class CastAnalyzer
         StatementsAnalyzer $statements_analyzer,
         Union $stmt_type,
         PhpParser\Node\Expr $stmt,
-        bool $explicit_cast = false
+        bool $explicit_cast = false,
     ): Union {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -496,7 +498,7 @@ class CastAnalyzer
         StatementsAnalyzer $statements_analyzer,
         Union $stmt_type,
         PhpParser\Node\Expr $stmt,
-        bool $explicit_cast = false
+        bool $explicit_cast = false,
     ): Union {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -682,7 +684,7 @@ class CastAnalyzer
         Context $context,
         Union $stmt_type,
         PhpParser\Node\Expr $stmt,
-        bool $explicit_cast = false
+        bool $explicit_cast = false,
     ): Union {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -873,7 +875,7 @@ class CastAnalyzer
     private static function checkExprGeneralUse(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\Cast $stmt,
-        Context $context
+        Context $context,
     ): bool {
         $was_inside_general_use = $context->inside_general_use;
         $context->inside_general_use = true;
@@ -885,7 +887,7 @@ class CastAnalyzer
     private static function handleRedundantCast(
         Union $maybe_type,
         StatementsAnalyzer $statements_analyzer,
-        PhpParser\Node\Expr\Cast $stmt
+        PhpParser\Node\Expr\Cast $stmt,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
         $project_analyzer = $statements_analyzer->getProjectAnalyzer();

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call\Method;
 
 use Exception;
@@ -41,7 +43,7 @@ use function strtolower;
 /**
  * @internal
  */
-class MethodCallReturnTypeFetcher
+final class MethodCallReturnTypeFetcher
 {
     /**
      * @param  TNamedObject|TTemplateParam|null  $static_type
@@ -60,7 +62,7 @@ class MethodCallReturnTypeFetcher
         ?Atomic $static_type,
         array $args,
         AtomicMethodCallAnalysisResult $result,
-        TemplateResult $template_result
+        TemplateResult $template_result,
     ): Union {
         $call_map_id = $declaring_method_id ?? $method_id;
 
@@ -286,7 +288,7 @@ class MethodCallReturnTypeFetcher
         MethodIdentifier $method_id,
         ?MethodIdentifier $declaring_method_id,
         string $cased_method_id,
-        Context $context
+        Context $context,
     ): void {
         if (!$statements_analyzer->data_flow_graph
             || !$declaring_method_id
@@ -560,7 +562,7 @@ class MethodCallReturnTypeFetcher
         TemplateResult $template_result,
         MethodIdentifier $method_id,
         int $arg_count,
-        Codebase $codebase
+        Codebase $codebase,
     ): Union {
         if ($template_result->template_types) {
             $bindable_template_types = $return_type_candidate->getTemplateTypes();

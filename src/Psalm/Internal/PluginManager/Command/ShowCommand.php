@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\PluginManager\Command;
 
 use Psalm\Internal\PluginManager\PluginListFactory;
@@ -22,7 +24,7 @@ use const DIRECTORY_SEPARATOR;
 /**
  * @internal
  */
-class ShowCommand extends Command
+final class ShowCommand extends Command
 {
     private PluginListFactory $plugin_list_factory;
 

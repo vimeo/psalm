@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Codebase;
 
 use InvalidArgumentException;
@@ -53,13 +55,13 @@ use function spl_object_id;
 /**
  * @internal
  */
-class ConstantTypeResolver
+final class ConstantTypeResolver
 {
     public static function resolve(
         ClassLikes $classlikes,
         UnresolvedConstantComponent $c,
         StatementsAnalyzer $statements_analyzer = null,
-        array $visited_constant_ids = []
+        array $visited_constant_ids = [],
     ): Atomic {
         $c_id = spl_object_id($c);
 
@@ -356,10 +358,8 @@ class ConstantTypeResolver
 
     /**
      * Note: This takes an array, but any array should only contain other arrays and scalars.
-     *
-     * @param  array|string|int|float|bool|null $value
      */
-    public static function getLiteralTypeFromScalarValue($value): Atomic
+    public static function getLiteralTypeFromScalarValue(array|string|int|float|bool|null $value): Atomic
     {
         if (is_array($value)) {
             if (empty($value)) {

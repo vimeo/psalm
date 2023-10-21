@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\PhpVisitor;
 
 use PhpParser;
@@ -8,7 +10,7 @@ use Psalm\Internal\Provider\NodeDataProvider;
 /**
  * @internal
  */
-class NodeCleanerVisitor extends PhpParser\NodeVisitorAbstract
+final class NodeCleanerVisitor extends PhpParser\NodeVisitorAbstract
 {
     private NodeDataProvider $type_provider;
 

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
@@ -25,7 +27,7 @@ use function is_int;
 /**
  * @internal
  */
-class UnaryPlusMinusAnalyzer
+final class UnaryPlusMinusAnalyzer
 {
     /**
      * @param PhpParser\Node\Expr\UnaryMinus|PhpParser\Node\Expr\UnaryPlus $stmt
@@ -33,7 +35,7 @@ class UnaryPlusMinusAnalyzer
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $stmt,
-        Context $context
+        Context $context,
     ): bool {
         if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context) === false) {
             return false;
@@ -113,7 +115,7 @@ class UnaryPlusMinusAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $stmt,
         PhpParser\Node\Expr $value,
-        string $type
+        string $type,
     ): void {
         $result_type = $statements_analyzer->node_data->getType($stmt);
         if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph && $result_type) {

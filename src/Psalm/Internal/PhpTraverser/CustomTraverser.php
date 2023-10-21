@@ -16,7 +16,7 @@ use function is_array;
 /**
  * @internal
  */
-class CustomTraverser extends NodeTraverser
+final class CustomTraverser extends NodeTraverser
 {
     public function __construct()
     {

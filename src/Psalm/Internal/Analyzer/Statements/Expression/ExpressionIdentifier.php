@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
@@ -17,13 +19,13 @@ use function strtolower;
 /**
  * @internal
  */
-class ExpressionIdentifier
+final class ExpressionIdentifier
 {
     public static function getVarId(
         PhpParser\Node\Expr $stmt,
         ?string $this_class_name,
         ?FileSource $source = null,
-        ?int &$nesting = null
+        ?int &$nesting = null,
     ): ?string {
         if ($stmt instanceof PhpParser\Node\Expr\Variable && is_string($stmt->name)) {
             return '$' . $stmt->name;
@@ -75,7 +77,7 @@ class ExpressionIdentifier
     public static function getRootVarId(
         PhpParser\Node\Expr $stmt,
         ?string $this_class_name,
-        ?FileSource $source = null
+        ?FileSource $source = null,
     ): ?string {
         if ($stmt instanceof PhpParser\Node\Expr\Variable
             || $stmt instanceof PhpParser\Node\Expr\StaticPropertyFetch
@@ -101,7 +103,7 @@ class ExpressionIdentifier
     public static function getExtendedVarId(
         PhpParser\Node\Expr $stmt,
         ?string $this_class_name,
-        ?FileSource $source = null
+        ?FileSource $source = null,
     ): ?string {
         if ($stmt instanceof PhpParser\Node\Expr\Assign) {
             return self::getExtendedVarId($stmt->var, $this_class_name, $source);

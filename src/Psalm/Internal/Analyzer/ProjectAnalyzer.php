@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer;
 
 use Fidry\CpuCoreCounter\CpuCoreCounter;
@@ -97,7 +99,7 @@ use const STDERR;
 /**
  * @internal
  */
-class ProjectAnalyzer
+final class ProjectAnalyzer
 {
     /**
      * Cached config
@@ -214,7 +216,7 @@ class ProjectAnalyzer
         array $generated_report_options = [],
         int $threads = 1,
         ?Progress $progress = null,
-        ?Codebase $codebase = null
+        ?Codebase $codebase = null,
     ) {
         if ($progress === null) {
             $progress = new VoidProgress();
@@ -1159,7 +1161,7 @@ class ProjectAnalyzer
 
     public function alterCodeAfterCompletion(
         bool $dry_run = false,
-        bool $safe_types = false
+        bool $safe_types = false,
     ): void {
         $this->codebase->alter_code = true;
         $this->codebase->infer_types_from_usage = true;
@@ -1273,7 +1275,7 @@ class ProjectAnalyzer
         MethodIdentifier $original_method_id,
         Context $this_context,
         string $root_file_path,
-        string $root_file_name
+        string $root_file_name,
     ): void {
         $fq_class_name = $original_method_id->fq_class_name;
 
@@ -1320,7 +1322,7 @@ class ProjectAnalyzer
 
     public function getFunctionLikeAnalyzer(
         MethodIdentifier $method_id,
-        string $file_path
+        string $file_path,
     ): ?FunctionLikeAnalyzer {
         $file_analyzer = new FileAnalyzer(
             $this,

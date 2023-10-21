@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\PluginManager;
 
 use DOMDocument;
@@ -17,7 +19,7 @@ use function substr;
 /**
  * @internal
  */
-class ConfigFile
+final class ConfigFile
 {
     private string $path;
 

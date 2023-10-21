@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\FunctionLike;
 
 use PhpParser;
@@ -23,7 +25,7 @@ use function array_merge;
  *
  * @internal
  */
-class ReturnTypeCollector
+final class ReturnTypeCollector
 {
     /**
      * Gets the return types from a list of statements
@@ -38,7 +40,7 @@ class ReturnTypeCollector
         NodeDataProvider $nodes,
         array $stmts,
         array &$yield_types,
-        bool $collapse_types = false
+        bool $collapse_types = false,
     ): array {
         $return_types = [];
 
@@ -256,7 +258,7 @@ class ReturnTypeCollector
     private static function processYieldTypes(
         Codebase $codebase,
         array $return_types,
-        array $yield_types
+        array $yield_types,
     ): array {
         $key_type = null;
         $value_type = null;
@@ -305,7 +307,7 @@ class ReturnTypeCollector
      */
     private static function getYieldTypeFromExpression(
         PhpParser\Node\Expr $stmt,
-        NodeDataProvider $nodes
+        NodeDataProvider $nodes,
     ): array {
         $collector = new YieldTypeCollector($nodes);
         $traverser = new NodeTraverser();

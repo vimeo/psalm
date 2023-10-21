@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Type\Comparator;
 
 use Psalm\Type\Atomic;
@@ -8,7 +10,7 @@ use Psalm\Type\Union;
 /**
  * @internal
  */
-class TypeComparisonResult
+final class TypeComparisonResult
 {
     /**
      * This is used to trigger `InvalidScalarArgument` in situations where we know PHP

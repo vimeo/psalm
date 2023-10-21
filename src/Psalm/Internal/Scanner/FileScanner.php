@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Scanner;
 
 use PhpParser;
@@ -35,7 +37,7 @@ class FileScanner implements FileSource
         Codebase $codebase,
         FileStorage $file_storage,
         bool $storage_from_cache = false,
-        ?Progress $progress = null
+        ?Progress $progress = null,
     ): void {
         if ($progress === null) {
             $progress = new VoidProgress();

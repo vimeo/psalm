@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\PhpVisitor\Reflector;
 
 use Exception;
@@ -91,7 +93,7 @@ use const PREG_SPLIT_NO_EMPTY;
 /**
  * @internal
  */
-class ClassLikeNodeScanner
+final class ClassLikeNodeScanner
 {
     private FileScanner $file_scanner;
 
@@ -129,7 +131,7 @@ class ClassLikeNodeScanner
         FileStorage $file_storage,
         FileScanner $file_scanner,
         Aliases $aliases,
-        ?Name $namespace_name
+        ?Name $namespace_name,
     ) {
         $this->codebase = $codebase;
         $this->file_storage = $file_storage;
@@ -959,7 +961,7 @@ class ClassLikeNodeScanner
     private function extendTemplatedType(
         ClassLikeStorage $storage,
         PhpParser\Node\Stmt\ClassLike $node,
-        string $extended_class_name
+        string $extended_class_name,
     ): void {
         if (trim($extended_class_name) === '') {
             $storage->docblock_issues[] = new InvalidDocblock(
@@ -1043,7 +1045,7 @@ class ClassLikeNodeScanner
     private function implementTemplatedType(
         ClassLikeStorage $storage,
         PhpParser\Node\Stmt\ClassLike $node,
-        string $implemented_class_name
+        string $implemented_class_name,
     ): void {
         if (trim($implemented_class_name) === '') {
             $storage->docblock_issues[] = new InvalidDocblock(
@@ -1129,7 +1131,7 @@ class ClassLikeNodeScanner
     private function useTemplatedType(
         ClassLikeStorage $storage,
         PhpParser\Node\Stmt\TraitUse $node,
-        string $used_class_name
+        string $used_class_name,
     ): void {
         if (trim($used_class_name) === '') {
             $storage->docblock_issues[] = new InvalidDocblock(
@@ -1245,7 +1247,7 @@ class ClassLikeNodeScanner
     private function visitClassConstDeclaration(
         PhpParser\Node\Stmt\ClassConst $stmt,
         ClassLikeStorage $storage,
-        string $fq_classlike_name
+        string $fq_classlike_name,
     ): void {
         if ($storage->is_trait && $this->codebase->analysis_php_version_id < 8_02_00) {
             IssueBuffer::maybeAdd(new ConstantDeclarationInTrait(
@@ -1409,7 +1411,7 @@ class ClassLikeNodeScanner
     private function visitEnumDeclaration(
         PhpParser\Node\Stmt\EnumCase $stmt,
         ClassLikeStorage $storage,
-        string $fq_classlike_name
+        string $fq_classlike_name,
     ): void {
         if (isset($storage->constants[$stmt->name->name])) {
             IssueBuffer::maybeAdd(new DuplicateConstant(
@@ -1509,7 +1511,7 @@ class ClassLikeNodeScanner
         FileStorage $file_storage,
         Aliases $aliases,
         PhpParser\Node\Stmt $stmt,
-        ?string $fq_classlike_name
+        ?string $fq_classlike_name,
     ): array {
         $storages = [];
         foreach ($stmt->attrGroups as $attr_group) {
@@ -1534,7 +1536,7 @@ class ClassLikeNodeScanner
         PhpParser\Node\Stmt\Property $stmt,
         Config $config,
         ClassLikeStorage $storage,
-        string $fq_classlike_name
+        string $fq_classlike_name,
     ): void {
         $comment = $stmt->getDocComment();
         $var_comment = null;
@@ -1868,7 +1870,7 @@ class ClassLikeNodeScanner
         PhpParser\Comment\Doc $comment,
         Aliases $aliases,
         ?array $type_aliases,
-        ?string $self_fqcln
+        ?string $self_fqcln,
     ): array {
         $parsed_docblock = DocComment::parsePreservingLength($comment);
 
@@ -1899,7 +1901,7 @@ class ClassLikeNodeScanner
         array $type_alias_comment_lines,
         Aliases $aliases,
         ?array $type_aliases,
-        ?string $self_fqcln
+        ?string $self_fqcln,
     ): array {
         $type_alias_tokens = [];
 

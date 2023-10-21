@@ -10,7 +10,7 @@ use Psalm\Storage\ImmutableNonCloneableTrait;
  * @internal
  * @psalm-immutable
  */
-class DiffElem
+final class DiffElem
 {
     use ImmutableNonCloneableTrait;
 
@@ -23,15 +23,11 @@ class DiffElem
     /** @var int One of the TYPE_* constants */
     public int $type;
     /** @var mixed Is null for add operations */
-    public $old;
+    public mixed $old;
     /** @var mixed Is null for remove operations */
-    public $new;
+    public mixed $new;
 
-    /**
-     * @param mixed  $old
-     * @param mixed  $new
-     */
-    public function __construct(int $type, $old, $new)
+    public function __construct(int $type, mixed $old, mixed $new)
     {
         $this->type = $type;
         $this->old = $old;

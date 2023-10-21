@@ -65,7 +65,7 @@ class CacheTest extends TestCase
      * @dataProvider provideCacheInteractions
      */
     public function testCacheInteractions(
-        array $interactions
+        array $interactions,
     ): void {
         $config = Config::loadFromXML(
             __DIR__ . DIRECTORY_SEPARATOR . 'test_base_dir',

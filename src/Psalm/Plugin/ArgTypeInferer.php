@@ -25,10 +25,7 @@ final class ArgTypeInferer
         $this->statements_analyzer = $statements_analyzer;
     }
 
-    /**
-     * @return false|Union
-     */
-    public function infer(PhpParser\Node\Arg $arg)
+    public function infer(PhpParser\Node\Arg $arg): false|Union
     {
         $already_inferred_type = $this->statements_analyzer->node_data->getType($arg->value);
 

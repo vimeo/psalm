@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
 use PhpParser;
@@ -67,13 +69,13 @@ use function strtolower;
 /**
  * @internal
  */
-class NewAnalyzer extends CallAnalyzer
+final class NewAnalyzer extends CallAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\New_ $stmt,
         Context $context,
-        TemplateResult $template_result = null
+        TemplateResult $template_result = null,
     ): bool {
         $fq_class_name = null;
 
@@ -292,7 +294,7 @@ class NewAnalyzer extends CallAnalyzer
         string $fq_class_name,
         bool $from_static,
         bool $can_extend,
-        TemplateResult $template_result = null
+        TemplateResult $template_result = null,
     ): void {
         $storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
@@ -627,7 +629,7 @@ class NewAnalyzer extends CallAnalyzer
         PhpParser\Node\Expr $stmt_class,
         Config $config,
         ?string &$fq_class_name,
-        bool &$can_extend
+        bool &$can_extend,
     ): void {
         $was_inside_general_use = $context->inside_general_use;
         $context->inside_general_use = true;
@@ -734,7 +736,7 @@ class NewAnalyzer extends CallAnalyzer
         PhpParser\Node\Expr\New_ $stmt,
         Union $stmt_class_type,
         Config $config,
-        bool &$can_extend
+        bool &$can_extend,
     ): ?Union {
         $new_types = [];
 

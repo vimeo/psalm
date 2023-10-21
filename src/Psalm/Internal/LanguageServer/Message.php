@@ -13,7 +13,7 @@ use function strlen;
 /**
  * @internal
  */
-class Message
+final class Message
 {
     public ?MessageBody $body = null;
 

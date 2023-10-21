@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\PhpVisitor\Reflector;
 
 use PhpParser;
@@ -36,7 +38,7 @@ use const DIRECTORY_SEPARATOR;
 /**
  * @internal
  */
-class ExpressionScanner
+final class ExpressionScanner
 {
     public static function scan(
         Codebase $codebase,
@@ -45,7 +47,7 @@ class ExpressionScanner
         Aliases $aliases,
         PhpParser\Node\Expr $node,
         ?FunctionLikeStorage $functionlike_storage,
-        ?int $skip_if_descendants
+        ?int $skip_if_descendants,
     ): void {
         if ($node instanceof PhpParser\Node\Expr\Include_ && !$skip_if_descendants) {
             self::visitInclude(
@@ -106,7 +108,7 @@ class ExpressionScanner
         string $function_id,
         PhpParser\Node\Expr\FuncCall $node,
         ?FunctionLikeStorage $functionlike_storage,
-        ?int $skip_if_descendants
+        ?int $skip_if_descendants,
     ): void {
         $callables = InternalCallMapHandler::getCallablesFromCallMap($function_id);
 
@@ -299,7 +301,7 @@ class ExpressionScanner
         Codebase $codebase,
         FileStorage $file_storage,
         PhpParser\Node\Expr\Include_ $stmt,
-        bool $scan_deep
+        bool $scan_deep,
     ): void {
         $config = Config::getInstance();
 

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Type\Comparator;
 
 use Psalm\Codebase;
@@ -47,7 +49,7 @@ use function strtolower;
 /**
  * @internal
  */
-class AtomicTypeComparator
+final class AtomicTypeComparator
 {
     /**
      * Does the input param atomic type match the given param atomic type
@@ -58,7 +60,7 @@ class AtomicTypeComparator
         Atomic $container_type_part,
         bool $allow_interface_equality = false,
         bool $allow_float_int_equality = true,
-        ?TypeComparisonResult $atomic_comparison_result = null
+        ?TypeComparisonResult $atomic_comparison_result = null,
     ): bool {
 
 
@@ -799,7 +801,7 @@ class AtomicTypeComparator
         Codebase $codebase,
         Atomic $type1_part,
         Atomic $type2_part,
-        bool $allow_interface_equality = true
+        bool $allow_interface_equality = true,
     ): bool {
 
 

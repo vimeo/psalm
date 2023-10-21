@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements;
 
 use PhpParser;
@@ -53,12 +55,12 @@ use function strtolower;
 /**
  * @internal
  */
-class ReturnAnalyzer
+final class ReturnAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Return_ $stmt,
-        Context $context
+        Context $context,
     ): void {
         $doc_comment = $stmt->getDocComment();
 
@@ -564,7 +566,7 @@ class ReturnAnalyzer
         PhpParser\Node\Stmt\Return_ $stmt,
         string $cased_method_id,
         Union $inferred_type,
-        FunctionLikeStorage $storage
+        FunctionLikeStorage $storage,
     ): void {
         if (!$statements_analyzer->data_flow_graph instanceof TaintFlowGraph
             || !$stmt->expr
@@ -604,7 +606,7 @@ class ReturnAnalyzer
     private static function potentiallyInferTypesOnClosureFromParentReturnType(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\FunctionLike $expr,
-        Context $context
+        Context $context,
     ): void {
         // if not returning from inside of a function, return
         if (!$context->calling_method_id && !$context->calling_function_id) {
@@ -669,7 +671,7 @@ class ReturnAnalyzer
     private static function inferInnerClosureTypeFromParent(
         Codebase $codebase,
         ?Union $return_type,
-        ?Union $parent_return_type
+        ?Union $parent_return_type,
     ): ?Union {
         if (!$parent_return_type) {
             return $return_type;

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Type\ParseTree;
 
 use Psalm\Internal\Type\ParseTree;
@@ -7,7 +9,7 @@ use Psalm\Internal\Type\ParseTree;
 /**
  * @internal
  */
-class KeyedArrayPropertyTree extends ParseTree
+final class KeyedArrayPropertyTree extends ParseTree
 {
     public string $value;
 

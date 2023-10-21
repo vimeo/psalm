@@ -94,7 +94,7 @@ use const STDOUT;
  * @psalm-api
  * @internal
  */
-class LanguageServer extends Dispatcher
+final class LanguageServer extends Dispatcher
 {
     /**
      * Handles textDocument/* method calls
@@ -146,7 +146,7 @@ class LanguageServer extends Dispatcher
         Codebase $codebase,
         ClientConfiguration $clientConfiguration,
         Progress $progress,
-        PathMapper $path_mapper
+        PathMapper $path_mapper,
     ) {
         parent::__construct($this, '/');
 
@@ -239,7 +239,7 @@ class LanguageServer extends Dispatcher
         ClientConfiguration $clientConfiguration,
         string $base_dir,
         PathMapper $path_mapper,
-        bool $inMemory = false
+        bool $inMemory = false,
     ): void {
         $progress = new Progress();
 
@@ -371,7 +371,7 @@ class LanguageServer extends Dispatcher
         ?ClientInfo $clientInfo = null,
         ?string $rootUri = null,
         ?string $trace = null,
-        ?string $workDoneToken = null
+        ?string $workDoneToken = null,
     ): InitializeResult {
         $this->clientInfo = $clientInfo;
         $this->clientCapabilities = $capabilities;

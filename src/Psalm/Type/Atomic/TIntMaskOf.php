@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type\Atomic;
 
 use Psalm\Type\Atomic;
@@ -13,8 +15,7 @@ use Psalm\Type\Atomic;
  */
 final class TIntMaskOf extends TInt
 {
-    /** @var TClassConstant|TKeyOf|TValueOf */
-    public $value;
+    public TClassConstant|TKeyOf|TValueOf $value;
 
     /**
      * @param TClassConstant|TKeyOf|TValueOf $value
@@ -37,7 +38,7 @@ final class TIntMaskOf extends TInt
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        bool $use_phpdoc_format
+        bool $use_phpdoc_format,
     ): string {
         if ($use_phpdoc_format) {
             return 'int';

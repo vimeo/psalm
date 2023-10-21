@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\LanguageServer;
 
 use Psalm\Progress\Progress as Base;
@@ -9,7 +11,7 @@ use function str_replace;
 /**
  * @internal
  */
-class Progress extends Base
+final class Progress extends Base
 {
 
     private ?LanguageServer $server = null;

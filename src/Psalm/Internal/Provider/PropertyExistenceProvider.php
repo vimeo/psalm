@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Provider;
 
 use Closure;
@@ -15,7 +17,7 @@ use function strtolower;
 /**
  * @internal
  */
-class PropertyExistenceProvider
+final class PropertyExistenceProvider
 {
     /**
      * @var array<
@@ -64,7 +66,7 @@ class PropertyExistenceProvider
         bool $read_mode,
         ?StatementsSource $source = null,
         ?Context $context = null,
-        ?CodeLocation $code_location = null
+        ?CodeLocation $code_location = null,
     ): ?bool {
         foreach (self::$handlers[strtolower($fq_classlike_name)] ?? [] as $property_handler) {
             $event = new PropertyExistenceProviderEvent(

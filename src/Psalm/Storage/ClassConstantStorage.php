@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Storage;
 
 use Psalm\CodeLocation;
@@ -76,7 +78,7 @@ final class ClassConstantStorage
         ?UnresolvedConstantComponent $unresolved_node = null,
         array $attributes = [],
         array $suppressed_issues = [],
-        ?string $description = null
+        ?string $description = null,
     ) {
         $this->visibility = $visibility;
         $this->location = $location;

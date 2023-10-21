@@ -9,7 +9,7 @@ use LanguageServerProtocol\MessageType;
 /**
  * @internal
  */
-class ClientConfiguration
+final class ClientConfiguration
 {
 
     /**
@@ -111,7 +111,7 @@ class ClientConfiguration
         ?string $findUnusedCode = null,
         ?int $logLevel = null,
         ?int $onchangeLineLimit = null,
-        ?string $baseline = null
+        ?string $baseline = null,
     ) {
         $this->hideWarnings = $hideWarnings;
         $this->provideCompletion = $provideCompletion;

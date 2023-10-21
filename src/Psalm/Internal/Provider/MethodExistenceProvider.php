@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Provider;
 
 use Closure;
@@ -13,7 +15,7 @@ use function strtolower;
 /**
  * @internal
  */
-class MethodExistenceProvider
+final class MethodExistenceProvider
 {
     /**
      * @var array<
@@ -57,7 +59,7 @@ class MethodExistenceProvider
         string $fq_classlike_name,
         string $method_name_lowercase,
         ?StatementsSource $source = null,
-        ?CodeLocation $code_location = null
+        ?CodeLocation $code_location = null,
     ): ?bool {
         foreach (self::$handlers[strtolower($fq_classlike_name)] ?? [] as $method_handler) {
             $event = new MethodExistenceProviderEvent(

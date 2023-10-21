@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\TypeVisitor;
 
 use Psalm\Type;
@@ -13,7 +15,7 @@ use Psalm\Type\Union;
 /**
  * @internal
  */
-class TemplateTypeCollector extends TypeVisitor
+final class TemplateTypeCollector extends TypeVisitor
 {
     /**
      * @var list<TTemplateParam>

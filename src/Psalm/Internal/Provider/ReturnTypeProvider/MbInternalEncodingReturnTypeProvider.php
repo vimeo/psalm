@@ -21,7 +21,7 @@ use function count;
 /**
  * @internal
  */
-class MbInternalEncodingReturnTypeProvider implements FunctionReturnTypeProviderInterface
+final class MbInternalEncodingReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
      * @return array<lowercase-string>

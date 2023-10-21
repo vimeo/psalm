@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer;
 
 use InvalidArgumentException;
@@ -22,7 +24,7 @@ use function substr;
 /**
  * @internal
  */
-class NamespaceAnalyzer extends SourceAnalyzer
+final class NamespaceAnalyzer extends SourceAnalyzer
 {
     use CanAlias;
 

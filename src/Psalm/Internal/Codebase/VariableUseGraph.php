@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Codebase;
 
 use Psalm\CodeLocation;
@@ -13,7 +15,7 @@ use function count;
 /**
  * @internal
  */
-class VariableUseGraph extends DataFlowGraph
+final class VariableUseGraph extends DataFlowGraph
 {
     /** @var array<string, array<string, true>> */
     protected array $backward_edges = [];
@@ -38,7 +40,7 @@ class VariableUseGraph extends DataFlowGraph
         DataFlowNode $to,
         string $path_type,
         ?array $added_taints = null,
-        ?array $removed_taints = null
+        ?array $removed_taints = null,
     ): void {
         $from_id = $from->id;
         $to_id = $to->id;
@@ -146,7 +148,7 @@ class VariableUseGraph extends DataFlowGraph
      */
     private function getChildNodes(
         DataFlowNode $generated_source,
-        array $visited_source_ids
+        array $visited_source_ids,
     ): ?array {
         $new_child_nodes = [];
 
@@ -202,7 +204,7 @@ class VariableUseGraph extends DataFlowGraph
      */
     private function getParentNodes(
         DataFlowNode $destination,
-        array $visited_source_ids
+        array $visited_source_ids,
     ): array {
         $new_parent_nodes = [];
 

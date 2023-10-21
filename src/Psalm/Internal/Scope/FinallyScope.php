@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Scope;
 
 use Psalm\Type\Union;
@@ -7,7 +9,7 @@ use Psalm\Type\Union;
 /**
  * @internal
  */
-class FinallyScope
+final class FinallyScope
 {
     /**
      * @var array<string, Union>

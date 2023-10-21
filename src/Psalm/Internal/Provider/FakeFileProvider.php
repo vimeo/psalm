@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Provider;
 
 use function microtime;
@@ -8,7 +10,7 @@ use function strpos;
 /**
  * @internal
  */
-class FakeFileProvider extends FileProvider
+final class FakeFileProvider extends FileProvider
 {
     /**
      * @var array<string, string>

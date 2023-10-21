@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Block\IfElse;
 
 use PhpParser;
@@ -40,7 +42,7 @@ use function spl_object_id;
 /**
  * @internal
  */
-class ElseIfAnalyzer
+final class ElseIfAnalyzer
 {
     /**
      * @return false|null
@@ -52,7 +54,7 @@ class ElseIfAnalyzer
         Context $else_context,
         Context $outer_context,
         Codebase $codebase,
-        int $branch_point
+        int $branch_point,
     ): ?bool {
         $pre_conditional_context = clone $else_context;
 

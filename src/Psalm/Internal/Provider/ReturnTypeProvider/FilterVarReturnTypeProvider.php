@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -31,7 +33,7 @@ use const FILTER_VALIDATE_URL;
 /**
  * @internal
  */
-class FilterVarReturnTypeProvider implements FunctionReturnTypeProviderInterface
+final class FilterVarReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
      * @return array<lowercase-string>

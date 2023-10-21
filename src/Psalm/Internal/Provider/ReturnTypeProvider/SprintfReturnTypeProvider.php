@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use ArgumentCountError;
@@ -31,7 +33,7 @@ use function strlen;
 /**
  * @internal
  */
-class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
+final class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
      * @return array<lowercase-string>

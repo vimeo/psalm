@@ -26,7 +26,7 @@ final class StorageByPatternResolver
      */
     public function resolveConstants(
         ClassLikeStorage $class_like_storage,
-        string $pattern
+        string $pattern,
     ): array {
         $constants = $class_like_storage->constants;
 
@@ -59,7 +59,7 @@ final class StorageByPatternResolver
      */
     public function resolveEnums(
         ClassLikeStorage $class_like_storage,
-        string $pattern
+        string $pattern,
     ): array {
         $enum_cases = $class_like_storage->enum_cases;
         if (strpos($pattern, '*') === false) {

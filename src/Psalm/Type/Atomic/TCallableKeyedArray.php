@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type\Atomic;
 
 use Psalm\Type\Union;
@@ -25,7 +27,7 @@ final class TCallableKeyedArray extends TKeyedArray
         array $properties,
         ?array $class_strings = null,
         ?array $fallback_params = null,
-        bool $from_docblock = false
+        bool $from_docblock = false,
     ) {
         parent::__construct(
             $properties,

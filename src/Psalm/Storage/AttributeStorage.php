@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Storage;
 
 use Psalm\CodeLocation;
@@ -10,27 +12,22 @@ use Psalm\CodeLocation;
 final class AttributeStorage
 {
     use ImmutableNonCloneableTrait;
-    /**
-     * @var string
-     */
-    public $fq_class_name;
+    public string $fq_class_name;
 
     /**
      * @var list<AttributeArg>
      */
-    public $args;
+    public array $args;
 
     /**
-     * @var CodeLocation
      * @psalm-suppress PossiblyUnusedProperty part of public API
      */
-    public $location;
+    public CodeLocation $location;
 
     /**
-     * @var CodeLocation
      * @psalm-suppress PossiblyUnusedProperty part of public API
      */
-    public $name_location;
+    public CodeLocation $name_location;
 
     /**
      * @param list<AttributeArg> $args
@@ -39,7 +36,7 @@ final class AttributeStorage
         string $fq_class_name,
         array $args,
         CodeLocation $location,
-        CodeLocation $name_location
+        CodeLocation $name_location,
     ) {
         $this->fq_class_name = $fq_class_name;
         $this->args = $args;

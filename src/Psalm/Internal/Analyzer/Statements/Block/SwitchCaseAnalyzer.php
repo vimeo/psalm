@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Block;
 
 use PhpParser;
@@ -53,7 +55,7 @@ use function substr;
 /**
  * @internal
  */
-class SwitchCaseAnalyzer
+final class SwitchCaseAnalyzer
 {
     /**
      * @return null|false
@@ -69,7 +71,7 @@ class SwitchCaseAnalyzer
         string $case_exit_type,
         array $case_actions,
         bool $is_last,
-        SwitchScope $switch_scope
+        SwitchScope $switch_scope,
     ): ?bool {
         // has a return/throw at end
         $has_ending_statements = $case_actions === [ScopeAnalyzer::ACTION_END];
@@ -557,7 +559,7 @@ class SwitchCaseAnalyzer
         Context $case_context,
         Context $original_context,
         string $case_exit_type,
-        SwitchScope $switch_scope
+        SwitchScope $switch_scope,
     ): ?bool {
         if (!$case->cond
             && $switch_var_id
@@ -653,7 +655,7 @@ class SwitchCaseAnalyzer
 
     private static function simplifyCaseEqualityExpression(
         PhpParser\Node\Expr $case_equality_expr,
-        PhpParser\Node\Expr\Variable $var
+        PhpParser\Node\Expr\Variable $var,
     ): ?PhpParser\Node\Expr\FuncCall {
         if ($case_equality_expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr) {
             $nested_or_options = self::getOptionsFromNestedOr($case_equality_expr, $var);
@@ -697,7 +699,7 @@ class SwitchCaseAnalyzer
     private static function getOptionsFromNestedOr(
         PhpParser\Node\Expr $case_equality_expr,
         PhpParser\Node\Expr\Variable $var,
-        array $in_array_values = []
+        array $in_array_values = [],
     ): ?array {
         if ($case_equality_expr instanceof PhpParser\Node\Expr\BinaryOp\Identical
             && $case_equality_expr->left instanceof PhpParser\Node\Expr\Variable

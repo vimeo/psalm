@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Type\TypeAlias;
 
 use Psalm\Internal\Type\TypeAlias;
@@ -8,7 +10,7 @@ use Psalm\Type\Atomic;
 /**
  * @internal
  */
-class ClassTypeAlias implements TypeAlias
+final class ClassTypeAlias implements TypeAlias
 {
     /**
      * @var list<Atomic>

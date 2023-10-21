@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Plugin\EventHandler\Event;
 
 use Psalm\StatementsSource;
@@ -18,7 +20,7 @@ final class FunctionExistenceProviderEvent
      */
     public function __construct(
         StatementsSource $statements_source,
-        string $function_id
+        string $function_id,
     ) {
         $this->statements_source = $statements_source;
         $this->function_id = $function_id;

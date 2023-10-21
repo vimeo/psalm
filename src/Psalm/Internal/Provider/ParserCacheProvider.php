@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Provider;
 
 use JsonException;
@@ -72,7 +74,7 @@ class ParserCacheProvider
     public function loadStatementsFromCache(
         string $file_path,
         int $file_modified_time,
-        string $file_content_hash
+        string $file_content_hash,
     ): ?array {
         if (!$this->use_file_cache) {
             return null;
@@ -222,7 +224,7 @@ class ParserCacheProvider
         string $file_path,
         string $file_content_hash,
         array $stmts,
-        bool $touch_only
+        bool $touch_only,
     ): void {
         $cache_location = $this->getCacheLocationForPath($file_path, self::PARSER_CACHE_DIRECTORY, !$touch_only);
 
@@ -344,7 +346,7 @@ class ParserCacheProvider
     private function getCacheLocationForPath(
         string $file_path,
         string $subdirectory,
-        bool $create_directory = false
+        bool $create_directory = false,
     ): string {
         $root_cache_directory = $this->cache->getCacheDirectory();
 

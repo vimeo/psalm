@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Provider;
 
 use InvalidArgumentException;
@@ -11,7 +13,7 @@ use function strtolower;
 /**
  * @internal
  */
-class FileStorageProvider
+final class FileStorageProvider
 {
     /**
      * A list of data useful to analyse files

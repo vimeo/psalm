@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Scope;
 
 use Psalm\Context;
@@ -8,7 +10,7 @@ use Psalm\Type\Union;
 /**
  * @internal
  */
-class CaseScope
+final class CaseScope
 {
     public Context $parent_context;
 

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Storage;
 
 use Psalm\Aliases;
@@ -14,87 +16,76 @@ final class FileStorage
     /**
      * @var array<lowercase-string, string>
      */
-    public $classlikes_in_file = [];
+    public array $classlikes_in_file = [];
 
     /**
      * @var array<lowercase-string, string>
      */
-    public $referenced_classlikes = [];
+    public array $referenced_classlikes = [];
 
     /**
      * @var array<lowercase-string, string>
      */
-    public $required_classes = [];
+    public array $required_classes = [];
 
     /**
      * @var array<lowercase-string, string>
      */
-    public $required_interfaces = [];
+    public array $required_interfaces = [];
 
-    /** @var string */
-    public $file_path;
+    public string $file_path;
 
     /**
      * @var array<string, FunctionStorage>
      */
-    public $functions = [];
+    public array $functions = [];
 
     /** @var array<string, string> */
-    public $declaring_function_ids = [];
+    public array $declaring_function_ids = [];
 
     /**
      * @var array<string, Union>
      */
-    public $constants = [];
+    public array $constants = [];
 
     /** @var array<string, string> */
-    public $declaring_constants = [];
+    public array $declaring_constants = [];
 
     /** @var array<lowercase-string, string> */
-    public $required_file_paths = [];
+    public array $required_file_paths = [];
 
     /** @var array<lowercase-string, string> */
-    public $required_by_file_paths = [];
+    public array $required_by_file_paths = [];
 
-    /** @var bool */
-    public $populated = false;
+    public bool $populated = false;
 
-    /** @var bool */
-    public $deep_scan = false;
+    public bool $deep_scan = false;
 
-    /** @var bool */
-    public $has_extra_statements = false;
+    public bool $has_extra_statements = false;
 
-    /**
-     * @var string
-     */
-    public $hash = '';
+    public string $hash = '';
 
-    /**
-     * @var bool
-     */
-    public $has_visitor_issues = false;
+    public bool $has_visitor_issues = false;
 
     /**
      * @var list<CodeIssue>
      */
-    public $docblock_issues = [];
+    public array $docblock_issues = [];
 
     /**
      * @var array<string, TypeAlias>
      */
-    public $type_aliases = [];
+    public array $type_aliases = [];
 
     /**
      * @var array<string, string>
      */
-    public $classlike_aliases = [];
+    public array $classlike_aliases = [];
 
-    /** @var ?Aliases */
-    public $aliases;
+    public ?Aliases $aliases = null;
 
     /** @var Aliases[] */
-    public $namespace_aliases = [];
+    public array $namespace_aliases = [];
 
     public function __construct(string $file_path)
     {

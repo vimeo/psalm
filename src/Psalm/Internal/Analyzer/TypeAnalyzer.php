@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer;
 
 use Psalm\Type;
@@ -11,7 +13,7 @@ use function array_unique;
 /**
  * @internal
  */
-class TypeAnalyzer
+final class TypeAnalyzer
 {
     /**
      * Takes two arrays of types and merges them

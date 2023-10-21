@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Storage;
 
 use Psalm\Aliases;
@@ -23,168 +25,117 @@ final class ClassLikeStorage implements HasAttributesInterface
     /**
      * @var array<string, ClassConstantStorage>
      */
-    public $constants = [];
+    public array $constants = [];
 
     /**
      * Aliases to help Psalm understand constant refs
-     *
-     * @var ?Aliases
      */
-    public $aliases;
+    public ?Aliases $aliases = null;
 
-    /**
-     * @var bool
-     */
-    public $populated = false;
+    public bool $populated = false;
 
-    /**
-     * @var bool
-     */
-    public $stubbed = false;
+    public bool $stubbed = false;
 
-    /**
-     * @var bool
-     */
-    public $deprecated = false;
+    public bool $deprecated = false;
 
     /**
      * @var list<non-empty-string>
      */
-    public $internal = [];
+    public array $internal = [];
 
     /**
      * @var TTemplateParam[]
      */
-    public $templatedMixins = [];
+    public array $templatedMixins = [];
 
     /**
      * @var list<TNamedObject>
      */
-    public $namedMixins = [];
+    public array $namedMixins = [];
 
-    /**
-     * @var ?string
-     */
-    public $mixin_declaring_fqcln;
+    public ?string $mixin_declaring_fqcln = null;
 
-    /**
-     * @var ?bool
-     */
-    public $sealed_properties = null;
+    public ?bool $sealed_properties = null;
 
-    /**
-     * @var ?bool
-     */
-    public $sealed_methods = null;
+    public ?bool $sealed_methods = null;
 
-    /**
-     * @var bool
-     */
-    public $override_property_visibility = false;
+    public bool $override_property_visibility = false;
 
-    /**
-     * @var bool
-     */
-    public $override_method_visibility = false;
+    public bool $override_method_visibility = false;
 
     /**
      * @var array<int, string>
      */
-    public $suppressed_issues = [];
+    public array $suppressed_issues = [];
 
-    /**
-     * @var string
-     */
-    public $name;
+    public string $name;
 
     /**
      * Is this class user-defined
-     *
-     * @var bool
      */
-    public $user_defined = false;
+    public bool $user_defined = false;
 
     /**
      * Interfaces this class implements directly
      *
      * @var array<lowercase-string, string>
      */
-    public $direct_class_interfaces = [];
+    public array $direct_class_interfaces = [];
 
     /**
      * Interfaces this class implements explicitly and implicitly
      *
      * @var array<lowercase-string, string>
      */
-    public $class_implements = [];
+    public array $class_implements = [];
 
     /**
      * Parent interfaces listed explicitly
      *
      * @var array<lowercase-string, string>
      */
-    public $direct_interface_parents = [];
+    public array $direct_interface_parents = [];
 
     /**
      * Parent interfaces
      *
      * @var  array<lowercase-string, string>
      */
-    public $parent_interfaces = [];
+    public array $parent_interfaces = [];
 
     /**
      * There can only be one direct parent class
-     *
-     * @var ?string
      */
-    public $parent_class;
+    public ?string $parent_class = null;
 
     /**
      * Parent classes
      *
      * @var array<lowercase-string, string>
      */
-    public $parent_classes = [];
+    public array $parent_classes = [];
 
-    /**
-     * @var CodeLocation|null
-     */
-    public $location;
+    public ?CodeLocation $location = null;
 
-    /**
-     * @var CodeLocation|null
-     */
-    public $stmt_location;
+    public ?CodeLocation $stmt_location = null;
 
-    /**
-     * @var CodeLocation|null
-     */
-    public $namespace_name_location;
+    public ?CodeLocation $namespace_name_location = null;
 
-    /**
-     * @var bool
-     */
-    public $abstract = false;
+    public bool $abstract = false;
 
-    /**
-     * @var bool
-     */
-    public $final = false;
+    public bool $final = false;
 
-    /**
-     * @var bool
-     */
-    public $final_from_docblock = false;
+    public bool $final_from_docblock = false;
 
     /**
      * @var array<lowercase-string, string>
      */
-    public $used_traits = [];
+    public array $used_traits = [];
 
     /**
      * @var array<lowercase-string, lowercase-string>
      */
-    public $trait_alias_map = [];
+    public array $trait_alias_map = [];
 
     /**
      * @var array<string, string>
@@ -194,57 +145,39 @@ final class ClassLikeStorage implements HasAttributesInterface
     /**
      * @var array<lowercase-string, bool>
      */
-    public $trait_final_map = [];
+    public array $trait_final_map = [];
 
     /**
      * @var array<string, ClassLikeAnalyzer::VISIBILITY_*>
      */
-    public $trait_visibility_map = [];
+    public array $trait_visibility_map = [];
 
-    /**
-     * @var bool
-     */
-    public $is_trait = false;
+    public bool $is_trait = false;
 
-    /**
-     * @var bool
-     */
-    public $is_interface = false;
+    public bool $is_interface = false;
 
-    /**
-     * @var bool
-     */
-    public $is_enum = false;
+    public bool $is_enum = false;
 
-    /**
-     * @var bool
-     */
-    public $external_mutation_free = false;
+    public bool $external_mutation_free = false;
 
-    /**
-     * @var bool
-     */
-    public $mutation_free = false;
+    public bool $mutation_free = false;
 
-    /**
-     * @var bool
-     */
-    public $specialize_instance = false;
+    public bool $specialize_instance = false;
 
     /**
      * @var array<lowercase-string, MethodStorage>
      */
-    public $methods = [];
+    public array $methods = [];
 
     /**
      * @var array<lowercase-string, MethodStorage>
      */
-    public $pseudo_methods = [];
+    public array $pseudo_methods = [];
 
     /**
      * @var array<lowercase-string, MethodStorage>
      */
-    public $pseudo_static_methods = [];
+    public array $pseudo_static_methods = [];
 
     /**
      * Maps pseudo method names to the original declaring method identifier
@@ -254,17 +187,17 @@ final class ClassLikeStorage implements HasAttributesInterface
      *
      * @var array<lowercase-string, MethodIdentifier>
      */
-    public $declaring_pseudo_method_ids = [];
+    public array $declaring_pseudo_method_ids = [];
 
     /**
      * @var array<lowercase-string, MethodIdentifier>
      */
-    public $declaring_method_ids = [];
+    public array $declaring_method_ids = [];
 
     /**
      * @var array<lowercase-string, MethodIdentifier>
      */
-    public $appearing_method_ids = [];
+    public array $appearing_method_ids = [];
 
     /**
      * Map from lowercase method name to list of declarations in order from parent, to grandparent, to
@@ -273,62 +206,59 @@ final class ClassLikeStorage implements HasAttributesInterface
      *
      * @var array<lowercase-string, array<string, MethodIdentifier>>
      */
-    public $overridden_method_ids = [];
+    public array $overridden_method_ids = [];
 
     /**
      * @var array<lowercase-string, MethodIdentifier>
      */
-    public $documenting_method_ids = [];
+    public array $documenting_method_ids = [];
 
     /**
      * @var array<lowercase-string, MethodIdentifier>
      */
-    public $inheritable_method_ids = [];
+    public array $inheritable_method_ids = [];
 
     /**
      * @var array<lowercase-string, array<string, bool>>
      */
-    public $potential_declaring_method_ids = [];
+    public array $potential_declaring_method_ids = [];
 
     /**
      * @var array<string, PropertyStorage>
      */
-    public $properties = [];
+    public array $properties = [];
 
     /**
      * @var array<string, Union>
      */
-    public $pseudo_property_set_types = [];
+    public array $pseudo_property_set_types = [];
 
     /**
      * @var array<string, Union>
      */
-    public $pseudo_property_get_types = [];
+    public array $pseudo_property_get_types = [];
 
     /**
      * @var array<string, string>
      */
-    public $declaring_property_ids = [];
+    public array $declaring_property_ids = [];
 
     /**
      * @var array<string, string>
      */
-    public $appearing_property_ids = [];
+    public array $appearing_property_ids = [];
 
-    /**
-     * @var ?Union
-     */
-    public $inheritors = null;
+    public ?Union $inheritors = null;
 
     /**
      * @var array<string, string>
      */
-    public $inheritable_property_ids = [];
+    public array $inheritable_property_ids = [];
 
     /**
      * @var array<string, array<string>>
      */
-    public $overridden_property_ids = [];
+    public array $overridden_property_ids = [];
 
     /**
      * An array holding the class template "as" types.
@@ -341,12 +271,12 @@ final class ClassLikeStorage implements HasAttributesInterface
      *
      * @var array<string, non-empty-array<string, Union>>|null
      */
-    public $template_types;
+    public ?array $template_types = null;
 
     /**
      * @var array<int, bool>|null
      */
-    public $template_covariants;
+    public ?array $template_covariants = null;
 
     /**
      * A map of which generic classlikes are extended or implemented by this class or interface.
@@ -356,7 +286,7 @@ final class ClassLikeStorage implements HasAttributesInterface
      * @internal
      * @var array<string, non-empty-array<int, Union>>|null
      */
-    public $template_extended_offsets;
+    public ?array $template_extended_offsets = null;
 
     /**
      * A map of which generic classlikes are extended or implemented by this class or interface.
@@ -372,108 +302,87 @@ final class ClassLikeStorage implements HasAttributesInterface
      *
      * @var array<string, array<string, Union>>|null
      */
-    public $template_extended_params;
+    public ?array $template_extended_params = null;
 
     /**
      * @var array<string, int>|null
      */
-    public $template_type_extends_count;
+    public ?array $template_type_extends_count = null;
 
 
     /**
      * @var array<string, int>|null
      */
-    public $template_type_implements_count;
+    public ?array $template_type_implements_count = null;
 
-    /**
-     * @var ?Union
-     */
-    public $yield;
+    public ?Union $yield = null;
 
-    /** @var ?string */
-    public $declaring_yield_fqcn;
+    public ?string $declaring_yield_fqcn = null;
 
     /**
      * @var array<string, int>|null
      */
-    public $template_type_uses_count;
+    public ?array $template_type_uses_count = null;
 
     /**
      * @var array<string, bool>
      */
-    public $initialized_properties = [];
+    public array $initialized_properties = [];
 
     /**
      * @var array<string, true>
      */
-    public $invalid_dependencies = [];
+    public array $invalid_dependencies = [];
 
     /**
      * @var array<lowercase-string, bool>
      */
-    public $dependent_classlikes = [];
+    public array $dependent_classlikes = [];
 
     /**
      * A hash of the source file's name, contents, and this file's modified on date
-     *
-     * @var string
      */
-    public $hash = '';
+    public string $hash = '';
 
-    /**
-     * @var bool
-     */
-    public $has_visitor_issues = false;
+    public bool $has_visitor_issues = false;
 
     /**
      * @var list<CodeIssue>
      */
-    public $docblock_issues = [];
+    public array $docblock_issues = [];
 
     /**
      * @var array<string, ClassTypeAlias>
      */
-    public $type_aliases = [];
+    public array $type_aliases = [];
 
-    /**
-     * @var bool
-     */
-    public $preserve_constructor_signature = false;
+    public bool $preserve_constructor_signature = false;
 
-    /**
-     * @var bool
-     */
-    public $enforce_template_inheritance = false;
+    public bool $enforce_template_inheritance = false;
 
-    /**
-     * @var null|string
-     */
-    public $extension_requirement;
+    public ?string $extension_requirement = null;
 
     /**
      * @var array<int, string>
      */
-    public $implementation_requirements = [];
+    public array $implementation_requirements = [];
 
     /**
      * @var list<AttributeStorage>
      */
-    public $attributes = [];
+    public array $attributes = [];
 
     /**
      * @var array<string, EnumCaseStorage>
      */
-    public $enum_cases = [];
+    public array $enum_cases = [];
 
     /**
      * @var 'int'|'string'|null
      */
-    public $enum_type;
+    public ?string $enum_type = null;
 
-    /**
-     * @var ?string
-     */
-    public $description;
+    public ?string $description = null;
 
     public bool $public_api = false;
 
@@ -494,7 +403,7 @@ final class ClassLikeStorage implements HasAttributesInterface
 
     public function hasAttributeIncludingParents(
         string $fq_class_name,
-        Codebase $codebase
+        Codebase $codebase,
     ): bool {
         if ($this->hasAttribute($fq_class_name)) {
             return true;

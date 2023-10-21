@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm;
 
 use Psalm\Internal\Analyzer\IssueData;
@@ -34,31 +36,24 @@ abstract class Report
     /**
      * @var array<int, IssueData>
      */
-    protected $issues_data;
+    protected array $issues_data;
 
     /** @var array<string, int> */
-    protected $fixable_issue_counts;
+    protected array $fixable_issue_counts;
 
-    /** @var bool */
-    protected $use_color;
+    protected bool $use_color;
 
-    /** @var bool */
-    protected $show_snippet;
+    protected bool $show_snippet;
 
-    /** @var bool */
-    protected $show_info;
+    protected bool $show_info;
 
-    /** @var bool */
-    protected $pretty;
+    protected bool $pretty;
 
-    /** @var bool */
-    protected $in_ci;
+    protected bool $in_ci;
 
-    /** @var int */
-    protected $mixed_expression_count;
+    protected int $mixed_expression_count;
 
-    /** @var int */
-    protected $total_expression_count;
+    protected int $total_expression_count;
 
     /**
      * @param array<int, IssueData> $issues_data
@@ -69,7 +64,7 @@ abstract class Report
         array $fixable_issue_counts,
         ReportOptions $report_options,
         int $mixed_expression_count = 1,
-        int $total_expression_count = 1
+        int $total_expression_count = 1,
     ) {
         if (!$report_options->show_info) {
             $this->issues_data = array_filter(

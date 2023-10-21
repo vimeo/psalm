@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer;
 
 use PhpParser\Node\Stmt\Trait_;
@@ -12,7 +14,7 @@ use function assert;
 /**
  * @internal
  */
-class TraitAnalyzer extends ClassLikeAnalyzer
+final class TraitAnalyzer extends ClassLikeAnalyzer
 {
     private Aliases $aliases;
 
@@ -20,7 +22,7 @@ class TraitAnalyzer extends ClassLikeAnalyzer
         Trait_ $class,
         SourceAnalyzer $source,
         string $fq_class_name,
-        Aliases $aliases
+        Aliases $aliases,
     ) {
         $this->source = $source;
         $this->file_analyzer = $source->getFileAnalyzer();

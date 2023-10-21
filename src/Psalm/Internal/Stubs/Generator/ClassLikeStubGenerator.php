@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace Psalm\Internal\Stubs\Generator;
 
@@ -28,7 +28,7 @@ use function rtrim;
 /**
  * @internal
  */
-class ClassLikeStubGenerator
+final class ClassLikeStubGenerator
 {
     /**
      * @return PhpParser\Node\Stmt\Class_|PhpParser\Node\Stmt\Interface_|PhpParser\Node\Stmt\Trait_

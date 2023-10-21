@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
 use Psalm\Config;
@@ -59,10 +61,7 @@ class TestConfig extends Config
                 </projectFiles>';
     }
 
-    /**
-     * @return false
-     */
-    public function getComposerFilePathForClassLike(string $fq_classlike_name): bool
+    public function getComposerFilePathForClassLike(string $fq_classlike_name): string|false
     {
         return false;
     }

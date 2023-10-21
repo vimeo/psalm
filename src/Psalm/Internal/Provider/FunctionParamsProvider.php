@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Provider;
 
 use Closure;
@@ -16,7 +18,7 @@ use function strtolower;
 /**
  * @internal
  */
-class FunctionParamsProvider
+final class FunctionParamsProvider
 {
     /**
      * @var array<
@@ -65,7 +67,7 @@ class FunctionParamsProvider
         string $function_id,
         array $call_args,
         ?Context $context = null,
-        ?CodeLocation $code_location = null
+        ?CodeLocation $code_location = null,
     ): ?array {
         foreach (self::$handlers[strtolower($function_id)] ?? [] as $class_handler) {
             $event = new FunctionParamsProviderEvent(

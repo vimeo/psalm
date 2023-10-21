@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
 use AssertionError;
@@ -21,7 +23,7 @@ use function array_search;
 /**
  * @internal
  */
-class ClassTemplateParamCollector
+final class ClassTemplateParamCollector
 {
     /**
      * @param lowercase-string $method_name
@@ -35,7 +37,7 @@ class ClassTemplateParamCollector
         ClassLikeStorage $static_class_storage,
         ?string $method_name = null,
         ?Atomic $lhs_type_part = null,
-        bool $self_call = false
+        bool $self_call = false,
     ): ?array {
         $non_trait_class_storage = $class_storage->is_trait
             ? $static_class_storage
@@ -185,7 +187,7 @@ class ClassTemplateParamCollector
         Union $input_type_extends,
         ClassLikeStorage $static_class_storage,
         TGenericObject $lhs_type_part,
-        ?TemplateResult $template_result = null
+        ?TemplateResult $template_result = null,
     ): ?Union {
         $output_type_extends = null;
         foreach ($input_type_extends->getAtomicTypes() as $type_extends_atomic) {
@@ -259,7 +261,7 @@ class ClassTemplateParamCollector
         Union $input_type_extends,
         array $e,
         string $static_fq_class_name,
-        ?array $static_template_types
+        ?array $static_template_types,
     ): array {
         $output_type_extends = [];
 

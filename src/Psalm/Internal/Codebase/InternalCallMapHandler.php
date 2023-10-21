@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Codebase;
 
 use PhpParser;
@@ -33,7 +35,7 @@ use function version_compare;
  *
  * Gets values from the call map array, which stores data about native functions and methods
  */
-class InternalCallMapHandler
+final class InternalCallMapHandler
 {
     private const PHP_MAJOR_VERSION = 8;
     private const PHP_MINOR_VERSION = 3;
@@ -64,7 +66,7 @@ class InternalCallMapHandler
         Codebase $codebase,
         string $method_id,
         array $args,
-        ?NodeDataProvider $nodes
+        ?NodeDataProvider $nodes,
     ): TCallable {
         $possible_callables = self::getCallablesFromCallMap($method_id);
 
@@ -92,7 +94,7 @@ class InternalCallMapHandler
         array $callables,
         array $args,
         ?NodeTypeProvider $nodes,
-        string $method_id
+        string $method_id,
     ): TCallable {
         if (count($callables) === 1) {
             return $callables[0];

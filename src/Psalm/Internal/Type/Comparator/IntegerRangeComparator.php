@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Type\Comparator;
 
 use Psalm\Type\Atomic;
@@ -16,14 +18,14 @@ use function get_class;
 /**
  * @internal
  */
-class IntegerRangeComparator
+final class IntegerRangeComparator
 {
     /**
      * This method is used to check if an integer range can be contained in another
      */
     public static function isContainedBy(
         TIntRange $input_type_part,
-        TIntRange $container_type_part
+        TIntRange $container_type_part,
     ): bool {
         $is_input_min = $input_type_part->min_bound === null;
         $is_input_max = $input_type_part->max_bound === null;
@@ -47,7 +49,7 @@ class IntegerRangeComparator
      */
     public static function isContainedByUnion(
         TIntRange $input_type_part,
-        Union $container_type
+        Union $container_type,
     ): bool {
         $container_atomic_types = $container_type->getAtomicTypes();
         $reduced_range = new TIntRange(

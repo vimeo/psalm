@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\PhpVisitor\Reflector;
 
 use PhpParser;
@@ -45,13 +47,13 @@ use function strtolower;
 /**
  * @internal
  */
-class ExpressionResolver
+final class ExpressionResolver
 {
     public static function getUnresolvedClassConstExpr(
         PhpParser\Node\Expr $stmt,
         Aliases $aliases,
         ?string $fq_classlike_name,
-        ?string $parent_fq_class_name = null
+        ?string $parent_fq_class_name = null,
     ): ?UnresolvedConstantComponent {
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp) {
             $left = self::getUnresolvedClassConstExpr(
@@ -339,7 +341,7 @@ class ExpressionResolver
     public static function enterConditional(
         Codebase $codebase,
         string $file_path,
-        PhpParser\Node\Expr $expr
+        PhpParser\Node\Expr $expr,
     ): ?bool {
         if ($expr instanceof PhpParser\Node\Expr\BooleanNot) {
             $enter_negated = self::enterConditional($codebase, $file_path, $expr->expr);
@@ -404,7 +406,7 @@ class ExpressionResolver
     private static function functionEvaluatesToTrue(
         Codebase $codebase,
         string $file_path,
-        PhpParser\Node\Expr\FuncCall $function
+        PhpParser\Node\Expr\FuncCall $function,
     ): ?bool {
         if (!$function->name instanceof PhpParser\Node\Name) {
             return null;

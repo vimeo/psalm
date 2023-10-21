@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Storage;
 
 use Psalm\CodeLocation;
@@ -13,109 +15,54 @@ final class FunctionLikeParameter implements HasAttributesInterface, TypeNode
 {
     use CustomMetadataTrait;
 
-    /**
-     * @var string
-     */
-    public $name;
+    public string $name;
 
-    /**
-     * @var bool
-     */
-    public $by_ref;
+    public bool $by_ref;
 
-    /**
-     * @var Union|null
-     */
-    public $type;
+    public ?Union $type = null;
 
-    /**
-     * @var Union|null
-     */
-    public $out_type;
+    public ?Union $out_type = null;
 
-    /**
-     * @var Union|null
-     */
-    public $signature_type;
+    public ?Union $signature_type = null;
 
-    /**
-     * @var bool
-     */
-    public $has_docblock_type = false;
+    public bool $has_docblock_type = false;
 
-    /**
-     * @var bool
-     */
-    public $is_optional;
+    public bool $is_optional;
 
-    /**
-     * @var bool
-     */
-    public $is_nullable;
+    public bool $is_nullable;
 
-    /**
-     * @var Union|UnresolvedConstantComponent|null
-     */
-    public $default_type;
+    public Union|UnresolvedConstantComponent|null $default_type = null;
 
-    /**
-     * @var CodeLocation|null
-     */
-    public $location;
+    public ?CodeLocation $location = null;
 
-    /**
-     * @var CodeLocation|null
-     */
-    public $type_location;
+    public ?CodeLocation $type_location = null;
 
-    /**
-     * @var CodeLocation|null
-     */
-    public $signature_type_location;
+    public ?CodeLocation $signature_type_location = null;
 
-    /**
-     * @var bool
-     */
-    public $is_variadic;
+    public bool $is_variadic;
 
     /**
      * @var array<string>|null
      */
-    public $sinks;
+    public ?array $sinks = null;
 
-    /**
-     * @var bool
-     */
-    public $assert_untainted = false;
+    public bool $assert_untainted = false;
 
-    /**
-     * @var bool
-     */
-    public $type_inferred = false;
+    public bool $type_inferred = false;
 
-    /**
-     * @var bool
-     */
-    public $expect_variable = false;
+    public bool $expect_variable = false;
 
-    /**
-     * @var bool
-     */
-    public $promoted_property = false;
+    public bool $promoted_property = false;
 
     /**
      * @var list<AttributeStorage>
      */
-    public $attributes = [];
+    public array $attributes = [];
 
-    /**
-     * @var ?string
-     */
-    public $description;
+    public ?string $description = null;
 
     /**
      * @psalm-external-mutation-free
-     * @param Union|UnresolvedConstantComponent|null $default_type
      */
     public function __construct(
         string $name,
@@ -127,8 +74,8 @@ final class FunctionLikeParameter implements HasAttributesInterface, TypeNode
         bool $is_optional = true,
         bool $is_nullable = false,
         bool $is_variadic = false,
-        $default_type = null,
-        ?Union $out_type = null
+        Union|UnresolvedConstantComponent|null $default_type = null,
+        ?Union $out_type = null,
     ) {
         $this->name = $name;
         $this->by_ref = $by_ref;

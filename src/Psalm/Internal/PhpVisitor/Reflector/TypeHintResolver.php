@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\PhpVisitor\Reflector;
 
 use PhpParser;
@@ -26,7 +28,7 @@ use function strtolower;
 /**
  * @internal
  */
-class TypeHintResolver
+final class TypeHintResolver
 {
     /**
      * @param Identifier|IntersectionType|Name|NullableType|UnionType $hint
@@ -38,7 +40,7 @@ class TypeHintResolver
         FileStorage $file_storage,
         ?ClassLikeStorage $classlike_storage,
         Aliases $aliases,
-        int $analysis_php_version_id
+        int $analysis_php_version_id,
     ): Union {
         if ($hint instanceof PhpParser\Node\UnionType) {
             $type = null;

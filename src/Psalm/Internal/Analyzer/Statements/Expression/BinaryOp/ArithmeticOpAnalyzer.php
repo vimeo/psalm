@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\BinaryOp;
 
 use PhpParser;
@@ -57,7 +59,7 @@ use function strtolower;
 /**
  * @internal
  */
-class ArithmeticOpAnalyzer
+final class ArithmeticOpAnalyzer
 {
     public static function analyze(
         ?StatementsSource $statements_source,
@@ -66,7 +68,7 @@ class ArithmeticOpAnalyzer
         PhpParser\Node\Expr $right,
         PhpParser\Node $parent,
         ?Union &$result_type = null,
-        ?Context $context = null
+        ?Context $context = null,
     ): void {
         $codebase = $statements_source ? $statements_source->getCodebase() : null;
 
@@ -276,10 +278,7 @@ class ArithmeticOpAnalyzer
         }
     }
 
-    /**
-     * @param int|float $result
-     */
-    private static function getNumericalType($result): Union
+    private static function getNumericalType(int|float $result): Union
     {
         if (is_int($result)) {
             return Type::getInt(false, $result);
@@ -308,7 +307,7 @@ class ArithmeticOpAnalyzer
         bool &$has_valid_left_operand,
         bool &$has_valid_right_operand,
         bool &$has_string_increment,
-        Union &$result_type = null
+        Union &$result_type = null,
     ): ?Union {
         if (($left_type_part instanceof TLiteralInt || $left_type_part instanceof TLiteralFloat)
             && ($right_type_part instanceof TLiteralInt || $right_type_part instanceof TLiteralFloat)
@@ -921,15 +920,11 @@ class ArithmeticOpAnalyzer
         return null;
     }
 
-    /**
-     * @param float|int      $operand1
-     * @param float|int      $operand2
-     */
     public static function arithmeticOperation(
         PhpParser\Node $operation,
-        $operand1,
-        $operand2,
-        bool $allow_float_result
+        float|int $operand1,
+        float|int $operand2,
+        bool $allow_float_result,
     ): ?Union {
         if ($operation instanceof PhpParser\Node\Expr\BinaryOp\Plus) {
             $result = $operand1 + $operand2;
@@ -977,7 +972,7 @@ class ArithmeticOpAnalyzer
         PhpParser\Node $parent,
         ?Union &$result_type,
         TIntRange $left_type_part,
-        TIntRange $right_type_part
+        TIntRange $right_type_part,
     ): void {
         if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Div) {
             //can't assume an int range will stay int after division
@@ -1079,7 +1074,7 @@ class ArithmeticOpAnalyzer
         PhpParser\Node $parent,
         ?Union &$result_type,
         Atomic $left_type_part,
-        Atomic $right_type_part
+        Atomic $right_type_part,
     ): void {
         if (!$left_type_part instanceof TIntRange) {
             $left_type_part = TIntRange::convertToIntRange($left_type_part);
@@ -1095,7 +1090,7 @@ class ArithmeticOpAnalyzer
         PhpParser\Node\Expr\BinaryOp\Mul $parent,
         ?Union &$result_type,
         TIntRange $left_type_part,
-        TIntRange $right_type_part
+        TIntRange $right_type_part,
     ): void {
         //Mul is a special case because of double negatives. We can only infer when we know both signs strictly
         if ($right_type_part->min_bound !== null
@@ -1271,7 +1266,7 @@ class ArithmeticOpAnalyzer
     private static function analyzePowBetweenIntRange(
         ?Union &$result_type,
         TIntRange $left_type_part,
-        TIntRange $right_type_part
+        TIntRange $right_type_part,
     ): void {
         //If Pow first operand is negative, the result could be positive or negative, else it will be positive
         //If Pow second operand is negative, the result will be float, if it's 0, it will be 1/-1, else positive
@@ -1344,7 +1339,7 @@ class ArithmeticOpAnalyzer
     private static function analyzeModBetweenIntRange(
         ?Union &$result_type,
         TIntRange $left_type_part,
-        TIntRange $right_type_part
+        TIntRange $right_type_part,
     ): void {
         //result of Mod is not directly dependant on the bounds of the range
         if ($right_type_part->min_bound !== null && $right_type_part->min_bound === $right_type_part->max_bound) {

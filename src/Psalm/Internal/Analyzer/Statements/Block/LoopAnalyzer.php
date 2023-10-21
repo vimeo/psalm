@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Block;
 
 use PhpParser;
@@ -28,7 +30,7 @@ use function spl_object_id;
 /**
  * @internal
  */
-class LoopAnalyzer
+final class LoopAnalyzer
 {
     /**
      * Checks an array of statements in a loop
@@ -46,7 +48,7 @@ class LoopAnalyzer
         LoopScope $loop_scope,
         Context &$continue_context = null,
         bool $is_do = false,
-        bool $always_enters_loop = false
+        bool $always_enters_loop = false,
     ): ?bool {
         $traverser = new PhpParser\NodeTraverser;
 
@@ -526,7 +528,7 @@ class LoopAnalyzer
         LoopScope $loop_scope,
         Context $loop_context,
         Context $continue_context,
-        Context $pre_outer_context
+        Context $pre_outer_context,
     ): void {
         if (!in_array(ScopeAnalyzer::ACTION_CONTINUE, $loop_scope->final_actions, true)) {
             $loop_context->vars_in_scope = $pre_outer_context->vars_in_scope;
@@ -570,7 +572,7 @@ class LoopAnalyzer
         array $pre_condition_clauses,
         Context $loop_context,
         Context $outer_context,
-        bool $is_do
+        bool $is_do,
     ): array {
         $pre_referenced_var_ids = $loop_context->cond_referenced_var_ids;
         $loop_context->cond_referenced_var_ids = [];

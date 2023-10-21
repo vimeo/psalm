@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements;
 
 use PhpParser;
@@ -23,12 +25,12 @@ use function is_int;
 /**
  * @internal
  */
-class UnsetAnalyzer
+final class UnsetAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Unset_ $stmt,
-        Context $context
+        Context $context,
     ): void {
         $context->inside_unset = true;
 

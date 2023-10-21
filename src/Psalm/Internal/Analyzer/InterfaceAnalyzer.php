@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer;
 
 use InvalidArgumentException;
@@ -25,12 +27,12 @@ use function strtolower;
 /**
  * @internal
  */
-class InterfaceAnalyzer extends ClassLikeAnalyzer
+final class InterfaceAnalyzer extends ClassLikeAnalyzer
 {
     public function __construct(
         PhpParser\Node\Stmt\Interface_ $interface,
         SourceAnalyzer $source,
-        string $fq_interface_name
+        string $fq_interface_name,
     ) {
         parent::__construct($interface, $source, $fq_interface_name);
     }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Provider;
 
 use Closure;
@@ -22,7 +24,7 @@ use function strtolower;
 /**
  * @internal
  */
-class MethodReturnTypeProvider
+final class MethodReturnTypeProvider
 {
     /**
      * @var array<
@@ -71,19 +73,18 @@ class MethodReturnTypeProvider
     }
 
     /**
-     * @param PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall $stmt
      * @param non-empty-list<Union>|null $template_type_parameters
      */
     public function getReturnType(
         StatementsSource $statements_source,
         string $fq_classlike_name,
         string $method_name,
-        $stmt,
+        PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall $stmt,
         Context $context,
         CodeLocation $code_location,
         ?array $template_type_parameters = null,
         ?string $called_fq_classlike_name = null,
-        ?string $called_method_name = null
+        ?string $called_method_name = null,
     ): ?Union {
         foreach (self::$handlers[strtolower($fq_classlike_name)] ?? [] as $class_handler) {
             $event = new MethodReturnTypeProviderEvent(

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
@@ -27,12 +29,12 @@ use function array_pop;
 /**
  * @internal
  */
-class CloneAnalyzer
+final class CloneAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\Clone_ $stmt,
-        Context $context
+        Context $context,
     ): bool {
         $codebase = $statements_analyzer->getCodebase();
         $codebase_methods = $codebase->methods;

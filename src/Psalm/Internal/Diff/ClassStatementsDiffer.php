@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Diff;
 
 use PhpParser;
@@ -14,7 +16,7 @@ use function trim;
 /**
  * @internal
  */
-class ClassStatementsDiffer extends AstDiffer
+final class ClassStatementsDiffer extends AstDiffer
 {
     /**
      * Calculate diff (edit script) from $a to $b.
@@ -39,7 +41,7 @@ class ClassStatementsDiffer extends AstDiffer
                 PhpParser\Node\Stmt $b,
                 string $a_code,
                 string $b_code,
-                bool &$body_change = false
+                bool &$body_change = false,
             ) use (&$diff_map): bool {
                 if (get_class($a) !== get_class($b)) {
                     return false;

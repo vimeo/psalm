@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
 use AssertionError;
@@ -41,14 +43,14 @@ use function strtolower;
 /**
  * @internal
  */
-class MethodCallAnalyzer extends CallAnalyzer
+final class MethodCallAnalyzer extends CallAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\MethodCall $stmt,
         Context $context,
         bool $real_method_call = true,
-        ?TemplateResult $template_result = null
+        ?TemplateResult $template_result = null,
     ): bool {
         $was_inside_call = $context->inside_call;
 

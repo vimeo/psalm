@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Scanner;
 
 use Psalm\Exception\DocblockParseException;
@@ -31,7 +33,7 @@ use const PREG_OFFSET_CAPTURE;
  *
  * @internal
  */
-class DocblockParser
+final class DocblockParser
 {
     /**
      * $offsetStart is the absolute position of the docblock in the file. It'll be used to add to the position of some

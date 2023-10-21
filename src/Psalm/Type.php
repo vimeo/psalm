@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm;
 
 use InvalidArgumentException;
@@ -77,7 +79,7 @@ abstract class Type
     public static function parseString(
         string $type_string,
         ?int $analysis_php_version_id = null,
-        array $template_type_map = []
+        array $template_type_map = [],
     ): Union {
         return TypeParser::parseTokens(
             TypeTokenizer::tokenize(
@@ -90,7 +92,7 @@ abstract class Type
 
     public static function getFQCLNFromString(
         string $class,
-        Aliases $aliases
+        Aliases $aliases,
     ): string {
         if ($class === '') {
             throw new InvalidArgumentException('$class cannot be empty');
@@ -128,7 +130,7 @@ abstract class Type
         array $aliased_classes,
         ?string $this_class,
         bool $allow_self = false,
-        bool $is_static = false
+        bool $is_static = false,
     ): string {
         if ($allow_self && $value === $this_class) {
             if ($is_static) {
@@ -261,10 +263,9 @@ abstract class Type
 
     /**
      * @psalm-suppress PossiblyUnusedMethod
-     * @param int|string $value
      * @return TLiteralString|TLiteralInt
      */
-    public static function getLiteral($value): Atomic
+    public static function getLiteral(int|string $value): Atomic
     {
         if (is_int($value)) {
             return new TLiteralInt($value);
@@ -590,7 +591,7 @@ abstract class Type
         bool $overwrite_empty_array = false,
         bool $allow_mixed_union = true,
         int $literal_limit = 500,
-        ?bool $possibly_undefined = null
+        ?bool $possibly_undefined = null,
     ): Union {
         if ($type_2 === null && $type_1 === null) {
             throw new UnexpectedValueException('At least one type must be provided to combine');
@@ -713,7 +714,7 @@ abstract class Type
     public static function intersectUnionTypes(
         ?Union $type_1,
         ?Union $type_2,
-        Codebase $codebase
+        Codebase $codebase,
     ): ?Union {
         if ($type_2 === null && $type_1 === null) {
             throw new UnexpectedValueException('At least one type must be provided to combine');
@@ -839,7 +840,7 @@ abstract class Type
         Atomic $type_1_atomic,
         Atomic $type_2_atomic,
         Codebase $codebase,
-        bool &$intersection_performed
+        bool &$intersection_performed,
     ): ?Atomic {
         $intersection_atomic = null;
         $wider_type = null;

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests\FileUpdates;
 
 use Psalm\Exception\CodeException;
@@ -54,7 +56,7 @@ class ErrorAfterUpdateTest extends TestCase
     public function testErrorAfterUpdate(
         array $file_stages,
         string $error_message,
-        array $ignored_issues = []
+        array $ignored_issues = [],
     ): void {
         $this->project_analyzer->getCodebase()->diff_methods = true;
         $this->project_analyzer->getCodebase()->reportUnusedCode();

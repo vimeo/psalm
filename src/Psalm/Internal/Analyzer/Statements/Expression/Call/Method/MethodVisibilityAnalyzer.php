@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call\Method;
 
 use Psalm\CodeLocation;
@@ -20,7 +22,7 @@ use function strtolower;
 /**
  * @internal
  */
-class MethodVisibilityAnalyzer
+final class MethodVisibilityAnalyzer
 {
     /**
      * @param  string[]         $suppressed_issues
@@ -31,7 +33,7 @@ class MethodVisibilityAnalyzer
         Context $context,
         StatementsSource $source,
         CodeLocation $code_location,
-        array $suppressed_issues
+        array $suppressed_issues,
     ): ?bool {
         $codebase = $source->getCodebase();
         $codebase_methods = $codebase->methods;

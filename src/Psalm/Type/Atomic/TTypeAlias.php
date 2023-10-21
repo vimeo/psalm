@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type\Atomic;
 
 use Psalm\Type\Atomic;
@@ -18,13 +20,11 @@ final class TTypeAlias extends Atomic
      *             referencing type(s) are part of other intersection types. The intersection types are not set anymore
      *             and with v6 this property along with its related methods will get removed.
      */
-    public $extra_types;
+    public ?array $extra_types = null;
 
-    /** @var string */
-    public $declaring_fq_classlike_name;
+    public string $declaring_fq_classlike_name;
 
-    /** @var string */
-    public $alias_name;
+    public string $alias_name;
 
     /**
      * @param array<string, TTypeAlias>|null $extra_types
@@ -84,7 +84,7 @@ final class TTypeAlias extends Atomic
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        int $analysis_php_version_id
+        int $analysis_php_version_id,
     ): ?string {
         return null;
     }

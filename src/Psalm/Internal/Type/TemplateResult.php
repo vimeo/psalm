@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Type;
 
 use Psalm\Type\Union;
@@ -24,7 +26,7 @@ use function array_replace_recursive;
  *
  * @internal
  */
-class TemplateResult
+final class TemplateResult
 {
     /**
      * @var array<string, array<string, Union>>

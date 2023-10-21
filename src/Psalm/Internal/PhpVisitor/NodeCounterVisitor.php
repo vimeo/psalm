@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\PhpVisitor;
 
 use PhpParser;
@@ -7,7 +9,7 @@ use PhpParser;
 /**
  * @internal
  */
-class NodeCounterVisitor extends PhpParser\NodeVisitorAbstract
+final class NodeCounterVisitor extends PhpParser\NodeVisitorAbstract
 {
     public int $count = 0;
 

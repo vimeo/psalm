@@ -22,7 +22,7 @@ final class AssertionsFromInheritanceResolver
     private Codebase $codebase;
 
     public function __construct(
-        Codebase $codebase
+        Codebase $codebase,
     ) {
         $this->codebase = $codebase;
     }
@@ -32,7 +32,7 @@ final class AssertionsFromInheritanceResolver
      */
     public function resolve(
         MethodStorage $method_storage,
-        ClassLikeStorage $called_class
+        ClassLikeStorage $called_class,
     ): array {
         $method_name_lc = strtolower($method_storage->cased_name ?? '');
 

@@ -16,7 +16,7 @@ use function count;
 /**
  * @internal
  */
-class RandReturnTypeProvider implements FunctionReturnTypeProviderInterface
+final class RandReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
      * @return array<lowercase-string>

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use Psalm\Internal\DataFlow\DataFlowNode;
@@ -9,7 +11,7 @@ use Psalm\Type\Union;
 /**
  * @internal
  */
-class ArrayCreationInfo
+final class ArrayCreationInfo
 {
     /**
      * @var list<Atomic>

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
 use PhpParser\Node\Expr;
@@ -21,7 +23,7 @@ use function token_get_all;
 /**
  * @internal
  */
-class ArgumentMapPopulator
+final class ArgumentMapPopulator
 {
     /**
      * @param MethodCall|StaticCall|FuncCall|New_ $stmt
@@ -30,7 +32,7 @@ class ArgumentMapPopulator
         StatementsAnalyzer $statements_analyzer,
         Expr $stmt,
         Codebase $codebase,
-        string $function_reference
+        string $function_reference,
     ): void {
         $file_content = $codebase->file_provider->getContents($statements_analyzer->getFilePath());
 

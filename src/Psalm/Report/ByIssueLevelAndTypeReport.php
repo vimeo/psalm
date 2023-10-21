@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Report;
 
 use Psalm\Config;
@@ -140,10 +142,8 @@ HEADING;
 
     /**
      * Copied from ConsoleReport unchanged. We could consider moving to another class to reduce duplication.
-     *
-     * @param IssueData|DataFlowNodeData $data
      */
-    private function getFileReference($data): string
+    private function getFileReference(IssueData|DataFlowNodeData $data): string
     {
         $reference = $data->file_name . ':' . $data->line_from . ':' . $data->column_from;
 

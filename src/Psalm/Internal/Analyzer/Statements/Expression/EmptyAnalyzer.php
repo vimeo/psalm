@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
@@ -14,12 +16,12 @@ use Psalm\Type;
 /**
  * @internal
  */
-class EmptyAnalyzer
+final class EmptyAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\Empty_ $stmt,
-        Context $context
+        Context $context,
     ): void {
         IssetAnalyzer::analyzeIssetVar($statements_analyzer, $stmt->expr, $context);
 

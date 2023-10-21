@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal;
 
 use Composer\Autoload\ClassLoader;
@@ -63,7 +65,7 @@ final class CliUtils
     public static function requireAutoloaders(
         string $current_dir,
         bool $has_explicit_root,
-        string $vendor_dir
+        string $vendor_dir,
     ): ?ClassLoader {
         $autoload_roots = [$current_dir];
 
@@ -251,10 +253,9 @@ final class CliUtils
     }
 
     /**
-     * @param  string|array|null|false $f_paths
      * @return list<string>|null
      */
-    public static function getPathsToCheck($f_paths): ?array
+    public static function getPathsToCheck(string|array|false|null $f_paths): ?array
     {
         $paths_to_check = [];
 
@@ -341,7 +342,7 @@ final class CliUtils
         string $current_dir,
         string $output_format,
         ?ClassLoader $first_autoloader,
-        bool $create_if_non_existent = false
+        bool $create_if_non_existent = false,
     ): Config {
         try {
             if ($path_to_config) {

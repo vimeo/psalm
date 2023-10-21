@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\TypeVisitor;
 
 use Psalm\Type\Atomic;
@@ -12,7 +14,7 @@ use Psalm\Type\Union;
 /**
  * @internal
  */
-class FromDocblockSetter extends MutableTypeVisitor
+final class FromDocblockSetter extends MutableTypeVisitor
 {
     private bool $from_docblock;
     public function __construct(bool $from_docblock)

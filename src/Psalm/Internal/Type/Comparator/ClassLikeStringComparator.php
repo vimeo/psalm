@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Type\Comparator;
 
 use Psalm\Codebase;
@@ -14,7 +16,7 @@ use function get_class;
 /**
  * @internal
  */
-class ClassLikeStringComparator
+final class ClassLikeStringComparator
 {
     /**
      * @param TClassString|TLiteralClassString $input_type_part
@@ -25,7 +27,7 @@ class ClassLikeStringComparator
         Scalar $input_type_part,
         Scalar $container_type_part,
         bool $allow_interface_equality,
-        ?TypeComparisonResult $atomic_comparison_result = null
+        ?TypeComparisonResult $atomic_comparison_result = null,
     ): bool {
         if ($container_type_part instanceof TLiteralClassString
             && $input_type_part instanceof TLiteralClassString

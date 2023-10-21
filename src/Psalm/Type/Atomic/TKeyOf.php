@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type\Atomic;
 
 use Psalm\Type\Union;
@@ -14,8 +16,7 @@ use function array_values;
  */
 final class TKeyOf extends TArrayKey
 {
-    /** @var Union */
-    public $type;
+    public Union $type;
 
     public function __construct(Union $type, bool $from_docblock = false)
     {
@@ -35,7 +36,7 @@ final class TKeyOf extends TArrayKey
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        int $analysis_php_version_id
+        int $analysis_php_version_id,
     ): ?string {
         return null;
     }
@@ -66,7 +67,7 @@ final class TKeyOf extends TArrayKey
 
     public static function getArrayKeyType(
         Union $type,
-        bool $keep_template_params = false
+        bool $keep_template_params = false,
     ): ?Union {
         $key_types = [];
 

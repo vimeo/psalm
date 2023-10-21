@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Storage;
 
 use Psalm\CodeLocation;
@@ -8,25 +10,15 @@ use Psalm\Type\Atomic\TLiteralString;
 
 final class EnumCaseStorage
 {
-    /**
-     * @var TLiteralString|TLiteralInt|null
-     */
-    public $value;
+    public TLiteralString|TLiteralInt|null $value = null;
 
-    /** @var CodeLocation */
-    public $stmt_location;
+    public CodeLocation $stmt_location;
 
-    /**
-     * @var bool
-     */
-    public $deprecated = false;
+    public bool $deprecated = false;
 
-    /**
-     * @param TLiteralString|TLiteralInt|null $value
-     */
     public function __construct(
-        $value,
-        CodeLocation $location
+        TLiteralString|TLiteralInt|null $value,
+        CodeLocation $location,
     ) {
         $this->value = $value;
         $this->stmt_location = $location;

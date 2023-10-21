@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Fork;
 
 use Closure;
@@ -70,7 +72,7 @@ use const STREAM_SOCK_STREAM;
  *
  * @internal
  */
-class Pool
+final class Pool
 {
     private const EXIT_SUCCESS = 0;
     private const EXIT_FAILURE = 1;
@@ -116,7 +118,7 @@ class Pool
         Closure $startup_closure,
         Closure $task_closure,
         Closure $shutdown_closure,
-        ?Closure $task_done_closure = null
+        ?Closure $task_done_closure = null,
     ) {
         $pool_size = count($process_task_data_iterator);
         $this->task_done_closure = $task_done_closure;

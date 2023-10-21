@@ -9,7 +9,7 @@ use Amp\ByteStream\WritableResourceStream;
 /**
  * @internal
  */
-class ProtocolStreamWriter implements ProtocolWriter
+final class ProtocolStreamWriter implements ProtocolWriter
 {
     private WritableResourceStream $output;
 

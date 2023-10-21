@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\PhpVisitor;
 
 use LogicException;
@@ -51,7 +53,7 @@ use const PHP_VERSION_ID;
 /**
  * @internal
  */
-class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSource
+final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSource
 {
     private Aliases $aliases;
 
@@ -95,7 +97,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
     public function __construct(
         Codebase $codebase,
         FileScanner $file_scanner,
-        FileStorage $file_storage
+        FileStorage $file_storage,
     ) {
         $this->codebase = $codebase;
         $this->file_scanner = $file_scanner;

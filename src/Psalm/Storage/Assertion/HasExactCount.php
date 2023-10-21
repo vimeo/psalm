@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Storage\Assertion;
 
 use Psalm\Storage\Assertion;
@@ -10,7 +12,7 @@ use Psalm\Storage\Assertion;
 final class HasExactCount extends Assertion
 {
     /** @var positive-int */
-    public $count;
+    public int $count;
 
     /** @param positive-int $count */
     public function __construct(int $count)

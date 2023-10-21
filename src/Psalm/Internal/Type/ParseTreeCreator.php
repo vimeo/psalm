@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Type;
 
 use Psalm\Exception\TypeParseTreeException;
@@ -34,7 +36,7 @@ use function strtolower;
 /**
  * @internal
  */
-class ParseTreeCreator
+final class ParseTreeCreator
 {
     private ParseTree $parse_tree;
 

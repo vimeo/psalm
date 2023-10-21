@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer;
 
 use function str_pad;
@@ -9,7 +11,7 @@ use const STR_PAD_LEFT;
 /**
  * @internal
  */
-class IssueData
+final class IssueData
 {
     public const SEVERITY_INFO = 'info';
     public const SEVERITY_ERROR = 'error';
@@ -123,7 +125,7 @@ class IssueData
         int $error_level = -1,
         ?array $taint_trace = null,
         array $other_references = null,
-        ?string $dupe_key = null
+        ?string $dupe_key = null,
     ) {
         $this->severity = $severity;
         $this->line_from = $line_from;
