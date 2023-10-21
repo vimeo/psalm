@@ -704,7 +704,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                                 && $storage->template_types
                                 && $storage->template_covariants
                                 && ($local_offset
-                                    = array_search($t->param_name, array_keys($storage->template_types)))
+                                    = array_search($t->param_name, array_keys($storage->template_types), true))
                                     !== false
                                 && !empty($storage->template_covariants[$local_offset])
                             ) {

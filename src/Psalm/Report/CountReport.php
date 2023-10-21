@@ -21,7 +21,7 @@ final class CountReport extends Report
                 $issue_type_counts[$issue_data->type] = 1;
             }
         }
-        uksort($issue_type_counts, function (string $a, string $b) use ($issue_type_counts): int {
+        uksort($issue_type_counts, static function (string $a, string $b) use ($issue_type_counts): int {
             $cmp_result = $issue_type_counts[$a] <=> $issue_type_counts[$b];
             if ($cmp_result === 0) {
                 return $a <=> $b;

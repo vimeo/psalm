@@ -182,7 +182,7 @@ HEADING;
     {
         usort(
             $this->issues_data,
-            fn(IssueData $left, IssueData $right): int => [$left->error_level > 0, -$left->error_level,
+            static fn(IssueData $left, IssueData $right): int => [$left->error_level > 0, -$left->error_level,
                     $left->type, $left->file_path, $left->file_name, $left->line_from]
                 <=> [$right->error_level > 0, -$right->error_level, $right->type, $right->file_path, $right->file_name,
                     $right->line_from],

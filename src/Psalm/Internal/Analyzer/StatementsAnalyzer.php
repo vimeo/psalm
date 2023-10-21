@@ -865,7 +865,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
             }
 
             if ($function_storage) {
-                $param_index = array_search(substr($var_id, 1), array_keys($function_storage->param_lookup));
+                $param_index = array_search(substr($var_id, 1), array_keys($function_storage->param_lookup), true);
                 if ($param_index !== false) {
                     $param = $function_storage->params[$param_index];
 
