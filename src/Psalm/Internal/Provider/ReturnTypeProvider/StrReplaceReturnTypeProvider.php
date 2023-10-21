@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -14,7 +16,7 @@ use function count;
 /**
  * @internal
  */
-class StrReplaceReturnTypeProvider implements FunctionReturnTypeProviderInterface
+final class StrReplaceReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
      * @return array<lowercase-string>

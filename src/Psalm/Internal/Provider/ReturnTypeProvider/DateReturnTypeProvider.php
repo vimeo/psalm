@@ -19,7 +19,7 @@ use function is_numeric;
 /**
  * @internal
  */
-class DateReturnTypeProvider implements FunctionReturnTypeProviderInterface
+final class DateReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
      * @return array<lowercase-string>

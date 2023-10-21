@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
 use DOMDocument;
@@ -710,6 +712,7 @@ class ReportOutputTest extends TestCase
 
         $issue_data = [
             [
+                'link' => 'https://psalm.dev/024',
                 'severity' => 'error',
                 'line_from' => 3,
                 'line_to' => 3,
@@ -725,13 +728,13 @@ class ReportOutputTest extends TestCase
                 'snippet_to' => 83,
                 'column_from' => 10,
                 'column_to' => 26,
-                'error_level' => -1,
                 'shortcode' => 24,
-                'link' => 'https://psalm.dev/024',
+                'error_level' => -1,
                 'taint_trace' => null,
                 'other_references' => null,
             ],
             [
+                'link' => 'https://psalm.dev/138',
                 'severity' => 'error',
                 'line_from' => 3,
                 'line_to' => 3,
@@ -747,13 +750,13 @@ class ReportOutputTest extends TestCase
                 'snippet_to' => 83,
                 'column_from' => 10,
                 'column_to' => 26,
-                'error_level' => 1,
                 'shortcode' => 138,
-                'link' => 'https://psalm.dev/138',
+                'error_level' => 1,
                 'taint_trace' => null,
                 'other_references' => null,
             ],
             [
+                'link' => 'https://psalm.dev/047',
                 'severity' => 'error',
                 'line_from' => 2,
                 'line_to' => 2,
@@ -769,13 +772,13 @@ class ReportOutputTest extends TestCase
                 'snippet_to' => 56,
                 'column_from' => 42,
                 'column_to' => 49,
-                'error_level' => 1,
                 'shortcode' => 47,
-                'link' => 'https://psalm.dev/047',
+                'error_level' => 1,
                 'taint_trace' => null,
                 'other_references' => null,
             ],
             [
+                'link' => 'https://psalm.dev/020',
                 'severity' => 'error',
                 'line_from' => 8,
                 'line_to' => 8,
@@ -791,13 +794,13 @@ class ReportOutputTest extends TestCase
                 'snippet_to' => 172,
                 'column_from' => 6,
                 'column_to' => 15,
-                'error_level' => -1,
                 'shortcode' => 20,
-                'link' => 'https://psalm.dev/020',
+                'error_level' => -1,
                 'taint_trace' => null,
                 'other_references' => null,
             ],
             [
+                'link' => 'https://psalm.dev/126',
                 'severity' => 'info',
                 'line_from' => 17,
                 'line_to' => 17,
@@ -813,9 +816,8 @@ class ReportOutputTest extends TestCase
                 'snippet_to' => 277,
                 'column_from' => 6,
                 'column_to' => 8,
-                'error_level' => 3,
                 'shortcode' => 126,
-                'link' => 'https://psalm.dev/126',
+                'error_level' => 3,
                 'taint_trace' => null,
                 'other_references' => null,
             ],
@@ -1367,6 +1369,6 @@ class ReportOutputTest extends TestCase
      */
     private function toUnixLineEndings(string $output): string
     {
-        return preg_replace('~\r\n?~', "\n", $output);
+        return (string) preg_replace('~\r\n?~', "\n", $output);
     }
 }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests\FileUpdates;
 
 use Psalm\Codebase;
@@ -71,7 +73,7 @@ class TemporaryUpdateTest extends TestCase
         array $error_positions,
         array $ignored_issues = [],
         bool $test_save = true,
-        bool $check_unused_code = false
+        bool $check_unused_code = false,
     ): void {
         $codebase = $this->codebase;
         $codebase->diff_methods = true;
@@ -179,7 +181,7 @@ class TemporaryUpdateTest extends TestCase
             'fixMissingColonSyntaxError' => [
                 [
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -190,7 +192,7 @@ class TemporaryUpdateTest extends TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -201,7 +203,7 @@ class TemporaryUpdateTest extends TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -217,7 +219,7 @@ class TemporaryUpdateTest extends TestCase
             'addReturnTypesToSingleMethod' => [
                 [
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -232,7 +234,7 @@ class TemporaryUpdateTest extends TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -247,7 +249,7 @@ class TemporaryUpdateTest extends TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -267,7 +269,7 @@ class TemporaryUpdateTest extends TestCase
             'addSpaceAffectingOffsets' => [
                 [
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -283,7 +285,7 @@ class TemporaryUpdateTest extends TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -300,7 +302,7 @@ class TemporaryUpdateTest extends TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -326,7 +328,7 @@ class TemporaryUpdateTest extends TestCase
             'fixReturnType' => [
                 [
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -340,7 +342,7 @@ class TemporaryUpdateTest extends TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -354,7 +356,7 @@ class TemporaryUpdateTest extends TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -376,7 +378,7 @@ class TemporaryUpdateTest extends TestCase
             'resolveNamesInDifferentFunction' => [
                 [
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -394,7 +396,7 @@ class TemporaryUpdateTest extends TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -420,7 +422,7 @@ class TemporaryUpdateTest extends TestCase
             'bridgeStatements' => [
                 [
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -434,7 +436,7 @@ class TemporaryUpdateTest extends TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -448,7 +450,7 @@ class TemporaryUpdateTest extends TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -466,7 +468,7 @@ class TemporaryUpdateTest extends TestCase
             'colonReturnType' => [
                 [
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -480,7 +482,7 @@ class TemporaryUpdateTest extends TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -503,7 +505,7 @@ class TemporaryUpdateTest extends TestCase
             'noChangeJustWeirdDocblocks' => [
                 [
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -533,7 +535,7 @@ class TemporaryUpdateTest extends TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -569,7 +571,7 @@ class TemporaryUpdateTest extends TestCase
             'removeUseShouldInvalidate' => [
                 [
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             use Exception;
@@ -581,7 +583,7 @@ class TemporaryUpdateTest extends TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -596,7 +598,7 @@ class TemporaryUpdateTest extends TestCase
             'removeGroupUseShouldInvalidate' => [
                 [
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             use PhpParser\{Error};
@@ -608,7 +610,7 @@ class TemporaryUpdateTest extends TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -623,7 +625,7 @@ class TemporaryUpdateTest extends TestCase
             'removeUseWithAliasShouldInvalidate' => [
                 [
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             use Exception as E;
@@ -635,7 +637,7 @@ class TemporaryUpdateTest extends TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -650,7 +652,7 @@ class TemporaryUpdateTest extends TestCase
             'removeGroupUseWithAliasShouldInvalidate' => [
                 [
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             use PhpParser\{Error as E};
@@ -662,7 +664,7 @@ class TemporaryUpdateTest extends TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -677,7 +679,7 @@ class TemporaryUpdateTest extends TestCase
             'removeUseShouldInvalidateNoNamespace' => [
                 [
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             use PhpParser\Node\Name;
 
                             class A {
@@ -687,7 +689,7 @@ class TemporaryUpdateTest extends TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             class A {
                                 public function foo() : void {
                                     new Name("Martin");
@@ -700,7 +702,7 @@ class TemporaryUpdateTest extends TestCase
             'removeGroupUseShouldInvalidateNoNamespace' => [
                 [
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             use PhpParser\{Error};
@@ -712,7 +714,7 @@ class TemporaryUpdateTest extends TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -727,7 +729,7 @@ class TemporaryUpdateTest extends TestCase
             'removeUseWithAliasShouldInvalidateNoNamespace' => [
                 [
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             use Exception as E;
 
                             class A {
@@ -737,7 +739,7 @@ class TemporaryUpdateTest extends TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             class A {
                                 public function foo() : void {
                                     throw new E();
@@ -750,7 +752,7 @@ class TemporaryUpdateTest extends TestCase
             'removeGroupUseWithAliasShouldInvalidateNoNamespace' => [
                 [
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             use PhpParser\{Error as E};
 
                             class A {
@@ -760,7 +762,7 @@ class TemporaryUpdateTest extends TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -775,7 +777,7 @@ class TemporaryUpdateTest extends TestCase
             'addUseShouldValidate' => [
                 [
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -783,13 +785,13 @@ class TemporaryUpdateTest extends TestCase
                                     throw new E();
                                 }
                             }',
-                        getcwd() . DIRECTORY_SEPARATOR . 'E.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'E.php' => '<?php
                             namespace Bar;
 
                             class E extends \Exception {}',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             use Bar\E;
@@ -799,7 +801,7 @@ class TemporaryUpdateTest extends TestCase
                                     throw new E();
                                 }
                             }',
-                        getcwd() . DIRECTORY_SEPARATOR . 'E.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'E.php' => '<?php
                             namespace Bar;
 
                             class E extends \Exception {}',
@@ -810,7 +812,7 @@ class TemporaryUpdateTest extends TestCase
             'changeUseShouldInvalidateBadNew' => [
                 [
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo {
                                 use Baz\B;
 
@@ -826,7 +828,7 @@ class TemporaryUpdateTest extends TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo {
                                 use Bar\B;
 
@@ -847,7 +849,7 @@ class TemporaryUpdateTest extends TestCase
             'changeUseShouldInvalidateBadReturn' => [
                 [
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo {
                                 use Baz\B;
 
@@ -863,7 +865,7 @@ class TemporaryUpdateTest extends TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo {
                                 use Bar\B;
 
@@ -884,7 +886,7 @@ class TemporaryUpdateTest extends TestCase
             'changeUseShouldInvalidateBadDocblockReturn' => [
                 [
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo {
                                 use Baz\B;
 
@@ -901,7 +903,7 @@ class TemporaryUpdateTest extends TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo {
                                 use Bar\B;
 
@@ -923,7 +925,7 @@ class TemporaryUpdateTest extends TestCase
             'changeUseShouldInvalidateBadParam' => [
                 [
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo {
                                 use Baz\B;
 
@@ -937,7 +939,7 @@ class TemporaryUpdateTest extends TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo {
                                 use Bar\B;
 
@@ -956,7 +958,7 @@ class TemporaryUpdateTest extends TestCase
             'changeUseShouldInvalidateBadDocblockParam' => [
                 [
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo {
                                 use Baz\B;
 
@@ -971,7 +973,7 @@ class TemporaryUpdateTest extends TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo {
                                 use Bar\B;
 
@@ -991,7 +993,7 @@ class TemporaryUpdateTest extends TestCase
             'changeUseShouldInvalidateBadExtends' => [
                 [
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo {
                                 use Baz\B;
 
@@ -1003,7 +1005,7 @@ class TemporaryUpdateTest extends TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo {
                                 use Bar\B;
 
@@ -1020,7 +1022,7 @@ class TemporaryUpdateTest extends TestCase
             'fixMissingProperty' => [
                 [
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -1030,7 +1032,7 @@ class TemporaryUpdateTest extends TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -1047,7 +1049,7 @@ class TemporaryUpdateTest extends TestCase
             'traitMethodRenameDifferentFiles' => [
                 [
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -1056,7 +1058,7 @@ class TemporaryUpdateTest extends TestCase
                                     echo $this->bar();
                                 }
                             }',
-                        getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
                             namespace Foo;
 
                             trait T {
@@ -1066,7 +1068,7 @@ class TemporaryUpdateTest extends TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -1075,7 +1077,7 @@ class TemporaryUpdateTest extends TestCase
                                     echo $this->bar();
                                 }
                             }',
-                        getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
                             namespace Foo;
 
                             trait T {
@@ -1085,7 +1087,7 @@ class TemporaryUpdateTest extends TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -1094,7 +1096,7 @@ class TemporaryUpdateTest extends TestCase
                                     echo $this->bat();
                                 }
                             }',
-                        getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
                             namespace Foo;
 
                             trait T {
@@ -1104,7 +1106,7 @@ class TemporaryUpdateTest extends TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -1113,7 +1115,7 @@ class TemporaryUpdateTest extends TestCase
                                     echo $this->bat();
                                 }
                             }',
-                        getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
                             namespace Foo;
 
                             trait T {
@@ -1123,7 +1125,7 @@ class TemporaryUpdateTest extends TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -1132,7 +1134,7 @@ class TemporaryUpdateTest extends TestCase
                                     echo $this->bar();
                                 }
                             }',
-                        getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
                             namespace Foo;
 
                             trait T {
@@ -1147,7 +1149,7 @@ class TemporaryUpdateTest extends TestCase
             'traitMethodRenameSameFile' => [
                 [
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -1164,7 +1166,7 @@ class TemporaryUpdateTest extends TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -1181,7 +1183,7 @@ class TemporaryUpdateTest extends TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -1198,7 +1200,7 @@ class TemporaryUpdateTest extends TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -1215,7 +1217,7 @@ class TemporaryUpdateTest extends TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -1237,7 +1239,7 @@ class TemporaryUpdateTest extends TestCase
             'duplicateMethodThenRemove' => [
                 [
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             class A {
                                 /**
                                  * @return void
@@ -1253,7 +1255,7 @@ class TemporaryUpdateTest extends TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             class A {
                                 /**
                                  * @return void
@@ -1274,7 +1276,7 @@ class TemporaryUpdateTest extends TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             class A {
                                 /**
                                  * @return void
@@ -1295,13 +1297,13 @@ class TemporaryUpdateTest extends TestCase
             'classCopiesUse' => [
                 [
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {}',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             use B\A;
@@ -1309,7 +1311,7 @@ class TemporaryUpdateTest extends TestCase
                             class A {}',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {}',
@@ -1320,7 +1322,7 @@ class TemporaryUpdateTest extends TestCase
             'addMissingArgs' => [
                 [
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             function variadic_arguments(string $_foo, ...$bars ) : void {}
 
                             function foo() : void {
@@ -1331,7 +1333,7 @@ class TemporaryUpdateTest extends TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             function variadic_arguments(string $_foo, string ...$bars ) : void {}
 
                             function foo(string $baz, string $qux) : void {
@@ -1347,7 +1349,7 @@ class TemporaryUpdateTest extends TestCase
             'fixClassRef' => [
                 [
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             class SomeClass {}
 
                             class B {
@@ -1364,7 +1366,7 @@ class TemporaryUpdateTest extends TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             class SomeClass {}
 
                             class B {
@@ -1386,7 +1388,7 @@ class TemporaryUpdateTest extends TestCase
             'addPropertyDocblock' => [
                 [
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             class A {}
 
                             class B
@@ -1401,7 +1403,7 @@ class TemporaryUpdateTest extends TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             class A {}
 
                             class B
@@ -1424,7 +1426,7 @@ class TemporaryUpdateTest extends TestCase
             'fixNotNullProperty' => [
                 [
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             class B
                             {
                                 /**
@@ -1436,7 +1438,7 @@ class TemporaryUpdateTest extends TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             class B
                             {
                                 /**
@@ -1453,7 +1455,7 @@ class TemporaryUpdateTest extends TestCase
             'dontFixNotNullProperty' => [
                 [
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             class B
                             {
                                 /**
@@ -1465,7 +1467,7 @@ class TemporaryUpdateTest extends TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             class B
                             {
                                 /**
@@ -1482,9 +1484,9 @@ class TemporaryUpdateTest extends TestCase
             'requiredFileWithConstructorInitialisation' => [
                 [
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             require_once("B.php");',
-                        getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
                             class B
                             {
                                 /**
@@ -1498,9 +1500,9 @@ class TemporaryUpdateTest extends TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             require_once("B.php");',
-                        getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'B.php' => '<?php
                             class B
                             {
                                 /**
@@ -1519,7 +1521,7 @@ class TemporaryUpdateTest extends TestCase
             'updatePropertyInitialization' => [
                 [
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             class B {
                                 /**
                                  * @var string
@@ -1538,7 +1540,7 @@ class TemporaryUpdateTest extends TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             class B {
                                 /**
                                  * @var string
@@ -1557,7 +1559,7 @@ class TemporaryUpdateTest extends TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             class B {
                                 /**
                                  * @var string
@@ -1581,7 +1583,7 @@ class TemporaryUpdateTest extends TestCase
             'addPartialMethodWithSyntaxError' => [
                 [
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             class A {
                                 /**
                                  * @return void
@@ -1601,7 +1603,7 @@ class TemporaryUpdateTest extends TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             class A {
                                 /**
                                  * @return void
@@ -1621,7 +1623,7 @@ class TemporaryUpdateTest extends TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             class A {
                                 /**
                                  * @return void
@@ -1646,7 +1648,7 @@ class TemporaryUpdateTest extends TestCase
             'reformat' => [
                 [
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             class A {
                                 public function b(): void {
 
@@ -1654,7 +1656,7 @@ class TemporaryUpdateTest extends TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             class A {
                                 public function b(): void
                                 {
@@ -1667,7 +1669,7 @@ class TemporaryUpdateTest extends TestCase
             'dontForgetErrorInTraitMethod' => [
                 [
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -1675,7 +1677,7 @@ class TemporaryUpdateTest extends TestCase
                             }
 
                             (new A)->foo();',
-                        getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
                             namespace Foo;
 
                             trait T {
@@ -1685,7 +1687,7 @@ class TemporaryUpdateTest extends TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -1693,7 +1695,7 @@ class TemporaryUpdateTest extends TestCase
                             }
 
                             (new A)->foo();',
-                        getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'T.php' => '<?php
                             namespace Foo;
 
                             trait T {
@@ -1708,29 +1710,29 @@ class TemporaryUpdateTest extends TestCase
             'stillUnusedClass' => [
                 [
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {}',
-                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'B.php' => '<?php
                             namespace Foo;
 
                             class B {}',
-                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'user.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'user.php' => '<?php
                             namespace Foo;
 
                             new B();',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {}',
-                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'B.php' => '<?php
                             namespace Foo;
 
                             class B {}',
-                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'user.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'user.php' => '<?php
                             namespace Foo;
 
                             new B();',
@@ -1744,7 +1746,7 @@ class TemporaryUpdateTest extends TestCase
             'stillUnusedMethod' => [
                 [
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -1752,13 +1754,13 @@ class TemporaryUpdateTest extends TestCase
 
                                 public function bar() : void {}
                             }',
-                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'user.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'user.php' => '<?php
                             namespace Foo;
 
                             (new A())->foo();',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class A {
@@ -1767,7 +1769,7 @@ class TemporaryUpdateTest extends TestCase
 
                                 public function bar() : void {}
                             }',
-                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'user.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'user.php' => '<?php
                             namespace Foo;
 
                             (new A())->foo();',
@@ -1781,7 +1783,7 @@ class TemporaryUpdateTest extends TestCase
             'usedMethodWithNoAffectedConstantChanges' => [
                 [
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class Z {
@@ -1790,7 +1792,7 @@ class TemporaryUpdateTest extends TestCase
 
                                 public static function foo() : void {}
                             }',
-                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'B.php' => '<?php
                             namespace Foo;
 
                             class B {
@@ -1800,13 +1802,13 @@ class TemporaryUpdateTest extends TestCase
                                     echo Z::TWO;
                                 }
                             }',
-                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'user.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'user.php' => '<?php
                             namespace Foo;
 
                             (new B())->doFoo();',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
                             class Z {
@@ -1816,7 +1818,7 @@ class TemporaryUpdateTest extends TestCase
 
                                 public static function foo() : void {}
                             }',
-                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'B.php' => '<?php
                             namespace Foo;
 
                             class B {
@@ -1826,7 +1828,7 @@ class TemporaryUpdateTest extends TestCase
                                     echo Z::TWO;
                                 }
                             }',
-                        getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'user.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'user.php' => '<?php
                             namespace Foo;
 
                             (new B())->doFoo();',
@@ -1840,7 +1842,7 @@ class TemporaryUpdateTest extends TestCase
             'syntaxErrorFixed' => [
                 [
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             class A {
                                 public static function foo() : void {
                                     $a = 5;
@@ -1856,7 +1858,7 @@ class TemporaryUpdateTest extends TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             class A {
                                 public static function foo() : void {
                                     $a = 5;
@@ -1877,7 +1879,7 @@ class TemporaryUpdateTest extends TestCase
             'updateExampleWithSyntaxErrorThen' => [
                 [
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             class A {
                                 public static function foo() : void {
                                     $a = 5;
@@ -1893,7 +1895,7 @@ class TemporaryUpdateTest extends TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             class A {
                                 public static function foo() : void {
                                     $a = 5;
@@ -1909,7 +1911,7 @@ class TemporaryUpdateTest extends TestCase
                             }',
                     ],
                     [
-                        getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             class A {
                                 public static function foo() : void {
                                     $a = 5;

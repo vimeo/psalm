@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Codebase;
 
 use BackedEnum;
@@ -42,35 +44,20 @@ use function strtolower;
  *
  * Populates file and class information so that analysis can work properly
  */
-class Populator
+final class Populator
 {
-    private ClassLikeStorageProvider $classlike_storage_provider;
-
-    private FileStorageProvider $file_storage_provider;
-
     /**
      * @var array<lowercase-string, list<ClassLikeStorage>>
      */
     private array $invalid_class_storages = [];
 
-    private Progress $progress;
-
-    private ClassLikes $classlikes;
-
-    private FileReferenceProvider $file_reference_provider;
-
     public function __construct(
-        ClassLikeStorageProvider $classlike_storage_provider,
-        FileStorageProvider $file_storage_provider,
-        ClassLikes $classlikes,
-        FileReferenceProvider $file_reference_provider,
-        Progress $progress
+        private ClassLikeStorageProvider $classlike_storage_provider,
+        private readonly FileStorageProvider $file_storage_provider,
+        private readonly ClassLikes $classlikes,
+        private readonly FileReferenceProvider $file_reference_provider,
+        private readonly Progress $progress,
     ) {
-        $this->classlike_storage_provider = $classlike_storage_provider;
-        $this->file_storage_provider = $file_storage_provider;
-        $this->classlikes = $classlikes;
-        $this->progress = $progress;
-        $this->file_reference_provider = $file_reference_provider;
     }
 
     public function populateCodebase(): void
@@ -95,7 +82,7 @@ class Populator
             foreach ($class_storage->dependent_classlikes as $dependent_classlike_lc => $_) {
                 try {
                     $dependee_storage = $this->classlike_storage_provider->get($dependent_classlike_lc);
-                } catch (InvalidArgumentException $exception) {
+                } catch (InvalidArgumentException) {
                     continue;
                 }
 
@@ -273,7 +260,7 @@ class Populator
 
     private function populateOverriddenMethods(
         ClassLikeStorage $storage,
-        ClassLikeStorageProvider $storage_provider
+        ClassLikeStorageProvider $storage_provider,
     ): void {
         $interface_method_implementers = [];
         foreach ($storage->class_implements as $interface) {
@@ -284,7 +271,7 @@ class Populator
                     ),
                 );
                 $implemented_interface_storage = $storage_provider->get($implemented_interface);
-            } catch (InvalidArgumentException $e) {
+            } catch (InvalidArgumentException) {
                 continue;
             }
 
@@ -426,7 +413,7 @@ class Populator
         ClassLikeStorage $storage,
         ClassLikeStorageProvider $storage_provider,
         array $dependent_classlikes,
-        string $used_trait_lc
+        string $used_trait_lc,
     ): void {
         try {
             $used_trait_lc = strtolower(
@@ -435,7 +422,7 @@ class Populator
                 ),
             );
             $trait_storage = $storage_provider->get($used_trait_lc);
-        } catch (InvalidArgumentException $e) {
+        } catch (InvalidArgumentException) {
             return;
         }
 
@@ -456,7 +443,7 @@ class Populator
 
     private static function extendType(
         Union $type,
-        ClassLikeStorage $storage
+        ClassLikeStorage $storage,
     ): Union {
         $extended_types = [];
 
@@ -489,7 +476,7 @@ class Populator
         ClassLikeStorage $storage,
         ClassLikeStorageProvider $storage_provider,
         array $dependent_classlikes,
-        string $parent_storage_class
+        string $parent_storage_class,
     ): void {
         $parent_storage_class = strtolower(
             $this->classlikes->getUnAliasedName(
@@ -499,7 +486,7 @@ class Populator
 
         try {
             $parent_storage = $storage_provider->get($parent_storage_class);
-        } catch (InvalidArgumentException $e) {
+        } catch (InvalidArgumentException) {
             $this->progress->debug('Populator could not find dependency (' . __LINE__ . ")\n");
 
             $storage->invalid_dependencies[$parent_storage_class] = true;
@@ -511,32 +498,26 @@ class Populator
 
         $this->populateClassLikeStorage($parent_storage, $dependent_classlikes);
 
-        $storage->parent_classes = array_merge($storage->parent_classes, $parent_storage->parent_classes);
+        $storage->parent_classes = [...$storage->parent_classes, ...$parent_storage->parent_classes];
 
         self::extendTemplateParams($storage, $parent_storage, true);
 
         $this->inheritMethodsFromParent($storage, $parent_storage);
         $this->inheritPropertiesFromParent($storage, $parent_storage);
 
-        $storage->class_implements = array_merge($storage->class_implements, $parent_storage->class_implements);
-        $storage->invalid_dependencies = array_merge(
-            $storage->invalid_dependencies,
-            $parent_storage->invalid_dependencies,
-        );
+        $storage->class_implements = [...$storage->class_implements, ...$parent_storage->class_implements];
+        $storage->invalid_dependencies = [...$storage->invalid_dependencies, ...$parent_storage->invalid_dependencies];
 
         if ($parent_storage->has_visitor_issues) {
             $storage->has_visitor_issues = true;
         }
 
-        $storage->constants = array_merge(
-            array_filter(
-                $parent_storage->constants,
-                static fn(ClassConstantStorage $constant): bool
-                    => $constant->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC
-                        || $constant->visibility === ClassLikeAnalyzer::VISIBILITY_PROTECTED,
-            ),
-            $storage->constants,
-        );
+        $storage->constants = [...array_filter(
+            $parent_storage->constants,
+            static fn(ClassConstantStorage $constant): bool
+                => $constant->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC
+                    || $constant->visibility === ClassLikeAnalyzer::VISIBILITY_PROTECTED,
+        ), ...$storage->constants];
 
         if ($parent_storage->preserve_constructor_signature) {
             $storage->preserve_constructor_signature = true;
@@ -568,24 +549,21 @@ class Populator
         ClassLikeStorage $storage,
         ClassLikeStorage $interface_storage,
         ClassLikeStorageProvider $storage_provider,
-        array $dependent_classlikes
+        array $dependent_classlikes,
     ): void {
         $this->populateClassLikeStorage($interface_storage, $dependent_classlikes);
 
         // copy over any constants
-        $storage->constants = array_merge(
-            array_filter(
-                $interface_storage->constants,
-                static fn(ClassConstantStorage $constant): bool
-                    => $constant->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC,
-            ),
-            $storage->constants,
-        );
+        $storage->constants = [...array_filter(
+            $interface_storage->constants,
+            static fn(ClassConstantStorage $constant): bool
+                => $constant->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC,
+        ), ...$storage->constants];
 
-        $storage->invalid_dependencies = array_merge(
-            $storage->invalid_dependencies,
-            $interface_storage->invalid_dependencies,
-        );
+        $storage->invalid_dependencies = [
+            ...$storage->invalid_dependencies,
+            ...$interface_storage->invalid_dependencies,
+        ];
 
         self::extendTemplateParams($storage, $interface_storage, false);
 
@@ -599,7 +577,7 @@ class Populator
                     ),
                 );
                 $new_parent_interface_storage = $storage_provider->get($new_parent);
-            } catch (InvalidArgumentException $e) {
+            } catch (InvalidArgumentException) {
                 continue;
             }
 
@@ -610,7 +588,7 @@ class Populator
     private static function extendTemplateParams(
         ClassLikeStorage $storage,
         ClassLikeStorage $parent_storage,
-        bool $from_direct_parent
+        bool $from_direct_parent,
     ): void {
         if ($parent_storage->yield && !$storage->yield) {
             $storage->yield = $parent_storage->yield;
@@ -670,7 +648,7 @@ class Populator
         ClassLikeStorage $storage,
         ClassLikeStorageProvider $storage_provider,
         array $dependent_classlikes,
-        string $parent_interface_lc
+        string $parent_interface_lc,
     ): void {
         try {
             $parent_interface_lc = strtolower(
@@ -679,7 +657,7 @@ class Populator
                 ),
             );
             $parent_interface_storage = $storage_provider->get($parent_interface_lc);
-        } catch (InvalidArgumentException $e) {
+        } catch (InvalidArgumentException) {
             $this->progress->debug('Populator could not find dependency (' . __LINE__ . ")\n");
 
             $storage->invalid_dependencies[$parent_interface_lc] = true;
@@ -693,10 +671,7 @@ class Populator
         $storage->pseudo_methods += $parent_interface_storage->pseudo_methods;
         $storage->declaring_pseudo_method_ids += $parent_interface_storage->declaring_pseudo_method_ids;
 
-        $storage->parent_interfaces = array_merge(
-            $parent_interface_storage->parent_interfaces,
-            $storage->parent_interfaces,
-        );
+        $storage->parent_interfaces = [...$parent_interface_storage->parent_interfaces, ...$storage->parent_interfaces];
 
         if (isset($storage->parent_interfaces[strtolower(UnitEnum::class)])) {
             $storage->declaring_property_ids['name'] = $storage->name;
@@ -716,7 +691,7 @@ class Populator
         ClassLikeStorage $storage,
         ClassLikeStorageProvider $storage_provider,
         array $dependent_classlikes,
-        string $implemented_interface_lc
+        string $implemented_interface_lc,
     ): void {
         try {
             $implemented_interface_lc = strtolower(
@@ -725,7 +700,7 @@ class Populator
                 ),
             );
             $implemented_interface_storage = $storage_provider->get($implemented_interface_lc);
-        } catch (InvalidArgumentException $e) {
+        } catch (InvalidArgumentException) {
             $this->progress->debug('Populator could not find dependency (' . __LINE__ . ")\n");
 
             $storage->invalid_dependencies[$implemented_interface_lc] = true;
@@ -739,10 +714,10 @@ class Populator
             $dependent_classlikes,
         );
 
-        $storage->class_implements = array_merge(
-            $storage->class_implements,
-            $implemented_interface_storage->parent_interfaces,
-        );
+        $storage->class_implements = [
+            ...$storage->class_implements,
+            ...$implemented_interface_storage->parent_interfaces,
+        ];
     }
 
     /**
@@ -767,7 +742,7 @@ class Populator
         foreach ($storage->required_file_paths as $included_file_path => $_) {
             try {
                 $included_file_storage = $this->file_storage_provider->get($included_file_path);
-            } catch (InvalidArgumentException $e) {
+            } catch (InvalidArgumentException) {
                 continue;
             }
 
@@ -779,25 +754,25 @@ class Populator
         foreach ($all_required_file_paths as $included_file_path => $_) {
             try {
                 $included_file_storage = $this->file_storage_provider->get($included_file_path);
-            } catch (InvalidArgumentException $e) {
+            } catch (InvalidArgumentException) {
                 continue;
             }
 
-            $storage->declaring_function_ids = array_merge(
-                $included_file_storage->declaring_function_ids,
-                $storage->declaring_function_ids,
-            );
+            $storage->declaring_function_ids = [
+                ...$included_file_storage->declaring_function_ids,
+                ...$storage->declaring_function_ids,
+            ];
 
-            $storage->declaring_constants = array_merge(
-                $included_file_storage->declaring_constants,
-                $storage->declaring_constants,
-            );
+            $storage->declaring_constants = [
+                ...$included_file_storage->declaring_constants,
+                ...$storage->declaring_constants,
+            ];
         }
 
         foreach ($storage->referenced_classlikes as $fq_class_name) {
             try {
                 $classlike_storage = $this->classlike_storage_provider->get($fq_class_name);
-            } catch (InvalidArgumentException $e) {
+            } catch (InvalidArgumentException) {
                 continue;
             }
 
@@ -807,14 +782,14 @@ class Populator
 
             try {
                 $included_file_storage = $this->file_storage_provider->get($classlike_storage->location->file_path);
-            } catch (InvalidArgumentException $e) {
+            } catch (InvalidArgumentException) {
                 continue;
             }
 
             foreach ($classlike_storage->used_traits as $used_trait) {
                 try {
                     $trait_storage = $this->classlike_storage_provider->get($used_trait);
-                } catch (InvalidArgumentException $e) {
+                } catch (InvalidArgumentException) {
                     continue;
                 }
 
@@ -826,20 +801,20 @@ class Populator
                     $included_trait_file_storage = $this->file_storage_provider->get(
                         $trait_storage->location->file_path,
                     );
-                } catch (InvalidArgumentException $e) {
+                } catch (InvalidArgumentException) {
                     continue;
                 }
 
-                $storage->declaring_function_ids = array_merge(
-                    $included_trait_file_storage->declaring_function_ids,
-                    $storage->declaring_function_ids,
-                );
+                $storage->declaring_function_ids = [
+                    ...$included_trait_file_storage->declaring_function_ids,
+                    ...$storage->declaring_function_ids,
+                ];
             }
 
-            $storage->declaring_function_ids = array_merge(
-                $included_file_storage->declaring_function_ids,
-                $storage->declaring_function_ids,
-            );
+            $storage->declaring_function_ids = [
+                ...$included_file_storage->declaring_function_ids,
+                ...$storage->declaring_function_ids,
+            ];
         }
 
         $storage->required_file_paths = $all_required_file_paths;
@@ -847,7 +822,7 @@ class Populator
         foreach ($all_required_file_paths as $required_file_path) {
             try {
                 $required_file_storage = $this->file_storage_provider->get($required_file_path);
-            } catch (InvalidArgumentException $e) {
+            } catch (InvalidArgumentException) {
                 continue;
             }
 
@@ -857,7 +832,7 @@ class Populator
         foreach ($storage->required_classes as $required_classlike) {
             try {
                 $classlike_storage = $this->classlike_storage_provider->get($required_classlike);
-            } catch (InvalidArgumentException $e) {
+            } catch (InvalidArgumentException) {
                 continue;
             }
 
@@ -867,7 +842,7 @@ class Populator
 
             try {
                 $required_file_storage = $this->file_storage_provider->get($classlike_storage->location->file_path);
-            } catch (InvalidArgumentException $e) {
+            } catch (InvalidArgumentException) {
                 continue;
             }
 
@@ -879,7 +854,7 @@ class Populator
 
     private function inheritConstantsFromTrait(
         ClassLikeStorage $storage,
-        ClassLikeStorage $trait_storage
+        ClassLikeStorage $trait_storage,
     ): void {
         if (!$trait_storage->is_trait) {
             throw new Exception('Class like storage is not for a trait.');
@@ -913,9 +888,9 @@ class Populator
         }
     }
 
-    protected function inheritMethodsFromParent(
+    private function inheritMethodsFromParent(
         ClassLikeStorage $storage,
-        ClassLikeStorage $parent_storage
+        ClassLikeStorage $parent_storage,
     ): void {
         $fq_class_name = $storage->name;
         $fq_class_name_lc = strtolower($fq_class_name);
@@ -931,10 +906,10 @@ class Populator
             if ($parent_storage->is_trait
                 && $storage->trait_alias_map
             ) {
-                $aliased_method_names = array_merge(
-                    $aliased_method_names,
-                    array_keys($storage->trait_alias_map, $method_name_lc, true),
-                );
+                $aliased_method_names = [
+                    ...$aliased_method_names,
+                    ...array_keys($storage->trait_alias_map, $method_name_lc, true),
+                ];
             }
 
             foreach ($aliased_method_names as $aliased_method_name) {
@@ -1001,10 +976,10 @@ class Populator
             if ($parent_storage->is_trait
                 && $storage->trait_alias_map
             ) {
-                $aliased_method_names = array_merge(
-                    $aliased_method_names,
-                    array_keys($storage->trait_alias_map, $method_name_lc, true),
-                );
+                $aliased_method_names = [
+                    ...$aliased_method_names,
+                    ...array_keys($storage->trait_alias_map, $method_name_lc, true),
+                ];
             }
 
             foreach ($aliased_method_names as $aliased_method_name) {
@@ -1030,7 +1005,7 @@ class Populator
 
     private function inheritPropertiesFromParent(
         ClassLikeStorage $storage,
-        ClassLikeStorage $parent_storage
+        ClassLikeStorage $parent_storage,
     ): void {
         if ($parent_storage->sealed_properties !== null) {
             $storage->sealed_properties = $parent_storage->sealed_properties;

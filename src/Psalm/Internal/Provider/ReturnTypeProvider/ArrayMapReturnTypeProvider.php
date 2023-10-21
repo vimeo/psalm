@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use PhpParser;
@@ -25,7 +27,6 @@ use Psalm\Storage\Assertion;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -37,18 +38,19 @@ use function array_map;
 use function array_shift;
 use function array_slice;
 use function array_values;
+use function assert;
 use function count;
 use function explode;
 use function in_array;
 use function mt_rand;
 use function reset;
-use function strpos;
+use function str_contains;
 use function substr;
 
 /**
  * @internal
  */
-class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
+final class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
      * @return array<lowercase-string>
@@ -113,9 +115,9 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
             $array_arg_types = array_map(null, ...$array_arg_types);
             $array_arg_types = array_map(
                 /** @param non-empty-array<?Union> $sub */
-                function (array $sub) use ($null) {
+                static function (array $sub) use ($null) {
                     $sub = array_map(
-                        fn(?Union $t) => $t ?? $null,
+                        static fn(?Union $t) => $t ?? $null,
                         $sub,
                     );
                     return new Union([new TKeyedArray($sub, null, null, true)]);
@@ -144,9 +146,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
 
             if (isset($arg_types['array'])) {
                 $array_arg_atomic_type = $arg_types['array'];
-                if ($array_arg_atomic_type instanceof TList) {
-                    $array_arg_atomic_type = $array_arg_atomic_type->getKeyedArray();
-                }
+
                 $array_arg_type = ArrayType::infer($array_arg_atomic_type);
             }
         }
@@ -164,6 +164,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
             if ($function_call_type->hasCallableType()) {
                 $closure_types = $function_call_type->getClosureTypes() ?: $function_call_type->getCallableTypes();
                 $closure_atomic_type = reset($closure_types);
+                assert($closure_atomic_type !== false);
 
                 $closure_return_type = $closure_atomic_type->return_type ?: Type::getMixed();
 
@@ -295,7 +296,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $fake_call,
         Context $context,
-        ?array &$assertions = null
+        ?array &$assertions = null,
     ): ?Union {
         $old_data_provider = $statements_analyzer->node_data;
 
@@ -381,7 +382,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
         PhpParser\Node\Arg $function_call_arg,
         array $array_args,
         ?array &$assertions = null,
-        ?int $fake_var_discriminator = null
+        ?int $fake_var_discriminator = null,
     ): Union {
         $mapping_return_type = null;
 
@@ -416,7 +417,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
                     );
                 }
 
-                if (strpos($mapping_function_id_part, '::') !== false) {
+                if (str_contains($mapping_function_id_part, '::')) {
                     $is_instance = false;
 
                     if ($mapping_function_id_part[0] === '$') {
@@ -526,7 +527,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
     public static function cleanContext(Context $context, int $fake_var_discriminator): void
     {
         foreach ($context->vars_in_scope as $var_in_scope => $_) {
-            if (strpos($var_in_scope, "__fake_{$fake_var_discriminator}_") !== false) {
+            if (str_contains($var_in_scope, "__fake_{$fake_var_discriminator}_")) {
                 unset($context->vars_in_scope[$var_in_scope]);
             }
         }

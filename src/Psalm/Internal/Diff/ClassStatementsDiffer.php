@@ -1,12 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Diff;
 
 use PhpParser;
+use UnexpectedValueException;
 
 use function count;
-use function get_class;
-use function strpos;
+use function is_string;
+use function str_contains;
 use function strtolower;
 use function substr;
 use function trim;
@@ -14,7 +17,7 @@ use function trim;
 /**
  * @internal
  */
-class ClassStatementsDiffer extends AstDiffer
+final class ClassStatementsDiffer extends AstDiffer
 {
     /**
      * Calculate diff (edit script) from $a to $b.
@@ -39,9 +42,9 @@ class ClassStatementsDiffer extends AstDiffer
                 PhpParser\Node\Stmt $b,
                 string $a_code,
                 string $b_code,
-                bool &$body_change = false
+                bool &$body_change = false,
             ) use (&$diff_map): bool {
-                if (get_class($a) !== get_class($b)) {
+                if ($a::class !== $b::class) {
                     return false;
                 }
 
@@ -142,8 +145,8 @@ class ClassStatementsDiffer extends AstDiffer
                             $a_signature = trim($a_signature);
                             $b_signature = trim($b_signature);
 
-                            if (strpos($a_signature, $b_signature) === false
-                                && strpos($b_signature, $a_signature) === false
+                            if (!str_contains($a_signature, $b_signature)
+                                && !str_contains($b_signature, $a_signature)
                             ) {
                                 $signature_change = true;
                             }
@@ -230,7 +233,19 @@ class ClassStatementsDiffer extends AstDiffer
                 /** @var PhpParser\Node */
                 $affected_elem = $diff_elem->type === DiffElem::TYPE_REMOVE ? $diff_elem->old : $diff_elem->new;
                 if ($affected_elem instanceof PhpParser\Node\Stmt\ClassMethod) {
-                    $add_or_delete[] = $name_lc . '::' . strtolower((string) $affected_elem->name);
+                    $method_name = strtolower((string) $affected_elem->name);
+                    $add_or_delete[] = $name_lc . '::' . $method_name;
+                    if ($method_name === '__construct') {
+                        foreach ($affected_elem->getParams() as $param) {
+                            if (!$param->flags || !$param->var instanceof PhpParser\Node\Expr\Variable) {
+                                continue;
+                            }
+                            if ($param->var instanceof PhpParser\Node\Expr\Error || !is_string($param->var->name)) {
+                                throw new UnexpectedValueException('Not expecting param name to be non-string');
+                            }
+                            $add_or_delete[] = $name_lc . '::$' . $param->var->name;
+                        }
+                    }
                 } elseif ($affected_elem instanceof PhpParser\Node\Stmt\Property) {
                     foreach ($affected_elem->props as $prop) {
                         $add_or_delete[] = $name_lc . '::$' . $prop->name;

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests\Config\Plugin\Hook;
 
 use Psalm\Codebase;
@@ -54,11 +56,10 @@ class CustomArrayMapFunctionStorageProvider implements DynamicFunctionStoragePro
         $custom_array_map_storage->return_type = self::createReturnType($all_expected_callables);
         $custom_array_map_storage->params = [
             ...array_map(
-                function (TCallable $expected, int $offset) {
+                static function (TCallable $expected, int $offset) {
                     $t = new Union([$expected]);
                     $param = new FunctionLikeParameter('fn' . $offset, false, $t, $t);
                     $param->is_optional = false;
-
                     return $param;
                 },
                 $all_expected_callables,
@@ -108,7 +109,7 @@ class CustomArrayMapFunctionStorageProvider implements DynamicFunctionStoragePro
     private static function createExpectedCallable(
         Union $input_type,
         DynamicTemplateProvider $template_provider,
-        int $return_template_offset = 0
+        int $return_template_offset = 0,
     ): TCallable {
         return new TCallable(
             'callable',
@@ -124,7 +125,7 @@ class CustomArrayMapFunctionStorageProvider implements DynamicFunctionStoragePro
      */
     private static function createRestCallables(
         DynamicTemplateProvider $template_provider,
-        int $expected_callable_args_count
+        int $expected_callable_args_count,
     ): array {
         $rest_callable_params = [];
 
@@ -160,7 +161,7 @@ class CustomArrayMapFunctionStorageProvider implements DynamicFunctionStoragePro
      */
     private static function createTemplates(
         DynamicTemplateProvider $template_provider,
-        int $expected_callable_count
+        int $expected_callable_count,
     ): array {
         $template_params = [];
 

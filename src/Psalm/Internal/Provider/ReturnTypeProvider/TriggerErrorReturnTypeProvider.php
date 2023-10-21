@@ -25,7 +25,7 @@ use const E_USER_WARNING;
 /**
  * @internal
  */
-class TriggerErrorReturnTypeProvider implements FunctionReturnTypeProviderInterface
+final class TriggerErrorReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
      * @return array<lowercase-string>

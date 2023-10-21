@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\FunctionLike;
 
 use PhpParser;
@@ -13,7 +15,6 @@ use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 
@@ -24,7 +25,7 @@ use function array_merge;
  *
  * @internal
  */
-class ReturnTypeCollector
+final class ReturnTypeCollector
 {
     /**
      * Gets the return types from a list of statements
@@ -39,7 +40,7 @@ class ReturnTypeCollector
         NodeDataProvider $nodes,
         array $stmts,
         array &$yield_types,
-        bool $collapse_types = false
+        bool $collapse_types = false,
     ): array {
         $return_types = [];
 
@@ -257,7 +258,7 @@ class ReturnTypeCollector
     private static function processYieldTypes(
         Codebase $codebase,
         array $return_types,
-        array $yield_types
+        array $yield_types,
     ): array {
         $key_type = null;
         $value_type = null;
@@ -265,10 +266,6 @@ class ReturnTypeCollector
         $yield_type = Type::combineUnionTypeArray($yield_types, null);
 
         foreach ($yield_type->getAtomicTypes() as $type) {
-            if ($type instanceof TList) {
-                $type = $type->getKeyedArray();
-            }
-
             if ($type instanceof TKeyedArray) {
                 $type = $type->getGenericArrayType();
             }
@@ -310,7 +307,7 @@ class ReturnTypeCollector
      */
     private static function getYieldTypeFromExpression(
         PhpParser\Node\Expr $stmt,
-        NodeDataProvider $nodes
+        NodeDataProvider $nodes,
     ): array {
         $collector = new YieldTypeCollector($nodes);
         $traverser = new NodeTraverser();

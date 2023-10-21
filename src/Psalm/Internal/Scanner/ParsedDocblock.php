@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Scanner;
 
 use function explode;
@@ -8,26 +10,16 @@ use function trim;
 /**
  * @internal
  */
-class ParsedDocblock
+final class ParsedDocblock
 {
-    public string $description;
-
-    public string $first_line_padding;
-
-    /** @var array<string, array<int, string>> */
-    public array $tags = [];
-
     /** @var array<string, array<int, string>> */
     public array $combined_tags = [];
 
     private static bool $shouldAddNewLineBetweenAnnotations = true;
 
     /** @param array<string, array<int, string>> $tags */
-    public function __construct(string $description, array $tags, string $first_line_padding = '')
+    public function __construct(public string $description, public array $tags, public string $first_line_padding = '')
     {
-        $this->description = $description;
-        $this->tags = $tags;
-        $this->first_line_padding = $first_line_padding;
     }
 
     public function render(string $left_padding): string

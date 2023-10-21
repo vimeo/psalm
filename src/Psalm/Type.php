@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm;
 
 use InvalidArgumentException;
@@ -56,10 +58,11 @@ use function array_pop;
 use function array_shift;
 use function array_values;
 use function explode;
-use function get_class;
 use function implode;
+use function is_int;
 use function preg_quote;
 use function preg_replace;
+use function str_contains;
 use function stripos;
 use function strlen;
 use function strpos;
@@ -76,7 +79,7 @@ abstract class Type
     public static function parseString(
         string $type_string,
         ?int $analysis_php_version_id = null,
-        array $template_type_map = []
+        array $template_type_map = [],
     ): Union {
         return TypeParser::parseTokens(
             TypeTokenizer::tokenize(
@@ -89,7 +92,7 @@ abstract class Type
 
     public static function getFQCLNFromString(
         string $class,
-        Aliases $aliases
+        Aliases $aliases,
     ): string {
         if ($class === '') {
             throw new InvalidArgumentException('$class cannot be empty');
@@ -101,7 +104,7 @@ abstract class Type
 
         $imported_namespaces = $aliases->uses;
 
-        if (strpos($class, '\\') !== false) {
+        if (str_contains($class, '\\')) {
             $class_parts = explode('\\', $class);
             $first_namespace = array_shift($class_parts);
 
@@ -127,7 +130,7 @@ abstract class Type
         array $aliased_classes,
         ?string $this_class,
         bool $allow_self = false,
-        bool $is_static = false
+        bool $is_static = false,
     ): string {
         if ($allow_self && $value === $this_class) {
             if ($is_static) {
@@ -141,7 +144,7 @@ abstract class Type
         }
 
         if ($namespace && stripos($value, $namespace . '\\') === 0) {
-            $candidate = preg_replace(
+            $candidate = (string) preg_replace(
                 '/^' . preg_quote($namespace . '\\') . '/i',
                 '',
                 $value,
@@ -152,7 +155,7 @@ abstract class Type
             if (!isset($aliased_classes[strtolower($candidate_parts[0])])) {
                 return $candidate;
             }
-        } elseif (!$namespace && strpos($value, '\\') === false) {
+        } elseif (!$namespace && !str_contains($value, '\\')) {
             return $value;
         }
 
@@ -256,6 +259,19 @@ abstract class Type
         $type = new TNumericString;
 
         return new Union([$type]);
+    }
+
+    /**
+     * @psalm-suppress PossiblyUnusedMethod
+     * @return TLiteralString|TLiteralInt
+     */
+    public static function getLiteral(int|string $value): Atomic
+    {
+        if (is_int($value)) {
+            return new TLiteralInt($value);
+        }
+
+        return TLiteralString::make($value);
     }
 
     public static function getString(?string $value = null): Union
@@ -575,7 +591,7 @@ abstract class Type
         bool $overwrite_empty_array = false,
         bool $allow_mixed_union = true,
         int $literal_limit = 500,
-        ?bool $possibly_undefined = null
+        ?bool $possibly_undefined = null,
     ): Union {
         if ($type_2 === null && $type_1 === null) {
             throw new UnexpectedValueException('At least one type must be provided to combine');
@@ -612,13 +628,13 @@ abstract class Type
                     $both_failed_reconciliation = true;
                 } else {
                     return $type_2->setProperties([
-                        'parent_nodes' => array_merge($type_2->parent_nodes, $type_1->parent_nodes),
+                        'parent_nodes' => [...$type_2->parent_nodes, ...$type_1->parent_nodes],
                         'possibly_undefined' => $possibly_undefined ?? $type_2->possibly_undefined,
                     ]);
                 }
             } elseif ($type_2->failed_reconciliation) {
                 return $type_1->setProperties([
-                    'parent_nodes' => array_merge($type_1->parent_nodes, $type_2->parent_nodes),
+                    'parent_nodes' => [...$type_1->parent_nodes, ...$type_2->parent_nodes],
                     'possibly_undefined' => $possibly_undefined ?? $type_1->possibly_undefined,
                 ]);
             }
@@ -698,7 +714,7 @@ abstract class Type
     public static function intersectUnionTypes(
         ?Union $type_1,
         ?Union $type_2,
-        Codebase $codebase
+        Codebase $codebase,
     ): ?Union {
         if ($type_2 === null && $type_1 === null) {
             throw new UnexpectedValueException('At least one type must be provided to combine');
@@ -824,7 +840,7 @@ abstract class Type
         Atomic $type_1_atomic,
         Atomic $type_2_atomic,
         Codebase $codebase,
-        bool &$intersection_performed
+        bool &$intersection_performed,
     ): ?Atomic {
         $intersection_atomic = null;
         $wider_type = null;
@@ -832,15 +848,15 @@ abstract class Type
             && $type_2_atomic instanceof TNamedObject
         ) {
             if (($type_1_atomic->value === $type_2_atomic->value
-                && get_class($type_1_atomic) === TNamedObject::class
-                && get_class($type_2_atomic) !== TNamedObject::class)
+                && $type_1_atomic::class === TNamedObject::class
+                && $type_2_atomic::class !== TNamedObject::class)
             ) {
                 $intersection_atomic = $type_2_atomic;
                 $wider_type = $type_1_atomic;
                 $intersection_performed = true;
             } elseif (($type_1_atomic->value === $type_2_atomic->value
-                && get_class($type_2_atomic) === TNamedObject::class
-                && get_class($type_1_atomic) !== TNamedObject::class)
+                && $type_2_atomic::class === TNamedObject::class
+                && $type_1_atomic::class !== TNamedObject::class)
             ) {
                 $intersection_atomic = $type_1_atomic;
                 $wider_type = $type_2_atomic;
@@ -905,7 +921,7 @@ abstract class Type
                     if ($first_is_class && $second_is_class) {
                         return $intersection_atomic;
                     }
-                } catch (InvalidArgumentException $e) {
+                } catch (InvalidArgumentException) {
                     // Ignore non-existing classes during initial scan
                 }
             }
@@ -967,7 +983,7 @@ abstract class Type
         }
         try {
             $storage = $codebase->classlike_storage_provider->get($type->value);
-        } catch (InvalidArgumentException $e) {
+        } catch (InvalidArgumentException) {
             // Ignore non-existing classes during initial scan
             return true;
         }

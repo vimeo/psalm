@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Storage\Assertion;
 
 use Psalm\Storage\Assertion;
@@ -9,11 +11,8 @@ use Psalm\Storage\Assertion;
  */
 final class IsClassEqual extends Assertion
 {
-    public string $type;
-
-    public function __construct(string $type)
+    public function __construct(public readonly string $type)
     {
-        $this->type = $type;
     }
 
     public function getNegation(): Assertion

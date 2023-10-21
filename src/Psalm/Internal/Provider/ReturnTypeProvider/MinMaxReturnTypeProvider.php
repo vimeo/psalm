@@ -19,7 +19,6 @@ use UnexpectedValueException;
 use function array_filter;
 use function assert;
 use function count;
-use function get_class;
 use function in_array;
 use function max;
 use function min;
@@ -27,7 +26,7 @@ use function min;
 /**
  * @internal
  */
-class MinMaxReturnTypeProvider implements FunctionReturnTypeProviderInterface
+final class MinMaxReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
      * @return array<lowercase-string>
@@ -89,7 +88,7 @@ class MinMaxReturnTypeProvider implements FunctionReturnTypeProviderInterface
                         } elseif ($atomic_type instanceof TIntRange) {
                             $min_bounds[] = $atomic_type->min_bound;
                             $max_bounds[] = $atomic_type->max_bound;
-                        } elseif (get_class($atomic_type) === TInt::class) {
+                        } elseif ($atomic_type::class === TInt::class) {
                             $min_bounds[] = null;
                             $max_bounds[] = null;
                         } else {

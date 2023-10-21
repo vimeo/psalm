@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\Assignment;
 
 use InvalidArgumentException;
@@ -22,10 +24,8 @@ use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TClassStringMap;
-use Psalm\Type\Atomic\TDependentListKey;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
@@ -49,20 +49,20 @@ use function implode;
 use function in_array;
 use function is_string;
 use function preg_match;
+use function str_contains;
 use function strlen;
-use function strpos;
 
 /**
  * @internal
  */
-class ArrayAssignmentAnalyzer
+final class ArrayAssignmentAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
         Context $context,
         ?PhpParser\Node\Expr $assign_value,
-        Union $assignment_value_type
+        Union $assignment_value_type,
     ): void {
         $nesting = 0;
         $var_id = ExpressionIdentifier::getVarId(
@@ -94,7 +94,7 @@ class ArrayAssignmentAnalyzer
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
         ?PhpParser\Node\Expr $assign_value,
         Union $assignment_type,
-        Context $context
+        Context $context,
     ): ?bool {
         $root_array_expr = $stmt;
 
@@ -289,7 +289,7 @@ class ArrayAssignmentAnalyzer
         Codebase $codebase,
         Union $child_stmt_type,
         Union $current_type,
-        array $key_values
+        array $key_values,
     ): Union {
         $has_matching_objectlike_property = false;
         $has_matching_string = false;
@@ -297,9 +297,6 @@ class ArrayAssignmentAnalyzer
         $changed = false;
         $types = [];
         foreach ($child_stmt_type->getAtomicTypes() as $type) {
-            if ($type instanceof TList) {
-                $type = $type->getKeyedArray();
-            }
             $old_type = $type;
             if ($type instanceof TTemplateParam) {
                 $type = $type->replaceAs(self::updateTypeWithKeyValues(
@@ -394,7 +391,7 @@ class ArrayAssignmentAnalyzer
         Union &$stmt_type,
         Union $child_stmt_type,
         ?string $var_var_id,
-        array $key_values
+        array $key_values,
     ): void {
         if ($statements_analyzer->data_flow_graph
             && ($statements_analyzer->data_flow_graph instanceof VariableUseGraph
@@ -459,7 +456,7 @@ class ArrayAssignmentAnalyzer
         Union $value_type,
         Union $root_type,
         bool $offset_already_existed,
-        ?string $parent_var_id
+        ?string $parent_var_id,
     ): Union {
         $templated_assignment = false;
 
@@ -479,8 +476,6 @@ class ArrayAssignmentAnalyzer
 
                     if (($key_type_type instanceof TIntRange
                         && $key_type_type->dependent_list_key === $parent_var_id
-                    ) || ($key_type_type instanceof TDependentListKey
-                        && $key_type_type->var_id === $parent_var_id
                     )) {
                         $offset_already_existed = true;
                     }
@@ -515,7 +510,7 @@ class ArrayAssignmentAnalyzer
             }
 
             if ($parent_var_id && ($parent_type = $context->vars_in_scope[$parent_var_id] ?? null)) {
-                if ($offset_already_existed && $parent_type->hasList() && strpos($parent_var_id, '[') === false) {
+                if ($offset_already_existed && $parent_type->hasList() && !str_contains($parent_var_id, '[')) {
                     $array_atomic_type_list = $value_type;
                 } elseif ($parent_type->hasClassStringMap()
                     && $key_type
@@ -584,9 +579,7 @@ class ArrayAssignmentAnalyzer
             $atomic_root_types = $root_type->getAtomicTypes();
 
             foreach ($atomic_root_types as $atomic_root_type_array) {
-                if ($atomic_root_type_array instanceof TList) {
-                    $atomic_root_type_array = $atomic_root_type_array->getKeyedArray();
-                } elseif (!$atomic_root_type_array instanceof TKeyedArray
+                if (!$atomic_root_type_array instanceof TKeyedArray
                     && !$atomic_root_type_array instanceof TArray
                 ) {
                     continue;
@@ -712,9 +705,7 @@ class ArrayAssignmentAnalyzer
 
             if (isset($atomic_root_types['array'])) {
                 $atomic_root_type_array = $atomic_root_types['array'];
-                if ($atomic_root_type_array instanceof TList) {
-                    $atomic_root_type_array = $atomic_root_type_array->getKeyedArray();
-                }
+
 
                 if ($atomic_root_type_array instanceof TNonEmptyArray
                     && $atomic_root_type_array->count !== null
@@ -765,7 +756,7 @@ class ArrayAssignmentAnalyzer
         Union &$root_type,
         Union &$current_type,
         ?PhpParser\Node\Expr &$current_dim,
-        bool &$offset_already_existed
+        bool &$offset_already_existed,
     ): void {
         $var_id_additions = [];
 
@@ -1035,7 +1026,7 @@ class ArrayAssignmentAnalyzer
      */
     private static function getDimKeyValues(
         StatementsAnalyzer $statements_analyzer,
-        PhpParser\Node\Expr $dim
+        PhpParser\Node\Expr $dim,
     ): array {
         $key_values = [];
 
@@ -1076,7 +1067,7 @@ class ArrayAssignmentAnalyzer
     private static function getArrayAssignmentOffsetType(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\ArrayDimFetch $child_stmt,
-        Union $child_stmt_dim_type
+        Union $child_stmt_dim_type,
     ): array {
         if ($child_stmt->dim instanceof PhpParser\Node\Scalar\String_
             || (($child_stmt->dim instanceof PhpParser\Node\Expr\ConstFetch

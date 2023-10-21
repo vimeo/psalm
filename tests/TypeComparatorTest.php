@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
@@ -88,7 +90,7 @@ class TypeComparatorTest extends TestCase
         $basic_types['list{123}'] = true;
 
         return array_map(
-            fn($type) => [$type],
+            static fn($type) => [$type],
             array_keys($basic_types),
         );
     }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Storage\Assertion;
 
 use Psalm\Storage\Assertion;
@@ -10,11 +12,8 @@ use Psalm\Type\Atomic;
  */
 final class IsLooselyEqual extends Assertion
 {
-    public Atomic $type;
-
-    public function __construct(Atomic $type)
+    public function __construct(public readonly Atomic $type)
     {
-        $this->type = $type;
     }
 
     public function getNegation(): Assertion

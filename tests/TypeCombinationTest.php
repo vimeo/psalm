@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
 use Psalm\Internal\Type\TypeCombiner;
@@ -858,6 +860,13 @@ class TypeCombinationTest extends TestCase
                 [
                     'non-empty-string',
                     'non-empty-literal-string',
+                ],
+            ],
+            'nonFalsyStringAndFalsyLiteral' => [
+                'string',
+                [
+                    'non-falsy-string',
+                    '"0"',
                 ],
             ],
         ];

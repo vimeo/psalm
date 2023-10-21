@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type\Atomic;
 
 use Psalm\Codebase;
@@ -10,7 +12,6 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
 use function count;
-use function get_class;
 
 /**
  * Denotes a simple array of the form `array<TKey, TValue>`. It expects an array with two elements, both union types.
@@ -29,10 +30,7 @@ class TArray extends Atomic
      */
     public array $type_params;
 
-    /**
-     * @var string
-     */
-    public $value = 'array';
+    public string $value = 'array';
 
     /**
      * Constructs a new instance of a generic type
@@ -60,7 +58,7 @@ class TArray extends Atomic
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        int $analysis_php_version_id
+        int $analysis_php_version_id,
     ): string {
         return $this->getKey();
     }
@@ -72,7 +70,7 @@ class TArray extends Atomic
 
     public function equals(Atomic $other_type, bool $ensure_source_equality): bool
     {
-        if (get_class($other_type) !== static::class) {
+        if ($other_type::class !== static::class) {
             return false;
         }
 
@@ -123,7 +121,7 @@ class TArray extends Atomic
         ?string $calling_function = null,
         bool $replace = true,
         bool $add_lower_bound = false,
-        int $depth = 0
+        int $depth = 0,
     ): self {
         $type_params = $this->replaceTypeParamsTemplateTypesWithStandins(
             $template_result,

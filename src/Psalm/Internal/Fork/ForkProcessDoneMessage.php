@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Fork;
 
 use Psalm\Storage\ImmutableNonCloneableTrait;
@@ -8,17 +10,11 @@ use Psalm\Storage\ImmutableNonCloneableTrait;
  * @psalm-immutable
  * @internal
  */
-class ForkProcessDoneMessage implements ForkMessage
+final class ForkProcessDoneMessage implements ForkMessage
 {
     use ImmutableNonCloneableTrait;
-    /** @var mixed */
-    public $data;
 
-    /**
-     * @param mixed $data
-     */
-    public function __construct($data)
+    public function __construct(public readonly mixed $data)
     {
-        $this->data = $data;
     }
 }

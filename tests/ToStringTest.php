@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
@@ -260,19 +262,6 @@ class ToStringTest extends TestCase
                     function fooFoo(string $b): void {}
                     fooFoo(new A());',
                 'error_message' => 'InvalidArgument',
-            ],
-            'implicitCastWithStrictTypesToEchoOrSprintf' => [
-                'code' => '<?php declare(strict_types=1);
-                    class A {
-                        public function __toString(): string
-                        {
-                            return "hello";
-                        }
-                    }
-
-                    echo(new A());
-                    sprintf("hello *", new A());',
-                'error_message' => 'ImplicitToStringCast',
             ],
             'implicitCast' => [
                 'code' => '<?php

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<files psalm-version="dev-master@2e5235a0be1f106c251f69b4943ae4f027cef761">
+<files psalm-version="dev-master@7428e49b115a2a837aa29cf0fafd0ca902fe2457">
   <file src="examples/TemplateChecker.php">
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$comment_block->tags['variablesfrom'][0]]]></code>
@@ -12,13 +12,13 @@
       <code>$matches[1]</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
-  <file src="src/Psalm/Codebase.php">
-    <PossiblyUndefinedIntArrayOffset>
-      <code>$const_name</code>
-      <code>$const_name</code>
-      <code>$symbol_name</code>
-      <code>$symbol_parts[1]</code>
-    </PossiblyUndefinedIntArrayOffset>
+  <file src="src/Psalm/Config.php">
+    <PossiblyNullArgument>
+      <code>$deprecated_element_xml</code>
+    </PossiblyNullArgument>
+    <PropertyTypeCoercion>
+      <code>$this</code>
+    </PropertyTypeCoercion>
   </file>
   <file src="src/Psalm/Config/FileFilter.php">
     <PossiblyUndefinedIntArrayOffset>
@@ -44,6 +44,11 @@
     <PossiblyUndefinedIntArrayOffset>
       <code>$property_name</code>
     </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/Internal/Analyzer/NamespaceAnalyzer.php">
+    <NonInvariantDocblockPropertyType>
+      <code>$source</code>
+    </NonInvariantDocblockPropertyType>
   </file>
   <file src="src/Psalm/Internal/Analyzer/ProjectAnalyzer.php">
     <PossiblyUndefinedIntArrayOffset>
@@ -254,6 +259,16 @@
       <code>$stub</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
+  <file src="src/Psalm/Internal/Codebase/Methods.php">
+    <InvalidArgument>
+      <code><![CDATA[$class_storage->methods[$declaring_method_name]->stubbed]]></code>
+    </InvalidArgument>
+  </file>
+  <file src="src/Psalm/Internal/Codebase/Populator.php">
+    <InvalidArgument>
+      <code><![CDATA[$storage->methods[$implementing_method_id->method_name]->abstract]]></code>
+    </InvalidArgument>
+  </file>
   <file src="src/Psalm/Internal/Codebase/Properties.php">
     <PossiblyUndefinedIntArrayOffset>
       <code>$property_name</code>
@@ -289,6 +304,16 @@
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$stmt->props[0]]]></code>
     </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/Internal/Fork/Pool.php">
+    <PossiblyFalseArgument>
+      <code>$buffer</code>
+    </PossiblyFalseArgument>
+  </file>
+  <file src="src/Psalm/Internal/LanguageServer/ClientConfiguration.php">
+    <PossiblyUnusedProperty>
+      <code>$findUnusedVariables</code>
+    </PossiblyUnusedProperty>
   </file>
   <file src="src/Psalm/Internal/LanguageServer/LanguageClient.php">
     <InvalidArrayAccess>
@@ -341,12 +366,17 @@
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/PhpVisitor/Reflector/FunctionLikeDocblockParser.php">
+    <InvalidReturnStatement>
+      <code>$line_parts</code>
+    </InvalidReturnStatement>
+    <InvalidReturnType>
+      <code><![CDATA[array{string, string}&array<int<0, max>, string>]]></code>
+    </InvalidReturnType>
     <PossiblyUndefinedIntArrayOffset>
+      <code>$line_parts[0]</code>
+      <code>$line_parts[1]</code>
       <code>$since_parts[1]</code>
     </PossiblyUndefinedIntArrayOffset>
-    <RedundantCondition>
-      <code><![CDATA[count($line_parts) > 0]]></code>
-    </RedundantCondition>
   </file>
   <file src="src/Psalm/Internal/PhpVisitor/Reflector/FunctionLikeDocblockScanner.php">
     <PossiblyUndefinedArrayOffset>
@@ -379,9 +409,6 @@
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Type/Comparator/AtomicTypeComparator.php">
-    <ComplexMethod>
-      <code>isContainedBy</code>
-    </ComplexMethod>
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$array->properties[0]]]></code>
       <code><![CDATA[$array->properties[0]]]></code>
@@ -459,9 +486,6 @@
   </file>
   <file src="src/Psalm/Type/Atomic.php">
     <ImpureMethodCall>
-      <code>classExtendsOrImplements</code>
-      <code>classExtendsOrImplements</code>
-      <code>classExtendsOrImplements</code>
       <code>classOrInterfaceExists</code>
       <code>classOrInterfaceExists</code>
       <code>classOrInterfaceExists</code>
@@ -502,11 +526,6 @@
       <code>getMostSpecificTypeFromBounds</code>
     </ImpureMethodCall>
   </file>
-  <file src="src/Psalm/Type/Atomic/TCallableList.php">
-    <DeprecatedClass>
-      <code>TNonEmptyList</code>
-    </DeprecatedClass>
-  </file>
   <file src="src/Psalm/Type/Atomic/TClassString.php">
     <ImpureMethodCall>
       <code>replace</code>
@@ -528,17 +547,7 @@
       <code>replace</code>
     </ImpureMethodCall>
   </file>
-  <file src="src/Psalm/Type/Atomic/TDependentListKey.php">
-    <PossiblyUnusedMethod>
-      <code>__construct</code>
-    </PossiblyUnusedMethod>
-  </file>
   <file src="src/Psalm/Type/Atomic/TKeyedArray.php">
-    <DeprecatedClass>
-      <code>TList</code>
-      <code><![CDATA[new TList($this->getGenericValueType())]]></code>
-      <code><![CDATA[new TNonEmptyList($this->getGenericValueType())]]></code>
-    </DeprecatedClass>
     <ImpureMethodCall>
       <code>combine</code>
       <code>combine</code>
@@ -561,26 +570,6 @@
       <code><![CDATA[$this->properties[0]]]></code>
       <code><![CDATA[$this->properties[0]]]></code>
     </PossiblyUndefinedIntArrayOffset>
-    <PossiblyUnusedMethod>
-      <code>getList</code>
-    </PossiblyUnusedMethod>
-  </file>
-  <file src="src/Psalm/Type/Atomic/TList.php">
-    <ImpureMethodCall>
-      <code>replace</code>
-      <code>replace</code>
-    </ImpureMethodCall>
-    <ImpurePropertyAssignment>
-      <code><![CDATA[$cloned->type_param]]></code>
-    </ImpurePropertyAssignment>
-  </file>
-  <file src="src/Psalm/Type/Atomic/TNonEmptyList.php">
-    <DeprecatedClass>
-      <code>TList</code>
-    </DeprecatedClass>
-    <PossiblyUnusedMethod>
-      <code>setCount</code>
-    </PossiblyUnusedMethod>
   </file>
   <file src="src/Psalm/Type/Atomic/TObjectWithProperties.php">
     <ImpureMethodCall>
@@ -617,8 +606,6 @@
   <file src="src/Psalm/Type/Reconciler.php">
     <PossiblyUndefinedIntArrayOffset>
       <code>$const_name</code>
-      <code>$type[0]</code>
-      <code>$type[0][0]</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Type/TypeNode.php">
@@ -655,6 +642,16 @@
       <code>hasLowercaseString</code>
       <code>hasLowercaseString</code>
     </PossiblyUnusedMethod>
+  </file>
+  <file src="tests/TestConfig.php">
+    <InvalidExtendClass>
+      <code>Config</code>
+    </InvalidExtendClass>
+    <MethodSignatureMismatch>
+      <code>public function __construct()</code>
+      <code>public function getComposerFilePathForClassLike(string $fq_classlike_name): bool</code>
+      <code>public function getProjectDirectories(): array</code>
+    </MethodSignatureMismatch>
   </file>
   <file src="vendor/nikic/php-parser/lib/PhpParser/Node/Expr/ArrowFunction.php">
     <PossiblyUndefinedStringArrayOffset>

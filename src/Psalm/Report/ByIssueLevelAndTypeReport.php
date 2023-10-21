@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Report;
 
 use Psalm\Config;
@@ -140,10 +142,8 @@ HEADING;
 
     /**
      * Copied from ConsoleReport unchanged. We could consider moving to another class to reduce duplication.
-     *
-     * @param IssueData|DataFlowNodeData $data
      */
-    private function getFileReference($data): string
+    private function getFileReference(IssueData|DataFlowNodeData $data): string
     {
         $reference = $data->file_name . ':' . $data->line_from . ':' . $data->column_from;
 
@@ -166,8 +166,9 @@ HEADING;
 
         if (null === $this->link_format) {
             // if xdebug is not enabled, use `get_cfg_var` to get the value directly from php.ini
-            $this->link_format = ini_get('xdebug.file_link_format') ?: get_cfg_var('xdebug.file_link_format')
-                ?: 'file://%f#L%l';
+            $this->link_format = (
+                ini_get('xdebug.file_link_format') ?: get_cfg_var('xdebug.file_link_format')
+            ) ?: 'file://%f#L%l';
         }
 
         $link = strtr($this->link_format, ['%f' => $data->file_path, '%l' => $data->line_from]);
@@ -181,7 +182,7 @@ HEADING;
     {
         usort(
             $this->issues_data,
-            fn(IssueData $left, IssueData $right): int => [$left->error_level > 0, -$left->error_level,
+            static fn(IssueData $left, IssueData $right): int => [$left->error_level > 0, -$left->error_level,
                     $left->type, $left->file_path, $left->file_name, $left->line_from]
                 <=> [$right->error_level > 0, -$right->error_level, $right->type, $right->file_path, $right->file_name,
                     $right->line_from],

@@ -1,17 +1,18 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Provider;
 
 use InvalidArgumentException;
 use Psalm\Storage\FileStorage;
 
-use function array_merge;
 use function strtolower;
 
 /**
  * @internal
  */
-class FileStorageProvider
+final class FileStorageProvider
 {
     /**
      * A list of data useful to analyse files
@@ -29,11 +30,8 @@ class FileStorageProvider
      */
     private static array $new_storage = [];
 
-    public ?FileStorageCacheProvider $cache = null;
-
-    public function __construct(?FileStorageCacheProvider $cache = null)
+    public function __construct(public ?FileStorageCacheProvider $cache = null)
     {
-        $this->cache = $cache;
     }
 
     public function get(string $file_path): FileStorage
@@ -101,8 +99,8 @@ class FileStorageProvider
      */
     public function addMore(array $more): void
     {
-        self::$new_storage = array_merge(self::$new_storage, $more);
-        self::$storage = array_merge(self::$storage, $more);
+        self::$new_storage = [...self::$new_storage, ...$more];
+        self::$storage = [...self::$storage, ...$more];
     }
 
     public function create(string $file_path): FileStorage

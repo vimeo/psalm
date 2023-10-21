@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Provider;
 
 use Psalm\Config;
@@ -227,7 +229,7 @@ class FileReferenceCacheProvider
     /**
      * @return array<string, array<string, int>>|false
      */
-    public function getAnalyzedMethodCache()
+    public function getAnalyzedMethodCache(): array|false
     {
         /** @var null|array<string, array<string, int>> $cache_item */
         $cache_item = $this->getCacheItem(self::ANALYZED_METHODS_CACHE_NAME);
@@ -246,7 +248,7 @@ class FileReferenceCacheProvider
     /**
      * @return array<string, FileMapType>|false
      */
-    public function getFileMapCache()
+    public function getFileMapCache(): array|false
     {
         /** @var array<string, FileMapType>|null $cache_item */
         $cache_item = $this->getCacheItem(self::FILE_MAPS_CACHE_NAME);
@@ -283,10 +285,8 @@ class FileReferenceCacheProvider
         $this->saveCacheItem(self::TYPE_COVERAGE_CACHE_NAME, $mixed_counts);
     }
 
-    /**
-     * @return string|false
-     */
-    public function getConfigHashCache()
+    /** @return string|false */
+    public function getConfigHashCache(): string|bool
     {
         $cache_directory = $this->config->getCacheDirectory();
 

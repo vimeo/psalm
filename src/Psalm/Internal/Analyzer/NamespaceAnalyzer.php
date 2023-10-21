@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer;
 
 use InvalidArgumentException;
@@ -22,31 +24,26 @@ use function substr;
 /**
  * @internal
  */
-class NamespaceAnalyzer extends SourceAnalyzer
+final class NamespaceAnalyzer extends SourceAnalyzer
 {
     use CanAlias;
 
-    /**
-     * @var FileAnalyzer
-     * @psalm-suppress NonInvariantDocblockPropertyType
-     */
-    protected SourceAnalyzer $source;
-
-    private Namespace_ $namespace;
-
-    private string $namespace_name;
+    private readonly string $namespace_name;
 
     /**
      * A lookup table for public namespace constants
      *
      * @var array<string, array<string, Union>>
      */
-    protected static array $public_namespace_constants = [];
+    private static array $public_namespace_constants = [];
 
-    public function __construct(Namespace_ $namespace, FileAnalyzer $source)
-    {
-        $this->source = $source;
-        $this->namespace = $namespace;
+    public function __construct(
+        private readonly Namespace_ $namespace,
+        /**
+         * @var FileAnalyzer
+         */
+        protected SourceAnalyzer $source,
+    ) {
         $this->namespace_name = $this->namespace->name ? $this->namespace->name->toString() : '';
     }
 
@@ -210,7 +207,7 @@ class NamespaceAnalyzer extends SourceAnalyzer
      */
     public static function getNameSpaceRoot(string $fullyQualifiedClassName): string
     {
-        $root_namespace = preg_replace('/^([^\\\]+).*/', '$1', $fullyQualifiedClassName, 1);
+        $root_namespace = (string) preg_replace('/^([^\\\]+).*/', '$1', $fullyQualifiedClassName, 1);
         if ($root_namespace === "") {
             throw new InvalidArgumentException("Invalid classname \"$fullyQualifiedClassName\"");
         }

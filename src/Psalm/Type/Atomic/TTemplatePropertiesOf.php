@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type\Atomic;
 
 use Psalm\Codebase;
@@ -16,36 +18,15 @@ use Psalm\Type\Union;
 final class TTemplatePropertiesOf extends Atomic
 {
     /**
-     * @var string
-     */
-    public $param_name;
-    /**
-     * @var string
-     */
-    public $defining_class;
-    /**
-     * @var TTemplateParam
-     */
-    public $as;
-    /**
-     * @var TPropertiesOf::VISIBILITY_*|null
-     */
-    public $visibility_filter;
-
-    /**
      * @param TPropertiesOf::VISIBILITY_*|null $visibility_filter
      */
     public function __construct(
-        string $param_name,
-        string $defining_class,
-        TTemplateParam $as,
-        ?int $visibility_filter,
-        bool $from_docblock = false
+        public string $param_name,
+        public string $defining_class,
+        public TTemplateParam $as,
+        public ?int $visibility_filter,
+        bool $from_docblock = false,
     ) {
-        $this->param_name = $param_name;
-        $this->defining_class = $defining_class;
-        $this->as = $as;
-        $this->visibility_filter = $visibility_filter;
         parent::__construct($from_docblock);
     }
 
@@ -70,7 +51,7 @@ final class TTemplatePropertiesOf extends Atomic
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        int $analysis_php_version_id
+        int $analysis_php_version_id,
     ): string {
         return $this->getKey();
     }
@@ -85,7 +66,7 @@ final class TTemplatePropertiesOf extends Atomic
      */
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
-        ?Codebase $codebase
+        ?Codebase $codebase,
     ): self {
         $param = new TTemplateParam(
             $this->as->param_name,

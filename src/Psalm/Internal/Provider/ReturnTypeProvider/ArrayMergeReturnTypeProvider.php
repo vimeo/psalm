@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -11,7 +13,6 @@ use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNull;
@@ -26,7 +27,7 @@ use function max;
 /**
  * @internal
  */
-class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterface
+final class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
      * @return array<lowercase-string>
@@ -69,9 +70,6 @@ class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterfac
             }
 
             foreach ($call_arg_type->getAtomicTypes() as $type_part) {
-                if ($type_part instanceof TList) {
-                    $type_part = $type_part->getKeyedArray();
-                }
                 $unpacking_indefinite_number_of_args = false;
                 $unpacking_possibly_empty = false;
                 if ($call_arg->unpack) {

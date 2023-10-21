@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type\Atomic;
 
 use Psalm\Type\Union;
@@ -12,24 +14,10 @@ use Psalm\Type\Union;
 final class TDependentGetClass extends TString implements DependentType
 {
     /**
-     * Used to hold information as to what this refers to
-     *
-     * @var string
-     */
-    public $typeof;
-
-    /**
-     * @var Union
-     */
-    public $as_type;
-
-    /**
      * @param string $typeof the variable id
      */
-    public function __construct(string $typeof, Union $as_type)
+    public function __construct(public string $typeof, public Union $as_type)
     {
-        $this->typeof = $typeof;
-        $this->as_type = $as_type;
         parent::__construct(false);
     }
 

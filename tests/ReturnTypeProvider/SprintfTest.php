@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests\ReturnTypeProvider;
 
 use Psalm\Tests\TestCase;
@@ -142,7 +144,7 @@ class SprintfTest extends TestCase
                 '$val===' => '\'\'',
             ],
             'ignored_issues' => [
-                'InvalidArgument',
+                'RedundantFunctionCall',
             ],
         ];
 
@@ -221,7 +223,9 @@ class SprintfTest extends TestCase
             'assertions' => [
                 '$val===' => 'string',
             ],
-            'ignored_issues' => [],
+            'ignored_issues' => [
+                'RedundantFunctionCall',
+            ],
             'php_version' => '8.0',
         ];
 
@@ -251,11 +255,17 @@ class SprintfTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
-            'sprintfOnlyFormat' => [
+            'sprintfOnlyFormatWithoutPlaceholders' => [
                 'code' => '<?php
                     $x = sprintf("hello");
                 ',
-                'error_message' => 'TooFewArguments',
+                'error_message' => 'RedundantFunctionCall',
+            ],
+            'printfOnlyFormatWithoutPlaceholders' => [
+                'code' => '<?php
+                    $x = sprintf("hello");
+                ',
+                'error_message' => 'RedundantFunctionCall',
             ],
             'sprintfTooFewArguments' => [
                 'code' => '<?php
@@ -297,19 +307,29 @@ class SprintfTest extends TestCase
                 'code' => '<?php
                     $x = sprintf("", "abc");
                 ',
-                'error_message' => 'InvalidArgument',
+                'error_message' => 'RedundantFunctionCall',
             ],
             'sprintfFormatWithoutPlaceholders' => [
                 'code' => '<?php
                     $x = sprintf("hello", "abc");
                 ',
-                'error_message' => 'InvalidArgument',
+                'error_message' => 'TooManyArguments',
+                'ignored_issues' => [
+                    'RedundantFunctionCall',
+                ],
             ],
             'sprintfPaddedComplexEmptyStringFormat' => [
                 'code' => '<?php
                     $x = sprintf("%1$+0.0s", "abc");
                 ',
                 'error_message' => 'InvalidArgument',
+            ],
+            'printfVariableFormat' => [
+                'code' => '<?php
+                    /** @var string $bar */
+                    printf($bar);
+                ',
+                'error_message' => 'RedundantFunctionCall',
             ],
         ];
     }

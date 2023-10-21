@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
 use AssertionError;
@@ -21,7 +23,7 @@ use function array_search;
 /**
  * @internal
  */
-class ClassTemplateParamCollector
+final class ClassTemplateParamCollector
 {
     /**
      * @param lowercase-string $method_name
@@ -35,7 +37,7 @@ class ClassTemplateParamCollector
         ClassLikeStorage $static_class_storage,
         ?string $method_name = null,
         ?Atomic $lhs_type_part = null,
-        bool $self_call = false
+        bool $self_call = false,
     ): ?array {
         $non_trait_class_storage = $class_storage->is_trait
             ? $static_class_storage
@@ -48,9 +50,6 @@ class ClassTemplateParamCollector
         if ($static_class_storage->template_extended_params
             && $method_name
             && !empty($non_trait_class_storage->overridden_method_ids[$method_name])
-            && isset($class_storage->methods[$method_name])
-            && (!isset($non_trait_class_storage->methods[$method_name]->return_type)
-                || $class_storage->methods[$method_name]->inherited_return_type)
         ) {
             foreach ($non_trait_class_storage->overridden_method_ids[$method_name] as $overridden_method_id) {
                 $overridden_storage = $codebase->methods->getStorage($overridden_method_id);
@@ -188,7 +187,7 @@ class ClassTemplateParamCollector
         Union $input_type_extends,
         ClassLikeStorage $static_class_storage,
         TGenericObject $lhs_type_part,
-        ?TemplateResult $template_result = null
+        ?TemplateResult $template_result = null,
     ): ?Union {
         $output_type_extends = null;
         foreach ($input_type_extends->getAtomicTypes() as $type_extends_atomic) {
@@ -262,7 +261,7 @@ class ClassTemplateParamCollector
         Union $input_type_extends,
         array $e,
         string $static_fq_class_name,
-        ?array $static_template_types
+        ?array $static_template_types,
     ): array {
         $output_type_extends = [];
 

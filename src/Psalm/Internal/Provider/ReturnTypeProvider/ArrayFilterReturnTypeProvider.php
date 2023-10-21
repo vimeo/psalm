@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use PhpParser;
@@ -36,7 +38,7 @@ use function spl_object_id;
 /**
  * @internal
  */
-class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterface
+final class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
      * @return array<lowercase-string>
@@ -268,7 +270,7 @@ class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderInterfa
                                 $statements_source,
                                 $codebase,
                             );
-                        } catch (ComplicatedExpressionException $e) {
+                        } catch (ComplicatedExpressionException) {
                             $filter_clauses = [];
                         }
 

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal;
 
 use Psalm\Plugin\EventHandler\AddTaintsInterface;
@@ -48,7 +50,7 @@ use function is_subclass_of;
 /**
  * @internal
  */
-class EventDispatcher
+final class EventDispatcher
 {
     /**
      * Static methods to be called after method checks have completed

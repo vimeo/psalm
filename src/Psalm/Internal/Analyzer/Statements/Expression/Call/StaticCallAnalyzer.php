@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
 use PhpParser;
@@ -36,13 +38,13 @@ use function strtolower;
 /**
  * @internal
  */
-class StaticCallAnalyzer extends CallAnalyzer
+final class StaticCallAnalyzer extends CallAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\StaticCall $stmt,
         Context $context,
-        ?TemplateResult $template_result = null
+        ?TemplateResult $template_result = null,
     ): bool {
         $method_id = null;
 
@@ -54,8 +56,6 @@ class StaticCallAnalyzer extends CallAnalyzer
         $config = $codebase->config;
 
         if ($stmt->class instanceof PhpParser\Node\Name) {
-            $fq_class_name = null;
-
             if (count($stmt->class->getParts()) === 1
                 && in_array(strtolower($stmt->class->getFirst()), ['self', 'static', 'parent'], true)
             ) {
@@ -103,7 +103,7 @@ class StaticCallAnalyzer extends CallAnalyzer
                 if ($context->isPhantomClass($fq_class_name)) {
                     return true;
                 }
-            } elseif ($context->check_classes) {
+            } else {
                 $aliases = $statements_analyzer->getAliases();
 
                 if ($context->calling_method_id
@@ -153,6 +153,7 @@ class StaticCallAnalyzer extends CallAnalyzer
                             : null,
                         $statements_analyzer->getSuppressedIssues(),
                         new ClassLikeNameOptions(false, false, false, true),
+                        $context->check_classes,
                     );
                 }
 
@@ -247,7 +248,7 @@ class StaticCallAnalyzer extends CallAnalyzer
         Union &$return_type_candidate,
         ?MethodStorage $method_storage,
         ?TemplateResult $template_result,
-        ?Context $context = null
+        ?Context $context = null,
     ): void {
         if (!$statements_analyzer->data_flow_graph) {
             return;

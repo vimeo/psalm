@@ -1,11 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Scanner\UnresolvedConstant;
 
 /**
  * @psalm-immutable
  * @internal
  */
-class UnresolvedBitwiseOr extends UnresolvedBinaryOp
+final class UnresolvedBitwiseOr extends UnresolvedBinaryOp
 {
 }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
 use PhpParser;
@@ -50,13 +52,14 @@ use function array_map;
 use function extension_loaded;
 use function in_array;
 use function is_string;
+use function str_starts_with;
 use function strpos;
 use function strtolower;
 
 /**
  * @internal
  */
-class NamedFunctionCallHandler
+final class NamedFunctionCallHandler
 {
     /**
      * @param lowercase-string $function_id
@@ -68,7 +71,7 @@ class NamedFunctionCallHandler
         PhpParser\Node\Expr\FuncCall $real_stmt,
         PhpParser\Node\Name $function_name,
         string $function_id,
-        Context $context
+        Context $context,
     ): void {
         if ($function_id === 'get_class'
             || $function_id === 'gettype'
@@ -390,7 +393,7 @@ class NamedFunctionCallHandler
 
         if ($first_arg
             && $function_id
-            && strpos($function_id, 'is_') === 0
+            && str_starts_with($function_id, 'is_')
             && $function_id !== 'is_a'
             && !$context->inside_negation
         ) {
@@ -556,7 +559,7 @@ class NamedFunctionCallHandler
         PhpParser\Node\Expr\FuncCall $stmt,
         PhpParser\Node\Expr\FuncCall $real_stmt,
         string $function_id,
-        Context $context
+        Context $context,
     ): void {
         $first_arg = $stmt->getArgs()[0] ?? null;
 

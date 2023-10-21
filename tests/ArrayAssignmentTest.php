@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
 use Psalm\Context;
@@ -1297,7 +1299,6 @@ class ArrayAssignmentTest extends TestCase
 
                         /**
                          * @psalm-suppress MixedAssignment
-                         * @psalm-suppress MixedArrayOffset
                          */
                         foreach ($a as $k => $v) {
                             $arr[$k] = $v;

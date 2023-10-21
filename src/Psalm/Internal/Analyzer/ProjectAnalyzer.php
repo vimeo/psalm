@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer;
 
 use Fidry\CpuCoreCounter\CpuCoreCounter;
@@ -72,7 +74,6 @@ use function file_exists;
 use function fwrite;
 use function implode;
 use function in_array;
-use function ini_get;
 use function is_dir;
 use function is_file;
 use function microtime;
@@ -81,28 +82,27 @@ use function number_format;
 use function preg_match;
 use function rename;
 use function sprintf;
+use function str_ends_with;
+use function str_starts_with;
 use function strlen;
 use function strpos;
 use function strtolower;
 use function substr;
 use function usort;
-use function version_compare;
 
 use const PHP_EOL;
-use const PHP_OS;
-use const PHP_VERSION;
 use const PSALM_VERSION;
 use const STDERR;
 
 /**
  * @internal
  */
-class ProjectAnalyzer
+final class ProjectAnalyzer
 {
     /**
      * Cached config
      */
-    private Config $config;
+    private readonly Config $config;
 
     public static ProjectAnalyzer $instance;
 
@@ -111,15 +111,15 @@ class ProjectAnalyzer
      */
     private Codebase $codebase;
 
-    private FileProvider $file_provider;
+    private readonly FileProvider $file_provider;
 
-    private ClassLikeStorageProvider $classlike_storage_provider;
+    private readonly ClassLikeStorageProvider $classlike_storage_provider;
 
     private ?ParserCacheProvider $parser_cache_provider = null;
 
     public ?ProjectCacheProvider $project_cache_provider = null;
 
-    private FileReferenceProvider $file_reference_provider;
+    private readonly FileReferenceProvider $file_reference_provider;
 
     public Progress $progress;
 
@@ -128,8 +128,6 @@ class ProjectAnalyzer
     public bool $debug_performance = false;
 
     public bool $show_issues = true;
-
-    public int $threads;
 
     /**
      * @var array<string, bool>
@@ -166,13 +164,6 @@ class ProjectAnalyzer
      */
     private array $to_refactor = [];
 
-    public ?ReportOptions $stdout_report_options = null;
-
-    /**
-     * @var array<ReportOptions>
-     */
-    public array $generated_report_options;
-
     /**
      * @var array<int, class-string<CodeIssue>>
      */
@@ -200,17 +191,21 @@ class ProjectAnalyzer
         UnnecessaryVarAnnotation::class,
     ];
 
+    private const PHP_VERSION_REGEX = '^(0|[1-9]\d*)\.(0|[1-9]\d*)(?:\..*)?$';
+
+    private const PHP_SUPPORTED_VERSIONS_REGEX = '^(5\.[456]|7\.[01234]|8\.[0123])(\..*)?$';
+
     /**
      * @param array<ReportOptions> $generated_report_options
      */
     public function __construct(
         Config $config,
         Providers $providers,
-        ?ReportOptions $stdout_report_options = null,
-        array $generated_report_options = [],
-        int $threads = 1,
+        public ?ReportOptions $stdout_report_options = null,
+        public array $generated_report_options = [],
+        public int $threads = 1,
         ?Progress $progress = null,
-        ?Codebase $codebase = null
+        ?Codebase $codebase = null,
     ) {
         if ($progress === null) {
             $progress = new VoidProgress();
@@ -231,15 +226,11 @@ class ProjectAnalyzer
         $this->file_reference_provider = $providers->file_reference_provider;
 
         $this->progress = $progress;
-        $this->threads = $threads;
         $this->config = $config;
 
         $this->clearCacheDirectoryIfConfigOrComposerLockfileChanged();
 
         $this->codebase = $codebase;
-
-        $this->stdout_report_options = $stdout_report_options;
-        $this->generated_report_options = $generated_report_options;
 
         $this->config->processPluginFileExtensions($this);
         $file_extensions = $this->config->getFileExtensions();
@@ -248,7 +239,7 @@ class ProjectAnalyzer
             $file_paths = $this->file_provider->getFilesInDir(
                 $dir_name,
                 $file_extensions,
-                [$this->config, 'isInProjectDirs'],
+                $this->config->isInProjectDirs(...),
             );
 
             foreach ($file_paths as $file_path) {
@@ -260,7 +251,7 @@ class ProjectAnalyzer
             $file_paths = $this->file_provider->getFilesInDir(
                 $dir_name,
                 $file_extensions,
-                [$this->config, 'isInExtraDirs'],
+                $this->config->isInExtraDirs(...),
             );
 
             foreach ($file_paths as $file_path) {
@@ -347,7 +338,7 @@ class ProjectAnalyzer
 
         foreach ($report_file_paths as $report_file_path) {
             foreach ($mapping as $extension => $type) {
-                if (substr($report_file_path, -strlen($extension)) === $extension) {
+                if (str_ends_with($report_file_path, $extension)) {
                     $o = new ReportOptions();
 
                     $o->format = $type;
@@ -387,21 +378,13 @@ class ProjectAnalyzer
         $this->file_reference_provider->loadReferenceCache();
         $this->codebase->enterServerMode();
 
-        if (ini_get('pcre.jit') === '1'
-            && PHP_OS === 'Darwin'
-            && version_compare(PHP_VERSION, '7.3.0') >= 0
-            && version_compare(PHP_VERSION, '7.4.0') < 0
-        ) {
-            // do nothing
-        } else {
-            $cpu_count = self::getCpuCount();
+        $cpu_count = self::getCpuCount();
 
-            // let's not go crazy
-            $usable_cpus = $cpu_count - 2;
+        // let's not go crazy
+        $usable_cpus = $cpu_count - 2;
 
-            if ($usable_cpus > 1) {
-                $this->threads = $usable_cpus;
-            }
+        if ($usable_cpus > 1) {
+            $this->threads = $usable_cpus;
         }
 
         $server->logInfo("Initializing: Initialize Plugins...");
@@ -606,7 +589,7 @@ class ProjectAnalyzer
                 && $destination_pos === (strlen($destination) - 1)
             ) {
                 foreach ($this->codebase->classlike_storage_provider->getAll() as $class_storage) {
-                    if (strpos($source, substr($class_storage->name, 0, $source_pos)) === 0) {
+                    if (str_starts_with($source, substr($class_storage->name, 0, $source_pos))) {
                         $this->to_refactor[$class_storage->name]
                             = substr($destination, 0, -1) . substr($class_storage->name, $source_pos);
                     }
@@ -932,7 +915,7 @@ class ProjectAnalyzer
     private function checkDirWithConfig(string $dir_name, Config $config, bool $allow_non_project_files = false): void
     {
         $file_extensions = $config->getFileExtensions();
-        $filter = $allow_non_project_files ? null : [$this->config, 'isInProjectDirs'];
+        $filter = $allow_non_project_files ? null : $this->config->isInProjectDirs(...);
 
         $file_paths = $this->file_provider->getFilesInDir(
             $dir_name,
@@ -962,7 +945,7 @@ class ProjectAnalyzer
     /**
      * @return list<string>
      */
-    protected function getDiffFiles(): array
+    private function getDiffFiles(): array
     {
         if (!$this->parser_cache_provider || !$this->project_cache_provider) {
             throw new UnexpectedValueException('Parser cache provider cannot be null here');
@@ -1155,7 +1138,7 @@ class ProjectAnalyzer
 
     public function alterCodeAfterCompletion(
         bool $dry_run = false,
-        bool $safe_types = false
+        bool $safe_types = false,
     ): void {
         $this->codebase->alter_code = true;
         $this->codebase->infer_types_from_usage = true;
@@ -1179,8 +1162,16 @@ class ProjectAnalyzer
      */
     public function setPhpVersion(string $version, string $source): void
     {
-        if (!preg_match('/^(5\.[456]|7\.[01234]|8\.[012])(\..*)?$/', $version)) {
-            throw new UnexpectedValueException('Expecting a version number in the format x.y');
+        if (!preg_match('/' . self::PHP_VERSION_REGEX . '/', $version)) {
+            throw new UnexpectedValueException('Expecting a version number in the format x.y or x.y.z');
+        }
+
+        if (!preg_match('/' . self::PHP_SUPPORTED_VERSIONS_REGEX . '/', $version)) {
+            throw new UnexpectedValueException(
+                'Psalm supports PHP version ">=5.4". The specified version '
+                . $version
+                . " is either not supported or doesn't exist.",
+            );
         }
 
         [$php_major_version, $php_minor_version] = explode('.', $version);
@@ -1261,7 +1252,7 @@ class ProjectAnalyzer
         MethodIdentifier $original_method_id,
         Context $this_context,
         string $root_file_path,
-        string $root_file_name
+        string $root_file_name,
     ): void {
         $fq_class_name = $original_method_id->fq_class_name;
 
@@ -1308,7 +1299,7 @@ class ProjectAnalyzer
 
     public function getFunctionLikeAnalyzer(
         MethodIdentifier $method_id,
-        string $file_path
+        string $file_path,
     ): ?FunctionLikeAnalyzer {
         $file_analyzer = new FileAnalyzer(
             $this,
@@ -1341,15 +1332,6 @@ class ProjectAnalyzer
     {
         if (defined('PHP_WINDOWS_VERSION_MAJOR')) {
             // No support desired for Windows at the moment
-            return 1;
-        }
-
-        // PHP 7.3 with JIT on OSX is screwed for multi-threads
-        if (ini_get('pcre.jit') === '1'
-            && PHP_OS === 'Darwin'
-            && version_compare(PHP_VERSION, '7.3.0') >= 0
-            && version_compare(PHP_VERSION, '7.4.0') < 0
-        ) {
             return 1;
         }
 

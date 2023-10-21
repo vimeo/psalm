@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
@@ -957,6 +959,20 @@ class ClosureTest extends TestCase
                     }
                     PHP,
             ],
+            'returnByReferenceVariableInClosure' => [
+                'code' => '<?php
+                    function &(): int {
+                        /** @var int $x */
+                        static $x = 1;
+                        return $x;
+                    };
+                ',
+            ],
+            'returnByReferenceVariableInShortClosure' => [
+                'code' => '<?php
+                    fn &(int &$x): int => $x;
+                ',
+            ],
         ];
     }
 
@@ -1427,6 +1443,20 @@ class ClosureTest extends TestCase
                 'error_message' => 'ParseError',
                 'ignored_issues' => [],
                 'php_version' => '8.1',
+            ],
+            'returnByReferenceNonVariableInClosure' => [
+                'code' => '<?php
+                    function &(): int {
+                        return 45;
+                    };
+                ',
+                'error_message' => 'NonVariableReferenceReturn',
+            ],
+            'returnByReferenceNonVariableInShortClosure' => [
+                'code' => '<?php
+                    fn &(): int => 45;
+                ',
+                'error_message' => 'NonVariableReferenceReturn',
             ],
         ];
     }

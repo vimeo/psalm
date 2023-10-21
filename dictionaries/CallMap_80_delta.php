@@ -100,6 +100,22 @@ return [
       'old' => ['DOMNodeList', 'namespace'=>'string', 'localName'=>'string'],
       'new' => ['DOMNodeList', 'namespace'=>'?string', 'localName'=>'string'],
     ],
+    'DOMDocument::load' => [
+      'old' => ['DOMDocument|bool', 'filename'=>'string', 'options='=>'int'],
+      'new' => ['bool', 'filename'=>'string', 'options='=>'int'],
+    ],
+    'DOMDocument::loadXML' => [
+      'old' => ['DOMDocument|bool', 'source'=>'non-empty-string', 'options='=>'int'],
+      'new' => ['bool', 'source'=>'non-empty-string', 'options='=>'int'],
+    ],
+    'DOMDocument::loadHTML' => [
+      'old' => ['DOMDocument|bool', 'source'=>'non-empty-string', 'options='=>'int'],
+      'new' => ['bool', 'source'=>'non-empty-string', 'options='=>'int'],
+    ],
+    'DOMDocument::loadHTMLFile' => [
+      'old' => ['DOMDocument|bool', 'filename'=>'string', 'options='=>'int'],
+      'new' => ['bool', 'filename'=>'string', 'options='=>'int'],
+    ],
     'DOMImplementation::createDocument' => [
       'old' => ['DOMDocument|false', 'namespace='=>'string', 'qualifiedName='=>'string', 'doctype='=>'DOMDocumentType'],
       'new' => ['DOMDocument|false', 'namespace='=>'?string', 'qualifiedName='=>'string', 'doctype='=>'?DOMDocumentType'],
@@ -223,6 +239,14 @@ return [
     'Locale::getDisplayVariant' => [
       'old' => ['string', 'locale'=>'string', 'displayLocale='=>'string'],
       'new' => ['string', 'locale'=>'string', 'displayLocale='=>'?string'],
+    ],
+    'mysqli_field_seek' => [
+      'old' => ['bool', 'result'=>'mysqli_result', 'index'=>'int'],
+      'new' => ['true', 'result'=>'mysqli_result', 'index'=>'int'],
+    ],
+    'mysqli_result::field_seek' => [
+      'old' => ['bool', 'index'=>'int'],
+      'new' => ['true', 'index'=>'int'],
     ],
     'mysqli_stmt::__construct' => [
       'old' => ['void', 'mysql'=>'mysqli', 'query='=>'string'],
@@ -2565,8 +2589,12 @@ return [
       'new' => ['string', 'string'=>'string', 'offset'=>'int', 'length='=>'?int'],
     ],
     'substr_replace' => [
-      'old' => ['string|string[]', 'string'=>'string|string[]', 'replace'=>'string|string[]', 'offset'=>'int|int[]', 'length='=>'int|int[]'],
-      'new' => ['string|string[]', 'string'=>'string|string[]', 'replace'=>'string|string[]', 'offset'=>'int|int[]', 'length='=>'int|int[]|null'],
+      'old' => ['string', 'string'=>'string', 'replace'=>'string|string[]', 'offset'=>'int|int[]', 'length='=>'int|int[]'],
+      'new' => ['string', 'string'=>'string', 'replace'=>'string|string[]', 'offset'=>'int|int[]', 'length='=>'int|int[]|null'],
+    ],
+    'substr_replace\'1' => [
+      'old' => ['string[]', 'string'=>'string[]', 'replace'=>'string|string[]', 'offset'=>'int|int[]', 'length='=>'int|int[]'],
+      'new' => ['string[]', 'string'=>'string[]', 'replace'=>'string|string[]', 'offset'=>'int|int[]', 'length='=>'int|int[]|null'],
     ],
     'tidy_parse_file' => [
       'old' => ['tidy', 'filename'=>'string', 'config='=>'array|string', 'encoding='=>'string', 'useIncludePath='=>'bool'],

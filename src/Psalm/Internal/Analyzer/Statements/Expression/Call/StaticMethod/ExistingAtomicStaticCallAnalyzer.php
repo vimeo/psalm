@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call\StaticMethod;
 
 use PhpParser;
@@ -15,6 +17,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallProhibit
 use Psalm\Internal\Analyzer\Statements\Expression\Call\StaticCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\AssertionsFromInheritanceResolver;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
@@ -41,6 +44,7 @@ use function count;
 use function explode;
 use function in_array;
 use function is_string;
+use function str_starts_with;
 use function strlen;
 use function strpos;
 use function strtolower;
@@ -49,7 +53,7 @@ use function substr;
 /**
  * @internal
  */
-class ExistingAtomicStaticCallAnalyzer
+final class ExistingAtomicStaticCallAnalyzer
 {
     /**
      * @param  list<PhpParser\Node\Arg> $args
@@ -65,7 +69,7 @@ class ExistingAtomicStaticCallAnalyzer
         string $cased_method_id,
         ClassLikeStorage $class_storage,
         bool &$moved_call,
-        ?TemplateResult $inferred_template_result = null
+        ?TemplateResult $inferred_template_result = null,
     ): void {
         $fq_class_name = $method_id->fq_class_name;
         $method_name_lc = $method_id->method_name;
@@ -110,13 +114,13 @@ class ExistingAtomicStaticCallAnalyzer
                     $local_vars_possibly_in_scope = [];
 
                     foreach ($context->vars_in_scope as $var => $_) {
-                        if (strpos($var, '$this->') !== 0 && $var !== '$this') {
+                        if (!str_starts_with($var, '$this->') && $var !== '$this') {
                             $local_vars_in_scope[$var] = $context->vars_in_scope[$var];
                         }
                     }
 
                     foreach ($context->vars_possibly_in_scope as $var => $_) {
-                        if (strpos($var, '$this->') !== 0 && $var !== '$this') {
+                        if (!str_starts_with($var, '$this->') && $var !== '$this') {
                             $local_vars_possibly_in_scope[$var] = $context->vars_possibly_in_scope[$var];
                         }
                     }
@@ -317,11 +321,17 @@ class ExistingAtomicStaticCallAnalyzer
                 }
             }
 
-            if ($method_storage->assertions) {
+            $assertionsResolver = new AssertionsFromInheritanceResolver($codebase);
+            $assertions = $assertionsResolver->resolve(
+                $method_storage,
+                $class_storage,
+            );
+
+            if ($assertions) {
                 CallAnalyzer::applyAssertionsToContext(
                     $stmt_name,
                     null,
-                    $method_storage->assertions,
+                    $assertions,
                     $stmt->getArgs(),
                     $template_result,
                     $context,
@@ -475,7 +485,7 @@ class ExistingAtomicStaticCallAnalyzer
         Context $context,
         string $fq_class_name,
         ClassLikeStorage $class_storage,
-        Config $config
+        Config $config,
     ): ?Union {
         $return_type_candidate = $codebase->methods->getMethodReturnType(
             $method_id,
@@ -616,7 +626,7 @@ class ExistingAtomicStaticCallAnalyzer
         StaticCall $stmt,
         ClassLikeStorage $class_storage,
         MethodIdentifier $method_id,
-        TTemplateParam $template_type
+        TTemplateParam $template_type,
     ): array {
         if ($template_type->param_name === 'TFunctionArgCount') {
             return [

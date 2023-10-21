@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\TypeVisitor;
 
 use Psalm\Type\Atomic\TNamedObject;
@@ -9,7 +11,7 @@ use Psalm\Type\TypeVisitor;
 /**
  * @internal
  */
-class ContainsStaticVisitor extends TypeVisitor
+final class ContainsStaticVisitor extends TypeVisitor
 {
     private bool $contains_static = false;
 

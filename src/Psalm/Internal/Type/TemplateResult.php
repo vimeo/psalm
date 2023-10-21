@@ -1,8 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Type;
 
 use Psalm\Type\Union;
+
+use function array_replace_recursive;
 
 /**
  * This class captures the result of running Psalm's argument analysis with
@@ -21,17 +25,12 @@ use Psalm\Type\Union;
  *
  * @internal
  */
-class TemplateResult
+final class TemplateResult
 {
-    /**
-     * @var array<string, array<string, Union>>
-     */
-    public array $template_types;
-
     /**
      * @var array<string, array<string, non-empty-list<TemplateBound>>>
      */
-    public array $lower_bounds;
+    public array $lower_bounds = [];
 
     /**
      * @var array<string, array<string, TemplateBound>>
@@ -52,15 +51,27 @@ class TemplateResult
      * @param  array<string, array<string, Union>> $template_types
      * @param  array<string, array<string, Union>> $lower_bounds
      */
-    public function __construct(array $template_types, array $lower_bounds)
+    public function __construct(public array $template_types, array $lower_bounds)
     {
-        $this->template_types = $template_types;
-        $this->lower_bounds = [];
-
         foreach ($lower_bounds as $key1 => $boundSet) {
             foreach ($boundSet as $key2 => $bound) {
                 $this->lower_bounds[$key1][$key2] = [new TemplateBound($bound)];
             }
         }
+    }
+
+    public function merge(TemplateResult $result): TemplateResult
+    {
+        if ($result === $this) {
+            return $this;
+        }
+
+        $instance = clone $this;
+        /** @var array<string, array<string, non-empty-list<TemplateBound>>> $lower_bounds */
+        $lower_bounds = array_replace_recursive($instance->lower_bounds, $result->lower_bounds);
+        $instance->lower_bounds = $lower_bounds;
+        $instance->template_types = [...$instance->template_types, ...$result->template_types];
+
+        return $instance;
     }
 }

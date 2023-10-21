@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
 use Psalm\Context;
@@ -85,7 +87,7 @@ class FileReferenceTest extends TestCase
         array $expected_method_references_to_members,
         array $expected_method_references_to_missing_members,
         array $expected_file_references_to_members,
-        array $expected_file_references_to_missing_members
+        array $expected_file_references_to_missing_members,
     ): void {
         $test_name = $this->getTestName();
         if (strpos($test_name, 'SKIPPED-') !== false) {

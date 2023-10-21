@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Block;
 
 use PhpParser;
@@ -41,7 +43,7 @@ use function substr;
 /**
  * @internal
  */
-class IfElseAnalyzer
+final class IfElseAnalyzer
 {
     /**
      * System of type substitution and deletion
@@ -69,7 +71,7 @@ class IfElseAnalyzer
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\If_ $stmt,
-        Context $context
+        Context $context,
     ): ?bool {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -110,7 +112,7 @@ class IfElseAnalyzer
             // this is the context for stuff that happens after the `if` block
             $post_if_context = $if_conditional_scope->post_if_context;
             $assigned_in_conditional_var_ids = $if_conditional_scope->assigned_in_conditional_var_ids;
-        } catch (ScopeAnalysisException $e) {
+        } catch (ScopeAnalysisException) {
             return false;
         }
 
@@ -200,7 +202,7 @@ class IfElseAnalyzer
 
         try {
             $if_scope->negated_clauses = Algebra::negateFormula($if_clauses);
-        } catch (ComplicatedExpressionException $e) {
+        } catch (ComplicatedExpressionException) {
             try {
                 $if_scope->negated_clauses = FormulaGenerator::getFormula(
                     $cond_object_id,
@@ -211,7 +213,7 @@ class IfElseAnalyzer
                     $codebase,
                     false,
                 );
-            } catch (ComplicatedExpressionException $e) {
+            } catch (ComplicatedExpressionException) {
                 $if_scope->negated_clauses = [];
             }
         }
@@ -361,15 +363,15 @@ class IfElseAnalyzer
             );
         }
 
-        $context->vars_possibly_in_scope = array_merge(
-            $context->vars_possibly_in_scope,
-            $if_scope->new_vars_possibly_in_scope,
-        );
+        $context->vars_possibly_in_scope = [
+            ...$context->vars_possibly_in_scope,
+            ...$if_scope->new_vars_possibly_in_scope,
+        ];
 
-        $context->possibly_assigned_var_ids = array_merge(
-            $context->possibly_assigned_var_ids,
-            $if_scope->possibly_assigned_var_ids ?: [],
-        );
+        $context->possibly_assigned_var_ids = [
+            ...$context->possibly_assigned_var_ids,
+            ...$if_scope->possibly_assigned_var_ids ?: [],
+        ];
 
         // vars can only be defined/redefined if there was an else (defined in every block)
         $context->assigned_var_ids = array_merge(

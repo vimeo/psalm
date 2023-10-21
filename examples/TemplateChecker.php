@@ -30,9 +30,9 @@ use function str_replace;
 use function strtolower;
 use function trim;
 
-class TemplateAnalyzer extends Psalm\Internal\Analyzer\FileAnalyzer
+final class TemplateAnalyzer extends Psalm\Internal\Analyzer\FileAnalyzer
 {
-    const VIEW_CLASS = 'Your\\View\\Class';
+    final public const VIEW_CLASS = 'Your\\View\\Class';
 
     public function analyze(?Context $file_context = null, ?Context $global_context = null): void
     {
@@ -148,7 +148,7 @@ class TemplateAnalyzer extends Psalm\Internal\Analyzer\FileAnalyzer
     /**
      * @param  array<PhpParser\Node\Stmt> $stmts
      */
-    protected function checkWithViewClass(Context $context, array $stmts): void
+    private function checkWithViewClass(Context $context, array $stmts): void
     {
         $pseudo_method_stmts = [];
 
@@ -160,7 +160,7 @@ class TemplateAnalyzer extends Psalm\Internal\Analyzer\FileAnalyzer
             }
         }
 
-        $pseudo_method_name = preg_replace('/[^a-zA-Z0-9_]+/', '_', $this->file_name);
+        $pseudo_method_name = (string) preg_replace('/[^a-zA-Z0-9_]+/', '_', $this->file_name);
 
         $class_method = new VirtualClassMethod($pseudo_method_name, ['stmts' => []]);
 

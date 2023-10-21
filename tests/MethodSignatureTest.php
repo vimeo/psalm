@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
 use Psalm\Context;
@@ -929,6 +931,34 @@ class MethodSignatureTest extends TestCase
                     }
                 ',
             ],
+            'allowByRefReturn' => [
+                'code' => '<?php
+                    interface Foo {
+                        public function &foo(): int;
+                    }
+
+                    class Bar implements Foo {
+                        private int $x = 0;
+                        public function &foo(): int {
+                            return $this->x;
+                        }
+                    }
+                ',
+            ],
+            'descendantAddsByRefReturn' => [
+                'code' => '<?php
+                    interface Foo {
+                        public function foo(): int;
+                    }
+
+                    class Bar implements Foo {
+                        private int $x = 0;
+                        public function &foo(): int {
+                            return $this->x;
+                        }
+                    }
+                ',
+            ],
         ];
     }
 
@@ -1585,6 +1615,20 @@ class MethodSignatureTest extends TestCase
                 'error_message' => 'MethodSignatureMustProvideReturnType',
                 'ignored_issues' => [],
                 'php_version' => '8.1',
+            ],
+            'absentByRefReturnInDescendant' => [
+                'code' => '<?php
+                    interface Foo {
+                        public function &foo(): int;
+                    }
+
+                    class Bar implements Foo {
+                        public function foo(): int {
+                            return 1;
+                        }
+                    }
+                ',
+                'error_message' => 'MethodSignatureMismatch',
             ],
         ];
     }

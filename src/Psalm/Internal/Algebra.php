@@ -1,12 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal;
 
 use Psalm\Exception\ComplicatedExpressionException;
 use Psalm\Storage\Assertion;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use UnexpectedValueException;
 
 use function array_filter;
@@ -24,7 +25,7 @@ use function reset;
 /**
  * @internal
  */
-class Algebra
+final class Algebra
 {
     /**
      * @param array<string, non-empty-list<non-empty-list<Assertion>>>  $all_types
@@ -337,7 +338,7 @@ class Algebra
         array $clauses,
         ?int $creating_conditional_id = null,
         array &$cond_referenced_var_ids = [],
-        array &$active_truths = []
+        array &$active_truths = [],
     ): array {
         $truths = [];
         $active_truths = [];
@@ -406,8 +407,7 @@ class Algebra
                         continue;
                     }
 
-                    if ($assertion->type instanceof TList
-                        || $assertion->type instanceof TArray
+                    if ($assertion->type instanceof TArray
                         || $assertion->type instanceof TKeyedArray) {
                         $has_list_or_array = true;
                         // list/array are collapsed, therefore there can only be 1 and we can abort
@@ -434,8 +434,7 @@ class Algebra
                         continue;
                     }
 
-                    if ($assertion->type instanceof TList
-                        || $assertion->type instanceof TArray
+                    if ($assertion->type instanceof TArray
                         || $assertion->type instanceof TKeyedArray) {
                         unset($truths[$var][$key][$index]);
                     }
@@ -588,7 +587,7 @@ class Algebra
     public static function combineOredClauses(
         array $left_clauses,
         array $right_clauses,
-        int $conditional_object_id
+        int $conditional_object_id,
     ): array {
         if (count($left_clauses) > 60_000 || count($right_clauses) > 60_000) {
             return [];

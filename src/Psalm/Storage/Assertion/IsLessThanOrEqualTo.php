@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Storage\Assertion;
 
 use Psalm\Storage\Assertion;
@@ -9,11 +11,8 @@ use Psalm\Storage\Assertion;
  */
 final class IsLessThanOrEqualTo extends Assertion
 {
-    public int $value;
-
-    public function __construct(int $value)
+    public function __construct(public readonly int $value)
     {
-        $this->value = $value;
     }
 
     public function getNegation(): Assertion

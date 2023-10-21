@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Cli;
 
 use AssertionError;
@@ -30,6 +32,7 @@ use function array_key_exists;
 use function array_map;
 use function array_shift;
 use function array_slice;
+use function assert;
 use function chdir;
 use function count;
 use function explode;
@@ -53,7 +56,8 @@ use function preg_last_error_msg;
 use function preg_replace;
 use function preg_split;
 use function realpath;
-use function strpos;
+use function str_contains;
+use function str_starts_with;
 use function strtolower;
 use function substr;
 use function trim;
@@ -104,6 +108,9 @@ final class Psalter
 
         // get options from command line
         $options = getopt(implode('', self::SHORT_OPTIONS), self::LONG_OPTIONS);
+        if ($options === false) {
+            die('Failed to parse cli options' . PHP_EOL);
+        }
 
         self::validateCliArguments($args);
 
@@ -379,7 +386,7 @@ final class Psalter
 
         foreach ($keyed_issues as $issue_name => $_) {
             // MissingParamType requires the scanning of all files to inform possible params
-            if (strpos($issue_name, 'Unused') !== false
+            if (str_contains($issue_name, 'Unused')
                 || $issue_name === 'MissingParamType'
                 || $issue_name === 'UnnecessaryVarAnnotation'
                 || $issue_name === 'all'
@@ -447,8 +454,8 @@ final class Psalter
     {
         array_map(
             static function (string $arg): void {
-                if (strpos($arg, '--') === 0 && $arg !== '--') {
-                    $arg_name = preg_replace('/=.*$/', '', substr($arg, 2), 1);
+                if (str_starts_with($arg, '--') && $arg !== '--') {
+                    $arg_name = (string) preg_replace('/=.*$/', '', substr($arg, 2), 1);
 
                     if ($arg_name === 'alter') {
                         // valid option for psalm, ignored by psalter
@@ -499,16 +506,17 @@ final class Psalter
     private static function loadCodeowners(Providers $providers): array
     {
         if (file_exists('CODEOWNERS')) {
-            $codeowners_file_path = realpath('CODEOWNERS');
+            $codeowners_file_path = (string) realpath('CODEOWNERS');
         } elseif (file_exists('.github/CODEOWNERS')) {
-            $codeowners_file_path = realpath('.github/CODEOWNERS');
+            $codeowners_file_path = (string) realpath('.github/CODEOWNERS');
         } elseif (file_exists('docs/CODEOWNERS')) {
-            $codeowners_file_path = realpath('docs/CODEOWNERS');
+            $codeowners_file_path = (string) realpath('docs/CODEOWNERS');
         } else {
             die('Cannot use --codeowner without a CODEOWNERS file' . PHP_EOL);
         }
 
         $codeowners_file = file_get_contents($codeowners_file_path);
+        assert($codeowners_file != false);
 
         $codeowner_lines = array_map(
             static function (string $line): array {
@@ -527,7 +535,7 @@ final class Psalter
 
                     // currently we don’t match wildcard files or files that could appear anywhere
                     // in the repo
-                    return $line && $line[0] === '/' && strpos($line, '*') === false;
+                    return $line && $line[0] === '/' && !str_contains($line, '*');
                 },
             ),
         );

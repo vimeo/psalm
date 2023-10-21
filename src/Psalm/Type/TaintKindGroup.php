@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type;
 
 /**
@@ -21,5 +23,7 @@ final class TaintKindGroup
         TaintKind::INPUT_FILE,
         TaintKind::INPUT_HEADER,
         TaintKind::INPUT_COOKIE,
+        TaintKind::INPUT_XPATH,
+        TaintKind::INPUT_SLEEP,
     ];
 }

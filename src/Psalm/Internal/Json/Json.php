@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Json;
 
 use RuntimeException;
@@ -16,7 +18,7 @@ use const JSON_UNESCAPED_UNICODE;
  *
  * @internal
  */
-class Json
+final class Json
 {
     public const PRETTY = JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE;
 
@@ -26,10 +28,9 @@ class Json
     public const DEFAULT = 0;
 
     /**
-     * @param mixed $data
      * @psalm-pure
      */
-    public static function encode($data, ?int $options = null): string
+    public static function encode(mixed $data, ?int $options = null): string
     {
         if ($options === null) {
             $options = self::DEFAULT;

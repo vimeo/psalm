@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer;
 
 use PhpParser;
@@ -14,7 +16,7 @@ use function strtolower;
  * @internal
  * @extends FunctionLikeAnalyzer<PhpParser\Node\Stmt\Function_>
  */
-class FunctionAnalyzer extends FunctionLikeAnalyzer
+final class FunctionAnalyzer extends FunctionLikeAnalyzer
 {
     public function __construct(PhpParser\Node\Stmt\Function_ $function, SourceAnalyzer $source)
     {
@@ -54,7 +56,7 @@ class FunctionAnalyzer extends FunctionLikeAnalyzer
     public static function analyzeStatement(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Function_ $stmt,
-        Context $context
+        Context $context,
     ): void {
         foreach ($stmt->stmts as $function_stmt) {
             if ($function_stmt instanceof PhpParser\Node\Stmt\Global_) {

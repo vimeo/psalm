@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal;
 
 use Composer\Autoload\ClassLoader;
@@ -12,10 +14,12 @@ use Psalm\Exception\ConfigNotFoundException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Report;
 use RuntimeException;
+use UnexpectedValueException;
 
 use function array_filter;
 use function array_key_exists;
 use function array_slice;
+use function assert;
 use function count;
 use function define;
 use function dirname;
@@ -37,6 +41,7 @@ use function preg_last_error_msg;
 use function preg_replace;
 use function preg_split;
 use function realpath;
+use function str_starts_with;
 use function stream_get_meta_data;
 use function stream_set_blocking;
 use function strlen;
@@ -61,7 +66,7 @@ final class CliUtils
     public static function requireAutoloaders(
         string $current_dir,
         bool $has_explicit_root,
-        string $vendor_dir
+        string $vendor_dir,
     ): ?ClassLoader {
         $autoload_roots = [$current_dir];
 
@@ -171,7 +176,9 @@ final class CliUtils
             return 'vendor';
         }
         try {
-            $composer_json = json_decode(file_get_contents($composer_json_path), true, 512, JSON_THROW_ON_ERROR);
+            $composer_file_contents = file_get_contents($composer_json_path);
+            assert($composer_file_contents !== false);
+            $composer_json = json_decode($composer_file_contents, true, 512, JSON_THROW_ON_ERROR);
         } catch (JsonException $e) {
             fwrite(
                 STDERR,
@@ -247,10 +254,9 @@ final class CliUtils
     }
 
     /**
-     * @param  string|array|null|false $f_paths
      * @return list<string>|null
      */
-    public static function getPathsToCheck($f_paths): ?array
+    public static function getPathsToCheck(string|array|false|null $f_paths): ?array
     {
         $paths_to_check = [];
 
@@ -280,7 +286,7 @@ final class CliUtils
                 continue;
             }
 
-            if (strpos($input_path, '--') === 0 && strlen($input_path) > 2) {
+            if (str_starts_with($input_path, '--') && strlen($input_path) > 2) {
                 if (substr($input_path, 2) === 'config') {
                     ++$i;
                 }
@@ -337,7 +343,7 @@ final class CliUtils
         string $current_dir,
         string $output_format,
         ?ClassLoader $first_autoloader,
-        bool $create_if_non_existent = false
+        bool $create_if_non_existent = false,
     ): Config {
         try {
             if ($path_to_config) {
@@ -398,9 +404,10 @@ final class CliUtils
         }
 
         $config_file_contents = file_get_contents($config_file);
+        assert($config_file_contents !== false);
 
         if ($config->error_baseline) {
-            $amended_config_file_contents = preg_replace(
+            $amended_config_file_contents = (string) preg_replace(
                 '/errorBaseline=".*?"/',
                 "errorBaseline=\"{$baseline_path}\"",
                 $config_file_contents,
@@ -485,7 +492,15 @@ final class CliUtils
         }
 
         if ($version !== null && $source !== null) {
-            $project_analyzer->setPhpVersion($version, $source);
+            try {
+                $project_analyzer->setPhpVersion($version, $source);
+            } catch (UnexpectedValueException $e) {
+                fwrite(
+                    STDERR,
+                    $e->getMessage() . PHP_EOL,
+                );
+                exit(1);
+            }
         }
     }
 

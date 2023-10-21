@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
@@ -22,7 +24,7 @@ use function assert;
 /**
  * @internal
  */
-class IteratorToArrayReturnTypeProvider implements FunctionReturnTypeProviderInterface
+final class IteratorToArrayReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
      * @return array<lowercase-string>
@@ -105,6 +107,7 @@ class IteratorToArrayReturnTypeProvider implements FunctionReturnTypeProviderInt
                 if ($key_type->isSingle() && $key_type->hasTemplate()) {
                     $template_types = $key_type->getTemplateTypes();
                     $template_type = array_shift($template_types);
+                    assert($template_type !== null);
                     if ($template_type->as->hasMixed()) {
                         $template_type = $template_type->replaceAs(Type::getArrayKey());
                         $key_type = new Union([$template_type]);

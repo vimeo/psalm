@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\LanguageServer\Provider;
 
 use Psalm\Config;
@@ -11,7 +13,7 @@ use Psalm\Internal\Provider\FileReferenceCacheProvider as InternalFileReferenceC
  *
  * @internal
  */
-class FileReferenceCacheProvider extends InternalFileReferenceCacheProvider
+final class FileReferenceCacheProvider extends InternalFileReferenceCacheProvider
 {
     private ?array $cached_file_references = null;
 

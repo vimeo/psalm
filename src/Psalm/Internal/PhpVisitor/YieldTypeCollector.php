@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\PhpVisitor;
 
 use PhpParser\Node;
@@ -16,16 +18,14 @@ use Psalm\Type\Union;
 /**
  * @internal
  */
-class YieldTypeCollector extends NodeVisitorAbstract
+final class YieldTypeCollector extends NodeVisitorAbstract
 {
     /** @var list<Union> */
     private array $yield_types = [];
 
-    private NodeDataProvider $nodes;
-
-    public function __construct(NodeDataProvider $nodes)
-    {
-        $this->nodes = $nodes;
+    public function __construct(
+        private readonly NodeDataProvider $nodes,
+    ) {
     }
 
     public function enterNode(Node $node): ?int
@@ -43,7 +43,7 @@ class YieldTypeCollector extends NodeVisitorAbstract
                 $generator_type = new TGenericObject(
                     'Generator',
                     [
-                        $key_type ? $key_type : Type::getInt(),
+                        $key_type ?: Type::getInt(),
                         $value_type,
                         Type::getMixed(),
                         Type::getMixed(),

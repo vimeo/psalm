@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
 use AssertionError;
@@ -29,6 +31,7 @@ use Psalm\Issue\UndefinedMethod;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
@@ -40,14 +43,14 @@ use function strtolower;
 /**
  * @internal
  */
-class MethodCallAnalyzer extends CallAnalyzer
+final class MethodCallAnalyzer extends CallAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\MethodCall $stmt,
         Context $context,
         bool $real_method_call = true,
-        ?TemplateResult $template_result = null
+        ?TemplateResult $template_result = null,
     ): bool {
         $was_inside_call = $context->inside_call;
 
@@ -119,21 +122,6 @@ class MethodCallAnalyzer extends CallAnalyzer
             $class_type = $stmt_var_type;
         } elseif (!$class_type) {
             $statements_analyzer->node_data->setType($stmt, Type::getMixed());
-        }
-
-        if (!$context->check_classes) {
-            if (ArgumentsAnalyzer::analyze(
-                $statements_analyzer,
-                $stmt->getArgs(),
-                null,
-                null,
-                true,
-                $context,
-            ) === false) {
-                return false;
-            }
-
-            return true;
         }
 
         if ($class_type
@@ -412,7 +400,7 @@ class MethodCallAnalyzer extends CallAnalyzer
             $types = $class_type->getAtomicTypes();
 
             foreach ($types as $key => &$type) {
-                if (!$type instanceof TNamedObject) {
+                if (!$type instanceof TNamedObject && !$type instanceof TObject) {
                     unset($types[$key]);
                 } else {
                     $type = $type->setFromDocblock(false);

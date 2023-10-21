@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
@@ -574,6 +576,87 @@ class EnumTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'nameTypeOnKnownCases' => [
+                'code' => <<<'PHP'
+                    <?php
+                    enum Transport: string {
+                        case CAR = 'car';
+                        case BIKE = 'bike';
+                        case BOAT = 'boat';
+                    }
+
+                    $val = Transport::from(uniqid());
+                    $_name = $val->name;
+                    PHP,
+                'assertions' => [
+                    '$_name===' => "'BIKE'|'BOAT'|'CAR'",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'nameTypeOnUnknownCases' => [
+                'code' => <<<'PHP'
+                    <?php
+                    enum Transport: string {
+                        case CAR = 'car';
+                        case BIKE = 'bike';
+                        case BOAT = 'boat';
+                    }
+
+                    function f(Transport $e): void {
+                        $_name = $e->name;
+                        /** @psalm-check-type-exact $_name='BIKE'|'BOAT'|'CAR' */;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'classStringAsBackedEnumValue' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Foo {}
+
+                    enum FooEnum: string {
+                        case Foo = Foo::class;
+                    }
+
+                    /**
+                     * @param class-string $s
+                     */
+                    function noop(string $s): string
+                    {
+                        return $s;
+                    }
+
+                    $foo = FooEnum::Foo->value;
+                    noop($foo);
+                    noop(FooEnum::Foo->value);
+                PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'backedEnumCaseValueFromClassConstant' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class FooBar {
+                        public const FOO = 'foo';
+                        public const BAR = 2;
+                    }
+
+                    enum FooEnum: string {
+                        case FOO = FooBar::FOO;
+                    }
+
+                    enum BarEnum: int {
+                        case BAR = FooBar::BAR;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
@@ -976,6 +1059,51 @@ class EnumTest extends TestCase
                     withA(new WithState(State::C));
                 ',
                 'error_message' => 'InvalidArgument',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'backedEnumDoesNotPassNativeType' => [
+                'code' => '<?php
+                    enum State: string
+                    {
+                        case A = "A";
+                        case B = "B";
+                        case C = "C";
+                    }
+                    function f(string $state): void {}
+                    f(State::A);
+                ',
+                'error_message' => 'InvalidArgument',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'stringBackedEnumCaseValueFromClassConstant' => [
+                'code' => '<?php
+                    class Foo {
+                        const FOO = 1;
+                    }
+
+                    enum Bar: string
+                    {
+                        case Foo = Foo::FOO;
+                    }
+                ',
+                'error_message' => 'InvalidEnumCaseValue',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'intBackedEnumCaseValueFromClassConstant' => [
+                'code' => '<?php
+                    class Foo {
+                        const FOO = "foo";
+                    }
+
+                    enum Bar: int
+                    {
+                        case Foo = Foo::FOO;
+                    }
+                ',
+                'error_message' => 'InvalidEnumCaseValue',
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],

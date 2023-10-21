@@ -36,22 +36,13 @@ use function substr_count;
  *
  * @internal
  */
-class TextDocument
+final class TextDocument
 {
-    protected LanguageServer $server;
-
-    protected Codebase $codebase;
-
-    protected ProjectAnalyzer $project_analyzer;
-
     public function __construct(
-        LanguageServer $server,
-        Codebase $codebase,
-        ProjectAnalyzer $project_analyzer
+        protected LanguageServer $server,
+        protected Codebase $codebase,
+        protected ProjectAnalyzer $project_analyzer,
     ) {
-        $this->server = $server;
-        $this->codebase = $codebase;
-        $this->project_analyzer = $project_analyzer;
     }
 
     /**
@@ -309,10 +300,7 @@ class TextDocument
                 }
                 return new CompletionList($completion_items, false);
             }
-        } catch (UnanalyzedFileException $e) {
-            $this->server->logThrowable($e);
-            return null;
-        } catch (TypeParseTreeException $e) {
+        } catch (UnanalyzedFileException|TypeParseTreeException $e) {
             $this->server->logThrowable($e);
             return null;
         }
@@ -323,10 +311,7 @@ class TextDocument
                 $completion_items = $this->codebase->getCompletionItemsForType($type_context);
                 return new CompletionList($completion_items, false);
             }
-        } catch (UnexpectedValueException $e) {
-            $this->server->logThrowable($e);
-            return null;
-        } catch (TypeParseTreeException $e) {
+        } catch (UnexpectedValueException|TypeParseTreeException $e) {
             $this->server->logThrowable($e);
             return null;
         }
@@ -446,25 +431,6 @@ class TextDocument
                     ],
                 ]),
             );
-
-            /*
-            $fixers["fixAll.{$diagnostic->data->type}"] = new CodeAction(
-                "FixAll {$diagnostic->data->type} for this file",
-                CodeActionKind::QUICK_FIX,
-                null,
-                null,
-                null,
-                null,
-                new Command(
-                    "Fix All",
-                    "psalm.fixall",
-                    [
-                        'uri' => $textDocument->uri,
-                        'type' => $diagnostic->data->type
-                    ]
-                )
-            );
-            */
         }
 
         if (empty($fixers)) {

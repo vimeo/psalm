@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Type\Comparator;
 
 use Exception;
@@ -18,17 +20,16 @@ use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
-use Psalm\Type\Atomic\TCallableArray;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_slice;
 use function end;
 use function strtolower;
 use function substr;
@@ -36,7 +37,7 @@ use function substr;
 /**
  * @internal
  */
-class CallableTypeComparator
+final class CallableTypeComparator
 {
     /**
      * @param  TCallable|TClosure   $input_type_part
@@ -46,7 +47,7 @@ class CallableTypeComparator
         Codebase $codebase,
         Atomic $input_type_part,
         Atomic $container_type_part,
-        ?TypeComparisonResult $atomic_comparison_result
+        ?TypeComparisonResult $atomic_comparison_result,
     ): bool {
         if ($container_type_part->is_pure && !$input_type_part->is_pure) {
             if ($atomic_comparison_result) {
@@ -65,6 +66,8 @@ class CallableTypeComparator
             return false;
         }
 
+        $input_variadic_param_idx = null;
+
         if ($input_type_part->params !== null && $container_type_part->params !== null) {
             foreach ($input_type_part->params as $i => $input_param) {
                 $container_param = null;
@@ -79,7 +82,15 @@ class CallableTypeComparator
                     }
                 }
 
+                if ($input_param->is_variadic) {
+                    $input_variadic_param_idx = $i;
+                }
+
                 if (!$container_param) {
+                    if ($input_param->is_variadic) {
+                        break;
+                    }
+
                     if ($input_param->is_optional) {
                         break;
                     }
@@ -87,6 +98,26 @@ class CallableTypeComparator
                     return false;
                 }
 
+                if ($container_param->type
+                    && !$container_param->type->hasMixed()
+                    && !UnionTypeComparator::isContainedBy(
+                        $codebase,
+                        $container_param->type,
+                        $input_param->type ?: Type::getMixed(),
+                        false,
+                        false,
+                        $atomic_comparison_result,
+                    )
+                ) {
+                    return false;
+                }
+            }
+        }
+
+        if ($input_variadic_param_idx && isset($input_type_part->params[$input_variadic_param_idx])) {
+            $input_param = $input_type_part->params[$input_variadic_param_idx];
+
+            foreach (array_slice($container_type_part->params ?? [], $input_variadic_param_idx) as $container_param) {
                 if ($container_param->type
                     && !$container_param->type->hasMixed()
                     && !UnionTypeComparator::isContainedBy(
@@ -140,11 +171,9 @@ class CallableTypeComparator
         Codebase $codebase,
         Atomic $input_type_part,
         TCallable $container_type_part,
-        ?TypeComparisonResult $atomic_comparison_result
+        ?TypeComparisonResult $atomic_comparison_result,
     ): bool {
-        if ($input_type_part instanceof TList) {
-            $input_type_part = $input_type_part->getKeyedArray();
-        }
+
         if ($input_type_part instanceof TArray) {
             if ($input_type_part->type_params[1]->isMixed()
                 || $input_type_part->type_params[1]->hasScalar()
@@ -158,15 +187,6 @@ class CallableTypeComparator
             }
 
             if (!$input_type_part->type_params[1]->hasString()) {
-                return false;
-            }
-
-            if (!$input_type_part instanceof TCallableArray) {
-                if ($atomic_comparison_result) {
-                    $atomic_comparison_result->type_coerced_from_mixed = true;
-                    $atomic_comparison_result->type_coerced = true;
-                }
-
                 return false;
             }
         } elseif ($input_type_part instanceof TKeyedArray) {
@@ -190,7 +210,7 @@ class CallableTypeComparator
                 if (!$codebase->methods->hasStorage($method_id)) {
                     return false;
                 }
-            } catch (Exception $e) {
+            } catch (Exception) {
                 return false;
             }
         }
@@ -220,11 +240,9 @@ class CallableTypeComparator
         Atomic $input_type_part,
         ?TCallable $container_type_part = null,
         ?StatementsAnalyzer $statements_analyzer = null,
-        bool $expand_callable = false
+        bool $expand_callable = false,
     ): ?Atomic {
-        if ($input_type_part instanceof TList) {
-            $input_type_part = $input_type_part->getKeyedArray();
-        }
+
         if ($input_type_part instanceof TCallable || $input_type_part instanceof TClosure) {
             return $input_type_part;
         }
@@ -287,7 +305,7 @@ class CallableTypeComparator
                     $return_type,
                     $function_storage->pure,
                 );
-            } catch (UnexpectedValueException $e) {
+            } catch (UnexpectedValueException) {
                 if (InternalCallMapHandler::inCallMap($input_type_part->value)) {
                     $args = [];
 
@@ -352,7 +370,7 @@ class CallableTypeComparator
                         $converted_return_type,
                         $method_storage->pure,
                     );
-                } catch (UnexpectedValueException $e) {
+                } catch (UnexpectedValueException) {
                     // do nothing
                 }
             }
@@ -442,8 +460,8 @@ class CallableTypeComparator
         TKeyedArray $input_type_part,
         ?Codebase $codebase = null,
         ?string $calling_method_id = null,
-        ?string $file_name = null
-    ) {
+        ?string $file_name = null,
+    ): string|MethodIdentifier|null {
         if (!isset($input_type_part->properties[0])
             || !isset($input_type_part->properties[1])
         ) {

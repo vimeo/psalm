@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Codebase;
 
 use PhpParser;
@@ -22,8 +24,9 @@ use function assert;
 use function count;
 use function dirname;
 use function file_exists;
+use function str_ends_with;
+use function str_starts_with;
 use function strlen;
-use function strpos;
 use function strtolower;
 use function substr;
 use function version_compare;
@@ -33,7 +36,7 @@ use function version_compare;
  *
  * Gets values from the call map array, which stores data about native functions and methods
  */
-class InternalCallMapHandler
+final class InternalCallMapHandler
 {
     private const PHP_MAJOR_VERSION = 8;
     private const PHP_MINOR_VERSION = 3;
@@ -64,7 +67,7 @@ class InternalCallMapHandler
         Codebase $codebase,
         string $method_id,
         array $args,
-        ?NodeDataProvider $nodes
+        ?NodeDataProvider $nodes,
     ): TCallable {
         $possible_callables = self::getCallablesFromCallMap($method_id);
 
@@ -92,7 +95,7 @@ class InternalCallMapHandler
         array $callables,
         array $args,
         ?NodeTypeProvider $nodes,
-        string $method_id
+        string $method_id,
     ): TCallable {
         if (count($callables) === 1) {
             return $callables[0];
@@ -269,12 +272,12 @@ class InternalCallMapHandler
                     $by_reference = true;
                 }
 
-                if (substr($arg_name, -1) === '=') {
+                if (str_ends_with($arg_name, '=')) {
                     $arg_name = substr($arg_name, 0, -1);
                     $optional = true;
                 }
 
-                if (strpos($arg_name, '...') === 0) {
+                if (str_starts_with($arg_name, '...')) {
                     $arg_name = substr($arg_name, 3);
                     $variadic = true;
                 }

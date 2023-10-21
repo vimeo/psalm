@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
 use Psalm\Config;
@@ -93,7 +95,7 @@ class ProjectCheckerTest extends TestCase
 
         ob_start();
         $this->project_analyzer->check('tests/fixtures/DummyProject');
-        $output = ob_get_clean();
+        $output = (string) ob_get_clean();
 
         $this->assertStringContainsString('Target PHP version: 8.1 (set by tests)', $output);
         $this->assertStringContainsString('Scanning files...', $output);
@@ -225,7 +227,7 @@ class ProjectCheckerTest extends TestCase
             ),
         );
 
-        $bat_file_path = getcwd()
+        $bat_file_path = (string) getcwd()
             . DIRECTORY_SEPARATOR . 'tests'
             . DIRECTORY_SEPARATOR . 'fixtures'
             . DIRECTORY_SEPARATOR . 'DummyProject'
@@ -280,7 +282,7 @@ class Bat
 
         ob_start();
         $this->project_analyzer->checkDir('tests/fixtures/DummyProject');
-        $output = ob_get_clean();
+        $output = (string) ob_get_clean();
 
         $this->assertStringContainsString('Target PHP version: 8.1 (set by tests)', $output);
         $this->assertStringContainsString('Scanning files...', $output);
@@ -318,10 +320,10 @@ class Bat
         // checkPaths expects absolute paths,
         // otherwise it's unable to match them against configured folders
         $this->project_analyzer->checkPaths([
-            realpath(getcwd() . '/tests/fixtures/DummyProject/Bar.php'),
-            realpath(getcwd() . '/tests/fixtures/DummyProject/SomeTrait.php'),
+            (string) realpath((string) getcwd() . '/tests/fixtures/DummyProject/Bar.php'),
+            (string) realpath((string) getcwd() . '/tests/fixtures/DummyProject/SomeTrait.php'),
         ]);
-        $output = ob_get_clean();
+        $output = (string) ob_get_clean();
 
         $this->assertStringContainsString('Target PHP version: 8.1 (set by tests)', $output);
         $this->assertStringContainsString('Scanning files...', $output);
@@ -359,10 +361,10 @@ class Bat
         // checkPaths expects absolute paths,
         // otherwise it's unable to match them against configured folders
         $this->project_analyzer->checkPaths([
-            realpath(getcwd() . '/tests/fixtures/DummyProject/Bar.php'),
-            realpath(getcwd() . '/tests/fixtures/DummyProject/SomeTrait.php'),
+            (string) realpath((string) getcwd() . '/tests/fixtures/DummyProject/Bar.php'),
+            (string) realpath((string) getcwd() . '/tests/fixtures/DummyProject/SomeTrait.php'),
         ]);
-        $output = ob_get_clean();
+        $output = (string) ob_get_clean();
 
         $this->assertStringContainsString('Target PHP version: 8.1 (set by tests)', $output);
         $this->assertStringContainsString('Scanning files...', $output);

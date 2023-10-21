@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Scope;
 
 use PhpParser;
@@ -9,7 +11,7 @@ use Psalm\Type\Union;
 /**
  * @internal
  */
-class SwitchScope
+final class SwitchScope
 {
     /**
      * @var array<string, Union>|null

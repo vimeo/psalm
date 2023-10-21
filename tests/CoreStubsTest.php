@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
@@ -124,6 +126,18 @@ class CoreStubsTest extends TestCase
             'assertions' => [
                 '$a===' => 'string',
             ],
+        ];
+        yield 'sprintf accepts Stringable values' => [
+            'code' => '<?php
+
+            $a = sprintf(
+                "%s",
+                new class implements Stringable { public function __toString(): string { return "hello"; } },
+            );
+            ',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '8.0',
         ];
         yield 'json_encode returns a non-empty-string provided JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE' => [
             'code' => '<?php

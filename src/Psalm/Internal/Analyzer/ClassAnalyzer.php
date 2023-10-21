@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer;
 
 use Exception;
@@ -36,6 +38,7 @@ use Psalm\Issue\DuplicateEnumCaseValue;
 use Psalm\Issue\ExtensionRequirementViolation;
 use Psalm\Issue\ImplementationRequirementViolation;
 use Psalm\Issue\InaccessibleMethod;
+use Psalm\Issue\InheritorViolation;
 use Psalm\Issue\InternalClass;
 use Psalm\Issue\InvalidEnumCaseValue;
 use Psalm\Issue\InvalidExtendClass;
@@ -74,6 +77,8 @@ use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
@@ -93,8 +98,6 @@ use function count;
 use function explode;
 use function implode;
 use function in_array;
-use function is_int;
-use function is_string;
 use function preg_match;
 use function preg_replace;
 use function reset;
@@ -105,7 +108,7 @@ use function substr;
 /**
  * @internal
  */
-class ClassAnalyzer extends ClassLikeAnalyzer
+final class ClassAnalyzer extends ClassLikeAnalyzer
 {
     /**
      * @var array<string, Union>
@@ -144,7 +147,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
     public function analyze(
         ?Context $class_context = null,
-        ?Context $global_context = null
+        ?Context $global_context = null,
     ): void {
         $class = $this->class;
 
@@ -269,6 +272,22 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 $codebase,
                 $class_context,
             );
+        }
+
+        $class_union = new Union([new TNamedObject($fq_class_name)]);
+        foreach ($storage->parent_classes + $storage->direct_class_interfaces as $parent_class) {
+            $parent_storage = $codebase->classlikes->getStorageFor($parent_class);
+            if ($parent_storage && $parent_storage->inheritors) {
+                if (!UnionTypeComparator::isContainedBy($codebase, $class_union, $parent_storage->inheritors)) {
+                    IssueBuffer::maybeAdd(
+                        new InheritorViolation(
+                            'Class ' . $fq_class_name . ' is not an allowed inheritor of parent class ' . $parent_class,
+                            new CodeLocation($this, $this->class),
+                        ),
+                        $this->getSuppressedIssues(),
+                    );
+                }
+            }
         }
 
 
@@ -563,7 +582,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
                     try {
                         $trait_file_analyzer = $project_analyzer->getFileAnalyzerForClassLike($fq_trait_name);
-                    } catch (Exception $e) {
+                    } catch (Exception) {
                         continue;
                     }
 
@@ -671,7 +690,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         Context $class_context,
         string $fq_class_name,
         ?string $parent_fq_class_name,
-        array $stmts = []
+        array $stmts = [],
     ): void {
         $codebase = $statements_source->getCodebase();
 
@@ -926,7 +945,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         try {
                             $docBlock = DocComment::parsePreservingLength($docComment);
                             $suppressed = $docBlock->tags['psalm-suppress'] ?? [];
-                        } catch (DocblockParseException $e) {
+                        } catch (DocblockParseException) {
                             // do nothing to keep original behavior
                         }
                     }
@@ -1000,7 +1019,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         ClassLikeStorage $storage,
         Context $class_context,
         ?Context $global_context = null,
-        ?MethodAnalyzer $constructor_analyzer = null
+        ?MethodAnalyzer $constructor_analyzer = null,
     ): void {
         if (!$config->reportIssueInFile('PropertyNotSetInConstructor', $this->getFilePath())) {
             return;
@@ -1363,7 +1382,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         Context $class_context,
         ?Context $global_context = null,
         ?MethodAnalyzer &$constructor_analyzer = null,
-        ?TraitAnalyzer $previous_trait_analyzer = null
+        ?TraitAnalyzer $previous_trait_analyzer = null,
     ): ?bool {
         $codebase = $this->getCodebase();
 
@@ -1515,7 +1534,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
     private function analyzeProperty(
         SourceAnalyzer $source,
         PhpParser\Node\Stmt\Property $stmt,
-        Context $context
+        Context $context,
     ): void {
         $fq_class_name = $source->getFQCLN();
         $property_name = $stmt->props[0]->name->name;
@@ -1617,7 +1636,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         PhpParser\Node\Stmt\Property $property,
         Union $inferred_type,
         StatementsSource $source,
-        bool $docblock_only = false
+        bool $docblock_only = false,
     ): void {
         $manipulator = PropertyDocblockManipulator::getForProperty(
             $project_analyzer,
@@ -1661,7 +1680,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         SourceAnalyzer $source,
         Context $class_context,
         ?Context $global_context = null,
-        bool $is_fake = false
+        bool $is_fake = false,
     ): ?MethodAnalyzer {
         $config = Config::getInstance();
 
@@ -1836,7 +1855,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
     private static function getThisObjectType(
         ClassLikeStorage $class_storage,
-        string $original_fq_classlike_name
+        string $original_fq_classlike_name,
     ): TNamedObject {
         if ($class_storage->template_types) {
             $template_params = [];
@@ -1872,7 +1891,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         string $fq_classlike_name,
         MethodIdentifier $analyzed_method_id,
         MethodIdentifier $actual_method_id,
-        bool $did_explicitly_return
+        bool $did_explicitly_return,
     ): void {
         $secondary_return_type_location = null;
 
@@ -2000,7 +2019,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         PhpParser\Node\Stmt $class,
         Codebase $codebase,
         string $fq_class_name,
-        ClassLikeStorage $storage
+        ClassLikeStorage $storage,
     ): bool {
         $classlike_storage_provider = $codebase->classlike_storage_provider;
 
@@ -2058,7 +2077,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
 
             try {
                 $interface_storage = $classlike_storage_provider->get($fq_interface_name);
-            } catch (InvalidArgumentException $e) {
+            } catch (InvalidArgumentException) {
                 return false;
             }
 
@@ -2092,7 +2111,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         foreach ($storage->class_implements as $fq_interface_name_lc => $fq_interface_name) {
             try {
                 $interface_storage = $classlike_storage_provider->get($fq_interface_name_lc);
-            } catch (InvalidArgumentException $e) {
+            } catch (InvalidArgumentException) {
                 return false;
             }
 
@@ -2303,7 +2322,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
         string $parent_fq_class_name,
         ClassLikeStorage $storage,
         Codebase $codebase,
-        ?Context $class_context
+        ?Context $class_context,
     ): void {
         $classlike_storage_provider = $codebase->classlike_storage_provider;
 
@@ -2455,7 +2474,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                 $code_location,
                 $storage->template_type_extends_count[$parent_fq_class_name] ?? 0,
             );
-        } catch (InvalidArgumentException $e) {
+        } catch (InvalidArgumentException) {
             // do nothing
         }
     }
@@ -2483,8 +2502,8 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                     ),
                 );
             } elseif ($case_storage->value !== null) {
-                if ((is_int($case_storage->value) && $storage->enum_type === 'string')
-                    || (is_string($case_storage->value) && $storage->enum_type === 'int')
+                if (($case_storage->value instanceof TLiteralInt && $storage->enum_type === 'string')
+                    || ($case_storage->value instanceof TLiteralString && $storage->enum_type === 'int')
                 ) {
                     IssueBuffer::maybeAdd(
                         new InvalidEnumCaseValue(
@@ -2497,7 +2516,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
             }
 
             if ($case_storage->value !== null) {
-                if (in_array($case_storage->value, $seen_values, true)) {
+                if (in_array($case_storage->value->value, $seen_values, true)) {
                     IssueBuffer::maybeAdd(
                         new DuplicateEnumCaseValue(
                             'Enum case values should be unique',
@@ -2506,7 +2525,7 @@ class ClassAnalyzer extends ClassLikeAnalyzer
                         ),
                     );
                 } else {
-                    $seen_values[] = $case_storage->value;
+                    $seen_values[] = $case_storage->value->value;
                 }
             }
         }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -12,7 +14,7 @@ use Psalm\Type;
 /**
  * @internal
  */
-class PdoStatementSetFetchMode implements MethodParamsProviderInterface
+final class PdoStatementSetFetchMode implements MethodParamsProviderInterface
 {
     public static function getClassLikeNames(): array
     {

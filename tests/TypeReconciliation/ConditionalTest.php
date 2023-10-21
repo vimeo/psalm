@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests\TypeReconciliation;
 
 use Psalm\Tests\TestCase;
@@ -2429,7 +2431,7 @@ class ConditionalTest extends TestCase
                                     continue;
                                 }
 
-                                $remaining = trim(preg_replace(\'@^[ \t]*\* *@m\', \' \', substr($return_block, $i + 1)));
+                                $remaining = trim((string) preg_replace(\'@^[ \t]*\* *@m\', \' \', substr($return_block, $i + 1)));
 
                                 if ($remaining) {
                                     /** @var array<string> */
@@ -2817,7 +2819,6 @@ class ConditionalTest extends TestCase
                     $lilstring = "";
 
                     $n = new SimpleXMLElement($lilstring);
-                    /** @psalm-suppress MixedAssignment */
                     $n = $n->b;
 
                     if (!$n instanceof SimpleXMLElement) {
@@ -2905,7 +2906,11 @@ class ConditionalTest extends TestCase
                     $lilstring = "";
 
                     $n = new SimpleXMLElement($lilstring);
-                    $n = $n->children();
+                    $n = $n->b;
+
+                    if (!$n instanceof SimpleXMLIterator) {
+                        return;
+                    }
 
                     if (!$n) {
                         echo "false";

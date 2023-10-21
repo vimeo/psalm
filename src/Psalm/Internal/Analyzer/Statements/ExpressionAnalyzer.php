@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements;
 
 use PhpParser;
@@ -58,14 +60,13 @@ use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
 use Psalm\Type\TaintKind;
 
-use function get_class;
 use function in_array;
 use function strtolower;
 
 /**
  * @internal
  */
-class ExpressionAnalyzer
+final class ExpressionAnalyzer
 {
     /**
      * @param bool $assigned_to_reference This is set to true when the expression being analyzed
@@ -79,7 +80,7 @@ class ExpressionAnalyzer
         ?Context $global_context = null,
         bool $from_stmt = false,
         ?TemplateResult $template_result = null,
-        bool $assigned_to_reference = false
+        bool $assigned_to_reference = false,
     ): bool {
         if (self::dispatchBeforeExpressionAnalysis($stmt, $context, $statements_analyzer) === false) {
             return false;
@@ -150,7 +151,7 @@ class ExpressionAnalyzer
         ?Context $global_context,
         bool $from_stmt,
         ?TemplateResult $template_result = null,
-        bool $assigned_to_reference = false
+        bool $assigned_to_reference = false,
     ): bool {
         if ($stmt instanceof PhpParser\Node\Expr\Variable) {
             return VariableFetchAnalyzer::analyze(
@@ -500,7 +501,7 @@ class ExpressionAnalyzer
 
         IssueBuffer::maybeAdd(
             new UnrecognizedExpression(
-                'Psalm does not understand ' . get_class($stmt) . ' for PHP ' .
+                'Psalm does not understand ' . $stmt::class . ' for PHP ' .
                 $codebase->getMajorAnalysisPhpVersion() . '.' . $codebase->getMinorAnalysisPhpVersion(),
                 new CodeLocation($statements_analyzer->getSource(), $stmt),
             ),
@@ -522,7 +523,7 @@ class ExpressionAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $stmt,
         Context $context,
-        bool $from_stmt
+        bool $from_stmt,
     ): bool {
         $assignment_type = AssignmentAnalyzer::analyze(
             $statements_analyzer,
@@ -535,7 +536,7 @@ class ExpressionAnalyzer
             !$from_stmt ? $stmt : null,
         );
 
-        if ($assignment_type === false) {
+        if ($assignment_type === null) {
             return false;
         }
 
@@ -549,7 +550,7 @@ class ExpressionAnalyzer
     private static function dispatchBeforeExpressionAnalysis(
         PhpParser\Node\Expr $expr,
         Context $context,
-        StatementsAnalyzer $statements_analyzer
+        StatementsAnalyzer $statements_analyzer,
     ): ?bool {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -577,7 +578,7 @@ class ExpressionAnalyzer
     private static function dispatchAfterExpressionAnalysis(
         PhpParser\Node\Expr $expr,
         Context $context,
-        StatementsAnalyzer $statements_analyzer
+        StatementsAnalyzer $statements_analyzer,
     ): ?bool {
         $codebase = $statements_analyzer->getCodebase();
 

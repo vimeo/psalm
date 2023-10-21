@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
@@ -16,7 +18,7 @@ use function count;
 /**
  * @internal
  */
-class PowReturnTypeProvider implements FunctionReturnTypeProviderInterface
+final class PowReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
      * @return array<lowercase-string>

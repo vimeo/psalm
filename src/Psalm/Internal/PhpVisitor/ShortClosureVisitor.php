@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\PhpVisitor;
 
 use PhpParser;
@@ -9,12 +11,12 @@ use function is_string;
 /**
  * @internal
  */
-class ShortClosureVisitor extends PhpParser\NodeVisitorAbstract
+final class ShortClosureVisitor extends PhpParser\NodeVisitorAbstract
 {
     /**
      * @var array<string, bool>
      */
-    protected array $used_variables = [];
+    private array $used_variables = [];
 
     public function enterNode(PhpParser\Node $node): ?int
     {
