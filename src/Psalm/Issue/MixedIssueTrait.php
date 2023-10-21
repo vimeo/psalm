@@ -18,8 +18,7 @@ trait MixedIssueTrait
         CodeLocation $code_location,
         ?CodeLocation $origin_location = null,
     ) {
-        $this->code_location = $code_location;
-        $this->message = $message;
+        parent::__construct($message, $code_location);
         $this->origin_location = $origin_location;
     }
 
