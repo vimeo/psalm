@@ -28,7 +28,7 @@ final class PsalmRestarter extends XdebugHandler
 {
     private const REQUIRED_OPCACHE_SETTINGS = [
         'enable_cli' => 1,
-        'jit' => 1254,
+        'jit' => 1205,
         'validate_timestamps' => 0,
         'file_update_protection' => 0,
         'jit_buffer_size' => 512 * 1024 * 1024,
@@ -88,7 +88,7 @@ final class PsalmRestarter extends XdebugHandler
                 if ($ini_name === 'jit_buffer_size') {
                     $value = self::toBytes($value);
                 } elseif ($ini_name === 'enable_cli') {
-                    $value = in_array($value, ['1', 'true', true, 1]);
+                    $value = in_array($value, ['1', 'true', true, 1]) ? 1 : 0;
                 } elseif (is_int($required_value)) {
                     $required_value = (int) $required_value;
                 }

@@ -58,7 +58,6 @@
         "phpunit/phpunit": "^9.6",
         "psalm/plugin-mockery": "^1.1",
         "psalm/plugin-phpunit": "^0.18",
-        "rector/rector": "^0.18.5",
         "slevomat/coding-standard": "^8.4",
         "squizlabs/php_codesniffer": "^3.6",
         "symfony/process": "^4.4 || ^5.0 || ^6.0"
