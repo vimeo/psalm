@@ -254,7 +254,7 @@ abstract class FunctionLikeStorage implements HasAttributesInterface
         $params = count($this->params) > 0 ? "\n" . implode(
             ",\n",
             array_map(
-                static function (FunctionLikeParameter $param) : string {
+                static function (FunctionLikeParameter $param): string {
                     $realType = $param->type ?: 'mixed';
                     return "    {$realType} \${$param->name}";
                 },

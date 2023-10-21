@@ -42,7 +42,7 @@ final class TValueOf extends Atomic
         }
 
         return new Union(array_map(
-            static function (EnumCaseStorage $case) : Atomic {
+            static function (EnumCaseStorage $case): Atomic {
                 assert($case->value !== null);
                 // Backed enum must have a value
                 return ConstantTypeResolver::getLiteralTypeFromScalarValue($case->value);

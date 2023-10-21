@@ -237,7 +237,7 @@ class LanguageServer extends Dispatcher
 
         $this->protocolReader->on(
             'readMessageGroup',
-            static function () : void {
+            static function (): void {
                 //$this->verboseLog('Received message group');
                 //$this->doAnalysis();
             },
