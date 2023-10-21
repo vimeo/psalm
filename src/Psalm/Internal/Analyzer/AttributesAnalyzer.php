@@ -25,11 +25,11 @@ use Psalm\Storage\HasAttributesInterface;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Union;
 
+use function array_key_first;
 use function array_shift;
 use function array_values;
 use function assert;
 use function count;
-use function reset;
 use function strtolower;
 
 /**
