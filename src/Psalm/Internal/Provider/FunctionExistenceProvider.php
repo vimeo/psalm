@@ -36,7 +36,7 @@ final class FunctionExistenceProvider
     public function registerClass(string $class): void
     {
         if (is_subclass_of($class, FunctionExistenceProviderInterface::class, true)) {
-            $callable = Closure::fromCallable([$class, 'doesFunctionExist']);
+            $callable = $class::doesFunctionExist(...);
 
             foreach ($class::getFunctionIds() as $function_id) {
                 $this->registerClosure($function_id, $callable);

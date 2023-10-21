@@ -41,6 +41,7 @@ use function preg_last_error_msg;
 use function preg_replace;
 use function preg_split;
 use function realpath;
+use function str_starts_with;
 use function stream_get_meta_data;
 use function stream_set_blocking;
 use function strlen;
@@ -285,7 +286,7 @@ final class CliUtils
                 continue;
             }
 
-            if (strpos($input_path, '--') === 0 && strlen($input_path) > 2) {
+            if (str_starts_with($input_path, '--') && strlen($input_path) > 2) {
                 if (substr($input_path, 2) === 'config') {
                     ++$i;
                 }

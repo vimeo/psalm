@@ -28,27 +28,23 @@ final class NamespaceAnalyzer extends SourceAnalyzer
 {
     use CanAlias;
 
-    /**
-     * @var FileAnalyzer
-     * @psalm-suppress NonInvariantDocblockPropertyType
-     */
-    protected SourceAnalyzer $source;
-
-    private Namespace_ $namespace;
-
-    private string $namespace_name;
+    private readonly string $namespace_name;
 
     /**
      * A lookup table for public namespace constants
      *
      * @var array<string, array<string, Union>>
      */
-    protected static array $public_namespace_constants = [];
+    private static array $public_namespace_constants = [];
 
-    public function __construct(Namespace_ $namespace, FileAnalyzer $source)
-    {
-        $this->source = $source;
-        $this->namespace = $namespace;
+    public function __construct(
+        private readonly Namespace_ $namespace,
+        /**
+         * @var FileAnalyzer
+         * @psalm-suppress NonInvariantDocblockPropertyType
+         */
+        protected SourceAnalyzer $source,
+    ) {
         $this->namespace_name = $this->namespace->name ? $this->namespace->name->toString() : '';
     }
 

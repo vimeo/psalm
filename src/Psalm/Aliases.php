@@ -6,38 +6,6 @@ namespace Psalm;
 
 final class Aliases
 {
-    /**
-     * @var array<lowercase-string, string>
-     */
-    public array $uses;
-
-    /**
-     * @var array<lowercase-string, string>
-     */
-    public array $uses_flipped;
-
-    /**
-     * @var array<lowercase-string, non-empty-string>
-     */
-    public array $functions;
-
-    /**
-     * @var array<lowercase-string, string>
-     */
-    public array $functions_flipped;
-
-    /**
-     * @var array<string, string>
-     */
-    public array $constants;
-
-    /**
-     * @var array<string, string>
-     */
-    public array $constants_flipped;
-
-    public ?string $namespace = null;
-
     public ?int $namespace_first_stmt_start = null;
 
     public ?int $uses_start = null;
@@ -54,21 +22,7 @@ final class Aliases
      * @internal
      * @psalm-mutation-free
      */
-    public function __construct(
-        ?string $namespace = null,
-        array $uses = [],
-        array $functions = [],
-        array $constants = [],
-        array $uses_flipped = [],
-        array $functions_flipped = [],
-        array $constants_flipped = [],
-    ) {
-        $this->namespace = $namespace;
-        $this->uses = $uses;
-        $this->functions = $functions;
-        $this->constants = $constants;
-        $this->uses_flipped = $uses_flipped;
-        $this->functions_flipped = $functions_flipped;
-        $this->constants_flipped = $constants_flipped;
+    public function __construct(public ?string $namespace = null, public array $uses = [], public array $functions = [], public array $constants = [], public array $uses_flipped = [], public array $functions_flipped = [], public array $constants_flipped = [])
+    {
     }
 }

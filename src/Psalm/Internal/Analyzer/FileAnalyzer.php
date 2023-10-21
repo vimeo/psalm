@@ -34,7 +34,7 @@ use function array_combine;
 use function array_diff_key;
 use function array_keys;
 use function count;
-use function strpos;
+use function str_starts_with;
 use function strtolower;
 
 /**
@@ -45,13 +45,9 @@ class FileAnalyzer extends SourceAnalyzer
 {
     use CanAlias;
 
-    protected string $file_name;
+    private ?string $root_file_path = null;
 
-    protected string $file_path;
-
-    protected ?string $root_file_path = null;
-
-    protected ?string $root_file_name = null;
+    private ?string $root_file_name = null;
 
     /**
      * @var array<string, bool>
@@ -95,8 +91,6 @@ class FileAnalyzer extends SourceAnalyzer
 
     public ?Context $context = null;
 
-    public ProjectAnalyzer $project_analyzer;
-
     public Codebase $codebase;
 
     private int $first_statement_offset = -1;
@@ -105,12 +99,9 @@ class FileAnalyzer extends SourceAnalyzer
 
     private ?Union $return_type = null;
 
-    public function __construct(ProjectAnalyzer $project_analyzer, string $file_path, string $file_name)
+    public function __construct(public ProjectAnalyzer $project_analyzer, protected string $file_path, protected string $file_name)
     {
         $this->source = $this;
-        $this->file_path = $file_path;
-        $this->file_name = $file_name;
-        $this->project_analyzer = $project_analyzer;
         $this->codebase = $project_analyzer->getCodebase();
     }
 
@@ -148,7 +139,7 @@ class FileAnalyzer extends SourceAnalyzer
 
         try {
             $stmts = $codebase->getStatementsForFile($this->file_path);
-        } catch (PhpParser\Error $e) {
+        } catch (PhpParser\Error) {
             return;
         }
 
@@ -395,13 +386,13 @@ class FileAnalyzer extends SourceAnalyzer
         $call_context->calling_method_id = $this_context->calling_method_id;
 
         foreach ($this_context->vars_possibly_in_scope as $var => $_) {
-            if (strpos($var, '$this->') === 0) {
+            if (str_starts_with($var, '$this->')) {
                 $call_context->vars_possibly_in_scope[$var] = true;
             }
         }
 
         foreach ($this_context->vars_in_scope as $var => $type) {
-            if (strpos($var, '$this->') === 0) {
+            if (str_starts_with($var, '$this->')) {
                 $call_context->vars_in_scope[$var] = $type;
             }
         }

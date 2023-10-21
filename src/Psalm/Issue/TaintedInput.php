@@ -14,29 +14,21 @@ abstract class TaintedInput extends CodeIssue
     public const SHORTCODE = 205;
 
     /**
-     * @readonly
-     */
-    public string $journey_text;
-
-    /**
-     * @var list<array{location: ?CodeLocation, label: string, entry_path_type: string}>
-     * @readonly
-     */
-    public array $journey = [];
-
-    /**
      * @param list<array{location: ?CodeLocation, label: string, entry_path_type: string}> $journey
      */
     public function __construct(
         string $message,
         CodeLocation $code_location,
-        array $journey,
-        string $journey_text,
+        /**
+         * @readonly
+         */
+        public array $journey,
+        /**
+         * @readonly
+         */
+        public string $journey_text,
     ) {
         parent::__construct($message, $code_location);
-
-        $this->journey = $journey;
-        $this->journey_text = $journey_text;
     }
 
     /**

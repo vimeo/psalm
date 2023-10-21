@@ -31,15 +31,13 @@ final class PropertyDocblockManipulator
      */
     private static array $manipulators = [];
 
-    private Property $stmt;
+    private readonly int $docblock_start;
 
-    private int $docblock_start;
-
-    private int $docblock_end;
+    private readonly int $docblock_end;
 
     private ?int $typehint_start = null;
 
-    private int $typehint_area_start;
+    private readonly int $typehint_area_start;
 
     private ?int $typehint_end = null;
 
@@ -75,10 +73,9 @@ final class PropertyDocblockManipulator
 
     private function __construct(
         ProjectAnalyzer $project_analyzer,
-        Property $stmt,
+        private readonly Property $stmt,
         string $file_path,
     ) {
-        $this->stmt = $stmt;
         $docblock = $stmt->getDocComment();
         $this->docblock_start = $docblock ? $docblock->getStartFilePos() : (int)$stmt->getAttribute('startFilePos');
         $this->docblock_end = (int)$stmt->getAttribute('startFilePos');

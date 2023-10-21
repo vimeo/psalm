@@ -82,11 +82,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         'unknown type' => true,
     ];
 
-    protected PhpParser\Node\Stmt\ClassLike $class;
-
     public FileAnalyzer $file_analyzer;
-
-    protected string $fq_class_name;
 
     /**
      * The parent class
@@ -95,12 +91,10 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
 
     protected ClassLikeStorage $storage;
 
-    public function __construct(PhpParser\Node\Stmt\ClassLike $class, SourceAnalyzer $source, string $fq_class_name)
+    public function __construct(protected PhpParser\Node\Stmt\ClassLike $class, SourceAnalyzer $source, protected string $fq_class_name)
     {
-        $this->class = $class;
         $this->source = $source;
         $this->file_analyzer = $source->getFileAnalyzer();
-        $this->fq_class_name = $fq_class_name;
         $codebase = $source->getCodebase();
         $this->storage = $codebase->classlike_storage_provider->get($fq_class_name);
     }
@@ -806,7 +800,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
     {
         try {
             return $codebase->file_storage_provider->get($file_path)->classlikes_in_file;
-        } catch (InvalidArgumentException $e) {
+        } catch (InvalidArgumentException) {
             return [];
         }
     }

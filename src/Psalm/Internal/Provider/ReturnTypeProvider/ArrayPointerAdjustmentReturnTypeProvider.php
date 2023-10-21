@@ -29,7 +29,7 @@ final class ArrayPointerAdjustmentReturnTypeProvider implements FunctionReturnTy
     /**
      * These functions are already handled by the CoreGenericFunctions stub
      */
-    const IGNORE_FUNCTION_IDS_FOR_FALSE_RETURN_TYPE = [
+    public const IGNORE_FUNCTION_IDS_FOR_FALSE_RETURN_TYPE = [
         'reset',
         'end',
         'current',

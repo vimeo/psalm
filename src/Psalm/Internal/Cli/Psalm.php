@@ -15,7 +15,6 @@ use Psalm\Internal\CliUtils;
 use Psalm\Internal\Codebase\ReferenceMapGenerator;
 use Psalm\Internal\Composer;
 use Psalm\Internal\ErrorHandler;
-use Psalm\Internal\Fork\Pool;
 use Psalm\Internal\Fork\PsalmRestarter;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\Provider\ClassLikeStorageCacheProvider;
@@ -71,18 +70,15 @@ use function preg_replace;
 use function realpath;
 use function setlocale;
 use function str_repeat;
+use function str_starts_with;
 use function strlen;
-use function strpos;
 use function substr;
-use function version_compare;
 
 use const DIRECTORY_SEPARATOR;
 use const JSON_THROW_ON_ERROR;
 use const LC_CTYPE;
 use const PHP_EOL;
-use const PHP_OS;
 use const PHP_URL_SCHEME;
-use const PHP_VERSION;
 use const STDERR;
 
 // phpcs:disable PSR1.Files.SideEffects
@@ -270,8 +266,6 @@ final class Psalm
 
         $progress = self::initProgress($options, $config);
 
-        self::emitMacPcreWarning($options, $threads);
-
         self::restart($options, $threads, $progress);
 
         if (isset($options['debug-emitted-issues'])) {
@@ -422,7 +416,7 @@ final class Psalm
     private static function findDefaultOutputFormat(): string
     {
         $emulator = getenv('TERMINAL_EMULATOR');
-        if (is_string($emulator) && substr($emulator, 0, 9) === 'JetBrains') {
+        if (is_string($emulator) && str_starts_with($emulator, 'JetBrains')) {
             return Report::TYPE_PHP_STORM;
         }
 
@@ -454,7 +448,7 @@ final class Psalm
     {
         array_map(
             static function (string $arg): void {
-                if (strpos($arg, '--') === 0 && $arg !== '--') {
+                if (str_starts_with($arg, '--') && $arg !== '--') {
                     $arg_name = (string) preg_replace('/=.*$/', '', substr($arg, 2), 1);
 
                     if (!in_array($arg_name, self::LONG_OPTIONS)
@@ -468,7 +462,7 @@ final class Psalm
                         );
                         exit(1);
                     }
-                } elseif (strpos($arg, '-') === 0 && $arg !== '-' && $arg !== '--') {
+                } elseif (str_starts_with($arg, '-') && $arg !== '-' && $arg !== '--') {
                     $arg_name = (string) preg_replace('/=.*$/', '', substr($arg, 1));
 
                     if (!in_array($arg_name, self::SHORT_OPTIONS)
@@ -505,9 +499,9 @@ final class Psalm
                 && $arg !== '--debug'
                 && $arg !== '--debug-by-line'
                 && $arg !== '--debug-emitted-issues'
-                && strpos($arg, '--disable-extension=') !== 0
-                && strpos($arg, '--root=') !== 0
-                && strpos($arg, '--r=') !== 0
+                && !str_starts_with($arg, '--disable-extension=')
+                && !str_starts_with($arg, '--root=')
+                && !str_starts_with($arg, '--r=')
         ));
 
         $init_level = null;
@@ -656,7 +650,7 @@ final class Psalm
                 new FileProvider,
                 $options['set-baseline'],
             );
-        } catch (ConfigException $e) {
+        } catch (ConfigException) {
             $issue_baseline = [];
         }
 
@@ -862,24 +856,6 @@ final class Psalm
         }
 
         return $current_dir;
-    }
-
-    private static function emitMacPcreWarning(array $options, int $threads): void
-    {
-        if (!isset($options['threads'])
-            && !isset($options['debug'])
-            && $threads === 1
-            && ini_get('pcre.jit') === '1'
-            && PHP_OS === 'Darwin'
-            && version_compare(PHP_VERSION, '7.3.0') >= 0
-            && version_compare(PHP_VERSION, '7.4.0') < 0
-        ) {
-            echo(
-                'If you want to run Psalm as a language server, or run Psalm with' . PHP_EOL
-                    . 'multiple processes (--threads=4), beware:' . PHP_EOL
-                    . Pool::MAC_PCRE_MESSAGE . PHP_EOL . PHP_EOL
-            );
-        }
     }
 
     private static function restart(array $options, int $threads, Progress $progress): void
@@ -1118,7 +1094,7 @@ final class Psalm
     }
 
     /** @return false|'always'|'auto' */
-    private static function shouldFindUnusedCode(array $options, Config $config): false|string
+    private static function shouldFindUnusedCode(array $options, Config $config): bool|string
     {
         $find_unused_code = false;
         if (isset($options['find-dead-code'])) {

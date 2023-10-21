@@ -44,14 +44,13 @@ use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTrue;
 
 use function array_filter;
-use function array_merge;
 use function array_unique;
 use function count;
-use function get_class;
 use function implode;
 use function ksort;
 use function reset;
 use function sort;
+use function str_contains;
 use function strpos;
 
 use const ARRAY_FILTER_USE_BOTH;
@@ -220,7 +219,7 @@ trait UnionTrait
 
         if (count($types) > 1) {
             foreach ($types as $i => $type) {
-                if (strpos($type, ' as ') && strpos($type, '(') === false) {
+                if (strpos($type, ' as ') && !str_contains($type, '(')) {
                     $types[$i] = '(' . $type . ')';
                 }
             }
@@ -264,9 +263,9 @@ trait UnionTrait
             } elseif ($type instanceof TLiteralString) {
                 $literal_strings[] = $type_string;
             } else {
-                if (get_class($type) === TString::class) {
+                if ($type::class === TString::class) {
                     $has_non_literal_string = true;
-                } elseif (get_class($type) === TInt::class) {
+                } elseif ($type::class === TInt::class) {
                     $has_non_literal_int = true;
                 }
                 $other_types[] = $type_string;
@@ -274,13 +273,13 @@ trait UnionTrait
         }
 
         if (count($literal_ints) <= 3 && !$has_non_literal_int) {
-            $other_types = array_merge($other_types, $literal_ints);
+            $other_types = [...$other_types, ...$literal_ints];
         } else {
             $other_types[] = 'int';
         }
 
         if (count($literal_strings) <= 3 && !$has_non_literal_string) {
-            $other_types = array_merge($other_types, $literal_strings);
+            $other_types = [...$other_types, ...$literal_strings];
         } else {
             $other_types[] = 'string';
         }
@@ -828,7 +827,7 @@ trait UnionTrait
     public function isVanillaMixed(): bool
     {
         return isset($this->types['mixed'])
-            && get_class($this->types['mixed']) === TMixed::class
+            && $this->types['mixed']::class === TMixed::class
             && !$this->types['mixed']->from_loop_isset
             && count($this->types) === 1;
     }

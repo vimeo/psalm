@@ -134,8 +134,7 @@ final class ConsoleReport extends Report
 
         if (null === $this->link_format) {
             // if xdebug is not enabled, use `get_cfg_var` to get the value directly from php.ini
-            $this->link_format = ini_get('xdebug.file_link_format') ?: get_cfg_var('xdebug.file_link_format')
-                ?: 'file://%f#L%l';
+            $this->link_format = (ini_get('xdebug.file_link_format') ?: get_cfg_var('xdebug.file_link_format')) ?: 'file://%f#L%l';
         }
 
         $link = strtr($this->link_format, ['%f' => $data->file_path, '%l' => $data->line_from]);

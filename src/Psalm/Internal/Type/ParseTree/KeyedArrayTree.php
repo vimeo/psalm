@@ -11,13 +11,10 @@ use Psalm\Internal\Type\ParseTree;
  */
 final class KeyedArrayTree extends ParseTree
 {
-    public string $value;
-
     public bool $terminated = false;
 
-    public function __construct(string $value, ?ParseTree $parent = null)
+    public function __construct(public string $value, ?ParseTree $parent = null)
     {
-        $this->value = $value;
         $this->parent = $parent;
     }
 }

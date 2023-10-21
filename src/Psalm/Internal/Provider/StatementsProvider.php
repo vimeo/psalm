@@ -33,23 +33,16 @@ use function count;
 use function filemtime;
 use function hash;
 use function md5;
+use function str_starts_with;
 use function strlen;
 use function strpos;
-
-use const PHP_VERSION_ID;
 
 /**
  * @internal
  */
 final class StatementsProvider
 {
-    private FileProvider $file_provider;
-
-    public ?ParserCacheProvider $parser_cache_provider = null;
-
-    private int|bool $this_modified_time;
-
-    private ?FileStorageCacheProvider $file_storage_cache_provider = null;
+    private readonly int|bool $this_modified_time;
 
     /**
      * @var array<string, array<string, bool>>
@@ -86,14 +79,11 @@ final class StatementsProvider
     private static ?Parser $parser = null;
 
     public function __construct(
-        FileProvider $file_provider,
-        ?ParserCacheProvider $parser_cache_provider = null,
-        ?FileStorageCacheProvider $file_storage_cache_provider = null,
+        private readonly FileProvider $file_provider,
+        public ?ParserCacheProvider $parser_cache_provider = null,
+        private readonly ?FileStorageCacheProvider $file_storage_cache_provider = null,
     ) {
-        $this->file_provider = $file_provider;
-        $this->parser_cache_provider = $parser_cache_provider;
         $this->this_modified_time = filemtime(__FILE__);
-        $this->file_storage_cache_provider = $file_storage_cache_provider;
     }
 
     /**
@@ -119,11 +109,7 @@ final class StatementsProvider
 
         $config = Config::getInstance();
 
-        if (PHP_VERSION_ID >= 8_01_00) {
-            $file_content_hash = hash('xxh128', $version . $file_contents);
-        } else {
-            $file_content_hash = hash('md4', $version . $file_contents);
-        }
+        $file_content_hash = hash('xxh128', $version . $file_contents);
 
         if (!$this->parser_cache_provider
             || (!$config->isInProjectDirs($file_path) && strpos($file_path, 'vendor'))
@@ -211,7 +197,7 @@ final class StatementsProvider
 
                 $changed_members = array_map(
                     static function (string $key) use ($file_path_hash): string {
-                        if (strpos($key, 'use:') === 0) {
+                        if (str_starts_with($key, 'use:')) {
                             return $key . ':' . $file_path_hash;
                         }
 
@@ -288,7 +274,7 @@ final class StatementsProvider
      */
     public function addChangedMembers(array $more_changed_members): void
     {
-        $this->changed_members = array_merge($more_changed_members, $this->changed_members);
+        $this->changed_members = [...$more_changed_members, ...$this->changed_members];
     }
 
     /**
@@ -304,7 +290,7 @@ final class StatementsProvider
      */
     public function addUnchangedSignatureMembers(array $more_unchanged_members): void
     {
-        $this->unchanged_signature_members = array_merge($more_unchanged_members, $this->unchanged_signature_members);
+        $this->unchanged_signature_members = [...$more_unchanged_members, ...$this->unchanged_signature_members];
     }
 
     /**
@@ -355,7 +341,7 @@ final class StatementsProvider
      */
     public function addDiffMap(array $diff_map): void
     {
-        $this->diff_map = array_merge($diff_map, $this->diff_map);
+        $this->diff_map = [...$diff_map, ...$this->diff_map];
     }
 
     /**
@@ -363,7 +349,7 @@ final class StatementsProvider
      */
     public function addDeletionRanges(array $deletion_ranges): void
     {
-        $this->deletion_ranges = array_merge($deletion_ranges, $this->deletion_ranges);
+        $this->deletion_ranges = [...$deletion_ranges, ...$this->deletion_ranges];
     }
 
     public function resetDiffs(): void
@@ -429,7 +415,7 @@ final class StatementsProvider
                 try {
                     /** @var list<Stmt> */
                     $stmts = self::$parser->parse($file_contents, $error_handler) ?: [];
-                } catch (Throwable $t) {
+                } catch (Throwable) {
                     $stmts = [];
 
                     // hope this got caught below
@@ -439,7 +425,7 @@ final class StatementsProvider
             try {
                 /** @var list<Stmt> */
                 $stmts = self::$parser->parse($file_contents, $error_handler) ?: [];
-            } catch (Throwable $t) {
+            } catch (Throwable) {
                 $stmts = [];
 
                 // hope this got caught below

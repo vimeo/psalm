@@ -37,6 +37,7 @@ use function preg_match;
 use function preg_replace;
 use function preg_split;
 use function reset;
+use function str_contains;
 use function str_replace;
 use function strlen;
 use function strpos;
@@ -454,7 +455,7 @@ final class ClassLikeDocblockParser
                         $codebase->analysis_php_version_id,
                         $has_errors,
                     );
-                } catch (Exception $e) {
+                } catch (Exception) {
                     throw new DocblockParseException('Badly-formatted @method string ' . $method_entry);
                 }
 
@@ -527,7 +528,7 @@ final class ClassLikeDocblockParser
      *     'psalm-property-read'|'property-write'|'psalm-property-write' $property_tag
      * @throws DocblockParseException
      */
-    protected static function addMagicPropertyToInfo(
+    private static function addMagicPropertyToInfo(
         Doc $comment,
         ClassLikeDocblockComment $info,
         array $specials,
@@ -593,7 +594,7 @@ final class ClassLikeDocblockParser
         $method_offset = 0;
 
         foreach ($lines as $i => $line) {
-            if (strpos($line, $method_entry) !== false) {
+            if (str_contains($line, $method_entry)) {
                 $method_offset = $i;
                 break;
             }

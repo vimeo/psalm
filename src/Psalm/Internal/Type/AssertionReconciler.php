@@ -64,7 +64,6 @@ use Psalm\Type\Union;
 use function array_intersect_key;
 use function array_merge;
 use function count;
-use function get_class;
 use function is_string;
 
 /**
@@ -830,7 +829,7 @@ final class AssertionReconciler extends Reconciler
         bool $type_coerced,
     ): ?Atomic {
         if ($type_coerced
-            && get_class($type_2_atomic) === TNamedObject::class
+            && $type_2_atomic::class === TNamedObject::class
             && $type_1_atomic instanceof TGenericObject
         ) {
             // this is a hack - it's not actually rigorous, as the params may be different
@@ -952,7 +951,7 @@ final class AssertionReconciler extends Reconciler
 
             $existing_var_type = $existing_var_type->getBuilder();
             foreach ($existing_var_atomic_types as $atomic_key => $atomic_type) {
-                if (get_class($atomic_type) === TNamedObject::class
+                if ($atomic_type::class === TNamedObject::class
                     && $atomic_type->value === $fq_enum_name
                 ) {
                     $can_be_equal = true;
@@ -1547,7 +1546,7 @@ final class AssertionReconciler extends Reconciler
             if ($assertion_type instanceof TTemplateParamClass) {
                 return [new TTemplateParam(
                     $assertion_type->param_name,
-                    new Union([$assertion_type->as_type ? $assertion_type->as_type : new TObject()]),
+                    new Union([$assertion_type->as_type ?: new TObject()]),
                     $assertion_type->defining_class,
                 )];
             }

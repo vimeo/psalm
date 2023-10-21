@@ -45,7 +45,7 @@ final class AlgebraAnalyzer
     ): void {
         try {
             $negated_formula2 = Algebra::negateFormula($formula_2);
-        } catch (ComplicatedExpressionException $e) {
+        } catch (ComplicatedExpressionException) {
             return;
         }
 

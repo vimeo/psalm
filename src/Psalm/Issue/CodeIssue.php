@@ -17,24 +17,18 @@ abstract class CodeIssue
     /** @var int<0, max> */
     public const SHORTCODE = 0;
 
-    /**
-     * @readonly
-     */
-    public CodeLocation $code_location;
-
-    /**
-     * @readonly
-     */
-    public string $message;
-
     public ?string $dupe_key = null;
 
     public function __construct(
-        string $message,
-        CodeLocation $code_location,
+        /**
+         * @readonly
+         */
+        public string $message,
+        /**
+         * @readonly
+         */
+        public CodeLocation $code_location,
     ) {
-        $this->code_location = $code_location;
-        $this->message = $message;
     }
 
     public function getShortLocationWithPrevious(): string

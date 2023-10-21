@@ -11,8 +11,6 @@ use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParamClass;
 
-use function get_class;
-
 /**
  * @internal
  */
@@ -36,7 +34,7 @@ final class ClassLikeStringComparator
         }
 
         if ($container_type_part instanceof TTemplateParamClass
-            && get_class($input_type_part) === TClassString::class
+            && $input_type_part::class === TClassString::class
         ) {
             if ($atomic_comparison_result) {
                 $atomic_comparison_result->type_coerced = true;

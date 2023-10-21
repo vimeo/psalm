@@ -29,10 +29,12 @@ use function preg_match;
 use function preg_replace;
 use function preg_split;
 use function reset;
+use function str_contains;
+use function str_ends_with;
 use function str_replace;
+use function str_starts_with;
 use function stripos;
 use function strlen;
-use function strpos;
 use function strtolower;
 use function substr;
 use function substr_count;
@@ -263,7 +265,7 @@ final class FunctionLikeDocblockParser
                 if (count($param_parts) === 2) {
                     $taint_type = $param_parts[1];
 
-                    if (strpos($taint_type, 'exec_') === 0) {
+                    if (str_starts_with($taint_type, 'exec_')) {
                         $taint_type = substr($taint_type, 5);
 
                         if ($taint_type === 'tainted') {
@@ -578,7 +580,7 @@ final class FunctionLikeDocblockParser
      */
     private static function sanitizeAssertionLineParts(array $line_parts): array
     {
-        if (count($line_parts) < 2 || strpos($line_parts[1], '$') === false) {
+        if (count($line_parts) < 2 || !str_contains($line_parts[1], '$')) {
             throw new IncorrectDocblockException('Misplaced variable');
         }
 
@@ -588,7 +590,7 @@ final class FunctionLikeDocblockParser
             $param_name_parts = explode('->', $line_parts[1]);
 
             foreach ($param_name_parts as $i => $param_name_part) {
-                if (substr($param_name_part, -2) === '()') {
+                if (str_ends_with($param_name_part, '()')) {
                     $param_name_parts[$i] = strtolower($param_name_part);
                 }
             }

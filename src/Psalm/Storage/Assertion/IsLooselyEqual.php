@@ -12,11 +12,8 @@ use Psalm\Type\Atomic;
  */
 final class IsLooselyEqual extends Assertion
 {
-    public Atomic $type;
-
-    public function __construct(Atomic $type)
+    public function __construct(public Atomic $type)
     {
-        $this->type = $type;
     }
 
     public function getNegation(): Assertion

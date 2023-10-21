@@ -12,16 +12,10 @@ namespace Psalm\Type\Atomic;
 final class TDependentGetDebugType extends TString implements DependentType
 {
     /**
-     * Used to hold information as to what this refers to
-     */
-    public string $typeof;
-
-    /**
      * @param string $typeof the variable id
      */
-    public function __construct(string $typeof)
+    public function __construct(public string $typeof)
     {
-        $this->typeof = $typeof;
         parent::__construct(false);
     }
 

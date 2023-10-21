@@ -39,7 +39,7 @@ final class MethodVisibilityProvider
     public function registerClass(string $class): void
     {
         if (is_subclass_of($class, MethodVisibilityProviderInterface::class, true)) {
-            $callable = Closure::fromCallable([$class, 'isMethodVisible']);
+            $callable = $class::isMethodVisible(...);
 
             foreach ($class::getClassLikeNames() as $fq_classlike_name) {
                 $this->registerClosure($fq_classlike_name, $callable);

@@ -18,23 +18,19 @@ use const JSON_THROW_ON_ERROR;
 /**
  * @internal
  */
-class PluginListFactory
+final class PluginListFactory
 {
-    private string $project_root;
-
-    private string $psalm_root;
-
-    public function __construct(string $project_root, string $psalm_root)
-    {
-        $this->project_root = $project_root;
-        $this->psalm_root = $psalm_root;
+    public function __construct(
+        private readonly string $project_root,
+        private readonly string $psalm_root,
+    ) {
     }
 
     public function __invoke(string $current_dir, ?string $config_file_path = null): PluginList
     {
         try {
             $config_file = new ConfigFile($current_dir, $config_file_path);
-        } catch (RuntimeException $exception) {
+        } catch (RuntimeException) {
             $config_file = null;
         }
         $composer_lock = new ComposerLock($this->findLockFiles());

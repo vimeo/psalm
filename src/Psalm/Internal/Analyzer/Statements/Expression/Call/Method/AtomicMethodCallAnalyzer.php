@@ -51,7 +51,6 @@ use function array_search;
 use function array_shift;
 use function array_values;
 use function count;
-use function get_class;
 use function reset;
 use function strtolower;
 
@@ -620,7 +619,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
         bool $is_intersection,
         AtomicMethodCallAnalysisResult $result,
     ): void {
-        switch (get_class($lhs_type_part)) {
+        switch ($lhs_type_part::class) {
             case TNull::class:
             case TFalse::class:
                 // handled above

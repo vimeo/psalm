@@ -219,42 +219,17 @@ class CodeLocation
         }
 
         if ($this->regex_type !== null) {
-            switch ($this->regex_type) {
-                case self::VAR_TYPE:
-                    $regex = '/@(?:psalm-)?var[ \t]+' . CommentAnalyzer::TYPE_REGEX . '/';
-                    break;
-
-                case self::FUNCTION_RETURN_TYPE:
-                    $regex = '/\\:\s+(\\??\s*[A-Za-z0-9_\\\\\[\]]+)/';
-                    break;
-
-                case self::FUNCTION_PARAM_TYPE:
-                    $regex = '/^(\\??\s*[A-Za-z0-9_\\\\\[\]]+)\s/';
-                    break;
-
-                case self::FUNCTION_PHPDOC_RETURN_TYPE:
-                    $regex = '/@(?:psalm-)?return[ \t]+' . CommentAnalyzer::TYPE_REGEX . '/';
-                    break;
-
-                case self::FUNCTION_PHPDOC_METHOD:
-                    $regex = '/@(?:psalm-)?method[ \t]+(.*)/';
-                    break;
-
-                case self::FUNCTION_PHPDOC_PARAM_TYPE:
-                    $regex = '/@(?:psalm-)?param[ \t]+' . CommentAnalyzer::TYPE_REGEX . '/';
-                    break;
-
-                case self::FUNCTION_PARAM_VAR:
-                    $regex = '/(\$[^ ]*)/';
-                    break;
-
-                case self::CATCH_VAR:
-                    $regex = '/(\$[^ ^\)]*)/';
-                    break;
-
-                default:
-                    throw new UnexpectedValueException('Unrecognised regex type ' . $this->regex_type);
-            }
+            $regex = match ($this->regex_type) {
+                self::VAR_TYPE => '/@(?:psalm-)?var[ \t]+' . CommentAnalyzer::TYPE_REGEX . '/',
+                self::FUNCTION_RETURN_TYPE => '/\\:\s+(\\??\s*[A-Za-z0-9_\\\\\[\]]+)/',
+                self::FUNCTION_PARAM_TYPE => '/^(\\??\s*[A-Za-z0-9_\\\\\[\]]+)\s/',
+                self::FUNCTION_PHPDOC_RETURN_TYPE => '/@(?:psalm-)?return[ \t]+' . CommentAnalyzer::TYPE_REGEX . '/',
+                self::FUNCTION_PHPDOC_METHOD => '/@(?:psalm-)?method[ \t]+(.*)/',
+                self::FUNCTION_PHPDOC_PARAM_TYPE => '/@(?:psalm-)?param[ \t]+' . CommentAnalyzer::TYPE_REGEX . '/',
+                self::FUNCTION_PARAM_VAR => '/(\$[^ ]*)/',
+                self::CATCH_VAR => '/(\$[^ ^\)]*)/',
+                default => throw new UnexpectedValueException('Unrecognised regex type ' . $this->regex_type),
+            };
 
             $preview_snippet = mb_strcut(
                 $file_contents,

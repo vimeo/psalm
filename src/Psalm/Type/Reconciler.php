@@ -69,6 +69,8 @@ use function key;
 use function ksort;
 use function preg_match;
 use function preg_quote;
+use function str_contains;
+use function str_ends_with;
 use function str_replace;
 use function str_split;
 use function strlen;
@@ -330,7 +332,7 @@ class Reconciler
             if ($type_changed || $failed_reconciliation) {
                 $changed_var_ids[$key] = true;
 
-                if (substr($key, -1) === ']' && !$has_inverted_isset && !$has_empty && !$is_equality) {
+                if (str_ends_with($key, ']') && !$has_inverted_isset && !$has_empty && !$is_equality) {
                     self::adjustTKeyedArrayType(
                         $key_parts,
                         $existing_types,
@@ -459,7 +461,7 @@ class Reconciler
 
                             $new_base_key = $base_key . '[' . $array_key . ']';
 
-                            if (strpos($array_key, '\'') !== false) {
+                            if (str_contains($array_key, '\'')) {
                                 $new_types[$base_key][] = [new HasStringArrayAccess()];
                             } else {
                                 $new_types[$base_key][] = [new HasIntOrStringArrayAccess()];
@@ -822,7 +824,7 @@ class Reconciler
                             if (!$codebase->classOrInterfaceExists($existing_key_type_part->value)) {
                                 $class_property_type = Type::getMixed();
                             } else {
-                                if (substr($property_name, -2) === '()') {
+                                if (str_ends_with($property_name, '()')) {
                                     $method_id = new MethodIdentifier(
                                         $existing_key_type_part->value,
                                         strtolower(substr($property_name, 0, -2)),
@@ -920,11 +922,7 @@ class Reconciler
                 $fq_class_name,
             );
 
-            if (isset($declaring_class_storage->pseudo_property_get_types['$' . $property_name])) {
-                return $declaring_class_storage->pseudo_property_get_types['$' . $property_name];
-            }
-
-            return null;
+            return $declaring_class_storage->pseudo_property_get_types['$' . $property_name] ?? null;
         }
 
         $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(

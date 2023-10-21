@@ -57,13 +57,7 @@ use function strtolower;
  */
 final class Methods
 {
-    private ClassLikeStorageProvider $classlike_storage_provider;
-
     public bool $collect_locations = false;
-
-    public FileReferenceProvider $file_reference_provider;
-
-    private ClassLikes $classlikes;
 
     public MethodReturnTypeProvider $return_type_provider;
 
@@ -74,13 +68,10 @@ final class Methods
     public MethodVisibilityProvider $visibility_provider;
 
     public function __construct(
-        ClassLikeStorageProvider $storage_provider,
-        FileReferenceProvider $file_reference_provider,
-        ClassLikes $classlikes,
+        private readonly ClassLikeStorageProvider $classlike_storage_provider,
+        public FileReferenceProvider $file_reference_provider,
+        private readonly ClassLikes $classlikes,
     ) {
-        $this->classlike_storage_provider = $storage_provider;
-        $this->file_reference_provider = $file_reference_provider;
-        $this->classlikes = $classlikes;
         $this->return_type_provider = new MethodReturnTypeProvider();
         $this->existence_provider = new MethodExistenceProvider();
         $this->visibility_provider = new MethodVisibilityProvider();
@@ -125,7 +116,7 @@ final class Methods
 
         try {
             $class_storage = $this->classlike_storage_provider->get($fq_class_name);
-        } catch (InvalidArgumentException $e) {
+        } catch (InvalidArgumentException) {
             return false;
         }
 
@@ -810,7 +801,7 @@ final class Methods
                                 $overridden_storage_return_type,
                                 $source_analyzer->getCodebase(),
                             );
-                        } catch (InvalidArgumentException $e) {
+                        } catch (InvalidArgumentException) {
                             // TODO: fix
                         }
                     } else {
@@ -1156,7 +1147,7 @@ final class Methods
     {
         try {
             $class_storage = $this->classlike_storage_provider->get($method_id->fq_class_name);
-        } catch (InvalidArgumentException $e) {
+        } catch (InvalidArgumentException) {
             return false;
         }
 

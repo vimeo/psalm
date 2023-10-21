@@ -27,9 +27,6 @@ use function array_merge;
 use function in_array;
 use function is_string;
 use function strtolower;
-use function version_compare;
-
-use const PHP_VERSION;
 
 /**
  * @internal
@@ -269,8 +266,7 @@ final class TryAnalyzer
                             $fq_catch_class,
                             false,
                             false,
-                            version_compare(PHP_VERSION, '7.0.0dev', '>=')
-                                && strtolower($fq_catch_class) !== 'throwable'
+                            strtolower($fq_catch_class) !== 'throwable'
                                 && $codebase->interfaceExists($fq_catch_class)
                                 && !$codebase->interfaceExtends($fq_catch_class, 'Throwable')
                                     ? ['Throwable' => new TNamedObject('Throwable')]

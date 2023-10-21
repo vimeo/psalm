@@ -39,7 +39,7 @@ final class ArrayFillReturnTypeProvider implements FunctionReturnTypeProviderInt
         $second_arg_type = isset($call_args[1]) ? $statements_source->node_data->getType($call_args[1]->value) : null;
         $third_arg_type = isset($call_args[2]) ? $statements_source->node_data->getType($call_args[2]->value) : null;
 
-        $value_type_from_third_arg = $third_arg_type ? $third_arg_type : Type::getMixed();
+        $value_type_from_third_arg = $third_arg_type ?: Type::getMixed();
 
         if ($first_arg_type && $second_arg_type && $third_arg_type
             && $first_arg_type->isSingleIntLiteral()

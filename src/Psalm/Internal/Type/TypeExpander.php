@@ -44,7 +44,6 @@ use function array_map;
 use function array_merge;
 use function array_values;
 use function count;
-use function get_class;
 use function is_string;
 use function reset;
 use function strtolower;
@@ -156,10 +155,7 @@ final class TypeExpander
                     );
 
                     if ($extra_type instanceof TNamedObject && $extra_type->extra_types) {
-                        $new_intersection_types = array_merge(
-                            $new_intersection_types,
-                            $extra_type->extra_types,
-                        );
+                        $new_intersection_types = [...$new_intersection_types, ...$extra_type->extra_types];
                         $extra_type = $extra_type->setIntersectionTypes([]);
                     }
                     $extra_types[$extra_type->getKey()] = $extra_type;
@@ -254,7 +250,7 @@ final class TypeExpander
                         $return_type->const_name,
                         ReflectionProperty::IS_PRIVATE,
                     );
-                } catch (CircularReferenceException $e) {
+                } catch (CircularReferenceException) {
                     $class_constant = null;
                 }
 
@@ -306,28 +302,6 @@ final class TypeExpander
                 $more_recursively_fleshed_out_types = self::expandAtomic(
                     $codebase,
                     $replacement_atomic_type,
-                    $self_class,
-                    $static_class_type,
-                    $parent_class,
-                    $evaluate_class_constants,
-                    $evaluate_conditional_types,
-                    $final,
-                    $expand_generic,
-                    $expand_templates,
-                    $throw_on_unresolvable_constant,
-                );
-
-                $recursively_fleshed_out_types = [
-                    ...$more_recursively_fleshed_out_types,
-                    ...$recursively_fleshed_out_types,
-                ];
-            }
-
-            /** @psalm-suppress DeprecatedProperty For backwards compatibility, we have to keep this here. */
-            foreach ($return_type->extra_types ?? [] as $alias) {
-                $more_recursively_fleshed_out_types = self::expandAtomic(
-                    $codebase,
-                    $alias,
                     $self_class,
                     $static_class_type,
                     $parent_class,
@@ -615,7 +589,7 @@ final class TypeExpander
         bool &$expand_generic = false,
     ): TNamedObject|TTemplateParam {
         if ($expand_generic
-            && get_class($return_type) === TNamedObject::class
+            && $return_type::class === TNamedObject::class
             && !$return_type->extra_types
             && $codebase->classOrInterfaceExists($return_type->value)
         ) {
@@ -1065,7 +1039,7 @@ final class TypeExpander
                     false,
                     $return_type instanceof TValueOf,
                 );
-            } catch (CircularReferenceException $e) {
+            } catch (CircularReferenceException) {
                 return [$return_type];
             }
 

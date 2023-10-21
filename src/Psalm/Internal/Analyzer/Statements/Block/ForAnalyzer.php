@@ -170,10 +170,7 @@ final class ForAnalyzer
         $for_context->loop_scope = null;
 
         if ($can_leave_loop) {
-            $context->vars_possibly_in_scope = array_merge(
-                $context->vars_possibly_in_scope,
-                $for_context->vars_possibly_in_scope,
-            );
+            $context->vars_possibly_in_scope = [...$context->vars_possibly_in_scope, ...$for_context->vars_possibly_in_scope];
         } elseif ($pre_context) {
             $context->vars_possibly_in_scope = $pre_context->vars_possibly_in_scope;
         }

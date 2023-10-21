@@ -14,33 +14,18 @@ use Psalm\StatementsSource;
 
 final class DynamicFunctionStorageProviderEvent
 {
-    private ArgTypeInferer $arg_type_inferer;
-    private DynamicTemplateProvider $template_provider;
-    private StatementsSource $statement_source;
-    private string $function_id;
-    private PhpParser\Node\Expr\FuncCall $func_call;
-    private Context $context;
-    private CodeLocation $code_location;
-
     /**
      * @internal
      */
     public function __construct(
-        ArgTypeInferer $arg_type_inferer,
-        DynamicTemplateProvider $template_provider,
-        StatementsSource $statements_source,
-        string $function_id,
-        PhpParser\Node\Expr\FuncCall $func_call,
-        Context $context,
-        CodeLocation $code_location,
+        private readonly ArgTypeInferer $arg_type_inferer,
+        private readonly DynamicTemplateProvider $template_provider,
+        private readonly StatementsSource $statement_source,
+        private readonly string $function_id,
+        private readonly PhpParser\Node\Expr\FuncCall $func_call,
+        private readonly Context $context,
+        private readonly CodeLocation $code_location,
     ) {
-        $this->statement_source = $statements_source;
-        $this->function_id = $function_id;
-        $this->func_call = $func_call;
-        $this->context = $context;
-        $this->code_location = $code_location;
-        $this->arg_type_inferer = $arg_type_inferer;
-        $this->template_provider = $template_provider;
     }
 
     public function getArgTypeInferer(): ArgTypeInferer

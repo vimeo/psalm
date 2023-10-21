@@ -122,7 +122,7 @@ final class InstancePropertyAssignmentAnalyzer
                     $statements_analyzer,
                     $context,
                 );
-            } catch (UnexpectedValueException $e) {
+            } catch (UnexpectedValueException) {
                 // do nothing
             }
 

@@ -38,20 +38,8 @@ use function substr_count;
  */
 final class TextDocument
 {
-    protected LanguageServer $server;
-
-    protected Codebase $codebase;
-
-    protected ProjectAnalyzer $project_analyzer;
-
-    public function __construct(
-        LanguageServer $server,
-        Codebase $codebase,
-        ProjectAnalyzer $project_analyzer,
-    ) {
-        $this->server = $server;
-        $this->codebase = $codebase;
-        $this->project_analyzer = $project_analyzer;
+    public function __construct(protected LanguageServer $server, protected Codebase $codebase, protected ProjectAnalyzer $project_analyzer)
+    {
     }
 
     /**
@@ -309,10 +297,7 @@ final class TextDocument
                 }
                 return new CompletionList($completion_items, false);
             }
-        } catch (UnanalyzedFileException $e) {
-            $this->server->logThrowable($e);
-            return null;
-        } catch (TypeParseTreeException $e) {
+        } catch (UnanalyzedFileException|TypeParseTreeException $e) {
             $this->server->logThrowable($e);
             return null;
         }
@@ -323,10 +308,7 @@ final class TextDocument
                 $completion_items = $this->codebase->getCompletionItemsForType($type_context);
                 return new CompletionList($completion_items, false);
             }
-        } catch (UnexpectedValueException $e) {
-            $this->server->logThrowable($e);
-            return null;
-        } catch (TypeParseTreeException $e) {
+        } catch (UnexpectedValueException|TypeParseTreeException $e) {
             $this->server->logThrowable($e);
             return null;
         }

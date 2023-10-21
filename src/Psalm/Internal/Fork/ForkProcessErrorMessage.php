@@ -14,10 +14,7 @@ final class ForkProcessErrorMessage implements ForkMessage
 {
     use ImmutableNonCloneableTrait;
 
-    public string $message;
-
-    public function __construct(string $message)
+    public function __construct(public string $message)
     {
-        $this->message = $message;
     }
 }

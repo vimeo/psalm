@@ -13,8 +13,6 @@ use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
-use function get_class;
-
 /**
  * Represents an array where the type of each value
  * is a function of its string key value
@@ -23,24 +21,15 @@ use function get_class;
  */
 final class TClassStringMap extends Atomic
 {
-    public string $param_name;
-
-    public ?TNamedObject $as_type;
-
-    public Union $value_param;
-
     /**
      * Constructs a new instance of a list
      */
     public function __construct(
-        string $param_name,
-        ?TNamedObject $as_type,
-        Union $value_param,
+        public string $param_name,
+        public ?TNamedObject $as_type,
+        public Union $value_param,
         bool $from_docblock = false,
     ) {
-        $this->param_name = $param_name;
-        $this->as_type = $as_type;
-        $this->value_param = $value_param;
         parent::__construct($from_docblock);
     }
 
@@ -203,7 +192,7 @@ final class TClassStringMap extends Atomic
 
     public function equals(Atomic $other_type, bool $ensure_source_equality): bool
     {
-        if (get_class($other_type) !== static::class) {
+        if ($other_type::class !== self::class) {
             return false;
         }
 

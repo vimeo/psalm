@@ -15,32 +15,17 @@ use Psalm\Type\Union;
 final class TNonEmptyArray extends TArray
 {
     /**
-     * @var positive-int|null
-     */
-    public ?int $count = null;
-
-    /**
-     * @var positive-int|null
-     */
-    public ?int $min_count = null;
-
-    public string $value = 'non-empty-array';
-
-    /**
      * @param array{Union, Union} $type_params
      * @param positive-int|null $count
      * @param positive-int|null $min_count
      */
     public function __construct(
         array $type_params,
-        ?int $count = null,
-        ?int $min_count = null,
-        string $value = 'non-empty-array',
+        public ?int $count = null,
+        public ?int $min_count = null,
+        public string $value = 'non-empty-array',
         bool $from_docblock = false,
     ) {
-        $this->count = $count;
-        $this->min_count = $min_count;
-        $this->value = $value;
         parent::__construct($type_params, $from_docblock);
     }
 

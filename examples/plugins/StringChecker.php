@@ -16,7 +16,7 @@ use function preg_split;
 use function strpos;
 use function strtolower;
 
-class StringChecker implements AfterExpressionAnalysisInterface
+final class StringChecker implements AfterExpressionAnalysisInterface
 {
     /**
      * Called after an expression has been checked
@@ -31,8 +31,8 @@ class StringChecker implements AfterExpressionAnalysisInterface
         if ($expr instanceof PhpParser\Node\Scalar\String_) {
             $class_or_class_method = '/^\\\?Psalm(\\\[A-Z][A-Za-z0-9]+)+(::[A-Za-z0-9]+)?$/';
 
-            if (strpos($statements_source->getFileName(), 'base/DefinitionManager.php') === false
-                && strpos($expr->value, 'TestController') === false
+            if (!str_contains($statements_source->getFileName(), 'base/DefinitionManager.php')
+                && !str_contains($expr->value, 'TestController')
                 && preg_match($class_or_class_method, $expr->value)
             ) {
                 /** @psalm-suppress PossiblyInvalidArrayAccess */

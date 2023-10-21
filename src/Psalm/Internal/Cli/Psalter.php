@@ -56,7 +56,8 @@ use function preg_last_error_msg;
 use function preg_replace;
 use function preg_split;
 use function realpath;
-use function strpos;
+use function str_contains;
+use function str_starts_with;
 use function strtolower;
 use function substr;
 use function trim;
@@ -385,7 +386,7 @@ final class Psalter
 
         foreach ($keyed_issues as $issue_name => $_) {
             // MissingParamType requires the scanning of all files to inform possible params
-            if (strpos($issue_name, 'Unused') !== false
+            if (str_contains($issue_name, 'Unused')
                 || $issue_name === 'MissingParamType'
                 || $issue_name === 'UnnecessaryVarAnnotation'
                 || $issue_name === 'all'
@@ -453,7 +454,7 @@ final class Psalter
     {
         array_map(
             static function (string $arg): void {
-                if (strpos($arg, '--') === 0 && $arg !== '--') {
+                if (str_starts_with($arg, '--') && $arg !== '--') {
                     $arg_name = (string) preg_replace('/=.*$/', '', substr($arg, 2), 1);
 
                     if ($arg_name === 'alter') {
@@ -534,7 +535,7 @@ final class Psalter
 
                     // currently we don’t match wildcard files or files that could appear anywhere
                     // in the repo
-                    return $line && $line[0] === '/' && strpos($line, '*') === false;
+                    return $line && $line[0] === '/' && !str_contains($line, '*');
                 },
             ),
         );

@@ -15,13 +15,9 @@ use const JSON_THROW_ON_ERROR;
  */
 final class NotNestedAssertions extends Assertion
 {
-    /** @var array<string, list<list<Assertion>>> */
-    public array $assertions;
-
     /** @param array<string, list<list<Assertion>>> $assertions */
-    public function __construct(array $assertions)
+    public function __construct(public array $assertions)
     {
-        $this->assertions = $assertions;
     }
 
     public function isNegation(): bool

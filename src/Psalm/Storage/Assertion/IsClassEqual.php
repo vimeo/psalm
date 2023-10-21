@@ -11,11 +11,8 @@ use Psalm\Storage\Assertion;
  */
 final class IsClassEqual extends Assertion
 {
-    public string $type;
-
-    public function __construct(string $type)
+    public function __construct(public string $type)
     {
-        $this->type = $type;
     }
 
     public function getNegation(): Assertion

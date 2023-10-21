@@ -18,8 +18,8 @@ use ReflectionProperty;
 
 use function count;
 use function is_string;
+use function str_contains;
 use function str_replace;
-use function strpos;
 use function strtolower;
 
 /**
@@ -178,10 +178,10 @@ final class PhpStormMetaScanner
                             }
 
                             if (($mapped_type = $map[''] ?? null) && is_string($mapped_type)) {
-                                if (strpos($mapped_type, '@') !== false) {
+                                if (str_contains($mapped_type, '@')) {
                                     $mapped_type = str_replace('@', $offset_arg_value, $mapped_type);
 
-                                    if (strpos($mapped_type, '.') === false) {
+                                    if (!str_contains($mapped_type, '.')) {
                                         return new Union([
                                             new TNamedObject($mapped_type),
                                         ]);
@@ -320,10 +320,10 @@ final class PhpStormMetaScanner
                             }
 
                             if (($mapped_type = $map[''] ?? null) && is_string($mapped_type)) {
-                                if (strpos($mapped_type, '@') !== false) {
+                                if (str_contains($mapped_type, '@')) {
                                     $mapped_type = str_replace('@', $offset_arg_value, $mapped_type);
 
-                                    if (strpos($mapped_type, '.') === false) {
+                                    if (!str_contains($mapped_type, '.')) {
                                         return new Union([
                                             new TNamedObject($mapped_type),
                                         ]);

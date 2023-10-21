@@ -15,31 +15,9 @@ final class FunctionLikeParameter implements HasAttributesInterface, TypeNode
 {
     use CustomMetadataTrait;
 
-    public string $name;
-
-    public bool $by_ref;
-
-    public ?Union $type = null;
-
-    public ?Union $out_type = null;
-
-    public ?Union $signature_type = null;
-
     public bool $has_docblock_type = false;
 
-    public bool $is_optional;
-
-    public bool $is_nullable;
-
-    public Union|UnresolvedConstantComponent|null $default_type = null;
-
-    public ?CodeLocation $location = null;
-
-    public ?CodeLocation $type_location = null;
-
     public ?CodeLocation $signature_type_location = null;
-
-    public bool $is_variadic;
 
     /**
      * @var array<string>|null
@@ -65,30 +43,19 @@ final class FunctionLikeParameter implements HasAttributesInterface, TypeNode
      * @psalm-external-mutation-free
      */
     public function __construct(
-        string $name,
-        bool $by_ref,
-        ?Union $type = null,
-        ?Union $signature_type = null,
-        ?CodeLocation $location = null,
-        ?CodeLocation $type_location = null,
-        bool $is_optional = true,
-        bool $is_nullable = false,
-        bool $is_variadic = false,
-        Union|UnresolvedConstantComponent|null $default_type = null,
-        ?Union $out_type = null,
+        public string $name,
+        public bool $by_ref,
+        public ?Union $type = null,
+        public ?Union $signature_type = null,
+        public ?CodeLocation $location = null,
+        public ?CodeLocation $type_location = null,
+        public bool $is_optional = true,
+        public bool $is_nullable = false,
+        public bool $is_variadic = false,
+        public Union|UnresolvedConstantComponent|null $default_type = null,
+        public ?Union $out_type = null,
     ) {
-        $this->name = $name;
-        $this->by_ref = $by_ref;
-        $this->type = $type;
-        $this->signature_type = $signature_type;
-        $this->is_optional = $is_optional;
-        $this->is_nullable = $is_nullable;
-        $this->is_variadic = $is_variadic;
-        $this->location = $location;
-        $this->type_location = $type_location;
         $this->signature_type_location = $type_location;
-        $this->default_type = $default_type;
-        $this->out_type = $out_type;
     }
 
     /** @psalm-mutation-free */

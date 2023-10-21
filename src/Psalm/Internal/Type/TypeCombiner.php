@@ -63,7 +63,6 @@ use function array_merge;
 use function array_values;
 use function assert;
 use function count;
-use function get_class;
 use function is_int;
 use function is_numeric;
 use function min;
@@ -289,7 +288,7 @@ final class TypeCombiner
             }
 
             $has_non_specific_string = isset($combination->value_types['string'])
-                && get_class($combination->value_types['string']) === TString::class;
+                && $combination->value_types['string']::class === TString::class;
 
             if (!$has_non_specific_string) {
                 $object_type = self::combine(
@@ -439,11 +438,11 @@ final class TypeCombiner
             return null;
         }
 
-        if (get_class($type) === TBool::class && isset($combination->value_types['false'])) {
+        if ($type::class === TBool::class && isset($combination->value_types['false'])) {
             unset($combination->value_types['false']);
         }
 
-        if (get_class($type) === TBool::class && isset($combination->value_types['true'])) {
+        if ($type::class === TBool::class && isset($combination->value_types['true'])) {
             unset($combination->value_types['true']);
         }
 
@@ -1105,52 +1104,52 @@ final class TypeCombiner
                 } else {
                     $combination->value_types[$type_key] = $type;
                 }
-            } elseif (get_class($combination->value_types['string']) !== TString::class) {
-                if (get_class($type) === TString::class) {
+            } elseif ($combination->value_types['string']::class !== TString::class) {
+                if ($type::class === TString::class) {
                     $combination->value_types['string'] = $type;
-                } elseif (get_class($combination->value_types['string']) !== get_class($type)) {
-                    if (get_class($type) === TNonEmptyString::class
-                        && get_class($combination->value_types['string']) === TNumericString::class
+                } elseif ($combination->value_types['string']::class !== $type::class) {
+                    if ($type::class === TNonEmptyString::class
+                        && $combination->value_types['string']::class === TNumericString::class
                     ) {
                         $combination->value_types['string'] = $type;
-                    } elseif (get_class($type) === TNumericString::class
-                        && get_class($combination->value_types['string']) === TNonEmptyString::class
+                    } elseif ($type::class === TNumericString::class
+                        && $combination->value_types['string']::class === TNonEmptyString::class
                     ) {
                         // do nothing
-                    } elseif ((get_class($type) === TNonEmptyString::class
-                            || get_class($type) === TNumericString::class)
-                        && get_class($combination->value_types['string']) === TNonFalsyString::class
+                    } elseif (($type::class === TNonEmptyString::class
+                            || $type::class === TNumericString::class)
+                        && $combination->value_types['string']::class === TNonFalsyString::class
                     ) {
                         $combination->value_types['string'] = $type;
-                    } elseif (get_class($type) === TNonFalsyString::class
-                        && (get_class($combination->value_types['string']) === TNonEmptyString::class
-                            || get_class($combination->value_types['string']) === TNumericString::class)
+                    } elseif ($type::class === TNonFalsyString::class
+                        && ($combination->value_types['string']::class === TNonEmptyString::class
+                            || $combination->value_types['string']::class === TNumericString::class)
                     ) {
                         // do nothing
-                    } elseif ((get_class($type) === TNonEmptyString::class
-                            || get_class($type) === TNonFalsyString::class)
-                        && get_class($combination->value_types['string']) === TNonEmptyLowercaseString::class
+                    } elseif (($type::class === TNonEmptyString::class
+                            || $type::class === TNonFalsyString::class)
+                        && $combination->value_types['string']::class === TNonEmptyLowercaseString::class
                     ) {
                         $combination->value_types['string'] = new TNonEmptyString();
-                    } elseif ((get_class($combination->value_types['string']) === TNonEmptyString::class
-                            || get_class($combination->value_types['string']) === TNonFalsyString::class)
-                        && get_class($type) === TNonEmptyLowercaseString::class
+                    } elseif (($combination->value_types['string']::class === TNonEmptyString::class
+                            || $combination->value_types['string']::class === TNonFalsyString::class)
+                        && $type::class === TNonEmptyLowercaseString::class
                     ) {
                         $combination->value_types['string'] = new TNonEmptyString();
-                    } elseif (get_class($type) === TLowercaseString::class
-                        && get_class($combination->value_types['string']) === TNonEmptyLowercaseString::class
+                    } elseif ($type::class === TLowercaseString::class
+                        && $combination->value_types['string']::class === TNonEmptyLowercaseString::class
                     ) {
                         $combination->value_types['string'] = $type;
-                    } elseif (get_class($combination->value_types['string']) === TLowercaseString::class
-                        && get_class($type) === TNonEmptyLowercaseString::class
+                    } elseif ($combination->value_types['string']::class === TLowercaseString::class
+                        && $type::class === TNonEmptyLowercaseString::class
                     ) {
                         //no-change
-                    } elseif (get_class($combination->value_types['string'])
+                    } elseif ($combination->value_types['string']::class
                             === TNonEmptyNonspecificLiteralString::class
                         && $type instanceof TNonEmptyString
                     ) {
                         $combination->value_types['string'] = new TNonEmptyString();
-                    } elseif (get_class($type) === TNonEmptyNonspecificLiteralString::class
+                    } elseif ($type::class === TNonEmptyNonspecificLiteralString::class
                         && $combination->value_types['string'] instanceof TNonEmptyString
                     ) {
                         // do nothing
@@ -1226,8 +1225,8 @@ final class TypeCombiner
                 if ($combination->ints || !isset($combination->value_types['int'])) {
                     $combination->value_types['int'] = $type;
                 } elseif (isset($combination->value_types['int'])
-                    && get_class($combination->value_types['int'])
-                    !== get_class($type)
+                    && $combination->value_types['int']::class
+                    !== $type::class
                 ) {
                     $combination->value_types['int'] = new TInt();
                 }
@@ -1309,7 +1308,7 @@ final class TypeCombiner
     {
         try {
             $class_storage = $codebase->classlike_storage_provider->get($fq_classlike_name);
-        } catch (InvalidArgumentException $e) {
+        } catch (InvalidArgumentException) {
             return [];
         }
 

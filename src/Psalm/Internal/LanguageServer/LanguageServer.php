@@ -74,12 +74,13 @@ use function max;
 use function parse_url;
 use function rawurlencode;
 use function realpath;
+use function str_contains;
+use function str_ends_with;
 use function str_replace;
 use function stream_set_blocking;
 use function stream_socket_accept;
 use function stream_socket_client;
 use function stream_socket_server;
-use function strpos;
 use function substr;
 use function trim;
 use function uniqid;
@@ -108,27 +109,19 @@ final class LanguageServer extends Dispatcher
 
     public ?ClientInfo $clientInfo = null;
 
-    protected ProtocolReader $protocolReader;
-
-    protected ProtocolWriter $protocolWriter;
-
     public LanguageClient $client;
 
     public ?ClientCapabilities $clientCapabilities = null;
 
     public ?string $trace = null;
 
-    protected ProjectAnalyzer $project_analyzer;
-
-    protected Codebase $codebase;
-
     /**
      * The AMP Delay token
      */
-    protected string $versionedAnalysisDelayToken = '';
+    private string $versionedAnalysisDelayToken = '';
 
     /** @var array<string,array<string,array{o:int, s: list<string>}>> */
-    protected array $issue_baseline = [];
+    private array $issue_baseline = [];
 
     /**
      * This should actually be a private property on `parent`
@@ -137,33 +130,21 @@ final class LanguageServer extends Dispatcher
      */
     protected JsonMapper $mapper;
 
-    protected PathMapper $path_mapper;
-
     public function __construct(
-        ProtocolReader $reader,
-        ProtocolWriter $writer,
-        ProjectAnalyzer $project_analyzer,
-        Codebase $codebase,
+        protected ProtocolReader $protocolReader,
+        protected ProtocolWriter $protocolWriter,
+        protected ProjectAnalyzer $project_analyzer,
+        protected Codebase $codebase,
         ClientConfiguration $clientConfiguration,
         Progress $progress,
-        PathMapper $path_mapper,
+        protected PathMapper $path_mapper,
     ) {
         parent::__construct($this, '/');
 
         $progress->setServer($this);
-
-        $this->project_analyzer = $project_analyzer;
-
-        $this->codebase = $codebase;
-
-        $this->path_mapper = $path_mapper;
-
-        $this->protocolWriter = $writer;
-
-        $this->protocolReader = $reader;
         $this->protocolReader->on(
             'close',
-            function (): void {
+            function (): never {
                 $this->shutdown();
                 $this->exit();
             },
@@ -225,7 +206,7 @@ final class LanguageServer extends Dispatcher
             },
         );
 
-        $this->client = new LanguageClient($reader, $writer, $this, $clientConfiguration);
+        $this->client = new LanguageClient($protocolReader, $protocolWriter, $this, $clientConfiguration);
 
 
         $this->logInfo("Psalm Language Server ".PSALM_VERSION." has started.");
@@ -698,14 +679,10 @@ final class LanguageServer extends Dispatcher
                         new Position($start_line - 1, $start_column - 1),
                         new Position($end_line - 1, $end_column - 1),
                     );
-                    switch ($severity) {
-                        case IssueData::SEVERITY_INFO:
-                            $diagnostic_severity = DiagnosticSeverity::WARNING;
-                            break;
-                        default:
-                            $diagnostic_severity = DiagnosticSeverity::ERROR;
-                            break;
-                    }
+                    $diagnostic_severity = match ($severity) {
+                        IssueData::SEVERITY_INFO => DiagnosticSeverity::WARNING,
+                        default => DiagnosticSeverity::ERROR,
+                    };
                     $diagnostic = new Diagnostic(
                         $description,
                         $range,
@@ -812,7 +789,7 @@ final class LanguageServer extends Dispatcher
      * The server should exit with success code 0 if the shutdown request has been received before;
      * otherwise with error code 1.
      */
-    public function exit(): void
+    public function exit(): never
     {
         exit(0);
     }
@@ -852,7 +829,7 @@ final class LanguageServer extends Dispatcher
                     $message,
                 ),
             );
-        } catch (Throwable $err) {
+        } catch (Throwable) {
             // do nothing as we could potentially go into a loop here is not careful
             //TODO: Investigate if we can use error_log instead
         }
@@ -915,7 +892,7 @@ final class LanguageServer extends Dispatcher
                     $status . (!empty($additional_info) ? ': ' . $additional_info : ''),
                 ),
             );
-        } catch (Throwable $err) {
+        } catch (Throwable) {
             // do nothing
         }
     }
@@ -934,7 +911,7 @@ final class LanguageServer extends Dispatcher
         $parts = explode('/', $filepath);
         // Don't %-encode the colon after a Windows drive letter
         $first = array_shift($parts);
-        if (substr($first, -1) !== ':') {
+        if (!str_ends_with($first, ':')) {
             $first = rawurlencode($first);
         }
         $parts = array_map('rawurlencode', $parts);
@@ -951,7 +928,7 @@ final class LanguageServer extends Dispatcher
     {
         $filepath = urldecode($this->getPathPart($uri));
 
-        if (strpos($filepath, ':') !== false) {
+        if (str_contains($filepath, ':')) {
             if ($filepath[0] === '/') {
                 $filepath = substr($filepath, 1);
             }

@@ -40,7 +40,7 @@ use Psalm\Type\Union;
 
 use function array_filter;
 use function in_array;
-use function strpos;
+use function str_starts_with;
 use function strtolower;
 
 /**
@@ -448,7 +448,7 @@ final class MethodComparator
                 && $implementer_classlike_storage->user_defined
                 && $implementer_param->location
                 && $guide_method_storage->cased_name
-                && strpos($guide_method_storage->cased_name, '__') !== 0
+                && !str_starts_with($guide_method_storage->cased_name, '__')
                 && $config->isInProjectDirs(
                     $implementer_param->location->file_path,
                 )
@@ -742,7 +742,7 @@ final class MethodComparator
         $builder = $implementer_method_storage_param_type->getBuilder();
         foreach ($builder->getAtomicTypes() as $k => $t) {
             if ($t instanceof TTemplateParam
-                && strpos($t->defining_class, 'fn-') === 0
+                && str_starts_with($t->defining_class, 'fn-')
             ) {
                 $builder->removeType($k);
 
@@ -756,7 +756,7 @@ final class MethodComparator
         $builder = $guide_method_storage_param_type->getBuilder();
         foreach ($builder->getAtomicTypes() as $k => $t) {
             if ($t instanceof TTemplateParam
-                && strpos($t->defining_class, 'fn-') === 0
+                && str_starts_with($t->defining_class, 'fn-')
             ) {
                 $builder->removeType($k);
 

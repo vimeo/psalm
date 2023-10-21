@@ -390,7 +390,7 @@ final class ExpressionResolver
                 });
                 try {
                     return (bool) $evaluator->evaluateSilently($expr);
-                } catch (ConstExprEvaluationException $e) {
+                } catch (ConstExprEvaluationException) {
                     return null;
                 }
             }

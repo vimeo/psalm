@@ -77,7 +77,6 @@ use function array_shift;
 use function array_values;
 use function assert;
 use function count;
-use function get_class;
 use function implode;
 use function preg_match;
 use function preg_replace;
@@ -95,15 +94,9 @@ use const PREG_SPLIT_NO_EMPTY;
  */
 final class ClassLikeNodeScanner
 {
-    private FileScanner $file_scanner;
-
-    private Codebase $codebase;
-
-    private string $file_path;
+    private readonly string $file_path;
 
     private Config $config;
-
-    private FileStorage $file_storage;
 
     /**
      * @var array<string, InlineTypeAlias>
@@ -115,10 +108,6 @@ final class ClassLikeNodeScanner
      */
     public array $class_template_types = [];
 
-    private ?Name $namespace_name = null;
-
-    private Aliases $aliases;
-
     public ?ClassLikeStorage $storage = null;
 
     /**
@@ -127,19 +116,14 @@ final class ClassLikeNodeScanner
     public array $type_aliases = [];
 
     public function __construct(
-        Codebase $codebase,
-        FileStorage $file_storage,
-        FileScanner $file_scanner,
-        Aliases $aliases,
-        ?Name $namespace_name,
+        private readonly Codebase $codebase,
+        private readonly FileStorage $file_storage,
+        private readonly FileScanner $file_scanner,
+        private Aliases $aliases,
+        private readonly ?Name $namespace_name,
     ) {
-        $this->codebase = $codebase;
-        $this->file_storage = $file_storage;
-        $this->file_scanner = $file_scanner;
         $this->file_path = $file_storage->file_path;
-        $this->aliases = $aliases;
         $this->config = Config::getInstance();
-        $this->namespace_name = $namespace_name;
     }
 
     /**
@@ -215,7 +199,7 @@ final class ClassLikeNodeScanner
                     foreach ($storage->dependent_classlikes as $dependent_name_lc => $_) {
                         try {
                             $dependent_storage = $this->codebase->classlike_storage_provider->get($dependent_name_lc);
-                        } catch (InvalidArgumentException $exception) {
+                        } catch (InvalidArgumentException) {
                             continue;
                         }
                         $dependent_storage->populated = false;
@@ -504,7 +488,7 @@ final class ClassLikeNodeScanner
                     );
 
                     $storage->yield = $yield_type;
-                } catch (TypeParseTreeException $e) {
+                } catch (TypeParseTreeException) {
                     // do nothing
                 }
             }
@@ -868,7 +852,7 @@ final class ClassLikeNodeScanner
                     '@psalm-type ' . $key . ' contains invalid reference: ' . $e->getMessage(),
                     new CodeLocation($this->file_scanner, $node, null, true),
                 );
-            } catch (Exception $e) {
+            } catch (Exception) {
                 $classlike_storage->docblock_issues[] = new InvalidDocblock(
                     '@psalm-type ' . $key . ' contains invalid references',
                     new CodeLocation($this->file_scanner, $node, null, true),
@@ -1358,7 +1342,7 @@ final class ClassLikeNodeScanner
                 && !(
                     $const->value instanceof Concat
                     && $inferred_type->isSingle()
-                    && get_class($inferred_type->getSingleAtomic()) === TString::class
+                    && $inferred_type->getSingleAtomic()::class === TString::class
                 )
             ) {
                 $exists = true;

@@ -9,11 +9,6 @@ use Psalm\StatementsSource;
 
 final class MethodExistenceProviderEvent
 {
-    private string $fq_classlike_name;
-    private string $method_name_lowercase;
-    private ?StatementsSource $source;
-    private ?CodeLocation $code_location;
-
     /**
      * Use this hook for informing whether or not a method exists on a given object. If you know the method does
      * not exist, return false. If you aren't sure if it exists or not, return null and the default analysis will
@@ -22,15 +17,11 @@ final class MethodExistenceProviderEvent
      * @internal
      */
     public function __construct(
-        string $fq_classlike_name,
-        string $method_name_lowercase,
-        ?StatementsSource $source = null,
-        ?CodeLocation $code_location = null,
+        private readonly string $fq_classlike_name,
+        private readonly string $method_name_lowercase,
+        private readonly ?StatementsSource $source = null,
+        private readonly ?CodeLocation $code_location = null,
     ) {
-        $this->fq_classlike_name = $fq_classlike_name;
-        $this->method_name_lowercase = $method_name_lowercase;
-        $this->source = $source;
-        $this->code_location = $code_location;
     }
 
     public function getFqClasslikeName(): string

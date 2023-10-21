@@ -5,11 +5,12 @@ declare(strict_types=1);
 namespace Psalm\Storage;
 
 use Psalm\Type\Atomic;
+use Stringable;
 
 /**
  * @psalm-immutable
  */
-abstract class Assertion
+abstract class Assertion implements Stringable
 {
     use ImmutableNonCloneableTrait;
 

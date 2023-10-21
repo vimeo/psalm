@@ -285,7 +285,8 @@ class FileReferenceCacheProvider
         $this->saveCacheItem(self::TYPE_COVERAGE_CACHE_NAME, $mixed_counts);
     }
 
-    public function getConfigHashCache(): string|false
+    /** @return string|false */
+    public function getConfigHashCache(): string|bool
     {
         $cache_directory = $this->config->getCacheDirectory();
 

@@ -11,11 +11,8 @@ namespace Psalm\Type\Atomic;
  */
 final class TLiteralFloat extends TFloat
 {
-    public float $value;
-
-    public function __construct(float $value, bool $from_docblock = false)
+    public function __construct(public float $value, bool $from_docblock = false)
     {
-        $this->value = $value;
         parent::__construct($from_docblock);
     }
 

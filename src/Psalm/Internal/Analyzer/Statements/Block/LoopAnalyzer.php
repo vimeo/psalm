@@ -139,10 +139,7 @@ final class LoopAnalyzer
                 }
             }
 
-            $loop_parent_context->vars_possibly_in_scope = array_merge(
-                $continue_context->vars_possibly_in_scope,
-                $loop_parent_context->vars_possibly_in_scope,
-            );
+            $loop_parent_context->vars_possibly_in_scope = [...$continue_context->vars_possibly_in_scope, ...$loop_parent_context->vars_possibly_in_scope];
         } else {
             $original_parent_context = clone $loop_parent_context;
 
@@ -270,10 +267,7 @@ final class LoopAnalyzer
 
                 $continue_context->has_returned = false;
 
-                $loop_parent_context->vars_possibly_in_scope = array_merge(
-                    $continue_context->vars_possibly_in_scope,
-                    $loop_parent_context->vars_possibly_in_scope,
-                );
+                $loop_parent_context->vars_possibly_in_scope = [...$continue_context->vars_possibly_in_scope, ...$loop_parent_context->vars_possibly_in_scope];
 
                 // if there are no changes to the types, no need to re-examine
                 if (!$has_changes) {
@@ -442,10 +436,7 @@ final class LoopAnalyzer
                     $loop_parent_context->removeVarFromConflictingClauses($var_id);
                 } else {
                     $loop_parent_context->vars_in_scope[$var_id] =
-                        $loop_parent_context->vars_in_scope[$var_id]->setParentNodes(array_merge(
-                            $loop_parent_context->vars_in_scope[$var_id]->parent_nodes,
-                            $continue_context->vars_in_scope[$var_id]->parent_nodes,
-                        ))
+                        $loop_parent_context->vars_in_scope[$var_id]->setParentNodes([...$loop_parent_context->vars_in_scope[$var_id]->parent_nodes, ...$continue_context->vars_in_scope[$var_id]->parent_nodes])
                     ;
                 }
             }
@@ -457,7 +448,7 @@ final class LoopAnalyzer
 
             try {
                 $negated_pre_condition_clauses = Algebra::negateFormula(array_merge(...$pre_condition_clauses));
-            } catch (ComplicatedExpressionException $e) {
+            } catch (ComplicatedExpressionException) {
                 $negated_pre_condition_clauses = [];
             }
 
@@ -556,10 +547,7 @@ final class LoopAnalyzer
         }
 
         // merge vars possibly in scope at the end of each loop
-        $loop_context->vars_possibly_in_scope = array_merge(
-            $loop_context->vars_possibly_in_scope,
-            $loop_scope->vars_possibly_in_scope,
-        );
+        $loop_context->vars_possibly_in_scope = [...$loop_context->vars_possibly_in_scope, ...$loop_scope->vars_possibly_in_scope];
     }
 
     /**

@@ -11,7 +11,6 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
 use function count;
-use function get_class;
 
 /**
  * Denotes a simple array of the form `array<TKey, TValue>`. It expects an array with two elements, both union types.
@@ -67,7 +66,7 @@ class TArray extends Atomic
 
     public function equals(Atomic $other_type, bool $ensure_source_equality): bool
     {
-        if (get_class($other_type) !== static::class) {
+        if ($other_type::class !== static::class) {
             return false;
         }
 

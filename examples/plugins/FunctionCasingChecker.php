@@ -21,7 +21,7 @@ use function strtolower;
 /**
  * Checks that functions and methods are correctly-cased
  */
-class FunctionCasingChecker implements AfterFunctionCallAnalysisInterface, AfterMethodCallAnalysisInterface
+final class FunctionCasingChecker implements AfterFunctionCallAnalysisInterface, AfterMethodCallAnalysisInterface
 {
     public static function afterMethodCallAnalysis(AfterMethodCallAnalysisEvent $event): void
     {
@@ -55,7 +55,7 @@ class FunctionCasingChecker implements AfterFunctionCallAnalysisInterface, After
                     $statements_source->getSuppressedIssues(),
                 );
             }
-        } catch (Exception $e) {
+        } catch (Exception) {
             // can throw if storage is missing
         }
     }
@@ -93,12 +93,12 @@ class FunctionCasingChecker implements AfterFunctionCallAnalysisInterface, After
                     $statements_source->getSuppressedIssues(),
                 );
             }
-        } catch (Exception $e) {
+        } catch (Exception) {
             // can throw if storage is missing
         }
     }
 }
 
-class IncorrectFunctionCasing extends PluginIssue
+final class IncorrectFunctionCasing extends PluginIssue
 {
 }

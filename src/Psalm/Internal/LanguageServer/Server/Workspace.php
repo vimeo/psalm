@@ -25,20 +25,8 @@ use function realpath;
  */
 final class Workspace
 {
-    protected LanguageServer $server;
-
-    protected Codebase $codebase;
-
-    protected ProjectAnalyzer $project_analyzer;
-
-    public function __construct(
-        LanguageServer $server,
-        Codebase $codebase,
-        ProjectAnalyzer $project_analyzer,
-    ) {
-        $this->server = $server;
-        $this->codebase = $codebase;
-        $this->project_analyzer = $project_analyzer;
+    public function __construct(protected LanguageServer $server, protected Codebase $codebase, protected ProjectAnalyzer $project_analyzer)
+    {
     }
 
     /**
@@ -62,7 +50,7 @@ final class Workspace
             array_map(function (FileEvent $change) {
                 try {
                     return $this->server->uriToPath($change->uri);
-                } catch (InvalidArgumentException $e) {
+                } catch (InvalidArgumentException) {
                     return null;
                 }
             }, $changes),

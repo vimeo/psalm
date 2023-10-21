@@ -26,7 +26,6 @@ use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTrue;
 
 use function count;
-use function get_class;
 use function get_object_vars;
 use function strpos;
 
@@ -409,7 +408,7 @@ final class MutableUnion implements TypeNode
             foreach ($new_type->types as $key => $new_type_part) {
                 if (!isset($this->types[$key])
                     || ($new_type_part instanceof Scalar
-                        && get_class($new_type_part) === get_class($this->types[$key]))
+                        && $new_type_part::class === $this->types[$key]::class)
                 ) {
                     $this->types[$key] = $new_type_part;
                 } else {

@@ -12,14 +12,12 @@ use Psalm\Type\Union;
  */
 final class NotInArray extends Assertion
 {
-    /**
-     * @readonly
-     */
-    public Union $type;
-
-    public function __construct(Union $type)
-    {
-        $this->type = $type;
+    public function __construct(
+        /**
+         * @readonly
+         */
+        public Union $type,
+    ) {
     }
 
     public function getNegation(): Assertion

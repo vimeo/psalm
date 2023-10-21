@@ -17,28 +17,16 @@ use Psalm\Type\Union;
  */
 final class TTemplatePropertiesOf extends Atomic
 {
-    public string $param_name;
-    public string $defining_class;
-    public TTemplateParam $as;
-    /**
-     * @var TPropertiesOf::VISIBILITY_*|null
-     */
-    public ?int $visibility_filter;
-
     /**
      * @param TPropertiesOf::VISIBILITY_*|null $visibility_filter
      */
     public function __construct(
-        string $param_name,
-        string $defining_class,
-        TTemplateParam $as,
-        ?int $visibility_filter,
+        public string $param_name,
+        public string $defining_class,
+        public TTemplateParam $as,
+        public ?int $visibility_filter,
         bool $from_docblock = false,
     ) {
-        $this->param_name = $param_name;
-        $this->defining_class = $defining_class;
-        $this->as = $as;
-        $this->visibility_filter = $visibility_filter;
         parent::__construct($from_docblock);
     }
 

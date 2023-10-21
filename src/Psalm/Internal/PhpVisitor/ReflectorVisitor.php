@@ -36,19 +36,15 @@ use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use UnexpectedValueException;
 
-use function array_merge;
 use function array_pop;
 use function end;
 use function explode;
-use function get_class;
 use function in_array;
 use function is_string;
 use function reset;
 use function spl_object_id;
 use function strpos;
 use function strtolower;
-
-use const PHP_VERSION_ID;
 
 /**
  * @internal
@@ -57,15 +53,9 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
 {
     private Aliases $aliases;
 
-    private FileScanner $file_scanner;
-
-    private Codebase $codebase;
-
     private string $file_path;
 
-    private bool $scan_deep;
-
-    private FileStorage $file_storage;
+    private readonly bool $scan_deep;
 
     /**
      * @var array<FunctionLikeNodeScanner>
@@ -92,18 +82,15 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
      * @var array<int, bool>
      */
     private array $bad_classes = [];
-    private EventDispatcher $eventDispatcher;
+    private readonly EventDispatcher $eventDispatcher;
 
     public function __construct(
-        Codebase $codebase,
-        FileScanner $file_scanner,
-        FileStorage $file_storage,
+        private readonly Codebase $codebase,
+        private readonly FileScanner $file_scanner,
+        private readonly FileStorage $file_storage,
     ) {
-        $this->codebase = $codebase;
-        $this->file_scanner = $file_scanner;
         $this->file_path = $file_scanner->file_path;
         $this->scan_deep = $file_scanner->will_analyze;
-        $this->file_storage = $file_storage;
         $this->aliases = $this->file_storage->aliases = new Aliases();
         $this->eventDispatcher = $this->codebase->config->eventDispatcher;
     }
@@ -161,7 +148,7 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
                 return PhpParser\NodeTraverser::DONT_TRAVERSE_CHILDREN;
             }
 
-            $this->type_aliases = array_merge($this->type_aliases, $classlike_node_scanner->type_aliases);
+            $this->type_aliases = [...$this->type_aliases, ...$classlike_node_scanner->type_aliases];
         } elseif ($node instanceof PhpParser\Node\Stmt\TryCatch) {
             foreach ($node->catches as $catch) {
                 foreach ($catch->types as $catch_type) {
@@ -221,9 +208,7 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
                     $classlike_storage->class_implements['stringable'] = 'Stringable';
                 }
 
-                if (PHP_VERSION_ID >= 8_00_00) {
-                    $this->codebase->scanner->queueClassLikeForScanning('Stringable');
-                }
+                $this->codebase->scanner->queueClassLikeForScanning('Stringable');
             }
 
             if (!$this->scan_deep) {
@@ -351,7 +336,7 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
                     $template_types,
                     $this->type_aliases,
                 );
-            } catch (DocblockParseException $e) {
+            } catch (DocblockParseException) {
                 // do nothing
             }
 
@@ -562,7 +547,7 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
                     ) {
                         $e = reset($functionlike_node_scanner->storage->docblock_issues);
 
-                        $fqcn_parts = explode('\\', get_class($e));
+                        $fqcn_parts = explode('\\', $e::class);
                         $issue_type = array_pop($fqcn_parts);
 
                         $message = $e instanceof TaintedInput

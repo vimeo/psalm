@@ -26,16 +26,6 @@ final class TObjectWithProperties extends TObject
 {
     use HasIntersectionTrait;
 
-    /**
-     * @var array<string|int, Union>
-     */
-    public array $properties;
-
-    /**
-     * @var array<lowercase-string, string>
-     */
-    public array $methods;
-
     public bool $is_stringable_object_only = false;
 
     /**
@@ -46,13 +36,11 @@ final class TObjectWithProperties extends TObject
      * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties|TCallableObject> $extra_types
      */
     public function __construct(
-        array $properties,
-        array $methods = [],
+        public array $properties,
+        public array $methods = [],
         array $extra_types = [],
         bool $from_docblock = false,
     ) {
-        $this->properties = $properties;
-        $this->methods = $methods;
         $this->extra_types = $extra_types;
 
         $this->is_stringable_object_only =

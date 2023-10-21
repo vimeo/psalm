@@ -18,19 +18,10 @@ use Psalm\Storage\FileStorage;
  * @internal
  * @psalm-consistent-constructor
  */
-class FileScanner implements FileSource
+final class FileScanner implements FileSource
 {
-    public string $file_path;
-
-    public string $file_name;
-
-    public bool $will_analyze;
-
-    public function __construct(string $file_path, string $file_name, bool $will_analyze)
+    public function __construct(public string $file_path, public string $file_name, public bool $will_analyze)
     {
-        $this->file_path = $file_path;
-        $this->file_name = $file_name;
-        $this->will_analyze = $will_analyze;
     }
 
     public function scan(

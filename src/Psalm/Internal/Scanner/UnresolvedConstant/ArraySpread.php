@@ -12,10 +12,7 @@ use Psalm\Internal\Scanner\UnresolvedConstantComponent;
  */
 final class ArraySpread extends UnresolvedConstantComponent
 {
-    public UnresolvedConstantComponent $array;
-
-    public function __construct(UnresolvedConstantComponent $array)
+    public function __construct(public UnresolvedConstantComponent $array)
     {
-        $this->array = $array;
     }
 }

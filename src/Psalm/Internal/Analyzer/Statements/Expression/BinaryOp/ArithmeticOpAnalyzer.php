@@ -48,7 +48,6 @@ use Psalm\Type\Union;
 use function array_diff_key;
 use function array_values;
 use function count;
-use function get_class;
 use function is_int;
 use function is_numeric;
 use function max;
@@ -321,7 +320,7 @@ final class ArithmeticOpAnalyzer
             // get_class is fine here because both classes are final.
             if ($statements_source !== null
                 && $config->strict_binary_operands
-                && get_class($left_type_part) !== get_class($right_type_part)
+                && $left_type_part::class !== $right_type_part::class
             ) {
                 IssueBuffer::maybeAdd(
                     new InvalidOperand(
