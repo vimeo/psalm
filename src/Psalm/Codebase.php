@@ -69,7 +69,6 @@ use ReflectionType;
 use UnexpectedValueException;
 
 use function array_combine;
-use function array_merge;
 use function array_pop;
 use function array_reverse;
 use function array_values;
@@ -1917,7 +1916,7 @@ final class Codebase
                         );
                     }
 
-                    $completion_items = array_merge($completion_items, array_values($pseudo_property_types));
+                    $completion_items = [...$completion_items, ...array_values($pseudo_property_types)];
 
                     foreach ($class_storage->declaring_property_ids as $property_name => $declaring_class) {
                         $property_storage = $this->properties->getStorage(

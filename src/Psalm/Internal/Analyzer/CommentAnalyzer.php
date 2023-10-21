@@ -25,7 +25,6 @@ use Psalm\IssueBuffer;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
-use function array_merge;
 use function count;
 use function is_string;
 use function preg_match;
@@ -400,7 +399,7 @@ class CommentAnalyzer
                 $remaining = trim(preg_replace('@^[ \t]*\* *@m', ' ', substr($return_block, $i + 1)));
 
                 if ($remaining) {
-                    return array_merge([rtrim($type)], preg_split('/\s+/', $remaining) ?: []);
+                    return [rtrim($type), ...preg_split('/\s+/', $remaining) ?: []];
                 }
 
                 return [$type];

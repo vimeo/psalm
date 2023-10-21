@@ -44,7 +44,7 @@ class FunctionDocblockManipulator
     private static array $manipulators = [];
 
     /** @var Closure|Function_|ClassMethod|ArrowFunction */
-    private $stmt;
+    private FunctionLike $stmt;
 
     private int $docblock_start;
 
