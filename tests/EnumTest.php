@@ -633,6 +633,9 @@ class EnumTest extends TestCase
                     noop($foo);
                     noop(FooEnum::Foo->value);
                 PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'backedEnumCaseValueFromClassConstant' => [
                 'code' => <<<'PHP'
