@@ -30,7 +30,7 @@ $new_local = array_diff_key(
     $removed_foreign_functions
 );
 
-uksort($new_local, fn($a, $b) => strtolower($a) <=> strtolower($b));
+uksort($new_local, static fn($a, $b) => strtolower($a) <=> strtolower($b));
 
 foreach ($new_local as $name => $data) {
     if (!is_array($data)) {

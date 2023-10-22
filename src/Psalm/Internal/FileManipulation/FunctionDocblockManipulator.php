@@ -416,7 +416,7 @@ final class FunctionDocblockManipulator
             $modified_docblock = true;
             $inferredThrowsClause = array_reduce(
                 $this->throwsExceptions,
-                fn(string $throwsClause, string $exception) => $throwsClause === ''
+                static fn(string $throwsClause, string $exception) => $throwsClause === ''
                     ? $exception
                     : $throwsClause.'|'.$exception,
                 '',

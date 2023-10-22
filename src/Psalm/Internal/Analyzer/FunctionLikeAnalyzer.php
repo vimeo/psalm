@@ -1262,6 +1262,17 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     );
                 }
 
+                if ($param_type->isNever()) {
+                    IssueBuffer::maybeAdd(
+                        new ReservedWord(
+                            'Parameter cannot be never',
+                            $function_param->type_location,
+                            'never',
+                        ),
+                        $this->suppressed_issues,
+                    );
+                }
+
                 if ($param_type->check(
                     $this->source,
                     $function_param->type_location,

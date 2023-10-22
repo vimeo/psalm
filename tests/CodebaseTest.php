@@ -161,7 +161,7 @@ class CodebaseTest extends TestCase
                         ? (string)$stmt->extends->getAttribute('resolvedName')
                         : '';
                     $storage->custom_metadata['implements'] = array_map(
-                        fn(Name $aspect): string => (string)$aspect->getAttribute('resolvedName'),
+                        static fn(Name $aspect): string => (string)$aspect->getAttribute('resolvedName'),
                         $stmt->implements,
                     );
                     $storage->custom_metadata['a'] = 'b';

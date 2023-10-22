@@ -11,8 +11,6 @@ use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
-use function array_merge;
-
 /**
  * Represents a closure where we know the return type and params
  *
@@ -133,6 +131,6 @@ final class TClosure extends TNamedObject
 
     protected function getChildNodeKeys(): array
     {
-        return array_merge(parent::getChildNodeKeys(), $this->getCallableChildNodeKeys());
+        return [...parent::getChildNodeKeys(), ...$this->getCallableChildNodeKeys()];
     }
 }

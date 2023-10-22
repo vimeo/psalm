@@ -11,6 +11,9 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\TemplateBound;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
+use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\DeprecatedClass;
 use Psalm\Issue\DeprecatedInterface;
@@ -243,6 +246,7 @@ final class TypeChecker extends TypeVisitor
         }
 
         $expected_type_param_keys = array_keys($expected_type_params);
+        $template_result = new TemplateResult($expected_type_params, []);
 
         foreach ($atomic->type_params as $i => $type_param) {
             $this->prevent_template_covariance = $this->source instanceof MethodAnalyzer
@@ -253,12 +257,16 @@ final class TypeChecker extends TypeVisitor
                 $expected_template_name = $expected_type_param_keys[$i];
 
                 foreach ($expected_type_params[$expected_template_name] as $defining_class => $expected_type_param) {
-                    $expected_type_param = TypeExpander::expandUnion(
+                    $expected_type_param = TemplateInferredTypeReplacer::replace(
+                        TypeExpander::expandUnion(
+                            $codebase,
+                            $expected_type_param,
+                            $defining_class,
+                            null,
+                            null,
+                        ),
+                        $template_result,
                         $codebase,
-                        $expected_type_param,
-                        $defining_class,
-                        null,
-                        null,
                     );
 
                     $type_param = TypeExpander::expandUnion(
@@ -281,6 +289,9 @@ final class TypeChecker extends TypeVisitor
                             ),
                             $this->suppressed_issues,
                         );
+                    } else {
+                        $template_result->lower_bounds[$expected_template_name][$defining_class][]
+                            = new TemplateBound($type_param);
                     }
                 }
             }

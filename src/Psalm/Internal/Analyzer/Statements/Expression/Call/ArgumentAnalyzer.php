@@ -62,6 +62,7 @@ use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 
+use function array_merge;
 use function count;
 use function explode;
 use function implode;
@@ -1486,18 +1487,18 @@ final class ArgumentAnalyzer
             return;
         }
 
-        // numeric types can't be tainted, neither can bool
-        if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
-            && $input_type->isSingle()
-            && ($input_type->isInt() || $input_type->isFloat() || $input_type->isBool())
-        ) {
-            return;
-        }
-
         $event = new AddRemoveTaintsEvent($expr, $context, $statements_analyzer, $codebase);
 
         $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
         $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
+
+        // numeric types can't be tainted html or has_quotes, neither can bool
+        if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+            && $input_type->isSingle()
+            && ($input_type->isInt() || $input_type->isFloat() || $input_type->isBool())
+        ) {
+            $removed_taints = array_merge($removed_taints, array('html', 'has_quotes'));
+        }
 
         if ($function_param->type && $function_param->type->isString() && !$input_type->isString()) {
             $input_type = CastAnalyzer::castStringAttempt(

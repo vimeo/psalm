@@ -229,7 +229,7 @@ final class TemplateInferredTypeReplacer
             )->freeze();
         }
 
-        $atomic_types = array_merge($types, $new_types);
+        $atomic_types = [...$types, ...$new_types];
         if (!$atomic_types) {
             throw new UnexpectedValueException('This array should be full');
         }

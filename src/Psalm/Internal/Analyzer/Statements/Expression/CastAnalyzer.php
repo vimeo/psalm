@@ -143,14 +143,9 @@ final class CastAnalyzer
                 }
             }
 
-            if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph
-            ) {
-                $type = new Union([new TBool()], [
-                    'parent_nodes' => $maybe_type->parent_nodes ?? [],
-                ]);
-            } else {
-                $type = Type::getBool();
-            }
+            $type = new Union([new TBool()], [
+                'parent_nodes' => $maybe_type->parent_nodes ?? [],
+            ]);
 
             $statements_analyzer->node_data->setType($stmt, $type);
 
@@ -323,11 +318,7 @@ final class CastAnalyzer
 
         $atomic_types = $stmt_type->getAtomicTypes();
 
-        $parent_nodes = [];
-
-        if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
-            $parent_nodes = $stmt_type->parent_nodes;
-        }
+        $parent_nodes = $stmt_type->parent_nodes;
 
         while ($atomic_types) {
             $atomic_type = array_pop($atomic_types);
@@ -476,7 +467,7 @@ final class CastAnalyzer
             // todo: emit error here
         }
 
-        $valid_types = array_merge($valid_ints, $castable_types);
+        $valid_types = [...$valid_ints, ...$castable_types];
 
         if (!$valid_types) {
             $int_type = Type::getInt();
@@ -509,11 +500,7 @@ final class CastAnalyzer
 
         $atomic_types = $stmt_type->getAtomicTypes();
 
-        $parent_nodes = [];
-
-        if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
-            $parent_nodes = $stmt_type->parent_nodes;
-        }
+        $parent_nodes = $stmt_type->parent_nodes;
 
         while ($atomic_types) {
             $atomic_type = array_pop($atomic_types);
@@ -661,7 +648,7 @@ final class CastAnalyzer
             // todo: emit error here
         }
 
-        $valid_types = array_merge($valid_floats, $castable_types);
+        $valid_types = [...$valid_floats, ...$castable_types];
 
         if (!$valid_types) {
             $float_type = Type::getFloat();
@@ -804,10 +791,7 @@ final class CastAnalyzer
                                 $parent_nodes = array_merge($return_type->parent_nodes, $parent_nodes);
                             }
 
-                            $castable_types = array_merge(
-                                $castable_types,
-                                array_values($return_type->getAtomicTypes()),
-                            );
+                            $castable_types = [...$castable_types, ...array_values($return_type->getAtomicTypes())];
 
                             continue 2;
                         }
