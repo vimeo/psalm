@@ -632,6 +632,26 @@ class EnumTest extends TestCase
                     $foo = FooEnum::Foo->value;
                     noop($foo);
                     noop(FooEnum::Foo->value);
+                PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'backedEnumCaseValueFromClassConstant' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class FooBar {
+                        public const FOO = 'foo';
+                        public const BAR = 2;
+                    }
+
+                    enum FooEnum: string {
+                        case FOO = FooBar::FOO;
+                    }
+
+                    enum BarEnum: int {
+                        case BAR = FooBar::BAR;
+                    }
                     PHP,
                 'assertions' => [],
                 'ignored_issues' => [],
@@ -1054,6 +1074,36 @@ class EnumTest extends TestCase
                     f(State::A);
                 ',
                 'error_message' => 'InvalidArgument',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'stringBackedEnumCaseValueFromClassConstant' => [
+                'code' => '<?php
+                    class Foo {
+                        const FOO = 1;
+                    }
+
+                    enum Bar: string
+                    {
+                        case Foo = Foo::FOO;
+                    }
+                ',
+                'error_message' => 'InvalidEnumCaseValue',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'intBackedEnumCaseValueFromClassConstant' => [
+                'code' => '<?php
+                    class Foo {
+                        const FOO = "foo";
+                    }
+
+                    enum Bar: int
+                    {
+                        case Foo = Foo::FOO;
+                    }
+                ',
+                'error_message' => 'InvalidEnumCaseValue',
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],

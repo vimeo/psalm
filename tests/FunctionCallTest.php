@@ -3033,6 +3033,17 @@ class FunctionCallTest extends TestCase
                     }',
                 'error_message' => 'InvalidScalarArgument',
             ],
+            'disallowNeverTypeForParam' => [
+                'code' => '<?php
+                    function foo(never $_): void
+                    {
+                        return;
+                    }
+                    ',
+                'error_message' => 'ReservedWord',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 

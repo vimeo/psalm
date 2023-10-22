@@ -387,7 +387,11 @@ final class ClassConstAnalyzer
                 );
             }
 
-            if ($first_part_lc !== 'static' || $const_class_storage->final || $class_constant_type->from_docblock) {
+            if ($first_part_lc !== 'static' || $const_class_storage->final || $class_constant_type->from_docblock
+                || (isset($const_class_storage->constants[$stmt->name->name])
+                    && $const_class_storage->constants[$stmt->name->name]->final
+                )
+            ) {
                 $stmt_type = $class_constant_type;
 
                 $statements_analyzer->node_data->setType($stmt, $stmt_type);

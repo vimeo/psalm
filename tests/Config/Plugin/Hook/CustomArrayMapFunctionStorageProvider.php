@@ -56,11 +56,10 @@ class CustomArrayMapFunctionStorageProvider implements DynamicFunctionStoragePro
         $custom_array_map_storage->return_type = self::createReturnType($all_expected_callables);
         $custom_array_map_storage->params = [
             ...array_map(
-                function (TCallable $expected, int $offset) {
+                static function (TCallable $expected, int $offset) {
                     $t = new Union([$expected]);
                     $param = new FunctionLikeParameter('fn' . $offset, false, $t, $t);
                     $param->is_optional = false;
-
                     return $param;
                 },
                 $all_expected_callables,

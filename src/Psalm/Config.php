@@ -69,7 +69,6 @@ use function file_get_contents;
 use function flock;
 use function fopen;
 use function function_exists;
-use function get_class;
 use function get_defined_constants;
 use function get_defined_functions;
 use function getcwd;
@@ -98,7 +97,9 @@ use function rtrim;
 use function scandir;
 use function sha1;
 use function simplexml_import_dom;
+use function str_contains;
 use function str_replace;
+use function str_starts_with;
 use function strlen;
 use function strpos;
 use function strrpos;
@@ -127,13 +128,13 @@ use const SCANDIR_SORT_NONE;
  * @psalm-suppress PropertyNotSetInConstructor
  * @psalm-consistent-constructor
  */
-class Config
+final class Config
 {
     private const DEFAULT_FILE_NAME = 'psalm.xml';
-    public const CONFIG_NAMESPACE = 'https://getpsalm.org/schema/config';
-    public const REPORT_INFO = 'info';
-    public const REPORT_ERROR = 'error';
-    public const REPORT_SUPPRESS = 'suppress';
+    final public const CONFIG_NAMESPACE = 'https://getpsalm.org/schema/config';
+    final public const REPORT_INFO = 'info';
+    final public const REPORT_ERROR = 'error';
+    final public const REPORT_SUPPRESS = 'suppress';
 
     /**
      * @var array<string>
@@ -172,7 +173,7 @@ class Config
      *
      * @var array<int, lowercase-string>
      */
-    protected array $universal_object_crates;
+    private array $universal_object_crates;
 
     /**
      * @var static|null
@@ -222,7 +223,7 @@ class Config
 
     protected ?ProjectFileFilter $project_files = null;
 
-    protected ?ProjectFileFilter $extra_files = null;
+    private ?ProjectFileFilter $extra_files = null;
 
     /**
      * The base directory of this config file
@@ -426,7 +427,7 @@ class Config
 
     private ?IncludeCollector $include_collector = null;
 
-    protected ?TaintAnalysisFileFilter $taint_analysis_ignored_files = null;
+    private ?TaintAnalysisFileFilter $taint_analysis_ignored_files = null;
 
     /**
      * @var bool whether to emit a backtrace of emitted issues to stderr
@@ -874,7 +875,6 @@ class Config
     /**
      * @param non-empty-string $file_contents
      * @psalm-suppress MixedAssignment
-     * @psalm-suppress MixedArgument
      * @psalm-suppress MixedPropertyFetch
      * @throws ConfigException
      */
@@ -963,15 +963,15 @@ class Config
         if (file_exists($composer_json_path)) {
             $composer_json_contents = file_get_contents($composer_json_path);
             assert($composer_json_contents !== false);
-            $composer_json = json_decode($composer_json_contents, true);
+            $composer_json = json_decode($composer_json_contents, true, 512, JSON_THROW_ON_ERROR);
             if (!is_array($composer_json)) {
                 throw new UnexpectedValueException('Invalid composer.json at ' . $composer_json_path);
             }
         }
         $required_extensions = [];
         foreach (($composer_json["require"] ?? []) as $required => $_) {
-            if (strpos($required, "ext-") === 0) {
-                $required_extensions[strtolower(substr($required, 4))] = true;
+            if (str_starts_with((string) $required, "ext-")) {
+                $required_extensions[strtolower(substr((string) $required, 4))] = true;
             }
         }
         foreach ($required_extensions as $required_ext => $_) {
@@ -1649,7 +1649,7 @@ class Config
             try {
                 $file_storage = $codebase->file_storage_provider->get($file_path);
                 $dependent_files += $file_storage->required_by_file_paths;
-            } catch (InvalidArgumentException $e) {
+            } catch (InvalidArgumentException) {
                 // do nothing
             }
         }
@@ -1700,7 +1700,7 @@ class Config
 
     public function getReportingLevelForIssue(CodeIssue $e): string
     {
-        $fqcn_parts = explode('\\', get_class($e));
+        $fqcn_parts = explode('\\', $e::class);
         $issue_type = array_pop($fqcn_parts);
 
         $reporting_level = null;
@@ -1765,17 +1765,17 @@ class Config
             return null;
         }
 
-        if (strpos($issue_type, 'Possibly') === 0) {
+        if (str_starts_with($issue_type, 'Possibly')) {
             $stripped_issue_type = (string) preg_replace('/^Possibly(False|Null)?/', '', $issue_type, 1);
 
-            if (strpos($stripped_issue_type, 'Invalid') === false && strpos($stripped_issue_type, 'Un') !== 0) {
+            if (!str_contains($stripped_issue_type, 'Invalid') && !str_starts_with($stripped_issue_type, 'Un')) {
                 $stripped_issue_type = 'Invalid' . $stripped_issue_type;
             }
 
             return $stripped_issue_type;
         }
 
-        if (strpos($issue_type, 'Tainted') === 0) {
+        if (str_starts_with($issue_type, 'Tainted')) {
             return 'TaintedInput';
         }
 
@@ -2298,7 +2298,7 @@ class Config
             $codebase->classlikes->forgetMissingClassLikes();
 
             $this->include_collector->runAndCollect(
-                [$this, 'requireAutoloader'],
+                $this->requireAutoloader(...),
             );
         }
 
@@ -2324,7 +2324,8 @@ class Config
         }
     }
 
-    public function getComposerFilePathForClassLike(string $fq_classlike_name): string|false
+    /** @return string|false */
+    public function getComposerFilePathForClassLike(string $fq_classlike_name): string|bool
     {
         if (!$this->composer_class_loader) {
             return false;
@@ -2502,7 +2503,7 @@ class Config
                 $composer_json_contents = file_get_contents($composer_json_path);
                 assert($composer_json_contents !== false);
                 $composer_json = json_decode($composer_json_contents, true, 512, JSON_THROW_ON_ERROR);
-            } catch (JsonException $e) {
+            } catch (JsonException) {
                 $composer_json = null;
             }
 

@@ -154,7 +154,7 @@ class AsyncTestCase extends BaseAsyncTestCase
      */
     public static function assertArrayKeysAreZeroOrString(array $array, string $message = ''): void
     {
-        $isZeroOrString = /** @param mixed $key */ fn($key): bool => $key === 0 || is_string($key);
+        $isZeroOrString = /** @param mixed $key */ static fn($key): bool => $key === 0 || is_string($key);
         $validKeys = array_filter($array, $isZeroOrString, ARRAY_FILTER_USE_KEY);
         self::assertTrue(count($array) === count($validKeys), $message);
     }

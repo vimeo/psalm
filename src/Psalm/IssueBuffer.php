@@ -188,7 +188,7 @@ final class IssueBuffer
             return true;
         }
 
-        $suppressed_issue_position = array_search($issue_type, $suppressed_issues);
+        $suppressed_issue_position = array_search($issue_type, $suppressed_issues, true);
 
         if ($suppressed_issue_position !== false) {
             if (is_int($suppressed_issue_position)) {
@@ -201,7 +201,7 @@ final class IssueBuffer
         $parent_issue_type = Config::getParentIssueType($issue_type);
 
         if ($parent_issue_type) {
-            $suppressed_issue_position = array_search($parent_issue_type, $suppressed_issues);
+            $suppressed_issue_position = array_search($parent_issue_type, $suppressed_issues, true);
 
             if ($suppressed_issue_position !== false) {
                 if (is_int($suppressed_issue_position)) {
@@ -214,7 +214,7 @@ final class IssueBuffer
 
         $suppress_all_position = $config->disable_suppress_all
             ? false
-            : array_search('all', $suppressed_issues);
+            : array_search('all', $suppressed_issues, true);
 
         if ($suppress_all_position !== false) {
             if (is_int($suppress_all_position)) {
@@ -829,7 +829,7 @@ final class IssueBuffer
         $foreground = "30";
 
         // text style, 1 = bold
-        $style = "1";
+        $style = "2";
 
         if ($project_analyzer->stdout_report_options->use_color) {
             echo "\e[{$background};{$style}m{$paddingTop}\e[0m" . "\n";

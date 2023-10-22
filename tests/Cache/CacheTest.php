@@ -199,5 +199,113 @@ class CacheTest extends TestCase
                 ],
             ],
         ];
+
+        yield 'classDocblockChange' => [
+            [
+                [
+                    'files' => [
+                        '/src/A.php' => <<<'PHP'
+                            <?php
+
+                            /**
+                             * @template T
+                             */
+                            class A {
+                                /**
+                                 * @param T $baz
+                                 */
+                                public function foo($baz): void
+                                {
+                                }
+                            }
+                        PHP,
+                        '/src/B.php' => <<<'PHP'
+                            <?php
+
+                            class B {
+                                public function foo(): void
+                                {
+                                    (new A)->foo(1);
+                                }
+                            }
+                        PHP,
+                    ],
+                    'issues' => [],
+                ],
+                [
+                    'files' => [
+                        '/src/A.php' => <<<'PHP'
+                            <?php
+
+                            /**
+                             * @template K
+                             */
+                            class A {
+                                /**
+                                 * @param T $baz
+                                 */
+                                public function foo($baz): void
+                                {
+                                }
+                            }
+                        PHP,
+                    ],
+                    'issues' => [
+                        '/src/A.php' => [
+                            "UndefinedDocblockClass: Docblock-defined class, interface or enum named T does not exist",
+                        ],
+                        '/src/B.php' => [
+                            "InvalidArgument: Argument 1 of A::foo expects T, but 1 provided",
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        yield 'constructorPropertyPromotionChange' => [
+            [
+                [
+                    'files' => [
+                        '/src/A.php' => <<<'PHP'
+                            <?php
+                            class A {
+                                public function __construct(private string $foo)
+                                {
+                                }
+                                public function bar(): string
+                                {
+                                    return $this->foo;
+                                }
+                            }
+                            PHP,
+                    ],
+                    'issues' => [],
+                ],
+                [
+                    'files' => [
+                        '/src/A.php' => <<<'PHP'
+                            <?php
+                            class A
+                            {
+                                public function __construct()
+                                {
+                                }
+                                public function bar(): string
+                                {
+                                    return $this->foo;
+                                }
+                            }
+                            PHP,
+                    ],
+                    'issues' => [
+                        '/src/A.php' => [
+                            "UndefinedThisPropertyFetch: Instance property A::\$foo is not defined",
+                            "MixedReturnStatement: Could not infer a return type",
+                            "MixedInferredReturnType: Could not verify return type 'string' for A::bar",
+                        ],
+                    ],
+                ],
+            ],
+        ];
     }
 }

@@ -323,28 +323,6 @@ final class TypeExpander
                 ];
             }
 
-            /** @psalm-suppress DeprecatedProperty For backwards compatibility, we have to keep this here. */
-            foreach ($return_type->extra_types ?? [] as $alias) {
-                $more_recursively_fleshed_out_types = self::expandAtomic(
-                    $codebase,
-                    $alias,
-                    $self_class,
-                    $static_class_type,
-                    $parent_class,
-                    $evaluate_class_constants,
-                    $evaluate_conditional_types,
-                    $final,
-                    $expand_generic,
-                    $expand_templates,
-                    $throw_on_unresolvable_constant,
-                );
-
-                $recursively_fleshed_out_types = [
-                    ...$more_recursively_fleshed_out_types,
-                    ...$recursively_fleshed_out_types,
-                ];
-            }
-
             return $recursively_fleshed_out_types;
         }
 

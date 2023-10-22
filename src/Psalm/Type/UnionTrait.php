@@ -44,7 +44,6 @@ use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTrue;
 
 use function array_filter;
-use function array_merge;
 use function array_unique;
 use function count;
 use function get_class;
@@ -274,13 +273,13 @@ trait UnionTrait
         }
 
         if (count($literal_ints) <= 3 && !$has_non_literal_int) {
-            $other_types = array_merge($other_types, $literal_ints);
+            $other_types = [...$other_types, ...$literal_ints];
         } else {
             $other_types[] = 'int';
         }
 
         if (count($literal_strings) <= 3 && !$has_non_literal_string) {
-            $other_types = array_merge($other_types, $literal_strings);
+            $other_types = [...$other_types, ...$literal_strings];
         } else {
             $other_types[] = 'string';
         }
