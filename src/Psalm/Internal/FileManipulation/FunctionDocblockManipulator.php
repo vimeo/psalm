@@ -45,6 +45,7 @@ final class FunctionDocblockManipulator
     private static array $manipulators = [];
 
     private readonly int $docblock_start;
+    private Closure|Function_|ClassMethod|ArrowFunction $stmt;
 
     private readonly int $docblock_end;
 
