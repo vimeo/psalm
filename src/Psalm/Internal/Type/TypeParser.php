@@ -962,7 +962,7 @@ final class TypeParser
             $get_int_range_bound = static function (
                 ParseTree $parse_tree,
                 Union $generic_param,
-                string $bound_name
+                string $bound_name,
             ): ?int {
                 if (!$parse_tree instanceof Value
                     || count($generic_param->getAtomicTypes()) > 1

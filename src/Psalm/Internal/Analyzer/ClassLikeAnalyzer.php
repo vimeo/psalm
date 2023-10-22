@@ -206,7 +206,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         ?string $calling_method_id,
         array $suppressed_issues,
         ?ClassLikeNameOptions $options = null,
-        bool $check_classes = true
+        bool $check_classes = true,
     ): ?bool {
         if ($options === null) {
             $options = new ClassLikeNameOptions();
