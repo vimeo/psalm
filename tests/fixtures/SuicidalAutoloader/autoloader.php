@@ -3,7 +3,7 @@
 use React\Promise\PromiseInterface as ReactPromise;
 use Composer\InstalledVersions;
 
-spl_autoload_register(function (string $className) {
+spl_autoload_register(static function (string $className) {
     $knownBadClasses = [
         ReactPromise::class, // amphp/amp
         ResourceBundle::class, // symfony/polyfill-php73
@@ -25,11 +25,9 @@ spl_autoload_register(function (string $className) {
         'Symfony\Component\String\s',
         'Symfony\Component\Translation\t',
     ];
-
     if (in_array($className, $knownBadClasses)) {
         return;
     }
-
     $ex = new RuntimeException('Attempted to load ' . $className);
     echo $ex->__toString() . "\n\n" . $ex->getTraceAsString() . "\n\n";
     exit(70);

@@ -44,7 +44,7 @@ class FunctionDocblockManipulator
     private static array $manipulators = [];
 
     /** @var Closure|Function_|ClassMethod|ArrowFunction */
-    private $stmt;
+    private FunctionLike $stmt;
 
     private int $docblock_start;
 
@@ -415,7 +415,7 @@ class FunctionDocblockManipulator
             $modified_docblock = true;
             $inferredThrowsClause = array_reduce(
                 $this->throwsExceptions,
-                fn(string $throwsClause, string $exception) => $throwsClause === ''
+                static fn(string $throwsClause, string $exception) => $throwsClause === ''
                     ? $exception
                     : $throwsClause.'|'.$exception,
                 '',

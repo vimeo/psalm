@@ -751,6 +751,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                 $param_position = array_search(
                     $mixin->param_name,
                     $template_type_keys,
+                    true,
                 );
 
                 if ($param_position !== false

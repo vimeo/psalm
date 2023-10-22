@@ -1096,7 +1096,7 @@ class ForeachAnalyzer
     ): ?Union {
         if ($calling_class === $template_class) {
             if (isset($class_template_types[$template_name]) && $calling_type_params) {
-                $offset = array_search($template_name, array_keys($class_template_types));
+                $offset = array_search($template_name, array_keys($class_template_types), true);
 
                 if ($offset !== false && isset($calling_type_params[$offset])) {
                     return $calling_type_params[$offset];

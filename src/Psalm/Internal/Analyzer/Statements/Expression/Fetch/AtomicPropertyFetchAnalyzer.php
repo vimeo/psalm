@@ -788,6 +788,7 @@ class AtomicPropertyFetchAnalyzer
                             $position = array_search(
                                 $param_name,
                                 array_keys($property_class_storage->template_types),
+                                true,
                             );
                         }
 
@@ -1000,7 +1001,7 @@ class AtomicPropertyFetchAnalyzer
             empty($relevant_enum_case_names)
                 ? Type::getNonEmptyString()
                 : new Union(array_map(
-                    fn(string $name): TString => Type::getAtomicStringFromLiteral($name),
+                    static fn(string $name): TString => Type::getAtomicStringFromLiteral($name),
                     $relevant_enum_case_names,
                 )),
         );

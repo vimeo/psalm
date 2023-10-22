@@ -931,10 +931,10 @@ class Populator
             if ($parent_storage->is_trait
                 && $storage->trait_alias_map
             ) {
-                $aliased_method_names = array_merge(
-                    $aliased_method_names,
-                    array_keys($storage->trait_alias_map, $method_name_lc, true),
-                );
+                $aliased_method_names = [
+                    ...$aliased_method_names,
+                    ...array_keys($storage->trait_alias_map, $method_name_lc, true),
+                ];
             }
 
             foreach ($aliased_method_names as $aliased_method_name) {
@@ -1001,10 +1001,10 @@ class Populator
             if ($parent_storage->is_trait
                 && $storage->trait_alias_map
             ) {
-                $aliased_method_names = array_merge(
-                    $aliased_method_names,
-                    array_keys($storage->trait_alias_map, $method_name_lc, true),
-                );
+                $aliased_method_names = [
+                    ...$aliased_method_names,
+                    ...array_keys($storage->trait_alias_map, $method_name_lc, true),
+                ];
             }
 
             foreach ($aliased_method_names as $aliased_method_name) {

@@ -1106,7 +1106,7 @@ class ConfigTest extends TestCase
                  * @param string $issue_name
                  * @return string
                  */
-                fn($issue_name): string => '<' . $issue_name . ' errorLevel="suppress" />' . "\n",
+                static fn($issue_name): string => '<' . $issue_name . ' errorLevel="suppress" />' . "\n",
                 IssueHandler::getAllIssueTypes(),
             ),
         );
