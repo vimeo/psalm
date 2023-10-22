@@ -632,7 +632,7 @@ class EnumTest extends TestCase
                     $foo = FooEnum::Foo->value;
                     noop($foo);
                     noop(FooEnum::Foo->value);
-                    PHP,
+                PHP,
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.1',

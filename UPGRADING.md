@@ -44,6 +44,14 @@
 
 - [BC] `Psalm\CodeLocation\Raw`, `Psalm\CodeLocation\ParseErrorLocation`, `Psalm\CodeLocation\DocblockTypeLocation`, `Psalm\Report\CountReport`, `Psalm\Type\Atomic\TNonEmptyArray` are now all final.
 
+- [BC] `Psalm\Config` is now final.
+
+- [BC] The return type of `Psalm\Plugin\ArgTypeInferer::infer` changed from `Union|false` to `Union|null`
+
+- [BC] The `extra_types` property and `setIntersectionTypes` method of `Psalm\Type\Atomic\TTypeAlias` were removed.
+
+- [BC] Methods `convertSeverity` and `calculateFingerprint` of `Psalm\Report\CodeClimateReport` were removed.
+
 # Upgrading from Psalm 4 to Psalm 5
 ## Changed
 
