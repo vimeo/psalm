@@ -1797,3 +1797,9 @@ if (defined('GLOB_BRACE')) {
  * @psalm-taint-sink shell $command
  */
 function exec(string $command, &$output = null, int &$result_code = null): string|false {}
+
+/**
+* @return ($return_array is true ? array|false : object|false)
+* @psalm-ignore-falsable-return
+*/
+function get_browser(?string $user_agent = null, bool $return_array = false): object|array|false {}
