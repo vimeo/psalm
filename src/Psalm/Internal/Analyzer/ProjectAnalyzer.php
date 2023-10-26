@@ -72,7 +72,6 @@ use function file_exists;
 use function fwrite;
 use function implode;
 use function in_array;
-use function ini_get;
 use function is_dir;
 use function is_file;
 use function microtime;
@@ -86,11 +85,8 @@ use function strpos;
 use function strtolower;
 use function substr;
 use function usort;
-use function version_compare;
 
 use const PHP_EOL;
-use const PHP_OS;
-use const PHP_VERSION;
 use const PSALM_VERSION;
 use const STDERR;
 
@@ -391,21 +387,13 @@ class ProjectAnalyzer
         $this->file_reference_provider->loadReferenceCache();
         $this->codebase->enterServerMode();
 
-        if (ini_get('pcre.jit') === '1'
-            && PHP_OS === 'Darwin'
-            && version_compare(PHP_VERSION, '7.3.0') >= 0
-            && version_compare(PHP_VERSION, '7.4.0') < 0
-        ) {
-            // do nothing
-        } else {
-            $cpu_count = self::getCpuCount();
+        $cpu_count = self::getCpuCount();
 
-            // let's not go crazy
-            $usable_cpus = $cpu_count - 2;
+        // let's not go crazy
+        $usable_cpus = $cpu_count - 2;
 
-            if ($usable_cpus > 1) {
-                $this->threads = $usable_cpus;
-            }
+        if ($usable_cpus > 1) {
+            $this->threads = $usable_cpus;
         }
 
         $server->logInfo("Initializing: Initialize Plugins...");
@@ -1353,15 +1341,6 @@ class ProjectAnalyzer
     {
         if (defined('PHP_WINDOWS_VERSION_MAJOR')) {
             // No support desired for Windows at the moment
-            return 1;
-        }
-
-        // PHP 7.3 with JIT on OSX is screwed for multi-threads
-        if (ini_get('pcre.jit') === '1'
-            && PHP_OS === 'Darwin'
-            && version_compare(PHP_VERSION, '7.3.0') >= 0
-            && version_compare(PHP_VERSION, '7.4.0') < 0
-        ) {
             return 1;
         }
 
