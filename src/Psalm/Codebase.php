@@ -1859,93 +1859,113 @@ final class Codebase
                     $class_storage = $this->classlike_storage_provider->get($atomic_type->value);
 
                     foreach ($class_storage->appearing_method_ids as $declaring_method_id) {
-                        $method_storage = $this->methods->getStorage($declaring_method_id);
+                        try {
+                            $method_storage = $this->methods->getStorage($declaring_method_id);
 
-                        if ($method_storage->is_static || $gap === '->') {
-                            $completion_item = new CompletionItem(
-                                $method_storage->cased_name,
-                                CompletionItemKind::METHOD,
-                                $method_storage->getCompletionSignature(),
-                                $method_storage->description,
-                                (string)$method_storage->visibility,
-                                $method_storage->cased_name,
-                                $method_storage->cased_name,
-                                null,
-                                null,
-                                new Command('Trigger parameter hints', 'editor.action.triggerParameterHints'),
-                                null,
-                                2,
-                            );
-
-                            if ($snippets_supported && count($method_storage->params) > 0) {
-                                $completion_item->insertText .= '($0)';
-                                $completion_item->insertTextFormat =
-                                    InsertTextFormat::SNIPPET;
-                            } else {
-                                $completion_item->insertText .= '()';
+                            if ($method_storage->is_static || $gap === '->') {
+                                $completion_item = new CompletionItem(
+                                    $method_storage->cased_name,
+                                    CompletionItemKind::METHOD,
+                                    $method_storage->getCompletionSignature(),
+                                    $method_storage->description,
+                                    (string)$method_storage->visibility,
+                                    $method_storage->cased_name,
+                                    $method_storage->cased_name,
+                                    null,
+                                    null,
+                                    new Command('Trigger parameter hints', 'editor.action.triggerParameterHints'),
+                                    null,
+                                    2,
+                                );
+    
+                                if ($snippets_supported && count($method_storage->params) > 0) {
+                                    $completion_item->insertText .= '($0)';
+                                    $completion_item->insertTextFormat =
+                                        InsertTextFormat::SNIPPET;
+                                } else {
+                                    $completion_item->insertText .= '()';
+                                }
+    
+                                $completion_items[] = $completion_item;
                             }
-
-                            $completion_items[] = $completion_item;
+                        } catch (Exception $e) {
+                            error_log($e->getMessage());
                         }
                     }
 
                     $pseudo_property_types = [];
                     foreach ($class_storage->pseudo_property_get_types as $property_name => $type) {
-                        $pseudo_property_types[$property_name] = new CompletionItem(
-                            str_replace('$', '', $property_name),
-                            CompletionItemKind::PROPERTY,
-                            $type->__toString(),
-                            null,
-                            '1', //sort text
-                            str_replace('$', '', $property_name),
-                            ($gap === '::' ? '$' : '') .
+                        try {
+                            $pseudo_property_types[$property_name] = new CompletionItem(
                                 str_replace('$', '', $property_name),
-                        );
+                                CompletionItemKind::PROPERTY,
+                                $type->__toString(),
+                                null,
+                                '1', //sort text
+                                str_replace('$', '', $property_name),
+                                ($gap === '::' ? '$' : '') .
+                                    str_replace('$', '', $property_name),
+                            );
+                        } catch (Exception $e) {
+                            error_log($e->getMessage());
+                        }
                     }
 
                     foreach ($class_storage->pseudo_property_set_types as $property_name => $type) {
-                        $pseudo_property_types[$property_name] = new CompletionItem(
-                            str_replace('$', '', $property_name),
-                            CompletionItemKind::PROPERTY,
-                            $type->__toString(),
-                            null,
-                            '1',
-                            str_replace('$', '', $property_name),
-                            ($gap === '::' ? '$' : '') .
+                        try {
+                            $pseudo_property_types[$property_name] = new CompletionItem(
                                 str_replace('$', '', $property_name),
-                        );
+                                CompletionItemKind::PROPERTY,
+                                $type->__toString(),
+                                null,
+                                '1',
+                                str_replace('$', '', $property_name),
+                                ($gap === '::' ? '$' : '') .
+                                    str_replace('$', '', $property_name),
+                            );
+                        } catch (Exception $e) {
+                            error_log($e->getMessage());
+                        }
                     }
 
                     $completion_items = [...$completion_items, ...array_values($pseudo_property_types)];
 
                     foreach ($class_storage->declaring_property_ids as $property_name => $declaring_class) {
-                        $property_storage = $this->properties->getStorage(
-                            $declaring_class . '::$' . $property_name,
-                        );
-
-                        if ($property_storage->is_static || $gap === '->') {
-                            $completion_items[] = new CompletionItem(
-                                '$' . $property_name,
-                                CompletionItemKind::PROPERTY,
-                                $property_storage->getInfo(),
-                                $property_storage->description,
-                                (string)$property_storage->visibility,
-                                $property_name,
-                                ($gap === '::' ? '$' : '') . $property_name,
+                        try {
+                            $property_storage = $this->properties->getStorage(
+                                $declaring_class . '::$' . $property_name,
                             );
+    
+                            if ($property_storage->is_static || $gap === '->') {
+                                $completion_items[] = new CompletionItem(
+                                    '$' . $property_name,
+                                    CompletionItemKind::PROPERTY,
+                                    $property_storage->getInfo(),
+                                    $property_storage->description,
+                                    (string)$property_storage->visibility,
+                                    $property_name,
+                                    ($gap === '::' ? '$' : '') . $property_name,
+                                );
+                            }
+                        } catch (Exception $e) {
+                            error_log($e->getMessage());
                         }
                     }
 
                     foreach ($class_storage->constants as $const_name => $const) {
-                        $completion_items[] = new CompletionItem(
-                            $const_name,
-                            CompletionItemKind::VARIABLE,
-                            'const ' . $const_name,
-                            $const->description,
-                            null,
-                            $const_name,
-                            $const_name,
-                        );
+                        try {
+                            $completion_items[] = new CompletionItem(
+                                $const_name,
+                                CompletionItemKind::VARIABLE,
+                                'const ' . $const_name,
+                                $const->description,
+                                null,
+                                $const_name,
+                                $const_name,
+                            );
+                        } catch (Exception $e) {
+                            error_log($e->getMessage());
+                        }
                     }
                 } catch (Exception $e) {
                     error_log($e->getMessage());
