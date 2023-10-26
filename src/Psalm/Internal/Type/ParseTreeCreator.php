@@ -143,6 +143,7 @@ final class ParseTreeCreator
 
                 case 'is':
                 case 'as':
+                case 'of':
                     $this->handleIsOrAs($type_token);
                     break;
 
@@ -771,7 +772,7 @@ final class ParseTreeCreator
                 array_pop($current_parent->children);
             }
 
-            if ($type_token[0] === 'as') {
+            if ($type_token[0] === 'as' || $type_token[0] == 'of') {
                 $next_token = $this->t + 1 < $this->type_token_count ? $this->type_tokens[$this->t + 1] : null;
 
                 if (!$this->current_leaf instanceof Value
