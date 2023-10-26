@@ -15,6 +15,7 @@ use Psalm\Exception\UnsupportedIssueToFixException;
 use Psalm\FileManipulation;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
+use Psalm\Internal\Fork\Pool;
 use Psalm\Internal\LanguageServer\LanguageServer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
@@ -65,16 +66,14 @@ use function array_merge;
 use function array_shift;
 use function clearstatcache;
 use function count;
-use function defined;
 use function dirname;
 use function end;
 use function explode;
-use function extension_loaded;
 use function file_exists;
 use function fwrite;
+use function get_object_vars;
 use function implode;
 use function in_array;
-use function ini_get;
 use function is_dir;
 use function is_file;
 use function microtime;
@@ -88,11 +87,8 @@ use function strpos;
 use function strtolower;
 use function substr;
 use function usort;
-use function version_compare;
 
 use const PHP_EOL;
-use const PHP_OS;
-use const PHP_VERSION;
 use const PSALM_VERSION;
 use const STDERR;
 
@@ -130,8 +126,6 @@ final class ProjectAnalyzer
     public bool $debug_performance = false;
 
     public bool $show_issues = true;
-
-    public int $threads;
 
     /**
      * @var array<string, bool>
@@ -175,6 +169,11 @@ final class ProjectAnalyzer
      */
     public array $generated_report_options;
 
+    /** @internal */
+    public Pool $pool;
+
+    /** @internal */
+    public int $threads;
     /**
      * @var array<int, class-string<CodeIssue>>
      */
@@ -279,6 +278,10 @@ final class ProjectAnalyzer
         }
 
         self::$instance = $this;
+
+        if ($threads > 1) {
+            $this->pool = new Pool($threads, $this);
+        }
     }
 
     private function clearCacheDirectoryIfConfigOrComposerLockfileChanged(): void
@@ -393,21 +396,14 @@ final class ProjectAnalyzer
         $this->file_reference_provider->loadReferenceCache();
         $this->codebase->enterServerMode();
 
-        if (ini_get('pcre.jit') === '1'
-            && PHP_OS === 'Darwin'
-            && version_compare(PHP_VERSION, '7.3.0') >= 0
-            && version_compare(PHP_VERSION, '7.4.0') < 0
-        ) {
-            // do nothing
-        } else {
-            $cpu_count = self::getCpuCount();
+        $cpu_count = self::getCpuCount();
 
-            // let's not go crazy
-            $usable_cpus = $cpu_count - 2;
+        // let's not go crazy
+        $usable_cpus = $cpu_count - 2;
 
-            if ($usable_cpus > 1) {
-                $this->threads = $usable_cpus;
-            }
+        if ($usable_cpus > 1) {
+            $this->threads = $usable_cpus;
+            $this->pool = new Pool($usable_cpus, $this);
         }
 
         $server->logInfo("Initializing: Initialize Plugins...");
@@ -429,6 +425,12 @@ final class ProjectAnalyzer
     public function canReportIssues(string $file_path): bool
     {
         return isset($this->project_files[$file_path]);
+    }
+    public function __sleep(): array
+    {
+        $vars = get_object_vars($this);
+        unset($vars['pool']);
+        return array_keys($vars);
     }
 
     private function generatePHPVersionMessage(): string
@@ -521,7 +523,7 @@ final class ProjectAnalyzer
 
             $this->config->initializePlugins($this);
 
-            $this->codebase->scanFiles($this->threads);
+            $this->codebase->scanFiles();
 
             $this->codebase->infer_types_from_usage = true;
         } else {
@@ -544,7 +546,7 @@ final class ProjectAnalyzer
 
                     $this->config->initializePlugins($this);
 
-                    $this->codebase->scanFiles($this->threads);
+                    $this->codebase->scanFiles();
                 } else {
                     $diff_no_files = true;
                 }
@@ -565,7 +567,6 @@ final class ProjectAnalyzer
 
         $this->codebase->analyzer->analyzeFiles(
             $this,
-            $this->threads,
             $this->codebase->alter_code,
             true,
         );
@@ -921,7 +922,7 @@ final class ProjectAnalyzer
 
         $this->config->initializePlugins($this);
 
-        $this->codebase->scanFiles($this->threads);
+        $this->codebase->scanFiles();
 
         $this->config->visitStubFiles($this->codebase, $this->progress);
 
@@ -929,7 +930,6 @@ final class ProjectAnalyzer
 
         $this->codebase->analyzer->analyzeFiles(
             $this,
-            $this->threads,
             $this->codebase->alter_code,
             $this->codebase->find_unused_code === 'always',
         );
@@ -1031,7 +1031,7 @@ final class ProjectAnalyzer
 
         $this->config->initializePlugins($this);
 
-        $this->codebase->scanFiles($this->threads);
+        $this->codebase->scanFiles();
 
         $this->config->visitStubFiles($this->codebase, $this->progress);
 
@@ -1039,7 +1039,6 @@ final class ProjectAnalyzer
 
         $this->codebase->analyzer->analyzeFiles(
             $this,
-            $this->threads,
             $this->codebase->alter_code,
             $this->codebase->find_unused_code === 'always',
         );
@@ -1075,7 +1074,7 @@ final class ProjectAnalyzer
         $this->config->initializePlugins($this);
 
 
-        $this->codebase->scanFiles($this->threads);
+        $this->codebase->scanFiles();
 
         $this->config->visitStubFiles($this->codebase, $this->progress);
 
@@ -1083,7 +1082,6 @@ final class ProjectAnalyzer
 
         $this->codebase->analyzer->analyzeFiles(
             $this,
-            $this->threads,
             $this->codebase->alter_code,
             $this->codebase->find_unused_code === 'always',
         );
@@ -1353,25 +1351,6 @@ final class ProjectAnalyzer
      */
     public static function getCpuCount(): int
     {
-        if (defined('PHP_WINDOWS_VERSION_MAJOR')) {
-            // No support desired for Windows at the moment
-            return 1;
-        }
-
-        // PHP 7.3 with JIT on OSX is screwed for multi-threads
-        if (ini_get('pcre.jit') === '1'
-            && PHP_OS === 'Darwin'
-            && version_compare(PHP_VERSION, '7.3.0') >= 0
-            && version_compare(PHP_VERSION, '7.4.0') < 0
-        ) {
-            return 1;
-        }
-
-        if (!extension_loaded('pcntl')) {
-            // Psalm requires pcntl for multi-threads support
-            return 1;
-        }
-
         return (new CpuCoreCounter())->getCount();
     }
 

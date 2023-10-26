@@ -85,7 +85,7 @@ final class FileStorageProvider
     /**
      * @return array<lowercase-string, FileStorage>
      */
-    public function getAll(): array
+    public static function getAll(): array
     {
         return self::$storage;
     }
