@@ -262,8 +262,9 @@ final class CommentAnalyzer
     {
         $docblock_type = (string) preg_replace('@^[ \t]*\*@m', '', $docblock_type);
         $docblock_type = (string) preg_replace('/,\n\s+}/', '}', $docblock_type);
+        $docblock_type = (string) preg_replace('/[ \t]+/', ' ', $docblock_type);
 
-        return str_replace("\n", '', $docblock_type);
+        return trim(str_replace("\n", '', $docblock_type));
     }
 
     /**
