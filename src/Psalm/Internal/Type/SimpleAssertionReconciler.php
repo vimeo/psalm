@@ -97,7 +97,7 @@ use function strtolower;
  *
  * @internal
  */
-class SimpleAssertionReconciler extends Reconciler
+final class SimpleAssertionReconciler extends Reconciler
 {
     /**
      * @param   string[]  $suppressed_issues

@@ -22,7 +22,7 @@ use const PHP_VERSION_ID;
 /**
  * @internal
  */
-class PsalmRestarter extends XdebugHandler
+final class PsalmRestarter extends XdebugHandler
 {
     private const REQUIRED_OPCACHE_SETTINGS = [
         'enable_cli' => true,

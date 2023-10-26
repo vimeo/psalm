@@ -7,7 +7,7 @@ use Psalm\Internal\Provider\ClassLikeStorageProvider;
 /**
  * @internal
  */
-class ReferenceMapGenerator
+final class ReferenceMapGenerator
 {
     /**
      * @return array<string, string>

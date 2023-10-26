@@ -28,7 +28,7 @@ use function strtolower;
 /**
  * @internal
  */
-class ConstFetchAnalyzer
+final class ConstFetchAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,

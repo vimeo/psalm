@@ -46,7 +46,7 @@ use const JSON_THROW_ON_ERROR;
 /**
  * @internal
  */
-class TaintFlowGraph extends DataFlowGraph
+final class TaintFlowGraph extends DataFlowGraph
 {
     /** @var array<string, TaintSource> */
     private array $sources = [];

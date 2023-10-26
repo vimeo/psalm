@@ -66,7 +66,7 @@ use function strtolower;
 /**
  * @internal
  */
-class FunctionLikeNodeScanner
+final class FunctionLikeNodeScanner
 {
     private FileScanner $file_scanner;
 

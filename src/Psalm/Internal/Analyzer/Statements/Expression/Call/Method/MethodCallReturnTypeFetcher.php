@@ -41,7 +41,7 @@ use function strtolower;
 /**
  * @internal
  */
-class MethodCallReturnTypeFetcher
+final class MethodCallReturnTypeFetcher
 {
     /**
      * @param  TNamedObject|TTemplateParam|null  $static_type

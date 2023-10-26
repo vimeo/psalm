@@ -17,7 +17,7 @@ use function strtolower;
 /**
  * @internal
  */
-class YieldFromAnalyzer
+final class YieldFromAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,

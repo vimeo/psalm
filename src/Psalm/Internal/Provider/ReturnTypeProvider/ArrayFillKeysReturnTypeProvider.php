@@ -15,7 +15,7 @@ use function count;
 /**
  * @internal
  */
-class ArrayFillKeysReturnTypeProvider implements FunctionReturnTypeProviderInterface
+final class ArrayFillKeysReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
      * @return array<lowercase-string>

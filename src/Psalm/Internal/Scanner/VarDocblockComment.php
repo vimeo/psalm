@@ -7,7 +7,7 @@ use Psalm\Type\Union;
 /**
  * @internal
  */
-class VarDocblockComment
+final class VarDocblockComment
 {
     public ?Union $type = null;
 

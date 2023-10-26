@@ -10,7 +10,7 @@ use Amp\Promise;
 /**
  * @internal
  */
-class ProtocolStreamWriter implements ProtocolWriter
+final class ProtocolStreamWriter implements ProtocolWriter
 {
     private ResourceOutputStream $output;
 

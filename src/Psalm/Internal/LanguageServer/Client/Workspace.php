@@ -14,7 +14,7 @@ use Psalm\Internal\LanguageServer\LanguageServer;
  *
  * @internal
  */
-class Workspace
+final class Workspace
 {
     private ClientHandler $handler;
 

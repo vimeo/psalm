@@ -15,7 +15,7 @@ use function strtolower;
  * @psalm-immutable
  * @internal
  */
-class MethodIdentifier
+final class MethodIdentifier
 {
     use ImmutableNonCloneableTrait;
 

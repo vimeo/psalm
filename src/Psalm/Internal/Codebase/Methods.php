@@ -53,7 +53,7 @@ use function strtolower;
  *
  * Handles information about class methods
  */
-class Methods
+final class Methods
 {
     private ClassLikeStorageProvider $classlike_storage_provider;
 

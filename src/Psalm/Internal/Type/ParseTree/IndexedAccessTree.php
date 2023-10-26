@@ -7,7 +7,7 @@ use Psalm\Internal\Type\ParseTree;
 /**
  * @internal
  */
-class IndexedAccessTree extends ParseTree
+final class IndexedAccessTree extends ParseTree
 {
     public string $value;
 

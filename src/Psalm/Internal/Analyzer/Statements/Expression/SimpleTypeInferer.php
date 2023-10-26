@@ -45,7 +45,7 @@ use const PHP_INT_MAX;
  *
  * @internal
  */
-class SimpleTypeInferer
+final class SimpleTypeInferer
 {
     /**
      * @param   ?array<string, ClassConstantStorage> $existing_class_constants

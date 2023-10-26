@@ -44,7 +44,7 @@ use function substr;
 /**
  * @internal
  */
-class MatchAnalyzer
+final class MatchAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,

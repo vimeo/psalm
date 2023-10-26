@@ -16,7 +16,7 @@ use function strtolower;
 /**
  * @internal
  */
-class FunctionParamsProvider
+final class FunctionParamsProvider
 {
     /**
      * @var array<

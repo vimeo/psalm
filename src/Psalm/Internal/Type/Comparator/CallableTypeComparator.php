@@ -37,7 +37,7 @@ use function substr;
 /**
  * @internal
  */
-class CallableTypeComparator
+final class CallableTypeComparator
 {
     /**
      * @param  TCallable|TClosure   $input_type_part

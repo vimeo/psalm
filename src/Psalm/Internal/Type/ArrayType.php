@@ -15,7 +15,7 @@ use function count;
 /**
  * @internal
  */
-class ArrayType
+final class ArrayType
 {
     public Union $key;
 

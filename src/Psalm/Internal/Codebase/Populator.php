@@ -42,7 +42,7 @@ use function strtolower;
  *
  * Populates file and class information so that analysis can work properly
  */
-class Populator
+final class Populator
 {
     private ClassLikeStorageProvider $classlike_storage_provider;
 

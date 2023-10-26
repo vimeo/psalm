@@ -17,7 +17,7 @@ use Psalm\Type\Union;
 /**
  * @internal
  */
-class PdoStatementReturnTypeProvider implements MethodReturnTypeProviderInterface
+final class PdoStatementReturnTypeProvider implements MethodReturnTypeProviderInterface
 {
     public static function getClassLikeNames(): array
     {

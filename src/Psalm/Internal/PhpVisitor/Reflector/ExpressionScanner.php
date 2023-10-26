@@ -36,7 +36,7 @@ use const DIRECTORY_SEPARATOR;
 /**
  * @internal
  */
-class ExpressionScanner
+final class ExpressionScanner
 {
     public static function scan(
         Codebase $codebase,

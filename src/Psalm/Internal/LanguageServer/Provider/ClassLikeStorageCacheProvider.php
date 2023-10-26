@@ -11,7 +11,7 @@ use function strtolower;
 /**
  * @internal
  */
-class ClassLikeStorageCacheProvider extends InternalClassLikeStorageCacheProvider
+final class ClassLikeStorageCacheProvider extends InternalClassLikeStorageCacheProvider
 {
     /** @var array<string, ClassLikeStorage> */
     private array $cache = [];

@@ -16,7 +16,7 @@ use const LOCK_SH;
 /**
  * @internal
  */
-class Providers
+final class Providers
 {
     public FileProvider $file_provider;
 

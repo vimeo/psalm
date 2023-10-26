@@ -22,7 +22,7 @@ use function trim;
 /**
  * @internal
  */
-class UnusedAssignmentRemover
+final class UnusedAssignmentRemover
 {
     /**
      * @var array<string, CodeLocation>

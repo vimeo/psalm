@@ -13,7 +13,7 @@ use function count;
 /**
  * @internal
  */
-class VariableUseGraph extends DataFlowGraph
+final class VariableUseGraph extends DataFlowGraph
 {
     /** @var array<string, array<string, true>> */
     protected array $backward_edges = [];

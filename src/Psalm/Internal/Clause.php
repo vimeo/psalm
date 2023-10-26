@@ -26,7 +26,7 @@ use const PHP_VERSION_ID;
  * @internal
  * @psalm-immutable
  */
-class Clause
+final class Clause
 {
     use ImmutableNonCloneableTrait;
 

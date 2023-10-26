@@ -38,7 +38,7 @@ use function substr_count;
  *
  * @internal
  */
-class TextDocument
+final class TextDocument
 {
     protected LanguageServer $server;
 

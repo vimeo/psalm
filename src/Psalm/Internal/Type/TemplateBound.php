@@ -7,7 +7,7 @@ use Psalm\Type\Union;
 /**
  * @internal
  */
-class TemplateBound
+final class TemplateBound
 {
     public Union $type;
 

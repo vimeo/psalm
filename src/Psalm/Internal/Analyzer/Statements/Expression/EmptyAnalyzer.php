@@ -14,7 +14,7 @@ use Psalm\Type;
 /**
  * @internal
  */
-class EmptyAnalyzer
+final class EmptyAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,

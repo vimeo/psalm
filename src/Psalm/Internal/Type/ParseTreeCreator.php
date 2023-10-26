@@ -34,7 +34,7 @@ use function strtolower;
 /**
  * @internal
  */
-class ParseTreeCreator
+final class ParseTreeCreator
 {
     private ParseTree $parse_tree;
 

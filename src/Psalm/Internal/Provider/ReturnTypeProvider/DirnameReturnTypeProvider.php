@@ -19,7 +19,7 @@ use function dirname;
 /**
  * @internal
  */
-class DirnameReturnTypeProvider implements FunctionReturnTypeProviderInterface
+final class DirnameReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
      * @return array<lowercase-string>

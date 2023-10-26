@@ -8,7 +8,7 @@ use Psalm\Storage\ImmutableNonCloneableTrait;
  * @psalm-immutable
  * @internal
  */
-class UnresolvedDivisionOp extends UnresolvedBinaryOp
+final class UnresolvedDivisionOp extends UnresolvedBinaryOp
 {
     use ImmutableNonCloneableTrait;
 }

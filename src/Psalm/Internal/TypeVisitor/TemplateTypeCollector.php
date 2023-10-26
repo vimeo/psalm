@@ -13,7 +13,7 @@ use Psalm\Type\Union;
 /**
  * @internal
  */
-class TemplateTypeCollector extends TypeVisitor
+final class TemplateTypeCollector extends TypeVisitor
 {
     /**
      * @var list<TTemplateParam>

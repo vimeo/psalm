@@ -53,7 +53,7 @@ use function usort;
 /**
  * @internal
  */
-class TemplateStandinTypeReplacer
+final class TemplateStandinTypeReplacer
 {
     /**
      * This method fills in the values in $template_result based on how the various atomic types

@@ -15,7 +15,7 @@ use function strtolower;
 /**
  * @internal
  */
-class MethodVisibilityProvider
+final class MethodVisibilityProvider
 {
     /**
      * @var array<

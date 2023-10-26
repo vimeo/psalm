@@ -18,7 +18,7 @@ use function substr;
 /**
  * @internal
  */
-class CoalesceAnalyzer
+final class CoalesceAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
