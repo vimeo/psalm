@@ -15,7 +15,6 @@ use Psalm\Internal\Analyzer\AlgebraAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\IfElse\ElseAnalyzer;
-use Psalm\Internal\Analyzer\Statements\Block\IfElse\ElseIfAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\IfElse\IfAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
@@ -31,6 +30,7 @@ use function array_filter;
 use function array_intersect_key;
 use function array_keys;
 use function array_merge;
+use function array_slice;
 use function array_unique;
 use function array_values;
 use function count;
@@ -278,21 +278,17 @@ final class IfElseAnalyzer
             [...$else_context->clauses, ...$if_scope->negated_clauses],
         );
 
-        // check the elseifs
-        foreach ($stmt->elseifs as $elseif) {
-            if (ElseIfAnalyzer::analyze(
-                $statements_analyzer,
-                $elseif,
-                $if_scope,
-                $else_context,
-                $context,
-                $codebase,
-                $else_context->branch_point ?: (int) $stmt->getAttribute('startFilePos'),
-            ) === false) {
-                return false;
-            }
+        $else = $stmt->else;
+        // convert elseifs to if/else stmts
+        $elseifs = array_values($stmt->elseifs);
+        if ($elseifs) {
+            $newStmt = new PhpParser\Node\Stmt\If_($elseifs[0]->cond, [
+                'stmts' => $elseifs[0]->stmts,
+                'elseifs' => array_slice($elseifs, 1),
+                'else' => $stmt->else,
+            ], $elseifs[0]->getAttributes());
+            $else = new PhpParser\Node\Stmt\Else_([$newStmt], $elseifs[0]->getAttributes());
         }
-
         if ($stmt->else) {
             if ($codebase->alter_code) {
                 $else_context->branch_point =
@@ -302,7 +298,7 @@ final class IfElseAnalyzer
 
         if (ElseAnalyzer::analyze(
             $statements_analyzer,
-            $stmt->else,
+            $else,
             $if_scope,
             $else_context,
             $context,
@@ -310,9 +306,7 @@ final class IfElseAnalyzer
             return false;
         }
 
-        if (count($if_scope->if_actions) && !in_array(ScopeAnalyzer::ACTION_NONE, $if_scope->if_actions, true)
-            && !$stmt->elseifs
-        ) {
+        if (count($if_scope->if_actions) && !in_array(ScopeAnalyzer::ACTION_NONE, $if_scope->if_actions, true)) {
             $context->clauses = $else_context->clauses;
             foreach ($else_context->vars_in_scope as $var_id => $type) {
                 $context->vars_in_scope[$var_id] = $type;

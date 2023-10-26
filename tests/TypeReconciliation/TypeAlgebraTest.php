@@ -1338,7 +1338,7 @@ class TypeAlgebraTest extends TestCase
                         if (!$a) return $b;
                         return $a;
                     }',
-                'error_message' => 'TypeDoesNotContainType',
+                'error_message' => 'NullableReturnStatement',
             ],
             'twoVarLogicNotNestedWithElseifIncorrectlyReinforcedInIf' => [
                 'code' => '<?php
