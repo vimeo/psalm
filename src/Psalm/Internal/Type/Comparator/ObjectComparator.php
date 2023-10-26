@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Type\Comparator;
 
 use Psalm\Codebase;
@@ -23,7 +25,7 @@ use function substr;
 /**
  * @internal
  */
-class ObjectComparator
+final class ObjectComparator
 {
     /**
      * @param  TNamedObject|TTemplateParam|TIterable  $input_type_part
@@ -34,7 +36,7 @@ class ObjectComparator
         Atomic $input_type_part,
         Atomic $container_type_part,
         bool $allow_interface_equality,
-        ?TypeComparisonResult $atomic_comparison_result
+        ?TypeComparisonResult $atomic_comparison_result,
     ): bool {
         if ($container_type_part instanceof TTemplateParam
             && $input_type_part instanceof TTemplateParam
@@ -179,7 +181,7 @@ class ObjectComparator
         ?string $intersection_container_type_lower,
         bool $container_was_static,
         bool $allow_interface_equality,
-        ?TypeComparisonResult $atomic_comparison_result
+        ?TypeComparisonResult $atomic_comparison_result,
     ): bool {
         if ($intersection_container_type instanceof TTemplateParam
             && $intersection_input_type instanceof TTemplateParam

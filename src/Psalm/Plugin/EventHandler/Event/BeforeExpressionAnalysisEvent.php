@@ -32,7 +32,7 @@ final class BeforeExpressionAnalysisEvent
         Context $context,
         StatementsSource $statements_source,
         Codebase $codebase,
-        array $file_replacements = []
+        array $file_replacements = [],
     ) {
         $this->expr = $expr;
         $this->context = $context;

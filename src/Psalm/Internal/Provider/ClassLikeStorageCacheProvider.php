@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Provider;
 
 use Psalm\Config;
@@ -55,7 +57,7 @@ class ClassLikeStorageCacheProvider
                 throw new UnexpectedValueException($dependent_file_path . ' must exist');
             }
 
-            $this->modified_timestamps .= ' ' . filemtime($dependent_file_path);
+            $this->modified_timestamps .= ' ' . (int) filemtime($dependent_file_path);
         }
 
         $this->modified_timestamps .= $config->computeHash();
@@ -80,7 +82,7 @@ class ClassLikeStorageCacheProvider
     public function getLatestFromCache(
         string $fq_classlike_name_lc,
         ?string $file_path,
-        ?string $file_contents
+        ?string $file_contents,
     ): ClassLikeStorage {
         $cached_value = $this->loadFromCache($fq_classlike_name_lc, $file_path);
 
@@ -121,7 +123,7 @@ class ClassLikeStorageCacheProvider
     private function getCacheLocationForClass(
         string $fq_classlike_name_lc,
         ?string $file_path,
-        bool $create_directory = false
+        bool $create_directory = false,
     ): string {
         $root_cache_directory = $this->cache->getCacheDirectory();
 

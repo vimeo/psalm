@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Codebase;
 
 use Psalm\CodeLocation;
@@ -19,11 +21,13 @@ use Psalm\Issue\TaintedInclude;
 use Psalm\Issue\TaintedLdap;
 use Psalm\Issue\TaintedSSRF;
 use Psalm\Issue\TaintedShell;
+use Psalm\Issue\TaintedSleep;
 use Psalm\Issue\TaintedSql;
 use Psalm\Issue\TaintedSystemSecret;
 use Psalm\Issue\TaintedTextWithQuotes;
 use Psalm\Issue\TaintedUnserialize;
 use Psalm\Issue\TaintedUserSecret;
+use Psalm\Issue\TaintedXpath;
 use Psalm\IssueBuffer;
 use Psalm\Type\TaintKind;
 
@@ -46,7 +50,7 @@ use const JSON_THROW_ON_ERROR;
 /**
  * @internal
  */
-class TaintFlowGraph extends DataFlowGraph
+final class TaintFlowGraph extends DataFlowGraph
 {
     /** @var array<string, TaintSource> */
     private array $sources = [];
@@ -245,7 +249,7 @@ class TaintFlowGraph extends DataFlowGraph
         DataFlowNode $generated_source,
         array $source_taints,
         array $sinks,
-        array $visited_source_ids
+        array $visited_source_ids,
     ): array {
         $new_sources = [];
 
@@ -443,6 +447,24 @@ class TaintFlowGraph extends DataFlowGraph
                             case TaintKind::INPUT_HEADER:
                                 $issue = new TaintedHeader(
                                     'Detected tainted header',
+                                    $issue_location,
+                                    $issue_trace,
+                                    $path,
+                                );
+                                break;
+
+                            case TaintKind::INPUT_XPATH:
+                                $issue = new TaintedXpath(
+                                    'Detected tainted xpath query',
+                                    $issue_location,
+                                    $issue_trace,
+                                    $path,
+                                );
+                                break;
+
+                            case TaintKind::INPUT_SLEEP:
+                                $issue = new TaintedSleep(
+                                    'Detected tainted sleep',
                                     $issue_location,
                                     $issue_trace,
                                     $path,

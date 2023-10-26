@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\BinaryOp;
 
 use AssertionError;
@@ -50,7 +52,7 @@ use function strlen;
 /**
  * @internal
  */
-class ConcatAnalyzer
+final class ConcatAnalyzer
 {
     private const MAX_LITERALS = 64;
 
@@ -59,7 +61,7 @@ class ConcatAnalyzer
         PhpParser\Node\Expr $left,
         PhpParser\Node\Expr $right,
         Context $context,
-        Union &$result_type = null
+        Union &$result_type = null,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -309,7 +311,7 @@ class ConcatAnalyzer
         PhpParser\Node\Expr $operand,
         Union $operand_type,
         string $side,
-        Context $context
+        Context $context,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
         $config = Config::getInstance();

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Cli;
 
 use Composer\Autoload\ClassLoader;
@@ -447,7 +449,7 @@ final class Psalm
         array_map(
             static function (string $arg): void {
                 if (strpos($arg, '--') === 0 && $arg !== '--') {
-                    $arg_name = preg_replace('/=.*$/', '', substr($arg, 2), 1);
+                    $arg_name = (string) preg_replace('/=.*$/', '', substr($arg, 2), 1);
 
                     if (!in_array($arg_name, self::LONG_OPTIONS)
                         && !in_array($arg_name . ':', self::LONG_OPTIONS)
@@ -461,7 +463,7 @@ final class Psalm
                         exit(1);
                     }
                 } elseif (strpos($arg, '-') === 0 && $arg !== '-' && $arg !== '--') {
-                    $arg_name = preg_replace('/=.*$/', '', substr($arg, 1));
+                    $arg_name = (string) preg_replace('/=.*$/', '', substr($arg, 1));
 
                     if (!in_array($arg_name, self::SHORT_OPTIONS)
                         && !in_array($arg_name . ':', self::SHORT_OPTIONS)
@@ -548,7 +550,7 @@ final class Psalm
         string $output_format,
         ?ClassLoader $first_autoloader,
         bool $run_taint_analysis,
-        array $options
+        array $options,
     ): Config {
         $config = CliUtils::initializeConfig(
             $path_to_config,
@@ -639,7 +641,7 @@ final class Psalm
         array $options,
         Config $config,
         string $current_dir,
-        ?string $path_to_config
+        ?string $path_to_config,
     ): array {
         fwrite(STDERR, 'Writing error baseline to file...' . PHP_EOL);
 
@@ -749,7 +751,7 @@ final class Psalm
         ProjectAnalyzer $project_analyzer,
         string $current_dir,
         ?string $init_source_dir,
-        string $vendor_dir
+        string $vendor_dir,
     ): void {
         $issues_by_file = IssueBuffer::getIssuesData();
 
@@ -789,7 +791,7 @@ final class Psalm
         array $options,
         bool $show_info,
         string $output_format,
-        bool $in_ci
+        bool $in_ci,
     ): ReportOptions {
         $stdout_report_options = new ReportOptions();
         $stdout_report_options->use_color = !array_key_exists('m', $options);
@@ -806,8 +808,7 @@ final class Psalm
         return $stdout_report_options;
     }
 
-    /** @return never */
-    private static function clearGlobalCache(Config $config): void
+    private static function clearGlobalCache(Config $config): never
     {
         $cache_directory = $config->getGlobalCacheDirectory();
 
@@ -819,8 +820,7 @@ final class Psalm
         exit;
     }
 
-    /** @return never */
-    private static function clearCache(Config $config): void
+    private static function clearCache(Config $config): never
     {
         $cache_directory = $config->getCacheDirectory();
 
@@ -984,7 +984,7 @@ final class Psalm
         ?string $path_to_config,
         string $output_format,
         bool $run_taint_analysis,
-        array $options
+        array $options,
     ): array {
         $init_source_dir = null;
         if (isset($options['i'])) {
@@ -1019,7 +1019,7 @@ final class Psalm
         Config $config,
         string $current_dir,
         ?string $path_to_config,
-        ?array $paths_to_check
+        ?array $paths_to_check,
     ): array {
         $issue_baseline = [];
 
@@ -1094,7 +1094,7 @@ final class Psalm
     }
 
     /** @return false|'always'|'auto' */
-    private static function shouldFindUnusedCode(array $options, Config $config)
+    private static function shouldFindUnusedCode(array $options, Config $config): false|string
     {
         $find_unused_code = false;
         if (isset($options['find-dead-code'])) {
@@ -1122,17 +1122,16 @@ final class Psalm
     }
 
     /**
-     * @param string|bool|null $find_references_to
      * @param false|'always'|'auto' $find_unused_code
      */
     private static function configureProjectAnalyzer(
         array $options,
         Config $config,
         ProjectAnalyzer $project_analyzer,
-        $find_references_to,
-        $find_unused_code,
+        string|bool|null $find_references_to,
+        false|string $find_unused_code,
         bool $find_unused_variables,
-        bool $run_taint_analysis
+        bool $run_taint_analysis,
     ): void {
         if (isset($options['generate-json-map']) && is_string($options['generate-json-map'])) {
             $project_analyzer->getCodebase()->store_node_types = true;
@@ -1193,7 +1192,7 @@ final class Psalm
     private static function generateStubs(
         array $options,
         Providers $providers,
-        ProjectAnalyzer $project_analyzer
+        ProjectAnalyzer $project_analyzer,
     ): void {
         if (isset($options['generate-stubs']) && is_string($options['generate-stubs'])) {
             $stubs_location = $options['generate-stubs'];

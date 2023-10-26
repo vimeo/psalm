@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
 use InvalidArgumentException;
@@ -25,7 +27,6 @@ use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
-use Psalm\Type\Atomic\TCallableArray;
 use Psalm\Type\Atomic\TCallableKeyedArray;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClosure;
@@ -54,7 +55,7 @@ use function substr;
 /**
  * @internal
  */
-class FunctionCallReturnTypeFetcher
+final class FunctionCallReturnTypeFetcher
 {
     /**
      * @param non-empty-string $function_id
@@ -70,7 +71,7 @@ class FunctionCallReturnTypeFetcher
         ?FunctionLikeStorage $function_storage,
         ?TCallable $callmap_callable,
         TemplateResult $template_result,
-        Context $context
+        Context $context,
     ): Union {
         $stmt_type = null;
         $config = $codebase->config;
@@ -313,7 +314,7 @@ class FunctionCallReturnTypeFetcher
         string $function_id,
         array $call_args,
         TCallable $callmap_callable,
-        Context $context
+        Context $context,
     ): Union {
         $call_map_key = strtolower($function_id);
 
@@ -358,9 +359,7 @@ class FunctionCallReturnTypeFetcher
 
                         if (count($atomic_types) === 1) {
                             if (isset($atomic_types['array'])) {
-                                if ($atomic_types['array'] instanceof TCallableArray
-                                    || $atomic_types['array'] instanceof TCallableKeyedArray
-                                ) {
+                                if ($atomic_types['array'] instanceof TCallableKeyedArray) {
                                     return Type::getInt(false, 2);
                                 }
 
@@ -536,7 +535,7 @@ class FunctionCallReturnTypeFetcher
         FunctionLikeStorage $function_storage,
         Union &$stmt_type,
         TemplateResult $template_result,
-        Context $context
+        Context $context,
     ): ?DataFlowNode {
         if (!$statements_analyzer->data_flow_graph) {
             return null;
@@ -698,7 +697,7 @@ class FunctionCallReturnTypeFetcher
         CodeLocation $node_location,
         DataFlowNode $function_call_node,
         array $removed_taints,
-        array $added_taints = []
+        array $added_taints = [],
     ): void {
         foreach ($function_storage->return_source_params as $i => $path_type) {
             if (!isset($args[$i])) {

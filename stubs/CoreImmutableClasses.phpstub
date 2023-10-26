@@ -105,6 +105,7 @@ class DateTimeImmutable implements DateTimeInterface
  */
 class DateTimeZone
 {
+    /** @param non-empty-string $timezone */
     public function __construct(string $timezone) {}
 }
 

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type;
 
 use InvalidArgumentException;
@@ -109,7 +111,7 @@ class Reconciler
         array $template_type_map = [],
         bool $inside_loop = false,
         ?CodeLocation $code_location = null,
-        bool $negated = false
+        bool $negated = false,
     ): array {
         if (!$new_types) {
             return [$existing_types, $existing_references];
@@ -354,7 +356,7 @@ class Reconciler
                                 }
                                 // Set references pointing to $new_key to point
                                 // to the first other reference from the same group
-                                $new_primary_reference = key($reference_graph[$references_to_fix[0]]);
+                                $new_primary_reference = (string) key($reference_graph[$references_to_fix[0]]);
                                 unset($existing_references[$new_primary_reference]);
                                 foreach ($existing_references as $existing_reference => $existing_referenced) {
                                     if ($existing_referenced === $new_key) {
@@ -452,7 +454,7 @@ class Reconciler
                         $divider = array_shift($key_parts);
 
                         if ($divider === '[') {
-                            $array_key = array_shift($key_parts);
+                            $array_key = (string) array_shift($key_parts);
                             array_shift($key_parts);
 
                             $new_base_key = $base_key . '[' . $array_key . ']';
@@ -644,7 +646,7 @@ class Reconciler
         bool $has_inverted_isset,
         bool $has_empty,
         bool $inside_loop,
-        bool &$has_object_array_access
+        bool &$has_object_array_access,
     ): ?Union {
         $key_parts = self::breakUpPathIntoParts($key);
 
@@ -688,7 +690,7 @@ class Reconciler
             $divider = array_shift($key_parts);
 
             if ($divider === '[') {
-                $array_key = array_shift($key_parts);
+                $array_key = (string) array_shift($key_parts);
                 array_shift($key_parts);
 
                 $new_base_key = $base_key . '[' . $array_key . ']';
@@ -792,7 +794,7 @@ class Reconciler
 
                 $base_key = $new_base_key;
             } elseif ($divider === '->' || $divider === '::$') {
-                $property_name = array_shift($key_parts);
+                $property_name = (string) array_shift($key_parts);
                 $new_base_key = $base_key . $divider . $property_name;
 
                 if (!isset($existing_keys[$new_base_key])) {
@@ -909,7 +911,7 @@ class Reconciler
     private static function getPropertyType(
         Codebase $codebase,
         string $fq_class_name,
-        string $property_name
+        string $property_name,
     ): ?Union {
         $property_id = $fq_class_name . '::$' . $property_name;
 
@@ -959,18 +961,17 @@ class Reconciler
     }
 
     /**
-     * @param Union|MutableUnion $existing_var_type
      * @param  string[]     $suppressed_issues
      */
     protected static function triggerIssueForImpossible(
-        $existing_var_type,
+        Union|MutableUnion $existing_var_type,
         string $old_var_type_string,
         string $key,
         Assertion $assertion,
         bool $redundant,
         bool $negated,
         CodeLocation $code_location,
-        array $suppressed_issues
+        array $suppressed_issues,
     ): void {
         $assertion_string = (string)$assertion;
         $not = $assertion_string[0] === '!';
@@ -1092,7 +1093,7 @@ class Reconciler
         array $key_parts,
         array &$existing_types,
         array &$changed_var_ids,
-        Union $result_type
+        Union $result_type,
     ): void {
         array_pop($key_parts);
         $array_key = array_pop($key_parts);

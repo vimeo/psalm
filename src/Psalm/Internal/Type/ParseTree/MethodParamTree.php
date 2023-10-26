@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Type\ParseTree;
 
 use Psalm\Internal\Type\ParseTree;
@@ -7,7 +9,7 @@ use Psalm\Internal\Type\ParseTree;
 /**
  * @internal
  */
-class MethodParamTree extends ParseTree
+final class MethodParamTree extends ParseTree
 {
     public bool $variadic;
 
@@ -21,7 +23,7 @@ class MethodParamTree extends ParseTree
         string $name,
         bool $byref,
         bool $variadic,
-        ?ParseTree $parent = null
+        ?ParseTree $parent = null,
     ) {
         $this->name = $name;
         $this->byref = $byref;

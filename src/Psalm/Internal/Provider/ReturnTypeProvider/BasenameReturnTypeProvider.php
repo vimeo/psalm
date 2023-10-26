@@ -16,7 +16,7 @@ use function count;
 /**
  * @internal
  */
-class BasenameReturnTypeProvider implements FunctionReturnTypeProviderInterface
+final class BasenameReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
      * @return array<lowercase-string>

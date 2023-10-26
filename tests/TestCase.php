@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
 use PHPUnit\Framework\TestCase as BaseTestCase;
@@ -51,7 +53,7 @@ class TestCase extends BaseTestCase
         }
 
         parent::setUpBeforeClass();
-        self::$src_dir_path = getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR;
+        self::$src_dir_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR;
     }
 
     protected function makeConfig(): Config
@@ -149,7 +151,7 @@ class TestCase extends BaseTestCase
 
     public static function assertArrayKeysAreZeroOrString(array $array, string $message = ''): void
     {
-        $isZeroOrString = /** @param mixed $key */ fn($key): bool => $key === 0 || is_string($key);
+        $isZeroOrString = /** @param mixed $key */ static fn($key): bool => $key === 0 || is_string($key);
         $validKeys = array_filter($array, $isZeroOrString, ARRAY_FILTER_USE_KEY);
         self::assertTrue(count($array) === count($validKeys), $message);
     }

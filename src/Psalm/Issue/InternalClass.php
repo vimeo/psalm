@@ -1,8 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Issue;
 
 use function array_pop;
+use function array_unique;
 use function count;
 use function implode;
 use function reset;
@@ -15,6 +18,7 @@ final class InternalClass extends ClassIssue
     /** @param non-empty-list<non-empty-string> $words */
     public static function listToPhrase(array $words): string
     {
+        $words = array_unique($words);
         if (count($words) === 1) {
             return reset($words);
         }

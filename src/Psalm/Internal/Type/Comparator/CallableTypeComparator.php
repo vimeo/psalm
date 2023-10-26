@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Type\Comparator;
 
 use Exception;
@@ -18,7 +20,6 @@ use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
-use Psalm\Type\Atomic\TCallableArray;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TKeyedArray;
@@ -36,7 +37,7 @@ use function substr;
 /**
  * @internal
  */
-class CallableTypeComparator
+final class CallableTypeComparator
 {
     /**
      * @param  TCallable|TClosure   $input_type_part
@@ -46,7 +47,7 @@ class CallableTypeComparator
         Codebase $codebase,
         Atomic $input_type_part,
         Atomic $container_type_part,
-        ?TypeComparisonResult $atomic_comparison_result
+        ?TypeComparisonResult $atomic_comparison_result,
     ): bool {
         if ($container_type_part->is_pure && !$input_type_part->is_pure) {
             if ($atomic_comparison_result) {
@@ -170,7 +171,7 @@ class CallableTypeComparator
         Codebase $codebase,
         Atomic $input_type_part,
         TCallable $container_type_part,
-        ?TypeComparisonResult $atomic_comparison_result
+        ?TypeComparisonResult $atomic_comparison_result,
     ): bool {
 
         if ($input_type_part instanceof TArray) {
@@ -186,15 +187,6 @@ class CallableTypeComparator
             }
 
             if (!$input_type_part->type_params[1]->hasString()) {
-                return false;
-            }
-
-            if (!$input_type_part instanceof TCallableArray) {
-                if ($atomic_comparison_result) {
-                    $atomic_comparison_result->type_coerced_from_mixed = true;
-                    $atomic_comparison_result->type_coerced = true;
-                }
-
                 return false;
             }
         } elseif ($input_type_part instanceof TKeyedArray) {
@@ -248,7 +240,7 @@ class CallableTypeComparator
         Atomic $input_type_part,
         ?TCallable $container_type_part = null,
         ?StatementsAnalyzer $statements_analyzer = null,
-        bool $expand_callable = false
+        bool $expand_callable = false,
     ): ?Atomic {
 
         if ($input_type_part instanceof TCallable || $input_type_part instanceof TClosure) {
@@ -468,8 +460,8 @@ class CallableTypeComparator
         TKeyedArray $input_type_part,
         ?Codebase $codebase = null,
         ?string $calling_method_id = null,
-        ?string $file_name = null
-    ) {
+        ?string $file_name = null,
+    ): string|MethodIdentifier|null {
         if (!isset($input_type_part->properties[0])
             || !isset($input_type_part->properties[1])
         ) {

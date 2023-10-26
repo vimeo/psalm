@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Config;
 
 use Psalm\Config;
@@ -8,6 +10,7 @@ use SimpleXMLElement;
 
 use function array_filter;
 use function array_map;
+use function assert;
 use function dirname;
 use function in_array;
 use function scandir;
@@ -26,7 +29,7 @@ final class IssueHandler
      */
     private array $custom_levels = [];
 
-    public static function loadFromXMLElement(SimpleXMLElement $e, string $base_dir): IssueHandler
+    public static function loadFromXMLElement(SimpleXMLElement $e, string $base_dir): self
     {
         $handler = new self();
 
@@ -157,10 +160,12 @@ final class IssueHandler
      */
     public static function getAllIssueTypes(): array
     {
+        $scan = scandir(dirname(__DIR__) . '/Issue', SCANDIR_SORT_NONE);
+        assert($scan !== false);
         return array_filter(
             array_map(
                 static fn(string $file_name): string => substr($file_name, 0, -4),
-                scandir(dirname(__DIR__) . '/Issue', SCANDIR_SORT_NONE),
+                $scan,
             ),
             static fn(string $issue_name): bool => $issue_name !== ''
                 && $issue_name !== 'MethodIssue'

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\Fetch;
 
 use InvalidArgumentException;
@@ -51,7 +53,6 @@ use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TInt;
-use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
@@ -67,8 +68,6 @@ use function array_map;
 use function array_search;
 use function count;
 use function in_array;
-use function is_int;
-use function is_string;
 use function strtolower;
 
 use const ARRAY_FILTER_USE_KEY;
@@ -76,7 +75,7 @@ use const ARRAY_FILTER_USE_KEY;
 /**
  * @internal
  */
-class AtomicPropertyFetchAnalyzer
+final class AtomicPropertyFetchAnalyzer
 {
     /**
      * @param array<string> $invalid_fetch_types $invalid_fetch_types
@@ -94,7 +93,7 @@ class AtomicPropertyFetchAnalyzer
         string $prop_name,
         bool &$has_valid_fetch_type,
         array &$invalid_fetch_types,
-        bool $is_static_access = false
+        bool $is_static_access = false,
     ): void {
         if ($lhs_type_part instanceof TNull) {
             return;
@@ -548,7 +547,7 @@ class AtomicPropertyFetchAnalyzer
         string $prop_name,
         string $declaring_property_class,
         PhpParser\Node\Expr $stmt,
-        StatementsAnalyzer $statements_analyzer
+        StatementsAnalyzer $statements_analyzer,
     ): void {
         $property_id = $declaring_property_class . '::$' . $prop_name;
         $codebase = $statements_analyzer->getCodebase();
@@ -589,7 +588,7 @@ class AtomicPropertyFetchAnalyzer
         ?string $declaring_property_class,
         ClassLikeStorage $class_storage,
         MethodIdentifier $get_method_id,
-        bool $in_assignment
+        bool $in_assignment,
     ): bool {
         if ((!$naive_property_exists
                 || ($stmt_var_id !== '$this'
@@ -743,7 +742,7 @@ class AtomicPropertyFetchAnalyzer
         Union $class_property_type,
         TGenericObject $lhs_type_part,
         ClassLikeStorage $property_class_storage,
-        ClassLikeStorage $property_declaring_class_storage
+        ClassLikeStorage $property_declaring_class_storage,
     ): Union {
         $template_types = CallAnalyzer::getTemplateTypesForCall(
             $codebase,
@@ -788,6 +787,7 @@ class AtomicPropertyFetchAnalyzer
                             $position = array_search(
                                 $param_name,
                                 array_keys($property_class_storage->template_types),
+                                true,
                             );
                         }
 
@@ -816,7 +816,7 @@ class AtomicPropertyFetchAnalyzer
         string $property_id,
         ClassLikeStorage $class_storage,
         bool $in_assignment,
-        ?Context $context = null
+        ?Context $context = null,
     ): void {
         if (!$statements_analyzer->data_flow_graph) {
             return;
@@ -923,7 +923,7 @@ class AtomicPropertyFetchAnalyzer
         string $property_id,
         bool $in_assignment,
         ?array $added_taints,
-        ?array $removed_taints
+        ?array $removed_taints,
     ): void {
         if (!$statements_analyzer->data_flow_graph) {
             return;
@@ -980,7 +980,7 @@ class AtomicPropertyFetchAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PropertyFetch $stmt,
         Union $stmt_var_type,
-        ClassLikeStorage $class_storage
+        ClassLikeStorage $class_storage,
     ): void {
         $relevant_enum_cases = array_filter(
             $stmt_var_type->getAtomicTypes(),
@@ -1000,7 +1000,7 @@ class AtomicPropertyFetchAnalyzer
             empty($relevant_enum_case_names)
                 ? Type::getNonEmptyString()
                 : new Union(array_map(
-                    fn(string $name): TString => Type::getAtomicStringFromLiteral($name),
+                    static fn(string $name): TString => Type::getAtomicStringFromLiteral($name),
                     $relevant_enum_case_names,
                 )),
         );
@@ -1010,7 +1010,7 @@ class AtomicPropertyFetchAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PropertyFetch $stmt,
         Union $stmt_var_type,
-        ClassLikeStorage $class_storage
+        ClassLikeStorage $class_storage,
     ): void {
         $relevant_enum_cases = array_filter(
             $stmt_var_type->getAtomicTypes(),
@@ -1034,14 +1034,7 @@ class AtomicPropertyFetchAnalyzer
         $case_values = [];
 
         foreach ($enum_cases as $enum_case) {
-            if (is_string($enum_case->value)) {
-                $case_values[] = Type::getAtomicStringFromLiteral($enum_case->value);
-            } elseif (is_int($enum_case->value)) {
-                $case_values[] = new TLiteralInt($enum_case->value);
-            } else {
-                // this should never happen
-                $case_values[] = new TMixed();
-            }
+            $case_values[] = $enum_case->value ?? new TMixed();
         }
 
         /** @psalm-suppress ArgumentTypeCoercion */
@@ -1058,7 +1051,7 @@ class AtomicPropertyFetchAnalyzer
         ?string $stmt_var_id,
         string $property_id,
         bool $has_magic_getter,
-        ?string $var_id
+        ?string $var_id,
     ): void {
         if ($context->inside_isset || $context->collect_initializations) {
             if ($context->pure) {
@@ -1132,7 +1125,7 @@ class AtomicPropertyFetchAnalyzer
         bool &$class_exists,
         bool &$interface_exists,
         string &$fq_class_name,
-        bool &$override_property_visibility
+        bool &$override_property_visibility,
     ): void {
         if ($codebase->interfaceExists($lhs_type_part->value)) {
             $interface_exists = true;
@@ -1210,7 +1203,7 @@ class AtomicPropertyFetchAnalyzer
         ?string $stmt_var_id,
         bool $has_magic_getter,
         ?string $var_id,
-        bool &$has_valid_fetch_type
+        bool &$has_valid_fetch_type,
     ): void {
         if (($config->use_phpdoc_property_without_magic_or_parent
             || $class_storage->hasAttributeIncludingParents('AllowDynamicProperties', $codebase))
@@ -1277,7 +1270,7 @@ class AtomicPropertyFetchAnalyzer
         string $property_id,
         string $fq_class_name,
         string $prop_name,
-        TNamedObject $lhs_type_part
+        TNamedObject $lhs_type_part,
     ): Union {
         $class_property_type = $codebase->properties->getPropertyType(
             $property_id,

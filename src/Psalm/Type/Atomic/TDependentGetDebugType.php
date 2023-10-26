@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type\Atomic;
 
 /**
@@ -11,10 +13,8 @@ final class TDependentGetDebugType extends TString implements DependentType
 {
     /**
      * Used to hold information as to what this refers to
-     *
-     * @var string
      */
-    public $typeof;
+    public string $typeof;
 
     /**
      * @param string $typeof the variable id

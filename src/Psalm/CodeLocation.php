@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm;
 
 use Exception;
@@ -33,34 +35,25 @@ class CodeLocation
 {
     use ImmutableNonCloneableTrait;
 
-    /** @var string */
-    public $file_path;
+    public string $file_path;
 
-    /** @var string */
-    public $file_name;
+    public string $file_name;
 
-    /** @var int */
-    public $raw_line_number;
+    public int $raw_line_number;
 
     private int $end_line_number = -1;
 
-    /** @var int */
-    public $raw_file_start;
+    public int $raw_file_start;
 
-    /** @var int */
-    public $raw_file_end;
+    public int $raw_file_end;
 
-    /** @var int */
-    protected $file_start;
+    protected int $file_start;
 
-    /** @var int */
-    protected $file_end;
+    protected int $file_end;
 
-    /** @var bool */
-    protected $single_line;
+    protected bool $single_line;
 
-    /** @var int */
-    protected $preview_start;
+    protected int $preview_start;
 
     private int $preview_end = -1;
 
@@ -76,20 +69,17 @@ class CodeLocation
 
     private ?string $text = null;
 
-    /** @var int|null */
-    public $docblock_start;
+    public ?int $docblock_start = null;
 
     private ?int $docblock_start_line_number = null;
 
-    /** @var int|null */
-    protected $docblock_line_number;
+    protected ?int $docblock_line_number = null;
 
     private ?int $regex_type = null;
 
     private bool $have_recalculated = false;
 
-    /** @var null|CodeLocation */
-    public $previous_location;
+    public ?CodeLocation $previous_location = null;
 
     public const VAR_TYPE = 0;
     public const FUNCTION_RETURN_TYPE = 1;
@@ -107,7 +97,7 @@ class CodeLocation
         bool $single_line = false,
         ?int $regex_type = null,
         ?string $selected_text = null,
-        ?int $comment_line = null
+        ?int $comment_line = null,
     ) {
         /** @psalm-suppress ImpureMethodCall Actually mutation-free just not marked */
         $this->file_start = (int)$stmt->getAttribute('startFilePos');
@@ -222,7 +212,7 @@ class CodeLocation
 
             $indentation = (int)strpos($key_line, '@');
 
-            $key_line = trim(preg_replace('@\**/\s*@', '', mb_strcut($key_line, $indentation)));
+            $key_line = trim((string) preg_replace('@\**/\s*@', '', mb_strcut($key_line, $indentation)));
 
             $this->selection_start = $preview_offset + $indentation + $this->preview_start;
             $this->selection_end = $this->selection_start + strlen($key_line);

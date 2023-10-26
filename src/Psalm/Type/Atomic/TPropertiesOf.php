@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type\Atomic;
 
 use Psalm\Type\Atomic;
@@ -24,7 +26,7 @@ final class TPropertiesOf extends Atomic
     /**
      * @var self::VISIBILITY_*|null
      */
-    public $visibility_filter;
+    public ?int $visibility_filter;
 
     /**
      * @return list<TokenName>
@@ -45,7 +47,7 @@ final class TPropertiesOf extends Atomic
     public function __construct(
         TNamedObject $classlike_type,
         ?int $visibility_filter,
-        bool $from_docblock = false
+        bool $from_docblock = false,
     ) {
         $this->classlike_type = $classlike_type;
         $this->visibility_filter = $visibility_filter;
@@ -104,7 +106,7 @@ final class TPropertiesOf extends Atomic
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        int $analysis_php_version_id
+        int $analysis_php_version_id,
     ): string {
         return $this->getKey();
     }

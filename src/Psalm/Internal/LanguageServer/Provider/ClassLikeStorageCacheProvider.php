@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\LanguageServer\Provider;
 
 use Psalm\Internal\Provider\ClassLikeStorageCacheProvider as InternalClassLikeStorageCacheProvider;
@@ -11,7 +13,7 @@ use function strtolower;
 /**
  * @internal
  */
-class ClassLikeStorageCacheProvider extends InternalClassLikeStorageCacheProvider
+final class ClassLikeStorageCacheProvider extends InternalClassLikeStorageCacheProvider
 {
     /** @var array<string, ClassLikeStorage> */
     private array $cache = [];
@@ -29,7 +31,7 @@ class ClassLikeStorageCacheProvider extends InternalClassLikeStorageCacheProvide
     public function getLatestFromCache(
         string $fq_classlike_name_lc,
         ?string $file_path,
-        ?string $file_contents
+        ?string $file_contents,
     ): ClassLikeStorage {
         $cached_value = $this->loadFromCache($fq_classlike_name_lc);
 

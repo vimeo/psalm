@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Progress;
 
 use LogicException;
@@ -15,17 +17,13 @@ class LongProgress extends Progress
 {
     public const NUMBER_OF_COLUMNS = 60;
 
-    /** @var int|null */
-    protected $number_of_tasks;
+    protected ?int $number_of_tasks = null;
 
-    /** @var int */
-    protected $progress = 0;
+    protected int $progress = 0;
 
-    /** @var bool */
-    protected $print_errors = false;
+    protected bool $print_errors = false;
 
-    /** @var bool */
-    protected $print_infos = false;
+    protected bool $print_infos = false;
 
     public function __construct(bool $print_errors = true, bool $print_infos = true)
     {

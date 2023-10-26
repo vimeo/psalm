@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -15,7 +17,7 @@ use function in_array;
 /**
  * @internal
  */
-class StrTrReturnTypeProvider implements FunctionReturnTypeProviderInterface
+final class StrTrReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
      * @return array<lowercase-string>

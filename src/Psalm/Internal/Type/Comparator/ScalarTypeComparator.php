@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Type\Comparator;
 
 use Psalm\Codebase;
@@ -45,7 +47,7 @@ use function strtolower;
 /**
  * @internal
  */
-class ScalarTypeComparator
+final class ScalarTypeComparator
 {
     public static function isContainedBy(
         Codebase $codebase,
@@ -53,7 +55,7 @@ class ScalarTypeComparator
         Scalar $container_type_part,
         bool $allow_interface_equality = false,
         bool $allow_float_int_equality = true,
-        ?TypeComparisonResult $atomic_comparison_result = null
+        ?TypeComparisonResult $atomic_comparison_result = null,
     ): bool {
         if (get_class($container_type_part) === TString::class
             && $input_type_part instanceof TString

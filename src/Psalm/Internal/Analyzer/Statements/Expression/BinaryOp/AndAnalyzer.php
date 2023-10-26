@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\BinaryOp;
 
 use PhpParser;
@@ -28,13 +30,13 @@ use function spl_object_id;
 /**
  * @internal
  */
-class AndAnalyzer
+final class AndAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\BinaryOp $stmt,
         Context $context,
-        bool $from_stmt = false
+        bool $from_stmt = false,
     ): bool {
         if ($from_stmt) {
             $fake_if_stmt = new VirtualIf(

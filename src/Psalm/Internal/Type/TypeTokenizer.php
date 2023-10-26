@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Type;
 
 use Psalm\Aliases;
@@ -22,7 +24,7 @@ use function strtolower;
 /**
  * @internal
  */
-class TypeTokenizer
+final class TypeTokenizer
 {
     /**
      * @var array<string, bool>
@@ -312,7 +314,7 @@ class TypeTokenizer
      */
     public static function fixScalarTerms(
         string $type_string,
-        ?int $analysis_php_version_id = null
+        ?int $analysis_php_version_id = null,
     ): string {
         $type_string_lc = strtolower($type_string);
 
@@ -360,7 +362,7 @@ class TypeTokenizer
         ?array $type_aliases = null,
         ?string $self_fqcln = null,
         ?string $parent_fqcln = null,
-        bool $allow_assertions = false
+        bool $allow_assertions = false,
     ): array {
         $type_tokens = self::tokenize($string_type);
 
@@ -407,7 +409,7 @@ class TypeTokenizer
             }
 
             if (strpos($string_type_token[0], '$')) {
-                $string_type_token[0] = preg_replace('/(.+)\$.*/', '$1', $string_type_token[0]);
+                $string_type_token[0] = (string) preg_replace('/(.+)\$.*/', '$1', $string_type_token[0]);
             }
 
             $fixed_token = !isset($type_tokens[$i + 1]) || $type_tokens[$i + 1][0] !== '('

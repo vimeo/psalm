@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Type\TypeAlias;
 
 use Psalm\Internal\Type\TypeAlias;
@@ -9,7 +11,7 @@ use Psalm\Storage\ImmutableNonCloneableTrait;
  * @psalm-immutable
  * @internal
  */
-class InlineTypeAlias implements TypeAlias
+final class InlineTypeAlias implements TypeAlias
 {
     use ImmutableNonCloneableTrait;
 

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Plugin\EventHandler\Event;
 
 use PhpParser;
@@ -29,7 +31,7 @@ final class MethodParamsProviderEvent
         ?array $call_args = null,
         ?StatementsSource $statements_source = null,
         ?Context $context = null,
-        ?CodeLocation $code_location = null
+        ?CodeLocation $code_location = null,
     ) {
         $this->fq_classlike_name = $fq_classlike_name;
         $this->method_name_lowercase = $method_name_lowercase;

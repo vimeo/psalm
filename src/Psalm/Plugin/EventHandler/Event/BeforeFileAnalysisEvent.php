@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Plugin\EventHandler\Event;
 
 use Psalm\Codebase;
@@ -23,7 +25,7 @@ final class BeforeFileAnalysisEvent
         StatementsSource $statements_source,
         Context $file_context,
         FileStorage $file_storage,
-        Codebase $codebase
+        Codebase $codebase,
     ) {
         $this->statements_source = $statements_source;
         $this->file_context = $file_context;

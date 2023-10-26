@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
 use PhpParser;
@@ -60,6 +62,7 @@ use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 
+use function array_merge;
 use function count;
 use function explode;
 use function implode;
@@ -78,7 +81,7 @@ use const PREG_SPLIT_NO_EMPTY;
 /**
  * @internal
  */
-class ArgumentAnalyzer
+final class ArgumentAnalyzer
 {
     /**
      * @param  array<string, array<string, Union>> $class_generic_params
@@ -101,7 +104,7 @@ class ArgumentAnalyzer
         array $class_generic_params,
         ?TemplateResult $template_result,
         bool $specialize_taint,
-        bool $in_call_map
+        bool $in_call_map,
     ): ?bool {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -239,7 +242,7 @@ class ArgumentAnalyzer
         ?array $class_generic_params,
         ?TemplateResult $template_result,
         bool $specialize_taint,
-        bool $in_call_map
+        bool $in_call_map,
     ): ?bool {
         if (!$function_param->type) {
             if (!$codebase->infer_types_from_usage && !$statements_analyzer->data_flow_graph) {
@@ -671,7 +674,7 @@ class ArgumentAnalyzer
         ?Atomic $unpacked_atomic_array,
         bool $specialize_taint,
         bool $in_call_map,
-        CodeLocation $function_call_location
+        CodeLocation $function_call_location,
     ): ?bool {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -1161,7 +1164,7 @@ class ArgumentAnalyzer
         Union $param_type,
         CodeLocation $arg_location,
         PhpParser\Node\Expr $input_expr,
-        Context $context
+        Context $context,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -1336,9 +1339,19 @@ class ArgumentAnalyzer
         ?Union $signature_param_type,
         Context $context,
         bool $unpack,
-        ?Atomic $unpacked_atomic_array
+        ?Atomic $unpacked_atomic_array,
     ): void {
         if ($param_type->hasMixed()) {
+            return;
+        }
+
+        $var_id = ExpressionIdentifier::getVarId(
+            $input_expr,
+            $statements_analyzer->getFQCLN(),
+            $statements_analyzer,
+        );
+        
+        if (!$var_id) {
             return;
         }
 
@@ -1380,74 +1393,67 @@ class ArgumentAnalyzer
             $input_type = new Union($types);
         }
 
-        $var_id = ExpressionIdentifier::getVarId(
-            $input_expr,
-            $statements_analyzer->getFQCLN(),
-            $statements_analyzer,
-        );
 
-        if ($var_id) {
-            $was_cloned = false;
+        $was_cloned = false;
 
-            if ($input_type->isNullable() && !$param_type->isNullable()) {
-                $input_type = $input_type->getBuilder();
-                $was_cloned = true;
-                $input_type->removeType('null');
-                $input_type = $input_type->freeze();
+        if ($input_type->isNullable() && !$param_type->isNullable()) {
+            $input_type = $input_type->getBuilder();
+            $was_cloned = true;
+            $input_type->removeType('null');
+            $input_type = $input_type->freeze();
+        }
+
+        if ($input_type->getId() === $param_type->getId()) {
+            if ($input_type->from_docblock) {
+                $input_type = $input_type->setFromDocblock(false);
             }
+        } elseif ($input_type->hasMixed() && $signature_param_type) {
+            $was_cloned = true;
+            $parent_nodes = $input_type->parent_nodes;
+            $by_ref = $input_type->by_ref;
+            $input_type = $signature_param_type->setProperties([
+                'ignore_nullable_issues' => $signature_param_type->isNullable(),
+                'parent_nodes' => $parent_nodes,
+                'by_ref' => $by_ref,
+            ]);
+        }
 
-            if ($input_type->getId() === $param_type->getId()) {
-                if ($input_type->from_docblock) {
-                    $input_type = $input_type->setFromDocblock(false);
+        if ($context->inside_conditional && !isset($context->assigned_var_ids[$var_id])) {
+            $context->assigned_var_ids[$var_id] = 0;
+        }
+
+        if ($was_cloned) {
+            $context->removeVarFromConflictingClauses($var_id, null, $statements_analyzer);
+        }
+
+        if ($unpack) {
+            if ($unpacked_atomic_array instanceof TArray) {
+                $unpacked_atomic_array = $unpacked_atomic_array->setTypeParams([
+                    $unpacked_atomic_array->type_params[0],
+                    $input_type,
+                ]);
+
+                $context->vars_in_scope[$var_id] = new Union([$unpacked_atomic_array]);
+            } elseif ($unpacked_atomic_array instanceof TKeyedArray
+                && $unpacked_atomic_array->is_list
+            ) {
+                if ($unpacked_atomic_array->isNonEmpty()) {
+                    $unpacked_atomic_array = Type::getNonEmptyListAtomic($input_type);
+                } else {
+                    $unpacked_atomic_array = Type::getListAtomic($input_type);
                 }
-            } elseif ($input_type->hasMixed() && $signature_param_type) {
-                $was_cloned = true;
-                $parent_nodes = $input_type->parent_nodes;
-                $by_ref = $input_type->by_ref;
-                $input_type = $signature_param_type->setProperties([
-                    'ignore_nullable_issues' => $signature_param_type->isNullable(),
-                    'parent_nodes' => $parent_nodes,
-                    'by_ref' => $by_ref,
+
+                $context->vars_in_scope[$var_id] = new Union([$unpacked_atomic_array]);
+            } else {
+                $context->vars_in_scope[$var_id] = new Union([
+                    new TArray([
+                        Type::getInt(),
+                        $input_type,
+                    ]),
                 ]);
             }
-
-            if ($context->inside_conditional && !isset($context->assigned_var_ids[$var_id])) {
-                $context->assigned_var_ids[$var_id] = 0;
-            }
-
-            if ($was_cloned) {
-                $context->removeVarFromConflictingClauses($var_id, null, $statements_analyzer);
-            }
-
-            if ($unpack) {
-                if ($unpacked_atomic_array instanceof TArray) {
-                    $unpacked_atomic_array = $unpacked_atomic_array->setTypeParams([
-                        $unpacked_atomic_array->type_params[0],
-                        $input_type,
-                    ]);
-
-                    $context->vars_in_scope[$var_id] = new Union([$unpacked_atomic_array]);
-                } elseif ($unpacked_atomic_array instanceof TKeyedArray
-                    && $unpacked_atomic_array->is_list
-                ) {
-                    if ($unpacked_atomic_array->isNonEmpty()) {
-                        $unpacked_atomic_array = Type::getNonEmptyListAtomic($input_type);
-                    } else {
-                        $unpacked_atomic_array = Type::getListAtomic($input_type);
-                    }
-
-                    $context->vars_in_scope[$var_id] = new Union([$unpacked_atomic_array]);
-                } else {
-                    $context->vars_in_scope[$var_id] = new Union([
-                        new TArray([
-                            Type::getInt(),
-                            $input_type,
-                        ]),
-                    ]);
-                }
-            } else {
-                $context->vars_in_scope[$var_id] = $input_type;
-            }
+        } else {
+            $context->vars_in_scope[$var_id] = $input_type;
         }
     }
 
@@ -1462,7 +1468,7 @@ class ArgumentAnalyzer
         Union $input_type,
         PhpParser\Node\Expr $expr,
         Context $context,
-        bool $specialize_taint
+        bool $specialize_taint,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -1481,18 +1487,18 @@ class ArgumentAnalyzer
             return;
         }
 
-        // numeric types can't be tainted, neither can bool
-        if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
-            && $input_type->isSingle()
-            && ($input_type->isInt() || $input_type->isFloat() || $input_type->isBool())
-        ) {
-            return;
-        }
-
         $event = new AddRemoveTaintsEvent($expr, $context, $statements_analyzer, $codebase);
 
         $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
         $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
+
+        // numeric types can't be tainted html or has_quotes, neither can bool
+        if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+            && $input_type->isSingle()
+            && ($input_type->isInt() || $input_type->isFloat() || $input_type->isBool())
+        ) {
+            $removed_taints = array_merge($removed_taints, array('html', 'has_quotes'));
+        }
 
         if ($function_param->type && $function_param->type->isString() && !$input_type->isString()) {
             $input_type = CastAnalyzer::castStringAttempt(

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Provider;
 
 use Psalm\Config;
@@ -55,7 +57,7 @@ class FileStorageCacheProvider
                 throw new UnexpectedValueException($dependent_file_path . ' must exist');
             }
 
-            $this->modified_timestamps .= ' ' . filemtime($dependent_file_path);
+            $this->modified_timestamps .= ' ' . (int) filemtime($dependent_file_path);
         }
 
         $this->modified_timestamps .= $config->computeHash();

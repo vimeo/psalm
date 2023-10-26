@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
@@ -677,6 +679,68 @@ class TypeAnnotationTest extends TestCase
                 ',
                 'assertions' => [
                     '$output===' => 'callable():int',
+                ],
+            ],
+            'callableFormats' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type A callable(int, int): string
+                     * @psalm-type B callable(int, int=): string
+                     * @psalm-type C callable(int $a, string $b): void
+                     * @psalm-type D callable(string $c): mixed
+                     * @psalm-type E callable(string $c): mixed
+                     * @psalm-type F callable(float...): (int|null)
+                     * @psalm-type G callable(float ...$d): (int|null)
+                     * @psalm-type H callable(array<int>): array<string>
+                     * @psalm-type I callable(array<string, int> $e): array<int, string>
+                     * @psalm-type J callable(array<int> ...): string
+                     * @psalm-type K callable(array<int> ...$e): string
+                     * @psalm-type L \Closure(int, int): string
+                     *
+                     * @method ma(): A
+                     * @method mb(): B
+                     * @method mc(): C
+                     * @method md(): D
+                     * @method me(): E
+                     * @method mf(): F
+                     * @method mg(): G
+                     * @method mh(): H
+                     * @method mi(): I
+                     * @method mj(): J
+                     * @method mk(): K
+                     * @method ml(): L
+                     */
+                    class Foo {
+                        public function __call(string $method, array $params) { return 1; }
+                    }
+
+                    $foo = new \Foo();
+                    $output_ma = $foo->ma();
+                    $output_mb = $foo->mb();
+                    $output_mc = $foo->mc();
+                    $output_md = $foo->md();
+                    $output_me = $foo->me();
+                    $output_mf = $foo->mf();
+                    $output_mg = $foo->mg();
+                    $output_mh = $foo->mh();
+                    $output_mi = $foo->mi();
+                    $output_mj = $foo->mj();
+                    $output_mk = $foo->mk();
+                    $output_ml = $foo->ml();
+                ',
+                'assertions' => [
+                    '$output_ma===' => 'callable(int, int):string',
+                    '$output_mb===' => 'callable(int, int=):string',
+                    '$output_mc===' => 'callable(int, string):void',
+                    '$output_md===' => 'callable(string):mixed',
+                    '$output_me===' => 'callable(string):mixed',
+                    '$output_mf===' => 'callable(float...):(int|null)',
+                    '$output_mg===' => 'callable(float...):(int|null)',
+                    '$output_mh===' => 'callable(array<array-key, int>):array<array-key, string>',
+                    '$output_mi===' => 'callable(array<string, int>):array<int, string>',
+                    '$output_mj===' => 'callable(array<array-key, int>...):string',
+                    '$output_mk===' => 'callable(array<array-key, int>...):string',
+                    '$output_ml===' => 'Closure(int, int):string',
                 ],
             ],
             'unionOfStringsContainingBraceChar' => [

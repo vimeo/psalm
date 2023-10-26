@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Plugin\EventHandler\Event;
 
 use PhpParser;
@@ -18,10 +20,7 @@ final class MethodReturnTypeProviderEvent
     private string $method_name_lowercase;
     private Context $context;
     private CodeLocation $code_location;
-    /**
-     * @var PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall
-     */
-    private $stmt;
+    private PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall $stmt;
     /** @var non-empty-list<Union>|null */
     private ?array $template_type_parameters;
     private ?string $called_fq_classlike_name;
@@ -35,7 +34,6 @@ final class MethodReturnTypeProviderEvent
      * but another plugin may be able to determine the type, return null. Otherwise return a mixed union type if
      * something should be returned, but can't be more specific.
      *
-     * @param PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall $stmt
      * @param non-empty-list<Union>|null $template_type_parameters
      * @param lowercase-string $method_name_lowercase
      * @param lowercase-string $called_method_name_lowercase
@@ -45,12 +43,12 @@ final class MethodReturnTypeProviderEvent
         StatementsSource $source,
         string $fq_classlike_name,
         string $method_name_lowercase,
-        $stmt,
+        PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall $stmt,
         Context $context,
         CodeLocation $code_location,
         ?array $template_type_parameters = null,
         ?string $called_fq_classlike_name = null,
-        ?string $called_method_name_lowercase = null
+        ?string $called_method_name_lowercase = null,
     ) {
         $this->source = $source;
         $this->fq_classlike_name = $fq_classlike_name;
@@ -120,10 +118,7 @@ final class MethodReturnTypeProviderEvent
         return $this->called_method_name_lowercase;
     }
 
-    /**
-     * @return PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall
-     */
-    public function getStmt()
+    public function getStmt(): PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall
     {
         return $this->stmt;
     }

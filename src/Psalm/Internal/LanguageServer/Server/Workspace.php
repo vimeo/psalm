@@ -23,7 +23,7 @@ use function realpath;
  *
  * @internal
  */
-class Workspace
+final class Workspace
 {
     protected LanguageServer $server;
 
@@ -34,7 +34,7 @@ class Workspace
     public function __construct(
         LanguageServer $server,
         Codebase $codebase,
-        ProjectAnalyzer $project_analyzer
+        ProjectAnalyzer $project_analyzer,
     ) {
         $this->server = $server;
         $this->codebase = $codebase;
@@ -106,9 +106,9 @@ class Workspace
     /**
      * A notification sent from the client to the server to signal the change of configuration settings.
      *
-     * @psalm-suppress PossiblyUnusedMethod
+     * @psalm-suppress PossiblyUnusedMethod, UnusedParam
      */
-    public function didChangeConfiguration(): void
+    public function didChangeConfiguration(mixed $settings): void
     {
         $this->server->logDebug(
             'workspace/didChangeConfiguration',
@@ -120,10 +120,9 @@ class Workspace
      * The workspace/executeCommand request is sent from the client to the server to
      * trigger command execution on the server.
      *
-     * @param mixed $arguments
      * @psalm-suppress PossiblyUnusedMethod
      */
-    public function executeCommand(string $command, $arguments): void
+    public function executeCommand(string $command, mixed $arguments): void
     {
         $this->server->logDebug(
             'workspace/executeCommand',

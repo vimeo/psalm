@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\PluginManager;
 
 use DOMDocument;
@@ -17,7 +19,7 @@ use function substr;
 /**
  * @internal
  */
-class ConfigFile
+final class ConfigFile
 {
     private string $path;
 
@@ -111,6 +113,7 @@ class ConfigFile
         $doc = new DOMDocument();
 
         $file_contents = file_get_contents($this->path);
+        assert($file_contents !== false);
 
         if (($tag_start = strpos($file_contents, '<psalm')) !== false) {
             $tag_end = strpos($file_contents, '>', $tag_start + 1);

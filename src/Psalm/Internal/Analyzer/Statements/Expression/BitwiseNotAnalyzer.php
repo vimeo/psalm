@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
@@ -24,12 +26,12 @@ use Psalm\Type\Union;
 /**
  * @internal
  */
-class BitwiseNotAnalyzer
+final class BitwiseNotAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\BitwiseNot $stmt,
-        Context $context
+        Context $context,
     ): bool {
         if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context) === false) {
             return false;
@@ -104,7 +106,7 @@ class BitwiseNotAnalyzer
     private static function addDataFlow(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $stmt,
-        PhpParser\Node\Expr $value
+        PhpParser\Node\Expr $value,
     ): void {
         $result_type = $statements_analyzer->node_data->getType($stmt);
         if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph && $result_type) {

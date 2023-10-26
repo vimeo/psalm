@@ -1,20 +1,16 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Exception;
 
 use Exception;
 
 final class UnresolvableConstantException extends Exception
 {
-    /**
-     * @var string
-     */
-    public $class_name;
+    public string $class_name;
 
-    /**
-     * @var string
-     */
-    public $const_name;
+    public string $const_name;
 
     public function __construct(string $class_name, string $const_name)
     {

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm;
 
 use InvalidArgumentException;
@@ -38,19 +40,19 @@ final class Context
     /**
      * @var array<string, Union>
      */
-    public $vars_in_scope = [];
+    public array $vars_in_scope = [];
 
     /**
      * @var array<string, bool>
      */
-    public $vars_possibly_in_scope = [];
+    public array $vars_possibly_in_scope = [];
 
     /**
      * Keeps track of how many times a var_in_scope has been referenced. May not be set for all $vars_in_scope.
      *
      * @var array<string, int<0, max>>
      */
-    public $referenced_counts = [];
+    public array $referenced_counts = [];
 
     /**
      * Maps references to referenced variables for the current scope.
@@ -63,21 +65,21 @@ final class Context
      *
      * @var array<string, string>
      */
-    public $references_in_scope = [];
+    public array $references_in_scope = [];
 
     /**
      * Set of references to variables in another scope. These references will be marked as used if they are assigned to.
      *
      * @var array<string, true>
      */
-    public $references_to_external_scope = [];
+    public array $references_to_external_scope = [];
 
     /**
      * A set of globals that are referenced somewhere.
      *
      * @var array<string, true>
      */
-    public $referenced_globals = [];
+    public array $referenced_globals = [];
 
     /**
      * A set of references that might still be in scope from a scope likely to cause confusion. This applies
@@ -86,244 +88,190 @@ final class Context
      *
      * @var array<string, CodeLocation>
      */
-    public $references_possibly_from_confusing_scope = [];
+    public array $references_possibly_from_confusing_scope = [];
 
     /**
      * Whether or not we're inside the conditional of an if/where etc.
      *
      * This changes whether or not the context is cloned
-     *
-     * @var bool
      */
-    public $inside_conditional = false;
+    public bool $inside_conditional = false;
 
     /**
      * Whether or not we're inside an isset call
      *
      * Inside issets Psalm is more lenient about certain things
-     *
-     * @var bool
      */
-    public $inside_isset = false;
+    public bool $inside_isset = false;
 
     /**
      * Whether or not we're inside an unset call, where
      * we don't care about possibly undefined variables
-     *
-     * @var bool
      */
-    public $inside_unset = false;
+    public bool $inside_unset = false;
 
     /**
      * Whether or not we're inside an class_exists call, where
      * we don't care about possibly undefined classes
-     *
-     * @var bool
      */
-    public $inside_class_exists = false;
+    public bool $inside_class_exists = false;
 
     /**
      * Whether or not we're inside a function/method call
-     *
-     * @var bool
      */
-    public $inside_call = false;
+    public bool $inside_call = false;
 
     /**
      * Whether or not we're inside any other situation that treats a variable as used
-     *
-     * @var bool
      */
-    public $inside_general_use = false;
+    public bool $inside_general_use = false;
 
     /**
      * Whether or not we're inside a return expression
-     *
-     * @var bool
      */
-    public $inside_return = false;
+    public bool $inside_return = false;
 
     /**
      * Whether or not we're inside a throw
-     *
-     * @var bool
      */
-    public $inside_throw = false;
+    public bool $inside_throw = false;
 
     /**
      * Whether or not we're inside an assignment
-     *
-     * @var bool
      */
-    public $inside_assignment = false;
+    public bool $inside_assignment = false;
 
     /**
      * Whether or not we're inside a try block.
-     *
-     * @var bool
      */
-    public $inside_try = false;
+    public bool $inside_try = false;
 
-    /**
-     * @var null|CodeLocation
-     */
-    public $include_location;
+    public ?CodeLocation $include_location = null;
 
     /**
      * @var string|null
      * The name of the current class. Null if outside a class.
      */
-    public $self;
+    public ?string $self = null;
 
-    /**
-     * @var string|null
-     */
-    public $parent;
+    public ?string $parent = null;
 
-    /**
-     * @var bool
-     */
-    public $check_classes = true;
+    public bool $check_classes = true;
 
-    /**
-     * @var bool
-     */
-    public $check_variables = true;
+    public bool $check_variables = true;
 
-    /**
-     * @var bool
-     */
-    public $check_methods = true;
+    public bool $check_methods = true;
 
-    /**
-     * @var bool
-     */
-    public $check_consts = true;
+    public bool $check_consts = true;
 
-    /**
-     * @var bool
-     */
-    public $check_functions = true;
+    public bool $check_functions = true;
 
     /**
      * A list of classes checked with class_exists
      *
      * @var array<lowercase-string,true>
      */
-    public $phantom_classes = [];
+    public array $phantom_classes = [];
 
     /**
      * A list of files checked with file_exists
      *
      * @var array<string,bool>
      */
-    public $phantom_files = [];
+    public array $phantom_files = [];
 
     /**
      * A list of clauses in Conjunctive Normal Form
      *
      * @var list<Clause>
      */
-    public $clauses = [];
+    public array $clauses = [];
 
     /**
      * A list of hashed clauses that have already been factored in
      *
      * @var list<string|int>
      */
-    public $reconciled_expression_clauses = [];
+    public array $reconciled_expression_clauses = [];
 
     /**
      * Whether or not to do a deep analysis and collect mutations to this context
-     *
-     * @var bool
      */
-    public $collect_mutations = false;
+    public bool $collect_mutations = false;
 
     /**
      * Whether or not to do a deep analysis and collect initializations from private or final methods
-     *
-     * @var bool
      */
-    public $collect_initializations = false;
+    public bool $collect_initializations = false;
 
     /**
      * Whether or not to do a deep analysis and collect initializations from public non-final methods
-     *
-     * @var bool
      */
-    public $collect_nonprivate_initializations = false;
+    public bool $collect_nonprivate_initializations = false;
 
     /**
      * Stored to prevent re-analysing methods when checking for initialised properties
      *
      * @var array<string, bool>|null
      */
-    public $initialized_methods;
+    public ?array $initialized_methods = null;
 
     /**
      * @var array<string, Union>
      */
-    public $constants = [];
+    public array $constants = [];
 
     /**
      * Whether or not to track exceptions
-     *
-     * @var bool
      */
-    public $collect_exceptions = false;
+    public bool $collect_exceptions = false;
 
     /**
      * A list of variables that have been referenced in conditionals
      *
      * @var array<string, bool>
      */
-    public $cond_referenced_var_ids = [];
+    public array $cond_referenced_var_ids = [];
 
     /**
      * A list of variables that have been passed by reference (where we know their type)
      *
      * @var array<string, ReferenceConstraint>
      */
-    public $byref_constraints = [];
+    public array $byref_constraints = [];
 
     /**
      * A list of vars that have been assigned to
      *
      * @var array<string, int>
      */
-    public $assigned_var_ids = [];
+    public array $assigned_var_ids = [];
 
     /**
      * A list of vars that have been may have been assigned to
      *
      * @var array<string, bool>
      */
-    public $possibly_assigned_var_ids = [];
+    public array $possibly_assigned_var_ids = [];
 
     /**
      * A list of classes or interfaces that may have been thrown
      *
      * @var array<string, array<array-key, CodeLocation>>
      */
-    public $possibly_thrown_exceptions = [];
+    public array $possibly_thrown_exceptions = [];
 
-    /**
-     * @var bool
-     */
-    public $is_global = false;
+    public bool $is_global = false;
 
     /**
      * @var array<string, bool>
      */
-    public $protected_var_ids = [];
+    public array $protected_var_ids = [];
 
     /**
      * If we've branched from the main scope, a byte offset for where that branch happened
-     *
-     * @var int|null
      */
-    public $branch_point;
+    public ?int $branch_point = null;
 
     /**
      * What does break mean in this context?
@@ -333,94 +281,55 @@ final class Context
      *
      * @var list<'loop'|'switch'>
      */
-    public $break_types = [];
+    public array $break_types = [];
 
-    /**
-     * @var bool
-     */
-    public $inside_loop = false;
+    public bool $inside_loop = false;
 
-    /**
-     * @var LoopScope|null
-     */
-    public $loop_scope;
+    public ?LoopScope $loop_scope = null;
 
-    /**
-     * @var CaseScope|null
-     */
-    public $case_scope;
+    public ?CaseScope $case_scope = null;
 
-    /**
-     * @var FinallyScope|null
-     */
-    public $finally_scope;
+    public ?FinallyScope $finally_scope = null;
 
-    /**
-     * @var Context|null
-     */
-    public $if_body_context;
+    public ?Context $if_body_context = null;
 
-    /**
-     * @var bool
-     */
-    public $strict_types = false;
+    public bool $strict_types = false;
 
-    /**
-     * @var string|null
-     */
-    public $calling_function_id;
+    public ?string $calling_function_id = null;
 
     /**
      * @var lowercase-string|null
      */
-    public $calling_method_id;
+    public ?string $calling_method_id = null;
 
-    /**
-     * @var bool
-     */
-    public $inside_negation = false;
+    public bool $inside_negation = false;
 
-    /**
-     * @var bool
-     */
-    public $ignore_variable_property = false;
+    public bool $ignore_variable_property = false;
 
-    /**
-     * @var bool
-     */
-    public $ignore_variable_method = false;
+    public bool $ignore_variable_method = false;
 
-    /**
-     * @var bool
-     */
-    public $pure = false;
+    public bool $pure = false;
 
     /**
      * @var bool
      * Set by @psalm-immutable
      */
-    public $mutation_free = false;
+    public bool $mutation_free = false;
 
     /**
      * @var bool
      * Set by @psalm-external-mutation-free
      */
-    public $external_mutation_free = false;
+    public bool $external_mutation_free = false;
 
-    /**
-     * @var bool
-     */
-    public $error_suppressing = false;
+    public bool $error_suppressing = false;
 
-    /**
-     * @var bool
-     */
-    public $has_returned = false;
+    public bool $has_returned = false;
 
     /**
      * @var array<string, true>
      */
-    public $parent_remove_vars = [];
+    public array $parent_remove_vars = [];
 
     /** @internal */
     public function __construct(?string $self = null)
@@ -446,7 +355,7 @@ final class Context
         Context $end_context,
         bool $has_leaving_statements,
         array $vars_to_update,
-        array &$updated_vars
+        array &$updated_vars,
     ): void {
         foreach ($start_context->vars_in_scope as $var_id => $old_type) {
             // this is only true if there was some sort of type negation
@@ -495,7 +404,7 @@ final class Context
      */
     public function updateReferencesPossiblyFromConfusingScope(
         Context $confusing_scope_context,
-        StatementsAnalyzer $statements_analyzer
+        StatementsAnalyzer $statements_analyzer,
     ): void {
         $references = $confusing_scope_context->references_in_scope
             + $confusing_scope_context->references_to_external_scope;
@@ -670,7 +579,7 @@ final class Context
         string $remove_var_id,
         array $clauses,
         ?Union $new_type = null,
-        ?StatementsAnalyzer $statements_analyzer = null
+        ?StatementsAnalyzer $statements_analyzer = null,
     ): array {
         $new_type_string = $new_type ? $new_type->getId() : '';
         $clauses_to_keep = [];
@@ -736,7 +645,7 @@ final class Context
     public function removeVarFromConflictingClauses(
         string $remove_var_id,
         ?Union $new_type = null,
-        ?StatementsAnalyzer $statements_analyzer = null
+        ?StatementsAnalyzer $statements_analyzer = null,
     ): void {
         $this->clauses = self::filterClauses($remove_var_id, $this->clauses, $new_type, $statements_analyzer);
         $this->parent_remove_vars[$remove_var_id] = true;
@@ -750,7 +659,7 @@ final class Context
         string $remove_var_id,
         Union $existing_type,
         ?Union $new_type = null,
-        ?StatementsAnalyzer $statements_analyzer = null
+        ?StatementsAnalyzer $statements_analyzer = null,
     ): void {
         $this->removeVarFromConflictingClauses(
             $remove_var_id,
@@ -844,7 +753,7 @@ final class Context
             return false;
         }
 
-        $stripped_var = preg_replace('/(->|\[).*$/', '', $var_name, 1);
+        $stripped_var = (string) preg_replace('/(->|\[).*$/', '', $var_name, 1);
 
         if ($stripped_var !== '$this' || $var_name !== $stripped_var) {
             $this->cond_referenced_var_ids[$var_name] = true;
@@ -929,7 +838,7 @@ final class Context
 
     public function mergeFunctionExceptions(
         FunctionLikeStorage $function_storage,
-        CodeLocation $codelocation
+        CodeLocation $codelocation,
     ): void {
         $hash = $codelocation->getHash();
         foreach ($function_storage->throws as $possibly_thrown_exception => $_) {

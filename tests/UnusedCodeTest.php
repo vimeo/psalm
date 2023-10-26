@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
 use Psalm\Config;
@@ -105,7 +107,7 @@ class UnusedCodeTest extends TestCase
     public function testSeesClassesUsedAfterUnevaluatedCodeIssue(): void
     {
         $this->project_analyzer->getConfig()->throw_exception = false;
-        $file_path = getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php';
+        $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php';
 
         $this->addFile(
             $file_path,
@@ -137,7 +139,7 @@ class UnusedCodeTest extends TestCase
     public function testSeesUnusedClassReferencedByUnevaluatedCode(): void
     {
         $this->project_analyzer->getConfig()->throw_exception = false;
-        $file_path = getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php';
+        $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php';
 
         $this->addFile(
             $file_path,
@@ -465,6 +467,35 @@ class UnusedCodeTest extends TestCase
 
                     if (extension_loaded("fdsfdsfd")) {
                         new A();
+                    }',
+            ],
+            'useMethodPropertiesAfterExtensionLoaded' => [
+                'code' => '<?php
+
+                    final class a {
+                        public static self $a;
+                        public static function get(): a {
+                            return new a;
+                        }
+                    }
+                    
+                    final class b {
+                        public function test(): a {
+                            return new a;
+                        }
+                    }
+                    
+                    function process(b $handler): a {
+                        if (\extension_loaded("fdsfdsfd")) {
+                            return $handler->test();
+                        }
+                        if (\extension_loaded("fdsfdsfd")) {
+                            return a::$a;
+                        }
+                        if (\extension_loaded("fdsfdsfd")) {
+                            return a::get();
+                        }
+                        return $handler->test();
                     }',
             ],
             'usedParamInIf' => [

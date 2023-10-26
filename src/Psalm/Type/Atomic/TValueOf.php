@@ -1,9 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type\Atomic;
 
 use Psalm\Codebase;
-use Psalm\Internal\Codebase\ConstantTypeResolver;
 use Psalm\Storage\EnumCaseStorage;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
@@ -19,8 +20,7 @@ use function assert;
  */
 final class TValueOf extends Atomic
 {
-    /** @var Union */
-    public $type;
+    public Union $type;
 
     public function __construct(Union $type, bool $from_docblock = false)
     {
@@ -37,13 +37,15 @@ final class TValueOf extends Atomic
             assert(isset($cases[$atomic_type->case_name]), 'Should\'ve been verified in TValueOf#getValueType');
             $value = $cases[$atomic_type->case_name]->value;
             assert($value !== null, 'Backed enum must have a value.');
-            return new Union([ConstantTypeResolver::getLiteralTypeFromScalarValue($value)]);
+
+            return new Union([$value]);
         }
 
         return new Union(array_map(
-            function (EnumCaseStorage $case): Atomic {
+            static function (EnumCaseStorage $case): Atomic {
                 assert($case->value !== null); // Backed enum must have a value
-                return ConstantTypeResolver::getLiteralTypeFromScalarValue($case->value);
+
+                return $case->value;
             },
             array_values($cases),
         ));
@@ -67,7 +69,7 @@ final class TValueOf extends Atomic
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        int $analysis_php_version_id
+        int $analysis_php_version_id,
     ): ?string {
         return null;
     }
@@ -100,7 +102,7 @@ final class TValueOf extends Atomic
     public static function getValueType(
         Union $type,
         Codebase $codebase,
-        bool $keep_template_params = false
+        bool $keep_template_params = false,
     ): ?Union {
         $value_types = [];
 

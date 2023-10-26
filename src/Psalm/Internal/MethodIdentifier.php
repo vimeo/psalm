@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal;
 
 use InvalidArgumentException;
@@ -15,7 +17,7 @@ use function strtolower;
  * @psalm-immutable
  * @internal
  */
-class MethodIdentifier
+final class MethodIdentifier
 {
     use ImmutableNonCloneableTrait;
 
@@ -36,10 +38,9 @@ class MethodIdentifier
      * Takes any valid reference to a method id and converts
      * it into a MethodIdentifier
      *
-     * @param string|MethodIdentifier $method_id
      * @psalm-pure
      */
-    public static function wrap($method_id): self
+    public static function wrap(string|MethodIdentifier $method_id): self
     {
         return is_string($method_id) ? static::fromMethodIdReference($method_id) : $method_id;
     }

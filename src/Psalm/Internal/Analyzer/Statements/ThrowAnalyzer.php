@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements;
 
 use PhpParser;
@@ -16,7 +18,7 @@ use Psalm\Type\Union;
 /**
  * @internal
  */
-class ThrowAnalyzer
+final class ThrowAnalyzer
 {
     /**
      * @param PhpParser\Node\Stmt\Throw_|PhpParser\Node\Expr\Throw_ $stmt
@@ -24,7 +26,7 @@ class ThrowAnalyzer
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node $stmt,
-        Context $context
+        Context $context,
     ): bool {
         $context->inside_throw = true;
         if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context) === false) {

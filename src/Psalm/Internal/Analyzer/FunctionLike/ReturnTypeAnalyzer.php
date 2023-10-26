@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\FunctionLike;
 
 use PhpParser;
@@ -63,7 +65,7 @@ use function strtolower;
 /**
  * @internal
  */
-class ReturnTypeAnalyzer
+final class ReturnTypeAnalyzer
 {
     /**
      * @param Closure|Function_|ClassMethod|ArrowFunction $function
@@ -85,7 +87,7 @@ class ReturnTypeAnalyzer
         ?CodeLocation $return_type_location = null,
         array $compatible_method_ids = [],
         bool $did_explicitly_return = false,
-        bool $closure_inside_call = false
+        bool $closure_inside_call = false,
     ): ?bool {
         $suppressed_issues = $function_like_analyzer->getSuppressedIssues();
         $codebase = $source->getCodebase();
@@ -197,6 +199,7 @@ class ReturnTypeAnalyzer
                 )
             )
             && !$return_type->isVoid()
+            && !$return_type->isNever()
             && !$inferred_yield_types
             && (!$function_like_storage || !$function_like_storage->has_yield)
             && $function_returns_implicitly
@@ -222,7 +225,7 @@ class ReturnTypeAnalyzer
         ) {
             if (IssueBuffer::accepts(
                 new InvalidReturnType(
-                    $cased_method_id . ' is not expected to return any values but it does, '
+                    $cased_method_id . ' is not expected to return, but it does, '
                         . 'either implicitly or explicitly',
                     $return_type_location,
                 ),
@@ -830,7 +833,7 @@ class ReturnTypeAnalyzer
         ProjectAnalyzer $project_analyzer,
         FunctionLikeAnalyzer $function_like_analyzer,
         FunctionLikeStorage $storage,
-        Context $context
+        Context $context,
     ): ?bool {
         $codebase = $project_analyzer->getCodebase();
 
@@ -1026,7 +1029,7 @@ class ReturnTypeAnalyzer
         Union $inferred_return_type,
         StatementsSource $source,
         bool $docblock_only = false,
-        ?FunctionLikeStorage $function_like_storage = null
+        ?FunctionLikeStorage $function_like_storage = null,
     ): void {
         $manipulator = FunctionDocblockManipulator::getForFunction(
             $project_analyzer,

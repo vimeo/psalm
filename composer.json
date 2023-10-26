@@ -1,6 +1,6 @@
 {
     "name": "vimeo/psalm",
-    "type": "library",
+    "type": "project",
     "description": "A static analysis tool for finding errors in PHP applications",
     "keywords": [
         "php",
@@ -51,6 +51,7 @@
         "amphp/phpunit-util": "^3",
         "bamarni/composer-bin-plugin": "^1.4",
         "brianium/paratest": "^6.9",
+        "dg/bypass-finals": "^1.5",
         "mockery/mockery": "^1.5",
         "nunomaduro/mock-final-classes": "^1.1",
         "php-parallel-lint/php-parallel-lint": "^1.2",
@@ -117,7 +118,7 @@
         "lint": "parallel-lint ./src ./tests",
         "phpunit": [
             "Composer\\Config::disableProcessTimeout",
-            "paratest --runner=WrapperRunner"
+            "paratest -f --runner=WrapperRunner"
         ],
         "phpunit-std": [
             "Composer\\Config::disableProcessTimeout",
@@ -136,10 +137,15 @@
     "scripts-descriptions": {
         "cs": "Checks that the code conforms to the coding standard.",
         "cs-fix": "Automatically correct coding standard violations.",
-        "lint": "Runs unit tests.",
+        "lint": "Lint php files.",
         "phpunit": "Runs unit tests in parallel.",
         "phpunit-std": "Runs unit tests.",
         "psalm": "Runs static analysis.",
         "tests": "Runs all available tests."
+    },
+    "support": {
+      "docs": "https://psalm.dev/docs",
+      "issues": "https://github.com/vimeo/psalm/issues",
+      "source": "https://github.com/vimeo/psalm"
     }
 }

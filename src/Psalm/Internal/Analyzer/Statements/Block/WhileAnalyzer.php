@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Block;
 
 use PhpParser;
@@ -16,7 +18,7 @@ use function in_array;
 /**
  * @internal
  */
-class WhileAnalyzer
+final class WhileAnalyzer
 {
     /**
      * @return  false|null
@@ -24,7 +26,7 @@ class WhileAnalyzer
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\While_ $stmt,
-        Context $context
+        Context $context,
     ): ?bool {
         $while_true = ($stmt->cond instanceof PhpParser\Node\Expr\ConstFetch
                 && $stmt->cond->name->getParts() === ['true'])
@@ -121,7 +123,7 @@ class WhileAnalyzer
      * @return list<PhpParser\Node\Expr>
      */
     public static function getAndExpressions(
-        PhpParser\Node\Expr $expr
+        PhpParser\Node\Expr $expr,
     ): array {
         if ($expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd) {
             return [...self::getAndExpressions($expr->left), ...self::getAndExpressions($expr->right)];

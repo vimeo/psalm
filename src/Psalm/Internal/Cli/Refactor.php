@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Cli;
 
 use AssertionError;
@@ -85,11 +87,14 @@ final class Refactor
 
         // get options from command line
         $options = getopt(implode('', $valid_short_options), $valid_long_options);
+        if ($options === false) {
+            die('Failed to parse cli options' . PHP_EOL);
+        }
 
         array_map(
             static function (string $arg) use ($valid_long_options): void {
                 if (strpos($arg, '--') === 0 && $arg !== '--') {
-                    $arg_name = preg_replace('/=.*$/', '', substr($arg, 2), 1);
+                    $arg_name = (string) preg_replace('/=.*$/', '', substr($arg, 2), 1);
 
                     if ($arg_name === 'refactor') {
                         // valid option for psalm, ignored by psalter

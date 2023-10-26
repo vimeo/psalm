@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Codebase;
 
 use function dirname;
@@ -8,7 +10,7 @@ use function strtolower;
 /**
  * @internal
  */
-class PropertyMap
+final class PropertyMap
 {
     /**
      * @var array<lowercase-string, array<string, string>>|null

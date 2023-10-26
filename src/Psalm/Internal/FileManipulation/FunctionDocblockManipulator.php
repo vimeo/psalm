@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\FileManipulation;
 
 use PhpParser;
@@ -34,7 +36,7 @@ use function substr;
 /**
  * @internal
  */
-class FunctionDocblockManipulator
+final class FunctionDocblockManipulator
 {
     /**
      * Manipulators ordered by line number
@@ -43,8 +45,7 @@ class FunctionDocblockManipulator
      */
     private static array $manipulators = [];
 
-    /** @var Closure|Function_|ClassMethod|ArrowFunction */
-    private $stmt;
+    private Closure|Function_|ClassMethod|ArrowFunction $stmt;
 
     private int $docblock_start;
 
@@ -96,7 +97,7 @@ class FunctionDocblockManipulator
     public static function getForFunction(
         ProjectAnalyzer $project_analyzer,
         string $file_path,
-        FunctionLike $stmt
+        FunctionLike $stmt,
     ): FunctionDocblockManipulator {
         if (isset(self::$manipulators[$file_path][$stmt->getLine()])) {
             return self::$manipulators[$file_path][$stmt->getLine()];
@@ -273,7 +274,7 @@ class FunctionDocblockManipulator
         string $new_type,
         string $phpdoc_type,
         bool $is_php_compatible,
-        ?string $description
+        ?string $description,
     ): void {
         $new_type = str_replace(['<mixed, mixed>', '<array-key, mixed>'], '', $new_type);
 
@@ -291,7 +292,7 @@ class FunctionDocblockManipulator
         string $param_name,
         ?string $php_type,
         string $new_type,
-        string $phpdoc_type
+        string $phpdoc_type,
     ): void {
         $new_type = str_replace(['<mixed, mixed>', '<array-key, mixed>', '<never, never>'], '', $new_type);
 
@@ -415,7 +416,7 @@ class FunctionDocblockManipulator
             $modified_docblock = true;
             $inferredThrowsClause = array_reduce(
                 $this->throwsExceptions,
-                fn(string $throwsClause, string $exception) => $throwsClause === ''
+                static fn(string $throwsClause, string $exception) => $throwsClause === ''
                     ? $exception
                     : $throwsClause.'|'.$exception,
                 '',

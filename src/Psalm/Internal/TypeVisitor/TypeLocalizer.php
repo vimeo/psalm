@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\TypeVisitor;
 
 use Psalm\Internal\Codebase\Methods;
@@ -17,7 +19,7 @@ use function count;
 /**
  * @internal
  */
-class TypeLocalizer extends MutableTypeVisitor
+final class TypeLocalizer extends MutableTypeVisitor
 {
     /**
      * @var array<string, array<string, Union>>
@@ -30,7 +32,7 @@ class TypeLocalizer extends MutableTypeVisitor
      */
     public function __construct(
         array $extends,
-        string $base_fq_class_name
+        string $base_fq_class_name,
     ) {
         $this->extends = $extends;
         $this->base_fq_class_name = $base_fq_class_name;

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm;
 
 final class Aliases
@@ -7,44 +9,40 @@ final class Aliases
     /**
      * @var array<lowercase-string, string>
      */
-    public $uses;
+    public array $uses;
 
     /**
      * @var array<lowercase-string, string>
      */
-    public $uses_flipped;
+    public array $uses_flipped;
 
     /**
      * @var array<lowercase-string, non-empty-string>
      */
-    public $functions;
+    public array $functions;
 
     /**
      * @var array<lowercase-string, string>
      */
-    public $functions_flipped;
+    public array $functions_flipped;
 
     /**
      * @var array<string, string>
      */
-    public $constants;
+    public array $constants;
 
     /**
      * @var array<string, string>
      */
-    public $constants_flipped;
+    public array $constants_flipped;
 
-    /** @var string|null */
-    public $namespace;
+    public ?string $namespace = null;
 
-    /** @var ?int */
-    public $namespace_first_stmt_start;
+    public ?int $namespace_first_stmt_start = null;
 
-    /** @var ?int */
-    public $uses_start;
+    public ?int $uses_start = null;
 
-    /** @var ?int */
-    public $uses_end;
+    public ?int $uses_end = null;
 
     /**
      * @param array<lowercase-string, string> $uses
@@ -63,7 +61,7 @@ final class Aliases
         array $constants = [],
         array $uses_flipped = [],
         array $functions_flipped = [],
-        array $constants_flipped = []
+        array $constants_flipped = [],
     ) {
         $this->namespace = $namespace;
         $this->uses = $uses;

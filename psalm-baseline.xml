@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<files psalm-version="dev-master@f799b68a3cbc91e9056bb972cfe66b7ae0da3f76">
+<files psalm-version="dev-master@292ed063233e29d59d0bde61bb6daedee94d55bb">
   <file src="examples/TemplateChecker.php">
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$comment_block->tags['variablesfrom'][0]]]></code>
@@ -11,6 +11,14 @@
       <code><![CDATA[$comment_block->tags['variablesfrom'][0]]]></code>
       <code>$matches[1]</code>
     </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/Config.php">
+    <PossiblyNullArgument>
+      <code>$deprecated_element_xml</code>
+    </PossiblyNullArgument>
+    <PropertyTypeCoercion>
+      <code>$this</code>
+    </PropertyTypeCoercion>
   </file>
   <file src="src/Psalm/Config/FileFilter.php">
     <PossiblyUndefinedIntArrayOffset>
@@ -246,6 +254,16 @@
       <code>$stub</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
+  <file src="src/Psalm/Internal/Codebase/Methods.php">
+    <InvalidArgument>
+      <code><![CDATA[$class_storage->methods[$declaring_method_name]->stubbed]]></code>
+    </InvalidArgument>
+  </file>
+  <file src="src/Psalm/Internal/Codebase/Populator.php">
+    <InvalidArgument>
+      <code><![CDATA[$storage->methods[$implementing_method_id->method_name]->abstract]]></code>
+    </InvalidArgument>
+  </file>
   <file src="src/Psalm/Internal/Codebase/Properties.php">
     <PossiblyUndefinedIntArrayOffset>
       <code>$property_name</code>
@@ -281,6 +299,11 @@
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$stmt->props[0]]]></code>
     </PossiblyUndefinedIntArrayOffset>
+  </file>
+  <file src="src/Psalm/Internal/Fork/Pool.php">
+    <PossiblyFalseArgument>
+      <code>$buffer</code>
+    </PossiblyFalseArgument>
   </file>
   <file src="src/Psalm/Internal/LanguageServer/LanguageClient.php">
     <InvalidArrayAccess>
@@ -336,9 +359,6 @@
     <PossiblyUndefinedIntArrayOffset>
       <code>$since_parts[1]</code>
     </PossiblyUndefinedIntArrayOffset>
-    <RedundantCondition>
-      <code><![CDATA[count($line_parts) > 0]]></code>
-    </RedundantCondition>
   </file>
   <file src="src/Psalm/Internal/PhpVisitor/Reflector/FunctionLikeDocblockScanner.php">
     <PossiblyUndefinedArrayOffset>
@@ -604,6 +624,16 @@
       <code>hasLowercaseString</code>
       <code>hasLowercaseString</code>
     </PossiblyUnusedMethod>
+  </file>
+  <file src="tests/TestConfig.php">
+    <InvalidExtendClass>
+      <code>Config</code>
+    </InvalidExtendClass>
+    <MethodSignatureMismatch>
+      <code>public function __construct()</code>
+      <code>public function getComposerFilePathForClassLike(string $fq_classlike_name): bool</code>
+      <code>public function getProjectDirectories(): array</code>
+    </MethodSignatureMismatch>
   </file>
   <file src="vendor/nikic/php-parser/lib/PhpParser/Node/Expr/ArrowFunction.php">
     <PossiblyUndefinedStringArrayOffset>

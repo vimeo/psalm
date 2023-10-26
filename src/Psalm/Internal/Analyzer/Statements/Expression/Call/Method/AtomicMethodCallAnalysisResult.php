@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call\Method;
 
 use Psalm\Internal\MethodIdentifier;
@@ -8,7 +10,7 @@ use Psalm\Type\Union;
 /**
  * @internal
  */
-class AtomicMethodCallAnalysisResult
+final class AtomicMethodCallAnalysisResult
 {
     public ?Union $return_type = null;
 
@@ -26,7 +28,7 @@ class AtomicMethodCallAnalysisResult
     public array $invalid_method_call_types = [];
 
     /**
-     * @var array<string>
+     * @var array<string, bool>
      */
     public array $existent_method_ids = [];
 

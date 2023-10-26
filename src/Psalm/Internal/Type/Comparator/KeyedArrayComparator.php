@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Type\Comparator;
 
 use Psalm\Codebase;
@@ -19,7 +21,7 @@ use function is_string;
 /**
  * @internal
  */
-class KeyedArrayComparator
+final class KeyedArrayComparator
 {
     /**
      * @param TKeyedArray|TObjectWithProperties $input_type_part
@@ -30,7 +32,7 @@ class KeyedArrayComparator
         Atomic $input_type_part,
         Atomic $container_type_part,
         bool $allow_interface_equality,
-        ?TypeComparisonResult $atomic_comparison_result
+        ?TypeComparisonResult $atomic_comparison_result,
     ): bool {
         $container_sealed = $container_type_part instanceof TKeyedArray
             && $container_type_part->fallback_params === null;
@@ -285,7 +287,7 @@ class KeyedArrayComparator
         TNamedObject $input_type_part,
         TObjectWithProperties $container_type_part,
         bool $allow_interface_equality,
-        ?TypeComparisonResult $atomic_comparison_result
+        ?TypeComparisonResult $atomic_comparison_result,
     ): bool {
         $all_types_contain = true;
 
@@ -346,7 +348,7 @@ class KeyedArrayComparator
     public static function coerceToObjectWithProperties(
         Codebase $codebase,
         TNamedObject $input_type_part,
-        TObjectWithProperties $container_type_part
+        TObjectWithProperties $container_type_part,
     ): ?TObjectWithProperties {
         $storage = $codebase->classlikes->getStorageFor($input_type_part->value);
 

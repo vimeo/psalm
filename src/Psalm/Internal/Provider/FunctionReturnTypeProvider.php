@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Provider;
 
 use Closure;
@@ -55,7 +57,7 @@ use function strtolower;
 /**
  * @internal
  */
-class FunctionReturnTypeProvider
+final class FunctionReturnTypeProvider
 {
     /**
      * @var array<
@@ -145,7 +147,7 @@ class FunctionReturnTypeProvider
         string $function_id,
         PhpParser\Node\Expr\FuncCall $stmt,
         Context $context,
-        CodeLocation $code_location
+        CodeLocation $code_location,
     ): ?Union {
         foreach (self::$handlers[strtolower($function_id)] ?? [] as $function_handler) {
             $event = new FunctionReturnTypeProviderEvent(

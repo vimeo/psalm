@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Type;
 
 use InvalidArgumentException;
@@ -33,12 +35,13 @@ use UnexpectedValueException;
 use function array_merge;
 use function array_shift;
 use function array_values;
+use function assert;
 use function strpos;
 
 /**
  * @internal
  */
-class TemplateInferredTypeReplacer
+final class TemplateInferredTypeReplacer
 {
     /**
      * This replaces template types in unions with the inferred types they should be
@@ -48,7 +51,7 @@ class TemplateInferredTypeReplacer
     public static function replace(
         Union $union,
         TemplateResult $template_result,
-        ?Codebase $codebase
+        ?Codebase $codebase,
     ): Union {
         $new_types = [];
 
@@ -226,7 +229,7 @@ class TemplateInferredTypeReplacer
             )->freeze();
         }
 
-        $atomic_types = array_merge($types, $new_types);
+        $atomic_types = [...$types, ...$new_types];
         if (!$atomic_types) {
             throw new UnexpectedValueException('This array should be full');
         }
@@ -246,7 +249,7 @@ class TemplateInferredTypeReplacer
         ?Codebase $codebase,
         TTemplateParam $atomic_type,
         array $inferred_lower_bounds,
-        string $key
+        string $key,
     ): ?Union {
         $template_type = null;
 
@@ -279,6 +282,7 @@ class TemplateInferredTypeReplacer
                         ));
                     } elseif ($atomic_template_type instanceof TObject) {
                         $first_atomic_type = array_shift($atomic_type->extra_types);
+                        assert($first_atomic_type !== null);
 
                         if ($atomic_type->extra_types) {
                             $first_atomic_type = $first_atomic_type->setIntersectionTypes($atomic_type->extra_types);
@@ -335,7 +339,7 @@ class TemplateInferredTypeReplacer
     private static function replaceTemplateKeyOfValueOf(
         ?Codebase $codebase,
         Atomic $atomic_type,
-        array $inferred_lower_bounds
+        array $inferred_lower_bounds,
     ): ?Atomic {
         if (!isset($inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class])) {
             return null;
@@ -367,7 +371,7 @@ class TemplateInferredTypeReplacer
     private static function replaceTemplatePropertiesOf(
         ?Codebase $codebase,
         TTemplatePropertiesOf $atomic_type,
-        array $inferred_lower_bounds
+        array $inferred_lower_bounds,
     ): ?Atomic {
         if (!isset($inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class])) {
             return null;
@@ -396,7 +400,7 @@ class TemplateInferredTypeReplacer
         TemplateResult $template_result,
         Codebase $codebase,
         TConditional &$atomic_type,
-        array $inferred_lower_bounds
+        array $inferred_lower_bounds,
     ): Union {
         $template_type = isset($inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class])
             ? TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(

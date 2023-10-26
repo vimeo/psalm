@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Codebase;
 
 use InvalidArgumentException;
@@ -35,6 +37,7 @@ use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 use UnexpectedValueException;
@@ -44,7 +47,6 @@ use function assert;
 use function count;
 use function explode;
 use function in_array;
-use function is_int;
 use function reset;
 use function strtolower;
 
@@ -53,7 +55,7 @@ use function strtolower;
  *
  * Handles information about class methods
  */
-class Methods
+final class Methods
 {
     private ClassLikeStorageProvider $classlike_storage_provider;
 
@@ -74,7 +76,7 @@ class Methods
     public function __construct(
         ClassLikeStorageProvider $storage_provider,
         FileReferenceProvider $file_reference_provider,
-        ClassLikes $classlikes
+        ClassLikes $classlikes,
     ) {
         $this->classlike_storage_provider = $storage_provider;
         $this->file_reference_provider = $file_reference_provider;
@@ -99,7 +101,7 @@ class Methods
         ?StatementsSource $source = null,
         ?string $source_file_path = null,
         bool $use_method_existence_provider = true,
-        bool $is_used = false
+        bool $is_used = false,
     ): bool {
         $fq_class_name = $method_id->fq_class_name;
         $method_name = $method_id->method_name;
@@ -346,7 +348,7 @@ class Methods
         MethodIdentifier $method_id,
         ?StatementsSource $source = null,
         ?array $args = null,
-        ?Context $context = null
+        ?Context $context = null,
     ): array {
         $fq_class_name = $method_id->fq_class_name;
         $method_name = $method_id->method_name;
@@ -492,7 +494,7 @@ class Methods
         Codebase $codebase,
         Union $type,
         string $appearing_fq_class_name,
-        string $base_fq_class_name
+        string $base_fq_class_name,
     ): Union {
         $class_storage = $codebase->classlike_storage_provider->get($appearing_fq_class_name);
         $extends = $class_storage->template_extended_params;
@@ -515,7 +517,7 @@ class Methods
      */
     public static function getExtendedTemplatedTypes(
         TTemplateParam $atomic_type,
-        array $extends
+        array $extends,
     ): array {
         $extra_added_types = [];
 
@@ -557,7 +559,8 @@ class Methods
         MethodIdentifier $method_id,
         ?string &$self_class,
         ?SourceAnalyzer $source_analyzer = null,
-        ?array $args = null
+        ?array $args = null,
+        ?TemplateResult $template_result = null,
     ): ?Union {
         $original_fq_class_name = $method_id->fq_class_name;
         $original_method_name = $method_id->method_name;
@@ -587,6 +590,7 @@ class Methods
 
             if ($class_storage->abstract && isset($class_storage->overridden_method_ids[$original_method_name])) {
                 $appearing_method_id = reset($class_storage->overridden_method_ids[$original_method_name]);
+                assert($appearing_method_id !== false);
             } else {
                 return null;
             }
@@ -629,9 +633,7 @@ class Methods
                 foreach ($original_class_storage->enum_cases as $case_name => $case_storage) {
                     if (UnionTypeComparator::isContainedBy(
                         $source_analyzer->getCodebase(),
-                        is_int($case_storage->value) ?
-                            Type::getInt(false, $case_storage->value) :
-                            Type::getString($case_storage->value),
+                        new Union([$case_storage->value ?? new TString()]),
                         $first_arg_type,
                     )) {
                         $types[] = new TEnumCase($original_fq_class_name, $case_name);
@@ -784,9 +786,18 @@ class Methods
                     );
 
                     if ($found_generic_params) {
+                        $passed_template_result = $template_result;
+                        $template_result = new TemplateResult(
+                            [],
+                            $found_generic_params,
+                        );
+                        if ($passed_template_result !== null) {
+                            $template_result = $template_result->merge($passed_template_result);
+                        }
+
                         $overridden_storage_return_type = TemplateInferredTypeReplacer::replace(
                             $overridden_storage_return_type,
-                            new TemplateResult([], $found_generic_params),
+                            $template_result,
                             $source_analyzer->getCodebase(),
                         );
                     }
@@ -926,7 +937,7 @@ class Methods
 
     public function getMethodReturnTypeLocation(
         MethodIdentifier $method_id,
-        CodeLocation &$defined_location = null
+        CodeLocation &$defined_location = null,
     ): ?CodeLocation {
         $method_id = $this->getDeclaringMethodId($method_id);
 
@@ -966,7 +977,7 @@ class Methods
         string $fq_class_name,
         string $method_name_lc,
         string $declaring_fq_class_name,
-        string $declaring_method_name_lc
+        string $declaring_method_name_lc,
     ): void {
         $class_storage = $this->classlike_storage_provider->get($fq_class_name);
 
@@ -984,7 +995,7 @@ class Methods
         string $fq_class_name,
         string $method_name_lc,
         string $appearing_fq_class_name,
-        string $appearing_method_name_lc
+        string $appearing_method_name_lc,
     ): void {
         $class_storage = $this->classlike_storage_provider->get($fq_class_name);
 
@@ -996,7 +1007,7 @@ class Methods
 
     /** @psalm-mutation-free */
     public function getDeclaringMethodId(
-        MethodIdentifier $method_id
+        MethodIdentifier $method_id,
     ): ?MethodIdentifier {
         $fq_class_name = $this->classlikes->getUnAliasedName($method_id->fq_class_name);
 
@@ -1009,6 +1020,8 @@ class Methods
         }
 
         if ($class_storage->abstract && isset($class_storage->overridden_method_ids[$method_name])) {
+            assert(!empty($class_storage->overridden_method_ids[$method_name]));
+
             return reset($class_storage->overridden_method_ids[$method_name]);
         }
 
@@ -1019,7 +1032,7 @@ class Methods
      * Get the class this method appears in (vs is declared in, which could give a trait
      */
     public function getAppearingMethodId(
-        MethodIdentifier $method_id
+        MethodIdentifier $method_id,
     ): ?MethodIdentifier {
         $fq_class_name = $this->classlikes->getUnAliasedName($method_id->fq_class_name);
 

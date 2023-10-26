@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\FileManipulation;
 
 use PhpParser\Node\Stmt\Class_;
@@ -17,7 +19,7 @@ use function substr;
 /**
  * @internal
  */
-class ClassDocblockManipulator
+final class ClassDocblockManipulator
 {
     /**
      * @var array<string, array<int, self>>
@@ -37,7 +39,7 @@ class ClassDocblockManipulator
     public static function getForClass(
         ProjectAnalyzer $project_analyzer,
         string $file_path,
-        Class_ $stmt
+        Class_ $stmt,
     ): self {
         if (isset(self::$manipulators[$file_path][$stmt->getLine()])) {
             return self::$manipulators[$file_path][$stmt->getLine()];
@@ -53,7 +55,7 @@ class ClassDocblockManipulator
     private function __construct(
         ProjectAnalyzer $project_analyzer,
         Class_ $stmt,
-        string $file_path
+        string $file_path,
     ) {
         $this->stmt = $stmt;
         $docblock = $stmt->getDocComment();

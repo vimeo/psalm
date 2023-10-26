@@ -94,7 +94,7 @@ use const STDOUT;
  * @psalm-api
  * @internal
  */
-class LanguageServer extends Dispatcher
+final class LanguageServer extends Dispatcher
 {
     /**
      * Handles textDocument/* method calls
@@ -146,7 +146,7 @@ class LanguageServer extends Dispatcher
         Codebase $codebase,
         ClientConfiguration $clientConfiguration,
         Progress $progress,
-        PathMapper $path_mapper
+        PathMapper $path_mapper,
     ) {
         parent::__construct($this, '/');
 
@@ -219,7 +219,7 @@ class LanguageServer extends Dispatcher
 
         $this->protocolReader->on(
             'readMessageGroup',
-            function (): void {
+            static function (): void {
                 //$this->verboseLog('Received message group');
                 //$this->doAnalysis();
             },
@@ -239,7 +239,7 @@ class LanguageServer extends Dispatcher
         ClientConfiguration $clientConfiguration,
         string $base_dir,
         PathMapper $path_mapper,
-        bool $inMemory = false
+        bool $inMemory = false,
     ): void {
         $progress = new Progress();
 
@@ -371,7 +371,7 @@ class LanguageServer extends Dispatcher
         ?ClientInfo $clientInfo = null,
         ?string $rootUri = null,
         ?string $trace = null,
-        ?string $workDoneToken = null
+        ?string $workDoneToken = null,
     ): InitializeResult {
         $this->clientInfo = $clientInfo;
         $this->clientCapabilities = $capabilities;
@@ -735,7 +735,7 @@ class LanguageServer extends Dispatcher
                     return $diagnostic;
                 },
                 array_filter(
-                    array_map(function (IssueData $issue_data) use (&$issue_baseline) {
+                    array_map(static function (IssueData $issue_data) use (&$issue_baseline) {
                         if (empty($issue_baseline)) {
                             return $issue_data;
                         }
@@ -843,7 +843,7 @@ class LanguageServer extends Dispatcher
         }
 
         if (!empty($context)) {
-            $message .= "\n" . json_encode($context, JSON_PRETTY_PRINT);
+            $message .= "\n" . (string) json_encode($context, JSON_PRETTY_PRINT);
         }
         try {
             $this->client->logMessage(

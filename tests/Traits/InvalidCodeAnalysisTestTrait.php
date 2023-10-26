@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests\Traits;
 
 use Psalm\Config;
@@ -49,7 +51,7 @@ trait InvalidCodeAnalysisTestTrait
         string $code,
         string $error_message,
         array  $error_levels = [],
-        string $php_version = '7.4'
+        string $php_version = '7.4',
     ): void {
         $test_name = $this->getTestName();
         if (strpos($test_name, 'PHP80-') !== false) {
@@ -80,7 +82,7 @@ trait InvalidCodeAnalysisTestTrait
 
         $file_path = self::$src_dir_path . 'somefile.php';
 
-        // $error_message = preg_replace('/ src[\/\\\\]somefile\.php/', ' src/somefile.php', $error_message);
+        // $error_message = (string) preg_replace('/ src[\/\\\\]somefile\.php/', ' src/somefile.php', $error_message);
 
         $this->expectException(CodeException::class);
 

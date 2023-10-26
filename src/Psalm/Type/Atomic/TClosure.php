@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type\Atomic;
 
 use Psalm\Codebase;
@@ -8,8 +10,6 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
-
-use function array_merge;
 
 /**
  * Represents a closure where we know the return type and params
@@ -21,7 +21,7 @@ final class TClosure extends TNamedObject
     use CallableTrait;
 
     /** @var array<string, bool> */
-    public $byref_uses = [];
+    public array $byref_uses = [];
 
     /**
      * @param list<FunctionLikeParameter> $params
@@ -35,7 +35,7 @@ final class TClosure extends TNamedObject
         ?bool $is_pure = null,
         array $byref_uses = [],
         array $extra_types = [],
-        bool $from_docblock = false
+        bool $from_docblock = false,
     ) {
         $this->params = $params;
         $this->return_type = $return_type;
@@ -60,7 +60,7 @@ final class TClosure extends TNamedObject
      */
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
-        ?Codebase $codebase
+        ?Codebase $codebase,
     ): self {
         $replaced = $this->replaceCallableTemplateTypesWithArgTypes($template_result, $codebase);
         $intersection = $this->replaceIntersectionTemplateTypesWithArgTypes($template_result, $codebase);
@@ -90,7 +90,7 @@ final class TClosure extends TNamedObject
         ?string $calling_function = null,
         bool $replace = true,
         bool $add_lower_bound = false,
-        int $depth = 0
+        int $depth = 0,
     ): self {
         $replaced = $this->replaceCallableTemplateTypesWithStandins(
             $template_result,
@@ -131,6 +131,6 @@ final class TClosure extends TNamedObject
 
     protected function getChildNodeKeys(): array
     {
-        return array_merge(parent::getChildNodeKeys(), $this->getCallableChildNodeKeys());
+        return [...parent::getChildNodeKeys(), ...$this->getCallableChildNodeKeys()];
     }
 }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests\Template;
 
 use Psalm\Tests\TestCase;
@@ -1390,7 +1392,7 @@ class ClassTemplateExtendsTest extends TestCase
             'extendArrayObjectWithTemplateParams' => [
                 'code' => '<?php
                     /**
-                     * @template TKey
+                     * @template TKey of array-key
                      * @template TValue
                      * @template-extends \ArrayObject<TKey,TValue>
                      */

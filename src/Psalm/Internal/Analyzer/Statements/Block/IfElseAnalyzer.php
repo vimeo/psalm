@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Block;
 
 use PhpParser;
@@ -41,7 +43,7 @@ use function substr;
 /**
  * @internal
  */
-class IfElseAnalyzer
+final class IfElseAnalyzer
 {
     /**
      * System of type substitution and deletion
@@ -69,7 +71,7 @@ class IfElseAnalyzer
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\If_ $stmt,
-        Context $context
+        Context $context,
     ): ?bool {
         $codebase = $statements_analyzer->getCodebase();
 

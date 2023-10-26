@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use PhpParser;
@@ -36,6 +38,7 @@ use function array_map;
 use function array_shift;
 use function array_slice;
 use function array_values;
+use function assert;
 use function count;
 use function explode;
 use function in_array;
@@ -47,7 +50,7 @@ use function substr;
 /**
  * @internal
  */
-class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
+final class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
      * @return array<lowercase-string>
@@ -112,9 +115,9 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
             $array_arg_types = array_map(null, ...$array_arg_types);
             $array_arg_types = array_map(
                 /** @param non-empty-array<?Union> $sub */
-                function (array $sub) use ($null) {
+                static function (array $sub) use ($null) {
                     $sub = array_map(
-                        fn(?Union $t) => $t ?? $null,
+                        static fn(?Union $t) => $t ?? $null,
                         $sub,
                     );
                     return new Union([new TKeyedArray($sub, null, null, true)]);
@@ -161,6 +164,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
             if ($function_call_type->hasCallableType()) {
                 $closure_types = $function_call_type->getClosureTypes() ?: $function_call_type->getCallableTypes();
                 $closure_atomic_type = reset($closure_types);
+                assert($closure_atomic_type !== false);
 
                 $closure_return_type = $closure_atomic_type->return_type ?: Type::getMixed();
 
@@ -292,7 +296,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $fake_call,
         Context $context,
-        ?array &$assertions = null
+        ?array &$assertions = null,
     ): ?Union {
         $old_data_provider = $statements_analyzer->node_data;
 
@@ -378,7 +382,7 @@ class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInterface
         PhpParser\Node\Arg $function_call_arg,
         array $array_args,
         ?array &$assertions = null,
-        ?int $fake_var_discriminator = null
+        ?int $fake_var_discriminator = null,
     ): Union {
         $mapping_return_type = null;
 

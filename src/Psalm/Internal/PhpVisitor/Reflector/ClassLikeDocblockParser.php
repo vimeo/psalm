@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\PhpVisitor\Reflector;
 
 use Exception;
@@ -48,7 +50,7 @@ use const PREG_OFFSET_CAPTURE;
 /**
  * @internal
  */
-class ClassLikeDocblockParser
+final class ClassLikeDocblockParser
 {
     /**
      * @throws DocblockParseException if there was a problem parsing the docblock
@@ -56,7 +58,7 @@ class ClassLikeDocblockParser
     public static function parse(
         Node $node,
         Doc $comment,
-        Aliases $aliases
+        Aliases $aliases,
     ): ClassLikeDocblockComment {
         $parsed_docblock = DocComment::parsePreservingLength($comment);
         $codebase = ProjectAnalyzer::getInstance()->getCodebase();
@@ -66,7 +68,7 @@ class ClassLikeDocblockParser
         $templates = [];
         if (isset($parsed_docblock->combined_tags['template'])) {
             foreach ($parsed_docblock->combined_tags['template'] as $offset => $template_line) {
-                $template_type = preg_split('/[\s]+/', preg_replace('@^[ \t]*\*@m', '', $template_line));
+                $template_type = preg_split('/[\s]+/', (string) preg_replace('@^[ \t]*\*@m', '', $template_line));
                 if ($template_type === false) {
                     throw new IncorrectDocblockException('Invalid @ŧemplate tag: '.preg_last_error_msg());
                 }
@@ -109,7 +111,7 @@ class ClassLikeDocblockParser
 
         if (isset($parsed_docblock->combined_tags['template-covariant'])) {
             foreach ($parsed_docblock->combined_tags['template-covariant'] as $offset => $template_line) {
-                $template_type = preg_split('/[\s]+/', preg_replace('@^[ \t]*\*@m', '', $template_line));
+                $template_type = preg_split('/[\s]+/', (string) preg_replace('@^[ \t]*\*@m', '', $template_line));
                 if ($template_type === false) {
                     throw new IncorrectDocblockException('Invalid @template-covariant tag: '.preg_last_error_msg());
                 }
@@ -169,7 +171,7 @@ class ClassLikeDocblockParser
 
         if (isset($parsed_docblock->tags['psalm-require-extends'])
             && count($extension_requirements = $parsed_docblock->tags['psalm-require-extends']) > 0) {
-            $info->extension_requirement = trim(preg_replace(
+            $info->extension_requirement = trim((string) preg_replace(
                 '@^[ \t]*\*@m',
                 '',
                 $extension_requirements[array_key_first($extension_requirements)],
@@ -178,7 +180,7 @@ class ClassLikeDocblockParser
 
         if (isset($parsed_docblock->tags['psalm-require-implements'])) {
             foreach ($parsed_docblock->tags['psalm-require-implements'] as $implementation_requirement) {
-                $info->implementation_requirements[] = trim(preg_replace(
+                $info->implementation_requirements[] = trim((string) preg_replace(
                     '@^[ \t]*\*@m',
                     '',
                     $implementation_requirement,
@@ -195,9 +197,9 @@ class ClassLikeDocblockParser
         }
 
         if (isset($parsed_docblock->tags['psalm-yield'])) {
-            $yield = reset($parsed_docblock->tags['psalm-yield']);
+            $yield = (string) reset($parsed_docblock->tags['psalm-yield']);
 
-            $info->yield = trim(preg_replace('@^[ \t]*\*@m', '', $yield));
+            $info->yield = trim((string) preg_replace('@^[ \t]*\*@m', '', $yield));
         }
 
         if (isset($parsed_docblock->tags['deprecated'])) {
@@ -314,7 +316,7 @@ class ClassLikeDocblockParser
                 $info->sealed_methods = true;
             }
             foreach ($parsed_docblock->combined_tags['method'] as $offset => $method_entry) {
-                $method_entry = preg_replace('/[ \t]+/', ' ', trim($method_entry));
+                $method_entry = (string) preg_replace('/[ \t]+/', ' ', trim($method_entry));
 
                 $docblock_lines = [];
 
@@ -338,9 +340,9 @@ class ClassLikeDocblockParser
                     }
                 }
 
-                $method_entry = trim(preg_replace('/\/\/.*/', '', $method_entry));
+                $method_entry = trim((string) preg_replace('/\/\/.*/', '', $method_entry));
 
-                $method_entry = preg_replace(
+                $method_entry = (string) preg_replace(
                     '/array\(([0-9a-zA-Z_\'\" ]+,)*([0-9a-zA-Z_\'\" ]+)\)/',
                     '[]',
                     $method_entry,
@@ -353,10 +355,14 @@ class ClassLikeDocblockParser
                 }
 
                 $method_entry = str_replace([', ', '( '], [',', '('], $method_entry);
-                $method_entry = preg_replace('/ (?!(\$|\.\.\.|&))/', '', trim($method_entry));
+                $method_entry = (string) preg_replace('/ (?!(\$|\.\.\.|&))/', '', trim($method_entry));
 
                 // replace array bracket contents
-                $method_entry = preg_replace('/\[([0-9a-zA-Z_\'\" ]+,)*([0-9a-zA-Z_\'\" ]+)\]/', '[]', $method_entry);
+                $method_entry = (string) preg_replace(
+                    '/\[([0-9a-zA-Z_\'\" ]+,)*([0-9a-zA-Z_\'\" ]+)\]/',
+                    '[]',
+                    $method_entry,
+                );
 
                 if (!$method_entry) {
                     throw new DocblockParseException('No @method entry specified');
@@ -525,7 +531,7 @@ class ClassLikeDocblockParser
         Doc $comment,
         ClassLikeDocblockComment $info,
         array $specials,
-        string $property_tag
+        string $property_tag,
     ): void {
         $magic_property_comments = $specials[$property_tag] ?? [];
 
@@ -542,11 +548,11 @@ class ClassLikeDocblockParser
                 ) {
                     $line_parts[1] = str_replace('&', '', $line_parts[1]);
 
-                    $line_parts[1] = preg_replace('/,$/', '', $line_parts[1], 1);
+                    $line_parts[1] = (string) preg_replace('/,$/', '', $line_parts[1], 1);
 
                     $end = $offset + strlen($line_parts[0]);
 
-                    $line_parts[0] = str_replace("\n", '', preg_replace('@^[ \t]*\*@m', '', $line_parts[0]));
+                    $line_parts[0] = str_replace("\n", '', (string) preg_replace('@^[ \t]*\*@m', '', $line_parts[0]));
 
                     if ($line_parts[0] === ''
                         || ($line_parts[0][0] === '$'

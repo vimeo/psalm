@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Plugin;
 
 use BadMethodCallException;
@@ -13,6 +15,7 @@ use function array_filter;
 use function array_key_exists;
 use function array_merge;
 use function array_values;
+use function assert;
 use function curl_close;
 use function curl_exec;
 use function curl_getinfo;
@@ -46,7 +49,7 @@ final class Shepherd implements AfterAnalysisInterface
      * Called after analysis is complete
      */
     public static function afterAnalysis(
-        AfterAnalysisEvent $event
+        AfterAnalysisEvent $event,
     ): void {
         if (!function_exists('curl_init')) {
             fwrite(STDERR, "No curl found, cannot send data to shepherd server.\n");
@@ -125,6 +128,7 @@ final class Shepherd implements AfterAnalysisInterface
 
         // Prepare new cURL resource
         $ch = curl_init($endpoint);
+        assert($ch !== false);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
         curl_setopt($ch, CURLINFO_HEADER_OUT, true);

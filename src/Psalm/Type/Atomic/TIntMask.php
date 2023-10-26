@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type\Atomic;
 
 use function substr;
@@ -13,7 +15,7 @@ use function substr;
 final class TIntMask extends TInt
 {
     /** @var non-empty-array<TLiteralInt|TClassConstant> */
-    public $values;
+    public array $values;
 
     /** @param non-empty-array<TLiteralInt|TClassConstant> $values */
     public function __construct(array $values, bool $from_docblock = false)
@@ -51,7 +53,7 @@ final class TIntMask extends TInt
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        bool $use_phpdoc_format
+        bool $use_phpdoc_format,
     ): string {
         if ($use_phpdoc_format) {
             return 'int';

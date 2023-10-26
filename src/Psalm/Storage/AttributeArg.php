@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Storage;
 
 use Psalm\CodeLocation;
@@ -13,29 +15,21 @@ final class AttributeArg
 {
     use ImmutableNonCloneableTrait;
     /**
-     * @var ?string
      * @psalm-suppress PossiblyUnusedProperty It's part of the public API for now
      */
-    public $name;
+    public ?string $name = null;
+
+    public Union|UnresolvedConstantComponent $type;
 
     /**
-     * @var Union|UnresolvedConstantComponent
-     */
-    public $type;
-
-    /**
-     * @var CodeLocation
      * @psalm-suppress PossiblyUnusedProperty It's part of the public API for now
      */
-    public $location;
+    public CodeLocation $location;
 
-    /**
-     * @param Union|UnresolvedConstantComponent $type
-     */
     public function __construct(
         ?string $name,
-        $type,
-        CodeLocation $location
+        Union|UnresolvedConstantComponent $type,
+        CodeLocation $location,
     ) {
         $this->name = $name;
         $this->type = $type;

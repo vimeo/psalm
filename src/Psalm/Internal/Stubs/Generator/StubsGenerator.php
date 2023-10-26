@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace Psalm\Internal\Stubs\Generator;
 
@@ -51,7 +51,7 @@ use function strpos;
 /**
  * @internal
  */
-class StubsGenerator
+final class StubsGenerator
 {
     public static function getAll(
         Codebase $codebase,

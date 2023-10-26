@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use InvalidArgumentException;
@@ -56,7 +58,7 @@ use function strtolower;
 /**
  * @internal
  */
-class ClassConstAnalyzer
+final class ClassConstAnalyzer
 {
     /**
      * @psalm-suppress ComplexMethod to be refactored. We should probably regroup the two big if about $stmt->class and
@@ -65,7 +67,7 @@ class ClassConstAnalyzer
     public static function analyzeFetch(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\ClassConstFetch $stmt,
-        Context $context
+        Context $context,
     ): bool {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -385,7 +387,11 @@ class ClassConstAnalyzer
                 );
             }
 
-            if ($first_part_lc !== 'static' || $const_class_storage->final || $class_constant_type->from_docblock) {
+            if ($first_part_lc !== 'static' || $const_class_storage->final || $class_constant_type->from_docblock
+                || (isset($const_class_storage->constants[$stmt->name->name])
+                    && $const_class_storage->constants[$stmt->name->name]->final
+                )
+            ) {
                 $stmt_type = $class_constant_type;
 
                 $statements_analyzer->node_data->setType($stmt, $stmt_type);
@@ -688,7 +694,7 @@ class ClassConstAnalyzer
     public static function analyzeAssignment(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\ClassConst $stmt,
-        Context $context
+        Context $context,
     ): void {
         assert($context->self !== null);
         $class_storage = $statements_analyzer->getCodebase()->classlike_storage_provider->get($context->self);
@@ -724,7 +730,7 @@ class ClassConstAnalyzer
 
     public static function analyze(
         ClassLikeStorage $class_storage,
-        Codebase $codebase
+        Codebase $codebase,
     ): void {
         foreach ($class_storage->constants as $const_name => $const_storage) {
             [$parent_classlike_storage, $parent_const_storage] = self::getOverriddenConstant(
@@ -822,7 +828,7 @@ class ClassConstAnalyzer
         ClassLikeStorage $class_storage,
         ClassConstantStorage $const_storage,
         string $const_name,
-        Codebase $codebase
+        Codebase $codebase,
     ): ?array {
         $parent_classlike_storage = $interface_const_storage = $parent_const_storage = null;
         $interface_overrides = [];

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Block\IfElse;
 
 use PhpParser;
@@ -46,7 +48,7 @@ use function substr;
 /**
  * @internal
  */
-class IfAnalyzer
+final class IfAnalyzer
 {
     /**
      * @param  array<string, Union> $pre_assignment_else_redefined_vars
@@ -59,7 +61,7 @@ class IfAnalyzer
         IfConditionalScope $if_conditional_scope,
         Context $if_context,
         Context $outer_context,
-        array $pre_assignment_else_redefined_vars
+        array $pre_assignment_else_redefined_vars,
     ): ?bool {
         $cond_referenced_var_ids = $if_conditional_scope->cond_referenced_var_ids;
 
@@ -336,7 +338,7 @@ class IfAnalyzer
         PhpParser\Node\Expr $cond,
         Context $post_leaving_if_context,
         Context $post_if_context,
-        array $assigned_in_conditional_var_ids
+        array $assigned_in_conditional_var_ids,
     ): void {
         // this filters out coercions to expected types in ArgumentAnalyzer
         $assigned_in_conditional_var_ids = array_filter($assigned_in_conditional_var_ids);
@@ -440,7 +442,7 @@ class IfAnalyzer
         array $assigned_var_ids,
         array $possibly_assigned_var_ids,
         array $newly_reconciled_var_ids,
-        bool $update_new_vars = true
+        bool $update_new_vars = true,
     ): void {
         $redefined_vars = $if_context->getRedefinedVars($outer_context->vars_in_scope);
 

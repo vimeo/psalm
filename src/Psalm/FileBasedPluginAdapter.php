@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm;
 
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
@@ -11,6 +13,7 @@ use UnexpectedValueException;
 
 use function assert;
 use function class_exists;
+use function count;
 use function reset;
 use function str_replace;
 
@@ -62,6 +65,8 @@ final class FileBasedPluginAdapter implements PluginEntryPointInterface
         );
 
         $declared_classes = ClassLikeAnalyzer::getClassesForFile($codebase, $path);
+
+        assert(count($declared_classes) > 0, 'FileBasedPlugin contains a class');
 
         return reset($declared_classes);
     }

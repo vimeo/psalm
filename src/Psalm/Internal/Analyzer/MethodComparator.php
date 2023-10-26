@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer;
 
 use PhpParser\Node\Stmt\ClassMethod;
@@ -44,7 +46,7 @@ use function strtolower;
 /**
  * @internal
  */
-class MethodComparator
+final class MethodComparator
 {
     /**
      * @param  string[]         $suppressed_issues
@@ -63,7 +65,7 @@ class MethodComparator
         CodeLocation $code_location,
         array $suppressed_issues,
         bool $prevent_abstract_override = true,
-        bool $prevent_method_signature_mismatch = true
+        bool $prevent_method_signature_mismatch = true,
     ): ?bool {
         $implementer_method_id = new MethodIdentifier(
             $implementer_classlike_storage->name,
@@ -252,7 +254,7 @@ class MethodComparator
         bool $prevent_abstract_override,
         bool $trait_mismatches_are_fatal,
         CodeLocation $code_location,
-        array $suppressed_issues
+        array $suppressed_issues,
     ): void {
         if ($implementer_visibility > $guide_visibility) {
             if ($trait_mismatches_are_fatal
@@ -313,6 +315,16 @@ class MethodComparator
             );
         }
 
+        if ($guide_method_storage->returns_by_ref && !$implementer_method_storage->returns_by_ref) {
+            IssueBuffer::maybeAdd(
+                new MethodSignatureMismatch(
+                    'Method ' . $cased_implementer_method_id . ' must return by-reference',
+                    $code_location,
+                ),
+                $suppressed_issues + $implementer_classlike_storage->suppressed_issues,
+            );
+        }
+
         if ($guide_method_storage->external_mutation_free
             && !$implementer_method_storage->external_mutation_free
             && !$guide_method_storage->mutation_free_inferred
@@ -349,7 +361,7 @@ class MethodComparator
         string $cased_implementer_method_id,
         bool $prevent_method_signature_mismatch,
         CodeLocation $code_location,
-        array $suppressed_issues
+        array $suppressed_issues,
     ): void {
         if ($prevent_method_signature_mismatch) {
             if (!$guide_classlike_storage->user_defined
@@ -557,7 +569,7 @@ class MethodComparator
         string $cased_guide_method_id,
         string $cased_implementer_method_id,
         CodeLocation $code_location,
-        array $suppressed_issues
+        array $suppressed_issues,
     ): void {
         $guide_param_signature_type = $guide_param->signature_type
             ? TypeExpander::expandUnion(
@@ -677,7 +689,7 @@ class MethodComparator
         Union $guide_param_type,
         Union $implementer_param_type,
         CodeLocation $code_location,
-        array $suppressed_issues
+        array $suppressed_issues,
     ): void {
         $implementer_method_storage_param_type = TypeExpander::expandUnion(
             $codebase,
@@ -843,7 +855,7 @@ class MethodComparator
         string $implementer_called_class_name,
         string $cased_implementer_method_id,
         CodeLocation $code_location,
-        array $suppressed_issues
+        array $suppressed_issues,
     ): void {
         $guide_signature_return_type = TypeExpander::expandUnion(
             $codebase,
@@ -930,7 +942,7 @@ class MethodComparator
         string $implementer_called_class_name,
         ?MethodIdentifier $implementer_declaring_method_id,
         CodeLocation $code_location,
-        array $suppressed_issues
+        array $suppressed_issues,
     ): void {
         $implementer_method_storage_return_type = TypeExpander::expandUnion(
             $codebase,
@@ -1055,7 +1067,7 @@ class MethodComparator
         array $template_extended_params,
         string $base_class_name,
         Union &$templated_type,
-        Codebase $codebase
+        Codebase $codebase,
     ): void {
         if (isset($template_extended_params[$base_class_name])) {
             $map = $template_extended_params[$base_class_name];

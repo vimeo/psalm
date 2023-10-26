@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
@@ -20,7 +22,7 @@ use Psalm\Type;
 /**
  * @internal
  */
-class IncDecExpressionAnalyzer
+final class IncDecExpressionAnalyzer
 {
     /**
      * @param PostInc|PostDec|PreInc|PreDec $stmt
@@ -28,7 +30,7 @@ class IncDecExpressionAnalyzer
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $stmt,
-        Context $context
+        Context $context,
     ): bool {
         $was_inside_assignment = $context->inside_assignment;
         $context->inside_assignment = true;

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
@@ -1279,6 +1281,60 @@ class ReturnTypeTest extends TestCase
                         return $t;
                     }',
             ],
+            'returnByReferenceVariableInStaticMethod' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Foo {
+                        private static string $foo = "foo";
+
+                        public static function &foo(): string {
+                            return self::$foo;
+                        }
+                    }
+                    PHP,
+            ],
+            'returnByReferenceVariableInInstanceMethod' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Foo {
+                        private float $foo = 3.3;
+
+                        public function &foo(): float {
+                            return $this->foo;
+                        }
+                    }
+                    PHP,
+            ],
+            'returnByReferenceVariableInFunction' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function &foo(): array {
+                        /** @var array $x */
+                        static $x = [1, 2, 3];
+                        return $x;
+                    }
+                    PHP,
+            ],
+            'neverReturnType' => [
+                'code' => '<?php
+                    function exitProgram(bool $die): never
+                    {
+                        if ($die) {
+                            die;
+                        }
+
+                        exit;
+                    }
+
+                    function throwError(): never
+                    {
+                        throw new Exception();
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
@@ -1806,6 +1862,67 @@ class ReturnTypeTest extends TestCase
                 'error_message' => 'InvalidReturnStatement',
                 'ignored_issues' => [],
                 'php_version' => '8.0',
+            ],
+            'returnByReferenceNonVariableInStaticMethod' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Foo {
+                        public static function &foo(string $x): string {
+                            return $x . "bar";
+                        }
+                    }
+                    PHP,
+                'error_message' => 'NonVariableReferenceReturn',
+            ],
+            'returnByReferenceNonVariableInInstanceMethod' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Foo {
+                        public function &foo(): iterable {
+                            return [] + [1, 2];
+                        }
+                    }
+                    PHP,
+                'error_message' => 'NonVariableReferenceReturn',
+            ],
+            'returnByReferenceNonVariableInFunction' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function &foo(): array {
+                        return [1, 2, 3];
+                    }
+                    PHP,
+                'error_message' => 'NonVariableReferenceReturn',
+            ],
+            'implicitReturnFromFunctionWithNeverReturnType' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function foo(): never
+                    {
+                        if (rand(0, 1)) {
+                            exit();
+                        }
+                    }
+                    PHP,
+                'error_message' => 'InvalidReturnType',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'implicitReturnFromFunctionWithNeverReturnType2' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function foo(bool $x): never
+                    {
+                        while (true) {
+                            if ($x) {
+                                break;
+                            }
+                        }
+                    }
+                    PHP,
+                'error_message' => 'InvalidReturnType',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
         ];
     }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type\Atomic;
 
 use Psalm\Codebase;
@@ -18,10 +20,7 @@ final class TCallable extends Atomic
 {
     use CallableTrait;
 
-    /**
-     * @var string
-     */
-    public $value;
+    public string $value;
 
     /**
      * Constructs a new instance of a generic type
@@ -33,7 +32,7 @@ final class TCallable extends Atomic
         ?array $params = null,
         ?Union $return_type = null,
         ?bool $is_pure = null,
-        bool $from_docblock = false
+        bool $from_docblock = false,
     ) {
         $this->value = $value;
         $this->params = $params;
@@ -49,7 +48,7 @@ final class TCallable extends Atomic
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        int $analysis_php_version_id
+        int $analysis_php_version_id,
     ): string {
         return 'callable';
     }
@@ -88,7 +87,7 @@ final class TCallable extends Atomic
         ?string $calling_function = null,
         bool $replace = true,
         bool $add_lower_bound = false,
-        int $depth = 0
+        int $depth = 0,
     ): self {
         $replaced = $this->replaceCallableTemplateTypesWithStandins(
             $template_result,

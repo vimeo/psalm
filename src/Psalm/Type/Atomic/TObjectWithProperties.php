@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type\Atomic;
 
 use Psalm\Codebase;
@@ -27,15 +29,14 @@ final class TObjectWithProperties extends TObject
     /**
      * @var array<string|int, Union>
      */
-    public $properties;
+    public array $properties;
 
     /**
      * @var array<lowercase-string, string>
      */
-    public $methods;
+    public array $methods;
 
-    /** @var bool */
-    public $is_stringable_object_only = false;
+    public bool $is_stringable_object_only = false;
 
     /**
      * Constructs a new instance of a generic type
@@ -48,7 +49,7 @@ final class TObjectWithProperties extends TObject
         array $properties,
         array $methods = [],
         array $extra_types = [],
-        bool $from_docblock = false
+        bool $from_docblock = false,
     ) {
         $this->properties = $properties;
         $this->methods = $methods;
@@ -140,7 +141,7 @@ final class TObjectWithProperties extends TObject
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        bool $use_phpdoc_format
+        bool $use_phpdoc_format,
     ): string {
         if ($use_phpdoc_format) {
             return 'object';
@@ -178,7 +179,7 @@ final class TObjectWithProperties extends TObject
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        int $analysis_php_version_id
+        int $analysis_php_version_id,
     ): string {
         return $this->getKey();
     }
@@ -228,7 +229,7 @@ final class TObjectWithProperties extends TObject
         ?string $calling_function = null,
         bool $replace = true,
         bool $add_lower_bound = false,
-        int $depth = 0
+        int $depth = 0,
     ): self {
         $properties = [];
 
@@ -280,7 +281,7 @@ final class TObjectWithProperties extends TObject
      */
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
-        ?Codebase $codebase
+        ?Codebase $codebase,
     ): self {
         $properties = $this->properties;
         foreach ($properties as $offset => $property) {

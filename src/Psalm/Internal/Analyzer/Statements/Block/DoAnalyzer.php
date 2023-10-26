@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Block;
 
 use PhpParser;
@@ -28,12 +30,12 @@ use function spl_object_id;
 /**
  * @internal
  */
-class DoAnalyzer
+final class DoAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Do_ $stmt,
-        Context $context
+        Context $context,
     ): ?bool {
         $do_context = clone $context;
         $do_context->break_types[] = 'loop';
@@ -172,7 +174,7 @@ class DoAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Do_ $stmt,
         Context $context,
-        LoopScope $loop_scope
+        LoopScope $loop_scope,
     ): void {
         $do_context = clone $context;
 

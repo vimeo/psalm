@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type\Atomic;
 
 use Psalm\Codebase;
@@ -28,10 +30,7 @@ class TArray extends Atomic
      */
     public array $type_params;
 
-    /**
-     * @var string
-     */
-    public $value = 'array';
+    public string $value = 'array';
 
     /**
      * Constructs a new instance of a generic type
@@ -56,7 +55,7 @@ class TArray extends Atomic
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        int $analysis_php_version_id
+        int $analysis_php_version_id,
     ): string {
         return $this->getKey();
     }
@@ -119,7 +118,7 @@ class TArray extends Atomic
         ?string $calling_function = null,
         bool $replace = true,
         bool $add_lower_bound = false,
-        int $depth = 0
+        int $depth = 0,
     ): self {
         $type_params = $this->replaceTypeParamsTemplateTypesWithStandins(
             $template_result,

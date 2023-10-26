@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests\Template;
 
 use Psalm\Tests\TestCase;
@@ -1673,6 +1675,29 @@ class FunctionTemplateTest extends TestCase
                         return $t;
                     }',
             ],
+            'typeWithNestedTemplates' => [
+                'code' => '<?php
+                    /**
+                     * @template T of object
+                     */
+                    interface AType {}
+
+                    /**
+                     * @template T of object
+                     * @template B of AType<T>
+                     */
+                    final class BType {}
+
+                    /**
+                     * @param BType<object, AType<object>> $_value
+                     */
+                    function test1(BType $_value): void {}
+
+                    /**
+                     * @param BType<stdClass, AType<stdClass>> $_value
+                     */
+                    function test2(BType $_value): void {}',
+            ],
         ];
     }
 
@@ -2267,6 +2292,30 @@ class FunctionTemplateTest extends TestCase
                         }
                     }',
                 'error_message' => 'InvalidArgument',
+            ],
+            'catchInvalidTemplateTypeWithNestedTemplates' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     */
+                    interface AType {}
+
+                    /**
+                     * @template T
+                     * @template B of AType<T>
+                     */
+                    final class BType {}
+
+                    /**
+                     * @param BType<string, AType<int>> $_value
+                     */
+                    function test1(BType $_value): void {}
+
+                    /**
+                     * @param BType<int, AType<string>> $_value
+                     */
+                    function test2(BType $_value): void {}',
+                'error_message' => 'InvalidTemplateParam',
             ],
         ];
     }

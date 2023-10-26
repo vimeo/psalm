@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
 use Psalm\Context;
@@ -173,23 +175,6 @@ class TaintTest extends TestCase
                         }
 
                         public function deleteUser(PDO $pdo, string $userId) : void {
-                            $pdo->exec("delete from users where user_id = " . $userId);
-                        }
-                    }',
-            ],
-            'untaintedInputAfterIntCast' => [
-                'code' => '<?php
-                    class A {
-                        public function getUserId() : int {
-                            return (int) $_GET["user_id"];
-                        }
-
-                        public function getAppendedUserId() : string {
-                            return "aaaa" . $this->getUserId();
-                        }
-
-                        public function deleteUser(PDO $pdo) : void {
-                            $userId = $this->getAppendedUserId();
                             $pdo->exec("delete from users where user_id = " . $userId);
                         }
                     }',
@@ -698,21 +683,6 @@ class TaintTest extends TestCase
                     $value = $_GET["value"];
                     $result = fetch($value);',
             ],
-            'NoTaintForIntTypeCastUsingAnnotatedSink' => [
-                'code' => '<?php // --taint-analysis
-                    function fetch($id): string
-                    {
-                        return query("SELECT * FROM table WHERE id=" . (int)$id);
-                    }
-                    /**
-                     * @return string
-                     * @psalm-taint-sink sql $sql
-                     * @psalm-taint-specialize
-                     */
-                    function query(string $sql) {}
-                    $value = $_GET["value"];
-                    $result = fetch($value);',
-            ],
             'dontTaintArrayWithDifferentOffsetUpdated' => [
                 'code' => '<?php
                     function foo() {
@@ -749,6 +719,29 @@ class TaintTest extends TestCase
                     $d = mysqli_real_escape_string($_GET["d"]);
 
                     $mysqli->query("$a$b$c$d");',
+            ],
+            'querySimpleXMLElement' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-taint-escape xpath
+                     */
+                    function my_escaping_function_for_xpath(string $input) : string {};
+
+                    function queryExpression(SimpleXMLElement $xml) : array|false|null {
+                        $expression = $_GET["expression"];
+                        $expression = my_escaping_function_for_xpath($expression);
+                        return $xml->xpath($expression);
+                    }',
+            ],
+            'escapeSeconds' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-taint-escape sleep
+                     */
+                    function my_escaping_function_for_seconds(mixed $input) : int {};
+
+                    $seconds = my_escaping_function_for_seconds($_GET["seconds"]);
+                    sleep($seconds);',
             ],
         ];
     }
@@ -882,6 +875,40 @@ class TaintTest extends TestCase
                             $pdo->exec("delete from users where user_id = " . $userId);
                         }
                     }',
+                'error_message' => 'TaintedSql',
+            ],
+            'taintedInputAfterIntCast' => [
+                'code' => '<?php
+                    class A {
+                        public function getUserId() : int {
+                            return (int) $_GET["user_id"];
+                        }
+
+                        public function getAppendedUserId() : string {
+                            return "aaaa" . $this->getUserId();
+                        }
+
+                        public function deleteUser(PDO $pdo) : void {
+                            $userId = $this->getAppendedUserId();
+                            $pdo->exec("delete from users where user_id = " . $userId);
+                        }
+                    }',
+                'error_message' => 'TaintedSql',
+            ],
+            'TaintForIntTypeCastUsingAnnotatedSink' => [
+                'code' => '<?php // --taint-analysis
+                    function fetch($id): string
+                    {
+                        return query("SELECT * FROM table WHERE id=" . (int)$id);
+                    }
+                    /**
+                     * @return string
+                     * @psalm-taint-sink sql $sql
+                     * @psalm-taint-specialize
+                     */
+                    function query(string $sql) {}
+                    $value = $_GET["value"];
+                    $result = fetch($value);',
                 'error_message' => 'TaintedSql',
             ],
             'taintedInputFromReturnTypeWithBranch' => [
@@ -2503,6 +2530,55 @@ class TaintTest extends TestCase
                     $function->invoke();',
                 'error_message' => 'TaintedCallable',
             ],
+            'querySimpleXMLElement' => [
+                'code' => '<?php
+                    function queryExpression(SimpleXMLElement $xml) : array|false|null {
+                        $expression = $_GET["expression"];
+                        return $xml->xpath($expression);
+                    }',
+                'error_message' => 'TaintedXpath',
+            ],
+            'queryDOMXPath' => [
+                'code' => '<?php
+                    function queryExpression(DOMXPath $xpath) : mixed {
+                        $expression = $_GET["expression"];
+                        return $xpath->query($expression);
+                    }',
+                'error_message' => 'TaintedXpath',
+            ],
+            'evaluateDOMXPath' => [
+                'code' => '<?php
+                    function evaluateExpression(DOMXPath $xpath) : mixed {
+                        $expression = $_GET["expression"];
+                        return $xpath->evaluate($expression);
+                    }',
+                'error_message' => 'TaintedXpath',
+            ],
+            'taintedSleep' => [
+                'code' => '<?php
+                    sleep($_GET["seconds"]);',
+                'error_message' => 'TaintedSleep',
+            ],
+            'taintedUsleep' => [
+                'code' => '<?php
+                    usleep($_GET["microseconds"]);',
+                'error_message' => 'TaintedSleep',
+            ],
+            'taintedTimeNanosleepSeconds' => [
+                'code' => '<?php
+                    time_nanosleep($_GET["seconds"], 42);',
+                'error_message' => 'TaintedSleep',
+            ],
+            'taintedTimeNanosleepNanoseconds' => [
+                'code' => '<?php
+                    time_nanosleep(42, $_GET["nanoseconds"]);',
+                'error_message' => 'TaintedSleep',
+            ],
+            'taintedTimeSleepUntil' => [
+                'code' => '<?php
+                    time_sleep_until($_GET["timestamp"]);',
+                'error_message' => 'TaintedSleep',
+            ],
         ];
     }
 
@@ -2526,7 +2602,7 @@ class TaintTest extends TestCase
         $this->analyzeFile($filePath, new Context(), false);
 
         $actualIssueTypes = array_map(
-            fn(IssueData $issue): string => $issue->type . '{ ' . trim($issue->snippet) . ' }',
+            static fn(IssueData $issue): string => $issue->type . '{ ' . trim($issue->snippet) . ' }',
             IssueBuffer::getIssuesDataForFile($filePath),
         );
         self::assertSame($expectedIssuesTypes, $actualIssueTypes);

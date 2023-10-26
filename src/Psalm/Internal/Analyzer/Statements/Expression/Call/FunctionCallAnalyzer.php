@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
 use PhpParser;
@@ -77,13 +79,13 @@ use function strtolower;
 /**
  * @internal
  */
-class FunctionCallAnalyzer extends CallAnalyzer
+final class FunctionCallAnalyzer extends CallAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\FuncCall $stmt,
         Context $context,
-        ?TemplateResult $template_result = null
+        ?TemplateResult $template_result = null,
     ): bool {
         $function_name = $stmt->name;
 
@@ -432,7 +434,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
         PhpParser\Node\Expr\FuncCall $stmt,
         PhpParser\Node\Name $function_name,
         Context $context,
-        CodeLocation $code_location
+        CodeLocation $code_location,
     ): FunctionCallInfo {
         $function_call_info = new FunctionCallInfo();
 
@@ -611,7 +613,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
         PhpParser\Node\Expr\FuncCall $stmt,
         PhpParser\Node\Expr\FuncCall $real_stmt,
         PhpParser\Node\Expr $function_name,
-        Context $context
+        Context $context,
     ): FunctionCallInfo {
         $function_call_info = new FunctionCallInfo();
 
@@ -766,7 +768,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
                         if (strpos($var_type_part->value, '::')) {
                             $parts = explode('::', strtolower($var_type_part->value));
                             $fq_class_name = $parts[0];
-                            $fq_class_name = preg_replace('/^\\\/', '', $fq_class_name, 1);
+                            $fq_class_name = (string) preg_replace('/^\\\/', '', $fq_class_name, 1);
                             $potential_method_id = new MethodIdentifier($fq_class_name, $parts[1]);
                         } else {
                             $function_call_info->new_function_name = new VirtualFullyQualified(
@@ -884,7 +886,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
         PhpParser\Node\Expr\FuncCall $real_stmt,
         PhpParser\Node\Expr $function_name,
         Context $context,
-        Atomic $atomic_type
+        Atomic $atomic_type,
     ): void {
         $old_data_provider = $statements_analyzer->node_data;
 
@@ -940,7 +942,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
         Codebase $codebase,
         PhpParser\Node\Expr\FuncCall $stmt,
         PhpParser\Node\Arg $first_arg,
-        Context $context
+        Context $context,
     ): void {
         $first_arg_value_id = spl_object_id($first_arg->value);
 
@@ -1032,7 +1034,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
         PhpParser\Node\Expr\FuncCall $stmt,
         PhpParser\Node $function_name,
         FunctionCallInfo $function_call_info,
-        Context $context
+        Context $context,
     ): void {
         $config = $codebase->config;
 
@@ -1120,7 +1122,7 @@ class FunctionCallAnalyzer extends CallAnalyzer
 
     private static function callUsesByReferenceArguments(
         FunctionCallInfo $function_call_info,
-        PhpParser\Node\Expr\FuncCall $stmt
+        PhpParser\Node\Expr\FuncCall $stmt,
     ): bool {
         // If the function doesn't have any by-reference parameters
         // we shouldn't look any further.

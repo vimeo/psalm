@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call\Method;
 
 use PhpParser;
@@ -55,7 +57,7 @@ use function strtolower;
 /**
  * @internal
  */
-class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
+final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
 {
     /**
      * @param  TNamedObject|TTemplateParam|null  $static_type
@@ -73,7 +75,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
         ?string $lhs_var_id,
         MethodIdentifier $method_id,
         AtomicMethodCallAnalysisResult $result,
-        ?TemplateResult $inferred_template_result = null
+        ?TemplateResult $inferred_template_result = null,
     ): Union {
         $config = $codebase->config;
 
@@ -87,7 +89,8 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
 
         $cased_method_id = $fq_class_name . '::' . $stmt_name->name;
 
-        $result->existent_method_ids[] = $method_id->__toString();
+
+        $result->existent_method_ids[$method_id->__toString()] = true;
 
         if ($context->collect_initializations && $context->calling_method_id) {
             [$calling_method_class] = explode('::', $context->calling_method_id);
@@ -542,7 +545,7 @@ class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
         PhpParser\Node\Expr\MethodCall $stmt,
         PhpParser\Node\Identifier $stmt_name,
         Context $context,
-        string $fq_class_name
+        string $fq_class_name,
     ): ?Union {
         $method_name = strtolower($stmt_name->name);
         if (!in_array($method_name, ['__get', '__set'], true)) {

@@ -13,7 +13,7 @@ use Amp\DeferredFuture;
 /**
  * @internal
  */
-class ClientHandler
+final class ClientHandler
 {
     public ProtocolReader $protocolReader;
 
@@ -35,7 +35,7 @@ class ClientHandler
      * @param array|object $params The method parameters
      * @return mixed Resolved with the result of the request or rejected with an error
      */
-    public function request(string $method, $params)
+    public function request(string $method, array|object $params): mixed
     {
         $id = $this->idGenerator->generate();
 
@@ -77,7 +77,7 @@ class ClientHandler
      * @param string $method The method to call
      * @param array|object $params The method parameters
      */
-    public function notify(string $method, $params): void
+    public function notify(string $method, array|object $params): void
     {
         $this->protocolWriter->write(
             new Message(

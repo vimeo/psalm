@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer;
 
 use PhpParser;
@@ -25,7 +27,6 @@ use Psalm\IssueBuffer;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
-use function array_merge;
 use function count;
 use function is_string;
 use function preg_match;
@@ -42,7 +43,7 @@ use function trim;
 /**
  * @internal
  */
-class CommentAnalyzer
+final class CommentAnalyzer
 {
     public const TYPE_REGEX = '(\??\\\?[\(\)A-Za-z0-9_&\<\.=,\>\[\]\-\{\}:|?\\\\]*|\$[a-zA-Z_0-9_]+)';
 
@@ -57,7 +58,7 @@ class CommentAnalyzer
         FileSource $source,
         Aliases $aliases,
         ?array $template_type_map = null,
-        ?array $type_aliases = null
+        ?array $type_aliases = null,
     ): array {
         $parsed_docblock = DocComment::parsePreservingLength($comment);
 
@@ -83,7 +84,7 @@ class CommentAnalyzer
         FileSource $source,
         Aliases $aliases,
         ?array $template_type_map = null,
-        ?array $type_aliases = null
+        ?array $type_aliases = null,
     ): array {
         $var_id = null;
 
@@ -152,7 +153,7 @@ class CommentAnalyzer
                         } else {
                             $description = trim(substr($var_line, strlen($line_parts[0]) + 1));
                         }
-                        $description = preg_replace('/\\n \\*\\s+/um', ' ', $description);
+                        $description = (string) preg_replace('/\\n \\*\\s+/um', ' ', $description);
                     }
                 }
 
@@ -218,7 +219,7 @@ class CommentAnalyzer
 
     private static function decorateVarDocblockComment(
         VarDocblockComment $var_comment,
-        ParsedDocblock $parsed_docblock
+        ParsedDocblock $parsed_docblock,
     ): void {
         $var_comment->deprecated = isset($parsed_docblock->tags['deprecated']);
         $var_comment->internal = isset($parsed_docblock->tags['internal']);
@@ -259,8 +260,8 @@ class CommentAnalyzer
      */
     public static function sanitizeDocblockType(string $docblock_type): string
     {
-        $docblock_type = preg_replace('@^[ \t]*\*@m', '', $docblock_type);
-        $docblock_type = preg_replace('/,\n\s+}/', '}', $docblock_type);
+        $docblock_type = (string) preg_replace('@^[ \t]*\*@m', '', $docblock_type);
+        $docblock_type = (string) preg_replace('/,\n\s+}/', '}', $docblock_type);
 
         return str_replace("\n", '', $docblock_type);
     }
@@ -397,10 +398,10 @@ class CommentAnalyzer
                     continue;
                 }
 
-                $remaining = trim(preg_replace('@^[ \t]*\* *@m', ' ', substr($return_block, $i + 1)));
+                $remaining = trim((string) preg_replace('@^[ \t]*\* *@m', ' ', substr($return_block, $i + 1)));
 
                 if ($remaining) {
-                    return array_merge([rtrim($type)], preg_split('/\s+/', $remaining) ?: []);
+                    return [rtrim($type), ...preg_split('/\s+/', $remaining) ?: []];
                 }
 
                 return [$type];
@@ -418,7 +419,7 @@ class CommentAnalyzer
     public static function getVarComments(
         PhpParser\Comment\Doc $doc_comment,
         StatementsAnalyzer $statements_analyzer,
-        PhpParser\Node\Expr\Variable $var
+        PhpParser\Node\Expr\Variable $var,
     ): array {
         $codebase = $statements_analyzer->getCodebase();
         $parsed_docblock = $statements_analyzer->getParsedDocblock();
@@ -465,7 +466,7 @@ class CommentAnalyzer
         array $var_comments,
         PhpParser\Node\Expr\Variable $var,
         Context $context,
-        StatementsAnalyzer $statements_analyzer
+        StatementsAnalyzer $statements_analyzer,
     ): ?Union {
         if (!is_string($var->name)) {
             return null;

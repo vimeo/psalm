@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\LanguageServer\Provider;
 
 use PhpParser;
@@ -10,7 +12,7 @@ use function microtime;
 /**
  * @internal
  */
-class ParserCacheProvider extends InternalParserCacheProvider
+final class ParserCacheProvider extends InternalParserCacheProvider
 {
     /**
      * @var array<string, string>
@@ -39,7 +41,7 @@ class ParserCacheProvider extends InternalParserCacheProvider
     public function loadStatementsFromCache(
         string $file_path,
         int $file_modified_time,
-        string $file_content_hash
+        string $file_content_hash,
     ): ?array {
         if (isset($this->statements_cache[$file_path])
             && $this->statements_cache_time[$file_path] >= $file_modified_time
@@ -70,7 +72,7 @@ class ParserCacheProvider extends InternalParserCacheProvider
         string $file_path,
         string $file_content_hash,
         array $stmts,
-        bool $touch_only
+        bool $touch_only,
     ): void {
         $this->statements_cache[$file_path] = $stmts;
         $this->statements_cache_time[$file_path] = microtime(true);

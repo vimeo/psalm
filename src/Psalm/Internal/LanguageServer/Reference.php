@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\LanguageServer;
 
 use LanguageServerProtocol\Range;
@@ -7,7 +9,7 @@ use LanguageServerProtocol\Range;
 /**
  * @internal
  */
-class Reference
+final class Reference
 {
     public string $file_path;
     public string $symbol;

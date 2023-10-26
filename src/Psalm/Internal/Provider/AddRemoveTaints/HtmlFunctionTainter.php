@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Provider\AddRemoveTaints;
 
 use PhpParser;
@@ -16,7 +18,7 @@ use const ENT_QUOTES;
 /**
  * @internal
  */
-class HtmlFunctionTainter implements AddTaintsInterface, RemoveTaintsInterface
+final class HtmlFunctionTainter implements AddTaintsInterface, RemoveTaintsInterface
 {
     /**
      * Called to see what taints should be added

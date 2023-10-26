@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\Fetch;
 
 use PhpParser;
@@ -41,7 +43,7 @@ use function time;
 /**
  * @internal
  */
-class VariableFetchAnalyzer
+final class VariableFetchAnalyzer
 {
     public const SUPER_GLOBALS = [
         '$GLOBALS',
@@ -69,7 +71,7 @@ class VariableFetchAnalyzer
         ?Union $by_ref_type = null,
         bool $array_assignment = false,
         bool $from_global = false,
-        bool $assigned_to_reference = false
+        bool $assigned_to_reference = false,
     ): bool {
         $project_analyzer = $statements_analyzer->getFileAnalyzer()->project_analyzer;
         $codebase = $statements_analyzer->getCodebase();
@@ -431,7 +433,7 @@ class VariableFetchAnalyzer
         PhpParser\Node\Expr\Variable $stmt,
         string $var_name,
         Union &$stmt_type,
-        Context $context
+        Context $context,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -505,7 +507,7 @@ class VariableFetchAnalyzer
         StatementsAnalyzer $statements_analyzer,
         string $var_name,
         Union &$type,
-        PhpParser\Node\Expr\Variable $stmt
+        PhpParser\Node\Expr\Variable $stmt,
     ): void {
         if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
             && !in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())

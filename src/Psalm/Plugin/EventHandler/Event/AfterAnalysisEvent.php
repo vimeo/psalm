@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Plugin\EventHandler\Event;
 
 use Psalm\Codebase;
@@ -26,7 +28,7 @@ final class AfterAnalysisEvent
         Codebase $codebase,
         array $issues,
         array $build_info,
-        ?SourceControlInfo $source_control_info = null
+        ?SourceControlInfo $source_control_info = null,
     ) {
         $this->codebase = $codebase;
         $this->issues = $issues;

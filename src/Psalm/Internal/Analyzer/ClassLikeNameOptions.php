@@ -1,11 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer;
 
 /**
  * @internal
  */
-class ClassLikeNameOptions
+final class ClassLikeNameOptions
 {
     public bool $inferred;
 
@@ -25,7 +27,7 @@ class ClassLikeNameOptions
         bool $allow_interface = true,
         bool $allow_enum = true,
         bool $from_docblock = false,
-        bool $from_attribute = false
+        bool $from_attribute = false,
     ) {
         $this->inferred = $inferred;
         $this->allow_trait = $allow_trait;

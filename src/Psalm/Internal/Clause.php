@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal;
 
 use Psalm\Storage\Assertion;
@@ -12,6 +14,7 @@ use Psalm\Type\Atomic\TLiteralString;
 
 use function array_diff;
 use function array_keys;
+use function assert;
 use function count;
 use function hash;
 use function implode;
@@ -26,7 +29,7 @@ use const PHP_VERSION_ID;
  * @internal
  * @psalm-immutable
  */
-class Clause
+final class Clause
 {
     use ImmutableNonCloneableTrait;
 
@@ -89,7 +92,7 @@ class Clause
         bool $wedge = false,
         bool $reconcilable = true,
         bool $generated = false,
-        array $redefined_vars = []
+        array $redefined_vars = [],
     ) {
         if ($wedge || !$reconcilable) {
             $this->hash = ($wedge ? 'w' : '') . $creating_object_id;
@@ -187,6 +190,7 @@ class Clause
             if (count($var_id_clauses) > 1) {
                 $clause_strings[] = '('.implode(') || (', $var_id_clauses).')';
             } else {
+                assert(!empty($var_id_clauses));
                 $clause_strings[] = reset($var_id_clauses);
             }
         }
@@ -194,6 +198,8 @@ class Clause
         if (count($clause_strings) > 1) {
             return '(' . implode(') || (', $clause_strings) . ')';
         }
+
+        assert(!empty($clause_strings));
 
         return reset($clause_strings);
     }

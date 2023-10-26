@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
 use Psalm\Context;
@@ -23,7 +25,7 @@ class ConstantTest extends TestCase
 
     //     $this->testConfig->ensure_array_int_offsets_exist = true;
 
-    //     $file_path = getcwd() . '/src/somefile.php';
+    //     $file_path = (string) getcwd() . '/src/somefile.php';
 
     //     $this->addFile(
     //         $file_path,
@@ -49,8 +51,8 @@ class ConstantTest extends TestCase
 
     public function testUseObjectConstant(): void
     {
-        $file1 = getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'file1.php';
-        $file2 = getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'file2.php';
+        $file1 = (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'file1.php';
+        $file2 = (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'file2.php';
 
         $this->addFile(
             $file1,

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
 use Psalm\Config;
@@ -3030,6 +3032,17 @@ class FunctionCallTest extends TestCase
                         return strpos($s, 0) !== false;
                     }',
                 'error_message' => 'InvalidScalarArgument',
+            ],
+            'disallowNeverTypeForParam' => [
+                'code' => '<?php
+                    function foo(never $_): void
+                    {
+                        return;
+                    }
+                    ',
+                'error_message' => 'ReservedWord',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
         ];
     }

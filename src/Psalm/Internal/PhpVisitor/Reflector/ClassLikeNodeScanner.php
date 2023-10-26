@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\PhpVisitor\Reflector;
 
 use Exception;
@@ -42,6 +44,7 @@ use Psalm\Issue\ConstantDeclarationInTrait;
 use Psalm\Issue\DuplicateClass;
 use Psalm\Issue\DuplicateConstant;
 use Psalm\Issue\DuplicateEnumCase;
+use Psalm\Issue\DuplicateProperty;
 use Psalm\Issue\InvalidAttribute;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidEnumBackingType;
@@ -76,8 +79,6 @@ use function assert;
 use function count;
 use function get_class;
 use function implode;
-use function is_int;
-use function is_string;
 use function preg_match;
 use function preg_replace;
 use function preg_split;
@@ -92,7 +93,7 @@ use const PREG_SPLIT_NO_EMPTY;
 /**
  * @internal
  */
-class ClassLikeNodeScanner
+final class ClassLikeNodeScanner
 {
     private FileScanner $file_scanner;
 
@@ -130,7 +131,7 @@ class ClassLikeNodeScanner
         FileStorage $file_storage,
         FileScanner $file_scanner,
         Aliases $aliases,
-        ?Name $namespace_name
+        ?Name $namespace_name,
     ) {
         $this->codebase = $codebase;
         $this->file_storage = $file_storage;
@@ -737,14 +738,11 @@ class ClassLikeNodeScanner
         if ($storage->is_enum) {
             $name_types = [];
             $values_types = [];
-            foreach ($storage->enum_cases as $name => $enumCaseStorage) {
+            foreach ($storage->enum_cases as $name => $enum_case_storage) {
                 $name_types[] = Type::getAtomicStringFromLiteral($name);
-                if ($storage->enum_type !== null) {
-                    if (is_string($enumCaseStorage->value)) {
-                        $values_types[] = Type::getAtomicStringFromLiteral($enumCaseStorage->value);
-                    } elseif (is_int($enumCaseStorage->value)) {
-                        $values_types[] = new Type\Atomic\TLiteralInt($enumCaseStorage->value);
-                    }
+                if ($storage->enum_type !== null
+                    && $enum_case_storage->value !== null) {
+                    $values_types[] = $enum_case_storage->value;
                 }
             }
             if ($name_types !== []) {
@@ -942,7 +940,7 @@ class ClassLikeNodeScanner
                     $this->useTemplatedType(
                         $storage,
                         $node,
-                        trim(preg_replace('@^[ \t]*\*@m', '', $template_line)),
+                        trim((string) preg_replace('@^[ \t]*\*@m', '', $template_line)),
                     );
                 }
             }
@@ -963,7 +961,7 @@ class ClassLikeNodeScanner
     private function extendTemplatedType(
         ClassLikeStorage $storage,
         PhpParser\Node\Stmt\ClassLike $node,
-        string $extended_class_name
+        string $extended_class_name,
     ): void {
         if (trim($extended_class_name) === '') {
             $storage->docblock_issues[] = new InvalidDocblock(
@@ -1047,7 +1045,7 @@ class ClassLikeNodeScanner
     private function implementTemplatedType(
         ClassLikeStorage $storage,
         PhpParser\Node\Stmt\ClassLike $node,
-        string $implemented_class_name
+        string $implemented_class_name,
     ): void {
         if (trim($implemented_class_name) === '') {
             $storage->docblock_issues[] = new InvalidDocblock(
@@ -1133,7 +1131,7 @@ class ClassLikeNodeScanner
     private function useTemplatedType(
         ClassLikeStorage $storage,
         PhpParser\Node\Stmt\TraitUse $node,
-        string $used_class_name
+        string $used_class_name,
     ): void {
         if (trim($used_class_name) === '') {
             $storage->docblock_issues[] = new InvalidDocblock(
@@ -1249,7 +1247,7 @@ class ClassLikeNodeScanner
     private function visitClassConstDeclaration(
         PhpParser\Node\Stmt\ClassConst $stmt,
         ClassLikeStorage $storage,
-        string $fq_classlike_name
+        string $fq_classlike_name,
     ): void {
         if ($storage->is_trait && $this->codebase->analysis_php_version_id < 8_02_00) {
             IssueBuffer::maybeAdd(new ConstantDeclarationInTrait(
@@ -1413,7 +1411,7 @@ class ClassLikeNodeScanner
     private function visitEnumDeclaration(
         PhpParser\Node\Stmt\EnumCase $stmt,
         ClassLikeStorage $storage,
-        string $fq_classlike_name
+        string $fq_classlike_name,
     ): void {
         if (isset($storage->constants[$stmt->name->name])) {
             IssueBuffer::maybeAdd(new DuplicateConstant(
@@ -1441,9 +1439,9 @@ class ClassLikeNodeScanner
 
             if ($case_type) {
                 if ($case_type->isSingleIntLiteral()) {
-                    $enum_value = $case_type->getSingleIntLiteral()->value;
+                    $enum_value = $case_type->getSingleIntLiteral();
                 } elseif ($case_type->isSingleStringLiteral()) {
-                    $enum_value = $case_type->getSingleStringLiteral()->value;
+                    $enum_value = $case_type->getSingleStringLiteral();
                 } else {
                     IssueBuffer::maybeAdd(
                         new InvalidEnumCaseValue(
@@ -1513,7 +1511,7 @@ class ClassLikeNodeScanner
         FileStorage $file_storage,
         Aliases $aliases,
         PhpParser\Node\Stmt $stmt,
-        ?string $fq_classlike_name
+        ?string $fq_classlike_name,
     ): array {
         $storages = [];
         foreach ($stmt->attrGroups as $attr_group) {
@@ -1538,7 +1536,7 @@ class ClassLikeNodeScanner
         PhpParser\Node\Stmt\Property $stmt,
         Config $config,
         ClassLikeStorage $storage,
-        string $fq_classlike_name
+        string $fq_classlike_name,
     ): void {
         $comment = $stmt->getDocComment();
         $var_comment = null;
@@ -1617,6 +1615,16 @@ class ClassLikeNodeScanner
 
         foreach ($stmt->props as $property) {
             $doc_var_location = null;
+
+            if (isset($storage->properties[$property->name->name])) {
+                IssueBuffer::maybeAdd(
+                    new DuplicateProperty(
+                        'Property ' . $fq_classlike_name . '::$' . $property->name->name . ' has already been defined',
+                        new CodeLocation($this->file_scanner, $stmt, null, true),
+                        $fq_classlike_name . '::$' . $property->name->name,
+                    ),
+                );
+            }
 
             $property_storage = $storage->properties[$property->name->name] = new PropertyStorage();
             $property_storage->is_static = $stmt->isStatic();
@@ -1862,7 +1870,7 @@ class ClassLikeNodeScanner
         PhpParser\Comment\Doc $comment,
         Aliases $aliases,
         ?array $type_aliases,
-        ?string $self_fqcln
+        ?string $self_fqcln,
     ): array {
         $parsed_docblock = DocComment::parsePreservingLength($comment);
 
@@ -1893,7 +1901,7 @@ class ClassLikeNodeScanner
         array $type_alias_comment_lines,
         Aliases $aliases,
         ?array $type_aliases,
-        ?string $self_fqcln
+        ?string $self_fqcln,
     ): array {
         $type_alias_tokens = [];
 
@@ -1904,8 +1912,8 @@ class ClassLikeNodeScanner
                 continue;
             }
 
-            $var_line = preg_replace('/[ \t]+/', ' ', preg_replace('@^[ \t]*\*@m', '', $var_line));
-            $var_line = preg_replace('/,\n\s+\}/', '}', $var_line);
+            $var_line = (string) preg_replace('/[ \t]+/', ' ', (string) preg_replace('@^[ \t]*\*@m', '', $var_line));
+            $var_line = (string) preg_replace('/,\n\s+\}/', '}', $var_line);
             $var_line = str_replace("\n", '', $var_line);
 
             $var_line_parts = preg_split('/( |=)/', $var_line, -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY);

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Type;
 
 use Psalm\Type\Union;
@@ -7,7 +9,7 @@ use Psalm\Type\Union;
 /**
  * @internal
  */
-class TemplateBound
+final class TemplateBound
 {
     public Union $type;
 
@@ -36,7 +38,7 @@ class TemplateBound
         Union $type,
         int $appearance_depth = 0,
         ?int $arg_offset = null,
-        ?string $equality_bound_classlike = null
+        ?string $equality_bound_classlike = null,
     ) {
         $this->type = $type;
         $this->appearance_depth = $appearance_depth;

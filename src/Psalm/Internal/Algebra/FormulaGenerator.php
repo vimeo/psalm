@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Algebra;
 
 use PhpParser;
@@ -21,7 +23,7 @@ use function substr;
 /**
  * @internal
  */
-class FormulaGenerator
+final class FormulaGenerator
 {
      /**
      * @return list<Clause>
@@ -34,7 +36,7 @@ class FormulaGenerator
         FileSource $source,
         ?Codebase $codebase = null,
         bool $inside_negation = false,
-        bool $cache = true
+        bool $cache = true,
     ): array {
         if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd ||
             $conditional instanceof PhpParser\Node\Expr\BinaryOp\LogicalAnd

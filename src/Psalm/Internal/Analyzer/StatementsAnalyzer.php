@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer;
 
 use InvalidArgumentException;
@@ -21,6 +23,7 @@ use Psalm\Internal\Analyzer\Statements\Block\TryAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\WhileAnalyzer;
 use Psalm\Internal\Analyzer\Statements\BreakAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ContinueAnalyzer;
+use Psalm\Internal\Analyzer\Statements\DeclareAnalyzer;
 use Psalm\Internal\Analyzer\Statements\EchoAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
@@ -92,7 +95,7 @@ use const STDERR;
 /**
  * @internal
  */
-class StatementsAnalyzer extends SourceAnalyzer
+final class StatementsAnalyzer extends SourceAnalyzer
 {
     protected SourceAnalyzer $source;
 
@@ -174,7 +177,7 @@ class StatementsAnalyzer extends SourceAnalyzer
         array $stmts,
         Context $context,
         ?Context $global_context = null,
-        bool $root_scope = false
+        bool $root_scope = false,
     ): ?bool {
         if (!$stmts) {
             return null;
@@ -281,7 +284,7 @@ class StatementsAnalyzer extends SourceAnalyzer
     private static function hoistConstants(
         StatementsAnalyzer $statements_analyzer,
         array $stmts,
-        Context $context
+        Context $context,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -339,7 +342,7 @@ class StatementsAnalyzer extends SourceAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt $stmt,
         Context $context,
-        ?Context $global_context
+        ?Context $global_context,
     ): ?bool {
         if (self::dispatchBeforeStatementAnalysis($stmt, $context, $statements_analyzer) === false) {
             return false;
@@ -597,14 +600,7 @@ class StatementsAnalyzer extends SourceAnalyzer
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Label) {
             // do nothing
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Declare_) {
-            foreach ($stmt->declares as $declaration) {
-                if ((string) $declaration->key === 'strict_types'
-                    && $declaration->value instanceof PhpParser\Node\Scalar\LNumber
-                    && $declaration->value->value === 1
-                ) {
-                    $context->strict_types = true;
-                }
-            }
+            DeclareAnalyzer::analyze($statements_analyzer, $stmt, $context);
         } elseif ($stmt instanceof PhpParser\Node\Stmt\HaltCompiler) {
             $context->has_returned = true;
         } else {
@@ -684,7 +680,11 @@ class StatementsAnalyzer extends SourceAnalyzer
                 } else {
                     try {
                         $checked_type = $context->vars_in_scope[$checked_var_id];
-                        $check_type = Type::parseString($check_type_string);
+                        $fq_check_type_string = Type::getFQCLNFromString(
+                            $check_type_string,
+                            $statements_analyzer->getAliases(),
+                        );
+                        $check_type = Type::parseString($fq_check_type_string);
                         /** @psalm-suppress InaccessibleProperty We just created this type */
                         $check_type->possibly_undefined = $possibly_undefined;
 
@@ -721,7 +721,7 @@ class StatementsAnalyzer extends SourceAnalyzer
     private static function dispatchAfterStatementAnalysis(
         PhpParser\Node\Stmt $stmt,
         Context $context,
-        StatementsAnalyzer $statements_analyzer
+        StatementsAnalyzer $statements_analyzer,
     ): ?bool {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -747,7 +747,7 @@ class StatementsAnalyzer extends SourceAnalyzer
     private static function dispatchBeforeStatementAnalysis(
         PhpParser\Node\Stmt $stmt,
         Context $context,
-        StatementsAnalyzer $statements_analyzer
+        StatementsAnalyzer $statements_analyzer,
     ): ?bool {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -773,7 +773,7 @@ class StatementsAnalyzer extends SourceAnalyzer
     private function parseStatementDocblock(
         PhpParser\Comment\Doc $docblock,
         PhpParser\Node\Stmt $stmt,
-        Context $context
+        Context $context,
     ): void {
         $codebase = $this->getCodebase();
 
@@ -793,6 +793,7 @@ class StatementsAnalyzer extends SourceAnalyzer
         $comments = $this->parsed_docblock;
 
         if (isset($comments->tags['psalm-scope-this'])) {
+            assert(count($comments->tags['psalm-scope-this']));
             $trimmed = trim(reset($comments->tags['psalm-scope-this']));
             $scope_fqcn = Type::getFQCLNFromString($trimmed, $this->getAliases());
 
@@ -871,7 +872,7 @@ class StatementsAnalyzer extends SourceAnalyzer
             }
 
             if ($function_storage) {
-                $param_index = array_search(substr($var_id, 1), array_keys($function_storage->param_lookup));
+                $param_index = array_search(substr($var_id, 1), array_keys($function_storage->param_lookup), true);
                 if ($param_index !== false) {
                     $param = $function_storage->params[$param_index];
 
@@ -970,7 +971,7 @@ class StatementsAnalyzer extends SourceAnalyzer
 
     public function registerPossiblyUndefinedVariable(
         string $undefined_var_id,
-        PhpParser\Node\Expr\Variable $stmt
+        PhpParser\Node\Expr\Variable $stmt,
     ): void {
         if (!$this->data_flow_graph) {
             return;

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Issue;
 
 use Psalm\CodeLocation;
@@ -16,25 +18,20 @@ abstract class CodeIssue
     public const SHORTCODE = 0;
 
     /**
-     * @var CodeLocation
      * @readonly
      */
-    public $code_location;
+    public CodeLocation $code_location;
 
     /**
-     * @var string
      * @readonly
      */
-    public $message;
+    public string $message;
 
-    /**
-     * @var ?string
-     */
-    public $dupe_key;
+    public ?string $dupe_key = null;
 
     public function __construct(
         string $message,
-        CodeLocation $code_location
+        CodeLocation $code_location,
     ) {
         $this->code_location = $code_location;
         $this->message = $message;

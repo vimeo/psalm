@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\PhpVisitor;
 
 use PhpParser;
@@ -17,7 +19,7 @@ use function trait_exists;
  *
  * @internal
  */
-class TraitFinder extends PhpParser\NodeVisitorAbstract
+final class TraitFinder extends PhpParser\NodeVisitorAbstract
 {
     /** @var list<PhpParser\Node\Stmt\Trait_> */
     private array $matching_trait_nodes = [];

@@ -32,7 +32,7 @@ final class BeforeStatementAnalysisEvent
         Context $context,
         StatementsSource $statements_source,
         Codebase $codebase,
-        array $file_replacements = []
+        array $file_replacements = [],
     ) {
         $this->stmt = $stmt;
         $this->context = $context;

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Provider;
 
 use Closure;
@@ -16,7 +18,7 @@ use function strtolower;
 /**
  * @internal
  */
-class PropertyTypeProvider
+final class PropertyTypeProvider
 {
     /**
      * @var array<
@@ -65,7 +67,7 @@ class PropertyTypeProvider
         string $property_name,
         bool $read_mode,
         ?StatementsSource $source = null,
-        ?Context $context = null
+        ?Context $context = null,
     ): ?Union {
 
         if ($source) {

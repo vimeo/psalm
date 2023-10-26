@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm;
 
 use Composer\Autoload\ClassLoader;
@@ -67,7 +69,6 @@ use function file_get_contents;
 use function flock;
 use function fopen;
 use function function_exists;
-use function get_class;
 use function get_defined_constants;
 use function get_defined_functions;
 use function getcwd;
@@ -96,7 +97,9 @@ use function rtrim;
 use function scandir;
 use function sha1;
 use function simplexml_import_dom;
+use function str_contains;
 use function str_replace;
+use function str_starts_with;
 use function strlen;
 use function strpos;
 use function strrpos;
@@ -125,18 +128,18 @@ use const SCANDIR_SORT_NONE;
  * @psalm-suppress PropertyNotSetInConstructor
  * @psalm-consistent-constructor
  */
-class Config
+final class Config
 {
     private const DEFAULT_FILE_NAME = 'psalm.xml';
-    public const CONFIG_NAMESPACE = 'https://getpsalm.org/schema/config';
-    public const REPORT_INFO = 'info';
-    public const REPORT_ERROR = 'error';
-    public const REPORT_SUPPRESS = 'suppress';
+    final public const CONFIG_NAMESPACE = 'https://getpsalm.org/schema/config';
+    final public const REPORT_INFO = 'info';
+    final public const REPORT_ERROR = 'error';
+    final public const REPORT_SUPPRESS = 'suppress';
 
     /**
      * @var array<string>
      */
-    public static $ERROR_LEVELS = [
+    public static array $ERROR_LEVELS = [
         self::REPORT_INFO,
         self::REPORT_ERROR,
         self::REPORT_SUPPRESS,
@@ -170,7 +173,7 @@ class Config
      *
      * @var array<int, lowercase-string>
      */
-    protected $universal_object_crates;
+    private array $universal_object_crates;
 
     /**
      * @var static|null
@@ -179,74 +182,53 @@ class Config
 
     /**
      * Whether or not to use types as defined in docblocks
-     *
-     * @var bool
      */
-    public $use_docblock_types = true;
+    public bool $use_docblock_types = true;
 
     /**
      * Whether or not to use types as defined in property docblocks.
      * This is distinct from the above because you may want to use
      * property docblocks, but not function docblocks.
-     *
-     * @var bool
      */
-    public $use_docblock_property_types = false;
+    public bool $use_docblock_property_types = false;
 
     /**
      * Whether using property annotations in docblocks should implicitly seal properties
-     *
-     * @var bool
      */
-    public $docblock_property_types_seal_properties = true;
+    public bool $docblock_property_types_seal_properties = true;
 
     /**
      * Whether or not to throw an exception on first error
-     *
-     * @var bool
      */
-    public $throw_exception = false;
+    public bool $throw_exception = false;
 
     /**
      * The directory to store PHP Parser (and other) caches
      *
      * @internal
-     * @var string|null
      */
-    public $cache_directory;
+    public ?string $cache_directory = null;
 
     private bool $cache_directory_initialized = false;
 
     /**
      * The directory to store all Psalm project caches
-     *
-     * @var string|null
      */
-    public $global_cache_directory;
+    public ?string $global_cache_directory = null;
 
     /**
      * Path to the autoader
-     *
-     * @var string|null
      */
-    public $autoloader;
+    public ?string $autoloader = null;
 
-    /**
-     * @var ProjectFileFilter|null
-     */
-    protected $project_files;
+    protected ?ProjectFileFilter $project_files = null;
 
-    /**
-     * @var ProjectFileFilter|null
-     */
-    protected $extra_files;
+    private ?ProjectFileFilter $extra_files = null;
 
     /**
      * The base directory of this config file
-     *
-     * @var string
      */
-    public $base_dir;
+    public string $base_dir;
 
     /**
      * The PHP version to assume as declared in the config file
@@ -298,230 +280,124 @@ class Config
      */
     private array $stub_files = [];
 
-    /**
-     * @var bool
-     */
-    public $hide_external_errors = false;
+    public bool $hide_external_errors = false;
 
-    /**
-     * @var bool
-     */
-    public $hide_all_errors_except_passed_files = false;
+    public bool $hide_all_errors_except_passed_files = false;
 
-    /** @var bool */
-    public $allow_includes = true;
+    public bool $allow_includes = true;
 
     /** @var 1|2|3|4|5|6|7|8 */
-    public $level = 1;
+    public int $level = 1;
 
-    /**
-     * @var ?bool
-     */
-    public $show_mixed_issues;
+    public ?bool $show_mixed_issues = null;
 
-    /** @var bool */
-    public $strict_binary_operands = false;
+    public bool $strict_binary_operands = false;
 
-    /**
-     * @var bool
-     */
-    public $remember_property_assignments_after_call = true;
+    public bool $remember_property_assignments_after_call = true;
 
-    /** @var bool */
-    public $use_igbinary = false;
+    public bool $use_igbinary = false;
 
     /** @var 'lz4'|'deflate'|'off' */
-    public $compressor = 'off';
+    public string $compressor = 'off';
 
-    /**
-     * @var bool
-     */
-    public $allow_string_standin_for_class = false;
+    public bool $allow_string_standin_for_class = false;
 
-    /**
-     * @var bool
-     */
-    public $disable_suppress_all = false;
+    public bool $disable_suppress_all = false;
 
-    /**
-     * @var bool
-     */
-    public $use_phpdoc_method_without_magic_or_parent = false;
+    public bool $use_phpdoc_method_without_magic_or_parent = false;
 
-    /**
-     * @var bool
-     */
-    public $use_phpdoc_property_without_magic_or_parent = false;
+    public bool $use_phpdoc_property_without_magic_or_parent = false;
 
-    /**
-     * @var bool
-     */
-    public $skip_checks_on_unresolvable_includes = false;
+    public bool $skip_checks_on_unresolvable_includes = false;
 
-    /**
-     * @var bool
-     */
-    public $seal_all_methods = false;
+    public bool $seal_all_methods = false;
 
-    /**
-     * @var bool
-     */
-    public $seal_all_properties = false;
+    public bool $seal_all_properties = false;
 
-    /**
-     * @var bool
-     */
-    public $memoize_method_calls = false;
+    public bool $memoize_method_calls = false;
 
-    /**
-     * @var bool
-     */
-    public $hoist_constants = false;
+    public bool $hoist_constants = false;
 
-    /**
-     * @var bool
-     */
-    public $add_param_default_to_docblock_type = false;
+    public bool $add_param_default_to_docblock_type = false;
 
-    /**
-     * @var bool
-     */
-    public $disable_var_parsing = false;
+    public bool $disable_var_parsing = false;
 
-    /**
-     * @var bool
-     */
-    public $check_for_throws_docblock = false;
+    public bool $check_for_throws_docblock = false;
 
-    /**
-     * @var bool
-     */
-    public $check_for_throws_in_global_scope = false;
+    public bool $check_for_throws_in_global_scope = false;
 
-    /**
-     * @var bool
-     */
-    public $ignore_internal_falsable_issues = true;
+    public bool $ignore_internal_falsable_issues = false;
 
-    /**
-     * @var bool
-     */
-    public $ignore_internal_nullable_issues = true;
+    public bool $ignore_internal_nullable_issues = false;
 
     /**
      * @var array<string, bool>
      */
-    public $ignored_exceptions = [];
+    public array $ignored_exceptions = [];
 
     /**
      * @var array<string, bool>
      */
-    public $ignored_exceptions_in_global_scope = [];
+    public array $ignored_exceptions_in_global_scope = [];
 
     /**
      * @var array<string, bool>
      */
-    public $ignored_exceptions_and_descendants = [];
+    public array $ignored_exceptions_and_descendants = [];
 
     /**
      * @var array<string, bool>
      */
-    public $ignored_exceptions_and_descendants_in_global_scope = [];
+    public array $ignored_exceptions_and_descendants_in_global_scope = [];
 
-    /**
-     * @var bool
-     */
-    public $infer_property_types_from_constructor = true;
+    public bool $infer_property_types_from_constructor = true;
 
-    /**
-     * @var bool
-     */
-    public $ensure_array_string_offsets_exist = false;
+    public bool $ensure_array_string_offsets_exist = false;
 
-    /**
-     * @var bool
-     */
-    public $ensure_array_int_offsets_exist = false;
+    public bool $ensure_array_int_offsets_exist = false;
 
     /**
      * @var array<lowercase-string, bool>
      */
-    public $forbidden_functions = [];
+    public array $forbidden_functions = [];
 
-    /**
-     * @var bool
-     */
-    public $find_unused_code = true;
+    public bool $find_unused_code = true;
 
-    /**
-     * @var bool
-     */
-    public $find_unused_variables = false;
+    public bool $find_unused_variables = false;
 
-    /**
-     * @var bool
-     */
-    public $find_unused_psalm_suppress = false;
+    public bool $find_unused_psalm_suppress = false;
 
     public bool $find_unused_baseline_entry = true;
 
-    /**
-     * @var bool
-     */
-    public $run_taint_analysis = false;
+    public bool $run_taint_analysis = false;
 
-    /** @var bool */
-    public $use_phpstorm_meta_path = true;
+    public bool $use_phpstorm_meta_path = true;
 
-    /**
-     * @var bool
-     */
-    public $resolve_from_config_file = true;
+    public bool $resolve_from_config_file = true;
 
-    /**
-     * @var bool
-     */
-    public $restrict_return_types = false;
+    public bool $restrict_return_types = false;
 
-    /**
-     * @var bool
-     */
-    public $limit_method_complexity = false;
+    public bool $limit_method_complexity = false;
 
-    /**
-     * @var int
-     */
-    public $max_graph_size = 200;
+    public int $max_graph_size = 200;
 
-    /**
-     * @var int
-     */
-    public $max_avg_path_length = 70;
+    public int $max_avg_path_length = 70;
 
-    /**
-     * @var int
-     */
-    public $max_shaped_array_size = 100;
+    public int $max_shaped_array_size = 100;
 
     /**
      * @var string[]
      */
-    public $plugin_paths = [];
+    public array $plugin_paths = [];
 
     /**
      * @var array<array{class:string,config:?SimpleXMLElement}>
      */
     private array $plugin_classes = [];
 
-    /**
-     * @var bool
-     */
-    public $allow_internal_named_arg_calls = true;
+    public bool $allow_internal_named_arg_calls = true;
 
-    /**
-     * @var bool
-     */
-    public $allow_named_arg_calls = true;
+    public bool $allow_named_arg_calls = true;
 
     /** @var array<string, mixed> */
     private array $predefined_constants = [];
@@ -531,69 +407,51 @@ class Config
 
     private ?ClassLoader $composer_class_loader = null;
 
-    /**
-     * @var string
-     */
-    public $hash = '';
+    public string $hash = '';
 
-    /** @var string|null */
-    public $error_baseline;
+    public ?string $error_baseline = null;
+
+    public bool $include_php_versions_in_error_baseline = false;
 
     /**
-     * @var bool
-     */
-    public $include_php_versions_in_error_baseline = false;
-
-    /**
-     * @var string
      * @internal
      */
-    public $shepherd_endpoint = 'https://shepherd.dev/hooks/psalm';
+    public string $shepherd_endpoint = 'https://shepherd.dev/hooks/psalm';
 
     /**
      * @var array<string, string>
      */
-    public $globals = [];
+    public array $globals = [];
 
-    /**
-     * @var int
-     */
-    public $max_string_length = 1_000;
+    public int $max_string_length = 1_000;
 
     private ?IncludeCollector $include_collector = null;
 
-    /**
-     * @var TaintAnalysisFileFilter|null
-     */
-    protected $taint_analysis_ignored_files;
+    private ?TaintAnalysisFileFilter $taint_analysis_ignored_files = null;
 
     /**
      * @var bool whether to emit a backtrace of emitted issues to stderr
      */
-    public $debug_emitted_issues = false;
+    public bool $debug_emitted_issues = false;
 
     private bool $report_info = true;
 
-    /**
-     * @var EventDispatcher
-     */
-    public $eventDispatcher;
+    public EventDispatcher $eventDispatcher;
 
     /** @var list<ConfigIssue> */
-    public $config_issues = [];
+    public array $config_issues = [];
 
     /**
      * @var 'default'|'never'|'always'
      */
-    public $trigger_error_exits = 'default';
+    public string $trigger_error_exits = 'default';
 
     /**
      * @var string[]
      */
-    public $internal_stubs = [];
+    public array $internal_stubs = [];
 
-    /** @var ?int */
-    public $threads;
+    public ?int $threads = null;
 
     /**
      * A list of php extensions supported by Psalm.
@@ -606,7 +464,7 @@ class Config
      * @psalm-readonly-allow-private-mutation
      * @var array<string, bool|null>
      */
-    public $php_extensions = [
+    public array $php_extensions = [
         "apcu" => null,
         "decimal" => null,
         "dom" => null,
@@ -633,7 +491,7 @@ class Config
      * @var list<non-empty-string>
      * @readonly
      */
-    public $php_extensions_supported_by_psalm_callmaps = [
+    public array $php_extensions_supported_by_psalm_callmaps = [
         'apache',
         'bcmath',
         'bzip2',
@@ -698,7 +556,7 @@ class Config
      *
      * @var array<string, true>
      */
-    public $php_extensions_not_supported = [];
+    public array $php_extensions_not_supported = [];
 
     /**
      * @var array<class-string, PluginInterface>
@@ -814,7 +672,7 @@ class Config
         string $base_dir,
         string $file_contents,
         ?string $current_dir = null,
-        ?string $file_path = null
+        ?string $file_path = null,
     ): Config {
         if ($current_dir === null) {
             $current_dir = $base_dir;
@@ -840,6 +698,7 @@ class Config
         $dom_document->loadXML($file_contents, LIBXML_NONET);
         $dom_document->xinclude(LIBXML_NOWARNING | LIBXML_NONET);
 
+        /** @psalm-suppress PossiblyFalseArgument */
         chdir($oldpwd);
         return $dom_document;
     }
@@ -929,7 +788,7 @@ class Config
         DOMAttr $attribute,
         string $file_contents,
         self $config,
-        string $config_path
+        string $config_path,
     ): void {
         $line = $attribute->getLineNo();
         assert($line > 0); // getLineNo() always returns non-zero for nodes loaded from file
@@ -955,7 +814,7 @@ class Config
         DOMElement $deprecated_element_xml,
         string $file_contents,
         self $config,
-        string $config_path
+        string $config_path,
     ): void {
         $line = $deprecated_element_xml->getLineNo();
         assert($line > 0);
@@ -981,7 +840,7 @@ class Config
         self $config,
         DOMDocument $dom_document,
         string $file_contents,
-        string $config_path
+        string $config_path,
     ): void {
         $config->config_issues = [];
 
@@ -1016,7 +875,6 @@ class Config
     /**
      * @param non-empty-string $file_contents
      * @psalm-suppress MixedAssignment
-     * @psalm-suppress MixedArgument
      * @psalm-suppress MixedPropertyFetch
      * @throws ConfigException
      */
@@ -1024,7 +882,7 @@ class Config
         string $base_dir,
         string $file_contents,
         string $current_dir,
-        ?string $config_path
+        ?string $config_path,
     ): self {
         $config = new static();
 
@@ -1103,15 +961,17 @@ class Config
 
         $composer_json = null;
         if (file_exists($composer_json_path)) {
-            $composer_json = json_decode(file_get_contents($composer_json_path), true);
+            $composer_json_contents = file_get_contents($composer_json_path);
+            assert($composer_json_contents !== false);
+            $composer_json = json_decode($composer_json_contents, true, 512, JSON_THROW_ON_ERROR);
             if (!is_array($composer_json)) {
                 throw new UnexpectedValueException('Invalid composer.json at ' . $composer_json_path);
             }
         }
         $required_extensions = [];
         foreach (($composer_json["require"] ?? []) as $required => $_) {
-            if (strpos($required, "ext-") === 0) {
-                $required_extensions[strtolower(substr($required, 4))] = true;
+            if (str_starts_with((string) $required, "ext-")) {
+                $required_extensions[strtolower(substr((string) $required, 4))] = true;
             }
         }
         foreach ($required_extensions as $required_ext => $_) {
@@ -1159,7 +1019,7 @@ class Config
                 }
             }
 
-            $config->autoloader = realpath($autoloader_path);
+            $config->autoloader = (string) realpath($autoloader_path);
         }
 
         if (isset($config_xml['cacheDirectory'])) {
@@ -1305,8 +1165,7 @@ class Config
         if (isset($config_xml->universalObjectCrates) && isset($config_xml->universalObjectCrates->class)) {
             /** @var SimpleXMLElement $universal_object_crate */
             foreach ($config_xml->universalObjectCrates->class as $universal_object_crate) {
-                /** @var string $classString */
-                $classString = $universal_object_crate['name'];
+                $classString = (string) $universal_object_crate['name'];
                 $config->addUniversalObjectCrate($classString);
             }
         }
@@ -1467,10 +1326,27 @@ class Config
         $this->issue_handlers[$issue_key]->setCustomLevels($config, $this->base_dir);
     }
 
+    public function safeSetAdvancedErrorLevel(
+        string $issue_key,
+        array $config,
+        ?string $default_error_level = null,
+    ): void {
+        if (!isset($this->issue_handlers[$issue_key])) {
+            $this->setAdvancedErrorLevel($issue_key, $config, $default_error_level);
+        }
+    }
+
     public function setCustomErrorLevel(string $issue_key, string $error_level): void
     {
         $this->issue_handlers[$issue_key] = new IssueHandler();
         $this->issue_handlers[$issue_key]->setErrorLevel($error_level);
+    }
+
+    public function safeSetCustomErrorLevel(string $issue_key, string $error_level): void
+    {
+        if (!isset($this->issue_handlers[$issue_key])) {
+            $this->setCustomErrorLevel($issue_key, $error_level);
+        }
     }
 
     /**
@@ -1479,7 +1355,7 @@ class Config
     private function loadFileExtensions(SimpleXMLElement $extensions): void
     {
         foreach ($extensions as $extension) {
-            $extension_name = preg_replace('/^\.?/', '', (string)$extension['name'], 1);
+            $extension_name = (string) preg_replace('/^\.?/', '', (string)$extension['name'], 1);
             $this->file_extensions[] = $extension_name;
 
             if (isset($extension['scanner'])) {
@@ -1714,7 +1590,7 @@ class Config
     public function shortenFileName(string $to): string
     {
         if (!is_file($to)) {
-            return preg_replace('/^' . preg_quote($this->base_dir, '/') . '/', '', $to, 1);
+            return (string) preg_replace('/^' . preg_quote($this->base_dir, '/') . '/', '', $to, 1);
         }
 
         $from = $this->base_dir;
@@ -1779,7 +1655,7 @@ class Config
             try {
                 $file_storage = $codebase->file_storage_provider->get($file_path);
                 $dependent_files += $file_storage->required_by_file_paths;
-            } catch (InvalidArgumentException $e) {
+            } catch (InvalidArgumentException) {
                 // do nothing
             }
         }
@@ -1830,7 +1706,7 @@ class Config
 
     public function getReportingLevelForIssue(CodeIssue $e): string
     {
-        $fqcn_parts = explode('\\', get_class($e));
+        $fqcn_parts = explode('\\', $e::class);
         $issue_type = array_pop($fqcn_parts);
 
         $reporting_level = null;
@@ -1895,17 +1771,17 @@ class Config
             return null;
         }
 
-        if (strpos($issue_type, 'Possibly') === 0) {
-            $stripped_issue_type = preg_replace('/^Possibly(False|Null)?/', '', $issue_type, 1);
+        if (str_starts_with($issue_type, 'Possibly')) {
+            $stripped_issue_type = (string) preg_replace('/^Possibly(False|Null)?/', '', $issue_type, 1);
 
-            if (strpos($stripped_issue_type, 'Invalid') === false && strpos($stripped_issue_type, 'Un') !== 0) {
+            if (!str_contains($stripped_issue_type, 'Invalid') && !str_starts_with($stripped_issue_type, 'Un')) {
                 $stripped_issue_type = 'Invalid' . $stripped_issue_type;
             }
 
             return $stripped_issue_type;
         }
 
-        if (strpos($issue_type, 'Tainted') === 0) {
+        if (str_starts_with($issue_type, 'Tainted')) {
             return 'TaintedInput';
         }
 
@@ -2038,7 +1914,7 @@ class Config
             if ($level === null && $issue_type === 'UndefinedFunction') {
                 // undefined functions trigger global namespace fallback
                 // so we should also check reporting levels for the symbol in global scope
-                $root_function_id = preg_replace('/.*\\\/', '', $function_id);
+                $root_function_id = (string) preg_replace('/.*\\\/', '', $function_id);
                 if ($root_function_id !== $function_id) {
                     /** @psalm-suppress PossiblyUndefinedStringArrayOffset https://github.com/vimeo/psalm/issues/7656 */
                     $level = $this->issue_handlers[$issue_type]->getReportingLevelForFunction($root_function_id);
@@ -2283,9 +2159,10 @@ class Config
             if (is_file($phpstorm_meta_path)) {
                 $stub_files[] = $phpstorm_meta_path;
             } elseif (is_dir($phpstorm_meta_path)) {
-                $phpstorm_meta_path = realpath($phpstorm_meta_path);
+                $phpstorm_meta_path = (string) realpath($phpstorm_meta_path);
+                $phpstorm_meta_files = glob($phpstorm_meta_path . '/*.meta.php', GLOB_NOSORT);
 
-                foreach (glob($phpstorm_meta_path . '/*.meta.php', GLOB_NOSORT) as $glob) {
+                foreach ($phpstorm_meta_files ?: [] as $glob) {
                     if (is_file($glob) && realpath(dirname($glob)) === $phpstorm_meta_path) {
                         $stub_files[] = $glob;
                     }
@@ -2451,10 +2328,8 @@ class Config
         }
     }
 
-    /**
-     * @return string|false
-     */
-    public function getComposerFilePathForClassLike(string $fq_classlike_name)
+    /** @return string|false */
+    public function getComposerFilePathForClassLike(string $fq_classlike_name): string|bool
     {
         if (!$this->composer_class_loader) {
             return false;
@@ -2494,7 +2369,7 @@ class Config
                         && $this->isInProjectDirs($dir . DIRECTORY_SEPARATOR . 'testdummy.php')
                     ) {
                         $maxDepth = $depth;
-                        $candidate_path = realpath($dir) . $pathEnd;
+                        $candidate_path = (string) realpath($dir) . $pathEnd;
                     }
                 }
             }
@@ -2629,8 +2504,10 @@ class Config
 
         if (file_exists($composer_json_path)) {
             try {
-                $composer_json = json_decode(file_get_contents($composer_json_path), true, 512, JSON_THROW_ON_ERROR);
-            } catch (JsonException $e) {
+                $composer_json_contents = file_get_contents($composer_json_path);
+                assert($composer_json_contents !== false);
+                $composer_json = json_decode($composer_json_contents, true, 512, JSON_THROW_ON_ERROR);
+            } catch (JsonException) {
                 $composer_json = null;
             }
 

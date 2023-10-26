@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\ExecutionEnvironment;
 
 use Psalm\SourceControl\Git\CommitInfo;
@@ -21,7 +23,7 @@ use function trim;
  * @author Kitamura Satoshi <with.no.parachute@gmail.com>
  * @internal
  */
-class GitInfoCollector
+final class GitInfoCollector
 {
     /**
      * Git command.

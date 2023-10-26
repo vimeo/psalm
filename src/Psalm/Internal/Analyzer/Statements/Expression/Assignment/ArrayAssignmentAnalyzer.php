@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\Assignment;
 
 use InvalidArgumentException;
@@ -53,14 +55,14 @@ use function strpos;
 /**
  * @internal
  */
-class ArrayAssignmentAnalyzer
+final class ArrayAssignmentAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
         Context $context,
         ?PhpParser\Node\Expr $assign_value,
-        Union $assignment_value_type
+        Union $assignment_value_type,
     ): void {
         $nesting = 0;
         $var_id = ExpressionIdentifier::getVarId(
@@ -92,7 +94,7 @@ class ArrayAssignmentAnalyzer
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
         ?PhpParser\Node\Expr $assign_value,
         Union $assignment_type,
-        Context $context
+        Context $context,
     ): ?bool {
         $root_array_expr = $stmt;
 
@@ -287,7 +289,7 @@ class ArrayAssignmentAnalyzer
         Codebase $codebase,
         Union $child_stmt_type,
         Union $current_type,
-        array $key_values
+        array $key_values,
     ): Union {
         $has_matching_objectlike_property = false;
         $has_matching_string = false;
@@ -389,7 +391,7 @@ class ArrayAssignmentAnalyzer
         Union &$stmt_type,
         Union $child_stmt_type,
         ?string $var_var_id,
-        array $key_values
+        array $key_values,
     ): void {
         if ($statements_analyzer->data_flow_graph
             && ($statements_analyzer->data_flow_graph instanceof VariableUseGraph
@@ -454,7 +456,7 @@ class ArrayAssignmentAnalyzer
         Union $value_type,
         Union $root_type,
         bool $offset_already_existed,
-        ?string $parent_var_id
+        ?string $parent_var_id,
     ): Union {
         $templated_assignment = false;
 
@@ -750,7 +752,7 @@ class ArrayAssignmentAnalyzer
         Union &$root_type,
         Union &$current_type,
         ?PhpParser\Node\Expr &$current_dim,
-        bool &$offset_already_existed
+        bool &$offset_already_existed,
     ): void {
         $var_id_additions = [];
 
@@ -1020,7 +1022,7 @@ class ArrayAssignmentAnalyzer
      */
     private static function getDimKeyValues(
         StatementsAnalyzer $statements_analyzer,
-        PhpParser\Node\Expr $dim
+        PhpParser\Node\Expr $dim,
     ): array {
         $key_values = [];
 
@@ -1061,7 +1063,7 @@ class ArrayAssignmentAnalyzer
     private static function getArrayAssignmentOffsetType(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\ArrayDimFetch $child_stmt,
-        Union $child_stmt_dim_type
+        Union $child_stmt_dim_type,
     ): array {
         if ($child_stmt->dim instanceof PhpParser\Node\Scalar\String_
             || (($child_stmt->dim instanceof PhpParser\Node\Expr\ConstFetch

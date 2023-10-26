@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
@@ -96,11 +98,10 @@ use function strtolower;
 /**
  * @internal
  */
-class AssignmentAnalyzer
+final class AssignmentAnalyzer
 {
     /**
      * @param  PhpParser\Node\Expr|null $assign_value  This has to be null to support list destructuring
-     * @return false|Union
      */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
@@ -110,8 +111,8 @@ class AssignmentAnalyzer
         Context $context,
         ?PhpParser\Comment\Doc $doc_comment,
         array $not_ignored_docblock_var_ids = [],
-        ?PhpParser\Node\Expr $assign_expr = null
-    ) {
+        ?PhpParser\Node\Expr $assign_expr = null,
+    ): false|Union {
         $var_id = ExpressionIdentifier::getVarId(
             $assign_var,
             $statements_analyzer->getFQCLN(),
@@ -618,7 +619,7 @@ class AssignmentAnalyzer
         ?Doc $doc_comment,
         ?string $extended_var_id,
         array $var_comments,
-        array $removed_taints
+        array $removed_taints,
     ): ?bool {
         if ($assign_var instanceof PhpParser\Node\Expr\Variable) {
             self::analyzeAssignmentToVariable(
@@ -670,16 +671,14 @@ class AssignmentAnalyzer
                 return false;
             }
 
-            if ($context->check_classes) {
-                if (StaticPropertyAssignmentAnalyzer::analyze(
-                    $statements_analyzer,
-                    $assign_var,
-                    $assign_value,
-                    $assign_value_type,
-                    $context,
-                ) === false) {
-                    return false;
-                }
+            if (StaticPropertyAssignmentAnalyzer::analyze(
+                $statements_analyzer,
+                $assign_var,
+                $assign_value,
+                $assign_value_type,
+                $context,
+            ) === false) {
+                return false;
             }
 
             if ($var_id) {
@@ -698,7 +697,7 @@ class AssignmentAnalyzer
         ?Union &$comment_type = null,
         ?DocblockTypeLocation &$comment_type_location = null,
         array $not_ignored_docblock_var_ids = [],
-        bool $by_ref = false
+        bool $by_ref = false,
     ): void {
         if (!$var_comment->type) {
             return;
@@ -812,7 +811,7 @@ class AssignmentAnalyzer
         string $var_id,
         CodeLocation $var_location,
         array $removed_taints,
-        array $added_taints
+        array $added_taints,
     ): void {
         $parent_nodes = $type->parent_nodes;
 
@@ -836,7 +835,7 @@ class AssignmentAnalyzer
     public static function analyzeAssignmentOperation(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\AssignOp $stmt,
-        Context $context
+        Context $context,
     ): bool {
         if ($stmt instanceof PhpParser\Node\Expr\AssignOp\BitwiseAnd) {
             $operation = new VirtualBitwiseAnd($stmt->var, $stmt->expr, $stmt->getAttributes());
@@ -895,7 +894,7 @@ class AssignmentAnalyzer
     public static function analyzeAssignmentRef(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\AssignRef $stmt,
-        Context $context
+        Context $context,
     ): bool {
         ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context, false, null, false, null, true);
 
@@ -1032,7 +1031,7 @@ class AssignmentAnalyzer
         Union $by_ref_out_type,
         Context $context,
         bool $constrain_type = true,
-        bool $prevent_null = false
+        bool $prevent_null = false,
     ): void {
         if ($stmt instanceof PhpParser\Node\Expr\PropertyFetch && $stmt->name instanceof PhpParser\Node\Identifier) {
             $prop_name = $stmt->name->name;
@@ -1168,7 +1167,7 @@ class AssignmentAnalyzer
         ?PhpParser\Comment\Doc $doc_comment,
         ?string $extended_var_id,
         array $var_comments,
-        array $removed_taints
+        array $removed_taints,
     ): void {
         if (!$assign_value_type->hasArray()
             && !$assign_value_type->isMixed()
@@ -1590,7 +1589,7 @@ class AssignmentAnalyzer
         Context $context,
         ?PhpParser\Node\Expr $assign_value,
         Union $assign_value_type,
-        ?string $var_id
+        ?string $var_id,
     ): void {
         if (!$assign_var->name instanceof PhpParser\Node\Identifier) {
             $was_inside_general_use = $context->inside_general_use;
@@ -1695,7 +1694,7 @@ class AssignmentAnalyzer
         ?PhpParser\Node\Expr $assign_value,
         Union $assign_value_type,
         ?string $var_id,
-        Context $context
+        Context $context,
     ): void {
         if (is_string($assign_var->name)) {
             if ($var_id) {

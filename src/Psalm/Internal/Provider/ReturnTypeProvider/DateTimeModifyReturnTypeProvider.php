@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use DateTime;
@@ -13,7 +15,7 @@ use Psalm\Type\Union;
 /**
  * @internal
  */
-class DateTimeModifyReturnTypeProvider implements MethodReturnTypeProviderInterface
+final class DateTimeModifyReturnTypeProvider implements MethodReturnTypeProviderInterface
 {
     public static function getClassLikeNames(): array
     {

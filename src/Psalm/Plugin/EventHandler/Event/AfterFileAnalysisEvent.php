@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Plugin\EventHandler\Event;
 
 use PhpParser\Node\Stmt;
@@ -30,7 +32,7 @@ final class AfterFileAnalysisEvent
         Context $file_context,
         FileStorage $file_storage,
         Codebase $codebase,
-        array $stmts
+        array $stmts,
     ) {
         $this->statements_source = $statements_source;
         $this->file_context = $file_context;

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
@@ -57,7 +59,7 @@ use function strtolower;
 /**
  * @internal
  */
-class CastAnalyzer
+final class CastAnalyzer
 {
     /** @var string[] */
     private const PSEUDO_CASTABLE_CLASSES = [
@@ -70,7 +72,7 @@ class CastAnalyzer
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\Cast $stmt,
-        Context $context
+        Context $context,
     ): bool {
         if ($stmt instanceof PhpParser\Node\Expr\Cast\Int_) {
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context) === false) {
@@ -141,14 +143,9 @@ class CastAnalyzer
                 }
             }
 
-            if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph
-            ) {
-                $type = new Union([new TBool()], [
-                    'parent_nodes' => $maybe_type->parent_nodes ?? [],
-                ]);
-            } else {
-                $type = Type::getBool();
-            }
+            $type = new Union([new TBool()], [
+                'parent_nodes' => $maybe_type->parent_nodes ?? [],
+            ]);
 
             $statements_analyzer->node_data->setType($stmt, $type);
 
@@ -310,7 +307,7 @@ class CastAnalyzer
         StatementsAnalyzer $statements_analyzer,
         Union $stmt_type,
         PhpParser\Node\Expr $stmt,
-        bool $explicit_cast = false
+        bool $explicit_cast = false,
     ): Union {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -321,11 +318,7 @@ class CastAnalyzer
 
         $atomic_types = $stmt_type->getAtomicTypes();
 
-        $parent_nodes = [];
-
-        if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
-            $parent_nodes = $stmt_type->parent_nodes;
-        }
+        $parent_nodes = $stmt_type->parent_nodes;
 
         while ($atomic_types) {
             $atomic_type = array_pop($atomic_types);
@@ -474,7 +467,7 @@ class CastAnalyzer
             // todo: emit error here
         }
 
-        $valid_types = array_merge($valid_ints, $castable_types);
+        $valid_types = [...$valid_ints, ...$castable_types];
 
         if (!$valid_types) {
             $int_type = Type::getInt();
@@ -496,7 +489,7 @@ class CastAnalyzer
         StatementsAnalyzer $statements_analyzer,
         Union $stmt_type,
         PhpParser\Node\Expr $stmt,
-        bool $explicit_cast = false
+        bool $explicit_cast = false,
     ): Union {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -507,11 +500,7 @@ class CastAnalyzer
 
         $atomic_types = $stmt_type->getAtomicTypes();
 
-        $parent_nodes = [];
-
-        if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph) {
-            $parent_nodes = $stmt_type->parent_nodes;
-        }
+        $parent_nodes = $stmt_type->parent_nodes;
 
         while ($atomic_types) {
             $atomic_type = array_pop($atomic_types);
@@ -659,7 +648,7 @@ class CastAnalyzer
             // todo: emit error here
         }
 
-        $valid_types = array_merge($valid_floats, $castable_types);
+        $valid_types = [...$valid_floats, ...$castable_types];
 
         if (!$valid_types) {
             $float_type = Type::getFloat();
@@ -682,7 +671,7 @@ class CastAnalyzer
         Context $context,
         Union $stmt_type,
         PhpParser\Node\Expr $stmt,
-        bool $explicit_cast = false
+        bool $explicit_cast = false,
     ): Union {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -802,10 +791,7 @@ class CastAnalyzer
                                 $parent_nodes = array_merge($return_type->parent_nodes, $parent_nodes);
                             }
 
-                            $castable_types = array_merge(
-                                $castable_types,
-                                array_values($return_type->getAtomicTypes()),
-                            );
+                            $castable_types = [...$castable_types, ...array_values($return_type->getAtomicTypes())];
 
                             continue 2;
                         }
@@ -873,7 +859,7 @@ class CastAnalyzer
     private static function checkExprGeneralUse(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\Cast $stmt,
-        Context $context
+        Context $context,
     ): bool {
         $was_inside_general_use = $context->inside_general_use;
         $context->inside_general_use = true;
@@ -885,7 +871,7 @@ class CastAnalyzer
     private static function handleRedundantCast(
         Union $maybe_type,
         StatementsAnalyzer $statements_analyzer,
-        PhpParser\Node\Expr\Cast $stmt
+        PhpParser\Node\Expr\Cast $stmt,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
         $project_analyzer = $statements_analyzer->getProjectAnalyzer();

@@ -62,7 +62,7 @@ final class DynamicFunctionStorageProvider
         StatementsAnalyzer $statements_analyzer,
         string $function_id,
         Context $context,
-        CodeLocation $code_location
+        CodeLocation $code_location,
     ): ?FunctionStorage {
         if ($stmt->isFirstClassCallable()) {
             return null;

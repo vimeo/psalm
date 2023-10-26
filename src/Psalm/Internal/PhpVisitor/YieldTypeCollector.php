@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\PhpVisitor;
 
 use PhpParser\Node;
@@ -16,7 +18,7 @@ use Psalm\Type\Union;
 /**
  * @internal
  */
-class YieldTypeCollector extends NodeVisitorAbstract
+final class YieldTypeCollector extends NodeVisitorAbstract
 {
     /** @var list<Union> */
     private array $yield_types = [];

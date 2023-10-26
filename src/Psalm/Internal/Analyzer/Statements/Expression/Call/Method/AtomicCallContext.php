@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call\Method;
 
 use PhpParser;
@@ -8,7 +10,7 @@ use Psalm\Internal\MethodIdentifier;
 /**
  * @internal
  */
-class AtomicCallContext
+final class AtomicCallContext
 {
     public MethodIdentifier $method_id;
 

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer;
 
 use InvalidArgumentException;
@@ -22,7 +24,7 @@ use function substr;
 /**
  * @internal
  */
-class NamespaceAnalyzer extends SourceAnalyzer
+final class NamespaceAnalyzer extends SourceAnalyzer
 {
     use CanAlias;
 
@@ -210,7 +212,7 @@ class NamespaceAnalyzer extends SourceAnalyzer
      */
     public static function getNameSpaceRoot(string $fullyQualifiedClassName): string
     {
-        $root_namespace = preg_replace('/^([^\\\]+).*/', '$1', $fullyQualifiedClassName, 1);
+        $root_namespace = (string) preg_replace('/^([^\\\]+).*/', '$1', $fullyQualifiedClassName, 1);
         if ($root_namespace === "") {
             throw new InvalidArgumentException("Invalid classname \"$fullyQualifiedClassName\"");
         }

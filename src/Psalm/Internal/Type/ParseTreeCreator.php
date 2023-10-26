@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Type;
 
 use Psalm\Exception\TypeParseTreeException;
@@ -34,7 +36,7 @@ use function strtolower;
 /**
  * @internal
  */
-class ParseTreeCreator
+final class ParseTreeCreator
 {
     private ParseTree $parse_tree;
 
@@ -233,6 +235,46 @@ class ParseTreeCreator
         $current_parent->children[] = $new_parent_leaf;
 
         $this->current_leaf = $new_parent_leaf;
+    }
+
+    /**
+     * @param  array{0: string, 1: int, 2?: string} $current_token
+     */
+    private function parseCallableParam(array $current_token, ParseTree $current_parent): void
+    {
+        $variadic = false;
+        $has_default = false;
+
+        if ($current_token[0] === '&') {
+            ++$this->t;
+            $current_token = $this->t < $this->type_token_count ? $this->type_tokens[$this->t] : null;
+        } elseif ($current_token[0] === '...') {
+            $variadic = true;
+
+            ++$this->t;
+            $current_token = $this->t < $this->type_token_count ? $this->type_tokens[$this->t] : null;
+        } elseif ($current_token[0] === '=') {
+            $has_default = true;
+
+            ++$this->t;
+            $current_token = $this->t < $this->type_token_count ? $this->type_tokens[$this->t] : null;
+        }
+
+        if (!$current_token || $current_token[0][0] !== '$') {
+            throw new TypeParseTreeException('Unexpected token after space');
+        }
+
+        $new_leaf = new CallableParamTree($current_parent);
+        $new_leaf->has_default = $has_default;
+        $new_leaf->variadic = $variadic;
+
+        if ($current_parent !== $this->current_leaf) {
+            $new_leaf->children = [$this->current_leaf];
+            array_pop($current_parent->children);
+        }
+        $current_parent->children[] = $new_leaf;
+
+        $this->current_leaf = $new_leaf;
     }
 
     private function handleLessThan(): void
@@ -553,24 +595,27 @@ class ParseTreeCreator
 
         $current_parent = $this->current_leaf->parent;
 
-        if ($current_parent instanceof CallableTree) {
-            return;
-        }
-
-        while ($current_parent && !$current_parent instanceof MethodTree) {
+        //while ($current_parent && !$method_or_callable_parent) {
+        while ($current_parent && !$current_parent instanceof MethodTree && !$current_parent instanceof CallableTree) {
             $this->current_leaf = $current_parent;
             $current_parent = $current_parent->parent;
         }
 
         $next_token = $this->t + 1 < $this->type_token_count ? $this->type_tokens[$this->t + 1] : null;
 
-        if (!$current_parent instanceof MethodTree || !$next_token) {
+        if (!($current_parent instanceof MethodTree || $current_parent instanceof CallableTree) || !$next_token) {
             throw new TypeParseTreeException('Unexpected space');
         }
 
-        ++$this->t;
 
-        $this->createMethodParam($next_token, $current_parent);
+        if ($current_parent instanceof MethodTree) {
+            ++$this->t;
+            $this->createMethodParam($next_token, $current_parent);
+        }
+        if ($current_parent instanceof CallableTree) {
+            ++$this->t;
+            $this->parseCallableParam($next_token, $current_parent);
+        }
     }
 
     private function handleQuestionMark(): void

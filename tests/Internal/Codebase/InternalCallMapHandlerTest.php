@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests\Internal\Codebase;
 
 use InvalidArgumentException;
@@ -350,7 +352,7 @@ class InternalCallMapHandlerTest extends TestCase
                 continue;
             }
 
-            yield "$function: " . json_encode($entry) => [$function, $entry];
+            yield "$function: " . (string) json_encode($entry) => [$function, $entry];
         }
     }
 

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm;
 
 use Psalm\CodeLocation\Raw;
@@ -85,43 +87,39 @@ final class IssueBuffer
     /**
      * @var array<string, list<IssueData>>
      */
-    protected static $issues_data = [];
+    protected static array $issues_data = [];
 
     /**
      * @var array<int, array>
      */
-    protected static $console_issues = [];
+    protected static array $console_issues = [];
 
     /**
      * @var array<string, int>
      */
-    protected static $fixable_issue_counts = [];
+    protected static array $fixable_issue_counts = [];
 
-    /**
-     * @var int
-     */
-    protected static $error_count = 0;
+    protected static int $error_count = 0;
 
     /**
      * @var array<string, bool>
      */
-    protected static $emitted = [];
+    protected static array $emitted = [];
 
-    /** @var int */
-    protected static $recording_level = 0;
+    protected static int $recording_level = 0;
 
     /** @var array<int, array<int, CodeIssue>> */
-    protected static $recorded_issues = [];
+    protected static array $recorded_issues = [];
 
     /**
      * @var array<string, array<int, int>>
      */
-    protected static $unused_suppressions = [];
+    protected static array $unused_suppressions = [];
 
     /**
      * @var array<string, array<int, bool>>
      */
-    protected static $used_suppressions = [];
+    protected static array $used_suppressions = [];
 
     /** @var array<array-key,mixed> */
     private static array $server = [];
@@ -190,7 +188,7 @@ final class IssueBuffer
             return true;
         }
 
-        $suppressed_issue_position = array_search($issue_type, $suppressed_issues);
+        $suppressed_issue_position = array_search($issue_type, $suppressed_issues, true);
 
         if ($suppressed_issue_position !== false) {
             if (is_int($suppressed_issue_position)) {
@@ -203,7 +201,7 @@ final class IssueBuffer
         $parent_issue_type = Config::getParentIssueType($issue_type);
 
         if ($parent_issue_type) {
-            $suppressed_issue_position = array_search($parent_issue_type, $suppressed_issues);
+            $suppressed_issue_position = array_search($parent_issue_type, $suppressed_issues, true);
 
             if ($suppressed_issue_position !== false) {
                 if (is_int($suppressed_issue_position)) {
@@ -216,7 +214,7 @@ final class IssueBuffer
 
         $suppress_all_position = $config->disable_suppress_all
             ? false
-            : array_search('all', $suppressed_issues);
+            : array_search('all', $suppressed_issues, true);
 
         if ($suppress_all_position !== false) {
             if (is_int($suppress_all_position)) {
@@ -539,7 +537,7 @@ final class IssueBuffer
         bool $is_full,
         float $start_time,
         bool $add_stats = false,
-        array $issue_baseline = []
+        array $issue_baseline = [],
     ): void {
         if (!$project_analyzer->stdout_report_options) {
             throw new UnexpectedValueException('Cannot finish without stdout report options');
@@ -831,7 +829,7 @@ final class IssueBuffer
         $foreground = "30";
 
         // text style, 1 = bold
-        $style = "1";
+        $style = "2";
 
         if ($project_analyzer->stdout_report_options->use_color) {
             echo "\e[{$background};{$style}m{$paddingTop}\e[0m" . "\n";
@@ -851,7 +849,7 @@ final class IssueBuffer
     public static function getOutput(
         array $issues_data,
         ReportOptions $report_options,
-        array $mixed_counts = [0, 0]
+        array $mixed_counts = [0, 0],
     ): string {
         $total_expression_count = $mixed_counts[0] + $mixed_counts[1];
         $mixed_expression_count = $mixed_counts[0];

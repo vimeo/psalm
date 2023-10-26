@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\FileManipulation;
 
 use PhpParser\Node\Stmt\Property;
@@ -22,7 +24,7 @@ use function substr_count;
 /**
  * @internal
  */
-class PropertyDocblockManipulator
+final class PropertyDocblockManipulator
 {
     /**
      * @var array<string, array<int, self>>
@@ -58,7 +60,7 @@ class PropertyDocblockManipulator
     public static function getForProperty(
         ProjectAnalyzer $project_analyzer,
         string $file_path,
-        Property $stmt
+        Property $stmt,
     ): self {
         if (isset(self::$manipulators[$file_path][$stmt->getLine()])) {
             return self::$manipulators[$file_path][$stmt->getLine()];
@@ -74,7 +76,7 @@ class PropertyDocblockManipulator
     private function __construct(
         ProjectAnalyzer $project_analyzer,
         Property $stmt,
-        string $file_path
+        string $file_path,
     ) {
         $this->stmt = $stmt;
         $docblock = $stmt->getDocComment();
@@ -139,7 +141,7 @@ class PropertyDocblockManipulator
         string $new_type,
         string $phpdoc_type,
         bool $is_php_compatible,
-        ?string $description = null
+        ?string $description = null,
     ): void {
         $new_type = str_replace(['<mixed, mixed>', '<array-key, mixed>', '<never, never>'], '', $new_type);
 

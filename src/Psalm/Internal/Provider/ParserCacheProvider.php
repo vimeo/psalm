@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Provider;
 
 use JsonException;
@@ -10,6 +12,7 @@ use Psalm\Internal\Cache;
 use RuntimeException;
 use UnexpectedValueException;
 
+use function assert;
 use function clearstatcache;
 use function error_log;
 use function file_put_contents;
@@ -71,7 +74,7 @@ class ParserCacheProvider
     public function loadStatementsFromCache(
         string $file_path,
         int $file_modified_time,
-        string $file_content_hash
+        string $file_content_hash,
     ): ?array {
         if (!$this->use_file_cache) {
             return null;
@@ -221,7 +224,7 @@ class ParserCacheProvider
         string $file_path,
         string $file_content_hash,
         array $stmts,
-        bool $touch_only
+        bool $touch_only,
     ): void {
         $cache_location = $this->getCacheLocationForPath($file_path, self::PARSER_CACHE_DIRECTORY, !$touch_only);
 
@@ -309,6 +312,7 @@ class ParserCacheProvider
 
         if (is_dir($cache_directory)) {
             $directory_files = scandir($cache_directory, SCANDIR_SORT_NONE);
+            assert($directory_files !== false);
 
             foreach ($directory_files as $directory_file) {
                 $full_path = $cache_directory . DIRECTORY_SEPARATOR . $directory_file;
@@ -342,7 +346,7 @@ class ParserCacheProvider
     private function getCacheLocationForPath(
         string $file_path,
         string $subdirectory,
-        bool $create_directory = false
+        bool $create_directory = false,
     ): string {
         $root_cache_directory = $this->cache->getCacheDirectory();
 

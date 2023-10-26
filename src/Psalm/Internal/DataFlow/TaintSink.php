@@ -1,10 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\DataFlow;
 
 /**
  * @internal
  */
-class TaintSink extends DataFlowNode
+final class TaintSink extends DataFlowNode
 {
 }

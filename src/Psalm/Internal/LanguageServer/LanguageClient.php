@@ -22,7 +22,7 @@ use function json_encode;
 /**
  * @internal
  */
-class LanguageClient
+final class LanguageClient
 {
     /**
      * Handles textDocument/* methods
@@ -53,7 +53,7 @@ class LanguageClient
         ProtocolReader $reader,
         ProtocolWriter $writer,
         LanguageServer $server,
-        ClientConfiguration $clientConfiguration
+        ClientConfiguration $clientConfiguration,
     ) {
         $this->handler = new ClientHandler($reader, $writer);
         $this->server = $server;
@@ -159,7 +159,7 @@ class LanguageClient
         }
 
         /** @var array */
-        $array = json_decode(json_encode($config), true);
+        $array = json_decode((string) json_encode($config), true);
 
         if (isset($array['hideWarnings'])) {
             $this->clientConfiguration->hideWarnings = (bool) $array['hideWarnings'];

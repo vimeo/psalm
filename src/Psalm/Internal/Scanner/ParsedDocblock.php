@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Scanner;
 
 use function explode;
@@ -8,7 +10,7 @@ use function trim;
 /**
  * @internal
  */
-class ParsedDocblock
+final class ParsedDocblock
 {
     public string $description;
 

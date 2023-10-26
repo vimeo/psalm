@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\TypeVisitor;
 
 use Psalm\Codebase;
@@ -10,7 +12,7 @@ use Psalm\Type\TypeVisitor;
 use Psalm\Type\Union;
 
 /** @internal */
-class CanContainObjectTypeVisitor extends TypeVisitor
+final class CanContainObjectTypeVisitor extends TypeVisitor
 {
     private bool $contains_object_type = false;
 

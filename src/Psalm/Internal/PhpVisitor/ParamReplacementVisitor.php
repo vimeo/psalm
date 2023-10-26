@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\PhpVisitor;
 
 use PhpParser;
@@ -14,7 +16,7 @@ use function strlen;
 /**
  * @internal
  */
-class ParamReplacementVisitor extends PhpParser\NodeVisitorAbstract
+final class ParamReplacementVisitor extends PhpParser\NodeVisitorAbstract
 {
     private string $old_name;
 

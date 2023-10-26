@@ -34,7 +34,7 @@ class AstDiffer
         array $a,
         array $b,
         string $a_code,
-        string $b_code
+        string $b_code,
     ): array {
         $n = count($a);
         $m = count($b);

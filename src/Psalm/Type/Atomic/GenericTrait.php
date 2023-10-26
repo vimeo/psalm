@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type\Atomic;
 
 use Psalm\Codebase;
@@ -73,7 +75,7 @@ trait GenericTrait
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        bool $use_phpdoc_format
+        bool $use_phpdoc_format,
     ): string {
         $base_value = $this instanceof TNamedObject
             ? parent::toNamespacedString($namespace, $aliased_classes, $this_class, $use_phpdoc_format)
@@ -168,7 +170,7 @@ trait GenericTrait
         ?string $calling_function = null,
         bool $replace = true,
         bool $add_lower_bound = false,
-        int $depth = 0
+        int $depth = 0,
     ): ?array {
 
 
@@ -237,7 +239,7 @@ trait GenericTrait
      */
     protected function replaceTypeParamsTemplateTypesWithArgTypes(
         TemplateResult $template_result,
-        ?Codebase $codebase
+        ?Codebase $codebase,
     ): ?array {
         $type_params = $this->type_params;
         foreach ($type_params as $offset => $type_param) {

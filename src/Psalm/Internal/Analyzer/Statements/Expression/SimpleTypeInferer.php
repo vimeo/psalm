@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use InvalidArgumentException;
@@ -44,7 +46,7 @@ use const PHP_INT_MAX;
  *
  * @internal
  */
-class SimpleTypeInferer
+final class SimpleTypeInferer
 {
     /**
      * @param   ?array<string, ClassConstantStorage> $existing_class_constants
@@ -56,7 +58,7 @@ class SimpleTypeInferer
         Aliases $aliases,
         FileSource $file_source = null,
         ?array $existing_class_constants = null,
-        ?string $fq_classlike_name = null
+        ?string $fq_classlike_name = null,
     ): ?Union {
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp) {
             if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat) {
@@ -337,14 +339,15 @@ class SimpleTypeInferer
                 }
 
                 if ($existing_class_constants === null
-                    && $file_source instanceof StatementsAnalyzer
+                    || $existing_class_constants === []
+                    && $file_source !== null
                 ) {
                     try {
                         $foreign_class_constant = $codebase->classlikes->getClassConstantType(
                             $const_fq_class_name,
                             $stmt->name->name,
                             ReflectionProperty::IS_PRIVATE,
-                            $file_source,
+                            $file_source instanceof StatementsAnalyzer ? $file_source : null,
                         );
 
                         if ($foreign_class_constant) {
@@ -516,7 +519,7 @@ class SimpleTypeInferer
         Aliases $aliases,
         FileSource $file_source = null,
         ?array $existing_class_constants = null,
-        ?string $fq_classlike_name = null
+        ?string $fq_classlike_name = null,
     ): ?Union {
         if (count($stmt->items) === 0) {
             return Type::getEmptyArray();
@@ -600,7 +603,7 @@ class SimpleTypeInferer
         Aliases $aliases,
         FileSource $file_source = null,
         ?array $existing_class_constants = null,
-        ?string $fq_classlike_name = null
+        ?string $fq_classlike_name = null,
     ): bool {
         if ($item->unpack) {
             $unpacked_array_type = self::infer(
@@ -752,7 +755,7 @@ class SimpleTypeInferer
 
     private static function handleUnpackedArray(
         ArrayCreationInfo $array_creation_info,
-        Union $unpacked_array_type
+        Union $unpacked_array_type,
     ): bool {
         foreach ($unpacked_array_type->getAtomicTypes() as $unpacked_atomic_type) {
             if ($unpacked_atomic_type instanceof TKeyedArray) {

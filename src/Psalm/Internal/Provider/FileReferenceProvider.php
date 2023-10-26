@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Provider;
 
 use Psalm\CodeLocation;
@@ -22,7 +24,7 @@ use function explode;
  * @psalm-import-type FileMapType from Analyzer
  * @internal
  */
-class FileReferenceProvider
+final class FileReferenceProvider
 {
     private bool $loaded_from_cache = false;
 
@@ -231,7 +233,7 @@ class FileReferenceProvider
     public function addFileReferenceToClassMember(
         string $source_file,
         string $referenced_member_id,
-        bool $inside_return
+        bool $inside_return,
     ): void {
         self::$file_references_to_class_members[$referenced_member_id][$source_file] = true;
 
@@ -736,7 +738,7 @@ class FileReferenceProvider
     public function addMethodReferenceToClassMember(
         string $calling_function_id,
         string $referenced_member_id,
-        bool $inside_return
+        bool $inside_return,
     ): void {
         if (!isset(self::$method_references_to_class_members[$referenced_member_id])) {
             self::$method_references_to_class_members[$referenced_member_id] = [$calling_function_id => true];
@@ -755,7 +757,7 @@ class FileReferenceProvider
 
     public function addMethodDependencyToClassMember(
         string $calling_function_id,
-        string $referenced_member_id
+        string $referenced_member_id,
     ): void {
         if (!isset(self::$method_dependencies[$referenced_member_id])) {
             self::$method_dependencies[$referenced_member_id] = [$calling_function_id => true];
@@ -775,7 +777,7 @@ class FileReferenceProvider
 
     public function addMethodReferenceToMissingClassMember(
         string $calling_function_id,
-        string $referenced_member_id
+        string $referenced_member_id,
     ): void {
         if (!isset(self::$method_references_to_missing_class_members[$referenced_member_id])) {
             self::$method_references_to_missing_class_members[$referenced_member_id] = [$calling_function_id => true];
@@ -795,7 +797,7 @@ class FileReferenceProvider
 
     public function addCallingLocationForClassProperty(
         CodeLocation $code_location,
-        string $referenced_property_id
+        string $referenced_property_id,
     ): void {
         if (!isset(self::$class_property_locations[$referenced_property_id])) {
             self::$class_property_locations[$referenced_property_id] = [$code_location];

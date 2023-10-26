@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer;
 
 use PhpParser;
@@ -114,7 +116,7 @@ class FileAnalyzer extends SourceAnalyzer
 
     public function analyze(
         ?Context $file_context = null,
-        ?Context $global_context = null
+        ?Context $global_context = null,
     ): void {
         $codebase = $this->project_analyzer->getCodebase();
 
@@ -363,7 +365,7 @@ class FileAnalyzer extends SourceAnalyzer
     public function getMethodMutations(
         MethodIdentifier $method_id,
         Context $this_context,
-        bool $from_project_analyzer = false
+        bool $from_project_analyzer = false,
     ): void {
         $fq_class_name = $method_id->fq_class_name;
         $method_name = $method_id->method_name;

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Plugin\EventHandler\Event;
 
 use Psalm\Context;
@@ -19,7 +21,7 @@ final class PropertyTypeProviderEvent
         string $property_name,
         bool $read_mode,
         ?StatementsSource $source = null,
-        ?Context $context = null
+        ?Context $context = null,
     ) {
         $this->fq_classlike_name = $fq_classlike_name;
         $this->property_name = $property_name;

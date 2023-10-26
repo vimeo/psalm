@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Storage;
 
 use Psalm\CodeLocation;
@@ -17,97 +19,64 @@ abstract class FunctionLikeStorage implements HasAttributesInterface
 {
     use CustomMetadataTrait;
 
-    /**
-     * @var CodeLocation|null
-     */
-    public $location;
+    public ?CodeLocation $location = null;
 
-    /**
-     * @var CodeLocation|null
-     */
-    public $stmt_location;
+    public ?CodeLocation $stmt_location = null;
 
     /**
      * @psalm-readonly-allow-private-mutation
      * @var list<FunctionLikeParameter>
      */
-    public $params = [];
+    public array $params = [];
 
     /**
      * @psalm-readonly-allow-private-mutation
      * @var array<string, bool>
      */
-    public $param_lookup = [];
+    public array $param_lookup = [];
 
-    /**
-     * @var Union|null
-     */
-    public $return_type;
+    public ?Union $return_type = null;
 
-    /**
-     * @var CodeLocation|null
-     */
-    public $return_type_location;
+    public ?CodeLocation $return_type_location = null;
 
-    /**
-     * @var Union|null
-     */
-    public $signature_return_type;
+    public ?Union $signature_return_type = null;
 
-    /**
-     * @var CodeLocation|null
-     */
-    public $signature_return_type_location;
+    public ?CodeLocation $signature_return_type_location = null;
 
-    /**
-     * @var ?string
-     */
-    public $cased_name;
+    public ?string $cased_name = null;
 
     /**
      * @var array<int, string>
      */
-    public $suppressed_issues = [];
+    public array $suppressed_issues = [];
 
-    /**
-     * @var ?bool
-     */
-    public $deprecated;
+    public ?bool $deprecated = null;
 
     /**
      * @var list<non-empty-string>
      */
-    public $internal = [];
+    public array $internal = [];
 
-    /**
-     * @var bool
-     */
-    public $variadic = false;
+    public bool $variadic = false;
 
-    /**
-     * @var bool
-     */
-    public $returns_by_ref = false;
+    public bool $returns_by_ref = false;
 
-    /**
-     * @var ?int
-     */
-    public $required_param_count;
+    public ?int $required_param_count = null;
 
     /**
      * @var array<string, Union>
      */
-    public $defined_constants = [];
+    public array $defined_constants = [];
 
     /**
      * @var array<string, bool>
      */
-    public $global_variables = [];
+    public array $global_variables = [];
 
     /**
      * @var array<string, Union>
      */
-    public $global_types = [];
+    public array $global_types = [];
 
     /**
      * An array holding the class template "as" types.
@@ -120,57 +89,45 @@ abstract class FunctionLikeStorage implements HasAttributesInterface
      *
      * @var array<string, non-empty-array<string, Union>>|null
      */
-    public $template_types;
+    public ?array $template_types = null;
 
     /**
      * @var array<int, Possibilities>
      */
-    public $assertions = [];
+    public array $assertions = [];
 
     /**
      * @var array<int, Possibilities>
      */
-    public $if_true_assertions = [];
+    public array $if_true_assertions = [];
 
     /**
      * @var array<int, Possibilities>
      */
-    public $if_false_assertions = [];
+    public array $if_false_assertions = [];
 
-    /**
-     * @var bool
-     */
-    public $has_visitor_issues = false;
+    public bool $has_visitor_issues = false;
 
     /**
      * @var list<CodeIssue>
      */
-    public $docblock_issues = [];
+    public array $docblock_issues = [];
 
     /**
      * @var array<string, bool>
      */
-    public $throws = [];
+    public array $throws = [];
 
     /**
      * @var array<string, CodeLocation>
      */
-    public $throw_locations = [];
+    public array $throw_locations = [];
 
-    /**
-     * @var bool
-     */
-    public $has_yield = false;
+    public bool $has_yield = false;
 
-    /**
-     * @var bool
-     */
-    public $mutation_free = false;
+    public bool $mutation_free = false;
 
-    /**
-     * @var string|null
-     */
-    public $return_type_description;
+    public ?string $return_type_description = null;
 
     /**
      * @var array<string, CodeLocation>
@@ -179,68 +136,54 @@ abstract class FunctionLikeStorage implements HasAttributesInterface
 
     public bool $has_undertyped_native_parameters = false;
 
-    /**
-     * @var bool
-     */
-    public $is_static = false;
+    public bool $is_static = false;
 
-    /**
-     * @var bool
-     */
-    public $pure = false;
+    public bool $pure = false;
 
     /**
      * Whether or not the function output is dependent solely on input - a function can be
      * impure but still have this property (e.g. var_export). Useful for taint analysis.
-     *
-     * @var bool
      */
-    public $specialize_call = false;
+    public bool $specialize_call = false;
 
     /**
      * @var array<string>
      */
-    public $taint_source_types = [];
+    public array $taint_source_types = [];
 
     /**
      * @var array<string>
      */
-    public $added_taints = [];
+    public array $added_taints = [];
 
     /**
      * @var array<string>
      */
-    public $removed_taints = [];
+    public array $removed_taints = [];
 
     /**
      * @var array<Union>
      */
-    public $conditionally_removed_taints = [];
+    public array $conditionally_removed_taints = [];
 
     /**
      * @var array<int, string>
      */
-    public $return_source_params = [];
+    public array $return_source_params = [];
 
-    /**
-     * @var bool
-     */
-    public $allow_named_arg_calls = true;
+    public bool $allow_named_arg_calls = true;
 
     /**
      * @var list<AttributeStorage>
      */
-    public $attributes = [];
+    public array $attributes = [];
 
     /**
      * @var list<array{fqn: string, params: array<int>, return: bool}>|null
      */
-    public $proxy_calls = [];
+    public ?array $proxy_calls = [];
 
-    /**
-     * @var ?string
-     */
-    public $description;
+    public ?string $description = null;
 
     public bool $public_api = false;
 
@@ -252,7 +195,7 @@ abstract class FunctionLikeStorage implements HasAttributesInterface
         $params = count($this->params) > 0 ? "\n" . implode(
             ",\n",
             array_map(
-                function (FunctionLikeParameter $param): string {
+                static function (FunctionLikeParameter $param): string {
                     $realType = $param->type ?: 'mixed';
                     return "    {$realType} \${$param->name}";
                 },
@@ -287,7 +230,7 @@ abstract class FunctionLikeStorage implements HasAttributesInterface
         $symbol_text = 'function ' . $this->cased_name . '('   . implode(
             ',',
             array_map(
-                fn(FunctionLikeParameter $param): string => ($param->type ?: 'mixed') . ' $' . $param->name,
+                static fn(FunctionLikeParameter $param): string => ($param->type ?: 'mixed') . ' $' . $param->name,
                 $this->params,
             ),
         ) .  ') : ' . ($this->return_type ?: 'mixed');

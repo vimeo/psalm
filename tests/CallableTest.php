@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
@@ -1827,22 +1829,68 @@ class CallableTest extends TestCase
                     {
                         return 0;
                     }
-                    
+
                     /** @param Closure(int, int): int $f */
                     function int_int(Closure $f): void {}
-                    
+
                     /** @param Closure(int, int, int): int $f */
                     function int_int_int(Closure $f): void {}
-                    
+
                     /** @param Closure(int, int, int, int): int $f */
                     function int_int_int_int(Closure $f): void {}
-                    
+
                     int_int(withVariadic(...));
                     int_int_int(withVariadic(...));
                     int_int_int_int(withVariadic(...));',
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
+            ],
+            'callableArrayTypes' => [
+                'code' => '<?php
+                    /** @var callable-array $c */
+                    $c;
+                    [$a, $b] = $c;
+                    ',
+                'assertions' => [
+                    '$a' => 'class-string|object',
+                    '$b' => 'string',
+                    '$c' => 'list{class-string|object, string}',
+                ],
+            ],
+            'inferTypeWithNestedTemplatesAndExplicitTypeHint' => [
+                'code' => '<?php
+                    /**
+                     * @template TResult
+                     */
+                    interface Message {}
+
+                    /**
+                     * @implements Message<list<int>>
+                     */
+                    final class GetListOfNumbers implements Message {}
+
+                    /**
+                     * @template TResult
+                     * @template TMessage of Message<TResult>
+                     */
+                    final class Envelope {}
+
+                    /**
+                     * @template TResult
+                     * @template TMessage of Message<TResult>
+                     * @param class-string<TMessage> $_message
+                     * @param callable(TMessage, Envelope<TResult, TMessage>): TResult $_handler
+                     */
+                    function addHandler(string $_message, callable $_handler): void {}
+
+                    addHandler(GetListOfNumbers::class, function (Message $_message, Envelope $_envelope) {
+                        /**
+                         * @psalm-check-type-exact $_message = GetListOfNumbers
+                         * @psalm-check-type-exact $_envelope = Envelope<list<int>, GetListOfNumbers>
+                         */
+                        return [1, 2, 3];
+                    });',
             ],
         ];
     }
@@ -2291,16 +2339,16 @@ class CallableTest extends TestCase
                     {
                         return 0;
                     }
-                    
+
                     /** @param Closure(int, int, string, int, int): int $f */
                     function int_int_string_int_int(Closure $f): void {}
-                    
+
                     /** @param Closure(int, int, int, string, int): int $f */
                     function int_int_int_string_int(Closure $f): void {}
-                    
+
                     /** @param Closure(int, int, int, int, string): int $f */
                     function int_int_int_int_string(Closure $f): void {}
-                    
+
                     int_int_string_int_int(add(...));
                     int_int_int_string_int(add(...));
                     int_int_int_int_string(add(...));',

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Codebase;
 
 use InvalidArgumentException;
@@ -95,7 +97,7 @@ use const PHP_INT_MAX;
  *
  * Called in the analysis phase of Psalm's execution
  */
-class Analyzer
+final class Analyzer
 {
     private Config $config;
 
@@ -189,7 +191,7 @@ class Analyzer
         Config $config,
         FileProvider $file_provider,
         FileStorageProvider $file_storage_provider,
-        Progress $progress
+        Progress $progress,
     ) {
         $this->config = $config;
         $this->file_provider = $file_provider;
@@ -227,10 +229,33 @@ class Analyzer
         return isset($this->files_with_analysis_results[$file_path]);
     }
 
+    /**
+     * @param  array<string, class-string<FileAnalyzer>> $filetype_analyzers
+     */
+    private function getFileAnalyzer(
+        ProjectAnalyzer $project_analyzer,
+        string $file_path,
+        array $filetype_analyzers,
+    ): FileAnalyzer {
+        $extension = pathinfo($file_path, PATHINFO_EXTENSION);
+
+        $file_name = $this->config->shortenFileName($file_path);
+
+        if (isset($filetype_analyzers[$extension])) {
+            $file_analyzer = new $filetype_analyzers[$extension]($project_analyzer, $file_path, $file_name);
+        } else {
+            $file_analyzer = new FileAnalyzer($project_analyzer, $file_path, $file_name);
+        }
+
+        $this->progress->debug('Getting ' . $file_path . "\n");
+
+        return $file_analyzer;
+    }
+
     public function analyzeFiles(
         ProjectAnalyzer $project_analyzer,
         bool $alter_code,
-        bool $consolidate_analyzed_data = false
+        bool $consolidate_analyzed_data = false,
     ): void {
         $this->loadCachedResults($project_analyzer);
 
@@ -610,7 +635,7 @@ class Analyzer
                     $method_param_uses[$member_id],
                 );
 
-                $member_stub = preg_replace('/::.*$/', '::*', $member_id, 1);
+                $member_stub = (string) preg_replace('/::.*$/', '::*', $member_id, 1);
 
                 if (isset($all_referencing_methods[$member_stub])) {
                     $newly_invalidated_methods = array_merge(
@@ -1122,7 +1147,7 @@ class Analyzer
         string $file_path,
         PhpParser\Node $node,
         string $node_type,
-        PhpParser\Node $parent_node = null
+        PhpParser\Node $parent_node = null,
     ): void {
         if ($node_type === '') {
             throw new UnexpectedValueException('non-empty node_type expected');
@@ -1139,7 +1164,7 @@ class Analyzer
         int $start_position,
         int $end_position,
         string $reference,
-        int $argument_number
+        int $argument_number,
     ): void {
         if ($reference === '') {
             throw new UnexpectedValueException('non-empty reference expected');

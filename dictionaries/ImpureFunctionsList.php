@@ -67,6 +67,8 @@ return [
     'socket_set_block' => true,
     'socket_set_nonblock' => true,
     'socket_listen' => true,
+    'stream_socket_shutdown' => true,
+    'socket_shutdown' => true,
     // meta calls
     'call_user_func' => true,
     'call_user_func_array' => true,
@@ -93,7 +95,6 @@ return [
     'mcrypt_generic_deinit' => true,
     'mcrypt_module_close' => true,
     // internal optimisation
-    'opcache_compile_file' => true,
     'clearstatcache' => true,
     // process-related
     'pcntl_signal' => true,
@@ -247,4 +248,9 @@ return [
     'hash_update_stream' => true,
     // unserialize
     'unserialize' => true,
+    // openssl
+    'openssl_csr_export_to_file' => true,
+    'openssl_pkcs12_export_to_file' => true,
+    'openssl_pkey_export_to_file' => true,
+    'openssl_x509_export_to_file' => true,
 ];

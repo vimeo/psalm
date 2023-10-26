@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
 use PhpParser;
@@ -56,7 +58,7 @@ use function strtolower;
 /**
  * @internal
  */
-class NamedFunctionCallHandler
+final class NamedFunctionCallHandler
 {
     /**
      * @param lowercase-string $function_id
@@ -68,7 +70,7 @@ class NamedFunctionCallHandler
         PhpParser\Node\Expr\FuncCall $real_stmt,
         PhpParser\Node\Name $function_name,
         string $function_id,
-        Context $context
+        Context $context,
     ): void {
         if ($function_id === 'get_class'
             || $function_id === 'gettype'
@@ -556,7 +558,7 @@ class NamedFunctionCallHandler
         PhpParser\Node\Expr\FuncCall $stmt,
         PhpParser\Node\Expr\FuncCall $real_stmt,
         string $function_id,
-        Context $context
+        Context $context,
     ): void {
         $first_arg = $stmt->getArgs()[0] ?? null;
 

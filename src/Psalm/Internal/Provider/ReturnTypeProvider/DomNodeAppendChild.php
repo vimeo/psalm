@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -11,7 +13,7 @@ use Psalm\Type\Union;
 /**
  * @internal
  */
-class DomNodeAppendChild implements MethodReturnTypeProviderInterface
+final class DomNodeAppendChild implements MethodReturnTypeProviderInterface
 {
     public static function getClassLikeNames(): array
     {

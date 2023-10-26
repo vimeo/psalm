@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Type;
 
 use Psalm\Type\Atomic;
@@ -22,7 +24,7 @@ use function is_string;
 /**
  * @internal
  */
-class TypeCombination
+final class TypeCombination
 {
     /** @var array<string, Atomic> */
     public array $value_types = [];

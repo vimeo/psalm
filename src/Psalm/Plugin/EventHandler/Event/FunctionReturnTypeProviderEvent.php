@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Plugin\EventHandler\Event;
 
 use PhpParser;
@@ -32,7 +34,7 @@ final class FunctionReturnTypeProviderEvent
         string $function_id,
         FuncCall $stmt,
         Context $context,
-        CodeLocation $code_location
+        CodeLocation $code_location,
     ) {
         $this->statements_source = $statements_source;
         $this->function_id = $function_id;

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Codebase;
 
 use Psalm\CodeLocation;
@@ -23,7 +25,7 @@ use function strtolower;
  *
  * Handles information about class properties
  */
-class Properties
+final class Properties
 {
     private ClassLikeStorageProvider $classlike_storage_provider;
 
@@ -43,7 +45,7 @@ class Properties
     public function __construct(
         ClassLikeStorageProvider $storage_provider,
         FileReferenceProvider $file_reference_provider,
-        ClassLikes $classlikes
+        ClassLikes $classlikes,
     ) {
         $this->classlike_storage_provider = $storage_provider;
         $this->file_reference_provider = $file_reference_provider;
@@ -61,7 +63,7 @@ class Properties
         bool $read_mode,
         ?StatementsSource $source = null,
         ?Context $context = null,
-        ?CodeLocation $code_location = null
+        ?CodeLocation $code_location = null,
     ): bool {
         // remove leading backslash if it exists
         $property_id = ltrim($property_id, '\\');
@@ -168,7 +170,7 @@ class Properties
     public function getDeclaringClassForProperty(
         string $property_id,
         bool $read_mode,
-        ?StatementsSource $source = null
+        ?StatementsSource $source = null,
     ): ?string {
         [$fq_class_name, $property_name] = explode('::$', $property_id);
 
@@ -199,7 +201,7 @@ class Properties
     public function getAppearingClassForProperty(
         string $property_id,
         bool $read_mode,
-        ?StatementsSource $source = null
+        ?StatementsSource $source = null,
     ): ?string {
         [$fq_class_name, $property_name] = explode('::$', $property_id);
 
@@ -269,7 +271,7 @@ class Properties
         string $property_id,
         bool $property_set,
         ?StatementsSource $source = null,
-        ?Context $context = null
+        ?Context $context = null,
     ): ?Union {
         // remove leading backslash if it exists
         $property_id = ltrim($property_id, '\\');

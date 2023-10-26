@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Codebase;
 
 use BackedEnum;
@@ -42,7 +44,7 @@ use function strtolower;
  *
  * Populates file and class information so that analysis can work properly
  */
-class Populator
+final class Populator
 {
     private ClassLikeStorageProvider $classlike_storage_provider;
 
@@ -64,7 +66,7 @@ class Populator
         FileStorageProvider $file_storage_provider,
         ClassLikes $classlikes,
         FileReferenceProvider $file_reference_provider,
-        Progress $progress
+        Progress $progress,
     ) {
         $this->classlike_storage_provider = $classlike_storage_provider;
         $this->file_storage_provider = $file_storage_provider;
@@ -273,7 +275,7 @@ class Populator
 
     private function populateOverriddenMethods(
         ClassLikeStorage $storage,
-        ClassLikeStorageProvider $storage_provider
+        ClassLikeStorageProvider $storage_provider,
     ): void {
         $interface_method_implementers = [];
         foreach ($storage->class_implements as $interface) {
@@ -426,7 +428,7 @@ class Populator
         ClassLikeStorage $storage,
         ClassLikeStorageProvider $storage_provider,
         array $dependent_classlikes,
-        string $used_trait_lc
+        string $used_trait_lc,
     ): void {
         try {
             $used_trait_lc = strtolower(
@@ -456,7 +458,7 @@ class Populator
 
     private static function extendType(
         Union $type,
-        ClassLikeStorage $storage
+        ClassLikeStorage $storage,
     ): Union {
         $extended_types = [];
 
@@ -489,7 +491,7 @@ class Populator
         ClassLikeStorage $storage,
         ClassLikeStorageProvider $storage_provider,
         array $dependent_classlikes,
-        string $parent_storage_class
+        string $parent_storage_class,
     ): void {
         $parent_storage_class = strtolower(
             $this->classlikes->getUnAliasedName(
@@ -568,7 +570,7 @@ class Populator
         ClassLikeStorage $storage,
         ClassLikeStorage $interface_storage,
         ClassLikeStorageProvider $storage_provider,
-        array $dependent_classlikes
+        array $dependent_classlikes,
     ): void {
         $this->populateClassLikeStorage($interface_storage, $dependent_classlikes);
 
@@ -610,7 +612,7 @@ class Populator
     private static function extendTemplateParams(
         ClassLikeStorage $storage,
         ClassLikeStorage $parent_storage,
-        bool $from_direct_parent
+        bool $from_direct_parent,
     ): void {
         if ($parent_storage->yield && !$storage->yield) {
             $storage->yield = $parent_storage->yield;
@@ -670,7 +672,7 @@ class Populator
         ClassLikeStorage $storage,
         ClassLikeStorageProvider $storage_provider,
         array $dependent_classlikes,
-        string $parent_interface_lc
+        string $parent_interface_lc,
     ): void {
         try {
             $parent_interface_lc = strtolower(
@@ -716,7 +718,7 @@ class Populator
         ClassLikeStorage $storage,
         ClassLikeStorageProvider $storage_provider,
         array $dependent_classlikes,
-        string $implemented_interface_lc
+        string $implemented_interface_lc,
     ): void {
         try {
             $implemented_interface_lc = strtolower(
@@ -879,7 +881,7 @@ class Populator
 
     private function inheritConstantsFromTrait(
         ClassLikeStorage $storage,
-        ClassLikeStorage $trait_storage
+        ClassLikeStorage $trait_storage,
     ): void {
         if (!$trait_storage->is_trait) {
             throw new Exception('Class like storage is not for a trait.');
@@ -915,7 +917,7 @@ class Populator
 
     protected function inheritMethodsFromParent(
         ClassLikeStorage $storage,
-        ClassLikeStorage $parent_storage
+        ClassLikeStorage $parent_storage,
     ): void {
         $fq_class_name = $storage->name;
         $fq_class_name_lc = strtolower($fq_class_name);
@@ -931,10 +933,10 @@ class Populator
             if ($parent_storage->is_trait
                 && $storage->trait_alias_map
             ) {
-                $aliased_method_names = array_merge(
-                    $aliased_method_names,
-                    array_keys($storage->trait_alias_map, $method_name_lc, true),
-                );
+                $aliased_method_names = [
+                    ...$aliased_method_names,
+                    ...array_keys($storage->trait_alias_map, $method_name_lc, true),
+                ];
             }
 
             foreach ($aliased_method_names as $aliased_method_name) {
@@ -1001,10 +1003,10 @@ class Populator
             if ($parent_storage->is_trait
                 && $storage->trait_alias_map
             ) {
-                $aliased_method_names = array_merge(
-                    $aliased_method_names,
-                    array_keys($storage->trait_alias_map, $method_name_lc, true),
-                );
+                $aliased_method_names = [
+                    ...$aliased_method_names,
+                    ...array_keys($storage->trait_alias_map, $method_name_lc, true),
+                ];
             }
 
             foreach ($aliased_method_names as $aliased_method_name) {
@@ -1030,7 +1032,7 @@ class Populator
 
     private function inheritPropertiesFromParent(
         ClassLikeStorage $storage,
-        ClassLikeStorage $parent_storage
+        ClassLikeStorage $parent_storage,
     ): void {
         if ($parent_storage->sealed_properties !== null) {
             $storage->sealed_properties = $parent_storage->sealed_properties;

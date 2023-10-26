@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Scanner;
 
 use PhpParser;
@@ -23,7 +25,7 @@ use function strtolower;
 /**
  * @internal
  */
-class PhpStormMetaScanner
+final class PhpStormMetaScanner
 {
     /**
      * @param  list<PhpParser\Node\Arg> $args
@@ -142,12 +144,12 @@ class PhpStormMetaScanner
                 $codebase->methods->return_type_provider->registerClosure(
                     $meta_fq_classlike_name,
                     static function (
-                        MethodReturnTypeProviderEvent $event
+                        MethodReturnTypeProviderEvent $event,
                     ) use (
                         $map,
                         $offset,
                         $meta_fq_classlike_name,
-                        $meta_method_name
+                        $meta_method_name,
                     ): ?Union {
                         $statements_analyzer = $event->getSource();
                         $call_args = $event->getCallArgs();
@@ -195,11 +197,11 @@ class PhpStormMetaScanner
                 $codebase->methods->return_type_provider->registerClosure(
                     $meta_fq_classlike_name,
                     static function (
-                        MethodReturnTypeProviderEvent $event
+                        MethodReturnTypeProviderEvent $event,
                     ) use (
                         $type_offset,
                         $meta_fq_classlike_name,
-                        $meta_method_name
+                        $meta_method_name,
                     ): ?Union {
                         $statements_analyzer = $event->getSource();
                         $call_args = $event->getCallArgs();
@@ -229,11 +231,11 @@ class PhpStormMetaScanner
                 $codebase->methods->return_type_provider->registerClosure(
                     $meta_fq_classlike_name,
                     static function (
-                        MethodReturnTypeProviderEvent $event
+                        MethodReturnTypeProviderEvent $event,
                     ) use (
                         $element_type_offset,
                         $meta_fq_classlike_name,
-                        $meta_method_name
+                        $meta_method_name,
                     ): ?Union {
                         $statements_analyzer = $event->getSource();
                         $call_args = $event->getCallArgs();
@@ -292,10 +294,10 @@ class PhpStormMetaScanner
                 $codebase->functions->return_type_provider->registerClosure(
                     $function_id,
                     static function (
-                        FunctionReturnTypeProviderEvent $event
+                        FunctionReturnTypeProviderEvent $event,
                     ) use (
                         $map,
-                        $offset
+                        $offset,
                     ): Union {
                         $statements_analyzer = $event->getStatementsSource();
                         $call_args = $event->getCallArgs();
@@ -342,9 +344,9 @@ class PhpStormMetaScanner
                 $codebase->functions->return_type_provider->registerClosure(
                     $function_id,
                     static function (
-                        FunctionReturnTypeProviderEvent $event
+                        FunctionReturnTypeProviderEvent $event,
                     ) use (
-                        $type_offset
+                        $type_offset,
                     ): Union {
                         $statements_analyzer = $event->getStatementsSource();
                         $call_args = $event->getCallArgs();
@@ -372,9 +374,9 @@ class PhpStormMetaScanner
                 $codebase->functions->return_type_provider->registerClosure(
                     $function_id,
                     static function (
-                        FunctionReturnTypeProviderEvent $event
+                        FunctionReturnTypeProviderEvent $event,
                     ) use (
-                        $element_type_offset
+                        $element_type_offset,
                     ): Union {
                         $statements_analyzer = $event->getStatementsSource();
                         $call_args = $event->getCallArgs();

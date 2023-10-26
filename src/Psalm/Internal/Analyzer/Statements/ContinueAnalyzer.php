@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements;
 
 use PhpParser;
@@ -16,12 +18,12 @@ use function end;
 /**
  * @internal
  */
-class ContinueAnalyzer
+final class ContinueAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Continue_ $stmt,
-        Context $context
+        Context $context,
     ): void {
         $count = $stmt->num instanceof PhpParser\Node\Scalar\LNumber? $stmt->num->value : 1;
 

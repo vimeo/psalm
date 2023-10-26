@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use PhpParser;
@@ -30,7 +32,7 @@ use function substr;
 /**
  * @internal
  */
-class ArrayReduceReturnTypeProvider implements FunctionReturnTypeProviderInterface
+final class ArrayReduceReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
      * @return array<lowercase-string>

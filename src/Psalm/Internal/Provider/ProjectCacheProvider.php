@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Provider;
 
 use Psalm\Config;
@@ -67,7 +69,7 @@ class ProjectCacheProvider
 
             if (file_exists($run_cache_location)
                 && Providers::safeFileGetContents($run_cache_location) === $psalm_version) {
-                $this->last_run = filemtime($run_cache_location);
+                $this->last_run = (int) filemtime($run_cache_location);
             } else {
                 $this->last_run = 0;
             }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
 use Psalm\Context;
@@ -49,7 +51,7 @@ class JsonOutputTest extends TestCase
         int $error_count,
         string $message,
         int $line_number,
-        string $error
+        string $error,
     ): void {
         $this->addFile('somefile.php', $code);
         $this->analyzeFile('somefile.php', new Context());

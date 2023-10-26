@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 // based on PhpParser's builtin one
 
 namespace Psalm\Internal\PhpVisitor;
@@ -17,7 +19,7 @@ use PhpParser\NodeVisitorAbstract;
 /**
  * @internal
  */
-class SimpleNameResolver extends NodeVisitorAbstract
+final class SimpleNameResolver extends NodeVisitorAbstract
 {
     private NameContext $nameContext;
 

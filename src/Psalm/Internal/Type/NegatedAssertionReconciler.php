@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Type;
 
 use Psalm\CodeLocation;
@@ -40,7 +42,7 @@ use function strtolower;
 /**
  * @internal
  */
-class NegatedAssertionReconciler extends Reconciler
+final class NegatedAssertionReconciler extends Reconciler
 {
     /**
      * @param  string[]   $suppressed_issues
@@ -56,7 +58,7 @@ class NegatedAssertionReconciler extends Reconciler
         ?CodeLocation $code_location,
         array $suppressed_issues,
         int &$failed_reconciliation,
-        bool $inside_loop
+        bool $inside_loop,
     ): Union {
         $existing_var_type = ClosedInheritanceToUnion::map(
             $existing_var_type,
@@ -119,6 +121,11 @@ class NegatedAssertionReconciler extends Reconciler
             || $assertion instanceof IsNotCountable
         ) {
             $existing_var_type->removeType('array');
+        }
+
+        if ($assertion instanceof IsNotType && $assertion_type instanceof TClassString) {
+            $existing_var_type->removeType(TClassString::class);
+            $existing_var_type->addType(new TString);
         }
 
         if (!$is_equality
@@ -318,7 +325,7 @@ class NegatedAssertionReconciler extends Reconciler
         ?string $key,
         bool $negated,
         ?CodeLocation $code_location,
-        array $suppressed_issues
+        array $suppressed_issues,
     ): Union {
         $existing_var_type = $existing_var_type->getBuilder();
         $existing_var_atomic_types = $existing_var_type->getAtomicTypes();

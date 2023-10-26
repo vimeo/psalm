@@ -12,7 +12,7 @@ use Psalm\Internal\Provider\NodeDataProvider;
 /**
  * @internal
  */
-class ConditionCloningVisitor extends NodeVisitorAbstract
+final class ConditionCloningVisitor extends NodeVisitorAbstract
 {
     private NodeDataProvider $type_provider;
 

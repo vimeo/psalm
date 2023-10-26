@@ -2589,8 +2589,12 @@ return [
       'new' => ['string', 'string'=>'string', 'offset'=>'int', 'length='=>'?int'],
     ],
     'substr_replace' => [
-      'old' => ['string|string[]', 'string'=>'string|string[]', 'replace'=>'string|string[]', 'offset'=>'int|int[]', 'length='=>'int|int[]'],
-      'new' => ['string|string[]', 'string'=>'string|string[]', 'replace'=>'string|string[]', 'offset'=>'int|int[]', 'length='=>'int|int[]|null'],
+      'old' => ['string', 'string'=>'string', 'replace'=>'string|string[]', 'offset'=>'int|int[]', 'length='=>'int|int[]'],
+      'new' => ['string', 'string'=>'string', 'replace'=>'string|string[]', 'offset'=>'int|int[]', 'length='=>'int|int[]|null'],
+    ],
+    'substr_replace\'1' => [
+      'old' => ['string[]', 'string'=>'string[]', 'replace'=>'string|string[]', 'offset'=>'int|int[]', 'length='=>'int|int[]'],
+      'new' => ['string[]', 'string'=>'string[]', 'replace'=>'string|string[]', 'offset'=>'int|int[]', 'length='=>'int|int[]|null'],
     ],
     'tidy_parse_file' => [
       'old' => ['tidy', 'filename'=>'string', 'config='=>'array|string', 'encoding='=>'string', 'useIncludePath='=>'bool'],

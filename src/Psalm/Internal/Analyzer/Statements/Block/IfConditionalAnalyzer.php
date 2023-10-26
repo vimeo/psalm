@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Block;
 
 use PhpParser;
@@ -29,7 +31,7 @@ use function count;
 /**
  * @internal
  */
-class IfConditionalAnalyzer
+final class IfConditionalAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
@@ -37,7 +39,7 @@ class IfConditionalAnalyzer
         Context $outer_context,
         Codebase $codebase,
         IfScope $if_scope,
-        int $branch_point
+        int $branch_point,
     ): IfConditionalScope {
         $entry_clauses = [];
 
@@ -319,7 +321,7 @@ class IfConditionalAnalyzer
     public static function handleParadoxicalCondition(
         StatementsAnalyzer  $statements_analyzer,
         PhpParser\Node\Expr $stmt,
-        bool $emit_redundant_with_assignation = false
+        bool $emit_redundant_with_assignation = false,
     ): void {
         $type = $statements_analyzer->node_data->getType($stmt);
 

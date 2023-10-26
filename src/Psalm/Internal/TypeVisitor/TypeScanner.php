@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\TypeVisitor;
 
 use Psalm\Internal\Codebase\Scanner;
@@ -15,7 +17,7 @@ use function strtolower;
 /**
  * @internal
  */
-class TypeScanner extends TypeVisitor
+final class TypeScanner extends TypeVisitor
 {
     private Scanner $scanner;
 
@@ -32,7 +34,7 @@ class TypeScanner extends TypeVisitor
     public function __construct(
         Scanner $scanner,
         ?FileStorage $file_storage,
-        array $phantom_classes
+        array $phantom_classes,
     ) {
         $this->scanner = $scanner;
         $this->file_storage = $file_storage;

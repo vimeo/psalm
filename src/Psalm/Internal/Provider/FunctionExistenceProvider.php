@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Provider;
 
 use Closure;
@@ -13,7 +15,7 @@ use function strtolower;
 /**
  * @internal
  */
-class FunctionExistenceProvider
+final class FunctionExistenceProvider
 {
     /**
      * @var array<
@@ -58,7 +60,7 @@ class FunctionExistenceProvider
 
     public function doesFunctionExist(
         StatementsSource $statements_source,
-        string $function_id
+        string $function_id,
     ): ?bool {
         foreach (self::$handlers[strtolower($function_id)] ?? [] as $function_handler) {
             $event = new FunctionExistenceProviderEvent(

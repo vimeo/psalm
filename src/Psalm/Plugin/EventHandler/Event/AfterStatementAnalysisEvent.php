@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Plugin\EventHandler\Event;
 
 use PhpParser\Node\Stmt;
@@ -30,7 +32,7 @@ final class AfterStatementAnalysisEvent
         Context $context,
         StatementsSource $statements_source,
         Codebase $codebase,
-        array $file_replacements = []
+        array $file_replacements = [],
     ) {
         $this->stmt = $stmt;
         $this->context = $context;
