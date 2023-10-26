@@ -400,6 +400,15 @@ class MethodSignatureTest extends TestCase
                     '$b' => 'B',
                 ],
             ],
+            'returnIgnoresInlineComments' => [
+                'code' => '<?php
+                    class A {
+                        /** @return bool {@see true}*/
+                        public static function foo():bool {
+                            return true;
+                        }
+                    }',
+            ],
             'allowSomeCovariance' => [
                 'code' => '<?php
                     interface I1 {
