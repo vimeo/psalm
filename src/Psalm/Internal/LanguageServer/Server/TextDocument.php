@@ -297,6 +297,7 @@ class TextDocument
 
         try {
             $completion_data = $this->codebase->getCompletionDataAtPosition($file_path, $position);
+            $literal_part = $this->codebase->getBeginedLiteralPart($file_path, $position);
             if ($completion_data) {
                 [$recent_type, $gap, $offset] = $completion_data;
 
@@ -305,6 +306,8 @@ class TextDocument
                         ->textDocument->completion->completionItem->snippetSupport ?? false;
                     $completion_items =
                         $this->codebase->getCompletionItemsForClassishThing($recent_type, $gap, $snippetSupport);
+                    $completion_items =
+                        $this->codebase->filterCompletionItemsByBeginLiteralPart($completion_items, $literal_part);
                 } elseif ($gap === '[') {
                     $completion_items = $this->codebase->getCompletionItemsForArrayKeys($recent_type);
                 } else {

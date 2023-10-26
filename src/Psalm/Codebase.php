@@ -1742,6 +1742,9 @@ final class Codebase
 
         $offset = $position->toOffset($file_contents);
 
+        $literal_part = $this->getBeginedLiteralPart($file_path, $position);
+        $begin_literal_offset = $offset - strlen($literal_part);
+
         [$reference_map, $type_map] = $this->analyzer->getMapsForFile($file_path);
 
         if (!$reference_map && !$type_map) {
@@ -1776,7 +1779,7 @@ final class Codebase
                 }
             }
 
-            if ($offset - $end_pos === 2 || $offset - $end_pos === 3) {
+            if ($begin_literal_offset - $end_pos === 2) {
                 $candidate_gap = substr($file_contents, $end_pos, 2);
 
                 if ($candidate_gap === '->' || $candidate_gap === '::') {
@@ -1801,6 +1804,11 @@ final class Codebase
                 return [$possible_reference, '::', $offset];
             }
 
+            if ($offset <= $end_pos && substr($file_contents, $begin_literal_offset - 2, 2) === '::') {
+                $class_name = explode('::', $possible_reference)[0];
+                return [$class_name, '::', $offset];
+            }
+
             // Only continue for references that are partial / don't exist.
             if ($possible_reference[0] !== '*') {
                 continue;
@@ -1814,6 +1822,23 @@ final class Codebase
         }
 
         return null;
+    }
+
+    public function getBeginedLiteralPart(string $file_path, Position $position): string
+    {
+        $is_open = $this->file_provider->isOpen($file_path);
+
+        if (!$is_open) {
+            throw new UnanalyzedFileException($file_path . ' is not open');
+        }
+
+        $file_contents = $this->getFileContents($file_path);
+
+        $offset = $position->toOffset($file_contents);
+
+        preg_match('/\$?\w+$/', substr($file_contents, 0, $offset), $matches);
+        
+        return $matches[0] ?? '';
     }
 
     public function getTypeContextAtPosition(string $file_path, Position $position): ?Union
@@ -1955,6 +1980,26 @@ final class Codebase
         }
 
         return $completion_items;
+    }
+
+    /**
+     * @param list<CompletionItem> $items
+     * @return list<CompletionItem>
+     */
+    public function filterCompletionItemsByBeginLiteralPart(array $items, string $literal_part): array
+    {
+        if (!$literal_part) {
+            return $items;
+        }
+
+        $res = [];
+        foreach ($items as $item) {
+            if ($item->insertText && strpos($item->insertText, $literal_part) === 0) {
+                $res[] = $item;
+            }
+        }
+
+        return $res;
     }
 
     /**
