@@ -1,7 +1,5 @@
 <?php
 
-<?php
-
 /**
  * Constants that should be available via ext-soap in case the extension is not
  * enabled in the Psalm-executing environment.
