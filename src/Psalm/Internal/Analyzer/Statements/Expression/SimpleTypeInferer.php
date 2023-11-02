@@ -283,21 +283,26 @@ final class SimpleTypeInferer
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\ConstFetch) {
-            $name = strtolower($stmt->name->getFirst());
-            if ($name === 'false') {
+            $name = $stmt->name->getFirst();
+            $name_lowercase = strtolower($name);
+            if ($name_lowercase === 'false') {
                 return Type::getFalse();
             }
 
-            if ($name === 'true') {
+            if ($name_lowercase === 'true') {
                 return Type::getTrue();
             }
 
-            if ($name === 'null') {
+            if ($name_lowercase === 'null') {
                 return Type::getNull();
             }
 
-            if ($stmt->name->getFirst() === '__NAMESPACE__') {
+            if ($name === '__NAMESPACE__') {
                 return Type::getString($aliases->namespace);
+            }
+
+            if ($type = ConstFetchAnalyzer::getGlobalConstType($codebase, $name, $name)) {
+                return $type;
             }
 
             return null;
