@@ -47,6 +47,7 @@
         <xs:attribute name="findUnusedPsalmSuppress" type="xs:boolean" default="false" />
         <!-- TODO: Update default to true in Psalm 6 -->
         <xs:attribute name="findUnusedBaselineEntry" type="xs:boolean" default="false" />
+        <xs:attribute name="findUnusedIssueHandlerSuppression" type="xs:boolean" default="true" />
         <xs:attribute name="hideExternalErrors" type="xs:boolean" default="false" />
         <xs:attribute name="hoistConstants" type="xs:boolean" default="false" />
         <xs:attribute name="ignoreInternalFunctionFalseReturn" type="xs:boolean" default="false" />
@@ -494,6 +495,7 @@
             <xs:element name="UnusedClosureParam" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnusedConstructor" type="MethodIssueHandlerType" minOccurs="0" />
             <xs:element name="UnusedDocblockParam" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="UnusedIssueHandlerSuppression" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnusedForeachValue" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnusedFunctionCall" type="FunctionIssueHandlerType" minOccurs="0" />
             <xs:element name="UnusedMethod" type="MethodIssueHandlerType" minOccurs="0" />

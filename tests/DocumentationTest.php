@@ -18,6 +18,7 @@ use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\Issue\UnusedBaselineEntry;
+use Psalm\Issue\UnusedIssueHandlerSuppression;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use UnexpectedValueException;
 
@@ -270,6 +271,7 @@ class DocumentationTest extends TestCase
                 case 'TraitMethodSignatureMismatch':
                 case 'UncaughtThrowInGlobalScope':
                 case UnusedBaselineEntry::getIssueType():
+                case UnusedIssueHandlerSuppression::getIssueType():
                     continue 2;
 
                 /** @todo reinstate this test when the issue is restored */

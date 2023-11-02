@@ -298,6 +298,7 @@
  - [UnusedDocblockParam](issues/UnusedDocblockParam.md)
  - [UnusedForeachValue](issues/UnusedForeachValue.md)
  - [UnusedFunctionCall](issues/UnusedFunctionCall.md)
+ - [UnusedIssueHandlerSuppression](issues/UnusedIssueHandlerSuppression.md)
  - [UnusedMethod](issues/UnusedMethod.md)
  - [UnusedMethodCall](issues/UnusedMethodCall.md)
  - [UnusedParam](issues/UnusedParam.md)

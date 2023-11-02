@@ -513,6 +513,11 @@ class PremiumCar extends StandardCar {
 Emits [UnusedBaselineEntry](issues/UnusedBaselineEntry.md) when a baseline entry
 is not being used to suppress an issue.
 
+#### findUnusedIssueHandlerSuppression
+
+Emits [UnusedIssueHandlerSuppression](issues/UnusedIssueHandlerSuppression.md) when a suppressed issue handler
+is not being used to suppress an issue.
+
 ## Project settings
 
 #### &lt;projectFiles&gt;
