@@ -317,6 +317,7 @@ final class Scanner
             $pool_size = 1;
         }
 
+        $this->progress->expand(count($files_to_scan));
         if ($pool_size > 1) {
             $process_file_paths = [];
 
@@ -355,7 +356,6 @@ final class Scanner
                  */
                 function () {
                     $this->progress->debug('Collecting data from forked scanner process' . PHP_EOL);
-
                     $project_analyzer = ProjectAnalyzer::getInstance();
                     $codebase = $project_analyzer->getCodebase();
                     $statements_provider = $codebase->statements_provider;
@@ -376,6 +376,9 @@ final class Scanner
                             : [],
                         'taint_data' => $codebase->taint_flow_graph,
                     ];
+                },
+                function (): void {
+                    $this->progress->taskDone(0);
                 },
             );
 
@@ -427,6 +430,7 @@ final class Scanner
             $i = 0;
 
             foreach ($files_to_scan as $file_path => $_) {
+                $this->progress->taskDone(0);
                 $this->scanAPath($i, $file_path);
                 ++$i;
             }
