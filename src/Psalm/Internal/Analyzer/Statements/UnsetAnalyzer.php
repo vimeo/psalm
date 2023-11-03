@@ -24,7 +24,7 @@ use function is_int;
 /**
  * @internal
  */
-class UnsetAnalyzer
+final class UnsetAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,

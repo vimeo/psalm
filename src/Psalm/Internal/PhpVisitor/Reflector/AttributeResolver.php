@@ -20,7 +20,7 @@ use function strtolower;
 /**
  * @internal
  */
-class AttributeResolver
+final class AttributeResolver
 {
     public static function resolve(
         Codebase $codebase,

@@ -19,7 +19,7 @@ use function is_string;
 /**
  * @internal
  */
-class ForAnalyzer
+final class ForAnalyzer
 {
     /**
      * @return  false|null

@@ -21,7 +21,7 @@ use function trim;
  *
  * @internal
  */
-class ProtocolStreamReader implements ProtocolReader
+final class ProtocolStreamReader implements ProtocolReader
 {
     use EmitterTrait;
 

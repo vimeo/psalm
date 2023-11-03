@@ -9,7 +9,7 @@ use Psalm\Storage\ImmutableNonCloneableTrait;
  * @psalm-immutable
  * @internal
  */
-class LinkableTypeAlias implements TypeAlias
+final class LinkableTypeAlias implements TypeAlias
 {
     use ImmutableNonCloneableTrait;
 

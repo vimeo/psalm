@@ -120,7 +120,7 @@ use function substr;
  * For example if $a is an int, if($a > 0) will be turned into an assertion to make psalm understand that in the
  * if block, $a is a positive-int
  */
-class AssertionFinder
+final class AssertionFinder
 {
     public const ASSIGNMENT_TO_RIGHT = 1;
     public const ASSIGNMENT_TO_LEFT = -1;

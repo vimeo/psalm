@@ -21,7 +21,7 @@ use const DIRECTORY_SEPARATOR;
 /**
  * @internal
  */
-class DisableCommand extends Command
+final class DisableCommand extends Command
 {
     private PluginListFactory $plugin_list_factory;
 

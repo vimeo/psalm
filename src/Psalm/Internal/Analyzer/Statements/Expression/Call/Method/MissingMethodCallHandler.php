@@ -32,7 +32,7 @@ use function array_merge;
 /**
  * @internal
  */
-class MissingMethodCallHandler
+final class MissingMethodCallHandler
 {
     public static function handleMagicMethod(
         StatementsAnalyzer $statements_analyzer,

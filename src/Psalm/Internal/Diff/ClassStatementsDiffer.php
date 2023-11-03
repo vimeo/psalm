@@ -16,7 +16,7 @@ use function trim;
 /**
  * @internal
  */
-class ClassStatementsDiffer extends AstDiffer
+final class ClassStatementsDiffer extends AstDiffer
 {
     /**
      * Calculate diff (edit script) from $a to $b.

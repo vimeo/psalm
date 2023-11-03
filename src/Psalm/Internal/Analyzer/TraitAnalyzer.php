@@ -12,7 +12,7 @@ use function assert;
 /**
  * @internal
  */
-class TraitAnalyzer extends ClassLikeAnalyzer
+final class TraitAnalyzer extends ClassLikeAnalyzer
 {
     private Aliases $aliases;
 

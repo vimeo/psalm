@@ -67,7 +67,7 @@ use function strtolower;
 /**
  * @internal
  */
-class NewAnalyzer extends CallAnalyzer
+final class NewAnalyzer extends CallAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,

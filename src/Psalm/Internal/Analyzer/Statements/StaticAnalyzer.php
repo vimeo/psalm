@@ -19,7 +19,7 @@ use function is_string;
 /**
  * @internal
  */
-class StaticAnalyzer
+final class StaticAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,

@@ -9,7 +9,7 @@ namespace Psalm\Internal\LanguageServer;
  *
  * @internal
  */
-class IdGenerator
+final class IdGenerator
 {
     public int $counter = 1;
 

@@ -7,7 +7,7 @@ use Psalm\Internal\Type\ParseTree;
 /**
  * @internal
  */
-class ConditionalTree extends ParseTree
+final class ConditionalTree extends ParseTree
 {
     public TemplateIsTree $condition;
 

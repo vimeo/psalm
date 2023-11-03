@@ -52,7 +52,7 @@ use function strtolower;
 /**
  * @internal
  */
-class ReturnAnalyzer
+final class ReturnAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,

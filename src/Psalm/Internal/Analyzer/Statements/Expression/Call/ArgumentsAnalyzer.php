@@ -67,7 +67,7 @@ use function strtolower;
 /**
  * @internal
  */
-class ArgumentsAnalyzer
+final class ArgumentsAnalyzer
 {
     /**
      * @param   list<PhpParser\Node\Arg>          $args

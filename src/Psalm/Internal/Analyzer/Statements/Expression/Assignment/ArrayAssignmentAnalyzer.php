@@ -55,7 +55,7 @@ use function strpos;
 /**
  * @internal
  */
-class ArrayAssignmentAnalyzer
+final class ArrayAssignmentAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,

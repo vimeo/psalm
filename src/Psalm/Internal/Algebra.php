@@ -24,7 +24,7 @@ use function reset;
 /**
  * @internal
  */
-class Algebra
+final class Algebra
 {
     /**
      * @param array<string, non-empty-list<non-empty-list<Assertion>>>  $all_types

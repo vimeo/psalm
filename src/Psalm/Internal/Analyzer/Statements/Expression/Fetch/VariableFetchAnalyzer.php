@@ -41,7 +41,7 @@ use function time;
 /**
  * @internal
  */
-class VariableFetchAnalyzer
+final class VariableFetchAnalyzer
 {
     public const SUPER_GLOBALS = [
         '$GLOBALS',

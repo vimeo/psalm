@@ -68,7 +68,7 @@ use function strpos;
 /**
  * @internal
  */
-class SimpleNegatedAssertionReconciler extends Reconciler
+final class SimpleNegatedAssertionReconciler extends Reconciler
 {
     /**
      * @param  string[]   $suppressed_issues

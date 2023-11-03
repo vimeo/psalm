@@ -63,7 +63,7 @@ use function strtolower;
 /**
  * @internal
  */
-class ReturnTypeAnalyzer
+final class ReturnTypeAnalyzer
 {
     /**
      * @param Closure|Function_|ClassMethod|ArrowFunction $function

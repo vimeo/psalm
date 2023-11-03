@@ -39,7 +39,7 @@ use const PHP_VERSION_ID;
 /**
  * @internal
  */
-class StatementsProvider
+final class StatementsProvider
 {
     private FileProvider $file_provider;
 

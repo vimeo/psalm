@@ -14,7 +14,7 @@ use Psalm\Type;
 /**
  * @internal
  */
-class IssetAnalyzer
+final class IssetAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,

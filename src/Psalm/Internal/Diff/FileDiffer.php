@@ -23,7 +23,7 @@ use function substr;
  *
  * @internal
  */
-class FileDiffer
+final class FileDiffer
 {
     /**
      * @param list<string>    $a

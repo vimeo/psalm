@@ -55,7 +55,7 @@ use function substr;
 /**
  * @internal
  */
-class FunctionCallReturnTypeFetcher
+final class FunctionCallReturnTypeFetcher
 {
     /**
      * @param non-empty-string $function_id

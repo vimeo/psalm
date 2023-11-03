@@ -14,7 +14,7 @@ use function strtolower;
 /**
  * @internal
  */
-class ClasslikeReplacer extends MutableTypeVisitor
+final class ClasslikeReplacer extends MutableTypeVisitor
 {
     private string $old;
     private string $new;

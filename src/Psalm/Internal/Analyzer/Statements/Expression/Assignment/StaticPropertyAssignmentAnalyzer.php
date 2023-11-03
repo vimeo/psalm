@@ -33,7 +33,7 @@ use function strtolower;
 /**
  * @internal
  */
-class StaticPropertyAssignmentAnalyzer
+final class StaticPropertyAssignmentAnalyzer
 {
     /**
      * @return  false|null

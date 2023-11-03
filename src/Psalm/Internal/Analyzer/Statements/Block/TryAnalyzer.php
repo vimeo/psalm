@@ -29,7 +29,7 @@ use function strtolower;
 /**
  * @internal
  */
-class TryAnalyzer
+final class TryAnalyzer
 {
     /**
      * @return  false|null

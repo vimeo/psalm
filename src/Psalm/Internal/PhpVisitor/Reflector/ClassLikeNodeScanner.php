@@ -92,7 +92,7 @@ use const PREG_SPLIT_NO_EMPTY;
 /**
  * @internal
  */
-class ClassLikeNodeScanner
+final class ClassLikeNodeScanner
 {
     private FileScanner $file_scanner;
 

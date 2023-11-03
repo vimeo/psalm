@@ -22,7 +22,7 @@ use function strtolower;
 /**
  * @internal
  */
-class TypeTokenizer
+final class TypeTokenizer
 {
     /**
      * @var array<string, bool>

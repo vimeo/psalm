@@ -8,7 +8,7 @@ use Psalm\Type\Union;
 /**
  * @internal
  */
-class AtomicMethodCallAnalysisResult
+final class AtomicMethodCallAnalysisResult
 {
     public ?Union $return_type = null;
 

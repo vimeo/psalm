@@ -8,7 +8,7 @@ use Psalm\Internal\Scanner\UnresolvedConstantComponent;
  * @psalm-immutable
  * @internal
  */
-class ArraySpread extends UnresolvedConstantComponent
+final class ArraySpread extends UnresolvedConstantComponent
 {
     public UnresolvedConstantComponent $array;
 

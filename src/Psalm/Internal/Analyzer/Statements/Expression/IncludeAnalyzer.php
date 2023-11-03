@@ -47,7 +47,7 @@ use const PHP_EOL;
 /**
  * @internal
  */
-class IncludeAnalyzer
+final class IncludeAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,

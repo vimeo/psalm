@@ -87,7 +87,7 @@ use function strtolower;
 /**
  * @internal
  */
-class InstancePropertyAssignmentAnalyzer
+final class InstancePropertyAssignmentAnalyzer
 {
     /**
      * @param   PropertyFetch|PropertyProperty  $stmt
