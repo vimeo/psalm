@@ -1516,7 +1516,7 @@ final class TypeCombiner
                     $generic_type_params[1],
                     $objectlike_generic_type,
                     $codebase,
-                    $overwrite_empty_array,
+                    false,
                     $allow_mixed_union,
                 );
             }

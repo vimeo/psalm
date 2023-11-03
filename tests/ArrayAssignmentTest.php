@@ -2048,6 +2048,15 @@ class ArrayAssignmentTest extends TestCase
                         return $queryParams;
                     }',
             ],
+            'AssignListToNonEmptyList' => [
+                'code' => '<?php
+                    /** @var array<int, non-empty-list<string>> $l*/
+                    $l = [];
+                    $l[] = [];',
+                'assertions' => [
+                    '$l===' => 'non-empty-array<int, list<string>>',
+                ],
+            ],
         ];
     }
 
