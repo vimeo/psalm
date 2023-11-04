@@ -236,18 +236,20 @@ final class ClassLikeDocblockParser
             }
         }
 
-        if (isset($parsed_docblock->tags['psalm-seal-properties'])) {
-            $info->sealed_properties = true;
-        }
-        if (isset($parsed_docblock->tags['psalm-no-seal-properties'])) {
-            $info->sealed_properties = false;
-        }
+        foreach (['', 'psalm-'] as $prefix) {
+            if (isset($parsed_docblock->tags[$prefix . 'seal-properties'])) {
+                $info->sealed_properties = true;
+            }
+            if (isset($parsed_docblock->tags[$prefix . 'no-seal-properties'])) {
+                $info->sealed_properties = false;
+            }
 
-        if (isset($parsed_docblock->tags['psalm-seal-methods'])) {
-            $info->sealed_methods = true;
-        }
-        if (isset($parsed_docblock->tags['psalm-no-seal-methods'])) {
-            $info->sealed_methods = false;
+            if (isset($parsed_docblock->tags[$prefix . 'seal-methods'])) {
+                $info->sealed_methods = true;
+            }
+            if (isset($parsed_docblock->tags[$prefix . 'no-seal-methods'])) {
+                $info->sealed_methods = false;
+            }
         }
 
         if (isset($parsed_docblock->tags['psalm-inheritors'])) {

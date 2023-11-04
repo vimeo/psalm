@@ -1189,6 +1189,38 @@ class MagicPropertyTest extends TestCase
                     }',
                 'error_message' => 'InvalidDocblock',
             ],
+            'sealedWithNoProperties' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-seal-properties
+                     */
+                    final class OrganizationObject {
+
+                        public function __get(string $key)
+                        {
+                            return [];
+                        }
+
+                    }
+                    echo (new OrganizationObject)->errors;',
+                'error_message' => 'UndefinedMagicPropertyFetch',
+            ],
+            'sealedWithNoPropertiesNoPrefix' => [
+                'code' => '<?php
+                    /**
+                     * @seal-properties
+                     */
+                    final class OrganizationObject {
+
+                        public function __get(string $key)
+                        {
+                            return [];
+                        }
+                    }
+
+                    echo (new OrganizationObject)->errors;',
+                'error_message' => 'UndefinedMagicPropertyFetch',
+            ],
         ];
     }
 

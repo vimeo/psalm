@@ -1118,6 +1118,21 @@ class MagicMethodAnnotationTest extends TestCase
                     $b->foo();',
                 'error_message' => 'UndefinedMagicMethod',
             ],
+            'inheritSealedMethodsWithoutPrefix' => [
+                'code' => '<?php
+                    /**
+                     * @seal-methods
+                     */
+                    class A {
+                        public function __call(string $method, array $args) {}
+                    }
+
+                    class B extends A {}
+
+                    $b = new B();
+                    $b->foo();',
+                'error_message' => 'UndefinedMagicMethod',
+            ],
             'lonelyMethod' => [
                 'code' => '<?php
                     /**

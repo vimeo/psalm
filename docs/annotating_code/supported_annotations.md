@@ -202,7 +202,7 @@ takesFoo(getFoo());
 
 This provides the same, but for `false`. Psalm uses this internally for functions like `preg_replace`, which can return false if the given input has encoding errors, but where 99.9% of the time the function operates as expected.
 
-### `@psalm-seal-properties`, `@psalm-no-seal-properties`
+### `@psalm-seal-properties`, `@psalm-no-seal-properties`, `@seal-properties`, `@no-seal-properties`
 
 If you have a magic property getter/setter, you can use `@psalm-seal-properties` to instruct Psalm to disallow getting and setting any properties not contained in a list of `@property` (or `@property-read`/`@property-write`) annotations.
 This is automatically enabled with the configuration option `sealAllProperties` and can be disabled for a class with `@psalm-no-seal-properties`
@@ -211,7 +211,7 @@ This is automatically enabled with the configuration option `sealAllProperties` 
 <?php
 /**
  * @property string $foo
- * @psalm-seal-properties
+ * @seal-properties
  */
 class A {
      public function __get(string $name): ?string {
@@ -227,7 +227,7 @@ $a = new A();
 $a->bar = 5; // this call fails
 ```
 
-### `@psalm-seal-methods`, `@psalm-no-seal-methods`
+### `@psalm-seal-methods`, `@psalm-no-seal-methods`, `@seal-methods`, `@no-seal-methods`
 
 If you have a magic method caller, you can use `@psalm-seal-methods` to instruct Psalm to disallow calling any methods not contained in a list of `@method` annotations.
 This is automatically enabled with the configuration option `sealAllMethods` and can be disabled for a class with `@psalm-no-seal-methods`
@@ -236,7 +236,7 @@ This is automatically enabled with the configuration option `sealAllMethods` and
 <?php
 /**
  * @method foo(): string
- * @psalm-seal-methods
+ * @seal-methods
  */
 class A {
      public function __call(string $name, array $args) {
