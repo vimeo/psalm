@@ -774,7 +774,7 @@ class RecursiveArrayIterator extends ArrayIterator implements RecursiveIterator 
     const CHILD_ARRAYS_ONLY = 4 ;
 
     /**
-     * @return RecursiveArrayIterator<TKey, TValue>
+     * @return ?RecursiveArrayIterator<TKey, TValue>
      */
     public function getChildren() {}
 
