@@ -441,6 +441,64 @@ class RedundantConditionTest extends TestCase
                         }
                     }',
             ],
+            'allowIntValueCheckAfterComparisonDueToUnderflow' => [
+                'code' => '<?php
+                    function foo(int $x) : void {
+                        $x = $x - 1;
+
+                        if (!is_int($x)) {
+                            echo "Is a float.";
+                        } else {
+                            echo "Is an int.";
+                        }
+                    }
+
+                    function bar(int $x) : void {
+                        $x = $x - 1;
+
+                        if (is_float($x)) {
+                            echo "Is a float.";
+                        } else {
+                            echo "Is an int.";
+                        }
+                    }',
+            ],
+            'allowIntValueCheckAfterComparisonDueToUnderflowDec' => [
+                'code' => '<?php
+                    function foo(int $x) : void {
+                        $x--;
+
+                        if (!is_int($x)) {
+                            echo "Is a float.";
+                        } else {
+                            echo "Is an int.";
+                        }
+                    }
+
+                    function bar(int $x) : void {
+                        $x--;
+
+                        if (is_float($x)) {
+                            echo "Is a float.";
+                        } else {
+                            echo "Is an int.";
+                        }
+                    }',
+            ],
+            'allowIntValueCheckAfterComparisonDueToConditionalUnderflow' => [
+                'code' => '<?php
+                    function foo(int $x) : void {
+                        if (rand(0, 1)) {
+                            $x = $x - 1;
+                        }
+
+                        if (is_float($x)) {
+                            echo "Is a float.";
+                        } else {
+                            echo "Is an int.";
+                        }
+                    }',
+            ],
             'changeStringValue' => [
                 'code' => '<?php
                     $concat = "";
