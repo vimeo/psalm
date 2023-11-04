@@ -17,6 +17,7 @@ use Psalm\Issue\ConfigIssue;
 use Psalm\Issue\MixedIssue;
 use Psalm\Issue\TaintedInput;
 use Psalm\Issue\UnusedBaselineEntry;
+use Psalm\Issue\UnusedIssueHandlerSuppression;
 use Psalm\Issue\UnusedPsalmSuppress;
 use Psalm\Plugin\EventHandler\Event\AfterAnalysisEvent;
 use Psalm\Plugin\EventHandler\Event\BeforeAddIssueEvent;
@@ -641,6 +642,43 @@ final class IssueBuffer
                             );
                         }
                     }
+                }
+            }
+        }
+
+        if ($codebase->config->find_unused_issue_handler_suppression) {
+            foreach ($codebase->config->getIssueHandlers() as $type => $handler) {
+                foreach ($handler->getFilters() as $filter) {
+                    if ($filter->suppressions > 0 && $filter->getErrorLevel() == Config::REPORT_SUPPRESS) {
+                        continue;
+                    }
+                    $issues_data['config'][] = new IssueData(
+                        IssueData::SEVERITY_ERROR,
+                        0,
+                        0,
+                        UnusedIssueHandlerSuppression::getIssueType(),
+                        sprintf(
+                            'Suppressed issue type "%s" for %s was not thrown.',
+                            $type,
+                            str_replace(
+                                $codebase->config->base_dir,
+                                '',
+                                implode(', ', [...$filter->getFiles(), ...$filter->getDirectories()]),
+                            ),
+                        ),
+                        $codebase->config->source_filename ?? '',
+                        '',
+                        '',
+                        '',
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        UnusedIssueHandlerSuppression::SHORTCODE,
+                        UnusedIssueHandlerSuppression::ERROR_LEVEL,
+                    );
                 }
             }
         }
