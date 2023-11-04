@@ -935,6 +935,14 @@ class TypeParseTest extends TestCase
         );
     }
 
+    public function testClassStringMapOf(): void
+    {
+        $this->assertSame(
+            'class-string-map<T as Foo, T>',
+            Type::parseString('class-string-map<T of Foo, T>')->getId(false),
+        );
+    }
+
     public function testVeryLargeType(): void
     {
         $very_large_type = 'array{a: Closure():(array<array-key, mixed>|null), b?: Closure():array<array-key, mixed>, c?: Closure():array<array-key, mixed>, d?: Closure():array<array-key, mixed>, e?: Closure():(array{f: null|string, g: null|string, h: null|string, i: string, j: mixed, k: mixed, l: mixed, m: mixed, n: bool, o?: array{0: string}}|null), p?: Closure():(array{f: null|string, g: null|string, h: null|string, i: string, j: mixed, k: mixed, l: mixed, m: mixed, n: bool, o?: array{0: string}}|null), q: string, r?: Closure():(array<array-key, mixed>|null), s: array<array-key, mixed>}|null';
