@@ -631,6 +631,7 @@ class Config
         "mysqli" => null,
         "pdo" => null,
         "random" => null,
+        "rdkafka" => null,
         "redis" => null,
         "simplexml" => null,
         "soap" => null,
