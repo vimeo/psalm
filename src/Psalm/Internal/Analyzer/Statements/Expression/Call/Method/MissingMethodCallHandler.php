@@ -435,6 +435,12 @@ final class MissingMethodCallHandler
         }
 
         $ancestors = $static_class_storage->class_implements;
+        foreach ($static_class_storage->namedMixins as $namedObject) {
+            $type = $namedObject->value;
+            if ($type) {
+                $ancestors[$type] = true;
+            }
+        }
 
         foreach ($ancestors as $fq_class_name => $_) {
             $class_storage = $codebase->classlikes->getStorageFor($fq_class_name);
