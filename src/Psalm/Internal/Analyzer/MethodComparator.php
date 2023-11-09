@@ -542,6 +542,7 @@ final class MethodComparator
 
             if ($guide_classlike_storage->user_defined
                 && $implementer_param->signature_type
+                && $guide_param->signature_type
             ) {
                 self::compareMethodSignatureParams(
                     $codebase,

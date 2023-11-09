@@ -318,11 +318,7 @@ class CallAnalyzer
                 $declaring_class_storage = $class_storage;
             }
 
-            if (!isset($declaring_class_storage->methods[$declaring_method_name])) {
-                throw new UnexpectedValueException('Storage should not be empty here');
-            }
-
-            $method_storage = $declaring_class_storage->methods[$declaring_method_name];
+            $method_storage = $codebase->methods->getStorage($declaring_method_id);
 
             if ($declaring_class_storage->user_defined
                 && !$method_storage->has_docblock_param_types

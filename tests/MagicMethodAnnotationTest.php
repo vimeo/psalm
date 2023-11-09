@@ -824,7 +824,7 @@ class MagicMethodAnnotationTest extends TestCase
             'callUsingParent' => [
                 'code' => '<?php
                     /**
-                     * @method static create(array $data)
+                     * @method static create(array $input)
                      */
                     class Model {
                         public function __call(string $name, array $arguments) {
@@ -1218,6 +1218,23 @@ class MagicMethodAnnotationTest extends TestCase
                      */
                     interface B extends A {}
                     ',
+                'error_message' => 'ImplementedParamTypeMismatch',
+            ],
+            'MagicMethodMadeConcreteChecksParams' => [
+                'code' => '<?php
+                    /**
+                     * @method static void create(array $x)
+                     */
+                    class Model {
+                        public static function __callStatic(string $method, array $params) {
+                        }
+                    }
+
+                    class FooModel extends Model {
+                        public static function create(object $x): void {
+                            $x;
+                        }
+                    }',
                 'error_message' => 'ImplementedParamTypeMismatch',
             ],
         ];

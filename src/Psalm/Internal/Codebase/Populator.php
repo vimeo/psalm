@@ -367,7 +367,9 @@ final class Populator
                     $declaring_method_name = $declaring_method_id->method_name;
                     $declaring_class_storage = $declaring_class_storages[$declaring_class];
 
-                    $declaring_method_storage = $declaring_class_storage->methods[$declaring_method_name];
+                    $declaring_method_storage = $declaring_class_storage->methods[$declaring_method_name]
+                        ?? $declaring_class_storage->pseudo_methods[$declaring_method_name]
+                        ?? $declaring_class_storage->pseudo_static_methods[$declaring_method_name];
 
                     if (($declaring_method_storage->has_docblock_param_types
                             || $declaring_method_storage->has_docblock_return_type)

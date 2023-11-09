@@ -1148,14 +1148,18 @@ final class Methods
         }
 
         $method_name = $method_id->method_name;
+        $method_storage = $class_storage->methods[$method_name]
+            ?? $class_storage->pseudo_methods[$method_name]
+            ?? $class_storage->pseudo_static_methods[$method_name]
+            ?? null;
 
-        if (!isset($class_storage->methods[$method_name])) {
+        if (! $method_storage) {
             throw new UnexpectedValueException(
                 '$storage should not be null for ' . $method_id,
             );
         }
 
-        return $class_storage->methods[$method_name];
+        return $method_storage;
     }
 
     /** @psalm-mutation-free */
