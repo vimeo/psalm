@@ -311,7 +311,6 @@ class CallAnalyzer
             $declaring_method_id = $class_storage->declaring_method_ids[$method_name];
 
             $declaring_fq_class_name = $declaring_method_id->fq_class_name;
-            $declaring_method_name = $declaring_method_id->method_name;
 
             if ($declaring_fq_class_name !== $fq_class_name) {
                 $declaring_class_storage = $codebase->classlike_storage_provider->get($declaring_fq_class_name);
