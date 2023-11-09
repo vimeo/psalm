@@ -949,6 +949,21 @@ class MagicMethodAnnotationTest extends TestCase
                     //C::array();
                     PHP,
             ],
+            'DoubleInheritedDontComplain' => [
+                'code' => '<?php
+                    /**
+                     * @method void func(int ...$args)
+                     */
+                    class Foo {}
+
+                    class Bar extends Foo {
+                        public function func(int $i = 0, int ...$args): void {}
+                    }
+
+                    class UhOh extends Bar {}',
+                'assertions' => [],
+                'ignored_issues' => ['ParamNameMismatch'],
+            ],
         ];
     }
 
