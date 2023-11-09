@@ -258,8 +258,6 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             IssueBuffer::maybeAdd($docblock_issue);
         }
 
-        $classlike_storage_provider = $codebase->classlike_storage_provider;
-
         $parent_fq_class_name = $this->parent_fq_class_name;
 
         if ($class instanceof PhpParser\Node\Stmt\Class_ && $class->extends && $parent_fq_class_name) {
@@ -626,43 +624,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         }
 
         $pseudo_methods = $storage->pseudo_methods + $storage->pseudo_static_methods;
-
-        foreach ($pseudo_methods as $pseudo_method_name => $pseudo_method_storage) {
-            $pseudo_method_id = new MethodIdentifier(
-                $this->fq_class_name,
-                $pseudo_method_name,
-            );
-
-            $overridden_method_ids = $codebase->methods->getOverriddenMethodIds($pseudo_method_id);
-
-            if ($overridden_method_ids
-                && $pseudo_method_name !== '__construct'
-                && $pseudo_method_storage->location
-            ) {
-                foreach ($overridden_method_ids as $overridden_method_id) {
-                    $parent_method_storage = $codebase->methods->getStorage($overridden_method_id);
-
-                    $overridden_fq_class_name = $overridden_method_id->fq_class_name;
-
-                    $parent_storage = $classlike_storage_provider->get($overridden_fq_class_name);
-
-                    MethodComparator::compare(
-                        $codebase,
-                        null,
-                        $storage,
-                        $parent_storage,
-                        $pseudo_method_storage,
-                        $parent_method_storage,
-                        $this->fq_class_name,
-                        $pseudo_method_storage->visibility ?: 0,
-                        $storage->location ?: $pseudo_method_storage->location,
-                        $storage->suppressed_issues,
-                        true,
-                        false,
-                    );
-                }
-            }
-        }
+        MethodComparator::comparePseudoMethods($pseudo_methods, $this->fq_class_name, $codebase, $storage);
 
         $event = new AfterClassLikeAnalysisEvent(
             $class,

@@ -1164,6 +1164,62 @@ class MagicMethodAnnotationTest extends TestCase
                     }',
                 'error_message' => 'UndefinedVariable',
             ],
+            'MagicMethodReturnTypesCheckedForClasses' => [
+                'code' => '<?php
+                    class A
+                    {
+                        public function a(int $className): int { return 0; }
+                    }
+
+                    /**
+                     * @method stdClass a(int $a)
+                     */
+                    class B extends A {}
+                    ',
+                'error_message' => 'ImplementedReturnTypeMismatch',
+            ],
+            'MagicMethodParamTypesCheckedForClasses' => [
+                'code' => '<?php
+                    class A
+                    {
+                        public function a(int $className): int { return 0; }
+                    }
+
+                    /**
+                     * @method int a(string $a)
+                     */
+                    class B extends A {}
+                    ',
+                'error_message' => 'ImplementedParamTypeMismatch',
+            ],
+            'MagicMethodReturnTypesCheckedForInterfaces' => [
+                'code' => '<?php
+                    interface A
+                    {
+                        public function a(int $className): int;
+                    }
+
+                    /**
+                     * @method stdClass a(int $a)
+                     */
+                    interface B extends A {}
+                    ',
+                'error_message' => 'ImplementedReturnTypeMismatch',
+            ],
+            'MagicMethodParamTypesCheckedForInterfaces' => [
+                'code' => '<?php
+                    interface A
+                    {
+                        public function a(string $className): int;
+                    }
+
+                    /**
+                     * @method int a(int $a)
+                     */
+                    interface B extends A {}
+                    ',
+                'error_message' => 'ImplementedParamTypeMismatch',
+            ],
         ];
     }
 

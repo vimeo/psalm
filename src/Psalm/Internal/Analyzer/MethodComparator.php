@@ -239,6 +239,53 @@ final class MethodComparator
     }
 
     /**
+     * @param array<lowercase-string, MethodStorage> $pseudo_methods
+     */
+    public static function comparePseudoMethods(
+        array $pseudo_methods,
+        string $fq_class_name,
+        Codebase $codebase,
+        ClassLikeStorage $class_storage,
+    ): void {
+        foreach ($pseudo_methods as $pseudo_method_name => $pseudo_method_storage) {
+            $pseudo_method_id = new MethodIdentifier(
+                $fq_class_name,
+                $pseudo_method_name,
+            );
+
+            $overridden_method_ids = $codebase->methods->getOverriddenMethodIds($pseudo_method_id);
+
+            if ($overridden_method_ids
+                && $pseudo_method_name !== '__construct'
+                && $pseudo_method_storage->location
+            ) {
+                foreach ($overridden_method_ids as $overridden_method_id) {
+                    $parent_method_storage = $codebase->methods->getStorage($overridden_method_id);
+
+                    $overridden_fq_class_name = $overridden_method_id->fq_class_name;
+
+                    $parent_storage = $codebase->classlike_storage_provider->get($overridden_fq_class_name);
+
+                    self::compare(
+                        $codebase,
+                        null,
+                        $class_storage,
+                        $parent_storage,
+                        $pseudo_method_storage,
+                        $parent_method_storage,
+                        $fq_class_name,
+                        $pseudo_method_storage->visibility ?: 0,
+                        $class_storage->location ?: $pseudo_method_storage->location,
+                        $class_storage->suppressed_issues,
+                        true,
+                        false,
+                    );
+                }
+            }
+        }
+    }
+
+    /**
      * @param  string[]         $suppressed_issues
      */
     private static function checkForObviousMethodMismatches(
