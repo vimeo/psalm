@@ -1380,28 +1380,12 @@ class ReturnTypeTest extends TestCase
                     }',
                 'error_message' => 'MissingReturnType',
             ],
-            'mixedInferredReturnType' => [
-                'code' => '<?php
-                    function fooFoo(array $arr): string {
-                        /** @psalm-suppress MixedReturnStatement */
-                        return array_pop($arr);
-                    }',
-                'error_message' => 'MixedInferredReturnType',
-            ],
             'mixedInferredReturnStatement' => [
                 'code' => '<?php
                     function fooFoo(array $arr): string {
                         return array_pop($arr);
                     }',
                 'error_message' => 'MixedReturnStatement',
-            ],
-            'invalidReturnTypeClass' => [
-                'code' => '<?php
-                    function fooFoo(): A {
-                        return new A;
-                    }',
-                'error_message' => 'UndefinedClass',
-                'ignored_issues' => ['MixedInferredReturnType'],
             ],
             'invalidClassOnCall' => [
                 'code' => '<?php
@@ -1414,7 +1398,7 @@ class ReturnTypeTest extends TestCase
 
                     fooFoo()->bar();',
                 'error_message' => 'UndefinedClass',
-                'ignored_issues' => ['MixedInferredReturnType', 'MixedReturnStatement'],
+                'ignored_issues' => ['MixedReturnStatement'],
             ],
             'returnArrayOfNullableInvalid' => [
                 'code' => '<?php

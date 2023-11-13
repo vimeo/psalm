@@ -290,10 +290,6 @@ class DocumentationTest extends TestCase
                     $ignored_issues = ['InvalidReturnStatement'];
                     break;
 
-                case 'MixedInferredReturnType':
-                    $ignored_issues = ['MixedReturnStatement'];
-                    break;
-
                 case 'MixedStringOffsetAssignment':
                     $ignored_issues = ['MixedAssignment'];
                     break;

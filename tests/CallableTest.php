@@ -1917,7 +1917,7 @@ class CallableTest extends TestCase
                         }
                     }',
                 'error_message' => 'InvalidFunctionCall',
-                'ignored_issues' => ['UndefinedClass', 'MixedInferredReturnType'],
+                'ignored_issues' => ['UndefinedClass'],
             ],
             'undefinedCallableMethodFullString' => [
                 'code' => '<?php

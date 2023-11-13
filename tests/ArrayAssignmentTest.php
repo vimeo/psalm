@@ -2259,9 +2259,6 @@ class ArrayAssignmentTest extends TestCase
             ],
             'mergeWithDeeplyNestedArray' => [
                 'code' => '<?php
-                    /**
-                     * @psalm-suppress MixedInferredReturnType
-                     */
                     function getTwoPartsLocale(array $cache, string $a, string $b) : string
                     {
                         if (!isset($cache[$b])) {

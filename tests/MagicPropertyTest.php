@@ -398,7 +398,7 @@ class MagicPropertyTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MixedReturnStatement', 'MixedInferredReturnType'],
+                'ignored_issues' => ['MixedReturnStatement'],
             ],
             'overrideInheritedProperty' => [
                 'code' => '<?php

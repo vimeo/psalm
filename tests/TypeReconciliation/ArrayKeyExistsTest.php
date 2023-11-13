@@ -79,7 +79,7 @@ class ArrayKeyExistsTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MixedReturnStatement', 'MixedInferredReturnType'],
+                'ignored_issues' => ['MixedReturnStatement'],
             ],
             'assertSelfClassConstantOffsetsInFunction' => [
                 'code' => '<?php
@@ -100,7 +100,7 @@ class ArrayKeyExistsTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MixedReturnStatement', 'MixedInferredReturnType'],
+                'ignored_issues' => ['MixedReturnStatement'],
             ],
             'assertNamedClassConstantOffsetsInFunction' => [
                 'code' => '<?php
@@ -121,7 +121,7 @@ class ArrayKeyExistsTest extends TestCase
                         return C::ARR[$key]["foo"];
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MixedReturnStatement', 'MixedInferredReturnType'],
+                'ignored_issues' => ['MixedReturnStatement'],
             ],
             'possiblyUndefinedArrayAccessWithArrayKeyExists' => [
                 'code' => '<?php

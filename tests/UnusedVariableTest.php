@@ -1352,7 +1352,6 @@ class UnusedVariableTest extends TestCase
             'usedInUndefinedFunction' => [
                 'code' => '<?php
                     /**
-                     * @psalm-suppress MixedInferredReturnType
                      * @psalm-suppress MixedReturnStatement
                      */
                     function test(): string {
@@ -2231,7 +2230,6 @@ class UnusedVariableTest extends TestCase
                 'code' => '<?php
                     /**
                      * @psalm-suppress MixedReturnStatement
-                     * @psalm-suppress MixedInferredReturnType
                      */
                     function foo(array $data) : array {
                         $output = [];

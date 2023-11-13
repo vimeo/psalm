@@ -63,7 +63,6 @@ class AssignmentInConditionalTest extends TestCase
             'assertOnRemainderOfArray' => [
                 'code' => '<?php
                     /**
-                     * @psalm-suppress MixedInferredReturnType
                      * @psalm-suppress MixedReturnStatement
                      */
                     function foo(string $file_name) : int {
