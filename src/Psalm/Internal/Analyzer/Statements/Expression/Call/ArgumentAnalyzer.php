@@ -806,13 +806,16 @@ final class ArgumentAnalyzer
         }
 
         if ($input_type->isNever()) {
-            IssueBuffer::maybeAdd(
+            if (!IssueBuffer::accepts(
                 new NoValue(
                     'All possible types for this argument were invalidated - This may be dead code',
                     $arg_location,
                 ),
                 $statements_analyzer->getSuppressedIssues(),
-            );
+            )) {
+                // if the error is suppressed, do not treat it as exited anymore
+                $context->has_returned = false;
+            }
 
             return null;
         }
