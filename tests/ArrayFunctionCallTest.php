@@ -41,6 +41,19 @@ class ArrayFunctionCallTest extends TestCase
                     '$e' => 'array<int<0, 1>, object>',
                 ],
             ],
+            'arrayFilterStringCallable' => [
+                'code' => '<?php
+                    $arg = "is_string";
+
+                    /**
+                     * @var array<string|int, float> $bar
+                     */
+                    $keys = array_keys( $bar );
+                    $strings = array_filter( $keys, $arg );',
+                'assertions' => [
+                    '$strings' => 'array<int<0, max>, string>',
+                ],
+            ],
             'positiveIntArrayFilter' => [
                 'code' => '<?php
                     /**
