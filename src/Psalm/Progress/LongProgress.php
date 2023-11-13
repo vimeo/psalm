@@ -25,7 +25,7 @@ class LongProgress extends Progress
 
     protected bool $print_infos = false;
 
-    protected bool $fixed_size = true;
+    protected bool $fixed_size = false;
 
     public function __construct(bool $print_errors = true, bool $print_infos = true)
     {
