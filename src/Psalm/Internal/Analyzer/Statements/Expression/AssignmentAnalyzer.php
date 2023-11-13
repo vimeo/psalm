@@ -536,13 +536,15 @@ final class AssignmentAnalyzer
                     $statements_analyzer->getSuppressedIssues(),
                 )) {
                     // if the error is suppressed, do not treat it as never anymore
-                    $context->vars_in_scope[$var_id] = Type::getMixed();
+                    $new_mutable = $context->vars_in_scope[$var_id]->getBuilder()->addType(new TMixed);
+                    $new_mutable->removeType('never');
+                    $context->vars_in_scope[$var_id] = $new_mutable->freeze();
                     $context->has_returned = false;
+                } else {
+                    $context->inside_assignment = $was_in_assignment;
+
+                    return $context->vars_in_scope[$var_id];
                 }
-
-                $context->inside_assignment = $was_in_assignment;
-
-                return $context->vars_in_scope[$var_id];
             }
 
             if ($statements_analyzer->data_flow_graph) {

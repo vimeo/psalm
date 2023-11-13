@@ -1332,10 +1332,6 @@ class UnusedCodeTest extends TestCase
                      */
                     function foo() : void {}
 
-                    function bar(mixed $s) : string {
-                        return is_string($s) ? "hello" : "world";
-                    }
-
                     /** @psalm-suppress NoValue */
                     $a = foo();
                     print_r($a);',
@@ -1349,6 +1345,7 @@ class UnusedCodeTest extends TestCase
                      */
                     function foo() : void {}
 
+                    /** @psalm-suppress UnusedParam */
                     function bar(mixed $s) : void {}
 
                     /** @psalm-suppress NoValue */
