@@ -553,8 +553,8 @@ return [
       'new' => ['array', 'array'=>'array', '...arrays='=>'array'],
     ],
     'array_filter' => [
-      'old' => ['array', 'array'=>'array', 'callback='=>'callable(mixed,mixed=):scalar', 'mode='=>'int'],
-      'new' => ['array', 'array'=>'array', 'callback='=>'callable(mixed,mixed=):scalar|null', 'mode='=>'int'],
+      'old' => ['array', 'array'=>'array', 'callback='=>'callable(mixed,array-key=):mixed', 'mode='=>'int'],
+      'new' => ['array', 'array'=>'array', 'callback='=>'callable(mixed,array-key=):mixed|null', 'mode='=>'int'],
     ],
     'array_key_exists' => [
       'old' => ['bool', 'key'=>'string|int', 'array'=>'array|object'],

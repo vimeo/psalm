@@ -29,6 +29,18 @@ class ArrayFunctionCallTest extends TestCase
                     '$e' => 'array<string, int<0, 10>|null>',
                 ],
             ],
+            'arrayFilterObject' => [
+                'code' => '<?php
+                    $e = array_filter(
+                        [(object) [], null],
+                        function($i) {
+                            return $i;
+                        }
+                    );',
+                'assertions' => [
+                    '$e' => 'array<int<0, 1>, object>',
+                ],
+            ],
             'positiveIntArrayFilter' => [
                 'code' => '<?php
                     /**
