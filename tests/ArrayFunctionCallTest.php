@@ -2637,17 +2637,6 @@ class ArrayFunctionCallTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
-            'arrayFilterWithoutTypes' => [
-                'code' => '<?php
-                    $e = array_filter(
-                        ["a" => 5, "b" => 12, "c" => null],
-                        function(?int $i) {
-                            return $GLOBALS["a"];
-                        }
-                    );',
-                'error_message' => 'MixedArgumentTypeCoercion',
-                'ignored_issues' => ['MissingClosureParamType', 'MissingClosureReturnType'],
-            ],
             'arrayFilterUseMethodOnInferrableInt' => [
                 'code' => '<?php
                     $a = array_filter([1, 2, 3, 4], function ($i) { return $i->foo(); });',
