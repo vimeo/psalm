@@ -58,19 +58,22 @@ final class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderI
             return Type::getMixed();
         }
 
+        $fallback = new TArray([Type::getArrayKey(), Type::getMixed()]);
         $array_arg = $call_args[0]->value ?? null;
-
-        $first_arg_array = $array_arg
-            && ($first_arg_type = $statements_source->node_data->getType($array_arg))
-            && $first_arg_type->hasType('array')
-            && ($array_atomic_type = $first_arg_type->getArray())
-            && ($array_atomic_type instanceof TArray
-                || $array_atomic_type instanceof TKeyedArray)
-            ? $array_atomic_type
-            : null;
-
-        if (!$first_arg_array) {
-            return Type::getArray();
+        if (!$array_arg) {
+            $first_arg_array = $fallback;
+        } else {
+            $first_arg_type = $statements_source->node_data->getType($array_arg);
+            if (!$first_arg_type || $first_arg_type->isMixed()) {
+                $first_arg_array = $fallback;
+            } else {
+                $first_arg_array = $first_arg_type->hasType('array')
+                                   && ($array_atomic_type = $first_arg_type->getArray())
+                                   && ($array_atomic_type instanceof TArray
+                                       || $array_atomic_type instanceof TKeyedArray)
+                    ? $array_atomic_type
+                    : $fallback;
+            }
         }
 
         if ($first_arg_array instanceof TArray) {

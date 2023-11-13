@@ -54,6 +54,14 @@ class ArrayFunctionCallTest extends TestCase
                     '$strings' => 'array<int<0, max>, string>',
                 ],
             ],
+            'arrayFilterMixed' => [
+                'code' => '<?php
+                    /** @psalm-suppress UndefinedGlobalVariable, MixedArgument, MixedArrayAccess */
+                    $x = array_filter($foo, "is_string");',
+                'assertions' => [
+                    '$x' => 'array<array-key, string>',
+                ],
+            ],
             'positiveIntArrayFilter' => [
                 'code' => '<?php
                     /**
