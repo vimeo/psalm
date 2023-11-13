@@ -1346,7 +1346,7 @@ class UnusedCodeTest extends TestCase
                     function foo() : void {}
 
                     /** @psalm-suppress UnusedParam */
-                    function bar(mixed $s) : void {}
+                    function bar(string $s) : void {}
 
                     /** @psalm-suppress NoValue */
                     bar(foo());
