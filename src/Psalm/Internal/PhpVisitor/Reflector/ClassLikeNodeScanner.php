@@ -623,11 +623,16 @@ final class ClassLikeNodeScanner
                     $storage->pseudo_static_methods[$lc_method_name] = $pseudo_method_storage;
                 } else {
                     $storage->pseudo_methods[$lc_method_name] = $pseudo_method_storage;
-                    $storage->declaring_pseudo_method_ids[$lc_method_name] = new MethodIdentifier(
-                        $fq_classlike_name,
-                        $lc_method_name,
-                    );
                 }
+                $method_identifier = new MethodIdentifier(
+                    $fq_classlike_name,
+                    $lc_method_name,
+                );
+                $storage->inheritable_method_ids[$lc_method_name] = $method_identifier;
+                if (!isset($storage->overridden_method_ids[$lc_method_name])) {
+                    $storage->overridden_method_ids[$lc_method_name] = [];
+                }
+                $storage->declaring_pseudo_method_ids[$lc_method_name] = $method_identifier;
             }
 
 
