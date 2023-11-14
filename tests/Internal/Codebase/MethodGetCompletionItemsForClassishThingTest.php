@@ -447,6 +447,7 @@ final class MethodGetCompletionItemsForClassishThingTest extends TestCase
                 'protectedStaticMethod',
             ],
             '::' => [
+                'magicStaticMethod',
                 'publicStaticProp',
                 'protectedStaticProp',
 
