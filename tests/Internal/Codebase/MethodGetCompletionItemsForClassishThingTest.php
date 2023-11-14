@@ -285,11 +285,26 @@ final class MethodGetCompletionItemsForClassishThingTest extends TestCase
                 'publicObjProp',
                 'protectedObjProp',
                 'privateObjProp',
+
+                'abstractPublicMethod',
+                'abstractProtectedMethod',
+
+                'publicObjMethod',
+                'protectedObjMethod',
+                'privateObjMethod',
+
+                'publicStaticMethod',
+                'protectedStaticMethod',
+                'privateStaticMethod',
             ],
             '::' => [
                 'publicStaticProp',
                 'protectedStaticProp',
                 'privateStaticProp',
+
+                'publicStaticMethod',
+                'protectedStaticMethod',
+                'privateStaticMethod',
             ],
         ];
 
@@ -349,11 +364,26 @@ final class MethodGetCompletionItemsForClassishThingTest extends TestCase
                 'publicObjProp',
                 'protectedObjProp',
                 'privateObjProp',
+
+                'abstractPublicMethod',
+                'abstractProtectedMethod',
+
+                'publicObjMethod',
+                'protectedObjMethod',
+                'privateObjMethod',
+
+                'publicStaticMethod',
+                'protectedStaticMethod',
+                'privateStaticMethod',
             ],
             '::' => [
                 'publicStaticProp',
                 'protectedStaticProp',
                 'privateStaticProp',
+
+                'publicStaticMethod',
+                'protectedStaticMethod',
+                'privateStaticMethod',
             ],
         ];
 
@@ -409,10 +439,19 @@ final class MethodGetCompletionItemsForClassishThingTest extends TestCase
     
                 'publicObjProp',
                 'protectedObjProp',
+
+                'publicObjMethod',
+                'protectedObjMethod',
+
+                'publicStaticMethod',
+                'protectedStaticMethod',
             ],
             '::' => [
                 'publicStaticProp',
                 'protectedStaticProp',
+
+                'publicStaticMethod',
+                'protectedStaticMethod',
             ],
         ];
 

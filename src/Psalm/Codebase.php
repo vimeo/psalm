@@ -1883,7 +1883,10 @@ final class Codebase
                 try {
                     $class_storage = $this->classlike_storage_provider->get($atomic_type->value);
 
-                    $method_storages = [...$class_storage->methods];
+                    $method_storages = [];
+                    foreach ($class_storage->declaring_method_ids as $declaring_method_id) {
+                        $method_storages[] = $this->methods->getStorage($declaring_method_id);
+                    }
                     if ($gap === '->') {
                         $method_storages += $class_storage->pseudo_methods;
                     }
