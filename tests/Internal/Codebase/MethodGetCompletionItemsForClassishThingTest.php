@@ -298,6 +298,7 @@ final class MethodGetCompletionItemsForClassishThingTest extends TestCase
                 'privateStaticMethod',
             ],
             '::' => [
+                'magicStaticMethod',
                 'publicStaticProp',
                 'protectedStaticProp',
                 'privateStaticProp',
@@ -377,6 +378,7 @@ final class MethodGetCompletionItemsForClassishThingTest extends TestCase
                 'privateStaticMethod',
             ],
             '::' => [
+                'magicStaticMethod',
                 'publicStaticProp',
                 'protectedStaticProp',
                 'privateStaticProp',

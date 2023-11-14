@@ -450,6 +450,8 @@ final class Populator
         $storage->pseudo_property_get_types += $trait_storage->pseudo_property_get_types;
         $storage->pseudo_property_set_types += $trait_storage->pseudo_property_set_types;
 
+        $storage->pseudo_static_methods += $trait_storage->pseudo_static_methods;
+        
         $storage->pseudo_methods += $trait_storage->pseudo_methods;
         $storage->declaring_pseudo_method_ids += $trait_storage->declaring_pseudo_method_ids;
     }
