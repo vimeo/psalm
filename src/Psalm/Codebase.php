@@ -1918,34 +1918,34 @@ final class Codebase
                         }
                     }
 
-                    $pseudo_property_types = [];
-                    foreach ($class_storage->pseudo_property_get_types as $property_name => $type) {
-                        $pseudo_property_types[$property_name] = new CompletionItem(
-                            str_replace('$', '', $property_name),
-                            CompletionItemKind::PROPERTY,
-                            $type->__toString(),
-                            null,
-                            '1', //sort text
-                            str_replace('$', '', $property_name),
-                            ($gap === '::' ? '$' : '') .
+                    if ($gap === '->') {
+                        $pseudo_property_types = [];
+                        foreach ($class_storage->pseudo_property_get_types as $property_name => $type) {
+                            $pseudo_property_types[$property_name] = new CompletionItem(
                                 str_replace('$', '', $property_name),
-                        );
-                    }
-
-                    foreach ($class_storage->pseudo_property_set_types as $property_name => $type) {
-                        $pseudo_property_types[$property_name] = new CompletionItem(
-                            str_replace('$', '', $property_name),
-                            CompletionItemKind::PROPERTY,
-                            $type->__toString(),
-                            null,
-                            '1',
-                            str_replace('$', '', $property_name),
-                            ($gap === '::' ? '$' : '') .
+                                CompletionItemKind::PROPERTY,
+                                $type->__toString(),
+                                null,
+                                '1', //sort text
                                 str_replace('$', '', $property_name),
-                        );
+                                str_replace('$', '', $property_name),
+                            );
+                        }
+    
+                        foreach ($class_storage->pseudo_property_set_types as $property_name => $type) {
+                            $pseudo_property_types[$property_name] = new CompletionItem(
+                                str_replace('$', '', $property_name),
+                                CompletionItemKind::PROPERTY,
+                                $type->__toString(),
+                                null,
+                                '1',
+                                str_replace('$', '', $property_name),
+                                str_replace('$', '', $property_name),
+                            );
+                        }
+    
+                        $completion_items = [...$completion_items, ...array_values($pseudo_property_types)];
                     }
-
-                    $completion_items = [...$completion_items, ...array_values($pseudo_property_types)];
 
                     foreach ($class_storage->declaring_property_ids as $property_name => $declaring_class) {
                         $property_storage = $this->properties->getStorage(
