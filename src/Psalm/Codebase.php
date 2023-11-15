@@ -1952,7 +1952,7 @@ final class Codebase
                             $declaring_class . '::$' . $property_name,
                         );
 
-                        if ($property_storage->is_static || $gap === '->') {
+                        if ($property_storage->is_static === ($gap === '::')) {
                             $completion_items[] = new CompletionItem(
                                 $property_name,
                                 CompletionItemKind::PROPERTY,
