@@ -348,11 +348,10 @@ class ArgTest extends TestCase
 
                     /**
                      * @param string $a
-                     * @param int $b
-                     * @param int $c
+                     * @param int ...$b
                      * @return void
                      */
-                    function foo($a, $b, $c) {}
+                    function foo($a, ...$b) {}
 
                     var_caller("foo");',
             ],

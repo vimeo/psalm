@@ -7,6 +7,7 @@ use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Internal\Codebase\ClassConstantByWildcardResolver;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
+use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Storage\Assertion;
 use Psalm\Storage\Assertion\Any;
 use Psalm\Storage\Assertion\ArrayKeyExists;
@@ -2695,6 +2696,13 @@ final class SimpleAssertionReconciler extends Reconciler
                 $redundant = false;
 
                 $callable_types[] = $type;
+            } elseif ($candidate_callable = CallableTypeComparator::getCallableFromAtomic(
+                $codebase,
+                $type,
+            )) {
+                $redundant = false;
+
+                $callable_types[] = $candidate_callable;
             } else {
                 $redundant = false;
             }
