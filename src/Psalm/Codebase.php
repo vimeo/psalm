@@ -69,7 +69,6 @@ use ReflectionType;
 use UnexpectedValueException;
 
 use function array_combine;
-use function array_merge;
 use function array_pop;
 use function array_reverse;
 use function array_values;
@@ -1884,12 +1883,15 @@ final class Codebase
                 try {
                     $class_storage = $this->classlike_storage_provider->get($atomic_type->value);
 
-                    $methods = array_merge(
-                        $class_storage->methods,
-                        $class_storage->pseudo_methods,
-                        $class_storage->pseudo_static_methods,
-                    );
-                    foreach ($methods as $method_storage) {
+                    $method_storages = [...$class_storage->methods];
+                    if ($gap === '->') {
+                        $method_storages += $class_storage->pseudo_methods;
+                    }
+                    if ($gap === '::') {
+                        $method_storages += $class_storage->pseudo_static_methods;
+                    }
+
+                    foreach ($method_storages as $method_storage) {
                         if ($method_storage->is_static || $gap === '->') {
                             $completion_item = new CompletionItem(
                                 $method_storage->cased_name,
