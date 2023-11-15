@@ -48,8 +48,8 @@ class ArrayFunctionCallTest extends TestCase
                     /**
                      * @var array<string|int, float> $bar
                      */
-                    $keys = array_keys( $bar );
-                    $strings = array_filter( $keys, $arg );',
+                    $keys = array_keys($bar);
+                    $strings = array_filter($keys, $arg);',
                 'assertions' => [
                     '$strings' => 'array<int<0, max>, string>',
                 ],
@@ -173,6 +173,26 @@ class ArrayFunctionCallTest extends TestCase
                     /** @psalm-var array<Baz::STATUS_*> $statusList */
                     $statusList = [Baz::STATUS_FOO, Baz::STATUS_QUX];
                     $statusList = array_filter($statusList, [Baz::class, "isStatus"]);',
+            ],
+            'arrayFilterUseKeyCallback' => [
+                'code' => '<?php
+                    /**
+                     * @var array<string, float> $arg
+                     */
+                    $a = array_filter($arg, "strlen", ARRAY_FILTER_USE_KEY);',
+                'assertions' => [
+                    '$a' => 'array<string, float>',
+                ],
+            ],
+            'arrayFilterUseBothCallback' => [
+                'code' => '<?php
+                    /**
+                     * @var list<int> $arg
+                     */
+                    $a = array_filter($arg, function (int $v, int $k) { return ($v > $k);}, ARRAY_FILTER_USE_BOTH);',
+                'assertions' => [
+                    '$a' => 'array<int<0, max>, int>',
+                ],
             ],
             'arrayKeysNonEmpty' => [
                 'code' => '<?php
@@ -2514,8 +2534,29 @@ class ArrayFunctionCallTest extends TestCase
                      * @param array<string, array{x?:int, y?:int, width?:int, height?:int}> $foos
                      */
                     function foo(array $foos): void {
-                        array_multisort($formLayoutFields, SORT_ASC, array_column($foos, "y"));
+                        array_multisort(array_column($foos, "y"), SORT_ASC, $foos);
                     }',
+            ],
+            'arrayMultisortSortRestByRef' => [
+                'code' => '<?php
+                    /** @var non-empty-array<array{s: int, v: string}> $test */
+                    array_multisort(
+                        array_column($test, "s"),
+                        SORT_DESC,
+                        SORT_NATURAL|SORT_FLAG_CASE,
+                        $test
+                    );',
+                'assertions' => [
+                    '$test' => 'non-empty-array<array-key, array{s: int, v: string}>',
+                ],
+            ],
+            'arrayMultisortSort' => [
+                'code' => '<?php
+                    /** @var non-empty-array<array{s: int, v: string}> $test */
+                    array_multisort($test);',
+                'assertions' => [
+                    '$test' => 'non-empty-array<array-key, array{s: int, v: string}>',
+                ],
             ],
             'arrayMapGenericObject' => [
                 'code' => '<?php
@@ -2663,6 +2704,47 @@ class ArrayFunctionCallTest extends TestCase
                     $a = array_filter([1, 2, 3, 4], function ($i) { return $i->foo(); });',
                 'error_message' => 'InvalidMethodCall',
             ],
+            'arrayFilterThirdArgWillNotBeUsedWhenSecondNull' => [
+                'code' => '<?php
+                    array_filter( $arg, null, ARRAY_FILTER_USE_BOTH );',
+                'error_message' => 'InvalidArgument',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'arrayFilterThirdArgInvalidBehavesLike0' => [
+                'code' => '<?php
+                    array_filter( $arg, "strlen", 3 );',
+                'error_message' => 'PossiblyInvalidArgument',
+            ],
+            'arrayFilterCallbackValidationThirdArg0' => [
+                'code' => '<?php
+                    /**
+                     * @var array<int, string|int|float> $arg
+                     */
+                    array_filter($arg, "abs", 0);',
+                'error_message' => 'InvalidArgument',
+            ],
+            'arrayFilterKeyCallbackLiteral' => [
+                'code' => '<?php
+                    array_filter(["a" => 5, "b" => 12, "c" => null], "abs", ARRAY_FILTER_USE_KEY);',
+                'error_message' => 'InvalidArgument',
+            ],
+            'arrayFilterBothCallback' => [
+                'code' => '<?php
+                    /**
+                     * @var array<string, float> $arg
+                     */
+                    array_filter($arg, "strlen", ARRAY_FILTER_USE_BOTH);',
+                'error_message' => 'InvalidArgument',
+            ],
+            'arrayFilterKeyCallback' => [
+                'code' => '<?php
+                    /**
+                     * @var array<int, string> $arg
+                     */
+                    array_filter($arg, "strlen", ARRAY_FILTER_USE_KEY);',
+                'error_message' => 'InvalidScalarArgument',
+            ],
             'arrayMapUseMethodOnInferrableInt' => [
                 'code' => '<?php
                     $a = array_map(function ($i) { return $i->foo(); }, [1, 2, 3, 4]);',
@@ -2701,7 +2783,7 @@ class ArrayFunctionCallTest extends TestCase
                     }
 
                     array_filter([1, 2, 3], "foo");',
-                'error_message' => 'TooFewArguments',
+                'error_message' => 'InvalidArgument',
             ],
             'arrayMapBadArgs' => [
                 'code' => '<?php
@@ -2940,6 +3022,83 @@ class ArrayFunctionCallTest extends TestCase
                     takes_non_empty_array(array_flip([]));
                 ',
                 'error_message' => 'InvalidArgument',
+            ],
+            'arrayMultisortInvalidFlag' => [
+                'code' => '<?php
+                    /** @var array<string, array<string>> $test */
+                    array_multisort(
+                        $test,
+                        SORT_FLAG_CASE,
+                    );',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:21 - Argument 2 of array_multisort sort order/flag contains an invalid value of 8',
+            ],
+            'arrayMultisortInvalidSortFlags' => [
+                'code' => '<?php
+                    /** @var array<string, array<string>> $test */
+                    array_multisort(
+                        array_column($test, "s"),
+                        SORT_DESC,
+                        SORT_ASC,
+                        $test
+                    );',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:21 - Argument 3 of array_multisort contains sort order flags and can only be used after an array parameter',
+            ],
+            'arrayMultisortInvalidSortAfterFlags' => [
+                'code' => '<?php
+                    /** @var array<string, array<string>> $test */
+                    array_multisort(
+                        array_column($test, "s"),
+                        SORT_NATURAL,
+                        SORT_DESC,
+                        $test
+                    );',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:21 - Argument 3 of array_multisort contains sort order flags and can only be used after an array parameter',
+            ],
+            'arrayMultisortInvalidFlagsAfterFlags' => [
+                'code' => '<?php
+                    /** @var array<string, array<string>> $test */
+                    array_multisort(
+                        array_column($test, "s"),
+                        $test,
+                        SORT_NATURAL|SORT_FLAG_CASE,
+                        SORT_LOCALE_STRING,
+                    );',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:21 - Argument 4 of array_multisort are sort flags and cannot be used after a parameter with sort flags',
+            ],
+            'arrayMultisortNoByRef' => [
+                'code' => '<?php
+                    /** @var array<string, array{id: int, s: int, bar: string}> $test */
+                    array_multisort(
+                        array_column($test, "s"),
+                        SORT_DESC,
+                        array_column($test, "id")
+                    );',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:21 - At least 1 array argument of array_multisort must be a variable, since the sorting happens by reference and otherwise this function call does nothing',
+            ],
+            'arrayMultisortNotByRefAfterLastByRef' => [
+                'code' => '<?php
+                    /** @var array<string, array{id: int, s: int, bar: string}> $test */
+                    array_multisort(
+                        array_column($test, "s"),
+                        SORT_DESC,
+                        $test,
+                        SORT_ASC,
+                        array_column($test, "id"),
+                    );',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:21 - All arguments of array_multisort after argument 4, which are after the last by reference passed array argument and its flags, are redundant and can be removed, since the sorting happens by reference',
+            ],
+            'arrayMultisortNotByRefAfterLastByRefWithFlag' => [
+                'code' => '<?php
+                    /** @var array<string, array{id: int, s: int, bar: string}> $test */
+                    array_multisort(
+                        array_column($test, "s"),
+                        SORT_DESC,
+                        $test,
+                        SORT_ASC,
+                        array_column($test, "id"),
+                        SORT_NATURAL
+                    );',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:21 - All arguments of array_multisort after argument 4, which are after the last by reference passed array argument and its flags, are redundant and can be removed, since the sorting happens by reference',
             ],
         ];
     }
