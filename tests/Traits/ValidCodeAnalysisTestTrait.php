@@ -14,7 +14,6 @@ use function version_compare;
 
 use const PHP_OS;
 use const PHP_VERSION;
-use const PHP_VERSION_ID;
 
 trait ValidCodeAnalysisTestTrait
 {
@@ -76,20 +75,6 @@ trait ValidCodeAnalysisTestTrait
         $codebase = $this->project_analyzer->getCodebase();
         $codebase->enterServerMode();
         $codebase->config->visitPreloadedStubFiles($codebase);
-
-        // avoid MethodSignatureMismatch for __unserialize/() when extending DateTime
-        if (PHP_VERSION_ID >= 8_02_00) {
-            $this->addStubFile(
-                'stubOne.phpstub',
-                '<?php
-                    namespace {
-                        interface DateTimeInterface {
-                            public function __unserialize(mixed[] $data) {}
-                        }
-                    }
-                ',
-            );
-        }
 
         $file_path = self::$src_dir_path . 'somefile.php';
 
