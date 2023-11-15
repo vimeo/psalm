@@ -1827,16 +1827,16 @@ class CallableTest extends TestCase
                     {
                         return 0;
                     }
-                    
+
                     /** @param Closure(int, int): int $f */
                     function int_int(Closure $f): void {}
-                    
+
                     /** @param Closure(int, int, int): int $f */
                     function int_int_int(Closure $f): void {}
-                    
+
                     /** @param Closure(int, int, int, int): int $f */
                     function int_int_int_int(Closure $f): void {}
-                    
+
                     int_int(withVariadic(...));
                     int_int_int(withVariadic(...));
                     int_int_int_int(withVariadic(...));',
@@ -2109,6 +2109,19 @@ class CallableTest extends TestCase
                     new Func("f", ["Foo", "bar"]);',
                 'error_message' => 'InvalidArgument',
             ],
+            'invalidArrayCallable' => [
+                'code' => '<?php
+                    function foo(callable $callback) : void {
+                        $callback();
+                    }
+
+                    final class Bar {
+                        public static function baz() : void {}
+                    }
+
+                    foo([Bar::class, "baz", 1231233]);',
+                'error_message' => 'InvalidArgument',
+            ],
             'preventStringDocblockType' => [
                 'code' => '<?php
                     /**
@@ -2325,16 +2338,16 @@ class CallableTest extends TestCase
                     {
                         return 0;
                     }
-                    
+
                     /** @param Closure(int, int, string, int, int): int $f */
                     function int_int_string_int_int(Closure $f): void {}
-                    
+
                     /** @param Closure(int, int, int, string, int): int $f */
                     function int_int_int_string_int(Closure $f): void {}
-                    
+
                     /** @param Closure(int, int, int, int, string): int $f */
                     function int_int_int_int_string(Closure $f): void {}
-                    
+
                     int_int_string_int_int(add(...));
                     int_int_int_string_int(add(...));
                     int_int_int_int_string(add(...));',
