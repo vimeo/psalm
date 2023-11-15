@@ -217,7 +217,7 @@ class StubTest extends TestCase
     public function testStubFileParentClass(): void
     {
         $this->expectException(CodeException::class);
-        $this->expectExceptionMessage('ImplementedParamTypeMismatch');
+        $this->expectExceptionMessage('MethodSignatureMismatch');
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__),

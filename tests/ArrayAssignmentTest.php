@@ -1043,17 +1043,20 @@ class ArrayAssignmentTest extends TestCase
                      * @template-implements ArrayAccess<?int, string>
                      */
                     class C implements ArrayAccess {
-                        public function offsetExists(int $offset) : bool { return true; }
+                        public function offsetExists(mixed $offset) : bool { return true; }
 
                         public function offsetGet($offset) : string { return "";}
 
-                        public function offsetSet(?int $offset, string $value) : void {}
+                        public function offsetSet(mixed $offset, mixed $value) : void {}
 
-                        public function offsetUnset(int $offset) : void { }
+                        public function offsetUnset(mixed $offset) : void { }
                     }
 
                     $c = new C();
                     $c[] = "hello";',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'checkEmptinessAfterConditionalArrayAdjustment' => [
                 'code' => '<?php
@@ -1962,17 +1965,20 @@ class ArrayAssignmentTest extends TestCase
                      * @template-implements ArrayAccess<int, string>
                      */
                     class C implements ArrayAccess {
-                        public function offsetExists(int $offset) : bool { return true; }
+                        public function offsetExists(mixed $offset) : bool { return true; }
 
                         public function offsetGet($offset) : string { return "";}
 
-                        public function offsetSet(int $offset, string $value) : void {}
+                        public function offsetSet(mixed $offset, mixed $value) : void {}
 
-                        public function offsetUnset(int $offset) : void { }
+                        public function offsetUnset(mixed $offset) : void { }
                     }
 
                     $c = new C();
                     $c[] = "hello";',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'conditionalRestrictedDocblockKeyAssignment' => [
                 'code' => '<?php

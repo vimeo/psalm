@@ -37,6 +37,7 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
 use function array_filter;
+use function count;
 use function in_array;
 use function strpos;
 use function strtolower;
@@ -130,7 +131,7 @@ final class MethodComparator
         ) {
             IssueBuffer::maybeAdd(
                 new MethodSignatureMustProvideReturnType(
-                    'Method ' . $cased_implementer_method_id . ' must have a return type signature!',
+                    'Method ' . $cased_implementer_method_id . ' must have a return type signature',
                     $implementer_method_storage->location ?: $code_location,
                 ),
                 $suppressed_issues + $implementer_classlike_storage->suppressed_issues,
@@ -199,10 +200,9 @@ final class MethodComparator
             );
         }
 
-        if ($guide_classlike_storage->user_defined
-            && ($guide_classlike_storage->is_interface
-                || $guide_classlike_storage->preserve_constructor_signature
-                || $implementer_method_storage->cased_name !== '__construct')
+        if (($guide_classlike_storage->is_interface
+             || $guide_classlike_storage->preserve_constructor_signature
+             || $implementer_method_storage->cased_name !== '__construct')
             && $implementer_method_storage->required_param_count > $guide_method_storage->required_param_count
         ) {
             if ($implementer_method_storage->cased_name !== '__construct') {
@@ -361,10 +361,20 @@ final class MethodComparator
         CodeLocation $code_location,
         array $suppressed_issues
     ): void {
+        // ignore errors from stubbed/out of project files
+        $config = Config::getInstance();
+        if (!$implementer_classlike_storage->user_defined
+            && (!$implementer_param->location
+                || !$config->isInProjectDirs(
+                    $implementer_param->location->file_path,
+                )
+            )) {
+            return;
+        }
+
         if ($prevent_method_signature_mismatch) {
             if (!$guide_classlike_storage->user_defined
-                && $guide_param->type
-            ) {
+                && $guide_param->type) {
                 $implementer_param_type = $implementer_param->signature_type;
 
                 $guide_param_signature_type = $guide_param->type;
@@ -386,8 +396,6 @@ final class MethodComparator
                     && !$guide_param->type->from_docblock
                     && ($implementer_param_type || $guide_param_signature_type)
                 ) {
-                    $config = Config::getInstance();
-
                     if ($implementer_param_type
                         && (!$guide_param_signature_type
                             || strtolower($implementer_param_type->getId())
@@ -438,11 +446,8 @@ final class MethodComparator
                 }
             }
 
-            $config = Config::getInstance();
-
             if ($guide_param->name !== $implementer_param->name
                 && $guide_method_storage->allow_named_arg_calls
-                && $guide_classlike_storage->user_defined
                 && $implementer_classlike_storage->user_defined
                 && $implementer_param->location
                 && $guide_method_storage->cased_name
@@ -451,7 +456,10 @@ final class MethodComparator
                     $implementer_param->location->file_path,
                 )
             ) {
-                if ($config->allow_named_arg_calls
+                if (!$guide_classlike_storage->user_defined && $i === 0 && count($guide_method_storage->params) < 2) {
+                    // if it's third party defined and a single arg, renaming is unnecessary
+                    // if we still want to psalter it, move this if and change the else below to elseif
+                } elseif ($config->allow_named_arg_calls
                     || ($guide_classlike_storage->location
                         && !$config->isInProjectDirs($guide_classlike_storage->location->file_path)
                     )
@@ -491,9 +499,7 @@ final class MethodComparator
                 }
             }
 
-            if ($guide_classlike_storage->user_defined
-                && $implementer_param->signature_type
-            ) {
+            if ($implementer_param->signature_type) {
                 self::compareMethodSignatureParams(
                     $codebase,
                     $i,
@@ -532,9 +538,7 @@ final class MethodComparator
             );
         }
 
-        if ($guide_classlike_storage->user_defined && $implementer_param->by_ref !== $guide_param->by_ref) {
-            $config = Config::getInstance();
-
+        if ($implementer_param->by_ref !== $guide_param->by_ref) {
             IssueBuffer::maybeAdd(
                 new MethodSignatureMismatch(
                     'Argument ' . ($i + 1) . ' of ' . $cased_implementer_method_id . ' is' .
@@ -584,6 +588,50 @@ final class MethodComparator
                     : $guide_classlike_storage->parent_class,
             )
             : null;
+
+        // CallMapHandler needed due to https://github.com/vimeo/psalm/issues/10378
+        if (!$guide_param->signature_type
+            && $guide_param->type
+            && InternalCallMapHandler::inCallMap($cased_guide_method_id)) {
+            $guide_method_storage_param_type = TypeExpander::expandUnion(
+                $codebase,
+                $guide_param->type,
+                $guide_classlike_storage->is_trait && $guide_method_storage->abstract
+                    ? $implementer_classlike_storage->name
+                    : $guide_classlike_storage->name,
+                $guide_classlike_storage->is_trait && $guide_method_storage->abstract
+                    ? $implementer_classlike_storage->name
+                    : $guide_classlike_storage->name,
+                $guide_classlike_storage->is_trait && $guide_method_storage->abstract
+                    ? $implementer_classlike_storage->parent_class
+                    : $guide_classlike_storage->parent_class,
+            );
+
+            $builder = $guide_method_storage_param_type->getBuilder();
+            foreach ($builder->getAtomicTypes() as $k => $t) {
+                if ($t instanceof TTemplateParam) {
+                    $builder->removeType($k);
+
+                    foreach ($t->as->getAtomicTypes() as $as_t) {
+                        $builder->addType($as_t);
+                    }
+                }
+            }
+
+            if ($builder->hasMixed()) {
+                foreach ($builder->getAtomicTypes() as $k => $_) {
+                    if ($k !== 'mixed') {
+                        $builder->removeType($k);
+                    }
+                }
+            }
+            $guide_method_storage_param_type = $builder->freeze();
+            unset($builder);
+
+            if (!$guide_method_storage_param_type->hasMixed() || $codebase->analysis_php_version_id >= 8_00_00) {
+                $guide_param_signature_type = $guide_method_storage_param_type;
+            }
+        }
 
         $implementer_param_signature_type = TypeExpander::expandUnion(
             $codebase,
@@ -897,11 +945,11 @@ final class MethodComparator
 
         if (!$is_contained_by) {
             if ($codebase->analysis_php_version_id >= 8_00_00
-                || $guide_classlike_storage->is_trait === $implementer_classlike_storage->is_trait
-                || !in_array($guide_classlike_storage->name, $implementer_classlike_storage->used_traits)
-                || $implementer_method_storage->defining_fqcln !== $implementer_classlike_storage->name
-                || (!$implementer_method_storage->abstract
-                    && !$guide_method_storage->abstract)
+                      || $guide_classlike_storage->is_trait === $implementer_classlike_storage->is_trait
+                      || !in_array($guide_classlike_storage->name, $implementer_classlike_storage->used_traits)
+                      || $implementer_method_storage->defining_fqcln !== $implementer_classlike_storage->name
+                      || (!$implementer_method_storage->abstract
+                          && !$guide_method_storage->abstract)
             ) {
                 IssueBuffer::maybeAdd(
                     new MethodSignatureMismatch(
