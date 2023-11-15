@@ -7,6 +7,7 @@ use PhpParser\NodeTraverser;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Config;
+use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\PhpVisitor\ParamReplacementVisitor;
@@ -117,13 +118,13 @@ final class MethodComparator
             );
         }
 
+        // CallMapHandler needed due to https://github.com/vimeo/psalm/issues/10378
         if (!$guide_classlike_storage->user_defined
             && $implementer_classlike_storage->user_defined
             && $codebase->analysis_php_version_id >= 8_01_00
-            && ($guide_method_storage->return_type
+            && (($guide_method_storage->return_type && InternalCallMapHandler::inCallMap($cased_guide_method_id))
                 || $guide_method_storage->signature_return_type
-            )
-            && !$implementer_method_storage->signature_return_type
+            ) && !$implementer_method_storage->signature_return_type
             && !array_filter(
                 $implementer_method_storage->attributes,
                 static fn(AttributeStorage $s): bool => $s->fq_class_name === 'ReturnTypeWillChange',
@@ -944,7 +945,13 @@ final class MethodComparator
             : UnionTypeComparator::isContainedByInPhp($implementer_signature_return_type, $guide_signature_return_type);
 
         if (!$is_contained_by) {
-            if ($codebase->analysis_php_version_id >= 8_00_00
+            if ($implementer_signature_return_type === null
+                && array_filter(
+                    $implementer_method_storage->attributes,
+                    static fn(AttributeStorage $s): bool => $s->fq_class_name === 'ReturnTypeWillChange',
+                )) {
+                // no error if return type will change and no signature set at all
+            } elseif ($codebase->analysis_php_version_id >= 8_00_00
                       || $guide_classlike_storage->is_trait === $implementer_classlike_storage->is_trait
                       || !in_array($guide_classlike_storage->name, $implementer_classlike_storage->used_traits)
                       || $implementer_method_storage->defining_fqcln !== $implementer_classlike_storage->name
