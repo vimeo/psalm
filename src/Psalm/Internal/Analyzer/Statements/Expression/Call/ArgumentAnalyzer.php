@@ -959,6 +959,7 @@ final class ArgumentAnalyzer
                     && strpos($input_type_part->value, '::')
                 ) {
                     $parts = explode('::', $input_type_part->value);
+                    /** @psalm-suppress PossiblyUndefinedIntArrayOffset */
                     $potential_method_ids[] = new MethodIdentifier(
                         $parts[0],
                         strtolower($parts[1]),
