@@ -52,8 +52,9 @@ final class Decimal implements \JsonSerializable
      *
      * Initializes a new instance using a given value and minimum precision.
      *
-     * @param Decimal|string|int $value
-     * @param int                $precision
+     * @phpstan-param Decimal|numeric-string|int $value
+     * @param Decimal|string|int                 $value
+     * @param int                                $precision
      *
      * @throws \BadMethodCallException if already constructed.
      * @throws \TypeError if the value is not a decimal, string, or integer.
@@ -119,7 +120,8 @@ final class Decimal implements \JsonSerializable
      * The precision of the result will be the max of this decimal's precision
      * and the given value's precision, where scalar values assume the default.
      *
-     * @param Decimal|string|int $value
+     * @phpstan-param Decimal|numeric-string|int $value
+     * @param Decimal|string|int                 $value
      *
      * @return Decimal the result of adding this decimal to the given value.
      *
@@ -135,7 +137,8 @@ final class Decimal implements \JsonSerializable
      * The precision of the result will be the max of this decimal's precision
      * and the given value's precision, where scalar values assume the default.
      *
-     * @param Decimal|string|int $value
+     * @phpstan-param Decimal|numeric-string|int $value
+     * @param Decimal|string|int                 $value
      *
      * @return Decimal the result of subtracting a given value from this decimal.
      *
@@ -151,7 +154,8 @@ final class Decimal implements \JsonSerializable
      * The precision of the result will be the max of this decimal's precision
      * and the given value's precision, where scalar values assume the default.
      *
-     * @param Decimal|string|int $value
+     * @phpstan-param Decimal|numeric-string|int $value
+     * @param Decimal|string|int                 $value
      *
      * @return Decimal the result of multiplying this decimal by the given value.
      *
@@ -167,7 +171,8 @@ final class Decimal implements \JsonSerializable
      * The precision of the result will be the max of this decimal's precision
      * and the given value's precision, where scalar values assume the default.
      *
-     * @param Decimal|string|int $value
+     * @phpstan-param Decimal|numeric-string|int $value
+     * @param Decimal|string|int                 $value
      *
      * @return Decimal the result of dividing this decimal by the given value.
      *
@@ -187,7 +192,8 @@ final class Decimal implements \JsonSerializable
      *
      * @see Decimal::rem for the decimal remainder.
      *
-     * @param Decimal|string|int $value
+     * @phpstan-param Decimal|numeric-string|int $value
+     * @param Decimal|string|int                 $value
      *
      * @return Decimal the remainder after dividing the integer value of this
      *                 decimal by the integer value of the given value
@@ -204,7 +210,8 @@ final class Decimal implements \JsonSerializable
      * The precision of the result will be the max of this decimal's precision
      * and the given value's precision, where scalar values assume the default.
      *
-     * @param Decimal|string|int $value
+     * @phpstan-param Decimal|numeric-string|int $value
+     * @param Decimal|string|int                 $value
      *
      * @return Decimal the remainder after dividing this decimal by a given value.
      *
@@ -222,7 +229,8 @@ final class Decimal implements \JsonSerializable
      * The precision of the result will be the max of this decimal's precision
      * and the given value's precision, where scalar values assume the default.
      *
-     * @param Decimal|string|int $exponent The power to raise this decimal to.
+     * @phpstan-param Decimal|numeric-string|int $exponent The power to raise this decimal to.
+     * @param Decimal|string|int                 $exponent The power to raise this decimal to.
      *
      * @return Decimal the result of raising this decimal to a given power.
      *
@@ -488,5 +496,5 @@ final class Decimal implements \JsonSerializable
      *
      * @return string
      */
-    public function jsonSerialize() {}
+    public function jsonSerialize(): string {}
 }
