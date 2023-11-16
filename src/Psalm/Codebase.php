@@ -1869,13 +1869,15 @@ final class Codebase
 
     /**
      * @param list<int> $allow_visibilities
+     * @param list<string> $ignore_fq_class_names
      * @return list<CompletionItem>
      */
     public function getCompletionItemsForClassishThing(
         string $type_string,
         string $gap,
         bool $snippets_supported = false,
-        array $allow_visibilities = null
+        array $allow_visibilities = null,
+        array $ignore_fq_class_names = []
     ): array {
         if ($allow_visibilities === null) {
             $allow_visibilities = [
@@ -2002,11 +2004,15 @@ final class Codebase
 
                     if ($gap === '->') {
                         foreach ($class_storage->namedMixins as $mixin) {
+                            if (in_array($mixin->value, $ignore_fq_class_names)) {
+                                continue;
+                            }
                             $mixin_completion_items = $this->getCompletionItemsForClassishThing(
                                 $mixin->value,
                                 $gap,
                                 $snippets_supported,
                                 [ClassLikeAnalyzer::VISIBILITY_PUBLIC],
+                                [$type_string, ...$ignore_fq_class_names],
                             );
                             $completion_items = [...$completion_items, ...$mixin_completion_items];
                         }

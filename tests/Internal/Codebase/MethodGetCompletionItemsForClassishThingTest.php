@@ -554,4 +554,28 @@ final class MethodGetCompletionItemsForClassishThingTest extends TestCase
 
         $this->assertEqualsCanonicalizing($expected_labels[$gap], $actual_labels);
     }
+
+    public function testResolveCollisionWithMixin(): void
+    {
+        $content = <<<'EOF'
+            <?php
+            namespace B;
+
+            /** @mixin A */
+            class C {
+                public $myObjProp;
+            }
+
+            /** @mixin C */
+            class A {}
+        EOF;
+
+        $actual_labels = $this->getCompletionLabels($content, 'B\A', '->');
+
+        $expected_labels = [
+            'myObjProp',
+        ];
+
+        $this->assertEqualsCanonicalizing($expected_labels, $actual_labels);
+    }
 }
