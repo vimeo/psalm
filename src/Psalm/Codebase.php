@@ -18,6 +18,7 @@ use PhpParser\Node\Arg;
 use Psalm\CodeLocation\Raw;
 use Psalm\Exception\UnanalyzedFileException;
 use Psalm\Exception\UnpopulatedClasslikeException;
+use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
@@ -1867,13 +1868,24 @@ final class Codebase
     }
 
     /**
+     * @param list<int> $allow_visibilities
      * @return list<CompletionItem>
      */
     public function getCompletionItemsForClassishThing(
         string $type_string,
         string $gap,
-        bool $snippets_supported = false
+        bool $snippets_supported = false,
+        array $allow_visibilities = null
     ): array {
+        if ($allow_visibilities === null) {
+            $allow_visibilities = [
+                ClassLikeAnalyzer::VISIBILITY_PUBLIC,
+                ClassLikeAnalyzer::VISIBILITY_PROTECTED,
+                ClassLikeAnalyzer::VISIBILITY_PRIVATE,
+            ];
+        }
+        $allow_visibilities[] = null;
+
         $completion_items = [];
 
         $type = Type::parseString($type_string);
@@ -1895,6 +1907,9 @@ final class Codebase
                     }
 
                     foreach ($method_storages as $method_storage) {
+                        if (!in_array($method_storage->visibility, $allow_visibilities)) {
+                            continue;
+                        }
                         if ($method_storage->is_static || $gap === '->') {
                             $completion_item = new CompletionItem(
                                 $method_storage->cased_name,
@@ -1957,6 +1972,9 @@ final class Codebase
                             $declaring_class . '::$' . $property_name,
                         );
 
+                        if (!in_array($property_storage->visibility, $allow_visibilities)) {
+                            continue;
+                        }
                         if ($property_storage->is_static === ($gap === '::')) {
                             $completion_items[] = new CompletionItem(
                                 $property_name,
@@ -1980,6 +1998,18 @@ final class Codebase
                             $const_name,
                             $const_name,
                         );
+                    }
+
+                    if ($gap === '->') {
+                        foreach ($class_storage->namedMixins as $mixin) {
+                            $mixin_completion_items = $this->getCompletionItemsForClassishThing(
+                                $mixin->value,
+                                $gap,
+                                $snippets_supported,
+                                [ClassLikeAnalyzer::VISIBILITY_PUBLIC],
+                            );
+                            $completion_items = [...$completion_items, ...$mixin_completion_items];
+                        }
                     }
                 } catch (Exception $e) {
                     error_log($e->getMessage());
