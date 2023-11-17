@@ -1899,7 +1899,11 @@ final class Codebase
 
                     $method_storages = [];
                     foreach ($class_storage->declaring_method_ids as $declaring_method_id) {
-                        $method_storages[] = $this->methods->getStorage($declaring_method_id);
+                        try {
+                            $method_storages[] = $this->methods->getStorage($declaring_method_id);
+                        } catch (UnexpectedValueException $e) {
+                            error_log($e->getMessage());
+                        }
                     }
                     if ($gap === '->') {
                         $method_storages += $class_storage->pseudo_methods;
@@ -1970,9 +1974,14 @@ final class Codebase
                     }
 
                     foreach ($class_storage->declaring_property_ids as $property_name => $declaring_class) {
-                        $property_storage = $this->properties->getStorage(
-                            $declaring_class . '::$' . $property_name,
-                        );
+                        try {
+                            $property_storage = $this->properties->getStorage(
+                                $declaring_class . '::$' . $property_name,
+                            );
+                        } catch (UnexpectedValueException $e) {
+                            error_log($e->getMessage());
+                            continue;
+                        }
 
                         if (!in_array($property_storage->visibility, $allow_visibilities)) {
                             continue;
