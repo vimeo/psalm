@@ -1954,7 +1954,7 @@ final class Codebase
 
                         if ($property_storage->is_static || $gap === '->') {
                             $completion_items[] = new CompletionItem(
-                                '$' . $property_name,
+                                $property_name,
                                 CompletionItemKind::PROPERTY,
                                 $property_storage->getInfo(),
                                 $property_storage->description,
