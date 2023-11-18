@@ -24,7 +24,23 @@ exit "$exit_code"'
   mkdir -p build/parallel/ build/phpunit/logs/
 
   find tests -name '*Test.php' | shuf --random-source=<(get_seeded_random) > build/tests_all
-  split --number="l/$chunk_number/$chunk_count" build/tests_all > build/tests_split
+  # split incorrectly splits the lines by byte size, which means that the number of tests per file are as evenly distributed as possible
+  #split --number="l/$chunk_number/$chunk_count" build/tests_all > build/tests_split
+  local -r lines=$(wc -l <build/tests_all)
+  local -r chunk_lines=$(( $lines / $chunk_count ))
+  local -r rest=$(( $lines % $chunk_count ))
+  local start_line
+  local end_line
+  if [[ $chunk_number -le $rest ]]
+  then
+      start_line=$(( ($chunk_number - 1) * $chunk_lines + $chunk_number ))
+      end_line=$(( $chunk_number * $chunk_lines + $chunk_number ))
+  else
+      start_line=$(( ($chunk_number - 1) * $chunk_lines + $rest + 1 ))
+      end_line=$(( $chunk_number * $chunk_lines + $rest ))
+  fi
+  awk "NR==$start_line,NR==$end_line" <build/tests_all > build/tests_split
+
   parallel --group -j"$parallel_processes" --rpl {_}\ s/\\//_/g --joblog build/parallel/jobs.log "$phpunit_cmd" < build/tests_split
 }
 
