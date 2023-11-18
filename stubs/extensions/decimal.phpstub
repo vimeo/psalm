@@ -52,7 +52,7 @@ final class Decimal implements \JsonSerializable
      *
      * Initializes a new instance using a given value and minimum precision.
      *
-     * @phpstan-param Decimal|numeric-string|int $value
+     * @psalm-param Decimal|numeric-string|int $value
      * @param Decimal|string|int                 $value
      * @param int                                $precision
      *
@@ -120,7 +120,7 @@ final class Decimal implements \JsonSerializable
      * The precision of the result will be the max of this decimal's precision
      * and the given value's precision, where scalar values assume the default.
      *
-     * @phpstan-param Decimal|numeric-string|int $value
+     * @psalm-param Decimal|numeric-string|int $value
      * @param Decimal|string|int                 $value
      *
      * @return Decimal the result of adding this decimal to the given value.
@@ -137,7 +137,7 @@ final class Decimal implements \JsonSerializable
      * The precision of the result will be the max of this decimal's precision
      * and the given value's precision, where scalar values assume the default.
      *
-     * @phpstan-param Decimal|numeric-string|int $value
+     * @psalm-param Decimal|numeric-string|int $value
      * @param Decimal|string|int                 $value
      *
      * @return Decimal the result of subtracting a given value from this decimal.
@@ -154,7 +154,7 @@ final class Decimal implements \JsonSerializable
      * The precision of the result will be the max of this decimal's precision
      * and the given value's precision, where scalar values assume the default.
      *
-     * @phpstan-param Decimal|numeric-string|int $value
+     * @psalm-param Decimal|numeric-string|int $value
      * @param Decimal|string|int                 $value
      *
      * @return Decimal the result of multiplying this decimal by the given value.
@@ -171,7 +171,7 @@ final class Decimal implements \JsonSerializable
      * The precision of the result will be the max of this decimal's precision
      * and the given value's precision, where scalar values assume the default.
      *
-     * @phpstan-param Decimal|numeric-string|int $value
+     * @psalm-param Decimal|numeric-string|int $value
      * @param Decimal|string|int                 $value
      *
      * @return Decimal the result of dividing this decimal by the given value.
@@ -192,7 +192,7 @@ final class Decimal implements \JsonSerializable
      *
      * @see Decimal::rem for the decimal remainder.
      *
-     * @phpstan-param Decimal|numeric-string|int $value
+     * @psalm-param Decimal|numeric-string|int $value
      * @param Decimal|string|int                 $value
      *
      * @return Decimal the remainder after dividing the integer value of this
@@ -210,7 +210,7 @@ final class Decimal implements \JsonSerializable
      * The precision of the result will be the max of this decimal's precision
      * and the given value's precision, where scalar values assume the default.
      *
-     * @phpstan-param Decimal|numeric-string|int $value
+     * @psalm-param Decimal|numeric-string|int $value
      * @param Decimal|string|int                 $value
      *
      * @return Decimal the remainder after dividing this decimal by a given value.
@@ -229,7 +229,7 @@ final class Decimal implements \JsonSerializable
      * The precision of the result will be the max of this decimal's precision
      * and the given value's precision, where scalar values assume the default.
      *
-     * @phpstan-param Decimal|numeric-string|int $exponent The power to raise this decimal to.
+     * @psalm-param Decimal|numeric-string|int $exponent The power to raise this decimal to.
      * @param Decimal|string|int                 $exponent The power to raise this decimal to.
      *
      * @return Decimal the result of raising this decimal to a given power.
