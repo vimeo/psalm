@@ -80,7 +80,7 @@ class ConditionalTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['DocblockTypeContradiction'],
+                'ignored_issues' => ['DocblockTypeContradiction', 'TypeDoesNotContainType'],
             ],
             'notInstanceof' => [
                 'code' => '<?php
