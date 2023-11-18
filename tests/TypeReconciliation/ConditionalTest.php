@@ -1350,7 +1350,6 @@ class ConditionalTest extends TestCase
                     function takes_int(int $int) : void {}
 
                     if ($int == $string) {
-                        /** @psalm-suppress MixedArgument */
                         takes_int($int);
                     }',
             ],

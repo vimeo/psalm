@@ -1041,6 +1041,10 @@ final class SimpleAssertionReconciler extends Reconciler
                 }
 
                 $redundant = false;
+            } elseif ($type instanceof TInt && $assertion instanceof IsLooselyEqual) {
+                // don't change the type of an int for non-strict comparisons
+                $string_types[] = $type;
+                $redundant = false;
             } else {
                 $redundant = false;
             }
