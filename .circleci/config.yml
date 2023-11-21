@@ -50,7 +50,8 @@ jobs:
           command: bin/build-phar.sh
       - run:
           name: Smoke test Phar file
-          command: build/psalm.phar --version
+          # Change the root away from the project root to avoid conflicts with the Composer autoloader
+          command: build/psalm.phar --version --root build
       - store_artifacts:
           path: build/psalm.phar
       - run:
