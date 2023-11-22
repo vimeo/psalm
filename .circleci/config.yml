@@ -11,6 +11,9 @@ executors:
   php-81:
     docker:
       - image: thecodingmachine/php:8.1-v4-cli
+  php-82:
+    docker:
+      - image: thecodingmachine/php:8.2-v4-cli
 jobs:
   "Code Style Analysis":
     executor: php-74
@@ -67,7 +70,7 @@ jobs:
     # The resource_class feature allows configuring CPU and RAM resources for each job. Different resource classes are available for different executors. https://circleci.com/docs/2.0/configuration-reference/#resourceclass
     resource_class: large
   test-with-real-projects:
-    executor: php-81
+    executor: php-82
     steps:
       - checkout # used here just for the side effect of loading the github public ssh key so we can clone other stuff
       - attach_workspace:
