@@ -14,6 +14,7 @@ use Psalm\Issue\TaintedCallable;
 use Psalm\Issue\TaintedCookie;
 use Psalm\Issue\TaintedCustom;
 use Psalm\Issue\TaintedEval;
+use Psalm\Issue\TaintedExtract;
 use Psalm\Issue\TaintedFile;
 use Psalm\Issue\TaintedHeader;
 use Psalm\Issue\TaintedHtml;
@@ -465,6 +466,15 @@ final class TaintFlowGraph extends DataFlowGraph
                             case TaintKind::INPUT_SLEEP:
                                 $issue = new TaintedSleep(
                                     'Detected tainted sleep',
+                                    $issue_location,
+                                    $issue_trace,
+                                    $path,
+                                );
+                                break;
+
+                            case TaintKind::INPUT_EXTRACT:
+                                $issue = new TaintedExtract(
+                                    'Detected tainted extract',
                                     $issue_location,
                                     $issue_trace,
                                     $path,

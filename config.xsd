@@ -433,6 +433,7 @@
             <xs:element name="TaintedCookie" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedCustom" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedEval" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="TaintedExtract" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedFile" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedHeader" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedHtml" type="IssueHandlerType" minOccurs="0" />

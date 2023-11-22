@@ -1270,7 +1270,7 @@ final class ArgumentsAnalyzer
 
         $builtin_array_functions = [
             'ksort', 'asort', 'krsort', 'arsort', 'natcasesort', 'natsort',
-            'reset', 'end', 'next', 'prev', 'array_pop', 'array_shift',
+            'reset', 'end', 'next', 'prev', 'array_pop', 'array_shift', 'extract'
         ];
 
         if (($var_id && isset($context->vars_in_scope[$var_id]))
