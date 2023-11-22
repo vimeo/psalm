@@ -27,6 +27,9 @@ return [
     'ReflectionFunctionAbstract::getAttributes' => ['list<ReflectionAttribute>', 'name='=>'?string', 'flags='=>'int'],
     'ReflectionParameter::getAttributes' => ['list<ReflectionAttribute>', 'name='=>'?string', 'flags='=>'int'],
     'ReflectionProperty::getAttributes' => ['list<ReflectionAttribute>', 'name='=>'?string', 'flags='=>'int'],
+    'ReflectionProperty::getDefaultValue' => ['mixed'],
+    'ReflectionProperty::hasDefaultValue' => ['bool'],
+    'ReflectionProperty::isPromoted' => ['bool'],
     'ReflectionUnionType::getTypes' => ['list<ReflectionNamedType>'],
     'SplFixedArray::getIterator' => ['Iterator'],
     'WeakMap::count' => ['int'],
@@ -423,6 +426,10 @@ return [
     'ReflectionProperty::getValue' => [
       'old' => ['mixed', 'object='=>'object'],
       'new' => ['mixed', 'object='=>'null|object'],
+    ],
+    'ReflectionProperty::isInitialized' => [
+      'old' => ['bool', 'object'=>'object'],
+      'new' => ['bool', 'object='=>'null|object'],
     ],
     'SplFileInfo::getFileInfo' => [
       'old' => ['SplFileInfo', 'class='=>'class-string'],
