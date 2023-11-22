@@ -32,10 +32,23 @@ class TestCase extends BaseTestCase
 {
     protected static string $src_dir_path;
 
+    /**
+     * caused by phpunit using setUp() instead of __construct
+     * could perhaps use psalm-plugin-phpunit once https://github.com/psalm/psalm-plugin-phpunit/issues/129
+     * to remove this suppression
+     *
+     * @psalm-suppress PropertyNotSetInConstructor
+     */
     protected ProjectAnalyzer $project_analyzer;
 
+    /**
+     * @psalm-suppress PropertyNotSetInConstructor
+     */
     protected FakeFileProvider $file_provider;
 
+    /**
+     * @psalm-suppress PropertyNotSetInConstructor
+     */
     protected Config $testConfig;
 
     public static function setUpBeforeClass(): void

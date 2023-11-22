@@ -30,6 +30,7 @@ use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_slice;
+use function count;
 use function end;
 use function strtolower;
 use function substr;
@@ -477,6 +478,7 @@ final class CallableTypeComparator
     ) {
         if (!isset($input_type_part->properties[0])
             || !isset($input_type_part->properties[1])
+            || count($input_type_part->properties) > 2
         ) {
             return 'not-callable';
         }

@@ -9288,7 +9288,7 @@ return [
     'array_diff_ukey\'1' => ['array', 'array'=>'array', 'rest'=>'array', 'arr3'=>'array', 'arg4'=>'array|callable(mixed,mixed):int', '...rest='=>'array|callable(mixed,mixed):int'],
     'array_fill' => ['array<int,mixed>', 'start_index'=>'int', 'count'=>'int', 'value'=>'mixed'],
     'array_fill_keys' => ['array', 'keys'=>'array', 'value'=>'mixed'],
-    'array_filter' => ['array', 'array'=>'array', 'callback='=>'callable(mixed,mixed=):scalar', 'mode='=>'int'],
+    'array_filter' => ['array', 'array'=>'array', 'callback='=>'callable(mixed,array-key=):mixed', 'mode='=>'int'],
     'array_flip' => ['array<string|int>', 'array'=>'array<string|int>'],
     'array_intersect' => ['array', 'array'=>'array', '...arrays'=>'array'],
     'array_intersect_assoc' => ['array', 'array'=>'array', '...arrays'=>'array'],

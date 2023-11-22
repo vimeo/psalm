@@ -21,6 +21,7 @@ use Psalm\Exception\ConfigNotFoundException;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\CliUtils;
 use Psalm\Internal\Composer;
 use Psalm\Internal\EventDispatcher;
 use Psalm\Internal\IncludeCollector;
@@ -1296,6 +1297,66 @@ class Config
 
         if (isset($config_xml->projectFiles)) {
             $config->project_files = ProjectFileFilter::loadFromXMLElement($config_xml->projectFiles, $base_dir, true);
+        }
+
+        // any paths passed via CLI should be added to the projectFiles
+        // as they're getting analyzed like if they are part of the project
+        // ProjectAnalyzer::getInstance()->check_paths_files is not populated at this point in time
+        $paths_to_check = CliUtils::getPathsToCheck(null);
+        if ($paths_to_check !== null) {
+            $paths_to_add_to_project_files = array();
+            foreach ($paths_to_check as $path) {
+                // if we have an .xml arg here, the files passed are invalid
+                // valid cases (in which we don't want to add CLI passed files to projectFiles though)
+                // are e.g. if running phpunit tests for psalm itself
+                if (substr($path, -4) === '.xml') {
+                    $paths_to_add_to_project_files = array();
+                    break;
+                }
+
+                // we need an absolute path for checks
+                if ($path[0] !== '/' && DIRECTORY_SEPARATOR === '/') {
+                    $prospective_path = $base_dir . DIRECTORY_SEPARATOR . $path;
+                } else {
+                    $prospective_path = $path;
+                }
+
+                // will report an error when config is loaded anyway
+                if (!file_exists($prospective_path)) {
+                    continue;
+                }
+
+                if ($config->isInProjectDirs($prospective_path)) {
+                    continue;
+                }
+
+                $paths_to_add_to_project_files[] = $prospective_path;
+            }
+
+            if ($paths_to_add_to_project_files !== array() && !isset($config_xml->projectFiles)) {
+                if ($config_xml === null) {
+                    $config_xml = new SimpleXMLElement('<psalm/>');
+                }
+                $config_xml->addChild('projectFiles');
+            }
+
+            if ($paths_to_add_to_project_files !== array() && isset($config_xml->projectFiles)) {
+                foreach ($paths_to_add_to_project_files as $path) {
+                    if (is_dir($path)) {
+                        $child = $config_xml->projectFiles->addChild('directory');
+                    } else {
+                        $child = $config_xml->projectFiles->addChild('file');
+                    }
+
+                    $child->addAttribute('name', $path);
+                }
+
+                $config->project_files = ProjectFileFilter::loadFromXMLElement(
+                    $config_xml->projectFiles,
+                    $base_dir,
+                    true,
+                );
+            }
         }
 
         if (isset($config_xml->extraFiles)) {

@@ -103,7 +103,7 @@ class FileStorageCacheProvider
 
     public function removeCacheForFile(string $file_path): void
     {
-        $this->cache->deleteItem($this->getCacheLocationForPath($file_path));
+        $this->cache->deleteItem($this->getCacheLocationForPath(strtolower($file_path)));
     }
 
     private function getCacheHash(string $_unused_file_path, string $file_contents): string

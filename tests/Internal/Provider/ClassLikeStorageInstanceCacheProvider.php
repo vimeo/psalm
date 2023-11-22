@@ -10,7 +10,7 @@ use function strtolower;
 
 class ClassLikeStorageInstanceCacheProvider extends ClassLikeStorageCacheProvider
 {
-    /** @var array<string, ClassLikeStorage> */
+    /** @var array<lowercase-string, ClassLikeStorage> */
     private array $cache = [];
 
     public function __construct()
@@ -23,6 +23,9 @@ class ClassLikeStorageInstanceCacheProvider extends ClassLikeStorageCacheProvide
         $this->cache[$fq_classlike_name_lc] = $storage;
     }
 
+    /**
+     * @param lowercase-string $fq_classlike_name_lc
+     */
     public function getLatestFromCache(string $fq_classlike_name_lc, ?string $file_path, ?string $file_contents): ClassLikeStorage
     {
         $cached_value = $this->loadFromCache($fq_classlike_name_lc);
@@ -34,6 +37,9 @@ class ClassLikeStorageInstanceCacheProvider extends ClassLikeStorageCacheProvide
         return $cached_value;
     }
 
+    /**
+     * @param lowercase-string $fq_classlike_name_lc
+     */
     private function loadFromCache(string $fq_classlike_name_lc): ?ClassLikeStorage
     {
         return $this->cache[$fq_classlike_name_lc] ?? null;
