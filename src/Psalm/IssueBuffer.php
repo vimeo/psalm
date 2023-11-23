@@ -236,7 +236,7 @@ final class IssueBuffer
             return true;
         }
 
-        if (self::$recording_level > 0) {
+        if (self::isRecording()) {
             self::$recorded_issues[self::$recording_level][] = $e;
 
             return true;
@@ -362,7 +362,7 @@ final class IssueBuffer
      */
     public static function remove(string $file_path, string $issue_type, int $file_offset): void
     {
-        if (self::$recording_level > 0) {
+        if (self::isRecording()) {
             self::removeRecordedIssue($issue_type, $file_offset);
         }
 
