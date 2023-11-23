@@ -176,6 +176,11 @@ final class Clause
                     $value = substr($value, 1);
                 }
 
+                if ($negate && $value === 'non-empty') {
+                    $var_id_clauses[] = $var_id.' is empty';
+                    continue;
+                }
+
                 if ($negate) {
                     $var_id_clauses[] = $var_id.' is not '.$value;
                     continue;
