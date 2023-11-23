@@ -63,6 +63,7 @@ use Psalm\Type\Atomic\TNonEmptyScalar;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TNonFalsyString;
 use Psalm\Type\Atomic\TNonspecificLiteralString;
+use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TNumericString;
 use Psalm\Type\Atomic\TObject;
@@ -515,6 +516,19 @@ final class SimpleAssertionReconciler extends Reconciler
             );
         }
 
+        if ($assertion_type instanceof TNull) {
+            return self::reconcileNull(
+                $assertion,
+                $existing_var_type,
+                $key,
+                $negated,
+                $code_location,
+                $suppressed_issues,
+                $failed_reconciliation,
+                $is_equality,
+            );
+        }
+
         if ($existing_var_type->isSingle()
             && $existing_var_type->hasTemplate()
         ) {
@@ -611,6 +625,119 @@ final class SimpleAssertionReconciler extends Reconciler
         $existing_var_type->ignore_isset = false;
 
         return $existing_var_type->freeze();
+    }
+
+    /**
+     * @param   string[]  $suppressed_issues
+     * @param Reconciler::RECONCILIATION_* $failed_reconciliation
+     */
+    private static function reconcileNull(
+        Assertion $assertion,
+        Union $existing_var_type,
+        ?string $key,
+        bool $negated,
+        ?CodeLocation $code_location,
+        array $suppressed_issues,
+        int &$failed_reconciliation,
+        bool $is_equality
+    ): Union {
+        $types = $existing_var_type->getAtomicTypes();
+        $old_var_type_string = $existing_var_type->getId();
+
+        if ($existing_var_type->isEmptyMixed() || $existing_var_type->isVanillaMixed()) {
+            if ($assertion instanceof IsLooselyEqual) {
+                return $existing_var_type;
+            }
+
+            return Type::getNull();
+        }
+
+        $redundant = true;
+        if ($existing_var_type->possibly_undefined
+            || $existing_var_type->possibly_undefined_from_try) {
+            $redundant = false;
+        } elseif ($existing_var_type->isNull()) {
+            $redundant = true;
+        } elseif ($assertion instanceof IsLooselyEqual && $existing_var_type->isAlwaysFalsy()) {
+            $redundant = true;
+        } elseif (!$existing_var_type->isNullable()) {
+            $redundant = false;
+        }
+
+        foreach ($types as $existing_var_type_key => $existing_var_type_part) {
+            if ($assertion instanceof IsLooselyEqual && $existing_var_type_part->isFalsy()) {
+                continue;
+            }
+
+            if ($existing_var_type_part instanceof TTemplateParam) {
+                if ($existing_var_type_part->as->isNull()) {
+                    continue;
+                }
+
+                $as = self::reconcileNull(
+                    $assertion,
+                    $existing_var_type_part->as,
+                    null,
+                    false,
+                    null,
+                    $suppressed_issues,
+                    $failed_reconciliation,
+                    $is_equality,
+                );
+
+                if ($as !== $existing_var_type_part->as) {
+                    $redundant = false;
+                    $types[$existing_var_type_key] = $existing_var_type_part->replaceAs($as);
+                    continue;
+                }
+
+                unset($types[$existing_var_type_key]);
+                continue;
+            }
+
+            if ($existing_var_type_key === 'null') {
+                continue;
+            }
+
+            if ($existing_var_type_key === 'mixed'
+                && !($existing_var_type_part instanceof TNonEmptyMixed)
+                && !($assertion instanceof IsLooselyEqual)
+                && !$redundant
+                && !$existing_var_type->isNullable()) {
+                $types[$existing_var_type_key] = new TNull();
+                continue;
+            }
+
+            $redundant = false;
+            unset($types[$existing_var_type_key]);
+        }
+
+        if (!$types || $redundant) {
+            if ($key && $code_location && !$is_equality) {
+                self::triggerIssueForImpossible(
+                    $existing_var_type,
+                    $old_var_type_string,
+                    $key,
+                    $assertion,
+                    $redundant,
+                    $negated,
+                    $code_location,
+                    $suppressed_issues,
+                );
+
+                if ($redundant) {
+                    $failed_reconciliation = Reconciler::RECONCILIATION_REDUNDANT;
+                }
+            }
+        }
+
+        if ($types) {
+            return $existing_var_type->setTypes($types);
+        }
+
+        $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
+
+        return Type::getNever();
     }
 
     /**
