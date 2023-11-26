@@ -31,6 +31,7 @@ use function count;
 use function in_array;
 use function preg_match;
 use function strlen;
+use function strpos;
 use function strtolower;
 
 /**
@@ -139,6 +140,7 @@ final class ParseTreeCreator
 
                 case 'is':
                 case 'as':
+                case 'of':
                     $this->handleIsOrAs($type_token);
                     break;
 
@@ -767,7 +769,7 @@ final class ParseTreeCreator
                 array_pop($current_parent->children);
             }
 
-            if ($type_token[0] === 'as') {
+            if ($type_token[0] === 'as' || $type_token[0] == 'of') {
                 $next_token = $this->t + 1 < $this->type_token_count ? $this->type_tokens[$this->t + 1] : null;
 
                 if (!$this->current_leaf instanceof Value
@@ -820,13 +822,30 @@ final class ParseTreeCreator
                 break;
 
             case '{':
+                ++$this->t;
+
+                $nexter_token = $this->t + 1 < $this->type_token_count ? $this->type_tokens[$this->t + 1] : null;
+
+                if ($nexter_token && strpos($nexter_token[0], '@') !== false) {
+                    $this->t = $this->type_token_count;
+                    if ($type_token[0] === '$this') {
+                        $type_token[0] = 'static';
+                    }
+
+                    $new_leaf = new Value(
+                        $type_token[0],
+                        $type_token[1],
+                        $type_token[1] + strlen($type_token[0]),
+                        $type_token[2] ?? null,
+                        $new_parent,
+                    );
+                    break;
+                }
+
                 $new_leaf = new KeyedArrayTree(
                     $type_token[0],
                     $new_parent,
                 );
-                ++$this->t;
-
-                $nexter_token = $this->t + 1 < $this->type_token_count ? $this->type_tokens[$this->t + 1] : null;
 
                 if ($nexter_token !== null && $nexter_token[0] === '}') {
                     $new_leaf->terminated = true;

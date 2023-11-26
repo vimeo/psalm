@@ -835,6 +835,20 @@ class TypeAnnotationTest extends TestCase
                     '$output===' => 'array{phone: string}',
                 ],
             ],
+            'multilineTypeWithExtraSpace' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type PhoneType = array{
+                     *    phone: string, ' . '
+                     * }
+                     */
+                    class Foo {
+                        /** @var PhoneType */
+                        public static $phone;
+                    }
+                    $output = Foo::$phone;
+                    ',
+            ],
             'combineAliasOfArrayAndArrayCorrectly' => [
                 'code' => '<?php
 

@@ -677,7 +677,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
                             $check_type_string,
                             $statements_analyzer->getAliases(),
                         );
-                        $check_type = Type::parseString($fq_check_type_string);
+                        $check_type = Type::parseString(CommentAnalyzer::sanitizeDocblockType($fq_check_type_string));
                         /** @psalm-suppress InaccessibleProperty We just created this type */
                         $check_type->possibly_undefined = $possibly_undefined;
 

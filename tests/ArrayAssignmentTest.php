@@ -1045,13 +1045,13 @@ class ArrayAssignmentTest extends TestCase
                      * @template-implements ArrayAccess<?int, string>
                      */
                     class C implements ArrayAccess {
-                        public function offsetExists(int $offset) : bool { return true; }
+                        public function offsetExists($offset) : bool { return true; }
 
                         public function offsetGet($offset) : string { return "";}
 
-                        public function offsetSet(?int $offset, string $value) : void {}
+                        public function offsetSet($offset, string $value) : void {}
 
-                        public function offsetUnset(int $offset) : void { }
+                        public function offsetUnset($offset) : void { }
                     }
 
                     $c = new C();
@@ -1964,13 +1964,13 @@ class ArrayAssignmentTest extends TestCase
                      * @template-implements ArrayAccess<int, string>
                      */
                     class C implements ArrayAccess {
-                        public function offsetExists(int $offset) : bool { return true; }
+                        public function offsetExists($offset) : bool { return true; }
 
                         public function offsetGet($offset) : string { return "";}
 
-                        public function offsetSet(int $offset, string $value) : void {}
+                        public function offsetSet($offset, $value) : void {}
 
-                        public function offsetUnset(int $offset) : void { }
+                        public function offsetUnset($offset) : void { }
                     }
 
                     $c = new C();
@@ -2047,6 +2047,15 @@ class ArrayAssignmentTest extends TestCase
                         $queryParams["a"] = "zzz";
                         return $queryParams;
                     }',
+            ],
+            'AssignListToNonEmptyList' => [
+                'code' => '<?php
+                    /** @var array<int, non-empty-list<string>> $l*/
+                    $l = [];
+                    $l[] = [];',
+                'assertions' => [
+                    '$l===' => 'non-empty-array<int, list<string>>',
+                ],
             ],
         ];
     }
@@ -2250,9 +2259,6 @@ class ArrayAssignmentTest extends TestCase
             ],
             'mergeWithDeeplyNestedArray' => [
                 'code' => '<?php
-                    /**
-                     * @psalm-suppress MixedInferredReturnType
-                     */
                     function getTwoPartsLocale(array $cache, string $a, string $b) : string
                     {
                         if (!isset($cache[$b])) {

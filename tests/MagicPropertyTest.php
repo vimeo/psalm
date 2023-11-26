@@ -398,7 +398,7 @@ class MagicPropertyTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MixedReturnStatement', 'MixedInferredReturnType'],
+                'ignored_issues' => ['MixedReturnStatement'],
             ],
             'overrideInheritedProperty' => [
                 'code' => '<?php
@@ -1188,6 +1188,38 @@ class MagicPropertyTest extends TestCase
                       public array $arr;
                     }',
                 'error_message' => 'InvalidDocblock',
+            ],
+            'sealedWithNoProperties' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-seal-properties
+                     */
+                    final class OrganizationObject {
+
+                        public function __get(string $key)
+                        {
+                            return [];
+                        }
+
+                    }
+                    echo (new OrganizationObject)->errors;',
+                'error_message' => 'UndefinedMagicPropertyFetch',
+            ],
+            'sealedWithNoPropertiesNoPrefix' => [
+                'code' => '<?php
+                    /**
+                     * @seal-properties
+                     */
+                    final class OrganizationObject {
+
+                        public function __get(string $key)
+                        {
+                            return [];
+                        }
+                    }
+
+                    echo (new OrganizationObject)->errors;',
+                'error_message' => 'UndefinedMagicPropertyFetch',
             ],
         ];
     }

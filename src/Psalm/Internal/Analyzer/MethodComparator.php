@@ -23,6 +23,8 @@ use Psalm\Issue\ImplementedReturnTypeMismatch;
 use Psalm\Issue\LessSpecificImplementedReturnType;
 use Psalm\Issue\MethodSignatureMismatch;
 use Psalm\Issue\MethodSignatureMustProvideReturnType;
+use Psalm\Issue\MismatchingDocblockParamType;
+use Psalm\Issue\MismatchingDocblockReturnType;
 use Psalm\Issue\MissingImmutableAnnotation;
 use Psalm\Issue\MoreSpecificImplementedParamType;
 use Psalm\Issue\OverriddenMethodAccess;
@@ -236,6 +238,56 @@ final class MethodComparator
         }
 
         return null;
+    }
+
+    /**
+     * @param array<lowercase-string, MethodStorage> $pseudo_methods
+     */
+    public static function comparePseudoMethods(
+        array $pseudo_methods,
+        string $fq_class_name,
+        Codebase $codebase,
+        ClassLikeStorage $class_storage,
+    ): void {
+        foreach ($pseudo_methods as $pseudo_method_name => $pseudo_method_storage) {
+            $pseudo_method_id = new MethodIdentifier(
+                $fq_class_name,
+                $pseudo_method_name,
+            );
+
+            $overridden_method_ids = $codebase->methods->getOverriddenMethodIds($pseudo_method_id);
+            if (isset($class_storage->methods[$pseudo_method_id->method_name])) {
+                $overridden_method_ids[$class_storage->name] = $pseudo_method_id;
+            }
+
+            if ($overridden_method_ids
+                && $pseudo_method_name !== '__construct'
+                && $pseudo_method_storage->location
+            ) {
+                foreach ($overridden_method_ids as $overridden_method_id) {
+                    $parent_method_storage = $codebase->methods->getStorage($overridden_method_id);
+
+                    $overridden_fq_class_name = $overridden_method_id->fq_class_name;
+
+                    $parent_storage = $codebase->classlike_storage_provider->get($overridden_fq_class_name);
+
+                    self::compare(
+                        $codebase,
+                        null,
+                        $class_storage,
+                        $parent_storage,
+                        $pseudo_method_storage,
+                        $parent_method_storage,
+                        $fq_class_name,
+                        $pseudo_method_storage->visibility ?: 0,
+                        $class_storage->location ?: $pseudo_method_storage->location,
+                        $class_storage->suppressed_issues,
+                        true,
+                        false,
+                    );
+                }
+            }
+        }
     }
 
     /**
@@ -495,6 +547,7 @@ final class MethodComparator
 
             if ($guide_classlike_storage->user_defined
                 && $implementer_param->signature_type
+                && $guide_param->signature_type
             ) {
                 self::compareMethodSignatureParams(
                     $codebase,
@@ -823,6 +876,18 @@ final class MethodComparator
                         ),
                         $suppressed_issues + $implementer_classlike_storage->suppressed_issues,
                     );
+                } elseif ($guide_class_name == $implementer_called_class_name) {
+                    IssueBuffer::maybeAdd(
+                        new MismatchingDocblockParamType(
+                            'Argument ' . ($i + 1) . ' of ' . $cased_implementer_method_id
+                            . ' has wrong type \'' .
+                            $implementer_method_storage_param_type->getId() . '\' in @method annotation, expecting \'' .
+                            $guide_method_storage_param_type->getId() . '\'',
+                            $implementer_method_storage->params[$i]->location
+                                ?: $code_location,
+                        ),
+                        $suppressed_issues + $implementer_classlike_storage->suppressed_issues,
+                    );
                 } else {
                     IssueBuffer::maybeAdd(
                         new ImplementedParamTypeMismatch(
@@ -1039,6 +1104,17 @@ final class MethodComparator
                             . '\' for ' . $cased_guide_method_id . ' is more specific than the implemented '
                             . 'return type for ' . $implementer_declaring_method_id . ' \''
                             . $implementer_method_storage_return_type->getId() . '\'',
+                        $implementer_method_storage->return_type_location
+                            ?: $code_location,
+                    ),
+                    $suppressed_issues + $implementer_classlike_storage->suppressed_issues,
+                );
+            } elseif ($guide_class_name == $implementer_called_class_name) {
+                IssueBuffer::maybeAdd(
+                    new MismatchingDocblockReturnType(
+                        'The inherited return type \'' . $guide_method_storage_return_type->getId()
+                        . '\' for ' . $cased_guide_method_id . ' is different to the corresponding '
+                        . '@method annotation \'' . $implementer_method_storage_return_type->getId() . '\'',
                         $implementer_method_storage->return_type_location
                             ?: $code_location,
                     ),

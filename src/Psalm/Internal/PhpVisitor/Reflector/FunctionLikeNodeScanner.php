@@ -903,6 +903,7 @@ final class FunctionLikeNodeScanner
             $storage->is_static = $stmt->isStatic();
             $storage->final = $this->classlike_storage && $this->classlike_storage->final;
             $storage->final_from_docblock = $this->classlike_storage && $this->classlike_storage->final_from_docblock;
+            $storage->visibility = ClassLikeAnalyzer::VISIBILITY_PUBLIC;
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Function_) {
             $cased_function_id =
                 ($this->aliases->namespace ? $this->aliases->namespace . '\\' : '') . $stmt->name->name;

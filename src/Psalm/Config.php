@@ -156,7 +156,6 @@ final class Config
         'MixedArrayTypeCoercion',
         'MixedAssignment',
         'MixedFunctionCall',
-        'MixedInferredReturnType',
         'MixedMethodCall',
         'MixedOperand',
         'MixedPropertyFetch',
@@ -229,6 +228,8 @@ final class Config
      * The base directory of this config file
      */
     public string $base_dir;
+
+    public ?string $source_filename = null;
 
     /**
      * The PHP version to assume as declared in the config file
@@ -368,6 +369,8 @@ final class Config
     public bool $find_unused_psalm_suppress = false;
 
     public bool $find_unused_baseline_entry = true;
+
+    public bool $find_unused_issue_handler_suppression = true;
 
     public bool $run_taint_analysis = false;
 
@@ -935,6 +938,7 @@ final class Config
             'allowNamedArgumentCalls' => 'allow_named_arg_calls',
             'findUnusedPsalmSuppress' => 'find_unused_psalm_suppress',
             'findUnusedBaselineEntry' => 'find_unused_baseline_entry',
+            'findUnusedIssueHandlerSuppression' => 'find_unused_issue_handler_suppression',
             'reportInfo' => 'report_info',
             'restrictReturnTypes' => 'restrict_return_types',
             'limitMethodComplexity' => 'limit_method_complexity',
@@ -950,6 +954,7 @@ final class Config
             }
         }
 
+        $config->source_filename = $config_path;
         if ($config->resolve_from_config_file) {
             $config->base_dir = $base_dir;
         } else {
@@ -1309,6 +1314,12 @@ final class Config
     public function setComposerClassLoader(?ClassLoader $loader = null): void
     {
         $this->composer_class_loader = $loader;
+    }
+
+    /** @return array<string, IssueHandler> */
+    public function getIssueHandlers(): array
+    {
+        return $this->issue_handlers;
     }
 
     public function setAdvancedErrorLevel(string $issue_key, array $config, ?string $default_error_level = null): void
@@ -1856,6 +1867,30 @@ final class Config
         }
 
         return null;
+    }
+
+    /** @return array{type: string, index: int, count: int}[] */
+    public function getIssueHandlerSuppressions(): array
+    {
+        $suppressions = [];
+        foreach ($this->issue_handlers as $key => $handler) {
+            foreach ($handler->getFilters() as $index => $filter) {
+                $suppressions[] = [
+                    'type' => $key,
+                    'index' => $index,
+                    'count' => $filter->suppressions,
+                ];
+            }
+        }
+        return $suppressions;
+    }
+
+    /** @param array{type: string, index: int, count: int}[] $filters */
+    public function combineIssueHandlerSuppressions(array $filters): void
+    {
+        foreach ($filters as $filter) {
+            $this->issue_handlers[$filter['type']]->getFilters()[$filter['index']]->suppressions += $filter['count'];
+        }
     }
 
     public function getReportingLevelForFile(string $issue_type, string $file_path): string

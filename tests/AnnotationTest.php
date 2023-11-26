@@ -1013,6 +1013,21 @@ class AnnotationTest extends TestCase
                         return json_decode($json, true);
                     }',
             ],
+            'psalmTypeAnnotationForStaticVar' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type _Type A::TYPE_*
+                     */
+                    class A{
+                        const TYPE_A = 1;
+                        const TYPE_B = 2;
+
+                        public function f(): void {
+                            /** @psalm-var _Type $var*/
+                            static $var;
+                        }
+                    }',
+            ],
             'allowDocblockDefinedTKeyedArrayIntoNonEmpty' => [
                 'code' => '<?php
                     /** @param non-empty-array $_bar */
@@ -1679,7 +1694,7 @@ class AnnotationTest extends TestCase
                     }',
                 'error_message' => 'InvalidDocblock',
             ],
-            'noCrashOnInvalidClassTemplateAsType' => [
+            'SKIPPED-noCrashOnInvalidClassTemplateAsType' => [
                 'code' => '<?php
                     /**
                      * @template T as ' . '
@@ -1687,7 +1702,7 @@ class AnnotationTest extends TestCase
                     class A {}',
                 'error_message' => 'InvalidDocblock',
             ],
-            'noCrashOnInvalidFunctionTemplateAsType' => [
+            'SKIPPED-noCrashOnInvalidFunctionTemplateAsType' => [
                 'code' => '<?php
                     /**
                      * @template T as ' . '

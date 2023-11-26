@@ -79,7 +79,6 @@ use function assert;
 use function count;
 use function implode;
 use function preg_match;
-use function preg_replace;
 use function preg_split;
 use function str_replace;
 use function strtolower;
@@ -608,11 +607,16 @@ final class ClassLikeNodeScanner
                     $storage->pseudo_static_methods[$lc_method_name] = $pseudo_method_storage;
                 } else {
                     $storage->pseudo_methods[$lc_method_name] = $pseudo_method_storage;
-                    $storage->declaring_pseudo_method_ids[$lc_method_name] = new MethodIdentifier(
-                        $fq_classlike_name,
-                        $lc_method_name,
-                    );
                 }
+                $method_identifier = new MethodIdentifier(
+                    $fq_classlike_name,
+                    $lc_method_name,
+                );
+                $storage->inheritable_method_ids[$lc_method_name] = $method_identifier;
+                if (!isset($storage->overridden_method_ids[$lc_method_name])) {
+                    $storage->overridden_method_ids[$lc_method_name] = [];
+                }
+                $storage->declaring_pseudo_method_ids[$lc_method_name] = $method_identifier;
             }
 
 
@@ -924,7 +928,7 @@ final class ClassLikeNodeScanner
                     $this->useTemplatedType(
                         $storage,
                         $node,
-                        trim((string) preg_replace('@^[ \t]*\*@m', '', $template_line)),
+                        CommentAnalyzer::sanitizeDocblockType($template_line),
                     );
                 }
             }
@@ -1896,10 +1900,7 @@ final class ClassLikeNodeScanner
                 continue;
             }
 
-            $var_line = (string) preg_replace('/[ \t]+/', ' ', (string) preg_replace('@^[ \t]*\*@m', '', $var_line));
-            $var_line = (string) preg_replace('/,\n\s+\}/', '}', $var_line);
-            $var_line = str_replace("\n", '', $var_line);
-
+            $var_line = CommentAnalyzer::sanitizeDocblockType($var_line);
             $var_line_parts = preg_split('/( |=)/', $var_line, -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY);
 
             if (!$var_line_parts) {

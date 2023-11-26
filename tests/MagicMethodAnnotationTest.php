@@ -824,7 +824,7 @@ class MagicMethodAnnotationTest extends TestCase
             'callUsingParent' => [
                 'code' => '<?php
                     /**
-                     * @method static create(array $data)
+                     * @method static create(array $input)
                      */
                     class Model {
                         public function __call(string $name, array $arguments) {
@@ -948,6 +948,21 @@ class MagicMethodAnnotationTest extends TestCase
                     class C {}
                     //C::array();
                     PHP,
+            ],
+            'DoubleInheritedDontComplain' => [
+                'code' => '<?php
+                    /**
+                     * @method void func(int ...$args)
+                     */
+                    class Foo {}
+
+                    class Bar extends Foo {
+                        public function func(int $i = 0, int ...$args): void {}
+                    }
+
+                    class UhOh extends Bar {}',
+                'assertions' => [],
+                'ignored_issues' => ['ParamNameMismatch'],
             ],
         ];
     }
@@ -1118,6 +1133,21 @@ class MagicMethodAnnotationTest extends TestCase
                     $b->foo();',
                 'error_message' => 'UndefinedMagicMethod',
             ],
+            'inheritSealedMethodsWithoutPrefix' => [
+                'code' => '<?php
+                    /**
+                     * @seal-methods
+                     */
+                    class A {
+                        public function __call(string $method, array $args) {}
+                    }
+
+                    class B extends A {}
+
+                    $b = new B();
+                    $b->foo();',
+                'error_message' => 'UndefinedMagicMethod',
+            ],
             'lonelyMethod' => [
                 'code' => '<?php
                     /**
@@ -1148,6 +1178,79 @@ class MagicMethodAnnotationTest extends TestCase
                         }
                     }',
                 'error_message' => 'UndefinedVariable',
+            ],
+            'MagicMethodReturnTypesCheckedForClasses' => [
+                'code' => '<?php
+                    class A
+                    {
+                        public function a(int $className): int { return 0; }
+                    }
+
+                    /**
+                     * @method stdClass a(int $a)
+                     */
+                    class B extends A {}
+                    ',
+                'error_message' => 'ImplementedReturnTypeMismatch',
+            ],
+            'MagicMethodParamTypesCheckedForClasses' => [
+                'code' => '<?php
+                    class A
+                    {
+                        public function a(int $className): int { return 0; }
+                    }
+
+                    /**
+                     * @method int a(string $a)
+                     */
+                    class B extends A {}
+                    ',
+                'error_message' => 'ImplementedParamTypeMismatch',
+            ],
+            'MagicMethodReturnTypesCheckedForInterfaces' => [
+                'code' => '<?php
+                    interface A
+                    {
+                        public function a(int $className): int;
+                    }
+
+                    /**
+                     * @method stdClass a(int $a)
+                     */
+                    interface B extends A {}
+                    ',
+                'error_message' => 'ImplementedReturnTypeMismatch',
+            ],
+            'MagicMethodParamTypesCheckedForInterfaces' => [
+                'code' => '<?php
+                    interface A
+                    {
+                        public function a(string $className): int;
+                    }
+
+                    /**
+                     * @method int a(int $a)
+                     */
+                    interface B extends A {}
+                    ',
+                'error_message' => 'ImplementedParamTypeMismatch',
+            ],
+            'MagicMethodMadeConcreteChecksParams' => [
+                'code' => '<?php
+                    /**
+                     * @method static void create(array $x)
+                     */
+                    class Model {
+                        public static function __callStatic(string $method, array $params) {
+                        }
+                    }
+
+                    class FooModel extends Model {
+                        public static function create(object $x): void {
+                            $x;
+                        }
+                    }',
+                'error_message' => 'ImplementedParamTypeMismatch',
             ],
         ];
     }

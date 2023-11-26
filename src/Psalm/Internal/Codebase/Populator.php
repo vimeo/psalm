@@ -352,7 +352,9 @@ final class Populator
                     $declaring_method_name = $declaring_method_id->method_name;
                     $declaring_class_storage = $declaring_class_storages[$declaring_class];
 
-                    $declaring_method_storage = $declaring_class_storage->methods[$declaring_method_name];
+                    $declaring_method_storage = $declaring_class_storage->methods[$declaring_method_name]
+                        ?? $declaring_class_storage->pseudo_methods[$declaring_method_name]
+                        ?? $declaring_class_storage->pseudo_static_methods[$declaring_method_name];
 
                     if (($declaring_method_storage->has_docblock_param_types
                             || $declaring_method_storage->has_docblock_return_type)
@@ -541,8 +543,16 @@ final class Populator
 
         $parent_storage->dependent_classlikes[strtolower($storage->name)] = true;
 
-        $storage->pseudo_methods += $parent_storage->pseudo_methods;
-        $storage->declaring_pseudo_method_ids += $parent_storage->declaring_pseudo_method_ids;
+        foreach ($parent_storage->pseudo_methods as $method_name => $pseudo_method) {
+            if (!isset($storage->methods[$method_name])) {
+                $storage->pseudo_methods[$method_name] = $pseudo_method;
+            }
+        }
+        foreach ($parent_storage->declaring_pseudo_method_ids as $method_name => $pseudo_method_id) {
+            if (!isset($storage->methods[$method_name])) {
+                $storage->declaring_pseudo_method_ids[$method_name] = $pseudo_method_id;
+            };
+        }
     }
 
     private function populateInterfaceData(

@@ -25,7 +25,7 @@ final class IssueHandler
     private string $error_level = Config::REPORT_ERROR;
 
     /**
-     * @var array<ErrorLevelFileFilter>
+     * @var list<ErrorLevelFileFilter>
      */
     private array $custom_levels = [];
 
@@ -50,6 +50,12 @@ final class IssueHandler
         return $handler;
     }
 
+    /** @return list<ErrorLevelFileFilter> */
+    public function getFilters(): array
+    {
+        return $this->custom_levels;
+    }
+
     public function setCustomLevels(array $customLevels, string $base_dir): void
     {
         /** @var array $customLevel */
@@ -71,6 +77,7 @@ final class IssueHandler
     {
         foreach ($this->custom_levels as $custom_level) {
             if ($custom_level->allows($file_path)) {
+                $custom_level->suppressions++;
                 return $custom_level->getErrorLevel();
             }
         }
@@ -82,6 +89,7 @@ final class IssueHandler
     {
         foreach ($this->custom_levels as $custom_level) {
             if ($custom_level->allowsClass($fq_classlike_name)) {
+                $custom_level->suppressions++;
                 return $custom_level->getErrorLevel();
             }
         }
@@ -93,6 +101,7 @@ final class IssueHandler
     {
         foreach ($this->custom_levels as $custom_level) {
             if ($custom_level->allowsMethod(strtolower($method_id))) {
+                $custom_level->suppressions++;
                 return $custom_level->getErrorLevel();
             }
         }
@@ -115,6 +124,7 @@ final class IssueHandler
     {
         foreach ($this->custom_levels as $custom_level) {
             if ($custom_level->allowsMethod(strtolower($function_id))) {
+                $custom_level->suppressions++;
                 return $custom_level->getErrorLevel();
             }
         }
@@ -126,6 +136,7 @@ final class IssueHandler
     {
         foreach ($this->custom_levels as $custom_level) {
             if ($custom_level->allowsProperty($property_id)) {
+                $custom_level->suppressions++;
                 return $custom_level->getErrorLevel();
             }
         }
@@ -137,6 +148,7 @@ final class IssueHandler
     {
         foreach ($this->custom_levels as $custom_level) {
             if ($custom_level->allowsClassConstant($constant_id)) {
+                $custom_level->suppressions++;
                 return $custom_level->getErrorLevel();
             }
         }
@@ -148,6 +160,7 @@ final class IssueHandler
     {
         foreach ($this->custom_levels as $custom_level) {
             if ($custom_level->allowsVariable($var_name)) {
+                $custom_level->suppressions++;
                 return $custom_level->getErrorLevel();
             }
         }

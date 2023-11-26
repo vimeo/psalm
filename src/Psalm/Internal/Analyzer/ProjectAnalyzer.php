@@ -1027,6 +1027,9 @@ final class ProjectAnalyzer
      */
     public function checkPaths(array $paths_to_check): void
     {
+        $this->progress->write($this->generatePHPVersionMessage());
+        $this->progress->startScanningFiles();
+
         $this->config->visitPreloadedStubFiles($this->codebase, $this->progress);
         $this->visitAutoloadFiles();
 
@@ -1045,9 +1048,6 @@ final class ProjectAnalyzer
         }
 
         $this->file_reference_provider->loadReferenceCache();
-
-        $this->progress->write($this->generatePHPVersionMessage());
-        $this->progress->startScanningFiles();
 
         $this->config->initializePlugins($this);
 

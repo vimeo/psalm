@@ -917,7 +917,7 @@ class FunctionCallTest extends TestCase
                     '$porta' => 'false|int|null',
                     '$porte' => 'false|int|null',
                 ],
-                'ignored_issues' => ['MixedReturnStatement', 'MixedInferredReturnType'],
+                'ignored_issues' => ['MixedReturnStatement'],
             ],
             'parseUrlComponent' => [
                 'code' => '<?php

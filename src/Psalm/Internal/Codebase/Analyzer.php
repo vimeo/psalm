@@ -90,6 +90,7 @@ use const PHP_INT_MAX;
  *      used_suppressions: array<string, array<int, bool>>,
  *      function_docblock_manipulators: array<string, array<int, FunctionDocblockManipulator>>,
  *      mutable_classes: array<string, bool>,
+ *      issue_handlers: array{type: string, index: int, count: int}[],
  * }
  */
 
@@ -405,6 +406,10 @@ final class Analyzer
                 if ($codebase->track_unused_suppressions) {
                     IssueBuffer::addUnusedSuppressions($pool_data['unused_suppressions']);
                     IssueBuffer::addUsedSuppressions($pool_data['used_suppressions']);
+                }
+
+                if ($codebase->config->find_unused_issue_handler_suppression) {
+                    $codebase->config->combineIssueHandlerSuppressions($pool_data['issue_handlers']);
                 }
 
                 if ($codebase->taint_flow_graph && $pool_data['taint_data']) {
@@ -1628,6 +1633,7 @@ final class Analyzer
             'used_suppressions'                          => $codebase->track_unused_suppressions ? IssueBuffer::getUsedSuppressions() : [],
             'function_docblock_manipulators'             => FunctionDocblockManipulator::getManipulators(),
             'mutable_classes'                            => $codebase->analyzer->mutable_classes,
+            'issue_handlers'                             => $this->config->getIssueHandlerSuppressions()
         ];
         // @codingStandardsIgnoreEnd
     }
