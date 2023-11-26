@@ -375,7 +375,6 @@ final class ExpressionAnalyzer
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\ShellExec) {
-            /** @psalm-suppress ArgumentTypeCoercion $stmt->parts is untyped, but it's a list of expressions */
             $concat = new VirtualEncapsed($stmt->parts, $stmt->getAttributes());
             $virtual_call = new VirtualFuncCall(new VirtualName(['shell_exec']), [
                 new VirtualArg($concat),
