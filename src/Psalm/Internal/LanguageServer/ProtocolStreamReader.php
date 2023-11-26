@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\LanguageServer;
 
 use AdvancedJsonRpc\Message as MessageBody;
-use Amp\ByteStream\ResourceInputStream;
+use Amp\ByteStream\ReadableResourceStream;
 use Amp\Promise;
 use Exception;
 use Generator;
@@ -45,7 +45,7 @@ final class ProtocolStreamReader implements ProtocolReader
      */
     public function __construct($input)
     {
-        $input = new ResourceInputStream($input);
+        $input = new ReadableResourceStream($input);
         asyncCall(
             /**
              * @return Generator<int, Promise<?string>, ?string, void>
