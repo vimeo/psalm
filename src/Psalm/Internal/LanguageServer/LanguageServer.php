@@ -507,6 +507,11 @@ final class LanguageServer extends Dispatcher
                  * Support "Hover"
                  */
                 $serverCapabilities->hoverProvider = true;
+                /**
+                 * The server does not support documentHighlight-ing
+                 * Ref: https://github.com/vimeo/psalm/issues/10397
+                 */
+                $serverCapabilities->documentHighlightProvider = false;
 
                 /**
                  * The server provides completion support.
