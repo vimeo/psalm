@@ -18,7 +18,7 @@ use function json_last_error_msg;
 /**
  * @internal
  */
-class ComposerLock
+final class ComposerLock
 {
     /** @var string[] */
     private array $file_names;

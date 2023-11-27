@@ -18,7 +18,7 @@ use const JSON_THROW_ON_ERROR;
 /**
  * @internal
  */
-class PluginListFactory
+final class PluginListFactory
 {
     private string $project_root;
 

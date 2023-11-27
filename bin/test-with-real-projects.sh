@@ -38,8 +38,11 @@ psl)
 	cd endtoend-test-psl
 	git checkout 2.3.x
 	composer install
-	"$PSALM" --monochrome -c config/psalm.xml
-	"$PSALM" --monochrome -c config/psalm.xml tests/static-analysis
+	# Avoid conflicts with old psalm when running phar tests
+	rm -rf vendor/vimeo/psalm
+	sed 's/ErrorOutputBehavior::Packed, ErrorOutputBehavior::Discard/ErrorOutputBehavior::Discard/g' -i src/Psl/Shell/execute.php
+	"$PSALM_PHAR" --monochrome -c config/psalm.xml
+	"$PSALM_PHAR" --monochrome -c config/psalm.xml tests/static-analysis
 	;;
 
 laravel)

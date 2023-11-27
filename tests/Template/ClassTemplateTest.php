@@ -2350,7 +2350,7 @@ class ClassTemplateTest extends TestCase
 
                         /**
                          * @template U
-                         * @param callable(T=):U $callback
+                         * @param callable(T):U $callback
                          * @return static<U>
                          */
                         public function map(callable $callback) {

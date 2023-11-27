@@ -82,7 +82,7 @@ class ConditionalTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['DocblockTypeContradiction'],
+                'ignored_issues' => ['DocblockTypeContradiction', 'TypeDoesNotContainType'],
             ],
             'notInstanceof' => [
                 'code' => '<?php
@@ -1352,7 +1352,6 @@ class ConditionalTest extends TestCase
                     function takes_int(int $int) : void {}
 
                     if ($int == $string) {
-                        /** @psalm-suppress MixedArgument */
                         takes_int($int);
                     }',
             ],

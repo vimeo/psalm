@@ -51,6 +51,7 @@ use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_map;
+use function array_reduce;
 use function array_reverse;
 use function array_slice;
 use function array_values;
@@ -1030,7 +1031,26 @@ final class ArgumentsAnalyzer
             $check_null_ref = true;
 
             if ($last_param) {
-                if ($argument_offset < count($function_params)) {
+                if ($arg->name !== null) {
+                    $function_param = array_reduce(
+                        $function_params,
+                        static function (
+                            ?FunctionLikeParameter $function_param,
+                            FunctionLikeParameter $param,
+                        ) use (
+                            $arg,
+                        ) {
+                            if ($param->name === $arg->name->name) {
+                                return $param;
+                            }
+                            return $function_param;
+                        },
+                        null,
+                    );
+                    if ($function_param === null) {
+                        return false;
+                    }
+                } elseif ($argument_offset < count($function_params)) {
                     $function_param = $function_params[$argument_offset];
                 } else {
                     $function_param = $last_param;
