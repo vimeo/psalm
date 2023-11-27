@@ -1593,12 +1593,6 @@ final class Codebase
                             error_log($e->getMessage());
                         }
                     }
-                    if ($gap === '->') {
-                        $method_storages += $class_storage->pseudo_methods;
-                    }
-                    if ($gap === '::') {
-                        $method_storages += $class_storage->pseudo_static_methods;
-                    }
 
                     foreach ($method_storages as $method_storage) {
                         if (!in_array($method_storage->visibility, $allow_visibilities)) {

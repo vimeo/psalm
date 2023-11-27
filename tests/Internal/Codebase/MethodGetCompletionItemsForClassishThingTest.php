@@ -437,6 +437,7 @@ final class MethodGetCompletionItemsForClassishThingTest extends TestCase
                 'magicObjProp1',
                 'magicObjProp2',
     
+                'magicStaticMethod',
                 'magicObjMethod',
     
                 'publicObjProp',
