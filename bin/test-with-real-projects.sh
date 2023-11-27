@@ -41,8 +41,8 @@ psl)
 	# Avoid conflicts with old psalm when running phar tests
 	rm -rf vendor/vimeo/psalm
 	sed 's/ErrorOutputBehavior::Packed, ErrorOutputBehavior::Discard/ErrorOutputBehavior::Discard/g' -i src/Psl/Shell/execute.php
-	"$PSALM" --monochrome -c config/psalm.xml
-	"$PSALM" --monochrome -c config/psalm.xml tests/static-analysis
+	"$PSALM_PHAR" --monochrome -c config/psalm.xml
+	"$PSALM_PHAR" --monochrome -c config/psalm.xml tests/static-analysis
 	;;
 
 laravel)
