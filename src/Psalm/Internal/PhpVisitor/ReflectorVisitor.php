@@ -141,12 +141,12 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
                 $this->namespace_name,
             );
 
-            $this->classlike_node_scanners[] = $classlike_node_scanner;
-
             if ($classlike_node_scanner->start($node) === false) {
                 $this->bad_classes[spl_object_id($node)] = true;
-                return PhpParser\NodeTraverser::DONT_TRAVERSE_CHILDREN;
+                return PhpParser\NodeTraverser::DONT_TRAVERSE_CURRENT_AND_CHILDREN;
             }
+
+            $this->classlike_node_scanners[] = $classlike_node_scanner;
 
             $this->type_aliases = [...$this->type_aliases, ...$classlike_node_scanner->type_aliases];
         } elseif ($node instanceof PhpParser\Node\Stmt\TryCatch) {

@@ -35,7 +35,7 @@ final class FunctionParamsProviderEvent
     }
 
     /**
-     * @return PhpParser\Node\Arg[]
+     * @return list<PhpParser\Node\Arg>
      */
     public function getCallArgs(): array
     {

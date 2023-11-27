@@ -19,7 +19,6 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\ConstantTypeResolver;
-use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
@@ -805,13 +804,16 @@ final class ArgumentAnalyzer
         }
 
         if ($input_type->isNever()) {
-            IssueBuffer::maybeAdd(
+            if (!IssueBuffer::accepts(
                 new NoValue(
                     'All possible types for this argument were invalidated - This may be dead code',
                     $arg_location,
                 ),
                 $statements_analyzer->getSuppressedIssues(),
-            );
+            )) {
+                // if the error is suppressed, do not treat it as exited anymore
+                $context->has_returned = false;
+            }
 
             return null;
         }
@@ -836,21 +838,52 @@ final class ArgumentAnalyzer
             // $statements_analyzer, which is necessary to understand string function names
             $input_type = $input_type->getBuilder();
             foreach ($input_type->getAtomicTypes() as $key => $atomic_type) {
-                if (!$atomic_type instanceof TLiteralString
-                    || InternalCallMapHandler::inCallMap($atomic_type->value)
-                ) {
-                    continue;
-                }
+                $container_callable_type = $param_type->getSingleAtomic();
+                $container_callable_type = $container_callable_type instanceof TCallable
+                    ? $container_callable_type
+                    : null;
 
                 $candidate_callable = CallableTypeComparator::getCallableFromAtomic(
                     $codebase,
                     $atomic_type,
-                    null,
+                    $container_callable_type,
                     $statements_analyzer,
                     true,
                 );
 
-                if ($candidate_callable) {
+                if ($candidate_callable && $candidate_callable !== $atomic_type) {
+                    // if we had an array callable, mark it as used now, since it's not possible later
+                    $potential_method_id = null;
+
+                    if ($atomic_type instanceof TKeyedArray) {
+                        $potential_method_id = CallableTypeComparator::getCallableMethodIdFromTKeyedArray(
+                            $atomic_type,
+                            $codebase,
+                            $context->calling_method_id,
+                            $statements_analyzer->getFilePath(),
+                        );
+                    } elseif ($atomic_type instanceof TLiteralString
+                              && strpos($atomic_type->value, '::')
+                    ) {
+                        $parts = explode('::', $atomic_type->value);
+                        $potential_method_id = new MethodIdentifier(
+                            $parts[0],
+                            strtolower($parts[1]),
+                        );
+                    }
+
+                    if ($potential_method_id && $potential_method_id !== 'not-callable') {
+                        $codebase->methods->methodExists(
+                            $potential_method_id,
+                            $context->calling_method_id,
+                            $arg_location,
+                            $statements_analyzer,
+                            $statements_analyzer->getFilePath(),
+                            true,
+                            $context->insideUse(),
+                        );
+                    }
+
                     $input_type->removeType($key);
                     $input_type->addType($candidate_callable);
                 }
@@ -918,6 +951,7 @@ final class ArgumentAnalyzer
                     && strpos($input_type_part->value, '::')
                 ) {
                     $parts = explode('::', $input_type_part->value);
+                    /** @psalm-suppress PossiblyUndefinedIntArrayOffset */
                     $potential_method_ids[] = new MethodIdentifier(
                         $parts[0],
                         strtolower($parts[1]),
@@ -929,7 +963,7 @@ final class ArgumentAnalyzer
                 $codebase->methods->methodExists(
                     $potential_method_id,
                     $context->calling_method_id,
-                    null,
+                    $arg_location,
                     $statements_analyzer,
                     $statements_analyzer->getFilePath(),
                     true,

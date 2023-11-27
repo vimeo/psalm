@@ -276,12 +276,12 @@ class Redis {
     public function move(string $key, int $index): bool {}
 
     /**
-     * @param array<string, string>
+     * @param array<int|string, string>
      */
     public function mset($key_values): Redis|bool {}
 
     /**
-     * @param array<string, string>
+     * @param array<int|string, string>
      */
     public function msetnx($key_values): Redis|bool {}
 

@@ -16,6 +16,9 @@
     <PossiblyNullArgument>
       <code>$deprecated_element_xml</code>
     </PossiblyNullArgument>
+    <PossiblyNullReference>
+      <code>addAttribute</code>
+    </PossiblyNullReference>
     <PropertyTypeCoercion>
       <code>$this</code>
     </PropertyTypeCoercion>

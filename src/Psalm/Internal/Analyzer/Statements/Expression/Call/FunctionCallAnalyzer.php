@@ -206,7 +206,9 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     $statements_analyzer->node_data,
                 );
 
-                $function_call_info->function_params = $function_callable->params;
+                if (!$codebase->functions->params_provider->has($function_call_info->function_id)) {
+                    $function_call_info->function_params = $function_callable->params;
+                }
             }
         }
 

@@ -160,6 +160,15 @@ final class ClassLikeNodeScanner
             if ($this->codebase->classlike_storage_provider->has($fq_classlike_name_lc)) {
                 $duplicate_storage = $this->codebase->classlike_storage_provider->get($fq_classlike_name_lc);
 
+                // don't override data from files that are getting analyzed with data from stubs
+                // if the stubs contain the same class
+                if (!$duplicate_storage->stubbed
+                    && $this->codebase->register_stub_files
+                    && $duplicate_storage->stmt_location
+                    && $this->config->isInProjectDirs($duplicate_storage->stmt_location->file_path)) {
+                    return false;
+                }
+
                 if (!$this->codebase->register_stub_files) {
                     if (!$duplicate_storage->stmt_location
                         || $duplicate_storage->stmt_location->file_path !== $this->file_path

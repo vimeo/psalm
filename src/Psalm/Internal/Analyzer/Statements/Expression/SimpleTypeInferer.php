@@ -145,6 +145,17 @@ final class SimpleTypeInferer
                 $fq_classlike_name,
             );
 
+            if (!$stmt_left_type
+                && $file_source instanceof StatementsAnalyzer
+                && $stmt->left instanceof PhpParser\Node\Expr\ConstFetch) {
+                $stmt_left_type = ConstFetchAnalyzer::getConstType(
+                    $file_source,
+                    $stmt->left->name->toString(),
+                    true,
+                    null,
+                );
+            }
+
             $stmt_right_type = self::infer(
                 $codebase,
                 $nodes,
@@ -154,6 +165,17 @@ final class SimpleTypeInferer
                 $existing_class_constants,
                 $fq_classlike_name,
             );
+
+            if (!$stmt_right_type
+                && $file_source instanceof StatementsAnalyzer
+                && $stmt->right instanceof PhpParser\Node\Expr\ConstFetch) {
+                $stmt_right_type = ConstFetchAnalyzer::getConstType(
+                    $file_source,
+                    $stmt->right->name->toString(),
+                    true,
+                    null,
+                );
+            }
 
             if (!$stmt_left_type || !$stmt_right_type) {
                 return null;

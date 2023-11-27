@@ -1819,3 +1819,9 @@ function time_nanosleep(int $seconds, int $nanoseconds): array|bool {}
  * @psalm-taint-sink sleep $timestamp
  */
 function time_sleep_until(float $timestamp): bool {}
+
+/**
+ * @return ($return_array is true ? array|false : object|false)
+ * @psalm-ignore-falsable-return
+ */
+function get_browser(?string $user_agent = null, bool $return_array = false): object|array|false {}
