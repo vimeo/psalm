@@ -1565,7 +1565,7 @@ final class Codebase
         string $gap,
         bool $snippets_supported = false,
         array $allow_visibilities = null,
-        array $ignore_fq_class_names = []
+        array $ignore_fq_class_names = [],
     ): array {
         if ($allow_visibilities === null) {
             $allow_visibilities = [

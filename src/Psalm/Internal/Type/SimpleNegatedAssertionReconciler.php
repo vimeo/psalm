@@ -428,7 +428,7 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
     private static function reconcileCallable(
         Union $existing_var_type,
         Codebase $codebase,
-        TCallable $assertion_type
+        TCallable $assertion_type,
     ): Union {
         $existing_var_type = $existing_var_type->getBuilder();
         foreach ($existing_var_type->getAtomicTypes() as $atomic_key => $type) {

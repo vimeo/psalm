@@ -1036,9 +1036,9 @@ final class ArgumentsAnalyzer
                         $function_params,
                         static function (
                             ?FunctionLikeParameter $function_param,
-                            FunctionLikeParameter $param
+                            FunctionLikeParameter $param,
                         ) use (
-                            $arg
+                            $arg,
                         ) {
                             if ($param->name === $arg->name->name) {
                                 return $param;

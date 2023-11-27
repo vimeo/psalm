@@ -852,9 +852,6 @@ final class ArgumentAnalyzer
                 if ($candidate_callable && $candidate_callable !== $atomic_type) {
                     // if we had an array callable, mark it as used now, since it's not possible later
                     $potential_method_id = null;
-                    if ($atomic_type instanceof TList) {
-                        $atomic_type = $atomic_type->getKeyedArray();
-                    }
 
                     if ($atomic_type instanceof TKeyedArray) {
                         $potential_method_id = CallableTypeComparator::getCallableMethodIdFromTKeyedArray(
