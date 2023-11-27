@@ -72,6 +72,7 @@ use ReflectionType;
 use UnexpectedValueException;
 
 use function array_combine;
+use function array_key_exists;
 use function array_pop;
 use function array_reverse;
 use function array_values;
