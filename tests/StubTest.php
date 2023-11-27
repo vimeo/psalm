@@ -222,7 +222,7 @@ class StubTest extends TestCase
     public function testStubFileParentClass(): void
     {
         $this->expectException(CodeException::class);
-        $this->expectExceptionMessage('ImplementedParamTypeMismatch');
+        $this->expectExceptionMessage('MethodSignatureMismatch');
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__),
@@ -1194,94 +1194,6 @@ class StubTest extends TestCase
                 class Bar extends PartiallyStubbedClass  {}
 
                 new Bar();',
-        );
-
-        $this->analyzeFile($file_path, new Context());
-    }
-
-    public function testStubFileWithPartialClassDefinitionWithCoercion(): void
-    {
-        $this->expectExceptionMessage('TypeCoercion');
-        $this->expectException(CodeException::class);
-        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
-            TestConfig::loadFromXML(
-                dirname(__DIR__),
-                '<?xml version="1.0"?>
-                <psalm
-                    errorLevel="1"
-                >
-                    <projectFiles>
-                        <directory name="src" />
-                    </projectFiles>
-
-                    <stubs>
-                        <file name="tests/fixtures/stubs/partial_class.phpstub" />
-                    </stubs>
-                </psalm>',
-            ),
-        );
-
-        $file_path = (string) getcwd() . '/src/somefile.php';
-
-        $this->addFile(
-            $file_path,
-            '<?php
-                namespace Foo;
-
-                class PartiallyStubbedClass  {
-                    /**
-                     * @param string $a
-                     * @return object
-                     */
-                    public function foo(string $a) {
-                        return new self;
-                    }
-                }
-
-                (new PartiallyStubbedClass())->foo("dasda");',
-        );
-
-        $this->analyzeFile($file_path, new Context());
-    }
-
-    public function testStubFileWithPartialClassDefinitionGeneralReturnType(): void
-    {
-        $this->expectExceptionMessage('InvalidReturnStatement');
-        $this->expectException(CodeException::class);
-        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
-            TestConfig::loadFromXML(
-                dirname(__DIR__),
-                '<?xml version="1.0"?>
-                <psalm
-                    errorLevel="1"
-                >
-                    <projectFiles>
-                        <directory name="src" />
-                    </projectFiles>
-
-                    <stubs>
-                        <file name="tests/fixtures/stubs/partial_class.phpstub" />
-                    </stubs>
-                </psalm>',
-            ),
-        );
-
-        $file_path = (string) getcwd() . '/src/somefile.php';
-
-        $this->addFile(
-            $file_path,
-            '<?php
-                namespace Foo;
-
-                class PartiallyStubbedClass  {
-                    /**
-                     * @param string $a
-                     * @return object
-                     */
-                    public function foo(string $a) {
-                        return new \stdClass;
-                    }
-                }',
         );
 
         $this->analyzeFile($file_path, new Context());

@@ -454,6 +454,8 @@ final class Populator
         $storage->pseudo_property_get_types += $trait_storage->pseudo_property_get_types;
         $storage->pseudo_property_set_types += $trait_storage->pseudo_property_set_types;
 
+        $storage->pseudo_static_methods += $trait_storage->pseudo_static_methods;
+        
         $storage->pseudo_methods += $trait_storage->pseudo_methods;
         $storage->declaring_pseudo_method_ids += $trait_storage->declaring_pseudo_method_ids;
     }
@@ -564,6 +566,11 @@ final class Populator
 
         $parent_storage->dependent_classlikes[strtolower($storage->name)] = true;
 
+        foreach ($parent_storage->pseudo_static_methods as $method_name => $pseudo_method) {
+            if (!isset($storage->methods[$method_name])) {
+                $storage->pseudo_static_methods[$method_name] = $pseudo_method;
+            }
+        }
         foreach ($parent_storage->pseudo_methods as $method_name => $pseudo_method) {
             if (!isset($storage->methods[$method_name])) {
                 $storage->pseudo_methods[$method_name] = $pseudo_method;
