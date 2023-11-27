@@ -1034,7 +1034,11 @@ final class Populator
                         $implementing_method_id->fq_class_name,
                     );
 
-                    if (!$implementing_class_storage->methods[$implementing_method_id->method_name]->abstract
+                    $method = $implementing_class_storage->methods[$implementing_method_id->method_name]
+                        ?? $implementing_class_storage->pseudo_methods[$implementing_method_id->method_name]
+                        ?? $implementing_class_storage->pseudo_static_methods[$implementing_method_id->method_name];
+
+                    if (!$method->abstract
                         || !empty($storage->methods[$implementing_method_id->method_name]->abstract)
                     ) {
                         continue;
