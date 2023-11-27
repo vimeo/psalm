@@ -641,9 +641,6 @@ final class ClassLikeNodeScanner
                 if (!isset($storage->overridden_method_ids[$lc_method_name])) {
                     $storage->overridden_method_ids[$lc_method_name] = [];
                 }
-                if (!isset($storage->declaring_method_ids[$lc_method_name])) {
-                    $storage->declaring_method_ids[$lc_method_name] = $method_identifier;
-                }
                 $storage->declaring_pseudo_method_ids[$lc_method_name] = $method_identifier;
             }
 

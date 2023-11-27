@@ -1593,11 +1593,22 @@ final class Codebase
                             error_log($e->getMessage());
                         }
                     }
+                    if ($gap === '->') {
+                        $method_storages += $class_storage->pseudo_methods;
+                    }
+                    if ($gap === '::') {
+                        $method_storages += $class_storage->pseudo_static_methods;
+                    }
 
+                    $had = [];
                     foreach ($method_storages as $method_storage) {
                         if (!in_array($method_storage->visibility, $allow_visibilities)) {
                             continue;
                         }
+                        if (array_key_exists($method_storage->cased_name, $had)) {
+                            continue;
+                        }
+                        $had[$method_storage->cased_name] = true;
                         if ($method_storage->is_static || $gap === '->') {
                             $completion_item = new CompletionItem(
                                 $method_storage->cased_name,
