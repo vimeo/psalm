@@ -11,7 +11,7 @@ use Psalm\Plugin\EventHandler\Event\AfterStatementAnalysisEvent;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TString;
 
-class EchoChecker implements AfterStatementAnalysisInterface
+final class EchoChecker implements AfterStatementAnalysisInterface
 {
     /**
      * Called after a statement has been checked

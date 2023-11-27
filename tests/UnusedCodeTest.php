@@ -478,13 +478,13 @@ class UnusedCodeTest extends TestCase
                             return new a;
                         }
                     }
-                    
+
                     final class b {
                         public function test(): a {
                             return new a;
                         }
                     }
-                    
+
                     function process(b $handler): a {
                         if (\extension_loaded("fdsfdsfd")) {
                             return $handler->test();
@@ -1324,6 +1324,35 @@ class UnusedCodeTest extends TestCase
                     }
                     new A;
                     PHP,
+            ],
+            'callNeverReturnsSuppressed' => [
+                'code' => '<?php
+                    namespace Foo;
+                    /**
+                     * @psalm-suppress InvalidReturnType
+                     * @return never
+                     */
+                    function foo() : void {}
+
+                    /** @psalm-suppress NoValue */
+                    $a = foo();
+                    print_r($a);',
+            ],
+            'useNeverReturnsAsArgSuppressed' => [
+                'code' => '<?php
+                    namespace Foo;
+                    /**
+                     * @psalm-suppress InvalidReturnType
+                     * @return never
+                     */
+                    function foo() : void {}
+
+                    /** @psalm-suppress UnusedParam */
+                    function bar(string $s) : void {}
+
+                    /** @psalm-suppress NoValue */
+                    bar(foo());
+                    echo "hello";',
             ],
         ];
     }

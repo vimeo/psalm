@@ -17,6 +17,7 @@ use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
 use Psalm\Type;
 
+use function array_map;
 use function count;
 
 class CompletionTest extends TestCase
@@ -372,7 +373,7 @@ class CompletionTest extends TestCase
         $codebase->scanFiles();
         $this->analyzeFile('somefile.php', new Context());
 
-        $this->assertNull($codebase->getCompletionDataAtPosition('somefile.php', new Position(16, 41)));
+        $this->assertSame(['B\C', '->', 456], $codebase->getCompletionDataAtPosition('somefile.php', new Position(16, 41)));
     }
 
     public function testCompletionOnTemplatedThisProperty(): void
@@ -725,6 +726,201 @@ class CompletionTest extends TestCase
 
         $this->assertSame('bar($0)', $completion_items[0]->insertText);
         $this->assertSame('baz()', $completion_items[1]->insertText);
+    }
+
+    public function testObjectPropertyOnAppendToEnd(): void
+    {
+        $codebase = $this->codebase;
+        $config = $codebase->config;
+        $config->throw_exception = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace B;
+
+                class A {
+                    public $aProp = 123;
+                    public $bProp = 234;
+
+                    public function bar() {
+                        $this->aPr
+                    }
+                }',
+        );
+
+        $codebase->file_provider->openFile('somefile.php');
+        $codebase->scanFiles();
+
+        $this->analyzeFile('somefile.php', new Context());
+
+        $position = new Position(8, 34);
+        $completion_data = $codebase->getCompletionDataAtPosition('somefile.php', $position);
+        $literal_part = $codebase->getBeginedLiteralPart('somefile.php', $position);
+
+        $this->assertSame(['B\A&static', '->', 223], $completion_data);
+
+        $completion_items = $codebase->getCompletionItemsForClassishThing($completion_data[0], $completion_data[1], true);
+        $completion_items = $codebase->filterCompletionItemsByBeginLiteralPart($completion_items, $literal_part);
+        $completion_item_texts = array_map(fn($item) => $item->insertText, $completion_items);
+
+        $this->assertSame(['aProp'], $completion_item_texts);
+    }
+
+    public function testObjectPropertyOnReplaceEndPart(): void
+    {
+        $codebase = $this->codebase;
+        $config = $codebase->config;
+        $config->throw_exception = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace B;
+
+                class A {
+                    public $aProp1 = 123;
+                    public $aProp2 = 234;
+
+                    public function bar() {
+                        $this->aProp2;
+                    }
+                }',
+        );
+
+        $codebase->file_provider->openFile('somefile.php');
+        $codebase->scanFiles();
+
+        $this->analyzeFile('somefile.php', new Context());
+
+        $position = new Position(8, 34);
+        $completion_data = $codebase->getCompletionDataAtPosition('somefile.php', $position);
+        $literal_part = $codebase->getBeginedLiteralPart('somefile.php', $position);
+
+        $this->assertSame(['B\A&static', '->', 225], $completion_data);
+
+        $completion_items = $codebase->getCompletionItemsForClassishThing($completion_data[0], $completion_data[1], true);
+        $completion_items = $codebase->filterCompletionItemsByBeginLiteralPart($completion_items, $literal_part);
+        $completion_item_texts = array_map(fn($item) => $item->insertText, $completion_items);
+
+        $this->assertSame(['aProp1', 'aProp2'], $completion_item_texts);
+    }
+
+    public function testSelfPropertyOnAppendToEnd(): void
+    {
+        $codebase = $this->codebase;
+        $config = $codebase->config;
+        $config->throw_exception = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace B;
+
+                class A {
+                    public static $aProp = 123;
+                    public static $bProp = 234;
+
+                    public function bar() {
+                        self::$aPr
+                    }
+                }',
+        );
+
+        $codebase->file_provider->openFile('somefile.php');
+        $codebase->scanFiles();
+
+        $this->analyzeFile('somefile.php', new Context());
+
+        $position = new Position(8, 34);
+        $completion_data = $codebase->getCompletionDataAtPosition('somefile.php', $position);
+        $literal_part = $codebase->getBeginedLiteralPart('somefile.php', $position);
+
+        $this->assertSame(['B\A', '::', 237], $completion_data);
+
+        $completion_items = $codebase->getCompletionItemsForClassishThing($completion_data[0], $completion_data[1], true);
+        $completion_items = $codebase->filterCompletionItemsByBeginLiteralPart($completion_items, $literal_part);
+        $completion_item_texts = array_map(fn($item) => $item->insertText, $completion_items);
+
+        $this->assertSame(['$aProp'], $completion_item_texts);
+    }
+
+    public function testStaticPropertyOnAppendToEnd(): void
+    {
+        $codebase = $this->codebase;
+        $config = $codebase->config;
+        $config->throw_exception = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace B;
+
+                class A {
+                    public static $aProp = 123;
+                    public static $bProp = 234;
+
+                    public function bar() {
+                        static::$aPr
+                    }
+                }',
+        );
+
+        $codebase->file_provider->openFile('somefile.php');
+        $codebase->scanFiles();
+
+        $this->analyzeFile('somefile.php', new Context());
+
+        $position = new Position(8, 36);
+        $completion_data = $codebase->getCompletionDataAtPosition('somefile.php', $position);
+        $literal_part = $codebase->getBeginedLiteralPart('somefile.php', $position);
+
+        $this->assertSame(['B\A', '::', 239], $completion_data);
+
+        $completion_items = $codebase->getCompletionItemsForClassishThing($completion_data[0], $completion_data[1], true);
+        $completion_items = $codebase->filterCompletionItemsByBeginLiteralPart($completion_items, $literal_part);
+        $completion_item_texts = array_map(fn($item) => $item->insertText, $completion_items);
+
+        $this->assertSame(['$aProp'], $completion_item_texts);
+    }
+
+    public function testStaticPropertyOnReplaceEndPart(): void
+    {
+        $codebase = $this->codebase;
+        $config = $codebase->config;
+        $config->throw_exception = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace B;
+
+                class A {
+                    public static $aProp1 = 123;
+                    public static $aProp2 = 234;
+
+                    public function bar() {
+                        self::$aProp2;
+                    }
+                }',
+        );
+
+        $codebase->file_provider->openFile('somefile.php');
+        $codebase->scanFiles();
+
+        $this->analyzeFile('somefile.php', new Context());
+
+        $position = new Position(8, 34);
+        $completion_data = $codebase->getCompletionDataAtPosition('somefile.php', $position);
+        $literal_part = $codebase->getBeginedLiteralPart('somefile.php', $position);
+
+        $this->assertSame(['B\A', '::', 239], $completion_data);
+
+        $completion_items = $codebase->getCompletionItemsForClassishThing($completion_data[0], $completion_data[1], true);
+        $completion_items = $codebase->filterCompletionItemsByBeginLiteralPart($completion_items, $literal_part);
+        $completion_item_texts = array_map(fn($item) => $item->insertText, $completion_items);
+
+        $this->assertSame(['$aProp1', '$aProp2'], $completion_item_texts);
     }
 
     public function testCompletionOnNewExceptionWithoutNamespace(): void
@@ -1260,6 +1456,38 @@ class CompletionTest extends TestCase
 
         $completion_items = $codebase->getCompletionItemsForClassishThing($completion_data[0], $completion_data[1], true);
         $this->assertCount(2, $completion_items);
+    }
+
+    public function testCompletionStaticMethodOnDocBlock(): void
+    {
+        $codebase = $this->codebase;
+        $config = $codebase->config;
+        $config->throw_exception = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace Bar;
+
+                /**
+                 * @method static void foo()
+                 */
+                class Alpha {}
+                Alpha::',
+        );
+
+        $codebase->file_provider->openFile('somefile.php');
+        $codebase->scanFiles();
+        $this->analyzeFile('somefile.php', new Context());
+
+        $position = new Position(7, 23);
+        $completion_data = $codebase->getCompletionDataAtPosition('somefile.php', $position);
+
+        $this->assertSame(['Bar\Alpha', '::', 177], $completion_data);
+
+        $completion_items = $codebase->getCompletionItemsForClassishThing($completion_data[0], $completion_data[1], true);
+        $this->assertCount(1, $completion_items);
+        $this->assertSame('foo()', $completion_items[0]->insertText);
     }
 
     public function testCompletionOnClassInstanceReferenceWithAssignmentAfter(): void

@@ -30,7 +30,7 @@ use function str_replace;
 use function strtolower;
 use function trim;
 
-class TemplateAnalyzer extends Psalm\Internal\Analyzer\FileAnalyzer
+final class TemplateAnalyzer extends Psalm\Internal\Analyzer\FileAnalyzer
 {
     const VIEW_CLASS = 'Your\\View\\Class';
 

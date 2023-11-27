@@ -14,7 +14,7 @@ final class FunctionParamsProviderEvent
     private StatementsSource $statements_source;
     private string $function_id;
     /**
-     * @var PhpParser\Node\Arg[]
+     * @var list<PhpParser\Node\Arg>
      */
     private array $call_args;
     private ?Context $context;
@@ -49,7 +49,7 @@ final class FunctionParamsProviderEvent
     }
 
     /**
-     * @return PhpParser\Node\Arg[]
+     * @return list<PhpParser\Node\Arg>
      */
     public function getCallArgs(): array
     {

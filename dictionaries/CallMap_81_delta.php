@@ -52,6 +52,7 @@ return [
     'ReflectionFunctionAbstract::hasTentativeReturnType' => ['bool'],
     'ReflectionFunctionAbstract::isStatic' => ['bool'],
     'ReflectionObject::isEnum' => ['bool'],
+    'ReflectionProperty::isReadonly' => ['bool'],
     'sodium_crypto_stream_xchacha20' => ['non-empty-string', 'length'=>'positive-int', 'nonce'=>'non-empty-string', 'key'=>'non-empty-string'],
     'sodium_crypto_stream_xchacha20_keygen' => ['non-empty-string'],
     'sodium_crypto_stream_xchacha20_xor' => ['string', 'message'=>'string', 'nonce'=>'non-empty-string', 'key'=>'non-empty-string'],
