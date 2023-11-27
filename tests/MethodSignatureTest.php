@@ -927,7 +927,7 @@ class MethodSignatureTest extends TestCase
                         public function a(mixed $a): void {}
                     }',
                 'assertions' => [],
-                'ignored_errors' => [],
+                'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
             'doesNotRequireInterfaceDestructorsToHaveReturnType' => [
