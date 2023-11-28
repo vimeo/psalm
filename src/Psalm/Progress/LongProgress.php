@@ -30,13 +30,13 @@ class LongProgress extends Progress
     public function startScanningFiles(): void
     {
         $this->fixed_size = false;
-        $this->write('Scanning files...' . "\n");
+        $this->write("\n" . 'Scanning files...' . "\n\n");
     }
 
     public function startAnalyzingFiles(): void
     {
         $this->fixed_size = true;
-        $this->write("\n" . 'Analyzing files...' . "\n\n");
+        $this->write("\n\n" . 'Analyzing files...' . "\n\n");
     }
 
     public function startAlteringFiles(): void
@@ -72,7 +72,7 @@ class LongProgress extends Progress
         if (!$this->fixed_size) {
             if ($this->progress == 1 || $this->progress == $this->number_of_tasks || $this->progress % 10 == 0) {
                 $this->write(sprintf(
-                    "\r%s / %s?",
+                    "\r%s / %s...",
                     $this->progress,
                     $this->number_of_tasks,
                 ));
