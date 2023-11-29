@@ -1552,7 +1552,7 @@ return [
 'decbin' => ['string', 'num'=>'int'],
 'dechex' => ['string', 'num'=>'int'],
 'decoct' => ['string', 'num'=>'int'],
-'define' => ['bool', 'constant_name'=>'string', 'value'=>'mixed', 'case_insensitive='=>'bool'],
+'define' => ['bool', 'constant_name'=>'string', 'value'=>'array|scalar|null', 'case_insensitive='=>'false'],
 'define_syslog_variables' => ['void'],
 'defined' => ['bool', 'constant_name'=>'string'],
 'deflate_add' => ['string|false', 'context'=>'DeflateContext', 'data'=>'string', 'flush_mode='=>'int'],
