@@ -64,6 +64,10 @@ return [
       'old' => ['int', 'scale'=>'int'],
       'new' => ['int', 'scale='=>'int'],
     ],
+    'define' => [
+        'old' => ['bool', 'constant_name'=>'string', 'value'=>'array|scalar|null', 'case_insensitive='=>'bool'],
+        'new' => ['bool', 'constant_name'=>'string', 'value'=>'array|scalar|null', 'case_insensitive='=>'false'],
+    ],
     'ldap_compare' => [
       'old' => ['bool|int', 'ldap'=>'resource', 'dn'=>'string', 'attribute'=>'string', 'value'=>'string'],
       'new' => ['bool|int', 'ldap'=>'resource', 'dn'=>'string', 'attribute'=>'string', 'value'=>'string', 'controls='=>'array'],
