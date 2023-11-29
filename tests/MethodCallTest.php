@@ -286,10 +286,13 @@ class MethodCallTest extends TestCase
                 'code' => '<?php
 
                     /**
-                     * @method string getConfirmationUrl()
+                     * @method static getConfirmationUrl()
                      */
                     abstract class AbstractConfirmation
                     {
+                        public function __call(string $name, array $args): self {
+                            return $this;
+                        }
                     }
 
                     function t(AbstractConfirmation $v): void {
