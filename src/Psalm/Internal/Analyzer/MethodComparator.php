@@ -382,7 +382,6 @@ final class MethodComparator
             && !$implementer_method_storage->external_mutation_free
             && !$guide_method_storage->mutation_free_inferred
             && $prevent_method_signature_mismatch
-            && !$implementer_method_storage->fake
         ) {
             IssueBuffer::maybeAdd(
                 new MissingImmutableAnnotation(

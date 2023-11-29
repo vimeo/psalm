@@ -294,7 +294,7 @@ class MethodCallTest extends TestCase
 
                     function t(AbstractConfirmation $v): void {
                         $v->getConfirmationUrl();
-                    }'
+                    }',
             ],
             'canBeCalledOnMagic' => [
                 'code' => '<?php
