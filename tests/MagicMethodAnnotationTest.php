@@ -115,7 +115,7 @@ class MagicMethodAnnotationTest extends TestCase
                 }
 
                 /**
-                 * @method getMe() : Child
+                 * @method static Child getMe()
                  */
                 class Child extends ParentClass {}
 
