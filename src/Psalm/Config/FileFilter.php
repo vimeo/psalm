@@ -7,6 +7,7 @@ use Psalm\Exception\ConfigException;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use SimpleXMLElement;
+use Symfony\Component\Filesystem\Path;
 
 use function array_filter;
 use function array_map;
@@ -127,7 +128,7 @@ class FileFilter
                 $resolve_symlinks = (bool) ($directory['resolveSymlinks'] ?? false);
                 $declare_strict_types = (bool) ($directory['useStrictTypes'] ?? false);
 
-                if ($directory_path[0] === '/' && DIRECTORY_SEPARATOR === '/') {
+                if (Path::isAbsolute($directory_path)) {
                     /** @var non-empty-string */
                     $prospective_directory_path = $directory_path;
                 } else {
