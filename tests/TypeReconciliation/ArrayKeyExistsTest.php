@@ -47,6 +47,15 @@ class ArrayKeyExistsTest extends TestCase
                         echo $a["b"];
                     }',
             ],
+             'arrayKeyExistsNegation' => [
+                'code' => '<?php
+                    function getMethodName(array $data = []): void {
+                        if (\array_key_exists("custom_name", $data) && $data["custom_name"] !== null) {
+                        }
+                        /** @psalm-check-type-exact $data = array<array-key, mixed> */
+                    }
+                ',
+            ],
             'arrayKeyExistsTwice' => [
                 'code' => '<?php
                     function two(array $a): void {
