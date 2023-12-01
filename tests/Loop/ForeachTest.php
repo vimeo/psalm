@@ -1027,7 +1027,9 @@ class ForeachTest extends TestCase
                         $arr = [];
 
                         foreach ([1, 2, 3] as $i) {
-                            $arr[$i]["a"] ??= 0;
+                            if (!isset($arr[$i]["a"])) {
+                                $arr[$i]["a"] = 0;
+                            }
 
                             $arr[$i]["a"] += 5;
                         }
