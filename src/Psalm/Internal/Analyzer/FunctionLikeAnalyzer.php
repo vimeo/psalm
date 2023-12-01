@@ -186,7 +186,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 || !in_array("UnusedPsalmSuppress", $storage->suppressed_issues)
             ) {
                 foreach ($storage->suppressed_issues as $offset => $issue_name) {
-                    IssueBuffer::addUnusedSuppression($this->getFilePath(), $offset, $issue_name);
+                    IssueBuffer::addUnusedSuppression($storage->location->file_path, $offset, $issue_name);
                 }
             }
         }
