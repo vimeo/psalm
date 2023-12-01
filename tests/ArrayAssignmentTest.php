@@ -213,7 +213,7 @@ class ArrayAssignmentTest extends TestCase
                 'assertions' => [
                     '$foo' => 'array{0: string, 1: string, 2: string}',
                     '$bar' => 'list{int, int, int}',
-                    '$bat' => 'non-empty-array<string, int>',
+                    '$bat' => 'array{a: int, b: int, c: int}',
                 ],
             ],
             'implicitStringArrayCreation' => [
@@ -1000,6 +1000,7 @@ class ArrayAssignmentTest extends TestCase
                     $a = [];
 
                     foreach (["one", "two", "three"] as $key) {
+                        $a[$key] ??= 0;
                         $a[$key] += rand(0, 10);
                     }
 
