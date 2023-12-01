@@ -20,6 +20,7 @@ use Psalm\Issue\TypeDoesNotContainNull;
 use Psalm\Issue\TypeDoesNotContainType;
 use Psalm\IssueBuffer;
 use Psalm\Storage\Assertion;
+use Psalm\Storage\Assertion\ArrayKeyDoesNotExist;
 use Psalm\Storage\Assertion\ArrayKeyExists;
 use Psalm\Storage\Assertion\Empty_;
 use Psalm\Storage\Assertion\Falsy;
@@ -197,7 +198,9 @@ class Reconciler
                     $is_equality = $is_equality
                         && $new_type_part_part instanceof IsIdentical;
 
-                    $has_inverted_isset = $has_inverted_isset || $new_type_part_part instanceof IsNotIsset;
+                    $has_inverted_isset = $has_inverted_isset
+                        || $new_type_part_part instanceof IsNotIsset
+                        || $new_type_part_part instanceof ArrayKeyDoesNotExist;
 
                     $has_count_check = $has_count_check
                         || $new_type_part_part instanceof NonEmptyCountable;
