@@ -191,7 +191,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                             ? $storage->location->file_path
                             : $this->getFilePath(),
                         $offset,
-                        $issue_name
+                        $issue_name,
                     );
                 }
             }
