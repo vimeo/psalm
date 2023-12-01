@@ -629,7 +629,7 @@ final class ExistingAtomicStaticCallAnalyzer
     ): array {
         if ($template_type->param_name === 'TFunctionArgCount') {
             return [
-                'fn-' . strtolower((string)$method_id) => [
+                'fn-' . $method_id->method_name => [
                     new TemplateBound(
                         Type::getInt(false, count($stmt->getArgs())),
                     ),
@@ -639,7 +639,7 @@ final class ExistingAtomicStaticCallAnalyzer
 
         if ($template_type->param_name === 'TPhpMajorVersion') {
             return [
-                'fn-' . strtolower((string)$method_id) => [
+                'fn-' . $method_id->method_name => [
                     new TemplateBound(
                         Type::getInt(false, $codebase->getMajorAnalysisPhpVersion()),
                     ),
@@ -649,7 +649,7 @@ final class ExistingAtomicStaticCallAnalyzer
 
         if ($template_type->param_name === 'TPhpVersionId') {
             return [
-                'fn-' . strtolower((string) $method_id) => [
+                'fn-' . $method_id->method_name => [
                     new TemplateBound(
                         Type::getInt(
                             false,

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<files psalm-version="dev-master@292ed063233e29d59d0bde61bb6daedee94d55bb">
+<files psalm-version="dev-master@24735a0157f1e71d45e4ec3e406d89ee413a114f">
   <file src="examples/TemplateChecker.php">
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$comment_block->tags['variablesfrom'][0]]]></code>
@@ -16,6 +16,9 @@
     <PossiblyNullArgument>
       <code>$deprecated_element_xml</code>
     </PossiblyNullArgument>
+    <PossiblyNullReference>
+      <code>addAttribute</code>
+    </PossiblyNullReference>
     <PropertyTypeCoercion>
       <code>$this</code>
     </PropertyTypeCoercion>

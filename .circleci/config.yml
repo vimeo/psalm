@@ -47,7 +47,8 @@ jobs:
           command: bin/build-phar.sh
       - run:
           name: Smoke test Phar file
-          command: build/psalm.phar --version
+          # Change the root away from the project root to avoid conflicts with the Composer autoloader
+          command: build/psalm.phar --version --root build
       - store_artifacts:
           path: build/psalm.phar
       - run:
@@ -63,7 +64,7 @@ jobs:
     # The resource_class feature allows configuring CPU and RAM resources for each job. Different resource classes are available for different executors. https://circleci.com/docs/2.0/configuration-reference/#resourceclass
     resource_class: large
   test-with-real-projects:
-    executor: php-81
+    executor: php-82
     steps:
       - checkout # used here just for the side effect of loading the github public ssh key so we can clone other stuff
       - attach_workspace:
