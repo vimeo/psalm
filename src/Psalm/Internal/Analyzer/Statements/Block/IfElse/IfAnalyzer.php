@@ -34,14 +34,11 @@ use function array_key_exists;
 use function array_keys;
 use function array_merge;
 use function array_reduce;
-use function array_unique;
 use function count;
 use function in_array;
 use function preg_match;
 use function preg_quote;
 use function spl_object_id;
-use function strpos;
-use function substr;
 
 /**
  * @internal

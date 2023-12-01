@@ -67,7 +67,7 @@ class ArrayKeyExistsTest extends TestCase
                         }
                         /** @psalm-check-type-exact $ddata = array<array-key, mixed> */
                     }
-                '
+                ',
             ],
             'arrayKeyExistsTwice' => [
                 'code' => '<?php
