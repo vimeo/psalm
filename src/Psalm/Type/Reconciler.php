@@ -1124,7 +1124,10 @@ class Reconciler
                 return;
             }
         } else {
-            $array_key_offsets []= $array_key[0] === '\'' || $array_key[0] === '"' ? substr($array_key, 1, -1) : $array_key;
+            $array_key_offsets []= $array_key[0] === '\'' || $array_key[0] === '"'
+                ? substr($array_key, 1, -1)
+                : $array_key
+            ;
         }
 
         $base_key = implode($key_parts);
