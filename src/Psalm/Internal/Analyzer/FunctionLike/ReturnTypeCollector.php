@@ -42,6 +42,7 @@ final class ReturnTypeCollector
         array &$yield_types,
         bool $collapse_types = false,
     ): array {
+        $potential_void = true;
         $return_types = [];
 
         foreach ($stmts as $stmt) {
@@ -67,7 +68,7 @@ final class ReturnTypeCollector
                 } else {
                     $return_types[] = Type::getMixed();
                 }
-
+                $potential_void = false;
                 break;
             }
 
@@ -79,14 +80,14 @@ final class ReturnTypeCollector
 
             if ($stmt instanceof PhpParser\Node\Stmt\Throw_) {
                 $return_types[] = Type::getNever();
-
+                $potential_void = false;
                 break;
             }
 
             if ($stmt instanceof PhpParser\Node\Stmt\Expression) {
                 if ($stmt->expr instanceof PhpParser\Node\Expr\Exit_) {
                     $return_types[] = Type::getNever();
-
+                    $potential_void = false;
                     break;
                 }
 
@@ -97,7 +98,7 @@ final class ReturnTypeCollector
                     $stmt_type = $nodes->getType($stmt->expr);
                     if ($stmt_type && ($stmt_type->isNever() || $stmt_type->explicit_never)) {
                         $return_types[] = Type::getNever();
-
+                        $potential_void = false;
                         break;
                     }
                 }
@@ -115,39 +116,54 @@ final class ReturnTypeCollector
                 }
 
                 $yield_types = array_merge($yield_types, self::getYieldTypeFromExpression($stmt->expr, $nodes));
+
+                $potential_void = false;
             } elseif ($stmt instanceof PhpParser\Node\Stmt\If_) {
-                $return_types = [
-                    ...$return_types,
-                    ...self::getReturnTypes(
-                        $codebase,
-                        $nodes,
-                        $stmt->stmts,
-                        $yield_types,
-                    ),
-                ];
+                $all_branches_return = true;
+
+                $if_block_return_types = self::getReturnTypes(
+                    $codebase,
+                    $nodes,
+                    $stmt->stmts,
+                    $yield_types,
+                );
+                if ($if_block_return_types === []) {
+                    $all_branches_return = false;
+                }
+
+                $return_types = [...$return_types, ...$if_block_return_types];
 
                 foreach ($stmt->elseifs as $elseif) {
-                    $return_types = [
-                        ...$return_types,
-                        ...self::getReturnTypes(
-                            $codebase,
-                            $nodes,
-                            $elseif->stmts,
-                            $yield_types,
-                        ),
-                    ];
+                    $elseif_block_return_types = self::getReturnTypes(
+                        $codebase,
+                        $nodes,
+                        $elseif->stmts,
+                        $yield_types,
+                    );
+                    if ($elseif_block_return_types === []) {
+                        $all_branches_return = false;
+                    }
+                    $return_types = [...$return_types, ...$elseif_block_return_types];
                 }
 
                 if ($stmt->else) {
-                    $return_types = [
-                        ...$return_types,
-                        ...self::getReturnTypes(
-                            $codebase,
-                            $nodes,
-                            $stmt->else->stmts,
-                            $yield_types,
-                        ),
-                    ];
+                    $else_block_return_types = self::getReturnTypes(
+                        $codebase,
+                        $nodes,
+                        $stmt->else->stmts,
+                        $yield_types,
+                    );
+                    if ($else_block_return_types === []) {
+                        $all_branches_return = false;
+                    }
+                    $return_types = [...$return_types, ...$else_block_return_types];
+                } else {
+                    $all_branches_return = false;
+                }
+
+                if ($all_branches_return) {
+                    $potential_void = false;
+                    break;
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\TryCatch) {
                 $return_types = [
@@ -183,6 +199,8 @@ final class ReturnTypeCollector
                         ),
                     ];
                 }
+                // TODO: actually check if all branches return
+                $potential_void = false;
             } elseif ($stmt instanceof PhpParser\Node\Stmt\For_) {
                 $return_types = [
                     ...$return_types,
@@ -193,6 +211,7 @@ final class ReturnTypeCollector
                         $yield_types,
                     ),
                 ];
+                $potential_void = false;
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Foreach_) {
                 $return_types = [
                     ...$return_types,
@@ -203,6 +222,7 @@ final class ReturnTypeCollector
                         $yield_types,
                     ),
                 ];
+                $potential_void = false;
             } elseif ($stmt instanceof PhpParser\Node\Stmt\While_) {
                 $yield_types = array_merge($yield_types, self::getYieldTypeFromExpression($stmt->cond, $nodes));
                 $return_types = [
@@ -214,6 +234,7 @@ final class ReturnTypeCollector
                         $yield_types,
                     ),
                 ];
+                $potential_void = false;
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Do_) {
                 $return_types = [
                     ...$return_types,
@@ -224,6 +245,7 @@ final class ReturnTypeCollector
                         $yield_types,
                     ),
                 ];
+                $potential_void = false;
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Switch_) {
                 foreach ($stmt->cases as $case) {
                     $return_types = [
@@ -236,6 +258,8 @@ final class ReturnTypeCollector
                         ),
                     ];
                 }
+                // TODO: actually check if all branches return
+                $potential_void = false;
             }
         }
 
@@ -244,6 +268,9 @@ final class ReturnTypeCollector
             // if it's a generator, boil everything down to a single generator return type
             if ($yield_types) {
                 $yield_types = self::processYieldTypes($codebase, $return_types, $yield_types);
+            }
+            if ($potential_void) {
+                $return_types[] = Type::getVoid();
             }
         }
 

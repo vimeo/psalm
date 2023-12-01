@@ -37,7 +37,10 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                 'input' => '<?php
                     function foo() { }',
                 'output' => '<?php
-                    function foo(): void { }',
+                    /**
+                     * @return void
+                     */
+                    function foo() { }',
                 'php_version' => '7.1',
                 'issues_to_fix' => ['MissingReturnType'],
                 'safe_types' => true,
@@ -572,8 +575,14 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                     function foo(array $a = array()) {}
                     function bar(array $a = array() )  {}',
                 'output' => '<?php
-                    function foo(array $a = array()): void {}
-                    function bar(array $a = array() ): void  {}',
+                    /**
+                     * @return void
+                     */
+                    function foo(array $a = array()) {}
+                    /**
+                     * @return void
+                     */
+                    function bar(array $a = array() )  {}',
                 'php_version' => '7.1',
                 'issues_to_fix' => ['MissingReturnType'],
                 'safe_types' => false,
@@ -635,11 +644,17 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                     }',
                 'output' => '<?php
                     class A {
-                        private function foo(): void {}
+                        /**
+                         * @return void
+                         */
+                        private function foo() {}
                     }
 
                     class B extends A {
-                        private function foo(): void {}
+                        /**
+                         * @return void
+                         */
+                        private function foo() {}
                     }',
                 'php_version' => '7.1',
                 'issues_to_fix' => ['MissingReturnType'],
@@ -1099,8 +1114,11 @@ class MissingReturnTypeTest extends FileManipulationTestCase
 
                     class A
                     {
+                        /**
+                         * @return void
+                         */
                         #[Foo()]
-                        public function bar(): void
+                        public function bar()
                         {
                         }
                     }

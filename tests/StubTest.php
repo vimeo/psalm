@@ -328,32 +328,27 @@ class StubTest extends TestCase
 
                         /**
                          * @return mixed
-                         * @psalm-suppress InvalidReturnType
                          */
                         public function create(string $s) {}
 
                         /**
                          * @return mixed
-                         * @psalm-suppress InvalidReturnType
                          */
                         public function create2(string $s) {}
 
                         /**
                          * @return mixed
-                         * @psalm-suppress InvalidReturnType
                          */
                         public function create3(string $s) {}
 
                         /**
                          * @param mixed $s
                          * @return mixed
-                         * @psalm-suppress InvalidReturnType
                          */
                         public function foo($s) {}
 
                         /**
                          * @return mixed
-                         * @psalm-suppress InvalidReturnType
                          */
                         public function bar(array $a) {}
                     }
@@ -361,26 +356,22 @@ class StubTest extends TestCase
                 namespace {
                     /**
                      * @return mixed
-                     * @psalm-suppress InvalidReturnType
                      */
                     function create(string $s) {}
 
                     /**
                      * @return mixed
-                     * @psalm-suppress InvalidReturnType
                      */
                     function create2(string $s) {}
 
                     /**
                      * @param mixed $s
                      * @return mixed
-                     * @psalm-suppress InvalidReturnType
                      */
                     function foo($s) {}
 
                     /**
                      * @return mixed
-                     * @psalm-suppress InvalidReturnType
                      */
                     function bar(array $a) {}
 

@@ -407,10 +407,7 @@ class ReturnTypeManipulationTest extends FileManipulationTestCase
                     }
 
                     class B extends A {
-                        /**
-                         * @return void
-                         */
-                        protected function foo() {}
+                        protected function foo(): void {}
                     }',
                 'php_version' => '7.3',
                 'issues_to_fix' => ['InvalidReturnType'],

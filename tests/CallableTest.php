@@ -2502,6 +2502,26 @@ class CallableTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'GH-10433: implicit void bug' => [
+                'code' => <<<'PHP'
+                    <?php
+
+                    /**
+                     * @param \Closure():bool $bar
+                     */
+                    function foo(\Closure $bar): void {
+                        $bar();
+                    }
+
+                    // Wrong: "true|void" is not covariant with "bool"
+                    foo(function () {
+                        if (\random_int(0, 1)) {
+                            return true;
+                        }
+                    });
+                    PHP,
+                'error_message' => 'InvalidArgument',
+            ],
         ];
     }
 }
