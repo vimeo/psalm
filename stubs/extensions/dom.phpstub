@@ -975,7 +975,7 @@ class DOMXPath
     public function evaluate(string $expression, ?DOMNode $contextNode = null, bool $registerNodeNS = true): mixed {}
 
     /**
-     * @return DOMNodeList<DOMNode>|false
+     * @return DOMNodeList<DOMNode|DOMNameSpaceNode>|false
      */
     public function query(string $expression, ?DOMNode $contextNode = null, bool $registerNodeNS = true): mixed {}
 
