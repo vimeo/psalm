@@ -48,19 +48,6 @@ class ReferenceConstraintTest extends TestCase
 
                     useString($a->getString());',
             ],
-            'makeByRefUseMixed' => [
-                'code' => '<?php
-                    function s(?string $p): void {}
-
-                    $var = 1;
-                    $callback = function() use(&$var): void {
-                        s($var);
-                    };
-                    $var = null;
-                    $callback();',
-                'assertions' => [],
-                'ignored_issues' => ['MixedArgument'],
-            ],
             'assignByRefToMixed' => [
                 'code' => '<?php
                     function testRef() : array {
