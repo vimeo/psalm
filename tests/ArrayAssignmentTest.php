@@ -34,6 +34,27 @@ class ArrayAssignmentTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'assignUnionOfLiterals' => [
+                'code' => '<?php
+                    $result = [];
+                    
+                    foreach (["a", "b"] as $k) {
+                        $result[$k] = true;
+                    }
+                    
+                    $resultOpt = [];
+                    
+                    foreach (["a", "b"] as $k) {
+                        if (random_int(0, 1)) {
+                            continue;
+                        }
+                        $resultOpt[$k] = true;
+                    }',
+                'assertions' => [
+                    '$result===' => 'array{a: true, b: true}',
+                    '$resultOpt===' => 'array{a?: true, b?: true}',
+                ],
+            ],
             'genericArrayCreationWithSingleIntValue' => [
                 'code' => '<?php
                     $out = [];
@@ -192,7 +213,7 @@ class ArrayAssignmentTest extends TestCase
                 'assertions' => [
                     '$foo' => 'array{0: string, 1: string, 2: string}',
                     '$bar' => 'list{int, int, int}',
-                    '$bat' => 'non-empty-array<string, int>',
+                    '$bat' => 'array{a: int, b: int, c: int}',
                 ],
             ],
             'implicitStringArrayCreation' => [
@@ -979,6 +1000,7 @@ class ArrayAssignmentTest extends TestCase
                     $a = [];
 
                     foreach (["one", "two", "three"] as $key) {
+                        $a[$key] ??= 0;
                         $a[$key] += rand(0, 10);
                     }
 

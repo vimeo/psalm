@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<files psalm-version="5.x-dev@18a6c0b6e9aade82a2f3cc36e3a644ba70eaf539">
+<files psalm-version="5.x-dev@5acde045f126440ded206b406cf37b649ede84fc">
   <file src="examples/TemplateChecker.php">
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$comment_block->tags['variablesfrom'][0]]]></code>
@@ -216,19 +216,26 @@
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/UnusedAssignmentRemover.php">
+    <PossiblyUndefinedArrayOffset>
+      <code>$token_list[$iter]</code>
+    </PossiblyUndefinedArrayOffset>
     <PossiblyUndefinedIntArrayOffset>
       <code>$token_list[$iter]</code>
       <code>$token_list[$iter]</code>
       <code>$token_list[$iter]</code>
       <code>$token_list[$iter]</code>
       <code>$token_list[0]</code>
-      <code>$token_list[1]</code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Analyzer/StatementsAnalyzer.php">
     <PossiblyUndefinedArrayOffset>
       <code><![CDATA[$stmt->expr->getArgs()[0]]]></code>
     </PossiblyUndefinedArrayOffset>
+  </file>
+  <file src="src/Psalm/Internal/Cli/Psalm.php">
+    <PossiblyInvalidArgument>
+      <code><![CDATA[$options['f'] ?? null]]></code>
+    </PossiblyInvalidArgument>
   </file>
   <file src="src/Psalm/Internal/Cli/Refactor.php">
     <PossiblyUndefinedIntArrayOffset>
