@@ -850,7 +850,6 @@ class UnusedVariableTest extends TestCase
                     /** @psalm-suppress UnusedParam */
                     function foo(callable $c) : void {}
                     $listener = function () use (&$listener) : void {
-                        /** @psalm-suppress MixedArgument */
                         foo($listener);
                     };
                     foo($listener);',
@@ -874,7 +873,6 @@ class UnusedVariableTest extends TestCase
                         $i = 1;
                     };
                     $a();
-                    /** @psalm-suppress MixedArgument */
                     echo $i;',
             ],
             'regularVariableClosureUseInAddition' => [
@@ -2234,10 +2232,6 @@ class UnusedVariableTest extends TestCase
             ],
             'allowUseByRef' => [
                 'code' => '<?php
-                    /**
-                     * @psalm-suppress MixedReturnStatement
-                     * @psalm-suppress MixedInferredReturnType
-                     */
                     function foo(array $data) : array {
                         $output = [];
 
@@ -2257,7 +2251,6 @@ class UnusedVariableTest extends TestCase
 
                     $a = function() use (&$output_rows) : void {
                         $output_row = 5;
-                        /** @psalm-suppress MixedArrayAssignment */
                         $output_rows[] = $output_row;
                     };
                     $a();
