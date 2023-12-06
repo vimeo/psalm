@@ -73,6 +73,20 @@ class ArrayAssignmentTest extends TestCase
                     '$result===' => 'array{a::class: true, b::class: true}',
                 ],
             ],
+            'assignUnionOfLiteralsClassKeys2' => [
+                'code' => '<?php
+                    class a {}
+                    class b {}
+
+                    $result = ["c" => true];
+
+                    foreach ([a::class, b::class] as $k) {
+                        $result[$k] = true;
+                    }',
+                'assertions' => [
+                    '$result===' => 'array{a::class: true, b::class: true, c: true}',
+                ],
+            ],
             'genericArrayCreationWithSingleIntValue' => [
                 'code' => '<?php
                     $out = [];
