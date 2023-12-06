@@ -706,6 +706,12 @@ final class TypeCombiner
                     );
                 }
 
+                unset($missing_entries[$candidate_property_name]);
+
+                if (is_int($candidate_property_name)) {
+                    continue;
+                }
+
                 if (isset($combination->objectlike_class_string_keys[$candidate_property_name])) {
                     $combination->objectlike_class_string_keys[$candidate_property_name] =
                         $combination->objectlike_class_string_keys[$candidate_property_name]
@@ -714,8 +720,6 @@ final class TypeCombiner
                     $combination->objectlike_class_string_keys[$candidate_property_name] =
                         ($class_strings[$candidate_property_name] ?? false);
                 }
-
-                unset($missing_entries[$candidate_property_name]);
             }
 
             if ($type->fallback_params) {
