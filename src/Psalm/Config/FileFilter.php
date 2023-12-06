@@ -247,7 +247,7 @@ class FileFilter
             foreach ($config['file'] as $file) {
                 $file_path = (string) ($file['name'] ?? '');
 
-                if ($file_path[0] === '/' && DIRECTORY_SEPARATOR === '/') {
+                if (Path::isAbsolute($file_path)) {
                     /** @var non-empty-string */
                     $prospective_file_path = $file_path;
                 } else {
