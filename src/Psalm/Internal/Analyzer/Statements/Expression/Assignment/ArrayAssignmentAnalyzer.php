@@ -351,7 +351,9 @@ final class ArrayAssignmentAnalyzer
         if (!$has_matching_objectlike_property && !$has_matching_string) {
             $properties = [];
             $classStrings = [];
-            $current_type = $current_type->setPossiblyUndefined(count($key_values) > 1);
+            $current_type = $current_type->setPossiblyUndefined(
+                $current_type->possibly_undefined || count($key_values) > 1,
+            );
             foreach ($key_values as $key_value) {
                 $properties[$key_value->value] = $current_type;
                 if ($key_value instanceof TLiteralClassString) {

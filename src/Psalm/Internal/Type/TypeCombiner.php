@@ -667,6 +667,7 @@ final class TypeCombiner
 
             $has_defined_keys = false;
 
+            $class_strings = $type->class_strings ?? [];
             foreach ($type->properties as $candidate_property_name => $candidate_property_type) {
                 $value_type = $combination->objectlike_entries[$candidate_property_name] ?? null;
 
@@ -703,6 +704,15 @@ final class TypeCombiner
                         $codebase,
                         $overwrite_empty_array,
                     );
+                }
+
+                if (isset($combination->objectlike_class_string_keys[$candidate_property_name])) {
+                    $combination->objectlike_class_string_keys[$candidate_property_name] =
+                        $combination->objectlike_class_string_keys[$candidate_property_name]
+                        && ($class_strings[$candidate_property_name] ?? false);
+                } else {
+                    $combination->objectlike_class_string_keys[$candidate_property_name] =
+                        ($class_strings[$candidate_property_name] ?? false);
                 }
 
                 unset($missing_entries[$candidate_property_name]);
@@ -1421,7 +1431,7 @@ final class TypeCombiner
                 } else {
                     $objectlike = new TKeyedArray(
                         $combination->objectlike_entries,
-                        null,
+                        $combination->objectlike_class_string_keys,
                         $sealed || $fallback_key_type === null || $fallback_value_type === null
                             ? null
                             : [$fallback_key_type, $fallback_value_type],
