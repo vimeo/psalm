@@ -1431,7 +1431,7 @@ final class TypeCombiner
                 } else {
                     $objectlike = new TKeyedArray(
                         $combination->objectlike_entries,
-                        $combination->objectlike_class_string_keys,
+                        array_filter($combination->objectlike_class_string_keys),
                         $sealed || $fallback_key_type === null || $fallback_value_type === null
                             ? null
                             : [$fallback_key_type, $fallback_value_type],
