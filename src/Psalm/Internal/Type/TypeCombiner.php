@@ -1080,6 +1080,9 @@ final class TypeCombiner
 
                         if ($has_only_numeric_strings) {
                             $combination->value_types['string'] = $type;
+                        } elseif (count($combination->strings) === 1 && !$has_only_non_empty_strings) {
+                            $combination->value_types['string'] = $type;
+                            return;
                         } elseif ($has_only_non_empty_strings) {
                             $combination->value_types['string'] = new TNonEmptyString();
                         } else {
