@@ -338,7 +338,12 @@ class Reconciler
             if ($type_changed || $failed_reconciliation) {
                 $changed_var_ids[$key] = true;
 
-                if (substr($key, -1) === ']' && !$has_inverted_isset && !$has_inverted_key_exists && !$has_empty && !$is_equality) {
+                if (substr($key, -1) === ']'
+                    && !$has_inverted_isset
+                    && !$has_inverted_key_exists
+                    && !$has_empty
+                    && !$is_equality
+                ) {
                     self::adjustTKeyedArrayType(
                         $key_parts,
                         $existing_types,
@@ -728,11 +733,17 @@ class Reconciler
 
                             $new_base_type_candidate = $existing_key_type_part->type_params[1];
 
-                            if ($new_base_type_candidate->isMixed() && !$has_isset && !$has_inverted_isset && !$has_inverted_key_exists) {
+                            if ($new_base_type_candidate->isMixed()
+                                && !$has_isset
+                                && !$has_inverted_isset
+                                && !$has_inverted_key_exists
+                            ) {
                                 return $new_base_type_candidate;
                             }
 
-                            if (($has_isset || $has_inverted_isset || $has_inverted_key_exists) && isset($new_assertions[$new_base_key])) {
+                            if (($has_isset || $has_inverted_isset || $has_inverted_key_exists)
+                                && isset($new_assertions[$new_base_key])
+                            ) {
                                 if ($has_inverted_isset && $new_base_key === $key) {
                                     $new_base_type_candidate = $new_base_type_candidate->getBuilder();
                                     $new_base_type_candidate->addType(new TNull);
