@@ -1315,7 +1315,7 @@ class Config
                 }
 
                 // we need an absolute path for checks
-                if ($path[0] !== '/' && DIRECTORY_SEPARATOR === '/') {
+                if (Path::isRelative($path)) {
                     $prospective_path = $base_dir . DIRECTORY_SEPARATOR . $path;
                 } else {
                     $prospective_path = $path;

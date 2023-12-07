@@ -20,13 +20,13 @@ use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Storage\FileStorage;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type;
+use Symfony\Component\Filesystem\Path;
 
 use function assert;
 use function defined;
 use function dirname;
 use function explode;
 use function in_array;
-use function preg_match;
 use function strpos;
 use function strtolower;
 use function substr;
@@ -316,13 +316,7 @@ final class ExpressionScanner
             $include_path = IncludeAnalyzer::resolveIncludePath($path_to_file, dirname($file_storage->file_path));
             $path_to_file = $include_path ?: $path_to_file;
 
-            if (DIRECTORY_SEPARATOR === '/') {
-                $is_path_relative = $path_to_file[0] !== DIRECTORY_SEPARATOR;
-            } else {
-                $is_path_relative = !preg_match('~^[A-Z]:\\\\~i', $path_to_file);
-            }
-
-            if ($is_path_relative) {
+            if (Path::isRelative($path_to_file)) {
                 $path_to_file = $config->base_dir . DIRECTORY_SEPARATOR . $path_to_file;
             }
         } else {
