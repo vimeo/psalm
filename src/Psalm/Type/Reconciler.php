@@ -1148,7 +1148,9 @@ class Reconciler
 
         $base_key = implode($key_parts);
 
-        $result_type = $result_type->setPossiblyUndefined(count($array_key_offsets) > 1);
+        $result_type = $result_type->setPossiblyUndefined(
+            $result_type->possibly_undefined || count($array_key_offsets) > 1,
+        );
 
         foreach ($array_key_offsets as $array_key_offset) {
             if (isset($existing_types[$base_key]) && $array_key_offset !== false) {

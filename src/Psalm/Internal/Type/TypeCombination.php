@@ -55,6 +55,9 @@ final class TypeCombination
     /** @var array<string|int, Union> */
     public array $objectlike_entries = [];
 
+    /** @var array<string, bool> */
+    public array $objectlike_class_string_keys = [];
+
     public bool $objectlike_sealed = true;
 
     public ?Union $objectlike_key_type = null;
