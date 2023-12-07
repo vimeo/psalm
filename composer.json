@@ -110,16 +110,16 @@
         "psalter"
     ],
     "scripts": {
-        "cs": "phpcs -ps",
-        "cs-fix": "phpcbf -ps",
-        "lint": "parallel-lint ./src ./tests",
+        "cs": "@php phpcs -ps",
+        "cs-fix": "@php phpcbf -ps",
+        "lint": "@php parallel-lint ./src ./tests",
         "phpunit": [
             "Composer\\Config::disableProcessTimeout",
-            "paratest --runner=WrapperRunner"
+            "@php paratest --runner=WrapperRunner"
         ],
         "phpunit-std": [
             "Composer\\Config::disableProcessTimeout",
-            "phpunit"
+            "@php phpunit"
         ],
         "verify-callmap": "@php phpunit tests/Internal/Codebase/InternalCallMapHandlerTest.php",
         "psalm": "@php ./psalm",
