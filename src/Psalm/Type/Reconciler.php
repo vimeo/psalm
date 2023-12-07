@@ -171,6 +171,7 @@ class Reconciler
             $has_negation = false;
             $has_isset = false;
             $has_inverted_isset = false;
+            $has_inverted_key_exists = false;
             $has_truthy_or_falsy_or_empty = false;
             $has_empty = false;
             $has_count_check = false;
@@ -201,7 +202,9 @@ class Reconciler
                         && $new_type_part_part instanceof IsIdentical;
 
                     $has_inverted_isset = $has_inverted_isset
-                        || $new_type_part_part instanceof IsNotIsset
+                        || $new_type_part_part instanceof IsNotIsset;
+
+                    $has_inverted_key_exists = $has_inverted_key_exists
                         || $new_type_part_part instanceof ArrayKeyDoesNotExist;
 
                     $has_count_check = $has_count_check
@@ -221,6 +224,7 @@ class Reconciler
                 $code_location,
                 $has_isset,
                 $has_inverted_isset,
+                $has_inverted_key_exists,
                 $has_empty,
                 $inside_loop,
                 $has_object_array_access,
@@ -334,7 +338,12 @@ class Reconciler
             if ($type_changed || $failed_reconciliation) {
                 $changed_var_ids[$key] = true;
 
-                if (substr($key, -1) === ']' && !$has_inverted_isset && !$has_empty && !$is_equality) {
+                if (substr($key, -1) === ']'
+                    && !$has_inverted_isset
+                    && !$has_inverted_key_exists
+                    && !$has_empty
+                    && !$is_equality
+                ) {
                     self::adjustTKeyedArrayType(
                         $key_parts,
                         $existing_types,
@@ -648,6 +657,7 @@ class Reconciler
         ?CodeLocation $code_location,
         bool $has_isset,
         bool $has_inverted_isset,
+        bool $has_inverted_key_exists,
         bool $has_empty,
         bool $inside_loop,
         bool &$has_object_array_access
@@ -723,11 +733,17 @@ class Reconciler
 
                             $new_base_type_candidate = $existing_key_type_part->type_params[1];
 
-                            if ($new_base_type_candidate->isMixed() && !$has_isset && !$has_inverted_isset) {
+                            if ($new_base_type_candidate->isMixed()
+                                && !$has_isset
+                                && !$has_inverted_isset
+                                && !$has_inverted_key_exists
+                            ) {
                                 return $new_base_type_candidate;
                             }
 
-                            if (($has_isset || $has_inverted_isset) && isset($new_assertions[$new_base_key])) {
+                            if (($has_isset || $has_inverted_isset || $has_inverted_key_exists)
+                                && isset($new_assertions[$new_base_key])
+                            ) {
                                 if ($has_inverted_isset && $new_base_key === $key) {
                                     $new_base_type_candidate = $new_base_type_candidate->getBuilder();
                                     $new_base_type_candidate->addType(new TNull);
@@ -756,7 +772,7 @@ class Reconciler
                         } elseif ($existing_key_type_part instanceof TString) {
                             $new_base_type_candidate = Type::getString();
                         } elseif ($existing_key_type_part instanceof TNamedObject
-                            && ($has_isset || $has_inverted_isset)
+                            && ($has_isset || $has_inverted_isset || $has_inverted_key_exists)
                         ) {
                             $has_object_array_access = true;
 
