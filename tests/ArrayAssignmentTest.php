@@ -1280,6 +1280,29 @@ class ArrayAssignmentTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'constantArraySpreadWithString' => [
+                'code' => '<?php
+                    class BaseClass {
+                        public const KEYS = [
+                            "a" => "a",
+                            "b" => "b",
+                        ];
+                    }
+
+                    class ChildClass extends BaseClass {
+                        public const A = [
+                            ...parent::KEYS,
+                            "c" => "c",
+                        ];
+                    }
+
+                    $a = ChildClass::A;',
+                'assertions' => [
+                    '$a===' => "array{a: 'a', b: 'b', c: 'c'}",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'listPropertyAssignmentAfterIsset' => [
                 'code' => '<?php
                     class Collection {
