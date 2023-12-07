@@ -415,7 +415,7 @@ class TKeyedArray extends Atomic
 
         $value_type = $value_type->setPossiblyUndefined(false);
 
-        if ($allow_non_empty && ($has_defined_keys || $this->fallback_params !== null)) {
+        if ($allow_non_empty && $has_defined_keys) {
             return new TNonEmptyArray([$key_type, $value_type]);
         }
         return new TArray([$key_type, $value_type]);
