@@ -492,6 +492,16 @@ final class WeakMap implements ArrayAccess, Countable, IteratorAggregate, Traver
      * @return void
      */
     public function offsetUnset($offset) {}
+
+    /**
+     * Create a new iterator from an ArrayObject instance
+     * @link http://php.net/manual/en/arrayobject.getiterator.php
+     *
+     * @return \Traversable<TKey, TValue> An iterator from an ArrayObject.
+     *
+     * @since 5.0.0
+     */
+    public function getIterator() { }
 }
 
 class mysqli
