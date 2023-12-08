@@ -497,7 +497,7 @@ final class WeakMap implements ArrayAccess, Countable, IteratorAggregate, Traver
      * Create a new iterator from an ArrayObject instance
      * @link http://php.net/manual/en/arrayobject.getiterator.php
      *
-     * @return \Traversable<TKey, TValue> An iterator from an ArrayObject.
+     * @return \Traversable<TKey, TVal> An iterator from an ArrayObject.
      *
      * @since 5.0.0
      */
