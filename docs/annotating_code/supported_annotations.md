@@ -263,9 +263,9 @@ is not within the given namespace.
 <?php
 namespace A\B {
     /**
-    * @internal
-    * @psalm-internal A\B
-    */
+     * @internal
+     * @psalm-internal A\B
+     */
     class Foo { }
 }
 
