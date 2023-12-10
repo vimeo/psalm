@@ -180,6 +180,7 @@ final class ClassLikes
                 $this->existing_classlikes_lc[$predefined_class_lc] = true;
                 $this->existing_classes_lc[$predefined_class_lc] = true;
                 $this->existing_classes[$predefined_class] = true;
+                $this->classlike_storage_provider->create($predefined_class);
             }
         }
 
@@ -196,6 +197,7 @@ final class ClassLikes
                 $this->existing_classlikes_lc[$predefined_interface_lc] = true;
                 $this->existing_interfaces_lc[$predefined_interface_lc] = true;
                 $this->existing_interfaces[$predefined_interface] = true;
+                $this->classlike_storage_provider->create($predefined_interface);
             }
         }
     }

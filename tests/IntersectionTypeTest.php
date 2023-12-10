@@ -134,6 +134,16 @@ final class IntersectionTypeTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
             ],
+            'GH-10414: intersection type with predefined class-like' => [
+                'code' => <<<'PHP'
+                    <?php
+                    interface A {}
+                    function b(Traversable&A $_): void {}
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
