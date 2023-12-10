@@ -284,6 +284,7 @@ final class Codebase
             $providers->file_reference_provider,
             $providers->statements_provider,
             $this->scanner,
+            $reflection,
         );
 
         $this->properties = new Properties(
@@ -1527,7 +1528,7 @@ final class Codebase
         $offset = $position->toOffset($file_contents);
 
         preg_match('/\$?\w+$/', substr($file_contents, 0, $offset), $matches);
-        
+
         return $matches[0] ?? '';
     }
 
@@ -1653,7 +1654,7 @@ final class Codebase
                                 str_replace('$', '', $property_name),
                             );
                         }
-    
+
                         foreach ($class_storage->pseudo_property_set_types as $property_name => $type) {
                             $pseudo_property_types[$property_name] = new CompletionItem(
                                 str_replace('$', '', $property_name),
@@ -1665,7 +1666,7 @@ final class Codebase
                                 str_replace('$', '', $property_name),
                             );
                         }
-    
+
                         $completion_items = [...$completion_items, ...array_values($pseudo_property_types)];
                     }
 

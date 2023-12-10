@@ -155,17 +155,16 @@ final class ClassLikes
         FileReferenceProvider $file_reference_provider,
         StatementsProvider $statements_provider,
         Scanner $scanner,
+        private readonly Reflection $reflection,
     ) {
         $this->config = $config;
         $this->classlike_storage_provider = $storage_provider;
         $this->file_reference_provider = $file_reference_provider;
         $this->statements_provider = $statements_provider;
         $this->scanner = $scanner;
-
-        $this->collectPredefinedClassLikes();
     }
 
-    private function collectPredefinedClassLikes(): void
+    public function collectPredefinedClassLikes(): void
     {
         /** @var array<int, string> */
         $predefined_classes = get_declared_classes();
@@ -180,7 +179,7 @@ final class ClassLikes
                 $this->existing_classlikes_lc[$predefined_class_lc] = true;
                 $this->existing_classes_lc[$predefined_class_lc] = true;
                 $this->existing_classes[$predefined_class] = true;
-                $this->classlike_storage_provider->create($predefined_class);
+                $this->reflection->registerClass($reflection_class);
             }
         }
 
@@ -197,7 +196,7 @@ final class ClassLikes
                 $this->existing_classlikes_lc[$predefined_interface_lc] = true;
                 $this->existing_interfaces_lc[$predefined_interface_lc] = true;
                 $this->existing_interfaces[$predefined_interface] = true;
-                $this->classlike_storage_provider->create($predefined_interface);
+                $this->reflection->registerClass($reflection_class);
             }
         }
     }

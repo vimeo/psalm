@@ -214,17 +214,16 @@ final class ProjectAnalyzer
         ?Progress $progress = null,
         ?Codebase $codebase = null,
     ) {
+        self::$instance = $this;
+
         if ($progress === null) {
             $progress = new VoidProgress();
         }
 
-        if ($codebase === null) {
-            $codebase = new Codebase(
-                $config,
-                $providers,
-                $progress,
-            );
-        }
+        $this->codebase = $codebase === null
+            ? new Codebase($config, $providers, $progress)
+            : $codebase;
+        $this->codebase->classlikes->collectPredefinedClassLikes();
 
         $this->parser_cache_provider = $providers->parser_cache_provider;
         $this->project_cache_provider = $providers->project_cache_provider;
@@ -238,7 +237,6 @@ final class ProjectAnalyzer
 
         $this->clearCacheDirectoryIfConfigOrComposerLockfileChanged();
 
-        $this->codebase = $codebase;
 
         $this->stdout_report_options = $stdout_report_options;
         $this->generated_report_options = $generated_report_options;
@@ -273,8 +271,6 @@ final class ProjectAnalyzer
         foreach ($this->config->getProjectFiles() as $file_path) {
             $this->addProjectFile($file_path);
         }
-
-        self::$instance = $this;
     }
 
     private function clearCacheDirectoryIfConfigOrComposerLockfileChanged(): void
