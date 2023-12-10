@@ -41,12 +41,9 @@ final class IfConditionalAnalyzer
         IfScope $if_scope,
         int $branch_point,
     ): IfConditionalScope {
-        $entry_clauses = [];
 
         // used when evaluating elseifs
         if ($if_scope->negated_clauses) {
-            $entry_clauses = [...$outer_context->clauses, ...$if_scope->negated_clauses];
-
             $changed_var_ids = [];
 
             if ($if_scope->negated_types) {
@@ -74,15 +71,6 @@ final class IfConditionalAnalyzer
                     $outer_context = clone $outer_context;
                     $outer_context->vars_in_scope = $vars_reconciled;
                     $outer_context->references_in_scope = $references_reconciled;
-
-                    $entry_clauses = array_values(
-                        array_filter(
-                            $entry_clauses,
-                            static fn(Clause $c): bool => count($c->possibilities) > 1
-                                || $c->wedge
-                                || !isset($changed_var_ids[array_keys($c->possibilities)[0]])
-                        ),
-                    );
                 }
             }
         }
@@ -226,7 +214,6 @@ final class IfConditionalAnalyzer
             $post_if_context,
             $cond_referenced_var_ids,
             $assigned_in_conditional_var_ids,
-            $entry_clauses,
         );
     }
 
