@@ -286,6 +286,7 @@ Level 5 and above allows a more non-verifiable code, and higher levels are even 
  - [TaintedCookie](issues/TaintedCookie.md)
  - [TaintedCustom](issues/TaintedCustom.md)
  - [TaintedEval](issues/TaintedEval.md)
+ - [TaintedExtract](issues/TaintedExtract.md)
  - [TaintedFile](issues/TaintedFile.md)
  - [TaintedHeader](issues/TaintedHeader.md)
  - [TaintedHtml](issues/TaintedHtml.md)

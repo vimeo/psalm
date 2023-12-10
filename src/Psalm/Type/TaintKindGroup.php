@@ -25,5 +25,6 @@ final class TaintKindGroup
         TaintKind::INPUT_COOKIE,
         TaintKind::INPUT_XPATH,
         TaintKind::INPUT_SLEEP,
+        TaintKind::INPUT_EXTRACT,
     ];
 }
