@@ -205,7 +205,7 @@ class TList extends Atomic
             return false;
         }
 
-        if (!$this->type_param->equals($other_type->type_param, $ensure_source_equality)) {
+        if (!$this->type_param->equals($other_type->type_param, $ensure_source_equality, false)) {
             return false;
         }
 
