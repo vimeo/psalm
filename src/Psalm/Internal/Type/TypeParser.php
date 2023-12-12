@@ -48,6 +48,7 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
@@ -85,6 +86,7 @@ use function count;
 use function defined;
 use function end;
 use function explode;
+use function filter_var;
 use function get_class;
 use function in_array;
 use function is_int;
@@ -98,6 +100,9 @@ use function strpos;
 use function strtolower;
 use function strtr;
 use function substr;
+use function trim;
+
+use const FILTER_VALIDATE_INT;
 
 /**
  * @psalm-suppress InaccessibleProperty Allowed during construction
@@ -646,6 +651,18 @@ final class TypeParser
             }
 
             foreach ($generic_params[0]->getAtomicTypes() as $key => $atomic_type) {
+                // PHP 8 values with whitespace after number are counted as numeric
+                // and filter_var treats them as such too
+                if ($atomic_type instanceof TLiteralString
+                    && trim($atomic_type->value) === $atomic_type->value
+                    && ($string_to_int = filter_var($atomic_type->value, FILTER_VALIDATE_INT)) !== false
+                ) {
+                    $builder = $generic_params[0]->getBuilder();
+                    $builder->removeType($key);
+                    $generic_params[0] = $builder->addType(new TLiteralInt($string_to_int, $from_docblock))->freeze();
+                    continue;
+                }
+
                 if ($atomic_type instanceof TInt
                     || $atomic_type instanceof TString
                     || $atomic_type instanceof TArrayKey
@@ -702,6 +719,18 @@ final class TypeParser
             }
 
             foreach ($generic_params[0]->getAtomicTypes() as $key => $atomic_type) {
+                // PHP 8 values with whitespace after number are counted as numeric
+                // and filter_var treats them as such too
+                if ($atomic_type instanceof TLiteralString
+                    && trim($atomic_type->value) === $atomic_type->value
+                    && ($string_to_int = filter_var($atomic_type->value, FILTER_VALIDATE_INT)) !== false
+                ) {
+                    $builder = $generic_params[0]->getBuilder();
+                    $builder->removeType($key);
+                    $generic_params[0] = $builder->addType(new TLiteralInt($string_to_int, $from_docblock))->freeze();
+                    continue;
+                }
+
                 if ($atomic_type instanceof TInt
                     || $atomic_type instanceof TString
                     || $atomic_type instanceof TArrayKey
