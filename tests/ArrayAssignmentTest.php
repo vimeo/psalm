@@ -37,13 +37,13 @@ class ArrayAssignmentTest extends TestCase
             'assignUnionOfLiterals' => [
                 'code' => '<?php
                     $result = [];
-                    
+
                     foreach (["a", "b"] as $k) {
                         $result[$k] = true;
                     }
-                    
+
                     $resultOpt = [];
-                    
+
                     foreach (["a", "b"] as $k) {
                         if (random_int(0, 1)) {
                             continue;
@@ -2492,7 +2492,8 @@ class ArrayAssignmentTest extends TestCase
                         return $weird_array[$offset];
                     }
                 }',
-                'error_message' => 'InvalidArrayOffset',
+                'error_message' => 'MixedArrayAccess',
+                'ignored_issues' => ['InvalidDocblock'],
             ],
             'unpackTypedIterableWithStringKeysIntoArray' => [
                 'code' => '<?php
