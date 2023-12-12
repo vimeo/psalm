@@ -658,11 +658,11 @@ class TKeyedArray extends Atomic
         }
 
         if ($this->fallback_params !== null && $other_type->fallback_params !== null) {
-            if (!$this->fallback_params[0]->equals($other_type->fallback_params[0])) {
+            if (!$this->fallback_params[0]->equals($other_type->fallback_params[0], false, false)) {
                 return false;
             }
 
-            if (!$this->fallback_params[1]->equals($other_type->fallback_params[1])) {
+            if (!$this->fallback_params[1]->equals($other_type->fallback_params[1], false, false)) {
                 return false;
             }
         }
@@ -672,7 +672,7 @@ class TKeyedArray extends Atomic
                 return false;
             }
 
-            if (!$property_type->equals($other_type->properties[$property_name], $ensure_source_equality)) {
+            if (!$property_type->equals($other_type->properties[$property_name], $ensure_source_equality, false)) {
                 return false;
             }
         }
