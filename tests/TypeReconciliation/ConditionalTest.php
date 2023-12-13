@@ -608,6 +608,7 @@ class ConditionalTest extends TestCase
                     /**
                      * @param int|string $param
                      * @param float|string $param2
+                     * @return void
                      */
                     function foo($param, $param2) {
                         if ($param === $param2) {
@@ -616,7 +617,7 @@ class ConditionalTest extends TestCase
                         }
                     }
 
-                    function takesString(string $arg) {}',
+                    function takesString(string $arg): void {}',
             ],
             'reconcileNullableStringWithWeakEquality' => [
                 'code' => '<?php
