@@ -1302,7 +1302,17 @@ class Config
         // any paths passed via CLI should be added to the projectFiles
         // as they're getting analyzed like if they are part of the project
         // ProjectAnalyzer::getInstance()->check_paths_files is not populated at this point in time
-        $paths_to_check = CliUtils::getPathsToCheck(null);
+
+        $paths_to_check = null;
+        
+        global $argv;
+
+        // Hack for Symfonys own argv resolution.
+        // @see https://github.com/vimeo/psalm/issues/10465
+        if (!isset($argv[0]) || basename($argv[0]) !== 'psalm-plugin') {
+            $paths_to_check = CliUtils::getPathsToCheck(null);
+        }
+        
         if ($paths_to_check !== null) {
             $paths_to_add_to_project_files = array();
             foreach ($paths_to_check as $path) {
