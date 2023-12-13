@@ -2358,6 +2358,17 @@ class FunctionCallTest extends TestCase
                     fooFoo("string");',
                 'error_message' => 'InvalidArgument',
             ],
+            'invalidArgumentFalseTrueExpected' => [
+                'code' => '<?php
+                    /**
+                     * @param true|string $arg
+                     * @return void
+                     */
+                    function foo($arg) {}
+
+                    foo(false);',
+                'error_message' => 'InvalidArgument',
+            ],
             'builtinFunctioninvalidArgumentWithWeakTypes' => [
                 'code' => '<?php
                     $s = substr(5, 4);',
