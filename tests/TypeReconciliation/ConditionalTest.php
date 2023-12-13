@@ -603,6 +603,21 @@ class ConditionalTest extends TestCase
                         }
                     }',
             ],
+            'reconcileMultipleUnionIntersection' => [
+                'code' => '<?php
+                    /**
+                     * @param int|string $param
+                     * @param float|string $param2
+                     */
+                    function foo($param, $param2) {
+                        if ($param === $param2) {
+                            takesString($param);
+                            takesString($param2);
+                        }
+                    }
+
+                    function takesString(string $arg) {}',
+            ],
             'reconcileNullableStringWithWeakEquality' => [
                 'code' => '<?php
                     function foo(?string $s) : void {

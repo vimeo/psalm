@@ -544,7 +544,7 @@ final class AssertionFinder
                 // both side of the Identical can be asserted to the intersection of both
                 $intersection_type = Type::intersectUnionTypes($var_type, $other_type, $codebase);
 
-                if ($intersection_type !== null && $intersection_type->isSingle()) {
+                if ($intersection_type !== null) {
                     $if_types = [];
 
                     $var_name_left = ExpressionIdentifier::getExtendedVarId(
