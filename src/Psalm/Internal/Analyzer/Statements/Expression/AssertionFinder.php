@@ -542,7 +542,7 @@ final class AssertionFinder
                 );
             } else {
                 // both side of the Identical can be asserted to the intersection of both
-                $intersection_type = Type::intersectUnionTypes($var_type, $other_type, $codebase);
+                $intersection_type = Type::intersectUnionTypes($var_type, $other_type, $codebase, false, false);
 
                 if ($intersection_type !== null) {
                     $if_types = [];
