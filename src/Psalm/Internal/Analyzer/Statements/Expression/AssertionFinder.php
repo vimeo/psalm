@@ -555,8 +555,13 @@ final class AssertionFinder
 
                     $var_assertion_different = $var_type->getId() !== $intersection_type->getId();
 
+                    $all_assertions = [];
+                    foreach ($intersection_type->getAtomicTypes() as $atomic_type) {
+                        $all_assertions[] = new IsIdentical($atomic_type);
+                    }
+
                     if ($var_name_left && $var_assertion_different) {
-                        $if_types[$var_name_left] = [[new IsIdentical($intersection_type->getSingleAtomic())]];
+                        $if_types[$var_name_left] = [$all_assertions];
                     }
 
                     $var_name_right = ExpressionIdentifier::getExtendedVarId(
@@ -568,7 +573,7 @@ final class AssertionFinder
                     $other_assertion_different = $other_type->getId() !== $intersection_type->getId();
 
                     if ($var_name_right && $other_assertion_different) {
-                        $if_types[$var_name_right] = [[new IsIdentical($intersection_type->getSingleAtomic())]];
+                        $if_types[$var_name_right] = [$all_assertions];
                     }
 
                     return $if_types ? [$if_types] : [];
