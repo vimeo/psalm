@@ -51,6 +51,7 @@ use function strlen;
 use function strpos;
 use function strtolower;
 use function substr;
+use function trim;
 
 /**
  * @internal
