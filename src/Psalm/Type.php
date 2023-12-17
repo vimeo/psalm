@@ -287,7 +287,7 @@ abstract class Type
         $type = $config->eventDispatcher->dispatchStringInterpreter($event);
 
         if (!$type) {
-            if (strlen($value) < $config->max_string_length) {
+            if ($value === '' || strlen($value) < $config->max_string_length) {
                 $type = new TLiteralString($value, $from_docblock);
             } else {
                 $type = new TNonEmptyString($from_docblock);
