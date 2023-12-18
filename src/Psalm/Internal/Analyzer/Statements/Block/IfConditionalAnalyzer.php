@@ -17,6 +17,7 @@ use Psalm\Issue\RedundantCondition;
 use Psalm\Issue\RedundantConditionGivenDocblockType;
 use Psalm\Issue\TypeDoesNotContainType;
 use Psalm\IssueBuffer;
+use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Reconciler;
 
 use function array_diff_key;
@@ -362,6 +363,38 @@ final class IfConditionalAnalyzer
                             'Operand of type ' . $type->getId() . ' is always truthy',
                             new CodeLocation($statements_analyzer, $stmt),
                             $type->getId() . ' falsy',
+                        ),
+                        $statements_analyzer->getSuppressedIssues(),
+                    );
+                }
+            } elseif (!($stmt instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical)
+                && !($stmt instanceof PhpParser\Node\Expr\BinaryOp\Identical)
+                && !($stmt instanceof PhpParser\Node\Expr\BooleanNot)) {
+                $has_both = false;
+                $both_types = $type->getBuilder();
+                if (count($type->getAtomicTypes()) > 1) {
+                    foreach ($both_types->getAtomicTypes() as $key => $atomic_type) {
+                        if ($atomic_type->isTruthy()
+                            || $atomic_type->isFalsy()
+                            || $atomic_type instanceof TBool) {
+                            $both_types->removeType($key);
+                            continue;
+                        }
+
+                        $has_both = true;
+                    }
+                }
+
+                if ($has_both) {
+                    $both_types = $both_types->freeze();
+                    IssueBuffer::maybeAdd(
+                        new TypeDoesNotContainType(
+                            'Operand of type ' . $type->getId() . ' contains ' .
+                            'type' . (count($both_types->getAtomicTypes()) > 1 ? 's' : '') . ' ' .
+                            $both_types->getId() . ', which can be falsy and truthy. ' .
+                            'This can cause possibly unexpected behavior. Use strict comparison instead.',
+                            new CodeLocation($statements_analyzer, $stmt),
+                            $type->getId() . ' truthy-falsy',
                         ),
                         $statements_analyzer->getSuppressedIssues(),
                     );

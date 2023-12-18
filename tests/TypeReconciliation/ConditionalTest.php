@@ -38,6 +38,32 @@ class ConditionalTest extends TestCase
                         if ($b === $a) { }
                     }',
             ],
+            'nonStrictConditionTruthyFalsyNoOverlap' => [
+                'code' => '<?php
+                    /**
+					 * @param non-empty-array|null $arg
+					 * @return void
+					 */
+					function foo($arg) {
+						if ($arg) {
+						}
+
+						if (!$arg) {
+						}
+
+						if (bar($arg)) {
+						}
+
+						if (!bar($arg)) {
+						}
+					}
+
+					/**
+					 * @param mixed $arg
+					 * @return non-empty-array|null
+					 */
+					function bar($arg) {}',
+            ],
             'typeResolutionFromDocblock' => [
                 'code' => '<?php
                     class A { }
@@ -3490,6 +3516,66 @@ class ConditionalTest extends TestCase
                         echo "always";
                     }
                     ',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'nonStrictConditionTruthyFalsy' => [
+                'code' => '<?php
+                    /**
+					 * @param array|null $arg
+					 * @return void
+					 */
+					function foo($arg) {
+						if ($arg) {
+						}
+					}',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'nonStrictConditionTruthyFalsyNegated' => [
+                'code' => '<?php
+                    /**
+					 * @param array|null $arg
+					 * @return void
+					 */
+					function foo($arg) {
+						if (!$arg) {
+						}
+					}',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'nonStrictConditionTruthyFalsyFuncCall' => [
+                'code' => '<?php
+                    /**
+					 * @param array|null $arg
+					 * @return void
+					 */
+					function foo($arg) {
+						if (bar($arg)) {
+						}
+					}
+
+					/**
+					 * @param mixed $arg
+					 * @return array|null
+					 */
+					function bar($arg) {}',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'nonStrictConditionTruthyFalsyFuncCallNegated' => [
+                'code' => '<?php
+                    /**
+					 * @param array|null $arg
+					 * @return void
+					 */
+					function foo($arg) {
+						if (!bar($arg)) {
+						}
+					}
+
+					/**
+					 * @param mixed $arg
+					 * @return array|null
+					 */
+					function bar($arg) {}',
                 'error_message' => 'TypeDoesNotContainType',
             ],
             'redundantConditionForNonEmptyString' => [
