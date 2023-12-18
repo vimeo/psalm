@@ -466,7 +466,7 @@ final class Functions
             null,
         );
 
-        if (!$function_callable->params
+        if (!isset($function_callable->params)
             || ($args !== null && count($args) === 0)
             || ($function_callable->return_type && $function_callable->return_type->isVoid())
         ) {
