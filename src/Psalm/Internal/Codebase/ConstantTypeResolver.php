@@ -218,8 +218,8 @@ final class ConstantTypeResolver
                         return new TArray([Type::getArrayKey(), Type::getMixed()]);
                     }
 
-                    foreach ($spread_array->properties as $spread_array_type) {
-                        $properties[$auto_key++] = $spread_array_type;
+                    foreach ($spread_array->properties as $k => $spread_array_type) {
+                        $properties[is_string($k) ? $k : $auto_key++] = $spread_array_type;
                     }
                     continue;
                 }

@@ -663,6 +663,7 @@ final class TypeCombiner
 
             $has_defined_keys = false;
 
+            $class_strings = $type->class_strings ?? [];
             foreach ($type->properties as $candidate_property_name => $candidate_property_type) {
                 $value_type = $combination->objectlike_entries[$candidate_property_name] ?? null;
 
@@ -702,6 +703,19 @@ final class TypeCombiner
                 }
 
                 unset($missing_entries[$candidate_property_name]);
+
+                if (is_int($candidate_property_name)) {
+                    continue;
+                }
+
+                if (isset($combination->objectlike_class_string_keys[$candidate_property_name])) {
+                    $combination->objectlike_class_string_keys[$candidate_property_name] =
+                        $combination->objectlike_class_string_keys[$candidate_property_name]
+                        && ($class_strings[$candidate_property_name] ?? false);
+                } else {
+                    $combination->objectlike_class_string_keys[$candidate_property_name] =
+                        ($class_strings[$candidate_property_name] ?? false);
+                }
             }
 
             if ($type->fallback_params) {
@@ -1062,6 +1076,9 @@ final class TypeCombiner
 
                         if ($has_only_numeric_strings) {
                             $combination->value_types['string'] = $type;
+                        } elseif (count($combination->strings) === 1 && !$has_only_non_empty_strings) {
+                            $combination->value_types['string'] = $type;
+                            return;
                         } elseif ($has_only_non_empty_strings) {
                             $combination->value_types['string'] = new TNonEmptyString();
                         } else {
@@ -1416,7 +1433,7 @@ final class TypeCombiner
                 } else {
                     $objectlike = new TKeyedArray(
                         $combination->objectlike_entries,
-                        null,
+                        array_filter($combination->objectlike_class_string_keys),
                         $sealed || $fallback_key_type === null || $fallback_value_type === null
                             ? null
                             : [$fallback_key_type, $fallback_value_type],

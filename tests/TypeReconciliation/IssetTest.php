@@ -43,6 +43,50 @@ class IssetTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['MixedArrayAccess'],
             ],
+            'issetWithArrayAssignment' => [
+                'code'=> '<?php
+
+                    /**
+                     * @param array{0?: 0} $arr
+                     * @param 0 $i
+                     * @return array{0: 0|1}
+                     */
+                    function t2(array $arr, int $i): array {
+                        if (!isset($arr[$i])) {
+                            $arr[$i] = 1;
+                        }
+                        return $arr;
+                    }',
+            ],
+            'issetWithArrayAssignment2' => [
+                'code'=> '<?php
+
+                    /**
+                     * @param array{0?: 0, 1?: 0} $arr
+                     * @param 0|1 $i
+                     * @return array{0?: 0|1, 1?: 0|1}
+                     */
+                    function t2(array $arr, int $i): array {
+                        if (!isset($arr[$i])) {
+                            $arr[$i] = 1;
+                        }
+                        return $arr;
+                    }',
+            ],
+            'issetWithArrayAssignmentSubVar' => [
+                'code'=> '<?php
+
+                    /**
+                     * @param array{0?: 0, v: 0} $arr
+                     * @return array{0: 0|1, v: 0}
+                     */
+                    function t2(array $arr): array {
+                        if (!isset($arr[$arr["v"]])) {
+                            $arr[$arr["v"]] = 1;
+                        }
+                        return $arr;
+                    }',
+            ],
             'isset' => [
                 'code' => '<?php
                     $a = isset($b) ? $b : null;',

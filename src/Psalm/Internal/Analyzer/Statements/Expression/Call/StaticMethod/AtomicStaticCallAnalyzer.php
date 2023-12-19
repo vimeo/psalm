@@ -568,12 +568,12 @@ final class AtomicStaticCallAnalyzer
                 true,
                 $context->insideUse(),
             )) {
-                $callstatic_appearing_id = $codebase->methods->getAppearingMethodId($callstatic_id);
-                assert($callstatic_appearing_id !== null);
+                $callstatic_declaring_id = $codebase->methods->getDeclaringMethodId($callstatic_id);
+                assert($callstatic_declaring_id !== null);
                 $callstatic_pure = false;
                 $callstatic_mutation_free = false;
-                if ($codebase->methods->hasStorage($callstatic_appearing_id)) {
-                    $callstatic_storage = $codebase->methods->getStorage($callstatic_appearing_id);
+                if ($codebase->methods->hasStorage($callstatic_declaring_id)) {
+                    $callstatic_storage = $codebase->methods->getStorage($callstatic_declaring_id);
                     $callstatic_pure = $callstatic_storage->pure;
                     $callstatic_mutation_free = $callstatic_storage->mutation_free;
                 }

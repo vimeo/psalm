@@ -91,7 +91,6 @@ final class ClassStatementsDiffer extends AstDiffer
                     $start_diff = $b_start - $a_start;
                     $line_diff = $b->getLine() - $a->getLine();
 
-                    /** @psalm-suppress MixedArrayAssignment */
                     $diff_map[] = [$a_start, $a_end, $start_diff, $line_diff];
 
                     return true;
@@ -185,7 +184,6 @@ final class ClassStatementsDiffer extends AstDiffer
                 }
 
                 if (!$signature_change && !$body_change) {
-                    /** @psalm-suppress MixedArrayAssignment */
                     $diff_map[] = [$a_start, $a_end, $b_start - $a_start, $b->getLine() - $a->getLine()];
                 }
 
