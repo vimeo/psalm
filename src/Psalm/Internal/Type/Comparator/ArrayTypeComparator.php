@@ -57,7 +57,7 @@ final class ArrayTypeComparator
             && !$container_type_part->isNonEmpty()
             && !$container_type_part->isSealed()
             && $input_type_part->equals(
-                $container_type_part->getGenericArrayType($container_type_part->isNonEmpty()),
+                $container_type_part->getGenericArrayType(),
                 false,
             )
         ) {

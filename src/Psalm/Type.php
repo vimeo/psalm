@@ -716,7 +716,7 @@ abstract class Type
         ?Union $type_2,
         Codebase $codebase,
         bool $allow_interface_equality = false,
-        bool $allow_float_int_equality = true
+        bool $allow_float_int_equality = true,
     ): ?Union {
         if ($type_2 === null && $type_1 === null) {
             throw new UnexpectedValueException('At least one type must be provided to combine');
@@ -846,7 +846,7 @@ abstract class Type
         Codebase $codebase,
         bool &$intersection_performed,
         bool $allow_interface_equality = false,
-        bool $allow_float_int_equality = true
+        bool $allow_float_int_equality = true,
     ): ?Atomic {
         $intersection_atomic = null;
         $wider_type = null;

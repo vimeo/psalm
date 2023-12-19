@@ -47,7 +47,6 @@ use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
@@ -1152,11 +1151,8 @@ class Reconciler
         );
 
         foreach ($array_key_offsets as $array_key_offset) {
-            if (isset($existing_types[$base_key]) && $array_key_offset !== false) {
+            if (isset($existing_types[$base_key])) {
                 foreach ($existing_types[$base_key]->getAtomicTypes() as $base_atomic_type) {
-                    if ($base_atomic_type instanceof TList) {
-                        $base_atomic_type = $base_atomic_type->getKeyedArray();
-                    }
                     if ($base_atomic_type instanceof TKeyedArray
                     || ($base_atomic_type instanceof TArray
                         && !$base_atomic_type->isEmptyArray())
