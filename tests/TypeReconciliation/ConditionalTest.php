@@ -1642,7 +1642,7 @@ class ConditionalTest extends TestCase
                 'code' => '<?php
                     /**
                      * @param array<string, int> $arr
-                     * @return non-empty-array<string, int>
+                     * @return array<string, int>
                      */
                     function foo(array $arr) : array {
                         if (isset($arr["a"])) {
