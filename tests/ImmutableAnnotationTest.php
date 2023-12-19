@@ -768,63 +768,75 @@ class ImmutableAnnotationTest extends TestCase
                 'code' => '<?php
                     namespace World;
 
-					final readonly class Foo
-					{
-						public array $values;
+                    final class Foo
+                    {
+                        /**
+                         * @readonly
+                         */
+                        public array $values;
 
-						public function __construct(array $values)
-						{
-							$this->values = $values;
-						}
+                        public function __construct(array $values)
+                        {
+                            $this->values = $values;
+                        }
 
-						public function bar(): mixed
-						{
-							return reset($this->values);
-						}
-					}',
+                        /**
+                         * @return mixed
+                         */
+                        public function bar()
+                        {
+                            return reset($this->values);
+                        }
+                    }',
                 'error_message' => 'InaccessibleProperty',
             ],
             'readonlyByRef' => [
                 'code' => '<?php
                     namespace World;
 
-					final readonly class Foo
-					{
-						public array $values;
+                    final class Foo
+                    {
+                        /**
+                         * @readonly
+                         */
+                        public array $values;
 
-						public function __construct(array $values)
-						{
-							$this->values = $values;
-						}
-					}
+                        public function __construct(array $values)
+                        {
+                            $this->values = $values;
+                        }
+                    }
 
-					$x = new Foo([]);
-					reset($x->values);',
+                    $x = new Foo([]);
+                    reset($x->values);',
                 'error_message' => 'InaccessibleProperty',
             ],
             'readonlyByRefCustomFunction' => [
                 'code' => '<?php
                     namespace World;
 
-					final readonly class Foo
-					{
-						public array $values;
+                    final class Foo
+                    {
+                        /**
+                         * @readonly
+                         */
+                        public array $values;
 
-						public function __construct(array $values)
-						{
-							$this->values = $values;
-						}
-					}
+                        public function __construct(array $values)
+                        {
+                            $this->values = $values;
+                        }
+                    }
 
-					/**
-					 * @param string $a
-					 * @param array $b
-					 * @return void
-					 */
-					function bar($a, &$b) {}
+                    /**
+                     * @param string $a
+                     * @param array $b
+                     * @return void
+                     */
+                    function bar($a, &$b) {}
 
-					$x = new Foo([]);
-					bar("hello", $x->values);',
+                    $x = new Foo([]);
+                    bar("hello", $x->values);',
                 'error_message' => 'InaccessibleProperty',
             ],
             'preventUnset' => [

@@ -2,6 +2,7 @@
 
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
+use InvalidArgumentException;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
@@ -1267,10 +1268,15 @@ final class ArgumentsAnalyzer
         $codebase = $statements_analyzer->getCodebase();
         $declaring_property_class = (string) $codebase->properties->getDeclaringClassForProperty(
             $property_id,
-            false, # what does this do? @todo
+            true,
             $statements_analyzer,
         );
-        $declaring_class_storage = $codebase->classlike_storage_provider->get($declaring_property_class);
+
+        try {
+            $declaring_class_storage = $codebase->classlike_storage_provider->get($declaring_property_class);
+        } catch (InvalidArgumentException $_) {
+            return;
+        }
 
         if (isset($declaring_class_storage->properties[$prop_name])) {
             $property_storage = $declaring_class_storage->properties[$prop_name];
@@ -1310,7 +1316,7 @@ final class ArgumentsAnalyzer
         if ($arg->value instanceof PhpParser\Node\Expr\PropertyFetch
             && $arg->value->name instanceof PhpParser\Node\Identifier) {
             $prop_name = $arg->value->name->name;
-            if ($statements_analyzer->getFQCLN()) {
+            if (!empty($statements_analyzer->getFQCLN())) {
                 $fq_class_name = $statements_analyzer->getFQCLN();
 
                 self::handleByRefReadonlyArg(
