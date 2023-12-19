@@ -135,6 +135,7 @@ jobs:
       CHUNK_COUNT: "${{ matrix.count }}"
       CHUNK_NUMBER: "${{ matrix.chunk }}"
       PARALLEL_PROCESSES: 5
+      BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
 
     steps:
       - name: Set up PHP

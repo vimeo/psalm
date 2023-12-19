@@ -898,7 +898,7 @@ final class ArgumentAnalyzer
             $input_type,
             $param_type,
             true,
-            true,
+            !isset($param_type->getAtomicTypes()['true']),
             $union_comparison_results,
         );
 

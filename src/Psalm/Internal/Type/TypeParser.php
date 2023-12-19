@@ -50,13 +50,16 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TPropertiesOf;
+use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateIndexedAccess;
 use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -85,6 +88,8 @@ use function count;
 use function defined;
 use function end;
 use function explode;
+use function filter_var;
+use function get_class;
 use function in_array;
 use function is_int;
 use function is_numeric;
@@ -99,6 +104,9 @@ use function strpos;
 use function strtolower;
 use function strtr;
 use function substr;
+use function trim;
+
+use const FILTER_VALIDATE_INT;
 
 /**
  * @psalm-suppress InaccessibleProperty Allowed during construction
@@ -645,6 +653,46 @@ final class TypeParser
                 throw new TypeParseTreeException('Too many template parameters for array');
             }
 
+            foreach ($generic_params[0]->getAtomicTypes() as $key => $atomic_type) {
+                // PHP 8 values with whitespace after number are counted as numeric
+                // and filter_var treats them as such too
+                if ($atomic_type instanceof TLiteralString
+                    && trim($atomic_type->value) === $atomic_type->value
+                    && ($string_to_int = filter_var($atomic_type->value, FILTER_VALIDATE_INT)) !== false
+                ) {
+                    $builder = $generic_params[0]->getBuilder();
+                    $builder->removeType($key);
+                    $generic_params[0] = $builder->addType(new TLiteralInt($string_to_int, $from_docblock))->freeze();
+                    continue;
+                }
+
+                if ($atomic_type instanceof TInt
+                    || $atomic_type instanceof TString
+                    || $atomic_type instanceof TArrayKey
+                    || $atomic_type instanceof TClassConstant // @todo resolve and check types
+                    || $atomic_type instanceof TMixed
+                    || $atomic_type instanceof TNever
+                    || $atomic_type instanceof TTemplateParam
+                    || $atomic_type instanceof TValueOf
+                ) {
+                    continue;
+                }
+
+                if ($codebase->register_stub_files || $codebase->register_autoload_files) {
+                    $builder = $generic_params[0]->getBuilder();
+                    $builder->removeType($key);
+
+                    if (count($generic_params[0]->getAtomicTypes()) <= 1) {
+                        $builder = $builder->addType(new TArrayKey($from_docblock));
+                    }
+
+                    $generic_params[0] = $builder->freeze();
+                    continue;
+                }
+
+                throw new TypeParseTreeException('Invalid array key type ' . $atomic_type->getKey());
+            }
+
             return new TArray($generic_params, $from_docblock);
         }
 
@@ -671,6 +719,46 @@ final class TypeParser
 
             if (count($generic_params) !== 2) {
                 throw new TypeParseTreeException('Too many template parameters for non-empty-array');
+            }
+
+            foreach ($generic_params[0]->getAtomicTypes() as $key => $atomic_type) {
+                // PHP 8 values with whitespace after number are counted as numeric
+                // and filter_var treats them as such too
+                if ($atomic_type instanceof TLiteralString
+                    && trim($atomic_type->value) === $atomic_type->value
+                    && ($string_to_int = filter_var($atomic_type->value, FILTER_VALIDATE_INT)) !== false
+                ) {
+                    $builder = $generic_params[0]->getBuilder();
+                    $builder->removeType($key);
+                    $generic_params[0] = $builder->addType(new TLiteralInt($string_to_int, $from_docblock))->freeze();
+                    continue;
+                }
+
+                if ($atomic_type instanceof TInt
+                    || $atomic_type instanceof TString
+                    || $atomic_type instanceof TArrayKey
+                    || $atomic_type instanceof TClassConstant // @todo resolve and check types
+                    || $atomic_type instanceof TMixed
+                    || $atomic_type instanceof TNever
+                    || $atomic_type instanceof TTemplateParam
+                    || $atomic_type instanceof TValueOf
+                ) {
+                    continue;
+                }
+
+                if ($codebase->register_stub_files || $codebase->register_autoload_files) {
+                    $builder = $generic_params[0]->getBuilder();
+                    $builder->removeType($key);
+
+                    if (count($generic_params[0]->getAtomicTypes()) <= 1) {
+                        $builder = $builder->addType(new TArrayKey($from_docblock));
+                    }
+
+                    $generic_params[0] = $builder->freeze();
+                    continue;
+                }
+
+                throw new TypeParseTreeException('Invalid array key type ' . $atomic_type->getKey());
             }
 
             return new TNonEmptyArray($generic_params, null, null, 'non-empty-array', $from_docblock);

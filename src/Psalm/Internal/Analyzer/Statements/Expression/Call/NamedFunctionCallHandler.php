@@ -228,7 +228,38 @@ final class NamedFunctionCallHandler
         }
 
         if ($function_id === 'defined') {
-            $context->check_consts = false;
+            if ($first_arg && !$context->inside_negation) {
+                $fq_const_name = ConstFetchAnalyzer::getConstName(
+                    $first_arg->value,
+                    $statements_analyzer->node_data,
+                    $codebase,
+                    $statements_analyzer->getAliases(),
+                );
+
+                if ($fq_const_name !== null) {
+                    $const_type = ConstFetchAnalyzer::getConstType(
+                        $statements_analyzer,
+                        $fq_const_name,
+                        true,
+                        $context,
+                    );
+
+                    if (!$const_type) {
+                        ConstFetchAnalyzer::setConstType(
+                            $statements_analyzer,
+                            $fq_const_name,
+                            Type::getMixed(),
+                            $context,
+                        );
+
+                        $context->check_consts = false;
+                    }
+                } else {
+                    $context->check_consts = false;
+                }
+            } else {
+                $context->check_consts = false;
+            }
             return;
         }
 

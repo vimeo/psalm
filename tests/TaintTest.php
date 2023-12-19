@@ -2587,6 +2587,17 @@ class TaintTest extends TestCase
                     time_sleep_until($_GET["timestamp"]);',
                 'error_message' => 'TaintedSleep',
             ],
+            'taintedExtract' => [
+                'code' => '<?php
+                    $array = $_GET;
+                    extract($array);',
+                'error_message' => 'TaintedExtract',
+            ],
+            'extractPost' => [
+                'code' => '<?php
+                    extract($_POST);',
+                'error_message' => 'TaintedExtract',
+            ],
         ];
     }
 

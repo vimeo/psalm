@@ -53,6 +53,19 @@ final class ArrayTypeComparator
 
         if ($container_type_part instanceof TKeyedArray
             && $input_type_part instanceof TArray
+            && !$container_type_part->is_list
+            && !$container_type_part->isNonEmpty()
+            && !$container_type_part->isSealed()
+            && $input_type_part->equals(
+                $container_type_part->getGenericArrayType($container_type_part->isNonEmpty()),
+                false,
+            )
+        ) {
+            return true;
+        }
+
+        if ($container_type_part instanceof TKeyedArray
+            && $input_type_part instanceof TArray
         ) {
             $all_string_int_literals = true;
 

@@ -3,13 +3,15 @@
 set -eu
 
 function get_seeded_random() {
-  openssl enc -aes-256-ctr -pass pass:"vimeo/psalm" -nosalt </dev/zero 2>/dev/null
+  local -r branch_name="$1"
+  openssl enc -aes-256-ctr -pass pass:"$branch_name" -nosalt </dev/zero 2>/dev/null
 }
 
 function run {
   local -r chunk_count="$1"
   local -r chunk_number="$2"
   local -r parallel_processes="$3"
+  local -r branch_name="$4"
 
   local -r phpunit_cmd='
 echo "::group::{}";
@@ -23,7 +25,7 @@ exit "$exit_code"'
 
   mkdir -p build/parallel/ build/phpunit/logs/
 
-  find tests -name '*Test.php' | shuf --random-source=<(get_seeded_random) > build/tests_all
+  find tests -name '*Test.php' | shuf --random-source=<(get_seeded_random "$branch_name") > build/tests_all
   # split incorrectly splits the lines by byte size, which means that the number of tests per file are as evenly distributed as possible
   #split --number="l/$chunk_number/$chunk_count" build/tests_all > build/tests_split
   local -r lines=$(wc -l <build/tests_all)
@@ -47,5 +49,6 @@ exit "$exit_code"'
 if [ -z "${CHUNK_COUNT:-}" ]; then echo "Did not find env var CHUNK_COUNT."; exit 1; fi
 if [ -z "${CHUNK_NUMBER:-}" ]; then echo "Did not find env var CHUNK_NUMBER."; exit 1; fi
 if [ -z "${PARALLEL_PROCESSES:-}" ]; then echo "Did not find env var PARALLEL_PROCESSES."; exit 1; fi
+if [ -z "${BRANCH_NAME:-}" ]; then echo "Did not find env var BRANCH_NAME."; exit 1; fi
 
-run "$CHUNK_COUNT" "$CHUNK_NUMBER" "$PARALLEL_PROCESSES"
+run "$CHUNK_COUNT" "$CHUNK_NUMBER" "$PARALLEL_PROCESSES" "$BRANCH_NAME"

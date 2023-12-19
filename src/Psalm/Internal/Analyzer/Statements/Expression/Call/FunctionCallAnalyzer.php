@@ -402,13 +402,6 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             }
         }
 
-        if ($function_call_info->byref_uses) {
-            foreach ($function_call_info->byref_uses as $byref_use_var => $_) {
-                $context->vars_in_scope['$' . $byref_use_var] = Type::getMixed();
-                $context->vars_possibly_in_scope['$' . $byref_use_var] = true;
-            }
-        }
-
         if ($function_name instanceof PhpParser\Node\Name && $function_call_info->function_id) {
             NamedFunctionCallHandler::handle(
                 $statements_analyzer,

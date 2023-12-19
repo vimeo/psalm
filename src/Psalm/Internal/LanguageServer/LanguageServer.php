@@ -749,11 +749,8 @@ final class LanguageServer extends Dispatcher
                         //Process Baseline
                         $file = $issue_data->file_name;
                         $type = $issue_data->type;
-                        /** @psalm-suppress MixedArrayAccess */
                         if (isset($issue_baseline[$file][$type]) && $issue_baseline[$file][$type]['o'] > 0) {
-                            /** @psalm-suppress MixedArrayAccess, MixedArgument */
                             if ($issue_baseline[$file][$type]['o'] === count($issue_baseline[$file][$type]['s'])) {
-                                /** @psalm-suppress MixedArrayAccess, MixedAssignment */
                                 $position = array_search(
                                     str_replace("\r\n", "\n", trim($issue_data->selected_text)),
                                     $issue_baseline[$file][$type]['s'],
@@ -762,16 +759,12 @@ final class LanguageServer extends Dispatcher
 
                                 if ($position !== false) {
                                     $issue_data->severity = IssueData::SEVERITY_INFO;
-                                    /** @psalm-suppress MixedArgument */
                                     array_splice($issue_baseline[$file][$type]['s'], $position, 1);
-                                    /** @psalm-suppress MixedArrayAssignment, MixedOperand, MixedAssignment */
                                     $issue_baseline[$file][$type]['o']--;
                                 }
                             } else {
-                                /** @psalm-suppress MixedArrayAssignment */
                                 $issue_baseline[$file][$type]['s'] = [];
                                 $issue_data->severity = IssueData::SEVERITY_INFO;
-                                /** @psalm-suppress MixedArrayAssignment, MixedOperand, MixedAssignment */
                                 $issue_baseline[$file][$type]['o']--;
                             }
                         }

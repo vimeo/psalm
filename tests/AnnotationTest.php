@@ -1383,7 +1383,15 @@ class AnnotationTest extends TestCase
                     }',
                 'error_message' => 'MissingDocblockType',
             ],
-
+            'invalidArrayKeyType' => [
+                'code' => '<?php
+                    /**
+                     * @param array<float, string> $arg
+                     * @return void
+                     */
+                    function foo($arg) {}',
+                'error_message' => 'InvalidDocblock',
+            ],
             'invalidClassMethodReturnBrackets' => [
                 'code' => '<?php
                     class C {

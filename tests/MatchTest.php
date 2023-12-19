@@ -169,6 +169,21 @@ class MatchTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'nullCoalesce' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function foo(): bool { return false; }
+                    $match = match (foo()) {
+                        false => null,
+                        true => 1,
+                    } ?? 2;
+                    PHP,
+                'assertions' => [
+                    '$match' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 

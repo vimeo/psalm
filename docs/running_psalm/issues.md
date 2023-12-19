@@ -234,6 +234,7 @@
  - [TaintedCookie](issues/TaintedCookie.md)
  - [TaintedCustom](issues/TaintedCustom.md)
  - [TaintedEval](issues/TaintedEval.md)
+ - [TaintedExtract](issues/TaintedExtract.md)
  - [TaintedFile](issues/TaintedFile.md)
  - [TaintedHeader](issues/TaintedHeader.md)
  - [TaintedHtml](issues/TaintedHtml.md)

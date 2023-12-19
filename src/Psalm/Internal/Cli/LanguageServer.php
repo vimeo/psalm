@@ -318,11 +318,9 @@ final class LanguageServer
 
         $path_to_config = CliUtils::getPathToConfig($options);
 
-        if (isset($options['tcp'])) {
-            if (!is_string($options['tcp'])) {
-                fwrite(STDERR, 'tcp url should be a string' . PHP_EOL);
-                exit(1);
-            }
+        if (isset($options['tcp']) && !is_string($options['tcp'])) {
+            fwrite(STDERR, 'tcp url should be a string' . PHP_EOL);
+            exit(1);
         }
 
         $config = CliUtils::initializeConfig(

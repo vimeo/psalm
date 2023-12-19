@@ -52,6 +52,7 @@ use function str_ends_with;
 use function strlen;
 use function strtolower;
 use function substr;
+use function trim;
 
 /**
  * @internal
@@ -632,17 +633,19 @@ final class FunctionCallReturnTypeFetcher
                     $first_arg_value = $first_stmt_type->getSingleStringLiteral()->value;
 
                     $pattern = substr($first_arg_value, 1, -1);
+                    if (strlen(trim($pattern)) > 0) {
+                        $pattern = trim($pattern);
+                        if ($pattern[0] === '['
+                            && $pattern[1] === '^'
+                            && substr($pattern, -1) === ']'
+                        ) {
+                            $pattern = substr($pattern, 2, -1);
 
-                    if ($pattern[0] === '['
-                        && $pattern[1] === '^'
-                        && str_ends_with($pattern, ']')
-                    ) {
-                        $pattern = substr($pattern, 2, -1);
-
-                        if (self::simpleExclusion($pattern, $first_arg_value[0])) {
-                            $removed_taints[] = 'html';
-                            $removed_taints[] = 'has_quotes';
-                            $removed_taints[] = 'sql';
+                            if (self::simpleExclusion($pattern, $first_arg_value[0])) {
+                                $removed_taints[] = 'html';
+                                $removed_taints[] = 'has_quotes';
+                                $removed_taints[] = 'sql';
+                            }
                         }
                     }
                 }
