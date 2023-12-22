@@ -21,6 +21,9 @@ use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function strtolower;
+use function array_search;
+use function array_slice;
+use function in_array;
 
 /**
  * @internal
