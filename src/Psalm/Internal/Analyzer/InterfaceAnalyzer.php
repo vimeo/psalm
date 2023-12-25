@@ -157,7 +157,6 @@ final class InterfaceAnalyzer extends ClassLikeAnalyzer
 
         $member_stmts = [];
         foreach ($this->class->stmts as $stmt) {
-            $method_analyzer = null;
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
                 try {
                     $method_analyzer = new MethodAnalyzer($stmt, $this);
