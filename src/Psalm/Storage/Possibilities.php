@@ -12,6 +12,8 @@ use function str_replace;
 
 final class Possibilities
 {
+    use UnserializeMemoryUsageSuppressionTrait;
+
     /**
      * @var list<Assertion> the rule being asserted
      */

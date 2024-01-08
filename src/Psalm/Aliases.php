@@ -2,8 +2,12 @@
 
 namespace Psalm;
 
+use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
+
 final class Aliases
 {
+    use UnserializeMemoryUsageSuppressionTrait;
+
     /**
      * @var array<lowercase-string, string>
      */

@@ -10,6 +10,7 @@ use Psalm\Type\Union;
 final class FileStorage
 {
     use CustomMetadataTrait;
+    use UnserializeMemoryUsageSuppressionTrait;
 
     /**
      * @var array<lowercase-string, string>
