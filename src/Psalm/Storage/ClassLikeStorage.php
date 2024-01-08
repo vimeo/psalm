@@ -19,6 +19,7 @@ use function array_values;
 final class ClassLikeStorage implements HasAttributesInterface
 {
     use CustomMetadataTrait;
+    use UnserializeMemoryUsageSuppressionTrait;
 
     /**
      * @var array<string, ClassConstantStorage>

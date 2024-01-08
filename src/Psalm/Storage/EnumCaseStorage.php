@@ -6,6 +6,8 @@ use Psalm\CodeLocation;
 
 final class EnumCaseStorage
 {
+    use UnserializeMemoryUsageSuppressionTrait;
+
     /**
      * @var int|string|null
      */

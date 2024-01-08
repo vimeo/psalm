@@ -10,6 +10,7 @@ use Psalm\CodeLocation;
 final class AttributeStorage
 {
     use ImmutableNonCloneableTrait;
+    use UnserializeMemoryUsageSuppressionTrait;
     /**
      * @var string
      */
