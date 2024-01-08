@@ -77,14 +77,9 @@ final class ReturnTypeCollector
                 break;
             }
 
-            if ($stmt instanceof PhpParser\Node\Stmt\Throw_) {
-                $return_types[] = Type::getNever();
-
-                break;
-            }
-
             if ($stmt instanceof PhpParser\Node\Stmt\Expression) {
-                if ($stmt->expr instanceof PhpParser\Node\Expr\Exit_) {
+                if ($stmt->expr instanceof PhpParser\Node\Expr\Exit_
+                    || $stmt->expr instanceof PhpParser\Node\Expr\Throw_) {
                     $return_types[] = Type::getNever();
 
                     break;

@@ -50,8 +50,9 @@ final class ScopeAnalyzer
 
         foreach ($stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\Return_ ||
-                $stmt instanceof PhpParser\Node\Stmt\Throw_ ||
-                ($stmt instanceof PhpParser\Node\Stmt\Expression && $stmt->expr instanceof PhpParser\Node\Expr\Exit_)
+                ($stmt instanceof PhpParser\Node\Stmt\Expression
+                 && ($stmt->expr instanceof PhpParser\Node\Expr\Exit_
+                     || $stmt->expr instanceof PhpParser\Node\Expr\Throw_))
             ) {
                 if (!$return_is_exit && $stmt instanceof PhpParser\Node\Stmt\Return_) {
                     $stmt_return_type = null;
@@ -408,9 +409,9 @@ final class ScopeAnalyzer
         for ($i = count($stmts) - 1; $i >= 0; --$i) {
             $stmt = $stmts[$i];
 
-            if ($stmt instanceof PhpParser\Node\Stmt\Throw_
-                || ($stmt instanceof PhpParser\Node\Stmt\Expression
-                    && $stmt->expr instanceof PhpParser\Node\Expr\Exit_)
+            if ($stmt instanceof PhpParser\Node\Stmt\Expression
+                && ($stmt->expr instanceof PhpParser\Node\Expr\Exit_
+                    || $stmt->expr instanceof PhpParser\Node\Expr\Throw_)
             ) {
                 return true;
             }
@@ -438,7 +439,7 @@ final class ScopeAnalyzer
         }
 
         foreach ($stmts as $stmt) {
-            if ($stmt instanceof PhpParser\Node\Stmt\Throw_) {
+            if ($stmt instanceof PhpParser\Node\Stmt\Expression && $stmt->expr instanceof PhpParser\Node\Expr\Throw_) {
                 return true;
             }
         }

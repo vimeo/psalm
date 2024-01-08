@@ -40,6 +40,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\MatchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\NullsafeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\PrintAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\TernaryAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\ThrowAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\UnaryPlusMinusAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\YieldAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\YieldFromAnalyzer;
@@ -420,7 +421,7 @@ final class ExpressionAnalyzer
             return MatchAnalyzer::analyze($statements_analyzer, $stmt, $context);
         }
 
-        if ($stmt instanceof PhpParser\Node\Expr\Throw_ && $analysis_php_version_id >= 8_00_00) {
+        if ($stmt instanceof PhpParser\Node\Expr\Throw_) {
             return ThrowAnalyzer::analyze($statements_analyzer, $stmt, $context);
         }
 
