@@ -66,6 +66,8 @@ class SimpleXMLElement implements Traversable, Countable
     public function count(): int {}
 
     public function __get(string $name): SimpleXMLElement|SimpleXMLIterator|null {}
+
+    public function __set(string $name, $value): void {}
 }
 
 /**
