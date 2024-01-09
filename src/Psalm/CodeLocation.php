@@ -157,7 +157,7 @@ class CodeLocation
         $this->preview_start = $this->docblock_start ?: $this->file_start;
 
         /** @psalm-suppress ImpureMethodCall Actually mutation-free just not marked */
-        $this->raw_line_number = $stmt->getLine();
+        $this->raw_line_number = $stmt->getStartLine();
 
         $this->docblock_line_number = $comment_line;
     }
