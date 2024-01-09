@@ -237,7 +237,7 @@ final class ArgumentsAnalyzer
                 $context,
                 false,
                 null,
-                false,
+                null,
                 $high_order_template_result,
             ) === false) {
                 $context->inside_call = $was_inside_call;

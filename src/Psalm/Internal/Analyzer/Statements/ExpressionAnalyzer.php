@@ -76,7 +76,7 @@ final class ExpressionAnalyzer
         Context $context,
         bool $array_assignment = false,
         ?Context $global_context = null,
-        bool $from_stmt = false,
+        PhpParser\Node\Stmt $from_stmt = null,
         ?TemplateResult $template_result = null,
         bool $assigned_to_reference = false,
     ): bool {
@@ -147,7 +147,7 @@ final class ExpressionAnalyzer
         Context $context,
         bool $array_assignment,
         ?Context $global_context,
-        bool $from_stmt,
+        ?PhpParser\Node\Stmt $from_stmt,
         ?TemplateResult $template_result = null,
         bool $assigned_to_reference = false,
     ): bool {
@@ -257,7 +257,7 @@ final class ExpressionAnalyzer
                 $stmt,
                 $context,
                 0,
-                $from_stmt,
+                $from_stmt !== null,
             );
         }
 
@@ -461,7 +461,7 @@ final class ExpressionAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $stmt,
         Context $context,
-        bool $from_stmt,
+        ?PhpParser\Node\Stmt $from_stmt,
     ): bool {
         $assignment_type = AssignmentAnalyzer::analyze(
             $statements_analyzer,
@@ -469,7 +469,7 @@ final class ExpressionAnalyzer
             $stmt->expr,
             null,
             $context,
-            $stmt->getDocComment(),
+            $stmt->getDocComment() ?? $from_stmt?->getDocComment(),
             [],
             !$from_stmt ? $stmt : null,
         );
