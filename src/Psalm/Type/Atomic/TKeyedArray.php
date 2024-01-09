@@ -112,6 +112,8 @@ class TKeyedArray extends Atomic
         if ($cloned->is_list) {
             $last_k = -1;
             $had_possibly_undefined = false;
+
+            /** @psalm-suppress InaccessibleProperty */
             ksort($cloned->properties);
             foreach ($cloned->properties as $k => $v) {
                 if (is_string($k) || $last_k !== ($k-1) || ($had_possibly_undefined && !$v->possibly_undefined)) {
