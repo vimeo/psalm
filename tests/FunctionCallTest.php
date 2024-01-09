@@ -2387,6 +2387,18 @@ class FunctionCallTest extends TestCase
                     fooFoo("string");',
                 'error_message' => 'InvalidScalarArgument',
             ],
+            'invalidArgumentCallableWithoutArgsUnion' => [
+                'code' => '<?php
+                    function foo(int $a): void {}
+
+                    /**
+                     * @param callable()|float $callable
+                     * @return void
+                     */
+                    function acme($callable) {}
+                    acme("foo");',
+                'error_message' => 'InvalidArgument',
+            ],
             'invalidArgumentWithDeclareStrictTypes' => [
                 'code' => '<?php declare(strict_types=1);
                     function fooFoo(int $a): void {}
