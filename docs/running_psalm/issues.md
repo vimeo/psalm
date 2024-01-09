@@ -220,6 +220,7 @@
  - [RedundantCastGivenDocblockType](issues/RedundantCastGivenDocblockType.md)
  - [RedundantCondition](issues/RedundantCondition.md)
  - [RedundantConditionGivenDocblockType](issues/RedundantConditionGivenDocblockType.md)
+ - [RedundantFlag](issues/RedundantFlag.md)
  - [RedundantFunctionCall](issues/RedundantFunctionCall.md)
  - [RedundantFunctionCallGivenDocblockType](issues/RedundantFunctionCallGivenDocblockType.md)
  - [RedundantIdentityWithTrue](issues/RedundantIdentityWithTrue.md)

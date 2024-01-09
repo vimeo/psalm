@@ -418,6 +418,7 @@
             <xs:element name="RedundantCastGivenDocblockType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="RedundantCondition" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="RedundantConditionGivenDocblockType" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="RedundantFlag" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="RedundantFunctionCall" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="RedundantFunctionCallGivenDocblockType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="RedundantIdentityWithTrue" type="IssueHandlerType" minOccurs="0" />
