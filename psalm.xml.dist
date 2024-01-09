@@ -149,5 +149,13 @@
                 <directory name="vendor/nikic/php-parser" />
             </errorLevel>
         </MixedAssignment>
+
+        <PropertyNotSetInConstructor>
+            <errorLevel type="suppress">
+                <referencedProperty name="PhpParser\Node\Const_::$namespacedName" />
+                <referencedProperty name="PhpParser\Node\Stmt\ClassLike::$namespacedName" />
+                <referencedProperty name="PhpParser\Node\Stmt\Function_::$namespacedName" />
+            </errorLevel>
+        </PropertyNotSetInConstructor>
     </issueHandlers>
 </psalm>
