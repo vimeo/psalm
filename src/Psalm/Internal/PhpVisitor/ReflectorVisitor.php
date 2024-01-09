@@ -143,7 +143,7 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
 
             if ($classlike_node_scanner->start($node) === false) {
                 $this->bad_classes[spl_object_id($node)] = true;
-                return PhpParser\NodeTraverser::DONT_TRAVERSE_CURRENT_AND_CHILDREN;
+                return self::DONT_TRAVERSE_CURRENT_AND_CHILDREN;
             }
 
             $this->classlike_node_scanners[] = $classlike_node_scanner;
@@ -212,7 +212,7 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
             }
 
             if (!$this->scan_deep) {
-                return PhpParser\NodeTraverser::DONT_TRAVERSE_CHILDREN;
+                return self::DONT_TRAVERSE_CHILDREN;
             }
         } elseif ($node instanceof PhpParser\Node\Stmt\Global_) {
             $functionlike_node_scanner = end($this->functionlike_node_scanners);

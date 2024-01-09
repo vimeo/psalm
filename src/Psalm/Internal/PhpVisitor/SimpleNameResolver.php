@@ -93,7 +93,7 @@ final class SimpleNameResolver extends NodeVisitorAbstract
             if ($attrs['endFilePos'] < $this->start_change
                 || $attrs['startFilePos'] > $this->end_change
             ) {
-                return PhpParser\NodeTraverser::DONT_TRAVERSE_CHILDREN;
+                return PhpParser\NodeVisitor::DONT_TRAVERSE_CHILDREN;
             }
         }
 

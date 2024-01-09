@@ -144,7 +144,7 @@ final class CustomTraverser extends NodeTraverser
                         } elseif (false === $return) {
                             throw new LogicException(
                                 'bool(false) return from leaveNode() no longer supported. ' .
-                                'Return NodeTraverser::REMOVE_NODE instead',
+                                'Return NodeVisitor::REMOVE_NODE instead',
                             );
                         } else {
                             throw new LogicException(
