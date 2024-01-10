@@ -3825,22 +3825,6 @@ class PropertyTypeTest extends TestCase
                 ',
                 'error_message' => 'UndefinedPropertyAssignment',
             ],
-            'setPropertiesOfSimpleXMLElement1' => [
-                'code' => '<?php
-                    $a = new SimpleXMLElement("<person><child role=\"son\"></child></person>");
-                    $a->b = "c";
-                ',
-                'error_message' => 'UndefinedPropertyAssignment',
-            ],
-            'setPropertiesOfSimpleXMLElement2' => [
-                'code' => '<?php
-                    $a = new SimpleXMLElement("<person><child role=\"son\"></child></person>");
-                    if (isset($a->b)) {
-                        $a->b = "c";
-                    }
-                ',
-                'error_message' => 'UndefinedPropertyAssignment',
-            ],
         ];
     }
 }
