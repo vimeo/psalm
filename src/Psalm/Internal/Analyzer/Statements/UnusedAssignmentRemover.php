@@ -65,7 +65,7 @@ final class UnusedAssignmentRemover
                 $traverser->addVisitor($visitor);
                 $traverser->traverse([$rhs_exp]);
 
-                $rhs_exp_trivial = (count($visitor->getNonTrivialExpr()) === 0);
+                $rhs_exp_trivial = !$visitor->hasNonTrivialExpr();
 
                 if ($rhs_exp_trivial) {
                     $treat_as_expr = false;
