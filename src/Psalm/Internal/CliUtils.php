@@ -236,7 +236,7 @@ final class CliUtils
             }
 
             if ($input_path[0] === '-' && strlen($input_path) === 2) {
-                if ($input_path[1] === 'c' || $input_path[1] === 'f') {
+                if ($input_path[1] === 'c' || $input_path[1] === 'f' || $input_path[1] === 'r') {
                     ++$i;
                 }
                 continue;
@@ -275,7 +275,7 @@ final class CliUtils
             $input_path = $input_paths[$i];
 
             if ($input_path[0] === '-' && strlen($input_path) === 2) {
-                if ($input_path[1] === 'c' || $input_path[1] === 'f') {
+                if ($input_path[1] === 'c' || $input_path[1] === 'f' || $input_path[1] === 'r') {
                     ++$i;
                 }
                 continue;
@@ -291,6 +291,7 @@ final class CliUtils
                 $ignored_arguments = array(
                     'config',
                     'printer',
+                    'root',
                 );
 
                 if (in_array(substr($input_path, 2), $ignored_arguments, true)) {

@@ -6,6 +6,7 @@ namespace Psalm\Internal;
 
 use InvalidArgumentException;
 use Psalm\Storage\ImmutableNonCloneableTrait;
+use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 
 use function explode;
 use function is_string;
@@ -20,6 +21,7 @@ use function strtolower;
 final class MethodIdentifier
 {
     use ImmutableNonCloneableTrait;
+    use UnserializeMemoryUsageSuppressionTrait;
 
     public string $fq_class_name;
     /** @var lowercase-string  */

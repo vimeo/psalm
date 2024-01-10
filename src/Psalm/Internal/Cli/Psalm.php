@@ -43,6 +43,7 @@ use function array_merge;
 use function array_slice;
 use function array_sum;
 use function array_values;
+use function assert;
 use function chdir;
 use function count;
 use function extension_loaded;
@@ -281,6 +282,7 @@ final class Psalm
             }
         }
 
+        assert(!isset($options['f']) || $options['f'] !== true);
         $paths_to_check = CliUtils::getPathsToCheck($options['f'] ?? null);
 
         if ($config->resolve_from_config_file) {

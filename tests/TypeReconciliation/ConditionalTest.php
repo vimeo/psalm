@@ -582,6 +582,45 @@ class ConditionalTest extends TestCase
                         }
                     }',
             ],
+            'reconcileMultipleLiteralStrings' => [
+                'code' => '<?php
+                    /**
+                     * @param string $param
+                     * @param "a"|"b"|"c" $param2
+                     * @return void
+                     */
+                    function foo($param, $param2) {
+                        if ( $param === $param2 ) {
+                            if ($param === "a") {
+                                echo "x";
+                            }
+
+                            if ($param === "b") {
+                                echo "y";
+                            }
+
+                            if ($param === "c") {
+                                echo "z";
+                            }
+                        }
+                    }',
+            ],
+            'reconcileMultipleUnionIntersection' => [
+                'code' => '<?php
+                    /**
+                     * @param int|string $param
+                     * @param float|string $param2
+                     * @return void
+                     */
+                    function foo($param, $param2) {
+                        if ($param === $param2) {
+                            takesString($param);
+                            takesString($param2);
+                        }
+                    }
+
+                    function takesString(string $arg): void {}',
+            ],
             'reconcileNullableStringWithWeakEquality' => [
                 'code' => '<?php
                     function foo(?string $s) : void {
@@ -1382,8 +1421,9 @@ class ConditionalTest extends TestCase
                 'code' => '<?php
                     /**
                      * @psalm-suppress MixedReturnStatement
+                     * @return array<never, never>|false|string
                      */
-                    function foo() : array {
+                    function foo() {
                         return filter_input(INPUT_POST, "some_var") ?? [];
                     }',
             ],

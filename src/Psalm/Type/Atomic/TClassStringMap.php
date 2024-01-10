@@ -207,7 +207,7 @@ final class TClassStringMap extends Atomic
             return false;
         }
 
-        if (!$this->value_param->equals($other_type->value_param, $ensure_source_equality)) {
+        if (!$this->value_param->equals($other_type->value_param, $ensure_source_equality, false)) {
             return false;
         }
 

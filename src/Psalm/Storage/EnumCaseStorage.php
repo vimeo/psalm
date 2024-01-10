@@ -10,6 +10,8 @@ use Psalm\Type\Atomic\TLiteralString;
 
 final class EnumCaseStorage
 {
+    use UnserializeMemoryUsageSuppressionTrait;
+
     public TLiteralString|TLiteralInt|null $value = null;
 
     public CodeLocation $stmt_location;

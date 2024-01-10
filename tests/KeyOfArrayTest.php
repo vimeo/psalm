@@ -86,11 +86,11 @@ class KeyOfArrayTest extends TestCase
             'keyOfUnionArrayLiteral' => [
                 'code' => '<?php
                     /**
-                     * @return key-of<array<int, string>|array<float, string>>
+                     * @return key-of<array<int, string>|array<string, string>>
                      */
-                    function getKey(bool $asFloat) {
-                        if ($asFloat) {
-                            return 42.0;
+                    function getKey(bool $asString) {
+                        if ($asString) {
+                            return "42";
                         }
                         return 42;
                     }
@@ -194,14 +194,14 @@ class KeyOfArrayTest extends TestCase
                 ',
                 'error_message' => 'InvalidReturnStatement',
             ],
-            'noStringAllowedInKeyOfIntFloatArray' => [
+            'noStringAllowedInKeyOfIntFloatStringArray' => [
                 'code' => '<?php
                     /**
-                     * @return key-of<array<int, string>|array<float, string>>
+                     * @return key-of<array<int, string>|array<"42.0", string>>
                      */
-                    function getKey(bool $asFloat) {
-                        if ($asFloat) {
-                            return 42.0;
+                    function getKey(bool $asInt) {
+                        if ($asInt) {
+                            return 42;
                         }
                         return "42";
                     }
