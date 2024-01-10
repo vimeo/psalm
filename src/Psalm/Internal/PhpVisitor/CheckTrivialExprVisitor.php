@@ -17,7 +17,6 @@ final class CheckTrivialExprVisitor extends PhpParser\NodeVisitorAbstract
     {
         if ($node instanceof PhpParser\Node\Expr\ArrayDimFetch
             || $node instanceof PhpParser\Node\Expr\Closure
-            || $node instanceof PhpParser\Node\ClosureUse
             || $node instanceof PhpParser\Node\Expr\Eval_
             || $node instanceof PhpParser\Node\Expr\Exit_
             || $node instanceof PhpParser\Node\Expr\Include_
@@ -65,6 +64,9 @@ final class CheckTrivialExprVisitor extends PhpParser\NodeVisitorAbstract
                 || $node instanceof PhpParser\Node\Expr\StaticPropertyFetch) {
                 return self::STOP_TRAVERSAL;
             }
+        } elseif ($node instanceof PhpParser\Node\ClosureUse) {
+            $this->has_non_trivial_expr = true;
+            return self::STOP_TRAVERSAL;
         }
         return null;
     }
