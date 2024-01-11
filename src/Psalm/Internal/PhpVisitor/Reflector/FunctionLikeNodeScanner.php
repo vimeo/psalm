@@ -100,6 +100,7 @@ final class FunctionLikeNodeScanner
     public function start(
         PhpParser\Node\FunctionLike $stmt,
         bool $fake_method = false,
+        PhpParser\Comment\Doc $doc_comment = null,
     ): FunctionStorage|MethodStorage|false {
         if ($stmt instanceof PhpParser\Node\Expr\Closure
             || $stmt instanceof PhpParser\Node\Expr\ArrowFunction
@@ -411,7 +412,7 @@ final class FunctionLikeNodeScanner
             $storage->returns_by_ref = true;
         }
 
-        $doc_comment = $stmt->getDocComment();
+        $doc_comment = $stmt->getDocComment() ?? $doc_comment;
 
 
         if ($classlike_storage && !$classlike_storage->is_trait) {
