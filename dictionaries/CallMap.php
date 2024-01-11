@@ -14165,7 +14165,7 @@ return [
 'unlink' => ['bool', 'filename'=>'string', 'context='=>'resource'],
 'unpack' => ['array|false', 'format'=>'string', 'string'=>'string', 'offset='=>'int'],
 'unregister_tick_function' => ['void', 'callback'=>'callable'],
-'unserialize' => ['mixed', 'data'=>'string', 'options='=>'array{allowed_classes?:string[]|bool}'],
+'unserialize' => ['mixed', 'data'=>'string', 'options='=>'array{allowed_classes?:class-string[]|bool}'],
 'unset' => ['void', 'var='=>'mixed', '...args='=>'mixed'],
 'untaint' => ['bool', '&rw_string'=>'string', '&...rw_strings='=>'string'],
 'uopz_allow_exit' => ['void', 'allow'=>'bool'],
