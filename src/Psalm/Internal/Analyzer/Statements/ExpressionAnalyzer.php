@@ -192,10 +192,6 @@ final class ExpressionAnalyzer
             return true;
         }
 
-        if ($stmt instanceof PhpParser\Node\InterpolatedStringPart) {
-            return true;
-        }
-
         if ($stmt instanceof PhpParser\Node\Scalar\MagicConst) {
             MagicConstAnalyzer::analyze($statements_analyzer, $stmt, $context);
 
