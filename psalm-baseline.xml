@@ -2351,9 +2351,4 @@
       <code>$return_type</code>
     </RiskyTruthyFalsyComparison>
   </file>
-  <file src="vendor/nikic/php-parser/lib/PhpParser/Node/Expr/ArrowFunction.php">
-    <PossiblyUndefinedStringArrayOffset>
-      <code><![CDATA[$subNodes['expr']]]></code>
-    </PossiblyUndefinedStringArrayOffset>
-  </file>
 </files>
