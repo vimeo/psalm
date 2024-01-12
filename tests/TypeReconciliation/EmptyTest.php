@@ -612,6 +612,14 @@ class EmptyTest extends TestCase
                     '$GLOBALS[\'sql_query\']===' => 'string',
                 ],
             ],
+            'emptyLiteralTrueFalse' => [
+                'code' => '<?php
+                    $b = "asdf";
+                    $x = !empty($b);',
+                'assertions' => [
+                    '$x===' => 'true',
+                ],
+            ],
         ];
     }
 
@@ -719,6 +727,30 @@ class EmptyTest extends TestCase
                         return strlen("a" . $str . "b") > 2 ? $str : "string";
                     }',
                 'error_message' => 'LessSpecificReturnStatement',
+            ],
+            'impossibleEmptyOnFalsyFunctionCall' => [
+                'code' => '<?php
+                    /** @return false|null */
+                    function bar() {
+                        return rand(0, 5) ? null : false;
+                    }
+
+                    if (!empty(bar())) {
+                        echo "abc";
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'redundantEmptyOnFalsyFunctionCall' => [
+                'code' => '<?php
+                    /** @return false|null */
+                    function bar() {
+                        return rand(0, 5) ? null : false;
+                    }
+
+                    if (empty(bar())) {
+                        echo "abc";
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType',
             ],
         ];
     }
