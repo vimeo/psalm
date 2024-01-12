@@ -15,6 +15,7 @@ use Psalm\Internal\Scope\IfScope;
 use Psalm\Issue\DocblockTypeContradiction;
 use Psalm\Issue\RedundantCondition;
 use Psalm\Issue\RedundantConditionGivenDocblockType;
+use Psalm\Issue\RiskyTruthyFalsyComparison;
 use Psalm\Issue\TypeDoesNotContainType;
 use Psalm\IssueBuffer;
 use Psalm\Type\Atomic\TBool;
@@ -388,13 +389,13 @@ final class IfConditionalAnalyzer
                 if ($has_both) {
                     $both_types = $both_types->freeze();
                     IssueBuffer::maybeAdd(
-                        new TypeDoesNotContainType(
+                        new RiskyTruthyFalsyComparison(
                             'Operand of type ' . $type->getId() . ' contains ' .
                             'type' . (count($both_types->getAtomicTypes()) > 1 ? 's' : '') . ' ' .
                             $both_types->getId() . ', which can be falsy and truthy. ' .
                             'This can cause possibly unexpected behavior. Use strict comparison instead.',
                             new CodeLocation($statements_analyzer, $stmt),
-                            $type->getId() . ' truthy-falsy',
+                            $type->getId(),
                         ),
                         $statements_analyzer->getSuppressedIssues(),
                     );

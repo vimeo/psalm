@@ -173,6 +173,7 @@ Level 5 and above allows a more non-verifiable code, and higher levels are even 
 - [TooManyArguments](issues/TooManyArguments.md)
 - [TypeDoesNotContainNull](issues/TypeDoesNotContainNull.md)
 - [TypeDoesNotContainType](issues/TypeDoesNotContainType.md)
+- [RiskyTruthyFalsyComparison](issues/RiskyTruthyFalsyComparison.md)
 - [UndefinedMagicMethod](issues/UndefinedMagicMethod.md)
 - [UndefinedMagicPropertyAssignment](issues/UndefinedMagicPropertyAssignment.md)
 - [UndefinedMagicPropertyFetch](issues/UndefinedMagicPropertyFetch.md)

@@ -3528,7 +3528,7 @@ class ConditionalTest extends TestCase
 						if ($arg) {
 						}
 					}',
-                'error_message' => 'TypeDoesNotContainType',
+                'error_message' => 'RiskyTruthyFalsyComparison',
             ],
             'nonStrictConditionTruthyFalsyNegated' => [
                 'code' => '<?php
@@ -3540,7 +3540,7 @@ class ConditionalTest extends TestCase
 						if (!$arg) {
 						}
 					}',
-                'error_message' => 'TypeDoesNotContainType',
+                'error_message' => 'RiskyTruthyFalsyComparison',
             ],
             'nonStrictConditionTruthyFalsyFuncCall' => [
                 'code' => '<?php
@@ -3558,7 +3558,7 @@ class ConditionalTest extends TestCase
 					 * @return array|null
 					 */
 					function bar($arg) {}',
-                'error_message' => 'TypeDoesNotContainType',
+                'error_message' => 'RiskyTruthyFalsyComparison',
             ],
             'nonStrictConditionTruthyFalsyFuncCallNegated' => [
                 'code' => '<?php
@@ -3576,7 +3576,7 @@ class ConditionalTest extends TestCase
 					 * @return array|null
 					 */
 					function bar($arg) {}',
-                'error_message' => 'TypeDoesNotContainType',
+                'error_message' => 'RiskyTruthyFalsyComparison',
             ],
             'redundantConditionForNonEmptyString' => [
                 'code' => '<?php

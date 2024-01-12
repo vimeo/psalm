@@ -8,7 +8,7 @@ use Psalm\Context;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Issue\ForbiddenCode;
 use Psalm\Issue\InvalidArgument;
-use Psalm\Issue\TypeDoesNotContainType;
+use Psalm\Issue\RiskyTruthyFalsyComparison;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TBool;
@@ -82,13 +82,13 @@ final class EmptyAnalyzer
                 if ($has_both) {
                     $both_types = $both_types->freeze();
                     IssueBuffer::maybeAdd(
-                        new TypeDoesNotContainType(
+                        new RiskyTruthyFalsyComparison(
                             'Operand of type ' . $expr_type->getId() . ' contains ' .
                             'type' . (count($both_types->getAtomicTypes()) > 1 ? 's' : '') . ' ' .
                             $both_types->getId() . ', which can be falsy and truthy. ' .
                             'This can cause possibly unexpected behavior. Use strict comparison instead.',
                             new CodeLocation($statements_analyzer, $stmt),
-                            $expr_type->getId() . ' truthy-falsy',
+                            $expr_type->getId(),
                         ),
                         $statements_analyzer->getSuppressedIssues(),
                     );
