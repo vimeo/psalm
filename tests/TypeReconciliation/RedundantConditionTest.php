@@ -66,6 +66,10 @@ class RedundantConditionTest extends TestCase
                         }
                         return $x;
                     }',
+                'assertions' => [],
+                'ignored_issues' => [
+                    'RiskyTruthyFalsyComparison',
+                ],
             ],
             'noRedundantConditionAfterAssignment' => [
                 'code' => '<?php
@@ -99,7 +103,7 @@ class RedundantConditionTest extends TestCase
 
                         switch (get_class($i)) {
                             case A::class:
-                                if ($i->foo) {}
+                                if ($i->foo !== null) {}
                                 break;
 
                             default:
@@ -180,7 +184,7 @@ class RedundantConditionTest extends TestCase
                     }
                     if ($a) {}',
                 'assertions' => [],
-                'ignored_issues' => ['MixedAssignment', 'MixedArrayAccess'],
+                'ignored_issues' => ['MixedAssignment', 'MixedArrayAccess', 'RiskyTruthyFalsyComparison'],
             ],
             'noComplaintWithIsNumericThenIsEmpty' => [
                 'code' => '<?php
@@ -377,7 +381,7 @@ class RedundantConditionTest extends TestCase
                     /** @psalm-suppress PossiblyUndefinedGlobalVariable */
                     $option = $options["option"] ?? false;
 
-                    if ($option) {}',
+                    if ($option !== false) {}',
                 'assertions' => [],
                 'ignored_issues' => ['MixedAssignment', 'MixedArrayAccess'],
             ],
@@ -539,7 +543,7 @@ class RedundantConditionTest extends TestCase
                         exit;
                     }
 
-                    if ($i) {}',
+                    if ($i !== array() && $i !== "" && $i !== "0") {}',
             ],
             'emptyWithoutKnowingArrayType' => [
                 'code' => '<?php
@@ -825,7 +829,7 @@ class RedundantConditionTest extends TestCase
                 'code' => '<?php
                     function test(string|int|float|bool $value): bool {
                         if (is_numeric($value) || $value === true) {
-                            if ($value) {
+                            if ($value === true || (int) $value !== 0) {
                                 return true;
                             }
                         }
@@ -1068,6 +1072,7 @@ class RedundantConditionTest extends TestCase
                         return $a;
                     }',
                 'error_message' => 'RedundantCondition',
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'refineTypeInMethodCall' => [
                 'code' => '<?php

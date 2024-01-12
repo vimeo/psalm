@@ -298,6 +298,8 @@ class AssignmentInConditionalTest extends TestCase
 
                         return $pos;
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'assignmentInIf' => [
                 'code' => '<?php
@@ -416,7 +418,7 @@ class AssignmentInConditionalTest extends TestCase
                     }
 
                     if (rand(0, 10) > 5) {
-                    } elseif (($a = rand(0, 1) ? new A : null) && $a->foo) {}',
+                    } elseif (($a = rand(0, 1) ? new A : null) && is_string($a->foo)) {}',
             ],
             'noParadoxAfterConditionalAssignment' => [
                 'code' => '<?php
@@ -485,7 +487,7 @@ class AssignmentInConditionalTest extends TestCase
                         return "b";
                     }',
                 'error_message' => 'InvalidReturnStatement',
-                'ignored_issues' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
                 'php_version' => '8.0',
             ],
             'assignmentInBranchOfAndReferencedAfterIf' => [

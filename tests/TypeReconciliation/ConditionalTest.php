@@ -594,6 +594,8 @@ class ConditionalTest extends TestCase
                       }
                       return false;
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'numericStringAssertion' => [
                 'code' => '<?php
@@ -1943,6 +1945,8 @@ class ConditionalTest extends TestCase
                             if ($a && strlen($a) > 5) {}
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'arrayUnionTypeSwitching' => [
                 'code' => '<?php
@@ -1958,6 +1962,8 @@ class ConditionalTest extends TestCase
 
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'propertySetOnElementInConditional' => [
                 'code' => '<?php
@@ -2165,6 +2171,8 @@ class ConditionalTest extends TestCase
                             echo $valuePath;
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'issetAssertionOnStaticProperty' => [
                 'code' => '<?php
@@ -2509,6 +2517,8 @@ class ConditionalTest extends TestCase
 
                         return [$type];
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'nonEmptyStringAfterLiteralCheck' => [
                 'code' => '<?php

@@ -114,6 +114,8 @@ class EmptyTest extends TestCase
 
                         return "an exception";
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'emptyExceptionReconciliationAfterIf' => [
                 'code' => '<?php
@@ -175,6 +177,8 @@ class EmptyTest extends TestCase
                     foreach ($arr as $item) {
                         if (empty($item["hide"]) || $item["hide"] === 3) {}
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'alwaysBoolResult' => [
                 'code' => '<?php
@@ -219,7 +223,7 @@ class EmptyTest extends TestCase
                         if (empty($scopes)){}
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MixedAssignment', 'MissingParamType', 'MixedArgument'],
+                'ignored_issues' => ['MixedAssignment', 'MissingParamType', 'MixedArgument', 'RiskyTruthyFalsyComparison'],
             ],
             'multipleEmptiesInCondition' => [
                 'code' => '<?php
@@ -389,6 +393,8 @@ class EmptyTest extends TestCase
 
                         echo $arr["a"];
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'reconcileEmptyTwiceWithoutReturn' => [
                 'code' => '<?php

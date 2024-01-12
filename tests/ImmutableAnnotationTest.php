@@ -300,7 +300,7 @@ class ImmutableAnnotationTest extends TestCase
 
                     $dto = new DTO("BOOM!");
 
-                    if ($dto->getError()) {
+                    if ($dto->getError() !== null) {
                         takesString($dto->getError());
                     }',
             ],
