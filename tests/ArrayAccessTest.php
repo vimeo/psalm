@@ -654,6 +654,19 @@ class ArrayAccessTest extends TestCase
                     '$x3===' => "array{b: 'value'}",
                 ],
             ],
+            'possiblyUndefinedArrayOffsetKeyedArray' => [
+                'code' => '<?php
+                    $d = [];
+                    if (!rand(0,1)) {
+                        $d[0] = "a";
+                    }
+
+                    $x = $d[0];',
+                'assertions' => [
+                    '$x===' => '"a"|null',
+                ],
+                'ignored_issues' => ['PossiblyUndefinedArrayOffset'],
+            ],
             'domNodeListAccessible' => [
                 'code' => '<?php
                     $doc = new DOMDocument();
