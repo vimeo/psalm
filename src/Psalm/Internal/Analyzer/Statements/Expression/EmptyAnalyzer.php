@@ -64,34 +64,30 @@ final class EmptyAnalyzer
             } elseif ($expr_type->isAlwaysFalsy()) {
                 $stmt_type = new TTrue($expr_type->from_docblock);
             } else {
-                $has_both = false;
-                $both_types = $expr_type->getBuilder();
                 if (count($expr_type->getAtomicTypes()) > 1) {
+                    $both_types = $expr_type->getBuilder();
                     foreach ($both_types->getAtomicTypes() as $key => $atomic_type) {
                         if ($atomic_type->isTruthy()
                             || $atomic_type->isFalsy()
                             || $atomic_type instanceof TBool) {
                             $both_types->removeType($key);
-                            continue;
                         }
-
-                        $has_both = true;
                     }
-                }
 
-                if ($has_both) {
-                    $both_types = $both_types->freeze();
-                    IssueBuffer::maybeAdd(
-                        new RiskyTruthyFalsyComparison(
-                            'Operand of type ' . $expr_type->getId() . ' contains ' .
-                            'type' . (count($both_types->getAtomicTypes()) > 1 ? 's' : '') . ' ' .
-                            $both_types->getId() . ', which can be falsy and truthy. ' .
-                            'This can cause possibly unexpected behavior. Use strict comparison instead.',
-                            new CodeLocation($statements_analyzer, $stmt),
-                            $expr_type->getId(),
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
+                    if (count($both_types->getAtomicTypes()) > 0) {
+                        $both_types = $both_types->freeze();
+                        IssueBuffer::maybeAdd(
+                            new RiskyTruthyFalsyComparison(
+                                'Operand of type ' . $expr_type->getId() . ' contains ' .
+                                'type' . (count($both_types->getAtomicTypes()) > 1 ? 's' : '') . ' ' .
+                                $both_types->getId() . ', which can be falsy and truthy. ' .
+                                'This can cause possibly unexpected behavior. Use strict comparison instead.',
+                                new CodeLocation($statements_analyzer, $stmt),
+                                $expr_type->getId(),
+                            ),
+                            $statements_analyzer->getSuppressedIssues(),
+                        );
+                    }
                 }
 
                 $stmt_type = new TBool();
