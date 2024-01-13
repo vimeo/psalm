@@ -691,7 +691,7 @@ class ArrayAccessTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['MixedArgument', 'MixedArrayOffset', 'MissingParamType'],
             ],
-            'suppressPossiblyUndefinedStringArrayOffet' => [
+            'suppressPossiblyUndefinedStringArrayOffset' => [
                 'code' => '<?php
                     /** @var array{a?:string} */
                     $entry = ["a"];
