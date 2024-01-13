@@ -6625,7 +6625,7 @@ return [
 'mb_ereg_search_setpos' => ['bool', 'offset'=>'int'],
 'mb_eregi' => ['bool', 'pattern'=>'string', 'string'=>'string', '&w_matches='=>'array|null'],
 'mb_eregi_replace' => ['string|false|null', 'pattern'=>'string', 'replacement'=>'string', 'string'=>'string', 'options='=>'string|null'],
-'mb_get_info' => ['array|string|int|false', 'type='=>'string'],
+'mb_get_info' => ['array|string|int|false|null', 'type='=>'string'],
 'mb_http_input' => ['array|string|false', 'type='=>'string|null'],
 'mb_http_output' => ['string|bool', 'encoding='=>'string|null'],
 'mb_internal_encoding' => ['string|bool', 'encoding='=>'string|null'],
