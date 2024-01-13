@@ -1168,11 +1168,19 @@ class ConditionalTest extends TestCase
             ],
             'notEmptyCheckOnMixedInTernary' => [
                 'code' => '<?php
-                    $a = !empty($_SERVER["HTTPS"]) && $_SERVER["HTTPS"] !== "off" ? true : false;',
+                    /** @psalm-suppress InvalidReturnType */
+                    function foo(): array {}
+
+                    $b = foo();
+                    $a = !empty($b["hello"]) && $b["hello"] !== "off" ? true : false;',
             ],
             'notEmptyCheckOnMixedInIf' => [
                 'code' => '<?php
-                    if (!empty($_SERVER["HTTPS"]) && $_SERVER["HTTPS"] !== "off") {
+                    /** @psalm-suppress InvalidReturnType */
+                    function foo(): array {}
+
+                    $b = foo();
+                    if (!empty($b["hello"]) && $b["hello"] !== "off") {
                         $a = true;
                     } else {
                         $a = false;
