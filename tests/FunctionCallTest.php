@@ -513,17 +513,39 @@ class FunctionCallTest extends TestCase
             ],
             'extractVarCheck' => [
                 'code' => '<?php
+                    /**
+                     * @psalm-suppress InvalidReturnType
+                     * @return array{a: 15, ...}
+                     */
+                    function getUnsealedArray() {}
                     function takesString(string $str): void {}
 
-                    $foo = null;
-                    $a = ["$foo" => "bar"];
+                    $foo = "foo";
+                    $a = getUnsealedArray();
                     extract($a);
                     takesString($foo);',
                 'assertions' => [],
                 'ignored_issues' => [
-                    'MixedAssignment',
-                    'MixedArrayAccess',
                     'MixedArgument',
+                ],
+            ],
+            'extractVarCheckValid' => [
+                'code' => '<?php
+                    function takesInt(int $i): void {}
+
+                    $foo = "foo";
+                    $a = [$foo => 15];
+                    extract($a);
+                    takesInt($foo);',
+            ],
+            'extractSkipExtr' => [
+                'code' => '<?php
+                    $a = 1;
+
+                    extract(["a" => "x", "b" => "y"], EXTR_SKIP);',
+                'assertions' => [
+                    '$a===' => '1',
+                    '$b===' => '\'y\'',
                 ],
             ],
             'compact' => [
@@ -3099,6 +3121,16 @@ class FunctionCallTest extends TestCase
                 'error_message' => 'ReservedWord',
                 'ignored_issues' => [],
                 'php_version' => '8.1',
+            ],
+            'extractVarCheckInvalid' => [
+                'code' => '<?php
+                    function takesInt(int $i): void {}
+
+                    $foo = "123hello";
+                    $a = [$foo => 15];
+                    extract($a);
+                    takesInt($foo);',
+                'error_message' => 'InvalidScalarArgument',
             ],
         ];
     }
