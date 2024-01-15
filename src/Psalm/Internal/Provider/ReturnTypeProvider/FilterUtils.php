@@ -24,7 +24,6 @@ use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
@@ -666,10 +665,6 @@ final class FilterUtils
             && !self::hasFlag($flags_int_used, FILTER_REQUIRE_SCALAR)
         ) {
             foreach ($input_type->getAtomicTypes() as $key => $atomic_type) {
-                if ($atomic_type instanceof TList) {
-                    $atomic_type = $atomic_type->getKeyedArray();
-                }
-
                 if ($atomic_type instanceof TKeyedArray) {
                     $input_type = $input_type->getBuilder();
                     $input_type->removeType($key);

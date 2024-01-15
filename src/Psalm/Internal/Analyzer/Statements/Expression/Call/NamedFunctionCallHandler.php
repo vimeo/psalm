@@ -38,7 +38,6 @@ use Psalm\Type\Atomic\TDependentGetType;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLowercaseString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
@@ -295,10 +294,6 @@ final class NamedFunctionCallHandler
                 && $array_type_union->isSingle()
             ) {
                 foreach ($array_type_union->getAtomicTypes() as $array_type) {
-                    if ($array_type instanceof TList) {
-                        $array_type = $array_type->getKeyedArray();
-                    }
-
                     if ($array_type instanceof TKeyedArray) {
                         foreach ($array_type->properties as $key => $type) {
                             // variables must start with letters or underscore

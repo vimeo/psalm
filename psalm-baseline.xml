@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<files psalm-version="dev-master@24735a0157f1e71d45e4ec3e406d89ee413a114f">
+<files psalm-version="dev-master@c9fe76cadc102d1e7eeaf03bbf17daf6bb1f4931">
   <file src="examples/TemplateChecker.php">
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$comment_block->tags['variablesfrom'][0]]]></code>
@@ -236,9 +236,9 @@
     </PossiblyUndefinedArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Cli/Psalm.php">
-    <PossiblyInvalidArgument>
+    <InvalidScalarArgument>
       <code><![CDATA[$options['f'] ?? null]]></code>
-    </PossiblyInvalidArgument>
+    </InvalidScalarArgument>
   </file>
   <file src="src/Psalm/Internal/Cli/Refactor.php">
     <PossiblyUndefinedIntArrayOffset>
@@ -384,32 +384,6 @@
     <PossiblyUndefinedIntArrayOffset>
       <code>$cs[0]</code>
     </PossiblyUndefinedIntArrayOffset>
-  </file>
-  <file src="src/Psalm/Internal/PluginManager/Command/DisableCommand.php">
-    <RedundantCondition>
-      <code>$config_file_path !== null</code>
-    </RedundantCondition>
-    <ReservedWord>
-      <code><![CDATA[$input->getArgument('pluginName')]]></code>
-      <code><![CDATA[$input->getOption('config')]]></code>
-    </ReservedWord>
-  </file>
-  <file src="src/Psalm/Internal/PluginManager/Command/EnableCommand.php">
-    <RedundantCondition>
-      <code>$config_file_path !== null</code>
-    </RedundantCondition>
-    <ReservedWord>
-      <code><![CDATA[$input->getArgument('pluginName')]]></code>
-      <code><![CDATA[$input->getOption('config')]]></code>
-    </ReservedWord>
-  </file>
-  <file src="src/Psalm/Internal/PluginManager/Command/ShowCommand.php">
-    <RedundantCondition>
-      <code>$config_file_path !== null</code>
-    </RedundantCondition>
-    <ReservedWord>
-      <code><![CDATA[$input->getOption('config')]]></code>
-    </ReservedWord>
   </file>
   <file src="src/Psalm/Internal/Provider/ReturnTypeProvider/ArrayMapReturnTypeProvider.php">
     <PossiblyUndefinedIntArrayOffset>
