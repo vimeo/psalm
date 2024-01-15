@@ -26,6 +26,9 @@ collections)
 	git clone --depth=1 git@github.com:psalm/endtoend-test-collections.git
 	cd endtoend-test-collections
 	composer install
+	rm vendor/amphp/amp/lib/functions.php; touch vendor/amphp/amp/lib/functions.php;
+	rm vendor/amphp/amp/lib/Internal/functions.php; touch vendor/amphp/amp/lib/Internal/functions.php
+	rm vendor/amphp/byte-stream/lib/functions.php; touch vendor/amphp/byte-stream/lib/functions.php
 	"$PSALM" --monochrome --show-info=false
 	;;
 
