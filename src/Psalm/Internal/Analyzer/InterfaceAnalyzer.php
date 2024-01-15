@@ -162,6 +162,9 @@ final class InterfaceAnalyzer extends ClassLikeAnalyzer
                     $method_analyzer = new MethodAnalyzer($stmt, $this);
                 } catch (UnexpectedValueException $e) {
                     $key = array_search($stmt, $this->class->stmts);
+                    if ($key === false) {
+                        continue;
+                    }
                     $arr_stmts_wright = array_slice($this->class->stmts, $key + 1);
                     $arr_stmts_left = array_slice($this->class->stmts, 0, $key);
                     if (in_array($stmt, $arr_stmts_wright)) {
