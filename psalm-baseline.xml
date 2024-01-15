@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<files psalm-version="dev-master@c9fe76cadc102d1e7eeaf03bbf17daf6bb1f4931">
+<files psalm-version="dev-master@d12cdf6d429cb32e6934c61bf126329d27e56828">
   <file src="examples/TemplateChecker.php">
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$comment_block->tags['variablesfrom'][0]]]></code>
@@ -634,6 +634,28 @@
       <code>hasLowercaseString</code>
       <code>hasLowercaseString</code>
     </PossiblyUnusedMethod>
+  </file>
+  <file src="tests/Config/PluginListTest.php">
+    <InvalidPropertyAssignmentValue>
+      <code>Mockery::mock(ConfigFile::class)</code>
+    </InvalidPropertyAssignmentValue>
+    <MixedMethodCall>
+      <code>addPlugin</code>
+      <code>expects</code>
+      <code>expects</code>
+      <code>removePlugin</code>
+    </MixedMethodCall>
+    <NoValue>
+      <code><![CDATA[$this->config_file]]></code>
+      <code><![CDATA[$this->config_file]]></code>
+      <code><![CDATA[$this->config_file]]></code>
+      <code><![CDATA[$this->config_file]]></code>
+      <code><![CDATA[$this->config_file]]></code>
+      <code><![CDATA[$this->config_file]]></code>
+      <code><![CDATA[$this->config_file]]></code>
+      <code><![CDATA[$this->config_file]]></code>
+      <code><![CDATA[$this->config_file]]></code>
+    </NoValue>
   </file>
   <file src="tests/TestConfig.php">
     <InvalidExtendClass>
