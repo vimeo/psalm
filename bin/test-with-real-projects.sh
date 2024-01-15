@@ -36,7 +36,7 @@ psl)
 
 	git clone git@github.com:psalm/endtoend-test-psl.git
 	cd endtoend-test-psl
-	git checkout 2.3.x
+	git checkout 2.3.x_master
 	composer install
 	# Avoid conflicts with old psalm when running phar tests
 	rm -rf vendor/vimeo/psalm
