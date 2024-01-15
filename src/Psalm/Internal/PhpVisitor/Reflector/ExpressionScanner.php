@@ -29,9 +29,7 @@ use function defined;
 use function dirname;
 use function explode;
 use function in_array;
-use function preg_match;
 use function str_contains;
-use function strpos;
 use function strtolower;
 use function substr;
 

@@ -56,6 +56,7 @@ use function dirname;
 use function explode;
 use function file_put_contents;
 use function fwrite;
+use function get_class;
 use function implode;
 use function in_array;
 use function is_dir;

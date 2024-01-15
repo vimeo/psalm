@@ -48,7 +48,6 @@ use function count;
 use function explode;
 use function in_array;
 use function str_contains;
-use function str_ends_with;
 use function strlen;
 use function strtolower;
 use function substr;

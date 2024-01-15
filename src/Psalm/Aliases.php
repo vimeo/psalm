@@ -10,6 +10,8 @@ final class Aliases
 {
     use UnserializeMemoryUsageSuppressionTrait;
 
+    public ?int $namespace_first_stmt_start = null;
+
     public ?int $uses_start = null;
 
     public ?int $uses_end = null;

@@ -55,8 +55,8 @@ use function extension_loaded;
 use function in_array;
 use function is_numeric;
 use function is_string;
-use function str_starts_with;
 use function preg_match;
+use function str_starts_with;
 use function strpos;
 use function strtolower;
 
