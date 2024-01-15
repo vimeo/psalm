@@ -100,6 +100,8 @@ class TKeyedArray extends Atomic
         if ($cloned->is_list) {
             $last_k = -1;
             $had_possibly_undefined = false;
+
+            /** @psalm-suppress InaccessibleProperty */
             ksort($cloned->properties);
             foreach ($cloned->properties as $k => $v) {
                 if (is_string($k) || $last_k !== ($k-1) || ($had_possibly_undefined && !$v->possibly_undefined)) {
@@ -403,7 +405,7 @@ class TKeyedArray extends Atomic
 
         $value_type = $value_type->setPossiblyUndefined(false);
 
-        if ($has_defined_keys || $this->fallback_params !== null) {
+        if ($has_defined_keys) {
             return new TNonEmptyArray([$key_type, $value_type]);
         }
         return new TArray([$key_type, $value_type]);

@@ -159,7 +159,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         NodeDataProvider $type_provider,
         ?Context $global_context = null,
         bool $add_mutations = false,
-        array &$byref_vars = []
+        array &$byref_vars = [],
     ): ?bool {
         $storage = $this->storage;
 

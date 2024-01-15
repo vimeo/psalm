@@ -7,6 +7,7 @@ namespace Psalm\Internal;
 use InvalidArgumentException;
 use Psalm\Storage\ImmutableNonCloneableTrait;
 use Stringable;
+use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 
 use function explode;
 use function is_string;
@@ -21,6 +22,7 @@ use function strtolower;
 final class MethodIdentifier implements Stringable
 {
     use ImmutableNonCloneableTrait;
+    use UnserializeMemoryUsageSuppressionTrait;
 
     /**
      * @param lowercase-string $method_name

@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Psalm;
 
+use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
+
 final class Aliases
 {
-    public ?int $namespace_first_stmt_start = null;
+    use UnserializeMemoryUsageSuppressionTrait;
 
     public ?int $uses_start = null;
 

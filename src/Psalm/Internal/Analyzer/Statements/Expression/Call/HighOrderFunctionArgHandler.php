@@ -288,7 +288,8 @@ final class HighOrderFunctionArgHandler
         }
 
         foreach ($container_param->type->getAtomicTypes() as $a) {
-            if (($a instanceof TClosure || $a instanceof TCallable) && !$a->params) {
+            // must check null explicitly, since no params (empty array) would not be handled correctly otherwise
+            if (($a instanceof TClosure || $a instanceof TCallable) && $a->params === null) {
                 return false;
             }
 

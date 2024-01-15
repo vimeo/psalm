@@ -13,6 +13,7 @@ use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeAlias;
 use Psalm\Internal\Type\TypeAlias\LinkableTypeAlias;
 use Psalm\Internal\TypeVisitor\ClasslikeReplacer;
+use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
@@ -82,6 +83,8 @@ use function strtolower;
  */
 abstract class Atomic implements TypeNode, Stringable
 {
+    use UnserializeMemoryUsageSuppressionTrait;
+
     public function __construct(
         /**
          * Whether or not the type comes from a docblock

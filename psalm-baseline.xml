@@ -241,9 +241,9 @@
     </PossiblyUndefinedArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Cli/Psalm.php">
-    <PossiblyInvalidArgument>
+    <InvalidScalarArgument>
       <code><![CDATA[$options['f'] ?? null]]></code>
-    </PossiblyInvalidArgument>
+    </InvalidScalarArgument>
   </file>
   <file src="src/Psalm/Internal/Cli/Refactor.php">
     <PossiblyUndefinedIntArrayOffset>
@@ -402,32 +402,6 @@
     <PossiblyUndefinedIntArrayOffset>
       <code>$cs[0]</code>
     </PossiblyUndefinedIntArrayOffset>
-  </file>
-  <file src="src/Psalm/Internal/PluginManager/Command/DisableCommand.php">
-    <RedundantCondition>
-      <code>$config_file_path !== null</code>
-    </RedundantCondition>
-    <ReservedWord>
-      <code><![CDATA[$input->getArgument('pluginName')]]></code>
-      <code><![CDATA[$input->getOption('config')]]></code>
-    </ReservedWord>
-  </file>
-  <file src="src/Psalm/Internal/PluginManager/Command/EnableCommand.php">
-    <RedundantCondition>
-      <code>$config_file_path !== null</code>
-    </RedundantCondition>
-    <ReservedWord>
-      <code><![CDATA[$input->getArgument('pluginName')]]></code>
-      <code><![CDATA[$input->getOption('config')]]></code>
-    </ReservedWord>
-  </file>
-  <file src="src/Psalm/Internal/PluginManager/Command/ShowCommand.php">
-    <RedundantCondition>
-      <code>$config_file_path !== null</code>
-    </RedundantCondition>
-    <ReservedWord>
-      <code><![CDATA[$input->getOption('config')]]></code>
-    </ReservedWord>
   </file>
   <file src="src/Psalm/Internal/Provider/ReturnTypeProvider/ArrayMapReturnTypeProvider.php">
     <PossiblyUndefinedIntArrayOffset>
@@ -678,6 +652,29 @@
       <code>hasLowercaseString</code>
       <code>hasLowercaseString</code>
     </PossiblyUnusedMethod>
+  </file>
+  <file src="tests/Config/PluginListTest.php">
+    <InvalidArgument>
+      <code><![CDATA[$this->composer_lock]]></code>
+      <code><![CDATA[$this->composer_lock]]></code>
+      <code><![CDATA[$this->composer_lock]]></code>
+      <code><![CDATA[$this->composer_lock]]></code>
+      <code><![CDATA[$this->composer_lock]]></code>
+      <code><![CDATA[$this->composer_lock]]></code>
+      <code><![CDATA[$this->composer_lock]]></code>
+      <code><![CDATA[$this->composer_lock]]></code>
+      <code><![CDATA[$this->composer_lock]]></code>
+      <code><![CDATA[$this->composer_lock]]></code>
+      <code><![CDATA[$this->config_file]]></code>
+      <code><![CDATA[$this->config_file]]></code>
+      <code><![CDATA[$this->config_file]]></code>
+      <code><![CDATA[$this->config_file]]></code>
+      <code><![CDATA[$this->config_file]]></code>
+      <code><![CDATA[$this->config_file]]></code>
+      <code><![CDATA[$this->config_file]]></code>
+      <code><![CDATA[$this->config_file]]></code>
+      <code><![CDATA[$this->config_file]]></code>
+    </InvalidArgument>
   </file>
   <file src="tests/TestConfig.php">
     <InvalidExtendClass>

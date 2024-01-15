@@ -15,6 +15,7 @@ use Psalm\Type\Union;
 final class AttributeArg
 {
     use ImmutableNonCloneableTrait;
+    use UnserializeMemoryUsageSuppressionTrait;
 
     public function __construct(
         public readonly ?string $name,

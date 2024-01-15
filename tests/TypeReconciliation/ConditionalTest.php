@@ -1420,9 +1420,9 @@ class ConditionalTest extends TestCase
             'nullCoalescePossibleMixed' => [
                 'code' => '<?php
                     /**
-                     * @psalm-suppress MixedReturnStatement
+                     * @return array<never, never>|false|string
                      */
-                    function foo() : array {
+                    function foo() {
                         return filter_input(INPUT_POST, "some_var") ?? [];
                     }',
             ],
@@ -1642,7 +1642,7 @@ class ConditionalTest extends TestCase
                 'code' => '<?php
                     /**
                      * @param array<string, int> $arr
-                     * @return non-empty-array<string, int>
+                     * @return array<string, int>
                      */
                     function foo(array $arr) : array {
                         if (isset($arr["a"])) {
