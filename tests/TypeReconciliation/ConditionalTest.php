@@ -1418,10 +1418,9 @@ class ConditionalTest extends TestCase
             'nullCoalescePossibleMixed' => [
                 'code' => '<?php
                     /**
-                     * @psalm-suppress MixedReturnStatement
-                     * @psalm-suppress MixedInferredReturnType
+                     * @return array<never, never>|false|string
                      */
-                    function foo() : array {
+                    function foo() {
                         return filter_input(INPUT_POST, "some_var") ?? [];
                     }',
             ],

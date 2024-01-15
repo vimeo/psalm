@@ -100,6 +100,32 @@ class CodeLocation
     public const CATCH_VAR = 6;
     public const FUNCTION_PHPDOC_METHOD = 7;
 
+    private const PROPERTY_KEYS_FOR_UNSERIALIZE = [
+        'file_path' => 'file_path',
+        'file_name' => 'file_name',
+        'raw_line_number' => 'raw_line_number',
+        "\0" . self::class . "\0" . 'end_line_number' => 'end_line_number',
+        'raw_file_start' => 'raw_file_start',
+        'raw_file_end' => 'raw_file_end',
+        "\0*\0" . 'file_start' => 'file_start',
+        "\0*\0" . 'file_end' => 'file_end',
+        "\0*\0" . 'single_line' => 'single_line',
+        "\0*\0" . 'preview_start' => 'preview_start',
+        "\0" . self::class . "\0" . 'preview_end' => 'preview_end',
+        "\0" . self::class . "\0" . 'selection_start' => 'selection_start',
+        "\0" . self::class . "\0" . 'selection_end' => 'selection_end',
+        "\0" . self::class . "\0" . 'column_from' => 'column_from',
+        "\0" . self::class . "\0" . 'column_to' => 'column_to',
+        "\0" . self::class . "\0" . 'snippet' => 'snippet',
+        "\0" . self::class . "\0" . 'text' => 'text',
+        'docblock_start' => 'docblock_start',
+        "\0" . self::class . "\0" . 'docblock_start_line_number' => 'docblock_start_line_number',
+        "\0*\0" . 'docblock_line_number' => 'docblock_line_number',
+        "\0" . self::class . "\0" . 'regex_type' => 'regex_type',
+        "\0" . self::class . "\0" . 'have_recalculated' => 'have_recalculated',
+        'previous_location' => 'previous_location',
+    ];
+
     public function __construct(
         FileSource $file_source,
         PhpParser\Node $stmt,
@@ -134,6 +160,19 @@ class CodeLocation
         $this->raw_line_number = $stmt->getLine();
 
         $this->docblock_line_number = $comment_line;
+    }
+
+    /**
+     * Suppresses memory usage when unserializing objects.
+     *
+     * @see \Psalm\Storage\UnserializeMemoryUsageSuppressionTrait
+     */
+    public function __unserialize(array $properties): void
+    {
+        foreach (self::PROPERTY_KEYS_FOR_UNSERIALIZE as $key => $property_name) {
+            /** @psalm-suppress PossiblyUndefinedStringArrayOffset */
+            $this->$property_name = $properties[$key];
+        }
     }
 
     /**

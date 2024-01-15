@@ -641,13 +641,31 @@ final class TypeParser
             throw new TypeParseTreeException('No generic params provided for type');
         }
 
-        if ($generic_type_value === 'array' || $generic_type_value === 'associative-array') {
+        if ($generic_type_value === 'array'
+            || $generic_type_value === 'associative-array'
+            || $generic_type_value === 'non-empty-array'
+        ) {
+            if ($generic_type_value !== 'non-empty-array') {
+                $generic_type_value = 'array';
+            }
+
             if ($generic_params[0]->isMixed()) {
                 $generic_params[0] = Type::getArrayKey($from_docblock);
             }
 
             if (count($generic_params) !== 2) {
-                throw new TypeParseTreeException('Too many template parameters for array');
+                throw new TypeParseTreeException('Too many template parameters for '.$generic_type_value);
+            }
+
+            if ($type_aliases !== []) {
+                $intersection_types = self::resolveTypeAliases(
+                    $codebase,
+                    $generic_params[0]->getAtomicTypes(),
+                );
+
+                if ($intersection_types !== []) {
+                    $generic_params[0] = $generic_params[0]->setTypes($intersection_types);
+                }
             }
 
             foreach ($generic_params[0]->getAtomicTypes() as $key => $atomic_type) {
@@ -671,6 +689,7 @@ final class TypeParser
                     || $atomic_type instanceof TNever
                     || $atomic_type instanceof TTemplateParam
                     || $atomic_type instanceof TValueOf
+                    || !$from_docblock
                 ) {
                     continue;
                 }
@@ -690,7 +709,10 @@ final class TypeParser
                 throw new TypeParseTreeException('Invalid array key type ' . $atomic_type->getKey());
             }
 
-            return new TArray($generic_params, $from_docblock);
+            return $generic_type_value === 'array'
+                ? new TArray($generic_params, $from_docblock)
+                : new TNonEmptyArray($generic_params, null, null, 'non-empty-array', $from_docblock)
+            ;
         }
 
         if ($generic_type_value === 'arraylike-object') {
@@ -707,58 +729,6 @@ final class TypeParser
                 ],
                 $from_docblock,
             );
-        }
-
-        if ($generic_type_value === 'non-empty-array') {
-            if ($generic_params[0]->isMixed()) {
-                $generic_params[0] = Type::getArrayKey($from_docblock);
-            }
-
-            if (count($generic_params) !== 2) {
-                throw new TypeParseTreeException('Too many template parameters for non-empty-array');
-            }
-
-            foreach ($generic_params[0]->getAtomicTypes() as $key => $atomic_type) {
-                // PHP 8 values with whitespace after number are counted as numeric
-                // and filter_var treats them as such too
-                if ($atomic_type instanceof TLiteralString
-                    && trim($atomic_type->value) === $atomic_type->value
-                    && ($string_to_int = filter_var($atomic_type->value, FILTER_VALIDATE_INT)) !== false
-                ) {
-                    $builder = $generic_params[0]->getBuilder();
-                    $builder->removeType($key);
-                    $generic_params[0] = $builder->addType(new TLiteralInt($string_to_int, $from_docblock))->freeze();
-                    continue;
-                }
-
-                if ($atomic_type instanceof TInt
-                    || $atomic_type instanceof TString
-                    || $atomic_type instanceof TArrayKey
-                    || $atomic_type instanceof TClassConstant // @todo resolve and check types
-                    || $atomic_type instanceof TMixed
-                    || $atomic_type instanceof TNever
-                    || $atomic_type instanceof TTemplateParam
-                    || $atomic_type instanceof TValueOf
-                ) {
-                    continue;
-                }
-
-                if ($codebase->register_stub_files || $codebase->register_autoload_files) {
-                    $builder = $generic_params[0]->getBuilder();
-                    $builder->removeType($key);
-
-                    if (count($generic_params[0]->getAtomicTypes()) <= 1) {
-                        $builder = $builder->addType(new TArrayKey($from_docblock));
-                    }
-
-                    $generic_params[0] = $builder->freeze();
-                    continue;
-                }
-
-                throw new TypeParseTreeException('Invalid array key type ' . $atomic_type->getKey());
-            }
-
-            return new TNonEmptyArray($generic_params, null, null, 'non-empty-array', $from_docblock);
         }
 
         if ($generic_type_value === 'iterable') {

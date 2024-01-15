@@ -12,6 +12,7 @@ use Psalm\Type\Union;
 final class FunctionLikeParameter implements HasAttributesInterface, TypeNode
 {
     use CustomMetadataTrait;
+    use UnserializeMemoryUsageSuppressionTrait;
 
     /**
      * @var string

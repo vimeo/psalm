@@ -10,6 +10,7 @@ use Psalm\Type\Atomic;
 abstract class Assertion
 {
     use ImmutableNonCloneableTrait;
+    use UnserializeMemoryUsageSuppressionTrait;
 
     abstract public function getNegation(): Assertion;
 
