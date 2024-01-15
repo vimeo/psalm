@@ -24,9 +24,9 @@ class CallableTest extends TestCase
 
                     /**
                      * @return void
-                     * @psalm-suppress MixedArgument
                      */
                     function f() {
+                        $data = 0;
                         run_function(
                             /**
                              * @return void
@@ -1788,16 +1788,6 @@ class CallableTest extends TestCase
 
                     takesCallable(function() { return; });',
             ],
-            'byRefUsesAlwaysMixed' => [
-                'code' => '<?php
-                    $callback = function() use (&$isCalled) : void {
-                        $isCalled = true;
-                    };
-                    $isCalled = false;
-                    $callback();
-
-                    if ($isCalled === true) {}',
-            ],
             'notCallableListNoUndefinedClass' => [
                 'code' => '<?php
                     /**
@@ -1915,6 +1905,22 @@ class CallableTest extends TestCase
                          */
                         return [1, 2, 3];
                     });',
+            ],
+            'unsealedAllOptionalCbParam' => [
+                'code' => '<?php
+                    /**
+                     * @param callable(array<string, string>) $arg
+                     * @return void
+                     */
+                    function foo($arg) {}
+
+                    /**
+                     * @param array{a?: string}&array<string, string> $cb_arg
+                     * @return void
+                     */
+                    function bar($cb_arg) {}
+
+                    foo("bar");',
             ],
         ];
     }

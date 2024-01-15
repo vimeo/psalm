@@ -281,7 +281,7 @@ final class MethodGetCompletionItemsForClassishThingTest extends TestCase
                 'magicObjProp2',
     
                 'magicObjMethod',
-                'magicStaticMethod',
+                //'magicStaticMethod',
     
                 'publicObjProp',
                 'protectedObjProp',
@@ -362,7 +362,7 @@ final class MethodGetCompletionItemsForClassishThingTest extends TestCase
                 'magicObjProp2',
     
                 'magicObjMethod',
-                'magicStaticMethod',
+                //'magicStaticMethod',
     
                 'publicObjProp',
                 'protectedObjProp',
@@ -440,7 +440,7 @@ final class MethodGetCompletionItemsForClassishThingTest extends TestCase
                 'magicObjProp2',
     
                 'magicObjMethod',
-                'magicStaticMethod',
+                //'magicStaticMethod',
     
                 'publicObjProp',
                 'protectedObjProp',

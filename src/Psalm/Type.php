@@ -279,7 +279,7 @@ abstract class Type
         return new Union([$value === null ? new TString() : self::getAtomicStringFromLiteral($value)]);
     }
 
-    /** @return TLiteralString|TNonEmptyString */
+    /** @return TLiteralString|TNonEmptyString|TNonFalsyString */
     public static function getAtomicStringFromLiteral(string $value, bool $from_docblock = false): TString
     {
         $config = Config::getInstance();
@@ -289,10 +289,12 @@ abstract class Type
         $type = $config->eventDispatcher->dispatchStringInterpreter($event);
 
         if (!$type) {
-            if (strlen($value) < $config->max_string_length) {
+            if ($value === '' || strlen($value) < $config->max_string_length) {
                 $type = new TLiteralString($value, $from_docblock);
-            } else {
+            } elseif ($value === '0') {
                 $type = new TNonEmptyString($from_docblock);
+            } else {
+                $type = new TNonFalsyString($from_docblock);
             }
         }
 
@@ -715,6 +717,8 @@ abstract class Type
         ?Union $type_1,
         ?Union $type_2,
         Codebase $codebase,
+        bool $allow_interface_equality = false,
+        bool $allow_float_int_equality = true,
     ): ?Union {
         if ($type_2 === null && $type_1 === null) {
             throw new UnexpectedValueException('At least one type must be provided to combine');
@@ -768,6 +772,8 @@ abstract class Type
                             $type_2_atomic,
                             $codebase,
                             $intersection_performed,
+                            $allow_interface_equality,
+                            $allow_float_int_equality,
                         );
 
                         if (null !== $intersection_atomic) {
@@ -841,6 +847,8 @@ abstract class Type
         Atomic $type_2_atomic,
         Codebase $codebase,
         bool &$intersection_performed,
+        bool $allow_interface_equality = false,
+        bool $allow_float_int_equality = true,
     ): ?Atomic {
         $intersection_atomic = null;
         $wider_type = null;
@@ -886,6 +894,8 @@ abstract class Type
                 $codebase,
                 $type_2_atomic,
                 $type_1_atomic,
+                $allow_interface_equality,
+                $allow_float_int_equality,
             )) {
                 $intersection_atomic = $type_2_atomic;
                 $wider_type = $type_1_atomic;
@@ -894,6 +904,8 @@ abstract class Type
                 $codebase,
                 $type_1_atomic,
                 $type_2_atomic,
+                $allow_interface_equality,
+                $allow_float_int_equality,
             )) {
                 $intersection_atomic = $type_1_atomic;
                 $wider_type = $type_2_atomic;
