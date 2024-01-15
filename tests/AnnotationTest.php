@@ -1365,6 +1365,20 @@ class AnnotationTest extends TestCase
                     }
                     EOT,
             ],
+            'validArrayKeyAlias' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type ArrayKeyType array-key
+                     */
+                    class Bar {}
+
+                    /**
+                     * @psalm-import-type ArrayKeyType from Bar
+                     * @psalm-type UsesArrayKeyType array<ArrayKeyType, bool>
+                     */
+                    class Foo {}',
+                'assertions' => [],
+            ],
         ];
     }
 

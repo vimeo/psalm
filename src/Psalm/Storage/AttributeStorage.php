@@ -12,8 +12,10 @@ use Psalm\CodeLocation;
 final class AttributeStorage
 {
     use ImmutableNonCloneableTrait;
-    public string $fq_class_name;
+    use UnserializeMemoryUsageSuppressionTrait;
 
+    public string $fq_class_name;
+    
     /**
      * @var list<AttributeArg>
      */

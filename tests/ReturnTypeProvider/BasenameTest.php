@@ -34,5 +34,25 @@ class BasenameTest extends TestCase
                 '$base===' => 'string',
             ],
         ];
+
+        yield 'basenameOfStringPathReturnsNonEmptyString' => [
+            'code' => '<?php
+                $foo = rand(0, 1) ? "0" : "world";
+                $base = basename($foo);
+            ',
+            'assertions' => [
+                '$base===' => 'non-empty-string',
+            ],
+        ];
+
+        yield 'basenameOfStringPathReturnsNonFalsyString' => [
+            'code' => '<?php
+                $foo = rand(0, 1) ? "hello" : "world";
+                $base = basename($foo);
+            ',
+            'assertions' => [
+                '$base===' => 'non-falsy-string',
+            ],
+        ];
     }
 }

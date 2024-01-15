@@ -350,7 +350,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                             null,
                             true,
                         ),
-                        $this->getSuppressedIssues(),
+                        $storage->getSuppressedIssuesForTemplateExtendParams() + $this->getSuppressedIssues(),
                     );
                 }
             }
