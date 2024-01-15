@@ -636,16 +636,17 @@
     </PossiblyUnusedMethod>
   </file>
   <file src="tests/Config/PluginListTest.php">
-    <InvalidPropertyAssignmentValue>
-      <code>Mockery::mock(ConfigFile::class)</code>
-    </InvalidPropertyAssignmentValue>
-    <MixedMethodCall>
-      <code>addPlugin</code>
-      <code>expects</code>
-      <code>expects</code>
-      <code>removePlugin</code>
-    </MixedMethodCall>
-    <NoValue>
+    <InvalidArgument>
+      <code><![CDATA[$this->composer_lock]]></code>
+      <code><![CDATA[$this->composer_lock]]></code>
+      <code><![CDATA[$this->composer_lock]]></code>
+      <code><![CDATA[$this->composer_lock]]></code>
+      <code><![CDATA[$this->composer_lock]]></code>
+      <code><![CDATA[$this->composer_lock]]></code>
+      <code><![CDATA[$this->composer_lock]]></code>
+      <code><![CDATA[$this->composer_lock]]></code>
+      <code><![CDATA[$this->composer_lock]]></code>
+      <code><![CDATA[$this->composer_lock]]></code>
       <code><![CDATA[$this->config_file]]></code>
       <code><![CDATA[$this->config_file]]></code>
       <code><![CDATA[$this->config_file]]></code>
@@ -655,7 +656,7 @@
       <code><![CDATA[$this->config_file]]></code>
       <code><![CDATA[$this->config_file]]></code>
       <code><![CDATA[$this->config_file]]></code>
-    </NoValue>
+    </InvalidArgument>
   </file>
   <file src="tests/TestConfig.php">
     <InvalidExtendClass>
