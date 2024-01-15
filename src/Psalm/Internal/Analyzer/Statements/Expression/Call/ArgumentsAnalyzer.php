@@ -1260,7 +1260,7 @@ final class ArgumentsAnalyzer
         Context $context,
         PhpParser\Node\Expr\PropertyFetch $stmt,
         string $fq_class_name,
-        string $prop_name
+        string $prop_name,
     ): void {
         $property_id = $fq_class_name . '::$' . $prop_name;
 
