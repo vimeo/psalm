@@ -7,6 +7,7 @@
     "map": [
         {"build/phar-versions.php" : "phar-versions.php"}
     ],
+    "alias": "psalm_phar",
     "files-bin": ["config.xsd"],
     "directories-bin" : [
         "assets",
