@@ -60,7 +60,7 @@ final class CustomTraverser extends NodeTraverser
                 }
 
                 if ($traverseChildren) {
-                    $subNode = $this->traverseNode($subNode);
+                    $this->traverseNode($subNode);
                     if ($this->stopTraversal) {
                         break;
                     }
