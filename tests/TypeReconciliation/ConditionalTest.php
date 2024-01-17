@@ -38,6 +38,32 @@ class ConditionalTest extends TestCase
                         if ($b === $a) { }
                     }',
             ],
+            'nonStrictConditionTruthyFalsyNoOverlap' => [
+                'code' => '<?php
+                    /**
+					 * @param non-empty-array|null $arg
+					 * @return void
+					 */
+					function foo($arg) {
+						if ($arg) {
+						}
+
+						if (!$arg) {
+						}
+
+						if (bar($arg)) {
+						}
+
+						if (!bar($arg)) {
+						}
+					}
+
+					/**
+					 * @param mixed $arg
+					 * @return non-empty-array|null
+					 */
+					function bar($arg) {}',
+            ],
             'typeResolutionFromDocblock' => [
                 'code' => '<?php
                     class A { }
@@ -568,6 +594,8 @@ class ConditionalTest extends TestCase
                       }
                       return false;
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'numericStringAssertion' => [
                 'code' => '<?php
@@ -1140,11 +1168,19 @@ class ConditionalTest extends TestCase
             ],
             'notEmptyCheckOnMixedInTernary' => [
                 'code' => '<?php
-                    $a = !empty($_SERVER["HTTPS"]) && $_SERVER["HTTPS"] !== "off" ? true : false;',
+                    /** @psalm-suppress InvalidReturnType */
+                    function foo(): array {}
+
+                    $b = foo();
+                    $a = !empty($b["hello"]) && $b["hello"] !== "off" ? true : false;',
             ],
             'notEmptyCheckOnMixedInIf' => [
                 'code' => '<?php
-                    if (!empty($_SERVER["HTTPS"]) && $_SERVER["HTTPS"] !== "off") {
+                    /** @psalm-suppress InvalidReturnType */
+                    function foo(): array {}
+
+                    $b = foo();
+                    if (!empty($b["hello"]) && $b["hello"] !== "off") {
                         $a = true;
                     } else {
                         $a = false;
@@ -1917,6 +1953,8 @@ class ConditionalTest extends TestCase
                             if ($a && strlen($a) > 5) {}
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'arrayUnionTypeSwitching' => [
                 'code' => '<?php
@@ -1932,6 +1970,8 @@ class ConditionalTest extends TestCase
 
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'propertySetOnElementInConditional' => [
                 'code' => '<?php
@@ -2139,6 +2179,8 @@ class ConditionalTest extends TestCase
                             echo $valuePath;
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'issetAssertionOnStaticProperty' => [
                 'code' => '<?php
@@ -2483,6 +2525,8 @@ class ConditionalTest extends TestCase
 
                         return [$type];
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'nonEmptyStringAfterLiteralCheck' => [
                 'code' => '<?php
@@ -3491,6 +3535,66 @@ class ConditionalTest extends TestCase
                     }
                     ',
                 'error_message' => 'TypeDoesNotContainType',
+            ],
+            'nonStrictConditionTruthyFalsy' => [
+                'code' => '<?php
+                    /**
+					 * @param array|null $arg
+					 * @return void
+					 */
+					function foo($arg) {
+						if ($arg) {
+						}
+					}',
+                'error_message' => 'RiskyTruthyFalsyComparison',
+            ],
+            'nonStrictConditionTruthyFalsyNegated' => [
+                'code' => '<?php
+                    /**
+					 * @param array|null $arg
+					 * @return void
+					 */
+					function foo($arg) {
+						if (!$arg) {
+						}
+					}',
+                'error_message' => 'RiskyTruthyFalsyComparison',
+            ],
+            'nonStrictConditionTruthyFalsyFuncCall' => [
+                'code' => '<?php
+                    /**
+					 * @param array|null $arg
+					 * @return void
+					 */
+					function foo($arg) {
+						if (bar($arg)) {
+						}
+					}
+
+					/**
+					 * @param mixed $arg
+					 * @return array|null
+					 */
+					function bar($arg) {}',
+                'error_message' => 'RiskyTruthyFalsyComparison',
+            ],
+            'nonStrictConditionTruthyFalsyFuncCallNegated' => [
+                'code' => '<?php
+                    /**
+					 * @param array|null $arg
+					 * @return void
+					 */
+					function foo($arg) {
+						if (!bar($arg)) {
+						}
+					}
+
+					/**
+					 * @param mixed $arg
+					 * @return array|null
+					 */
+					function bar($arg) {}',
+                'error_message' => 'RiskyTruthyFalsyComparison',
             ],
             'redundantConditionForNonEmptyString' => [
                 'code' => '<?php
