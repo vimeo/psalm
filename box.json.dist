@@ -8,6 +8,7 @@
         {"build/phar-versions.php" : "phar-versions.php"}
     ],
     "alias": "psalm_phar",
+    "timestamp": "2020-10-20T10:01:11+00:00",
     "files-bin": ["config.xsd"],
     "directories-bin" : [
         "assets",
