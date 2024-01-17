@@ -46,6 +46,7 @@ use function preg_last_error_msg;
 use function preg_replace;
 use function preg_split;
 use function realpath;
+use function str_starts_with;
 use function strpos;
 use function substr;
 
@@ -93,7 +94,7 @@ final class Refactor
 
         array_map(
             static function (string $arg) use ($valid_long_options): void {
-                if (strpos($arg, '--') === 0 && $arg !== '--') {
+                if (str_starts_with($arg, '--') && $arg !== '--') {
                     $arg_name = (string) preg_replace('/=.*$/', '', substr($arg, 2), 1);
 
                     if ($arg_name === 'refactor') {

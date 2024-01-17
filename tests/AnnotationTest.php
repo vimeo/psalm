@@ -1365,6 +1365,20 @@ class AnnotationTest extends TestCase
                     }
                     EOT,
             ],
+            'validArrayKeyAlias' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type ArrayKeyType array-key
+                     */
+                    class Bar {}
+
+                    /**
+                     * @psalm-import-type ArrayKeyType from Bar
+                     * @psalm-type UsesArrayKeyType array<ArrayKeyType, bool>
+                     */
+                    class Foo {}',
+                'assertions' => [],
+            ],
         ];
     }
 
@@ -1383,7 +1397,15 @@ class AnnotationTest extends TestCase
                     }',
                 'error_message' => 'MissingDocblockType',
             ],
-
+            'invalidArrayKeyType' => [
+                'code' => '<?php
+                    /**
+                     * @param array<float, string> $arg
+                     * @return void
+                     */
+                    function foo($arg) {}',
+                'error_message' => 'InvalidDocblock',
+            ],
             'invalidClassMethodReturnBrackets' => [
                 'code' => '<?php
                     class C {

@@ -55,6 +55,8 @@ class TypeAlgebraTest extends TestCase
                         if (!$a) return $b;
                         return $a;
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'twoVarLogicNotNestedWithAllPathsReturning' => [
                 'code' => '<?php
@@ -69,6 +71,8 @@ class TypeAlgebraTest extends TestCase
                             }
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'twoVarLogicNotNestedWithAssignmentBeforeReturn' => [
                 'code' => '<?php
@@ -85,6 +89,8 @@ class TypeAlgebraTest extends TestCase
 
                         return $a;
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'invertedTwoVarLogicNotNested' => [
                 'code' => '<?php
@@ -98,6 +104,8 @@ class TypeAlgebraTest extends TestCase
                         if (!$a) return $b;
                         return $a;
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'invertedTwoVarLogicNotNestedWithAssignmentBeforeReturn' => [
                 'code' => '<?php
@@ -112,6 +120,8 @@ class TypeAlgebraTest extends TestCase
                         if (!$a) return $b;
                         return $a;
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'twoVarLogicNotNestedWithElseifAndNoNegations' => [
                 'code' => '<?php
@@ -127,6 +137,8 @@ class TypeAlgebraTest extends TestCase
                         if (!$a) return $b;
                         return $a;
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'threeVarLogicNotNestedWithNoRedefinitionsWithClasses' => [
                 'code' => '<?php
@@ -165,6 +177,8 @@ class TypeAlgebraTest extends TestCase
                         if (!$a) return $b;
                         return $a;
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'threeVarLogicNotNestedAndOrWithNoRedefinitions' => [
                 'code' => '<?php
@@ -181,6 +195,8 @@ class TypeAlgebraTest extends TestCase
                         if (!$a) return $b;
                         return $a;
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'twoVarLogicNotNestedWithElseifCorrectlyNegatedInElseIf' => [
                 'code' => '<?php
@@ -289,12 +305,12 @@ class TypeAlgebraTest extends TestCase
                     $arr = [];
 
                     foreach ([0, 1, 2, 3] as $i) {
-                        $a = rand(0, 1) ? 5 : "010";
+                        $a = (int) (rand(0, 1) ? 5 : "010");
 
-                        if (!isset($arr[(int) $a])) {
-                            $arr[(int) $a] = 5;
+                        if (!isset($arr[$a])) {
+                            $arr[$a] = 5;
                         } else {
-                            $arr[(int) $a] += 4;
+                            $arr[$a] += 4;
                         }
                     }',
             ],
@@ -417,6 +433,8 @@ class TypeAlgebraTest extends TestCase
                         }
                         return $arr;
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'lotsaTruthyStatements' => [
                 'code' => '<?php
@@ -999,6 +1017,8 @@ class TypeAlgebraTest extends TestCase
 
                         return $b;
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'cancelOutDifferentStatement' => [
                 'code' => '<?php
@@ -1013,6 +1033,8 @@ class TypeAlgebraTest extends TestCase
 
                         return $b;
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'moreChecks' => [
                 'code' => '<?php
@@ -1187,6 +1209,8 @@ class TypeAlgebraTest extends TestCase
 
                         if ($foo === null) {}
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'compareToIntInsideIfCNF' => [
                 'code' => '<?php
@@ -1199,6 +1223,8 @@ class TypeAlgebraTest extends TestCase
 
                         if ($foo === null) {}
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'ternaryAssertionOnBool' => [
                 'code' => '<?php
@@ -1305,6 +1331,7 @@ class TypeAlgebraTest extends TestCase
                         return $a;
                     }',
                 'error_message' => 'NullableReturnStatement',
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'invertedTwoVarLogicNotNestedWithElseif' => [
                 'code' => '<?php
@@ -1321,6 +1348,7 @@ class TypeAlgebraTest extends TestCase
                         return $a;
                     }',
                 'error_message' => 'NullableReturnStatement',
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'threeVarLogicWithElseifAndAnd' => [
                 'code' => '<?php
@@ -1338,6 +1366,7 @@ class TypeAlgebraTest extends TestCase
                         return $a;
                     }',
                 'error_message' => 'TypeDoesNotContainType',
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'twoVarLogicNotNestedWithElseifIncorrectlyReinforcedInIf' => [
                 'code' => '<?php
@@ -1354,6 +1383,7 @@ class TypeAlgebraTest extends TestCase
                         return $a;
                     }',
                 'error_message' => 'RedundantCondition',
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'repeatedIfStatements' => [
                 'code' => '<?php
@@ -1368,6 +1398,7 @@ class TypeAlgebraTest extends TestCase
                         }
                     }',
                 'error_message' => 'TypeDoesNotContainType',
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'repeatedConditionals' => [
                 'code' => '<?php
@@ -1460,6 +1491,7 @@ class TypeAlgebraTest extends TestCase
                         }
                     }',
                 'error_message' => 'RedundantCondition',
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'dependentTypeInvalidated' => [
                 'code' => '<?php

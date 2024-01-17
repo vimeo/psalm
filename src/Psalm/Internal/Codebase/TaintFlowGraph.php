@@ -14,6 +14,7 @@ use Psalm\Issue\TaintedCallable;
 use Psalm\Issue\TaintedCookie;
 use Psalm\Issue\TaintedCustom;
 use Psalm\Issue\TaintedEval;
+use Psalm\Issue\TaintedExtract;
 use Psalm\Issue\TaintedFile;
 use Psalm\Issue\TaintedHeader;
 use Psalm\Issue\TaintedHtml;
@@ -224,15 +225,12 @@ final class TaintFlowGraph extends DataFlowGraph
                 $generated_sources = $this->getSpecializedSources($source);
 
                 foreach ($generated_sources as $generated_source) {
-                    $new_sources = array_merge(
-                        $new_sources,
-                        $this->getChildNodes(
-                            $generated_source,
-                            $source_taints,
-                            $sinks,
-                            $visited_source_ids,
-                        ),
-                    );
+                    $new_sources = [...$new_sources, ...$this->getChildNodes(
+                        $generated_source,
+                        $source_taints,
+                        $sinks,
+                        $visited_source_ids,
+                    )];
                 }
             }
 
@@ -471,6 +469,15 @@ final class TaintFlowGraph extends DataFlowGraph
                                 );
                                 break;
 
+                            case TaintKind::INPUT_EXTRACT:
+                                $issue = new TaintedExtract(
+                                    'Detected tainted extract',
+                                    $issue_location,
+                                    $issue_trace,
+                                    $path,
+                                );
+                                break;
+
                             default:
                                 $issue = new TaintedCustom(
                                     'Detected tainted ' . $matching_taint,
@@ -543,7 +550,7 @@ final class TaintFlowGraph extends DataFlowGraph
 
         return array_filter(
             $generated_sources,
-            [$this, 'doesForwardEdgeExist'],
+            $this->doesForwardEdgeExist(...),
         );
     }
 

@@ -515,17 +515,39 @@ class FunctionCallTest extends TestCase
             ],
             'extractVarCheck' => [
                 'code' => '<?php
+                    /**
+                     * @psalm-suppress InvalidReturnType
+                     * @return array{a: 15, ...}
+                     */
+                    function getUnsealedArray() {}
                     function takesString(string $str): void {}
 
-                    $foo = null;
-                    $a = ["$foo" => "bar"];
+                    $foo = "foo";
+                    $a = getUnsealedArray();
                     extract($a);
                     takesString($foo);',
                 'assertions' => [],
                 'ignored_issues' => [
-                    'MixedAssignment',
-                    'MixedArrayAccess',
                     'MixedArgument',
+                ],
+            ],
+            'extractVarCheckValid' => [
+                'code' => '<?php
+                    function takesInt(int $i): void {}
+
+                    $foo = "foo";
+                    $a = [$foo => 15];
+                    extract($a);
+                    takesInt($foo);',
+            ],
+            'extractSkipExtr' => [
+                'code' => '<?php
+                    $a = 1;
+
+                    extract(["a" => "x", "b" => "y"], EXTR_SKIP);',
+                'assertions' => [
+                    '$a===' => '1',
+                    '$b===' => '\'y\'',
                 ],
             ],
             'compact' => [
@@ -1029,6 +1051,41 @@ class FunctionCallTest extends TestCase
                     '$c' => 'float|string',
                     '$d' => 'string',
                 ],
+            ],
+            'filterInput' => [
+                'code' => '<?php
+                    function filterInt(string $s) : int {
+                        $filtered = filter_var($s, FILTER_VALIDATE_INT);
+                        if ($filtered === false) {
+                            return 0;
+                        }
+                        return $filtered;
+                    }
+                    function filterNullableInt(string $s) : ?int {
+                        return filter_var($s, FILTER_VALIDATE_INT, ["options" => ["default" => null]]);
+                    }
+                    function filterIntWithDefault(string $s) : int {
+                        return filter_var($s, FILTER_VALIDATE_INT, ["options" => ["default" => 5]]);
+                    }
+                    function filterBool(string $s) : bool {
+                        return filter_var($s, FILTER_VALIDATE_BOOLEAN);
+                    }
+                    function filterNullableBool(string $s) : ?bool {
+                        return filter_var($s, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+                    }
+                    function filterNullableBoolWithFlagsArray(string $s) : ?bool {
+                        return filter_var($s, FILTER_VALIDATE_BOOLEAN, ["flags" => FILTER_NULL_ON_FAILURE]);
+                    }
+                    function filterFloat(string $s) : float {
+                        $filtered = filter_var($s, FILTER_VALIDATE_FLOAT);
+                        if ($filtered === false) {
+                            return 0.0;
+                        }
+                        return $filtered;
+                    }
+                    function filterFloatWithDefault(string $s) : float {
+                        return filter_var($s, FILTER_VALIDATE_FLOAT, ["options" => ["default" => 5.0]]);
+                    }',
             ],
             'filterVar' => [
                 'code' => '<?php
@@ -1882,7 +1939,7 @@ class FunctionCallTest extends TestCase
             'strposAllowDictionary' => [
                 'code' => '<?php
                     function sayHello(string $format): void {
-                        if (strpos("abcdefghijklmno", $format)) {}
+                        if (strpos("abcdefghijklmno", $format) !== false) {}
                     }',
             ],
             'curlInitIsResourceAllowedIn7x' => [
@@ -2083,7 +2140,7 @@ class FunctionCallTest extends TestCase
             'strposFirstParamAllowClassString' => [
                 'code' => '<?php
                     function sayHello(string $needle): void {
-                        if (strpos(DateTime::class, $needle)) {}
+                        if (strpos(DateTime::class, $needle) !== false) {}
                     }',
             ],
             'mb_strtolowerProducesStringWithSecondArgument' => [
@@ -2354,10 +2411,33 @@ class FunctionCallTest extends TestCase
                     fooFoo("string");',
                 'error_message' => 'InvalidScalarArgument',
             ],
+            'invalidArgumentCallableWithoutArgsUnion' => [
+                'code' => '<?php
+                    function foo(int $a): void {}
+
+                    /**
+                     * @param callable()|float $callable
+                     * @return void
+                     */
+                    function acme($callable) {}
+                    acme("foo");',
+                'error_message' => 'InvalidArgument',
+            ],
             'invalidArgumentWithDeclareStrictTypes' => [
                 'code' => '<?php declare(strict_types=1);
                     function fooFoo(int $a): void {}
                     fooFoo("string");',
+                'error_message' => 'InvalidArgument',
+            ],
+            'invalidArgumentFalseTrueExpected' => [
+                'code' => '<?php
+                    /**
+                     * @param true|string $arg
+                     * @return void
+                     */
+                    function foo($arg) {}
+
+                    foo(false);',
                 'error_message' => 'InvalidArgument',
             ],
             'builtinFunctioninvalidArgumentWithWeakTypes' => [
@@ -3043,6 +3123,16 @@ class FunctionCallTest extends TestCase
                 'error_message' => 'ReservedWord',
                 'ignored_issues' => [],
                 'php_version' => '8.1',
+            ],
+            'extractVarCheckInvalid' => [
+                'code' => '<?php
+                    function takesInt(int $i): void {}
+
+                    $foo = "123hello";
+                    $a = [$foo => 15];
+                    extract($a);
+                    takesInt($foo);',
+                'error_message' => 'InvalidScalarArgument',
             ],
         ];
     }

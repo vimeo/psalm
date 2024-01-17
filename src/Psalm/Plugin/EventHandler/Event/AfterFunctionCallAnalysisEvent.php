@@ -13,41 +13,20 @@ use Psalm\Type\Union;
 
 final class AfterFunctionCallAnalysisEvent
 {
-    private FuncCall $expr;
-    /**
-     * @var non-empty-string
-     */
-    private string $function_id;
-    private Context $context;
-    private StatementsSource $statements_source;
-    private Codebase $codebase;
-    private Union $return_type_candidate;
-    /**
-     * @var FileManipulation[]
-     */
-    private array $file_replacements;
-
     /**
      * @param non-empty-string $function_id
      * @param FileManipulation[] $file_replacements
      * @internal
      */
     public function __construct(
-        FuncCall $expr,
-        string $function_id,
-        Context $context,
-        StatementsSource $statements_source,
-        Codebase $codebase,
-        Union $return_type_candidate,
-        array $file_replacements,
+        private readonly FuncCall $expr,
+        private readonly string $function_id,
+        private readonly Context $context,
+        private readonly StatementsSource $statements_source,
+        private readonly Codebase $codebase,
+        private readonly Union $return_type_candidate,
+        private array $file_replacements,
     ) {
-        $this->expr = $expr;
-        $this->function_id = $function_id;
-        $this->context = $context;
-        $this->statements_source = $statements_source;
-        $this->codebase = $codebase;
-        $this->return_type_candidate = $return_type_candidate;
-        $this->file_replacements = $file_replacements;
     }
 
     public function getExpr(): FuncCall

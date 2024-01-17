@@ -89,7 +89,7 @@ final class StaticAnalyzer
             }
 
             if ($context->check_variables) {
-                $context->vars_in_scope[$var_id] = $comment_type ? $comment_type : Type::getMixed();
+                $context->vars_in_scope[$var_id] = $comment_type ?: Type::getMixed();
                 $context->vars_possibly_in_scope[$var_id] = true;
                 $context->assigned_var_ids[$var_id] = (int) $stmt->getAttribute('startFilePos');
                 $statements_analyzer->byref_uses[$var_id] = true;

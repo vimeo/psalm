@@ -44,7 +44,48 @@ final class BasenameReturnTypeProvider implements FunctionReturnTypeProviderInte
         );
 
         if ($evaled_path === null) {
-            return Type::getString();
+            $union = $statements_source->getNodeTypeProvider()->getType($call_args[0]->value);
+            $generic = false;
+            $non_empty = false;
+            if ($union !== null) {
+                foreach ($union->getAtomicTypes() as $atomic) {
+                    if ($atomic instanceof Type\Atomic\TNonFalsyString) {
+                        continue;
+                    }
+
+                    if ($atomic instanceof Type\Atomic\TLiteralString) {
+                        if ($atomic->value === '') {
+                            $generic = true;
+                            break;
+                        }
+
+                        if ($atomic->value === '0') {
+                            $non_empty = true;
+                            continue;
+                        }
+
+                        continue;
+                    }
+
+                    if ($atomic instanceof Type\Atomic\TNonEmptyString) {
+                        $non_empty = true;
+                        continue;
+                    }
+
+                    $generic = true;
+                    break;
+                }
+            }
+
+            if ($union === null || $generic) {
+                return Type::getString();
+            }
+
+            if ($non_empty) {
+                return Type::getNonEmptyString();
+            }
+
+            return Type::getNonFalsyString();
         }
 
         $basename = basename($evaled_path);

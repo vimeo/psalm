@@ -14,37 +14,37 @@ final class CommitInfo
     /**
      * Commit ID.
      */
-    protected ?string $id = null;
+    private ?string $id = null;
 
     /**
      * Author name.
      */
-    protected ?string $author_name = null;
+    private ?string $author_name = null;
 
     /**
      * Author email.
      */
-    protected ?string $author_email = null;
+    private ?string $author_email = null;
 
     /**
      * Committer name.
      */
-    protected ?string $committer_name = null;
+    private ?string $committer_name = null;
 
     /**
      * Committer email.
      */
-    protected ?string $committer_email = null;
+    private ?string $committer_email = null;
 
     /**
      * Commit message.
      */
-    protected ?string $message = null;
+    private ?string $message = null;
 
     /**
      * Commit message.
      */
-    protected ?int $date = null;
+    private ?int $date = null;
 
     public function toArray(): array
     {

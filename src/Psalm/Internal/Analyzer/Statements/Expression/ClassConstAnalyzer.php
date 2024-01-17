@@ -263,9 +263,9 @@ final class ClassConstAnalyzer
                     [],
                     $stmt->class->getFirst() === "static",
                 );
-            } catch (InvalidArgumentException $_) {
+            } catch (InvalidArgumentException) {
                 return true;
-            } catch (CircularReferenceException $e) {
+            } catch (CircularReferenceException) {
                 IssueBuffer::maybeAdd(
                     new CircularReference(
                         'Constant ' . $const_id . ' contains a circular reference',
@@ -567,9 +567,9 @@ final class ClassConstAnalyzer
                     $class_visibility,
                     $statements_analyzer,
                 );
-            } catch (InvalidArgumentException $_) {
+            } catch (InvalidArgumentException) {
                 return true;
-            } catch (CircularReferenceException $e) {
+            } catch (CircularReferenceException) {
                 IssueBuffer::maybeAdd(
                     new CircularReference(
                         'Constant ' . $const_id . ' contains a circular reference',

@@ -295,6 +295,22 @@ class AttributeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.2',
             ],
+            'override' => [
+                'code' => '<?php
+
+                    namespace OverrideAttribute;
+
+                    use Override;
+
+                    class HelloWorld {
+                        #[Override]
+                        public function __invoke() {}
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
             'sensitiveParameter' => [
                 'code' => '<?php
 

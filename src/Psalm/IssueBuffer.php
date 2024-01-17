@@ -74,8 +74,8 @@ use function sha1;
 use function sprintf;
 use function str_repeat;
 use function str_replace;
+use function str_starts_with;
 use function strlen;
-use function strpos;
 use function trim;
 use function usort;
 
@@ -88,39 +88,39 @@ final class IssueBuffer
     /**
      * @var array<string, list<IssueData>>
      */
-    protected static array $issues_data = [];
+    private static array $issues_data = [];
 
     /**
      * @var array<int, array>
      */
-    protected static array $console_issues = [];
+    private static array $console_issues = [];
 
     /**
      * @var array<string, int>
      */
-    protected static array $fixable_issue_counts = [];
+    private static array $fixable_issue_counts = [];
 
-    protected static int $error_count = 0;
+    private static int $error_count = 0;
 
     /**
      * @var array<string, bool>
      */
-    protected static array $emitted = [];
+    private static array $emitted = [];
 
-    protected static int $recording_level = 0;
+    private static int $recording_level = 0;
 
     /** @var array<int, array<int, CodeIssue>> */
-    protected static array $recorded_issues = [];
+    private static array $recorded_issues = [];
 
     /**
      * @var array<string, array<int, int>>
      */
-    protected static array $unused_suppressions = [];
+    private static array $unused_suppressions = [];
 
     /**
      * @var array<string, array<int, bool>>
      */
-    protected static array $used_suppressions = [];
+    private static array $used_suppressions = [];
 
     /** @var array<array-key,mixed> */
     private static array $server = [];
@@ -132,6 +132,14 @@ final class IssueBuffer
      */
     public static function accepts(CodeIssue $e, array $suppressed_issues = [], bool $is_fixable = false): bool
     {
+        $config = Config::getInstance();
+        $project_analyzer = ProjectAnalyzer::getInstance();
+        $codebase = $project_analyzer->getCodebase();
+        $event = new BeforeAddIssueEvent($e, $is_fixable, $codebase);
+        if ($config->eventDispatcher->dispatchBeforeAddIssue($event) === false) {
+            return false;
+        }
+
         if (self::isSuppressed($e, $suppressed_issues)) {
             return false;
         }
@@ -154,7 +162,7 @@ final class IssueBuffer
      */
     public static function addUnusedSuppression(string $file_path, int $offset, string $issue_type): void
     {
-        if (strpos($issue_type, 'Tainted') === 0) {
+        if (str_starts_with($issue_type, 'Tainted')) {
             return;
         }
 
@@ -181,7 +189,7 @@ final class IssueBuffer
     {
         $config = Config::getInstance();
 
-        $fqcn_parts = explode('\\', get_class($e));
+        $fqcn_parts = explode('\\', $e::class);
         $issue_type = array_pop($fqcn_parts);
         $file_path = $e->getFilePath();
 
@@ -257,11 +265,6 @@ final class IssueBuffer
         $project_analyzer = ProjectAnalyzer::getInstance();
         $codebase = $project_analyzer->getCodebase();
 
-        $event = new BeforeAddIssueEvent($e, $is_fixable, $codebase);
-        if ($config->eventDispatcher->dispatchBeforeAddIssue($event) === false) {
-            return false;
-        }
-
         $fqcn_parts = explode('\\', get_class($e));
         $issue_type = array_pop($fqcn_parts);
 
@@ -269,7 +272,7 @@ final class IssueBuffer
             return false;
         }
 
-        $is_tainted = strpos($issue_type, 'Tainted') === 0;
+        $is_tainted = str_starts_with($issue_type, 'Tainted');
 
         if ($codebase->taint_flow_graph && !$is_tainted) {
             return false;
@@ -706,7 +709,7 @@ final class IssueBuffer
 
             try {
                 $source_control_info = (new GitInfoCollector())->collect();
-            } catch (RuntimeException $e) {
+            } catch (RuntimeException) {
                 // do nothing
             }
 
@@ -896,89 +899,100 @@ final class IssueBuffer
 
         $format = $report_options->format;
 
-        switch ($format) {
-            case Report::TYPE_COMPACT:
-                $output = new CompactReport($normalized_data, self::$fixable_issue_counts, $report_options);
-                break;
-
-            case Report::TYPE_EMACS:
-                $output = new EmacsReport($normalized_data, self::$fixable_issue_counts, $report_options);
-                break;
-
-            case Report::TYPE_TEXT:
-                $output = new TextReport($normalized_data, self::$fixable_issue_counts, $report_options);
-                break;
-
-            case Report::TYPE_JSON:
-                $output = new JsonReport($normalized_data, self::$fixable_issue_counts, $report_options);
-                break;
-
-            case Report::TYPE_BY_ISSUE_LEVEL:
-                $output = new ByIssueLevelAndTypeReport($normalized_data, self::$fixable_issue_counts, $report_options);
-                break;
-
-            case Report::TYPE_JSON_SUMMARY:
-                $output = new JsonSummaryReport(
-                    $normalized_data,
-                    self::$fixable_issue_counts,
-                    $report_options,
-                    $mixed_expression_count,
-                    $total_expression_count,
-                );
-                break;
-
-            case Report::TYPE_SONARQUBE:
-                $output = new SonarqubeReport($normalized_data, self::$fixable_issue_counts, $report_options);
-                break;
-
-            case Report::TYPE_PYLINT:
-                $output = new PylintReport($normalized_data, self::$fixable_issue_counts, $report_options);
-                break;
-
-            case Report::TYPE_CHECKSTYLE:
-                $output = new CheckstyleReport($normalized_data, self::$fixable_issue_counts, $report_options);
-                break;
-
-            case Report::TYPE_XML:
-                $output = new XmlReport($normalized_data, self::$fixable_issue_counts, $report_options);
-                break;
-
-            case Report::TYPE_JUNIT:
-                $output = new JunitReport($normalized_data, self::$fixable_issue_counts, $report_options);
-                break;
-
-            case Report::TYPE_CONSOLE:
-                $output = new ConsoleReport($normalized_data, self::$fixable_issue_counts, $report_options);
-                break;
-
-            case Report::TYPE_GITHUB_ACTIONS:
-                $output = new GithubActionsReport($normalized_data, self::$fixable_issue_counts, $report_options);
-                break;
-
-            case Report::TYPE_PHP_STORM:
-                $output = new PhpStormReport($normalized_data, self::$fixable_issue_counts, $report_options);
-                break;
-
-            case Report::TYPE_SARIF:
-                $output = new SarifReport($normalized_data, self::$fixable_issue_counts, $report_options);
-                break;
-
-            case Report::TYPE_CODECLIMATE:
-                $output = new CodeClimateReport($normalized_data, self::$fixable_issue_counts, $report_options);
-                break;
-
-            case Report::TYPE_COUNT:
-                $output = new CountReport($normalized_data, self::$fixable_issue_counts, $report_options);
-                break;
-
-            default:
-                throw new RuntimeException('Unexpected report format: ' . $report_options->format);
-        }
+        $output = match ($format) {
+            Report::TYPE_COMPACT => new CompactReport(
+                $normalized_data,
+                self::$fixable_issue_counts,
+                $report_options,
+            ),
+            Report::TYPE_EMACS => new EmacsReport(
+                $normalized_data,
+                self::$fixable_issue_counts,
+                $report_options,
+            ),
+            Report::TYPE_TEXT => new TextReport(
+                $normalized_data,
+                self::$fixable_issue_counts,
+                $report_options,
+            ),
+            Report::TYPE_JSON => new JsonReport(
+                $normalized_data,
+                self::$fixable_issue_counts,
+                $report_options,
+            ),
+            Report::TYPE_BY_ISSUE_LEVEL => new ByIssueLevelAndTypeReport(
+                $normalized_data,
+                self::$fixable_issue_counts,
+                $report_options,
+            ),
+            Report::TYPE_JSON_SUMMARY => new JsonSummaryReport(
+                $normalized_data,
+                self::$fixable_issue_counts,
+                $report_options,
+                $mixed_expression_count,
+                $total_expression_count,
+            ),
+            Report::TYPE_SONARQUBE => new SonarqubeReport(
+                $normalized_data,
+                self::$fixable_issue_counts,
+                $report_options,
+            ),
+            Report::TYPE_PYLINT => new PylintReport(
+                $normalized_data,
+                self::$fixable_issue_counts,
+                $report_options,
+            ),
+            Report::TYPE_CHECKSTYLE => new CheckstyleReport(
+                $normalized_data,
+                self::$fixable_issue_counts,
+                $report_options,
+            ),
+            Report::TYPE_XML => new XmlReport(
+                $normalized_data,
+                self::$fixable_issue_counts,
+                $report_options,
+            ),
+            Report::TYPE_JUNIT => new JunitReport(
+                $normalized_data,
+                self::$fixable_issue_counts,
+                $report_options,
+            ),
+            Report::TYPE_CONSOLE => new ConsoleReport(
+                $normalized_data,
+                self::$fixable_issue_counts,
+                $report_options,
+            ),
+            Report::TYPE_GITHUB_ACTIONS => new GithubActionsReport(
+                $normalized_data,
+                self::$fixable_issue_counts,
+                $report_options,
+            ),
+            Report::TYPE_PHP_STORM => new PhpStormReport(
+                $normalized_data,
+                self::$fixable_issue_counts,
+                $report_options,
+            ),
+            Report::TYPE_SARIF => new SarifReport(
+                $normalized_data,
+                self::$fixable_issue_counts,
+                $report_options,
+            ),
+            Report::TYPE_CODECLIMATE => new CodeClimateReport(
+                $normalized_data,
+                self::$fixable_issue_counts,
+                $report_options,
+            ),
+            Report::TYPE_COUNT => new CountReport(
+                $normalized_data,
+                self::$fixable_issue_counts,
+                $report_options,
+            ),
+        };
 
         return $output->create();
     }
 
-    protected static function alreadyEmitted(string $message): bool
+    public static function alreadyEmitted(string $message): bool
     {
         $sham = sha1($message);
 

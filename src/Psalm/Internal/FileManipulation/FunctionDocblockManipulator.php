@@ -17,7 +17,6 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Scanner\ParsedDocblock;
 
 use function array_key_exists;
-use function array_merge;
 use function array_reduce;
 use function array_slice;
 use function count;
@@ -45,13 +44,11 @@ final class FunctionDocblockManipulator
      */
     private static array $manipulators = [];
 
-    private Closure|Function_|ClassMethod|ArrowFunction $stmt;
+    private readonly int $docblock_start;
 
-    private int $docblock_start;
+    private readonly int $docblock_end;
 
-    private int $docblock_end;
-
-    private int $return_typehint_area_start;
+    private readonly int $return_typehint_area_start;
 
     private ?int $return_typehint_colon_start = null;
 
@@ -110,12 +107,11 @@ final class FunctionDocblockManipulator
         return $manipulator;
     }
 
-    /**
-     * @param Closure|Function_|ClassMethod|ArrowFunction $stmt
-     */
-    private function __construct(string $file_path, FunctionLike $stmt, ProjectAnalyzer $project_analyzer)
-    {
-        $this->stmt = $stmt;
+    private function __construct(
+        string $file_path,
+        private readonly Closure|Function_|ClassMethod|ArrowFunction $stmt,
+        ProjectAnalyzer $project_analyzer,
+    ) {
         $docblock = $stmt->getDocComment();
         $this->docblock_start = $docblock ? $docblock->getStartFilePos() : (int)$stmt->getAttribute('startFilePos');
         $this->docblock_end = $function_start = (int)$stmt->getAttribute('startFilePos');
@@ -578,7 +574,7 @@ final class FunctionDocblockManipulator
      */
     public static function addManipulators(array $manipulators): void
     {
-        self::$manipulators = array_merge($manipulators, self::$manipulators);
+        self::$manipulators = [...$manipulators, ...self::$manipulators];
     }
 
     /**

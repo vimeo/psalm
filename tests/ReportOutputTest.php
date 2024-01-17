@@ -12,6 +12,7 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
+use Psalm\Internal\VersionUtils;
 use Psalm\IssueBuffer;
 use Psalm\Report;
 use Psalm\Report\JsonReport;
@@ -111,7 +112,7 @@ class ReportOutputTest extends TestCase
                         'driver' => [
                             'name' => 'Psalm',
                             'informationUri' => 'https://psalm.dev',
-                            'version' => '4.0.0',
+                            'version' => VersionUtils::getPsalmVersion(),
                             'rules' => [
                                 [
                                     'id' => '246',
@@ -712,6 +713,7 @@ class ReportOutputTest extends TestCase
 
         $issue_data = [
             [
+                'link' => 'https://psalm.dev/024',
                 'severity' => 'error',
                 'line_from' => 3,
                 'line_to' => 3,
@@ -727,13 +729,13 @@ class ReportOutputTest extends TestCase
                 'snippet_to' => 83,
                 'column_from' => 10,
                 'column_to' => 26,
-                'error_level' => -1,
                 'shortcode' => 24,
-                'link' => 'https://psalm.dev/024',
+                'error_level' => -1,
                 'taint_trace' => null,
                 'other_references' => null,
             ],
             [
+                'link' => 'https://psalm.dev/138',
                 'severity' => 'error',
                 'line_from' => 3,
                 'line_to' => 3,
@@ -749,13 +751,13 @@ class ReportOutputTest extends TestCase
                 'snippet_to' => 83,
                 'column_from' => 10,
                 'column_to' => 26,
-                'error_level' => 1,
                 'shortcode' => 138,
-                'link' => 'https://psalm.dev/138',
+                'error_level' => 1,
                 'taint_trace' => null,
                 'other_references' => null,
             ],
             [
+                'link' => 'https://psalm.dev/020',
                 'severity' => 'error',
                 'line_from' => 8,
                 'line_to' => 8,
@@ -771,13 +773,13 @@ class ReportOutputTest extends TestCase
                 'snippet_to' => 172,
                 'column_from' => 6,
                 'column_to' => 15,
-                'error_level' => -1,
                 'shortcode' => 20,
-                'link' => 'https://psalm.dev/020',
+                'error_level' => -1,
                 'taint_trace' => null,
                 'other_references' => null,
             ],
             [
+                'link' => 'https://psalm.dev/126',
                 'severity' => 'info',
                 'line_from' => 17,
                 'line_to' => 17,
@@ -793,9 +795,8 @@ class ReportOutputTest extends TestCase
                 'snippet_to' => 277,
                 'column_from' => 6,
                 'column_to' => 8,
-                'error_level' => 3,
                 'shortcode' => 126,
-                'link' => 'https://psalm.dev/126',
+                'error_level' => 3,
                 'taint_trace' => null,
                 'other_references' => null,
             ],

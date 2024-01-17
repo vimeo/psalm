@@ -41,6 +41,7 @@ use function preg_last_error_msg;
 use function preg_replace;
 use function preg_split;
 use function realpath;
+use function str_starts_with;
 use function stream_get_meta_data;
 use function stream_set_blocking;
 use function strlen;
@@ -236,7 +237,7 @@ final class CliUtils
             }
 
             if ($input_path[0] === '-' && strlen($input_path) === 2) {
-                if ($input_path[1] === 'c' || $input_path[1] === 'f') {
+                if ($input_path[1] === 'c' || $input_path[1] === 'f' || $input_path[1] === 'r') {
                     ++$i;
                 }
                 continue;
@@ -275,7 +276,7 @@ final class CliUtils
             $input_path = $input_paths[$i];
 
             if ($input_path[0] === '-' && strlen($input_path) === 2) {
-                if ($input_path[1] === 'c' || $input_path[1] === 'f') {
+                if ($input_path[1] === 'c' || $input_path[1] === 'f' || $input_path[1] === 'r') {
                     ++$i;
                 }
                 continue;
@@ -285,12 +286,13 @@ final class CliUtils
                 continue;
             }
 
-            if (strpos($input_path, '--') === 0 && strlen($input_path) > 2) {
+            if (str_starts_with($input_path, '--') && strlen($input_path) > 2) {
                 // ignore --config psalm.xml
                 // ignore common phpunit args that accept a class instead of a path, as this can cause issues on Windows
                 $ignored_arguments = array(
                     'config',
                     'printer',
+                    'root',
                 );
 
                 if (in_array(substr($input_path, 2), $ignored_arguments, true)) {

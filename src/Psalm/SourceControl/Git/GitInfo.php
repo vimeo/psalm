@@ -32,34 +32,20 @@ use Psalm\SourceControl\SourceControlInfo;
 final class GitInfo extends SourceControlInfo
 {
     /**
-     * Branch name.
-     */
-    protected string $branch;
-
-    /**
-     * Head.
-     */
-    protected CommitInfo $head;
-
-    /**
-     * Remote.
-     *
-     * @var RemoteInfo[]
-     */
-    protected array $remotes;
-
-    /**
      * Constructor.
      *
      * @param string $branch  branch name
      * @param CommitInfo $head    HEAD commit
      * @param RemoteInfo[]  $remotes remote repositories
      */
-    public function __construct(string $branch, CommitInfo $head, array $remotes)
-    {
-        $this->branch = $branch;
-        $this->head = $head;
-        $this->remotes = $remotes;
+    public function __construct(
+        protected string $branch,
+        protected CommitInfo $head,
+        /**
+         * Remote.
+         */
+        protected array $remotes,
+    ) {
     }
 
     public function toArray(): array

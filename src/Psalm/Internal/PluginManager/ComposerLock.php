@@ -20,13 +20,10 @@ use function json_last_error_msg;
  */
 final class ComposerLock
 {
-    /** @var string[] */
-    private array $file_names;
-
     /** @param string[] $file_names */
-    public function __construct(array $file_names)
-    {
-        $this->file_names = $file_names;
+    public function __construct(
+        private readonly array $file_names,
+    ) {
     }
 
     /**

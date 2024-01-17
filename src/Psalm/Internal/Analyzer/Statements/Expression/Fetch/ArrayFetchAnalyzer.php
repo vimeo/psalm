@@ -314,14 +314,18 @@ final class ArrayFetchAnalyzer
                 && !$context->inside_unset
                 && ($stmt_var_type && !$stmt_var_type->hasMixed())
             ) {
-                IssueBuffer::maybeAdd(
+                if (IssueBuffer::accepts(
                     new PossiblyUndefinedArrayOffset(
                         'Possibly undefined array key ' . $keyed_array_var_id
                             . ' on ' . $stmt_var_type->getId(),
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                     ),
                     $statements_analyzer->getSuppressedIssues(),
-                );
+                )) {
+                    $stmt_type = $stmt_type->getBuilder()->addType(new TNull())->freeze();
+                }
+            } elseif ($stmt_type->possibly_undefined) {
+                $stmt_type = $stmt_type->getBuilder()->addType(new TNull())->freeze();
             }
 
             $stmt_type = $stmt_type->setPossiblyUndefined(false);

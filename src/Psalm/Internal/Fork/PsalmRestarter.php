@@ -16,11 +16,10 @@ use function file_put_contents;
 use function implode;
 use function in_array;
 use function ini_get;
+use function is_int;
 use function preg_replace;
 use function strlen;
 use function strtolower;
-
-use const PHP_VERSION_ID;
 
 /**
  * @internal
@@ -28,9 +27,22 @@ use const PHP_VERSION_ID;
 final class PsalmRestarter extends XdebugHandler
 {
     private const REQUIRED_OPCACHE_SETTINGS = [
-        'enable_cli' => true,
+        'enable_cli' => 1,
         'jit' => 1205,
-        'jit_buffer_size' => 512 * 1024 * 1024,
+        'validate_timestamps' => 0,
+        'file_update_protection' => 0,
+        'jit_buffer_size' => 128 * 1024 * 1024,
+        'max_accelerated_files' => 1_000_000,
+        'interned_strings_buffer' => 64,
+        'jit_max_root_traces' => 1_000_000,
+        'jit_max_side_traces' => 1_000_000,
+        'jit_max_exit_counters' => 1_000_000,
+        'jit_hot_loop' => 1,
+        'jit_hot_func' => 1,
+        'jit_hot_return' => 1,
+        'jit_hot_side_exit' => 1,
+        'jit_blacklist_root_trace' => 255,
+        'jit_blacklist_side_trace' => 255,
         'optimization_level' => '0x7FFEBFFF',
         'preload' => '',
         'log_verbosity_level' => 0,
@@ -69,19 +81,18 @@ final class PsalmRestarter extends XdebugHandler
 
         $opcache_loaded = extension_loaded('opcache') || extension_loaded('Zend OPcache');
 
-        if (PHP_VERSION_ID >= 8_00_00 && $opcache_loaded) {
+        if ($opcache_loaded) {
             // restart to enable JIT if it's not configured in the optimal way
-            $opcache_settings = [
-                'enable_cli' => in_array(ini_get('opcache.enable_cli'), ['1', 'true', true, 1]),
-                'jit' => (int) ini_get('opcache.jit'),
-                'log_verbosity_level' => (int) ini_get('opcache.log_verbosity_level'),
-                'optimization_level' => (string) ini_get('opcache.optimization_level'),
-                'preload' => (string) ini_get('opcache.preload'),
-                'jit_buffer_size' => self::toBytes((string) ini_get('opcache.jit_buffer_size')),
-            ];
-
             foreach (self::REQUIRED_OPCACHE_SETTINGS as $ini_name => $required_value) {
-                if ($opcache_settings[$ini_name] !== $required_value) {
+                $value = (string) ini_get("opcache.$ini_name");
+                if ($ini_name === 'jit_buffer_size') {
+                    $value = self::toBytes($value);
+                } elseif ($ini_name === 'enable_cli') {
+                    $value = in_array($value, ['1', 'true', true, 1]) ? 1 : 0;
+                } elseif (is_int($required_value)) {
+                    $value = (int) $value;
+                }
+                if ($value !== $required_value) {
                     return true;
                 }
             }
@@ -144,16 +155,11 @@ final class PsalmRestarter extends XdebugHandler
         // executed in the parent process (before restart)
         // if it wasn't loaded then we apparently don't have opcache installed and there's no point trying
         // to tweak it
-        // If we're running on 7.4 there's no JIT available
-        if (PHP_VERSION_ID >= 8_00_00 && $opcache_loaded) {
-            $additional_options = [
-                '-dopcache.enable_cli=true',
-                '-dopcache.jit_buffer_size=512M',
-                '-dopcache.jit=1205',
-                '-dopcache.optimization_level=0x7FFEBFFF',
-                '-dopcache.preload=',
-                '-dopcache.log_verbosity_level=0',
-            ];
+        if ($opcache_loaded) {
+            $additional_options = [];
+            foreach (self::REQUIRED_OPCACHE_SETTINGS as $key => $value) {
+                $additional_options []= "-dopcache.{$key}={$value}";
+            }
         }
 
         array_splice(

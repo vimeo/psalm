@@ -43,7 +43,6 @@ use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_filter;
-use function array_merge;
 use function array_pop;
 use function array_shift;
 use function array_unshift;
@@ -51,7 +50,7 @@ use function assert;
 use function count;
 use function explode;
 use function is_numeric;
-use function strpos;
+use function str_contains;
 use function strtolower;
 use function substr;
 
@@ -460,12 +459,11 @@ final class ArrayFunctionArgumentsAnalyzer
                         $length_min = (int) $length_literal->value;
                     }
                 } else {
-                    $literals = array_merge(
-                        $length_arg_type->getLiteralStrings(),
-                        $length_arg_type->getLiteralInts(),
-                        $length_arg_type->getLiteralFloats(),
-                    );
-                    foreach ($literals as $literal) {
+                    foreach ([
+                        ...$length_arg_type->getLiteralStrings(),
+                        ...$length_arg_type->getLiteralInts(),
+                        ...$length_arg_type->getLiteralFloats(),
+                    ] as $literal) {
                         if ($literal->isNumericType()
                             && ($literal_val = (int) $literal->value)
                             && ((isset($length_min) && $length_min> $literal_val) || !isset($length_min))) {
@@ -766,7 +764,7 @@ final class ArrayFunctionArgumentsAnalyzer
             foreach ($function_ids as $function_id) {
                 $function_id = strtolower($function_id);
 
-                if (strpos($function_id, '::') !== false) {
+                if (str_contains($function_id, '::')) {
                     if ($function_id[0] === '$') {
                         $function_id = substr($function_id, 1);
                     }
@@ -804,7 +802,7 @@ final class ArrayFunctionArgumentsAnalyzer
 
                         try {
                             $method_storage = $codebase->methods->getStorage($function_id_part);
-                        } catch (UnexpectedValueException $e) {
+                        } catch (UnexpectedValueException) {
                             // the method may not exist, but we're suppressing that issue
                             continue;
                         }

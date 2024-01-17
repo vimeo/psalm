@@ -33,37 +33,21 @@ use const PREG_SET_ORDER;
  */
 final class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
 {
-    /** @var array<int, array{0: int, 1: int, 2: int, 3: int, 4: int, 5: string}> */
-    private array $offset_map;
-
     private bool $must_rescan = false;
 
     private int $non_method_changes;
 
-    private string $a_file_contents;
-
-    private string $b_file_contents;
-
-    private int $a_file_contents_length;
-
-    private Parser $parser;
-
-    private Collecting $error_handler;
+    private readonly int $a_file_contents_length;
 
     /** @param array<int, array{0: int, 1: int, 2: int, 3: int, 4: int, 5: string}> $offset_map */
     public function __construct(
-        Parser $parser,
-        Collecting $error_handler,
-        array $offset_map,
-        string $a_file_contents,
-        string $b_file_contents,
+        private readonly Parser $parser,
+        private readonly Collecting $error_handler,
+        private readonly array $offset_map,
+        private readonly string $a_file_contents,
+        private readonly string $b_file_contents,
     ) {
-        $this->parser = $parser;
-        $this->error_handler = $error_handler;
-        $this->offset_map = $offset_map;
-        $this->a_file_contents = $a_file_contents;
         $this->a_file_contents_length = strlen($a_file_contents);
-        $this->b_file_contents = $b_file_contents;
         $this->non_method_changes = count($offset_map);
     }
 

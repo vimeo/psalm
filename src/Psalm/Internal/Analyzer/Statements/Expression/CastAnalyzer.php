@@ -53,7 +53,6 @@ use Psalm\Type\Union;
 use function array_merge;
 use function array_pop;
 use function array_values;
-use function get_class;
 use function strtolower;
 
 /**
@@ -294,7 +293,7 @@ final class CastAnalyzer
 
         IssueBuffer::maybeAdd(
             new UnrecognizedExpression(
-                'Psalm does not understand the cast ' . get_class($stmt),
+                'Psalm does not understand the cast ' . $stmt::class,
                 new CodeLocation($statements_analyzer->getSource(), $stmt),
             ),
             $statements_analyzer->getSuppressedIssues(),
@@ -385,7 +384,7 @@ final class CastAnalyzer
                 $intersection_types = [$atomic_type];
 
                 if ($atomic_type->extra_types) {
-                    $intersection_types = array_merge($intersection_types, $atomic_type->extra_types);
+                    $intersection_types = [...$intersection_types, ...$atomic_type->extra_types];
                 }
 
                 foreach ($intersection_types as $intersection_type) {
@@ -566,7 +565,7 @@ final class CastAnalyzer
                 $intersection_types = [$atomic_type];
 
                 if ($atomic_type->extra_types) {
-                    $intersection_types = array_merge($intersection_types, $atomic_type->extra_types);
+                    $intersection_types = [...$intersection_types, ...$atomic_type->extra_types];
                 }
 
                 foreach ($intersection_types as $intersection_type) {

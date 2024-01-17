@@ -420,6 +420,7 @@
             <xs:element name="RedundantCastGivenDocblockType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="RedundantCondition" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="RedundantConditionGivenDocblockType" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="RedundantFlag" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="RedundantFunctionCall" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="RedundantFunctionCallGivenDocblockType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="RedundantIdentityWithTrue" type="IssueHandlerType" minOccurs="0" />
@@ -428,11 +429,13 @@
             <xs:element name="ReferenceReusedFromConfusingScope" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ReservedWord" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="RiskyCast" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="RiskyTruthyFalsyComparison" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="StringIncrement" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedCallable" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedCookie" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedCustom" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedEval" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="TaintedExtract" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedFile" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedHeader" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedHtml" type="IssueHandlerType" minOccurs="0" />

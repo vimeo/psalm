@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
+use InvalidArgumentException;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\AttributesAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
@@ -45,6 +47,7 @@ use Psalm\Type\Atomic\TCallableKeyedArray;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
@@ -61,7 +64,7 @@ use function is_string;
 use function max;
 use function min;
 use function reset;
-use function strpos;
+use function str_contains;
 use function strtolower;
 
 /**
@@ -448,7 +451,7 @@ final class ArgumentsAnalyzer
                 $statements_analyzer->getFilePath(),
                 $closure_id,
             );
-        } catch (UnexpectedValueException $e) {
+        } catch (UnexpectedValueException) {
             return;
         }
 
@@ -1135,7 +1138,7 @@ final class ArgumentsAnalyzer
                 $by_ref_type,
                 $by_ref_out_type ?: $by_ref_type,
                 $context,
-                $method_id && (strpos($method_id, '::') !== false || !InternalCallMapHandler::inCallMap($method_id)),
+                $method_id && (str_contains($method_id, '::') || !InternalCallMapHandler::inCallMap($method_id)),
                 $check_null_ref,
             );
         }
@@ -1252,6 +1255,42 @@ final class ArgumentsAnalyzer
         return null;
     }
 
+    private static function handleByRefReadonlyArg(
+        StatementsAnalyzer $statements_analyzer,
+        Context $context,
+        PhpParser\Node\Expr\PropertyFetch $stmt,
+        string $fq_class_name,
+        string $prop_name,
+    ): void {
+        $property_id = $fq_class_name . '::$' . $prop_name;
+
+        $codebase = $statements_analyzer->getCodebase();
+        $declaring_property_class = (string) $codebase->properties->getDeclaringClassForProperty(
+            $property_id,
+            true,
+            $statements_analyzer,
+        );
+
+        try {
+            $declaring_class_storage = $codebase->classlike_storage_provider->get($declaring_property_class);
+        } catch (InvalidArgumentException $_) {
+            return;
+        }
+
+        if (isset($declaring_class_storage->properties[$prop_name])) {
+            $property_storage = $declaring_class_storage->properties[$prop_name];
+
+            InstancePropertyAssignmentAnalyzer::trackPropertyImpurity(
+                $statements_analyzer,
+                $stmt,
+                $property_id,
+                $property_storage,
+                $declaring_class_storage,
+                $context,
+            );
+        }
+    }
+
     /**
      * @return false|null
      */
@@ -1270,8 +1309,48 @@ final class ArgumentsAnalyzer
 
         $builtin_array_functions = [
             'ksort', 'asort', 'krsort', 'arsort', 'natcasesort', 'natsort',
-            'reset', 'end', 'next', 'prev', 'array_pop', 'array_shift',
+            'reset', 'end', 'next', 'prev', 'array_pop', 'array_shift', 'extract',
         ];
+
+        if ($arg->value instanceof PhpParser\Node\Expr\PropertyFetch
+            && $arg->value->name instanceof PhpParser\Node\Identifier) {
+            $prop_name = $arg->value->name->name;
+            if (!empty($statements_analyzer->getFQCLN())) {
+                $fq_class_name = $statements_analyzer->getFQCLN();
+
+                self::handleByRefReadonlyArg(
+                    $statements_analyzer,
+                    $context,
+                    $arg->value,
+                    $fq_class_name,
+                    $prop_name,
+                );
+            } else {
+                // @todo atm only works for simple fetch, $a->foo, not $a->foo->bar
+                // I guess there's a function to do this, but I couldn't locate it
+                $var_id = ExpressionIdentifier::getVarId(
+                    $arg->value->var,
+                    $statements_analyzer->getFQCLN(),
+                    $statements_analyzer,
+                );
+
+                if ($var_id && isset($context->vars_in_scope[$var_id])) {
+                    foreach ($context->vars_in_scope[$var_id]->getAtomicTypes() as $atomic_type) {
+                        if ($atomic_type instanceof TNamedObject) {
+                            $fq_class_name = $atomic_type->value;
+
+                            self::handleByRefReadonlyArg(
+                                $statements_analyzer,
+                                $context,
+                                $arg->value,
+                                $fq_class_name,
+                                $prop_name,
+                            );
+                        }
+                    }
+                }
+            }
+        }
 
         if (($var_id && isset($context->vars_in_scope[$var_id]))
             || ($method_id

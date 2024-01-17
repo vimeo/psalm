@@ -27,13 +27,11 @@ use const LOCK_EX;
  */
 final class Cache
 {
-    private Config $config;
-
     public bool $use_igbinary;
 
-    public function __construct(Config $config)
-    {
-        $this->config = $config;
+    public function __construct(
+        private readonly Config $config,
+    ) {
         $this->use_igbinary = $config->use_igbinary;
     }
 

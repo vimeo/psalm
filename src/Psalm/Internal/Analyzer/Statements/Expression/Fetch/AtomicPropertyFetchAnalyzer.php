@@ -269,7 +269,7 @@ final class AtomicPropertyFetchAnalyzer
 
                     try {
                         $new_class_storage = $codebase->classlike_storage_provider->get($mixin->value);
-                    } catch (InvalidArgumentException $e) {
+                    } catch (InvalidArgumentException) {
                         $new_class_storage = null;
                     }
 

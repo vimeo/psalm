@@ -104,7 +104,7 @@ class UnusedVariableTest extends TestCase
                     function foo(array $arr) : void {
                         $a = null;
                         foreach ($arr as $a) { }
-                        if ($a) {}
+                        if ($a !== null) {}
                     }',
             ],
             'definedInSecondBranchOfCondition' => [
@@ -130,10 +130,10 @@ class UnusedVariableTest extends TestCase
             'dummyByRefVar' => [
                 'code' => '<?php
                     function foo(string &$a = null, string $b = null): void {
-                        if ($a) {
+                        if ($a !== null) {
                             echo $a;
                         }
-                        if ($b) {
+                        if ($b !== null) {
                             echo $b;
                         }
                     }
@@ -329,7 +329,7 @@ class UnusedVariableTest extends TestCase
                             echo $e->getMessage();
                         }
 
-                        if ($s) {}
+                        if ($s !== null) {}
                     }',
             ],
             'throwWithMessageCallAndAssignmentInCatchAndReference' => [
@@ -852,7 +852,6 @@ class UnusedVariableTest extends TestCase
                     /** @psalm-suppress UnusedParam */
                     function foo(callable $c) : void {}
                     $listener = function () use (&$listener) : void {
-                        /** @psalm-suppress MixedArgument */
                         foo($listener);
                     };
                     foo($listener);',
@@ -876,7 +875,6 @@ class UnusedVariableTest extends TestCase
                         $i = 1;
                     };
                     $a();
-                    /** @psalm-suppress MixedArgument */
                     echo $i;',
             ],
             'regularVariableClosureUseInAddition' => [
@@ -944,7 +942,7 @@ class UnusedVariableTest extends TestCase
                         if ($foo) {}
                     } catch (Exception $e) {}
 
-                    if ($foo) {}',
+                    if ($foo !== false && $foo !== 0) {}',
             ],
             'useTryAssignedVariableInsideFinally' => [
                 'code' => '<?php
@@ -1956,7 +1954,7 @@ class UnusedVariableTest extends TestCase
                         $arr = str_getcsv($value);
 
                         foreach ($arr as &$element) {
-                            $element = $element ?: "foo";
+                            $element = $element !== null ?: "foo";
                         }
 
                         return $arr;
@@ -2235,9 +2233,6 @@ class UnusedVariableTest extends TestCase
             ],
             'allowUseByRef' => [
                 'code' => '<?php
-                    /**
-                     * @psalm-suppress MixedReturnStatement
-                     */
                     function foo(array $data) : array {
                         $output = [];
 
@@ -2257,7 +2252,6 @@ class UnusedVariableTest extends TestCase
 
                     $a = function() use (&$output_rows) : void {
                         $output_row = 5;
-                        /** @psalm-suppress MixedArrayAssignment */
                         $output_rows[] = $output_row;
                     };
                     $a();
@@ -2344,7 +2338,7 @@ class UnusedVariableTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'ignored_issues' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
                 'php_version' => '8.0',
             ],
             'concatWithUnknownProperty' => [
@@ -3172,7 +3166,7 @@ class UnusedVariableTest extends TestCase
                         $user = $user_id;
                     }
 
-                    if ($user) {
+                    if ($user !== null && $user !== 0) {
                         $a = 0;
                         for ($i = 1; $i <= 10; $i++) {
                             $a += $i;
@@ -3192,7 +3186,7 @@ class UnusedVariableTest extends TestCase
                         $user = $user_id;
                     }
 
-                    if ($user) {
+                    if ($user !== null && $user !== 0) {
                         $a = 0;
                         foreach ([1, 2, 3] as $i) {
                             $a += $i;

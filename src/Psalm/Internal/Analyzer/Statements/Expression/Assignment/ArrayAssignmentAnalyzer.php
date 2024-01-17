@@ -49,8 +49,8 @@ use function implode;
 use function in_array;
 use function is_string;
 use function preg_match;
+use function str_contains;
 use function strlen;
-use function strpos;
 
 /**
  * @internal
@@ -346,29 +346,25 @@ final class ArrayAssignmentAnalyzer
         }
 
         if (!$has_matching_objectlike_property && !$has_matching_string) {
-            if (count($key_values) === 1) {
-                $key_value = $key_values[0];
-
-                $object_like = new TKeyedArray(
-                    [$key_value->value => $current_type],
-                    $key_value instanceof TLiteralClassString
-                        ? [$key_value->value => true]
-                        : null,
-                );
-
-                $array_assignment_type = new Union([
-                    $object_like,
-                ]);
-            } else {
-                $array_assignment_literals = $key_values;
-
-                $array_assignment_type = new Union([
-                    new TNonEmptyArray([
-                        new Union($array_assignment_literals),
-                        $current_type,
-                    ]),
-                ]);
+            $properties = [];
+            $classStrings = [];
+            $current_type = $current_type->setPossiblyUndefined(
+                $current_type->possibly_undefined || count($key_values) > 1,
+            );
+            foreach ($key_values as $key_value) {
+                $properties[$key_value->value] = $current_type;
+                if ($key_value instanceof TLiteralClassString) {
+                    $classStrings[$key_value->value] = true;
+                }
             }
+            $object_like = new TKeyedArray(
+                $properties,
+                $classStrings ?: null,
+            );
+
+            $array_assignment_type = new Union([
+                $object_like,
+            ]);
 
             return Type::combineUnionTypes(
                 $child_stmt_type,
@@ -510,7 +506,7 @@ final class ArrayAssignmentAnalyzer
             }
 
             if ($parent_var_id && ($parent_type = $context->vars_in_scope[$parent_var_id] ?? null)) {
-                if ($offset_already_existed && $parent_type->hasList() && strpos($parent_var_id, '[') === false) {
+                if ($offset_already_existed && $parent_type->hasList() && !str_contains($parent_var_id, '[')) {
                     $array_atomic_type_list = $value_type;
                 } elseif ($parent_type->hasClassStringMap()
                     && $key_type

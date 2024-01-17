@@ -74,7 +74,7 @@ final class InterfaceAnalyzer extends ClassLikeAnalyzer
 
                 try {
                     $extended_interface_storage = $codebase->classlike_storage_provider->get($extended_interface_name);
-                } catch (InvalidArgumentException $e) {
+                } catch (InvalidArgumentException) {
                     continue;
                 }
 

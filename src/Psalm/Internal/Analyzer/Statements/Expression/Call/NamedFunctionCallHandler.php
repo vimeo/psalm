@@ -37,6 +37,7 @@ use Psalm\Type\Atomic\TDependentGetDebugType;
 use Psalm\Type\Atomic\TDependentGetType;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLowercaseString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
@@ -49,11 +50,18 @@ use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
 use function array_map;
+use function count;
 use function extension_loaded;
 use function in_array;
+use function is_numeric;
 use function is_string;
+use function preg_match;
+use function str_starts_with;
 use function strpos;
 use function strtolower;
+
+use const EXTR_OVERWRITE;
+use const EXTR_SKIP;
 
 /**
  * @internal
@@ -227,15 +235,127 @@ final class NamedFunctionCallHandler
         }
 
         if ($function_id === 'defined') {
-            $context->check_consts = false;
+            if ($first_arg && !$context->inside_negation) {
+                $fq_const_name = ConstFetchAnalyzer::getConstName(
+                    $first_arg->value,
+                    $statements_analyzer->node_data,
+                    $codebase,
+                    $statements_analyzer->getAliases(),
+                );
+
+                if ($fq_const_name !== null) {
+                    $const_type = ConstFetchAnalyzer::getConstType(
+                        $statements_analyzer,
+                        $fq_const_name,
+                        true,
+                        $context,
+                    );
+
+                    if (!$const_type) {
+                        ConstFetchAnalyzer::setConstType(
+                            $statements_analyzer,
+                            $fq_const_name,
+                            Type::getMixed(),
+                            $context,
+                        );
+
+                        $context->check_consts = false;
+                    }
+                } else {
+                    $context->check_consts = false;
+                }
+            } else {
+                $context->check_consts = false;
+            }
             return;
         }
 
         if ($function_id === 'extract') {
+            $flag_value = false;
+            if (!isset($stmt->args[1])) {
+                $flag_value = EXTR_OVERWRITE;
+            } elseif (isset($stmt->args[1]->value)
+                && $stmt->args[1]->value instanceof PhpParser\Node\Expr
+                && ($flags_type = $statements_analyzer->node_data->getType($stmt->args[1]->value))
+                && $flags_type->hasLiteralInt() && count($flags_type->getAtomicTypes()) === 1) {
+                $flag_type_value = $flags_type->getSingleIntLiteral()->value;
+                if ($flag_type_value === EXTR_SKIP) {
+                    $flag_value = EXTR_SKIP;
+                } elseif ($flag_type_value === EXTR_OVERWRITE) {
+                    $flag_value = EXTR_OVERWRITE;
+                }
+                // @todo add support for other flags
+            }
+
+            $is_unsealed = true;
+            $validated_var_ids = [];
+            if ($flag_value !== false && isset($stmt->args[0]->value)
+                && $stmt->args[0]->value instanceof PhpParser\Node\Expr
+                && ($array_type_union = $statements_analyzer->node_data->getType($stmt->args[0]->value))
+                && $array_type_union->isSingle()
+            ) {
+                foreach ($array_type_union->getAtomicTypes() as $array_type) {
+                    if ($array_type instanceof TKeyedArray) {
+                        foreach ($array_type->properties as $key => $type) {
+                            // variables must start with letters or underscore
+                            if ($key === '' || is_numeric($key) || preg_match('/^[A-Za-z_]/', $key) !== 1) {
+                                continue;
+                            }
+
+                            $var_id = '$' . $key;
+                            $validated_var_ids[] = $var_id;
+
+                            if (isset($context->vars_in_scope[$var_id]) && $flag_value === EXTR_SKIP) {
+                                continue;
+                            }
+
+                            if (!isset($context->vars_in_scope[$var_id]) && $type->possibly_undefined === true) {
+                                $context->possibly_assigned_var_ids[$var_id] = true;
+                            } elseif (isset($context->vars_in_scope[$var_id])
+                                && $type->possibly_undefined === true
+                                && $flag_value === EXTR_OVERWRITE) {
+                                $type = Type::combineUnionTypes(
+                                    $context->vars_in_scope[$var_id],
+                                    $type,
+                                    $codebase,
+                                    false,
+                                    true,
+                                    500,
+                                    false,
+                                );
+                            }
+
+                            $context->vars_in_scope[$var_id] = $type;
+                            $context->assigned_var_ids[$var_id] = (int) $stmt->getAttribute('startFilePos');
+                        }
+
+                        if (!isset($array_type->fallback_params)) {
+                            $is_unsealed = false;
+                        }
+                    }
+                }
+            }
+
+            if ($flag_value === EXTR_OVERWRITE && $is_unsealed === false) {
+                return;
+            }
+
+            if ($flag_value === EXTR_SKIP && $is_unsealed === false) {
+                return;
+            }
+
             $context->check_variables = false;
+
+            if ($flag_value === EXTR_SKIP) {
+                return;
+            }
 
             foreach ($context->vars_in_scope as $var_id => $_) {
                 if ($var_id === '$this' || strpos($var_id, '[') || strpos($var_id, '>')) {
+                    continue;
+                }
+
+                if (in_array($var_id, $validated_var_ids, true)) {
                     continue;
                 }
 
@@ -392,7 +512,7 @@ final class NamedFunctionCallHandler
 
         if ($first_arg
             && $function_id
-            && strpos($function_id, 'is_') === 0
+            && str_starts_with($function_id, 'is_')
             && $function_id !== 'is_a'
             && !$context->inside_negation
         ) {

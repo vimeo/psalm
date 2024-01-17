@@ -8,6 +8,7 @@ use Psalm\CodeLocation;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Issue\CodeIssue;
 use Psalm\Type\Union;
+use Stringable;
 
 use function array_column;
 use function array_fill_keys;
@@ -15,9 +16,10 @@ use function array_map;
 use function count;
 use function implode;
 
-abstract class FunctionLikeStorage implements HasAttributesInterface
+abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
 {
     use CustomMetadataTrait;
+    use UnserializeMemoryUsageSuppressionTrait;
 
     public ?CodeLocation $location = null;
 
@@ -211,18 +213,11 @@ abstract class FunctionLikeStorage implements HasAttributesInterface
             return $symbol_text;
         }
 
-        switch ($this->visibility) {
-            case ClassLikeAnalyzer::VISIBILITY_PRIVATE:
-                $visibility_text = 'private';
-                break;
-
-            case ClassLikeAnalyzer::VISIBILITY_PROTECTED:
-                $visibility_text = 'protected';
-                break;
-
-            default:
-                $visibility_text = 'public';
-        }
+        $visibility_text = match ($this->visibility) {
+            ClassLikeAnalyzer::VISIBILITY_PRIVATE => 'private',
+            ClassLikeAnalyzer::VISIBILITY_PROTECTED => 'protected',
+            default => 'public',
+        };
 
         return $visibility_text . ' ' . $symbol_text;
     }
@@ -241,18 +236,11 @@ abstract class FunctionLikeStorage implements HasAttributesInterface
             return $symbol_text;
         }
 
-        switch ($this->visibility) {
-            case ClassLikeAnalyzer::VISIBILITY_PRIVATE:
-                $visibility_text = 'private';
-                break;
-
-            case ClassLikeAnalyzer::VISIBILITY_PROTECTED:
-                $visibility_text = 'protected';
-                break;
-
-            default:
-                $visibility_text = 'public';
-        }
+        $visibility_text = match ($this->visibility) {
+            ClassLikeAnalyzer::VISIBILITY_PRIVATE => 'private',
+            ClassLikeAnalyzer::VISIBILITY_PROTECTED => 'protected',
+            default => 'public',
+        };
 
         return $visibility_text . ' ' . $symbol_text;
     }

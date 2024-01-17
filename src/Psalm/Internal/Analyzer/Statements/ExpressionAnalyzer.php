@@ -57,7 +57,6 @@ use Psalm\Plugin\EventHandler\Event\AfterExpressionAnalysisEvent;
 use Psalm\Plugin\EventHandler\Event\BeforeExpressionAnalysisEvent;
 use Psalm\Type;
 
-use function get_class;
 use function in_array;
 use function strtolower;
 
@@ -439,7 +438,7 @@ final class ExpressionAnalyzer
 
         IssueBuffer::maybeAdd(
             new UnrecognizedExpression(
-                'Psalm does not understand ' . get_class($stmt) . ' for PHP ' .
+                'Psalm does not understand ' . $stmt::class . ' for PHP ' .
                 $codebase->getMajorAnalysisPhpVersion() . '.' . $codebase->getMinorAnalysisPhpVersion(),
                 new CodeLocation($statements_analyzer->getSource(), $stmt),
             ),
@@ -474,7 +473,7 @@ final class ExpressionAnalyzer
             !$from_stmt ? $stmt : null,
         );
 
-        if ($assignment_type === false) {
+        if ($assignment_type === null) {
             return false;
         }
 

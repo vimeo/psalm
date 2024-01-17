@@ -359,6 +359,15 @@ class BinaryOperationTest extends TestCase
                 'code' => '<?php
                     $a = "Hey " . "Jude,";',
             ],
+            'concatenationNonFalsyLiteralStringWithString' => [
+                'code' => '<?php
+                    function foo(): string {}
+                    $a = "Hey " . foo();',
+                'assertions' => [
+                    '$a===' => 'non-falsy-string',
+                ],
+                'ignored_issues' => ['InvalidReturnType'],
+            ],
             'concatenationWithNumberInWeakMode' => [
                 'code' => '<?php
                     $a = "hi" . 5;',

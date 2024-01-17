@@ -51,7 +51,27 @@ class DirnameTest extends TestCase
                 $dir = dirname(uniqid() . "abc", 2);
             ',
             'assertions' => [
-                '$dir===' => 'non-empty-string',
+                '$dir===' => 'non-falsy-string',
+            ],
+        ];
+
+        yield 'dirnameOfNonEmptyShouldBeNonFalsy' => [
+            'code' => '<?php
+                $foo = rand(0, 1) ? "0" : "world";
+                $dir = dirname($foo, 20);
+            ',
+            'assertions' => [
+                '$dir===' => 'non-falsy-string',
+            ],
+        ];
+
+        yield 'dirnameOfEmptyShouldBeString' => [
+            'code' => '<?php
+                $foo = rand(0, 1) ? "" : "world";
+                $dir = dirname($foo, 20);
+            ',
+            'assertions' => [
+                '$dir===' => 'string',
             ],
         ];
     }

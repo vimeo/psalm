@@ -6,6 +6,7 @@ namespace Psalm\Type\Atomic;
 
 use Psalm\Codebase;
 use Psalm\Storage\EnumCaseStorage;
+use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
@@ -20,11 +21,9 @@ use function assert;
  */
 final class TValueOf extends Atomic
 {
-    public Union $type;
-
-    public function __construct(Union $type, bool $from_docblock = false)
+    use UnserializeMemoryUsageSuppressionTrait;
+    public function __construct(public Union $type, bool $from_docblock = false)
     {
-        $this->type = $type;
         parent::__construct($from_docblock);
     }
 
@@ -43,8 +42,8 @@ final class TValueOf extends Atomic
 
         return new Union(array_map(
             static function (EnumCaseStorage $case): Atomic {
-                assert($case->value !== null); // Backed enum must have a value
-
+                assert($case->value !== null);
+                // Backed enum must have a value
                 return $case->value;
             },
             array_values($cases),

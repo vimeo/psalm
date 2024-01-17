@@ -151,7 +151,7 @@ class MethodCallTest extends TestCase
 
                 $obj = new SomeClass();
 
-                if ($obj->getInt()) {
+                if ($obj->getInt() !== null) {
                     printInt($obj->getInt());
                 }',
         );
@@ -187,7 +187,7 @@ class MethodCallTest extends TestCase
 
                 $obj = new SomeClass();
 
-                if ($obj->getInt()) {
+                if ($obj->getInt() !== null) {
                     printInt($obj->getInt());
                 }',
         );
@@ -955,7 +955,7 @@ class MethodCallTest extends TestCase
 
                     $a = new A();
 
-                    if ($a->getA()) {
+                    if ($a->getA() !== null) {
                         echo strlen($a->getA());
                     }',
             ],
@@ -1026,7 +1026,7 @@ class MethodCallTest extends TestCase
 
                     $obj = new SomeClass();
 
-                    if ($obj->getInt()) {
+                    if ($obj->getInt() !== null) {
                         printInt($obj->getInt());
                     }',
             ],
@@ -1050,7 +1050,7 @@ class MethodCallTest extends TestCase
 
                     $obj = new SomeClass();
 
-                    if ($obj->getInt()) {
+                    if ($obj->getInt() !== null) {
                         printInt($obj->getInt());
                     }',
             ],
@@ -1650,7 +1650,7 @@ class MethodCallTest extends TestCase
                     }
 
                     function foo(A $a) : void {
-                        if ($a->getA()) {
+                        if ($a->getA() !== null) {
                             echo strlen($a->getA());
                         }
                     }
@@ -1716,7 +1716,7 @@ class MethodCallTest extends TestCase
 
                     $obj = new SomeClass();
 
-                    if ($obj->getInt()) {
+                    if ($obj->getInt() !== null) {
                         printInt($obj->getInt());
                     }',
                 'error_message' => 'PossiblyNullArgument',

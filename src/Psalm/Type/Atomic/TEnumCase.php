@@ -11,13 +11,9 @@ namespace Psalm\Type\Atomic;
  */
 final class TEnumCase extends TNamedObject
 {
-    public string $case_name;
-
-    public function __construct(string $fq_enum_name, string $case_name)
+    public function __construct(string $fq_enum_name, public string $case_name)
     {
         parent::__construct($fq_enum_name);
-
-        $this->case_name = $case_name;
     }
 
     public function getKey(bool $include_extra = true): string

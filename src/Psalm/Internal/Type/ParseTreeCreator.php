@@ -43,19 +43,15 @@ final class ParseTreeCreator
 
     private ParseTree $current_leaf;
 
-    /** @var array<int, array{0: string, 1: int, 2?: string}> */
-    private array $type_tokens;
-
-    private int $type_token_count;
+    private readonly int $type_token_count;
 
     private int $t = 0;
 
     /**
      * @param list<array{0: string, 1: int, 2?: string}> $type_tokens
      */
-    public function __construct(array $type_tokens)
+    public function __construct(private array $type_tokens)
     {
-        $this->type_tokens = $type_tokens;
         $this->type_token_count = count($type_tokens);
         $this->parse_tree = new Root();
         $this->current_leaf = $this->parse_tree;
@@ -830,7 +826,11 @@ final class ParseTreeCreator
 
                 $nexter_token = $this->t + 1 < $this->type_token_count ? $this->type_tokens[$this->t + 1] : null;
 
-                if ($nexter_token && strpos($nexter_token[0], '@') !== false) {
+                if ($nexter_token
+                    && strpos($nexter_token[0], '@') !== false
+                    && $type_token[0] !== 'list'
+                    && $type_token[0] !== 'array'
+                ) {
                     $this->t = $this->type_token_count;
                     if ($type_token[0] === '$this') {
                         $type_token[0] = 'static';

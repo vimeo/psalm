@@ -6,6 +6,7 @@ namespace Psalm\Type\Atomic;
 
 use Psalm\Codebase;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
@@ -19,27 +20,19 @@ use function implode;
  */
 final class TTemplateParam extends Atomic
 {
+    use UnserializeMemoryUsageSuppressionTrait;
     use HasIntersectionTrait;
-
-    public string $param_name;
-
-    public Union $as;
-
-    public string $defining_class;
 
     /**
      * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties> $extra_types
      */
     public function __construct(
-        string $param_name,
-        Union $extends,
-        string $defining_class,
+        public string $param_name,
+        public Union $as,
+        public string $defining_class,
         array $extra_types = [],
         bool $from_docblock = false,
     ) {
-        $this->param_name = $param_name;
-        $this->as = $extends;
-        $this->defining_class = $defining_class;
         $this->extra_types = $extra_types;
         parent::__construct($from_docblock);
     }

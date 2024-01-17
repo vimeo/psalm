@@ -238,10 +238,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             $function_call_info->function_id,
         );
 
-        $template_result->lower_bounds = array_merge(
-            $template_result->lower_bounds,
-            $already_inferred_lower_bounds,
-        );
+        $template_result->lower_bounds = [...$template_result->lower_bounds, ...$already_inferred_lower_bounds];
 
         if ($function_name instanceof PhpParser\Node\Name && $function_call_info->function_id) {
             $stmt_type = FunctionCallReturnTypeFetcher::fetch(
@@ -405,13 +402,6 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             }
         }
 
-        if ($function_call_info->byref_uses) {
-            foreach ($function_call_info->byref_uses as $byref_use_var => $_) {
-                $context->vars_in_scope['$' . $byref_use_var] = Type::getMixed();
-                $context->vars_possibly_in_scope['$' . $byref_use_var] = true;
-            }
-        }
-
         if ($function_name instanceof PhpParser\Node\Name && $function_call_info->function_id) {
             NamedFunctionCallHandler::handle(
                 $statements_analyzer,
@@ -569,7 +559,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                         $function_call_info->defined_constants = $function_storage->defined_constants;
                         $function_call_info->global_variables = $function_storage->global_variables;
                     }
-                } catch (UnexpectedValueException $e) {
+                } catch (UnexpectedValueException) {
                     $function_call_info->function_params = [
                         new FunctionLikeParameter('args', false, null, null, null, null, false, false, true),
                     ];

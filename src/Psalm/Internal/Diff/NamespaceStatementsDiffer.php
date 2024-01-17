@@ -8,7 +8,6 @@ use PhpParser;
 
 use function assert;
 use function end;
-use function get_class;
 use function substr;
 
 /**
@@ -38,7 +37,7 @@ final class NamespaceStatementsDiffer extends AstDiffer
                 string $a_code,
                 string $b_code,
             ): bool {
-                if (get_class($a) !== get_class($b)) {
+                if ($a::class !== $b::class) {
                     return false;
                 }
 

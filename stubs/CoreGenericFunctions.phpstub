@@ -1825,3 +1825,8 @@ function time_sleep_until(float $timestamp): bool {}
  * @psalm-ignore-falsable-return
  */
 function get_browser(?string $user_agent = null, bool $return_array = false): object|array|false {}
+
+/**
+ * @psalm-taint-sink extract $array
+ */
+function extract(array &$array, int $flags = EXTR_OVERWRITE, string $prefix = ""): int {}

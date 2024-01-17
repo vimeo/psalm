@@ -22,21 +22,18 @@ use const DIRECTORY_SEPARATOR;
 /** @internal */
 final class FileBasedPluginAdapter implements PluginEntryPointInterface
 {
-    private string $path;
+    private readonly string $path;
 
-    private Codebase $codebase;
-
-    private Config $config;
-
-    public function __construct(string $path, Config $config, Codebase $codebase)
-    {
+    public function __construct(
+        string $path,
+        private readonly Config $config,
+        private Codebase $codebase,
+    ) {
         if (!$path) {
             throw new UnexpectedValueException('$path cannot be empty');
         }
 
         $this->path = $path;
-        $this->config = $config;
-        $this->codebase = $codebase;
     }
 
     public function __invoke(RegistrationInterface $registration, ?SimpleXMLElement $config = null): void

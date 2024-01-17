@@ -8,6 +8,7 @@ use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Storage\FunctionLikeParameter;
+use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
@@ -18,6 +19,7 @@ use Psalm\Type\Union;
  */
 final class TCallable extends Atomic
 {
+    use UnserializeMemoryUsageSuppressionTrait;
     use CallableTrait;
 
     public string $value;

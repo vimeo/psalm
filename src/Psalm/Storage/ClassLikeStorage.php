@@ -12,15 +12,18 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TypeAlias\ClassTypeAlias;
 use Psalm\Issue\CodeIssue;
+use Psalm\Issue\DeprecatedClass;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
 use function array_values;
+use function in_array;
 
 final class ClassLikeStorage implements HasAttributesInterface
 {
     use CustomMetadataTrait;
+    use UnserializeMemoryUsageSuppressionTrait;
 
     /**
      * @var array<string, ClassConstantStorage>
@@ -67,8 +70,6 @@ final class ClassLikeStorage implements HasAttributesInterface
      * @var array<int, string>
      */
     public array $suppressed_issues = [];
-
-    public string $name;
 
     /**
      * Is this class user-defined
@@ -388,9 +389,8 @@ final class ClassLikeStorage implements HasAttributesInterface
 
     public bool $readonly = false;
 
-    public function __construct(string $name)
+    public function __construct(public string $name)
     {
-        $this->name = $name;
     }
 
     /**
@@ -458,5 +458,23 @@ final class ClassLikeStorage implements HasAttributesInterface
         }
 
         return false;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public function getSuppressedIssuesForTemplateExtendParams(): array
+    {
+        $allowed_issue_types = [
+            DeprecatedClass::getIssueType(),
+        ];
+        $suppressed_issues_for_template_extend_params = [];
+        foreach ($this->suppressed_issues as $offset => $suppressed_issue) {
+            if (!in_array($suppressed_issue, $allowed_issue_types, true)) {
+                continue;
+            }
+            $suppressed_issues_for_template_extend_params[$offset] = $suppressed_issue;
+        }
+        return $suppressed_issues_for_template_extend_params;
     }
 }

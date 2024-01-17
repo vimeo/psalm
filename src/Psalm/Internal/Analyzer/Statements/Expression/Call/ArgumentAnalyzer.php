@@ -69,6 +69,8 @@ use function in_array;
 use function ord;
 use function preg_split;
 use function reset;
+use function str_contains;
+use function str_starts_with;
 use function strpos;
 use function strtolower;
 use function substr;
@@ -683,7 +685,7 @@ final class ArgumentAnalyzer
                 && !$param_type->from_docblock
                 && !$param_type->had_template
                 && $method_id
-                && strpos($method_id->method_name, '__') !== 0
+                && !str_starts_with($method_id->method_name, '__')
             ) {
                 $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
 
@@ -896,7 +898,7 @@ final class ArgumentAnalyzer
             $input_type,
             $param_type,
             true,
-            true,
+            !isset($param_type->getAtomicTypes()['true']),
             $union_comparison_results,
         );
 
@@ -1268,7 +1270,7 @@ final class ArgumentAnalyzer
                     );
 
                     foreach ($function_ids as $function_id) {
-                        if (strpos($function_id, '::') !== false) {
+                        if (str_contains($function_id, '::')) {
                             if ($function_id[0] === '$') {
                                 $function_id = substr($function_id, 1);
                             }
