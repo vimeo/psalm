@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <files psalm-version="5.x-dev@b9583493b08eb36259c0f6b746a787c4c9b3ac45">
-  <file src="../../felixfbecker/advanced-json-rpc/lib/Dispatcher.php">
+  <file src="vendor/felixfbecker/advanced-json-rpc/lib/Dispatcher.php">
     <InternalProperty>
       <code><![CDATA[$this->mapper]]></code>
     </InternalProperty>
   </file>
-  <file src="../../nikic/php-parser/lib/PhpParser/Node/Expr/Array_.php">
+  <file src="vendor/nikic/php-parser/lib/PhpParser/Node/Expr/Array_.php">
     <MixedPropertyTypeCoercion>
       <code>$items</code>
     </MixedPropertyTypeCoercion>
   </file>
-  <file src="../../nikic/php-parser/lib/PhpParser/Node/Expr/ArrowFunction.php">
+  <file src="vendor/nikic/php-parser/lib/PhpParser/Node/Expr/ArrowFunction.php">
     <MixedAssignment>
       <code>$returnType</code>
       <code><![CDATA[$this->attrGroups]]></code>
@@ -24,7 +24,7 @@
       <code><![CDATA[$subNodes['expr']]]></code>
     </PossiblyUndefinedStringArrayOffset>
   </file>
-  <file src="../../nikic/php-parser/lib/PhpParser/Node/Expr/Closure.php">
+  <file src="vendor/nikic/php-parser/lib/PhpParser/Node/Expr/Closure.php">
     <MixedAssignment>
       <code>$returnType</code>
       <code><![CDATA[$this->attrGroups]]></code>
@@ -36,39 +36,39 @@
       <code><![CDATA[$this->uses]]></code>
     </MixedAssignment>
   </file>
-  <file src="../../nikic/php-parser/lib/PhpParser/Node/Expr/List_.php">
+  <file src="vendor/nikic/php-parser/lib/PhpParser/Node/Expr/List_.php">
     <MixedPropertyTypeCoercion>
       <code>$items</code>
     </MixedPropertyTypeCoercion>
   </file>
-  <file src="../../nikic/php-parser/lib/PhpParser/Node/Expr/ShellExec.php">
+  <file src="vendor/nikic/php-parser/lib/PhpParser/Node/Expr/ShellExec.php">
     <PropertyTypeCoercion>
       <code>$parts</code>
     </PropertyTypeCoercion>
   </file>
-  <file src="../../nikic/php-parser/lib/PhpParser/Node/MatchArm.php">
+  <file src="vendor/nikic/php-parser/lib/PhpParser/Node/MatchArm.php">
     <PropertyTypeCoercion>
       <code>$conds</code>
     </PropertyTypeCoercion>
   </file>
-  <file src="../../nikic/php-parser/lib/PhpParser/Node/Name.php">
+  <file src="vendor/nikic/php-parser/lib/PhpParser/Node/Name.php">
     <MissingConstructor>
       <code>$parts</code>
       <code>$parts</code>
       <code>$parts</code>
     </MissingConstructor>
   </file>
-  <file src="../../nikic/php-parser/lib/PhpParser/Node/Stmt/Case_.php">
+  <file src="vendor/nikic/php-parser/lib/PhpParser/Node/Stmt/Case_.php">
     <PropertyTypeCoercion>
       <code>$stmts</code>
     </PropertyTypeCoercion>
   </file>
-  <file src="../../nikic/php-parser/lib/PhpParser/Node/Stmt/Catch_.php">
+  <file src="vendor/nikic/php-parser/lib/PhpParser/Node/Stmt/Catch_.php">
     <PropertyTypeCoercion>
       <code>$stmts</code>
     </PropertyTypeCoercion>
   </file>
-  <file src="../../nikic/php-parser/lib/PhpParser/Node/Stmt/ClassMethod.php">
+  <file src="vendor/nikic/php-parser/lib/PhpParser/Node/Stmt/ClassMethod.php">
     <MixedAssignment>
       <code>$returnType</code>
       <code><![CDATA[$this->attrGroups]]></code>
@@ -79,7 +79,7 @@
       <code><![CDATA[$this->stmts]]></code>
     </MixedAssignment>
   </file>
-  <file src="../../nikic/php-parser/lib/PhpParser/Node/Stmt/Class_.php">
+  <file src="vendor/nikic/php-parser/lib/PhpParser/Node/Stmt/Class_.php">
     <MixedAssignment>
       <code><![CDATA[$this->attrGroups]]></code>
       <code><![CDATA[$this->extends]]></code>
@@ -88,27 +88,27 @@
       <code><![CDATA[$this->stmts]]></code>
     </MixedAssignment>
   </file>
-  <file src="../../nikic/php-parser/lib/PhpParser/Node/Stmt/Do_.php">
+  <file src="vendor/nikic/php-parser/lib/PhpParser/Node/Stmt/Do_.php">
     <PropertyTypeCoercion>
       <code>$stmts</code>
     </PropertyTypeCoercion>
   </file>
-  <file src="../../nikic/php-parser/lib/PhpParser/Node/Stmt/ElseIf_.php">
+  <file src="vendor/nikic/php-parser/lib/PhpParser/Node/Stmt/ElseIf_.php">
     <PropertyTypeCoercion>
       <code>$stmts</code>
     </PropertyTypeCoercion>
   </file>
-  <file src="../../nikic/php-parser/lib/PhpParser/Node/Stmt/Else_.php">
+  <file src="vendor/nikic/php-parser/lib/PhpParser/Node/Stmt/Else_.php">
     <PropertyTypeCoercion>
       <code>$stmts</code>
     </PropertyTypeCoercion>
   </file>
-  <file src="../../nikic/php-parser/lib/PhpParser/Node/Stmt/Finally_.php">
+  <file src="vendor/nikic/php-parser/lib/PhpParser/Node/Stmt/Finally_.php">
     <PropertyTypeCoercion>
       <code>$stmts</code>
     </PropertyTypeCoercion>
   </file>
-  <file src="../../nikic/php-parser/lib/PhpParser/Node/Stmt/For_.php">
+  <file src="vendor/nikic/php-parser/lib/PhpParser/Node/Stmt/For_.php">
     <MixedAssignment>
       <code><![CDATA[$this->cond]]></code>
       <code><![CDATA[$this->init]]></code>
@@ -116,14 +116,14 @@
       <code><![CDATA[$this->stmts]]></code>
     </MixedAssignment>
   </file>
-  <file src="../../nikic/php-parser/lib/PhpParser/Node/Stmt/Foreach_.php">
+  <file src="vendor/nikic/php-parser/lib/PhpParser/Node/Stmt/Foreach_.php">
     <MixedAssignment>
       <code><![CDATA[$this->byRef]]></code>
       <code><![CDATA[$this->keyVar]]></code>
       <code><![CDATA[$this->stmts]]></code>
     </MixedAssignment>
   </file>
-  <file src="../../nikic/php-parser/lib/PhpParser/Node/Stmt/Function_.php">
+  <file src="vendor/nikic/php-parser/lib/PhpParser/Node/Stmt/Function_.php">
     <MixedAssignment>
       <code>$returnType</code>
       <code><![CDATA[$this->attrGroups]]></code>
@@ -133,42 +133,42 @@
       <code><![CDATA[$this->stmts]]></code>
     </MixedAssignment>
   </file>
-  <file src="../../nikic/php-parser/lib/PhpParser/Node/Stmt/If_.php">
+  <file src="vendor/nikic/php-parser/lib/PhpParser/Node/Stmt/If_.php">
     <MixedAssignment>
       <code><![CDATA[$this->else]]></code>
       <code><![CDATA[$this->elseifs]]></code>
       <code><![CDATA[$this->stmts]]></code>
     </MixedAssignment>
   </file>
-  <file src="../../nikic/php-parser/lib/PhpParser/Node/Stmt/Interface_.php">
+  <file src="vendor/nikic/php-parser/lib/PhpParser/Node/Stmt/Interface_.php">
     <MixedAssignment>
       <code><![CDATA[$this->attrGroups]]></code>
       <code><![CDATA[$this->extends]]></code>
       <code><![CDATA[$this->stmts]]></code>
     </MixedAssignment>
   </file>
-  <file src="../../nikic/php-parser/lib/PhpParser/Node/Stmt/Namespace_.php">
+  <file src="vendor/nikic/php-parser/lib/PhpParser/Node/Stmt/Namespace_.php">
     <PropertyTypeCoercion>
       <code>$stmts</code>
     </PropertyTypeCoercion>
   </file>
-  <file src="../../nikic/php-parser/lib/PhpParser/Node/Stmt/Trait_.php">
+  <file src="vendor/nikic/php-parser/lib/PhpParser/Node/Stmt/Trait_.php">
     <MixedAssignment>
       <code><![CDATA[$this->attrGroups]]></code>
       <code><![CDATA[$this->stmts]]></code>
     </MixedAssignment>
   </file>
-  <file src="../../nikic/php-parser/lib/PhpParser/Node/Stmt/TryCatch.php">
+  <file src="vendor/nikic/php-parser/lib/PhpParser/Node/Stmt/TryCatch.php">
     <PropertyTypeCoercion>
       <code>$stmts</code>
     </PropertyTypeCoercion>
   </file>
-  <file src="../../nikic/php-parser/lib/PhpParser/Node/Stmt/While_.php">
+  <file src="vendor/nikic/php-parser/lib/PhpParser/Node/Stmt/While_.php">
     <PropertyTypeCoercion>
       <code>$stmts</code>
     </PropertyTypeCoercion>
   </file>
-  <file src="../../symfony/console/Command/Command.php">
+  <file src="vendor/symfony/console/Command/Command.php">
     <InternalClass>
       <code>static::getDefaultDescription()</code>
       <code>static::getDefaultDescription()</code>
