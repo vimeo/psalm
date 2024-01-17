@@ -2880,6 +2880,8 @@ class ClassTemplateTest extends TestCase
                     ): void {
                     }
                 }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'noCrashTemplateInsideGenerator' => [
                 'code' => '<?php

@@ -246,6 +246,7 @@ Level 5 and above allows a more non-verifiable code, and higher levels are even 
 - [RedundantConditionGivenDocblockType](issues/RedundantConditionGivenDocblockType.md)
 - [RedundantFunctionCallGivenDocblockType](issues/RedundantFunctionCallGivenDocblockType.md)
 - [ReferenceConstraintViolation](issues/ReferenceConstraintViolation.md)
+- [RiskyTruthyFalsyComparison](issues/RiskyTruthyFalsyComparison.md)
 - [UndefinedTrace](issues/UndefinedTrace.md)
 - [UnresolvableInclude](issues/UnresolvableInclude.md)
 - [UnsafeInstantiation](issues/UnsafeInstantiation.md)

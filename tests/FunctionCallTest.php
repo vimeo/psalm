@@ -1939,7 +1939,7 @@ class FunctionCallTest extends TestCase
             'strposAllowDictionary' => [
                 'code' => '<?php
                     function sayHello(string $format): void {
-                        if (strpos("abcdefghijklmno", $format)) {}
+                        if (strpos("abcdefghijklmno", $format) !== false) {}
                     }',
             ],
             'curlInitIsResourceAllowedIn7x' => [
@@ -2140,7 +2140,7 @@ class FunctionCallTest extends TestCase
             'strposFirstParamAllowClassString' => [
                 'code' => '<?php
                     function sayHello(string $needle): void {
-                        if (strpos(DateTime::class, $needle)) {}
+                        if (strpos(DateTime::class, $needle) !== false) {}
                     }',
             ],
             'mb_strtolowerProducesStringWithSecondArgument' => [

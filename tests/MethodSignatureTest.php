@@ -313,7 +313,7 @@ class MethodSignatureTest extends TestCase
 
                     class B extends A {
                         public function foo(?string $s): string {
-                            return $s ?: "hello";
+                            return $s !== null ? $s : "hello";
                         }
                     }
 
@@ -329,7 +329,7 @@ class MethodSignatureTest extends TestCase
 
                     class B extends A {
                         public function foo(string $s = null): string {
-                            return $s ?: "hello";
+                            return $s !== null ? $s : "hello";
                         }
                     }
 
@@ -1058,7 +1058,7 @@ class MethodSignatureTest extends TestCase
                 'code' => '<?php
                     class A {
                         public function foo(?string $s): string {
-                            return $s ?: "hello";
+                            return $s !== null ? $s : "hello";
                         }
                     }
 
