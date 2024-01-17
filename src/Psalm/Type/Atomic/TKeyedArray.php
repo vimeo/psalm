@@ -10,6 +10,7 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeCombiner;
+use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
@@ -32,6 +33,7 @@ use function str_replace;
  */
 class TKeyedArray extends Atomic
 {
+    use UnserializeMemoryUsageSuppressionTrait;
     /**
      * If the shape has fallback params then they are here
      *

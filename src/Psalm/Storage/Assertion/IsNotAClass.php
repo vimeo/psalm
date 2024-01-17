@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Storage\Assertion;
 
 use Psalm\Storage\Assertion;
+use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type\Atomic;
 
 /**
@@ -12,6 +13,7 @@ use Psalm\Type\Atomic;
  */
 final class IsNotAClass extends Assertion
 {
+    use UnserializeMemoryUsageSuppressionTrait;
     /** @param Atomic\TTemplateParamClass|Atomic\TNamedObject $type */
     public function __construct(public readonly Atomic $type, public readonly bool $allow_string)
     {

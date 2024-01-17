@@ -7,6 +7,7 @@ namespace Psalm\Type\Atomic;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
@@ -19,6 +20,7 @@ use function count;
  */
 class TArray extends Atomic
 {
+    use UnserializeMemoryUsageSuppressionTrait;
     /**
      * @use GenericTrait<array{Union, Union}>
      */
