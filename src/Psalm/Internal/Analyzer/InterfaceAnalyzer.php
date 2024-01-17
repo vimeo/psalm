@@ -170,11 +170,15 @@ final class InterfaceAnalyzer extends ClassLikeAnalyzer
                     if (in_array($stmt, $arr_stmts_wright)) {
                         $key_wright = array_search($stmt, $arr_stmts_wright);
                         $stmt = $arr_stmts_wright[$key_wright];
-                        $method_analyzer = new MethodAnalyzer($stmt, $this);
+                        if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
+                            $method_analyzer = new MethodAnalyzer($stmt, $this);
+                        }
                     } elseif (in_array($stmt, $arr_stmts_left)) {
                         $key_left = array_search($stmt, $arr_stmts_left);
                         $stmt = $arr_stmts_left[$key_left];
-                        $method_analyzer = new MethodAnalyzer($stmt, $this);
+                        if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
+                            $method_analyzer = new MethodAnalyzer($stmt, $this);
+                        }
                     } else {
                         // FIXME: if storage is null for $stmt skipp this $stmt. Maybe need more elegant fix.
                         continue;
