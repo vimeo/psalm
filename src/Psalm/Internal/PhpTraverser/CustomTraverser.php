@@ -29,7 +29,7 @@ final class CustomTraverser extends NodeTraverser
      * @param Node $node node to traverse
      * @return Node Result of traversal (may be original node or new one)
      */
-    protected function traverseNode(Node $node): Node
+    protected function traverseNode(Node $node): void
     {
         foreach ($node->getSubNodeNames() as $name) {
             $subNode = &$node->$name;
@@ -60,7 +60,7 @@ final class CustomTraverser extends NodeTraverser
                 }
 
                 if ($traverseChildren) {
-                    $subNode = $this->traverseNode($subNode);
+                    $this->traverseNode($subNode);
                     if ($this->stopTraversal) {
                         break;
                     }
@@ -88,8 +88,6 @@ final class CustomTraverser extends NodeTraverser
                 }
             }
         }
-
-        return $node;
     }
 
     /**
