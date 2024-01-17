@@ -31,7 +31,7 @@ use Psalm\Node\Expr\VirtualConstFetch;
 use Psalm\Node\Expr\VirtualFuncCall;
 use Psalm\Node\Expr\VirtualVariable;
 use Psalm\Node\Name\VirtualFullyQualified;
-use Psalm\Node\Scalar\VirtualInt_;
+use Psalm\Node\Scalar\VirtualInt;
 use Psalm\Node\Stmt\VirtualIf;
 use Psalm\Node\VirtualArg;
 use Psalm\Node\VirtualArrayItem;
@@ -249,8 +249,8 @@ final class SwitchCaseAnalyzer
                 $case_equality_expr = new VirtualFuncCall(
                     new VirtualFullyQualified(['rand']),
                     [
-                        new VirtualArg(new VirtualInt_(0)),
-                        new VirtualArg(new VirtualInt_(1)),
+                        new VirtualArg(new VirtualInt(0)),
+                        new VirtualArg(new VirtualInt(1)),
                     ],
                     $case->getAttributes(),
                 );
@@ -294,8 +294,8 @@ final class SwitchCaseAnalyzer
                 $case_or_default_equality_expr = new VirtualFuncCall(
                     new VirtualFullyQualified(['rand']),
                     [
-                        new VirtualArg(new VirtualInt_(0)),
-                        new VirtualArg(new VirtualInt_(1)),
+                        new VirtualArg(new VirtualInt(0)),
+                        new VirtualArg(new VirtualInt(1)),
                     ],
                     $case->getAttributes(),
                 );

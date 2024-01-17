@@ -28,8 +28,8 @@ use Psalm\Node\Expr\VirtualClassConstFetch;
 use Psalm\Node\Expr\VirtualConstFetch;
 use Psalm\Node\Expr\VirtualVariable;
 use Psalm\Node\Name\VirtualFullyQualified;
-use Psalm\Node\Scalar\VirtualFloat_;
-use Psalm\Node\Scalar\VirtualInt_;
+use Psalm\Node\Scalar\VirtualFloat;
+use Psalm\Node\Scalar\VirtualInt;
 use Psalm\Node\Scalar\VirtualString;
 use Psalm\Node\Stmt\VirtualFunction;
 use Psalm\Node\Stmt\VirtualNamespace;
@@ -365,11 +365,11 @@ final class StubsGenerator
             }
 
             if ($atomic_type instanceof TLiteralInt) {
-                return new VirtualInt_($atomic_type->value);
+                return new VirtualInt($atomic_type->value);
             }
 
             if ($atomic_type instanceof TLiteralFloat) {
-                return new VirtualFloat_($atomic_type->value);
+                return new VirtualFloat($atomic_type->value);
             }
 
             if ($atomic_type instanceof TFalse) {
@@ -395,7 +395,7 @@ final class StubsGenerator
                     if ($atomic_type->is_list) {
                         $key_type = null;
                     } elseif (is_int($property_name)) {
-                        $key_type = new VirtualInt_($property_name);
+                        $key_type = new VirtualInt($property_name);
                     } else {
                         $key_type = new VirtualString($property_name);
                     }
