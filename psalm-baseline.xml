@@ -1,186 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<files psalm-version="5.x-dev@b9583493b08eb36259c0f6b746a787c4c9b3ac45">
-  <file src="vendor/felixfbecker/advanced-json-rpc/lib/Dispatcher.php">
-    <InternalProperty>
-      <code><![CDATA[$this->mapper]]></code>
-    </InternalProperty>
-  </file>
-  <file src="vendor/nikic/php-parser/lib/PhpParser/Node/Expr/Array_.php">
-    <MixedPropertyTypeCoercion>
-      <code>$items</code>
-    </MixedPropertyTypeCoercion>
-  </file>
-  <file src="vendor/nikic/php-parser/lib/PhpParser/Node/Expr/ArrowFunction.php">
-    <MixedAssignment>
-      <code>$returnType</code>
-      <code><![CDATA[$this->attrGroups]]></code>
-      <code><![CDATA[$this->byRef]]></code>
-      <code><![CDATA[$this->expr]]></code>
-      <code><![CDATA[$this->params]]></code>
-      <code><![CDATA[$this->returnType]]></code>
-      <code><![CDATA[$this->static]]></code>
-    </MixedAssignment>
-    <PossiblyUndefinedStringArrayOffset>
-      <code><![CDATA[$subNodes['expr']]]></code>
-    </PossiblyUndefinedStringArrayOffset>
-  </file>
-  <file src="vendor/nikic/php-parser/lib/PhpParser/Node/Expr/Closure.php">
-    <MixedAssignment>
-      <code>$returnType</code>
-      <code><![CDATA[$this->attrGroups]]></code>
-      <code><![CDATA[$this->byRef]]></code>
-      <code><![CDATA[$this->params]]></code>
-      <code><![CDATA[$this->returnType]]></code>
-      <code><![CDATA[$this->static]]></code>
-      <code><![CDATA[$this->stmts]]></code>
-      <code><![CDATA[$this->uses]]></code>
-    </MixedAssignment>
-  </file>
-  <file src="vendor/nikic/php-parser/lib/PhpParser/Node/Expr/List_.php">
-    <MixedPropertyTypeCoercion>
-      <code>$items</code>
-    </MixedPropertyTypeCoercion>
-  </file>
-  <file src="vendor/nikic/php-parser/lib/PhpParser/Node/Expr/ShellExec.php">
-    <PropertyTypeCoercion>
-      <code>$parts</code>
-    </PropertyTypeCoercion>
-  </file>
-  <file src="vendor/nikic/php-parser/lib/PhpParser/Node/MatchArm.php">
-    <PropertyTypeCoercion>
-      <code>$conds</code>
-    </PropertyTypeCoercion>
-  </file>
-  <file src="vendor/nikic/php-parser/lib/PhpParser/Node/Name.php">
-    <MissingConstructor>
-      <code>$parts</code>
-      <code>$parts</code>
-      <code>$parts</code>
-    </MissingConstructor>
-  </file>
-  <file src="vendor/nikic/php-parser/lib/PhpParser/Node/Stmt/Case_.php">
-    <PropertyTypeCoercion>
-      <code>$stmts</code>
-    </PropertyTypeCoercion>
-  </file>
-  <file src="vendor/nikic/php-parser/lib/PhpParser/Node/Stmt/Catch_.php">
-    <PropertyTypeCoercion>
-      <code>$stmts</code>
-    </PropertyTypeCoercion>
-  </file>
-  <file src="vendor/nikic/php-parser/lib/PhpParser/Node/Stmt/ClassMethod.php">
-    <MixedAssignment>
-      <code>$returnType</code>
-      <code><![CDATA[$this->attrGroups]]></code>
-      <code><![CDATA[$this->byRef]]></code>
-      <code><![CDATA[$this->flags]]></code>
-      <code><![CDATA[$this->params]]></code>
-      <code><![CDATA[$this->returnType]]></code>
-      <code><![CDATA[$this->stmts]]></code>
-    </MixedAssignment>
-  </file>
-  <file src="vendor/nikic/php-parser/lib/PhpParser/Node/Stmt/Class_.php">
-    <MixedAssignment>
-      <code><![CDATA[$this->attrGroups]]></code>
-      <code><![CDATA[$this->extends]]></code>
-      <code><![CDATA[$this->flags]]></code>
-      <code><![CDATA[$this->implements]]></code>
-      <code><![CDATA[$this->stmts]]></code>
-    </MixedAssignment>
-  </file>
-  <file src="vendor/nikic/php-parser/lib/PhpParser/Node/Stmt/Do_.php">
-    <PropertyTypeCoercion>
-      <code>$stmts</code>
-    </PropertyTypeCoercion>
-  </file>
-  <file src="vendor/nikic/php-parser/lib/PhpParser/Node/Stmt/ElseIf_.php">
-    <PropertyTypeCoercion>
-      <code>$stmts</code>
-    </PropertyTypeCoercion>
-  </file>
-  <file src="vendor/nikic/php-parser/lib/PhpParser/Node/Stmt/Else_.php">
-    <PropertyTypeCoercion>
-      <code>$stmts</code>
-    </PropertyTypeCoercion>
-  </file>
-  <file src="vendor/nikic/php-parser/lib/PhpParser/Node/Stmt/Finally_.php">
-    <PropertyTypeCoercion>
-      <code>$stmts</code>
-    </PropertyTypeCoercion>
-  </file>
-  <file src="vendor/nikic/php-parser/lib/PhpParser/Node/Stmt/For_.php">
-    <MixedAssignment>
-      <code><![CDATA[$this->cond]]></code>
-      <code><![CDATA[$this->init]]></code>
-      <code><![CDATA[$this->loop]]></code>
-      <code><![CDATA[$this->stmts]]></code>
-    </MixedAssignment>
-  </file>
-  <file src="vendor/nikic/php-parser/lib/PhpParser/Node/Stmt/Foreach_.php">
-    <MixedAssignment>
-      <code><![CDATA[$this->byRef]]></code>
-      <code><![CDATA[$this->keyVar]]></code>
-      <code><![CDATA[$this->stmts]]></code>
-    </MixedAssignment>
-  </file>
-  <file src="vendor/nikic/php-parser/lib/PhpParser/Node/Stmt/Function_.php">
-    <MixedAssignment>
-      <code>$returnType</code>
-      <code><![CDATA[$this->attrGroups]]></code>
-      <code><![CDATA[$this->byRef]]></code>
-      <code><![CDATA[$this->params]]></code>
-      <code><![CDATA[$this->returnType]]></code>
-      <code><![CDATA[$this->stmts]]></code>
-    </MixedAssignment>
-  </file>
-  <file src="vendor/nikic/php-parser/lib/PhpParser/Node/Stmt/If_.php">
-    <MixedAssignment>
-      <code><![CDATA[$this->else]]></code>
-      <code><![CDATA[$this->elseifs]]></code>
-      <code><![CDATA[$this->stmts]]></code>
-    </MixedAssignment>
-  </file>
-  <file src="vendor/nikic/php-parser/lib/PhpParser/Node/Stmt/Interface_.php">
-    <MixedAssignment>
-      <code><![CDATA[$this->attrGroups]]></code>
-      <code><![CDATA[$this->extends]]></code>
-      <code><![CDATA[$this->stmts]]></code>
-    </MixedAssignment>
-  </file>
-  <file src="vendor/nikic/php-parser/lib/PhpParser/Node/Stmt/Namespace_.php">
-    <PropertyTypeCoercion>
-      <code>$stmts</code>
-    </PropertyTypeCoercion>
-  </file>
-  <file src="vendor/nikic/php-parser/lib/PhpParser/Node/Stmt/Trait_.php">
-    <MixedAssignment>
-      <code><![CDATA[$this->attrGroups]]></code>
-      <code><![CDATA[$this->stmts]]></code>
-    </MixedAssignment>
-  </file>
-  <file src="vendor/nikic/php-parser/lib/PhpParser/Node/Stmt/TryCatch.php">
-    <PropertyTypeCoercion>
-      <code>$stmts</code>
-    </PropertyTypeCoercion>
-  </file>
-  <file src="vendor/nikic/php-parser/lib/PhpParser/Node/Stmt/While_.php">
-    <PropertyTypeCoercion>
-      <code>$stmts</code>
-    </PropertyTypeCoercion>
-  </file>
-  <file src="vendor/symfony/console/Command/Command.php">
-    <InternalClass>
-      <code>static::getDefaultDescription()</code>
-      <code>static::getDefaultDescription()</code>
-      <code>static::getDefaultDescription()</code>
-      <code>static::getDefaultName()</code>
-      <code>static::getDefaultName()</code>
-      <code>static::getDefaultName()</code>
-    </InternalClass>
-    <PossiblyNullArgument>
-      <code>$name</code>
-    </PossiblyNullArgument>
-  </file>
+<files psalm-version="dev-master@950293c6e74c6e9db842f537c5722755b1594313">
   <file src="examples/TemplateChecker.php">
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$comment_block->tags['variablesfrom'][0]]]></code>
@@ -213,12 +32,6 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Codebase.php">
-    <PossiblyUndefinedIntArrayOffset>
-      <code>$const_name</code>
-      <code>$const_name</code>
-      <code>$symbol_name</code>
-      <code>$symbol_parts[1]</code>
-    </PossiblyUndefinedIntArrayOffset>
     <RiskyTruthyFalsyComparison>
       <code>!$function_name</code>
       <code><![CDATA[$aliases->namespace]]></code>
@@ -235,17 +48,19 @@
       <code><![CDATA[strpos($reference->symbol, '::')]]></code>
       <code><![CDATA[strpos($reference->symbol, '::')]]></code>
       <code><![CDATA[strpos($reference->symbol, '\\')]]></code>
-      <code><![CDATA[strpos($symbol, '()')]]></code>
-      <code><![CDATA[strpos($symbol, '()')]]></code>
-      <code><![CDATA[strpos($symbol, '()')]]></code>
-      <code><![CDATA[strpos($symbol, '()')]]></code>
       <code><![CDATA[strpos($symbol, '::')]]></code>
-      <code><![CDATA[strpos($symbol, '::')]]></code>
-      <code><![CDATA[strpos($symbol, '::')]]></code>
-      <code><![CDATA[strpos($symbol, '\\')]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Config.php">
+    <PossiblyNullArgument>
+      <code>$deprecated_element_xml</code>
+    </PossiblyNullArgument>
+    <PossiblyNullReference>
+      <code>addAttribute</code>
+    </PossiblyNullReference>
+    <PropertyTypeCoercion>
+      <code>$this</code>
+    </PropertyTypeCoercion>
     <RiskyTruthyFalsyComparison>
       <code>!$composer_json</code>
       <code>!$config_path</code>
@@ -257,6 +72,7 @@
       <code><![CDATA[$igbinary_version = phpversion('igbinary')]]></code>
       <code>$issue_handler_children</code>
       <code>$parent_issue_type</code>
+      <code>$phpstorm_meta_files</code>
       <code><![CDATA[$pluginclas_class_path = $this->composer_class_loader->findFile($pluginClassName)]]></code>
       <code><![CDATA[$this->autoloader]]></code>
       <code><![CDATA[strpos($file_contents, $deprecated_element_xml->localName, $offset)]]></code>
@@ -266,6 +82,9 @@
   <file src="src/Psalm/Config/Creator.php">
     <RiskyTruthyFalsyComparison>
       <code>$suggested_dir</code>
+      <code><![CDATA[glob($current_dir . DIRECTORY_SEPARATOR . '**/**/*.php', GLOB_NOSORT)]]></code>
+      <code><![CDATA[glob($current_dir . DIRECTORY_SEPARATOR . '**/*.php', GLOB_NOSORT)]]></code>
+      <code><![CDATA[glob($current_dir . DIRECTORY_SEPARATOR . '*.php', GLOB_NOSORT)]]></code>
       <code><![CDATA[strpos($issue->file_path, 'stub')]]></code>
       <code><![CDATA[strpos($issue->file_path, 'vendor')]]></code>
     </RiskyTruthyFalsyComparison>
@@ -276,7 +95,6 @@
     </PossiblyUndefinedIntArrayOffset>
     <RiskyTruthyFalsyComparison>
       <code>!$directory_path</code>
-      <code>!$file_path</code>
       <code>!$glob_directory_path</code>
       <code>!$glob_file_path</code>
       <code><![CDATA[$e->directory]]></code>
@@ -377,7 +195,6 @@
       <code><![CDATA[!$var_comment->description]]></code>
       <code><![CDATA[!$var_comment->var_id]]></code>
       <code>!$var_type_tokens</code>
-      <code>$brackets</code>
       <code>$template_type_map</code>
       <code>$type_aliases</code>
       <code><![CDATA[$var_comment->line_number]]></code>
@@ -463,6 +280,11 @@
       <code><![CDATA[$implementer_classlike_storage->template_extended_params]]></code>
       <code><![CDATA[$implementer_method_storage->defining_fqcln]]></code>
     </RiskyTruthyFalsyComparison>
+  </file>
+  <file src="src/Psalm/Internal/Analyzer/NamespaceAnalyzer.php">
+    <NonInvariantDocblockPropertyType>
+      <code>$source</code>
+    </NonInvariantDocblockPropertyType>
   </file>
   <file src="src/Psalm/Internal/Analyzer/ProjectAnalyzer.php">
     <PossiblyUndefinedIntArrayOffset>
@@ -823,6 +645,7 @@
     </PossiblyUndefinedIntArrayOffset>
     <RiskyTruthyFalsyComparison>
       <code>!$container_class</code>
+      <code>!$var_id</code>
       <code>$cased_method_id</code>
       <code>$cased_method_id</code>
       <code>$cased_method_id</code>
@@ -834,7 +657,6 @@
       <code><![CDATA[$context->calling_method_id]]></code>
       <code>$self_fq_class_name</code>
       <code>$static_fq_class_name</code>
-      <code>$var_id</code>
       <code><![CDATA[strpos($atomic_type->value, '::')]]></code>
       <code><![CDATA[strpos($input_type_part->value, '::')]]></code>
     </RiskyTruthyFalsyComparison>
@@ -1277,12 +1099,6 @@
       <code><![CDATA[$this->vars_to_initialize]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
-  <file src="src/Psalm/Internal/Cache.php">
-    <UnusedPsalmSuppress>
-      <code>UndefinedFunction</code>
-      <code>UndefinedFunction</code>
-    </UnusedPsalmSuppress>
-  </file>
   <file src="src/Psalm/Internal/Cli/LanguageServer.php">
     <RiskyTruthyFalsyComparison>
       <code>!$root_path</code>
@@ -1290,9 +1106,9 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Cli/Psalm.php">
-    <PossiblyInvalidArgument>
+    <InvalidScalarArgument>
       <code><![CDATA[$options['f'] ?? null]]></code>
-    </PossiblyInvalidArgument>
+    </InvalidScalarArgument>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$config->error_baseline]]></code>
       <code>!$paths_to_check</code>
@@ -1407,6 +1223,9 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Codebase/Methods.php">
+    <InvalidArgument>
+      <code><![CDATA[$class_storage->methods[$declaring_method_name]->stubbed]]></code>
+    </InvalidArgument>
     <RiskyTruthyFalsyComparison>
       <code>!$calling_class_name</code>
       <code>!$extends</code>
@@ -1432,6 +1251,9 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Codebase/Populator.php">
+    <InvalidArgument>
+      <code><![CDATA[$storage->methods[$implementing_method_id->method_name]->abstract]]></code>
+    </InvalidArgument>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!strpos($fq_classlike_name_lc, '\\')]]></code>
       <code>$mapped_name</code>
@@ -1558,6 +1380,9 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Fork/Pool.php">
+    <PossiblyFalseArgument>
+      <code>$buffer</code>
+    </PossiblyFalseArgument>
     <RiskyTruthyFalsyComparison>
       <code>!$sockets</code>
     </RiskyTruthyFalsyComparison>
@@ -1572,7 +1397,23 @@
       <code>empty($message)</code>
     </RiskyTruthyFalsyComparison>
   </file>
+  <file src="src/Psalm/Internal/LanguageServer/ClientConfiguration.php">
+    <PossiblyUnusedProperty>
+      <code>$findUnusedVariables</code>
+    </PossiblyUnusedProperty>
+  </file>
+  <file src="src/Psalm/Internal/LanguageServer/LanguageClient.php">
+    <InvalidArrayAccess>
+      <code>$config</code>
+    </InvalidArrayAccess>
+    <InvalidArrayOffset>
+      <code>[$config]</code>
+    </InvalidArrayOffset>
+  </file>
   <file src="src/Psalm/Internal/LanguageServer/LanguageServer.php">
+    <MixedAssignment>
+      <code>$result</code>
+    </MixedAssignment>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$clientConfiguration->TCPServerAddress]]></code>
       <code><![CDATA[$clientConfiguration->TCPServerAddress]]></code>
@@ -1609,7 +1450,6 @@
       <code>$replacement_stmts[0]</code>
     </PossiblyUndefinedIntArrayOffset>
     <RiskyTruthyFalsyComparison>
-      <code>!$method_contents</code>
       <code><![CDATA[$this->parser->parse(
                                     $hacky_class_fix,
                                     $error_handler,
@@ -1628,7 +1468,6 @@
       <code><![CDATA[$method_tree->children[1]]]></code>
     </PossiblyUndefinedIntArrayOffset>
     <RiskyTruthyFalsyComparison>
-      <code>!$method_entry</code>
       <code><![CDATA[!strpos($doc_line_parts[1], '(')]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
@@ -1679,12 +1518,17 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/PhpVisitor/Reflector/FunctionLikeDocblockParser.php">
+    <InvalidReturnStatement>
+      <code>$line_parts</code>
+    </InvalidReturnStatement>
+    <InvalidReturnType>
+      <code><![CDATA[array{string, string}&array<int<0, max>, string>]]></code>
+    </InvalidReturnType>
     <PossiblyUndefinedIntArrayOffset>
+      <code>$line_parts[0]</code>
+      <code>$line_parts[1]</code>
       <code>$since_parts[1]</code>
     </PossiblyUndefinedIntArrayOffset>
-    <RedundantCondition>
-      <code><![CDATA[count($line_parts) > 0]]></code>
-    </RedundantCondition>
   </file>
   <file src="src/Psalm/Internal/PhpVisitor/Reflector/FunctionLikeDocblockScanner.php">
     <PossiblyUndefinedArrayOffset>
@@ -1759,32 +1603,6 @@
       <code><![CDATA[$this->end_change]]></code>
       <code><![CDATA[$this->start_change]]></code>
     </RiskyTruthyFalsyComparison>
-  </file>
-  <file src="src/Psalm/Internal/PluginManager/Command/DisableCommand.php">
-    <RedundantCondition>
-      <code>$config_file_path !== null</code>
-    </RedundantCondition>
-    <ReservedWord>
-      <code><![CDATA[$input->getArgument('pluginName')]]></code>
-      <code><![CDATA[$input->getOption('config')]]></code>
-    </ReservedWord>
-  </file>
-  <file src="src/Psalm/Internal/PluginManager/Command/EnableCommand.php">
-    <RedundantCondition>
-      <code>$config_file_path !== null</code>
-    </RedundantCondition>
-    <ReservedWord>
-      <code><![CDATA[$input->getArgument('pluginName')]]></code>
-      <code><![CDATA[$input->getOption('config')]]></code>
-    </ReservedWord>
-  </file>
-  <file src="src/Psalm/Internal/PluginManager/Command/ShowCommand.php">
-    <RedundantCondition>
-      <code>$config_file_path !== null</code>
-    </RedundantCondition>
-    <ReservedWord>
-      <code><![CDATA[$input->getOption('config')]]></code>
-    </ReservedWord>
   </file>
   <file src="src/Psalm/Internal/PluginManager/ConfigFile.php">
     <RiskyTruthyFalsyComparison>
@@ -1950,9 +1768,6 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Type/Comparator/AtomicTypeComparator.php">
-    <ComplexMethod>
-      <code>isContainedBy</code>
-    </ComplexMethod>
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$array->properties[0]]]></code>
       <code><![CDATA[$array->properties[0]]]></code>
@@ -2290,11 +2105,6 @@
       <code>getMostSpecificTypeFromBounds</code>
     </ImpureMethodCall>
   </file>
-  <file src="src/Psalm/Type/Atomic/TCallableList.php">
-    <DeprecatedClass>
-      <code>TNonEmptyList</code>
-    </DeprecatedClass>
-  </file>
   <file src="src/Psalm/Type/Atomic/TClassString.php">
     <ImpureMethodCall>
       <code>replace</code>
@@ -2326,11 +2136,6 @@
       <code>replace</code>
     </ImpureMethodCall>
   </file>
-  <file src="src/Psalm/Type/Atomic/TDependentListKey.php">
-    <PossiblyUnusedMethod>
-      <code>__construct</code>
-    </PossiblyUnusedMethod>
-  </file>
   <file src="src/Psalm/Type/Atomic/TGenericObject.php">
     <RiskyTruthyFalsyComparison>
       <code>!$intersection</code>
@@ -2343,11 +2148,6 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Type/Atomic/TKeyedArray.php">
-    <DeprecatedClass>
-      <code>TList</code>
-      <code><![CDATA[new TList($this->getGenericValueType())]]></code>
-      <code><![CDATA[new TNonEmptyList($this->getGenericValueType())]]></code>
-    </DeprecatedClass>
     <ImpureMethodCall>
       <code>combine</code>
       <code>combine</code>
@@ -2370,18 +2170,6 @@
       <code><![CDATA[$this->properties[0]]]></code>
       <code><![CDATA[$this->properties[0]]]></code>
     </PossiblyUndefinedIntArrayOffset>
-    <PossiblyUnusedMethod>
-      <code>getList</code>
-    </PossiblyUnusedMethod>
-  </file>
-  <file src="src/Psalm/Type/Atomic/TList.php">
-    <ImpureMethodCall>
-      <code>replace</code>
-      <code>replace</code>
-    </ImpureMethodCall>
-    <ImpurePropertyAssignment>
-      <code><![CDATA[$cloned->type_param]]></code>
-    </ImpurePropertyAssignment>
   </file>
   <file src="src/Psalm/Type/Atomic/TLiteralClassString.php">
     <RiskyTruthyFalsyComparison>
@@ -2394,14 +2182,6 @@
       <code>!$intersection</code>
       <code>$intersection</code>
     </RiskyTruthyFalsyComparison>
-  </file>
-  <file src="src/Psalm/Type/Atomic/TNonEmptyList.php">
-    <DeprecatedClass>
-      <code>TList</code>
-    </DeprecatedClass>
-    <PossiblyUnusedMethod>
-      <code>setCount</code>
-    </PossiblyUnusedMethod>
   </file>
   <file src="src/Psalm/Type/Atomic/TObjectWithProperties.php">
     <ImpureMethodCall>
@@ -2432,11 +2212,6 @@
     <ImpureMethodCall>
       <code>replace</code>
     </ImpureMethodCall>
-  </file>
-  <file src="src/Psalm/Type/Atomic/TTypeAlias.php">
-    <RiskyTruthyFalsyComparison>
-      <code><![CDATA[$this->extra_types]]></code>
-    </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Type/MutableUnion.php">
     <PossiblyUnusedProperty>
@@ -2512,6 +2287,29 @@
       <code><![CDATA[strpos($type, ' as ')]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
+  <file src="tests/Config/PluginListTest.php">
+    <InvalidArgument>
+      <code><![CDATA[$this->composer_lock]]></code>
+      <code><![CDATA[$this->composer_lock]]></code>
+      <code><![CDATA[$this->composer_lock]]></code>
+      <code><![CDATA[$this->composer_lock]]></code>
+      <code><![CDATA[$this->composer_lock]]></code>
+      <code><![CDATA[$this->composer_lock]]></code>
+      <code><![CDATA[$this->composer_lock]]></code>
+      <code><![CDATA[$this->composer_lock]]></code>
+      <code><![CDATA[$this->composer_lock]]></code>
+      <code><![CDATA[$this->composer_lock]]></code>
+      <code><![CDATA[$this->config_file]]></code>
+      <code><![CDATA[$this->config_file]]></code>
+      <code><![CDATA[$this->config_file]]></code>
+      <code><![CDATA[$this->config_file]]></code>
+      <code><![CDATA[$this->config_file]]></code>
+      <code><![CDATA[$this->config_file]]></code>
+      <code><![CDATA[$this->config_file]]></code>
+      <code><![CDATA[$this->config_file]]></code>
+      <code><![CDATA[$this->config_file]]></code>
+    </InvalidArgument>
+  </file>
   <file src="tests/DocumentationTest.php">
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[strpos($error_message, 'ArrayOffset')]]></code>
@@ -2529,6 +2327,16 @@
       <code><![CDATA[strpos(static::class, 'Unused')]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
+  <file src="tests/TestConfig.php">
+    <InvalidExtendClass>
+      <code>Config</code>
+    </InvalidExtendClass>
+    <MethodSignatureMismatch>
+      <code>public function __construct()</code>
+      <code>public function getComposerFilePathForClassLike(string $fq_classlike_name): bool</code>
+      <code>public function getProjectDirectories(): array</code>
+    </MethodSignatureMismatch>
+  </file>
   <file src="tests/TypeParseTest.php">
     <RiskyTruthyFalsyComparison>
       <code>$param_type_1</code>
@@ -2537,5 +2345,10 @@
       <code>$param_type_4</code>
       <code>$return_type</code>
     </RiskyTruthyFalsyComparison>
+  </file>
+  <file src="vendor/nikic/php-parser/lib/PhpParser/Node/Expr/ArrowFunction.php">
+    <PossiblyUndefinedStringArrayOffset>
+      <code><![CDATA[$subNodes['expr']]]></code>
+    </PossiblyUndefinedStringArrayOffset>
   </file>
 </files>

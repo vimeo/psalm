@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Plugin\EventHandler\Event;
 
 use Psalm\CodeLocation;
@@ -8,25 +10,14 @@ use Psalm\StatementsSource;
 
 final class MethodVisibilityProviderEvent
 {
-    private StatementsSource $source;
-    private string $fq_classlike_name;
-    private string $method_name_lowercase;
-    private Context $context;
-    private ?CodeLocation $code_location;
-
     /** @internal */
     public function __construct(
-        StatementsSource $source,
-        string $fq_classlike_name,
-        string $method_name_lowercase,
-        Context $context,
-        ?CodeLocation $code_location = null
+        private readonly StatementsSource $source,
+        private readonly string $fq_classlike_name,
+        private readonly string $method_name_lowercase,
+        private readonly Context $context,
+        private readonly ?CodeLocation $code_location = null,
     ) {
-        $this->source = $source;
-        $this->fq_classlike_name = $fq_classlike_name;
-        $this->method_name_lowercase = $method_name_lowercase;
-        $this->context = $context;
-        $this->code_location = $code_location;
     }
 
     public function getSource(): StatementsSource

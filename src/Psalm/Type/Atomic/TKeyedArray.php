@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type\Atomic;
 
 use Psalm\Codebase;
@@ -8,15 +10,14 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeCombiner;
+use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
-use UnexpectedValueException;
 
 use function addslashes;
 use function assert;
 use function count;
-use function get_class;
 use function implode;
 use function is_int;
 use function is_string;
@@ -32,27 +33,18 @@ use function str_replace;
  */
 class TKeyedArray extends Atomic
 {
-    /**
-     * @var non-empty-array<string|int, Union>
-     */
-    public $properties;
-
-    /**
-     * @var array<string, bool>|null
-     */
-    public $class_strings;
-
+    use UnserializeMemoryUsageSuppressionTrait;
     /**
      * If the shape has fallback params then they are here
      *
      * @var array{Union, Union}|null
      */
-    public $fallback_params;
+    public ?array $fallback_params = null;
 
     /**
      * @var bool - if this is a list of sequential elements
      */
-    public $is_list = false;
+    public bool $is_list = false;
 
     /** @var non-empty-lowercase-string */
     protected const NAME_ARRAY = 'array';
@@ -67,17 +59,15 @@ class TKeyedArray extends Atomic
      * @param array<string, bool> $class_strings
      */
     public function __construct(
-        array $properties,
-        ?array $class_strings = null,
+        public array $properties,
+        public ?array $class_strings = null,
         ?array $fallback_params = null,
         bool $is_list = false,
-        bool $from_docblock = false
+        bool $from_docblock = false,
     ) {
         if ($is_list && $fallback_params) {
             $fallback_params[0] = Type::getListKey();
         }
-        $this->properties = $properties;
-        $this->class_strings = $class_strings;
         $this->fallback_params = $fallback_params;
         $this->is_list = $is_list;
         if ($this->is_list) {
@@ -221,7 +211,7 @@ class TKeyedArray extends Atomic
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        bool $use_phpdoc_format
+        bool $use_phpdoc_format,
     ): string {
         if ($use_phpdoc_format) {
             return $this->getGenericArrayType()->toNamespacedString(
@@ -293,7 +283,7 @@ class TKeyedArray extends Atomic
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        int $analysis_php_version_id
+        int $analysis_php_version_id,
     ): string {
         return 'array';
     }
@@ -362,7 +352,7 @@ class TKeyedArray extends Atomic
     /**
      * @return TArray|TNonEmptyArray
      */
-    public function getGenericArrayType(bool $allow_non_empty = true, ?string $list_var_id = null): TArray
+    public function getGenericArrayType(?string $list_var_id = null): TArray
     {
         $key_types = [];
         $value_type = null;
@@ -401,7 +391,7 @@ class TKeyedArray extends Atomic
                 $key_type = new Union([new TIntRange(0, null, false, $list_var_id)]);
             }
 
-            if ($has_defined_keys && $allow_non_empty) {
+            if ($has_defined_keys) {
                 return new TNonEmptyArray([$key_type, $value_type]);
             }
             return new TArray([$key_type, $value_type]);
@@ -417,7 +407,7 @@ class TKeyedArray extends Atomic
 
         $value_type = $value_type->setPossiblyUndefined(false);
 
-        if ($allow_non_empty && ($has_defined_keys || $this->fallback_params !== null)) {
+        if ($has_defined_keys) {
             return new TNonEmptyArray([$key_type, $value_type]);
         }
         return new TArray([$key_type, $value_type]);
@@ -511,7 +501,7 @@ class TKeyedArray extends Atomic
         ?string $calling_function = null,
         bool $replace = true,
         bool $add_lower_bound = false,
-        int $depth = 0
+        int $depth = 0,
     ): self {
         if ($input_type instanceof TKeyedArray
             && $input_type->is_list
@@ -612,7 +602,7 @@ class TKeyedArray extends Atomic
      */
     public function replaceTemplateTypesWithArgTypes(
         TemplateResult $template_result,
-        ?Codebase $codebase
+        ?Codebase $codebase,
     ): self {
         $properties = $this->properties;
         foreach ($properties as $offset => $property) {
@@ -647,7 +637,7 @@ class TKeyedArray extends Atomic
 
     public function equals(Atomic $other_type, bool $ensure_source_equality): bool
     {
-        if (get_class($other_type) !== static::class) {
+        if ($other_type::class !== static::class) {
             return false;
         }
 
@@ -687,25 +677,7 @@ class TKeyedArray extends Atomic
         return $this->is_list ? 'list' : 'array';
     }
 
-    /**
-     * @deprecated Will be removed in Psalm v6 along with the TList type.
-     */
-    public function getList(): TList
-    {
-        if (!$this->is_list) {
-            throw new UnexpectedValueException('Object-like array must be a list for conversion');
-        }
-
-        return $this->isNonEmpty()
-            ? new TNonEmptyList($this->getGenericValueType())
-            : new TList($this->getGenericValueType());
-    }
-
-    /**
-     * @param string|int $name
-     * @return string|int
-     */
-    private function escapeAndQuote($name)
+    private function escapeAndQuote(string|int $name): string|int
     {
         if (is_string($name)) {
             $quote = false;

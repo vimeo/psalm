@@ -17,8 +17,8 @@ namespace Psalm\Issue;
 
 final class MyNewIssue extends CodeIssue 
 {
-    public const SHORTCODE = 123;
     public const ERROR_LEVEL = 2;
+    public const SHORTCODE = 123;
 }
 ```
 
@@ -26,7 +26,7 @@ For `SHORTCODE` value use `$max_shortcode + 1`. To choose appropriate error leve
 
 There a number of abstract classes you can extend:
 
-* `CodeIssue` - non specific, default issue. It's a base class for all issues.
+* `CodeIssue` - non-specific, default issue. It's a base class for all issues.
 * `ClassIssue` - issue related to a specific class (also interface, trait, enum). These issues can be suppressed for specific classes in `psalm.xml` by using `referencedClass` attribute
 * `PropertyIssue` - issue related to a specific property. Can be targeted by using `referencedProperty` in `psalm.xml`
 * `FunctionIssue` - issue related to a specific function. Can be suppressed with `referencedFunction` attribute.

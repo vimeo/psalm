@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer;
 
 use Exception;
@@ -75,6 +77,8 @@ use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
@@ -94,8 +98,6 @@ use function count;
 use function explode;
 use function implode;
 use function in_array;
-use function is_int;
-use function is_string;
 use function preg_match;
 use function preg_replace;
 use function reset;
@@ -145,7 +147,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
 
     public function analyze(
         ?Context $class_context = null,
-        ?Context $global_context = null
+        ?Context $global_context = null,
     ): void {
         $class = $this->class;
 
@@ -255,8 +257,6 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         foreach ($storage->docblock_issues as $docblock_issue) {
             IssueBuffer::maybeAdd($docblock_issue);
         }
-
-        $classlike_storage_provider = $codebase->classlike_storage_provider;
 
         $parent_fq_class_name = $this->parent_fq_class_name;
 
@@ -580,7 +580,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
 
                     try {
                         $trait_file_analyzer = $project_analyzer->getFileAnalyzerForClassLike($fq_trait_name);
-                    } catch (Exception $e) {
+                    } catch (Exception) {
                         continue;
                     }
 
@@ -624,43 +624,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         }
 
         $pseudo_methods = $storage->pseudo_methods + $storage->pseudo_static_methods;
-
-        foreach ($pseudo_methods as $pseudo_method_name => $pseudo_method_storage) {
-            $pseudo_method_id = new MethodIdentifier(
-                $this->fq_class_name,
-                $pseudo_method_name,
-            );
-
-            $overridden_method_ids = $codebase->methods->getOverriddenMethodIds($pseudo_method_id);
-
-            if ($overridden_method_ids
-                && $pseudo_method_name !== '__construct'
-                && $pseudo_method_storage->location
-            ) {
-                foreach ($overridden_method_ids as $overridden_method_id) {
-                    $parent_method_storage = $codebase->methods->getStorage($overridden_method_id);
-
-                    $overridden_fq_class_name = $overridden_method_id->fq_class_name;
-
-                    $parent_storage = $classlike_storage_provider->get($overridden_fq_class_name);
-
-                    MethodComparator::compare(
-                        $codebase,
-                        null,
-                        $storage,
-                        $parent_storage,
-                        $pseudo_method_storage,
-                        $parent_method_storage,
-                        $this->fq_class_name,
-                        $pseudo_method_storage->visibility ?: 0,
-                        $storage->location ?: $pseudo_method_storage->location,
-                        $storage->suppressed_issues,
-                        true,
-                        false,
-                    );
-                }
-            }
-        }
+        MethodComparator::comparePseudoMethods($pseudo_methods, $this->fq_class_name, $codebase, $storage);
 
         $event = new AfterClassLikeAnalysisEvent(
             $class,
@@ -688,7 +652,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         Context $class_context,
         string $fq_class_name,
         ?string $parent_fq_class_name,
-        array $stmts = []
+        array $stmts = [],
     ): void {
         $codebase = $statements_source->getCodebase();
 
@@ -943,7 +907,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                         try {
                             $docBlock = DocComment::parsePreservingLength($docComment);
                             $suppressed = $docBlock->tags['psalm-suppress'] ?? [];
-                        } catch (DocblockParseException $e) {
+                        } catch (DocblockParseException) {
                             // do nothing to keep original behavior
                         }
                     }
@@ -1017,7 +981,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         ClassLikeStorage $storage,
         Context $class_context,
         ?Context $global_context = null,
-        ?MethodAnalyzer $constructor_analyzer = null
+        ?MethodAnalyzer $constructor_analyzer = null,
     ): void {
         if (!$config->reportIssueInFile('PropertyNotSetInConstructor', $this->getFilePath())) {
             return;
@@ -1380,7 +1344,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         Context $class_context,
         ?Context $global_context = null,
         ?MethodAnalyzer &$constructor_analyzer = null,
-        ?TraitAnalyzer $previous_trait_analyzer = null
+        ?TraitAnalyzer $previous_trait_analyzer = null,
     ): ?bool {
         $codebase = $this->getCodebase();
 
@@ -1532,7 +1496,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
     private function analyzeProperty(
         SourceAnalyzer $source,
         PhpParser\Node\Stmt\Property $stmt,
-        Context $context
+        Context $context,
     ): void {
         $fq_class_name = $source->getFQCLN();
         $property_name = $stmt->props[0]->name->name;
@@ -1634,7 +1598,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         PhpParser\Node\Stmt\Property $property,
         Union $inferred_type,
         StatementsSource $source,
-        bool $docblock_only = false
+        bool $docblock_only = false,
     ): void {
         $manipulator = PropertyDocblockManipulator::getForProperty(
             $project_analyzer,
@@ -1678,7 +1642,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         SourceAnalyzer $source,
         Context $class_context,
         ?Context $global_context = null,
-        bool $is_fake = false
+        bool $is_fake = false,
     ): ?MethodAnalyzer {
         $config = Config::getInstance();
 
@@ -1853,7 +1817,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
 
     private static function getThisObjectType(
         ClassLikeStorage $class_storage,
-        string $original_fq_classlike_name
+        string $original_fq_classlike_name,
     ): TNamedObject {
         if ($class_storage->template_types) {
             $template_params = [];
@@ -1889,7 +1853,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         string $fq_classlike_name,
         MethodIdentifier $analyzed_method_id,
         MethodIdentifier $actual_method_id,
-        bool $did_explicitly_return
+        bool $did_explicitly_return,
     ): void {
         $secondary_return_type_location = null;
 
@@ -2017,7 +1981,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         PhpParser\Node\Stmt $class,
         Codebase $codebase,
         string $fq_class_name,
-        ClassLikeStorage $storage
+        ClassLikeStorage $storage,
     ): bool {
         $classlike_storage_provider = $codebase->classlike_storage_provider;
 
@@ -2075,7 +2039,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
 
             try {
                 $interface_storage = $classlike_storage_provider->get($fq_interface_name);
-            } catch (InvalidArgumentException $e) {
+            } catch (InvalidArgumentException) {
                 return false;
             }
 
@@ -2109,7 +2073,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         foreach ($storage->class_implements as $fq_interface_name_lc => $fq_interface_name) {
             try {
                 $interface_storage = $classlike_storage_provider->get($fq_interface_name_lc);
-            } catch (InvalidArgumentException $e) {
+            } catch (InvalidArgumentException) {
                 return false;
             }
 
@@ -2320,7 +2284,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         string $parent_fq_class_name,
         ClassLikeStorage $storage,
         Codebase $codebase,
-        ?Context $class_context
+        ?Context $class_context,
     ): void {
         $classlike_storage_provider = $codebase->classlike_storage_provider;
 
@@ -2472,7 +2436,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 $code_location,
                 $storage->template_type_extends_count[$parent_fq_class_name] ?? 0,
             );
-        } catch (InvalidArgumentException $e) {
+        } catch (InvalidArgumentException) {
             // do nothing
         }
     }
@@ -2500,8 +2464,8 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     ),
                 );
             } elseif ($case_storage->value !== null) {
-                if ((is_int($case_storage->value) && $storage->enum_type === 'string')
-                    || (is_string($case_storage->value) && $storage->enum_type === 'int')
+                if (($case_storage->value instanceof TLiteralInt && $storage->enum_type === 'string')
+                    || ($case_storage->value instanceof TLiteralString && $storage->enum_type === 'int')
                 ) {
                     IssueBuffer::maybeAdd(
                         new InvalidEnumCaseValue(
@@ -2514,7 +2478,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             }
 
             if ($case_storage->value !== null) {
-                if (in_array($case_storage->value, $seen_values, true)) {
+                if (in_array($case_storage->value->value, $seen_values, true)) {
                     IssueBuffer::maybeAdd(
                         new DuplicateEnumCaseValue(
                             'Enum case values should be unique',
@@ -2523,7 +2487,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                         ),
                     );
                 } else {
-                    $seen_values[] = $case_storage->value;
+                    $seen_values[] = $case_storage->value->value;
                 }
             }
         }

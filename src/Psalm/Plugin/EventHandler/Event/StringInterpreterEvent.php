@@ -1,24 +1,23 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Plugin\EventHandler\Event;
 
 use Psalm\Codebase;
 
 final class StringInterpreterEvent
 {
-    private string $value;
-    private Codebase $codebase;
-
     /**
      * Called after a statement has been checked
      *
      * @psalm-external-mutation-free
      * @internal
      */
-    public function __construct(string $value, Codebase $codebase)
-    {
-        $this->value = $value;
-        $this->codebase = $codebase;
+    public function __construct(
+        private readonly string $value,
+        private readonly Codebase $codebase,
+    ) {
     }
 
     public function getValue(): string

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Codebase;
 
 use Psalm\CodeLocation;
@@ -12,6 +14,7 @@ use Psalm\Issue\TaintedCallable;
 use Psalm\Issue\TaintedCookie;
 use Psalm\Issue\TaintedCustom;
 use Psalm\Issue\TaintedEval;
+use Psalm\Issue\TaintedExtract;
 use Psalm\Issue\TaintedFile;
 use Psalm\Issue\TaintedHeader;
 use Psalm\Issue\TaintedHtml;
@@ -19,11 +22,13 @@ use Psalm\Issue\TaintedInclude;
 use Psalm\Issue\TaintedLdap;
 use Psalm\Issue\TaintedSSRF;
 use Psalm\Issue\TaintedShell;
+use Psalm\Issue\TaintedSleep;
 use Psalm\Issue\TaintedSql;
 use Psalm\Issue\TaintedSystemSecret;
 use Psalm\Issue\TaintedTextWithQuotes;
 use Psalm\Issue\TaintedUnserialize;
 use Psalm\Issue\TaintedUserSecret;
+use Psalm\Issue\TaintedXpath;
 use Psalm\IssueBuffer;
 use Psalm\Type\TaintKind;
 
@@ -220,15 +225,12 @@ final class TaintFlowGraph extends DataFlowGraph
                 $generated_sources = $this->getSpecializedSources($source);
 
                 foreach ($generated_sources as $generated_source) {
-                    $new_sources = array_merge(
-                        $new_sources,
-                        $this->getChildNodes(
-                            $generated_source,
-                            $source_taints,
-                            $sinks,
-                            $visited_source_ids,
-                        ),
-                    );
+                    $new_sources = [...$new_sources, ...$this->getChildNodes(
+                        $generated_source,
+                        $source_taints,
+                        $sinks,
+                        $visited_source_ids,
+                    )];
                 }
             }
 
@@ -245,7 +247,7 @@ final class TaintFlowGraph extends DataFlowGraph
         DataFlowNode $generated_source,
         array $source_taints,
         array $sinks,
-        array $visited_source_ids
+        array $visited_source_ids,
     ): array {
         $new_sources = [];
 
@@ -449,6 +451,33 @@ final class TaintFlowGraph extends DataFlowGraph
                                 );
                                 break;
 
+                            case TaintKind::INPUT_XPATH:
+                                $issue = new TaintedXpath(
+                                    'Detected tainted xpath query',
+                                    $issue_location,
+                                    $issue_trace,
+                                    $path,
+                                );
+                                break;
+
+                            case TaintKind::INPUT_SLEEP:
+                                $issue = new TaintedSleep(
+                                    'Detected tainted sleep',
+                                    $issue_location,
+                                    $issue_trace,
+                                    $path,
+                                );
+                                break;
+
+                            case TaintKind::INPUT_EXTRACT:
+                                $issue = new TaintedExtract(
+                                    'Detected tainted extract',
+                                    $issue_location,
+                                    $issue_trace,
+                                    $path,
+                                );
+                                break;
+
                             default:
                                 $issue = new TaintedCustom(
                                     'Detected tainted ' . $matching_taint,
@@ -521,7 +550,7 @@ final class TaintFlowGraph extends DataFlowGraph
 
         return array_filter(
             $generated_sources,
-            [$this, 'doesForwardEdgeExist'],
+            $this->doesForwardEdgeExist(...),
         );
     }
 

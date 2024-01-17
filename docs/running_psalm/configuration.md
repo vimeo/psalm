@@ -213,7 +213,7 @@ When `true`, Psalm will check that the developer has caught every exception in g
   ignoreInternalFunctionFalseReturn="[bool]"
 >
 ```
-When `true`, Psalm ignores possibly-false issues stemming from return values of internal functions (like `preg_split`) that may return false, but do so rarely. Defaults to `true`.
+When `true`, Psalm ignores possibly-false issues stemming from return values of internal functions (like `preg_split`) that may return false, but do so rarely. Defaults to `false`.
 
 #### ignoreInternalFunctionNullReturn
 
@@ -222,7 +222,7 @@ When `true`, Psalm ignores possibly-false issues stemming from return values of 
   ignoreInternalFunctionNullReturn="[bool]"
 >
 ```
-When `true`, Psalm ignores possibly-null issues stemming from return values of internal array functions (like `current`) that may return null, but do so rarely. Defaults to `true`.
+When `true`, Psalm ignores possibly-null issues stemming from return values of internal array functions (like `current`) that may return null, but do so rarely. Defaults to `false`.
 
 #### inferPropertyTypesFromConstructor
 
@@ -511,6 +511,11 @@ class PremiumCar extends StandardCar {
 #### findUnusedBaselineEntry
 
 Emits [UnusedBaselineEntry](issues/UnusedBaselineEntry.md) when a baseline entry
+is not being used to suppress an issue.
+
+#### findUnusedIssueHandlerSuppression
+
+Emits [UnusedIssueHandlerSuppression](issues/UnusedIssueHandlerSuppression.md) when a suppressed issue handler
 is not being used to suppress an issue.
 
 ## Project settings

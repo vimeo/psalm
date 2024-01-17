@@ -10,14 +10,12 @@ use Psalm\Type\Union;
 
 final class DynamicTemplateProvider
 {
-    private string $defining_class;
-
     /**
      * @internal
      */
-    public function __construct(string $defining_class)
-    {
-        $this->defining_class = $defining_class;
+    public function __construct(
+        private readonly string $defining_class,
+    ) {
     }
 
     /**

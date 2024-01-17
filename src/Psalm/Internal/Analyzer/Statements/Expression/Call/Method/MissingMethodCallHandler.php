@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call\Method;
 
 use PhpParser;
@@ -44,7 +46,7 @@ final class MissingMethodCallHandler
         Config $config,
         ?Union $all_intersection_return_type,
         AtomicMethodCallAnalysisResult $result,
-        ?Atomic $lhs_type_part
+        ?Atomic $lhs_type_part,
     ): ?AtomicCallContext {
         $fq_class_name = $method_id->fq_class_name;
         $method_name_lc = $method_id->method_name;
@@ -250,7 +252,7 @@ final class MissingMethodCallHandler
         ?string $intersection_method_id,
         string $cased_method_id,
         AtomicMethodCallAnalysisResult $result,
-        ?Atomic $lhs_type_part
+        ?Atomic $lhs_type_part,
     ): void {
         $fq_class_name = $method_id->fq_class_name;
         $method_name_lc = $method_id->method_name;
@@ -417,7 +419,7 @@ final class MissingMethodCallHandler
     private static function findPseudoMethodAndClassStorages(
         Codebase $codebase,
         ClassLikeStorage $static_class_storage,
-        string $method_name_lc
+        string $method_name_lc,
     ): ?array {
         if (isset($static_class_storage->declaring_pseudo_method_ids[$method_name_lc])) {
             $method_id = $static_class_storage->declaring_pseudo_method_ids[$method_name_lc];
@@ -433,6 +435,12 @@ final class MissingMethodCallHandler
         }
 
         $ancestors = $static_class_storage->class_implements;
+        foreach ($static_class_storage->namedMixins as $namedObject) {
+            $type = $namedObject->value;
+            if ($type) {
+                $ancestors[$type] = true;
+            }
+        }
 
         foreach ($ancestors as $fq_class_name => $_) {
             $class_storage = $codebase->classlikes->getStorageFor($fq_class_name);

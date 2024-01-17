@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm;
 
 use Psalm\Internal\Analyzer\IssueData;
@@ -13,52 +15,38 @@ use const ENT_XML1;
 
 abstract class Report
 {
-    public const TYPE_COMPACT = 'compact';
-    public const TYPE_CONSOLE = 'console';
-    public const TYPE_PYLINT = 'pylint';
-    public const TYPE_JSON = 'json';
-    public const TYPE_JSON_SUMMARY = 'json-summary';
-    public const TYPE_SONARQUBE = 'sonarqube';
-    public const TYPE_EMACS = 'emacs';
-    public const TYPE_XML = 'xml';
-    public const TYPE_JUNIT = 'junit';
-    public const TYPE_CHECKSTYLE = 'checkstyle';
-    public const TYPE_TEXT = 'text';
-    public const TYPE_GITHUB_ACTIONS = 'github';
-    public const TYPE_PHP_STORM = 'phpstorm';
-    public const TYPE_SARIF = 'sarif';
-    public const TYPE_CODECLIMATE = 'codeclimate';
-    public const TYPE_COUNT = 'count';
-    public const TYPE_BY_ISSUE_LEVEL = 'by-issue-level';
+    final public const TYPE_COMPACT = 'compact';
+    final public const TYPE_CONSOLE = 'console';
+    final public const TYPE_PYLINT = 'pylint';
+    final public const TYPE_JSON = 'json';
+    final public const TYPE_JSON_SUMMARY = 'json-summary';
+    final public const TYPE_SONARQUBE = 'sonarqube';
+    final public const TYPE_EMACS = 'emacs';
+    final public const TYPE_XML = 'xml';
+    final public const TYPE_JUNIT = 'junit';
+    final public const TYPE_CHECKSTYLE = 'checkstyle';
+    final public const TYPE_TEXT = 'text';
+    final public const TYPE_GITHUB_ACTIONS = 'github';
+    final public const TYPE_PHP_STORM = 'phpstorm';
+    final public const TYPE_SARIF = 'sarif';
+    final public const TYPE_CODECLIMATE = 'codeclimate';
+    final public const TYPE_COUNT = 'count';
+    final public const TYPE_BY_ISSUE_LEVEL = 'by-issue-level';
 
     /**
      * @var array<int, IssueData>
      */
-    protected $issues_data;
+    protected array $issues_data;
 
-    /** @var array<string, int> */
-    protected $fixable_issue_counts;
+    protected bool $use_color;
 
-    /** @var bool */
-    protected $use_color;
+    protected bool $show_snippet;
 
-    /** @var bool */
-    protected $show_snippet;
+    protected bool $show_info;
 
-    /** @var bool */
-    protected $show_info;
+    protected bool $pretty;
 
-    /** @var bool */
-    protected $pretty;
-
-    /** @var bool */
-    protected $in_ci;
-
-    /** @var int */
-    protected $mixed_expression_count;
-
-    /** @var int */
-    protected $total_expression_count;
+    protected bool $in_ci;
 
     /**
      * @param array<int, IssueData> $issues_data
@@ -66,10 +54,10 @@ abstract class Report
      */
     public function __construct(
         array $issues_data,
-        array $fixable_issue_counts,
+        protected array $fixable_issue_counts,
         ReportOptions $report_options,
-        int $mixed_expression_count = 1,
-        int $total_expression_count = 1
+        protected int $mixed_expression_count = 1,
+        protected int $total_expression_count = 1,
     ) {
         if (!$report_options->show_info) {
             $this->issues_data = array_filter(
@@ -79,16 +67,12 @@ abstract class Report
         } else {
             $this->issues_data = $issues_data;
         }
-        $this->fixable_issue_counts = $fixable_issue_counts;
 
         $this->use_color = $report_options->use_color;
         $this->show_snippet = $report_options->show_snippet;
         $this->show_info = $report_options->show_info;
         $this->pretty = $report_options->pretty;
         $this->in_ci = $report_options->in_ci;
-
-        $this->mixed_expression_count = $mixed_expression_count;
-        $this->total_expression_count = $total_expression_count;
     }
 
     protected function xmlEncode(string $data): string

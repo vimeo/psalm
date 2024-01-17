@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests\TypeReconciliation;
 
 use Psalm\Tests\TestCase;
@@ -1676,7 +1678,7 @@ class ConditionalTest extends TestCase
                 'code' => '<?php
                     /**
                      * @param array<string, int> $arr
-                     * @return non-empty-array<string, int>
+                     * @return array<string, int>
                      */
                     function foo(array $arr) : array {
                         if (isset($arr["a"])) {
@@ -1798,7 +1800,6 @@ class ConditionalTest extends TestCase
                         /**
                          * @psalm-suppress MixedArrayAccess
                          * @psalm-suppress MixedReturnStatement
-                         * @psalm-suppress MixedInferredReturnType
                          * @psalm-suppress MixedArrayAssignment
                          */
                         public function foo() : stdClass {
@@ -2189,7 +2190,6 @@ class ConditionalTest extends TestCase
 
                         /**
                          * @psalm-suppress MixedReturnStatement
-                         * @psalm-suppress MixedInferredReturnType
                          * @psalm-suppress MixedArrayAccess
                          */
                         public static function get(string $k1, string $k2) : ?string {
@@ -2508,7 +2508,7 @@ class ConditionalTest extends TestCase
                                     continue;
                                 }
 
-                                $remaining = trim(preg_replace(\'@^[ \t]*\* *@m\', \' \', substr($return_block, $i + 1)));
+                                $remaining = trim((string) preg_replace(\'@^[ \t]*\* *@m\', \' \', substr($return_block, $i + 1)));
 
                                 if ($remaining) {
                                     /** @var array<string> */

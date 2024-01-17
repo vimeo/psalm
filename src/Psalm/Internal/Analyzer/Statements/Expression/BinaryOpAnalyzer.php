@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
@@ -46,7 +48,7 @@ final class BinaryOpAnalyzer
         PhpParser\Node\Expr\BinaryOp $stmt,
         Context $context,
         int $nesting = 0,
-        bool $from_stmt = false
+        bool $from_stmt = false,
     ): bool {
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat && $nesting > 100) {
             $statements_analyzer->node_data->setType($stmt, Type::getString());
@@ -390,7 +392,7 @@ final class BinaryOpAnalyzer
         PhpParser\Node\Expr $stmt,
         PhpParser\Node\Expr $left,
         PhpParser\Node\Expr $right,
-        string $type = 'binaryop'
+        string $type = 'binaryop',
     ): void {
         if ($stmt->getLine() === -1) {
             throw new UnexpectedValueException('bad');
@@ -472,7 +474,7 @@ final class BinaryOpAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\BinaryOp\Equal $stmt,
         Union $stmt_left_type,
-        Union $stmt_right_type
+        Union $stmt_right_type,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -486,7 +488,7 @@ final class BinaryOpAnalyzer
                                 '__tostring',
                             ),
                         );
-                    } catch (UnexpectedValueException $e) {
+                    } catch (UnexpectedValueException) {
                         continue;
                     }
 
@@ -520,7 +522,7 @@ final class BinaryOpAnalyzer
                                 '__tostring',
                             ),
                         );
-                    } catch (UnexpectedValueException $e) {
+                    } catch (UnexpectedValueException) {
                         continue;
                     }
 

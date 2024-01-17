@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Block;
 
 use PhpParser;
@@ -37,7 +39,7 @@ final class TryAnalyzer
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\TryCatch $stmt,
-        Context $context
+        Context $context,
     ): ?bool {
         $catch_actions = [];
         $all_catches_leave = true;

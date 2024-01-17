@@ -1,9 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Issue;
 
-class InvalidInterfaceImplementation extends ClassIssue
+final class InvalidInterfaceImplementation extends ClassIssue
 {
-    const ERROR_LEVEL = -1;
-    const SHORTCODE = 317;
+    final public const ERROR_LEVEL = -1;
+    final public const SHORTCODE = 317;
 }

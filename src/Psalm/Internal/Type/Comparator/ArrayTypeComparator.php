@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Type\Comparator;
 
 use Psalm\Codebase;
@@ -27,7 +29,7 @@ final class ArrayTypeComparator
         Atomic $input_type_part,
         Atomic $container_type_part,
         bool $allow_interface_equality,
-        ?TypeComparisonResult $atomic_comparison_result
+        ?TypeComparisonResult $atomic_comparison_result,
     ): bool {
         $all_types_contain = true;
 
@@ -44,19 +46,6 @@ final class ArrayTypeComparator
                     && !$container_type_part instanceof TNonEmptyArray)
                 || ($container_type_part instanceof TKeyedArray
                     && !$container_type_part->isNonEmpty())
-            )
-        ) {
-            return true;
-        }
-
-        if ($container_type_part instanceof TKeyedArray
-            && $input_type_part instanceof TArray
-            && !$container_type_part->is_list
-            && !$container_type_part->isNonEmpty()
-            && !$container_type_part->isSealed()
-            && $input_type_part->equals(
-                $container_type_part->getGenericArrayType($container_type_part->isNonEmpty()),
-                false,
             )
         ) {
             return true;

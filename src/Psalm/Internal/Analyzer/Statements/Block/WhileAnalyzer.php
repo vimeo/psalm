@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Block;
 
 use PhpParser;
@@ -10,7 +12,6 @@ use Psalm\Internal\Scope\LoopScope;
 use Psalm\Type;
 use UnexpectedValueException;
 
-use function array_merge;
 use function in_array;
 
 /**
@@ -24,7 +25,7 @@ final class WhileAnalyzer
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\While_ $stmt,
-        Context $context
+        Context $context,
     ): ?bool {
         $while_true = ($stmt->cond instanceof PhpParser\Node\Expr\ConstFetch
                 && $stmt->cond->name->getParts() === ['true'])
@@ -102,10 +103,10 @@ final class WhileAnalyzer
         $while_context->loop_scope = null;
 
         if ($can_leave_loop) {
-            $context->vars_possibly_in_scope = array_merge(
-                $context->vars_possibly_in_scope,
-                $while_context->vars_possibly_in_scope,
-            );
+            $context->vars_possibly_in_scope = [
+                ...$context->vars_possibly_in_scope,
+                ...$while_context->vars_possibly_in_scope,
+            ];
         } elseif ($pre_context) {
             $context->vars_possibly_in_scope = $pre_context->vars_possibly_in_scope;
         }
@@ -121,7 +122,7 @@ final class WhileAnalyzer
      * @return list<PhpParser\Node\Expr>
      */
     public static function getAndExpressions(
-        PhpParser\Node\Expr $expr
+        PhpParser\Node\Expr $expr,
     ): array {
         if ($expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd) {
             return [...self::getAndExpressions($expr->left), ...self::getAndExpressions($expr->right)];

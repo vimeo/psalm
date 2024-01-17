@@ -1,34 +1,20 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Storage;
 
 use Psalm\CodeLocation;
+use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TLiteralString;
 
 final class EnumCaseStorage
 {
     use UnserializeMemoryUsageSuppressionTrait;
 
-    /**
-     * @var int|string|null
-     */
-    public $value;
+    public bool $deprecated = false;
 
-    /** @var CodeLocation */
-    public $stmt_location;
-
-    /**
-     * @var bool
-     */
-    public $deprecated = false;
-
-    /**
-     * @param int|string|null  $value
-     */
-    public function __construct(
-        $value,
-        CodeLocation $location
-    ) {
-        $this->value = $value;
-        $this->stmt_location = $location;
+    public function __construct(public TLiteralString|TLiteralInt|null $value, public CodeLocation $stmt_location)
+    {
     }
 }

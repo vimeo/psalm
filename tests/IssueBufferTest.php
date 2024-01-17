@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
 use Psalm\Codebase;
@@ -126,7 +128,7 @@ class IssueBufferTest extends TestCase
 
         ob_start();
         IssueBuffer::finish($projectAnalzyer, false, microtime(true), false, $baseline);
-        $output = ob_get_clean();
+        $output = (string) ob_get_clean();
         $this->assertStringNotContainsString("ERROR", $output, "all issues baselined");
         IssueBuffer::clear();
     }
@@ -137,7 +139,7 @@ class IssueBufferTest extends TestCase
         $project_analyzer->stdout_report_options = new ReportOptions;
         ob_start();
         IssueBuffer::printSuccessMessage($project_analyzer);
-        $output = ob_get_clean();
+        $output = (string) ob_get_clean();
 
         $this->assertStringContainsString('No errors found!', $output);
     }

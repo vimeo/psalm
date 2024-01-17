@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use InvalidArgumentException;
@@ -20,7 +22,6 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
@@ -58,7 +59,7 @@ final class SimpleTypeInferer
         Aliases $aliases,
         FileSource $file_source = null,
         ?array $existing_class_constants = null,
-        ?string $fq_classlike_name = null
+        ?string $fq_classlike_name = null,
     ): ?Union {
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp) {
             if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat) {
@@ -283,21 +284,26 @@ final class SimpleTypeInferer
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\ConstFetch) {
-            $name = strtolower($stmt->name->getFirst());
-            if ($name === 'false') {
+            $name = $stmt->name->getFirst();
+            $name_lowercase = strtolower($name);
+            if ($name_lowercase === 'false') {
                 return Type::getFalse();
             }
 
-            if ($name === 'true') {
+            if ($name_lowercase === 'true') {
                 return Type::getTrue();
             }
 
-            if ($name === 'null') {
+            if ($name_lowercase === 'null') {
                 return Type::getNull();
             }
 
-            if ($stmt->name->getFirst() === '__NAMESPACE__') {
+            if ($name === '__NAMESPACE__') {
                 return Type::getString($aliases->namespace);
+            }
+
+            if ($type = ConstFetchAnalyzer::getGlobalConstType($codebase, $name, $name)) {
+                return $type;
             }
 
             return null;
@@ -377,7 +383,7 @@ final class SimpleTypeInferer
                         }
 
                         return null;
-                    } catch (InvalidArgumentException | CircularReferenceException $e) {
+                    } catch (InvalidArgumentException | CircularReferenceException) {
                         return null;
                     }
                 }
@@ -505,11 +511,7 @@ final class SimpleTypeInferer
 
                     foreach ($array_type->getAtomicTypes() as $array_atomic_type) {
                         if ($array_atomic_type instanceof TKeyedArray) {
-                            if (isset($array_atomic_type->properties[$dim_value])) {
-                                return $array_atomic_type->properties[$dim_value];
-                            }
-
-                            return null;
+                            return $array_atomic_type->properties[$dim_value] ?? null;
                         }
                     }
                 }
@@ -541,7 +543,7 @@ final class SimpleTypeInferer
         Aliases $aliases,
         FileSource $file_source = null,
         ?array $existing_class_constants = null,
-        ?string $fq_classlike_name = null
+        ?string $fq_classlike_name = null,
     ): ?Union {
         if (count($stmt->items) === 0) {
             return Type::getEmptyArray();
@@ -625,7 +627,7 @@ final class SimpleTypeInferer
         Aliases $aliases,
         FileSource $file_source = null,
         ?array $existing_class_constants = null,
-        ?string $fq_classlike_name = null
+        ?string $fq_classlike_name = null,
     ): bool {
         if ($item->unpack) {
             $unpacked_array_type = self::infer(
@@ -777,12 +779,9 @@ final class SimpleTypeInferer
 
     private static function handleUnpackedArray(
         ArrayCreationInfo $array_creation_info,
-        Union $unpacked_array_type
+        Union $unpacked_array_type,
     ): bool {
         foreach ($unpacked_array_type->getAtomicTypes() as $unpacked_atomic_type) {
-            if ($unpacked_atomic_type instanceof TList) {
-                $unpacked_atomic_type = $unpacked_atomic_type->getKeyedArray();
-            }
             if ($unpacked_atomic_type instanceof TKeyedArray) {
                 foreach ($unpacked_atomic_type->properties as $key => $property_value) {
                     if (is_string($key)) {

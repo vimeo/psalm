@@ -10,7 +10,7 @@
       *  Configuration                                                                                                *
       ************************************************************************************************************** -->
 
-    <config name="php_version" value="70400"/>
+    <config name="php_version" value="80100"/>
     <config name="installed_paths" value="../../slevomat/coding-standard"/>
 
     <arg name="basepath" value="."/>
@@ -91,8 +91,6 @@
             <property name="linesCountAfterDeclare" value="1"/>
             <property name="spacesCountAroundEqualsSign" value="0"/>
         </properties>
-
-        <exclude name="SlevomatCodingStandard.TypeHints.DeclareStrictTypes.DeclareStrictTypesMissing"/>
     </rule>
 
     <!--
@@ -251,13 +249,11 @@
     </rule>
     <rule ref="SlevomatCodingStandard.TypeHints.PropertyTypeHint">
         <exclude name="SlevomatCodingStandard.TypeHints.PropertyTypeHint.MissingTraversableTypeHintSpecification"/>
-        <!-- TODO: Remove in Psalm 6 -->
-        <include-pattern>bin/*</include-pattern>
-        <include-pattern>src/Psalm/Internal/*</include-pattern>
-        <include-pattern>tests/*</include-pattern>
     </rule>
     <rule ref="SlevomatCodingStandard.Arrays.TrailingArrayComma"/>
     <rule ref="SlevomatCodingStandard.Functions.RequireTrailingCommaInCall"/>
     <rule ref="SlevomatCodingStandard.Functions.RequireTrailingCommaInClosureUse"/>
     <rule ref="SlevomatCodingStandard.Functions.RequireTrailingCommaInDeclaration"/>
+
+    <rule ref="SlevomatCodingStandard.TypeHints.DeclareStrictTypes"/>
 </ruleset>

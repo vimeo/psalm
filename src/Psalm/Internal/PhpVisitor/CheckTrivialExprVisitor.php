@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\PhpVisitor;
 
 use PhpParser;
@@ -12,7 +14,7 @@ final class CheckTrivialExprVisitor extends PhpParser\NodeVisitorAbstract
     /**
      * @var array<int, PhpParser\Node\Expr>
      */
-    protected array $non_trivial_expr = [];
+    private array $non_trivial_expr = [];
 
     private function checkNonTrivialExpr(PhpParser\Node\Expr $node): bool
     {

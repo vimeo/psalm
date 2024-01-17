@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
@@ -1858,6 +1860,18 @@ class CallableTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'callableArrayTypes' => [
+                'code' => '<?php
+                    /** @var callable-array $c */
+                    $c;
+                    [$a, $b] = $c;
+                    ',
+                'assertions' => [
+                    '$a' => 'class-string|object',
+                    '$b' => 'string',
+                    '$c' => 'list{class-string|object, string}',
+                ],
+            ],
             'inferTypeWithNestedTemplatesAndExplicitTypeHint' => [
                 'code' => '<?php
                     /**
@@ -1933,7 +1947,7 @@ class CallableTest extends TestCase
                         }
                     }',
                 'error_message' => 'InvalidFunctionCall',
-                'ignored_issues' => ['UndefinedClass', 'MixedInferredReturnType'],
+                'ignored_issues' => ['UndefinedClass'],
             ],
             'undefinedCallableMethodFullString' => [
                 'code' => '<?php

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\PhpVisitor;
 
 use PhpParser;
@@ -18,13 +20,10 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
     /**
      * @var array<string, array<string, bool>>
      */
-    protected array $assignment_map = [];
+    private array $assignment_map = [];
 
-    protected ?string $this_class_name = null;
-
-    public function __construct(?string $this_class_name)
+    public function __construct(protected ?string $this_class_name)
     {
-        $this->this_class_name = $this_class_name;
     }
 
     public function enterNode(PhpParser\Node $node): ?int

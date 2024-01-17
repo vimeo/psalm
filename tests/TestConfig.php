@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
 use Psalm\Config;
@@ -27,8 +29,10 @@ class TestConfig extends Config
         $this->use_docblock_types = true;
         $this->level = 1;
         $this->cache_directory = null;
+        $this->ignore_internal_falsable_issues = true;
+        $this->ignore_internal_nullable_issues = true;
 
-        $this->base_dir = getcwd() . DIRECTORY_SEPARATOR;
+        $this->base_dir = (string) getcwd() . DIRECTORY_SEPARATOR;
 
         if (!self::$cached_project_files) {
             self::$cached_project_files = ProjectFileFilter::loadFromXMLElement(
@@ -57,9 +61,7 @@ class TestConfig extends Config
                 </projectFiles>';
     }
 
-    /**
-     * @return false
-     */
+    /** @return false */
     public function getComposerFilePathForClassLike(string $fq_classlike_name): bool
     {
         return false;

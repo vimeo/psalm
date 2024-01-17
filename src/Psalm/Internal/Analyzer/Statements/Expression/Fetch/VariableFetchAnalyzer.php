@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\Fetch;
 
 use PhpParser;
@@ -69,7 +71,7 @@ final class VariableFetchAnalyzer
         ?Union $by_ref_type = null,
         bool $array_assignment = false,
         bool $from_global = false,
-        bool $assigned_to_reference = false
+        bool $assigned_to_reference = false,
     ): bool {
         $project_analyzer = $statements_analyzer->getFileAnalyzer()->project_analyzer;
         $codebase = $statements_analyzer->getCodebase();
@@ -431,7 +433,7 @@ final class VariableFetchAnalyzer
         PhpParser\Node\Expr\Variable $stmt,
         string $var_name,
         Union &$stmt_type,
-        Context $context
+        Context $context,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -505,7 +507,7 @@ final class VariableFetchAnalyzer
         StatementsAnalyzer $statements_analyzer,
         string $var_name,
         Union &$type,
-        PhpParser\Node\Expr\Variable $stmt
+        PhpParser\Node\Expr\Variable $stmt,
     ): void {
         if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
             && !in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
@@ -573,11 +575,7 @@ final class VariableFetchAnalyzer
             $var_id = '$_FILES full path';
         }
 
-        if (isset(self::$globalCache[$var_id])) {
-            return self::$globalCache[$var_id];
-        }
-
-        return Type::getMixed();
+        return self::$globalCache[$var_id] ?? Type::getMixed();
     }
 
     /**
@@ -638,7 +636,7 @@ final class VariableFetchAnalyzer
             return new Union([$type]);
         }
 
-        if (in_array($var_id, array('$_GET', '$_POST', '$_REQUEST'), true)) {
+        if (in_array($var_id, ['$_GET', '$_POST', '$_REQUEST'], true)) {
             $array_key = new Union([new TNonEmptyString(), new TInt()]);
             $array = new TNonEmptyArray(
                 [

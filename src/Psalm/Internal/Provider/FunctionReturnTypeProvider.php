@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Provider;
 
 use Closure;
@@ -117,7 +119,7 @@ final class FunctionReturnTypeProvider
     public function registerClass(string $class): void
     {
         if (is_subclass_of($class, FunctionReturnTypeProviderInterface::class, true)) {
-            $callable = Closure::fromCallable([$class, 'getFunctionReturnType']);
+            $callable = $class::getFunctionReturnType(...);
 
             foreach ($class::getFunctionIds() as $function_id) {
                 $this->registerClosure($function_id, $callable);
@@ -147,7 +149,7 @@ final class FunctionReturnTypeProvider
         string $function_id,
         PhpParser\Node\Expr\FuncCall $stmt,
         Context $context,
-        CodeLocation $code_location
+        CodeLocation $code_location,
     ): ?Union {
         foreach (self::$handlers[strtolower($function_id)] ?? [] as $function_handler) {
             $event = new FunctionReturnTypeProviderEvent(

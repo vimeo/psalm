@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
@@ -610,6 +612,31 @@ class EnumTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'classStringAsBackedEnumValue' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Foo {}
+
+                    enum FooEnum: string {
+                        case Foo = Foo::class;
+                    }
+
+                    /**
+                     * @param class-string $s
+                     */
+                    function noop(string $s): string
+                    {
+                        return $s;
+                    }
+
+                    $foo = FooEnum::Foo->value;
+                    noop($foo);
+                    noop(FooEnum::Foo->value);
+                PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'backedEnumCaseValueFromClassConstant' => [
                 'code' => <<<'PHP'
                     <?php
@@ -626,6 +653,28 @@ class EnumTest extends TestCase
                         case BAR = FooBar::BAR;
                     }
                     PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'stringBackedEnumCaseValueFromStringGlobalConstant' => [
+                'code' => '<?php
+                    enum Bar: string
+                    {
+                        case Foo = \DATE_ATOM;
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'intBackedEnumCaseValueFromIntGlobalConstant' => [
+                'code' => '<?php
+                    enum Bar: int
+                    {
+                        case Foo = \UPLOAD_ERR_OK;
+                    }
+                ',
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
@@ -1074,6 +1123,50 @@ class EnumTest extends TestCase
                     enum Bar: int
                     {
                         case Foo = Foo::FOO;
+                    }
+                ',
+                'error_message' => 'InvalidEnumCaseValue',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'invalidStringBackedEnumCaseValueFromStringGlobalConstant' => [
+                'code' => '<?php
+                    enum Bar: string
+                    {
+                        case Foo = \PHP_VERSION_ID;
+                    }
+                ',
+                'error_message' => 'InvalidEnumCaseValue',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'invalidIntBackedEnumCaseValueFromIntGlobalConstant' => [
+                'code' => '<?php
+                    enum Bar: int
+                    {
+                        case Foo = \PHP_BINARY;
+                    }
+                ',
+                'error_message' => 'InvalidEnumCaseValue',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'invalidStringBackedEnumCaseValueFromIntGlobalConstant' => [
+                'code' => '<?php
+                    enum Bar: string
+                    {
+                        case Foo = \PHP_BINARY;
+                    }
+                ',
+                'error_message' => 'InvalidEnumCaseValue',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'invalidIntBackedEnumCaseValueFromStringGlobalConstant' => [
+                'code' => '<?php
+                    enum Bar: int
+                    {
+                        case Foo = \PHP_VERSION_ID;
                     }
                 ',
                 'error_message' => 'InvalidEnumCaseValue',

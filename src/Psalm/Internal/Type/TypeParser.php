@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Type;
 
 use InvalidArgumentException;
@@ -87,13 +89,14 @@ use function defined;
 use function end;
 use function explode;
 use function filter_var;
-use function get_class;
 use function in_array;
 use function is_int;
 use function is_numeric;
 use function preg_match;
 use function preg_replace;
 use function reset;
+use function str_contains;
+use function str_starts_with;
 use function stripslashes;
 use function strlen;
 use function strpos;
@@ -122,7 +125,7 @@ final class TypeParser
         ?int $analysis_php_version_id = null,
         array $template_type_map = [],
         array $type_aliases = [],
-        bool $from_docblock = false
+        bool $from_docblock = false,
     ): Union {
         if (count($type_tokens) === 1) {
             $only_token = $type_tokens[0];
@@ -130,8 +133,8 @@ final class TypeParser
             // Note: valid identifiers can include class names or $this
             if (!preg_match('@^(\$this|\\\\?[a-zA-Z_\x7f-\xff][\\\\\-0-9a-zA-Z_\x7f-\xff]*)$@', $only_token[0])) {
                 if (!is_numeric($only_token[0])
-                    && strpos($only_token[0], '\'') !== false
-                    && strpos($only_token[0], '"') !== false
+                    && str_contains($only_token[0], '\'')
+                    && str_contains($only_token[0], '"')
                 ) {
                     throw new TypeParseTreeException("Invalid type '$only_token[0]'");
                 }
@@ -182,7 +185,7 @@ final class TypeParser
         ?int      $analysis_php_version_id = null,
         array     $template_type_map = [],
         array     $type_aliases = [],
-        bool      $from_docblock = false
+        bool      $from_docblock = false,
     ): TypeNode {
         if ($parse_tree instanceof GenericTree) {
             return self::getTypeFromGenericTree(
@@ -399,7 +402,7 @@ final class TypeParser
         }
 
         if (!$parse_tree instanceof Value) {
-            throw new InvalidArgumentException('Unrecognised parse tree type ' . get_class($parse_tree));
+            throw new InvalidArgumentException('Unrecognised parse tree type ' . $parse_tree::class);
         }
 
         if ($parse_tree->value[0] === '"' || $parse_tree->value[0] === '\'') {
@@ -457,7 +460,7 @@ final class TypeParser
         string $param_name,
         Union &$as,
         string $defining_class,
-        bool $from_docblock = false
+        bool $from_docblock = false,
     ): TTemplateParamClass {
         if ($as->hasMixed()) {
             return new TTemplateParamClass(
@@ -570,7 +573,6 @@ final class TypeParser
     /**
      * @param  array<string, array<string, Union>> $template_type_map
      * @param  array<string, TypeAlias> $type_aliases
-     * @return Atomic|Union
      * @throws TypeParseTreeException
      * @psalm-suppress ComplexMethod to be refactored
      */
@@ -579,8 +581,8 @@ final class TypeParser
         Codebase $codebase,
         array $template_type_map,
         array $type_aliases,
-        bool $from_docblock = false
-    ) {
+        bool $from_docblock = false,
+    ): Atomic|Union {
         $generic_type = $parse_tree->value;
 
         $generic_params = [];
@@ -959,7 +961,7 @@ final class TypeParser
 
                 if (!$atomic_type instanceof TLiteralInt
                     && !($atomic_type instanceof TClassConstant
-                        && strpos($atomic_type->const_name, '*') === false)
+                        && !str_contains($atomic_type->const_name, '*'))
                 ) {
                     throw new TypeParseTreeException(
                         'int-mask types must all be integer values or scalar class constants',
@@ -999,7 +1001,7 @@ final class TypeParser
                     'Invalid reference passed to int-mask-of',
                 );
             } elseif ($param_type instanceof TClassConstant
-                && strpos($param_type->const_name, '*') === false
+                && !str_contains($param_type->const_name, '*')
             ) {
                 throw new TypeParseTreeException(
                     'Class constant passed to int-mask-of must be a wildcard type',
@@ -1018,7 +1020,7 @@ final class TypeParser
             $get_int_range_bound = static function (
                 ParseTree $parse_tree,
                 Union $generic_param,
-                string $bound_name
+                string $bound_name,
             ): ?int {
                 if (!$parse_tree instanceof Value
                     || count($generic_param->getAtomicTypes()) > 1
@@ -1077,7 +1079,7 @@ final class TypeParser
         Codebase $codebase,
         array $template_type_map,
         array $type_aliases,
-        bool $from_docblock
+        bool $from_docblock,
     ): Union {
         $has_null = false;
 
@@ -1143,7 +1145,7 @@ final class TypeParser
         Codebase $codebase,
         array $template_type_map,
         array $type_aliases,
-        bool $from_docblock
+        bool $from_docblock,
     ): Atomic {
         $intersection_types = [];
 
@@ -1220,6 +1222,7 @@ final class TypeParser
         }
 
         $first_type = array_shift($keyed_intersection_types);
+        assert($first_type !== null);
 
         // Keyed array intersection are merged together and are not combinable with object-types
         if ($first_type instanceof TKeyedArray) {
@@ -1255,7 +1258,6 @@ final class TypeParser
     /**
      * @param  array<string, array<string, Union>> $template_type_map
      * @param  array<string, TypeAlias> $type_aliases
-     * @return TCallable|TClosure
      * @throws TypeParseTreeException
      */
     private static function getTypeFromCallableTree(
@@ -1263,8 +1265,8 @@ final class TypeParser
         Codebase $codebase,
         array $template_type_map,
         array $type_aliases,
-        bool $from_docblock
-    ) {
+        bool $from_docblock,
+    ): TCallable|TClosure {
         $params = [];
 
         foreach ($parse_tree->children as $child_tree) {
@@ -1289,7 +1291,7 @@ final class TypeParser
                 $is_optional = $child_tree->has_default;
             } else {
                 if ($child_tree instanceof Value && strpos($child_tree->value, '$') > 0) {
-                    $child_tree->value = preg_replace('/(.+)\$.*/', '$1', $child_tree->value);
+                    $child_tree->value = (string) preg_replace('/(.+)\$.*/', '$1', $child_tree->value);
                 }
 
                 $tree_type = self::getTypeFromTree(
@@ -1317,7 +1319,7 @@ final class TypeParser
             $params[] = $param;
         }
 
-        $pure = strpos($parse_tree->value, 'pure-') === 0 ? true : null;
+        $pure = str_starts_with($parse_tree->value, 'pure-') ? true : null;
 
         if (in_array(strtolower($parse_tree->value), ['closure', '\closure', 'pure-closure'], true)) {
             return new TClosure('Closure', $params, null, $pure, [], [], $from_docblock);
@@ -1333,7 +1335,7 @@ final class TypeParser
     private static function getTypeFromIndexAccessTree(
         IndexedAccessTree $parse_tree,
         array $template_type_map,
-        bool $from_docblock
+        bool $from_docblock,
     ): TTemplateIndexedAccess {
         if (!isset($parse_tree->children[0]) || !$parse_tree->children[0] instanceof Value) {
             throw new TypeParseTreeException('Unrecognised indexed access');
@@ -1368,7 +1370,7 @@ final class TypeParser
         $array_defining_class = array_keys($template_type_map[$array_param_name])[0];
 
         if ($offset_defining_class !== $array_defining_class
-            && strpos($offset_defining_class, 'fn-') !== 0
+            && !str_starts_with($offset_defining_class, 'fn-')
         ) {
             throw new TypeParseTreeException('Template params are defined in different locations');
         }
@@ -1384,7 +1386,6 @@ final class TypeParser
     /**
      * @param  array<string, array<string, Union>> $template_type_map
      * @param  array<string, TypeAlias> $type_aliases
-     * @return TCallableKeyedArray|TKeyedArray|TObjectWithProperties|TArray
      * @throws TypeParseTreeException
      */
     private static function getTypeFromKeyedArrayTree(
@@ -1392,8 +1393,8 @@ final class TypeParser
         Codebase $codebase,
         array $template_type_map,
         array $type_aliases,
-        bool $from_docblock
-    ) {
+        bool $from_docblock,
+    ): TCallableKeyedArray|TKeyedArray|TObjectWithProperties|TArray {
         $properties = [];
         $class_strings = [];
 
@@ -1516,7 +1517,7 @@ final class TypeParser
             return new TObjectWithProperties($properties, [], [], $from_docblock);
         }
 
-        $callable = strpos($type, 'callable-') === 0;
+        $callable = str_starts_with($type, 'callable-');
         $class = TKeyedArray::class;
         if ($callable) {
             $class = TCallableKeyedArray::class;
@@ -1591,7 +1592,7 @@ final class TypeParser
      */
     private static function extractKeyedIntersectionTypes(
         Codebase $codebase,
-        array $intersection_types
+        array $intersection_types,
     ): array {
         $keyed_intersection_types = [];
         $callable_intersection = null;
@@ -1629,7 +1630,7 @@ final class TypeParser
                 continue;
             }
 
-            if (get_class($intersection_type) === TObject::class) {
+            if ($intersection_type::class === TObject::class) {
                 continue;
             }
 
@@ -1645,7 +1646,7 @@ final class TypeParser
 
             throw new TypeParseTreeException(
                 'Intersection types must be all objects, '
-                . get_class($intersection_type) . ' provided',
+                . $intersection_type::class . ' provided',
             );
         }
 
@@ -1721,7 +1722,7 @@ final class TypeParser
         array $intersection_types,
         Atomic $first_type,
         Atomic $last_type,
-        bool $from_docblock
+        bool $from_docblock,
     ): Atomic {
         /** @var non-empty-array<string|int, Union> */
         $properties = [];

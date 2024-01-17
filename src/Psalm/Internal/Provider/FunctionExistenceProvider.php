@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Provider;
 
 use Closure;
@@ -34,7 +36,7 @@ final class FunctionExistenceProvider
     public function registerClass(string $class): void
     {
         if (is_subclass_of($class, FunctionExistenceProviderInterface::class, true)) {
-            $callable = Closure::fromCallable([$class, 'doesFunctionExist']);
+            $callable = $class::doesFunctionExist(...);
 
             foreach ($class::getFunctionIds() as $function_id) {
                 $this->registerClosure($function_id, $callable);
@@ -58,7 +60,7 @@ final class FunctionExistenceProvider
 
     public function doesFunctionExist(
         StatementsSource $statements_source,
-        string $function_id
+        string $function_id,
     ): ?bool {
         foreach (self::$handlers[strtolower($function_id)] ?? [] as $function_handler) {
             $event = new FunctionExistenceProviderEvent(

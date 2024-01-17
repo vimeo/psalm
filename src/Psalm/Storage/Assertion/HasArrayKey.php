@@ -1,8 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Storage\Assertion;
 
 use Psalm\Storage\Assertion;
+use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use UnexpectedValueException;
 
 /**
@@ -10,11 +13,9 @@ use UnexpectedValueException;
  */
 final class HasArrayKey extends Assertion
 {
-    public $key;
-
-    public function __construct(string $key)
+    use UnserializeMemoryUsageSuppressionTrait;
+    public function __construct(public readonly string $key)
     {
-        $this->key = $key;
     }
 
     public function getNegation(): Assertion

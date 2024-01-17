@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\BinaryOp;
 
 use PhpParser;
@@ -42,7 +44,7 @@ final class OrAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\BinaryOp $stmt,
         Context $context,
-        bool $from_stmt = false
+        bool $from_stmt = false,
     ): bool {
         if ($from_stmt) {
             $fake_if_stmt = new VirtualIf(
@@ -90,7 +92,7 @@ final class OrAnalyzer
                 if ($stmt->left instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr) {
                     $post_leaving_if_context = clone $context;
                 }
-            } catch (ScopeAnalysisException $e) {
+            } catch (ScopeAnalysisException) {
                 return false;
             }
         } else {
@@ -130,10 +132,16 @@ final class OrAnalyzer
             }
 
             $left_referenced_var_ids = $left_context->cond_referenced_var_ids;
-            $left_context->cond_referenced_var_ids = array_merge($pre_referenced_var_ids, $left_referenced_var_ids);
+            $left_context->cond_referenced_var_ids = [
+                ...$pre_referenced_var_ids,
+                ...$left_referenced_var_ids,
+            ];
 
             $left_assigned_var_ids = array_diff_key($left_context->assigned_var_ids, $pre_assigned_var_ids);
-            $left_context->assigned_var_ids = array_merge($pre_assigned_var_ids, $left_context->assigned_var_ids);
+            $left_context->assigned_var_ids = [
+                ...$pre_assigned_var_ids,
+                ...$left_context->assigned_var_ids,
+            ];
 
             $left_referenced_var_ids = array_diff_key($left_referenced_var_ids, $left_assigned_var_ids);
         }
@@ -151,7 +159,7 @@ final class OrAnalyzer
 
         try {
             $negated_left_clauses = Algebra::negateFormula($left_clauses);
-        } catch (ComplicatedExpressionException $e) {
+        } catch (ComplicatedExpressionException) {
             try {
                 $negated_left_clauses = FormulaGenerator::getFormula(
                     $left_cond_id,
@@ -162,7 +170,7 @@ final class OrAnalyzer
                     $codebase,
                     false,
                 );
-            } catch (ComplicatedExpressionException $e) {
+            } catch (ComplicatedExpressionException) {
                 return false;
             }
         }
@@ -352,15 +360,12 @@ final class OrAnalyzer
             $context->updateChecks($right_context);
         }
 
-        $context->cond_referenced_var_ids = array_merge(
-            $right_context->cond_referenced_var_ids,
-            $context->cond_referenced_var_ids,
-        );
+        $context->cond_referenced_var_ids = [
+            ...$right_context->cond_referenced_var_ids,
+            ...$context->cond_referenced_var_ids,
+        ];
 
-        $context->assigned_var_ids = array_merge(
-            $context->assigned_var_ids,
-            $right_context->assigned_var_ids,
-        );
+        $context->assigned_var_ids = [...$context->assigned_var_ids, ...$right_context->assigned_var_ids];
 
         if ($context->if_body_context) {
             $if_body_context = $context->if_body_context;
@@ -381,23 +386,23 @@ final class OrAnalyzer
                 }
             }
 
-            $if_body_context->cond_referenced_var_ids = array_merge(
-                $context->cond_referenced_var_ids,
-                $if_body_context->cond_referenced_var_ids,
-            );
+            $if_body_context->cond_referenced_var_ids = [
+                ...$context->cond_referenced_var_ids,
+                ...$if_body_context->cond_referenced_var_ids,
+            ];
 
-            $if_body_context->assigned_var_ids = array_merge(
-                $context->assigned_var_ids,
-                $if_body_context->assigned_var_ids,
-            );
+            $if_body_context->assigned_var_ids = [
+                ...$context->assigned_var_ids,
+                ...$if_body_context->assigned_var_ids,
+            ];
 
             $if_body_context->updateChecks($context);
         }
 
-        $context->vars_possibly_in_scope = array_merge(
-            $right_context->vars_possibly_in_scope,
-            $context->vars_possibly_in_scope,
-        );
+        $context->vars_possibly_in_scope = [
+            ...$right_context->vars_possibly_in_scope,
+            ...$context->vars_possibly_in_scope,
+        ];
 
         return true;
     }

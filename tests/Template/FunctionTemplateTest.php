@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests\Template;
 
 use Psalm\Tests\TestCase;
@@ -1334,7 +1336,6 @@ class FunctionTemplateTest extends TestCase
                      * @param E $e
                      * @param mixed $d
                      * @return ?E
-                     * @psalm-suppress MixedInferredReturnType
                      */
                     function reduce_values($e, $d) {
                         if (rand(0, 1)) {
@@ -1357,7 +1358,6 @@ class FunctionTemplateTest extends TestCase
                      * @param E $e
                      * @param mixed $d
                      * @return ?E
-                     * @psalm-suppress MixedInferredReturnType
                      */
                     function reduce_values($e, $d)
                     {

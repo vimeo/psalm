@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Type;
 
 use Psalm\Aliases;
@@ -7,9 +9,11 @@ use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Type\TypeAlias\InlineTypeAlias;
 use Psalm\Type;
 
+use function array_slice;
 use function array_splice;
 use function array_unshift;
 use function count;
+use function implode;
 use function in_array;
 use function is_numeric;
 use function preg_match;
@@ -144,11 +148,9 @@ final class TypeTokenizer
                 $type_tokens[++$rtc] = [' ', $i - 1];
                 $type_tokens[++$rtc] = ['', $i];
             } elseif ($was_space
-                && ($char === 'a' || $char === 'i')
-                && ($chars[$i + 1] ?? null) === 's'
-                && ($chars[$i + 2] ?? null) === ' '
+                && in_array(implode('', array_slice($chars, $i, 3)), ['as ', 'is ', 'of '])
             ) {
-                $type_tokens[++$rtc] = [$char . 's', $i - 1];
+                $type_tokens[++$rtc] = [$char . $chars[$i+1], $i - 1];
                 $type_tokens[++$rtc] = ['', ++$i];
                 $was_char = false;
                 continue;
@@ -312,40 +314,20 @@ final class TypeTokenizer
      */
     public static function fixScalarTerms(
         string $type_string,
-        ?int $analysis_php_version_id = null
+        ?int $analysis_php_version_id = null,
     ): string {
         $type_string_lc = strtolower($type_string);
-
-        switch ($type_string_lc) {
-            case 'int':
-            case 'void':
-            case 'float':
-            case 'string':
-            case 'bool':
-            case 'callable':
-            case 'iterable':
-            case 'array':
-            case 'object':
-            case 'true':
-            case 'false':
-            case 'null':
-            case 'mixed':
-                return $type_string_lc;
-        }
-
-        switch ($type_string) {
-            case 'boolean':
-                return $analysis_php_version_id !== null ? $type_string : 'bool';
-
-            case 'integer':
-                return $analysis_php_version_id !== null ? $type_string : 'int';
-
-            case 'double':
-            case 'real':
-                return $analysis_php_version_id !== null ? $type_string : 'float';
-        }
-
-        return $type_string;
+        return match ($type_string_lc) {
+            'int', 'void', 'float', 'string', 'bool',
+            'callable', 'iterable', 'array', 'object',
+            'true', 'false', 'null', 'mixed' => $type_string_lc,
+            default => match ($type_string) {
+                'boolean' => $analysis_php_version_id !== null ? $type_string : 'bool',
+                'integer' => $analysis_php_version_id !== null ? $type_string : 'int',
+                'double', 'real' => $analysis_php_version_id !== null ? $type_string : 'float',
+                default => $type_string,
+            },
+        };
     }
 
     /**
@@ -360,7 +342,7 @@ final class TypeTokenizer
         ?array $type_aliases = null,
         ?string $self_fqcln = null,
         ?string $parent_fqcln = null,
-        bool $allow_assertions = false
+        bool $allow_assertions = false,
     ): array {
         $type_tokens = self::tokenize($string_type);
 
@@ -407,7 +389,7 @@ final class TypeTokenizer
             }
 
             if (strpos($string_type_token[0], '$')) {
-                $string_type_token[0] = preg_replace('/(.+)\$.*/', '$1', $string_type_token[0]);
+                $string_type_token[0] = (string) preg_replace('/(.+)\$.*/', '$1', $string_type_token[0]);
             }
 
             $fixed_token = !isset($type_tokens[$i + 1]) || $type_tokens[$i + 1][0] !== '('

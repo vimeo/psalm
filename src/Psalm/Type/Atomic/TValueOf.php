@@ -1,12 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type\Atomic;
 
 use Psalm\Codebase;
-use Psalm\Internal\Codebase\ConstantTypeResolver;
 use Psalm\Storage\EnumCaseStorage;
+use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type\Atomic;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Union;
 
 use function array_map;
@@ -20,12 +21,9 @@ use function assert;
  */
 final class TValueOf extends Atomic
 {
-    /** @var Union */
-    public $type;
-
-    public function __construct(Union $type, bool $from_docblock = false)
+    use UnserializeMemoryUsageSuppressionTrait;
+    public function __construct(public Union $type, bool $from_docblock = false)
     {
-        $this->type = $type;
         parent::__construct($from_docblock);
     }
 
@@ -38,14 +36,15 @@ final class TValueOf extends Atomic
             assert(isset($cases[$atomic_type->case_name]), 'Should\'ve been verified in TValueOf#getValueType');
             $value = $cases[$atomic_type->case_name]->value;
             assert($value !== null, 'Backed enum must have a value.');
-            return new Union([ConstantTypeResolver::getLiteralTypeFromScalarValue($value)]);
+
+            return new Union([$value]);
         }
 
         return new Union(array_map(
             static function (EnumCaseStorage $case): Atomic {
                 assert($case->value !== null);
                 // Backed enum must have a value
-                return ConstantTypeResolver::getLiteralTypeFromScalarValue($case->value);
+                return $case->value;
             },
             array_values($cases),
         ));
@@ -69,7 +68,7 @@ final class TValueOf extends Atomic
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        int $analysis_php_version_id
+        int $analysis_php_version_id,
     ): ?string {
         return null;
     }
@@ -90,7 +89,6 @@ final class TValueOf extends Atomic
             if (!$type instanceof TArray
                 && !$type instanceof TClassConstant
                 && !$type instanceof TKeyedArray
-                && !$type instanceof TList
                 && !$type instanceof TPropertiesOf
                 && !$type instanceof TNamedObject
             ) {
@@ -103,15 +101,13 @@ final class TValueOf extends Atomic
     public static function getValueType(
         Union $type,
         Codebase $codebase,
-        bool $keep_template_params = false
+        bool $keep_template_params = false,
     ): ?Union {
         $value_types = [];
 
         foreach ($type->getAtomicTypes() as $atomic_type) {
             if ($atomic_type instanceof TArray) {
                 $value_atomics = $atomic_type->type_params[1];
-            } elseif ($atomic_type instanceof TList) {
-                $value_atomics = $atomic_type->type_param;
             } elseif ($atomic_type instanceof TKeyedArray) {
                 $value_atomics = $atomic_type->getGenericValueType();
             } elseif ($atomic_type instanceof TTemplateParam) {

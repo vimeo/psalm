@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests\Config;
 
 use Composer\Autoload\ClassLoader;
@@ -106,8 +108,8 @@ class ConfigTest extends TestCase
 
         $config = $this->project_analyzer->getConfig();
 
-        $this->assertTrue($config->isInProjectDirs(realpath('src/Psalm/Type.php')));
-        $this->assertFalse($config->isInProjectDirs(realpath('examples/TemplateScanner.php')));
+        $this->assertTrue($config->isInProjectDirs((string) realpath('src/Psalm/Type.php')));
+        $this->assertFalse($config->isInProjectDirs((string) realpath('examples/TemplateScanner.php')));
     }
 
     public function testIgnoreProjectDirectory(): void
@@ -129,9 +131,9 @@ class ConfigTest extends TestCase
 
         $config = $this->project_analyzer->getConfig();
 
-        $this->assertTrue($config->isInProjectDirs(realpath('src/Psalm/Type.php')));
-        $this->assertFalse($config->isInProjectDirs(realpath('src/Psalm/Internal/Analyzer/FileAnalyzer.php')));
-        $this->assertFalse($config->isInProjectDirs(realpath('examples/TemplateScanner.php')));
+        $this->assertTrue($config->isInProjectDirs((string) realpath('src/Psalm/Type.php')));
+        $this->assertFalse($config->isInProjectDirs((string) realpath('src/Psalm/Internal/Analyzer/FileAnalyzer.php')));
+        $this->assertFalse($config->isInProjectDirs((string) realpath('examples/TemplateScanner.php')));
     }
 
     public function testIgnoreMissingProjectDirectory(): void
@@ -153,9 +155,9 @@ class ConfigTest extends TestCase
 
         $config = $this->project_analyzer->getConfig();
 
-        $this->assertTrue($config->isInProjectDirs(realpath('src/Psalm/Type.php')));
-        $this->assertFalse($config->isInProjectDirs(realpath(__DIR__ . '/../../') . '/does/not/exist/FileAnalyzer.php'));
-        $this->assertFalse($config->isInProjectDirs(realpath('examples/TemplateScanner.php')));
+        $this->assertTrue($config->isInProjectDirs((string) realpath('src/Psalm/Type.php')));
+        $this->assertFalse($config->isInProjectDirs((string) realpath(__DIR__ . '/../../') . '/does/not/exist/FileAnalyzer.php'));
+        $this->assertFalse($config->isInProjectDirs((string) realpath('examples/TemplateScanner.php')));
     }
 
     public function testIgnoreSymlinkedProjectDirectory(): void
@@ -199,9 +201,9 @@ class ConfigTest extends TestCase
 
         $config = $this->project_analyzer->getConfig();
 
-        $this->assertTrue($config->isInProjectDirs(realpath('tests/AnnotationTest.php')));
-        $this->assertFalse($config->isInProjectDirs(realpath('tests/fixtures/symlinktest/a/ignoreme.php')));
-        $this->assertFalse($config->isInProjectDirs(realpath('examples/TemplateScanner.php')));
+        $this->assertTrue($config->isInProjectDirs((string) realpath('tests/AnnotationTest.php')));
+        $this->assertFalse($config->isInProjectDirs((string) realpath('tests/fixtures/symlinktest/a/ignoreme.php')));
+        $this->assertFalse($config->isInProjectDirs((string) realpath('examples/TemplateScanner.php')));
 
         $regex = '/^unlink\([^\)]+\): (?:Permission denied|No such file or directory)$/';
         $last_error = error_get_last();
@@ -246,10 +248,10 @@ class ConfigTest extends TestCase
 
         $config = $this->project_analyzer->getConfig();
 
-        $this->assertTrue($config->isInProjectDirs(realpath('src/Psalm/Type.php')));
-        $this->assertFalse($config->isInProjectDirs(realpath('src/Psalm/Internal/Analyzer/FileAnalyzer.php')));
-        $this->assertFalse($config->isInProjectDirs(realpath('src/Psalm/Internal/Analyzer/Statements/ReturnAnalyzer.php')));
-        $this->assertFalse($config->isInProjectDirs(realpath('examples/TemplateScanner.php')));
+        $this->assertTrue($config->isInProjectDirs((string) realpath('src/Psalm/Type.php')));
+        $this->assertFalse($config->isInProjectDirs((string) realpath('src/Psalm/Internal/Analyzer/FileAnalyzer.php')));
+        $this->assertFalse($config->isInProjectDirs((string) realpath('src/Psalm/Internal/Analyzer/Statements/ReturnAnalyzer.php')));
+        $this->assertFalse($config->isInProjectDirs((string) realpath('examples/TemplateScanner.php')));
     }
 
     public function testIgnoreRecursiveWildcardProjectDirectory(): void
@@ -271,9 +273,9 @@ class ConfigTest extends TestCase
 
         $config = $this->project_analyzer->getConfig();
 
-        $this->assertTrue($config->isInProjectDirs(realpath('src/Psalm/Internal/Analyzer/Statements/Expression/BinaryOpAnalyzer.php')));
-        $this->assertFalse($config->isInProjectDirs(realpath('src/Psalm/Internal/Analyzer/Statements/Expression/BinaryOp/OrAnalyzer.php')));
-        $this->assertFalse($config->isInProjectDirs(realpath('src/Psalm/Node/Expr/BinaryOp/VirtualPlus.php')));
+        $this->assertTrue($config->isInProjectDirs((string) realpath('src/Psalm/Internal/Analyzer/Statements/Expression/BinaryOpAnalyzer.php')));
+        $this->assertFalse($config->isInProjectDirs((string) realpath('src/Psalm/Internal/Analyzer/Statements/Expression/BinaryOp/OrAnalyzer.php')));
+        $this->assertFalse($config->isInProjectDirs((string) realpath('src/Psalm/Node/Expr/BinaryOp/VirtualPlus.php')));
     }
 
     public function testIgnoreRecursiveDoubleWildcardProjectFiles(): void
@@ -295,9 +297,9 @@ class ConfigTest extends TestCase
 
         $config = $this->project_analyzer->getConfig();
 
-        $this->assertTrue($config->isInProjectDirs(realpath('src/Psalm/Type.php')));
-        $this->assertFalse($config->isInProjectDirs(realpath('src/Psalm/Internal/Analyzer/FileAnalyzer.php')));
-        $this->assertFalse($config->isInProjectDirs(realpath('src/Psalm/Internal/Analyzer/Statements/ReturnAnalyzer.php')));
+        $this->assertTrue($config->isInProjectDirs((string) realpath('src/Psalm/Type.php')));
+        $this->assertFalse($config->isInProjectDirs((string) realpath('src/Psalm/Internal/Analyzer/FileAnalyzer.php')));
+        $this->assertFalse($config->isInProjectDirs((string) realpath('src/Psalm/Internal/Analyzer/Statements/ReturnAnalyzer.php')));
     }
 
     public function testIgnoreWildcardFiles(): void
@@ -319,10 +321,10 @@ class ConfigTest extends TestCase
 
         $config = $this->project_analyzer->getConfig();
 
-        $this->assertTrue($config->isInProjectDirs(realpath('src/Psalm/Type.php')));
-        $this->assertFalse($config->isInProjectDirs(realpath('src/Psalm/Internal/Analyzer/FileAnalyzer.php')));
-        $this->assertTrue($config->isInProjectDirs(realpath('src/Psalm/Internal/Analyzer/Statements/ReturnAnalyzer.php')));
-        $this->assertFalse($config->isInProjectDirs(realpath('examples/TemplateScanner.php')));
+        $this->assertTrue($config->isInProjectDirs((string) realpath('src/Psalm/Type.php')));
+        $this->assertFalse($config->isInProjectDirs((string) realpath('src/Psalm/Internal/Analyzer/FileAnalyzer.php')));
+        $this->assertTrue($config->isInProjectDirs((string) realpath('src/Psalm/Internal/Analyzer/Statements/ReturnAnalyzer.php')));
+        $this->assertFalse($config->isInProjectDirs((string) realpath('examples/TemplateScanner.php')));
     }
 
     public function testIgnoreWildcardFilesInWildcardFolder(): void
@@ -346,11 +348,11 @@ class ConfigTest extends TestCase
 
         $config = $this->project_analyzer->getConfig();
 
-        $this->assertTrue($config->isInProjectDirs(realpath('src/Psalm/Type.php')));
-        $this->assertTrue($config->isInProjectDirs(realpath('src/Psalm/Internal/PhpVisitor/ReflectorVisitor.php')));
-        $this->assertFalse($config->isInProjectDirs(realpath('src/Psalm/Internal/Analyzer/FileAnalyzer.php')));
-        $this->assertFalse($config->isInProjectDirs(realpath('src/Psalm/Internal/Analyzer/Statements/ReturnAnalyzer.php')));
-        $this->assertTrue($config->isInProjectDirs(realpath('examples/plugins/StringChecker.php')));
+        $this->assertTrue($config->isInProjectDirs((string) realpath('src/Psalm/Type.php')));
+        $this->assertTrue($config->isInProjectDirs((string) realpath('src/Psalm/Internal/PhpVisitor/ReflectorVisitor.php')));
+        $this->assertFalse($config->isInProjectDirs((string) realpath('src/Psalm/Internal/Analyzer/FileAnalyzer.php')));
+        $this->assertFalse($config->isInProjectDirs((string) realpath('src/Psalm/Internal/Analyzer/Statements/ReturnAnalyzer.php')));
+        $this->assertTrue($config->isInProjectDirs((string) realpath('examples/plugins/StringChecker.php')));
     }
 
     public function testIgnoreWildcardFilesInAllPossibleWildcardFolders(): void
@@ -374,10 +376,10 @@ class ConfigTest extends TestCase
 
         $config = $this->project_analyzer->getConfig();
 
-        $this->assertTrue($config->isInProjectDirs(realpath('src/Psalm/Type.php')));
-        $this->assertTrue($config->isInProjectDirs(realpath('src/Psalm/Internal/PhpVisitor/ReflectorVisitor.php')));
-        $this->assertFalse($config->isInProjectDirs(realpath('src/Psalm/Internal/Analyzer/FileAnalyzer.php')));
-        $this->assertFalse($config->isInProjectDirs(realpath('src/Psalm/Internal/Analyzer/Statements/ReturnAnalyzer.php')));
+        $this->assertTrue($config->isInProjectDirs((string) realpath('src/Psalm/Type.php')));
+        $this->assertTrue($config->isInProjectDirs((string) realpath('src/Psalm/Internal/PhpVisitor/ReflectorVisitor.php')));
+        $this->assertFalse($config->isInProjectDirs((string) realpath('src/Psalm/Internal/Analyzer/FileAnalyzer.php')));
+        $this->assertFalse($config->isInProjectDirs((string) realpath('src/Psalm/Internal/Analyzer/Statements/ReturnAnalyzer.php')));
     }
 
     public function testIssueHandler(): void
@@ -401,8 +403,8 @@ class ConfigTest extends TestCase
 
         $config = $this->project_analyzer->getConfig();
 
-        $this->assertFalse($config->reportIssueInFile('MissingReturnType', realpath(__FILE__)));
-        $this->assertFalse($config->reportIssueInFile('MissingReturnType', realpath('src/Psalm/Type.php')));
+        $this->assertFalse($config->reportIssueInFile('MissingReturnType', (string) realpath(__FILE__)));
+        $this->assertFalse($config->reportIssueInFile('MissingReturnType', (string) realpath('src/Psalm/Type.php')));
     }
 
     public function testReportMixedIssues(): void
@@ -422,7 +424,7 @@ class ConfigTest extends TestCase
         $config = $this->project_analyzer->getConfig();
 
         $this->assertNull($config->show_mixed_issues);
-        $this->assertTrue($config->reportIssueInFile('MixedArgument', realpath(__FILE__)));
+        $this->assertTrue($config->reportIssueInFile('MixedArgument', (string) realpath(__FILE__)));
 
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             Config::loadFromXML(
@@ -439,7 +441,7 @@ class ConfigTest extends TestCase
         $config = $this->project_analyzer->getConfig();
 
         $this->assertFalse($config->show_mixed_issues);
-        $this->assertFalse($config->reportIssueInFile('MixedArgument', realpath(__FILE__)));
+        $this->assertFalse($config->reportIssueInFile('MixedArgument', (string) realpath(__FILE__)));
 
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             Config::loadFromXML(
@@ -456,7 +458,7 @@ class ConfigTest extends TestCase
         $config = $this->project_analyzer->getConfig();
 
         $this->assertNull($config->show_mixed_issues);
-        $this->assertFalse($config->reportIssueInFile('MixedArgument', realpath(__FILE__)));
+        $this->assertFalse($config->reportIssueInFile('MixedArgument', (string) realpath(__FILE__)));
 
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             Config::loadFromXML(
@@ -473,7 +475,7 @@ class ConfigTest extends TestCase
         $config = $this->project_analyzer->getConfig();
 
         $this->assertTrue($config->show_mixed_issues);
-        $this->assertTrue($config->reportIssueInFile('MixedArgument', realpath(__FILE__)));
+        $this->assertTrue($config->reportIssueInFile('MixedArgument', (string) realpath(__FILE__)));
     }
 
     public function testGlobalUndefinedFunctionSuppression(): void
@@ -530,8 +532,8 @@ class ConfigTest extends TestCase
 
         $config = $this->project_analyzer->getConfig();
 
-        $this->assertFalse($config->reportIssueInFile('MissingReturnType', realpath(__FILE__)));
-        $this->assertFalse($config->reportIssueInFile('UndefinedClass', realpath(__FILE__)));
+        $this->assertFalse($config->reportIssueInFile('MissingReturnType', (string) realpath(__FILE__)));
+        $this->assertFalse($config->reportIssueInFile('UndefinedClass', (string) realpath(__FILE__)));
     }
 
     public function testIssueHandlerWithCustomErrorLevels(): void
@@ -610,7 +612,7 @@ class ConfigTest extends TestCase
             'info',
             $config->getReportingLevelForFile(
                 'MissingReturnType',
-                realpath('src/Psalm/Type.php'),
+                (string) realpath('src/Psalm/Type.php'),
             ),
         );
 
@@ -618,7 +620,7 @@ class ConfigTest extends TestCase
             'error',
             $config->getReportingLevelForFile(
                 'MissingReturnType',
-                realpath('src/Psalm/Internal/Analyzer/FileAnalyzer.php'),
+                (string) realpath('src/Psalm/Internal/Analyzer/FileAnalyzer.php'),
             ),
         );
 
@@ -626,7 +628,7 @@ class ConfigTest extends TestCase
             'error',
             $config->getReportingLevelForFile(
                 'PossiblyInvalidArgument',
-                realpath('src/psalm.php'),
+                (string) realpath('src/psalm.php'),
             ),
         );
 
@@ -634,7 +636,7 @@ class ConfigTest extends TestCase
             'info',
             $config->getReportingLevelForFile(
                 'PossiblyInvalidArgument',
-                realpath('examples/TemplateChecker.php'),
+                (string) realpath('examples/TemplateChecker.php'),
             ),
         );
 
@@ -843,7 +845,7 @@ class ConfigTest extends TestCase
             'info',
             $config->getReportingLevelForFile(
                 'MissingReturnType',
-                realpath('src/Psalm/Type.php'),
+                (string) realpath('src/Psalm/Type.php'),
             ),
         );
 
@@ -851,7 +853,7 @@ class ConfigTest extends TestCase
             'error',
             $config->getReportingLevelForFile(
                 'MissingReturnType',
-                realpath('src/Psalm/Internal/Analyzer/FileAnalyzer.php'),
+                (string) realpath('src/Psalm/Internal/Analyzer/FileAnalyzer.php'),
             ),
         );
 
@@ -859,7 +861,7 @@ class ConfigTest extends TestCase
             'error',
             $config->getReportingLevelForFile(
                 'PossiblyInvalidArgument',
-                realpath('src/psalm.php'),
+                (string) realpath('src/psalm.php'),
             ),
         );
 
@@ -867,7 +869,7 @@ class ConfigTest extends TestCase
             'info',
             $config->getReportingLevelForFile(
                 'PossiblyInvalidArgument',
-                realpath('examples/TemplateChecker.php'),
+                (string) realpath('examples/TemplateChecker.php'),
             ),
         );
 
@@ -1019,7 +1021,7 @@ class ConfigTest extends TestCase
             'info',
             $config->getReportingLevelForFile(
                 'MissingReturnType',
-                realpath('src/Psalm/Type.php'),
+                (string) realpath('src/Psalm/Type.php'),
             ),
         );
 
@@ -1027,14 +1029,14 @@ class ConfigTest extends TestCase
             'error',
             $config->getReportingLevelForFile(
                 'MissingReturnType',
-                realpath('src/Psalm/Internal/Analyzer/FileAnalyzer.php'),
+                (string) realpath('src/Psalm/Internal/Analyzer/FileAnalyzer.php'),
             ),
         );
         $this->assertSame(
             'suppress',
             $config->getReportingLevelForFile(
                 'UndefinedClass',
-                realpath('src/Psalm/Internal/Analyzer/FileAnalyzer.php'),
+                (string) realpath('src/Psalm/Internal/Analyzer/FileAnalyzer.php'),
             ),
         );
     }
@@ -1078,7 +1080,7 @@ class ConfigTest extends TestCase
             'error',
             $config->getReportingLevelForFile(
                 'MissingReturnType',
-                realpath('src/Psalm/Type.php'),
+                (string) realpath('src/Psalm/Type.php'),
             ),
         );
 
@@ -1086,14 +1088,14 @@ class ConfigTest extends TestCase
             'info',
             $config->getReportingLevelForFile(
                 'MissingReturnType',
-                realpath('src/Psalm/Internal/Analyzer/FileAnalyzer.php'),
+                (string) realpath('src/Psalm/Internal/Analyzer/FileAnalyzer.php'),
             ),
         );
         $this->assertSame(
             'info',
             $config->getReportingLevelForFile(
                 'UndefinedClass',
-                realpath('src/Psalm/Internal/Analyzer/FileAnalyzer.php'),
+                (string) realpath('src/Psalm/Internal/Analyzer/FileAnalyzer.php'),
             ),
         );
     }
@@ -1167,7 +1169,7 @@ class ConfigTest extends TestCase
             ),
         );
 
-        $file_path = getcwd() . '/src/somefile.php';
+        $file_path = (string) getcwd() . '/src/somefile.php';
 
         $this->addFile(
             $file_path,
@@ -1202,7 +1204,7 @@ class ConfigTest extends TestCase
             ),
         );
 
-        $file_path = getcwd() . '/src/somefile.php';
+        $file_path = (string) getcwd() . '/src/somefile.php';
 
         $this->addFile(
             $file_path,
@@ -1250,7 +1252,7 @@ class ConfigTest extends TestCase
             ),
         );
 
-        $file_path = getcwd() . '/src/somefile.php';
+        $file_path = (string) getcwd() . '/src/somefile.php';
 
         $this->addFile(
             $file_path,
@@ -1301,7 +1303,7 @@ class ConfigTest extends TestCase
             ),
         );
 
-        $file_path = getcwd() . '/src/somefile.php';
+        $file_path = (string) getcwd() . '/src/somefile.php';
 
         $this->addFile(
             $file_path,
@@ -1374,7 +1376,7 @@ class ConfigTest extends TestCase
             ),
         );
 
-        $file_path = getcwd() . '/src/somefile.php';
+        $file_path = (string) getcwd() . '/src/somefile.php';
 
         $this->addFile(
             $file_path,
@@ -1472,7 +1474,7 @@ class ConfigTest extends TestCase
             ),
         );
 
-        $file_path = getcwd() . '/src/somefile.php';
+        $file_path = (string) getcwd() . '/src/somefile.php';
 
         $this->addFile(
             $file_path,
@@ -1538,7 +1540,7 @@ class ConfigTest extends TestCase
             ),
         );
 
-        $file_path = getcwd() . '/src/somefile.php';
+        $file_path = (string) getcwd() . '/src/somefile.php';
 
         $this->addFile(
             $file_path,
@@ -1755,14 +1757,14 @@ class ConfigTest extends TestCase
 
         $config = $this->project_analyzer->getConfig();
 
-        $this->assertFalse($config->reportTypeStatsForFile(realpath('src/Psalm/Config') . DIRECTORY_SEPARATOR));
-        $this->assertTrue($config->reportTypeStatsForFile(realpath('src/Psalm/Internal') . DIRECTORY_SEPARATOR));
-        $this->assertTrue($config->reportTypeStatsForFile(realpath('src/Psalm/Issue') . DIRECTORY_SEPARATOR));
-        $this->assertTrue($config->reportTypeStatsForFile(realpath('src/Psalm/Node') . DIRECTORY_SEPARATOR));
-        $this->assertTrue($config->reportTypeStatsForFile(realpath('src/Psalm/Plugin') . DIRECTORY_SEPARATOR));
-        $this->assertTrue($config->reportTypeStatsForFile(realpath('src/Psalm/Progress') . DIRECTORY_SEPARATOR));
-        $this->assertTrue($config->reportTypeStatsForFile(realpath('src/Psalm/Report') . DIRECTORY_SEPARATOR));
-        $this->assertTrue($config->reportTypeStatsForFile(realpath('src/Psalm/SourceControl') . DIRECTORY_SEPARATOR));
+        $this->assertFalse($config->reportTypeStatsForFile((string) realpath('src/Psalm/Config') . DIRECTORY_SEPARATOR));
+        $this->assertTrue($config->reportTypeStatsForFile((string) realpath('src/Psalm/Internal') . DIRECTORY_SEPARATOR));
+        $this->assertTrue($config->reportTypeStatsForFile((string) realpath('src/Psalm/Issue') . DIRECTORY_SEPARATOR));
+        $this->assertTrue($config->reportTypeStatsForFile((string) realpath('src/Psalm/Node') . DIRECTORY_SEPARATOR));
+        $this->assertTrue($config->reportTypeStatsForFile((string) realpath('src/Psalm/Plugin') . DIRECTORY_SEPARATOR));
+        $this->assertTrue($config->reportTypeStatsForFile((string) realpath('src/Psalm/Progress') . DIRECTORY_SEPARATOR));
+        $this->assertTrue($config->reportTypeStatsForFile((string) realpath('src/Psalm/Report') . DIRECTORY_SEPARATOR));
+        $this->assertTrue($config->reportTypeStatsForFile((string) realpath('src/Psalm/SourceControl') . DIRECTORY_SEPARATOR));
     }
 
     public function testStrictTypesForFileReporting(): void
@@ -1788,14 +1790,14 @@ class ConfigTest extends TestCase
 
         $config = $this->project_analyzer->getConfig();
 
-        $this->assertTrue($config->useStrictTypesForFile(realpath('src/Psalm/Config') . DIRECTORY_SEPARATOR));
-        $this->assertFalse($config->useStrictTypesForFile(realpath('src/Psalm/Internal') . DIRECTORY_SEPARATOR));
-        $this->assertFalse($config->useStrictTypesForFile(realpath('src/Psalm/Issue') . DIRECTORY_SEPARATOR));
-        $this->assertFalse($config->useStrictTypesForFile(realpath('src/Psalm/Node') . DIRECTORY_SEPARATOR));
-        $this->assertFalse($config->useStrictTypesForFile(realpath('src/Psalm/Plugin') . DIRECTORY_SEPARATOR));
-        $this->assertFalse($config->useStrictTypesForFile(realpath('src/Psalm/Progress') . DIRECTORY_SEPARATOR));
-        $this->assertFalse($config->useStrictTypesForFile(realpath('src/Psalm/Report') . DIRECTORY_SEPARATOR));
-        $this->assertFalse($config->useStrictTypesForFile(realpath('src/Psalm/SourceControl') . DIRECTORY_SEPARATOR));
+        $this->assertTrue($config->useStrictTypesForFile((string) realpath('src/Psalm/Config') . DIRECTORY_SEPARATOR));
+        $this->assertFalse($config->useStrictTypesForFile((string) realpath('src/Psalm/Internal') . DIRECTORY_SEPARATOR));
+        $this->assertFalse($config->useStrictTypesForFile((string) realpath('src/Psalm/Issue') . DIRECTORY_SEPARATOR));
+        $this->assertFalse($config->useStrictTypesForFile((string) realpath('src/Psalm/Node') . DIRECTORY_SEPARATOR));
+        $this->assertFalse($config->useStrictTypesForFile((string) realpath('src/Psalm/Plugin') . DIRECTORY_SEPARATOR));
+        $this->assertFalse($config->useStrictTypesForFile((string) realpath('src/Psalm/Progress') . DIRECTORY_SEPARATOR));
+        $this->assertFalse($config->useStrictTypesForFile((string) realpath('src/Psalm/Report') . DIRECTORY_SEPARATOR));
+        $this->assertFalse($config->useStrictTypesForFile((string) realpath('src/Psalm/SourceControl') . DIRECTORY_SEPARATOR));
     }
 
     public function testConfigFileWithXIncludeWithoutFallbackShouldThrowException(): void
@@ -1849,7 +1851,7 @@ class ConfigTest extends TestCase
 
         $config = $this->project_analyzer->getConfig();
 
-        $this->assertFalse($config->reportIssueInFile('MixedAssignment', realpath('src/Psalm/Type.php')));
+        $this->assertFalse($config->reportIssueInFile('MixedAssignment', (string) realpath('src/Psalm/Type.php')));
     }
 
     public function testConfigFileWithWildcardPathIssueHandler(): void
@@ -1878,14 +1880,14 @@ class ConfigTest extends TestCase
 
         $config = $this->project_analyzer->getConfig();
 
-        $this->assertTrue($config->reportIssueInFile('MissingReturnType', realpath(__FILE__)));
-        $this->assertTrue($config->reportIssueInFile('MissingReturnType', realpath('src/Psalm/Type.php')));
-        $this->assertTrue($config->reportIssueInFile('MissingReturnType', realpath('src/Psalm/Internal/Analyzer/Statements/ReturnAnalyzer.php')));
+        $this->assertTrue($config->reportIssueInFile('MissingReturnType', (string) realpath(__FILE__)));
+        $this->assertTrue($config->reportIssueInFile('MissingReturnType', (string) realpath('src/Psalm/Type.php')));
+        $this->assertTrue($config->reportIssueInFile('MissingReturnType', (string) realpath('src/Psalm/Internal/Analyzer/Statements/ReturnAnalyzer.php')));
 
-        $this->assertFalse($config->reportIssueInFile('MissingReturnType', realpath('src/Psalm/Node/Expr/BinaryOp/VirtualPlus.php')));
-        $this->assertFalse($config->reportIssueInFile('MissingReturnType', realpath('src/Psalm/Internal/Analyzer/Statements/Expression/BinaryOp/OrAnalyzer.php')));
-        $this->assertFalse($config->reportIssueInFile('MissingReturnType', realpath('src/Psalm/Internal/Type/TypeAlias.php')));
-        $this->assertFalse($config->reportIssueInFile('MissingReturnType', realpath('src/Psalm/Internal/Type/TypeAlias/ClassTypeAlias.php')));
+        $this->assertFalse($config->reportIssueInFile('MissingReturnType', (string) realpath('src/Psalm/Node/Expr/BinaryOp/VirtualPlus.php')));
+        $this->assertFalse($config->reportIssueInFile('MissingReturnType', (string) realpath('src/Psalm/Internal/Analyzer/Statements/Expression/BinaryOp/OrAnalyzer.php')));
+        $this->assertFalse($config->reportIssueInFile('MissingReturnType', (string) realpath('src/Psalm/Internal/Type/TypeAlias.php')));
+        $this->assertFalse($config->reportIssueInFile('MissingReturnType', (string) realpath('src/Psalm/Internal/Type/TypeAlias/ClassTypeAlias.php')));
     }
 
     /**
@@ -1909,7 +1911,7 @@ class ConfigTest extends TestCase
 
         $config->visitStubFiles($codebase);
 
-        $this->assertContains(realpath('stubs/extensions/apcu.phpstub'), $config->internal_stubs);
+        $this->assertContains((string) realpath('stubs/extensions/apcu.phpstub'), $config->internal_stubs);
         $this->assertContains(
             'Psalm 6 will not automatically load stubs for ext-apcu. You should explicitly enable or disable this ext in composer.json or Psalm config.',
             $config->config_warnings,
@@ -1940,7 +1942,7 @@ class ConfigTest extends TestCase
 
         $config->visitStubFiles($codebase);
 
-        $this->assertNotContains(realpath('stubs/extensions/apcu.phpstub'), $config->internal_stubs);
+        $this->assertNotContains((string) realpath('stubs/extensions/apcu.phpstub'), $config->internal_stubs);
         $this->assertNotContains(
             'Psalm 6 will not automatically load stubs for ext-apcu. You should explicitly enable or disable this ext in composer.json or Psalm config.',
             $config->internal_stubs,

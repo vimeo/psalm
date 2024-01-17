@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use PhpParser;
@@ -291,7 +293,7 @@ final class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderI
                                 $statements_source,
                                 $codebase,
                             );
-                        } catch (ComplicatedExpressionException $e) {
+                        } catch (ComplicatedExpressionException) {
                             $filter_clauses = [];
                         }
 
