@@ -63,12 +63,12 @@ final class StubsGenerator
         $psalm_base = dirname(__DIR__, 5);
 
         foreach ($class_provider->getAll() as $storage) {
-            if (strpos($storage->name, 'Psalm\\') === 0) {
+            if (str_starts_with($storage->name, 'Psalm\\')) {
                 continue;
             }
 
             if ($storage->location
-                && strpos($storage->location->file_path, $psalm_base) === 0
+                && str_starts_with($storage->location->file_path, $psalm_base)
             ) {
                 continue;
             }
@@ -97,7 +97,7 @@ final class StubsGenerator
 
         foreach ($codebase->functions->getAllStubbedFunctions() as $function_storage) {
             if ($function_storage->location
-                && strpos($function_storage->location->file_path, $psalm_base) === 0
+                && str_starts_with($function_storage->location->file_path, $psalm_base)
             ) {
                 continue;
             }
@@ -143,7 +143,7 @@ final class StubsGenerator
         }
 
         foreach ($file_provider->getAll() as $file_storage) {
-            if (strpos($file_storage->file_path, $psalm_base) === 0) {
+            if (str_starts_with($file_storage->file_path, $psalm_base)) {
                 continue;
             }
 

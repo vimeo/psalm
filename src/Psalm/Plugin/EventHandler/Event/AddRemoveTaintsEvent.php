@@ -11,26 +11,17 @@ use Psalm\StatementsSource;
 
 final class AddRemoveTaintsEvent
 {
-    private Expr $expr;
-    private Context $context;
-    private StatementsSource $statements_source;
-    private Codebase $codebase;
-
     /**
      * Called after an expression has been checked
      *
      * @internal
      */
     public function __construct(
-        Expr $expr,
-        Context $context,
-        StatementsSource $statements_source,
-        Codebase $codebase,
+        private readonly Expr $expr,
+        private readonly Context $context,
+        private readonly StatementsSource $statements_source,
+        private readonly Codebase $codebase,
     ) {
-        $this->expr = $expr;
-        $this->context = $context;
-        $this->statements_source = $statements_source;
-        $this->codebase = $codebase;
     }
 
     public function getExpr(): Expr

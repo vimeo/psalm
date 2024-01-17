@@ -8,16 +8,14 @@ use Psalm\Codebase;
 
 final class AfterCodebasePopulatedEvent
 {
-    private Codebase $codebase;
-
     /**
      * Called after codebase has been populated
      *
      * @internal
      */
-    public function __construct(Codebase $codebase)
-    {
-        $this->codebase = $codebase;
+    public function __construct(
+        private readonly Codebase $codebase,
+    ) {
     }
 
     public function getCodebase(): Codebase

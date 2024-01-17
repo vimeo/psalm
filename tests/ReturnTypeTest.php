@@ -102,6 +102,8 @@ class ReturnTypeTest extends TestCase
                             return $str;
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'returnTypeNotEmptyCheckInElseIf' => [
                 'code' => '<?php
@@ -120,6 +122,8 @@ class ReturnTypeTest extends TestCase
                             return $str;
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'returnTypeNotEmptyCheckInElse' => [
                 'code' => '<?php
@@ -138,6 +142,8 @@ class ReturnTypeTest extends TestCase
                             return $str;
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'returnTypeAfterIf' => [
                 'code' => '<?php

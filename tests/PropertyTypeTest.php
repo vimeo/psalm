@@ -185,7 +185,7 @@ class PropertyTypeTest extends TestCase
                 }
 
                 function testX(X $x): void {
-                    if ($x->getX()) {
+                    if (is_int($x->getX())) {
                         XCollector::modify();
                         if ($x->getX() === null) {}
                     }
@@ -223,7 +223,7 @@ class PropertyTypeTest extends TestCase
                 }
 
                 function testX(X $x): void {
-                    if ($x->getX()) {
+                    if ($x->getX() !== null) {
                         XCollector::modify();
                         if ($x->getX() === null) {}
                     }
@@ -257,7 +257,7 @@ class PropertyTypeTest extends TestCase
                 }
 
                 function testX(X $x): void {
-                    if ($x->x) {
+                    if ($x->x !== null) {
                         XCollector::modify();
                         if ($x->x === null) {}
                     }
@@ -688,6 +688,8 @@ class PropertyTypeTest extends TestCase
                     }
 
                     echo substr($a->aa, 1);',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'nullableStaticPropertyWithIfCheck' => [
                 'code' => '<?php

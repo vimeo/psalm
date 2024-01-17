@@ -30,7 +30,9 @@ use function implode;
 use function in_array;
 use function is_bool;
 use function rtrim;
-use function strpos;
+use function str_contains;
+use function str_ends_with;
+use function str_starts_with;
 use function strtolower;
 use function substr;
 
@@ -39,8 +41,6 @@ use function substr;
  */
 final class Functions
 {
-    private FileStorageProvider $file_storage_provider;
-
     /**
      * @var array<lowercase-string, FunctionStorage>
      */
@@ -54,12 +54,10 @@ final class Functions
 
     public DynamicFunctionStorageProvider $dynamic_storage_provider;
 
-    private Reflection $reflection;
-
-    public function __construct(FileStorageProvider $storage_provider, Reflection $reflection)
-    {
-        $this->file_storage_provider = $storage_provider;
-        $this->reflection = $reflection;
+    public function __construct(
+        private readonly FileStorageProvider $file_storage_provider,
+        private readonly Reflection $reflection,
+    ) {
         $this->return_type_provider = new FunctionReturnTypeProvider();
         $this->existence_provider = new FunctionExistenceProvider();
         $this->params_provider = new FunctionParamsProvider();
@@ -238,7 +236,7 @@ final class Functions
         $imported_function_namespaces = $aliases->functions;
         $imported_namespaces = $aliases->uses;
 
-        if (strpos($function_name, '\\') !== false) {
+        if (str_contains($function_name, '\\')) {
             $function_name_parts = explode('\\', $function_name);
             $first_namespace = array_shift($function_name_parts);
             $first_namespace_lcase = strtolower($first_namespace);
@@ -311,10 +309,10 @@ final class Functions
 
         if ($current_namespace_aliases) {
             foreach ($current_namespace_aliases->functions as $alias_name => $function_name) {
-                if (strpos($alias_name, $stub) === 0) {
+                if (str_starts_with($alias_name, $stub)) {
                     try {
                         $match_function_patterns[] = $function_name;
-                    } catch (Exception $e) {
+                    } catch (Exception) {
                     }
                 }
             }
@@ -335,8 +333,8 @@ final class Functions
             foreach ($match_function_patterns as $pattern) {
                 $pattern_lc = strtolower($pattern);
 
-                if (substr($pattern, -1, 1) === '*') {
-                    if (strpos($function_name, rtrim($pattern_lc, '*')) !== 0) {
+                if (str_ends_with($pattern, '*')) {
+                    if (!str_starts_with($function_name, rtrim($pattern_lc, '*'))) {
                         continue;
                     }
                 } elseif ($function_name !== $pattern) {
@@ -406,11 +404,11 @@ final class Functions
             }
         }
 
-        if (strpos($function_id, 'image') === 0) {
+        if (str_starts_with($function_id, 'image')) {
             return false;
         }
 
-        if (strpos($function_id, 'readline') === 0) {
+        if (str_starts_with($function_id, 'readline')) {
             return false;
         }
 
@@ -440,7 +438,7 @@ final class Functions
 
                         try {
                             return $codebase->methods->getStorage($count_method_id)->mutation_free;
-                        } catch (Exception $e) {
+                        } catch (Exception) {
                             // do nothing
                         }
                     }

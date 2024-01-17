@@ -76,14 +76,13 @@ use function assert;
 use function count;
 use function explode;
 use function fwrite;
-use function get_class;
 use function in_array;
 use function is_string;
 use function preg_split;
 use function reset;
 use function round;
+use function str_starts_with;
 use function strlen;
-use function strpos;
 use function strrpos;
 use function strtolower;
 use function substr;
@@ -97,11 +96,9 @@ use const STDERR;
  */
 final class StatementsAnalyzer extends SourceAnalyzer
 {
-    protected SourceAnalyzer $source;
+    private readonly FileAnalyzer $file_analyzer;
 
-    protected FileAnalyzer $file_analyzer;
-
-    protected Codebase $codebase;
+    private readonly Codebase $codebase;
 
     /**
      * @var array<string, CodeLocation>
@@ -139,8 +136,6 @@ final class StatementsAnalyzer extends SourceAnalyzer
 
     private ?string $fake_this_class = null;
 
-    public NodeDataProvider $node_data;
-
     public ?DataFlowGraph $data_flow_graph = null;
 
     /**
@@ -153,12 +148,10 @@ final class StatementsAnalyzer extends SourceAnalyzer
      */
     public array $foreach_var_locations = [];
 
-    public function __construct(SourceAnalyzer $source, NodeDataProvider $node_data)
+    public function __construct(protected SourceAnalyzer $source, public NodeDataProvider $node_data)
     {
-        $this->source = $source;
         $this->file_analyzer = $source->getFileAnalyzer();
         $this->codebase = $source->getCodebase();
-        $this->node_data = $node_data;
 
         if ($this->codebase->taint_flow_graph) {
             $this->data_flow_graph = new TaintFlowGraph();
@@ -271,7 +264,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
                 try {
                     $function_analyzer = new FunctionAnalyzer($stmt, $this->source);
                     $this->function_analyzers[$fq_function_name] = $function_analyzer;
-                } catch (UnexpectedValueException $e) {
+                } catch (UnexpectedValueException) {
                     // do nothing
                 }
             }
@@ -587,7 +580,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
                 );
 
                 $class_analyzer->analyze(null, $global_context);
-            } catch (InvalidArgumentException $e) {
+            } catch (InvalidArgumentException) {
                 // disregard this exception, we'll likely see it elsewhere in the form
                 // of an issue
             }
@@ -606,7 +599,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
         } else {
             if (IssueBuffer::accepts(
                 new UnrecognizedStatement(
-                    'Psalm does not understand ' . get_class($stmt),
+                    'Psalm does not understand ' . $stmt::class,
                     new CodeLocation($statements_analyzer->source, $stmt),
                 ),
                 $statements_analyzer->getSuppressedIssues(),
@@ -867,7 +860,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
         }
 
         foreach ($this->unused_var_locations as [$var_id, $original_location]) {
-            if (strpos($var_id, '$_') === 0) {
+            if (str_starts_with($var_id, '$_')) {
                 continue;
             }
 
@@ -1098,7 +1091,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
                                 $is_expected = true;
                                 break;
                             }
-                        } catch (InvalidArgumentException $e) {
+                        } catch (InvalidArgumentException) {
                             $is_expected = true;
                             break;
                         }

@@ -488,7 +488,7 @@ final class BinaryOpAnalyzer
                                 '__tostring',
                             ),
                         );
-                    } catch (UnexpectedValueException $e) {
+                    } catch (UnexpectedValueException) {
                         continue;
                     }
 
@@ -522,7 +522,7 @@ final class BinaryOpAnalyzer
                                 '__tostring',
                             ),
                         );
-                    } catch (UnexpectedValueException $e) {
+                    } catch (UnexpectedValueException) {
                         continue;
                     }
 

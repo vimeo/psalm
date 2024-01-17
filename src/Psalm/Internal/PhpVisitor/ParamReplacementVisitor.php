@@ -18,10 +18,6 @@ use function strlen;
  */
 final class ParamReplacementVisitor extends PhpParser\NodeVisitorAbstract
 {
-    private string $old_name;
-
-    private string $new_name;
-
     /** @var list<FileManipulation> */
     private array $replacements = [];
 
@@ -29,10 +25,10 @@ final class ParamReplacementVisitor extends PhpParser\NodeVisitorAbstract
 
     private bool $new_new_name_used = false;
 
-    public function __construct(string $old_name, string $new_name)
-    {
-        $this->old_name = $old_name;
-        $this->new_name = $new_name;
+    public function __construct(
+        private readonly string $old_name,
+        private readonly string $new_name,
+    ) {
     }
 
     public function enterNode(PhpParser\Node $node): ?int

@@ -7,6 +7,7 @@ namespace Psalm\Type\Atomic;
 use Psalm\Codebase;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
@@ -17,21 +18,13 @@ use Psalm\Type\Union;
  */
 final class TTemplateKeyOf extends Atomic
 {
-    public string $param_name;
-
-    public string $defining_class;
-
-    public Union $as;
-
+    use UnserializeMemoryUsageSuppressionTrait;
     public function __construct(
-        string $param_name,
-        string $defining_class,
-        Union $as,
+        public string $param_name,
+        public string $defining_class,
+        public Union $as,
         bool $from_docblock = false,
     ) {
-        $this->param_name = $param_name;
-        $this->defining_class = $defining_class;
-        $this->as = $as;
         parent::__construct($from_docblock);
     }
 

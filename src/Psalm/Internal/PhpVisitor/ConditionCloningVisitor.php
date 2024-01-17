@@ -14,11 +14,9 @@ use Psalm\Internal\Provider\NodeDataProvider;
  */
 final class ConditionCloningVisitor extends NodeVisitorAbstract
 {
-    private NodeDataProvider $type_provider;
-
-    public function __construct(NodeDataProvider $old_type_provider)
-    {
-        $this->type_provider = $old_type_provider;
+    public function __construct(
+        private readonly NodeDataProvider $type_provider,
+    ) {
     }
 
     /**

@@ -46,6 +46,7 @@ use function array_values;
 use function count;
 use function in_array;
 use function reset;
+use function str_starts_with;
 use function strpos;
 use function strtolower;
 use function substr;
@@ -505,7 +506,7 @@ final class TemplateStandinTypeReplacer
                 continue;
             }
 
-            if (strpos($input_key, $key . '&') === 0) {
+            if (str_starts_with($input_key, $key . '&')) {
                 $matching_atomic_types[$atomic_input_type->getId()] = $atomic_input_type;
                 continue;
             }
@@ -530,7 +531,7 @@ final class TemplateStandinTypeReplacer
                         $matching_atomic_types[$atomic_input_type->getId()] = $atomic_input_type;
                         continue;
                     }
-                } catch (InvalidArgumentException $e) {
+                } catch (InvalidArgumentException) {
                     // do nothing
                 }
             }
@@ -592,7 +593,7 @@ final class TemplateStandinTypeReplacer
                         $matching_atomic_types[$atomic_input_type->getId()] = $atomic_input_type;
                         continue;
                     }
-                } catch (InvalidArgumentException $e) {
+                } catch (InvalidArgumentException) {
                     // do nothing
                 }
             }

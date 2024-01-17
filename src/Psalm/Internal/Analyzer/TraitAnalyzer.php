@@ -16,13 +16,11 @@ use function assert;
  */
 final class TraitAnalyzer extends ClassLikeAnalyzer
 {
-    private Aliases $aliases;
-
     public function __construct(
         Trait_ $class,
         SourceAnalyzer $source,
         string $fq_class_name,
-        Aliases $aliases,
+        private Aliases $aliases,
     ) {
         $this->source = $source;
         $this->file_analyzer = $source->getFileAnalyzer();
@@ -31,7 +29,6 @@ final class TraitAnalyzer extends ClassLikeAnalyzer
         $this->fq_class_name = $fq_class_name;
         $codebase = $source->getCodebase();
         $this->storage = $codebase->classlike_storage_provider->get($fq_class_name);
-        $this->aliases = $aliases;
     }
 
     /** @psalm-mutation-free */

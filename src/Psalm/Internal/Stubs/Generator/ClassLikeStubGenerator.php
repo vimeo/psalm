@@ -162,17 +162,11 @@ final class ClassLikeStubGenerator
         $property_nodes = [];
 
         foreach ($storage->properties as $property_name => $property_storage) {
-            switch ($property_storage->visibility) {
-                case ClassLikeAnalyzer::VISIBILITY_PRIVATE:
-                    $flag = PhpParser\Node\Stmt\Class_::MODIFIER_PRIVATE;
-                    break;
-                case ClassLikeAnalyzer::VISIBILITY_PROTECTED:
-                    $flag = PhpParser\Node\Stmt\Class_::MODIFIER_PROTECTED;
-                    break;
-                default:
-                    $flag = PhpParser\Node\Stmt\Class_::MODIFIER_PUBLIC;
-                    break;
-            }
+            $flag = match ($property_storage->visibility) {
+                ClassLikeAnalyzer::VISIBILITY_PRIVATE => PhpParser\Node\Stmt\Class_::MODIFIER_PRIVATE,
+                ClassLikeAnalyzer::VISIBILITY_PROTECTED => PhpParser\Node\Stmt\Class_::MODIFIER_PROTECTED,
+                default => PhpParser\Node\Stmt\Class_::MODIFIER_PUBLIC,
+            };
 
             $docblock = new ParsedDocblock('', []);
 
@@ -227,17 +221,11 @@ final class ClassLikeStubGenerator
                 throw new UnexpectedValueException('very bad');
             }
 
-            switch ($method_storage->visibility) {
-                case ReflectionProperty::IS_PRIVATE:
-                    $flag = PhpParser\Node\Stmt\Class_::MODIFIER_PRIVATE;
-                    break;
-                case ReflectionProperty::IS_PROTECTED:
-                    $flag = PhpParser\Node\Stmt\Class_::MODIFIER_PROTECTED;
-                    break;
-                default:
-                    $flag = PhpParser\Node\Stmt\Class_::MODIFIER_PUBLIC;
-                    break;
-            }
+            $flag = match ($method_storage->visibility) {
+                ReflectionProperty::IS_PRIVATE => PhpParser\Node\Stmt\Class_::MODIFIER_PRIVATE,
+                ReflectionProperty::IS_PROTECTED => PhpParser\Node\Stmt\Class_::MODIFIER_PROTECTED,
+                default => PhpParser\Node\Stmt\Class_::MODIFIER_PUBLIC,
+            };
 
             $docblock = new ParsedDocblock('', []);
 

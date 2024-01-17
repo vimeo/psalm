@@ -15,15 +15,12 @@ final class Progress implements ProgressInterface
     private const STATUS_FINISHED = 'finished';
 
     private string $status = self::STATUS_INACTIVE;
-
-    private ClientHandler $handler;
-    private string $token;
     private bool $withPercentage = false;
 
-    public function __construct(ClientHandler $handler, string $token)
-    {
-        $this->handler = $handler;
-        $this->token = $token;
+    public function __construct(
+        private readonly ClientHandler $handler,
+        private readonly string $token,
+    ) {
     }
 
     public function begin(

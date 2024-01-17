@@ -60,9 +60,11 @@ use function preg_last_error_msg;
 use function preg_match;
 use function preg_replace;
 use function preg_split;
+use function str_contains;
+use function str_ends_with;
 use function str_replace;
+use function str_starts_with;
 use function strlen;
-use function strpos;
 use function strtolower;
 use function substr;
 use function substr_replace;
@@ -471,9 +473,7 @@ final class FunctionLikeDocblockScanner
                                     = $storage->template_types[$template_name];
                                 $param_type_mapping[$token_body] = $template_name;
                             } else {
-                                $template_as_type = $param_storage->type
-                                    ? $param_storage->type
-                                    : Type::getMixed();
+                                $template_as_type = $param_storage->type ?: Type::getMixed();
 
                                 $storage->template_types[$template_name] = [
                                     $template_function_id => $template_as_type,
@@ -720,7 +720,7 @@ final class FunctionLikeDocblockScanner
             $param_name = $docblock_param['name'];
             $docblock_param_variadic = false;
 
-            if (strpos($param_name, '...') === 0) {
+            if (str_starts_with($param_name, '...')) {
                 $docblock_param_variadic = true;
                 $param_name = substr($param_name, 3);
             }
@@ -1094,7 +1094,7 @@ final class FunctionLikeDocblockScanner
                 if (isset($flow_parts[1]) && trim($flow_parts[1]) === 'return') {
                     $source_param_string = trim($flow_parts[0]);
 
-                    if ($source_param_string[0] === '(' && substr($source_param_string, -1) === ')') {
+                    if ($source_param_string[0] === '(' && str_ends_with($source_param_string, ')')) {
                         $source_params = preg_split('/, ?/', substr($source_param_string, 1, -1));
                         if ($source_params === false) {
                             throw new AssertionError(preg_last_error_msg());
@@ -1112,7 +1112,7 @@ final class FunctionLikeDocblockScanner
                     }
                 }
 
-                if (isset($flow_parts[0]) && strpos(trim($flow_parts[0]), 'proxy') === 0) {
+                if (isset($flow_parts[0]) && str_starts_with(trim($flow_parts[0]), 'proxy')) {
                     $proxy_call = trim(substr($flow_parts[0], strlen('proxy')));
                     [$fully_qualified_name, $source_param_string] = explode('(', $proxy_call, 2);
 
@@ -1249,7 +1249,7 @@ final class FunctionLikeDocblockScanner
                         continue 2;
                     }
 
-                    if (strpos($assertion['param_name'], $param->name.'->') === 0) {
+                    if (str_starts_with($assertion['param_name'], $param->name.'->')) {
                         $storage->assertions[] = new Possibilities(
                             substr_replace($assertion['param_name'], (string) $i, 0, strlen($param->name)),
                             $assertion_type_parts,
@@ -1259,7 +1259,7 @@ final class FunctionLikeDocblockScanner
                 }
 
                 $storage->assertions[] = new Possibilities(
-                    (strpos($assertion['param_name'], '$') === false ? '$' : '') . $assertion['param_name'],
+                    (!str_contains($assertion['param_name'], '$') ? '$' : '') . $assertion['param_name'],
                     $assertion_type_parts,
                 );
             }
@@ -1296,7 +1296,7 @@ final class FunctionLikeDocblockScanner
                         continue 2;
                     }
 
-                    if (strpos($assertion['param_name'], $param->name.'->') === 0) {
+                    if (str_starts_with($assertion['param_name'], $param->name.'->')) {
                         $storage->if_true_assertions[] = new Possibilities(
                             str_replace($param->name, (string) $i, $assertion['param_name']),
                             $assertion_type_parts,
@@ -1306,7 +1306,7 @@ final class FunctionLikeDocblockScanner
                 }
 
                 $storage->if_true_assertions[] = new Possibilities(
-                    (strpos($assertion['param_name'], '$') === false ? '$' : '') . $assertion['param_name'],
+                    (!str_contains($assertion['param_name'], '$') ? '$' : '') . $assertion['param_name'],
                     $assertion_type_parts,
                 );
             }
@@ -1343,7 +1343,7 @@ final class FunctionLikeDocblockScanner
                         continue 2;
                     }
 
-                    if (strpos($assertion['param_name'], $param->name.'->') === 0) {
+                    if (str_starts_with($assertion['param_name'], $param->name.'->')) {
                         $storage->if_false_assertions[] = new Possibilities(
                             str_replace($param->name, (string) $i, $assertion['param_name']),
                             $assertion_type_parts,
@@ -1353,7 +1353,7 @@ final class FunctionLikeDocblockScanner
                 }
 
                 $storage->if_false_assertions[] = new Possibilities(
-                    (strpos($assertion['param_name'], '$') === false ? '$' : '') . $assertion['param_name'],
+                    (!str_contains($assertion['param_name'], '$') ? '$' : '') . $assertion['param_name'],
                     $assertion_type_parts,
                 );
             }

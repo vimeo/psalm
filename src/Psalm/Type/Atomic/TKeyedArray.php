@@ -10,6 +10,7 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeCombiner;
+use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
@@ -17,7 +18,6 @@ use Psalm\Type\Union;
 use function addslashes;
 use function assert;
 use function count;
-use function get_class;
 use function implode;
 use function is_int;
 use function is_string;
@@ -33,16 +33,7 @@ use function str_replace;
  */
 class TKeyedArray extends Atomic
 {
-    /**
-     * @var non-empty-array<string|int, Union>
-     */
-    public array $properties;
-
-    /**
-     * @var array<string, bool>|null
-     */
-    public ?array $class_strings = null;
-
+    use UnserializeMemoryUsageSuppressionTrait;
     /**
      * If the shape has fallback params then they are here
      *
@@ -68,8 +59,8 @@ class TKeyedArray extends Atomic
      * @param array<string, bool> $class_strings
      */
     public function __construct(
-        array $properties,
-        ?array $class_strings = null,
+        public array $properties,
+        public ?array $class_strings = null,
         ?array $fallback_params = null,
         bool $is_list = false,
         bool $from_docblock = false,
@@ -77,8 +68,6 @@ class TKeyedArray extends Atomic
         if ($is_list && $fallback_params) {
             $fallback_params[0] = Type::getListKey();
         }
-        $this->properties = $properties;
-        $this->class_strings = $class_strings;
         $this->fallback_params = $fallback_params;
         $this->is_list = $is_list;
         if ($this->is_list) {
@@ -648,7 +637,7 @@ class TKeyedArray extends Atomic
 
     public function equals(Atomic $other_type, bool $ensure_source_equality): bool
     {
-        if (get_class($other_type) !== static::class) {
+        if ($other_type::class !== static::class) {
             return false;
         }
 

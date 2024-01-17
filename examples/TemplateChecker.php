@@ -32,7 +32,7 @@ use function trim;
 
 final class TemplateAnalyzer extends Psalm\Internal\Analyzer\FileAnalyzer
 {
-    const VIEW_CLASS = 'Your\\View\\Class';
+    final public const VIEW_CLASS = 'Your\\View\\Class';
 
     public function analyze(?Context $file_context = null, ?Context $global_context = null): void
     {
@@ -148,7 +148,7 @@ final class TemplateAnalyzer extends Psalm\Internal\Analyzer\FileAnalyzer
     /**
      * @param  array<PhpParser\Node\Stmt> $stmts
      */
-    protected function checkWithViewClass(Context $context, array $stmts): void
+    private function checkWithViewClass(Context $context, array $stmts): void
     {
         $pseudo_method_stmts = [];
 

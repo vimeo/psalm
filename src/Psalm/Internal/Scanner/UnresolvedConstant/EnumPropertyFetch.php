@@ -12,13 +12,7 @@ use Psalm\Internal\Scanner\UnresolvedConstantComponent;
  */
 abstract class EnumPropertyFetch extends UnresolvedConstantComponent
 {
-    public string $fqcln;
-
-    public string $case;
-
-    public function __construct(string $fqcln, string $case)
+    public function __construct(public readonly string $fqcln, public readonly string $case)
     {
-        $this->fqcln = $fqcln;
-        $this->case = $case;
     }
 }

@@ -18,15 +18,13 @@ use function strtolower;
  */
 final class ClasslikeReplacer extends MutableTypeVisitor
 {
-    private string $old;
-    private string $new;
+    private readonly string $old;
 
     public function __construct(
         string $old,
-        string $new,
+        private readonly string $new,
     ) {
         $this->old = strtolower($old);
-        $this->new = $new;
     }
 
     protected function enterNode(TypeNode &$type): ?int

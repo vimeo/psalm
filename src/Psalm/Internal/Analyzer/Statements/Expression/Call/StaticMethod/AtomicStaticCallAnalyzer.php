@@ -964,7 +964,7 @@ final class AtomicStaticCallAnalyzer
                     new CodeLocation($statements_analyzer, $stmt),
                     $context,
                 );
-            } catch (Exception $e) {
+            } catch (Exception) {
                 // do nothing
             }
         }

@@ -239,7 +239,7 @@ final class SprintfReturnTypeProvider implements FunctionReturnTypeProviderInter
                         );
 
                         break 2;
-                    } catch (ArgumentCountError $error) {
+                    } catch (ArgumentCountError) {
                         // PHP 8
                         if (count($dummy) === $provided_placeholders_count) {
                             IssueBuffer::maybeAdd(

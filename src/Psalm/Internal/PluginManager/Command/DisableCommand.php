@@ -25,11 +25,9 @@ use const DIRECTORY_SEPARATOR;
  */
 final class DisableCommand extends Command
 {
-    private PluginListFactory $plugin_list_factory;
-
-    public function __construct(PluginListFactory $plugin_list_factory)
-    {
-        $this->plugin_list_factory = $plugin_list_factory;
+    public function __construct(
+        private readonly PluginListFactory $plugin_list_factory,
+    ) {
         parent::__construct();
     }
 
@@ -67,7 +65,7 @@ final class DisableCommand extends Command
 
         try {
             $plugin_class = $plugin_list->resolvePluginClass($plugin_name);
-        } catch (InvalidArgumentException $e) {
+        } catch (InvalidArgumentException) {
             $io->error('Unknown plugin class ' . $plugin_name);
 
             return 2;

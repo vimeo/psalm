@@ -36,7 +36,7 @@ final class PropertyVisibilityProvider
      */
     public function registerClass(string $class): void
     {
-        $callable = Closure::fromCallable([$class, 'isPropertyVisible']);
+        $callable = $class::isPropertyVisible(...);
 
         foreach ($class::getClassLikeNames() as $fq_classlike_name) {
             $this->registerClosure($fq_classlike_name, $callable);

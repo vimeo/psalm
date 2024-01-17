@@ -575,11 +575,7 @@ final class VariableFetchAnalyzer
             $var_id = '$_FILES full path';
         }
 
-        if (isset(self::$globalCache[$var_id])) {
-            return self::$globalCache[$var_id];
-        }
-
-        return Type::getMixed();
+        return self::$globalCache[$var_id] ?? Type::getMixed();
     }
 
     /**
@@ -640,7 +636,7 @@ final class VariableFetchAnalyzer
             return new Union([$type]);
         }
 
-        if (in_array($var_id, array('$_GET', '$_POST', '$_REQUEST'), true)) {
+        if (in_array($var_id, ['$_GET', '$_POST', '$_REQUEST'], true)) {
             $array_key = new Union([new TNonEmptyString(), new TInt()]);
             $array = new TNonEmptyArray(
                 [

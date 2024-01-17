@@ -64,7 +64,7 @@ use function is_string;
 use function max;
 use function min;
 use function reset;
-use function strpos;
+use function str_contains;
 use function strtolower;
 
 /**
@@ -451,7 +451,7 @@ final class ArgumentsAnalyzer
                 $statements_analyzer->getFilePath(),
                 $closure_id,
             );
-        } catch (UnexpectedValueException $e) {
+        } catch (UnexpectedValueException) {
             return;
         }
 
@@ -1138,7 +1138,7 @@ final class ArgumentsAnalyzer
                 $by_ref_type,
                 $by_ref_out_type ?: $by_ref_type,
                 $context,
-                $method_id && (strpos($method_id, '::') !== false || !InternalCallMapHandler::inCallMap($method_id)),
+                $method_id && (str_contains($method_id, '::') || !InternalCallMapHandler::inCallMap($method_id)),
                 $check_null_ref,
             );
         }

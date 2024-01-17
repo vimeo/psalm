@@ -12,17 +12,9 @@ final class EnumCaseStorage
 {
     use UnserializeMemoryUsageSuppressionTrait;
 
-    public TLiteralString|TLiteralInt|null $value = null;
-
-    public CodeLocation $stmt_location;
-
     public bool $deprecated = false;
 
-    public function __construct(
-        TLiteralString|TLiteralInt|null $value,
-        CodeLocation $location,
-    ) {
-        $this->value = $value;
-        $this->stmt_location = $location;
+    public function __construct(public TLiteralString|TLiteralInt|null $value, public CodeLocation $stmt_location)
+    {
     }
 }

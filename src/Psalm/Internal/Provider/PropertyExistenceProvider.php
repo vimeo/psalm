@@ -39,7 +39,7 @@ final class PropertyExistenceProvider
     public function registerClass(string $class): void
     {
         if (is_subclass_of($class, PropertyExistenceProviderInterface::class, true)) {
-            $callable = Closure::fromCallable([$class, 'doesPropertyExist']);
+            $callable = $class::doesPropertyExist(...);
 
             foreach ($class::getClassLikeNames() as $fq_classlike_name) {
                 $this->registerClosure($fq_classlike_name, $callable);

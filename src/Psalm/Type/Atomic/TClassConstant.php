@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Type\Atomic;
 
+use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 
@@ -14,14 +15,12 @@ use Psalm\Type\Atomic;
  */
 final class TClassConstant extends Atomic
 {
-    public string $fq_classlike_name;
-
-    public string $const_name;
-
-    public function __construct(string $fq_classlike_name, string $const_name, bool $from_docblock = false)
-    {
-        $this->fq_classlike_name = $fq_classlike_name;
-        $this->const_name = $const_name;
+    use UnserializeMemoryUsageSuppressionTrait;
+    public function __construct(
+        public string $fq_classlike_name,
+        public string $const_name,
+        bool $from_docblock = false,
+    ) {
         parent::__construct($from_docblock);
     }
 

@@ -26,7 +26,6 @@ use function fclose;
 use function feof;
 use function fread;
 use function fwrite;
-use function get_class;
 use function gettype;
 use function igbinary_serialize;
 use function igbinary_unserialize;
@@ -41,12 +40,12 @@ use function posix_get_last_error;
 use function posix_kill;
 use function posix_strerror;
 use function serialize;
+use function str_contains;
 use function stream_select;
 use function stream_set_blocking;
 use function stream_socket_pair;
 use function stripos;
 use function strlen;
-use function strpos;
 use function substr;
 use function unserialize;
 use function usleep;
@@ -74,8 +73,6 @@ final class Pool
     private const EXIT_SUCCESS = 0;
     private const EXIT_FAILURE = 1;
 
-    private Config $config;
-
     /** @var int[] */
     private array $child_pid_list = [];
 
@@ -83,9 +80,6 @@ final class Pool
     private array $read_streams = [];
 
     private bool $did_have_error = false;
-
-    /** @var ?Closure(mixed): void */
-    private ?Closure $task_done_closure = null;
 
     /**
      * @param array<int, array<int, mixed>> $process_task_data_iterator
@@ -104,16 +98,14 @@ final class Pool
      * @psalm-suppress MixedAssignment
      */
     public function __construct(
-        Config $config,
+        private readonly Config $config,
         array $process_task_data_iterator,
         Closure $startup_closure,
         Closure $task_closure,
         Closure $shutdown_closure,
-        ?Closure $task_done_closure = null,
+        private readonly ?Closure $task_done_closure = null,
     ) {
         $pool_size = count($process_task_data_iterator);
-        $this->task_done_closure = $task_done_closure;
-        $this->config = $config;
 
         assert(
             $pool_size > 1,
@@ -223,7 +215,7 @@ final class Pool
             // This can happen when developing Psalm from source without running `composer update`,
             // or because of rare bugs in Psalm.
             $process_done_message = new ForkProcessErrorMessage(
-                get_class($t) . ' ' . $t->getMessage() . "\n" .
+                $t::class . ' ' . $t->getMessage() . "\n" .
                 "Emitted in " . $t->getFile() . ":" . $t->getLine() . "\n" .
                 "Stack trace in the forked worker:\n" .
                 $t->getTraceAsString(),
@@ -349,7 +341,7 @@ final class Pool
                     $content[(int)$file] .= $buffer;
                 }
 
-                if (strpos($buffer, "\n") !== false) {
+                if (str_contains($buffer, "\n")) {
                     $serialized_messages = explode("\n", $content[(int)$file]);
                     $content[(int)$file] = array_pop($serialized_messages);
 

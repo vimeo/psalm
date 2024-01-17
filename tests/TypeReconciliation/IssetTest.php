@@ -411,7 +411,7 @@ class IssetTest extends TestCase
                     $a = isset($_GET["a"]) ? $_GET["a"] : "";
                     if ($a) {}',
                 'assertions' => [],
-                'ignored_issues' => ['MixedAssignment', 'MixedArrayAccess'],
+                'ignored_issues' => ['MixedAssignment', 'MixedArrayAccess', 'RiskyTruthyFalsyComparison'],
             ],
             'mixedArrayIssetGetStringVar' => [
                 'code' => '<?php

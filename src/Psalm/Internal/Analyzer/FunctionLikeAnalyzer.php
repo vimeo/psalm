@@ -81,6 +81,7 @@ use function mb_strpos;
 use function md5;
 use function microtime;
 use function reset;
+use function str_starts_with;
 use function strpos;
 use function strtolower;
 use function substr;
@@ -93,11 +94,6 @@ use const SORT_NUMERIC;
  */
 abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 {
-    /**
-     * @var TFunction
-     */
-    protected Closure|Function_|ClassMethod|ArrowFunction $function;
-
     protected Codebase $codebase;
 
     /**
@@ -137,18 +133,17 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
      */
     public array $param_nodes = [];
 
-    protected FunctionLikeStorage $storage;
-
     /**
      * @param TFunction $function
      */
-    public function __construct($function, SourceAnalyzer $source, FunctionLikeStorage $storage)
-    {
-        $this->function = $function;
+    public function __construct(
+        protected Closure|Function_|ClassMethod|ArrowFunction $function,
+        SourceAnalyzer $source,
+        protected FunctionLikeStorage $storage,
+    ) {
         $this->source = $source;
         $this->suppressed_issues = $source->getSuppressedIssues();
         $this->codebase = $source->getCodebase();
-        $this->storage = $storage;
     }
 
     /**
@@ -840,20 +835,20 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
 
             if ($this->return_vars_possibly_in_scope !== null) {
-                $context->vars_possibly_in_scope = array_merge(
-                    $context->vars_possibly_in_scope,
-                    $this->return_vars_possibly_in_scope,
-                );
+                $context->vars_possibly_in_scope = [
+                    ...$context->vars_possibly_in_scope,
+                    ...$this->return_vars_possibly_in_scope,
+                ];
             }
 
             foreach ($context->vars_in_scope as $var => $_) {
-                if (strpos($var, '$this->') !== 0 && $var !== '$this') {
+                if (!str_starts_with($var, '$this->') && $var !== '$this') {
                     $context->removePossibleReference($var);
                 }
             }
 
             foreach ($context->vars_possibly_in_scope as $var => $_) {
-                if (strpos($var, '$this->') !== 0 && $var !== '$this') {
+                if (!str_starts_with($var, '$this->') && $var !== '$this') {
                     unset($context->vars_possibly_in_scope[$var]);
                 }
             }
@@ -1581,10 +1576,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         }
 
         if ($this->return_vars_possibly_in_scope !== null) {
-            $this->return_vars_possibly_in_scope = array_merge(
-                $context->vars_possibly_in_scope,
-                $this->return_vars_possibly_in_scope,
-            );
+            $this->return_vars_possibly_in_scope = [
+                ...$context->vars_possibly_in_scope,
+                ...$this->return_vars_possibly_in_scope,
+            ];
         } else {
             $this->return_vars_possibly_in_scope = $context->vars_possibly_in_scope;
         }
@@ -1671,7 +1666,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
             try {
                 return $codebase_methods->getStorage($method_id);
-            } catch (UnexpectedValueException $e) {
+            } catch (UnexpectedValueException) {
                 $declaring_method_id = $codebase_methods->getDeclaringMethodId($method_id);
 
                 if ($declaring_method_id === null) {
@@ -2204,6 +2199,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
     private function isIgnoredForUnusedParam(string $var_name): bool
     {
-        return strpos($var_name, '$_') === 0 || (strpos($var_name, '$unused') === 0 && $var_name !== '$unused');
+        return str_starts_with($var_name, '$_') || (str_starts_with($var_name, '$unused') && $var_name !== '$unused');
     }
 }

@@ -44,6 +44,7 @@ use function count;
 use function explode;
 use function in_array;
 use function is_string;
+use function str_starts_with;
 use function strlen;
 use function strpos;
 use function strtolower;
@@ -113,13 +114,13 @@ final class ExistingAtomicStaticCallAnalyzer
                     $local_vars_possibly_in_scope = [];
 
                     foreach ($context->vars_in_scope as $var => $_) {
-                        if (strpos($var, '$this->') !== 0 && $var !== '$this') {
+                        if (!str_starts_with($var, '$this->') && $var !== '$this') {
                             $local_vars_in_scope[$var] = $context->vars_in_scope[$var];
                         }
                     }
 
                     foreach ($context->vars_possibly_in_scope as $var => $_) {
-                        if (strpos($var, '$this->') !== 0 && $var !== '$this') {
+                        if (!str_starts_with($var, '$this->') && $var !== '$this') {
                             $local_vars_possibly_in_scope[$var] = $context->vars_possibly_in_scope[$var];
                         }
                     }

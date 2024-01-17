@@ -71,8 +71,6 @@ final class ClassLikeStorage implements HasAttributesInterface
      */
     public array $suppressed_issues = [];
 
-    public string $name;
-
     /**
      * Is this class user-defined
      */
@@ -391,9 +389,8 @@ final class ClassLikeStorage implements HasAttributesInterface
 
     public bool $readonly = false;
 
-    public function __construct(string $name)
+    public function __construct(public string $name)
     {
-        $this->name = $name;
     }
 
     /**

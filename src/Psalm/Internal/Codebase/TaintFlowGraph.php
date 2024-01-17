@@ -225,15 +225,12 @@ final class TaintFlowGraph extends DataFlowGraph
                 $generated_sources = $this->getSpecializedSources($source);
 
                 foreach ($generated_sources as $generated_source) {
-                    $new_sources = array_merge(
-                        $new_sources,
-                        $this->getChildNodes(
-                            $generated_source,
-                            $source_taints,
-                            $sinks,
-                            $visited_source_ids,
-                        ),
-                    );
+                    $new_sources = [...$new_sources, ...$this->getChildNodes(
+                        $generated_source,
+                        $source_taints,
+                        $sinks,
+                        $visited_source_ids,
+                    )];
                 }
             }
 
@@ -553,7 +550,7 @@ final class TaintFlowGraph extends DataFlowGraph
 
         return array_filter(
             $generated_sources,
-            [$this, 'doesForwardEdgeExist'],
+            $this->doesForwardEdgeExist(...),
         );
     }
 

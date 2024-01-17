@@ -75,10 +75,6 @@ use const PHP_EOL;
  */
 final class ClassLikes
 {
-    private ClassLikeStorageProvider $classlike_storage_provider;
-
-    public FileReferenceProvider $file_reference_provider;
-
     /**
      * @var array<lowercase-string, bool>
      */
@@ -143,25 +139,13 @@ final class ClassLikes
 
     public bool $collect_locations = false;
 
-    private StatementsProvider $statements_provider;
-
-    private Config $config;
-
-    private Scanner $scanner;
-
     public function __construct(
-        Config $config,
-        ClassLikeStorageProvider $storage_provider,
-        FileReferenceProvider $file_reference_provider,
-        StatementsProvider $statements_provider,
-        Scanner $scanner,
+        private readonly Config $config,
+        private readonly ClassLikeStorageProvider $classlike_storage_provider,
+        public FileReferenceProvider $file_reference_provider,
+        private readonly StatementsProvider $statements_provider,
+        private readonly Scanner $scanner,
     ) {
-        $this->config = $config;
-        $this->classlike_storage_provider = $storage_provider;
-        $this->file_reference_provider = $file_reference_provider;
-        $this->statements_provider = $statements_provider;
-        $this->scanner = $scanner;
-
         $this->collectPredefinedClassLikes();
     }
 
@@ -848,7 +832,7 @@ final class ClassLikes
         foreach ($this->existing_classlikes_lc as $fq_class_name_lc => $_) {
             try {
                 $classlike_storage = $this->classlike_storage_provider->get($fq_class_name_lc);
-            } catch (InvalidArgumentException $e) {
+            } catch (InvalidArgumentException) {
                 continue;
             }
 
@@ -955,7 +939,7 @@ final class ClassLikes
                 $source_method_storage = $methods->getStorage(
                     new MethodIdentifier(...$source_parts),
                 );
-            } catch (InvalidArgumentException $e) {
+            } catch (InvalidArgumentException) {
                 continue;
             }
 
@@ -963,7 +947,7 @@ final class ClassLikes
 
             try {
                 $classlike_storage = $this->classlike_storage_provider->get($destination_fq_class_name);
-            } catch (InvalidArgumentException $e) {
+            } catch (InvalidArgumentException) {
                 continue;
             }
 
@@ -1032,7 +1016,7 @@ final class ClassLikes
         foreach ($codebase->properties_to_move as $source => $destination) {
             try {
                 $source_property_storage = $properties->getStorage($source);
-            } catch (InvalidArgumentException $e) {
+            } catch (InvalidArgumentException) {
                 continue;
             }
 
@@ -1692,7 +1676,7 @@ final class ClassLikes
 
                 try {
                     $declaring_classlike_storage = $this->classlike_storage_provider->get($declaring_fq_classlike_name);
-                } catch (InvalidArgumentException $e) {
+                } catch (InvalidArgumentException) {
                     continue;
                 }
 
@@ -1792,7 +1776,7 @@ final class ClassLikes
                         foreach ($classlike_storage->class_implements as $fq_interface_name_lc => $_) {
                             try {
                                 $interface_storage = $this->classlike_storage_provider->get($fq_interface_name_lc);
-                            } catch (InvalidArgumentException $e) {
+                            } catch (InvalidArgumentException) {
                                 continue;
                             }
 
@@ -1950,7 +1934,7 @@ final class ClassLikes
 
                 try {
                     $declaring_classlike_storage = $this->classlike_storage_provider->get($declaring_fq_classlike_name);
-                } catch (InvalidArgumentException $e) {
+                } catch (InvalidArgumentException) {
                     continue;
                 }
 
@@ -2019,7 +2003,7 @@ final class ClassLikes
 
                 try {
                     $declaring_classlike_storage = $this->classlike_storage_provider->get($declaring_fq_classlike_name);
-                } catch (InvalidArgumentException $e) {
+                } catch (InvalidArgumentException) {
                     continue;
                 }
 
@@ -2385,7 +2369,7 @@ final class ClassLikes
 
         try {
             return $this->classlike_storage_provider->get($fq_class_name);
-        } catch (InvalidArgumentException $e) {
+        } catch (InvalidArgumentException) {
             return null;
         }
     }
