@@ -757,7 +757,7 @@ class ReportOutputTest extends TestCase
                 'other_references' => null,
             ],
             [
-                'link' => 'https://psalm.dev/047',
+                'link' => 'https://psalm.dev/020',
                 'severity' => 'error',
                 'line_from' => 8,
                 'line_to' => 8,
