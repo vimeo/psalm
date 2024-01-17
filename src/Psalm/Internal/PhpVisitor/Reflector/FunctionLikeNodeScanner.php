@@ -11,7 +11,6 @@ use PhpParser\Node\Identifier;
 use PhpParser\Node\IntersectionType;
 use PhpParser\Node\Name;
 use PhpParser\Node\NullableType;
-use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\UnionType;
 use Psalm\Aliases;
 use Psalm\CodeLocation;

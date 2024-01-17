@@ -395,7 +395,8 @@ final class StatementsProvider
         if (!self::$parser) {
             $major_version = Codebase::transformPhpVersionId($analysis_php_version_id, 10_000);
             $minor_version = Codebase::transformPhpVersionId($analysis_php_version_id % 10_000, 100);
-            self::$parser = (new ParserFactory())->createForVersion(PhpVersion::fromComponents($major_version, $minor_version));
+            self::$parser = (new ParserFactory())
+                ->createForVersion(PhpVersion::fromComponents($major_version, $minor_version));
         }
         $used_cached_statements = false;
 
