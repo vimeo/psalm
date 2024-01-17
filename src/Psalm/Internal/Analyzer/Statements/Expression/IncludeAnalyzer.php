@@ -332,7 +332,7 @@ final class IncludeAnalyzer
                 $dir_level = 1;
 
                 if (isset($stmt->getArgs()[1])) {
-                    if ($stmt->getArgs()[1]->value instanceof PhpParser\Node\Scalar\LNumber) {
+                    if ($stmt->getArgs()[1]->value instanceof PhpParser\Node\Scalar\Int_) {
                         $dir_level = $stmt->getArgs()[1]->value->value;
                     } else {
                         if ($statements_analyzer) {

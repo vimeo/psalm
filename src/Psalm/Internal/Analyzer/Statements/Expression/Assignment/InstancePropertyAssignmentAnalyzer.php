@@ -7,7 +7,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Assignment;
 use PhpParser;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\PropertyFetch;
-use PhpParser\Node\Stmt\PropertyProperty;
+use PhpParser\Node\PropertyItem;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Config;
@@ -92,7 +92,7 @@ use function strtolower;
 final class InstancePropertyAssignmentAnalyzer
 {
     /**
-     * @param   PropertyFetch|PropertyProperty  $stmt
+     * @param   PropertyFetch|PropertyItem  $stmt
      * @param   bool                            $direct_assignment whether the variable is assigned explicitly
      */
     public static function analyze(
@@ -106,7 +106,7 @@ final class InstancePropertyAssignmentAnalyzer
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
-        if ($stmt instanceof PropertyProperty) {
+        if ($stmt instanceof PropertyItem) {
             if (!$context->self || !$stmt->default) {
                 return;
             }
@@ -1405,7 +1405,7 @@ final class InstancePropertyAssignmentAnalyzer
                     ? 'Unable to determine the type that ' . $var_id . ' is being assigned to'
                     : 'Unable to determine the type of this assignment';
 
-                if ($origin_location && $origin_location->getLineNumber() === $stmt->getLine()) {
+                if ($origin_location && $origin_location->getLineNumber() === $stmt->getStartLine()) {
                     $origin_location = null;
                 }
 

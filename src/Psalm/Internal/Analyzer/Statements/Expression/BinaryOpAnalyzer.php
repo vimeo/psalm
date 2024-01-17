@@ -394,7 +394,7 @@ final class BinaryOpAnalyzer
         PhpParser\Node\Expr $right,
         string $type = 'binaryop',
     ): void {
-        if ($stmt->getLine() === -1) {
+        if ($stmt->getStartLine() === -1) {
             throw new UnexpectedValueException('bad');
         }
         $result_type = $statements_analyzer->node_data->getType($stmt);

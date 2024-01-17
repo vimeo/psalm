@@ -8,7 +8,7 @@ use PhpParser\Node;
 use PhpParser\Node\Expr\YieldFrom;
 use PhpParser\Node\Expr\Yield_;
 use PhpParser\Node\FunctionLike;
-use PhpParser\NodeTraverser;
+use PhpParser\NodeVisitor;
 use PhpParser\NodeVisitorAbstract;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Type;
@@ -65,7 +65,7 @@ final class YieldTypeCollector extends NodeVisitorAbstract
 
             $this->yield_types []= Type::getMixed();
         } elseif ($node instanceof FunctionLike) {
-            return NodeTraverser::DONT_TRAVERSE_CHILDREN;
+            return NodeVisitor::DONT_TRAVERSE_CHILDREN;
         }
 
         return null;

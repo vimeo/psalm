@@ -99,12 +99,12 @@ final class FunctionDocblockManipulator
         string $file_path,
         FunctionLike $stmt,
     ): FunctionDocblockManipulator {
-        if (isset(self::$manipulators[$file_path][$stmt->getLine()])) {
-            return self::$manipulators[$file_path][$stmt->getLine()];
+        if (isset(self::$manipulators[$file_path][$stmt->getStartLine()])) {
+            return self::$manipulators[$file_path][$stmt->getStartLine()];
         }
 
         $manipulator
-            = self::$manipulators[$file_path][$stmt->getLine()]
+            = self::$manipulators[$file_path][$stmt->getStartLine()]
             = new self($file_path, $stmt, $project_analyzer);
 
         return $manipulator;

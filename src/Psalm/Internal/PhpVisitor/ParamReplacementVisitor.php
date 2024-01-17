@@ -47,7 +47,7 @@ final class ParamReplacementVisitor extends PhpParser\NodeVisitorAbstract
             } elseif ($node->name === $this->new_name) {
                 if ($this->new_new_name_used) {
                     $this->replacements = [];
-                    return PhpParser\NodeTraverser::STOP_TRAVERSAL;
+                    return PhpParser\NodeVisitor::STOP_TRAVERSAL;
                 }
 
                 $this->replacements[] = new FileManipulation(
@@ -60,7 +60,7 @@ final class ParamReplacementVisitor extends PhpParser\NodeVisitorAbstract
             } elseif ($node->name === $this->new_name . '_new') {
                 if ($this->new_name_replaced) {
                     $this->replacements = [];
-                    return PhpParser\NodeTraverser::STOP_TRAVERSAL;
+                    return PhpParser\NodeVisitor::STOP_TRAVERSAL;
                 }
 
                 $this->new_new_name_used = true;

@@ -14,6 +14,7 @@ use PhpParser\Node\Expr;
 use PhpParser\Node\Name;
 use PhpParser\Node\NullableType;
 use PhpParser\Node\Stmt;
+use PhpParser\Node\UseItem;
 use PhpParser\NodeVisitorAbstract;
 
 /**
@@ -55,6 +56,12 @@ final class SimpleNameResolver extends NodeVisitorAbstract
 
     public function enterNode(Node $node): ?int
     {
+        if ($node instanceof Stmt\Expression
+            && ($comment = $node->getComments())
+            && (!$node->expr->getComments())
+        ) {
+            $node->expr->setAttribute('comments', $comment);
+        }
         if ($node instanceof Stmt\Namespace_) {
             $this->nameContext->startNamespace($node->name);
         } elseif ($node instanceof Stmt\Use_) {
@@ -93,7 +100,7 @@ final class SimpleNameResolver extends NodeVisitorAbstract
             if ($attrs['endFilePos'] < $this->start_change
                 || $attrs['startFilePos'] > $this->end_change
             ) {
-                return PhpParser\NodeTraverser::DONT_TRAVERSE_CHILDREN;
+                return PhpParser\NodeVisitor::DONT_TRAVERSE_CHILDREN;
             }
         }
 
@@ -146,7 +153,7 @@ final class SimpleNameResolver extends NodeVisitorAbstract
         return null;
     }
 
-    private function addAlias(Stmt\UseUse $use, int $type, ?Name $prefix = null): void
+    private function addAlias(UseItem $use, int $type, ?Name $prefix = null): void
     {
         // Add prefix for group uses
         /** @var Name $name */

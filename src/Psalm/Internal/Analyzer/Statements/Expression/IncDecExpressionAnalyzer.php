@@ -16,7 +16,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Node\Expr\BinaryOp\VirtualMinus;
 use Psalm\Node\Expr\BinaryOp\VirtualPlus;
 use Psalm\Node\Expr\VirtualAssign;
-use Psalm\Node\Scalar\VirtualLNumber;
+use Psalm\Node\Scalar\VirtualInt_;
 use Psalm\Type;
 
 /**
@@ -55,7 +55,7 @@ final class IncDecExpressionAnalyzer
         ) {
             $return_type = null;
 
-            $fake_right_expr = new VirtualLNumber(1, $stmt->getAttributes());
+            $fake_right_expr = new VirtualInt_(1, $stmt->getAttributes());
             $statements_analyzer->node_data->setType($fake_right_expr, Type::getInt());
 
             ArithmeticOpAnalyzer::analyze(
@@ -100,7 +100,7 @@ final class IncDecExpressionAnalyzer
                 );
             }
         } else {
-            $fake_right_expr = new VirtualLNumber(1, $stmt->getAttributes());
+            $fake_right_expr = new VirtualInt_(1, $stmt->getAttributes());
 
             $operation = $stmt instanceof PostInc || $stmt instanceof PreInc
                 ? new VirtualPlus(

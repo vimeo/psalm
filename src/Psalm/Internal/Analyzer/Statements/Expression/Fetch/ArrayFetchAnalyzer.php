@@ -497,7 +497,7 @@ final class ArrayFetchAnalyzer
             if ($value_type instanceof TLiteralString) {
                 $key_values[] = $value_type;
             }
-        } elseif ($stmt->dim instanceof PhpParser\Node\Scalar\LNumber) {
+        } elseif ($stmt->dim instanceof PhpParser\Node\Scalar\Int_) {
             $key_values[] = new TLiteralInt($stmt->dim->value);
         } elseif ($stmt->dim && ($stmt_dim_type = $statements_analyzer->node_data->getType($stmt->dim))) {
             $string_literals = $stmt_dim_type->getLiteralStrings();

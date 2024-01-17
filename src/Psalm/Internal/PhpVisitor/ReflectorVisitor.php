@@ -156,7 +156,7 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
 
             if ($classlike_node_scanner->start($node) === false) {
                 $this->bad_classes[spl_object_id($node)] = true;
-                return PhpParser\NodeTraverser::DONT_TRAVERSE_CURRENT_AND_CHILDREN;
+                return PhpParser\NodeVisitor::DONT_TRAVERSE_CURRENT_AND_CHILDREN;
             }
 
             $this->classlike_node_scanners[] = $classlike_node_scanner;
@@ -227,7 +227,7 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
             }
 
             if (!$this->scan_deep) {
-                return PhpParser\NodeTraverser::DONT_TRAVERSE_CHILDREN;
+                return PhpParser\NodeVisitor::DONT_TRAVERSE_CHILDREN;
             }
         } elseif ($node instanceof PhpParser\Node\Stmt\Global_) {
             $functionlike_node_scanner = end($this->functionlike_node_scanners);
@@ -290,11 +290,11 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
                 ) === false
                 ) {
                     // the else node should terminate the agreement
-                    $this->skip_if_descendants = $node->else ? $node->else->getLine() : $node->getLine();
+                    $this->skip_if_descendants = $node->else ? $node->else->getStartLine() : $node->getStartLine();
                 }
             }
         } elseif ($node instanceof PhpParser\Node\Stmt\Else_) {
-            if ($this->skip_if_descendants === $node->getLine()) {
+            if ($this->skip_if_descendants === $node->getStartLine()) {
                 $this->skip_if_descendants = null;
                 $this->exists_cond_expr = null;
             } elseif (!$this->skip_if_descendants) {
@@ -305,7 +305,7 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
                         $this->exists_cond_expr,
                     ) === true
                 ) {
-                    $this->skip_if_descendants = $node->getLine();
+                    $this->skip_if_descendants = $node->getStartLine();
                 }
             }
         } elseif ($node instanceof Expr) {
@@ -548,7 +548,7 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
                 }
 
                 throw new UnexpectedValueException(
-                    'There should be function storages for line ' . $this->file_path . ':' . $node->getLine(),
+                    'There should be function storages for line ' . $this->file_path . ':' . $node->getStartLine(),
                 );
             }
 
@@ -583,10 +583,10 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
                     $this->file_storage->has_visitor_issues = true;
                 }
             }
-        } elseif ($node instanceof PhpParser\Node\Stmt\If_ && $node->getLine() === $this->skip_if_descendants) {
+        } elseif ($node instanceof PhpParser\Node\Stmt\If_ && $node->getStartLine() === $this->skip_if_descendants) {
             $this->exists_cond_expr = null;
             $this->skip_if_descendants = null;
-        } elseif ($node instanceof PhpParser\Node\Stmt\Else_ && $node->getLine() === $this->skip_if_descendants) {
+        } elseif ($node instanceof PhpParser\Node\Stmt\Else_ && $node->getStartLine() === $this->skip_if_descendants) {
             $this->exists_cond_expr = null;
             $this->skip_if_descendants = null;
         }

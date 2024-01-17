@@ -2,7 +2,7 @@
 
 namespace Psalm\Example\Plugin;
 
-use PhpParser\Node\Expr\ArrayItem;
+use PhpParser\Node\ArrayItem;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Plugin\EventHandler\RemoveTaintsInterface;

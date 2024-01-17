@@ -107,7 +107,7 @@ final class PhpStormMetaScanner
 
         if ($args[1]->value->name->getParts() === ['type']
             && $args[1]->value->getArgs()
-            && $args[1]->value->getArgs()[0]->value instanceof PhpParser\Node\Scalar\LNumber
+            && $args[1]->value->getArgs()[0]->value instanceof PhpParser\Node\Scalar\Int_
         ) {
             $type_offset = $args[1]->value->getArgs()[0]->value->value;
         }
@@ -116,7 +116,7 @@ final class PhpStormMetaScanner
 
         if ($args[1]->value->name->getParts() === ['elementType']
             && $args[1]->value->getArgs()
-            && $args[1]->value->getArgs()[0]->value instanceof PhpParser\Node\Scalar\LNumber
+            && $args[1]->value->getArgs()[0]->value instanceof PhpParser\Node\Scalar\Int_
         ) {
             $element_type_offset = $args[1]->value->getArgs()[0]->value->value;
         }
@@ -126,7 +126,7 @@ final class PhpStormMetaScanner
             && $identifier->name instanceof PhpParser\Node\Identifier
             && (
                 $identifier->getArgs() === []
-                || $identifier->getArgs()[0]->value instanceof PhpParser\Node\Scalar\LNumber
+                || $identifier->getArgs()[0]->value instanceof PhpParser\Node\Scalar\Int_
             )
         ) {
             $meta_fq_classlike_name = $identifier->class->toString();
@@ -136,7 +136,7 @@ final class PhpStormMetaScanner
             if ($map) {
                 $offset = 0;
                 if ($identifier->getArgs()
-                    && $identifier->getArgs()[0]->value instanceof PhpParser\Node\Scalar\LNumber
+                    && $identifier->getArgs()[0]->value instanceof PhpParser\Node\Scalar\Int_
                 ) {
                     $offset = $identifier->getArgs()[0]->value->value;
                 }
@@ -278,7 +278,7 @@ final class PhpStormMetaScanner
             && $identifier->name instanceof PhpParser\Node\Name\FullyQualified
             && (
                 $identifier->getArgs() === []
-                || $identifier->getArgs()[0]->value instanceof PhpParser\Node\Scalar\LNumber
+                || $identifier->getArgs()[0]->value instanceof PhpParser\Node\Scalar\Int_
             )
         ) {
             $function_id = strtolower($identifier->name->toString());
@@ -286,7 +286,7 @@ final class PhpStormMetaScanner
             if ($map) {
                 $offset = 0;
                 if ($identifier->getArgs()
-                    && $identifier->getArgs()[0]->value instanceof PhpParser\Node\Scalar\LNumber
+                    && $identifier->getArgs()[0]->value instanceof PhpParser\Node\Scalar\Int_
                 ) {
                     $offset = $identifier->getArgs()[0]->value->value;
                 }

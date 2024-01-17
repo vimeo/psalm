@@ -55,7 +55,7 @@ final class TraitFinder extends PhpParser\NodeVisitorAbstract
         if ($node instanceof PhpParser\Node\Stmt\ClassLike
             || $node instanceof PhpParser\Node\FunctionLike
         ) {
-            return PhpParser\NodeTraverser::DONT_TRAVERSE_CHILDREN;
+            return PhpParser\NodeVisitor::DONT_TRAVERSE_CHILDREN;
         }
 
         return null;
@@ -78,7 +78,7 @@ final class TraitFinder extends PhpParser\NodeVisitorAbstract
         }
 
         foreach ($this->matching_trait_nodes as $node) {
-            if ($node->getLine() === $reflection_trait->getStartLine()) {
+            if ($node->getStartLine() === $reflection_trait->getStartLine()) {
                 return $node;
             }
         }

@@ -89,7 +89,7 @@ final class ClassStatementsDiffer extends AstDiffer
                     && substr($a_code, $a_start, $a_size) === substr($b_code, $b_start, $b_size)
                 ) {
                     $start_diff = $b_start - $a_start;
-                    $line_diff = $b->getLine() - $a->getLine();
+                    $line_diff = $b->getStartLine() - $a->getStartLine();
 
                     $diff_map[] = [$a_start, $a_end, $start_diff, $line_diff];
 
@@ -184,7 +184,7 @@ final class ClassStatementsDiffer extends AstDiffer
                 }
 
                 if (!$signature_change && !$body_change) {
-                    $diff_map[] = [$a_start, $a_end, $b_start - $a_start, $b->getLine() - $a->getLine()];
+                    $diff_map[] = [$a_start, $a_end, $b_start - $a_start, $b->getStartLine() - $a->getStartLine()];
                 }
 
                 return !$signature_change;

@@ -142,7 +142,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
     public static function getAnonymousClassName(PhpParser\Node\Stmt\Class_ $class, string $file_path): string
     {
         return preg_replace('/[^A-Za-z0-9]/', '_', $file_path)
-            . '_' . $class->getLine() . '_' . (int)$class->getAttribute('startFilePos');
+            . '_' . $class->getStartLine() . '_' . (int)$class->getAttribute('startFilePos');
     }
 
     public function analyze(
@@ -1163,7 +1163,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 );
 
                 $fake_constructor_attributes = [
-                    'startLine' => $class->extends->getLine(),
+                    'startLine' => $class->extends->getStartLine(),
                     'startFilePos' => $class->extends->getAttribute('startFilePos'),
                     'endFilePos' => $class->extends->getAttribute('endFilePos'),
                 ];
@@ -1172,7 +1172,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     + [
                         'comments' => [new PhpParser\Comment\Doc(
                             '/** @psalm-suppress InaccessibleMethod */',
-                            $class->extends->getLine(),
+                            $class->extends->getStartLine(),
                             (int) $class->extends->getAttribute('startFilePos'),
                         )],
                     ];
@@ -1192,7 +1192,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 $fake_stmt = new VirtualClassMethod(
                     new VirtualIdentifier('__construct'),
                     [
-                        'type' => PhpParser\Node\Stmt\Class_::MODIFIER_PUBLIC,
+                        'type' => PhpParser\Modifiers::PUBLIC,
                         'params' => $fake_constructor_params,
                         'stmts' => $fake_constructor_stmts,
                     ],

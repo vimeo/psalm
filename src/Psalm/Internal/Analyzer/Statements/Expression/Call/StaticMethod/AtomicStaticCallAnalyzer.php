@@ -34,11 +34,11 @@ use Psalm\Issue\MixedMethodCall;
 use Psalm\Issue\UndefinedClass;
 use Psalm\IssueBuffer;
 use Psalm\Node\Expr\VirtualArray;
-use Psalm\Node\Expr\VirtualArrayItem;
 use Psalm\Node\Expr\VirtualMethodCall;
 use Psalm\Node\Expr\VirtualVariable;
 use Psalm\Node\Scalar\VirtualString;
 use Psalm\Node\VirtualArg;
+use Psalm\Node\VirtualArrayItem;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
@@ -670,7 +670,7 @@ final class AtomicStaticCallAnalyzer
                 }
 
                 $array_values = array_map(
-                    static fn(PhpParser\Node\Arg $arg): PhpParser\Node\Expr\ArrayItem => new VirtualArrayItem(
+                    static fn(PhpParser\Node\Arg $arg): PhpParser\Node\ArrayItem => new VirtualArrayItem(
                         $arg->value,
                         null,
                         false,

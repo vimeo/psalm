@@ -824,7 +824,7 @@ final class ClassLikeNodeScanner
     {
         if (!$this->storage) {
             throw new UnexpectedValueException(
-                'Storage should exist in ' . $this->file_path . ' at ' . $node->getLine(),
+                'Storage should exist in ' . $this->file_path . ' at ' . $node->getStartLine(),
             );
         }
 

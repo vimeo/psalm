@@ -400,11 +400,11 @@ final class SimpleTypeInferer
             return Type::getString($stmt->value);
         }
 
-        if ($stmt instanceof PhpParser\Node\Scalar\LNumber) {
+        if ($stmt instanceof PhpParser\Node\Scalar\Int_) {
             return Type::getInt(false, $stmt->value);
         }
 
-        if ($stmt instanceof PhpParser\Node\Scalar\DNumber) {
+        if ($stmt instanceof PhpParser\Node\Scalar\Float_) {
             return Type::getFloat($stmt->value);
         }
 
@@ -627,7 +627,7 @@ final class SimpleTypeInferer
         Codebase $codebase,
         NodeDataProvider $nodes,
         ArrayCreationInfo $array_creation_info,
-        PhpParser\Node\Expr\ArrayItem $item,
+        PhpParser\Node\ArrayItem $item,
         Aliases $aliases,
         FileSource $file_source = null,
         ?array $existing_class_constants = null,
@@ -734,7 +734,7 @@ final class SimpleTypeInferer
         $array_creation_info->all_list = $array_creation_info->all_list && $item_is_list_item;
 
         if ($item->key instanceof PhpParser\Node\Scalar\String_
-            || $item->key instanceof PhpParser\Node\Scalar\LNumber
+            || $item->key instanceof PhpParser\Node\Scalar\Int_
             || !$item->key
         ) {
             if ($item_key_value !== null

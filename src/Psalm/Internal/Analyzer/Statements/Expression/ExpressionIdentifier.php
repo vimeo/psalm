@@ -116,7 +116,7 @@ final class ExpressionIdentifier
 
             if ($root_var_id) {
                 if ($stmt->dim instanceof PhpParser\Node\Scalar\String_
-                    || $stmt->dim instanceof PhpParser\Node\Scalar\LNumber
+                    || $stmt->dim instanceof PhpParser\Node\Scalar\Int_
                 ) {
                     $offset = $stmt->dim instanceof PhpParser\Node\Scalar\String_
                         ? '\'' . $stmt->dim->value . '\''

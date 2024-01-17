@@ -6,6 +6,7 @@ namespace Psalm\Internal\PhpVisitor\Reflector;
 
 use LogicException;
 use PhpParser;
+use PhpParser\Modifiers;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\IntersectionType;
 use PhpParser\Node\Name;
@@ -644,7 +645,7 @@ final class FunctionLikeNodeScanner
                 $property_storage->location = $param_storage->location;
                 $property_storage->stmt_location = new CodeLocation($this->file_scanner, $param);
                 $property_storage->has_default = (bool)$param->default;
-                $param_type_readonly = (bool)($param->flags & PhpParser\Node\Stmt\Class_::MODIFIER_READONLY);
+                $param_type_readonly = (bool)($param->flags & PhpParser\Modifiers::READONLY);
                 $property_storage->readonly = $param_type_readonly ?: $var_comment_readonly;
                 $property_storage->allow_private_mutation = $var_comment_allow_private_mutation;
                 $param_storage->promoted_property = true;
@@ -652,18 +653,18 @@ final class FunctionLikeNodeScanner
 
                 $property_id = $fq_classlike_name . '::$' . $param_storage->name;
 
-                switch ($param->flags & Class_::VISIBILITY_MODIFIER_MASK) {
-                    case Class_::MODIFIER_PUBLIC:
+                switch ($param->flags & Modifiers::VISIBILITY_MASK) {
+                    case Modifiers::PUBLIC:
                         $property_storage->visibility = ClassLikeAnalyzer::VISIBILITY_PUBLIC;
                         $classlike_storage->inheritable_property_ids[$param_storage->name] = $property_id;
                         break;
 
-                    case Class_::MODIFIER_PROTECTED:
+                    case Modifiers::PROTECTED:
                         $property_storage->visibility = ClassLikeAnalyzer::VISIBILITY_PROTECTED;
                         $classlike_storage->inheritable_property_ids[$param_storage->name] = $property_id;
                         break;
 
-                    case Class_::MODIFIER_PRIVATE:
+                    case Modifiers::PRIVATE:
                         $property_storage->visibility = ClassLikeAnalyzer::VISIBILITY_PRIVATE;
                         break;
                 }
@@ -956,7 +957,7 @@ final class FunctionLikeNodeScanner
                     $duplicate_function_storage = $this->file_storage->functions[$function_id];
 
                     if ($duplicate_function_storage->location
-                        && $duplicate_function_storage->location->getLineNumber() === $stmt->getLine()
+                        && $duplicate_function_storage->location->getLineNumber() === $stmt->getStartLine()
                     ) {
                         $storage = $this->storage = $this->file_storage->functions[$function_id];
 
@@ -1137,7 +1138,7 @@ final class FunctionLikeNodeScanner
             || $stmt instanceof PhpParser\Node\Expr\ArrowFunction
         ) {
             $function_id = $cased_function_id = strtolower($this->file_path)
-                . ':' . $stmt->getLine()
+                . ':' . $stmt->getStartLine()
                 . ':' . (int)$stmt->getAttribute('startFilePos') . ':-:closure';
 
             $storage = $this->storage = $this->file_storage->functions[$function_id] = new FunctionStorage();

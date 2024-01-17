@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\Analyzer\Statements;
 
 use PhpParser;
+use PhpParser\Node\InterpolatedStringPart;
 use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
@@ -50,7 +51,7 @@ use Psalm\Issue\UnrecognizedExpression;
 use Psalm\Issue\UnsupportedReferenceUsage;
 use Psalm\IssueBuffer;
 use Psalm\Node\Expr\VirtualFuncCall;
-use Psalm\Node\Scalar\VirtualEncapsed;
+use Psalm\Node\Scalar\VirtualInterpolatedString;
 use Psalm\Node\VirtualArg;
 use Psalm\Node\VirtualName;
 use Psalm\Plugin\EventHandler\Event\AfterExpressionAnalysisEvent;
@@ -72,7 +73,7 @@ final class ExpressionAnalyzer
      */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
-        PhpParser\Node\Expr $stmt,
+        PhpParser\Node\Expr|InterpolatedStringPart $stmt,
         Context $context,
         bool $array_assignment = false,
         ?Context $global_context = null,
@@ -143,7 +144,7 @@ final class ExpressionAnalyzer
      */
     private static function handleExpression(
         StatementsAnalyzer $statements_analyzer,
-        PhpParser\Node\Expr $stmt,
+        PhpParser\Node\Expr|InterpolatedStringPart $stmt,
         Context $context,
         bool $array_assignment,
         ?Context $global_context,
@@ -192,7 +193,7 @@ final class ExpressionAnalyzer
             return true;
         }
 
-        if ($stmt instanceof PhpParser\Node\Scalar\EncapsedStringPart) {
+        if ($stmt instanceof PhpParser\Node\InterpolatedStringPart) {
             return true;
         }
 
@@ -202,13 +203,13 @@ final class ExpressionAnalyzer
             return true;
         }
 
-        if ($stmt instanceof PhpParser\Node\Scalar\LNumber) {
+        if ($stmt instanceof PhpParser\Node\Scalar\Int_) {
             $statements_analyzer->node_data->setType($stmt, Type::getInt(false, $stmt->value));
 
             return true;
         }
 
-        if ($stmt instanceof PhpParser\Node\Scalar\DNumber) {
+        if ($stmt instanceof PhpParser\Node\Scalar\Float_) {
             $statements_analyzer->node_data->setType($stmt, Type::getFloat($stmt->value));
 
             return true;
@@ -277,7 +278,7 @@ final class ExpressionAnalyzer
             return ArrayAnalyzer::analyze($statements_analyzer, $stmt, $context);
         }
 
-        if ($stmt instanceof PhpParser\Node\Scalar\Encapsed) {
+        if ($stmt instanceof PhpParser\Node\Scalar\InterpolatedString) {
             return EncapsulatedStringAnalyzer::analyze($statements_analyzer, $stmt, $context);
         }
 
@@ -377,7 +378,7 @@ final class ExpressionAnalyzer
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\ShellExec) {
-            $concat = new VirtualEncapsed($stmt->parts, $stmt->getAttributes());
+            $concat = new VirtualInterpolatedString($stmt->parts, $stmt->getAttributes());
             $virtual_call = new VirtualFuncCall(new VirtualName(['shell_exec']), [
                 new VirtualArg($concat),
             ], $stmt->getAttributes());
@@ -459,7 +460,7 @@ final class ExpressionAnalyzer
      */
     private static function analyzeAssignment(
         StatementsAnalyzer $statements_analyzer,
-        PhpParser\Node\Expr $stmt,
+        PhpParser\Node\Expr|InterpolatedStringPart $stmt,
         Context $context,
         bool $from_stmt,
     ): bool {
@@ -486,7 +487,7 @@ final class ExpressionAnalyzer
     }
 
     private static function dispatchBeforeExpressionAnalysis(
-        PhpParser\Node\Expr $expr,
+        PhpParser\Node\Expr|InterpolatedStringPart $expr,
         Context $context,
         StatementsAnalyzer $statements_analyzer,
     ): ?bool {
@@ -514,7 +515,7 @@ final class ExpressionAnalyzer
     }
 
     private static function dispatchAfterExpressionAnalysis(
-        PhpParser\Node\Expr $expr,
+        PhpParser\Node\Expr|InterpolatedStringPart $expr,
         Context $context,
         StatementsAnalyzer $statements_analyzer,
     ): ?bool {

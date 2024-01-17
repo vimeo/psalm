@@ -23,13 +23,13 @@ use Psalm\Type\Atomic\Scalar;
 use PhpParser;
 use Psalm\Internal\Scanner\ParsedDocblock;
 use Psalm\Node\Expr\VirtualArray;
-use Psalm\Node\Expr\VirtualArrayItem;
+use Psalm\Node\VirtualArrayItem;
 use Psalm\Node\Expr\VirtualClassConstFetch;
 use Psalm\Node\Expr\VirtualConstFetch;
 use Psalm\Node\Expr\VirtualVariable;
 use Psalm\Node\Name\VirtualFullyQualified;
-use Psalm\Node\Scalar\VirtualDNumber;
-use Psalm\Node\Scalar\VirtualLNumber;
+use Psalm\Node\Scalar\VirtualFloat_;
+use Psalm\Node\Scalar\VirtualInt_;
 use Psalm\Node\Scalar\VirtualString;
 use Psalm\Node\Stmt\VirtualFunction;
 use Psalm\Node\Stmt\VirtualNamespace;
@@ -365,11 +365,11 @@ final class StubsGenerator
             }
 
             if ($atomic_type instanceof TLiteralInt) {
-                return new VirtualLNumber($atomic_type->value);
+                return new VirtualInt_($atomic_type->value);
             }
 
             if ($atomic_type instanceof TLiteralFloat) {
-                return new VirtualDNumber($atomic_type->value);
+                return new VirtualFloat_($atomic_type->value);
             }
 
             if ($atomic_type instanceof TFalse) {
@@ -395,7 +395,7 @@ final class StubsGenerator
                     if ($atomic_type->is_list) {
                         $key_type = null;
                     } elseif (is_int($property_name)) {
-                        $key_type = new VirtualLNumber($property_name);
+                        $key_type = new VirtualInt_($property_name);
                     } else {
                         $key_type = new VirtualString($property_name);
                     }

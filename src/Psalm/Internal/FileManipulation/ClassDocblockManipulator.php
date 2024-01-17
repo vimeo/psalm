@@ -41,12 +41,12 @@ final class ClassDocblockManipulator
         string $file_path,
         Class_ $stmt,
     ): self {
-        if (isset(self::$manipulators[$file_path][$stmt->getLine()])) {
-            return self::$manipulators[$file_path][$stmt->getLine()];
+        if (isset(self::$manipulators[$file_path][$stmt->getStartLine()])) {
+            return self::$manipulators[$file_path][$stmt->getStartLine()];
         }
 
         $manipulator
-            = self::$manipulators[$file_path][$stmt->getLine()]
+            = self::$manipulators[$file_path][$stmt->getStartLine()]
             = new self($project_analyzer, $stmt, $file_path);
 
         return $manipulator;

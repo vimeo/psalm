@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace Psalm\Plugin\EventHandler\Event;
 
-use PhpParser\Node\Expr;
+use PhpParser\Node;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\StatementsSource;
 
 final class AddRemoveTaintsEvent
 {
-    private Expr $expr;
+    private Node $expr;
     private Context $context;
     private StatementsSource $statements_source;
     private Codebase $codebase;
@@ -22,7 +22,7 @@ final class AddRemoveTaintsEvent
      * @internal
      */
     public function __construct(
-        Expr $expr,
+        Node $expr,
         Context $context,
         StatementsSource $statements_source,
         Codebase $codebase,
@@ -33,7 +33,7 @@ final class AddRemoveTaintsEvent
         $this->codebase = $codebase;
     }
 
-    public function getExpr(): Expr
+    public function getExpr(): Node
     {
         return $this->expr;
     }

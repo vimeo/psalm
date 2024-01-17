@@ -54,7 +54,7 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
                 }
             }
 
-            return PhpParser\NodeTraverser::DONT_TRAVERSE_CHILDREN;
+            return PhpParser\NodeVisitor::DONT_TRAVERSE_CHILDREN;
         }
 
         if ($node instanceof PhpParser\Node\Expr\PostInc
@@ -69,7 +69,7 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
                 $this->assignment_map[$var_id][$var_id] = true;
             }
 
-            return PhpParser\NodeTraverser::DONT_TRAVERSE_CHILDREN;
+            return PhpParser\NodeVisitor::DONT_TRAVERSE_CHILDREN;
         }
 
         if ($node instanceof PhpParser\Node\Expr\FuncCall

@@ -56,10 +56,10 @@ final class DeclareAnalyzer
 
     private static function analyzeStrictTypesDeclaration(
         StatementsAnalyzer $statements_analyzer,
-        PhpParser\Node\Stmt\DeclareDeclare $declaration,
+        PhpParser\Node\DeclareItem $declaration,
         Context $context,
     ): void {
-        if (!$declaration->value instanceof PhpParser\Node\Scalar\LNumber
+        if (!$declaration->value instanceof PhpParser\Node\Scalar\Int_
             || !in_array($declaration->value->value, [0, 1], true)
         ) {
             IssueBuffer::maybeAdd(
@@ -80,9 +80,9 @@ final class DeclareAnalyzer
 
     private static function analyzeTicksDeclaration(
         StatementsAnalyzer $statements_analyzer,
-        PhpParser\Node\Stmt\DeclareDeclare $declaration,
+        PhpParser\Node\DeclareItem $declaration,
     ): void {
-        if (!$declaration->value instanceof PhpParser\Node\Scalar\LNumber) {
+        if (!$declaration->value instanceof PhpParser\Node\Scalar\Int_) {
             IssueBuffer::maybeAdd(
                 new UnrecognizedStatement(
                     'ticks declaration should have integer as a value',
@@ -95,7 +95,7 @@ final class DeclareAnalyzer
 
     private static function analyzeEncodingDeclaration(
         StatementsAnalyzer $statements_analyzer,
-        PhpParser\Node\Stmt\DeclareDeclare $declaration,
+        PhpParser\Node\DeclareItem $declaration,
     ): void {
         if (!$declaration->value instanceof PhpParser\Node\Scalar\String_) {
             IssueBuffer::maybeAdd(

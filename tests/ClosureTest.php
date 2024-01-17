@@ -1346,7 +1346,7 @@ class ClosureTest extends TestCase
                     );',
                 'error_message' => 'InvalidArgument',
             ],
-            'undefinedVariableInEncapsedString' => [
+            'undefinedVariableInInterpolatedStringString' => [
                 'code' => '<?php
                     fn(): string => "$a";
                 ',

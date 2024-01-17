@@ -119,7 +119,7 @@ final class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
                             if ($a_e2 > $stmt_end_pos) {
                                 $this->must_rescan = true;
 
-                                return PhpParser\NodeTraverser::STOP_TRAVERSAL;
+                                return PhpParser\NodeVisitor::STOP_TRAVERSAL;
                             }
 
                             $end_offset = $b_e2 - $a_e2;
@@ -155,7 +155,7 @@ final class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
                         if (!$method_contents) {
                             $this->must_rescan = true;
 
-                            return PhpParser\NodeTraverser::STOP_TRAVERSAL;
+                            return PhpParser\NodeVisitor::STOP_TRAVERSAL;
                         }
 
                         $error_handler = new Collecting();
@@ -220,7 +220,7 @@ final class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
                             ) {
                                 $this->must_rescan = true;
 
-                                return PhpParser\NodeTraverser::STOP_TRAVERSAL;
+                                return PhpParser\NodeVisitor::STOP_TRAVERSAL;
                             }
 
                             // changes "): {" to ") {"
@@ -243,7 +243,7 @@ final class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
                             ) {
                                 $this->must_rescan = true;
 
-                                return PhpParser\NodeTraverser::STOP_TRAVERSAL;
+                                return PhpParser\NodeVisitor::STOP_TRAVERSAL;
                             }
                         }
 
@@ -302,7 +302,7 @@ final class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
 
                     $this->must_rescan = true;
 
-                    return PhpParser\NodeTraverser::STOP_TRAVERSAL;
+                    return PhpParser\NodeVisitor::STOP_TRAVERSAL;
                 }
 
                 if ($node->stmts) {
@@ -333,7 +333,7 @@ final class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
 
             $this->must_rescan = true;
 
-            return PhpParser\NodeTraverser::STOP_TRAVERSAL;
+            return PhpParser\NodeVisitor::STOP_TRAVERSAL;
         }
 
         if ($start_offset !== 0 || $end_offset !== 0 || $line_offset !== 0) {

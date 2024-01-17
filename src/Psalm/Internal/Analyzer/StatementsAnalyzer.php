@@ -354,7 +354,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
         $codebase = $statements_analyzer->getCodebase();
 
         if ($statements_analyzer->getProjectAnalyzer()->debug_lines) {
-            fwrite(STDERR, $statements_analyzer->getFilePath() . ':' . $stmt->getLine() . "\n");
+            fwrite(STDERR, $statements_analyzer->getFilePath() . ':' . $stmt->getStartLine() . "\n");
         }
 
         $new_issues = null;
@@ -543,8 +543,12 @@ final class StatementsAnalyzer extends SourceAnalyzer
             UnsetAnalyzer::analyze($statements_analyzer, $stmt, $context);
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Return_) {
             ReturnAnalyzer::analyze($statements_analyzer, $stmt, $context);
-        } elseif ($stmt instanceof PhpParser\Node\Stmt\Throw_) {
-            ThrowAnalyzer::analyze($statements_analyzer, $stmt, $context);
+        } elseif ($stmt instanceof PhpParser\Node\Stmt\Block) {
+            foreach ($stmt->stmts as $s) {
+                if (self::analyzeStatement($statements_analyzer, $s, $context, $global_context) === false) {
+                    return false;
+                }
+            }
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Switch_) {
             SwitchAnalyzer::analyze($statements_analyzer, $stmt, $context);
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Break_) {
@@ -560,7 +564,9 @@ final class StatementsAnalyzer extends SourceAnalyzer
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Function_) {
             FunctionAnalyzer::analyzeStatement($statements_analyzer, $stmt, $context);
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Expression) {
-            if (ExpressionAnalyzer::analyze(
+            if ($stmt->expr instanceof PhpParser\Node\Expr\Throw_) {
+                ThrowAnalyzer::analyze($statements_analyzer, $stmt->expr, $context);
+            } elseif (ExpressionAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt->expr,
                 $context,

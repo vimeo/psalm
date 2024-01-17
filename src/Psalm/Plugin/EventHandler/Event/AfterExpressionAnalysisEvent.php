@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Plugin\EventHandler\Event;
 
 use PhpParser\Node\Expr;
+use PhpParser\Node\InterpolatedStringPart;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\FileManipulation;
@@ -12,7 +13,7 @@ use Psalm\StatementsSource;
 
 final class AfterExpressionAnalysisEvent
 {
-    private Expr $expr;
+    private Expr|InterpolatedStringPart $expr;
     private Context $context;
     private StatementsSource $statements_source;
     private Codebase $codebase;
@@ -28,7 +29,7 @@ final class AfterExpressionAnalysisEvent
      * @internal
      */
     public function __construct(
-        Expr $expr,
+        Expr|InterpolatedStringPart $expr,
         Context $context,
         StatementsSource $statements_source,
         Codebase $codebase,
@@ -41,7 +42,7 @@ final class AfterExpressionAnalysisEvent
         $this->file_replacements = $file_replacements;
     }
 
-    public function getExpr(): Expr
+    public function getExpr(): Expr|InterpolatedStringPart
     {
         return $this->expr;
     }
