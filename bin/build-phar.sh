@@ -2,10 +2,6 @@
 
 set -e
 
-sed 's/PsalmAutoloader/PsalmPharAutoloader/g' -i composer.json
-rm -rf vendor/composer
-composer install
-
 composer bin box install
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
@@ -19,10 +15,6 @@ if [[ ! -f build/phar-versions.php ]] ; then
 fi
 
 vendor/bin/box compile --no-parallel
-
-sed 's/PsalmPharAutoloader/PsalmAutoloader/g' -i composer.json
-rm -rf vendor/composer
-composer install
 
 if [[ "$GPG_SIGNING" != '' ]] ; then
     if [[ "$GPG_SECRET_KEY" != '' ]] ; then
