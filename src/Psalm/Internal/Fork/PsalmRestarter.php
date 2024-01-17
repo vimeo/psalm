@@ -141,7 +141,7 @@ final class PsalmRestarter extends XdebugHandler
     protected function restart($command): void
     {
         if ($this->required && $this->tmpIni) {
-            $regex = '/^\s*(extension\s*=.*(' . implode('|', $this->disabled_extensions) . ').*)$/mi';
+            $regex = '/^\s*((?:zend_)?extension\s*=.*(' . implode('|', $this->disabled_extensions) . ').*)$/mi';
             $content = file_get_contents($this->tmpIni);
             assert($content !== false);
 

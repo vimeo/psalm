@@ -896,6 +896,10 @@ final class Psalm
             'blackfire',
         ]);
 
+        if (defined('PHP_WINDOWS_VERSION_MAJOR')) {
+            $ini_handler->disableExtensions(['opcache', 'Zend OPcache']);
+        }
+
         // If Xdebug is enabled, restart without it
         $ini_handler->check();
 
