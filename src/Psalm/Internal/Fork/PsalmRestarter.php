@@ -10,6 +10,7 @@ use function array_filter;
 use function array_merge;
 use function array_splice;
 use function assert;
+use function defined;
 use function extension_loaded;
 use function file_get_contents;
 use function file_put_contents;
@@ -81,7 +82,7 @@ final class PsalmRestarter extends XdebugHandler
 
         $opcache_loaded = extension_loaded('opcache') || extension_loaded('Zend OPcache');
 
-        if ($opcache_loaded) {
+        if ($opcache_loaded && !defined('PHP_WINDOWS_VERSION_MAJOR')) {
             // restart to enable JIT if it's not configured in the optimal way
             foreach (self::REQUIRED_OPCACHE_SETTINGS as $ini_name => $required_value) {
                 $value = (string) ini_get("opcache.$ini_name");
@@ -155,7 +156,7 @@ final class PsalmRestarter extends XdebugHandler
         // executed in the parent process (before restart)
         // if it wasn't loaded then we apparently don't have opcache installed and there's no point trying
         // to tweak it
-        if ($opcache_loaded) {
+        if ($opcache_loaded && !defined('PHP_WINDOWS_VERSION_MAJOR')) {
             $additional_options = [];
             foreach (self::REQUIRED_OPCACHE_SETTINGS as $key => $value) {
                 $additional_options []= "-dopcache.{$key}={$value}";

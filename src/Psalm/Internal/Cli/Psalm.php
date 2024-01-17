@@ -45,6 +45,7 @@ use function array_sum;
 use function array_values;
 use function chdir;
 use function count;
+use function defined;
 use function extension_loaded;
 use function file_exists;
 use function file_put_contents;
@@ -898,7 +899,7 @@ final class Psalm
         // If Xdebug is enabled, restart without it
         $ini_handler->check();
 
-        if (!function_exists('opcache_get_status')) {
+        if (!function_exists('opcache_get_status') && !defined('PHP_WINDOWS_VERSION_MAJOR')) {
             $progress->write(PHP_EOL
                 . 'Install the opcache extension to make use of JIT for a 20%+ performance boost!'
                 . PHP_EOL . PHP_EOL);
