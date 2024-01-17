@@ -1129,8 +1129,6 @@ final class FunctionLikeNodeScanner
             throw new UnexpectedValueException('Unrecognized functionlike');
         }
 
-        $storage->fake = $fake_method;
-
         return [
             $cased_function_id,
             $storage,
