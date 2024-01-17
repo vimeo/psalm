@@ -7,7 +7,6 @@
     "map": [
         {"build/phar-versions.php" : "phar-versions.php"}
     ],
-    "exclude-composer-files": false,
     "files-bin": ["config.xsd"],
     "directories-bin" : [
         "assets",

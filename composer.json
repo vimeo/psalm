@@ -73,7 +73,8 @@
         },
         "optimize-autoloader": true,
         "sort-packages": true,
-        "platform-check": true
+        "platform-check": true,
+        "autoloader-suffix": "Psalm"
     },
     "extra": {
         "branch-alias": {
