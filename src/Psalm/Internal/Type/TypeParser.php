@@ -668,17 +668,31 @@ final class TypeParser
                 }
             }
 
-            foreach ($generic_params[0]->getAtomicTypes() as $key => $atomic_type) {
+            $literals = [];
+            $possibly_undefined = null;
+            $final = [];
+            $changed = false;
+            $extract_literals = $generic_type_value === 'array';
+
+            $types = $generic_params[0]->getAtomicTypes();
+            foreach ($types as $atomic_type) {
+                if ($extract_literals && ($atomic_type instanceof TLiteralInt
+                    || $atomic_type instanceof TLiteralString
+                )) {
+                    $possibly_undefined ??= $generic_params[1]->setPossiblyUndefined(true);
+                    $literals[$atomic_type->value] = $possibly_undefined;
+                    $changed = true;
+                    continue;
+                }
+
                 // PHP 8 values with whitespace after number are counted as numeric
                 // and filter_var treats them as such too
                 if ($atomic_type instanceof TLiteralString
                     && ($string_to_int = filter_var($atomic_type->value, FILTER_VALIDATE_INT)) !== false
                     && trim($atomic_type->value) === $atomic_type->value
                 ) {
-                    $builder = $generic_params[0]->getBuilder();
-                    $builder->removeType($key);
-                    $generic_params[0] = $builder->addType(new TLiteralInt($string_to_int, $from_docblock))->freeze();
-                    continue;
+                    $changed = true;
+                    $atomic_type = new TLiteralInt($string_to_int, $from_docblock);
                 }
 
                 if ($atomic_type instanceof TInt
@@ -698,24 +712,33 @@ final class TypeParser
                     || $atomic_type instanceof TKeyOf
                     || !$from_docblock
                 ) {
+                    $final []= $atomic_type;
                     continue;
                 }
 
                 if ($codebase->register_stub_files || $codebase->register_autoload_files) {
-                    $builder = $generic_params[0]->getBuilder();
-                    $builder->removeType($key);
+                    $changed = true;
 
-                    if (count($generic_params[0]->getAtomicTypes()) <= 1) {
-                        $builder = $builder->addType(new TArrayKey($from_docblock));
-                    }
-
-                    $generic_params[0] = $builder->freeze();
                     continue;
                 }
 
                 throw new TypeParseTreeException('Invalid array key type ' . $atomic_type->getKey());
             }
 
+            if ($changed) {
+                $generic_params[0] = $generic_params[0]->setTypes(
+                    $final ?: [Type::getArrayKey($from_docblock)],
+                );
+            }
+            if ($literals) {
+                return new TKeyedArray(
+                    $literals,
+                    null,
+                    count($literals) === count($types) ? null : $generic_params,
+                    false,
+                    $from_docblock,
+                );
+            }
             return $generic_type_value === 'array'
                 ? new TArray($generic_params, $from_docblock)
                 : new TNonEmptyArray($generic_params, null, null, 'non-empty-array', $from_docblock)
