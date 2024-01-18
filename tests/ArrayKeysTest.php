@@ -124,6 +124,64 @@ class ArrayKeysTest extends TestCase
                         }
                     }',
             ],
+            'variousArrayKeys' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type TAlias = 123
+                     */
+                    class a {}
+                    
+                    /**
+                     * @psalm-import-type TAlias from a
+                     * @template TKey as array-key
+                     * @template TValue as array-key
+                     * @template T as array<TKey, TValue>
+                     * @template TT
+                     * @template TBool as bool
+                     */
+                    class b {
+                        /** 
+                         * @var array<TAlias, int> 
+                         */
+                        private array $a = [];
+                        
+                        /** @var array<value-of<T>, int> */
+                        private array $c = [];
+                        
+                        /** @var array<key-of<T>, int> */
+                        private array $d = [];
+                        
+                        /** @var array<TT, int> */
+                        private array $e = [];
+                        
+                        /** @var array<key-of<array<int, int>>, int> */
+                        private array $f = [];
+                        
+                        /** @var array<value-of<array<int, int>>, int> */
+                        private array $g = [];
+
+                        /** @var array<TBool is true ? string : int, int> */
+                        private array $h = [];
+
+                        /**
+                         * @param T $arr
+                         * @param class-string<TT> $b
+                         * @param TBool $c
+                         */
+                        public function __construct(
+                            array $arr,
+                            string $b,
+                            bool $c
+                        ) {}
+
+                        /**
+                         * @return array<$v is true ? "a" : 123, 123>
+                         */
+                        public function test(bool $v): array {
+                            return $v ? ["a" => 123] : [123 => 123];
+                        }
+                    }',
+            ],
         ];
     }
 
