@@ -674,8 +674,8 @@ final class TypeParser
                 // PHP 8 values with whitespace after number are counted as numeric
                 // and filter_var treats them as such too
                 if ($atomic_type instanceof TLiteralString
-                    && trim($atomic_type->value) === $atomic_type->value
                     && ($string_to_int = filter_var($atomic_type->value, FILTER_VALIDATE_INT)) !== false
+                    && trim($atomic_type->value) === $atomic_type->value
                 ) {
                     $builder = $generic_params[0]->getBuilder();
                     $builder->removeType($key);
@@ -690,7 +690,14 @@ final class TypeParser
                     || $atomic_type instanceof TMixed
                     || $atomic_type instanceof TNever
                     || $atomic_type instanceof TTemplateParam
+                    || $atomic_type instanceof TTemplateIndexedAccess
+                    || $atomic_type instanceof TTemplateValueOf
+                    || $atomic_type instanceof TTemplateKeyOf
+                    || $atomic_type instanceof TTemplateParamClass
+                    || $atomic_type instanceof TTypeAlias
                     || $atomic_type instanceof TValueOf
+                    || $atomic_type instanceof TConditional
+                    || $atomic_type instanceof TKeyOf
                     || !$from_docblock
                 ) {
                     continue;
