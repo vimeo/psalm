@@ -727,7 +727,7 @@ final class TypeParser
 
             if ($changed) {
                 $generic_params[0] = $generic_params[0]->setTypes(
-                    $final ?: [Type::getArrayKey($from_docblock)],
+                    $final ?: [new TArrayKey($from_docblock)],
                 );
             }
             if ($literals) {

@@ -146,7 +146,7 @@ class TypeParseTest extends TestCase
 
         // TODO: needs a non-empty flag for unsealed arrays
         $this->assertSame('non-empty-array<0|1, string>', Type::parseString('non-empty-array<0|1, string>')->getId(true));
-        $this->assertSame("non-empty-array<'a'|'b', string>", (string) Type::parseString('non-empty-array<"a"|"b", string>')->getId(true));
+        $this->assertSame("non-empty-array<'a'|'b', string>", Type::parseString('non-empty-array<"a"|"b", string>')->getId(true));
     }
 
     public function testGeneric(): void

@@ -3754,9 +3754,7 @@ final class AssertionFinder
                     || $atomic_type instanceof TKeyedArray
                 ) {
                     if ($atomic_type instanceof TKeyedArray) {
-                        $key_type = $atomic_type->getGenericKeyType(
-                            !$atomic_type->allShapeKeysAlwaysDefined(),
-                        );
+                        $key_type = $atomic_type->getGenericKeyType();
                     } else {
                         $key_type = $atomic_type->type_params[0];
                     }
