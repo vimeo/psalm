@@ -340,7 +340,7 @@ final class ExpressionAnalyzer
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\AssignRef) {
-            if (!AssignmentAnalyzer::analyzeAssignmentRef($statements_analyzer, $stmt, $context)) {
+            if (!AssignmentAnalyzer::analyzeAssignmentRef($statements_analyzer, $stmt, $context, $from_stmt)) {
                 IssueBuffer::maybeAdd(
                     new UnsupportedReferenceUsage(
                         "This reference cannot be analyzed by Psalm",
