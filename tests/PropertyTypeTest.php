@@ -1166,7 +1166,7 @@ class PropertyTypeTest extends TestCase
                          * Constructs a finally node.
                          *
                          * @param list<Node\Stmt> $stmts      Statements
-                         * @param array  $attributes Additional attributes
+                         * @param array<string, mixed>  $attributes Additional attributes
                          */
                         public function __construct(array $stmts = array(), array $attributes = array()) {
                             parent::__construct($attributes);
