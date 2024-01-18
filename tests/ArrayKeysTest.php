@@ -136,43 +136,35 @@ class ArrayKeysTest extends TestCase
                      * @template TKey as array-key
                      * @template TValue as array-key
                      * @template T as array<TKey, TValue>
-                     * @template TT
+                     * 
+                     * @template TOrig as a|b
+                     * @template TT as class-string<TOrig>
+                     * 
                      * @template TBool as bool
                      */
                     class b {
                         /** 
                          * @var array<TAlias, int> 
                          */
-                        private array $a = [];
+                        private array $a = [123 => 123];
                         
                         /** @var array<value-of<T>, int> */
-                        private array $c = [];
+                        public array $c = [];
                         
                         /** @var array<key-of<T>, int> */
-                        private array $d = [];
+                        public array $d = [];
                         
                         /** @var array<TT, int> */
-                        private array $e = [];
+                        public array $e = [];
                         
-                        /** @var array<key-of<array<int, int>>, int> */
-                        private array $f = [];
+                        /** @var array<key-of<array<int, string>>, int> */
+                        private array $f = [123 => 123];
                         
-                        /** @var array<value-of<array<int, int>>, int> */
-                        private array $g = [];
+                        /** @var array<value-of<array<int, string>>, int> */
+                        private array $g = ["test" => 123];
 
                         /** @var array<TBool is true ? string : int, int> */
-                        private array $h = [];
-
-                        /**
-                         * @param T $arr
-                         * @param class-string<TT> $b
-                         * @param TBool $c
-                         */
-                        public function __construct(
-                            array $arr,
-                            string $b,
-                            bool $c
-                        ) {}
+                        private array $h = [123 => 123];
 
                         /**
                          * @return array<$v is true ? "a" : 123, 123>
@@ -180,7 +172,16 @@ class ArrayKeysTest extends TestCase
                         public function test(bool $v): array {
                             return $v ? ["a" => 123] : [123 => 123];
                         }
-                    }',
+                    }
+                    
+                    /** @var b<"testKey", "testValue", array<"testKey", "testValue">, b, class-string<b>, true> */
+                    $b = new b;
+                    $b->d["testKey"] = 123;
+
+                    // TODO
+                    //$b->c["testValue"] = 123;
+                    //$b->e["b"] = 123;
+                    ',
             ],
         ];
     }
