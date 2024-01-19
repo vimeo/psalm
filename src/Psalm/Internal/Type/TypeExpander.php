@@ -94,6 +94,21 @@ final class TypeExpander
             $codebase,
         );
 
+        $fleshed_out_type->as_type = $return_type->as_type !== null
+            ? self::expandUnion(
+                $codebase,
+                $return_type->as_type,
+                $self_class,
+                $static_class_type,
+                $parent_class,
+                $evaluate_class_constants,
+                $evaluate_conditional_types,
+                $final,
+                $expand_generic,
+                $expand_templates,
+                $throw_on_unresolvable_constant
+            ) : null;
+
         $fleshed_out_type->from_docblock = $return_type->from_docblock;
         $fleshed_out_type->ignore_nullable_issues = $return_type->ignore_nullable_issues;
         $fleshed_out_type->ignore_falsable_issues = $return_type->ignore_falsable_issues;

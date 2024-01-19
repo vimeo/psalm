@@ -188,6 +188,8 @@ final class Union implements TypeNode
 
     public bool $different = false;
 
+    public ?Union $as_type = null;
+
     private const PROPERTY_KEYS_FOR_UNSERIALIZE = [
         "\0" . self::class . "\0" . 'types' => 'types',
         'from_docblock' => 'from_docblock',

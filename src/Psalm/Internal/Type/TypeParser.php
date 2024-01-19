@@ -24,6 +24,7 @@ use Psalm\Internal\Type\ParseTree\MethodTree;
 use Psalm\Internal\Type\ParseTree\MethodWithReturnTypeTree;
 use Psalm\Internal\Type\ParseTree\NullableTree;
 use Psalm\Internal\Type\ParseTree\TemplateAsTree;
+use Psalm\Internal\Type\ParseTree\TypeIsTree;
 use Psalm\Internal\Type\ParseTree\UnionTree;
 use Psalm\Internal\Type\ParseTree\Value;
 use Psalm\Storage\FunctionLikeParameter;
@@ -336,6 +337,37 @@ final class TypeParser
                 $from_docblock,
             );
             return $result;
+        }
+
+        if ($parse_tree instanceof TypeIsTree) {
+            $type = self::getTypeFromTree(
+                $parse_tree->children[0],
+                $codebase,
+                $analysis_php_version_id,
+                $template_type_map,
+                $type_aliases,
+                $from_docblock
+            );
+            $as_type = self::getTypeFromTree(
+                $parse_tree->children[1],
+                $codebase,
+                $analysis_php_version_id,
+                $template_type_map,
+                $type_aliases,
+                $from_docblock
+            );
+
+
+            if ($as_type instanceof Atomic) {
+                $as_type = new Union([$as_type], ['from_docblock' => $from_docblock]);
+            }
+            if ($type instanceof Atomic) {
+                $type = new Union([$type], ['from_docblock' => $from_docblock, 'as_type' => $as_type]);
+            } else {
+                $type->as_type = $as_type;
+            }
+
+            return $type;
         }
 
         if ($parse_tree instanceof ConditionalTree) {

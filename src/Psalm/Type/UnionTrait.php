@@ -227,6 +227,10 @@ trait UnionTrait
 
         $id = implode('|', $types);
 
+        if ($this->as_type !== null) {
+            $id .= ': '.$this->as_type->getId($exact);
+        }
+
         if ($exact) {
             /** @psalm-suppress ImpurePropertyAssignment, InaccessibleProperty Cache */
             $this->exact_id = $id;
@@ -1427,6 +1431,14 @@ trait UnionTrait
         }
 
         if ($this->different || $other_type->different) {
+            return false;
+        }
+
+        if (($this->as_type === null) !== ($other_type->as_type === null)) {
+            return false;
+        }
+
+        if ($this->as_type !== null && !$this->as_type->equals($other_type->as_type)) {
             return false;
         }
 
