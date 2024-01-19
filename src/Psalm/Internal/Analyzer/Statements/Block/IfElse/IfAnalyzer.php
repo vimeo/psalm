@@ -167,12 +167,12 @@ final class IfAnalyzer
             $outer_context->removeVarFromConflictingClauses($var_id);
         }
 
-        $if_scope->if_actions = $final_actions = ScopeAnalyzer::getControlActions(
+        $final_actions = ScopeAnalyzer::getControlActions(
             $stmt->stmts,
             $statements_analyzer->node_data,
             [],
         );
-
+        // has a return/throw at end
         $has_ending_statements = $final_actions === [ScopeAnalyzer::ACTION_END];
 
         $has_leaving_statements = $has_ending_statements
