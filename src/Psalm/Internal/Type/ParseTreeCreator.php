@@ -562,11 +562,11 @@ final class ParseTreeCreator
             return;
         }
 
-        if (!$this->current_leaf instanceof Value) {
-            throw new TypeParseTreeException('Unexpected LHS of property');
-        }
-
         if ($current_parent instanceof KeyedArrayTree) {
+            if (!$this->current_leaf instanceof Value) {
+                throw new TypeParseTreeException('Unexpected LHS of property');
+            }
+    
             $prev_token = $this->t > 0 ? $this->type_tokens[$this->t - 1] : null;
 
             $new_parent_leaf = new KeyedArrayPropertyTree($this->current_leaf->value, $current_parent);

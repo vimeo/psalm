@@ -33,6 +33,7 @@ use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTemplatePropertiesOf;
+use Psalm\Type\Atomic\TTemplateSatisfiedBy;
 use Psalm\Type\Atomic\TTemplateValueOf;
 use Psalm\Type\Union;
 
@@ -324,7 +325,8 @@ final class TemplateStandinTypeReplacer
         }
 
         if ($atomic_type instanceof TTemplateKeyOf
-            || $atomic_type instanceof TTemplateValueOf) {
+            || $atomic_type instanceof TTemplateValueOf
+            || $atomic_type instanceof TTemplateSatisfiedBy) {
             if (!$replace) {
                 return [$atomic_type];
             }
@@ -344,6 +346,12 @@ final class TemplateStandinTypeReplacer
             }
 
             if ($template_type) {
+                if ($atomic_type instanceof TTemplateSatisfiedBy) {
+                    if ($template_type->as_type === null) {
+                        return [$atomic_type];
+                    }
+                    return $template_type->as_type->getAtomicTypes();
+                }
                 foreach ($template_type->getAtomicTypes() as $template_atomic) {
                     if (!$template_atomic instanceof TKeyedArray
                         && !$template_atomic instanceof TArray

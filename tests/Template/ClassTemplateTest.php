@@ -4233,6 +4233,39 @@ class ClassTemplateTest extends TestCase
                     '$a===' => 'SplObjectStorage<never, never>',
                 ],
             ],
+            'testSatisfies1' => [
+                'code' => '<?php
+                    /**
+                     * @template TValue as mixed = never
+                     */
+                    class FutureSplQueue {
+                        /**
+                         * @template TNewValue as satisfied-by<TValue>
+                         *
+                         * @param TNewValue $value
+                         *
+                         * @psalm-this-out self<(TValue|TNewValue): satisfied-by<TValue>>
+                         */
+                        public function enqueue($value): void {}
+                    }
+                    
+                    /** @var FutureSplQueue<never: int> */
+                    $a = new FutureSplQueue;
+                    
+                    /** @psalm-check-type-exact $a = FutureSplQueue<never: int> */;
+                    
+                    $a->enqueue(1);
+                    
+                    /** @psalm-check-type-exact $a = FutureSplQueue<1: int> */;
+                    
+                    $a->enqueue(2);
+                    
+                    /** @psalm-check-type-exact $a = FutureSplQueue<1|2: int> */;
+
+                    /** @psalm-suppress InvalidArgument */
+                    $a->enqueue("str");
+                '
+            ]
         ];
     }
 

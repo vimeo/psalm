@@ -228,7 +228,7 @@ trait UnionTrait
         $id = implode('|', $types);
 
         if ($this->as_type !== null) {
-            $id .= ': '.$this->as_type->getId($exact);
+            $id = "($id) : ".$this->as_type->getId($exact).')';
         }
 
         if ($exact) {
@@ -1301,6 +1301,10 @@ trait UnionTrait
 
         $checker->traverseArray($this->types);
 
+        if ($this->as_type !== null) {
+            $checker->traverse($this->as_type);
+        }
+
         /** @psalm-suppress InaccessibleProperty, ImpurePropertyAssignment Does not affect anything else */
         $this->checked = true;
 
@@ -1323,6 +1327,9 @@ trait UnionTrait
 
         /** @psalm-suppress ImpureMethodCall */
         $scanner_visitor->traverseArray($this->types);
+        if ($this->as_type !== null) {
+            $scanner_visitor->traverse($this->as_type);
+        }
     }
 
     /**
@@ -1335,6 +1342,10 @@ trait UnionTrait
 
         /** @psalm-suppress ImpureMethodCall Actually mutation-free */
         $classlike_visitor->traverseArray($this->types);
+
+        if ($this->as_type !== null) {
+            $classlike_visitor->traverse($this->as_type);
+        }
 
         return $classlike_visitor->matches();
     }
@@ -1360,6 +1371,9 @@ trait UnionTrait
         /** @psalm-suppress ImpureMethodCall Actually mutation-free */
         $literal_visitor->traverseArray($this->types);
 
+        if ($this->as_type !== null) {
+            $literal_visitor->traverse($this->as_type);
+        }
         return $literal_visitor->matches();
     }
 
@@ -1373,6 +1387,10 @@ trait UnionTrait
 
         /** @psalm-suppress ImpureMethodCall Actually mutation-free */
         $template_type_collector->traverseArray($this->types);
+
+        if ($this->as_type !== null) {
+            $template_type_collector->traverse($this->as_type);
+        }
 
         return $template_type_collector->getTemplateTypes();
     }
@@ -1564,6 +1582,10 @@ trait UnionTrait
             if ($visitor->traverse($type) === false) {
                 return false;
             }
+        }
+
+        if ($this->as_type !== null) {
+            return $visitor->traverse($this->as_type);
         }
 
         return true;

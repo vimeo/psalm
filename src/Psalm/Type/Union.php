@@ -188,10 +188,14 @@ final class Union implements TypeNode
 
     public bool $different = false;
 
+    /**
+     * If null, treat as `mixed`.
+     */
     public ?Union $as_type = null;
 
     private const PROPERTY_KEYS_FOR_UNSERIALIZE = [
         "\0" . self::class . "\0" . 'types' => 'types',
+        'as_type' => 'as_type',
         'from_docblock' => 'from_docblock',
         'from_calculation' => 'from_calculation',
         'from_property' => 'from_property',
@@ -378,8 +382,15 @@ final class Union implements TypeNode
         }
         unset($type);
 
+        $as_type = null;
+        if ($node->as_type) {
+            $as_type = $visitor->traverse($node->as_type);
+            $changed = $changed || $as_type !== $node->as_type;
+        }
+
         if ($changed) {
             $node = $node->setTypes($types);
+            $node->as_type = $as_type;
         }
 
         return $result;

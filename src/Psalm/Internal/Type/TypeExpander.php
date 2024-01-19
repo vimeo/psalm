@@ -32,6 +32,7 @@ use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TPropertiesOf;
+use Psalm\Type\Atomic\TSatisfiedBy;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTypeAlias;
 use Psalm\Type\Atomic\TValueOf;
@@ -341,6 +342,22 @@ final class TypeExpander
             || $return_type instanceof TValueOf
         ) {
             return self::expandKeyOfValueOf(
+                $codebase,
+                $return_type,
+                $self_class,
+                $static_class_type,
+                $parent_class,
+                $evaluate_class_constants,
+                $evaluate_conditional_types,
+                $final,
+                $expand_generic,
+                $expand_templates,
+                $throw_on_unresolvable_constant,
+            );
+        }
+
+        if ($return_type instanceof TSatisfiedBy) {
+            return self::expandTSatisfiedBy(
                 $codebase,
                 $return_type,
                 $self_class,
@@ -1095,5 +1112,44 @@ final class TypeExpander
         }
 
         return array_values($new_return_types->getAtomicTypes());
+    }
+
+
+    /**
+     * @return non-empty-list<Atomic>
+     */
+    private static function expandTSatisfiedBy(
+        Codebase $codebase,
+        TSatisfiedBy &$return_type,
+        ?string $self_class,
+        string|TNamedObject|TTemplateParam|null $static_class_type,
+        ?string $parent_class,
+        bool $evaluate_class_constants = true,
+        bool $evaluate_conditional_types = false,
+        bool $final = false,
+        bool $expand_generic = false,
+        bool $expand_templates = false,
+        bool $throw_on_unresolvable_constant = false,
+    ): array {
+        // Expand class constants to their atomics
+        $type_atomics = [];
+        foreach ($return_type->type->as_type->getAtomicTypes() as $type_param) {
+            $type_param_expanded = self::expandAtomic(
+                $codebase,
+                $type_param,
+                $self_class,
+                $static_class_type,
+                $parent_class,
+                $evaluate_class_constants,
+                $evaluate_conditional_types,
+                $final,
+                $expand_generic,
+                $expand_templates,
+                $throw_on_unresolvable_constant,
+            );
+            $type_atomics = [...$type_atomics, ...$type_param_expanded];
+        }
+
+        return $type_atomics;
     }
 }

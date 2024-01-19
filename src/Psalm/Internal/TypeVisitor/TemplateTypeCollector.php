@@ -8,6 +8,7 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
+use Psalm\Type\Atomic\TTemplateSatisfiedBy;
 use Psalm\Type\TypeNode;
 use Psalm\Type\TypeVisitor;
 use Psalm\Type\Union;
@@ -24,7 +25,13 @@ final class TemplateTypeCollector extends TypeVisitor
 
     protected function enterNode(TypeNode $type): ?int
     {
-        if ($type instanceof TTemplateParam) {
+        if ($type instanceof TTemplateSatisfiedBy) {
+            $this->template_types[] = new TTemplateParam(
+                $type->param_name,
+                $type->as,
+                $type->defining_class,
+            );
+        } elseif ($type instanceof TTemplateParam) {
             $this->template_types[] = $type;
         } elseif ($type instanceof TTemplateParamClass) {
             $extends = $type->as_type;

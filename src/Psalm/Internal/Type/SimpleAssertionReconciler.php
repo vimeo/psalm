@@ -68,6 +68,7 @@ use Psalm\Type\Atomic\TNumericString;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TResource;
+use Psalm\Type\Atomic\TSatisfiedBy;
 use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -290,6 +291,10 @@ final class SimpleAssertionReconciler extends Reconciler
         }
 
         $assertion_type = $assertion->getAtomicType();
+
+        while ($assertion_type instanceof TSatisfiedBy) {
+            $assertion_type = $assertion_type->type->as_type;
+        }
 
         if ($assertion_type instanceof TObject) {
             return self::reconcileObject(
