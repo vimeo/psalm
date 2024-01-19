@@ -42,7 +42,7 @@ final class LoopScope
     public array $vars_possibly_in_scope = [];
 
     /**
-     * @var array<string, bool>
+     * @var array<string, bool|int>
      */
     public array $protected_var_ids = [];
 

@@ -78,8 +78,8 @@ final class SwitchCaseAnalyzer
 
         $case_context = clone $original_context;
 
-        if ($codebase->alter_code) {
-            $case_context->branch_point = $case_context->branch_point ?: (int) $stmt->getAttribute('startFilePos');
+        if ($codebase->alter_code && $case_context->branch_point === null) {
+            $case_context->branch_point = (int) $stmt->getAttribute('startFilePos');
         }
 
         $case_scope = $case_context->case_scope = new CaseScope($case_context);

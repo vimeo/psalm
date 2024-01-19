@@ -4,15 +4,10 @@ namespace Psalm\Internal\Analyzer\Statements\Block;
 
 use PhpParser;
 use Psalm\Context;
-use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Scope\LoopScope;
-use UnexpectedValueException;
 
 use function array_merge;
-use function count;
-use function in_array;
 use function is_string;
 
 /**
@@ -56,113 +51,15 @@ final class ForAnalyzer
 
         $while_true = !$stmt->cond && !$stmt->init && !$stmt->loop;
 
-        $pre_context = null;
-
-        if ($while_true) {
-            $pre_context = clone $context;
-        }
-
-        $for_context = clone $context;
-
-        $for_context->inside_loop = true;
-        $for_context->break_types[] = 'loop';
-
-        $codebase = $statements_analyzer->getCodebase();
-
-        if ($codebase->alter_code) {
-            $for_context->branch_point = $for_context->branch_point ?: (int) $stmt->getAttribute('startFilePos');
-        }
-
-        $loop_scope = new LoopScope($for_context, $context);
-
-        $loop_scope->protected_var_ids = array_merge(
-            $assigned_var_ids,
-            $context->protected_var_ids,
-        );
-
-        if (LoopAnalyzer::analyze(
+        return LoopAnalyzer::analyzeForOrWhile(
             $statements_analyzer,
-            $stmt->stmts,
+            $stmt,
+            $context,
+            $while_true,
+            $init_var_types,
+            $assigned_var_ids,
             $stmt->cond,
             $stmt->loop,
-            $loop_scope,
-            $inner_loop_context,
-        ) === false) {
-            return false;
-        }
-
-        if (!$inner_loop_context) {
-            throw new UnexpectedValueException('There should be an inner loop context');
-        }
-
-        $always_enters_loop = false;
-
-        foreach ($stmt->cond as $cond) {
-            if ($cond_type = $statements_analyzer->node_data->getType($cond)) {
-                $always_enters_loop = $cond_type->isAlwaysTruthy();
-            }
-
-            if (count($stmt->init) === 1
-                && count($stmt->cond) === 1
-                && $cond instanceof PhpParser\Node\Expr\BinaryOp
-                && ($cond_value = $statements_analyzer->node_data->getType($cond->right))
-                && ($cond_value->isSingleIntLiteral() || $cond_value->isSingleStringLiteral())
-                && $cond->left instanceof PhpParser\Node\Expr\Variable
-                && is_string($cond->left->name)
-                && isset($init_var_types[$cond->left->name])
-                && $init_var_types[$cond->left->name]->isSingleIntLiteral()
-            ) {
-                $init_value = $init_var_types[$cond->left->name]->getSingleLiteral()->value;
-                $cond_value = $cond_value->getSingleLiteral()->value;
-
-                if ($cond instanceof PhpParser\Node\Expr\BinaryOp\Smaller && $init_value < $cond_value) {
-                    $always_enters_loop = true;
-                    break;
-                }
-
-                if ($cond instanceof PhpParser\Node\Expr\BinaryOp\SmallerOrEqual && $init_value <= $cond_value) {
-                    $always_enters_loop = true;
-                    break;
-                }
-
-                if ($cond instanceof PhpParser\Node\Expr\BinaryOp\Greater && $init_value > $cond_value) {
-                    $always_enters_loop = true;
-                    break;
-                }
-
-                if ($cond instanceof PhpParser\Node\Expr\BinaryOp\GreaterOrEqual && $init_value >= $cond_value) {
-                    $always_enters_loop = true;
-                    break;
-                }
-            }
-        }
-
-        if ($while_true) {
-            $always_enters_loop = true;
-        }
-
-        $can_leave_loop = !$while_true
-            || in_array(ScopeAnalyzer::ACTION_BREAK, $loop_scope->final_actions, true);
-
-        if ($always_enters_loop && $can_leave_loop) {
-            LoopAnalyzer::setLoopVars($inner_loop_context, $context, $loop_scope);
-        }
-
-        $for_context->loop_scope = null;
-
-        if ($can_leave_loop) {
-            $context->vars_possibly_in_scope = array_merge(
-                $context->vars_possibly_in_scope,
-                $for_context->vars_possibly_in_scope,
-            );
-        } elseif ($pre_context) {
-            $context->vars_possibly_in_scope = $pre_context->vars_possibly_in_scope;
-        }
-
-        if ($context->collect_exceptions) {
-            $context->mergeExceptions($for_context);
-        }
-
-        return null;
+        );
     }
 }
