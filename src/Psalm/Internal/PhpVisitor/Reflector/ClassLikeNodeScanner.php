@@ -415,8 +415,16 @@ final class ClassLikeNodeScanner
                     if ($template_map[1] !== null && $template_map[2] !== null) {
                         if (trim($template_map[2])) {
                             $type_string = $template_map[2];
+                            $default_type_string = null;
                             try {
-                                $type_string = CommentAnalyzer::splitDocLine($type_string)[0];
+                                $type_string_split = CommentAnalyzer::splitDocLine($type_string);
+                                if (isset($type_string_split[1])
+                                    && isset($type_string_split[2])
+                                    && $type_string_split[1] === '='
+                                ) {
+                                    $default_type_string = $type_string_split[2];
+                                }
+                                $type_string = $type_string_split[0];
                             } catch (DocblockParseException $e) {
                                 throw new DocblockParseException(
                                     $type_string . ' is not a valid type: ' . $e->getMessage(),
@@ -447,6 +455,37 @@ final class ClassLikeNodeScanner
                             $storage->template_types[$template_name] = [
                                 $fq_classlike_name => $template_type,
                             ];
+
+                            if ($default_type_string !== null) {
+                                $default_type_string = CommentAnalyzer::sanitizeDocblockType($default_type_string);
+                                try {
+                                    $default_template_type = TypeParser::parseTokens(
+                                        TypeTokenizer::getFullyQualifiedTokens(
+                                            $default_type_string,
+                                            $this->aliases,
+                                            $storage->template_types,
+                                            $this->type_aliases,
+                                        ),
+                                        null,
+                                        $storage->template_types,
+                                        $this->type_aliases,
+                                    );
+                                } catch (TypeParseTreeException $e) {
+                                    $storage->docblock_issues[] = new InvalidDocblock(
+                                        $e->getMessage() . ' in docblock for ' . $fq_classlike_name,
+                                        $name_location ?? $class_location,
+                                    );
+
+                                    continue;
+                                }
+
+                                $storage->default_template_types[$template_name] = [
+                                    $fq_classlike_name => $default_template_type,
+                                ];
+                            } else {
+                                $storage->default_template_types[$template_name] = 
+                                    $storage->template_types[$template_name];
+                            }
                         } else {
                             $storage->docblock_issues[] = new InvalidDocblock(
                                 'Template missing as type',

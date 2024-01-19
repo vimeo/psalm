@@ -113,6 +113,54 @@ function array_combine(array $arr, array $arr2) {}
 - `@template` tag order matters for class docblocks, as they dictate the order in which those generic parameters are referenced in docblocks.
 - The names of your templated types (e.g. `TKey`, `TValue`) don't matter outside the scope of the class or function in which they're declared.
 
+## Default template values
+
+By default, if a class template parameter is not initialized in the constructor or by a `@var` annotation, Psalm will initialize it to `mixed`.  
+
+However, a custom default initial type can also by provided using the following syntax: 
+
+```php
+<?php
+
+/**
+ * Template T can have any type (`mixed`), but if it's not specified, it will default to `never`.
+ * 
+ * @template T as mixed = never
+ */
+class MyContainer {
+  /** @var list<T> */
+  private array $values = [];
+
+  /** @param T $value */
+  public function addValue($value): void {
+    $this->values []= $value;
+  }
+
+  /** @return list<T> */
+  public function getValue(): array {
+    return $this->values;
+  }
+}
+
+$t1 = new MyContainer;
+
+/** @psalm-trace $t1 */; // MyContainer<never>
+
+// InvalidArgument: Argument 1 of MyContainer::addValue expects never, but 123 provided
+$t1->addValue(123); 
+
+
+/** @var MyContainer<int> Always specify template parameters! */
+$t2 = new MyContainer;
+
+/** @psalm-trace $t2 */; // MyContainer<int>
+
+// OK!
+$t2->addValue(123); 
+```
+
+This can be often useful, like in the above example, to always force specification of a template type when constructing generic objects by specifying `never` as default type: `never` is the [bottom type](https://psalm.dev/docs/annotating_code/type_syntax/top_bottom_types/#never), and thus all usages of methods relying on an *uninitialized* template type will use `never` and will emit Psalm issues, essentially warning the user to explicitly specify a template parameter when constructing the class.  
+
 ## @param class-string&lt;T&gt;
 
 Psalm also allows you to parameterize class types

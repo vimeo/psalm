@@ -735,8 +735,8 @@ class SplPriorityQueue implements Iterator, Countable {
  * cases involving the need to uniquely identify objects.
  * @link https://php.net/manual/en/class.splobjectstorage.php
  *
- * @template TObject as object
- * @template TArrayValue
+ * @template TObject as object = never
+ * @template TArrayValue as mixed = never
  * @template-implements ArrayAccess<TObject, TArrayValue>
  * @template-implements Iterator<int, TObject>
  */

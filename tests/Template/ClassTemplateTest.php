@@ -4211,6 +4211,28 @@ class ClassTemplateTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'defaultTemplateType' => [
+                'code' => '<?php
+                    /**
+                     * @template T as mixed = never
+                     */
+                    class a {
+                        public function __construct() {}
+                    }
+                    
+                    $a = new a;',
+                'assertions' => [
+                    '$a===' => 'a<never>',
+                ],
+            ],
+            'initializeSplObjectStorage' => [
+                'code' => '<?php
+                    $a = new SplObjectStorage();
+                ',
+                'assertions' => [
+                    '$a===' => 'SplObjectStorage<never, never>',
+                ],
+            ],
         ];
     }
 
