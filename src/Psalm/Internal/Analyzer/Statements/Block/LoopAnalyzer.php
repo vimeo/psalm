@@ -490,23 +490,7 @@ final class LoopAnalyzer
         }
 
         if ($always_enters_loop) {
-            foreach ($continue_context->vars_in_scope as $var_id => $type) {
-                // if there are break statements in the loop it's not certain
-                // that the loop has finished executing, so the assertions at the end
-                // the loop in the while conditional may not hold
-                if (in_array(ScopeAnalyzer::ACTION_BREAK, $loop_scope->final_actions, true)
-                    || in_array(ScopeAnalyzer::ACTION_CONTINUE, $loop_scope->final_actions, true)
-                ) {
-                    if (isset($loop_scope->possibly_defined_loop_parent_vars[$var_id])) {
-                        $loop_parent_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
-                            $type,
-                            $loop_scope->possibly_defined_loop_parent_vars[$var_id],
-                        );
-                    }
-                } else {
-                    $loop_parent_context->vars_in_scope[$var_id] = $type;
-                }
-            }
+            self::setLoopVars($continue_context, $loop_parent_context, $loop_scope);
         }
 
         if ($inner_do_context) {
@@ -520,6 +504,27 @@ final class LoopAnalyzer
         );
 
         return null;
+    }
+
+    public static function setLoopVars(Context $inner_context, Context $context, LoopScope $loop_scope): void
+    {
+        foreach ($inner_context->vars_in_scope as $var_id => $type) {
+            // if there are break statements in the loop it's not certain
+            // that the loop has finished executing, so the assertions at the end
+            // the loop in the while conditional may not hold
+            if (in_array(ScopeAnalyzer::ACTION_BREAK, $loop_scope->final_actions, true)
+                || in_array(ScopeAnalyzer::ACTION_CONTINUE, $loop_scope->final_actions, true)
+            ) {
+                if (isset($loop_scope->possibly_defined_loop_parent_vars[$var_id])) {
+                    $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                        $type,
+                        $loop_scope->possibly_defined_loop_parent_vars[$var_id],
+                    );
+                }
+            } else {
+                $context->vars_in_scope[$var_id] = $type;
+            }
+        }
     }
 
     private static function updateLoopScopeContexts(
