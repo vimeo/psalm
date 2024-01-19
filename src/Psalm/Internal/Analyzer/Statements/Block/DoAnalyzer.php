@@ -7,11 +7,9 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
-use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Internal\Scope\LoopScope;
-use Psalm\Type;
 use Psalm\Type\Reconciler;
 use UnexpectedValueException;
 
@@ -138,21 +136,7 @@ final class DoAnalyzer
                 );
         }
 
-        foreach ($inner_loop_context->vars_in_scope as $var_id => $type) {
-            // if there are break statements in the loop it's not certain
-            // that the loop has finished executing, so the assertions at the end
-            // the loop in the while conditional may not hold
-            if (in_array(ScopeAnalyzer::ACTION_BREAK, $loop_scope->final_actions, true)) {
-                if (isset($loop_scope->possibly_defined_loop_parent_vars[$var_id])) {
-                    $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
-                        $type,
-                        $loop_scope->possibly_defined_loop_parent_vars[$var_id],
-                    );
-                }
-            } else {
-                $context->vars_in_scope[$var_id] = $type;
-            }
-        }
+        LoopAnalyzer::setLoopVars($inner_loop_context, $context, $loop_scope);
 
         $do_context->loop_scope = null;
 
