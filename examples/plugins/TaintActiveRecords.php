@@ -2,8 +2,6 @@
 
 namespace Psalm\Example\Plugin;
 
-use Exception;
-use phpDocumentor\Reflection\DocBlock\Tags\Var_;
 use PhpParser\Node\Expr\PropertyFetch;
 use PhpParser\Node\Expr;
 use Psalm\Plugin\EventHandler\AddTaintsInterface;
