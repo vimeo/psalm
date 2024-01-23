@@ -21,10 +21,10 @@ class TaintBadDataPlugin implements AddTaintsInterface
     {
         $expr = $event->getExpr();
 
-        if (!$expr instanceof Variable) {
-            return [];
+        if ($expr instanceof Variable && $expr->name === 'bad_data') {
+            return TaintKindGroup::ALL_INPUT;
         }
 
-        return $expr->name === 'bad_data' ? TaintKindGroup::ALL_INPUT : [];
+        return [];
     }
 }
