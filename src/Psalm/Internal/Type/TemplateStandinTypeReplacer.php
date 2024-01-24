@@ -1254,7 +1254,6 @@ final class TemplateStandinTypeReplacer
         Atomic $container_type_part,
         ?array &$container_type_params_covariant = null
     ): array {
-        $_ = null;
         if ($input_type_part instanceof TGenericObject || $input_type_part instanceof TIterable) {
             $input_type_params = $input_type_part->type_params;
         } elseif ($codebase->classlike_storage_provider->has($input_type_part->value)) {
@@ -1290,7 +1289,6 @@ final class TemplateStandinTypeReplacer
             $replacement_templates = [];
 
             if ($input_template_types
-                && (!$input_type_part instanceof TGenericObject || !$input_type_part->remapped_params)
                 && (!$container_type_part instanceof TGenericObject || !$container_type_part->remapped_params)
             ) {
                 foreach ($input_template_types as $template_name => $_) {
