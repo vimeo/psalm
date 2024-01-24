@@ -132,6 +132,7 @@ use const SCANDIR_SORT_NONE;
 final class Config
 {
     private const DEFAULT_FILE_NAME = 'psalm.xml';
+    public const DEFAULT_BASELINE_NAME = 'psalm-baseline.xml';
     final public const CONFIG_NAMESPACE = 'https://getpsalm.org/schema/config';
     final public const REPORT_INFO = 'info';
     final public const REPORT_ERROR = 'error';

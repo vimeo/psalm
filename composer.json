@@ -116,7 +116,7 @@
         ],
         "verify-callmap": "@php phpunit tests/Internal/Codebase/InternalCallMapHandlerTest.php",
         "psalm": "@php ./psalm",
-        "psalm-set-baseline": "@php ./psalm --set-baseline=psalm-baseline.xml",
+        "psalm-set-baseline": "@php ./psalm --set-baseline",
         "tests": [
             "@lint",
             "@cs",

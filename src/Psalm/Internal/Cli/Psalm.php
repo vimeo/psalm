@@ -133,7 +133,7 @@ final class Psalm
         'report:',
         'report-show-info:',
         'root:',
-        'set-baseline:',
+        'set-baseline::',
         'show-info:',
         'show-snippet:',
         'stats',
@@ -272,7 +272,6 @@ final class Psalm
         if (isset($options['debug-emitted-issues'])) {
             $config->debug_emitted_issues = true;
         }
-
 
         setlocale(LC_CTYPE, 'C');
 
@@ -641,7 +640,7 @@ final class Psalm
     }
 
     /**
-     * @param array{"set-baseline": string, ...} $options
+     * @param array{"set-baseline": mixed, ...} $options
      * @return array<string,array<string,array{o:int, s: list<string>}>>
      */
     private static function generateBaseline(
@@ -652,29 +651,34 @@ final class Psalm
     ): array {
         fwrite(STDERR, 'Writing error baseline to file...' . PHP_EOL);
 
+        $errorBaseline = ((string) $options['set-baseline']) ?: $config->error_baseline;
+
         try {
             $issue_baseline = ErrorBaseline::read(
                 new FileProvider,
-                $options['set-baseline'],
+                $errorBaseline,
             );
         } catch (ConfigException) {
             $issue_baseline = [];
         }
 
+        echo $errorBaseline;
         ErrorBaseline::create(
             new FileProvider,
-            $options['set-baseline'],
+            $errorBaseline,
             IssueBuffer::getIssuesData(),
             $config->include_php_versions_in_error_baseline || isset($options['include-php-versions']),
         );
 
-        fwrite(STDERR, "Baseline saved to {$options['set-baseline']}.");
+        fwrite(STDERR, "Baseline saved to $errorBaseline.");
 
-        CliUtils::updateConfigFile(
-            $config,
-            $path_to_config ?? $current_dir,
-            $options['set-baseline'],
-        );
+        if($options['set-baseline'] && $options['set-baseline'] !== $config->error_baseline) {
+            CliUtils::updateConfigFile(
+                $config,
+                $path_to_config ?? $current_dir,
+                $errorBaseline,
+            );
+        }
 
         fwrite(STDERR, PHP_EOL);
 
@@ -1037,7 +1041,7 @@ final class Psalm
     ): array {
         $issue_baseline = [];
 
-        if (isset($options['set-baseline']) && is_string($options['set-baseline'])) {
+        if (isset($options['set-baseline'])) {
             if ($paths_to_check !== null) {
                 fwrite(STDERR, PHP_EOL . 'Cannot generate baseline when checking specific files' . PHP_EOL);
                 exit(1);
@@ -1285,10 +1289,12 @@ final class Psalm
                 Output the taint graph using the DOT language – requires --taint-analysis
 
         Issue baselines:
-            --set-baseline=PATH
+            --set-baseline[=PATH]
                 Save all current error level issues to a file, to mark them as info in subsequent runs
 
                 Add --include-php-versions to also include a list of PHP extension versions
+
+                Default value is `psalm-baseline.xml`
 
             --use-baseline=PATH
                 Allows you to use a baseline other than the default baseline provided in your config
