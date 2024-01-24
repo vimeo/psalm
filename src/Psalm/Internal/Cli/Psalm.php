@@ -672,7 +672,7 @@ final class Psalm
 
         fwrite(STDERR, "Baseline saved to $errorBaseline.");
 
-        if($options['set-baseline'] && $options['set-baseline'] !== $config->error_baseline) {
+        if ($options['set-baseline'] && $options['set-baseline'] !== $config->error_baseline) {
             CliUtils::updateConfigFile(
                 $config,
                 $path_to_config ?? $current_dir,
