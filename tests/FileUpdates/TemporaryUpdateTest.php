@@ -603,7 +603,7 @@ class TemporaryUpdateTest extends TestCase
 
                             class A {
                                 public function foo() : void {
-                                    throw new Error("bad", 5);
+                                    throw new Error("bad", []);
                                 }
                             }',
                     ],
@@ -613,7 +613,7 @@ class TemporaryUpdateTest extends TestCase
 
                             class A {
                                 public function foo() : void {
-                                    throw new Error("bad", 5);
+                                    throw new Error("bad", []);
                                 }
                             }',
                     ],
@@ -657,7 +657,7 @@ class TemporaryUpdateTest extends TestCase
 
                             class A {
                                 public function foo() : void {
-                                    throw new E("bad", 5);
+                                    throw new E("bad", []);
                                 }
                             }',
                     ],
@@ -667,7 +667,7 @@ class TemporaryUpdateTest extends TestCase
 
                             class A {
                                 public function foo() : void {
-                                    throw new E("bad", 5);
+                                    throw new E("bad", []);
                                 }
                             }',
                     ],
@@ -707,7 +707,7 @@ class TemporaryUpdateTest extends TestCase
 
                             class A {
                                 public function foo() : void {
-                                    throw new Error("bad", 5);
+                                    throw new Error("bad", []);
                                 }
                             }',
                     ],
@@ -717,7 +717,7 @@ class TemporaryUpdateTest extends TestCase
 
                             class A {
                                 public function foo() : void {
-                                    throw new Error("bad", 5);
+                                    throw new Error("bad", []);
                                 }
                             }',
                     ],
@@ -755,7 +755,7 @@ class TemporaryUpdateTest extends TestCase
 
                             class A {
                                 public function foo() : void {
-                                    throw new E("bad", 5);
+                                    throw new E("bad", []);
                                 }
                             }',
                     ],
@@ -765,7 +765,7 @@ class TemporaryUpdateTest extends TestCase
 
                             class A {
                                 public function foo() : void {
-                                    throw new E("bad", 5);
+                                    throw new E("bad", []);
                                 }
                             }',
                     ],
