@@ -46,9 +46,12 @@ final class EncapsulatedStringAnalyzer
                 return false;
             }
 
-            $part_type = $statements_analyzer->node_data->getType($part);
-
-            if ($part_type !== null) {
+            if ($part instanceof EncapsedStringPart) {
+                if ($literal_string !== null) {
+                    $literal_string .= $part->value;
+                }
+                $non_empty = $non_empty || $part->value !== "";
+            } elseif ($part_type = $statements_analyzer->node_data->getType($part)) {
                 $casted_part_type = CastAnalyzer::castStringAttempt(
                     $statements_analyzer,
                     $context,
@@ -110,11 +113,6 @@ final class EncapsulatedStringAnalyzer
                         }
                     }
                 }
-            } elseif ($part instanceof EncapsedStringPart) {
-                if ($literal_string !== null) {
-                    $literal_string .= $part->value;
-                }
-                $non_empty = $non_empty || $part->value !== "";
             } else {
                 $all_literals = false;
                 $literal_string = null;
