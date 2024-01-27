@@ -1355,6 +1355,7 @@ final class ArgumentAnalyzer
                         } else {
                             if (!$param_type->hasString()
                                 && !$param_type->hasArray()
+                                && $context->check_functions
                                 && CallAnalyzer::checkFunctionExists(
                                     $statements_analyzer,
                                     $function_id,
