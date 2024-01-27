@@ -147,23 +147,25 @@ final class ClassLikes
 
     private Scanner $scanner;
 
+    private Reflection $reflection;
+
     public function __construct(
         Config $config,
         ClassLikeStorageProvider $storage_provider,
         FileReferenceProvider $file_reference_provider,
         StatementsProvider $statements_provider,
-        Scanner $scanner
+        Scanner $scanner,
+        Reflection $reflection,
     ) {
         $this->config = $config;
         $this->classlike_storage_provider = $storage_provider;
         $this->file_reference_provider = $file_reference_provider;
         $this->statements_provider = $statements_provider;
         $this->scanner = $scanner;
-
-        $this->collectPredefinedClassLikes();
+        $this->reflection = $reflection;
     }
 
-    private function collectPredefinedClassLikes(): void
+    public function collectPredefinedClassLikes(): void
     {
         /** @var array<int, string> */
         $predefined_classes = get_declared_classes();
@@ -174,10 +176,7 @@ final class ClassLikes
             $reflection_class = new ReflectionClass($predefined_class);
 
             if (!$reflection_class->isUserDefined() && $reflection_class->name === $predefined_class) {
-                $predefined_class_lc = strtolower($predefined_class);
-                $this->existing_classlikes_lc[$predefined_class_lc] = true;
-                $this->existing_classes_lc[$predefined_class_lc] = true;
-                $this->existing_classes[$predefined_class] = true;
+                $this->reflection->registerClass($reflection_class);
             }
         }
 
@@ -190,10 +189,7 @@ final class ClassLikes
             $reflection_class = new ReflectionClass($predefined_interface);
 
             if (!$reflection_class->isUserDefined() && $reflection_class->name === $predefined_interface) {
-                $predefined_interface_lc = strtolower($predefined_interface);
-                $this->existing_classlikes_lc[$predefined_interface_lc] = true;
-                $this->existing_interfaces_lc[$predefined_interface_lc] = true;
-                $this->existing_interfaces[$predefined_interface] = true;
+                $this->reflection->registerClass($reflection_class);
             }
         }
     }
@@ -356,6 +352,7 @@ final class ClassLikes
             }
         }
 
+        // fixme: this is some crazy hack, figure out what's going on
         if (!isset($this->existing_classes_lc[$fq_class_name_lc])
             || !$this->existing_classes_lc[$fq_class_name_lc]
             || !$this->classlike_storage_provider->has($fq_class_name_lc)
@@ -396,13 +393,14 @@ final class ClassLikes
     ): bool {
         $fq_class_name_lc = strtolower($this->getUnAliasedName($fq_class_name));
 
+        // fixme: this is some crazy hack, figure out what's going on
         if (!isset($this->existing_interfaces_lc[$fq_class_name_lc])
             || !$this->existing_interfaces_lc[$fq_class_name_lc]
             || !$this->classlike_storage_provider->has($fq_class_name_lc)
         ) {
             if ((
-                !isset($this->existing_classes_lc[$fq_class_name_lc])
-                    || $this->existing_classes_lc[$fq_class_name_lc]
+                !isset($this->existing_interfaces_lc[$fq_class_name_lc])
+                    || $this->existing_interfaces_lc[$fq_class_name_lc]
                 )
                 && !$this->classlike_storage_provider->has($fq_class_name_lc)
             ) {
@@ -463,13 +461,14 @@ final class ClassLikes
     ): bool {
         $fq_class_name_lc = strtolower($this->getUnAliasedName($fq_class_name));
 
+        // fixme: this is some crazy hack, figure out what's going on
         if (!isset($this->existing_enums_lc[$fq_class_name_lc])
             || !$this->existing_enums_lc[$fq_class_name_lc]
             || !$this->classlike_storage_provider->has($fq_class_name_lc)
         ) {
             if ((
-                !isset($this->existing_classes_lc[$fq_class_name_lc])
-                    || $this->existing_classes_lc[$fq_class_name_lc]
+                !isset($this->existing_enums_lc[$fq_class_name_lc])
+                    || $this->existing_enums_lc[$fq_class_name_lc]
                 )
                 && !$this->classlike_storage_provider->has($fq_class_name_lc)
             ) {

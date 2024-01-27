@@ -29,6 +29,7 @@ use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralClassString;
@@ -42,11 +43,15 @@ use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Union;
 use ReflectionProperty;
+use UnitEnum;
 
 use function ctype_digit;
+use function get_class;
+use function gettype;
 use function is_array;
 use function is_float;
 use function is_int;
+use function is_object;
 use function is_string;
 use function spl_object_id;
 
@@ -358,7 +363,7 @@ final class ConstantTypeResolver
     /**
      * Note: This takes an array, but any array should only contain other arrays and scalars.
      *
-     * @param  array|string|int|float|bool|null $value
+     * @param  array|string|int|float|bool|null|object $value
      */
     public static function getLiteralTypeFromScalarValue($value): Atomic
     {
@@ -399,6 +404,10 @@ final class ConstantTypeResolver
             return new TNull();
         }
 
-        throw new InvalidArgumentException('$value must be a scalar.');
+        if (is_object($value) && $value instanceof UnitEnum) {
+            return new TEnumCase(get_class($value), $value->name);
+        }
+
+        throw new InvalidArgumentException('$value must be a scalar or enum case, ' . gettype($value) . ' given');
     }
 }

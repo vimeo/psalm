@@ -273,6 +273,9 @@ final class ProjectAnalyzer
         }
 
         self::$instance = $this;
+
+
+        $this->codebase->classlikes->collectPredefinedClassLikes();
     }
 
     private function clearCacheDirectoryIfConfigOrComposerLockfileChanged(): void

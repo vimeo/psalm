@@ -134,6 +134,13 @@ final class IntersectionTypeTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
             ],
+            'interfacePlusInternalInterface' => [
+                'code' => <<<'PHP'
+                <?php
+                interface I {}
+                function f(SessionHandlerInterface&I $_p): void {}
+                PHP,
+            ],
         ];
     }
 

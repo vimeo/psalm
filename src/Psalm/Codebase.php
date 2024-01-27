@@ -357,6 +357,7 @@ final class Codebase
             $providers->file_reference_provider,
             $providers->statements_provider,
             $this->scanner,
+            $reflection,
         );
 
         $this->properties = new Properties(
