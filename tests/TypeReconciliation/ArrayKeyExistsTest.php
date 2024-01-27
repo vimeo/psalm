@@ -507,6 +507,19 @@ class ArrayKeyExistsTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'keyExistsAsAliasForArrayKeyExists' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param array<string, string> $arr
+                     */
+                    function foo(array $arr): void {
+                        if (key_exists("a", $arr)) {
+                            echo $arr["a"];
+                        }
+                    }
+                PHP,
+            ],
         ];
     }
 
