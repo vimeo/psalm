@@ -51,7 +51,6 @@ use function gettype;
 use function is_array;
 use function is_float;
 use function is_int;
-use function is_object;
 use function is_string;
 use function spl_object_id;
 
@@ -404,8 +403,9 @@ final class ConstantTypeResolver
             return new TNull();
         }
 
-        if (is_object($value) && $value instanceof UnitEnum) {
-            return new TEnumCase(get_class($value), $value->name);
+        if ($value instanceof UnitEnum) {
+            $value_name = (string) $value->name;
+            return new TEnumCase(get_class($value), $value_name);
         }
 
         throw new InvalidArgumentException('$value must be a scalar or enum case, ' . gettype($value) . ' given');
