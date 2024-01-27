@@ -1735,6 +1735,8 @@ final class Codebase
     /**
      * @param list<CompletionItem> $items
      * @return list<CompletionItem>
+     * @deprecated to be removed in Psalm 6
+     * @api fix deprecation problem "PossiblyUnusedMethod: Cannot find any calls to method"
      */
     public function filterCompletionItemsByBeginLiteralPart(array $items, string $literal_part): array
     {
