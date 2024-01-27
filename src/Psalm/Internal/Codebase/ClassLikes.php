@@ -155,7 +155,7 @@ final class ClassLikes
         FileReferenceProvider $file_reference_provider,
         StatementsProvider $statements_provider,
         Scanner $scanner,
-        Reflection $reflection,
+        Reflection $reflection
     ) {
         $this->config = $config;
         $this->classlike_storage_provider = $storage_provider;
