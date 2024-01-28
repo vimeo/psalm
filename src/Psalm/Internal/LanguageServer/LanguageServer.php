@@ -721,7 +721,7 @@ final class LanguageServer extends Dispatcher
             $diagnostics = array_map(
                 function (IssueData $issue_data): Diagnostic {
                     //$check_name = $issue->check_name;
-                    $description = $issue_data->message;
+                    $description = '[' . $issue_data->type . '] ' . $issue_data->message;
                     $severity = $issue_data->severity;
 
                     $start_line = max($issue_data->line_from, 1);
