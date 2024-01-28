@@ -126,10 +126,6 @@ final class ExistingAtomicStaticCallAnalyzer
                     }
 
                     if (!isset($context->initialized_methods[(string) $appearing_method_id])) {
-                        if ($context->initialized_methods === null) {
-                            $context->initialized_methods = [];
-                        }
-
                         $context->initialized_methods[(string) $appearing_method_id] = true;
 
                         $file_analyzer->getMethodMutations($appearing_method_id, $context);

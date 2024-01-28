@@ -110,10 +110,6 @@ abstract class CallAnalyzer
                         return;
                     }
 
-                    if ($context->initialized_methods === null) {
-                        $context->initialized_methods = [];
-                    }
-
                     $context->initialized_methods[(string) $method_id] = true;
                 }
 
@@ -191,10 +187,6 @@ abstract class CallAnalyzer
 
             if (isset($context->initialized_methods[(string) $declaring_method_id])) {
                 return;
-            }
-
-            if ($context->initialized_methods === null) {
-                $context->initialized_methods = [];
             }
 
             $context->initialized_methods[(string) $declaring_method_id] = true;
