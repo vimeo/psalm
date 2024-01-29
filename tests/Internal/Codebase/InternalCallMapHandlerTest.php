@@ -142,7 +142,6 @@ class InternalCallMapHandlerTest extends TestCase
         'oci_result',
         'ocigetbufferinglob',
         'ocisetbufferinglob',
-        'recursiveiteratoriterator::__construct', // Class used in CallMap does not exist: recursiveiterator
         'sqlsrv_fetch_array',
         'sqlsrv_fetch_object',
         'sqlsrv_get_field',
