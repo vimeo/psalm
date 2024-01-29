@@ -2055,7 +2055,9 @@ final class AssertionFinder
 
     protected static function hasArrayKeyExistsCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
     {
-        return $stmt->name instanceof PhpParser\Node\Name && strtolower($stmt->name->getFirst()) === 'array_key_exists';
+        return $stmt->name instanceof PhpParser\Node\Name
+            && (strtolower($stmt->name->getFirst()) === 'array_key_exists'
+                || strtolower($stmt->name->getFirst()) === 'key_exists');
     }
 
     /**
