@@ -174,7 +174,6 @@ class InternalCallMapHandlerTest extends TestCase
     private static array $ignoredReturnTypeOnlyFunctions = [
         'appenditerator::getinneriterator' => ['8.1', '8.2', '8.3'],
         'appenditerator::getiteratorindex' => ['8.1', '8.2', '8.3'],
-        'arrayobject::getiterator' => ['8.1', '8.2', '8.3'],
         'cachingiterator::getinneriterator' => ['8.1', '8.2', '8.3'],
         'callbackfilteriterator::getinneriterator' => ['8.1', '8.2', '8.3'],
         'curl_multi_getcontent',
