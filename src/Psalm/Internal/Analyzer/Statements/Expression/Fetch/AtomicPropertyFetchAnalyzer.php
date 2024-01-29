@@ -1141,6 +1141,8 @@ final class AtomicPropertyFetchAnalyzer
 
             $override_property_visibility = $interface_storage->override_property_visibility;
 
+            $intersects_with_enum = false;
+
             foreach ($intersection_types as $intersection_type) {
                 if ($intersection_type instanceof TNamedObject
                     && $codebase->classExists($intersection_type->value)
@@ -1149,12 +1151,19 @@ final class AtomicPropertyFetchAnalyzer
                     $class_exists = true;
                     return;
                 }
+                if ($intersection_type instanceof TNamedObject
+                    && (in_array($intersection_type->value, ['UnitEnum', 'BackedEnum'], true)
+                        || in_array('UnitEnum', $codebase->getParentInterfaces($intersection_type->value)))
+                ) {
+                    $intersects_with_enum = true;
+                }
             }
 
             if (!$class_exists &&
                 //interfaces can't have properties. Except when they do... In PHP Core, they can
                 !in_array($fq_class_name, ['UnitEnum', 'BackedEnum'], true) &&
-                !in_array('UnitEnum', $codebase->getParentInterfaces($fq_class_name))
+                !in_array('UnitEnum', $codebase->getParentInterfaces($fq_class_name)) &&
+                !$intersects_with_enum
             ) {
                 if (IssueBuffer::accepts(
                     new NoInterfaceProperties(
