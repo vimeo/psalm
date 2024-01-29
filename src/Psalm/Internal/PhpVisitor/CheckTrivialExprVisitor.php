@@ -9,10 +9,7 @@ use PhpParser;
  */
 final class CheckTrivialExprVisitor extends PhpParser\NodeVisitorAbstract
 {
-    /**
-     * @var array<int, PhpParser\Node\Expr>
-     */
-    protected array $non_trivial_expr = [];
+    private bool $has_non_trivial_expr = false;
 
     private function checkNonTrivialExpr(PhpParser\Node\Expr $node): bool
     {
@@ -55,7 +52,7 @@ final class CheckTrivialExprVisitor extends PhpParser\NodeVisitorAbstract
         if ($node instanceof PhpParser\Node\Expr) {
             // Check for Non-Trivial Expression first
             if ($this->checkNonTrivialExpr($node)) {
-                $this->non_trivial_expr[] = $node;
+                $this->has_non_trivial_expr = true;
                 return PhpParser\NodeTraverser::STOP_TRAVERSAL;
             }
 
@@ -70,11 +67,8 @@ final class CheckTrivialExprVisitor extends PhpParser\NodeVisitorAbstract
         return null;
     }
 
-    /**
-     * @return array<int, PhpParser\Node\Expr>
-     */
-    public function getNonTrivialExpr(): array
+    public function hasNonTrivialExpr(): bool
     {
-        return $this->non_trivial_expr;
+        return $this->has_non_trivial_expr;
     }
 }
