@@ -26,9 +26,11 @@ use ReflectionType;
 use function array_shift;
 use function class_exists;
 use function count;
+use function enum_exists;
 use function explode;
 use function function_exists;
 use function in_array;
+use function interface_exists;
 use function is_array;
 use function is_int;
 use function json_encode;
@@ -631,6 +633,8 @@ class InternalCallMapHandlerTest extends TestCase
         } catch (InvalidArgumentException $e) {
             if (preg_match('/^Could not get class storage for (.*)$/', $e->getMessage(), $matches)
                 && !class_exists($matches[1])
+                && !interface_exists($matches[1])
+                && !enum_exists($matches[1])
             ) {
                 $this->fail("Class used in CallMap does not exist: {$matches[1]}");
             }
