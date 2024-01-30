@@ -84,6 +84,11 @@ final class PsalmRestarter extends XdebugHandler
             }
         }
 
+        // opcache.save_comments is required for json mapper (used in language server) to work
+        if ($opcache_loaded && in_array(ini_get('opcache.save_comments'), ['0', 'false', 0, false])) {
+            return true;
+        }
+
         return $default || $this->required;
     }
 
@@ -150,6 +155,10 @@ final class PsalmRestarter extends XdebugHandler
                 '-dopcache.preload=',
                 '-dopcache.log_verbosity_level=0',
             ];
+        }
+
+        if ($opcache_loaded) {
+            $additional_options[] = '-dopcache.save_comments=1';
         }
 
         array_splice(
