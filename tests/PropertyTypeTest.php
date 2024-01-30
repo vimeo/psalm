@@ -3829,6 +3829,15 @@ class PropertyTypeTest extends TestCase
                 ',
                 'error_message' => 'UndefinedPropertyAssignment',
             ],
+            'nativeMixedPropertyWithNoConstructor' => [
+                'code' => <<< 'PHP'
+                    <?php
+                    class A {
+                        public mixed $foo;
+                    }
+                PHP,
+                'error_message' => 'MissingConstructor',
+            ],
         ];
     }
 }
