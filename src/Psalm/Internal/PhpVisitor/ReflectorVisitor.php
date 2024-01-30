@@ -546,7 +546,7 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
                 }
 
                 throw new UnexpectedValueException(
-                    'There should be function storages for line ' . $this->file_path . ':' . $node->getLine(),
+                    'There should be function storages for line ' . $this->file_path . ':' . $node->getStartLine(),
                 );
             }
 
