@@ -1649,6 +1649,14 @@ class FunctionCallTest extends TestCase
                         }
                     }',
             ],
+            'callableArgumentWithFunctionExists' => [
+                'code' => <<<'PHP'
+                    <?php
+                    if (function_exists('foo')) {
+                        register_shutdown_function('foo');
+                    }
+                    PHP,
+            ],
             'pregMatch' => [
                 'code' => '<?php
                     function takesInt(int $i) : void {}

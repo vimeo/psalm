@@ -85,6 +85,7 @@ return [
     'ob_end_clean' => true,
     'ob_get_clean' => true,
     'readfile' => true,
+    'readgzfile' => true,
     'printf' => true,
     'var_dump' => true,
     'phpinfo' => true,
