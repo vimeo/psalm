@@ -567,20 +567,7 @@ final class AtomicStaticCallAnalyzer
             '__callstatic',
         );
 
-        $callstatic_method_exists = $codebase->methods->methodExists(
-            $callstatic_id,
-            $context->calling_method_id,
-            $codebase->collect_locations
-                ? new CodeLocation($statements_analyzer, $stmt_name)
-                : null,
-            !$context->collect_initializations
-                && !$context->collect_mutations
-                ? $statements_analyzer
-                : null,
-            $statements_analyzer->getFilePath(),
-            true,
-            $context->insideUse(),
-        );
+        $callstatic_method_exists = $codebase->methods->methodExists($callstatic_id);
 
         if (!$naive_method_exists
             || !MethodAnalyzer::isMethodVisible(
