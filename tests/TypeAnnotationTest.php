@@ -884,6 +884,23 @@ class TypeAnnotationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'inlineComments' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @psalm-type Foo=array{
+                     *   a: string, // comment
+                     *   b: string, // comment
+                     * }
+                     */
+                    class A {
+                        /**
+                         * @psalm-param Foo $foo
+                         */
+                        public function bar(array $foo): void {}
+                    }
+                PHP,
+            ],
         ];
     }
 
