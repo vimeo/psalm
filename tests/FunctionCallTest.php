@@ -1118,6 +1118,24 @@ class FunctionCallTest extends TestCase
                     }
                     function filterFloatWithDefault(string $s) : float {
                         return filter_var($s, FILTER_VALIDATE_FLOAT, ["options" => ["default" => 5.0]]);
+                    }
+
+                    /**
+                     * @param mixed $c
+                     * @return int<1, 100>|stdClass|array<never, never>
+                     */
+                    function filterNumericIntWithDefault($c) {
+                        if (is_numeric($c)) {
+                            return filter_var($c, FILTER_VALIDATE_INT, [
+                             "options" => [
+                                "default"   => new stdClass(),
+                                "min_range" => 1,
+                                "max_range" => 100,
+                            ],
+                            ]);
+                        }
+
+                        return array();
                     }',
             ],
             'callVariableVar' => [
