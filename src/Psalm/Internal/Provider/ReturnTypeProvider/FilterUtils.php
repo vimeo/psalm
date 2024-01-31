@@ -919,7 +919,7 @@ final class FilterUtils
                         $filter_types[] = new TFloat();
                     }
 
-                    if ($atomic_type instanceof TMixed) {
+                    if ($atomic_type instanceof TMixed || $atomic_type instanceof TNumeric) {
                         $filter_types[] = new TFloat();
                     }
 
@@ -994,6 +994,7 @@ final class FilterUtils
                 } else {
                     $int_type = new TInt();
                 }
+
                 foreach ($input_type->getAtomicTypes() as $atomic_type) {
                     if ($atomic_type instanceof TLiteralInt) {
                         if ($min_range !== null && $min_range > $atomic_type->value) {
@@ -1108,7 +1109,7 @@ final class FilterUtils
                         $filter_types[] = $int_type;
                     }
 
-                    if ($atomic_type instanceof TMixed) {
+                    if ($atomic_type instanceof TMixed || $atomic_type instanceof TNumeric) {
                         $filter_types[] = $int_type;
                     }
 
