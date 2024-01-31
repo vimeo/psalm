@@ -32,12 +32,8 @@ use Psalm\Issue\MixedMethodCall;
 use Psalm\Issue\UndefinedClass;
 use Psalm\Issue\UndefinedMethod;
 use Psalm\IssueBuffer;
-use Psalm\Node\Expr\VirtualArray;
-use Psalm\Node\Expr\VirtualArrayItem;
 use Psalm\Node\Expr\VirtualMethodCall;
 use Psalm\Node\Expr\VirtualVariable;
-use Psalm\Node\Scalar\VirtualString;
-use Psalm\Node\VirtualArg;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
@@ -57,7 +53,6 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
 use function array_filter;
-use function array_map;
 use function array_values;
 use function assert;
 use function count;
@@ -569,6 +564,8 @@ final class AtomicStaticCallAnalyzer
 
         $callstatic_method_exists = $codebase->methods->methodExists($callstatic_id);
 
+        $with_pseudo = $callstatic_method_exists;
+
         if (!$naive_method_exists
             || !MethodAnalyzer::isMethodVisible(
                 $method_id,
@@ -680,36 +677,6 @@ final class AtomicStaticCallAnalyzer
                         return false;
                     }
                 }
-
-                $array_values = array_map(
-                    static fn(PhpParser\Node\Arg $arg): PhpParser\Node\Expr\ArrayItem => new VirtualArrayItem(
-                        $arg->value,
-                        null,
-                        false,
-                        $arg->getAttributes(),
-                    ),
-                    $args,
-                );
-
-                $args = [
-                    new VirtualArg(
-                        new VirtualString((string) $method_id, $stmt_name->getAttributes()),
-                        false,
-                        false,
-                        $stmt_name->getAttributes(),
-                    ),
-                    new VirtualArg(
-                        new VirtualArray($array_values, $stmt->getAttributes()),
-                        false,
-                        false,
-                        $stmt->getAttributes(),
-                    ),
-                ];
-
-                $method_id = new MethodIdentifier(
-                    $fq_class_name,
-                    '__callstatic',
-                );
             } elseif ($found_method_and_class_storage
                 && ($config->use_phpdoc_method_without_magic_or_parent || $class_storage->parent_class)
             ) {
@@ -797,6 +764,7 @@ final class AtomicStaticCallAnalyzer
             new CodeLocation($statements_analyzer, $stmt),
             $statements_analyzer->getSuppressedIssues(),
             $context->calling_method_id,
+            $with_pseudo,
         );
 
         if (!$does_method_exist) {
