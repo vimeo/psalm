@@ -81,7 +81,6 @@ use function is_string;
 use function preg_match;
 use function preg_replace;
 use function preg_split;
-use function str_replace;
 use function strtolower;
 use function trim;
 use function usort;
@@ -1913,10 +1912,6 @@ final class ClassLikeNodeScanner
                 continue;
             }
 
-            $var_line = preg_replace('/[ \t]+/', ' ', preg_replace('@^[ \t]*\*@m', '', $var_line));
-            $var_line = preg_replace('/,\n\s+\}/', '}', $var_line);
-            $var_line = str_replace("\n", '', $var_line);
-
             $var_line_parts = preg_split('/( |=)/', $var_line, -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY);
 
             if (!$var_line_parts) {
@@ -1949,7 +1944,7 @@ final class ClassLikeNodeScanner
                 array_shift($var_line_parts);
             }
 
-            $type_string = str_replace("\n", '', implode('', $var_line_parts));
+            $type_string = implode('', $var_line_parts);
             try {
                 $type_string = CommentAnalyzer::splitDocLine($type_string)[0];
             } catch (DocblockParseException $e) {
