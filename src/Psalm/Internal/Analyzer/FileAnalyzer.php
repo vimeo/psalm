@@ -237,7 +237,7 @@ class FileAnalyzer extends SourceAnalyzer
                         $this->suppressed_issues,
                         new ClassLikeNameOptions(
                             true,
-                            false,
+                            true,
                             true,
                             true,
                             true,
