@@ -720,6 +720,7 @@ class PropertyTypeTest extends TestCase
                 'assertions' => [
                     '$owner' => 'DOMDocument',
                 ],
+                'ignored_issues' => ['InternalMethod'],
             ],
             'propertyMapHydration' => [
                 'code' => '<?php

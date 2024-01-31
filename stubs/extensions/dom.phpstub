@@ -256,6 +256,9 @@ class DOMDocumentFragment extends DOMNode implements DOMParentNode
     /** @readonly */
     public int $childElementCount;
 
+    /**
+     * @psalm-internal DOMDocument::createDocumentFragment
+     */
     public function __construct() {}
 
     public function appendXML(string $data): bool {}
@@ -729,6 +732,10 @@ class DOMAttr extends DOMNode
      */
     public string $localName;
 
+    /**
+     * @psalm-internal DOMDocument::createAttribute
+     * @psalm-internal DOMDocument::createAttributeNS
+     */
     public function __construct(string $name, string $value = '') {}
 
     public function isId(): bool {}
@@ -765,6 +772,10 @@ class DOMElement extends DOMNode implements DOMParentNode, DOMChildNode
      */
     public string $localName;
 
+    /**
+     * @psalm-internal DOMDocument::createElement
+     * @psalm-internal DOMDocument::createElementNS
+     */
     public function __construct(string $qualifiedName, ?string $value = null, string $namespace = '') {}
 
     public function getAttribute(string $qualifiedName): string {}
@@ -874,6 +885,9 @@ class DOMText extends DOMCharacterData
     /** @readonly */
     public string $wholeText;
 
+    /**
+     * @psalm-internal DOMDocument::createTextNode
+     */
     public function __construct(string $data = '') {}
 
     public function isWhitespaceInElementContent(): bool {}
@@ -892,11 +906,17 @@ class DOMText extends DOMCharacterData
 
 class DOMComment extends DOMCharacterData
 {
+    /**
+     * @psalm-internal DOMDocument::createComment
+     */
     public function __construct(string $data = '') {}
 }
 
 class DOMCdataSection extends DOMText
 {
+    /**
+     * @psalm-internal DOMDocument::createCDATASection
+     */
     public function __construct(string $data) {}
 }
 
@@ -954,6 +974,9 @@ class DOMEntity extends DOMNode
 
 class DOMEntityReference extends DOMNode
 {
+    /**
+     * @psalm-internal DOMDocument::createEntityReference
+     */
     public function __construct(string $name) {}
 }
 
@@ -963,6 +986,9 @@ class DOMProcessingInstruction extends DOMNode
     public string $target;
     public string $data;
 
+    /**
+     * @psalm-internal DOMDocument::createProcessingInstruction
+     */
     public function __construct(string $name, string $value = '') {}
 }
 
