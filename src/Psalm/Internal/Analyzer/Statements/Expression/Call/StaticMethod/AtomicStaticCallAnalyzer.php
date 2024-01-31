@@ -564,7 +564,8 @@ final class AtomicStaticCallAnalyzer
 
         $callstatic_method_exists = $codebase->methods->methodExists($callstatic_id);
 
-        $with_pseudo = $callstatic_method_exists;
+        $with_pseudo = $callstatic_method_exists
+            || $codebase->config->use_phpdoc_method_without_magic_or_parent;
 
         if (!$naive_method_exists
             || !MethodAnalyzer::isMethodVisible(
@@ -573,8 +574,7 @@ final class AtomicStaticCallAnalyzer
                 $statements_analyzer->getSource(),
             )
             || $fake_method_exists
-            || ($found_method_and_class_storage
-                && ($config->use_phpdoc_method_without_magic_or_parent || $class_storage->parent_class))
+            || $found_method_and_class_storage
         ) {
             if ($callstatic_method_exists) {
                 $callstatic_declaring_id = $codebase->methods->getDeclaringMethodId($callstatic_id);
@@ -677,9 +677,7 @@ final class AtomicStaticCallAnalyzer
                         return false;
                     }
                 }
-            } elseif ($found_method_and_class_storage
-                && ($config->use_phpdoc_method_without_magic_or_parent || $class_storage->parent_class)
-            ) {
+            } elseif ($found_method_and_class_storage) {
                 [$pseudo_method_storage, $defining_class_storage] = $found_method_and_class_storage;
 
                 if (self::checkPseudoMethod(
@@ -696,7 +694,9 @@ final class AtomicStaticCallAnalyzer
                     return false;
                 }
 
-                if ($pseudo_method_storage->return_type) {
+                if ($pseudo_method_storage->return_type
+                    && ($naive_method_exists || $with_pseudo)
+                ) {
                     return true;
                 }
             } elseif ($stmt->class instanceof PhpParser\Node\Name && $stmt->class->getFirst() === 'parent'
