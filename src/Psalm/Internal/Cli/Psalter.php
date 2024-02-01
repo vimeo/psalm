@@ -194,16 +194,16 @@ final class Psalter
             exit(1);
         }
 
-        $current_dir = (string)getcwd() . DIRECTORY_SEPARATOR;
+        $current_dir = (string) getcwd();
 
         if (isset($options['r']) && is_string($options['r'])) {
             $root_path = realpath($options['r']);
 
-            if (!$root_path) {
+            if ($root_path === false) {
                 die('Could not locate root directory ' . $current_dir . DIRECTORY_SEPARATOR . $options['r'] . PHP_EOL);
             }
 
-            $current_dir = $root_path . DIRECTORY_SEPARATOR;
+            $current_dir = $root_path;
         }
 
         $vendor_dir = CliUtils::getVendorDir($current_dir);

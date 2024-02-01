@@ -485,7 +485,7 @@ final class Psalm
      */
     private static function generateConfig(string $current_dir, array &$args): void
     {
-        if (file_exists($current_dir . 'psalm.xml')) {
+        if (file_exists($current_dir . DIRECTORY_SEPARATOR . 'psalm.xml')) {
             die('A config file already exists in the current directory' . PHP_EOL);
         }
 
@@ -535,7 +535,7 @@ final class Psalm
                 die($e->getMessage() . PHP_EOL);
             }
 
-            if (!file_put_contents($current_dir . 'psalm.xml', $template_contents)) {
+            if (!file_put_contents($current_dir . DIRECTORY_SEPARATOR . 'psalm.xml', $template_contents)) {
                 die('Could not write to psalm.xml' . PHP_EOL);
             }
 
@@ -779,7 +779,7 @@ final class Psalm
             die($e->getMessage() . PHP_EOL);
         }
 
-        if (!file_put_contents($current_dir . 'psalm.xml', $template_contents)) {
+        if (!file_put_contents($current_dir . DIRECTORY_SEPARATOR . 'psalm.xml', $template_contents)) {
             die('Could not write to psalm.xml' . PHP_EOL);
         }
 
@@ -840,12 +840,12 @@ final class Psalm
             exit(1);
         }
 
-        $current_dir = $cwd . DIRECTORY_SEPARATOR;
+        $current_dir = $cwd;
 
         if (isset($options['r']) && is_string($options['r'])) {
             $root_path = realpath($options['r']);
 
-            if (!$root_path) {
+            if ($root_path === false) {
                 fwrite(
                     STDERR,
                     'Could not locate root directory ' . $current_dir . DIRECTORY_SEPARATOR . $options['r'] . PHP_EOL,
@@ -853,7 +853,7 @@ final class Psalm
                 exit(1);
             }
 
-            $current_dir = $root_path . DIRECTORY_SEPARATOR;
+            $current_dir = $root_path;
         }
 
         return $current_dir;
