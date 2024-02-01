@@ -368,7 +368,7 @@ final class Methods
             }
         }
 
-        $declaring_method_id = $this->getDeclaringMethodId($method_id);
+        $declaring_method_id = $this->getDeclaringMethodId($method_id, true);
 
         $callmap_id = $declaring_method_id ?? $method_id;
 
@@ -424,7 +424,7 @@ final class Methods
         }
 
         if ($declaring_method_id) {
-            $storage = $this->getStorage($declaring_method_id);
+            $storage = $this->getStorage($declaring_method_id, true);
 
             $params = $storage->params;
 
@@ -1088,7 +1088,7 @@ final class Methods
 
     public function getUserMethodStorage(MethodIdentifier $method_id): ?MethodStorage
     {
-        $declaring_method_id = $this->getDeclaringMethodId($method_id);
+        $declaring_method_id = $this->getDeclaringMethodId($method_id, true);
 
         if (!$declaring_method_id) {
             if (InternalCallMapHandler::inCallMap((string) $method_id)) {
@@ -1098,7 +1098,7 @@ final class Methods
             throw new UnexpectedValueException('$storage should not be null for ' . $method_id);
         }
 
-        $storage = $this->getStorage($declaring_method_id);
+        $storage = $this->getStorage($declaring_method_id, true);
 
         if (!$storage->location) {
             return null;
