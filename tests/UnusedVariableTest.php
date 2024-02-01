@@ -1012,6 +1012,23 @@ class UnusedVariableTest extends TestCase
                         A::$method();
                     }',
             ],
+            'usedAsClassConstFetch' => [
+                'code' => '<?php
+                    class A {
+                        const bool something = false;
+
+                        public function foo() : void {
+                            $var = "something";
+
+                            if (rand(0, 1)) {
+                                static::{$var};
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
             'usedAsStaticPropertyAssign' => [
                 'code' => '<?php
                     class A {

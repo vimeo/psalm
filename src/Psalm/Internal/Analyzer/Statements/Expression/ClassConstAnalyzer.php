@@ -206,7 +206,15 @@ final class ClassConstAnalyzer
             }
 
             if (!$stmt->name instanceof PhpParser\Node\Identifier) {
-                return true;
+                $was_inside_general_use = $context->inside_general_use;
+
+                $context->inside_general_use = true;
+
+                $ret = ExpressionAnalyzer::analyze($statements_analyzer, $stmt->name, $context);
+
+                $context->inside_general_use = $was_inside_general_use;
+
+                return $ret;
             }
 
             $const_id = $fq_class_name . '::' . $stmt->name;
