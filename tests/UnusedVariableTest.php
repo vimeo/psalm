@@ -1012,7 +1012,7 @@ class UnusedVariableTest extends TestCase
                         A::$method();
                     }',
             ],
-            'usedAsStaticPropertyName' => [
+            'usedAsStaticPropertyAssign' => [
                 'code' => '<?php
                     class A {
                         private static bool $something = false;
@@ -1022,6 +1022,20 @@ class UnusedVariableTest extends TestCase
 
                             if (rand(0, 1)) {
                                 static::${$var} = true;
+                            }
+                        }
+                    }',
+            ],
+            'usedAsStaticPropertyFetch' => [
+                'code' => '<?php
+                    class A {
+                        private static bool $something = false;
+
+                        public function foo() : void {
+                            $var = "something";
+
+                            if (rand(0, 1)) {
+                                static::${$var};
                             }
                         }
                     }',
