@@ -276,7 +276,8 @@ final class Psalm
 
         if (isset($options['set-baseline'])) {
             if (is_array($options['set-baseline'])) {
-                die('Only one baseline file can be created at a time' . PHP_EOL);
+                fwrite(STDERR, 'Only one baseline file can be created at a time' . PHP_EOL);
+                exit(1);
             }
         }
 
@@ -486,7 +487,8 @@ final class Psalm
     private static function generateConfig(string $current_dir, array &$args): void
     {
         if (file_exists($current_dir . DIRECTORY_SEPARATOR . 'psalm.xml')) {
-            die('A config file already exists in the current directory' . PHP_EOL);
+            fwrite(STDERR, 'A config file already exists in the current directory' . PHP_EOL);
+            exit(1);
         }
 
         $args = array_values(array_filter(
@@ -507,12 +509,14 @@ final class Psalm
         $init_source_dir = null;
         if (count($args)) {
             if (count($args) > 2) {
-                die('Too many arguments provided for psalm --init' . PHP_EOL);
+                fwrite(STDERR, 'Too many arguments provided for psalm --init' . PHP_EOL);
+                exit(1);
             }
 
             if (isset($args[1])) {
                 if (!preg_match('/^[1-8]$/', $args[1])) {
-                    die('Config strictness must be a number between 1 and 8 inclusive' . PHP_EOL);
+                    fwrite(STDERR, 'Config strictness must be a number between 1 and 8 inclusive' . PHP_EOL);
+                    exit(1);
                 }
 
                 $init_level = (int)$args[1];
@@ -532,11 +536,13 @@ final class Psalm
                     $vendor_dir,
                 );
             } catch (ConfigCreationException $e) {
-                die($e->getMessage() . PHP_EOL);
+                fwrite(STDERR, $e->getMessage() . PHP_EOL);
+                exit(1);
             }
 
-            if (!file_put_contents($current_dir . DIRECTORY_SEPARATOR . 'psalm.xml', $template_contents)) {
-                die('Could not write to psalm.xml' . PHP_EOL);
+            if (file_put_contents($current_dir . DIRECTORY_SEPARATOR . 'psalm.xml', $template_contents) === false) {
+                fwrite(STDERR, 'Could not write to psalm.xml' . PHP_EOL);
+                exit(1);
             }
 
             exit('Config file created successfully. Please re-run psalm.' . PHP_EOL);
@@ -681,7 +687,8 @@ final class Psalm
         $baselineFile = $config->error_baseline;
 
         if (empty($baselineFile)) {
-            die('Cannot update baseline, because no baseline file is configured.' . PHP_EOL);
+            fwrite(STDERR, 'Cannot update baseline, because no baseline file is configured.' . PHP_EOL);
+            exit(1);
         }
 
         try {
@@ -776,11 +783,13 @@ final class Psalm
                 $vendor_dir,
             );
         } catch (ConfigCreationException $e) {
-            die($e->getMessage() . PHP_EOL);
+            fwrite(STDERR, $e->getMessage() . PHP_EOL);
+            exit(1);
         }
 
-        if (!file_put_contents($current_dir . DIRECTORY_SEPARATOR . 'psalm.xml', $template_contents)) {
-            die('Could not write to psalm.xml' . PHP_EOL);
+        if (file_put_contents($current_dir . DIRECTORY_SEPARATOR . 'psalm.xml', $template_contents) === false) {
+            fwrite(STDERR, 'Could not write to psalm.xml' . PHP_EOL);
+            exit(1);
         }
 
         exit('Config file created successfully. Please re-run psalm.' . PHP_EOL);

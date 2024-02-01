@@ -483,7 +483,8 @@ final class CliUtils
 
         if (isset($options['php-version'])) {
             if (!is_string($options['php-version'])) {
-                die('Expecting a version number in the format x.y' . PHP_EOL);
+                fwrite(STDERR, 'Expecting a version number in the format x.y' . PHP_EOL);
+                exit(1);
             }
             $version = $options['php-version'];
             $source = 'cli';
