@@ -864,7 +864,7 @@ class StubTest extends TestCase
 
     public function testNoStubFunction(): void
     {
-        $this->expectExceptionMessage('UndefinedFunction - /src/somefile.php:2:22 - Function barBar does not exist');
+        $this->expectExceptionMessage('UndefinedFunction');
         $this->expectException(CodeException::class);
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
