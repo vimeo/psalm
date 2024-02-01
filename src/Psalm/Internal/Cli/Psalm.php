@@ -1067,7 +1067,8 @@ final class Psalm
         if ($paths_to_check !== null) {
             $filtered_issue_baseline = [];
             foreach ($paths_to_check as $path_to_check) {
-                $path_to_check = substr($path_to_check, strlen($config->base_dir));
+                // +1 to remove the initial slash from $path_to_check
+                $path_to_check = substr($path_to_check, strlen($config->base_dir) + 1);
                 if (isset($issue_baseline[$path_to_check])) {
                     $filtered_issue_baseline[$path_to_check] = $issue_baseline[$path_to_check];
                 }
