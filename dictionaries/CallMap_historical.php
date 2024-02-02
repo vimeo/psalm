@@ -11835,7 +11835,7 @@ return [
     'inotify_add_watch' => ['int|false', 'inotify_instance'=>'resource', 'pathname'=>'string', 'mask'=>'int'],
     'inotify_init' => ['resource|false'],
     'inotify_queue_len' => ['int', 'inotify_instance'=>'resource'],
-    'inotify_read' => ['array|false', 'inotify_instance'=>'resource'],
+    'inotify_read' => ['array{wd: int, mask: int, cookie: int, name: string}[]|false', 'inotify_instance'=>'resource'],
     'inotify_rm_watch' => ['bool', 'inotify_instance'=>'resource', 'watch_descriptor'=>'int'],
     'intdiv' => ['int', 'num1'=>'int', 'num2'=>'int'],
     'interface_exists' => ['bool', 'interface'=>'string', 'autoload='=>'bool'],
