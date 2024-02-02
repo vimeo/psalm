@@ -679,6 +679,42 @@ class EnumTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'stringBackedEnumCaseValueFromStringBackedEnumCaseValue' => [
+                'code' => <<<'PHP'
+                    <?php
+
+                    enum Foo: string
+                    {
+                        case Bar = 'bar';
+                    }
+
+                    enum Baz: string
+                    {
+                        case Qux = Foo::Bar->value;
+                    }
+                PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'intBackedEnumCaseValueFromIntBackedEnumCaseValue' => [
+                'code' => <<<'PHP'
+                    <?php
+
+                    enum Foo: int
+                    {
+                        case Bar = 123;
+                    }
+
+                    enum Baz: int
+                    {
+                        case Qux = Foo::Bar->value;
+                    }
+                PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
