@@ -6,6 +6,7 @@ use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\TypeVisitor\FromDocblockSetter;
 use Psalm\Storage\ImmutableNonCloneableTrait;
 use Psalm\Type\Atomic\TClassString;
+use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
@@ -185,6 +186,11 @@ final class Union implements TypeNode
      * @var array<string, TLiteralFloat>
      */
     private array $literal_float_types = [];
+
+    /**
+     * @var array<string, TEnumCase>
+     */
+    private array $enum_case_types = [];
 
     /**
      * True if the type was passed or returned by reference, or if the type refers to an object's

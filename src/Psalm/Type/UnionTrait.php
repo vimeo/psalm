@@ -21,6 +21,7 @@ use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TEmptyMixed;
+use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
@@ -97,6 +98,8 @@ trait UnionTrait
                 && ($type->as_type || $type instanceof TTemplateParamClass)
             ) {
                 $this->typed_class_strings[$key] = $type;
+            } elseif ($type instanceof TEnumCase) {
+                $this->enum_case_types[$key] = $type;
             } elseif ($type instanceof TNever) {
                 $this->explicit_never = true;
             }
@@ -1557,5 +1560,10 @@ trait UnionTrait
         }
 
         return true;
+    }
+
+    public function isSingleEnumCase(): bool
+    {
+        return count($this->types) === 1 && count($this->enum_case_types) === 1;
     }
 }

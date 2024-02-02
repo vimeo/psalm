@@ -9,6 +9,7 @@ use Psalm\Type;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TClassString;
+use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
@@ -173,6 +174,11 @@ final class MutableUnion implements TypeNode
      * @var array<string, TLiteralFloat>
      */
     private array $literal_float_types = [];
+
+    /**
+     * @var array<string, TEnumCase>
+     */
+    private array $enum_case_types = [];
 
     /**
      * True if the type was passed or returned by reference, or if the type refers to an object's

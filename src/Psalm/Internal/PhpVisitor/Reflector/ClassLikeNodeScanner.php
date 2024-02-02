@@ -1453,6 +1453,10 @@ final class ClassLikeNodeScanner
                 $fq_classlike_name,
             );
 
+            if ($case_type && $case_type->isSingleEnumCase()) {
+                $case_type = Type\Atomic\TValueOf::getValueType($case_type, $this->codebase);
+            }
+
             if ($case_type) {
                 if ($case_type->isSingleIntLiteral()) {
                     $enum_value = $case_type->getSingleIntLiteral()->value;
