@@ -1437,10 +1437,16 @@ final class ClassLikeNodeScanner
         $case_location = new CodeLocation($this->file_scanner, $stmt);
 
         if ($stmt->expr !== null) {
+            $expr = $stmt->expr;
+
+            if ($expr instanceof PhpParser\Node\Expr\PropertyFetch) {
+                $expr = $expr->var;
+            }
+
             $case_type = SimpleTypeInferer::infer(
                 $this->codebase,
                 new NodeDataProvider(),
-                $stmt->expr,
+                $expr,
                 $this->aliases,
                 $this->file_scanner,
                 $storage->constants,
