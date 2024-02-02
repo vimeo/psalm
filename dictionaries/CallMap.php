@@ -5700,7 +5700,7 @@ return [
 'ini_restore' => ['void', 'option'=>'string'],
 'ini_parse_quantity' => ['int', 'shorthand'=>'non-empty-string'],
 'ini_set' => ['string|false', 'option'=>'string', 'value'=>'string|int|float|bool|null'],
-'inotify_add_watch' => ['int', 'inotify_instance'=>'resource', 'pathname'=>'string', 'mask'=>'int'],
+'inotify_add_watch' => ['int|false', 'inotify_instance'=>'resource', 'pathname'=>'string', 'mask'=>'int'],
 'inotify_init' => ['resource|false'],
 'inotify_queue_len' => ['int', 'inotify_instance'=>'resource'],
 'inotify_read' => ['array|false', 'inotify_instance'=>'resource'],
