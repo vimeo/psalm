@@ -45,6 +45,8 @@ use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\ReferenceConstraint;
 use Psalm\Internal\Scanner\ParsedDocblock;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\TypeParser;
+use Psalm\Internal\Type\TypeTokenizer;
 use Psalm\Issue\CheckType;
 use Psalm\Issue\ComplexFunction;
 use Psalm\Issue\ComplexMethod;
@@ -678,11 +680,23 @@ final class StatementsAnalyzer extends SourceAnalyzer
                 } else {
                     try {
                         $checked_type = $context->vars_in_scope[$checked_var_id];
-                        $fq_check_type_string = Type::getFQCLNFromString(
+
+                        $path = $statements_analyzer->getRootFilePath();
+                        $file_storage = $codebase->file_storage_provider->get($path);
+
+                        $check_tokens = TypeTokenizer::getFullyQualifiedTokens(
                             $check_type_string,
                             $statements_analyzer->getAliases(),
+                            $statements_analyzer->getTemplateTypeMap(),
+                            $file_storage->type_aliases,
                         );
-                        $check_type = Type::parseString($fq_check_type_string);
+                        $check_type = TypeParser::parseTokens(
+                            $check_tokens,
+                            null,
+                            $statements_analyzer->getTemplateTypeMap() ?? [],
+                            $file_storage->type_aliases,
+                            true,
+                        );
                         /** @psalm-suppress InaccessibleProperty We just created this type */
                         $check_type->possibly_undefined = $possibly_undefined;
 
