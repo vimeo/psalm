@@ -446,6 +446,11 @@ class Config
     public $ensure_array_int_offsets_exist = false;
 
     /**
+     * @var bool
+     */
+    public $ensure_override_attribute = false;
+
+    /**
      * @var array<lowercase-string, bool>
      */
     public $forbidden_functions = [];
@@ -1081,6 +1086,7 @@ class Config
             'includePhpVersionsInErrorBaseline' => 'include_php_versions_in_error_baseline',
             'ensureArrayStringOffsetsExist' => 'ensure_array_string_offsets_exist',
             'ensureArrayIntOffsetsExist' => 'ensure_array_int_offsets_exist',
+            'ensureOverrideAttribute' => 'ensure_override_attribute',
             'reportMixedIssues' => 'show_mixed_issues',
             'skipChecksOnUnresolvableIncludes' => 'skip_checks_on_unresolvable_includes',
             'sealAllMethods' => 'seal_all_methods',
