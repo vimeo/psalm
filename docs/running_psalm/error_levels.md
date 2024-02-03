@@ -98,6 +98,7 @@ Level 5 and above allows a more non-verifiable code, and higher levels are even 
 - [CircularReference](issues/CircularReference.md)
 - [ConflictingReferenceConstraint](issues/ConflictingReferenceConstraint.md)
 - [ContinueOutsideLoop](issues/ContinueOutsideLoop.md)
+- [InvalidOverride](issues/InvalidOverride.md)
 - [InvalidTypeImport](issues/InvalidTypeImport.md)
 - [MethodSignatureMismatch](issues/MethodSignatureMismatch.md)
 - [OverriddenMethodAccess](issues/OverriddenMethodAccess.md)
