@@ -295,14 +295,28 @@ class AttributeTest extends TestCase
             ],
             'override' => [
                 'code' => '<?php
+                    class C {
+                        public function f(): void {}
+                    }
 
-                    namespace OverrideAttribute;
-
-                    use Override;
-
-                    class HelloWorld {
+                    class C2 extends C {
                         #[Override]
-                        public function __invoke() {}
+                        public function f(): void {}
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'overrideInterface' => [
+                'code' => '<?php
+                    interface I {
+                        public function f(): void;
+                    }
+
+                    interface I2 extends I {
+                        #[Override]
+                        public function f(): void;
                     }
                 ',
                 'assertions' => [],
@@ -526,6 +540,61 @@ class AttributeTest extends TestCase
 
                     function foo(#[Pure] string $str) : void {}',
                 'error_message' => 'UndefinedAttributeClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:36',
+            ],
+            'overrideWithNoParent' => [
+                'code' => '<?php
+                    class C {
+                        #[Override]
+                        public function f(): void {}
+                    }
+                ',
+                'error_message' => 'InvalidOverride - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:25',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'overrideConstructor' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-consistent-constructor
+                     */
+                    class C {
+                        public function __construct() {}
+                    }
+
+                    class C2 extends C {
+                        #[Override]
+                        public function __construct() {}
+                    }
+                ',
+                'error_message' => 'InvalidOverride - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:25',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'overridePrivate' => [
+                'code' => '<?php
+                    class C {
+                        private function f(): void {}
+                    }
+
+                    class C2 extends C {
+                        #[Override]
+                        private function f(): void {}
+                    }
+                ',
+                'error_message' => 'InvalidOverride - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'overrideInterfaceWithNoParent' => [
+                'code' => '<?php
+                    interface I {
+                        #[Override]
+                        public function f(): void;
+                    }
+                ',
+                'error_message' => 'InvalidOverride - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:25',
+                'error_levels' => [],
+                'php_version' => '8.3',
             ],
             'tooFewArgumentsToAttributeConstructor' => [
                 'code' => '<?php
