@@ -10,7 +10,6 @@
 /psalm-baseline.xml export-ignore
 /dictionaries/scripts export-ignore
 /.editorconfig export-ignore
-/examples export-ignore
 /.gitattributes export-ignore
 /.github export-ignore
 /.gitignore export-ignore
