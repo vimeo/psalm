@@ -38,6 +38,15 @@ class CheckTypeTest extends TestCase
                 $_a = new stdClass();
                 /** @psalm-check-type-exact $_a = \stdClass */',
         ];
+        yield 'allowType' => [
+            'code' => '<?php
+                namespace X;
+
+                /** @psalm-type A = int|string */
+
+                $_a = 1;
+                /** @psalm-check-type $_a = A */',
+        ];
     }
 
     public function providerInvalidCodeParse(): iterable
