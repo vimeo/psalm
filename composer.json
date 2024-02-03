@@ -94,12 +94,6 @@
             "Psalm\\Tests\\": "tests/"
         }
     },
-    "repositories": [
-        {
-            "type": "path",
-            "url": "examples/plugins/composer-based/echo-checker"
-        }
-    ],
     "minimum-stability": "dev",
     "prefer-stable": true,
     "bin": [
