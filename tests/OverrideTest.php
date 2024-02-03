@@ -2,6 +2,7 @@
 
 namespace Psalm\Tests;
 
+use Psalm\Config;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
@@ -12,9 +13,33 @@ class OverrideTest extends TestCase
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
 
+    protected function makeConfig(): Config
+    {
+        $config = parent::makeConfig();
+        $config->ensure_override_attribute = true;
+        return $config;
+    }
+
     public function providerValidCodeParse(): iterable
     {
         return [
+            'constructor' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-consistent-constructor
+                     */
+                    class C {
+                        public function __construct() {}
+                    }
+
+                    class C2 extends C {
+                        public function __construct() {}
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
             'overrideClass' => [
                 'code' => '<?php
                     class C {
@@ -62,6 +87,36 @@ class OverrideTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.3',
             ],
+            'classMissingAttribute' => [
+                'code' => '<?php
+                    class C {
+                        public function f(): void {}
+                    }
+
+                    class C2 extends C {
+                        public function f(): void {}
+                    }
+                ',
+                'error_message' => 'MissingOverrideAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'classUsingTrait' => [
+                'code' => '<?php
+                    trait T {
+                        abstract public function f(): void;
+                    }
+
+                    class C {
+                        use T;
+
+                        public function f(): void {}
+                    }
+                ',
+                'error_message' => 'MissingOverrideAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:25',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
             'constructor' => [
                 'code' => '<?php
                     /**
@@ -77,6 +132,20 @@ class OverrideTest extends TestCase
                     }
                 ',
                 'error_message' => 'InvalidOverride - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:25',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'interfaceMissingAttribute' => [
+                'code' => '<?php
+                    interface I {
+                        public function f(): void;
+                    }
+
+                    interface I2 extends I {
+                        public function f(): void;
+                    }
+                ',
+                'error_message' => 'MissingOverrideAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25',
                 'error_levels' => [],
                 'php_version' => '8.3',
             ],
