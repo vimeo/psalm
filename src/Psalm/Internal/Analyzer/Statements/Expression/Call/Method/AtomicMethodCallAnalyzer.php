@@ -884,6 +884,47 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
             if (!$class_storage->mixin_declaring_fqcln) {
                 continue;
             }
+            if (!$codebase->classlike_storage_provider->has($mixin->value)) {
+                continue;
+            }
+
+            $mixin_declaring_class_storage = $codebase->classlike_storage_provider->get(
+                $class_storage->mixin_declaring_fqcln,
+            );
+
+            $mixin_class_template_params = ClassTemplateParamCollector::collect(
+                $codebase,
+                $mixin_declaring_class_storage,
+                $codebase->classlike_storage_provider->get($fq_class_name),
+                null,
+                $lhs_type_part,
+                $lhs_var_id === '$this',
+            );
+
+            $mixin_lhs_type_part = $mixin->replaceTemplateTypesWithArgTypes(
+                new TemplateResult([], $mixin_class_template_params ?: []),
+                $codebase,
+            );
+
+            $lhs_type_expanded = TypeExpander::expandUnion(
+                $codebase,
+                new Union([$mixin_lhs_type_part]),
+                $mixin_declaring_class_storage->name,
+                $fq_class_name,
+                $class_storage->parent_class,
+                true,
+                false,
+                $class_storage->final,
+            );
+
+            $_lhs_type_part = $lhs_type_expanded->getSingleAtomic();
+            if ($_lhs_type_part instanceof TNamedObject) {
+                $mixin_lhs_type_part = $_lhs_type_part;
+            }
+
+            $mixin_class_storage = $codebase->classlike_storage_provider->get($mixin->value);
+
+            $mixin_fq_class_name = $mixin_class_storage->name;
 
             $new_method_id = new MethodIdentifier(
                 $mixin->value,
@@ -904,48 +945,15 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                 true,
                 $context->insideUse(),
             )) {
-                $mixin_declaring_class_storage = $codebase->classlike_storage_provider->get(
-                    $class_storage->mixin_declaring_fqcln,
-                );
-
-                $mixin_class_template_params = ClassTemplateParamCollector::collect(
-                    $codebase,
-                    $mixin_declaring_class_storage,
-                    $codebase->classlike_storage_provider->get($fq_class_name),
-                    null,
-                    $lhs_type_part,
-                    $lhs_var_id === '$this',
-                );
-
-                $lhs_type_part = $mixin->replaceTemplateTypesWithArgTypes(
-                    new TemplateResult([], $mixin_class_template_params ?: []),
-                    $codebase,
-                );
-
-                $lhs_type_expanded = TypeExpander::expandUnion(
-                    $codebase,
-                    new Union([$lhs_type_part]),
-                    $mixin_declaring_class_storage->name,
-                    $fq_class_name,
-                    $class_storage->parent_class,
-                    true,
-                    false,
-                    $class_storage->final,
-                );
-
-                $new_lhs_type_part = $lhs_type_expanded->getSingleAtomic();
-
-                if ($new_lhs_type_part instanceof TNamedObject) {
-                    $lhs_type_part = $new_lhs_type_part;
-                }
-
-                $mixin_class_storage = $codebase->classlike_storage_provider->get($mixin->value);
-
-                $fq_class_name = $mixin_class_storage->name;
-                $mixin_class_storage->mixin_declaring_fqcln = $class_storage->mixin_declaring_fqcln;
-                $class_storage = $mixin_class_storage;
                 $method_exists = true;
                 $naive_method_exists = true;
+            }
+
+            if ($method_exists) {
+                $lhs_type_part = $mixin_lhs_type_part;
+                $fq_class_name = $mixin_fq_class_name;
+                $mixin_class_storage->mixin_declaring_fqcln = $class_storage->mixin_declaring_fqcln;
+                $class_storage = $mixin_class_storage;
                 $method_id = $new_method_id;
             }
         }
