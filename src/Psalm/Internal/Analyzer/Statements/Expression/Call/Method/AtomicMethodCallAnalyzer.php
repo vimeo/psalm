@@ -949,12 +949,36 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                 $naive_method_exists = true;
             }
 
+            if (!$method_exists) {
+                [
+                    $mixin_lhs_type_part,
+                    $mixin_class_storage,
+                    $method_exists,
+                    $naive_method_exists,
+                    $new_method_id,
+                    $mixin_fq_class_name,
+                ] = self::handleMixins(
+                    $mixin_class_storage,
+                    $mixin_lhs_type_part,
+                    $method_name_lc,
+                    $codebase,
+                    $context,
+                    $new_method_id,
+                    $source,
+                    $stmt,
+                    $statements_analyzer,
+                    $mixin_fq_class_name,
+                    $lhs_var_id,
+                );
+            }
+
             if ($method_exists) {
                 $lhs_type_part = $mixin_lhs_type_part;
                 $fq_class_name = $mixin_fq_class_name;
                 $mixin_class_storage->mixin_declaring_fqcln = $class_storage->mixin_declaring_fqcln;
                 $class_storage = $mixin_class_storage;
                 $method_id = $new_method_id;
+                break;
             }
         }
 
