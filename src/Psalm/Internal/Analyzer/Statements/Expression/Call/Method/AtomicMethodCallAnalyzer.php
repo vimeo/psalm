@@ -833,15 +833,17 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                                 true,
                                 $context->insideUse(),
                             )) {
-                                $lhs_type_part = $lhs_type_part_new;
-                                $class_storage = $mixin_class_storage;
                                 $method_exists = true;
                                 $naive_method_exists = true;
-                                $method_id = $new_method_id;
-                            } elseif (isset($mixin_class_storage->pseudo_methods[$method_name_lc])) {
+                            }
+
+                            if (!$method_exists) {
+                                $method_exists = isset($mixin_class_storage->pseudo_methods[$method_name_lc]);
+                            }
+
+                            if ($method_exists) {
                                 $lhs_type_part = $lhs_type_part_new;
                                 $class_storage = $mixin_class_storage;
-                                $method_exists = true;
                                 $method_id = $new_method_id;
                             }
                         }
