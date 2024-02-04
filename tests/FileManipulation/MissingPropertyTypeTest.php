@@ -330,6 +330,29 @@ class MissingPropertyTypeTest extends FileManipulationTestCase
                 'issues_to_fix' => ['MissingPropertyType'],
                 'safe_types' => true,
             ],
+            'addClosurePropertyType' => [
+                'input' => <<<'PHP'
+                    <?php
+                    class A {
+                        public $u;
+                        public function __construct(Closure $u) {
+                            $this->u = $u;
+                        }
+                    }
+                PHP,
+                'output' => <<<'PHP'
+                    <?php
+                    class A {
+                        public Closure $u;
+                        public function __construct(Closure $u) {
+                            $this->u = $u;
+                        }
+                    }
+                PHP,
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPropertyType'],
+                'safe_types' => true,
+            ],
         ];
     }
 }

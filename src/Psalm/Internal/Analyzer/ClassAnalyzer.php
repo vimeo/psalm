@@ -1650,7 +1650,9 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         $allow_native_type = !$docblock_only
             && $codebase->analysis_php_version_id >= 7_04_00
             && $codebase->allow_backwards_incompatible_changes
-            && !$inferred_type->hasCallableType() // PHP does not support callable properties
+            // PHP does not support callable properties, but does allow Closure properties
+            // hasCallableType() treats Closure as a callable, but getCallableTypes() does not
+            && $inferred_type->getCallableTypes() === []
             ;
 
         $manipulator->setType(

@@ -50,7 +50,8 @@ final class TClosure extends TNamedObject
 
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
-        return false;
+        // it can, if it's just 'Closure'
+        return $this->params === null && $this->return_type === null && $this->is_pure === null;
     }
 
     /**
