@@ -1195,7 +1195,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 $fake_stmt = new VirtualClassMethod(
                     new VirtualIdentifier('__construct'),
                     [
-                        'flags' => PhpParser\Node\Stmt\Class_::MODIFIER_PUBLIC,
+                        'flags' => PhpParser\Modifiers::PUBLIC,
                         'params' => $fake_constructor_params,
                         'stmts' => $fake_constructor_stmts,
                     ],

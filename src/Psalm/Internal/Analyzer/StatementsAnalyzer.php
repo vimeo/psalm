@@ -35,7 +35,6 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\GlobalAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ReturnAnalyzer;
 use Psalm\Internal\Analyzer\Statements\StaticAnalyzer;
-use Psalm\Internal\Analyzer\Statements\ThrowAnalyzer;
 use Psalm\Internal\Analyzer\Statements\UnsetAnalyzer;
 use Psalm\Internal\Analyzer\Statements\UnusedAssignmentRemover;
 use Psalm\Internal\Codebase\DataFlowGraph;
@@ -536,8 +535,6 @@ final class StatementsAnalyzer extends SourceAnalyzer
             UnsetAnalyzer::analyze($statements_analyzer, $stmt, $context);
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Return_) {
             ReturnAnalyzer::analyze($statements_analyzer, $stmt, $context);
-        } elseif ($stmt instanceof PhpParser\Node\Stmt\Throw_) {
-            ThrowAnalyzer::analyze($statements_analyzer, $stmt, $context);
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Switch_) {
             SwitchAnalyzer::analyze($statements_analyzer, $stmt, $context);
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Break_) {
@@ -559,7 +556,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
                 $context,
                 false,
                 $global_context,
-                true,
+                $stmt,
             ) === false) {
                 return false;
             }

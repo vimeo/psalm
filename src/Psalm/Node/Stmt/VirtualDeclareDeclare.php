@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Psalm\Node\Stmt;
 
-use PhpParser\Node\Stmt\DeclareDeclare;
+use PhpParser\Node\DeclareItem;
 use Psalm\Node\VirtualNode;
 
-final class VirtualDeclareDeclare extends DeclareDeclare implements VirtualNode
+final class VirtualDeclareItem extends DeclareItem implements VirtualNode
 {
 
 }

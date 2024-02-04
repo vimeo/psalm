@@ -144,10 +144,31 @@
             </errorLevel>
         </PropertyTypeCoercion>
 
+        <InvalidArrayOffset>
+            <errorLevel type="suppress">
+                <file name="vendor/nikic/php-parser/lib/PhpParser/Node/Stmt/Class_.php" />
+                <file name="vendor/nikic/php-parser/lib/PhpParser/Node/Stmt/ClassMethod.php" />
+            </errorLevel>
+        </InvalidArrayOffset>
+
+        <InvalidPropertyAssignmentValue>
+            <errorLevel type="suppress">
+                <file name="vendor/nikic/php-parser/lib/PhpParser/Node/MatchArm.php" />
+            </errorLevel>
+        </InvalidPropertyAssignmentValue>
+
         <MixedAssignment>
             <errorLevel type="suppress">
                 <directory name="vendor/nikic/php-parser" />
             </errorLevel>
         </MixedAssignment>
+
+        <PropertyNotSetInConstructor>
+            <errorLevel type="suppress">
+                <referencedProperty name="PhpParser\Node\Const_::$namespacedName" />
+                <referencedProperty name="PhpParser\Node\Stmt\ClassLike::$namespacedName" />
+                <referencedProperty name="PhpParser\Node\Stmt\Function_::$namespacedName" />
+            </errorLevel>
+        </PropertyNotSetInConstructor>
     </issueHandlers>
 </psalm>

@@ -1186,8 +1186,7 @@ final class ProjectAnalyzer
         $analysis_php_version_id = $php_major_version * 10_000 + $php_minor_version * 100;
 
         if ($this->codebase->analysis_php_version_id !== $analysis_php_version_id) {
-            // reset lexer and parser when php version changes
-            StatementsProvider::clearLexer();
+            // reset parser when php version changes
             StatementsProvider::clearParser();
         }
 

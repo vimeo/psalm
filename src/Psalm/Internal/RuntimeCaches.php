@@ -40,7 +40,6 @@ abstract class RuntimeCaches
         FunctionLikeAnalyzer::clearCache();
         ClassLikeStorageProvider::deleteAll();
         FileStorageProvider::deleteAll();
-        StatementsProvider::clearLexer();
         StatementsProvider::clearParser();
         ParsedDocblock::resetNewlineBetweenAnnotations();
     }

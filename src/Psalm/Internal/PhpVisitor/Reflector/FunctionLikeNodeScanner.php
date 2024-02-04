@@ -6,11 +6,11 @@ namespace Psalm\Internal\PhpVisitor\Reflector;
 
 use LogicException;
 use PhpParser;
+use PhpParser\Modifiers;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\IntersectionType;
 use PhpParser\Node\Name;
 use PhpParser\Node\NullableType;
-use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\UnionType;
 use Psalm\Aliases;
 use Psalm\CodeLocation;
@@ -100,6 +100,7 @@ final class FunctionLikeNodeScanner
     public function start(
         PhpParser\Node\FunctionLike $stmt,
         bool $fake_method = false,
+        PhpParser\Comment\Doc $doc_comment = null,
     ): FunctionStorage|MethodStorage|false {
         if ($stmt instanceof PhpParser\Node\Expr\Closure
             || $stmt instanceof PhpParser\Node\Expr\ArrowFunction
@@ -411,7 +412,7 @@ final class FunctionLikeNodeScanner
             $storage->returns_by_ref = true;
         }
 
-        $doc_comment = $stmt->getDocComment();
+        $doc_comment = $stmt->getDocComment() ?? $doc_comment;
 
 
         if ($classlike_storage && !$classlike_storage->is_trait) {
@@ -618,7 +619,7 @@ final class FunctionLikeNodeScanner
                 $property_storage->location = $param_storage->location;
                 $property_storage->stmt_location = new CodeLocation($this->file_scanner, $param);
                 $property_storage->has_default = (bool)$param->default;
-                $param_type_readonly = (bool)($param->flags & PhpParser\Node\Stmt\Class_::MODIFIER_READONLY);
+                $param_type_readonly = (bool)($param->flags & PhpParser\Modifiers::READONLY);
                 $property_storage->readonly = $param_type_readonly ?: $var_comment_readonly;
                 $property_storage->allow_private_mutation = $var_comment_allow_private_mutation;
                 $param_storage->promoted_property = true;
@@ -626,18 +627,18 @@ final class FunctionLikeNodeScanner
 
                 $property_id = $fq_classlike_name . '::$' . $param_storage->name;
 
-                switch ($param->flags & Class_::VISIBILITY_MODIFIER_MASK) {
-                    case Class_::MODIFIER_PUBLIC:
+                switch ($param->flags & Modifiers::VISIBILITY_MASK) {
+                    case Modifiers::PUBLIC:
                         $property_storage->visibility = ClassLikeAnalyzer::VISIBILITY_PUBLIC;
                         $classlike_storage->inheritable_property_ids[$param_storage->name] = $property_id;
                         break;
 
-                    case Class_::MODIFIER_PROTECTED:
+                    case Modifiers::PROTECTED:
                         $property_storage->visibility = ClassLikeAnalyzer::VISIBILITY_PROTECTED;
                         $classlike_storage->inheritable_property_ids[$param_storage->name] = $property_id;
                         break;
 
-                    case Class_::MODIFIER_PRIVATE:
+                    case Modifiers::PRIVATE:
                         $property_storage->visibility = ClassLikeAnalyzer::VISIBILITY_PRIVATE;
                         break;
                 }

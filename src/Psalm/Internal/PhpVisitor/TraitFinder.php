@@ -53,7 +53,7 @@ final class TraitFinder extends PhpParser\NodeVisitorAbstract
         if ($node instanceof PhpParser\Node\Stmt\ClassLike
             || $node instanceof PhpParser\Node\FunctionLike
         ) {
-            return PhpParser\NodeTraverser::DONT_TRAVERSE_CHILDREN;
+            return PhpParser\NodeVisitor::DONT_TRAVERSE_CHILDREN;
         }
 
         return null;
