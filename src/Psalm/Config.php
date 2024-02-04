@@ -1817,7 +1817,13 @@ class Config
     public function shortenFileName(string $to): string
     {
         if (!is_file($to)) {
-            return preg_replace('/^' . preg_quote($this->base_dir . DIRECTORY_SEPARATOR, '/') . '?/', '', $to, 1);
+            // if cwd is the root directory it will be just the directory separator - trim it off first
+            return preg_replace(
+                '/^' . preg_quote(rtrim($this->base_dir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR, '/') . '/',
+                '',
+                $to,
+                1,
+            );
         }
 
         $from = $this->base_dir;
