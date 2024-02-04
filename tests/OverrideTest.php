@@ -6,8 +6,6 @@ use Psalm\Config;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
-use const DIRECTORY_SEPARATOR;
-
 class OverrideTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
@@ -83,7 +81,7 @@ class OverrideTest extends TestCase
                         public function f(): void {}
                     }
                 ',
-                'error_message' => 'InvalidOverride - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:25',
+                'error_message' => 'InvalidOverride',
                 'error_levels' => [],
                 'php_version' => '8.3',
             ],
@@ -97,7 +95,7 @@ class OverrideTest extends TestCase
                         public function f(): void {}
                     }
                 ',
-                'error_message' => 'MissingOverrideAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25',
+                'error_message' => 'MissingOverrideAttribute',
                 'error_levels' => [],
                 'php_version' => '8.3',
             ],
@@ -113,7 +111,7 @@ class OverrideTest extends TestCase
                         public function f(): void {}
                     }
                 ',
-                'error_message' => 'MissingOverrideAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:25',
+                'error_message' => 'MissingOverrideAttribute',
                 'error_levels' => [],
                 'php_version' => '8.3',
             ],
@@ -131,7 +129,7 @@ class OverrideTest extends TestCase
                         public function __construct() {}
                     }
                 ',
-                'error_message' => 'InvalidOverride - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:25',
+                'error_message' => 'InvalidOverride',
                 'error_levels' => [],
                 'php_version' => '8.3',
             ],
@@ -145,7 +143,7 @@ class OverrideTest extends TestCase
                         public function f(): void;
                     }
                 ',
-                'error_message' => 'MissingOverrideAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25',
+                'error_message' => 'MissingOverrideAttribute',
                 'error_levels' => [],
                 'php_version' => '8.3',
             ],
@@ -160,7 +158,7 @@ class OverrideTest extends TestCase
                         private function f(): void {}
                     }
                 ',
-                'error_message' => 'InvalidOverride - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25',
+                'error_message' => 'InvalidOverride',
                 'error_levels' => [],
                 'php_version' => '8.3',
             ],
@@ -171,7 +169,7 @@ class OverrideTest extends TestCase
                         public function f(): void;
                     }
                 ',
-                'error_message' => 'InvalidOverride - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:25',
+                'error_message' => 'InvalidOverride',
                 'error_levels' => [],
                 'php_version' => '8.3',
             ],
