@@ -356,6 +356,7 @@ final class ClassLikes
             }
         }
 
+        // fixme: this looks like a crazy caching hack
         if (!isset($this->existing_classes_lc[$fq_class_name_lc])
             || !$this->existing_classes_lc[$fq_class_name_lc]
             || !$this->classlike_storage_provider->has($fq_class_name_lc)
@@ -396,13 +397,14 @@ final class ClassLikes
     ): bool {
         $fq_class_name_lc = strtolower($this->getUnAliasedName($fq_class_name));
 
+        // fixme: this looks like a crazy caching hack
         if (!isset($this->existing_interfaces_lc[$fq_class_name_lc])
             || !$this->existing_interfaces_lc[$fq_class_name_lc]
             || !$this->classlike_storage_provider->has($fq_class_name_lc)
         ) {
             if ((
-                !isset($this->existing_classes_lc[$fq_class_name_lc])
-                    || $this->existing_classes_lc[$fq_class_name_lc]
+                !isset($this->existing_interfaces_lc[$fq_class_name_lc])
+                    || $this->existing_interfaces_lc[$fq_class_name_lc]
                 )
                 && !$this->classlike_storage_provider->has($fq_class_name_lc)
             ) {
@@ -463,13 +465,14 @@ final class ClassLikes
     ): bool {
         $fq_class_name_lc = strtolower($this->getUnAliasedName($fq_class_name));
 
+        // fixme: this looks like a crazy caching hack
         if (!isset($this->existing_enums_lc[$fq_class_name_lc])
             || !$this->existing_enums_lc[$fq_class_name_lc]
             || !$this->classlike_storage_provider->has($fq_class_name_lc)
         ) {
             if ((
-                !isset($this->existing_classes_lc[$fq_class_name_lc])
-                    || $this->existing_classes_lc[$fq_class_name_lc]
+                !isset($this->existing_enums_lc[$fq_class_name_lc])
+                    || $this->existing_enums_lc[$fq_class_name_lc]
                 )
                 && !$this->classlike_storage_provider->has($fq_class_name_lc)
             ) {

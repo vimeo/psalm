@@ -2406,7 +2406,6 @@ final class Codebase
 
     /**
      * @param array<string, mixed> $phantom_classes
-     * @psalm-suppress PossiblyUnusedMethod part of the public API
      */
     public function queueClassLikeForScanning(
         string $fq_classlike_name,
