@@ -1035,10 +1035,11 @@ final class AtomicPropertyFetchAnalyzer
         $case_values = [];
 
         foreach ($enum_cases as $enum_case) {
-            if (is_string($enum_case->value)) {
-                $case_values[] = Type::getAtomicStringFromLiteral($enum_case->value);
-            } elseif (is_int($enum_case->value)) {
-                $case_values[] = new TLiteralInt($enum_case->value);
+            $case_value = $enum_case->getValue($statements_analyzer->getCodebase()->classlikes);
+            if (is_string($case_value)) {
+                $case_values[] = Type::getAtomicStringFromLiteral($case_value);
+            } elseif (is_int($case_value)) {
+                $case_values[] = new TLiteralInt($case_value);
             } else {
                 // this should never happen
                 $case_values[] = new TMixed();
