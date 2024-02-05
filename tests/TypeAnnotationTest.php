@@ -908,6 +908,38 @@ class TypeAnnotationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'importFromTrait' => [
+                'code' => <<<'PHP'
+                <?php
+                /** @psalm-type _Foo = array{foo: string} */
+                trait T {}
+
+                /** @psalm-import-type _Foo from T */
+                class C {
+                    /** @param _Foo $foo */
+                    public function f(array $foo): void {
+                        echo $foo['foo'];
+                    }
+                }
+                PHP,
+            ],
+            'inlineComments' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @psalm-type Foo=array{
+                     *   a: string, // comment
+                     *   b: string, // comment
+                     * }
+                     */
+                    class A {
+                        /**
+                         * @psalm-param Foo $foo
+                         */
+                        public function bar(array $foo): void {}
+                    }
+                PHP,
+            ],
         ];
     }
 

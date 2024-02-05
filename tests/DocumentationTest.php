@@ -315,6 +315,10 @@ class DocumentationTest extends TestCase
                 case 'InvalidInterfaceImplementation':
                     $php_version = '8.1';
                     break;
+
+                case 'InvalidOverride':
+                    $php_version = '8.3';
+                    break;
             }
 
             $invalid_code_data[$issue_name] = [

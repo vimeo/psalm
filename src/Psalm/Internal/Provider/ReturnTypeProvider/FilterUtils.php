@@ -34,6 +34,7 @@ use Psalm\Type\Atomic\TNonFalsyString;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TNumericString;
+use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Union;
@@ -43,6 +44,7 @@ use function array_diff;
 use function array_keys;
 use function array_merge;
 use function filter_var;
+use function get_class;
 use function implode;
 use function in_array;
 use function preg_match;
@@ -909,7 +911,11 @@ final class FilterUtils
                         $filter_types[] = new TFloat();
                     }
 
-                    if ($atomic_type instanceof TMixed) {
+                    // only these specific classes, not any class that extends either
+                    // to avoid matching already better handled cases from above, e.g. float is numeric and scalar
+                    if ($atomic_type instanceof TMixed
+                        || get_class($atomic_type) === TNumeric::class
+                        || get_class($atomic_type) === TScalar::class) {
                         $filter_types[] = new TFloat();
                     }
 
@@ -957,7 +963,9 @@ final class FilterUtils
                     if ($atomic_type instanceof TMixed
                         || $atomic_type instanceof TString
                         || $atomic_type instanceof TInt
-                        || $atomic_type instanceof TFloat) {
+                        || $atomic_type instanceof TFloat
+                        || $atomic_type instanceof TNumeric
+                        || $atomic_type instanceof TScalar) {
                         $filter_types[] = new TBool();
                     }
 
@@ -984,6 +992,7 @@ final class FilterUtils
                 } else {
                     $int_type = new TInt();
                 }
+
                 foreach ($input_type->getAtomicTypes() as $atomic_type) {
                     if ($atomic_type instanceof TLiteralInt) {
                         if ($min_range !== null && $min_range > $atomic_type->value) {
@@ -1098,7 +1107,9 @@ final class FilterUtils
                         $filter_types[] = $int_type;
                     }
 
-                    if ($atomic_type instanceof TMixed) {
+                    if ($atomic_type instanceof TMixed
+                        || get_class($atomic_type) === TNumeric::class
+                        || get_class($atomic_type) === TScalar::class) {
                         $filter_types[] = $int_type;
                     }
 
@@ -1119,9 +1130,7 @@ final class FilterUtils
                         $filter_types[] = $atomic_type;
                     } elseif ($atomic_type instanceof TString) {
                         $filter_types[] = new TNonFalsyString();
-                    }
-
-                    if ($atomic_type instanceof TMixed) {
+                    } elseif ($atomic_type instanceof TMixed || $atomic_type instanceof TScalar) {
                         $filter_types[] = new TNonFalsyString();
                     }
 
@@ -1149,6 +1158,7 @@ final class FilterUtils
                         || $atomic_type instanceof TInt
                         || $atomic_type instanceof TFloat
                         || $atomic_type instanceof TNumeric
+                        || $atomic_type instanceof TScalar
                         || $atomic_type instanceof TMixed) {
                         $filter_types[] = new TString();
                     }
@@ -1173,11 +1183,10 @@ final class FilterUtils
                         } else {
                             $filter_types[] = $atomic_type;
                         }
-                    }
-
-                    if ($atomic_type instanceof TMixed
+                    } elseif ($atomic_type instanceof TMixed
                         || $atomic_type instanceof TInt
-                        || $atomic_type instanceof TFloat) {
+                        || $atomic_type instanceof TFloat
+                        || $atomic_type instanceof TScalar) {
                         $filter_types[] = $string_type;
                     }
 
@@ -1220,7 +1229,7 @@ final class FilterUtils
                         continue;
                     }
 
-                    if ($atomic_type instanceof TMixed) {
+                    if ($atomic_type instanceof TMixed || $atomic_type instanceof TScalar) {
                         $filter_types[] = new TString();
                     }
 
@@ -1300,7 +1309,7 @@ final class FilterUtils
                         continue;
                     }
 
-                    if ($atomic_type instanceof TMixed) {
+                    if ($atomic_type instanceof TMixed || $atomic_type instanceof TScalar) {
                         $filter_types[] = new TString();
                     }
 
@@ -1319,7 +1328,7 @@ final class FilterUtils
                         continue;
                     }
 
-                    if ($atomic_type instanceof TMixed) {
+                    if ($atomic_type instanceof TMixed || $atomic_type instanceof TScalar) {
                         $filter_types[] = new TString();
                     }
 
@@ -1376,7 +1385,7 @@ final class FilterUtils
                         continue;
                     }
 
-                    if ($atomic_type instanceof TMixed) {
+                    if ($atomic_type instanceof TMixed || $atomic_type instanceof TScalar) {
                         $filter_types[] = new TNumericString();
                         $filter_types[] = Type::getAtomicStringFromLiteral('');
                     }
