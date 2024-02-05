@@ -85,6 +85,7 @@
  - [InvalidNamedArgument](issues/InvalidNamedArgument.md)
  - [InvalidNullableReturnType](issues/InvalidNullableReturnType.md)
  - [InvalidOperand](issues/InvalidOperand.md)
+ - [InvalidOverride](issues/InvalidOverride.md)
  - [InvalidParamDefault](issues/InvalidParamDefault.md)
  - [InvalidParent](issues/InvalidParent.md)
  - [InvalidPassByReference](issues/InvalidPassByReference.md)

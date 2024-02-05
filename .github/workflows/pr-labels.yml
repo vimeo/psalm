@@ -1,4 +1,4 @@
-name: Pull Request Labels
+name: Pull Request Labels (to be added by maintainers)
 on:
   pull_request:
     types: [opened, reopened, labeled, unlabeled, synchronize]
