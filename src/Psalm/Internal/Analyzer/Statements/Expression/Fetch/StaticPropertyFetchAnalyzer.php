@@ -134,12 +134,26 @@ final class StaticPropertyFetchAnalyzer
 
         if ($stmt->name instanceof PhpParser\Node\VarLikeIdentifier) {
             $prop_name = $stmt->name->name;
-        } elseif (($stmt_name_type = $statements_analyzer->node_data->getType($stmt->name))
-            && $stmt_name_type->isSingleStringLiteral()
-        ) {
-            $prop_name = $stmt_name_type->getSingleStringLiteral()->value;
         } else {
-            $prop_name = null;
+            $was_inside_general_use = $context->inside_general_use;
+
+            $context->inside_general_use = true;
+
+            if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->name, $context) === false) {
+                $context->inside_general_use = $was_inside_general_use;
+
+                return false;
+            }
+
+            $context->inside_general_use = $was_inside_general_use;
+
+            if (($stmt_name_type = $statements_analyzer->node_data->getType($stmt->name))
+                && $stmt_name_type->isSingleStringLiteral()
+            ) {
+                $prop_name = $stmt_name_type->getSingleStringLiteral()->value;
+            } else {
+                $prop_name = null;
+            }
         }
 
         if (!$prop_name) {

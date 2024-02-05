@@ -206,7 +206,25 @@ final class ClassConstAnalyzer
             }
 
             if (!$stmt->name instanceof PhpParser\Node\Identifier) {
-                return true;
+                if ($codebase->analysis_php_version_id < 8_03_00) {
+                    IssueBuffer::maybeAdd(
+                        new ParseError(
+                            'Dynamically fetching class constants and enums requires PHP 8.3',
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
+                        ),
+                        $statements_analyzer->getSuppressedIssues(),
+                    );
+                }
+
+                $was_inside_general_use = $context->inside_general_use;
+
+                $context->inside_general_use = true;
+
+                $ret = ExpressionAnalyzer::analyze($statements_analyzer, $stmt->name, $context);
+
+                $context->inside_general_use = $was_inside_general_use;
+
+                return $ret;
             }
 
             $const_id = $fq_class_name . '::' . $stmt->name;

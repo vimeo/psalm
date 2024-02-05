@@ -1012,7 +1012,43 @@ class UnusedVariableTest extends TestCase
                         A::$method();
                     }',
             ],
-            'usedAsStaticPropertyName' => [
+            'usedAsClassConstFetch' => [
+                'code' => '<?php
+                    class A {
+                        const bool something = false;
+
+                        public function foo() : void {
+                            $var = "something";
+
+                            if (rand(0, 1)) {
+                                static::{$var};
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'usedAsEnumFetch' => [
+                'code' => '<?php
+                    enum E {
+                        case C;
+                    }
+
+                    class A {
+                        public function foo() : void {
+                            $var = "C";
+
+                            if (rand(0, 1)) {
+                                E::{$var};
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'usedAsStaticPropertyAssign' => [
                 'code' => '<?php
                     class A {
                         private static bool $something = false;
@@ -1022,6 +1058,20 @@ class UnusedVariableTest extends TestCase
 
                             if (rand(0, 1)) {
                                 static::${$var} = true;
+                            }
+                        }
+                    }',
+            ],
+            'usedAsStaticPropertyFetch' => [
+                'code' => '<?php
+                    class A {
+                        private static bool $something = false;
+
+                        public function foo() : void {
+                            $var = "something";
+
+                            if (rand(0, 1)) {
+                                static::${$var};
                             }
                         }
                     }',
