@@ -738,6 +738,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                     $stmt,
                     $statements_analyzer,
                     $fq_class_name,
+                    $lhs_var_id,
                 );
         } elseif ($class_storage->mixin_declaring_fqcln
             && $class_storage->namedMixins
@@ -782,7 +783,8 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
         StatementsSource $source,
         PhpParser\Node\Expr\MethodCall $stmt,
         StatementsAnalyzer $statements_analyzer,
-        string $fq_class_name
+        string $fq_class_name,
+        ?string $lhs_var_id
     ): array {
         $method_exists = false;
         $naive_method_exists = false;
@@ -843,11 +845,35 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                                 $method_exists = isset($mixin_class_storage->pseudo_methods[$method_name_lc]);
                             }
 
+                            if (!$method_exists) {
+                                [
+                                    $lhs_type_part_new,
+                                    $mixin_class_storage,
+                                    $method_exists,
+                                    $naive_method_exists,
+                                    $new_method_id,
+                                    $mixin_fq_class_name,
+                                ] = self::handleMixins(
+                                    $mixin_class_storage,
+                                    $lhs_type_part_new,
+                                    $method_name_lc,
+                                    $codebase,
+                                    $context,
+                                    $new_method_id,
+                                    $source,
+                                    $stmt,
+                                    $statements_analyzer,
+                                    $mixin_fq_class_name,
+                                    $lhs_var_id,
+                                );
+                            }
+
                             if ($method_exists) {
                                 $lhs_type_part = $lhs_type_part_new;
                                 $class_storage = $mixin_class_storage;
                                 $method_id = $new_method_id;
                                 $fq_class_name = $mixin_fq_class_name;
+                                break;
                             }
                         }
                     }
