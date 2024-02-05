@@ -1029,6 +1029,25 @@ class UnusedVariableTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.3',
             ],
+            'usedAsEnumFetch' => [
+                'code' => '<?php
+                    enum E {
+                        case C;
+                    }
+
+                    class A {
+                        public function foo() : void {
+                            $var = "C";
+
+                            if (rand(0, 1)) {
+                                E::{$var};
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
             'usedAsStaticPropertyAssign' => [
                 'code' => '<?php
                     class A {

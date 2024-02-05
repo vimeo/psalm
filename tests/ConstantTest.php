@@ -2485,7 +2485,7 @@ class ConstantTest extends TestCase
                     $a = C::{"A"};
                 ',
                 'error_message' => 'ParseError',
-                'errors_levels' => [],
+                'error_levels' => [],
                 'php_version' => '8.2',
             ],
         ];
