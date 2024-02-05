@@ -819,6 +819,8 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                                 $lhs_type_part_new->value,
                             );
 
+                            $mixin_fq_class_name = $mixin_class_storage->name;
+
                             if ($codebase->methods->methodExists(
                                 $new_method_id,
                                 $context->calling_method_id,
@@ -845,6 +847,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                                 $lhs_type_part = $lhs_type_part_new;
                                 $class_storage = $mixin_class_storage;
                                 $method_id = $new_method_id;
+                                $fq_class_name = $mixin_fq_class_name;
                             }
                         }
                     }
