@@ -777,8 +777,31 @@ class FunctionCallTest extends TestCase
                     }',
             ],
             'allowPossiblyUndefinedClassInClassExists' => [
-                'code' => '<?php
-                    if (class_exists(Foo::class)) {}',
+                'code' => <<<'PHP'
+                    <?php
+                    if (class_exists(Foo::class)) {}
+                    PHP,
+            ],
+            'allowPossiblyUndefinedClassInInterfaceExists' => [
+                'code' => <<<'PHP'
+                    <?php
+                    if (interface_exists(Foo::class)) {}
+                    PHP,
+            ],
+            'allowPossiblyUndefinedClassInTraitExists' => [
+                'code' => <<<'PHP'
+                    <?php
+                    if (trait_exists(Foo::class)) {}
+                    PHP,
+            ],
+            'allowPossiblyUndefinedClassInEnumExists' => [
+                'code' => <<<'PHP'
+                    <?php
+                    if (enum_exists(Foo::class)) {}
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'allowConstructorAfterClassExists' => [
                 'code' => '<?php
