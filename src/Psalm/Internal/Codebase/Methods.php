@@ -628,11 +628,13 @@ final class Methods
             ) {
                 $types = [];
                 foreach ($original_class_storage->enum_cases as $case_name => $case_storage) {
+                    $case_value = $case_storage->getValue($this->classlikes);
+
                     if (UnionTypeComparator::isContainedBy(
                         $source_analyzer->getCodebase(),
-                        is_int($case_storage->value) ?
-                            Type::getInt(false, $case_storage->value) :
-                            Type::getString($case_storage->value),
+                        is_int($case_value) ?
+                            Type::getInt(false, $case_value) :
+                            Type::getString($case_value),
                         $first_arg_type,
                     )) {
                         $types[] = new TEnumCase($original_fq_class_name, $case_name);

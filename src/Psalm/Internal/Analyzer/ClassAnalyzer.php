@@ -2490,7 +2490,8 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
 
         $seen_values = [];
         foreach ($storage->enum_cases as $case_storage) {
-            if ($case_storage->value !== null && $storage->enum_type === null) {
+            $case_value = $case_storage->getValue($this->getCodebase()->classlikes);
+            if ($case_value !== null && $storage->enum_type === null) {
                 IssueBuffer::maybeAdd(
                     new InvalidEnumCaseValue(
                         'Case of a non-backed enum should not have a value',
@@ -2498,7 +2499,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                         $storage->name,
                     ),
                 );
-            } elseif ($case_storage->value === null && $storage->enum_type !== null) {
+            } elseif ($case_value === null && $storage->enum_type !== null) {
                 IssueBuffer::maybeAdd(
                     new InvalidEnumCaseValue(
                         'Case of a backed enum should have a value',
@@ -2506,9 +2507,9 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                         $storage->name,
                     ),
                 );
-            } elseif ($case_storage->value !== null) {
-                if ((is_int($case_storage->value) && $storage->enum_type === 'string')
-                    || (is_string($case_storage->value) && $storage->enum_type === 'int')
+            } elseif ($case_value !== null) {
+                if ((is_int($case_value) && $storage->enum_type === 'string')
+                    || (is_string($case_value) && $storage->enum_type === 'int')
                 ) {
                     IssueBuffer::maybeAdd(
                         new InvalidEnumCaseValue(
@@ -2520,8 +2521,8 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 }
             }
 
-            if ($case_storage->value !== null) {
-                if (in_array($case_storage->value, $seen_values, true)) {
+            if ($case_value !== null) {
+                if (in_array($case_value, $seen_values, true)) {
                     IssueBuffer::maybeAdd(
                         new DuplicateEnumCaseValue(
                             'Enum case values should be unique',
@@ -2530,7 +2531,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                         ),
                     );
                 } else {
-                    $seen_values[] = $case_storage->value;
+                    $seen_values[] = $case_value;
                 }
             }
         }

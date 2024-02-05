@@ -63,10 +63,11 @@ final class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProvide
                     return new TKeyedArray($properties);
                 }
                 $enum_case_storage = $enum_classlike_storage->enum_cases[$object_type->case_name];
-                if (is_int($enum_case_storage->value)) {
-                    $properties['value'] = new Union([new Atomic\TLiteralInt($enum_case_storage->value)]);
-                } elseif (is_string($enum_case_storage->value)) {
-                    $properties['value'] = new Union([Type::getAtomicStringFromLiteral($enum_case_storage->value)]);
+                $case_value = $enum_case_storage->getValue($statements_source->getCodebase()->classlikes);
+                if (is_int($case_value)) {
+                    $properties['value'] = new Union([new Atomic\TLiteralInt($case_value)]);
+                } elseif (is_string($case_value)) {
+                    $properties['value'] = new Union([Type::getAtomicStringFromLiteral($case_value)]);
                 }
                 return new TKeyedArray($properties);
             }
