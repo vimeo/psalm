@@ -13,7 +13,7 @@ namespace Psalm\Type\Atomic;
  */
 final class TIntMaskOf extends TInt
 {
-    public function __construct(public TClassConstant|TKeyOf|TValueOf $value, bool $from_docblock = false)
+    public function __construct(public TClassConstant|TKeyOf|TValueOf|TSatisfiedBy $value, bool $from_docblock = false)
     {
         parent::__construct($from_docblock);
     }

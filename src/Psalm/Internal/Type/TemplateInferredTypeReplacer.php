@@ -22,11 +22,13 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TPropertiesOf;
+use Psalm\Type\Atomic\TSatisfiedBy;
 use Psalm\Type\Atomic\TTemplateIndexedAccess;
 use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTemplatePropertiesOf;
+use Psalm\Type\Atomic\TTemplateSatisfiedBy;
 use Psalm\Type\Atomic\TTemplateValueOf;
 use Psalm\Type\Atomic\TValueOf;
 use Psalm\Type\Union;
@@ -173,6 +175,7 @@ final class TemplateInferredTypeReplacer
                 }
             } elseif ($atomic_type instanceof TTemplateKeyOf
                 || $atomic_type instanceof TTemplateValueOf
+                || $atomic_type instanceof TTemplateSatisfiedBy
             ) {
                 $new_type = self::replaceTemplateKeyOfValueOf(
                     $codebase,
@@ -234,12 +237,22 @@ final class TemplateInferredTypeReplacer
             throw new UnexpectedValueException('This array should be full');
         }
 
-        return $union->getBuilder()->setTypes(
+        $builder = $union->getBuilder()->setTypes(
             TypeCombiner::combine(
                 $atomic_types,
                 $codebase,
             )->getAtomicTypes(),
-        )->freeze();
+        );
+        
+        if ($union->as_type !== null) {
+            $builder->as_type = self::replace(
+                $union->as_type,
+                $template_result,
+                $codebase
+            );
+        }
+
+        return $builder->freeze();
     }
 
     /**
@@ -333,7 +346,7 @@ final class TemplateInferredTypeReplacer
     }
 
     /**
-     * @param TTemplateKeyOf|TTemplateValueOf $atomic_type
+     * @param TTemplateKeyOf|TTemplateValueOf|TTemplateSatisfiedBy $atomic_type
      * @param array<string, array<string, non-empty-list<TemplateBound>>> $inferred_lower_bounds
      */
     private static function replaceTemplateKeyOfValueOf(
@@ -360,6 +373,12 @@ final class TemplateInferredTypeReplacer
             && TValueOf::isViableTemplateType($template_type)
         ) {
             return new TValueOf($template_type);
+        }
+
+        if ($atomic_type instanceof TTemplateSatisfiedBy
+            && $template_type->as_type !== null
+        ) {
+            return new TSatisfiedBy($template_type);
         }
 
         return null;

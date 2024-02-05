@@ -4211,6 +4211,124 @@ class ClassTemplateTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'defaultTemplateType' => [
+                'code' => '<?php
+                    /**
+                     * @template T as mixed = never
+                     */
+                    class a {
+                        public function __construct() {}
+                    }
+                    
+                    $a = new a;',
+                'assertions' => [
+                    '$a===' => 'a<never>',
+                ],
+            ],
+            'initializeSplObjectStorage' => [
+                'code' => '<?php
+                    $a = new SplObjectStorage();
+                ',
+                'assertions' => [
+                    '$a===' => 'SplObjectStorage<never, never>',
+                ],
+            ],
+            'testSatisfies1' => [
+                'code' => '<?php
+                    /**
+                     * @template TValue as mixed = never
+                     */
+                    class FutureSplQueue {
+                        /**
+                         * @template TNewValue as satisfied-by<TValue>
+                         *
+                         * @param TNewValue $value
+                         *
+                         * @psalm-this-out self<(TValue|TNewValue): satisfied-by<TValue>>
+                         */
+                        public function enqueue($value): void {}
+                    }
+                    
+                    /** @var FutureSplQueue<never: int> */
+                    $a = new FutureSplQueue;
+                    
+                    /** @psalm-check-type-exact $a = FutureSplQueue<never: int> */;
+                    
+                    $a->enqueue(1);
+                    
+                    /** @psalm-check-type-exact $a = FutureSplQueue<1: int> */;
+                    
+                    $a->enqueue(2);
+                    
+                    /** @psalm-check-type-exact $a = FutureSplQueue<1|2: int> */;
+
+                    /** @psalm-suppress InvalidArgument */
+                    $a->enqueue("str");
+                '
+            ],
+            'testSatisfies2' => [
+                'code' => '<?php
+                    /**
+                     * @template TValue as mixed = never
+                     */
+                    class FutureSplQueue {
+                        /**
+                         * @template TNewValue as satisfied-by<TValue>
+                         *
+                         * @param TNewValue $value
+                         *
+                         * @psalm-this-out self<(TValue|TNewValue): satisfied-by<TValue>>
+                         */
+                        public function enqueue($value): void {}
+
+                        /** @return list<TValue> */
+                        public function ret(): array {
+                            return [];
+                        }
+                    }
+                    
+                    /** @param FutureSplQueue<int> $a */
+                    function take(FutureSplQueue $a): int {
+                        foreach ($a->ret() as $v) {
+                            return $v;
+                        }
+                        return 0;
+                    }
+
+                    function takeInt(int $a): int {
+                        return $a;
+                    }
+
+                    /** @param 1|2 $a */
+                    function takeIntExact(int $a): int {
+                        return $a;
+                    }
+
+                    /** @var FutureSplQueue<never: int> */
+                    $a = new FutureSplQueue;
+                    
+                    /** @psalm-check-type-exact $a = FutureSplQueue<never: int> */;
+                    
+                    $a->enqueue(1);
+                    
+                    /** @psalm-check-type-exact $a = FutureSplQueue<1: int> */;
+                    
+                    $a->enqueue(2);
+                    
+                    /** @psalm-check-type-exact $a = FutureSplQueue<1|2: int> */;
+
+                    foreach ($a->ret() as $v) {
+                        takeInt($v);
+                        takeIntExact($v);
+                    }
+
+                    /** @psalm-check-type-exact $a = FutureSplQueue<1|2: int> */;
+
+                    take($a);
+                    
+                    /** @psalm-check-type-exact $a = FutureSplQueue<int> */;
+                '
+            ]
         ];
     }
 

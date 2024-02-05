@@ -1057,6 +1057,14 @@ class TypeParseTest extends TestCase
         );
     }
 
+    public function testSingleLiteralIntWithSatisfies(): void
+    {
+        $this->assertSame(
+            '6: int',
+            Type::parseString('6: int')->getId(true),
+        );
+    }
+
     public function testSingleLiteralIntWithSeparators(): void
     {
         $this->assertSame('10', Type::parseString('1_0')->getId());

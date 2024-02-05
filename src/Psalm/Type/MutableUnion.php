@@ -177,6 +177,8 @@ final class MutableUnion implements TypeNode
     /** @psalm-suppress PossiblyUnusedProperty */
     public bool $propagate_parent_nodes = false;
 
+    public ?Union $as_type = null;
+
     /**
      * @psalm-external-mutation-free
      * @param non-empty-array<Atomic>  $types

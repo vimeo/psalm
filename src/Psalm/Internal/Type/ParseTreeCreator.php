@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Type;
 
+use AssertionError;
 use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Type\ParseTree\CallableParamTree;
 use Psalm\Internal\Type\ParseTree\CallableTree;
@@ -23,6 +24,8 @@ use Psalm\Internal\Type\ParseTree\NullableTree;
 use Psalm\Internal\Type\ParseTree\Root;
 use Psalm\Internal\Type\ParseTree\TemplateAsTree;
 use Psalm\Internal\Type\ParseTree\TemplateIsTree;
+use Psalm\Internal\Type\ParseTree\TypeIsTree;
+use Psalm\Internal\Type\ParseTree\UnionAsTree;
 use Psalm\Internal\Type\ParseTree\UnionTree;
 use Psalm\Internal\Type\ParseTree\Value;
 
@@ -559,24 +562,36 @@ final class ParseTreeCreator
             return;
         }
 
-        if (!$current_parent) {
-            throw new TypeParseTreeException('Cannot process colon without parent');
+        if ($current_parent instanceof KeyedArrayTree) {
+            if (!$this->current_leaf instanceof Value) {
+                throw new TypeParseTreeException('Unexpected LHS of property');
+            }
+    
+            $prev_token = $this->t > 0 ? $this->type_tokens[$this->t - 1] : null;
+
+            $new_parent_leaf = new KeyedArrayPropertyTree($this->current_leaf->value, $current_parent);
+            $new_parent_leaf->possibly_undefined = $prev_token !== null && $prev_token[0] === '?';
+            array_pop($current_parent->children);
+            $current_parent->children[] = $new_parent_leaf;
+
+            $this->current_leaf = $new_parent_leaf;
+            return;
         }
 
-        if (!$this->current_leaf instanceof Value) {
-            throw new TypeParseTreeException('Unexpected LHS of property');
+        if ($this->t+1 >= $this->type_token_count) {
+            throw new TypeParseTreeException('Unexpected token :');
         }
 
-        if (!$current_parent instanceof KeyedArrayTree) {
-            throw new TypeParseTreeException('Saw : outside of object-like array');
+        $new_parent_leaf = new TypeIsTree($current_parent);
+        $this->current_leaf->parent = $new_parent_leaf;
+        $new_parent_leaf->children = [$this->current_leaf];
+
+        if ($current_parent) {
+            array_pop($current_parent->children);
+            $current_parent->children[] = $new_parent_leaf;
+        } else {
+            $this->parse_tree = $new_parent_leaf;
         }
-
-        $prev_token = $this->t > 0 ? $this->type_tokens[$this->t - 1] : null;
-
-        $new_parent_leaf = new KeyedArrayPropertyTree($this->current_leaf->value, $current_parent);
-        $new_parent_leaf->possibly_undefined = $prev_token !== null && $prev_token[0] === '?';
-        array_pop($current_parent->children);
-        $current_parent->children[] = $new_parent_leaf;
 
         $this->current_leaf = $new_parent_leaf;
     }
@@ -682,6 +697,11 @@ final class ParseTreeCreator
         $current_parent = $this->current_leaf->parent;
 
         if ($current_parent instanceof CallableWithReturnTypeTree) {
+            $this->current_leaf = $current_parent;
+            $current_parent = $current_parent->parent;
+        }
+
+        if ($current_parent instanceof TypeIsTree) {
             $this->current_leaf = $current_parent;
             $current_parent = $current_parent->parent;
         }

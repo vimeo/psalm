@@ -54,6 +54,47 @@ final class UnionTypeComparator
             return true;
         }
 
+        if ($container_type->as_type !== null) {
+            if (!self::isContainedBy(
+                $codebase,
+                $input_type,
+                $container_type->as_type,
+                $ignore_null,
+                $ignore_false,
+                $union_comparison_result,
+                $allow_interface_equality,
+                $allow_float_int_equality,
+            )) {
+                return false;
+            }
+
+            if ($input_type->as_type !== null && !self::isContainedBy(
+                $codebase,
+                $input_type->as_type,
+                $container_type->as_type,
+                $ignore_null,
+                $ignore_false,
+                $union_comparison_result,
+                $allow_interface_equality,
+                $allow_float_int_equality,
+            )) {
+                return false;
+            }
+        } elseif ($input_type->as_type !== null) {
+            if (!self::isContainedBy(
+                $codebase,
+                $input_type->as_type,
+                $container_type,
+                $ignore_null,
+                $ignore_false,
+                $union_comparison_result,
+                $allow_interface_equality,
+                $allow_float_int_equality,
+            )) {
+                return false;
+            }
+        }
+
         if ($union_comparison_result) {
             $union_comparison_result->scalar_type_match_found = true;
         }

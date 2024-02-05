@@ -24,6 +24,7 @@ use Psalm\Internal\Type\ParseTree\MethodTree;
 use Psalm\Internal\Type\ParseTree\MethodWithReturnTypeTree;
 use Psalm\Internal\Type\ParseTree\NullableTree;
 use Psalm\Internal\Type\ParseTree\TemplateAsTree;
+use Psalm\Internal\Type\ParseTree\TypeIsTree;
 use Psalm\Internal\Type\ParseTree\UnionTree;
 use Psalm\Internal\Type\ParseTree\Value;
 use Psalm\Storage\FunctionLikeParameter;
@@ -59,12 +60,14 @@ use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TPropertiesOf;
+use Psalm\Type\Atomic\TSatisfiedBy;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateIndexedAccess;
 use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTemplatePropertiesOf;
+use Psalm\Type\Atomic\TTemplateSatisfiedBy;
 use Psalm\Type\Atomic\TTemplateValueOf;
 use Psalm\Type\Atomic\TTypeAlias;
 use Psalm\Type\Atomic\TUnknownClassString;
@@ -336,6 +339,37 @@ final class TypeParser
                 $from_docblock,
             );
             return $result;
+        }
+
+        if ($parse_tree instanceof TypeIsTree) {
+            $type = self::getTypeFromTree(
+                $parse_tree->children[0],
+                $codebase,
+                $analysis_php_version_id,
+                $template_type_map,
+                $type_aliases,
+                $from_docblock
+            );
+            $as_type = self::getTypeFromTree(
+                $parse_tree->children[1],
+                $codebase,
+                $analysis_php_version_id,
+                $template_type_map,
+                $type_aliases,
+                $from_docblock
+            );
+
+
+            if ($as_type instanceof Atomic) {
+                $as_type = new Union([$as_type], ['from_docblock' => $from_docblock]);
+            }
+            if ($type instanceof Atomic) {
+                $type = new Union([$type], ['from_docblock' => $from_docblock, 'as_type' => $as_type]);
+            } else {
+                $type->as_type = $as_type;
+            }
+
+            return $type;
         }
 
         if ($parse_tree instanceof ConditionalTree) {
@@ -694,8 +728,10 @@ final class TypeParser
                     || $atomic_type instanceof TTemplateValueOf
                     || $atomic_type instanceof TTemplateKeyOf
                     || $atomic_type instanceof TTemplateParamClass
+                    || $atomic_type instanceof TTemplateSatisfiedBy
                     || $atomic_type instanceof TTypeAlias
                     || $atomic_type instanceof TValueOf
+                    || $atomic_type instanceof TSatisfiedBy
                     || $atomic_type instanceof TConditional
                     || $atomic_type instanceof TKeyOf
                     || !$from_docblock
@@ -931,6 +967,34 @@ final class TypeParser
             }
 
             return new TValueOf($generic_params[0]);
+        }
+
+        if ($generic_type_value === 'satisfied-by') {
+            $param_name = $generic_params[0]->getId(false);
+
+            if (isset($template_type_map[$param_name])
+                && ($defining_class = array_key_first($template_type_map[$param_name])) !== null
+            ) {
+                return new TTemplateSatisfiedBy(
+                    $param_name,
+                    $defining_class,
+                    $generic_params[0],
+                    $from_docblock,
+                );
+            }
+
+            if (!$generic_params[0]->as_type
+                && !$generic_params[0] instanceof TTypeAlias
+                && !$generic_params[0] instanceof TValueOf
+                && !$generic_params[0] instanceof TKeyOf
+                && !$generic_params[0] instanceof TPropertiesOf
+            ) {
+                throw new TypeParseTreeException(
+                    'Untemplated satisfied-by param ' . $param_name . ' should have an upper bound!',
+                );
+            }
+
+            return new TSatisfiedBy($generic_params[0]);
         }
 
         if ($generic_type_value === 'int-mask') {

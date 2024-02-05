@@ -492,8 +492,8 @@ final class NewAnalyzer extends CallAnalyzer
 
             $generic_param_types = null;
 
-            if ($storage->template_types) {
-                foreach ($storage->template_types as $template_name => $base_type) {
+            if ($storage->default_template_types) {
+                foreach ($storage->default_template_types as $template_name => $base_type) {
                     if (isset($template_result->lower_bounds[$template_name][$fq_class_name])) {
                         $generic_param_type = TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
                             $template_result->lower_bounds[$template_name][$fq_class_name],
@@ -517,11 +517,7 @@ final class NewAnalyzer extends CallAnalyzer
                             ),
                         );
                     } else {
-                        if ($fq_class_name === 'SplObjectStorage') {
-                            $generic_param_type = Type::getNever();
-                        } else {
-                            $generic_param_type = array_values($base_type)[0];
-                        }
+                        $generic_param_type = array_values($base_type)[0];
                     }
 
                     $generic_param_types[] = $generic_param_type->setProperties([
@@ -552,13 +548,13 @@ final class NewAnalyzer extends CallAnalyzer
                 ),
                 $statements_analyzer->getSuppressedIssues(),
             );
-        } elseif ($storage->template_types) {
+        } elseif ($storage->default_template_types) {
             $result_atomic_type = new TGenericObject(
                 $fq_class_name,
                 array_values(
                     array_map(
                         static fn($map) => reset($map),
-                        $storage->template_types,
+                        $storage->default_template_types,
                     ),
                 ),
                 false,

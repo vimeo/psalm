@@ -275,6 +275,17 @@ final class ClassLikeStorage implements HasAttributesInterface
     public ?array $template_types = null;
 
     /**
+     * An array holding the class template default types.
+     *
+     * The name of the template is the first key. The nested array is keyed by the defining class
+     * (i.e. the same as the class name). This allows operations with the same-named template defined
+     * across multiple classes to not run into trouble.
+     *
+     * @var array<string, non-empty-array<string, Union>>|null
+     */
+    public $default_template_types;
+
+    /**
      * @var array<int, bool>|null
      */
     public ?array $template_covariants = null;

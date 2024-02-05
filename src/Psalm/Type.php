@@ -707,6 +707,20 @@ abstract class Type
             $combined_type->by_ref = true;
         }
 
+        if (($type_1->as_type === null) !== ($type_2->as_type === null)) {
+            $combined_type->as_type = null;
+        } elseif ($type_1->as_type !== null) {
+            $combined_type->as_type = self::combineUnionTypes(
+                $type_1->as_type,
+                $type_2->as_type,
+                $codebase,
+                $overwrite_empty_array,
+                $allow_mixed_union,
+                $literal_limit,
+                $possibly_undefined
+            );
+        }
+
         return $combined_type;
     }
 
@@ -833,6 +847,18 @@ abstract class Type
 
                 $combined_type = $combined_type->freeze();
             }
+        }
+
+        if (($type_1->as_type === null) !== ($type_2->as_type === null)) {
+            $combined_type->as_type = $type_1->as_type ?? $type_2->as_type;
+        } elseif ($type_1->as_type !== null) {
+            $combined_type->as_type = self::intersectUnionTypes(
+                $type_1->as_type,
+                $type_2->as_type,
+                $codebase,
+                $allow_interface_equality,
+                $allow_float_int_equality
+            );
         }
 
         if (!$intersection_performed && $type_1->getId() !== $type_2->getId()) {

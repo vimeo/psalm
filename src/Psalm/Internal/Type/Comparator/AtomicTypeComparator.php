@@ -31,10 +31,12 @@ use Psalm\Type\Atomic\TNonEmptyMixed;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
+use Psalm\Type\Atomic\TSatisfiedBy;
 use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTemplateSatisfiedBy;
 use Psalm\Type\Atomic\TTemplateValueOf;
 use Psalm\Type\Atomic\TValueOf;
 use Psalm\Type\Union;
@@ -95,6 +97,32 @@ final class AtomicTypeComparator
                 return UnionTypeComparator::isContainedBy(
                     $codebase,
                     TValueOf::getValueType($input_type_part->type, $codebase) ?? $input_type_part->type,
+                    new Union([$container_type_part]),
+                    false,
+                    false,
+                    null,
+                    false,
+                    false,
+                );
+            }
+        }
+
+        if ($input_type_part instanceof TSatisfiedBy) {
+            if ($container_type_part instanceof TSatisfiedBy) {
+                return UnionTypeComparator::isContainedBy(
+                    $codebase,
+                    $input_type_part->type->as_type,
+                    $container_type_part->type->as_type,
+                    false,
+                    false,
+                    null,
+                    false,
+                    false,
+                );
+            } else {
+                return UnionTypeComparator::isContainedBy(
+                    $codebase,
+                    $input_type_part->type->as_type,
                     new Union([$container_type_part]),
                     false,
                     false,
@@ -432,8 +460,42 @@ final class AtomicTypeComparator
             );
         }
 
+        if ($container_type_part instanceof TTemplateSatisfiedBy) {
+            if (!$input_type_part instanceof TTemplateSatisfiedBy) {
+                return false;
+            }
+
+            return UnionTypeComparator::isContainedBy(
+                $codebase,
+                $input_type_part->as,
+                $container_type_part->as,
+            );
+        }
+
         if ($input_type_part instanceof TTemplateValueOf) {
             $array_value_type = TValueOf::getValueType($input_type_part->as, $codebase);
+            if ($array_value_type === null) {
+                return false;
+            }
+
+            foreach ($array_value_type->getAtomicTypes() as $array_value_atomic) {
+                if (!self::isContainedBy(
+                    $codebase,
+                    $array_value_atomic,
+                    $container_type_part,
+                    $allow_interface_equality,
+                    $allow_float_int_equality,
+                    $atomic_comparison_result,
+                )) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        if ($input_type_part instanceof TTemplateSatisfiedBy) {
+            $array_value_type = $input_type_part->as->as_type;
             if ($array_value_type === null) {
                 return false;
             }
