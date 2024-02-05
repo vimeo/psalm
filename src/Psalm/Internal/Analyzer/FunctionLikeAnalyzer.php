@@ -37,6 +37,7 @@ use Psalm\Issue\InvalidThrow;
 use Psalm\Issue\MethodSignatureMismatch;
 use Psalm\Issue\MismatchingDocblockParamType;
 use Psalm\Issue\MissingClosureParamType;
+use Psalm\Issue\MissingOverrideAttribute;
 use Psalm\Issue\MissingParamType;
 use Psalm\Issue\MissingThrowsDocblock;
 use Psalm\Issue\ReferenceConstraintViolation;
@@ -1973,20 +1974,37 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 true,
             );
 
-            if ($codebase->analysis_php_version_id >= 8_03_00
-                && (!$overridden_method_ids || $storage->cased_name === '__construct')
-                && array_filter(
+            if ($codebase->analysis_php_version_id >= 8_03_00) {
+                $has_override_attribute = array_filter(
                     $storage->attributes,
                     static fn(AttributeStorage $s): bool => $s->fq_class_name === 'Override',
-                )
-            ) {
-                IssueBuffer::maybeAdd(
-                    new InvalidOverride(
-                        'Method ' . $storage->cased_name . ' does not match any parent method',
-                        $codeLocation,
-                    ),
-                    $this->getSuppressedIssues(),
                 );
+
+                if ($has_override_attribute
+                    && (!$overridden_method_ids || $storage->cased_name === '__construct')
+                ) {
+                    IssueBuffer::maybeAdd(
+                        new InvalidOverride(
+                            'Method ' . $storage->cased_name . ' does not match any parent method',
+                            $codeLocation,
+                        ),
+                        $this->getSuppressedIssues(),
+                    );
+                }
+
+                if (!$has_override_attribute
+                    && $codebase->config->ensure_override_attribute
+                    && $overridden_method_ids
+                    && $storage->cased_name !== '__construct'
+                ) {
+                    IssueBuffer::maybeAdd(
+                        new MissingOverrideAttribute(
+                            'Method ' . $storage->cased_name . ' should have the "Override" attribute',
+                            $codeLocation,
+                        ),
+                        $this->getSuppressedIssues(),
+                    );
+                }
             }
 
             if ($overridden_method_ids
