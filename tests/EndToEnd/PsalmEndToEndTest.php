@@ -24,6 +24,8 @@ use function sys_get_temp_dir;
 use function tempnam;
 use function unlink;
 
+use const DIRECTORY_SEPARATOR;
+
 /**
  * Tests some of the most important use cases of the psalm and psalter commands, by launching a new
  * process as if invoked by a real user.
@@ -47,8 +49,6 @@ class PsalmEndToEndTest extends TestCase
             throw new Exception('Couldn\'t get working directory');
         }
 
-        mkdir(self::$tmpDir . '/src');
-
         copy(__DIR__ . '/../fixtures/DummyProjectWithErrors/composer.json', self::$tmpDir . '/composer.json');
 
         $process = new Process(['composer', 'install', '--no-plugins'], self::$tmpDir, null, null, 120);
@@ -63,7 +63,8 @@ class PsalmEndToEndTest extends TestCase
 
     public function setUp(): void
     {
-        @unlink(self::$tmpDir . '/psalm.xml');
+        mkdir(self::$tmpDir . '/src');
+
         copy(
             __DIR__ . '/../fixtures/DummyProjectWithErrors/src/FileWithErrors.php',
             self::$tmpDir . '/src/FileWithErrors.php',
@@ -73,9 +74,16 @@ class PsalmEndToEndTest extends TestCase
 
     public function tearDown(): void
     {
+        @unlink(self::$tmpDir . '/psalm.xml');
+
         if (file_exists(self::$tmpDir . '/cache')) {
             self::recursiveRemoveDirectory(self::$tmpDir . '/cache');
         }
+
+        if (file_exists(self::$tmpDir . '/src')) {
+            self::recursiveRemoveDirectory(self::$tmpDir . '/src');
+        }
+
         parent::tearDown();
     }
 
@@ -275,7 +283,7 @@ class PsalmEndToEndTest extends TestCase
         $dir = opendir($src);
         while (false !== ($file = readdir($dir))) {
             if (($file !== '.') && ($file !== '..')) {
-                $full = $src . '/' . $file;
+                $full = $src . DIRECTORY_SEPARATOR . $file;
                 if (is_dir($full)) {
                     self::recursiveRemoveDirectory($full);
                 } else {

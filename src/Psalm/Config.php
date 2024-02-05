@@ -244,7 +244,7 @@ class Config
     protected $extra_files;
 
     /**
-     * The base directory of this config file
+     * The base directory of this config file without trailing slash
      *
      * @var string
      */
@@ -1451,7 +1451,7 @@ class Config
                 if (!$file_path) {
                     throw new ConfigException(
                         'Cannot resolve stubfile path '
-                            . rtrim($config->base_dir, DIRECTORY_SEPARATOR)
+                            . $config->base_dir
                             . DIRECTORY_SEPARATOR
                             . $stub_file['name'],
                     );
@@ -1588,11 +1588,11 @@ class Config
     private function loadFileExtensions(SimpleXMLElement $extensions): void
     {
         foreach ($extensions as $extension) {
-            $extension_name = preg_replace('/^\.?/', '', (string)$extension['name'], 1);
+            $extension_name = preg_replace('/^\.?/', '', (string) $extension['name'], 1);
             $this->file_extensions[] = $extension_name;
 
             if (isset($extension['scanner'])) {
-                $path = $this->base_dir . (string)$extension['scanner'];
+                $path = $this->base_dir . DIRECTORY_SEPARATOR . (string) $extension['scanner'];
 
                 if (!file_exists($path)) {
                     throw new ConfigException('Error parsing config: cannot find file ' . $path);
@@ -1602,7 +1602,7 @@ class Config
             }
 
             if (isset($extension['checker'])) {
-                $path = $this->base_dir . (string)$extension['checker'];
+                $path = $this->base_dir . DIRECTORY_SEPARATOR . (string) $extension['checker'];
 
                 if (!file_exists($path)) {
                     throw new ConfigException('Error parsing config: cannot find file ' . $path);
@@ -1823,7 +1823,13 @@ class Config
     public function shortenFileName(string $to): string
     {
         if (!is_file($to)) {
-            return preg_replace('/^' . preg_quote($this->base_dir, '/') . '/', '', $to, 1);
+            // if cwd is the root directory it will be just the directory separator - trim it off first
+            return preg_replace(
+                '/^' . preg_quote(rtrim($this->base_dir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR, '/') . '/',
+                '',
+                $to,
+                1,
+            );
         }
 
         $from = $this->base_dir;

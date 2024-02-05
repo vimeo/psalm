@@ -173,4 +173,8 @@
             </errorLevel>
         </MixedAssignment>
     </issueHandlers>
+
+    <forbiddenFunctions>
+        <function name="die" />
+    </forbiddenFunctions>
 </psalm>

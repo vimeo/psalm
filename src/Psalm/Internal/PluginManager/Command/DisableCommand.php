@@ -16,8 +16,6 @@ use function assert;
 use function getcwd;
 use function is_string;
 
-use const DIRECTORY_SEPARATOR;
-
 /**
  * @internal
  */
@@ -50,7 +48,7 @@ final class DisableCommand extends Command
     {
         $io = new SymfonyStyle($input, $output);
 
-        $current_dir = (string) getcwd() . DIRECTORY_SEPARATOR;
+        $current_dir = (string) getcwd();
 
         $config_file_path = $input->getOption('config');
         if ($config_file_path !== null && !is_string($config_file_path)) {

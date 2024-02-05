@@ -112,7 +112,8 @@ final class Psalter
         self::syncShortOptions($options);
 
         if (isset($options['c']) && is_array($options['c'])) {
-            die('Too many config files provided' . PHP_EOL);
+            fwrite(STDERR, 'Too many config files provided' . PHP_EOL);
+            exit(1);
         }
 
         if (array_key_exists('h', $options)) {
@@ -194,16 +195,20 @@ final class Psalter
             exit(1);
         }
 
-        $current_dir = (string)getcwd() . DIRECTORY_SEPARATOR;
+        $current_dir = (string) getcwd();
 
         if (isset($options['r']) && is_string($options['r'])) {
             $root_path = realpath($options['r']);
 
-            if (!$root_path) {
-                die('Could not locate root directory ' . $current_dir . DIRECTORY_SEPARATOR . $options['r'] . PHP_EOL);
+            if ($root_path === false) {
+                fwrite(
+                    STDERR,
+                    'Could not locate root directory ' . $current_dir . DIRECTORY_SEPARATOR . $options['r'] . PHP_EOL,
+                );
+                exit(1);
             }
 
-            $current_dir = $root_path . DIRECTORY_SEPARATOR;
+            $current_dir = $root_path;
         }
 
         $vendor_dir = CliUtils::getVendorDir($current_dir);
@@ -304,7 +309,8 @@ final class Psalter
 
         if (array_key_exists('issues', $options)) {
             if (!is_string($options['issues']) || !$options['issues']) {
-                die('Expecting a comma-separated list of issues' . PHP_EOL);
+                fwrite(STDERR, 'Expecting a comma-separated list of issues' . PHP_EOL);
+                exit(1);
             }
 
             $issues = explode(',', $options['issues']);
@@ -339,7 +345,11 @@ final class Psalter
             );
 
             if ($allow_backwards_incompatible_changes === null) {
-                die('--allow-backwards-incompatible-changes expects a boolean value [true|false|1|0]' . PHP_EOL);
+                fwrite(
+                    STDERR,
+                    '--allow-backwards-incompatible-changes expects a boolean value [true|false|1|0]' . PHP_EOL,
+                );
+                exit(1);
             }
 
             $project_analyzer->getCodebase()->allow_backwards_incompatible_changes
@@ -354,7 +364,11 @@ final class Psalter
             );
 
             if ($doc_block_add_new_line_before_return === null) {
-                die('--add-newline-between-docblock-annotations expects a boolean value [true|false|1|0]' . PHP_EOL);
+                fwrite(
+                    STDERR,
+                    '--add-newline-between-docblock-annotations expects a boolean value [true|false|1|0]' . PHP_EOL,
+                );
+                exit(1);
             }
 
             ParsedDocblock::addNewLineBetweenAnnotations($doc_block_add_new_line_before_return);
@@ -505,7 +519,8 @@ final class Psalter
         } elseif (file_exists('docs/CODEOWNERS')) {
             $codeowners_file_path = realpath('docs/CODEOWNERS');
         } else {
-            die('Cannot use --codeowner without a CODEOWNERS file' . PHP_EOL);
+            fwrite(STDERR, 'Cannot use --codeowner without a CODEOWNERS file' . PHP_EOL);
+            exit(1);
         }
 
         $codeowners_file = file_get_contents($codeowners_file_path);
@@ -555,7 +570,8 @@ final class Psalter
         }
 
         if (!$codeowner_files) {
-            die('Could not find any available entries in CODEOWNERS' . PHP_EOL);
+            fwrite(STDERR, 'Could not find any available entries in CODEOWNERS' . PHP_EOL);
+            exit(1);
         }
 
         return $codeowner_files;
@@ -571,11 +587,13 @@ final class Psalter
         /** @psalm-suppress MixedAssignment */
         foreach ($desired_codeowners as $desired_codeowner) {
             if (!is_string($desired_codeowner)) {
-                die('Invalid --codeowner ' . (string)$desired_codeowner . PHP_EOL);
+                fwrite(STDERR, 'Invalid --codeowner ' . (string) $desired_codeowner . PHP_EOL);
+                exit(1);
             }
 
             if ($desired_codeowner[0] !== '@') {
-                die('--codeowner option must start with @' . PHP_EOL);
+                fwrite(STDERR, '--codeowner option must start with @' . PHP_EOL);
+                exit(1);
             }
 
             $matched_file = false;
@@ -588,7 +606,8 @@ final class Psalter
             }
 
             if (!$matched_file) {
-                die('User/group ' . $desired_codeowner . ' does not own any PHP files' . PHP_EOL);
+                fwrite(STDERR, 'User/group ' . $desired_codeowner . ' does not own any PHP files' . PHP_EOL);
+                exit(1);
             }
         }
 
