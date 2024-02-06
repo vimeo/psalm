@@ -5969,7 +5969,7 @@ return [
     'ReflectionParameter::getDefaultValue' => ['mixed'],
     'ReflectionParameter::getDefaultValueConstantName' => ['?string'],
     'ReflectionParameter::getName' => ['string'],
-    'ReflectionParameter::getPosition' => ['int'],
+    'ReflectionParameter::getPosition' => ['int<0, max>'],
     'ReflectionParameter::getType' => ['?ReflectionType'],
     'ReflectionParameter::hasType' => ['bool'],
     'ReflectionParameter::isArray' => ['bool'],
