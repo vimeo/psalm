@@ -562,6 +562,26 @@ final class AtomicStaticCallAnalyzer
             return true;
         }
 
+        $callstatic_id = new MethodIdentifier(
+            $fq_class_name,
+            '__callstatic',
+        );
+
+        $callstatic_method_exists = $codebase->methods->methodExists(
+            $callstatic_id,
+            $context->calling_method_id,
+            $codebase->collect_locations
+                ? new CodeLocation($statements_analyzer, $stmt_name)
+                : null,
+            !$context->collect_initializations
+                && !$context->collect_mutations
+                ? $statements_analyzer
+                : null,
+            $statements_analyzer->getFilePath(),
+            true,
+            $context->insideUse(),
+        );
+
         if (!$naive_method_exists
             || !MethodAnalyzer::isMethodVisible(
                 $method_id,
@@ -572,25 +592,7 @@ final class AtomicStaticCallAnalyzer
             || ($found_method_and_class_storage
                 && ($config->use_phpdoc_method_without_magic_or_parent || $class_storage->parent_class))
         ) {
-            $callstatic_id = new MethodIdentifier(
-                $fq_class_name,
-                '__callstatic',
-            );
-
-            if ($codebase->methods->methodExists(
-                $callstatic_id,
-                $context->calling_method_id,
-                $codebase->collect_locations
-                    ? new CodeLocation($statements_analyzer, $stmt_name)
-                    : null,
-                !$context->collect_initializations
-                    && !$context->collect_mutations
-                    ? $statements_analyzer
-                    : null,
-                $statements_analyzer->getFilePath(),
-                true,
-                $context->insideUse(),
-            )) {
+            if ($callstatic_method_exists) {
                 $callstatic_declaring_id = $codebase->methods->getDeclaringMethodId($callstatic_id);
                 assert($callstatic_declaring_id !== null);
                 $callstatic_pure = false;
