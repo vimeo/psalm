@@ -322,14 +322,19 @@ final class ClassLikeDocblockParser
 
                 $has_return = false;
 
-                if (!preg_match('/^([a-z_A-Z][a-z_0-9A-Z]+) *\(/', $method_entry, $matches)) {
+                $doc_line_parts = CommentAnalyzer::splitDocLine($method_entry);
+
+                if (count($doc_line_parts) > 2
+                    && $doc_line_parts[0] === 'static'
+                    && !strpos($doc_line_parts[1], '(')
+                ) {
+                    $is_static = true;
+                    array_shift($doc_line_parts);
+                    $method_entry = implode(' ', $doc_line_parts);
                     $doc_line_parts = CommentAnalyzer::splitDocLine($method_entry);
+                }
 
-                    if ($doc_line_parts[0] === 'static' && !strpos($doc_line_parts[1], '(')) {
-                        $is_static = true;
-                        array_shift($doc_line_parts);
-                    }
-
+                if (!preg_match('/^([a-z_A-Z][a-z_0-9A-Z]+) *\(/', $method_entry, $matches)) {
                     if (count($doc_line_parts) > 1) {
                         $docblock_lines[] = '@return ' . array_shift($doc_line_parts);
                         $has_return = true;
