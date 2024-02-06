@@ -312,6 +312,26 @@ class InternalCallMapHandlerTest extends TestCase
         }
     }
 
+    public function testGetCallablesFromCallmapRemovesRwPrefixFromParameterNames(): void
+    {
+        $entries = InternalCallMapHandler::getCallablesFromCallMap('collator_sort'); // has &rw_array parameter as second parameter
+        $this->assertNotNull($entries);
+        $collator_sort_entry = $entries[0];
+        $this->assertIsArray($collator_sort_entry->params);
+        $this->assertArrayHasKey(1, $collator_sort_entry->params);
+        $this->assertEquals('array', $collator_sort_entry->params[1]->name);
+    }
+
+    public function testGetCallablesFromCallmapRemovesWPrefixFromParameterNames(): void
+    {
+        $entries = InternalCallMapHandler::getCallablesFromCallMap('curl_multi_exec'); // has &w_still_running parameter as second parameter
+        $this->assertNotNull($entries);
+        $curl_multi_exec_entry = $entries[0];
+        $this->assertIsArray($curl_multi_exec_entry->params);
+        $this->assertArrayHasKey(1, $curl_multi_exec_entry->params);
+        $this->assertEquals('still_running', $curl_multi_exec_entry->params[1]->name);
+    }
+
     /**
      * @return iterable<string, array{string, array<int|string, string>}>
      */
