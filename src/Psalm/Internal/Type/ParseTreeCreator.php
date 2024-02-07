@@ -869,15 +869,6 @@ final class ParseTreeCreator
             case '::':
                 $nexter_token = $this->t + 2 < $this->type_token_count ? $this->type_tokens[$this->t + 2] : null;
 
-                if ($this->current_leaf instanceof ParseTree\KeyedArrayTree
-                    && $nexter_token
-                    && strtolower($nexter_token[0]) !== 'class'
-                ) {
-                    throw new TypeParseTreeException(
-                        ':: in array key is only allowed for ::class',
-                    );
-                }
-
                 if (!$nexter_token
                     || (!preg_match('/^([a-zA-Z_][a-zA-Z_0-9]*\*?|\*)$/', $nexter_token[0])
                         && strtolower($nexter_token[0]) !== 'class')
