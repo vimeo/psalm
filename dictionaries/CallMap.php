@@ -8529,7 +8529,7 @@ return [
 'openssl_x509_parse' => ['array|false', 'certificate'=>'OpenSSLCertificate|string', 'short_names='=>'bool'],
 'openssl_x509_read' => ['OpenSSLCertificate|false', 'certificate'=>'OpenSSLCertificate|string'],
 'openssl_x509_verify' => ['int', 'certificate'=>'string|OpenSSLCertificate', 'public_key'=>'string|OpenSSLCertificate|OpenSSLAsymmetricKey|array'],
-'ord' => ['int', 'character'=>'string'],
+'ord' => ['int<0,255>', 'character'=>'string'],
 'OuterIterator::current' => ['mixed'],
 'OuterIterator::getInnerIterator' => ['Iterator'],
 'OuterIterator::key' => ['int|string'],
