@@ -567,6 +567,39 @@ final class AtomicStaticCallAnalyzer
         $with_pseudo = $callstatic_method_exists
             || $codebase->config->use_phpdoc_method_without_magic_or_parent;
 
+        if ($codebase->methods->getDeclaringMethodId($method_id, $with_pseudo)) {
+            if ((!$stmt->class instanceof PhpParser\Node\Name
+                    || $stmt->class->getFirst() !== 'parent'
+                    || $statements_analyzer->isStatic())
+                && (
+                    !$context->self
+                    || $statements_analyzer->isStatic()
+                    || !$codebase->classExtends($context->self, $fq_class_name)
+                )
+            ) {
+                MethodAnalyzer::checkStatic(
+                    $method_id,
+                    ($stmt->class instanceof PhpParser\Node\Name
+                        && strtolower($stmt->class->getFirst()) === 'self')
+                    || $context->self === $fq_class_name,
+                    !$statements_analyzer->isStatic(),
+                    $codebase,
+                    new CodeLocation($statements_analyzer, $stmt),
+                    $statements_analyzer->getSuppressedIssues(),
+                    $is_dynamic_this_method,
+                );
+
+                if ($is_dynamic_this_method) {
+                    return self::forwardCallToInstanceMethod(
+                        $statements_analyzer,
+                        $stmt,
+                        $stmt_name,
+                        $context,
+                    );
+                }
+            }
+        }
+
         if (!$naive_method_exists
             || !MethodAnalyzer::isMethodVisible(
                 $method_id,
@@ -829,37 +862,6 @@ final class AtomicStaticCallAnalyzer
             $statements_analyzer->getSuppressedIssues(),
         ) === false) {
             return false;
-        }
-
-        if ((!$stmt->class instanceof PhpParser\Node\Name
-                || $stmt->class->getFirst() !== 'parent'
-                || $statements_analyzer->isStatic())
-            && (
-                !$context->self
-                || $statements_analyzer->isStatic()
-                || !$codebase->classExtends($context->self, $fq_class_name)
-            )
-        ) {
-            MethodAnalyzer::checkStatic(
-                $method_id,
-                ($stmt->class instanceof PhpParser\Node\Name
-                    && strtolower($stmt->class->getFirst()) === 'self')
-                || $context->self === $fq_class_name,
-                !$statements_analyzer->isStatic(),
-                $codebase,
-                new CodeLocation($statements_analyzer, $stmt),
-                $statements_analyzer->getSuppressedIssues(),
-                $is_dynamic_this_method,
-            );
-
-            if ($is_dynamic_this_method) {
-                return self::forwardCallToInstanceMethod(
-                    $statements_analyzer,
-                    $stmt,
-                    $stmt_name,
-                    $context,
-                );
-            }
         }
 
         $has_existing_method = true;
