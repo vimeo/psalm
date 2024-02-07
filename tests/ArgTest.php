@@ -355,6 +355,20 @@ class ArgTest extends TestCase
 
                     var_caller("foo");',
             ],
+            'mixedNullable' => [
+                'code' => '<?php
+                    class A {
+                        public function __construct(public mixed $default = null) {
+                        }
+                    }
+                    $a = new A;
+                    $_v = $a->default;',
+                'assertions' => [
+                    '$_v===' => 'mixed',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
