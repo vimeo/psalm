@@ -150,6 +150,54 @@ class MagicMethodAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', $context);
     }
 
+    public function testAnnotationWithoutCallConfigWithExtends(): void
+    {
+        $this->expectExceptionMessage('UndefinedMethod');
+        $this->expectException(CodeException::class);
+        Config::getInstance()->use_phpdoc_method_without_magic_or_parent = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class MyParent {}
+                /**
+                 * @method string getString()
+                 */
+                class Child extends MyParent {}
+
+                $child = new Child();
+
+                $child->getString();',
+        );
+
+        $context = new Context();
+
+        $this->analyzeFile('somefile.php', $context);
+    }
+
+    public function testAnnotationWithoutCallConfigWithExtendsWithStatic(): void
+    {
+        $this->expectExceptionMessage('UndefinedMethod');
+        $this->expectException(CodeException::class);
+        Config::getInstance()->use_phpdoc_method_without_magic_or_parent = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class MyParent {}
+                /**
+                 * @method static string getString()
+                 */
+                class Child extends MyParent {}
+
+                Child::getString();',
+        );
+
+        $context = new Context();
+
+        $this->analyzeFile('somefile.php', $context);
+    }
+
     public function testOverrideParentClassRetunType(): void
     {
         Config::getInstance()->use_phpdoc_method_without_magic_or_parent = true;
