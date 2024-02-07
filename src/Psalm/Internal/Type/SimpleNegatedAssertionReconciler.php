@@ -476,11 +476,29 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
 
         foreach ($existing_var_type->getAtomicTypes() as $type) {
             if ($type instanceof TTemplateParam) {
-                if (!$type->as->hasBool()) {
+                if (!$is_equality && !$type->as->isMixed()) {
+                    $template_did_fail = 0;
+
+                    $type = $type->replaceAs(self::reconcileBool(
+                        $assertion,
+                        $type->as,
+                        null,
+                        false,
+                        null,
+                        $suppressed_issues,
+                        $template_did_fail,
+                        $is_equality,
+                    ));
+
+                    $redundant = false;
+
+                    if (!$template_did_fail) {
+                        $non_bool_types[] = $type;
+                    }
+                } else {
+                    $redundant = false;
                     $non_bool_types[] = $type;
                 }
-
-                $redundant = false;
             } elseif (!$type instanceof TBool
                 || ($is_equality && get_class($type) === TBool::class)
             ) {

@@ -1435,7 +1435,7 @@ final class SimpleAssertionReconciler extends Reconciler
             if ($type instanceof Scalar) {
                 $scalar_types[] = $type;
             } elseif ($type instanceof TTemplateParam) {
-                if ($type->as->hasScalar() || $type->as->hasMixed()) {
+                if ($type->as->hasScalarType() || $type->as->hasMixed()) {
                     $type = $type->replaceAs(self::reconcileScalar(
                         $assertion,
                         $type->as,
@@ -1526,7 +1526,7 @@ final class SimpleAssertionReconciler extends Reconciler
                 $numeric_types[] = new TInt();
                 $numeric_types[] = new TNumericString();
             } elseif ($type instanceof TTemplateParam) {
-                if ($type->as->hasNumeric() || $type->as->hasMixed()) {
+                if ($type->as->hasScalarType() || $type->as->hasMixed()) {
                     $type = $type->replaceAs(self::reconcileNumeric(
                         $assertion,
                         $type->as,
