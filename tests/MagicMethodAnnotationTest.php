@@ -46,6 +46,35 @@ class MagicMethodAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testPhpDocMethodWhenUndefinedWithStatic(): void
+    {
+        Config::getInstance()->use_phpdoc_method_without_magic_or_parent = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /**
+                 * @method static string getString()
+                 * @method static void setInteger(int $integer)
+                 * @method static mixed setString(int $integer)
+                 * @method static bool getBool(string $foo)
+                 * @method static (string|int)[] getArray()
+                 * @method static (callable() : string) getCallable()
+                 */
+                class Child {}
+
+                $a = Child::getString();
+                Child::setInteger(4);
+                /** @psalm-suppress MixedAssignment */
+                $b = Child::setString(5);
+                $c = Child::getBool("hello");
+                $d = Child::getArray();
+                $e = Child::getCallable();',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
     public function testPhpDocMethodWhenTemplated(): void
     {
         Config::getInstance()->use_phpdoc_method_without_magic_or_parent = true;
@@ -92,6 +121,28 @@ class MagicMethodAnnotationTest extends TestCase
                 $child = new Child();
 
                 $child->getString();',
+        );
+
+        $context = new Context();
+
+        $this->analyzeFile('somefile.php', $context);
+    }
+
+    public function testAnnotationWithoutCallConfigWithStatic(): void
+    {
+        $this->expectExceptionMessage('UndefinedMethod');
+        $this->expectException(CodeException::class);
+        Config::getInstance()->use_phpdoc_method_without_magic_or_parent = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /**
+                 * @method static string getString()
+                 */
+                class Child {}
+
+                Child::getString();',
         );
 
         $context = new Context();
@@ -191,6 +242,48 @@ class MagicMethodAnnotationTest extends TestCase
                     '$c' => 'bool',
                     '$d' => 'array<array-key, int|string>',
                     '$e' => 'callable():string',
+                ],
+            ],
+            'validSimpleAnnotationsWithStatic' => [
+                'code' => '<?php
+                    class ParentClass {
+                        public function __callStatic(string $name, array $args) {}
+                    }
+
+                    /**
+                     * @method static string getString() dsa sada
+                     * @method static void setInteger(int $integer) dsa sada
+                     * @method static mixed setString(int $integer) dsa sada
+                     * @method static mixed setMixed(mixed $foo) dsa sada
+                     * @method static mixed setImplicitMixed($foo) dsa sada
+                     * @method static mixed setAnotherImplicitMixed( $foo, $bar,$baz) dsa sada
+                     * @method static mixed setYetAnotherImplicitMixed( $foo  ,$bar,  $baz    ) dsa sada
+                     * @method static bool getBool(string $foo)   dsa sada
+                     * @method static (string|int)[] getArray() with some text dsa sada
+                     * @method static (callable() : string) getCallable() dsa sada
+                     * @method static static getInstance() dsa sada
+                     */
+                    class Child extends ParentClass {}
+
+                    $a = Child::getString();
+                    Child::setInteger(4);
+                    /** @psalm-suppress MixedAssignment */
+                    $b = Child::setString(5);
+                    $c = Child::getBool("hello");
+                    $d = Child::getArray();
+                    $e = Child::getCallable();
+                    $f = Child::getInstance();
+                    Child::setMixed("hello");
+                    Child::setMixed(4);
+                    Child::setImplicitMixed("hello");
+                    Child::setImplicitMixed(4);',
+                'assertions' => [
+                    '$a' => 'string',
+                    '$b' => 'mixed',
+                    '$c' => 'bool',
+                    '$d' => 'array<array-key, int|string>',
+                    '$e' => 'callable():string',
+                    '$f' => 'Child',
                 ],
             ],
             'validAnnotationWithDefault' => [
@@ -1116,6 +1209,20 @@ class MagicMethodAnnotationTest extends TestCase
                     $b->foo();',
                 'error_message' => 'UndefinedMagicMethod',
             ],
+            'inheritSealedMethodsWithStatic' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-seal-methods
+                     */
+                    class A {
+                        public static function __callStatic(string $method, array $args) {}
+                    }
+
+                    class B extends A {}
+
+                    B::foo();',
+                'error_message' => 'UndefinedMagicMethod',
+            ],
             'lonelyMethod' => [
                 'code' => '<?php
                     /**
@@ -1174,6 +1281,29 @@ class MagicMethodAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testSealAllMethodsWithoutFooWithStatic(): void
+    {
+        Config::getInstance()->seal_all_methods = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+              class A {
+                public static function __callStatic(string $method, array $args) {}
+              }
+
+              class B extends A {}
+
+              B::foo();
+              ',
+        );
+
+        $error_message = 'UndefinedMagicMethod';
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage($error_message);
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
     public function testNoSealAllMethods(): void
     {
         Config::getInstance()->seal_all_methods = true;
@@ -1190,6 +1320,30 @@ class MagicMethodAnnotationTest extends TestCase
 
               $b = new B();
               $b->foo();
+              ',
+        );
+
+        $error_message = 'UndefinedMagicMethod';
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage($error_message);
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testNoSealAllMethodsWithStatic(): void
+    {
+        Config::getInstance()->seal_all_methods = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+              /** @psalm-no-seal-properties */
+              class A {
+                public static function __callStatic(string $method, array $args) {}
+              }
+
+              class B extends A {}
+
+              B::foo();
               ',
         );
 
@@ -1221,6 +1375,27 @@ class MagicMethodAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testSealAllMethodsWithFooWithStatic(): void
+    {
+        Config::getInstance()->seal_all_methods = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+              class A {
+                public static function __callStatic(string $method, array $args) {}
+                public static function foo(): void {}
+              }
+
+              class B extends A {}
+
+              B::foo();
+              ',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
     public function testSealAllMethodsWithFooInSubclass(): void
     {
         Config::getInstance()->seal_all_methods = true;
@@ -1238,6 +1413,28 @@ class MagicMethodAnnotationTest extends TestCase
 
               $b = new B();
               $b->foo();
+              ',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testSealAllMethodsWithFooInSubclassWithStatic(): void
+    {
+        Config::getInstance()->seal_all_methods = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+              class A {
+                public static function __callStatic(string $method, array $args) {}
+              }
+
+              class B extends A {
+                public static function foo(): void {}
+              }
+
+              B::foo();
               ',
         );
 
@@ -1266,6 +1463,27 @@ class MagicMethodAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testSealAllMethodsWithFooAnnotatedWithStatic(): void
+    {
+        Config::getInstance()->seal_all_methods = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+              /** @method static int foo() */
+              class A {
+                public static function __callStatic(string $method, array $args) {}
+              }
+
+              class B extends A {}
+
+              B::foo();
+              ',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
     public function testSealAllMethodsSetToFalse(): void
     {
         Config::getInstance()->seal_all_methods = false;
@@ -1281,6 +1499,26 @@ class MagicMethodAnnotationTest extends TestCase
 
               $b = new B();
               $b->foo();
+              ',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testSealAllMethodsSetToFalseWithStatic(): void
+    {
+        Config::getInstance()->seal_all_methods = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+              class A {
+                public static function __callStatic(string $method, array $args) {}
+              }
+
+              class B extends A {}
+
+              B::foo();
               ',
         );
 
