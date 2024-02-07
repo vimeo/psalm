@@ -1605,14 +1605,6 @@ final class SimpleAssertionReconciler extends Reconciler
                 /** @var TNamedObject|TTemplateParam|TIterable|TObjectWithProperties|TCallableObject $assertion_type */
                 $object_types[] = $type->addIntersectionType($assertion_type);
                 $redundant = false;
-            } elseif ($type->isObjectType()) {
-                if ($assertion_type_is_intersectable_type
-                    && !self::areIntersectionTypesAllowed($codebase, $type)
-                ) {
-                    $redundant = false;
-                } else {
-                    $object_types[] = $type;
-                }
             } elseif ($type instanceof TCallable) {
                 $callable_object = new TCallableObject($type->from_docblock, $type);
                 $object_types[] = $callable_object;
@@ -1624,7 +1616,7 @@ final class SimpleAssertionReconciler extends Reconciler
                 $object_types[] = $type;
                 $redundant = false;
             } elseif ($type instanceof TTemplateParam) {
-                if ($type->as->hasObject() || $type->as->hasMixed()) {
+                if ($type->as->hasObjectType() || $type->as->hasMixed()) {
                     /**
                      * @psalm-suppress PossiblyInvalidArgument This looks wrong, psalm assumes that $assertion_type
                      *                                         can contain TNamedObject due to the reconciliation above
@@ -1650,6 +1642,14 @@ final class SimpleAssertionReconciler extends Reconciler
                 }
 
                 $redundant = false;
+            } elseif ($type->isObjectType()) {
+                if ($assertion_type_is_intersectable_type
+                    && !self::areIntersectionTypesAllowed($codebase, $type)
+                ) {
+                    $redundant = false;
+                } else {
+                    $object_types[] = $type;
+                }
             } elseif ($type instanceof TIterable) {
                 $params = $type->type_params;
                 $params[0] = self::refineArrayKey($params[0]);
