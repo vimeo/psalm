@@ -13190,7 +13190,7 @@ return [
     'openssl_x509_free' => ['void', 'certificate'=>'resource'],
     'openssl_x509_parse' => ['array|false', 'certificate'=>'string|resource', 'short_names='=>'bool'],
     'openssl_x509_read' => ['resource|false', 'certificate'=>'string|resource'],
-    'ord' => ['int', 'character'=>'string'],
+    'ord' => ['int<0,255>', 'character'=>'string'],
     'output_add_rewrite_var' => ['bool', 'name'=>'string', 'value'=>'string'],
     'output_cache_disable' => ['void'],
     'output_cache_disable_compression' => ['void'],
