@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<files psalm-version="dev-master@d916aa65573879da15711249605414287f0b6f08">
+<files psalm-version="dev-master@4b2c6980c51129b066ae85c73798162865df5142">
   <file src="examples/TemplateChecker.php">
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$comment_block->tags['variablesfrom'][0]]]></code>
@@ -66,7 +66,6 @@
       <code><![CDATA[!$config_path]]></code>
       <code><![CDATA[!$file_path]]></code>
       <code><![CDATA[!strpos($issue_type, 'Reference')]]></code>
-      <code><![CDATA[$cwd]]></code>
       <code><![CDATA[$dir]]></code>
       <code><![CDATA[$e->function_id]]></code>
       <code><![CDATA[$igbinary_version = phpversion('igbinary')]]></code>
@@ -1101,7 +1100,6 @@
   </file>
   <file src="src/Psalm/Internal/Cli/LanguageServer.php">
     <RiskyTruthyFalsyComparison>
-      <code><![CDATA[!$root_path]]></code>
       <code><![CDATA[$options['verbose']]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
@@ -1112,9 +1110,6 @@
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$config->error_baseline]]></code>
       <code><![CDATA[!$paths_to_check]]></code>
-      <code><![CDATA[!$root_path]]></code>
-      <code><![CDATA[!file_put_contents($current_dir . 'psalm.xml', $template_contents)]]></code>
-      <code><![CDATA[!file_put_contents($current_dir . 'psalm.xml', $template_contents)]]></code>
       <code><![CDATA[$baseline_file_path]]></code>
       <code><![CDATA[$cache_directory]]></code>
       <code><![CDATA[$config->threads]]></code>
@@ -1125,7 +1120,6 @@
   </file>
   <file src="src/Psalm/Internal/Cli/Psalter.php">
     <RiskyTruthyFalsyComparison>
-      <code><![CDATA[!$root_path]]></code>
       <code><![CDATA[$paths_to_check]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
@@ -1137,7 +1131,6 @@
       <code><![CDATA[!$last_arg]]></code>
       <code><![CDATA[!$last_arg]]></code>
       <code><![CDATA[!$last_arg]]></code>
-      <code><![CDATA[!$root_path]]></code>
       <code><![CDATA[strpos($last_arg_part, '::')]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
@@ -1462,7 +1455,6 @@
   </file>
   <file src="src/Psalm/Internal/PhpVisitor/Reflector/ClassLikeDocblockParser.php">
     <PossiblyUndefinedIntArrayOffset>
-      <code><![CDATA[$doc_line_parts[1]]]></code>
       <code><![CDATA[$matches[0]]]></code>
       <code><![CDATA[$method_tree->children[0]]]></code>
       <code><![CDATA[$method_tree->children[1]]]></code>
