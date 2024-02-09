@@ -416,7 +416,7 @@ abstract class ReflectionFunctionAbstract implements Reflector
      * @since 8.0
      * @template TClass as object
      * @param class-string<TClass>|null $name
-     * @return ($name is null ? array<ReflectionAttribute<object>> : array<ReflectionAttribute<TClass>>)
+     * @return ($name is null ? list<ReflectionAttribute<object>> : list<ReflectionAttribute<TClass>>)
      */
     public function getAttributes(?string $name = null, int $flags = 0): array {}
 }
@@ -463,7 +463,7 @@ class ReflectionProperty implements Reflector
      * @since 8.0
      * @template TClass as object
      * @param class-string<TClass>|null $name
-     * @return ($name is null ? array<ReflectionAttribute<object>> : array<ReflectionAttribute<TClass>>)
+     * @return ($name is null ? list<ReflectionAttribute<object>> : list<ReflectionAttribute<TClass>>)
      */
     public function getAttributes(?string $name = null, int $flags = 0): array {}
 
@@ -540,7 +540,7 @@ class ReflectionProperty implements Reflector
 class ReflectionMethod extends ReflectionFunctionAbstract
 {
     /**
-     * @var string
+     * @var non-empty-string
      * @readonly
      */
     public $name;
@@ -599,7 +599,7 @@ class ReflectionClassConstant implements Reflector
      * @since 8.0
      * @template TClass as object
      * @param class-string<TClass>|null $name
-     * @return ($name is null ? array<ReflectionAttribute<object>> : array<ReflectionAttribute<TClass>>)
+     * @return ($name is null ? list<ReflectionAttribute<object>> : list<ReflectionAttribute<TClass>>)
      */
     public function getAttributes(?string $name = null, int $flags = 0): array {}
 
@@ -635,7 +635,7 @@ class ReflectionParameter implements Reflector {
      * @since 8.0
      * @template TClass as object
      * @param class-string<TClass>|null $name
-     * @return ($name is null ? array<ReflectionAttribute<object>> : array<ReflectionAttribute<TClass>>)
+     * @return ($name is null ? list<ReflectionAttribute<object>> : list<ReflectionAttribute<TClass>>)
      */
     public function getAttributes(?string $name = null, int $flags = 0): array {}
 

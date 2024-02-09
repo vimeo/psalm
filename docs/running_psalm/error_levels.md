@@ -279,6 +279,7 @@ Level 5 and above allows a more non-verifiable code, and higher levels are even 
 
 ## Feature-specific errors
 
+ - [MissingOverrideAttribute](issues/MissingOverrideAttribute.md)
  - [PossiblyUndefinedIntArrayOffset](issues/PossiblyUndefinedIntArrayOffset.md)
  - [PossiblyUndefinedStringArrayOffset](issues/PossiblyUndefinedStringArrayOffset.md)
  - [PossiblyUnusedMethod](issues/PossiblyUnusedMethod.md)

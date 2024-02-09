@@ -706,6 +706,40 @@ class EnumTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'enumWithCasesReferencingClassConstantsWhereClassIsDefinedAfterTheEnum' => [
+                'code' => <<<'PHP'
+                    <?php
+                    enum Bar: string {
+                        case FOO = Foo::FOO;
+                    }
+                    class Foo {
+                        const FOO = "foo";
+                    }
+                    $a = Bar::FOO->value;
+                PHP,
+                'assertions' => [
+                    '$a===' => "'foo'",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'enumWithCasesReferencingAnotherEnumCase' => [
+                'code' => <<<'PHP'
+                    <?php
+                    enum Bar: string {
+                        case BAR = Foo::FOO->value;
+                    }
+                    enum Foo: string {
+                        case FOO = "foo";
+                    }
+                    $a = Bar::BAR->value;
+                PHP,
+                'assertions' => [
+                    '$a===' => "'foo'",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 

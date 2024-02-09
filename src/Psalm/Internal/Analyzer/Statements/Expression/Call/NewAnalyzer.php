@@ -246,6 +246,17 @@ final class NewAnalyzer extends CallAnalyzer
                 new Union([$result_atomic_type]),
             );
 
+            if (strtolower($fq_class_name) === 'stdclass' && $stmt->getArgs() !== []) {
+                IssueBuffer::maybeAdd(
+                    new TooManyArguments(
+                        'stdClass::__construct() has no parameters',
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                        'stdClass::__construct',
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            }
+
             if (strtolower($fq_class_name) !== 'stdclass' &&
                 $codebase->classlikes->classExists($fq_class_name)
             ) {

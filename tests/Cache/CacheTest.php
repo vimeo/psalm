@@ -92,7 +92,7 @@ class CacheTest extends TestCase
 
         foreach ($interactions as $interaction) {
             foreach ($interaction['files'] as $file_path => $file_contents) {
-                $file_path = $config->base_dir . str_replace('/', DIRECTORY_SEPARATOR, $file_path);
+                $file_path = $config->base_dir . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $file_path);
                 if ($file_contents === null) {
                     $file_provider->deleteFile($file_path);
                 } else {
@@ -126,7 +126,7 @@ class CacheTest extends TestCase
             [
                 [
                     'files' => [
-                        '/src/A.php' => <<<'PHP'
+                        'src/A.php' => <<<'PHP'
                             <?php
                             class A {
                                 public function do(B $b): void
@@ -135,7 +135,7 @@ class CacheTest extends TestCase
                                 }
                             }
                             PHP,
-                        '/src/B.php' => <<<'PHP'
+                        'src/B.php' => <<<'PHP'
                             <?php
                             class B {
                                 public function do(): void
@@ -148,10 +148,10 @@ class CacheTest extends TestCase
                 ],
                 [
                     'files' => [
-                        '/src/B.php' => null,
+                        'src/B.php' => null,
                     ],
                     'issues' => [
-                        '/src/A.php' => [
+                        'src/A.php' => [
                             'UndefinedClass: Class, interface or enum named B does not exist',
                         ],
                     ],
@@ -163,7 +163,7 @@ class CacheTest extends TestCase
             [
                 [
                     'files' => [
-                        '/src/A.php' => <<<'PHP'
+                        'src/A.php' => <<<'PHP'
                             <?php
                             class A {
                                 public function foo(B $b): int
@@ -172,7 +172,7 @@ class CacheTest extends TestCase
                                 }
                             }
                             PHP,
-                        '/src/B.php' => <<<'PHP'
+                        'src/B.php' => <<<'PHP'
                             <?php
                             class B {
                                 public ?int $value = 0;
@@ -180,7 +180,7 @@ class CacheTest extends TestCase
                             PHP,
                     ],
                     'issues' => [
-                        '/src/A.php' => [
+                        'src/A.php' => [
                             "NullableReturnStatement: The declared return type 'int' for A::foo is not nullable, but the function returns 'int|null'",
                             "InvalidNullableReturnType: The declared return type 'int' for A::foo is not nullable, but 'int|null' contains null",
                         ],
@@ -188,7 +188,7 @@ class CacheTest extends TestCase
                 ],
                 [
                     'files' => [
-                        '/src/B.php' => <<<'PHP'
+                        'src/B.php' => <<<'PHP'
                             <?php
                             class B {
                                 public int $value = 0;
@@ -204,7 +204,7 @@ class CacheTest extends TestCase
             [
                 [
                     'files' => [
-                        '/src/A.php' => <<<'PHP'
+                        'src/A.php' => <<<'PHP'
                             <?php
 
                             /**
@@ -219,7 +219,7 @@ class CacheTest extends TestCase
                                 }
                             }
                         PHP,
-                        '/src/B.php' => <<<'PHP'
+                        'src/B.php' => <<<'PHP'
                             <?php
 
                             class B {
@@ -234,7 +234,7 @@ class CacheTest extends TestCase
                 ],
                 [
                     'files' => [
-                        '/src/A.php' => <<<'PHP'
+                        'src/A.php' => <<<'PHP'
                             <?php
 
                             /**
@@ -251,10 +251,10 @@ class CacheTest extends TestCase
                         PHP,
                     ],
                     'issues' => [
-                        '/src/A.php' => [
+                        'src/A.php' => [
                             "UndefinedDocblockClass: Docblock-defined class, interface or enum named T does not exist",
                         ],
-                        '/src/B.php' => [
+                        'src/B.php' => [
                             "InvalidArgument: Argument 1 of A::foo expects T, but 1 provided",
                         ],
                     ],
@@ -266,7 +266,7 @@ class CacheTest extends TestCase
             [
                 [
                     'files' => [
-                        '/src/A.php' => <<<'PHP'
+                        'src/A.php' => <<<'PHP'
                             <?php
                             class A {
                                 public function __construct(private string $foo)
@@ -283,7 +283,7 @@ class CacheTest extends TestCase
                 ],
                 [
                     'files' => [
-                        '/src/A.php' => <<<'PHP'
+                        'src/A.php' => <<<'PHP'
                             <?php
                             class A
                             {
@@ -298,7 +298,7 @@ class CacheTest extends TestCase
                             PHP,
                     ],
                     'issues' => [
-                        '/src/A.php' => [
+                        'src/A.php' => [
                             "UndefinedThisPropertyFetch: Instance property A::\$foo is not defined",
                             "MixedReturnStatement: Could not infer a return type",
                         ],

@@ -1034,7 +1034,8 @@ final class AtomicPropertyFetchAnalyzer
         $case_values = [];
 
         foreach ($enum_cases as $enum_case) {
-            $case_values[] = $enum_case->value ?? new TMixed();
+            $case_value = $enum_case->getValue($statements_analyzer->getCodebase()->classlikes);
+            $case_values[] = $case_value ?? new TMixed();
         }
 
         /** @psalm-suppress ArgumentTypeCoercion */

@@ -344,7 +344,16 @@ final class ConstantTypeResolver
                         $value = $enum_storage->enum_cases[$c->case]->value;
 
                         if ($value !== null) {
-                            return $value;
+                            if ($value instanceof UnresolvedConstantComponent) {
+                                return self::resolve(
+                                    $classlikes,
+                                    $value,
+                                    $statements_analyzer,
+                                    $visited_constant_ids + [$c_id => true],
+                                );
+                            } else {
+                                return $value;
+                            }
                         }
                     } elseif ($c instanceof EnumNameFetch) {
                         return Type::getString($c->case)->getSingleAtomic();

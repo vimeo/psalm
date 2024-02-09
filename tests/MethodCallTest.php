@@ -1240,7 +1240,7 @@ class MethodCallTest extends TestCase
                     }
                     class Child1 extends Old {}
                     class Child2 extends Old {}
-                    
+
                     /**
                      * @template IsClient of bool
                      */
@@ -1799,6 +1799,13 @@ class MethodCallTest extends TestCase
                     }
                 ',
                 'error_message' => 'InvalidParamDefault',
+            ],
+            'stdClassConstructorHasNoParameters' => [
+                'code' => <<<'PHP'
+                    <?php
+                    $a = new stdClass(5);
+                PHP,
+                'error_message' => 'TooManyArguments',
             ],
         ];
     }
