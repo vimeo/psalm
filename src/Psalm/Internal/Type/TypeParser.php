@@ -1468,8 +1468,12 @@ final class TypeParser
                     if ($const_name === 'class') {
                         $property_key = $fq_classlike_name;
                         $class_string = true;
-                    } else {
+                    } elseif ($property_branch->value[0] === '"' || $property_branch->value[0] === "'") {
                         $property_key = $property_branch->value;
+                    } else {
+                        throw new TypeParseTreeException(
+                            ':: in array key is only allowed for ::class',
+                        );
                     }
                 } else {
                     $property_key = $property_branch->value;
