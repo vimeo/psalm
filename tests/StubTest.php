@@ -1464,7 +1464,7 @@ class StubTest extends TestCase
 
         $this->project_analyzer->trackTaintedInputs();
 
-        $file_path = (string) getcwd() . '/src/somefile.php';
+        $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'src/somefile.php';
 
         $this->addFile(
             $file_path,
