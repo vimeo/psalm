@@ -358,10 +358,7 @@ final class Config
 
     public bool $ensure_array_int_offsets_exist = false;
 
-    /**
-     * @var bool
-     */
-    public $ensure_override_attribute = false;
+    public bool $ensure_override_attribute = false;
 
     /**
      * @var array<lowercase-string, bool>

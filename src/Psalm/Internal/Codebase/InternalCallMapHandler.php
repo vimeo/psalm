@@ -27,6 +27,7 @@ use function file_exists;
 use function str_ends_with;
 use function str_starts_with;
 use function strlen;
+use function strpos;
 use function strtolower;
 use function substr;
 use function version_compare;
