@@ -869,7 +869,7 @@ class StubTest extends TestCase
 
     public function testNoStubFunction(): void
     {
-        $this->expectExceptionMessage('UndefinedFunction - /src/somefile.php:2:22 - Function barBar does not exist');
+        $this->expectExceptionMessage('UndefinedFunction');
         $this->expectException(CodeException::class);
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
@@ -1464,7 +1464,7 @@ class StubTest extends TestCase
 
         $this->project_analyzer->trackTaintedInputs();
 
-        $file_path = (string) getcwd() . '/src/somefile.php';
+        $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'src/somefile.php';
 
         $this->addFile(
             $file_path,
@@ -1473,7 +1473,7 @@ class StubTest extends TestCase
                 echo custom_taint_source();',
         );
 
-        $this->expectExceptionMessage('TaintedHtml - /src/somefile.php');
+        $this->expectExceptionMessage('TaintedHtml - src/somefile.php');
         $this->analyzeFile($file_path, new Context());
     }
 }

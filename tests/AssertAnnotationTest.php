@@ -92,6 +92,33 @@ class AssertAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testAssertInvalidDocblockMessageDoesNotIncludeTrace(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessageMatches(
+            '!^InvalidDocblock - ' . 'somefile\\.php:10:5 - Invalid @psalm-assert union type: Invalid type \'\\$expected\'$!',
+        );
+
+        $this->addFile(
+            'somefile.php',
+            <<<'PHP'
+            <?php
+                /**
+                 * Asserts that two variables are not the same.
+                 *
+                 * @template T
+                 * @param T      $expected
+                 * @param mixed  $actual
+                 * @psalm-assert !=$expected $actual
+                 */
+                function assertNotSame($expected, $actual) : void {}
+            PHP,
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+
     public function providerValidCodeParse(): iterable
     {
         return [

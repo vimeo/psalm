@@ -171,4 +171,8 @@
             </errorLevel>
         </PropertyNotSetInConstructor>
     </issueHandlers>
+
+    <forbiddenFunctions>
+        <function name="die" />
+    </forbiddenFunctions>
 </psalm>

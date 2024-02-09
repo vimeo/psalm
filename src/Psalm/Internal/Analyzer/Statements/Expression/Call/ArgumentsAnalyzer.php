@@ -191,7 +191,7 @@ final class ArgumentsAnalyzer
 
             $toggled_class_exists = false;
 
-            if ($method_id === 'class_exists'
+            if (in_array($method_id, ['class_exists', 'interface_exists', 'enum_exists', 'trait_exists'], true)
                 && $argument_offset === 0
                 && !$context->inside_class_exists
             ) {

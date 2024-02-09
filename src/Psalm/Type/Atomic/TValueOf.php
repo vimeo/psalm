@@ -30,21 +30,25 @@ final class TValueOf extends Atomic
     /**
      * @param non-empty-array<string,EnumCaseStorage> $cases
      */
-    private static function getValueTypeForNamedObject(array $cases, TNamedObject $atomic_type): Union
-    {
+    private static function getValueTypeForNamedObject(
+        array $cases,
+        TNamedObject $atomic_type,
+        Codebase $codebase,
+    ): Union {
         if ($atomic_type instanceof TEnumCase) {
             assert(isset($cases[$atomic_type->case_name]), 'Should\'ve been verified in TValueOf#getValueType');
-            $value = $cases[$atomic_type->case_name]->value;
+            $value = $cases[$atomic_type->case_name]->getValue($codebase->classlikes);
             assert($value !== null, 'Backed enum must have a value.');
 
             return new Union([$value]);
         }
 
         return new Union(array_map(
-            static function (EnumCaseStorage $case): Atomic {
-                assert($case->value !== null);
+            static function (EnumCaseStorage $case) use ($codebase): Atomic {
+                $case_value = $case->getValue($codebase->classlikes);
                 // Backed enum must have a value
-                return $case->value;
+                assert($case_value !== null);
+                return $case_value;
             },
             array_values($cases),
         ));
@@ -137,7 +141,7 @@ final class TValueOf extends Atomic
                     continue;
                 }
 
-                $value_atomics = self::getValueTypeForNamedObject($cases, $atomic_type);
+                $value_atomics = self::getValueTypeForNamedObject($cases, $atomic_type, $codebase);
             } else {
                 continue;
             }

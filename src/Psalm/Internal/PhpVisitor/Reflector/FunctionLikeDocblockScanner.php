@@ -625,7 +625,7 @@ final class FunctionLikeDocblockScanner
             );
         } catch (TypeParseTreeException $e) {
             $storage->docblock_issues[] = new InvalidDocblock(
-                'Invalid @psalm-assert union type ' . $e,
+                'Invalid @psalm-assert union type: ' . $e->getMessage(),
                 new CodeLocation($file_scanner, $stmt, null, true),
             );
 

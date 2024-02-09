@@ -2478,6 +2478,18 @@ class ConstantTest extends TestCase
                     PHP,
                 'error_message' => 'InvalidArrayOffset',
             ],
+            'unsupportedDynamicFetch' => [
+                'code' => '<?php
+                    class C {
+                        const A = 0;
+                    }
+
+                    $a = C::{"A"};
+                ',
+                'error_message' => 'ParseError',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
         ];
     }
 }
