@@ -1473,7 +1473,7 @@ class StubTest extends TestCase
                 echo custom_taint_source();',
         );
 
-        $this->expectExceptionMessage('TaintedHtml - /src/somefile.php');
+        $this->expectExceptionMessage('TaintedHtml - src/somefile.php');
         $this->analyzeFile($file_path, new Context());
     }
 }
