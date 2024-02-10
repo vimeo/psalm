@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<files psalm-version="5.x-dev@76364ab2ccde9930513b0e3cc7e1757d3d0469f1">
+<files psalm-version="5.x-dev@ba4e312594006059b0d9afb0c5ebeea649a59112">
   <file src="vendor/nikic/php-parser/lib/PhpParser/Node/Expr/ArrowFunction.php">
     <PossiblyUndefinedStringArrayOffset>
       <code><![CDATA[$subNodes['expr']]]></code>
@@ -1056,6 +1056,7 @@
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/ReturnAnalyzer.php">
     <PossiblyUndefinedIntArrayOffset>
+      <code><![CDATA[$method_name]]></code>
       <code><![CDATA[$method_name]]></code>
     </PossiblyUndefinedIntArrayOffset>
     <RiskyTruthyFalsyComparison>
