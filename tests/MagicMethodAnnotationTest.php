@@ -958,6 +958,7 @@ class MagicMethodAnnotationTest extends TestCase
                     class B extends A {}
                     function consumeInt(int $i): void {}
 
+                    /** @psalm-suppress UndefinedMethod */
                     consumeInt(B::bar());',
             ],
             'callUsingParent' => [
