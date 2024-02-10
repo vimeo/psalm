@@ -265,7 +265,7 @@ final class Psalm
 
         $threads = self::detectThreads($options, $config, $in_ci);
 
-        $progress = self::initProgress($options, $config);
+        $progress = self::initProgress($options, $config, $in_ci);
 
         self::restart($options, $threads, $progress);
 
@@ -583,7 +583,7 @@ final class Psalm
         return $config;
     }
 
-    private static function initProgress(array $options, Config $config): Progress
+    private static function initProgress(array $options, Config $config, bool $in_ci): Progress
     {
         $debug = array_key_exists('debug', $options) || array_key_exists('debug-by-line', $options);
 
@@ -598,9 +598,9 @@ final class Psalm
         } else {
             $show_errors = !$config->error_baseline || isset($options['ignore-baseline']);
             if (isset($options['long-progress'])) {
-                $progress = new LongProgress($show_errors, $show_info);
+                $progress = new LongProgress($show_errors, $show_info, $in_ci);
             } else {
-                $progress = new DefaultProgress($show_errors, $show_info);
+                $progress = new DefaultProgress($show_errors, $show_info, $in_ci);
             }
         }
         // output buffered warnings
