@@ -30,6 +30,7 @@ use Psalm\Issue\InternalClass;
 use Psalm\Issue\InvalidStringClass;
 use Psalm\Issue\MixedMethodCall;
 use Psalm\Issue\UndefinedClass;
+use Psalm\Issue\UndefinedMethod;
 use Psalm\IssueBuffer;
 use Psalm\Node\Expr\VirtualArray;
 use Psalm\Node\Expr\VirtualArrayItem;
@@ -490,6 +491,7 @@ final class AtomicStaticCallAnalyzer
             $method_name_lc,
         );
 
+
         if ($stmt->isFirstClassCallable()) {
             if ($found_method_and_class_storage) {
                 [ $method_storage ] = $found_method_and_class_storage;
@@ -516,7 +518,17 @@ final class AtomicStaticCallAnalyzer
                         $codebase->methods->getStorage($declaring_method_id)->pure,
                     )]);
                 } else {
-                    // FIXME: perhaps Psalm should complain about nonexisting method here, or throw a logic exception?
+                    if (IssueBuffer::accepts(
+                        new UndefinedMethod(
+                            'Method ' . $method_id . ' does not exist',
+                            new CodeLocation($statements_analyzer, $stmt),
+                            (string) $method_id,
+                        ),
+                        $statements_analyzer->getSuppressedIssues(),
+                    )) {
+                        return false;
+                    }
+
                     $return_type_candidate = Type::getClosure();
                 }
             }

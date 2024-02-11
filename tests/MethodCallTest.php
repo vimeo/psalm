@@ -1805,6 +1805,22 @@ class MethodCallTest extends TestCase
                 PHP,
                 'error_message' => 'TooManyArguments',
             ],
+            'firstClassCallableWithUnknownStaticMethod' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class A {}
+                    $_a = A::foo(...);
+                PHP,
+                'error_message' => 'UndefinedMethod',
+            ],
+            'firstClassCallableWithUnknownInstanceMethod' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class A {}
+                    $_a = (new A)->foo(...);
+                PHP,
+                'error_message' => 'UndefinedMethod',
+            ],
         ];
     }
 }
