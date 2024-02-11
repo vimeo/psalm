@@ -517,6 +517,19 @@ final class AtomicStaticCallAnalyzer
                         $codebase->getMethodReturnType($method_id, $fq_class_name),
                         $codebase->methods->getStorage($declaring_method_id)->pure,
                     )]);
+                } elseif ($codebase->methodExists(
+                    $call_static_method_id = new MethodIdentifier($method_id->fq_class_name, '__callstatic'),
+                    new CodeLocation($statements_analyzer, $stmt),
+                    null,
+                    null,
+                    false,
+                )) {
+                    $return_type_candidate = new Union([new TClosure(
+                        'Closure',
+                        null,
+                        $codebase->getMethodReturnType($call_static_method_id, $fq_class_name),
+                        $codebase->methods->getStorage($call_static_method_id)->pure,
+                    )]);
                 } else {
                     if (IssueBuffer::accepts(
                         new UndefinedMethod(
