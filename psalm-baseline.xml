@@ -1054,6 +1054,7 @@
   <file src="src/Psalm/Internal/Analyzer/Statements/ReturnAnalyzer.php">
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$method_name]]></code>
+      <code><![CDATA[$method_name]]></code>
     </PossiblyUndefinedIntArrayOffset>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$context->calling_function_id]]></code>
