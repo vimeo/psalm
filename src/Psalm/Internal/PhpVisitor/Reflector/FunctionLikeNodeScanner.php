@@ -804,7 +804,9 @@ final class FunctionLikeNodeScanner
                 $this->codebase->analysis_php_version_id,
             );
 
-            if ($is_nullable) {
+            if ($param_type->isMixed()) {
+                $is_nullable = false;
+            } elseif ($is_nullable) {
                 $param_type = $param_type->getBuilder()->addType(new TNull)->freeze();
             } else {
                 $is_nullable = $param_type->isNullable();

@@ -1914,6 +1914,17 @@ class ReturnTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'constructorsShouldReturnVoid' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class A {
+                        public function __construct() {
+                            return 5;
+                        }
+                    }
+                    PHP,
+                'error_message' => 'InvalidReturnStatement',
+            ],
         ];
     }
 }
