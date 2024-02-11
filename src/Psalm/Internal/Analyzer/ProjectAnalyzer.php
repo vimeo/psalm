@@ -502,6 +502,7 @@ final class ProjectAnalyzer
 
             $this->codebase->infer_types_from_usage = true;
         } else {
+            $this->codebase->diff_run = true;
             $this->progress->debug(count($diff_files) . ' changed files: ' . "\n");
             $this->progress->debug('    ' . implode("\n    ", $diff_files) . "\n");
 

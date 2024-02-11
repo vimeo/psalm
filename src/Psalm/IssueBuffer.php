@@ -80,6 +80,7 @@ use function trim;
 use function usort;
 
 use const DEBUG_BACKTRACE_IGNORE_ARGS;
+use const PHP_EOL;
 use const PSALM_VERSION;
 use const STDERR;
 
@@ -650,39 +651,42 @@ final class IssueBuffer
         }
 
         if ($codebase->config->find_unused_issue_handler_suppression) {
-            foreach ($codebase->config->getIssueHandlers() as $type => $handler) {
-                foreach ($handler->getFilters() as $filter) {
-                    if ($filter->suppressions > 0 && $filter->getErrorLevel() == Config::REPORT_SUPPRESS) {
-                        continue;
-                    }
-                    $issues_data['config'][] = new IssueData(
-                        IssueData::SEVERITY_ERROR,
-                        0,
-                        0,
-                        UnusedIssueHandlerSuppression::getIssueType(),
-                        sprintf(
-                            'Suppressed issue type "%s" for %s was not thrown.',
-                            $type,
-                            str_replace(
-                                $codebase->config->base_dir,
-                                '',
-                                implode(', ', [...$filter->getFiles(), ...$filter->getDirectories()]),
+            if ($is_full && !$codebase->diff_run) {
+                foreach ($codebase->config->getIssueHandlers() as $type => $handler) {
+                    foreach ($handler->getFilters() as $filter) {
+                        if ($filter->suppressions > 0 && $filter->getErrorLevel() == Config::REPORT_SUPPRESS) {
+                            continue;
+                        }
+                        $issues_data['config'][] = new IssueData(
+                            IssueData::SEVERITY_ERROR,
+                            0,
+                            0,
+                            UnusedIssueHandlerSuppression::getIssueType(),
+                            sprintf(
+                                'Suppressed issue type "%s" for %s was not thrown.',
+                                $type,
+                                str_replace(
+                                    $codebase->config->base_dir,
+                                    '',
+                                    implode(', ', [...$filter->getFiles(), ...$filter->getDirectories()]),
+                                ),
                             ),
-                        ),
-                        $codebase->config->source_filename ?? '',
-                        '',
-                        '',
-                        '',
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        UnusedIssueHandlerSuppression::SHORTCODE,
-                        UnusedIssueHandlerSuppression::ERROR_LEVEL,
-                    );
+                            $codebase->config->source_filename ?? '',
+                            '',
+                            '',
+                            '',
+                            0,
+                            0,
+                            0,
+                            0,
+                            0,
+                            0,
+                            UnusedIssueHandlerSuppression::SHORTCODE,
+                            UnusedIssueHandlerSuppression::ERROR_LEVEL,
+                        );
+                    }
                 }
+            } else {
             }
         }
 
@@ -826,6 +830,15 @@ final class IssueBuffer
 
                     echo "\n";
                 }
+            }
+
+            if ($codebase->config->find_unused_issue_handler_suppression && (!$is_full || $codebase->diff_run)) {
+                fwrite(
+                    STDERR,
+                    PHP_EOL . 'To whom it may concern: Psalm cannot detect unused issue handler suppressions when'
+                    . PHP_EOL . 'analyzing individual files and folders or running in diff mode. Run on the full'
+                    . PHP_EOL . 'project with diff mode off to enable unused issue handler detection.' . PHP_EOL,
+                );
             }
         }
 

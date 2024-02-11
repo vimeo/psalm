@@ -181,6 +181,9 @@ final class Codebase
 
     public bool $diff_methods = false;
 
+    /** whether or not we only checked a part of the codebase */
+    public bool $diff_run = false;
+
     /**
      * @var array<lowercase-string, string>
      */
