@@ -32,6 +32,12 @@ jobs:
         env:
           COMPOSER_ROOT_VERSION: dev-master
 
+      - name: Check all classes are autoloadable
+        run: |
+          composer dump-autoload -o --strict-psr
+        env:
+          COMPOSER_ROOT_VERSION: dev-master
+
       - name: Cache composer cache
         uses: actions/cache@v4
         with:
