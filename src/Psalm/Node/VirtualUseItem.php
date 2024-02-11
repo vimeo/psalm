@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Psalm\Node\Stmt;
+namespace Psalm\Node;
 
 use PhpParser\Node\UseItem;
 use Psalm\Node\VirtualNode;
