@@ -651,7 +651,7 @@ final class Psalm
     ): array {
         fwrite(STDERR, 'Writing error baseline to file...' . PHP_EOL);
 
-        $errorBaseline = ((string) $options['set-baseline']) ?: $config->error_baseline;
+        $errorBaseline = ((string) $options['set-baseline']) ?: $config->error_baseline ?: Config::DEFAULT_BASELINE_NAME;
 
         try {
             $issue_baseline = ErrorBaseline::read(
@@ -662,7 +662,6 @@ final class Psalm
             $issue_baseline = [];
         }
 
-        echo $errorBaseline;
         ErrorBaseline::create(
             new FileProvider,
             $errorBaseline,
@@ -672,7 +671,7 @@ final class Psalm
 
         fwrite(STDERR, "Baseline saved to $errorBaseline.");
 
-        if ($options['set-baseline'] && $options['set-baseline'] !== $config->error_baseline) {
+        if ($errorBaseline !== $config->error_baseline) {
             CliUtils::updateConfigFile(
                 $config,
                 $path_to_config ?? $current_dir,
