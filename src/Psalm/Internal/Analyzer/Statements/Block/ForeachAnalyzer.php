@@ -929,10 +929,24 @@ final class ForeachAnalyzer
                     );
 
                     if ($iterator_value_type && !$iterator_value_type->isMixed()) {
+                        // remove null coming from current() to signify invalid iterations
+                        // we're in a foreach context, so we know we're not going iterate past the end
+                        if (isset($type_params[1]) && !$type_params[1]->isNullable()) {
+                            $iterator_value_type = $iterator_value_type->getBuilder();
+                            $iterator_value_type->removeType('null');
+                            $iterator_value_type = $iterator_value_type->freeze();
+                        }
                         $value_type = Type::combineUnionTypes($value_type, $iterator_value_type);
                     }
 
                     if ($iterator_key_type && !$iterator_key_type->isMixed()) {
+                        // remove null coming from key() to signify invalid iterations
+                        // we're in a foreach context, so we know we're not going iterate past the end
+                        if (isset($type_params[0]) && !$type_params[0]->isNullable()) {
+                            $iterator_key_type = $iterator_key_type->getBuilder();
+                            $iterator_key_type->removeType('null');
+                            $iterator_key_type = $iterator_key_type->freeze();
+                        }
                         $key_type = Type::combineUnionTypes($key_type, $iterator_key_type);
                     }
                 } elseif ($codebase->classImplements(
