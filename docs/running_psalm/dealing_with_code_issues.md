@@ -99,7 +99,7 @@ If you have a bunch of errors and you don't want to fix them all at once, Psalm 
 vendor/bin/psalm --set-baseline
 ```
 
-will generate a file psalm-baseline.xml containing the current errors. Alternateivly you can specify the name of your baseline file.
+will generate a file `psalm-baseline.xml` containing the current errors. Alternatively, you can specify the name of your baseline file.
 
 ```
 vendor/bin/psalm --set-baseline=your-baseline.xml
