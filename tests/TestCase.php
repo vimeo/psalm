@@ -23,8 +23,11 @@ use function count;
 use function define;
 use function defined;
 use function getcwd;
+use function implode;
 use function ini_set;
 use function is_string;
+use function preg_match;
+use function preg_quote;
 
 use const ARRAY_FILTER_USE_KEY;
 use const DIRECTORY_SEPARATOR;
@@ -153,6 +156,31 @@ class TestCase extends BaseTestCase
     protected function getTestName(bool $withDataSet = true): string
     {
         return $this->getName($withDataSet);
+    }
+
+    public static function assertHasIssueType(string $expected, string $message = ''): void
+    {
+        $issueMessages = [];
+        $res = false;
+        $issues = IssueBuffer::getIssuesData();
+        foreach ($issues as $file_issues) {
+            foreach ($file_issues as $issue) {
+                $fullIssueMessage = $issue->type . ' - ' . $issue->file_name . ':' . $issue->line_from . ':' . $issue->column_from . ' - ' . $issue->message;
+                $issueMessages[] = $fullIssueMessage;
+                if (preg_match('/\b' . preg_quote($expected, '/') . '\b/', $fullIssueMessage)) {
+                    $res = true;
+                }
+            }
+        }
+        if (!$message) {
+            $message = "Failed asserting that issue with \"$expected\".";
+            if (count($issueMessages)) {
+                $message .= "\n" . 'Other exists issues:' . "\n  - " . implode("\n  - ", $issueMessages);
+            } else {
+                $message .= ' Issues is not exists.';
+            }
+        }
+        self::assertTrue($res, $message);
     }
 
     public static function assertArrayKeysAreStrings(array $array, string $message = ''): void
