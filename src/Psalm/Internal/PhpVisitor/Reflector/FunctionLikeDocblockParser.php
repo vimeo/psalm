@@ -238,6 +238,13 @@ final class FunctionLikeDocblockParser
 
                 if (count($param_parts) >= 2) {
                     $info->taint_sink_params[] = ['name' => $param_parts[1], 'taint' => $param_parts[0]];
+                } else {
+                    IssueBuffer::maybeAdd(
+                        new InvalidDocblock(
+                            '@psalm-taint-sink expects 2 arguments',
+                            $code_location,
+                        ),
+                    );
                 }
             }
         }
@@ -279,6 +286,13 @@ final class FunctionLikeDocblockParser
 
                 if ($param_parts[0]) {
                     $info->taint_source_types[] = $param_parts[0];
+                } else {
+                    IssueBuffer::maybeAdd(
+                        new InvalidDocblock(
+                            '@psalm-taint-source expects 1 argument',
+                            $code_location,
+                        ),
+                    );
                 }
             }
         } elseif (isset($parsed_docblock->tags['return-taint'])) {
