@@ -194,6 +194,22 @@ class PsalmEndToEndTest extends TestCase
         $this->assertSame(2, $result['CODE']);
     }
 
+    public function testPsalmSetBaseline(): void
+    {
+        $this->runPsalmInit(1);
+        $this->runPsalm(['--set-baseline'], self::$tmpDir, true);
+
+        $this->assertSame(0, $this->runPsalm([], self::$tmpDir)['CODE']);
+    }
+
+    public function testPsalmSetBaselineWithArgument(): void
+    {
+        $this->runPsalmInit(1);
+        $this->runPsalm(['--set-baseline=psalm-custom-baseline.xml'], self::$tmpDir, true);
+
+        $this->assertSame(0, $this->runPsalm([], self::$tmpDir)['CODE']);
+    }
+
     public function testTaintingWithoutInit(): void
     {
         $result = $this->runPsalm(['--taint-analysis'], self::$tmpDir, true, false);
@@ -210,7 +226,7 @@ class PsalmEndToEndTest extends TestCase
         $result = $this->runPsalm(
             [
                 '--taint-analysis',
-                '--dump-taint-graph='.self::$tmpDir.'/taints.dot',
+                '--dump-taint-graph=' . self::$tmpDir . '/taints.dot',
             ],
             self::$tmpDir,
             true,
@@ -219,7 +235,7 @@ class PsalmEndToEndTest extends TestCase
         $this->assertSame(2, $result['CODE']);
         $this->assertFileEquals(
             __DIR__ . '/../fixtures/expected_taint_graph.dot',
-            self::$tmpDir.'/taints.dot',
+            self::$tmpDir . '/taints.dot',
         );
     }
 
@@ -263,7 +279,7 @@ class PsalmEndToEndTest extends TestCase
 
         if ($level) {
             $args[] = 'src';
-            $args[] = (string) $level;
+            $args[] = (string)$level;
         }
 
         $ret = $this->runPsalm($args, self::$tmpDir, false, false);
