@@ -652,7 +652,7 @@ final class Psalm
         fwrite(STDERR, 'Writing error baseline to file...' . PHP_EOL);
 
         $errorBaseline = is_string($options['set-baseline']) ? $options['set-baseline'] :
-            ($config->error_baseline ?: Config::DEFAULT_BASELINE_NAME);
+            ($config->error_baseline ?? Config::DEFAULT_BASELINE_NAME);
 
         try {
             $issue_baseline = ErrorBaseline::read(
