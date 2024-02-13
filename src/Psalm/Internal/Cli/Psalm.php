@@ -651,13 +651,13 @@ final class Psalm
     ): array {
         fwrite(STDERR, 'Writing error baseline to file...' . PHP_EOL);
 
-        $errorBaseline = is_string($options['set-baseline']) ? $options['set-baseline'] :
+        $error_baseline = is_string($options['set-baseline']) ? $options['set-baseline'] :
             ($config->error_baseline ?? Config::DEFAULT_BASELINE_NAME);
 
         try {
             $issue_baseline = ErrorBaseline::read(
                 new FileProvider,
-                $errorBaseline,
+                $error_baseline,
             );
         } catch (ConfigException) {
             $issue_baseline = [];
@@ -665,18 +665,18 @@ final class Psalm
 
         ErrorBaseline::create(
             new FileProvider,
-            $errorBaseline,
+            $error_baseline,
             IssueBuffer::getIssuesData(),
             $config->include_php_versions_in_error_baseline || isset($options['include-php-versions']),
         );
 
-        fwrite(STDERR, "Baseline saved to $errorBaseline.");
+        fwrite(STDERR, "Baseline saved to $error_baseline.");
 
-        if ($errorBaseline !== $config->error_baseline) {
+        if ($error_baseline !== $config->error_baseline) {
             CliUtils::updateConfigFile(
                 $config,
                 $path_to_config ?? $current_dir,
-                $errorBaseline,
+                $error_baseline,
             );
         }
 
