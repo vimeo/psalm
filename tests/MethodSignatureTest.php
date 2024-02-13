@@ -5,12 +5,14 @@ namespace Psalm\Tests;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
+use Psalm\Tests\Traits\InvalidCodeAnalysisWithIssuesTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 use const DIRECTORY_SEPARATOR;
 
 class MethodSignatureTest extends TestCase
 {
+    use InvalidCodeAnalysisWithIssuesTestTrait;
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
 

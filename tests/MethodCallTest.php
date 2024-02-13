@@ -4,12 +4,14 @@ namespace Psalm\Tests;
 
 use Psalm\Context;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
+use Psalm\Tests\Traits\InvalidCodeAnalysisWithIssuesTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 use const DIRECTORY_SEPARATOR;
 
 class MethodCallTest extends TestCase
 {
+    use InvalidCodeAnalysisWithIssuesTestTrait;
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 

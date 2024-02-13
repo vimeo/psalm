@@ -3,10 +3,12 @@
 namespace Psalm\Tests;
 
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
+use Psalm\Tests\Traits\InvalidCodeAnalysisWithIssuesTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 class MixinAnnotationTest extends TestCase
 {
+    use InvalidCodeAnalysisWithIssuesTestTrait;
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
 
