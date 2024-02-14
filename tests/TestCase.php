@@ -160,22 +160,22 @@ class TestCase extends BaseTestCase
 
     public static function assertHasIssueType(string $expected, string $message = ''): void
     {
-        $issueMessages = [];
+        $issue_messages = [];
         $res = false;
         $issues = IssueBuffer::getIssuesData();
         foreach ($issues as $file_issues) {
             foreach ($file_issues as $issue) {
-                $fullIssueMessage = $issue->type . ' - ' . $issue->file_name . ':' . $issue->line_from . ':' . $issue->column_from . ' - ' . $issue->message;
-                $issueMessages[] = $fullIssueMessage;
-                if (preg_match('/\b' . preg_quote($expected, '/') . '\b/', $fullIssueMessage)) {
+                $full_issue_message = $issue->type . ' - ' . $issue->file_name . ':' . $issue->line_from . ':' . $issue->column_from . ' - ' . $issue->message;
+                $issue_messages[] = $full_issue_message;
+                if (preg_match('/\b' . preg_quote($expected, '/') . '\b/', $full_issue_message)) {
                     $res = true;
                 }
             }
         }
         if (!$message) {
             $message = "Failed asserting that issue with \"$expected\" was emitted.";
-            if (count($issueMessages)) {
-                $message .= "\n" . 'Other issues reported:' . "\n  - " . implode("\n  - ", $issueMessages);
+            if (count($issue_messages)) {
+                $message .= "\n" . 'Other issues reported:' . "\n  - " . implode("\n  - ", $issue_messages);
             } else {
                 $message .= ' No issues reported.';
             }
