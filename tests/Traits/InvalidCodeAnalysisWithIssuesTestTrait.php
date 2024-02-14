@@ -32,7 +32,7 @@ use const PHP_VERSION;
  * If "throw_exception" is set to `false`, the code may continue
  * to execute, and an error may potentially occur.
  *
- * This commit allows testing for the second case, when the value of
+ * This is trait allows testing for the second case, when the value of
  * "throw_exception" will be "false".
  *
  * @psalm-type DeprecatedDataProviderArrayNotation = array{
