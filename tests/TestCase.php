@@ -173,11 +173,11 @@ class TestCase extends BaseTestCase
             }
         }
         if (!$message) {
-            $message = "Failed asserting that issue with \"$expected\".";
+            $message = "Failed asserting that issue with \"$expected\" was emitted.";
             if (count($issueMessages)) {
-                $message .= "\n" . 'Other exists issues:' . "\n  - " . implode("\n  - ", $issueMessages);
+                $message .= "\n" . 'Other issues reported:' . "\n  - " . implode("\n  - ", $issueMessages);
             } else {
-                $message .= ' Issues is not exists.';
+                $message .= ' No issues reported.';
             }
         }
         self::assertTrue($res, $message);
