@@ -960,8 +960,43 @@ class MagicMethodAnnotationTest extends TestCase
                     class B extends A {}
                     function consumeInt(int $i): void {}
 
-                    /** @psalm-suppress UndefinedMethod */
+                    /** @psalm-suppress UndefinedMethod, MixedArgument */
                     consumeInt(B::bar());',
+            ],
+            'magicStaticMethodInheritanceWithoutCallStatic_WithReturnAndManyArgs' => [
+                // This is compatible with "magicMethodInheritanceWithoutCall_WithReturnAndManyArgs"
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @method static void bar()
+                     */
+                    class A {}
+                    class B extends A {}
+
+                    /** @psalm-suppress UndefinedMethod, MixedAssignment */
+                    $a = B::bar(123, "whatever");
+                    PHP,
+                'assertions' => [
+                    '$a===' => 'mixed',
+                ],
+            ],
+            'magicMethodInheritanceWithoutCall_WithReturnAndManyArgs' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @method void bar()
+                     */
+                    class A {}
+                    class B extends A {}
+
+                    $obj = new B();
+
+                    /** @psalm-suppress UndefinedMethod, MixedAssignment */
+                    $a = $obj->bar(123, "whatever");
+                    PHP,
+                'assertions' => [
+                    '$a===' => 'mixed',
+                ],
             ],
             'callUsingParent' => [
                 'code' => '<?php
@@ -1366,6 +1401,32 @@ class MagicMethodAnnotationTest extends TestCase
                         }
                     }',
                 'error_message' => 'NonStaticSelfCall',
+            ],
+            'suppressUndefinedMethodWithObjectCall_WithNotExistsFunc' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @method int bar() */
+                    class A {}
+                    class B extends A {}
+
+                    $obj = new B();
+                
+                    /** @psalm-suppress UndefinedMethod */
+                    $a = $obj->bar(function_does_not_exist(123));
+                    PHP,
+                'error_message' => 'UndefinedFunction',
+            ],
+            'suppressUndefinedMethodWithStaticCall_WithNotExistsFunc' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @method static int bar() */
+                    class A {}
+                    class B extends A {}
+                
+                    /** @psalm-suppress UndefinedMethod */
+                    $a = B::bar(function_does_not_exist(123));
+                    PHP,
+                'error_message' => 'UndefinedFunction',
             ],
         ];
     }
