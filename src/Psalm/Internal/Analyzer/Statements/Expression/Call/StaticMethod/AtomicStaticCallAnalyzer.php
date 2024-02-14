@@ -710,7 +710,7 @@ final class AtomicStaticCallAnalyzer
                         return false;
                     }
                 }
-            } elseif ($found_method_and_class_storage) {
+            } elseif ($found_method_and_class_storage && ($naive_method_exists || $with_pseudo)) {
                 [$pseudo_method_storage, $defining_class_storage] = $found_method_and_class_storage;
 
                 if (self::checkPseudoMethod(
@@ -727,9 +727,7 @@ final class AtomicStaticCallAnalyzer
                     return false;
                 }
 
-                if ($pseudo_method_storage->return_type
-                    && ($naive_method_exists || $with_pseudo)
-                ) {
+                if ($pseudo_method_storage->return_type) {
                     return true;
                 }
             } elseif ($stmt->class instanceof PhpParser\Node\Name && $stmt->class->getFirst() === 'parent'
