@@ -27,10 +27,12 @@ use const PHP_VERSION;
  * $codebase->config->throw_exception = true; // or false
  * ```
  *
- * If "throw_exception" is set to `true`, code execution stops.
+ * When `throw_exception` is set to `true`, code execution stops once
+ * the first issue is emitted, thus it may mask any problems after
+ * that point.
  *
- * If "throw_exception" is set to `false`, the code may continue
- * to execute, and an error may potentially occur.
+ * When `throw_exception` is set to `false`, the code will continue
+ * to be executed and we can uncover some additional bugs.
  *
  * This is trait allows testing for the second case, when the value of
  * "throw_exception" will be "false".
