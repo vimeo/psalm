@@ -107,6 +107,6 @@ trait InvalidCodeAnalysisWithIssuesTestTrait
         $this->addFile($file_path, $code);
         $this->analyzeFile($file_path, new Context());
 
-        $this->assertHasIssueType($error_message);
+        $this->assertHasIssue($error_message);
     }
 }

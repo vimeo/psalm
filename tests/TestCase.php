@@ -158,7 +158,7 @@ class TestCase extends BaseTestCase
         return $this->getName($withDataSet);
     }
 
-    public static function assertHasIssueType(string $expected, string $message = ''): void
+    public static function assertHasIssue(string $expected, string $message = ''): void
     {
         $issue_messages = [];
         $res = false;
