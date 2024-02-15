@@ -87,10 +87,20 @@ namespace Random
          */
         public function getBytes(int $length): string {}
 
+        /**
+         * @template TValue
+         * @param array<TValue> $array
+         * @return list<TValue>
+         */
         public function shuffleArray(array $array): array {}
 
         public function shuffleBytes(string $bytes): string {}
 
+        /**
+         * @template TKey as array-key
+         * @param array<TKey, mixed> $array
+         * @return list<TKey>
+         */
         public function pickArrayKeys(array $array, int $num): array {}
 
         public function __serialize(): array {}
