@@ -384,97 +384,29 @@ final class AtomicStaticCallAnalyzer
 
         $args = $stmt->isFirstClassCallable() ? [] : $stmt->getArgs();
 
-        if (!$naive_method_exists
-            && $class_storage->mixin_declaring_fqcln
-            && $class_storage->namedMixins
-        ) {
-            foreach ($class_storage->namedMixins as $mixin) {
-                $new_method_id = new MethodIdentifier(
-                    $mixin->value,
-                    $method_name_lc,
-                );
+        if (!$naive_method_exists) {
+            $new_lhs_type = self::handleRegularMixins(
+                $class_storage,
+                $lhs_type_part,
+                $method_name_lc,
+                $codebase,
+                $context,
+                $stmt_name,
+                $statements_analyzer,
+                $fq_class_name,
+            );
+            if ($new_lhs_type !== null) {
+                $mixin_context = clone $context;
+                $mixin_context->vars_in_scope['$__tmp_mixin_var__'] = $new_lhs_type;
 
-                if ($codebase->methods->methodExists(
-                    $new_method_id,
-                    $context->calling_method_id,
-                    $codebase->collect_locations
-                        ? new CodeLocation($statements_analyzer, $stmt_name)
-                        : null,
-                    !$context->collect_initializations
-                    && !$context->collect_mutations
-                        ? $statements_analyzer
-                        : null,
-                    $statements_analyzer->getFilePath(),
+                return self::forwardCallToInstanceMethod(
+                    $statements_analyzer,
+                    $stmt,
+                    $stmt_name,
+                    $mixin_context,
+                    '__tmp_mixin_var__',
                     true,
-                    $context->insideUse(),
-                )) {
-                    $mixin_candidates = [];
-                    foreach ($class_storage->templatedMixins as $mixin_candidate) {
-                        $mixin_candidates[] = $mixin_candidate;
-                    }
-
-                    foreach ($class_storage->namedMixins as $mixin_candidate) {
-                        $mixin_candidates[] = $mixin_candidate;
-                    }
-
-                    $mixin_candidates_no_generic = array_filter(
-                        $mixin_candidates,
-                        static fn(Atomic $check): bool => !($check instanceof TGenericObject),
-                    );
-
-                    // $mixin_candidates_no_generic will only be empty when there are TGenericObject entries.
-                    // In that case, Union will be initialized with an empty array but
-                    // replaced with non-empty types in the following loop.
-                    /** @psalm-suppress ArgumentTypeCoercion */
-                    $mixin_candidate_type = new Union($mixin_candidates_no_generic);
-
-                    foreach ($mixin_candidates as $tGenericMixin) {
-                        if (!($tGenericMixin instanceof TGenericObject)) {
-                            continue;
-                        }
-
-                        $mixin_declaring_class_storage = $codebase->classlike_storage_provider->get(
-                            $class_storage->mixin_declaring_fqcln,
-                        );
-
-                        $new_mixin_candidate_type = AtomicPropertyFetchAnalyzer::localizePropertyType(
-                            $codebase,
-                            new Union([$lhs_type_part]),
-                            $tGenericMixin,
-                            $class_storage,
-                            $mixin_declaring_class_storage,
-                        )->getBuilder();
-
-                        foreach ($mixin_candidate_type->getAtomicTypes() as $type) {
-                            $new_mixin_candidate_type->addType($type);
-                        }
-
-                        $mixin_candidate_type = $new_mixin_candidate_type->freeze();
-                    }
-
-                    $new_lhs_type = TypeExpander::expandUnion(
-                        $codebase,
-                        $mixin_candidate_type,
-                        $fq_class_name,
-                        $fq_class_name,
-                        $class_storage->parent_class,
-                        true,
-                        false,
-                        $class_storage->final,
-                    );
-
-                    $mixin_context = clone $context;
-                    $mixin_context->vars_in_scope['$__tmp_mixin_var__'] = $new_lhs_type;
-
-                    return self::forwardCallToInstanceMethod(
-                        $statements_analyzer,
-                        $stmt,
-                        $stmt_name,
-                        $mixin_context,
-                        '__tmp_mixin_var__',
-                        true,
-                    );
-                }
+                );
             }
         }
 
@@ -988,6 +920,103 @@ final class AtomicStaticCallAnalyzer
             );
         }
 
+        return null;
+    }
+
+    /**
+     * @param lowercase-string $method_name_lc
+     */
+    private static function handleRegularMixins(
+        ClassLikeStorage $class_storage,
+        Atomic $lhs_type_part,
+        string $method_name_lc,
+        Codebase $codebase,
+        Context $context,
+        PhpParser\Node\Identifier $stmt_name,
+        StatementsAnalyzer $statements_analyzer,
+        string $fq_class_name
+    ): ?Union {
+        if ($class_storage->mixin_declaring_fqcln === null) {
+            return null;
+        }
+        foreach ($class_storage->namedMixins as $mixin) {
+            $new_method_id = new MethodIdentifier(
+                $mixin->value,
+                $method_name_lc,
+            );
+
+            if ($codebase->methods->methodExists(
+                $new_method_id,
+                $context->calling_method_id,
+                $codebase->collect_locations
+                    ? new CodeLocation($statements_analyzer, $stmt_name)
+                    : null,
+                !$context->collect_initializations
+                && !$context->collect_mutations
+                    ? $statements_analyzer
+                    : null,
+                $statements_analyzer->getFilePath(),
+                true,
+                $context->insideUse(),
+            )) {
+                $mixin_candidates = [];
+                foreach ($class_storage->templatedMixins as $mixin_candidate) {
+                    $mixin_candidates[] = $mixin_candidate;
+                }
+
+                foreach ($class_storage->namedMixins as $mixin_candidate) {
+                    $mixin_candidates[] = $mixin_candidate;
+                }
+
+                $mixin_candidates_no_generic = array_filter(
+                    $mixin_candidates,
+                    static fn(Atomic $check): bool => !($check instanceof TGenericObject),
+                );
+
+                // $mixin_candidates_no_generic will only be empty when there are TGenericObject entries.
+                // In that case, Union will be initialized with an empty array but
+                // replaced with non-empty types in the following loop.
+                /** @psalm-suppress ArgumentTypeCoercion */
+                $mixin_candidate_type = new Union($mixin_candidates_no_generic);
+
+                foreach ($mixin_candidates as $tGenericMixin) {
+                    if (!($tGenericMixin instanceof TGenericObject)) {
+                        continue;
+                    }
+
+                    $mixin_declaring_class_storage = $codebase->classlike_storage_provider->get(
+                        $class_storage->mixin_declaring_fqcln,
+                    );
+
+                    $new_mixin_candidate_type = AtomicPropertyFetchAnalyzer::localizePropertyType(
+                        $codebase,
+                        new Union([$lhs_type_part]),
+                        $tGenericMixin,
+                        $class_storage,
+                        $mixin_declaring_class_storage,
+                    )->getBuilder();
+
+                    foreach ($mixin_candidate_type->getAtomicTypes() as $type) {
+                        $new_mixin_candidate_type->addType($type);
+                    }
+
+                    $mixin_candidate_type = $new_mixin_candidate_type->freeze();
+                }
+
+                $new_lhs_type = TypeExpander::expandUnion(
+                    $codebase,
+                    $mixin_candidate_type,
+                    $fq_class_name,
+                    $fq_class_name,
+                    $class_storage->parent_class,
+                    true,
+                    false,
+                    $class_storage->final,
+                );
+
+                return $new_lhs_type;
+            }
+        }
         return null;
     }
 
