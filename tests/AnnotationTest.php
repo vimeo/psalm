@@ -532,7 +532,7 @@ class AnnotationTest extends TestCase
                     $_ = (new A)->ret();
                 ',
                 'assertions' => [
-                    '$_===' => 'list<array{href: string, lang: string}>'
+                    '$_===' => 'list<array{href: string, lang: string}>',
                 ],
             ],
             'builtInClassInAShape' => [
