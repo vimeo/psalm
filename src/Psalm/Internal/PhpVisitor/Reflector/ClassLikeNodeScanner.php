@@ -78,6 +78,7 @@ use function array_values;
 use function assert;
 use function count;
 use function implode;
+use function ltrim;
 use function preg_match;
 use function preg_split;
 use function strtolower;
@@ -1925,7 +1926,7 @@ final class ClassLikeNodeScanner
                 continue;
             }
 
-            if ($var_line_parts[0] === ' ') {
+            while (isset($var_line_parts[0]) && $var_line_parts[0] === ' ') {
                 array_shift($var_line_parts);
             }
 
@@ -1941,11 +1942,12 @@ final class ClassLikeNodeScanner
                 continue;
             }
 
-            if ($var_line_parts[0] === ' ') {
+            while (isset($var_line_parts[0]) && $var_line_parts[0] === ' ') {
                 array_shift($var_line_parts);
             }
 
             $type_string = implode('', $var_line_parts);
+            $type_string = ltrim($type_string, "* \n\r");
             try {
                 $type_string = CommentAnalyzer::splitDocLine($type_string)[0];
             } catch (DocblockParseException $e) {
