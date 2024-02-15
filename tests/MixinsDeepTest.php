@@ -42,6 +42,41 @@ class MixinsDeepTest extends TestCase
                     '$b' => 'int',
                 ],
             ],
+            'NamedMixinsWithoutT_WithStaticMethods' => [
+                'code' => <<<'PHP'
+                    <?php
+                    abstract class Foo {
+                        public static function getString(): string {}
+                    }
+
+                    /**
+                     * @mixin Foo
+                     */
+                    abstract class Bar {
+                        public static function getInt(): int {}
+                        public static function __callStatic(string $name, array $arguments) {}
+                    }
+
+                    /**
+                     * @mixin Bar
+                     */
+                    class Baz {
+                        public static function __callStatic(string $name, array $arguments) {}
+                    }
+
+                    /** @mixin Baz */
+                    class Bat {
+                        public static function __callStatic(string $name, array $arguments) {}
+                    }
+                    $a = Bat::getString();
+                    $b = Bat::getInt();
+                    PHP,
+                'assertions' => [
+                    '$a' => 'string',
+                    '$b' => 'int',
+                ],
+                'ignored_issues' => ['InvalidReturnType'],
+            ],
             'NamedMixinsWithT_WithObjectMethods' => [
                 'code' => <<<'PHP'
                     <?php
@@ -87,6 +122,55 @@ class MixinsDeepTest extends TestCase
                     '$a' => 'string',
                     '$b' => 'int',
                 ],
+            ],
+            'NamedMixinsWithT_WithStaticMethods' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T
+                     */
+                    abstract class Foo {
+                        /**
+                         * @return T
+                         */
+                        public static function getString() {}
+                    }
+
+                    /**
+                     * @template T1
+                     * @template T2
+                     * @mixin Foo<T1>
+                     */
+                    abstract class Bar {
+                        /**
+                         * @return T2
+                         */
+                        public static function getInt() {}
+
+                        public static function __callStatic(string $name, array $arguments) {}
+                    }
+
+                    /**
+                     * @template T1
+                     * @template T2
+                     * @mixin Bar<T1, T2>
+                     */
+                    class Baz {
+                        public static function __callStatic(string $name, array $arguments) {}
+                    }
+
+                    /** @mixin Baz<string, int> */
+                    class Bat {
+                        public static function __callStatic(string $name, array $arguments) {}
+                    }
+                    $a = Bat::getString();
+                    $b = Bat::getInt();
+                    PHP,
+                'assertions' => [
+                    '$a' => 'string',
+                    '$b' => 'int',
+                ],
+                'ignored_issues' => ['InvalidReturnType'],
             ],
             'TemplatedMixins_WithObjectMethods' => [
                 'code' => <<<'PHP'
