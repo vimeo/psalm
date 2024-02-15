@@ -786,7 +786,7 @@ class ConditionalReturnTypeTest extends TestCase
                          * @template TSource as self::SOURCE_*
                          * @param TSource $source
                          * @return (TSource is "BODY" ? object|list : array)
-                         * @psalm-taint-source
+                         * @psalm-taint-source input
                          */
                         public function getParams(
                             string $source = self::SOURCE_GET

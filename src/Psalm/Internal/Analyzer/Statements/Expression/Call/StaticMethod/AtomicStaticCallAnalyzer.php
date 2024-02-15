@@ -32,6 +32,7 @@ use Psalm\Issue\InternalClass;
 use Psalm\Issue\InvalidStringClass;
 use Psalm\Issue\MixedMethodCall;
 use Psalm\Issue\UndefinedClass;
+use Psalm\Issue\UndefinedMethod;
 use Psalm\IssueBuffer;
 use Psalm\Node\Expr\VirtualArray;
 use Psalm\Node\Expr\VirtualMethodCall;
@@ -492,6 +493,7 @@ final class AtomicStaticCallAnalyzer
             $method_name_lc,
         );
 
+
         if ($stmt->isFirstClassCallable()) {
             if ($found_method_and_class_storage) {
                 [ $method_storage ] = $found_method_and_class_storage;
@@ -517,8 +519,31 @@ final class AtomicStaticCallAnalyzer
                         $codebase->getMethodReturnType($method_id, $fq_class_name),
                         $codebase->methods->getStorage($declaring_method_id)->pure,
                     )]);
+                } elseif ($codebase->methodExists(
+                    $call_static_method_id = new MethodIdentifier($method_id->fq_class_name, '__callstatic'),
+                    new CodeLocation($statements_analyzer, $stmt),
+                    null,
+                    null,
+                    false,
+                )) {
+                    $return_type_candidate = new Union([new TClosure(
+                        'Closure',
+                        null,
+                        $codebase->getMethodReturnType($call_static_method_id, $fq_class_name),
+                        $codebase->methods->getStorage($call_static_method_id)->pure,
+                    )]);
                 } else {
-                    // FIXME: perhaps Psalm should complain about nonexisting method here, or throw a logic exception?
+                    if (IssueBuffer::accepts(
+                        new UndefinedMethod(
+                            'Method ' . $method_id . ' does not exist',
+                            new CodeLocation($statements_analyzer, $stmt),
+                            (string) $method_id,
+                        ),
+                        $statements_analyzer->getSuppressedIssues(),
+                    )) {
+                        return false;
+                    }
+
                     $return_type_candidate = Type::getClosure();
                 }
             }
