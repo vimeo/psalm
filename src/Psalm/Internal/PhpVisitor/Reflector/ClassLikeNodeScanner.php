@@ -1948,11 +1948,8 @@ final class ClassLikeNodeScanner
                 continue;
             }
 
-            if ($var_line_parts[0] === ' ') {
-                array_shift($var_line_parts);
-            }
-
             $type_string = implode('', $var_line_parts);
+            $type_string = ltrim($type_string, "* \n\r");
             try {
                 $type_string = CommentAnalyzer::splitDocLine($type_string)[0];
             } catch (DocblockParseException $e) {
