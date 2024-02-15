@@ -78,6 +78,7 @@ use function get_class;
 use function implode;
 use function is_int;
 use function is_string;
+use function ltrim;
 use function preg_match;
 use function preg_replace;
 use function preg_split;
@@ -1948,11 +1949,8 @@ final class ClassLikeNodeScanner
                 continue;
             }
 
-            if ($var_line_parts[0] === ' ') {
-                array_shift($var_line_parts);
-            }
-
             $type_string = implode('', $var_line_parts);
+            $type_string = ltrim($type_string, "* \n\r");
             try {
                 $type_string = CommentAnalyzer::splitDocLine($type_string)[0];
             } catch (DocblockParseException $e) {
