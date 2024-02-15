@@ -18,6 +18,7 @@
 return [
   'added' => [
     'json_validate' => ['bool', 'json'=>'string', 'depth='=>'positive-int', 'flags='=>'int'],
+    'Random\\Randomizer::getBytesFromString' => ['non-empty-string', 'string' => 'non-empty-string', 'length' => 'int<1, max>'],
   ],
 
   'changed' => [

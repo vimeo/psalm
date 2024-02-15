@@ -461,9 +461,9 @@ final class FunctionLikeNodeScanner
             }
 
             if ($docblock_info) {
-                if ($docblock_info->since_php_major_version && !$this->aliases->namespace) {
+                if ($docblock_info->since_php_major_version) {
                     $analysis_major_php_version = $this->codebase->getMajorAnalysisPhpVersion();
-                    $analysis_minor_php_version = $this->codebase->getMajorAnalysisPhpVersion();
+                    $analysis_minor_php_version = $this->codebase->getMinorAnalysisPhpVersion();
                     if ($docblock_info->since_php_major_version > $analysis_major_php_version) {
                         return false;
                     }

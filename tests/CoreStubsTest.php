@@ -424,10 +424,44 @@ class CoreStubsTest extends TestCase
                 $globBrace = glob('abc', GLOB_BRACE);
                 PHP,
         ];
+        yield 'randomizer' => [
+            'code' => <<<'PHP'
+                <?php
+                $r = new Random\Randomizer;
+                /** @var array<int, int> */
+                $arr = [];
+                $res = $r->shuffleArray($arr);
+                /** @psalm-check-type-exact $res = list<int> */;
+
+                /** @var non-empty-array<int, int> */
+                $arr = [];
+                $res = $r->shuffleArray($arr);
+                /** @psalm-check-type-exact $res = non-empty-list<int> */;
+
+                $str = '123';
+                $res = $r->getBytesFromString($str, 3);
+                /** @psalm-check-type-exact $res = non-empty-string */;
+                PHP,
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '8.3',
+        ];
     }
 
     public function providerInvalidCodeParse(): iterable
     {
+        yield 'randomizer 8.2' => [
+            'code' => <<<'PHP'
+                <?php
+                $r = new Random\Randomizer;
+
+                $str = '123';
+                $res = $r->getBytesFromString($str, 3);
+                PHP,
+            'error_message' => 'InvalidAssignment',
+            'error_levels' => [],
+            'php_version' => '8.2',
+        ];
         yield 'json_decode invalid depth' => [
             'code' => '<?php
                 json_decode("true", depth: -1);

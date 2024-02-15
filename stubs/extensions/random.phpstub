@@ -90,7 +90,7 @@ namespace Random
         /**
          * @template TValue
          * @param array<TValue> $array
-         * @return list<TValue>
+         * @return ($array is non-empty-array<TValue> ? non-empty-list<TValue> : list<TValue>)
          */
         public function shuffleArray(array $array): array {}
 
@@ -102,6 +102,15 @@ namespace Random
          * @return list<TKey>
          */
         public function pickArrayKeys(array $array, int $num): array {}
+
+        /**
+         * @since 8.3
+         *
+         * @param non-empty-string $string
+         * @param positive-int $length
+         * @return non-empty-string
+         */
+        public function getBytesFromString(string $string, int $length): string {}
 
         public function __serialize(): array {}
 

@@ -390,6 +390,14 @@ final class FunctionLikeDocblockParser
                 $info->since_php_major_version = (int)$since_parts[0];
                 $info->since_php_minor_version = (int)$since_parts[1];
             }
+        } elseif (isset($parsed_docblock->tags['php-from'])) {
+            $since = trim(reset($parsed_docblock->tags['php-from']));
+            if (preg_match('/^[4578]\.\d(\.\d+)?$/', $since)) {
+                $since_parts = explode('.', $since);
+
+                $info->since_php_major_version = (int)$since_parts[0];
+                $info->since_php_minor_version = (int)$since_parts[1];
+            }
         }
 
         if (isset($parsed_docblock->tags['deprecated'])) {
