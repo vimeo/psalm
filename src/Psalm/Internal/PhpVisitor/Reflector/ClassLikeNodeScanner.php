@@ -1933,7 +1933,7 @@ final class ClassLikeNodeScanner
                 continue;
             }
 
-            if ($var_line_parts[0] === ' ') {
+            while (isset($var_line_parts[0]) && $var_line_parts[0] === ' ') {
                 array_shift($var_line_parts);
             }
 
@@ -1947,6 +1947,10 @@ final class ClassLikeNodeScanner
 
             if (!isset($var_line_parts[0])) {
                 continue;
+            }
+
+            while (isset($var_line_parts[0]) && $var_line_parts[0] === ' ') {
+                array_shift($var_line_parts);
             }
 
             $type_string = implode('', $var_line_parts);
