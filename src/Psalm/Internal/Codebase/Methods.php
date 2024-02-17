@@ -99,7 +99,8 @@ final class Methods
         ?StatementsSource $source = null,
         ?string $source_file_path = null,
         bool $use_method_existence_provider = true,
-        bool $is_used = false
+        bool $is_used = false,
+        bool $with_pseudo = false
     ): bool {
         $fq_class_name = $method_id->fq_class_name;
         $method_name = $method_id->method_name;
@@ -147,9 +148,11 @@ final class Methods
             $calling_class_name = explode('::', $calling_method_id)[0];
         }
 
-        if (isset($class_storage->declaring_method_ids[$method_name])) {
-            $declaring_method_id = $class_storage->declaring_method_ids[$method_name];
-
+        $declaring_method_id = $class_storage->declaring_method_ids[$method_name] ?? null;
+        if ($declaring_method_id === null && $with_pseudo) {
+            $declaring_method_id = $class_storage->declaring_pseudo_method_ids[$method_name] ?? null;
+        }
+        if ($declaring_method_id !== null) {
             if ($calling_method_id === strtolower((string) $declaring_method_id)) {
                 return true;
             }
@@ -365,7 +368,7 @@ final class Methods
             }
         }
 
-        $declaring_method_id = $this->getDeclaringMethodId($method_id);
+        $declaring_method_id = $this->getDeclaringMethodId($method_id, true);
 
         $callmap_id = $declaring_method_id ?? $method_id;
 
@@ -421,7 +424,7 @@ final class Methods
         }
 
         if ($declaring_method_id) {
-            $storage = $this->getStorage($declaring_method_id);
+            $storage = $this->getStorage($declaring_method_id, true);
 
             $params = $storage->params;
 
@@ -1008,7 +1011,8 @@ final class Methods
 
     /** @psalm-mutation-free */
     public function getDeclaringMethodId(
-        MethodIdentifier $method_id
+        MethodIdentifier $method_id,
+        bool $with_pseudo = false
     ): ?MethodIdentifier {
         $fq_class_name = $this->classlikes->getUnAliasedName($method_id->fq_class_name);
 
@@ -1022,6 +1026,10 @@ final class Methods
 
         if ($class_storage->abstract && isset($class_storage->overridden_method_ids[$method_name])) {
             return reset($class_storage->overridden_method_ids[$method_name]);
+        }
+
+        if ($with_pseudo && isset($class_storage->declaring_pseudo_method_ids[$method_name])) {
+            return $class_storage->declaring_pseudo_method_ids[$method_name];
         }
 
         return null;
@@ -1080,7 +1088,7 @@ final class Methods
 
     public function getUserMethodStorage(MethodIdentifier $method_id): ?MethodStorage
     {
-        $declaring_method_id = $this->getDeclaringMethodId($method_id);
+        $declaring_method_id = $this->getDeclaringMethodId($method_id, true);
 
         if (!$declaring_method_id) {
             if (InternalCallMapHandler::inCallMap((string) $method_id)) {
@@ -1090,7 +1098,7 @@ final class Methods
             throw new UnexpectedValueException('$storage should not be null for ' . $method_id);
         }
 
-        $storage = $this->getStorage($declaring_method_id);
+        $storage = $this->getStorage($declaring_method_id, true);
 
         if (!$storage->location) {
             return null;
@@ -1131,7 +1139,7 @@ final class Methods
     }
 
     /** @psalm-mutation-free */
-    public function getStorage(MethodIdentifier $method_id): MethodStorage
+    public function getStorage(MethodIdentifier $method_id, bool $with_pseudo = false): MethodStorage
     {
         try {
             $class_storage = $this->classlike_storage_provider->get($method_id->fq_class_name);
@@ -1141,13 +1149,21 @@ final class Methods
 
         $method_name = $method_id->method_name;
 
-        if (!isset($class_storage->methods[$method_name])) {
+        $storage = $class_storage->methods[$method_name] ?? null;
+
+        if ($storage === null && $with_pseudo) {
+            $storage = $class_storage->pseudo_methods[$method_name]
+                ?? $class_storage->pseudo_static_methods[$method_name]
+                ?? null;
+        }
+
+        if ($storage === null) {
             throw new UnexpectedValueException(
                 '$storage should not be null for ' . $method_id,
             );
         }
 
-        return $class_storage->methods[$method_name];
+        return $storage;
     }
 
     /** @psalm-mutation-free */

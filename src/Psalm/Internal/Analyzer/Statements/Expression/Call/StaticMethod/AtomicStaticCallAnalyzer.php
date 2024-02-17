@@ -32,12 +32,8 @@ use Psalm\Issue\MixedMethodCall;
 use Psalm\Issue\UndefinedClass;
 use Psalm\Issue\UndefinedMethod;
 use Psalm\IssueBuffer;
-use Psalm\Node\Expr\VirtualArray;
-use Psalm\Node\Expr\VirtualArrayItem;
 use Psalm\Node\Expr\VirtualMethodCall;
 use Psalm\Node\Expr\VirtualVariable;
-use Psalm\Node\Scalar\VirtualString;
-use Psalm\Node\VirtualArg;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
@@ -57,7 +53,6 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
 use function array_filter;
-use function array_map;
 use function array_values;
 use function assert;
 use function count;
@@ -562,6 +557,49 @@ final class AtomicStaticCallAnalyzer
             return true;
         }
 
+        $callstatic_id = new MethodIdentifier(
+            $fq_class_name,
+            '__callstatic',
+        );
+
+        $callstatic_method_exists = $codebase->methods->methodExists($callstatic_id);
+
+        $with_pseudo = $callstatic_method_exists
+            || $codebase->config->use_phpdoc_method_without_magic_or_parent;
+
+        if ($codebase->methods->getDeclaringMethodId($method_id, $with_pseudo)) {
+            if ((!$stmt->class instanceof PhpParser\Node\Name
+                    || $stmt->class->getFirst() !== 'parent'
+                    || $statements_analyzer->isStatic())
+                && (
+                    !$context->self
+                    || $statements_analyzer->isStatic()
+                    || !$codebase->classExtends($context->self, $fq_class_name)
+                )
+            ) {
+                MethodAnalyzer::checkStatic(
+                    $method_id,
+                    ($stmt->class instanceof PhpParser\Node\Name
+                        && strtolower($stmt->class->getFirst()) === 'self')
+                    || $context->self === $fq_class_name,
+                    !$statements_analyzer->isStatic(),
+                    $codebase,
+                    new CodeLocation($statements_analyzer, $stmt),
+                    $statements_analyzer->getSuppressedIssues(),
+                    $is_dynamic_this_method,
+                );
+
+                if ($is_dynamic_this_method) {
+                    return self::forwardCallToInstanceMethod(
+                        $statements_analyzer,
+                        $stmt,
+                        $stmt_name,
+                        $context,
+                    );
+                }
+            }
+        }
+
         if (!$naive_method_exists
             || !MethodAnalyzer::isMethodVisible(
                 $method_id,
@@ -569,28 +607,9 @@ final class AtomicStaticCallAnalyzer
                 $statements_analyzer->getSource(),
             )
             || $fake_method_exists
-            || ($found_method_and_class_storage
-                && ($config->use_phpdoc_method_without_magic_or_parent || $class_storage->parent_class))
+            || $found_method_and_class_storage
         ) {
-            $callstatic_id = new MethodIdentifier(
-                $fq_class_name,
-                '__callstatic',
-            );
-
-            if ($codebase->methods->methodExists(
-                $callstatic_id,
-                $context->calling_method_id,
-                $codebase->collect_locations
-                    ? new CodeLocation($statements_analyzer, $stmt_name)
-                    : null,
-                !$context->collect_initializations
-                    && !$context->collect_mutations
-                    ? $statements_analyzer
-                    : null,
-                $statements_analyzer->getFilePath(),
-                true,
-                $context->insideUse(),
-            )) {
+            if ($callstatic_method_exists) {
                 $callstatic_declaring_id = $codebase->methods->getDeclaringMethodId($callstatic_id);
                 assert($callstatic_declaring_id !== null);
                 $callstatic_pure = false;
@@ -691,39 +710,7 @@ final class AtomicStaticCallAnalyzer
                         return false;
                     }
                 }
-
-                $array_values = array_map(
-                    static fn(PhpParser\Node\Arg $arg): PhpParser\Node\Expr\ArrayItem => new VirtualArrayItem(
-                        $arg->value,
-                        null,
-                        false,
-                        $arg->getAttributes(),
-                    ),
-                    $args,
-                );
-
-                $args = [
-                    new VirtualArg(
-                        new VirtualString((string) $method_id, $stmt_name->getAttributes()),
-                        false,
-                        false,
-                        $stmt_name->getAttributes(),
-                    ),
-                    new VirtualArg(
-                        new VirtualArray($array_values, $stmt->getAttributes()),
-                        false,
-                        false,
-                        $stmt->getAttributes(),
-                    ),
-                ];
-
-                $method_id = new MethodIdentifier(
-                    $fq_class_name,
-                    '__callstatic',
-                );
-            } elseif ($found_method_and_class_storage
-                && ($config->use_phpdoc_method_without_magic_or_parent || $class_storage->parent_class)
-            ) {
+            } elseif ($found_method_and_class_storage && ($naive_method_exists || $with_pseudo)) {
                 [$pseudo_method_storage, $defining_class_storage] = $found_method_and_class_storage;
 
                 if (self::checkPseudoMethod(
@@ -802,13 +789,18 @@ final class AtomicStaticCallAnalyzer
             }
         }
 
-        $does_method_exist = MethodAnalyzer::checkMethodExists(
-            $codebase,
-            $method_id,
-            new CodeLocation($statements_analyzer, $stmt),
-            $statements_analyzer->getSuppressedIssues(),
-            $context->calling_method_id,
-        );
+        if (!$callstatic_method_exists || $class_storage->hasSealedMethods($config)) {
+            $does_method_exist = MethodAnalyzer::checkMethodExists(
+                $codebase,
+                $method_id,
+                new CodeLocation($statements_analyzer, $stmt),
+                $statements_analyzer->getSuppressedIssues(),
+                $context->calling_method_id,
+                $with_pseudo,
+            );
+        } else {
+            $does_method_exist = null;
+        }
 
         if (!$does_method_exist) {
             if (ArgumentsAnalyzer::analyze(
@@ -868,37 +860,6 @@ final class AtomicStaticCallAnalyzer
             $statements_analyzer->getSuppressedIssues(),
         ) === false) {
             return false;
-        }
-
-        if ((!$stmt->class instanceof PhpParser\Node\Name
-                || $stmt->class->getFirst() !== 'parent'
-                || $statements_analyzer->isStatic())
-            && (
-                !$context->self
-                || $statements_analyzer->isStatic()
-                || !$codebase->classExtends($context->self, $fq_class_name)
-            )
-        ) {
-            MethodAnalyzer::checkStatic(
-                $method_id,
-                ($stmt->class instanceof PhpParser\Node\Name
-                    && strtolower($stmt->class->getFirst()) === 'self')
-                || $context->self === $fq_class_name,
-                !$statements_analyzer->isStatic(),
-                $codebase,
-                new CodeLocation($statements_analyzer, $stmt),
-                $statements_analyzer->getSuppressedIssues(),
-                $is_dynamic_this_method,
-            );
-
-            if ($is_dynamic_this_method) {
-                return self::forwardCallToInstanceMethod(
-                    $statements_analyzer,
-                    $stmt,
-                    $stmt_name,
-                    $context,
-                );
-            }
         }
 
         $has_existing_method = true;
