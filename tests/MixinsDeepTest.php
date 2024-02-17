@@ -77,6 +77,38 @@ class MixinsDeepTest extends TestCase
                 ],
                 'ignored_issues' => ['InvalidReturnType'],
             ],
+            'NamedMixinsWithoutT_WithObjectProperties' => [
+                'code' => <<<'PHP'
+                    <?php
+                    abstract class Foo {
+                        public string $propString = 'hello';
+                    }
+
+                    /**
+                     * @mixin Foo
+                     */
+                    abstract class Bar {
+                        public int $propInt = 123;
+                        
+                        public function __get(string $name) {}
+                    }
+
+                    /**
+                     * @mixin Bar
+                     */
+                    class Baz {
+                        public function __get(string $name) {}
+                    }
+
+                    $baz = new Baz();
+                    $a = $baz->propString;
+                    $b = $baz->propInt;
+                    PHP,
+                'assertions' => [
+                    '$a' => 'string',
+                    '$b' => 'int',
+                ],
+            ],
             'NamedMixinsWithT_WithObjectMethods' => [
                 'code' => <<<'PHP'
                     <?php
