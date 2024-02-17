@@ -265,38 +265,19 @@ final class AtomicPropertyFetchAnalyzer
 
         if (!$naive_property_exists) {
             if ($class_storage->namedMixins) {
-                foreach ($class_storage->namedMixins as $mixin) {
-                    $new_property_id = $mixin->value . '::$' . $prop_name;
-
-                    try {
-                        $new_class_storage = $codebase->classlike_storage_provider->get($mixin->value);
-                    } catch (InvalidArgumentException $e) {
-                        $new_class_storage = null;
-                    }
-
-                    if ($new_class_storage
-                        && ($codebase->properties->propertyExists(
-                            $new_property_id,
-                            !$in_assignment,
-                            $statements_analyzer,
-                            $context,
-                            $codebase->collect_locations
-                                    ? new CodeLocation($statements_analyzer->getSource(), $stmt)
-                                    : null,
-                        )
-                            || isset($new_class_storage->pseudo_property_get_types['$' . $prop_name]))
-                    ) {
-                        $fq_class_name = $mixin->value;
-                        $lhs_type_part = $mixin;
-                        $class_storage = $new_class_storage;
-
-                        if (!isset($new_class_storage->pseudo_property_get_types['$' . $prop_name])) {
-                            $naive_property_exists = true;
-                        }
-
-                        $property_id = $new_property_id;
-                    }
-                }
+                [$lhs_type_part, $class_storage, $naive_property_exists, $property_id, $fq_class_name]
+                    = self::handleRegularMixins(
+                        $class_storage,
+                        $lhs_type_part,
+                        $prop_name,
+                        $in_assignment,
+                        $codebase,
+                        $context,
+                        $property_id,
+                        $stmt,
+                        $statements_analyzer,
+                        $fq_class_name,
+                    );
             } elseif ($intersection_types !== [] && !$class_storage->final) {
                 foreach ($intersection_types as $intersection_type) {
                     self::analyze(
@@ -1275,6 +1256,63 @@ final class AtomicPropertyFetchAnalyzer
             $has_magic_getter,
             $var_id,
         );
+    }
+
+    /**
+     * @return array{TNamedObject, ClassLikeStorage, bool, bool, string, string}
+     */
+    private static function handleRegularMixins(
+        ClassLikeStorage $class_storage,
+        TNamedObject $lhs_type_part,
+        string $prop_name,
+        bool $in_assignment,
+        Codebase $codebase,
+        Context $context,
+        string $property_id,
+        PhpParser\Node\Expr\PropertyFetch $stmt,
+        StatementsAnalyzer $statements_analyzer,
+        string $fq_class_name
+    ): array {
+        $naive_property_exists = false;
+        foreach ($class_storage->namedMixins as $mixin) {
+            $new_property_id = $mixin->value . '::$' . $prop_name;
+
+            try {
+                $new_class_storage = $codebase->classlike_storage_provider->get($mixin->value);
+            } catch (InvalidArgumentException $e) {
+                $new_class_storage = null;
+            }
+
+            if ($new_class_storage
+                && ($codebase->properties->propertyExists(
+                    $new_property_id,
+                    !$in_assignment,
+                    $statements_analyzer,
+                    $context,
+                    $codebase->collect_locations
+                            ? new CodeLocation($statements_analyzer->getSource(), $stmt)
+                            : null,
+                )
+                    || isset($new_class_storage->pseudo_property_get_types['$' . $prop_name]))
+            ) {
+                $fq_class_name = $mixin->value;
+                $lhs_type_part = $mixin;
+                $class_storage = $new_class_storage;
+
+                if (!isset($new_class_storage->pseudo_property_get_types['$' . $prop_name])) {
+                    $naive_property_exists = true;
+                }
+
+                $property_id = $new_property_id;
+            }
+        }
+        return [
+            $lhs_type_part,
+            $class_storage,
+            $naive_property_exists,
+            $property_id,
+            $fq_class_name,
+        ];
     }
 
     private static function getClassPropertyType(
