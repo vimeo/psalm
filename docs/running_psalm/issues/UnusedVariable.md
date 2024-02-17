@@ -1,6 +1,6 @@
 # UnusedVariable
 
-Emitted when `--find-dead-code` is turned on and Psalm cannot find any references to a variable, once instantiated
+Emitted when `--find-unused-code` is turned on and Psalm cannot find any references to a variable, once instantiated
 
 ```php
 <?php
