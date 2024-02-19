@@ -370,6 +370,7 @@ final class Pool
                                  */
                                 posix_kill($child_pid, SIGTERM);
                             }
+                            // @todo add more meta-data why the process failed for a potential auto-recovery
                             throw new Exception($message->message);
                         } else {
                             error_log('Child should return ForkMessage - response type=' . gettype($message));

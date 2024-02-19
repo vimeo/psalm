@@ -433,11 +433,16 @@ final class Codebase
      */
     public function scanFiles(int $threads = 1): void
     {
-        $has_changes = $this->scanner->scanFiles($this->classlikes, $threads);
-
-        if ($has_changes) {
-            $this->populator->populateCodebase();
-        }
+        $max = 10;
+        do {
+            $has_changes = $this->scanner->scanFiles($this->classlikes, $threads);
+            if ($has_changes) {
+                $this->populator->populateCodebase();
+            }
+            // in case previous scans failed, let's try again after previously found
+            // references (class-like storage items and dependencies) were populated
+            $shall_rescan = $this->scanner->prepareRescanFiles();
+        } while ($max-- > 0 && $shall_rescan);
     }
 
     public function getFileContents(string $file_path): string

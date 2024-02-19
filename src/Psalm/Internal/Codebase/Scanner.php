@@ -6,6 +6,7 @@ namespace Psalm\Internal\Codebase;
 
 use Psalm\Codebase;
 use Psalm\Config;
+use Psalm\Exception\ClassStorageNotFoundException;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\ErrorHandler;
@@ -101,6 +102,13 @@ final class Scanner
      * @var array<string, string>
      */
     private array $files_to_scan = [];
+
+    /**
+     * Files marked to be scanned again, once all other references were resolved.
+     *
+     * @var array<string, string>
+     */
+    private array $files_to_rescan = [];
 
     /**
      * @var array<string, string>
@@ -269,6 +277,19 @@ final class Scanner
         return $has_changes;
     }
 
+    /**
+     * @return bool whether there are files to be rescanned
+     */
+    public function prepareRescanFiles(): bool
+    {
+        if ($this->files_to_rescan === []) {
+            return false;
+        }
+        $this->files_to_scan = $this->files_to_rescan;
+        $this->files_to_rescan = [];
+        return true;
+    }
+
     private function shouldScan(string $file_path): bool
     {
         return $this->file_provider->fileExists($file_path)
@@ -329,6 +350,7 @@ final class Scanner
 
                     $this->progress->debug('Have initialised forked process for scanning' . PHP_EOL);
                 },
+                // @todo how are failures process in pooled sub processes?! (see Pool::$task_closure)
                 $this->scanAPath(...),
                 /**
                  * @return PoolData
@@ -410,7 +432,9 @@ final class Scanner
 
             foreach ($files_to_scan as $file_path => $_) {
                 $this->progress->taskDone(0);
-                $this->scanAPath($i, $file_path);
+                if (!$this->scanAPath($i, $file_path)) {
+                    $this->files_to_rescan[$file_path] = $file_path;
+                }
                 ++$i;
             }
         }
@@ -505,12 +529,13 @@ final class Scanner
 
     /**
      * @param  array<string, class-string<FileScanner>>  $filetype_scanners
+     * @return bool whether scanning was successful
      */
     private function scanFile(
         string $file_path,
         array $filetype_scanners,
         bool $will_analyze = false,
-    ): void {
+    ): bool {
         $file_scanner = $this->getScannerForPath($file_path, $filetype_scanners, $will_analyze);
 
         if (isset($this->scanned_files[$file_path])
@@ -521,7 +546,7 @@ final class Scanner
 
         if (!$this->file_provider->fileExists($file_path) && $this->config->mustBeIgnored($file_path)) {
             // this should not happen, but might if the file was temporary
-            return;
+            return true;
         }
 
         $file_contents = $this->file_provider->getContents($file_path);
@@ -532,16 +557,20 @@ final class Scanner
             $this->file_storage_provider->create($file_path);
         }
 
-        $this->scanned_files[$file_path] = $will_analyze;
-
         $file_storage = $this->file_storage_provider->get($file_path);
 
-        $file_scanner->scan(
-            $this->codebase,
-            $file_storage,
-            $from_cache,
-            $this->progress,
-        );
+        try {
+            $file_scanner->scan(
+                $this->codebase,
+                $file_storage,
+                $from_cache,
+                $this->progress,
+            );
+            $this->scanned_files[$file_path] = $will_analyze;
+        } catch (ClassStorageNotFoundException) {
+            // @todo there might be more failures besides `ClassStorageNotFoundException`, that should be rescanned
+            return false;
+        }
 
         if (!$from_cache) {
             if (!$file_storage->has_visitor_issues && $this->file_storage_provider->cache) {
@@ -595,6 +624,8 @@ final class Scanner
                 $this->codebase->classlikes->addClassAlias($unaliased_name, $aliased_name);
             }
         }
+
+        return true;
     }
 
     /**
@@ -762,9 +793,12 @@ final class Scanner
         $this->is_forked = true;
     }
 
-    private function scanAPath(int $_, string $file_path): void
+    /**
+     * @return bool whether scanning was successful
+     */
+    private function scanAPath(int $_, string $file_path): bool
     {
-        $this->scanFile(
+        return $this->scanFile(
             $file_path,
             $this->config->getFiletypeScanners(),
             isset($this->files_to_deep_scan[$file_path]),
