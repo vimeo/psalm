@@ -1103,18 +1103,53 @@ final class TypeCombiner
                         } else {
                             $combination->value_types['string'] = $type;
                         }
-                    } elseif ($type instanceof TNonEmptyString) {
+                    } elseif ($type instanceof TNonFalsyString) {
                         $has_empty_string = false;
+                        $has_falsy_string = false;
 
                         foreach ($combination->strings as $string_type) {
-                            if (!$string_type->value) {
+                            if ($string_type->value === '') {
                                 $has_empty_string = true;
+                                $has_falsy_string = true;
                                 break;
+                            }
+
+                            if ($string_type->value === '0') {
+                                $has_falsy_string = true;
                             }
                         }
 
                         if ($has_empty_string) {
                             $combination->value_types['string'] = new TString();
+                        } elseif ($has_falsy_string) {
+                            $combination->value_types['string'] = new TNonEmptyString();
+                        } else {
+                            $combination->value_types['string'] = $type;
+                        }
+                    } elseif ($type instanceof TNonEmptyString) {
+                        $has_empty_string = false;
+
+                        foreach ($combination->strings as $string_type) {
+                            if ($string_type->value === '') {
+                                $has_empty_string = true;
+                                break;
+                            }
+                        }
+
+                        $has_non_lowercase_string = false;
+                        if ($type instanceof TNonEmptyLowercaseString) {
+                            foreach ($combination->strings as $string_type) {
+                                if (strtolower($string_type->value) !== $string_type->value) {
+                                    $has_non_lowercase_string = true;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if ($has_empty_string) {
+                            $combination->value_types['string'] = new TString();
+                        } elseif ($has_non_lowercase_string && get_class($type) !== TNonEmptyString::class) {
+                            $combination->value_types['string'] = new TNonEmptyString();
                         } else {
                             $combination->value_types['string'] = $type;
                         }
