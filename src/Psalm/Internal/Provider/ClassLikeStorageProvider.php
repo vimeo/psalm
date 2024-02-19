@@ -6,6 +6,7 @@ namespace Psalm\Internal\Provider;
 
 use InvalidArgumentException;
 use LogicException;
+use Psalm\Exception\ClassStorageNotFoundException;
 use Psalm\Storage\ClassLikeStorage;
 
 use function strtolower;
@@ -40,7 +41,9 @@ final class ClassLikeStorageProvider
         $fq_classlike_name_lc = strtolower($fq_classlike_name);
         /** @psalm-suppress ImpureStaticProperty Used only for caching */
         if (!isset(self::$storage[$fq_classlike_name_lc])) {
-            throw new InvalidArgumentException('Could not get class storage for ' . $fq_classlike_name_lc);
+            throw (new ClassStorageNotFoundException(
+                'Could not get class storage for ' . $fq_classlike_name_lc)
+            )->setName($fq_classlike_name_lc);
         }
 
         /** @psalm-suppress ImpureStaticProperty Used only for caching */
