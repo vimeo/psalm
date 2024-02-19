@@ -1048,11 +1048,18 @@ final class TypeCombiner
                 ) {
                     // do nothing
                 } elseif (isset($combination->value_types['string'])
+                    && $combination->value_types['string'] instanceof TNonFalsyString
+                    && $type->value
+                ) {
+                    // do nothing
+                } elseif (isset($combination->value_types['string'])
+                    && $combination->value_types['string'] instanceof TNonFalsyString
+                    && $type->value === '0'
+                ) {
+                    $combination->value_types['string'] = new TNonEmptyString();
+                } elseif (isset($combination->value_types['string'])
                     && $combination->value_types['string'] instanceof TNonEmptyString
-                    && ($combination->value_types['string'] instanceof TNonFalsyString
-                        ? $type->value
-                        : $type->value !== ''
-                    )
+                    && $type->value !== ''
                 ) {
                     // do nothing
                 } else {

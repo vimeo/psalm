@@ -934,7 +934,7 @@ class TypeCombinationTest extends TestCase
                 ],
             ],
             'nonFalsyStringAndFalsyLiteral' => [
-                'string',
+                'non-empty-string',
                 [
                     'non-falsy-string',
                     '"0"',
