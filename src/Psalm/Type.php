@@ -888,33 +888,37 @@ abstract class Type
         }
 
         if (null === $intersection_atomic) {
-            if (AtomicTypeComparator::isContainedBy(
-                $codebase,
-                $type_2_atomic,
-                $type_1_atomic,
-                $allow_interface_equality,
-                $allow_float_int_equality,
-            )) {
-                $intersection_atomic = $type_2_atomic;
-                $wider_type = $type_1_atomic;
-                $intersection_performed = true;
-            } elseif (AtomicTypeComparator::isContainedBy(
-                $codebase,
-                $type_1_atomic,
-                $type_2_atomic,
-                $allow_interface_equality,
-                $allow_float_int_equality,
-            )) {
-                $intersection_atomic = $type_1_atomic;
-                $wider_type = $type_2_atomic;
-                $intersection_performed = true;
-            }
+            try {
+                if (AtomicTypeComparator::isContainedBy(
+                    $codebase,
+                    $type_2_atomic,
+                    $type_1_atomic,
+                    $allow_interface_equality,
+                    $allow_float_int_equality,
+                )) {
+                    $intersection_atomic = $type_2_atomic;
+                    $wider_type = $type_1_atomic;
+                    $intersection_performed = true;
+                } elseif (AtomicTypeComparator::isContainedBy(
+                    $codebase,
+                    $type_1_atomic,
+                    $type_2_atomic,
+                    $allow_interface_equality,
+                    $allow_float_int_equality,
+                )) {
+                    $intersection_atomic = $type_1_atomic;
+                    $wider_type = $type_2_atomic;
+                    $intersection_performed = true;
+                }
 
-            if ($intersection_atomic
-                && !self::hasIntersection($type_1_atomic)
-                && !self::hasIntersection($type_2_atomic)
-            ) {
-                return $intersection_atomic;
+                if ($intersection_atomic
+                    && !self::hasIntersection($type_1_atomic)
+                    && !self::hasIntersection($type_2_atomic)
+                ) {
+                    return $intersection_atomic;
+                }
+            } catch (InvalidArgumentException $e) {
+                // Ignore non-existing classes during initial scan
             }
         }
 
