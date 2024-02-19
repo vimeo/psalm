@@ -150,9 +150,9 @@ class FileAnalyzer extends SourceAnalyzer
             return;
         }
 
-        $event = new BeforeFileAnalysisEvent($this, $this->context, $file_storage, $codebase);
-
+        $event = new BeforeFileAnalysisEvent($this, $this->context, $file_storage, $codebase, $stmts);
         $codebase->config->eventDispatcher->dispatchBeforeFileAnalysis($event);
+        $stmts = $event->getStmts();
 
         if ($codebase->alter_code) {
             foreach ($stmts as $stmt) {
