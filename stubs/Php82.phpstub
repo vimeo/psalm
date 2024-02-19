@@ -42,4 +42,22 @@ namespace {
     * @psalm-flow ($string) -> return
     */
     function str_split(string $string, int $length = 1) {}
+
+    /**
+     * @psalm-immutable
+     * @template TValue
+     *
+     * @since 8.2.0
+     */
+    final class SensitiveParameterValue
+    {
+        /** @param TValue $value */
+        public function __construct(private readonly mixed $value) {}
+
+        /** @return array<never, never> */
+        public function __debugInfo(): array {}
+
+        /** @return TValue */
+        public function getValue(): mixed {}
+    }
 }
