@@ -41,9 +41,12 @@ final class ClassLikeStorageProvider
         $fq_classlike_name_lc = strtolower($fq_classlike_name);
         /** @psalm-suppress ImpureStaticProperty Used only for caching */
         if (!isset(self::$storage[$fq_classlike_name_lc])) {
-            throw (new ClassStorageNotFoundException(
-                'Could not get class storage for ' . $fq_classlike_name_lc)
-            )->setName($fq_classlike_name_lc);
+            throw new ClassStorageNotFoundException(
+                'Could not get class storage for ' . $fq_classlike_name_lc,
+                0,
+                null,
+                $fq_classlike_name_lc,
+            );
         }
 
         /** @psalm-suppress ImpureStaticProperty Used only for caching */

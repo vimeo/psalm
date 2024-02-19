@@ -5,22 +5,19 @@ declare(strict_types=1);
 namespace Psalm\Exception;
 
 use InvalidArgumentException;
+use Throwable;
 
 /**
  * To be thrown when a `\Psalm\Storage\ClassLikeStorage` for a given name could not be resolved.
  */
 final class ClassStorageNotFoundException extends InvalidArgumentException
 {
-    private ?string $name = null;
+    /** @psalm-suppress PossiblyUnusedProperty */
+    public readonly ?string $name;
 
-    public function setName(string $name): self
+    public function __construct(string $message = '', int $code = 0, Throwable $previous = null, string $name = null)
     {
+        parent::__construct($message, $code, $previous);
         $this->name = $name;
-        return $this;
-    }
-
-    public function getName(): ?string
-    {
-        return $this->name;
     }
 }
