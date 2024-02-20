@@ -3153,6 +3153,25 @@ class ConditionalTest extends TestCase
                     '$existing' => 'null|stdClass',
                 ],
             ],
+            'nonStrictConditionWithoutExclusiveTruthyFalsyFuncCallNegated' => [
+                'code' => '<?php
+                    /**
+                     * @param array|null $arg
+                     * @return void
+                     */
+                    function foo($arg) {
+                        if (!bar($arg)) {
+                        }
+                    }
+
+                    /**
+                     * @param mixed $arg
+                     * @return float|int
+                     */
+                    function bar($arg) {}',
+                'assertions' => [],
+                'ignored_issues' => ['InvalidReturnType'],
+            ],
         ];
     }
 
