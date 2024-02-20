@@ -496,7 +496,7 @@ final class UnionTypeComparator
     /**
      * @return list<Atomic>
      */
-    private static function getTypeParts(
+    public static function getTypeParts(
         Codebase $codebase,
         Union $union_type
     ): array {

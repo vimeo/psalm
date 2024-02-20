@@ -16,6 +16,7 @@ use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
 use Psalm\Type;
+use Psalm\Type\Atomic\TNamedObject;
 use ReflectionException;
 use ReflectionFunction;
 use ReflectionFunctionAbstract;
@@ -23,6 +24,8 @@ use ReflectionMethod;
 use ReflectionParameter;
 use ReflectionType;
 
+use function array_filter;
+use function array_map;
 use function array_shift;
 use function class_exists;
 use function count;
@@ -39,6 +42,7 @@ use function print_r;
 use function strcmp;
 use function strncmp;
 use function strpos;
+use function strtolower;
 use function substr;
 use function version_compare;
 
@@ -646,18 +650,36 @@ class InternalCallMapHandlerTest extends TestCase
         $expectedType = Reflection::getPsalmTypeFromReflectionType($reflected);
         $callMapType = Type::parseString($specified);
 
-        try {
-            $this->assertTrue(UnionTypeComparator::isContainedBy(self::$codebase, $callMapType, $expectedType, false, false, null, false, false), "{$msgPrefix} type '{$specified}' is not contained by reflected type '{$reflected}'");
-        } catch (InvalidArgumentException $e) {
-            if (preg_match('/^Could not get class storage for (.*)$/', $e->getMessage(), $matches)
-                && !class_exists($matches[1])
-                && !interface_exists($matches[1])
-                && !enum_exists($matches[1])
-            ) {
-                $this->fail("Class used in CallMap does not exist: {$matches[1]}");
-            }
+        $types = array_filter(
+            [
+                ...UnionTypeComparator::getTypeParts(self::$codebase, $callMapType),
+                ...UnionTypeComparator::getTypeParts(self::$codebase, $expectedType),
+            ],
+            static fn($type) => $type instanceof TNamedObject && !$type->is_static,
+        );
+        /** @var list<class-string> */
+        $type_names = array_map(
+            static fn($type) => strtolower(self::$codebase->classlikes->getUnAliasedName($type->value)),
+            $types,
+        );
+        $unknown_type_names = array_filter(
+            $type_names,
+            static fn($type_name) => !self::$codebase->classlike_storage_provider->has($type_name)
+        );
+        // compare union types only if all type names are known
+        if ($unknown_type_names === []) {
+            $result = UnionTypeComparator::isContainedBy(self::$codebase, $callMapType, $expectedType, false, false, null, false, false);
+            self::assertTrue($result, "{$msgPrefix} type '{$specified}' is not contained by reflected type '{$reflected}'");
         }
-
+        foreach ($type_names as $type_name) {
+            self::assertTrue(
+                !in_array($type_name, $unknown_type_names, true)
+                || class_exists($type_name)
+                || interface_exists($type_name)
+                || (function_exists('enum_exists') && enum_exists($type_name)),
+                'Class used in CallMap does not exist: ' . $type_name,
+            );
+        }
         // Reflection::getPsalmTypeFromReflectionType adds |null to mixed types so skip comparison
         if (!$expectedType->hasMixed()) {
             $this->assertSame($expectedType->isNullable(), $callMapType->isNullable(), "{$msgPrefix} type '{$specified}' missing null from reflected type '{$reflected}'");
