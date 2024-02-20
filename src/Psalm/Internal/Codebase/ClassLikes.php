@@ -613,6 +613,9 @@ final class ClassLikes
             return false;
         }
 
+        if (!$this->classlike_storage_provider->has($unaliased_fq_class_name)) {
+            return false;
+        }
         $class_storage = $this->classlike_storage_provider->get($unaliased_fq_class_name);
 
         if ($from_api && !$class_storage->populated) {
@@ -722,7 +725,9 @@ final class ClassLikes
     public function getParentInterfaces(string $fq_interface_name): array
     {
         $fq_interface_name = strtolower($fq_interface_name);
-
+        if (!$this->classlike_storage_provider->has($fq_interface_name)) {
+            return [];
+        }
         return $this->classlike_storage_provider->get($fq_interface_name)->parent_interfaces;
     }
 
