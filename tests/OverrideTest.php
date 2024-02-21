@@ -68,6 +68,23 @@ class OverrideTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.3',
             ],
+            'canBeUsedOnPureMethods' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class A {
+                        /** @psalm-pure */
+                        public function f(): void {}
+                    }
+                    class B extends A {
+                        /** @psalm-pure */
+                        #[Override]
+                        public function f(): void {}
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
         ];
     }
 
