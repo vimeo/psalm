@@ -1,6 +1,6 @@
 # RiskyTruthyFalsyComparison
 
-Emitted when comparing a value with multiple types that can both contain truthy and falsy values.
+Emitted when comparing a value with multiple types, where at least one type can be only truthy or falsy and other types can contain both truthy and falsy values.
 
 ```php
 <?php
@@ -22,7 +22,7 @@ function foo($arg) {
 
 ## Why this is bad
 
-The truthy/falsy type of one variable is often forgotten and not handled explicitly causing hard to track down errors.
+The truthy/falsy type of a variable is often forgotten and not handled explicitly causing hard to track down errors.
 
 ## How to fix
 

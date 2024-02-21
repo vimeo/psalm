@@ -41,28 +41,28 @@ class ConditionalTest extends TestCase
             'nonStrictConditionTruthyFalsyNoOverlap' => [
                 'code' => '<?php
                     /**
-					 * @param non-empty-array|null $arg
-					 * @return void
-					 */
-					function foo($arg) {
-						if ($arg) {
-						}
+                     * @param non-empty-array|null $arg
+                     * @return void
+                     */
+                    function foo($arg) {
+                        if ($arg) {
+                        }
 
-						if (!$arg) {
-						}
+                        if (!$arg) {
+                        }
 
-						if (bar($arg)) {
-						}
+                        if (bar($arg)) {
+                        }
 
-						if (!bar($arg)) {
-						}
-					}
+                        if (!bar($arg)) {
+                        }
+                    }
 
-					/**
-					 * @param mixed $arg
-					 * @return non-empty-array|null
-					 */
-					function bar($arg) {}',
+                    /**
+                     * @param mixed $arg
+                     * @return non-empty-array|null
+                     */
+                    function bar($arg) {}',
             ],
             'typeResolutionFromDocblock' => [
                 'code' => '<?php
@@ -3153,6 +3153,25 @@ class ConditionalTest extends TestCase
                     '$existing' => 'null|stdClass',
                 ],
             ],
+            'nonStrictConditionWithoutExclusiveTruthyFalsyFuncCallNegated' => [
+                'code' => '<?php
+                    /**
+                     * @param array|null $arg
+                     * @return void
+                     */
+                    function foo($arg) {
+                        if (!bar($arg)) {
+                        }
+                    }
+
+                    /**
+                     * @param mixed $arg
+                     * @return float|int
+                     */
+                    function bar($arg) {}',
+                'assertions' => [],
+                'ignored_issues' => ['InvalidReturnType'],
+            ],
         ];
     }
 
@@ -3539,61 +3558,61 @@ class ConditionalTest extends TestCase
             'nonStrictConditionTruthyFalsy' => [
                 'code' => '<?php
                     /**
-					 * @param array|null $arg
-					 * @return void
-					 */
-					function foo($arg) {
-						if ($arg) {
-						}
-					}',
+                     * @param array|null $arg
+                     * @return void
+                     */
+                    function foo($arg) {
+                        if ($arg) {
+                        }
+                    }',
                 'error_message' => 'RiskyTruthyFalsyComparison',
             ],
             'nonStrictConditionTruthyFalsyNegated' => [
                 'code' => '<?php
                     /**
-					 * @param array|null $arg
-					 * @return void
-					 */
-					function foo($arg) {
-						if (!$arg) {
-						}
-					}',
+                     * @param array|null $arg
+                     * @return void
+                     */
+                    function foo($arg) {
+                        if (!$arg) {
+                        }
+                    }',
                 'error_message' => 'RiskyTruthyFalsyComparison',
             ],
             'nonStrictConditionTruthyFalsyFuncCall' => [
                 'code' => '<?php
                     /**
-					 * @param array|null $arg
-					 * @return void
-					 */
-					function foo($arg) {
-						if (bar($arg)) {
-						}
-					}
+                     * @param array|null $arg
+                     * @return void
+                     */
+                    function foo($arg) {
+                        if (bar($arg)) {
+                        }
+                    }
 
-					/**
-					 * @param mixed $arg
-					 * @return array|null
-					 */
-					function bar($arg) {}',
+                    /**
+                     * @param mixed $arg
+                     * @return array|null
+                     */
+                    function bar($arg) {}',
                 'error_message' => 'RiskyTruthyFalsyComparison',
             ],
             'nonStrictConditionTruthyFalsyFuncCallNegated' => [
                 'code' => '<?php
                     /**
-					 * @param array|null $arg
-					 * @return void
-					 */
-					function foo($arg) {
-						if (!bar($arg)) {
-						}
-					}
+                     * @param array|null $arg
+                     * @return void
+                     */
+                    function foo($arg) {
+                        if (!bar($arg)) {
+                        }
+                    }
 
-					/**
-					 * @param mixed $arg
-					 * @return array|null
-					 */
-					function bar($arg) {}',
+                    /**
+                     * @param mixed $arg
+                     * @return array|null
+                     */
+                    function bar($arg) {}',
                 'error_message' => 'RiskyTruthyFalsyComparison',
             ],
             'redundantConditionForNonEmptyString' => [
