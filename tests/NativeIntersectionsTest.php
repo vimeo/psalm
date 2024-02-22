@@ -51,6 +51,64 @@ class NativeIntersectionsTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'nativeTypeIntersectionAsClassProperty' => [
+                'code' => '<?php
+                    interface A {}
+                    interface B {}
+                    class C implements A, B {}
+                    class D {
+                        private A&B $intersection;
+                        public function __construct()
+                        {
+                            $this->intersection = new C();
+                        }
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'nativeTypeIntersectionAsClassPropertyUsingProcessedInterfaces' => [
+                'code' => '<?php
+                    interface A {}
+                    interface B {}
+                    class AB implements A, B {}
+                    class C {
+                        private A&B $other;
+                        public function __construct()
+                        {
+                            $this->other = new AB();
+                        }
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'nativeTypeIntersectionAsClassPropertyUsingUnprocessedInterfaces' => [
+                'code' => '<?php
+                    class StringableJson implements \Stringable, \JsonSerializable {
+                        public function jsonSerialize(): array
+                        {
+                            return [];
+                        }
+                        public function __toString(): string
+                        {
+                            return json_encode($this);
+                        }
+                    }
+                    class C {
+                        private \Stringable&\JsonSerializable $other;
+                        public function __construct()
+                        {
+                            $this->other = new StringableJson();
+                        }
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
@@ -135,6 +193,22 @@ class NativeIntersectionsTest extends TestCase
                 'error_message' => 'ParseError',
                 'ignored_issues' => [],
                 'php_version' => '8.0',
+            ],
+            'nativeTypeIntersectionAsClassPropertyUsingUnknownInterfaces' => [
+                'code' => '<?php
+                    class C {
+                        private \Example\Unknown\A&\Example\Unknown\B $other;
+                        public function __construct()
+                        {
+                            $this->other = new \Example\Unknown\AB();
+                        }
+                    }
+                ',
+                // @todo decide whether a fall-back should be implemented, that allows to by-pass this failure (opt-in config)
+                // `UndefinedClass - src/somefile.php:3:33 - Class, interface or enum named Example\Unknown\B does not exist`
+                'error_message' => 'UndefinedClass',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
         ];
     }
