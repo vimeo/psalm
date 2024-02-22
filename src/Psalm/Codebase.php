@@ -2423,7 +2423,7 @@ final class Codebase
     public function addTaintSource(
         Union $expr_type,
         string $taint_id,
-        array $taints = TaintKindGroup::ALL_INPUT,
+        array $taints = [TaintKindGroup::GROUP_INPUT],
         ?CodeLocation $code_location = null
     ): Union {
         if (!$this->taint_flow_graph) {
@@ -2449,7 +2449,7 @@ final class Codebase
      */
     public function addTaintSink(
         string $taint_id,
-        array $taints = TaintKindGroup::ALL_INPUT,
+        array $taints = [TaintKindGroup::GROUP_INPUT],
         ?CodeLocation $code_location = null
     ): void {
         if (!$this->taint_flow_graph) {
