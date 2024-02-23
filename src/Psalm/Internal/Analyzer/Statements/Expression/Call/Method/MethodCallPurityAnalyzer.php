@@ -133,6 +133,30 @@ final class MethodCallPurityAnalyzer
             }
         }
 
+        if ($codebase->find_unused_variables
+            && !$context->inside_unset
+            && !$context->insideUse()
+            && !$method_storage->assertions
+            && (!$method_storage->throws
+                || !$context->inside_try)
+            && !(
+                $method_storage->return_type &&
+                ($method_storage->return_type->isVoid() || $method_storage->return_type->isNever())
+            )
+            && ($method_storage->require_usage
+                || $method_storage->removed_taints
+                || $method_storage->conditionally_removed_taints)
+        ) {
+            IssueBuffer::maybeAdd(
+                new UnusedMethodCall(
+                    'The call to ' . $cased_method_id . ' is not used',
+                    new CodeLocation($statements_analyzer, $stmt->name),
+                    (string) $method_id,
+                ),
+                $statements_analyzer->getSuppressedIssues(),
+            );
+        }
+
         if ($statements_analyzer->getSource() instanceof FunctionLikeAnalyzer
             && $statements_analyzer->getSource()->track_mutations
             && !$method_storage->mutation_free

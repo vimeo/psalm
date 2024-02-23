@@ -146,6 +146,10 @@ final class FunctionLikeDocblockScanner
             }
         }
 
+        if ($docblock_info->require_usage) {
+            $storage->require_usage = true;
+        }
+
         if ($docblock_info->specialize_call) {
             $storage->specialize_call = true;
         }
