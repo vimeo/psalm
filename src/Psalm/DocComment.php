@@ -37,6 +37,7 @@ final class DocComment
         'require-extends', 'require-implements', 'param-out', 'ignore-var',
         'consistent-templates', 'if-this-is', 'this-out', 'check-type', 'check-type-exact',
         'api', 'inheritors',
+        'require-usage',
     ];
 
     /**

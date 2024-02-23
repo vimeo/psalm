@@ -82,6 +82,11 @@ final class FunctionDocblockComment
     public bool $pure = false;
 
     /**
+     * Whether or not the function return type must not be unused if the function is impure
+     */
+    public bool $require_usage = false;
+
+    /**
      * Whether or not to specialize a given call (useful for taint analysis)
      */
     public bool $specialize_call = false;

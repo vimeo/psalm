@@ -533,6 +533,25 @@ echo $counter->count; // outputs 1
 $counter->count = 5; // This will fail, as it's mutating a property directly
 ```
 
+### `@psalm-require-usage`
+
+Used to annotate an impure function or method the unused result of which Psalm should report.
+
+```php
+<?php
+/**
+ * @psalm-require-usage
+ *
+ * @return int
+ */
+function foo() {
+	return rand();
+}
+
+foo(); // reports UnusedFunctionCall
+echo foo(); // no error
+```
+
 ### `@psalm-trace`
 
 You can use this annotation to trace inferred type (applied to the *next* statement).

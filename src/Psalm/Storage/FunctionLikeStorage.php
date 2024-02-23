@@ -144,6 +144,11 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
     public bool $pure = false;
 
     /**
+     * Whether or not the function return type must not be unused if the function is impure
+     */
+    public bool $require_usage = false;
+
+    /**
      * Whether or not the function output is dependent solely on input - a function can be
      * impure but still have this property (e.g. var_export). Useful for taint analysis.
      */

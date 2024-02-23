@@ -1981,6 +1981,92 @@ final class UnusedCodeTest extends TestCase
                     new a;',
                 'error_message' => 'ClassMustBeFinal',
             ],
+            'unusedFunctionCallRequireUsageAnnotation' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @psalm-require-usage
+                     *
+                     * @return int
+                     */
+                    function foo() {
+                        return rand();
+                    }
+
+                    foo();
+                    PHP,
+                'error_message' => 'UnusedFunctionCall',
+            ],
+            'unusedFunctionCallTaintEscapeAnnotation' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param string|array $str
+                     * @param bool $escape
+                     * @psalm-taint-escape ($escape is true ? "html" : null)
+                     */
+                    function processVar($str, bool $escape = true) : string {
+                        if (is_array($str)) {
+                                return "";
+                        }
+
+                        if ($escape) {
+                            $str = str_replace(["<", ">"], "", $str);
+                        }
+                        return $str;
+                    }
+
+                    processVar($_GET["text"], true);
+                    PHP,
+                'error_message' => 'UnusedFunctionCall',
+            ],
+            'unusedMethodCallRequireUsageAnnotation' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Bar {
+                        /**
+                         * @psalm-require-usage
+                         *
+                         * @return int
+                         */
+                        public function foo() {
+                            return rand();
+                        }
+                    }
+
+                    $bar = new Bar();
+                    $bar->foo();
+                    PHP,
+                'error_message' => 'UnusedMethodCall',
+                'ignored_issues' => ['PossiblyUnusedReturnValue'],
+            ],
+            'unusedMethodCallTaintEscapeAnnotation' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Bar {
+                        /**
+                         * @param string|array $str
+                         * @param bool $escape
+                         * @psalm-taint-escape ($escape is true ? "html" : null)
+                         */
+                        public function processVar($str, bool $escape = true) : string {
+                            if (is_array($str)) {
+                                return "";
+                            }
+
+                            if ($escape) {
+                                $str = str_replace(["<", ">"], "", $str);
+                            }
+                            return $str;
+                        }
+                    }
+
+                    $bar = new Bar();
+                    $bar->processVar($_GET["text"], true);
+                    PHP,
+                'error_message' => 'UnusedMethodCall',
+                'ignored_issues' => ['PossiblyUnusedReturnValue'],
+            ],
         ];
     }
 }
