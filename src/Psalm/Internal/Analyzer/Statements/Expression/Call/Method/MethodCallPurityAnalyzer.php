@@ -115,9 +115,10 @@ final class MethodCallPurityAnalyzer
                     && !$context->inside_call
                     && !$context->inside_return
                     && !$method_storage->assertions
-                    && !$method_storage->if_true_assertions
-                    && !$method_storage->if_false_assertions
-                    && !$method_storage->throws
+                    && (!$method_storage->throws
+                        || !$context->inside_try)
+                    && !($method_storage->return_type
+                          && ($method_storage->return_type->isVoid() || $method_storage->return_type->isNever()))
                 ) {
                     IssueBuffer::maybeAdd(
                         new UnusedMethodCall(
