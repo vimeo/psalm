@@ -27,6 +27,7 @@ final class UnionTest extends TestCase
     {
         $this->expectException(InvalidArgumentException::class);
         $union = new Union([new TFloat()]);
+        /** @psalm-suppress UnusedMethodCall */
         $union->getSingleFloatLiteral();
     }
 }
