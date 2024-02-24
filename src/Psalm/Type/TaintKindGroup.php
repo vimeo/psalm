@@ -7,6 +7,8 @@ namespace Psalm\Type;
  */
 final class TaintKindGroup
 {
+    public const GROUP_INPUT = 'input';
+
     public const ALL_INPUT = [
         TaintKind::INPUT_HTML,
         TaintKind::INPUT_HAS_QUOTES,
