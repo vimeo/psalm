@@ -35,6 +35,7 @@ use Psalm\IssueBuffer;
 use Psalm\Node\Expr\BinaryOp\VirtualIdentical;
 use Psalm\Node\Expr\VirtualConstFetch;
 use Psalm\Node\VirtualName;
+use Psalm\StatementsSource;
 use Psalm\Storage\Assertion\Falsy;
 use Psalm\Storage\Assertion\IsIdentical;
 use Psalm\Storage\Assertion\IsType;
@@ -568,6 +569,14 @@ class CallAnalyzer
         if (!$file_source instanceof StatementsAnalyzer
             || !($class_arg_type = $file_source->node_data->getType($class_arg))
         ) {
+            if ($file_source instanceof StatementsSource
+                && ($fqcln = $file_source->getFQCLN()) !== null
+                && $class_arg instanceof PhpParser\Node\Expr\Variable
+                && $class_arg->name === 'this'
+            ) {
+                return [$fqcln . '::' . $method_name_arg->value];
+            }
+
             return [];
         }
 
