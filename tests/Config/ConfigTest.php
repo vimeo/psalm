@@ -160,6 +160,9 @@ class ConfigTest extends TestCase
         $this->assertFalse($config->isInProjectDirs((string) realpath('examples/TemplateScanner.php')));
     }
 
+    /**
+     * @requires OS ^(?!WIN)
+     */
     public function testIgnoreSymlinkedProjectDirectory(): void
     {
         @unlink(dirname(__DIR__, 1) . '/fixtures/symlinktest/ignored/b');
