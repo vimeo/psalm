@@ -2326,6 +2326,10 @@ class Config
 
         foreach ($stub_files as $file_path) {
             $file_path = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $file_path);
+            // fix mangled phar paths on Windows
+            if (strpos($file_path, 'phar:\\\\') === 0) {
+                $file_path = 'phar://'. substr($file_path, 7);
+            }
             $codebase->scanner->addFileToDeepScan($file_path);
         }
 
@@ -2423,6 +2427,10 @@ class Config
 
         foreach ($stub_files as $file_path) {
             $file_path = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $file_path);
+            // fix mangled phar paths on Windows
+            if (strpos($file_path, 'phar:\\\\') === 0) {
+                $file_path = 'phar://' . substr($file_path, 7);
+            }
             $codebase->scanner->addFileToDeepScan($file_path);
         }
 
