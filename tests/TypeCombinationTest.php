@@ -129,6 +129,40 @@ class TypeCombinationTest extends TestCase
                     '$x===' => 'non-falsy-string',
                 ],
             ],
+            'loopNonFalsyWithZeroShouldBeNonEmpty' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-suppress InvalidReturnType
+                     * @return string[]
+                     */
+                    function getStringArray() {}
+
+                    $x = array();
+                    foreach (getStringArray() as $id) {
+                        $x[] = "0";
+                        $x[] = "some_" . $id;
+                    }',
+                'assertions' => [
+                    '$x===' => 'list<non-empty-string>',
+                ],
+            ],
+            'loopNonLowercaseLiteralWithNonEmptyLowercaseShouldBeNonEmptyAndNotLowercase' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-suppress InvalidReturnType
+                     * @return int[]
+                     */
+                    function getIntArray() {}
+
+                    $x = array();
+                    foreach (getIntArray() as $id) {
+                        $x[] = "TEXT";
+                        $x[] = "some_" . $id;
+                    }',
+                'assertions' => [
+                    '$x===' => 'list<non-empty-string>',
+                ],
+            ],
         ];
     }
 
@@ -902,7 +936,7 @@ class TypeCombinationTest extends TestCase
                 ],
             ],
             'nonFalsyStringAndFalsyLiteral' => [
-                'string',
+                'non-empty-string',
                 [
                     'non-falsy-string',
                     '"0"',

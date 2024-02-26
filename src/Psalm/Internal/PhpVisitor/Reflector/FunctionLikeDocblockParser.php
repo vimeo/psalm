@@ -16,6 +16,7 @@ use Psalm\Internal\Scanner\FunctionDocblockComment;
 use Psalm\Internal\Scanner\ParsedDocblock;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\IssueBuffer;
+use Psalm\Type\TaintKindGroup;
 
 use function array_keys;
 use function array_shift;
@@ -268,10 +269,11 @@ final class FunctionLikeDocblockParser
                         $taint_type = substr($taint_type, 5);
 
                         if ($taint_type === 'tainted') {
-                            $taint_type = 'input';
+                            $taint_type = TaintKindGroup::GROUP_INPUT;
                         }
 
                         if ($taint_type === 'misc') {
+                            // @todo `text` is semantically not defined in `TaintKind`, maybe drop it
                             $taint_type = 'text';
                         }
 
@@ -309,10 +311,11 @@ final class FunctionLikeDocblockParser
 
                 if ($param_parts[0]) {
                     if ($param_parts[0] === 'tainted') {
-                        $param_parts[0] = 'input';
+                        $param_parts[0] = TaintKindGroup::GROUP_INPUT;
                     }
 
                     if ($param_parts[0] === 'misc') {
+                        // @todo `text` is semantically not defined in `TaintKind`, maybe drop it
                         $param_parts[0] = 'text';
                     }
 
