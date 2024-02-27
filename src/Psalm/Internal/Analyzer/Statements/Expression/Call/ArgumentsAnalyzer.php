@@ -231,6 +231,9 @@ final class ArgumentsAnalyzer
             $was_inside_call = $context->inside_call;
             $context->inside_call = true;
 
+            $was_inside_isset = $context->inside_isset;
+            $context->inside_isset = false;
+
             if (ExpressionAnalyzer::analyze(
                 $statements_analyzer,
                 $arg->value,
@@ -240,11 +243,13 @@ final class ArgumentsAnalyzer
                 false,
                 $high_order_template_result,
             ) === false) {
+                $context->inside_isset = $was_inside_isset;
                 $context->inside_call = $was_inside_call;
 
                 return false;
             }
 
+            $context->inside_isset = $was_inside_isset;
             $context->inside_call = $was_inside_call;
 
             if ($high_order_callable_info && $high_order_template_result) {
