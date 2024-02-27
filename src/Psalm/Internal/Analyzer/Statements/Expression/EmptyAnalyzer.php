@@ -67,16 +67,18 @@ final class EmptyAnalyzer
                 $stmt_type = new TTrue($expr_type->from_docblock);
             } else {
                 if (count($expr_type->getAtomicTypes()) > 1) {
+                    $has_truthy_or_falsy_exclusive_type = false;
                     $both_types = $expr_type->getBuilder();
                     foreach ($both_types->getAtomicTypes() as $key => $atomic_type) {
                         if ($atomic_type->isTruthy()
                             || $atomic_type->isFalsy()
                             || $atomic_type instanceof TBool) {
                             $both_types->removeType($key);
+                            $has_truthy_or_falsy_exclusive_type = true;
                         }
                     }
 
-                    if (count($both_types->getAtomicTypes()) > 0) {
+                    if (count($both_types->getAtomicTypes()) > 0 && $has_truthy_or_falsy_exclusive_type) {
                         $both_types = $both_types->freeze();
                         IssueBuffer::maybeAdd(
                             new RiskyTruthyFalsyComparison(
