@@ -108,7 +108,7 @@ final class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderI
                         continue;
                     }
                     if (!$row_shape instanceof TKeyedArray) {
-                        if ($row_shape instanceof TArray && $row_shape->isEmptyArray()) {
+                        if ($row_shape instanceof TArray && $row_shape->isEmpty()) {
                             continue;
                         }
                         $ok = false;

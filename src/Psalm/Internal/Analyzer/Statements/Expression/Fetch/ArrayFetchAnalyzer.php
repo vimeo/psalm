@@ -1120,7 +1120,7 @@ final class ArrayFetchAnalyzer
 
         if ($in_assignment) {
             if ($type instanceof TArray) {
-                $from_empty_array = $type->isEmptyArray();
+                $from_empty_array = $type->isEmpty();
 
                 if (count($key_values) === 1) {
                     $single_atomic = $key_values[0];
@@ -1249,7 +1249,7 @@ final class ArrayFetchAnalyzer
     ): void {
         // if we're assigning to an empty array with a key offset, refashion that array
         if ($in_assignment) {
-            if ($type->isEmptyArray()) {
+            if ($type->isEmpty()) {
                 $type = $type->setTypeParams([
                     $offset_type->isMixed()
                         ? Type::getArrayKey()
@@ -1257,7 +1257,7 @@ final class ArrayFetchAnalyzer
                     $type->type_params[1],
                 ]);
             }
-        } elseif (!$type->isEmptyArray()) {
+        } elseif (!$type->isEmpty()) {
             $expected_offset_type = $type->type_params[0]->hasMixed()
                 ? new Union([new TArrayKey])
                 : $type->type_params[0];

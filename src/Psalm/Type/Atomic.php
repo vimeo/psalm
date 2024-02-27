@@ -15,6 +15,7 @@ use Psalm\Internal\Type\TypeAlias\LinkableTypeAlias;
 use Psalm\Internal\TypeVisitor\ClasslikeReplacer;
 use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type;
+use Psalm\Type\Atomic\ArrayInterface;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
@@ -908,7 +909,7 @@ abstract class Atomic implements TypeNode, Stringable
             return true;
         }
 
-        if ($this instanceof TArray && $this->isEmptyArray()) {
+        if ($this instanceof ArrayInterface && $this->isEmpty()) {
             return true;
         }
 

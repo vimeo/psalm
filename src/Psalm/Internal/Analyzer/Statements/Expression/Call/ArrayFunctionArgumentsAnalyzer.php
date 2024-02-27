@@ -279,7 +279,7 @@ final class ArrayFunctionArgumentsAnalyzer
                         array_unshift($properties, $arg_value_type);
 
                         $by_ref_type = new Union([$objectlike_list->setProperties($properties)]);
-                    } elseif ($array_type instanceof TArray && $array_type->isEmptyArray()) {
+                    } elseif ($array_type instanceof TArray && $array_type->isEmpty()) {
                         $by_ref_type = new Union([new TKeyedArray([
                             $arg_value_type,
                         ], null, null, true)]);

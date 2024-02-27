@@ -47,7 +47,7 @@ final class ArrayFillKeysReturnTypeProvider implements FunctionReturnTypeProvide
         ) {
             $results = [];
             foreach ($first_arg_type->getArrays() as $array) {
-                if ($array instanceof TArray && $array->isEmptyArray()) {
+                if ($array instanceof TArray && $array->isEmpty()) {
                     $results []= $array;
                     continue;
                 } elseif ($array instanceof TKeyedArray && !$array->fallback_params) {

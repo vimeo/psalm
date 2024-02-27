@@ -41,6 +41,7 @@ use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic\ArrayInterface;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCallableKeyedArray;
@@ -1236,7 +1237,7 @@ final class ArgumentsAnalyzer
 
                 $t = $context->vars_in_scope[$var_id]->getBuilder();
                 foreach ($t->getAtomicTypes() as $k => $type) {
-                    if ($type instanceof TArray && $type->isEmptyArray()) {
+                    if ($type instanceof ArrayInterface && $type->isEmpty()) {
                         $t->removeType($k);
                         $t->addType(
                             new TArray(

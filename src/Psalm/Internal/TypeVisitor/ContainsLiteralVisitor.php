@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\TypeVisitor;
 
+use Psalm\Type\Atomic\ArrayInterface;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TLiteralFloat;
@@ -32,7 +33,7 @@ final class ContainsLiteralVisitor extends TypeVisitor
             return self::STOP_TRAVERSAL;
         }
 
-        if ($type instanceof TArray && $type->isEmptyArray()) {
+        if ($type instanceof ArrayInterface && $type->isEmpty()) {
             $this->contains_literal = true;
             return self::STOP_TRAVERSAL;
         }

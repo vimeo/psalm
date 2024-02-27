@@ -98,7 +98,7 @@ final class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInte
                 } elseif ($call_arg_type
                     && $call_arg_type->isSingle()
                     && ($call_arg_atomic = $call_arg_type->getSingleAtomic()) instanceof TArray
-                    && $call_arg_atomic->isEmptyArray()
+                    && $call_arg_atomic->isEmpty()
                 ) {
                     $array_arg_types []= [];
                     $orig_types []= $call_arg_type;

@@ -637,7 +637,7 @@ final class SimpleAssertionReconciler extends Reconciler
                     || ($assertion instanceof HasAtLeastCount
                         && $array_atomic_type->min_count < $assertion->count)
                 ) {
-                    if ($array_atomic_type->isEmptyArray()) {
+                    if ($array_atomic_type->isEmpty()) {
                         $existing_var_type->removeType($k);
                     } else {
                         $non_empty_array = new TNonEmptyArray(
@@ -2399,7 +2399,7 @@ final class SimpleAssertionReconciler extends Reconciler
                     }
                 }
 
-                if ($type->isEmptyArray()) {
+                if ($type->isEmpty()) {
                     //we allow an empty array to pass as a list. We keep the type as empty array though (more precise)
                     $array_types[] = $type;
                 }

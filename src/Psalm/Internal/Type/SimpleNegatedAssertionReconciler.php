@@ -24,6 +24,7 @@ use Psalm\Storage\Assertion\IsNotIsset;
 use Psalm\Storage\Assertion\NotInArray;
 use Psalm\Storage\Assertion\NotNonEmptyCountable;
 use Psalm\Type;
+use Psalm\Type\Atomic\ArrayInterface;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
@@ -630,7 +631,7 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
                         ));
                     }
                 }
-            } elseif (!$array_atomic_type instanceof TArray || !$array_atomic_type->isEmptyArray()) {
+            } elseif (!$array_atomic_type instanceof ArrayInterface || !$array_atomic_type->isEmpty()) {
                 $redundant = false;
 
                 if (!$count) {

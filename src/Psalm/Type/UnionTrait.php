@@ -483,7 +483,6 @@ trait UnionTrait
 
     public function areArraysAllEmpty(): bool
     {
-        $result = true;
         foreach ($this->types as $t) {
             if ($t instanceof ArrayInterface
                 && !$t->isEmpty()
@@ -1670,8 +1669,7 @@ trait UnionTrait
      */
     public function isEmptyArray(): bool
     {
-        return count($this->types) === 1
-            && isset($this->types['array<never, never>']);
+        return $this->isArray() && $this->areArraysAllEmpty();
     }
 
     /**

@@ -63,11 +63,11 @@ class TArray extends Atomic implements ArrayInterface
     }
     public function getCount(): ?int
     {
-        return $this->isEmptyArray() ? 0 : null;
+        return $this->isEmpty() ? 0 : null;
     }
     public function isEmpty(): bool
     {
-        return $this->isEmptyArray();
+        return $this->type_params[1]->isNever();
     }
     public function isNonEmpty(): bool
     {
@@ -132,11 +132,6 @@ class TArray extends Atomic implements ArrayInterface
         }
 
         return $this->getId();
-    }
-
-    public function isEmptyArray(): bool
-    {
-        return $this->type_params[1]->isNever();
     }
 
     /**

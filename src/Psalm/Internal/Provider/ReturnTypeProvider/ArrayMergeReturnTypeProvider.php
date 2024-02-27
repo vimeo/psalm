@@ -202,7 +202,7 @@ final class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderIn
                     }
 
                     if ($unpacked_type_part instanceof TArray) {
-                        if ($unpacked_type_part->isEmptyArray()) {
+                        if ($unpacked_type_part->isEmpty()) {
                             continue;
                         }
 

@@ -1153,7 +1153,7 @@ class Reconciler
                 foreach ($existing_types[$base_key]->getAtomicTypes() as $base_atomic_type) {
                     if ($base_atomic_type instanceof TKeyedArray
                     || ($base_atomic_type instanceof TArray
-                        && !$base_atomic_type->isEmptyArray())
+                        && !$base_atomic_type->isEmpty())
                     || $base_atomic_type instanceof TClassStringMap
                     ) {
                         $new_base_type = $existing_types[$base_key];
