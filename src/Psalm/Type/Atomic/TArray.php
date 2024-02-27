@@ -8,6 +8,7 @@ use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Type;
+use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
@@ -20,6 +21,7 @@ use function count;
  */
 class TArray extends Atomic
 {
+    use UnserializeMemoryUsageSuppressionTrait;
     /**
      * @use GenericTrait<array{Union, Union}>
      */
@@ -86,7 +88,7 @@ class TArray extends Atomic
         }
 
         foreach ($this->type_params as $i => $type_param) {
-            if (!$type_param->equals($other_type->type_params[$i], $ensure_source_equality)) {
+            if (!$type_param->equals($other_type->type_params[$i], $ensure_source_equality, false)) {
                 return false;
             }
         }

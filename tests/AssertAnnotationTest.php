@@ -92,6 +92,33 @@ class AssertAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testAssertInvalidDocblockMessageDoesNotIncludeTrace(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessageMatches(
+            '!^InvalidDocblock - ' . 'somefile\\.php:10:5 - Invalid @psalm-assert union type: Invalid type \'\\$expected\'$!',
+        );
+
+        $this->addFile(
+            'somefile.php',
+            <<<'PHP'
+            <?php
+                /**
+                 * Asserts that two variables are not the same.
+                 *
+                 * @template T
+                 * @param T      $expected
+                 * @param mixed  $actual
+                 * @psalm-assert !=$expected $actual
+                 */
+                function assertNotSame($expected, $actual) : void {}
+            PHP,
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -2257,7 +2284,36 @@ class AssertAnnotationTest extends TestCase
                     function isNonEmptyString($_str): bool
                     {
                         return true;
-                    }',
+                    }
+                    ',
+            ],
+            'assertStringIsNonEmptyStringInNamespace' => [
+                'code' => '<?php
+                    namespace X;
+                    /** @var string $str */;
+                    /** @var string|int $stringOrInt */;
+
+                    if (isNonEmptyString($str)) {
+                        /** @psalm-check-type-exact $str = non-empty-string */;
+                    } else {
+                        /** @psalm-check-type-exact $str = string */;
+                    }
+
+                    if (isNonEmptyString($stringOrInt)) {
+                        /** @psalm-check-type-exact $stringOrInt = non-empty-string */;
+                    } else {
+                        /** @psalm-check-type-exact $stringOrInt = string|int */;
+                    }
+
+                    /**
+                     * @param mixed $_str
+                     * @psalm-assert-if-true non-empty-string $_str
+                     */
+                    function isNonEmptyString($_str): bool
+                    {
+                        return true;
+                    }
+                    ',
             ],
             'assertObjectWithClosedInheritance' => [
                 'code' => '<?php

@@ -77,6 +77,9 @@ class ClassLikeStorageCacheProvider
         $this->cache->saveItem($cache_location, $storage);
     }
 
+    /**
+     * @param lowercase-string $fq_classlike_name_lc
+     */
     public function getLatestFromCache(
         string $fq_classlike_name_lc,
         ?string $file_path,
@@ -108,6 +111,9 @@ class ClassLikeStorageCacheProvider
         return hash('xxh128', $data);
     }
 
+    /**
+     * @param lowercase-string $fq_classlike_name_lc
+     */
     private function loadFromCache(string $fq_classlike_name_lc, ?string $file_path): ?ClassLikeStorage
     {
         $storage = $this->cache->getItem($this->getCacheLocationForClass($fq_classlike_name_lc, $file_path));
@@ -118,6 +124,9 @@ class ClassLikeStorageCacheProvider
         return null;
     }
 
+    /**
+     * @param lowercase-string $fq_classlike_name_lc
+     */
     private function getCacheLocationForClass(
         string $fq_classlike_name_lc,
         ?string $file_path,

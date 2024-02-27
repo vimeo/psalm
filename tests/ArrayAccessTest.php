@@ -656,6 +656,19 @@ class ArrayAccessTest extends TestCase
                     '$x3===' => "array{b: 'value'}",
                 ],
             ],
+            'possiblyUndefinedArrayOffsetKeyedArray' => [
+                'code' => '<?php
+                    $d = [];
+                    if (!rand(0,1)) {
+                        $d[0] = "a";
+                    }
+
+                    $x = $d[0];',
+                'assertions' => [
+                    '$x===' => '\'a\'',
+                ],
+                'ignored_issues' => ['PossiblyUndefinedArrayOffset'],
+            ],
             'domNodeListAccessible' => [
                 'code' => '<?php
                     $doc = new DOMDocument();
@@ -680,7 +693,7 @@ class ArrayAccessTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['MixedArgument', 'MixedArrayOffset', 'MissingParamType'],
             ],
-            'suppressPossiblyUndefinedStringArrayOffet' => [
+            'suppressPossiblyUndefinedStringArrayOffset' => [
                 'code' => '<?php
                     /** @var array{a?:string} */
                     $entry = ["a"];
@@ -909,20 +922,20 @@ class ArrayAccessTest extends TestCase
                         }
 
                         /**
-                         * @param ?string $name
+                         * @param ?string $offset
                          * @param scalar|array $value
                          * @psalm-suppress MixedArgumentTypeCoercion
                          */
-                        public function offsetSet($name, $value) : void
+                        public function offsetSet($offset, $value) : void
                         {
                             if (is_array($value)) {
                                 $value = new static($value);
                             }
 
-                            if (null === $name) {
+                            if (null === $offset) {
                                 $this->data[] = $value;
                             } else {
-                                $this->data[$name] = $value;
+                                $this->data[$offset] = $value;
                             }
                         }
 
@@ -1055,12 +1068,12 @@ class ArrayAccessTest extends TestCase
                         }
 
                         /**
-                         * @param string $name
+                         * @param string $offset
                          * @param mixed $value
                          */
-                        public function offsetSet($name, $value) : void
+                        public function offsetSet($offset, $value) : void
                         {
-                            $this->data[$name] = $value;
+                            $this->data[$offset] = $value;
                         }
 
                         public function __isset(string $name) : bool
@@ -1338,7 +1351,7 @@ class ArrayAccessTest extends TestCase
                     echo $a[new Foo];',
                 'error_message' => 'InvalidArrayOffset',
             ],
-            'possiblyUndefinedIntArrayOffet' => [
+            'possiblyUndefinedIntArrayOffset' => [
                 'code' => '<?php
                     /** @var array{0?:string} */
                     $entry = ["a"];
@@ -1346,7 +1359,7 @@ class ArrayAccessTest extends TestCase
                     [$elt] = $entry;',
                 'error_message' => 'PossiblyUndefinedArrayOffset',
             ],
-            'possiblyUndefinedStringArrayOffet' => [
+            'possiblyUndefinedStringArrayOffset' => [
                 'code' => '<?php
                     /** @var array{a?:string} */
                     $entry = ["a"];
@@ -1530,6 +1543,19 @@ class ArrayAccessTest extends TestCase
 
                     avg(["a" => 0.5, "b" => 1.5, "c" => new Exception()]);',
                 'error_message' => 'InvalidArgument',
+            ],
+            'possiblyUndefinedArrayOffsetKeyedArray' => [
+                'code' => '<?php
+                    $d = [];
+                    if (!rand(0,1)) {
+                        $d[0] = "a";
+                    }
+
+                    $x = $d[0];
+
+                    //  should not report TypeDoesNotContainNull
+                    if ($x === null) {}',
+                'error_message' => 'PossiblyUndefinedArrayOffset',
             ],
         ];
     }

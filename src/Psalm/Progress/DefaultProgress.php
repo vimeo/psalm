@@ -22,7 +22,7 @@ class DefaultProgress extends LongProgress
 
     public function taskDone(int $level): void
     {
-        if ($this->number_of_tasks > self::TOO_MANY_FILES) {
+        if ($this->fixed_size && $this->number_of_tasks > self::TOO_MANY_FILES) {
             ++$this->progress;
 
             // Source for rate limiting:

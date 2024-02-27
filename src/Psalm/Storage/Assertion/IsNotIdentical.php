@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Storage\Assertion;
 
 use Psalm\Storage\Assertion;
+use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type\Atomic;
 
 /**
@@ -12,6 +13,7 @@ use Psalm\Type\Atomic;
  */
 final class IsNotIdentical extends Assertion
 {
+    use UnserializeMemoryUsageSuppressionTrait;
     public function __construct(public readonly Atomic $type)
     {
     }

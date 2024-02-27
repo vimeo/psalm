@@ -90,7 +90,7 @@ class JsonOutputTest extends TestCase
                     function fooFoo(int $a): int {
                         return $b + 1;
                     }',
-                'error_count' => 5,
+                'error_count' => 4,
                 'message' => 'Cannot find referenced variable $b',
                 'line' => 3,
                 'error' => '$b',
@@ -100,7 +100,7 @@ class JsonOutputTest extends TestCase
                     function fooFoo(Badger\Bodger $a): Badger\Bodger {
                         return $a;
                     }',
-                'error_count' => 3,
+                'error_count' => 2,
                 'message' => 'Class, interface or enum named Badger\\Bodger does not exist',
                 'line' => 2,
                 'error' => 'Badger\\Bodger',
@@ -140,6 +140,7 @@ class JsonOutputTest extends TestCase
             ],
             'singleIssueForTypeDifference' => [
                 'code' => '<?php
+                    /** @psalm-suppress RiskyTruthyFalsyComparison */
                     function fooFoo(?string $a, ?string $b): void {
                         if ($a || $b) {
                             if ($a || $b) {}
@@ -147,7 +148,7 @@ class JsonOutputTest extends TestCase
                     }',
                 'error_count' => 1,
                 'message' => 'Operand of type non-falsy-string is always truthy',
-                'line' => 4,
+                'line' => 5,
                 'error' => '$b',
             ],
         ];

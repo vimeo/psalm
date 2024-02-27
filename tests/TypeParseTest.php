@@ -358,6 +358,11 @@ class TypeParseTest extends TestCase
         $this->assertSame('array{\'\\"\': int, \'\\\'\': string}', (string) Type::parseString('array{"\\"": int, "\\\'": string}'));
     }
 
+    public function testTKeyedArrayWithClassConstantValueType(): void
+    {
+        $this->assertSame('list{A::X|A::Y, B::X}', (string) Type::parseString('list{A::X|A::Y, B::X}'));
+    }
+
     public function testTKeyedArrayWithClassConstantKey(): void
     {
         $this->expectException(TypeParseTreeException::class);
@@ -932,6 +937,14 @@ class TypeParseTest extends TestCase
         $this->assertSame(
             'class-string-map<T as Foo, T>',
             Type::parseString('class-string-map<T as Foo, T>')->getId(false),
+        );
+    }
+
+    public function testClassStringMapOf(): void
+    {
+        $this->assertSame(
+            'class-string-map<T as Foo, T>',
+            Type::parseString('class-string-map<T of Foo, T>')->getId(false),
         );
     }
 

@@ -13,6 +13,7 @@ use Stringable;
 abstract class Assertion implements Stringable
 {
     use ImmutableNonCloneableTrait;
+    use UnserializeMemoryUsageSuppressionTrait;
 
     abstract public function getNegation(): Assertion;
 

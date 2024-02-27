@@ -32,8 +32,14 @@ jobs:
         env:
           COMPOSER_ROOT_VERSION: dev-master
 
+      - name: Check all classes are autoloadable
+        run: |
+          composer dump-autoload -o --strict-psr
+        env:
+          COMPOSER_ROOT_VERSION: dev-master
+
       - name: Cache composer cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ${{ steps.composer-cache.outputs.files_cache }}
@@ -77,7 +83,7 @@ jobs:
           COMPOSER_ROOT_VERSION: dev-master
 
       - name: Cache composer cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ${{ steps.composer-cache.outputs.files_cache }}
@@ -135,6 +141,7 @@ jobs:
       CHUNK_COUNT: "${{ matrix.count }}"
       CHUNK_NUMBER: "${{ matrix.chunk }}"
       PARALLEL_PROCESSES: 5
+      BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
 
     steps:
       - name: Set up PHP
@@ -163,7 +170,7 @@ jobs:
           COMPOSER_ROOT_VERSION: dev-master
 
       - name: Cache composer cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ${{ steps.composer-cache.outputs.files_cache }}

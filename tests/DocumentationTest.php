@@ -18,6 +18,7 @@ use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\Issue\UnusedBaselineEntry;
+use Psalm\Issue\UnusedIssueHandlerSuppression;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use UnexpectedValueException;
 
@@ -227,6 +228,8 @@ class DocumentationTest extends TestCase
         $this->project_analyzer->getConfig()->ensure_array_string_offsets_exist = $is_array_offset_test;
         $this->project_analyzer->getConfig()->ensure_array_int_offsets_exist = $is_array_offset_test;
 
+        $this->project_analyzer->getConfig()->ensure_override_attribute = $error_message === 'MissingOverrideAttribute';
+
         foreach ($ignored_issues as $error_level) {
             $this->project_analyzer->getCodebase()->config->setCustomErrorLevel($error_level, Config::REPORT_SUPPRESS);
         }
@@ -270,6 +273,7 @@ class DocumentationTest extends TestCase
                 case 'TraitMethodSignatureMismatch':
                 case 'UncaughtThrowInGlobalScope':
                 case UnusedBaselineEntry::getIssueType():
+                case UnusedIssueHandlerSuppression::getIssueType():
                     continue 2;
 
                 /** @todo reinstate this test when the issue is restored */
@@ -286,10 +290,6 @@ class DocumentationTest extends TestCase
 
                 case 'InvalidReturnType':
                     $ignored_issues = ['InvalidReturnStatement'];
-                    break;
-
-                case 'MixedInferredReturnType':
-                    $ignored_issues = ['MixedReturnStatement'];
                     break;
 
                 case 'MixedStringOffsetAssignment':
@@ -316,6 +316,11 @@ class DocumentationTest extends TestCase
                 case 'OverriddenFinalConstant':
                 case 'InvalidInterfaceImplementation':
                     $php_version = '8.1';
+                    break;
+
+                case 'InvalidOverride':
+                case 'MissingOverrideAttribute':
+                    $php_version = '8.3';
                     break;
             }
 

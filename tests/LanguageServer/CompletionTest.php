@@ -372,7 +372,7 @@ class CompletionTest extends TestCase
         $codebase->scanFiles();
         $this->analyzeFile('somefile.php', new Context());
 
-        $this->assertNull($codebase->getCompletionDataAtPosition('somefile.php', new Position(16, 41)));
+        $this->assertSame(['B\C', '->', 456], $codebase->getCompletionDataAtPosition('somefile.php', new Position(16, 41)));
     }
 
     public function testCompletionOnTemplatedThisProperty(): void
@@ -1260,6 +1260,38 @@ class CompletionTest extends TestCase
 
         $completion_items = $codebase->getCompletionItemsForClassishThing($completion_data[0], $completion_data[1], true);
         $this->assertCount(2, $completion_items);
+    }
+
+    public function testCompletionStaticMethodOnDocBlock(): void
+    {
+        $codebase = $this->codebase;
+        $config = $codebase->config;
+        $config->throw_exception = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace Bar;
+
+                /**
+                 * @method static void foo()
+                 */
+                class Alpha {}
+                Alpha::',
+        );
+
+        $codebase->file_provider->openFile('somefile.php');
+        $codebase->scanFiles();
+        $this->analyzeFile('somefile.php', new Context());
+
+        $position = new Position(7, 23);
+        $completion_data = $codebase->getCompletionDataAtPosition('somefile.php', $position);
+
+        $this->assertSame(['Bar\Alpha', '::', 177], $completion_data);
+
+        $completion_items = $codebase->getCompletionItemsForClassishThing($completion_data[0], $completion_data[1], true);
+        $this->assertCount(1, $completion_items);
+        $this->assertSame('foo()', $completion_items[0]->insertText);
     }
 
     public function testCompletionOnClassInstanceReferenceWithAssignmentAfter(): void

@@ -15,7 +15,6 @@ use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOpAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\BitwiseNotAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\BooleanNotAnalyzer;
-use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\NewAnalyzer;
@@ -41,24 +40,23 @@ use Psalm\Internal\Analyzer\Statements\Expression\MatchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\NullsafeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\PrintAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\TernaryAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\ThrowAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\UnaryPlusMinusAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\YieldAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\YieldFromAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Codebase\TaintFlowGraph;
-use Psalm\Internal\DataFlow\DataFlowNode;
-use Psalm\Internal\DataFlow\TaintSink;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\Type\TemplateResult;
-use Psalm\Issue\ForbiddenCode;
 use Psalm\Issue\UnrecognizedExpression;
 use Psalm\Issue\UnsupportedReferenceUsage;
 use Psalm\IssueBuffer;
+use Psalm\Node\Expr\VirtualFuncCall;
+use Psalm\Node\Scalar\VirtualInterpolatedString;
+use Psalm\Node\VirtualArg;
+use Psalm\Node\VirtualName;
 use Psalm\Plugin\EventHandler\Event\AfterExpressionAnalysisEvent;
 use Psalm\Plugin\EventHandler\Event\BeforeExpressionAnalysisEvent;
-use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
-use Psalm\Type\TaintKind;
 
 use function in_array;
 use function strtolower;
@@ -78,7 +76,7 @@ final class ExpressionAnalyzer
         Context $context,
         bool $array_assignment = false,
         ?Context $global_context = null,
-        bool $from_stmt = false,
+        PhpParser\Node\Stmt $from_stmt = null,
         ?TemplateResult $template_result = null,
         bool $assigned_to_reference = false,
     ): bool {
@@ -149,7 +147,7 @@ final class ExpressionAnalyzer
         Context $context,
         bool $array_assignment,
         ?Context $global_context,
-        bool $from_stmt,
+        ?PhpParser\Node\Stmt $from_stmt,
         ?TemplateResult $template_result = null,
         bool $assigned_to_reference = false,
     ): bool {
@@ -194,23 +192,19 @@ final class ExpressionAnalyzer
             return true;
         }
 
-        if ($stmt instanceof PhpParser\Node\Scalar\EncapsedStringPart) {
-            return true;
-        }
-
         if ($stmt instanceof PhpParser\Node\Scalar\MagicConst) {
             MagicConstAnalyzer::analyze($statements_analyzer, $stmt, $context);
 
             return true;
         }
 
-        if ($stmt instanceof PhpParser\Node\Scalar\LNumber) {
+        if ($stmt instanceof PhpParser\Node\Scalar\Int_) {
             $statements_analyzer->node_data->setType($stmt, Type::getInt(false, $stmt->value));
 
             return true;
         }
 
-        if ($stmt instanceof PhpParser\Node\Scalar\DNumber) {
+        if ($stmt instanceof PhpParser\Node\Scalar\Float_) {
             $statements_analyzer->node_data->setType($stmt, Type::getFloat($stmt->value));
 
             return true;
@@ -259,7 +253,7 @@ final class ExpressionAnalyzer
                 $stmt,
                 $context,
                 0,
-                $from_stmt,
+                $from_stmt !== null,
             );
         }
 
@@ -279,7 +273,7 @@ final class ExpressionAnalyzer
             return ArrayAnalyzer::analyze($statements_analyzer, $stmt, $context);
         }
 
-        if ($stmt instanceof PhpParser\Node\Scalar\Encapsed) {
+        if ($stmt instanceof PhpParser\Node\Scalar\InterpolatedString) {
             return EncapsulatedStringAnalyzer::analyze($statements_analyzer, $stmt, $context);
         }
 
@@ -346,7 +340,7 @@ final class ExpressionAnalyzer
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\AssignRef) {
-            if (!AssignmentAnalyzer::analyzeAssignmentRef($statements_analyzer, $stmt, $context)) {
+            if (!AssignmentAnalyzer::analyzeAssignmentRef($statements_analyzer, $stmt, $context, $from_stmt)) {
                 IssueBuffer::maybeAdd(
                     new UnsupportedReferenceUsage(
                         "This reference cannot be analyzed by Psalm",
@@ -379,80 +373,20 @@ final class ExpressionAnalyzer
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\ShellExec) {
-            if ($statements_analyzer->data_flow_graph) {
-                $call_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
-
-                if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
-                    $sink = TaintSink::getForMethodArgument(
-                        'shell_exec',
-                        'shell_exec',
-                        0,
-                        null,
-                        $call_location,
-                    );
-
-                    $sink->taints = [TaintKind::INPUT_SHELL];
-
-                    $statements_analyzer->data_flow_graph->addSink($sink);
-                }
-
-                foreach ($stmt->parts as $part) {
-                    if ($part instanceof PhpParser\Node\Expr\Variable) {
-                        if (self::analyze($statements_analyzer, $part, $context) === false) {
-                            break;
-                        }
-
-                        $expr_type = $statements_analyzer->node_data->getType($part);
-                        if ($expr_type === null) {
-                            break;
-                        }
-
-                        $shell_exec_param = new FunctionLikeParameter(
-                            'var',
-                            false,
-                        );
-
-                        if (ArgumentAnalyzer::verifyType(
-                            $statements_analyzer,
-                            $expr_type,
-                            Type::getString(),
-                            null,
-                            'shell_exec',
-                            null,
-                            0,
-                            $call_location,
-                            $stmt,
-                            $context,
-                            $shell_exec_param,
-                            false,
-                            null,
-                            true,
-                            true,
-                            new CodeLocation($statements_analyzer, $stmt),
-                        ) === false) {
-                            return false;
-                        }
-
-                        foreach ($expr_type->parent_nodes as $parent_node) {
-                            $statements_analyzer->data_flow_graph->addPath(
-                                $parent_node,
-                                new DataFlowNode('variable-use', 'variable use', null),
-                                'variable-use',
-                            );
-                        }
-                    }
-                }
-            }
-
-            IssueBuffer::maybeAdd(
-                new ForbiddenCode(
-                    'Use of shell_exec',
-                    new CodeLocation($statements_analyzer->getSource(), $stmt),
-                ),
-                $statements_analyzer->getSuppressedIssues(),
+            $concat = new VirtualInterpolatedString($stmt->parts, $stmt->getAttributes());
+            $virtual_call = new VirtualFuncCall(new VirtualName(['shell_exec']), [
+                new VirtualArg($concat),
+            ], $stmt->getAttributes());
+            return self::handleExpression(
+                $statements_analyzer,
+                $virtual_call,
+                $context,
+                $array_assignment,
+                $global_context,
+                $from_stmt,
+                $template_result,
+                $assigned_to_reference,
             );
-
-            return true;
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\Print_) {
@@ -483,7 +417,7 @@ final class ExpressionAnalyzer
             return MatchAnalyzer::analyze($statements_analyzer, $stmt, $context);
         }
 
-        if ($stmt instanceof PhpParser\Node\Expr\Throw_ && $analysis_php_version_id >= 8_00_00) {
+        if ($stmt instanceof PhpParser\Node\Expr\Throw_) {
             return ThrowAnalyzer::analyze($statements_analyzer, $stmt, $context);
         }
 
@@ -523,7 +457,7 @@ final class ExpressionAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $stmt,
         Context $context,
-        bool $from_stmt,
+        ?PhpParser\Node\Stmt $from_stmt,
     ): bool {
         $assignment_type = AssignmentAnalyzer::analyze(
             $statements_analyzer,
@@ -531,7 +465,7 @@ final class ExpressionAnalyzer
             $stmt->expr,
             null,
             $context,
-            $stmt->getDocComment(),
+            $stmt->getDocComment() ?? $from_stmt?->getDocComment(),
             [],
             !$from_stmt ? $stmt : null,
         );

@@ -314,14 +314,18 @@ final class ArrayFetchAnalyzer
                 && !$context->inside_unset
                 && ($stmt_var_type && !$stmt_var_type->hasMixed())
             ) {
-                IssueBuffer::maybeAdd(
+                if (IssueBuffer::accepts(
                     new PossiblyUndefinedArrayOffset(
                         'Possibly undefined array key ' . $keyed_array_var_id
                             . ' on ' . $stmt_var_type->getId(),
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                     ),
                     $statements_analyzer->getSuppressedIssues(),
-                );
+                )) {
+                    $stmt_type = $stmt_type->getBuilder()->addType(new TNull())->freeze();
+                }
+            } elseif ($stmt_type->possibly_undefined) {
+                $stmt_type = $stmt_type->getBuilder()->addType(new TNull())->freeze();
             }
 
             $stmt_type = $stmt_type->setPossiblyUndefined(false);
@@ -497,7 +501,7 @@ final class ArrayFetchAnalyzer
             if ($value_type instanceof TLiteralString) {
                 $key_values[] = $value_type;
             }
-        } elseif ($stmt->dim instanceof PhpParser\Node\Scalar\LNumber) {
+        } elseif ($stmt->dim instanceof PhpParser\Node\Scalar\Int_) {
             $key_values[] = new TLiteralInt($stmt->dim->value);
         } elseif ($stmt->dim && ($stmt_dim_type = $statements_analyzer->node_data->getType($stmt->dim))) {
             $string_literals = $stmt_dim_type->getLiteralStrings();

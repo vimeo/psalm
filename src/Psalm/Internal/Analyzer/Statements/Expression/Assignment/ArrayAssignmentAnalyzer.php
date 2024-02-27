@@ -174,7 +174,7 @@ final class ArrayAssignmentAnalyzer
             if ($value_type instanceof TLiteralString) {
                 $key_values[] = $value_type;
             }
-        } elseif ($current_dim instanceof PhpParser\Node\Scalar\LNumber && !$root_is_string) {
+        } elseif ($current_dim instanceof PhpParser\Node\Scalar\Int_ && !$root_is_string) {
             $key_values[] = new TLiteralInt($current_dim->value);
         } elseif ($current_dim
             && ($key_type = $statements_analyzer->node_data->getType($current_dim))
@@ -346,29 +346,25 @@ final class ArrayAssignmentAnalyzer
         }
 
         if (!$has_matching_objectlike_property && !$has_matching_string) {
-            if (count($key_values) === 1) {
-                $key_value = $key_values[0];
-
-                $object_like = new TKeyedArray(
-                    [$key_value->value => $current_type],
-                    $key_value instanceof TLiteralClassString
-                        ? [$key_value->value => true]
-                        : null,
-                );
-
-                $array_assignment_type = new Union([
-                    $object_like,
-                ]);
-            } else {
-                $array_assignment_literals = $key_values;
-
-                $array_assignment_type = new Union([
-                    new TNonEmptyArray([
-                        new Union($array_assignment_literals),
-                        $current_type,
-                    ]),
-                ]);
+            $properties = [];
+            $classStrings = [];
+            $current_type = $current_type->setPossiblyUndefined(
+                $current_type->possibly_undefined || count($key_values) > 1,
+            );
+            foreach ($key_values as $key_value) {
+                $properties[$key_value->value] = $current_type;
+                if ($key_value instanceof TLiteralClassString) {
+                    $classStrings[$key_value->value] = true;
+                }
             }
+            $object_like = new TKeyedArray(
+                $properties,
+                $classStrings ?: null,
+            );
+
+            $array_assignment_type = new Union([
+                $object_like,
+            ]);
 
             return Type::combineUnionTypes(
                 $child_stmt_type,
@@ -1035,7 +1031,7 @@ final class ArrayAssignmentAnalyzer
             if ($value_type instanceof TLiteralString) {
                 $key_values[] = $value_type;
             }
-        } elseif ($dim instanceof PhpParser\Node\Scalar\LNumber) {
+        } elseif ($dim instanceof PhpParser\Node\Scalar\Int_) {
             $key_values[] = new TLiteralInt($dim->value);
         } else {
             $key_type = $statements_analyzer->node_data->getType($dim);
@@ -1092,12 +1088,12 @@ final class ArrayAssignmentAnalyzer
             return [$offset_type, $var_id_addition, true];
         }
 
-        if ($child_stmt->dim instanceof PhpParser\Node\Scalar\LNumber
+        if ($child_stmt->dim instanceof PhpParser\Node\Scalar\Int_
             || (($child_stmt->dim instanceof PhpParser\Node\Expr\ConstFetch
                     || $child_stmt->dim instanceof PhpParser\Node\Expr\ClassConstFetch)
                 && $child_stmt_dim_type->isSingleIntLiteral())
         ) {
-            if ($child_stmt->dim instanceof PhpParser\Node\Scalar\LNumber) {
+            if ($child_stmt->dim instanceof PhpParser\Node\Scalar\Int_) {
                 $offset_type = new TLiteralInt($child_stmt->dim->value);
             } else {
                 $offset_type = $child_stmt_dim_type->getSingleIntLiteral();

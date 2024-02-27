@@ -113,6 +113,7 @@ return [
         'formatOutput' => 'bool',
         'implementation' => 'DOMImplementation',
         'lastElementChild' => 'DOMElement|null',
+        'ownerDocument' => 'null',
         'preserveWhiteSpace' => 'bool',
         'recover' => 'bool',
         'resolveExternals' => 'bool',
@@ -173,7 +174,7 @@ return [
         'nodeName' => 'string',
         'nodeType' => 'int',
         'nodeValue' => 'string|null',
-        'ownerDocument' => 'DOMDocument|null',
+        'ownerDocument' => 'DOMDocument',
         'parentNode' => 'DOMNode|null',
         'prefix' => 'string',
         'previousSibling' => 'DOMNode|null',
@@ -384,7 +385,7 @@ return [
         'items' => 'array<int, PhpParser\\Node\\Expr\\ArrayItem|null>',
     ],
     'phpparser\\node\\expr\\shellexec' => [
-        'parts' => 'list<PhpParser\\Node>',
+        'parts' => 'list<PhpParser\\Node\\Expr>',
     ],
     'phpparser\\node\\matcharm' => [
         'conds' => 'null|non-empty-list<PhpParser\\Node\\Expr>',

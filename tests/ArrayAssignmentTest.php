@@ -36,6 +36,45 @@ class ArrayAssignmentTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'assignUnionOfLiterals' => [
+                'code' => '<?php
+                    $result = [];
+
+                    foreach (["a", "b"] as $k) {
+                        $result[$k] = true;
+                    }
+
+                    $resultOpt = [];
+
+                    foreach (["a", "b"] as $k) {
+                        if (random_int(0, 1)) {
+                            continue;
+                        }
+                        $resultOpt[$k] = true;
+                    }',
+                'assertions' => [
+                    '$result===' => 'array{a: true, b: true}',
+                    '$resultOpt===' => 'array{a?: true, b?: true}',
+                ],
+            ],
+            'assignUnionOfLiteralsClassKeys' => [
+                'code' => '<?php
+                    class a {}
+                    class b {}
+
+                    $result = [];
+
+                    foreach ([a::class, b::class] as $k) {
+                        $result[$k] = true;
+                    }
+
+                    foreach ($result as $k => $v) {
+                        $vv = new $k;
+                    }',
+                'assertions' => [
+                    '$result===' => 'array{a::class: true, b::class: true}',
+                ],
+            ],
             'genericArrayCreationWithSingleIntValue' => [
                 'code' => '<?php
                     $out = [];
@@ -194,7 +233,7 @@ class ArrayAssignmentTest extends TestCase
                 'assertions' => [
                     '$foo' => 'array{0: string, 1: string, 2: string}',
                     '$bar' => 'list{int, int, int}',
-                    '$bat' => 'non-empty-array<string, int>',
+                    '$bat' => 'array{a: int, b: int, c: int}',
                 ],
             ],
             'implicitStringArrayCreation' => [
@@ -981,6 +1020,7 @@ class ArrayAssignmentTest extends TestCase
                     $a = [];
 
                     foreach (["one", "two", "three"] as $key) {
+                        $a[$key] ??= 0;
                         $a[$key] += rand(0, 10);
                     }
 
@@ -1045,17 +1085,20 @@ class ArrayAssignmentTest extends TestCase
                      * @template-implements ArrayAccess<?int, string>
                      */
                     class C implements ArrayAccess {
-                        public function offsetExists(int $offset) : bool { return true; }
+                        public function offsetExists(mixed $offset) : bool { return true; }
 
                         public function offsetGet($offset) : string { return "";}
 
-                        public function offsetSet(?int $offset, string $value) : void {}
+                        public function offsetSet(mixed $offset, mixed $value) : void {}
 
-                        public function offsetUnset(int $offset) : void { }
+                        public function offsetUnset(mixed $offset) : void { }
                     }
 
                     $c = new C();
                     $c[] = "hello";',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'checkEmptinessAfterConditionalArrayAdjustment' => [
                 'code' => '<?php
@@ -1253,6 +1296,29 @@ class ArrayAssignmentTest extends TestCase
                     ];',
                 'assertions' => [
                     '$x===' => 'array{a: 1, b: 2}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'constantArraySpreadWithString' => [
+                'code' => '<?php
+                    class BaseClass {
+                        public const KEYS = [
+                            "a" => "a",
+                            "b" => "b",
+                        ];
+                    }
+
+                    class ChildClass extends BaseClass {
+                        public const A = [
+                            ...parent::KEYS,
+                            "c" => "c",
+                        ];
+                    }
+
+                    $a = ChildClass::A;',
+                'assertions' => [
+                    '$a===' => "array{a: 'a', b: 'b', c: 'c'}",
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
@@ -1803,7 +1869,7 @@ class ArrayAssignmentTest extends TestCase
                 'code' => '<?php
                     /**
                      * @param array<string, mixed> $array
-                     * @return non-empty-array<string, mixed>
+                     * @return array<string, mixed>
                      */
                     function getArray(array $array): array {
                         if (rand(0, 1)) {
@@ -1964,17 +2030,20 @@ class ArrayAssignmentTest extends TestCase
                      * @template-implements ArrayAccess<int, string>
                      */
                     class C implements ArrayAccess {
-                        public function offsetExists(int $offset) : bool { return true; }
+                        public function offsetExists(mixed $offset) : bool { return true; }
 
                         public function offsetGet($offset) : string { return "";}
 
-                        public function offsetSet(int $offset, string $value) : void {}
+                        public function offsetSet(mixed $offset, mixed $value) : void {}
 
-                        public function offsetUnset(int $offset) : void { }
+                        public function offsetUnset(mixed $offset) : void { }
                     }
 
                     $c = new C();
                     $c[] = "hello";',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'conditionalRestrictedDocblockKeyAssignment' => [
                 'code' => '<?php
@@ -2047,6 +2116,38 @@ class ArrayAssignmentTest extends TestCase
                         $queryParams["a"] = "zzz";
                         return $queryParams;
                     }',
+            ],
+            'AssignListToNonEmptyList' => [
+                'code' => '<?php
+                    /** @var array<int, non-empty-list<string>> $l*/
+                    $l = [];
+                    $l[] = [];',
+                'assertions' => [
+                    '$l===' => 'non-empty-array<int, list<string>>',
+                ],
+            ],
+            'stringIntKeys' => [
+                'code' => '<?php
+                    /**
+                     * @param array<15|"17"|"hello", string> $arg
+                     * @return bool
+                     */
+                    function foo($arg) {
+                        foreach ($arg as $k => $v) {
+                            if ( $k === 15 ) {
+                                return true;
+                            }
+
+                            if ( $k === 17 ) {
+                                return false;
+                            }
+                        }
+
+                        return true;
+                    }
+
+                    $x = ["15" => "a", 17 => "b"];
+                    foo($x);',
             ],
         ];
     }
@@ -2250,9 +2351,6 @@ class ArrayAssignmentTest extends TestCase
             ],
             'mergeWithDeeplyNestedArray' => [
                 'code' => '<?php
-                    /**
-                     * @psalm-suppress MixedInferredReturnType
-                     */
                     function getTwoPartsLocale(array $cache, string $a, string $b) : string
                     {
                         if (!isset($cache[$b])) {
@@ -2425,7 +2523,8 @@ class ArrayAssignmentTest extends TestCase
                         return $weird_array[$offset];
                     }
                 }',
-                'error_message' => 'InvalidArrayOffset',
+                'error_message' => 'MixedArrayAccess',
+                'ignored_issues' => ['InvalidDocblock'],
             ],
             'unpackTypedIterableWithStringKeysIntoArray' => [
                 'code' => '<?php

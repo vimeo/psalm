@@ -196,7 +196,7 @@ final class TObjectWithProperties extends TObject
                 return false;
             }
 
-            if (!$property_type->equals($other_type->properties[$property_name], $ensure_source_equality)) {
+            if (!$property_type->equals($other_type->properties[$property_name], $ensure_source_equality, false)) {
                 return false;
             }
         }

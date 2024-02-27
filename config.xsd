@@ -42,11 +42,13 @@
         <xs:attribute name="checkForThrowsInGlobalScope" type="xs:boolean" default="false" />
         <xs:attribute name="ensureArrayIntOffsetsExist" type="xs:boolean" default="false" />
         <xs:attribute name="ensureArrayStringOffsetsExist" type="xs:boolean" default="false" />
+        <xs:attribute name="ensureOverrideAttribute" type="xs:boolean" default="false" />
         <xs:attribute name="findUnusedCode" type="xs:boolean" default="false" />
         <xs:attribute name="findUnusedVariablesAndParams" type="xs:boolean" default="false" />
         <xs:attribute name="findUnusedPsalmSuppress" type="xs:boolean" default="false" />
         <!-- TODO: Update default to true in Psalm 6 -->
         <xs:attribute name="findUnusedBaselineEntry" type="xs:boolean" default="false" />
+        <xs:attribute name="findUnusedIssueHandlerSuppression" type="xs:boolean" default="true" />
         <xs:attribute name="hideExternalErrors" type="xs:boolean" default="false" />
         <xs:attribute name="hoistConstants" type="xs:boolean" default="false" />
         <xs:attribute name="ignoreInternalFunctionFalseReturn" type="xs:boolean" default="false" />
@@ -284,6 +286,7 @@
             <xs:element name="InvalidNamedArgument" type="ArgumentIssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidNullableReturnType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidOperand" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="InvalidOverride" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidParamDefault" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidParent" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InvalidPassByReference" type="IssueHandlerType" minOccurs="0" />
@@ -319,6 +322,7 @@
             <xs:element name="MissingDocblockType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingFile" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingImmutableAnnotation" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="MissingOverrideAttribute" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingParamType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingPropertyType" type="PropertyIssueHandlerType" minOccurs="0" />
             <xs:element name="MissingReturnType" type="IssueHandlerType" minOccurs="0" />
@@ -333,7 +337,6 @@
             <xs:element name="MixedAssignment" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MixedClone" type="ArgumentIssueHandlerType" minOccurs="0" />
             <xs:element name="MixedFunctionCall" type="IssueHandlerType" minOccurs="0" />
-            <xs:element name="MixedInferredReturnType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MixedMethodCall" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MixedOperand" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MixedPropertyAssignment" type="IssueHandlerType" minOccurs="0" />
@@ -420,6 +423,7 @@
             <xs:element name="RedundantCastGivenDocblockType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="RedundantCondition" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="RedundantConditionGivenDocblockType" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="RedundantFlag" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="RedundantFunctionCall" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="RedundantFunctionCallGivenDocblockType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="RedundantIdentityWithTrue" type="IssueHandlerType" minOccurs="0" />
@@ -428,11 +432,13 @@
             <xs:element name="ReferenceReusedFromConfusingScope" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ReservedWord" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="RiskyCast" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="RiskyTruthyFalsyComparison" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="StringIncrement" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedCallable" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedCookie" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedCustom" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedEval" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="TaintedExtract" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedFile" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedHeader" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedHtml" type="IssueHandlerType" minOccurs="0" />
@@ -494,6 +500,7 @@
             <xs:element name="UnusedClosureParam" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnusedConstructor" type="MethodIssueHandlerType" minOccurs="0" />
             <xs:element name="UnusedDocblockParam" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="UnusedIssueHandlerSuppression" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnusedForeachValue" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnusedFunctionCall" type="FunctionIssueHandlerType" minOccurs="0" />
             <xs:element name="UnusedMethod" type="MethodIssueHandlerType" minOccurs="0" />

@@ -1,6 +1,6 @@
 # TaintedEval
 
-Emitted when user-controlled input can be passed into to an `eval` call.
+Emitted when user-controlled input can be passed into an `eval` call.
 
 Passing untrusted user input to `eval` calls is dangerous, as it allows arbitrary data to be executed on your server.
 

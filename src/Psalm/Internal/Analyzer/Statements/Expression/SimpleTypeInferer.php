@@ -12,6 +12,7 @@ use Psalm\Exception\CircularReferenceException;
 use Psalm\FileSource;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\ArithmeticOpAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Type\TypeCombiner;
@@ -144,6 +145,17 @@ final class SimpleTypeInferer
                 $fq_classlike_name,
             );
 
+            if (!$stmt_left_type
+                && $file_source instanceof StatementsAnalyzer
+                && $stmt->left instanceof PhpParser\Node\Expr\ConstFetch) {
+                $stmt_left_type = ConstFetchAnalyzer::getConstType(
+                    $file_source,
+                    $stmt->left->name->toString(),
+                    true,
+                    null,
+                );
+            }
+
             $stmt_right_type = self::infer(
                 $codebase,
                 $nodes,
@@ -153,6 +165,17 @@ final class SimpleTypeInferer
                 $existing_class_constants,
                 $fq_classlike_name,
             );
+
+            if (!$stmt_right_type
+                && $file_source instanceof StatementsAnalyzer
+                && $stmt->right instanceof PhpParser\Node\Expr\ConstFetch) {
+                $stmt_right_type = ConstFetchAnalyzer::getConstType(
+                    $file_source,
+                    $stmt->right->name->toString(),
+                    true,
+                    null,
+                );
+            }
 
             if (!$stmt_left_type || !$stmt_right_type) {
                 return null;
@@ -261,21 +284,26 @@ final class SimpleTypeInferer
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\ConstFetch) {
-            $name = strtolower($stmt->name->getFirst());
-            if ($name === 'false') {
+            $name = $stmt->name->getFirst();
+            $name_lowercase = strtolower($name);
+            if ($name_lowercase === 'false') {
                 return Type::getFalse();
             }
 
-            if ($name === 'true') {
+            if ($name_lowercase === 'true') {
                 return Type::getTrue();
             }
 
-            if ($name === 'null') {
+            if ($name_lowercase === 'null') {
                 return Type::getNull();
             }
 
-            if ($stmt->name->getFirst() === '__NAMESPACE__') {
+            if ($name === '__NAMESPACE__') {
                 return Type::getString($aliases->namespace);
+            }
+
+            if ($type = ConstFetchAnalyzer::getGlobalConstType($codebase, $name, $name)) {
+                return $type;
             }
 
             return null;
@@ -372,11 +400,11 @@ final class SimpleTypeInferer
             return Type::getString($stmt->value);
         }
 
-        if ($stmt instanceof PhpParser\Node\Scalar\LNumber) {
+        if ($stmt instanceof PhpParser\Node\Scalar\Int_) {
             return Type::getInt(false, $stmt->value);
         }
 
-        if ($stmt instanceof PhpParser\Node\Scalar\DNumber) {
+        if ($stmt instanceof PhpParser\Node\Scalar\Float_) {
             return Type::getFloat($stmt->value);
         }
 
@@ -595,7 +623,7 @@ final class SimpleTypeInferer
         Codebase $codebase,
         NodeDataProvider $nodes,
         ArrayCreationInfo $array_creation_info,
-        PhpParser\Node\Expr\ArrayItem $item,
+        PhpParser\Node\ArrayItem $item,
         Aliases $aliases,
         FileSource $file_source = null,
         ?array $existing_class_constants = null,
@@ -702,7 +730,7 @@ final class SimpleTypeInferer
         $array_creation_info->all_list = $array_creation_info->all_list && $item_is_list_item;
 
         if ($item->key instanceof PhpParser\Node\Scalar\String_
-            || $item->key instanceof PhpParser\Node\Scalar\LNumber
+            || $item->key instanceof PhpParser\Node\Scalar\Int_
             || !$item->key
         ) {
             if ($item_key_value !== null

@@ -116,6 +116,8 @@ class EmptyTest extends TestCase
 
                         return "an exception";
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'emptyExceptionReconciliationAfterIf' => [
                 'code' => '<?php
@@ -177,6 +179,8 @@ class EmptyTest extends TestCase
                     foreach ($arr as $item) {
                         if (empty($item["hide"]) || $item["hide"] === 3) {}
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'alwaysBoolResult' => [
                 'code' => '<?php
@@ -221,7 +225,7 @@ class EmptyTest extends TestCase
                         if (empty($scopes)){}
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MixedAssignment', 'MissingParamType', 'MixedArgument'],
+                'ignored_issues' => ['MixedAssignment', 'MissingParamType', 'MixedArgument', 'RiskyTruthyFalsyComparison'],
             ],
             'multipleEmptiesInCondition' => [
                 'code' => '<?php
@@ -391,6 +395,8 @@ class EmptyTest extends TestCase
 
                         echo $arr["a"];
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'reconcileEmptyTwiceWithoutReturn' => [
                 'code' => '<?php
@@ -614,6 +620,14 @@ class EmptyTest extends TestCase
                     '$GLOBALS[\'sql_query\']===' => 'string',
                 ],
             ],
+            'emptyLiteralTrueFalse' => [
+                'code' => '<?php
+                    $b = "asdf";
+                    $x = !empty($b);',
+                'assertions' => [
+                    '$x===' => 'true',
+                ],
+            ],
         ];
     }
 
@@ -721,6 +735,30 @@ class EmptyTest extends TestCase
                         return strlen("a" . $str . "b") > 2 ? $str : "string";
                     }',
                 'error_message' => 'LessSpecificReturnStatement',
+            ],
+            'impossibleEmptyOnFalsyFunctionCall' => [
+                'code' => '<?php
+                    /** @return false|null */
+                    function bar() {
+                        return rand(0, 5) ? null : false;
+                    }
+
+                    if (!empty(bar())) {
+                        echo "abc";
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'redundantEmptyOnFalsyFunctionCall' => [
+                'code' => '<?php
+                    /** @return false|null */
+                    function bar() {
+                        return rand(0, 5) ? null : false;
+                    }
+
+                    if (empty(bar())) {
+                        echo "abc";
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType',
             ],
         ];
     }

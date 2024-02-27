@@ -261,9 +261,10 @@ final class CommentAnalyzer
     public static function sanitizeDocblockType(string $docblock_type): string
     {
         $docblock_type = (string) preg_replace('@^[ \t]*\*@m', '', $docblock_type);
-        $docblock_type = (string) preg_replace('/,\n\s+}/', '}', $docblock_type);
+        $docblock_type = (string) preg_replace('/,[\n\s]+}/', '}', $docblock_type);
+        $docblock_type = (string) preg_replace('/[ \t]+/', ' ', $docblock_type);
 
-        return str_replace("\n", '', $docblock_type);
+        return trim(str_replace("\n", '', $docblock_type));
     }
 
     /**
@@ -431,6 +432,10 @@ final class CommentAnalyzer
         $var_comments = [];
 
         try {
+            $file_path = $statements_analyzer->getRootFilePath();
+            $file_storage_provider = $codebase->file_storage_provider;
+            $file_storage = $file_storage_provider->get($file_path);
+
             $var_comments = $codebase->config->disable_var_parsing
                 ? []
                 : self::arrayToDocblocks(
@@ -439,6 +444,7 @@ final class CommentAnalyzer
                     $statements_analyzer->getSource(),
                     $statements_analyzer->getSource()->getAliases(),
                     $statements_analyzer->getSource()->getTemplateTypeMap(),
+                    $file_storage->type_aliases,
                 );
         } catch (IncorrectDocblockException $e) {
             IssueBuffer::maybeAdd(

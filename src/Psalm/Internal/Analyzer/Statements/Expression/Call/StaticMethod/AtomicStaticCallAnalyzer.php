@@ -32,13 +32,14 @@ use Psalm\Issue\InternalClass;
 use Psalm\Issue\InvalidStringClass;
 use Psalm\Issue\MixedMethodCall;
 use Psalm\Issue\UndefinedClass;
+use Psalm\Issue\UndefinedMethod;
 use Psalm\IssueBuffer;
 use Psalm\Node\Expr\VirtualArray;
-use Psalm\Node\Expr\VirtualArrayItem;
 use Psalm\Node\Expr\VirtualMethodCall;
 use Psalm\Node\Expr\VirtualVariable;
 use Psalm\Node\Scalar\VirtualString;
 use Psalm\Node\VirtualArg;
+use Psalm\Node\VirtualArrayItem;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
@@ -492,6 +493,7 @@ final class AtomicStaticCallAnalyzer
             $method_name_lc,
         );
 
+
         if ($stmt->isFirstClassCallable()) {
             if ($found_method_and_class_storage) {
                 [ $method_storage ] = $found_method_and_class_storage;
@@ -517,8 +519,31 @@ final class AtomicStaticCallAnalyzer
                         $codebase->getMethodReturnType($method_id, $fq_class_name),
                         $codebase->methods->getStorage($declaring_method_id)->pure,
                     )]);
+                } elseif ($codebase->methodExists(
+                    $call_static_method_id = new MethodIdentifier($method_id->fq_class_name, '__callstatic'),
+                    new CodeLocation($statements_analyzer, $stmt),
+                    null,
+                    null,
+                    false,
+                )) {
+                    $return_type_candidate = new Union([new TClosure(
+                        'Closure',
+                        null,
+                        $codebase->getMethodReturnType($call_static_method_id, $fq_class_name),
+                        $codebase->methods->getStorage($call_static_method_id)->pure,
+                    )]);
                 } else {
-                    // FIXME: perhaps Psalm should complain about nonexisting method here, or throw a logic exception?
+                    if (IssueBuffer::accepts(
+                        new UndefinedMethod(
+                            'Method ' . $method_id . ' does not exist',
+                            new CodeLocation($statements_analyzer, $stmt),
+                            (string) $method_id,
+                        ),
+                        $statements_analyzer->getSuppressedIssues(),
+                    )) {
+                        return false;
+                    }
+
                     $return_type_candidate = Type::getClosure();
                 }
             }
@@ -568,12 +593,12 @@ final class AtomicStaticCallAnalyzer
                 true,
                 $context->insideUse(),
             )) {
-                $callstatic_appearing_id = $codebase->methods->getAppearingMethodId($callstatic_id);
-                assert($callstatic_appearing_id !== null);
+                $callstatic_declaring_id = $codebase->methods->getDeclaringMethodId($callstatic_id);
+                assert($callstatic_declaring_id !== null);
                 $callstatic_pure = false;
                 $callstatic_mutation_free = false;
-                if ($codebase->methods->hasStorage($callstatic_appearing_id)) {
-                    $callstatic_storage = $codebase->methods->getStorage($callstatic_appearing_id);
+                if ($codebase->methods->hasStorage($callstatic_declaring_id)) {
+                    $callstatic_storage = $codebase->methods->getStorage($callstatic_declaring_id);
                     $callstatic_pure = $callstatic_storage->pure;
                     $callstatic_mutation_free = $callstatic_storage->mutation_free;
                 }
@@ -670,7 +695,7 @@ final class AtomicStaticCallAnalyzer
                 }
 
                 $array_values = array_map(
-                    static fn(PhpParser\Node\Arg $arg): PhpParser\Node\Expr\ArrayItem => new VirtualArrayItem(
+                    static fn(PhpParser\Node\Arg $arg): PhpParser\Node\ArrayItem => new VirtualArrayItem(
                         $arg->value,
                         null,
                         false,

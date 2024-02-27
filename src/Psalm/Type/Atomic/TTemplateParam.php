@@ -6,6 +6,7 @@ namespace Psalm\Type\Atomic;
 
 use Psalm\Codebase;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
@@ -19,6 +20,7 @@ use function implode;
  */
 final class TTemplateParam extends Atomic
 {
+    use UnserializeMemoryUsageSuppressionTrait;
     use HasIntersectionTrait;
 
     /**

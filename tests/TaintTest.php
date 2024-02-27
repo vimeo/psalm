@@ -2331,6 +2331,14 @@ class TaintTest extends TestCase
                     ',
                 'error_message' => 'TaintedShell',
             ],
+            'shellExecBacktickConcat' => [
+                'code' => '<?php
+
+                    $input = $_GET["input"];
+                    $x = `ls $input`;
+                    ',
+                'error_message' => 'TaintedShell',
+            ],
             /*
             // TODO: Stubs do not support this type of inference even with $this->message = $message.
             // Most uses of getMessage() would be with caught exceptions, so this is not representative of real code.
@@ -2578,6 +2586,17 @@ class TaintTest extends TestCase
                 'code' => '<?php
                     time_sleep_until($_GET["timestamp"]);',
                 'error_message' => 'TaintedSleep',
+            ],
+            'taintedExtract' => [
+                'code' => '<?php
+                    $array = $_GET;
+                    extract($array);',
+                'error_message' => 'TaintedExtract',
+            ],
+            'extractPost' => [
+                'code' => '<?php
+                    extract($_POST);',
+                'error_message' => 'TaintedExtract',
             ],
         ];
     }

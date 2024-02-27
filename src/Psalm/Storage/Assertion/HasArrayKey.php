@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Storage\Assertion;
 
 use Psalm\Storage\Assertion;
+use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use UnexpectedValueException;
 
 /**
@@ -12,6 +13,7 @@ use UnexpectedValueException;
  */
 final class HasArrayKey extends Assertion
 {
+    use UnserializeMemoryUsageSuppressionTrait;
     public function __construct(public readonly string $key)
     {
     }

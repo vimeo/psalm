@@ -104,7 +104,7 @@ class UnusedVariableTest extends TestCase
                     function foo(array $arr) : void {
                         $a = null;
                         foreach ($arr as $a) { }
-                        if ($a) {}
+                        if ($a !== null) {}
                     }',
             ],
             'definedInSecondBranchOfCondition' => [
@@ -130,10 +130,10 @@ class UnusedVariableTest extends TestCase
             'dummyByRefVar' => [
                 'code' => '<?php
                     function foo(string &$a = null, string $b = null): void {
-                        if ($a) {
+                        if ($a !== null) {
                             echo $a;
                         }
-                        if ($b) {
+                        if ($b !== null) {
                             echo $b;
                         }
                     }
@@ -329,7 +329,7 @@ class UnusedVariableTest extends TestCase
                             echo $e->getMessage();
                         }
 
-                        if ($s) {}
+                        if ($s !== null) {}
                     }',
             ],
             'throwWithMessageCallAndAssignmentInCatchAndReference' => [
@@ -852,7 +852,6 @@ class UnusedVariableTest extends TestCase
                     /** @psalm-suppress UnusedParam */
                     function foo(callable $c) : void {}
                     $listener = function () use (&$listener) : void {
-                        /** @psalm-suppress MixedArgument */
                         foo($listener);
                     };
                     foo($listener);',
@@ -876,7 +875,6 @@ class UnusedVariableTest extends TestCase
                         $i = 1;
                     };
                     $a();
-                    /** @psalm-suppress MixedArgument */
                     echo $i;',
             ],
             'regularVariableClosureUseInAddition' => [
@@ -944,7 +942,7 @@ class UnusedVariableTest extends TestCase
                         if ($foo) {}
                     } catch (Exception $e) {}
 
-                    if ($foo) {}',
+                    if ($foo !== false && $foo !== 0) {}',
             ],
             'useTryAssignedVariableInsideFinally' => [
                 'code' => '<?php
@@ -1016,7 +1014,43 @@ class UnusedVariableTest extends TestCase
                         A::$method();
                     }',
             ],
-            'usedAsStaticPropertyName' => [
+            'usedAsClassConstFetch' => [
+                'code' => '<?php
+                    class A {
+                        const bool something = false;
+
+                        public function foo() : void {
+                            $var = "something";
+
+                            if (rand(0, 1)) {
+                                static::{$var};
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'usedAsEnumFetch' => [
+                'code' => '<?php
+                    enum E {
+                        case C;
+                    }
+
+                    class A {
+                        public function foo() : void {
+                            $var = "C";
+
+                            if (rand(0, 1)) {
+                                E::{$var};
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'usedAsStaticPropertyAssign' => [
                 'code' => '<?php
                     class A {
                         private static bool $something = false;
@@ -1026,6 +1060,20 @@ class UnusedVariableTest extends TestCase
 
                             if (rand(0, 1)) {
                                 static::${$var} = true;
+                            }
+                        }
+                    }',
+            ],
+            'usedAsStaticPropertyFetch' => [
+                'code' => '<?php
+                    class A {
+                        private static bool $something = false;
+
+                        public function foo() : void {
+                            $var = "something";
+
+                            if (rand(0, 1)) {
+                                static::${$var};
                             }
                         }
                     }',
@@ -1352,7 +1400,6 @@ class UnusedVariableTest extends TestCase
             'usedInUndefinedFunction' => [
                 'code' => '<?php
                     /**
-                     * @psalm-suppress MixedInferredReturnType
                      * @psalm-suppress MixedReturnStatement
                      */
                     function test(): string {
@@ -1957,7 +2004,7 @@ class UnusedVariableTest extends TestCase
                         $arr = str_getcsv($value);
 
                         foreach ($arr as &$element) {
-                            $element = $element ?: "foo";
+                            $element = $element !== null ?: "foo";
                         }
 
                         return $arr;
@@ -2144,12 +2191,19 @@ class UnusedVariableTest extends TestCase
                      * @param bool $b
                      */
                     function validate($b, string $source) : void {
-                        /**
-                         * @psalm-suppress DocblockTypeContradiction
-                         * @psalm-suppress MixedAssignment
-                         */
+                        /** @var bool|string $b */
                         if (!is_bool($b)) {
                             $source = $b;
+                            $b = false;
+                        }
+
+                        /**
+                         * test to ensure $b is only type bool and not bool|string anymore
+                         * after we set $b = false; inside the condition above
+                         * @psalm-suppress TypeDoesNotContainType
+                         */
+                        if (!is_bool($b)) {
+                            echo "this should not happen";
                         }
 
                         print_r($source);
@@ -2229,10 +2283,6 @@ class UnusedVariableTest extends TestCase
             ],
             'allowUseByRef' => [
                 'code' => '<?php
-                    /**
-                     * @psalm-suppress MixedReturnStatement
-                     * @psalm-suppress MixedInferredReturnType
-                     */
                     function foo(array $data) : array {
                         $output = [];
 
@@ -2252,7 +2302,6 @@ class UnusedVariableTest extends TestCase
 
                     $a = function() use (&$output_rows) : void {
                         $output_row = 5;
-                        /** @psalm-suppress MixedArrayAssignment */
                         $output_rows[] = $output_row;
                     };
                     $a();
@@ -2339,7 +2388,7 @@ class UnusedVariableTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'ignored_issues' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
                 'php_version' => '8.0',
             ],
             'concatWithUnknownProperty' => [
@@ -3167,7 +3216,7 @@ class UnusedVariableTest extends TestCase
                         $user = $user_id;
                     }
 
-                    if ($user) {
+                    if ($user !== null && $user !== 0) {
                         $a = 0;
                         for ($i = 1; $i <= 10; $i++) {
                             $a += $i;
@@ -3187,7 +3236,7 @@ class UnusedVariableTest extends TestCase
                         $user = $user_id;
                     }
 
-                    if ($user) {
+                    if ($user !== null && $user !== 0) {
                         $a = 0;
                         foreach ([1, 2, 3] as $i) {
                             $a += $i;

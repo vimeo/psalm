@@ -515,17 +515,39 @@ class FunctionCallTest extends TestCase
             ],
             'extractVarCheck' => [
                 'code' => '<?php
+                    /**
+                     * @psalm-suppress InvalidReturnType
+                     * @return array{a: 15, ...}
+                     */
+                    function getUnsealedArray() {}
                     function takesString(string $str): void {}
 
-                    $foo = null;
-                    $a = ["$foo" => "bar"];
+                    $foo = "foo";
+                    $a = getUnsealedArray();
                     extract($a);
                     takesString($foo);',
                 'assertions' => [],
                 'ignored_issues' => [
-                    'MixedAssignment',
-                    'MixedArrayAccess',
                     'MixedArgument',
+                ],
+            ],
+            'extractVarCheckValid' => [
+                'code' => '<?php
+                    function takesInt(int $i): void {}
+
+                    $foo = "foo";
+                    $a = [$foo => 15];
+                    extract($a);
+                    takesInt($foo);',
+            ],
+            'extractSkipExtr' => [
+                'code' => '<?php
+                    $a = 1;
+
+                    extract(["a" => "x", "b" => "y"], EXTR_SKIP);',
+                'assertions' => [
+                    '$a===' => '1',
+                    '$b===' => '\'y\'',
                 ],
             ],
             'compact' => [
@@ -757,8 +779,31 @@ class FunctionCallTest extends TestCase
                     }',
             ],
             'allowPossiblyUndefinedClassInClassExists' => [
-                'code' => '<?php
-                    if (class_exists(Foo::class)) {}',
+                'code' => <<<'PHP'
+                    <?php
+                    if (class_exists(Foo::class)) {}
+                    PHP,
+            ],
+            'allowPossiblyUndefinedClassInInterfaceExists' => [
+                'code' => <<<'PHP'
+                    <?php
+                    if (interface_exists(Foo::class)) {}
+                    PHP,
+            ],
+            'allowPossiblyUndefinedClassInTraitExists' => [
+                'code' => <<<'PHP'
+                    <?php
+                    if (trait_exists(Foo::class)) {}
+                    PHP,
+            ],
+            'allowPossiblyUndefinedClassInEnumExists' => [
+                'code' => <<<'PHP'
+                    <?php
+                    if (enum_exists(Foo::class)) {}
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'allowConstructorAfterClassExists' => [
                 'code' => '<?php
@@ -917,7 +962,7 @@ class FunctionCallTest extends TestCase
                     '$porta' => 'false|int|null',
                     '$porte' => 'false|int|null',
                 ],
-                'ignored_issues' => ['MixedReturnStatement', 'MixedInferredReturnType'],
+                'ignored_issues' => ['MixedReturnStatement'],
             ],
             'parseUrlComponent' => [
                 'code' => '<?php
@@ -1030,6 +1075,41 @@ class FunctionCallTest extends TestCase
                     '$d' => 'string',
                 ],
             ],
+            'filterInput' => [
+                'code' => '<?php
+                    function filterInt(string $s) : int {
+                        $filtered = filter_var($s, FILTER_VALIDATE_INT);
+                        if ($filtered === false) {
+                            return 0;
+                        }
+                        return $filtered;
+                    }
+                    function filterNullableInt(string $s) : ?int {
+                        return filter_var($s, FILTER_VALIDATE_INT, ["options" => ["default" => null]]);
+                    }
+                    function filterIntWithDefault(string $s) : int {
+                        return filter_var($s, FILTER_VALIDATE_INT, ["options" => ["default" => 5]]);
+                    }
+                    function filterBool(string $s) : bool {
+                        return filter_var($s, FILTER_VALIDATE_BOOLEAN);
+                    }
+                    function filterNullableBool(string $s) : ?bool {
+                        return filter_var($s, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+                    }
+                    function filterNullableBoolWithFlagsArray(string $s) : ?bool {
+                        return filter_var($s, FILTER_VALIDATE_BOOLEAN, ["flags" => FILTER_NULL_ON_FAILURE]);
+                    }
+                    function filterFloat(string $s) : float {
+                        $filtered = filter_var($s, FILTER_VALIDATE_FLOAT);
+                        if ($filtered === false) {
+                            return 0.0;
+                        }
+                        return $filtered;
+                    }
+                    function filterFloatWithDefault(string $s) : float {
+                        return filter_var($s, FILTER_VALIDATE_FLOAT, ["options" => ["default" => 5.0]]);
+                    }',
+            ],
             'filterVar' => [
                 'code' => '<?php
                     function filterInt(string $s) : int {
@@ -1063,6 +1143,24 @@ class FunctionCallTest extends TestCase
                     }
                     function filterFloatWithDefault(string $s) : float {
                         return filter_var($s, FILTER_VALIDATE_FLOAT, ["options" => ["default" => 5.0]]);
+                    }
+
+                    /**
+                     * @param mixed $c
+                     * @return int<1, 100>|stdClass|array<never, never>
+                     */
+                    function filterNumericIntWithDefault($c) {
+                        if (is_numeric($c)) {
+                            return filter_var($c, FILTER_VALIDATE_INT, [
+                             "options" => [
+                                "default"   => new stdClass(),
+                                "min_range" => 1,
+                                "max_range" => 100,
+                            ],
+                            ]);
+                        }
+
+                        return array();
                     }',
             ],
             'callVariableVar' => [
@@ -1592,6 +1690,14 @@ class FunctionCallTest extends TestCase
                         }
                     }',
             ],
+            'callableArgumentWithFunctionExists' => [
+                'code' => <<<'PHP'
+                    <?php
+                    if (function_exists('foo')) {
+                        register_shutdown_function('foo');
+                    }
+                    PHP,
+            ],
             'pregMatch' => [
                 'code' => '<?php
                     function takesInt(int $i) : void {}
@@ -1882,7 +1988,7 @@ class FunctionCallTest extends TestCase
             'strposAllowDictionary' => [
                 'code' => '<?php
                     function sayHello(string $format): void {
-                        if (strpos("abcdefghijklmno", $format)) {}
+                        if (strpos("abcdefghijklmno", $format) !== false) {}
                     }',
             ],
             'curlInitIsResourceAllowedIn7x' => [
@@ -2083,7 +2189,7 @@ class FunctionCallTest extends TestCase
             'strposFirstParamAllowClassString' => [
                 'code' => '<?php
                     function sayHello(string $needle): void {
-                        if (strpos(DateTime::class, $needle)) {}
+                        if (strpos(DateTime::class, $needle) !== false) {}
                     }',
             ],
             'mb_strtolowerProducesStringWithSecondArgument' => [
@@ -2354,10 +2460,33 @@ class FunctionCallTest extends TestCase
                     fooFoo("string");',
                 'error_message' => 'InvalidScalarArgument',
             ],
+            'invalidArgumentCallableWithoutArgsUnion' => [
+                'code' => '<?php
+                    function foo(int $a): void {}
+
+                    /**
+                     * @param callable()|float $callable
+                     * @return void
+                     */
+                    function acme($callable) {}
+                    acme("foo");',
+                'error_message' => 'InvalidArgument',
+            ],
             'invalidArgumentWithDeclareStrictTypes' => [
                 'code' => '<?php declare(strict_types=1);
                     function fooFoo(int $a): void {}
                     fooFoo("string");',
+                'error_message' => 'InvalidArgument',
+            ],
+            'invalidArgumentFalseTrueExpected' => [
+                'code' => '<?php
+                    /**
+                     * @param true|string $arg
+                     * @return void
+                     */
+                    function foo($arg) {}
+
+                    foo(false);',
                 'error_message' => 'InvalidArgument',
             ],
             'builtinFunctioninvalidArgumentWithWeakTypes' => [
@@ -3043,6 +3172,16 @@ class FunctionCallTest extends TestCase
                 'error_message' => 'ReservedWord',
                 'ignored_issues' => [],
                 'php_version' => '8.1',
+            ],
+            'extractVarCheckInvalid' => [
+                'code' => '<?php
+                    function takesInt(int $i): void {}
+
+                    $foo = "123hello";
+                    $a = [$foo => 15];
+                    extract($a);
+                    takesInt($foo);',
+                'error_message' => 'InvalidScalarArgument',
             ],
         ];
     }

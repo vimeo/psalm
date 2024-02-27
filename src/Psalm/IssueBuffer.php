@@ -17,6 +17,7 @@ use Psalm\Issue\ConfigIssue;
 use Psalm\Issue\MixedIssue;
 use Psalm\Issue\TaintedInput;
 use Psalm\Issue\UnusedBaselineEntry;
+use Psalm\Issue\UnusedIssueHandlerSuppression;
 use Psalm\Issue\UnusedPsalmSuppress;
 use Psalm\Plugin\EventHandler\Event\AfterAnalysisEvent;
 use Psalm\Plugin\EventHandler\Event\BeforeAddIssueEvent;
@@ -55,6 +56,7 @@ use function dirname;
 use function explode;
 use function file_put_contents;
 use function fwrite;
+use function get_class;
 use function implode;
 use function in_array;
 use function is_dir;
@@ -78,6 +80,7 @@ use function trim;
 use function usort;
 
 use const DEBUG_BACKTRACE_IGNORE_ARGS;
+use const PHP_EOL;
 use const PSALM_VERSION;
 use const STDERR;
 
@@ -130,6 +133,14 @@ final class IssueBuffer
      */
     public static function accepts(CodeIssue $e, array $suppressed_issues = [], bool $is_fixable = false): bool
     {
+        $config = Config::getInstance();
+        $project_analyzer = ProjectAnalyzer::getInstance();
+        $codebase = $project_analyzer->getCodebase();
+        $event = new BeforeAddIssueEvent($e, $is_fixable, $codebase);
+        if ($config->eventDispatcher->dispatchBeforeAddIssue($event) === false) {
+            return false;
+        }
+
         if (self::isSuppressed($e, $suppressed_issues)) {
             return false;
         }
@@ -255,12 +266,7 @@ final class IssueBuffer
         $project_analyzer = ProjectAnalyzer::getInstance();
         $codebase = $project_analyzer->getCodebase();
 
-        $event = new BeforeAddIssueEvent($e, $is_fixable, $codebase);
-        if ($config->eventDispatcher->dispatchBeforeAddIssue($event) === false) {
-            return false;
-        }
-
-        $fqcn_parts = explode('\\', $e::class);
+        $fqcn_parts = explode('\\', get_class($e));
         $issue_type = array_pop($fqcn_parts);
 
         if (!$project_analyzer->show_issues) {
@@ -644,6 +650,46 @@ final class IssueBuffer
             }
         }
 
+        if ($codebase->config->find_unused_issue_handler_suppression) {
+            if ($is_full && !$codebase->diff_run) {
+                foreach ($codebase->config->getIssueHandlers() as $type => $handler) {
+                    foreach ($handler->getFilters() as $filter) {
+                        if ($filter->suppressions > 0 && $filter->getErrorLevel() == Config::REPORT_SUPPRESS) {
+                            continue;
+                        }
+                        $issues_data['config'][] = new IssueData(
+                            IssueData::SEVERITY_ERROR,
+                            0,
+                            0,
+                            UnusedIssueHandlerSuppression::getIssueType(),
+                            sprintf(
+                                'Suppressed issue type "%s" for %s was not thrown.',
+                                $type,
+                                str_replace(
+                                    $codebase->config->base_dir,
+                                    '',
+                                    implode(', ', [...$filter->getFiles(), ...$filter->getDirectories()]),
+                                ),
+                            ),
+                            $codebase->config->source_filename ?? '',
+                            '',
+                            '',
+                            '',
+                            0,
+                            0,
+                            0,
+                            0,
+                            0,
+                            0,
+                            UnusedIssueHandlerSuppression::SHORTCODE,
+                            UnusedIssueHandlerSuppression::ERROR_LEVEL,
+                        );
+                    }
+                }
+            } else {
+            }
+        }
+
         echo self::getOutput(
             $issues_data,
             $project_analyzer->stdout_report_options,
@@ -784,6 +830,15 @@ final class IssueBuffer
 
                     echo "\n";
                 }
+            }
+
+            if ($codebase->config->find_unused_issue_handler_suppression && (!$is_full || $codebase->diff_run)) {
+                fwrite(
+                    STDERR,
+                    PHP_EOL . 'To whom it may concern: Psalm cannot detect unused issue handler suppressions when'
+                    . PHP_EOL . 'analyzing individual files and folders or running in diff mode. Run on the full'
+                    . PHP_EOL . 'project with diff mode off to enable unused issue handler detection.' . PHP_EOL,
+                );
             }
         }
 

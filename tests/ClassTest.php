@@ -341,7 +341,6 @@ class ClassTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [
                     'UndefinedClass',
-                    'MixedInferredReturnType',
                     'InvalidArgument',
                 ],
             ],
@@ -356,7 +355,6 @@ class ClassTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [
                     'UndefinedClass',
-                    'MixedInferredReturnType',
                     'InvalidArgument',
                 ],
             ],
@@ -466,7 +464,9 @@ class ClassTest extends TestCase
             ],
             'classAliasNoException' => [
                 'code' => '<?php
-                    class_alias("Bar\F1", "Bar\F2");
+                    namespace {
+                        class_alias("Bar\F1", "Bar\F2");
+                    }
 
                     namespace Bar {
                         class F1 {

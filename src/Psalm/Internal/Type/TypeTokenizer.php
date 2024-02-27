@@ -9,9 +9,11 @@ use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Type\TypeAlias\InlineTypeAlias;
 use Psalm\Type;
 
+use function array_slice;
 use function array_splice;
 use function array_unshift;
 use function count;
+use function implode;
 use function in_array;
 use function is_numeric;
 use function preg_match;
@@ -146,11 +148,9 @@ final class TypeTokenizer
                 $type_tokens[++$rtc] = [' ', $i - 1];
                 $type_tokens[++$rtc] = ['', $i];
             } elseif ($was_space
-                && ($char === 'a' || $char === 'i')
-                && ($chars[$i + 1] ?? null) === 's'
-                && ($chars[$i + 2] ?? null) === ' '
+                && in_array(implode('', array_slice($chars, $i, 3)), ['as ', 'is ', 'of '])
             ) {
-                $type_tokens[++$rtc] = [$char . 's', $i - 1];
+                $type_tokens[++$rtc] = [$char . $chars[$i+1], $i - 1];
                 $type_tokens[++$rtc] = ['', ++$i];
                 $was_char = false;
                 continue;

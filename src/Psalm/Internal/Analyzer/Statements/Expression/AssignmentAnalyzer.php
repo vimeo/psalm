@@ -530,21 +530,23 @@ final class AssignmentAnalyzer
             }
 
             if ($context->vars_in_scope[$var_id]->isNever()) {
-                if (IssueBuffer::accepts(
+                if (!IssueBuffer::accepts(
                     new NoValue(
                         'All possible types for this assignment were invalidated - This may be dead code',
                         new CodeLocation($statements_analyzer->getSource(), $assign_var),
                     ),
                     $statements_analyzer->getSuppressedIssues(),
                 )) {
-                    return null;
+                    // if the error is suppressed, do not treat it as never anymore
+                    $new_mutable = $context->vars_in_scope[$var_id]->getBuilder()->addType(new TMixed);
+                    $new_mutable->removeType('never');
+                    $context->vars_in_scope[$var_id] = $new_mutable->freeze();
+                    $context->has_returned = false;
+                } else {
+                    $context->inside_assignment = $was_in_assignment;
+
+                    return $context->vars_in_scope[$var_id];
                 }
-
-                $context->vars_in_scope[$var_id] = Type::getNever();
-
-                $context->inside_assignment = $was_in_assignment;
-
-                return $context->vars_in_scope[$var_id];
             }
 
             if ($statements_analyzer->data_flow_graph) {
@@ -897,8 +899,9 @@ final class AssignmentAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\AssignRef $stmt,
         Context $context,
+        ?PhpParser\Node\Stmt $from_stmt,
     ): bool {
-        ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context, false, null, false, null, true);
+        ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context, false, null, null, null, true);
 
         $lhs_var_id = ExpressionIdentifier::getExtendedVarId(
             $stmt->var,
@@ -912,7 +915,7 @@ final class AssignmentAnalyzer
             $statements_analyzer,
         );
 
-        $doc_comment = $stmt->getDocComment();
+        $doc_comment = $stmt->getDocComment() ?? $from_stmt?->getDocComment();
         if ($doc_comment) {
             try {
                 $var_comments = CommentAnalyzer::getTypeFromComment(
@@ -1410,7 +1413,7 @@ final class AssignmentAnalyzer
                         $can_be_empty = !$assign_value_atomic_type instanceof TNonEmptyArray;
                     } elseif ($assign_value_atomic_type instanceof TKeyedArray) {
                         if (($assign_var_item->key instanceof PhpParser\Node\Scalar\String_
-                            || $assign_var_item->key instanceof PhpParser\Node\Scalar\LNumber)
+                            || $assign_var_item->key instanceof PhpParser\Node\Scalar\Int_)
                             && isset($assign_value_atomic_type->properties[$assign_var_item->key->value])
                         ) {
                             $new_assign_type =

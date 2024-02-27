@@ -359,6 +359,15 @@ class BinaryOperationTest extends TestCase
                 'code' => '<?php
                     $a = "Hey " . "Jude,";',
             ],
+            'concatenationNonFalsyLiteralStringWithString' => [
+                'code' => '<?php
+                    function foo(): string {}
+                    $a = "Hey " . foo();',
+                'assertions' => [
+                    '$a===' => 'non-falsy-string',
+                ],
+                'ignored_issues' => ['InvalidReturnType'],
+            ],
             'concatenationWithNumberInWeakMode' => [
                 'code' => '<?php
                     $a = "hi" . 5;',
@@ -953,6 +962,40 @@ class BinaryOperationTest extends TestCase
                 'assertions' => [
                     '$a' => 'float|int',
                     '$b' => 'float|int',
+                ],
+            ],
+            'incrementInLoop' => [
+                'code' => '<?php
+                    for ($i = 0; $i < 10; $i++) {
+                        if (rand(0,1)) {
+                            break;
+                        }
+                    }
+                    for ($j = 100; $j < 110; $j++) {
+                        if (rand(0,1)) {
+                            break;
+                        }
+                    }',
+                'assertions' => [
+                    '$i' => 'int<0, 10>',
+                    '$j' => 'int<100, 110>',
+                ],
+            ],
+            'decrementInLoop' => [
+                'code' => '<?php
+                    for ($i = 10; $i > 0; $i--) {
+                        if (rand(0,1)) {
+                            break;
+                        }
+                    }
+                    for ($j = 110; $j > 100; $j--) {
+                        if (rand(0,1)) {
+                            break;
+                        }
+                    }',
+                'assertions' => [
+                    '$i' => 'int<0, 10>',
+                    '$j' => 'int<100, 110>',
                 ],
             ],
             'coalesceFilterOutNullEvenWithTernary' => [

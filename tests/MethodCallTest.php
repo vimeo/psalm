@@ -151,7 +151,7 @@ class MethodCallTest extends TestCase
 
                 $obj = new SomeClass();
 
-                if ($obj->getInt()) {
+                if ($obj->getInt() !== null) {
                     printInt($obj->getInt());
                 }',
         );
@@ -187,7 +187,7 @@ class MethodCallTest extends TestCase
 
                 $obj = new SomeClass();
 
-                if ($obj->getInt()) {
+                if ($obj->getInt() !== null) {
                     printInt($obj->getInt());
                 }',
         );
@@ -938,7 +938,7 @@ class MethodCallTest extends TestCase
 
                     $a = new A();
 
-                    if ($a->getA()) {
+                    if ($a->getA() !== null) {
                         echo strlen($a->getA());
                     }',
             ],
@@ -1009,7 +1009,7 @@ class MethodCallTest extends TestCase
 
                     $obj = new SomeClass();
 
-                    if ($obj->getInt()) {
+                    if ($obj->getInt() !== null) {
                         printInt($obj->getInt());
                     }',
             ],
@@ -1033,7 +1033,7 @@ class MethodCallTest extends TestCase
 
                     $obj = new SomeClass();
 
-                    if ($obj->getInt()) {
+                    if ($obj->getInt() !== null) {
                         printInt($obj->getInt());
                     }',
             ],
@@ -1150,7 +1150,7 @@ class MethodCallTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MixedReturnStatement', 'MixedInferredReturnType'],
+                'ignored_issues' => ['MixedReturnStatement'],
                 'php_version' => '8.0',
             ],
             'nullsafeShortCircuit' => [
@@ -1231,6 +1231,27 @@ class MethodCallTest extends TestCase
                     }
                     $x = new Foo();
                     $x->bar($x);',
+            ],
+            'conditional' => [
+                'code' => '<?php
+
+                    class Old {
+                        public function x(): void {}
+                    }
+                    class Child1 extends Old {}
+                    class Child2 extends Old {}
+
+                    /**
+                     * @template IsClient of bool
+                     */
+                    class A {
+                        /**
+                         * @psalm-param (IsClient is true ? Child1 : Child2) $var
+                         */
+                        public function test(Old $var): void {
+                            $var->x();
+                        }
+                    }',
             ],
         ];
     }
@@ -1342,7 +1363,7 @@ class MethodCallTest extends TestCase
                         }
                     }',
                 'error_message' => 'LessSpecificReturnStatement',
-                'ignored_issues' => ['MixedInferredReturnType', 'MixedReturnStatement', 'MixedMethodCall'],
+                'ignored_issues' => ['MixedReturnStatement', 'MixedMethodCall'],
             ],
             'undefinedVariableStaticCall' => [
                 'code' => '<?php
@@ -1633,7 +1654,7 @@ class MethodCallTest extends TestCase
                     }
 
                     function foo(A $a) : void {
-                        if ($a->getA()) {
+                        if ($a->getA() !== null) {
                             echo strlen($a->getA());
                         }
                     }
@@ -1699,7 +1720,7 @@ class MethodCallTest extends TestCase
 
                     $obj = new SomeClass();
 
-                    if ($obj->getInt()) {
+                    if ($obj->getInt() !== null) {
                         printInt($obj->getInt());
                     }',
                 'error_message' => 'PossiblyNullArgument',
@@ -1778,6 +1799,29 @@ class MethodCallTest extends TestCase
                     }
                 ',
                 'error_message' => 'InvalidParamDefault',
+            ],
+            'stdClassConstructorHasNoParameters' => [
+                'code' => <<<'PHP'
+                    <?php
+                    $a = new stdClass(5);
+                PHP,
+                'error_message' => 'TooManyArguments',
+            ],
+            'firstClassCallableWithUnknownStaticMethod' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class A {}
+                    $_a = A::foo(...);
+                PHP,
+                'error_message' => 'UndefinedMethod',
+            ],
+            'firstClassCallableWithUnknownInstanceMethod' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class A {}
+                    $_a = (new A)->foo(...);
+                PHP,
+                'error_message' => 'UndefinedMethod',
             ],
         ];
     }

@@ -61,9 +61,10 @@ final class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProvide
                     return new TKeyedArray($properties);
                 }
                 $enum_case_storage = $enum_classlike_storage->enum_cases[$object_type->case_name];
+                $case_value = $enum_case_storage->getValue($statements_source->getCodebase()->classlikes);
 
-                if ($enum_case_storage->value !== null) {
-                    $properties['value'] = new Union([$enum_case_storage->value]);
+                if ($case_value !== null) {
+                    $properties['value'] = new Union([$case_value]);
                 }
 
                 return new TKeyedArray($properties);

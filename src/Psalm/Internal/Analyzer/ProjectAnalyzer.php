@@ -502,6 +502,7 @@ final class ProjectAnalyzer
 
             $this->codebase->infer_types_from_usage = true;
         } else {
+            $this->codebase->diff_run = true;
             $this->progress->debug(count($diff_files) . ' changed files: ' . "\n");
             $this->progress->debug('    ' . implode("\n    ", $diff_files) . "\n");
 
@@ -1027,6 +1028,9 @@ final class ProjectAnalyzer
      */
     public function checkPaths(array $paths_to_check): void
     {
+        $this->progress->write($this->generatePHPVersionMessage());
+        $this->progress->startScanningFiles();
+
         $this->config->visitPreloadedStubFiles($this->codebase, $this->progress);
         $this->visitAutoloadFiles();
 
@@ -1046,15 +1050,16 @@ final class ProjectAnalyzer
 
         $this->file_reference_provider->loadReferenceCache();
 
-        $this->progress->write($this->generatePHPVersionMessage());
-        $this->progress->startScanningFiles();
-
         $this->config->initializePlugins($this);
 
 
         $this->codebase->scanFiles($this->threads);
 
         $this->config->visitStubFiles($this->codebase, $this->progress);
+
+        $event = new AfterCodebasePopulatedEvent($this->codebase);
+
+        $this->config->eventDispatcher->dispatchAfterCodebasePopulated($event);
 
         $this->progress->startAnalyzingFiles();
 
@@ -1182,8 +1187,7 @@ final class ProjectAnalyzer
         $analysis_php_version_id = $php_major_version * 10_000 + $php_minor_version * 100;
 
         if ($this->codebase->analysis_php_version_id !== $analysis_php_version_id) {
-            // reset lexer and parser when php version changes
-            StatementsProvider::clearLexer();
+            // reset parser when php version changes
             StatementsProvider::clearParser();
         }
 

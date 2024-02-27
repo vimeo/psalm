@@ -285,8 +285,9 @@ class ConfigFileTest extends TestCase
         $passed = false;
 
         foreach ([PHP_EOL, "\n", "\r", "\r\n"] as $eol) {
-            if (!$passed && $contents === ($expected_template . $eol)) {
+            if ($contents === ($expected_template . $eol)) {
                 $passed = true;
+                break;
             }
         }
 

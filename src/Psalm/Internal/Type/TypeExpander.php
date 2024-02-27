@@ -278,7 +278,9 @@ final class TypeExpander
                 $declaring_fq_classlike_name = $self_class;
             }
 
-            if (!($evaluate_class_constants && $codebase->classOrInterfaceExists($declaring_fq_classlike_name))) {
+            if (!($evaluate_class_constants
+                && $codebase->classlikes->doesClassLikeExist(strtolower($declaring_fq_classlike_name))
+            )) {
                 return [$return_type];
             }
 

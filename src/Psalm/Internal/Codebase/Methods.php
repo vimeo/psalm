@@ -450,6 +450,13 @@ final class Methods
             foreach ($params as $i => $param) {
                 if (isset($overridden_storage->params[$i]->type)
                     && $overridden_storage->params[$i]->has_docblock_type
+                    && (
+                        ! $param->type
+                        || $param->type->equals(
+                            $overridden_storage->params[$i]->signature_type
+                                ?? $overridden_storage->params[$i]->type,
+                        )
+                    )
                 ) {
                     $params[$i] = clone $param;
                     /** @var Union $params[$i]->type */
@@ -622,9 +629,12 @@ final class Methods
             ) {
                 $types = [];
                 foreach ($original_class_storage->enum_cases as $case_name => $case_storage) {
+                    $case_value = $case_storage->getValue($this->classlikes);
+
                     if (UnionTypeComparator::isContainedBy(
                         $source_analyzer->getCodebase(),
-                        new Union([$case_storage->value ?? new TString()]),
+                        // XXX: why TString? Perhaps it should be string|int?
+                        new Union([$case_value ?? new TString()]),
                         $first_arg_type,
                     )) {
                         $types[] = new TEnumCase($original_fq_class_name, $case_name);
@@ -1132,14 +1142,18 @@ final class Methods
         }
 
         $method_name = $method_id->method_name;
+        $method_storage = $class_storage->methods[$method_name]
+            ?? $class_storage->pseudo_methods[$method_name]
+            ?? $class_storage->pseudo_static_methods[$method_name]
+            ?? null;
 
-        if (!isset($class_storage->methods[$method_name])) {
+        if (! $method_storage) {
             throw new UnexpectedValueException(
                 '$storage should not be null for ' . $method_id,
             );
         }
 
-        return $class_storage->methods[$method_name];
+        return $method_storage;
     }
 
     /** @psalm-mutation-free */

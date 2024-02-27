@@ -486,6 +486,36 @@ final class LanguageServer extends Dispatcher
              */
             $serverCapabilities->completionProvider->triggerCharacters = ['$', '>', ':',"[", "(", ",", " "];
         }
+                /**
+                 * The server provides document symbol support.
+                 * Support "Find all symbols"
+                 */
+                $serverCapabilities->documentSymbolProvider = false;
+                /**
+                 * The server provides workspace symbol support.
+                 * Support "Find all symbols in workspace"
+                 */
+                $serverCapabilities->workspaceSymbolProvider = false;
+                /**
+                 * The server provides goto definition support.
+                 * Support "Go to definition"
+                 */
+                $serverCapabilities->definitionProvider = true;
+                /**
+                 * The server provides find references support.
+                 * Support "Find all references"
+                 */
+                $serverCapabilities->referencesProvider = false;
+                /**
+                 * The server provides hover support.
+                 * Support "Hover"
+                 */
+                $serverCapabilities->hoverProvider = true;
+                /**
+                 * The server does not support documentHighlight-ing
+                 * Ref: https://github.com/vimeo/psalm/issues/10397
+                 */
+                $serverCapabilities->documentHighlightProvider = false;
 
         /**
          * Whether code action supports the `data` property which is
@@ -667,7 +697,7 @@ final class LanguageServer extends Dispatcher
             $diagnostics = array_map(
                 function (IssueData $issue_data): Diagnostic {
                     //$check_name = $issue->check_name;
-                    $description = $issue_data->message;
+                    $description = '[' . $issue_data->type . '] ' . $issue_data->message;
                     $severity = $issue_data->severity;
 
                     $start_line = max($issue_data->line_from, 1);
@@ -719,11 +749,8 @@ final class LanguageServer extends Dispatcher
                         //Process Baseline
                         $file = $issue_data->file_name;
                         $type = $issue_data->type;
-                        /** @psalm-suppress MixedArrayAccess */
                         if (isset($issue_baseline[$file][$type]) && $issue_baseline[$file][$type]['o'] > 0) {
-                            /** @psalm-suppress MixedArrayAccess, MixedArgument */
                             if ($issue_baseline[$file][$type]['o'] === count($issue_baseline[$file][$type]['s'])) {
-                                /** @psalm-suppress MixedArrayAccess, MixedAssignment */
                                 $position = array_search(
                                     str_replace("\r\n", "\n", trim($issue_data->selected_text)),
                                     $issue_baseline[$file][$type]['s'],
@@ -732,16 +759,12 @@ final class LanguageServer extends Dispatcher
 
                                 if ($position !== false) {
                                     $issue_data->severity = IssueData::SEVERITY_INFO;
-                                    /** @psalm-suppress MixedArgument */
                                     array_splice($issue_baseline[$file][$type]['s'], $position, 1);
-                                    /** @psalm-suppress MixedArrayAssignment, MixedOperand, MixedAssignment */
                                     $issue_baseline[$file][$type]['o']--;
                                 }
                             } else {
-                                /** @psalm-suppress MixedArrayAssignment */
                                 $issue_baseline[$file][$type]['s'] = [];
                                 $issue_data->severity = IssueData::SEVERITY_INFO;
-                                /** @psalm-suppress MixedArrayAssignment, MixedOperand, MixedAssignment */
                                 $issue_baseline[$file][$type]['o']--;
                             }
                         }

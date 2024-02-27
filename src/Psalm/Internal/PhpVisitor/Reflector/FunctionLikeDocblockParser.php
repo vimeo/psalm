@@ -153,11 +153,7 @@ final class FunctionLikeDocblockParser
                             $line_parts[1] = substr($line_parts[1], 1);
                         }
 
-                        $line_parts[0] = str_replace(
-                            "\n",
-                            '',
-                            (string) preg_replace('@^[ \t]*\*@m', '', $line_parts[0]),
-                        );
+                        $line_parts[0] = CommentAnalyzer::sanitizeDocblockType($line_parts[0]);
 
                         if ($line_parts[0] === ''
                             || ($line_parts[0][0] === '$'
@@ -196,14 +192,10 @@ final class FunctionLikeDocblockParser
                     $line_parts = CommentAnalyzer::splitDocLine($param);
 
                     if (count($line_parts) > 0) {
-                        $line_parts[0] = str_replace(
-                            "\n",
-                            '',
-                            (string) preg_replace('@^[ \t]*\*@m', '', $line_parts[0]),
-                        );
+                        $line_parts[0] = CommentAnalyzer::sanitizeDocblockType($line_parts[0]);
 
                         $info->self_out = [
-                            'type' => str_replace("\n", '', $line_parts[0]),
+                            'type' => $line_parts[0],
                             'line_number' => $comment->getStartLine() + substr_count(
                                 $comment_text,
                                 "\n",
@@ -227,10 +219,10 @@ final class FunctionLikeDocblockParser
             foreach ($parsed_docblock->tags['psalm-if-this-is'] as $offset => $param) {
                 $line_parts = CommentAnalyzer::splitDocLine($param);
 
-                $line_parts[0] = str_replace("\n", '', (string) preg_replace('@^[ \t]*\*@m', '', $line_parts[0]));
+                $line_parts[0] = CommentAnalyzer::sanitizeDocblockType($line_parts[0]);
 
                 $info->if_this_is = [
-                    'type' => str_replace("\n", '', $line_parts[0]),
+                    'type' => $line_parts[0],
                     'line_number' => $comment->getStartLine() + substr_count(
                         $comment->getText(),
                         "\n",
@@ -250,6 +242,13 @@ final class FunctionLikeDocblockParser
 
                 if (count($param_parts) >= 2) {
                     $info->taint_sink_params[] = ['name' => $param_parts[1], 'taint' => $param_parts[0]];
+                } else {
+                    IssueBuffer::maybeAdd(
+                        new InvalidDocblock(
+                            '@psalm-taint-sink expects 2 arguments',
+                            $code_location,
+                        ),
+                    );
                 }
             }
         }
@@ -291,6 +290,13 @@ final class FunctionLikeDocblockParser
 
                 if ($param_parts[0]) {
                     $info->taint_source_types[] = $param_parts[0];
+                } else {
+                    IssueBuffer::maybeAdd(
+                        new InvalidDocblock(
+                            '@psalm-taint-source expects 1 argument',
+                            $code_location,
+                        ),
+                    );
                 }
             }
         } elseif (isset($parsed_docblock->tags['return-taint'])) {
@@ -456,7 +462,7 @@ final class FunctionLikeDocblockParser
         $templates = [];
         if (isset($parsed_docblock->combined_tags['template'])) {
             foreach ($parsed_docblock->combined_tags['template'] as $offset => $template_line) {
-                $template_type = preg_split('/[\s]+/', (string) preg_replace('@^[ \t]*\*@m', '', $template_line));
+                $template_type = preg_split('/[\s]+/', CommentAnalyzer::sanitizeDocblockType($template_line));
                 if ($template_type === false) {
                     throw new AssertionError(preg_last_error_msg());
                 }

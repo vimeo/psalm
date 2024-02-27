@@ -15,6 +15,8 @@ final class ErrorLevelFileFilter extends FileFilter
 {
     private string $error_level = '';
 
+    public int $suppressions = 0;
+
     public static function loadFromArray(
         array $config,
         string $base_dir,

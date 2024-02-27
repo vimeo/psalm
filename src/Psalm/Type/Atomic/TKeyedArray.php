@@ -10,6 +10,7 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeCombiner;
+use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
@@ -32,6 +33,7 @@ use function str_replace;
  */
 class TKeyedArray extends Atomic
 {
+    use UnserializeMemoryUsageSuppressionTrait;
     /**
      * If the shape has fallback params then they are here
      *
@@ -100,6 +102,8 @@ class TKeyedArray extends Atomic
         if ($cloned->is_list) {
             $last_k = -1;
             $had_possibly_undefined = false;
+
+            /** @psalm-suppress InaccessibleProperty */
             ksort($cloned->properties);
             foreach ($cloned->properties as $k => $v) {
                 if (is_string($k) || $last_k !== ($k-1) || ($had_possibly_undefined && !$v->possibly_undefined)) {
@@ -403,7 +407,7 @@ class TKeyedArray extends Atomic
 
         $value_type = $value_type->setPossiblyUndefined(false);
 
-        if ($has_defined_keys || $this->fallback_params !== null) {
+        if ($has_defined_keys) {
             return new TNonEmptyArray([$key_type, $value_type]);
         }
         return new TArray([$key_type, $value_type]);
@@ -646,11 +650,11 @@ class TKeyedArray extends Atomic
         }
 
         if ($this->fallback_params !== null && $other_type->fallback_params !== null) {
-            if (!$this->fallback_params[0]->equals($other_type->fallback_params[0])) {
+            if (!$this->fallback_params[0]->equals($other_type->fallback_params[0], false, false)) {
                 return false;
             }
 
-            if (!$this->fallback_params[1]->equals($other_type->fallback_params[1])) {
+            if (!$this->fallback_params[1]->equals($other_type->fallback_params[1], false, false)) {
                 return false;
             }
         }
@@ -660,7 +664,7 @@ class TKeyedArray extends Atomic
                 return false;
             }
 
-            if (!$property_type->equals($other_type->properties[$property_name], $ensure_source_equality)) {
+            if (!$property_type->equals($other_type->properties[$property_name], $ensure_source_equality, false)) {
                 return false;
             }
         }

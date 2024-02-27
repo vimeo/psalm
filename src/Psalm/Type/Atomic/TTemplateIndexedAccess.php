@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Type\Atomic;
 
+use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type\Atomic;
 
 /**
@@ -11,6 +12,7 @@ use Psalm\Type\Atomic;
  */
 final class TTemplateIndexedAccess extends Atomic
 {
+    use UnserializeMemoryUsageSuppressionTrait;
     public function __construct(
         public string $array_param_name,
         public string $offset_param_name,

@@ -19,6 +19,7 @@ use function implode;
 abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
 {
     use CustomMetadataTrait;
+    use UnserializeMemoryUsageSuppressionTrait;
 
     public ?CodeLocation $location = null;
 

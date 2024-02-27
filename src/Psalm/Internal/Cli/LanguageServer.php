@@ -261,12 +261,12 @@ final class LanguageServer
             $options['r'] = $options['root'];
         }
 
-        $current_dir = (string)getcwd() . DIRECTORY_SEPARATOR;
+        $current_dir = (string) getcwd();
 
         if (isset($options['r']) && is_string($options['r'])) {
             $root_path = realpath($options['r']);
 
-            if (!$root_path) {
+            if ($root_path === false) {
                 fwrite(
                     STDERR,
                     'Could not locate root directory ' . $current_dir . DIRECTORY_SEPARATOR . $options['r'] . PHP_EOL,
@@ -274,7 +274,7 @@ final class LanguageServer
                 exit(1);
             }
 
-            $current_dir = $root_path . DIRECTORY_SEPARATOR;
+            $current_dir = $root_path;
         }
 
         $vendor_dir = CliUtils::getVendorDir($current_dir);
@@ -318,11 +318,9 @@ final class LanguageServer
 
         $path_to_config = CliUtils::getPathToConfig($options);
 
-        if (isset($options['tcp'])) {
-            if (!is_string($options['tcp'])) {
-                fwrite(STDERR, 'tcp url should be a string' . PHP_EOL);
-                exit(1);
-            }
+        if (isset($options['tcp']) && !is_string($options['tcp'])) {
+            fwrite(STDERR, 'tcp url should be a string' . PHP_EOL);
+            exit(1);
         }
 
         $config = CliUtils::initializeConfig(

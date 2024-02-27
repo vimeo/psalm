@@ -273,6 +273,14 @@ When `true`, Psalm will complain when referencing an explicit string offset on a
 ```
 When `true`, Psalm will complain when referencing an explicit integer offset on an array e.g. `$arr[7]` without a user first asserting that it exists (either via an `isset` check or via an object-like array). Defaults to `false`.
 
+#### ensureOverrideAttribute
+```xml
+<psalm
+  ensureOverrideAttribute="[bool]"
+>
+```
+When `true`, Psalm will report class and interface methods that override a method on a parent, but do not have an `Override` attribute. Defaults to `false`.
+
 #### phpVersion
 ```xml
 <psalm
@@ -511,6 +519,11 @@ class PremiumCar extends StandardCar {
 #### findUnusedBaselineEntry
 
 Emits [UnusedBaselineEntry](issues/UnusedBaselineEntry.md) when a baseline entry
+is not being used to suppress an issue.
+
+#### findUnusedIssueHandlerSuppression
+
+Emits [UnusedIssueHandlerSuppression](issues/UnusedIssueHandlerSuppression.md) when a suppressed issue handler
 is not being used to suppress an issue.
 
 ## Project settings

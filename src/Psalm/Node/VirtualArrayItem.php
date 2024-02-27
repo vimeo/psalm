@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Psalm\Node\Expr;
+namespace Psalm\Node;
 
-use PhpParser\Node\Expr\ArrayItem;
+use PhpParser\Node\ArrayItem;
 use Psalm\Node\VirtualNode;
 
 final class VirtualArrayItem extends ArrayItem implements VirtualNode
