@@ -139,24 +139,19 @@ final class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInte
         }
 
         $array_arg_atomic_type = null;
-        $array_arg_type = null;
-
-        if ($array_arg_union_type = $statements_source->node_data->getType($array_arg->value)) {
-            $arg_types = $array_arg_union_type->getAtomicTypes();
-
-            if (isset($arg_types['array'])) {
-                $array_arg_atomic_type = $arg_types['array'];
-
-                $array_arg_type = ArrayType::infer($array_arg_atomic_type);
-            }
-        }
+        $array_arg_type = ($array_arg_union_type = $statements_source->node_data->getType($array_arg->value))
+            && $array_arg_union_type->hasArray();
 
         $generic_key_type = null;
         $mapping_return_type = null;
 
         if ($function_call_arg && $function_call_type) {
+            $codebase = $statements_source->getCodebase();
+
             if (count($call_args) === 2) {
-                $generic_key_type = $array_arg_type->key ?? Type::getArrayKey();
+                $generic_key_type = $array_arg_type 
+                    ? Type::combineUnionTypeArray($array_arg_union_type->getArrayKeyTypes(), $codebase) 
+                    : Type::getArrayKey();
             } else {
                 $generic_key_type = Type::getInt();
             }
@@ -279,10 +274,10 @@ final class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInte
             ]);
         }
 
-        return count($call_args) === 2 && !($array_arg_type->is_list ?? false)
+        return count($call_args) === 2 && !$array_arg_union_type->hasList()
             ? new Union([
                 new TArray([
-                    $array_arg_type->key ?? Type::getArrayKey(),
+                    $generic_key_type ?? Type::getArrayKey(),
                     Type::getMixed(),
                 ]),
             ])

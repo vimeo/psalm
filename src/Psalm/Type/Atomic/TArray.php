@@ -63,7 +63,15 @@ class TArray extends Atomic implements ArrayInterface
     }
     public function getCount(): ?int
     {
-        return null;
+        return $this->isEmptyArray() ? 0 : null;
+    }
+    public function isEmpty(): bool
+    {
+        return $this->isEmptyArray();
+    }
+    public function isNonEmpty(): bool
+    {
+        return false;
     }
     public function getGenericKeyType(): Union
     {

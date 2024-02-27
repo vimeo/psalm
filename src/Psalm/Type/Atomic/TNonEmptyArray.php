@@ -27,6 +27,14 @@ final class TNonEmptyArray extends TArray
         return $this->count;
     }
 
+    public function isNonEmpty(): bool
+    {
+        return true;
+    }
+    public function isEmpty(): bool
+    {
+        return false;
+    }
     /**
      * @param array{Union, Union} $type_params
      * @param positive-int|null $count

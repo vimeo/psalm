@@ -17,6 +17,7 @@ use Psalm\Internal\TypeVisitor\TypeScanner;
 use Psalm\StatementsSource;
 use Psalm\Storage\FileStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic\ArrayInterface;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TClassString;
@@ -401,10 +402,7 @@ trait UnionTrait
     public function hasArray(): bool
     {
         foreach ($this->types as $t) {
-            if ($t instanceof TArray
-                || $t instanceof TKeyedArray
-                || $t instanceof TClassStringMap
-            ) {
+            if ($t instanceof ArrayInterface) {
                 return true;
             }
         }
@@ -412,13 +410,13 @@ trait UnionTrait
     }
 
     /**
-     * @return list<(TArray|TKeyedArray|TClassStringMap)>
+     * @return list<ArrayInterface>
      */
     public function getArrays(): array
     {
         $result = [];
         foreach ($this->types as $t) {
-            if ($t instanceof TKeyedArray || $t instanceof TArray || $t instanceof TClassStringMap) {
+            if ($t instanceof ArrayInterface) {
                 $result []= $t;
             }
         }
@@ -433,12 +431,8 @@ trait UnionTrait
     {
         $result = [];
         foreach ($this->types as $t) {
-            if ($t instanceof TKeyedArray) {
+            if ($t instanceof ArrayInterface) {
                 $result []= $t->getGenericKeyType();
-            } elseif ($t instanceof TArray) {
-                $result []= $t->type_params[0];
-            } elseif ($t instanceof TClassStringMap) {
-                $result []= Type::getClassString($t->as_type?->value ?? 'object');
             }
         }
         return $result;
@@ -451,20 +445,84 @@ trait UnionTrait
     {
         $result = [];
         foreach ($this->types as $t) {
-            if ($t instanceof TKeyedArray) {
+            if ($t instanceof ArrayInterface) {
                 $result []= $t->getGenericValueType();
-            } elseif ($t instanceof TArray) {
-                $result []= $t->type_params[1];
-            } elseif ($t instanceof TClassStringMap) {
-                if ($t->as_type) {
-                    $result []= new Union([$t->as_type]);
-                } else {
-                    $result []= Type::getObject();
-                }
             }
         }
         return $result;
     }
+
+    /**
+     * @return int<0, max>
+     */
+    public function getArrayMinCount(): int
+    {
+        $result = null;
+        foreach ($this->types as $t) {
+            if ($t instanceof ArrayInterface) {
+                $minCount = $t->getMinCount();
+                $result = $result === null ? $minCount : min($result, $minCount);
+            }
+        }
+        assert($result !== null);
+        return $result;
+    }
+
+    public function areArraysAllNonEmpty(): bool
+    {
+        $result = true;
+        foreach ($this->types as $t) {
+            if ($t instanceof ArrayInterface
+                && !$t->isNonEmpty()
+            ) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public function areArraysAllEmpty(): bool
+    {
+        $result = true;
+        foreach ($this->types as $t) {
+            if ($t instanceof ArrayInterface
+                && !$t->isEmpty()
+            ) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * @return ?int<0, max>
+     */
+    public function getArrayMaxCount(): ?int
+    {
+        $result = null;
+        foreach ($this->types as $t) {
+            if ($t instanceof ArrayInterface) {
+                $maxCount = $t->getMaxCount();
+                $result = $result === null ? $maxCount : max($result, $maxCount);
+            }
+        }
+        return $result;
+    }
+    /**
+     * @return ?int<0, max>
+     */
+    public function getArrayCount(): ?int
+    {
+        $result = null;
+        foreach ($this->types as $t) {
+            if ($t instanceof ArrayInterface) {
+                $count = $t->getCount();
+                $result = $result === null ? $count : ($result === $count ? $count : -1);
+            }
+        }
+        return $result === -1 ? null : $result;
+    }
+
     /**
      * @psalm-mutation-free
      */
@@ -1129,9 +1187,22 @@ trait UnionTrait
     public function isArray(): bool
     {
         foreach ($this->types as $t) {
+            if (!$t instanceof ArrayInterface) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * @psalm-mutation-free
+     * @return bool true if this is a list
+     */
+    public function isList(): bool
+    {
+        foreach ($this->types as $t) {
             if (!$t instanceof TKeyedArray
-                && !$t instanceof TArray
-                && !$t instanceof TClassStringMap
+                || !$t->is_list
             ) {
                 return false;
             }

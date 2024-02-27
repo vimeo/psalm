@@ -527,14 +527,7 @@ final class ArrayFunctionArgumentsAnalyzer
             && $replacement_arg_type
             && $replacement_arg_type->hasArray()
         ) {
-            /**
-             * @var TArray|TKeyedArray
-             */
-            $replacement_array_type = $replacement_arg_type->getArray();
-
-            if (($replacement_array_type_generic = ArrayType::infer($replacement_array_type))
-                && $replacement_array_type_generic->count === 0
-                && $cover_whole_arr) {
+            if ($replacement_arg_type->areArraysAllEmpty() && $cover_whole_arr) {
                 $empty_array_type = Type::getEmptyArray();
                 AssignmentAnalyzer::assignByRefParam(
                     $statements_analyzer,
@@ -562,7 +555,7 @@ final class ArrayFunctionArgumentsAnalyzer
                 }
             }
 
-            $by_ref_type = TypeCombiner::combine([$array_type, $replacement_array_type]);
+            $by_ref_type = TypeCombiner::combine([$array_type, ...$replacement_arg_type->getArrayValueTypes()]);
 
             AssignmentAnalyzer::assignByRefParam(
                 $statements_analyzer,

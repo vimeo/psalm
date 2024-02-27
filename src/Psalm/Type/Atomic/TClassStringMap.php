@@ -20,7 +20,7 @@ use Psalm\Type\Union;
  *
  * @psalm-immutable
  */
-final class TClassStringMap extends Atomic
+final class TClassStringMap extends Atomic implements ArrayInterface
 {
     use UnserializeMemoryUsageSuppressionTrait;
     /**
@@ -33,6 +33,35 @@ final class TClassStringMap extends Atomic
         bool $from_docblock = false,
     ) {
         parent::__construct($from_docblock);
+    }
+
+    public function getCount(): ?int
+    {
+        return null;
+    }
+    public function getMaxCount(): ?int
+    {
+        return null;
+    }
+    public function getMinCount(): int
+    {
+        return 0;
+    }
+    public function isNonEmpty(): bool
+    {
+        return false;
+    }
+    public function isEmpty(): bool
+    {
+        return false;
+    }
+    public function getGenericValueType(): Union
+    {
+        return $this->as_type ? new Union([$this->as_type]) : Type::getObject();
+    }
+    public function getGenericKeyType(): Union
+    {
+        return Type::getClassString($this->as_type?->value ?? 'object');
     }
 
     public function getId(bool $exact = true, bool $nested = false): string

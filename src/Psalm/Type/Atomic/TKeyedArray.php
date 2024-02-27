@@ -51,6 +51,11 @@ class TKeyedArray extends Atomic implements ArrayInterface
     /** @var non-empty-lowercase-string */
     protected const NAME_LIST = 'list';
 
+    public function isEmpty(): bool
+    {
+        return false;
+    }
+
     /**
      * Constructs a new instance of a generic type
      *
