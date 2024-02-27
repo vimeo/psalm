@@ -31,7 +31,7 @@ use function str_replace;
  *
  * @psalm-immutable
  */
-class TKeyedArray extends Atomic
+class TKeyedArray extends Atomic implements ArrayInterface
 {
     use UnserializeMemoryUsageSuppressionTrait;
     /**
@@ -425,6 +425,15 @@ class TKeyedArray extends Atomic
         }
 
         return false;
+    }
+
+    public function getCount(): ?int
+    {
+        $min = $this->getMinCount();
+        if ($min === $this->getMaxCount()) {
+            return $min;
+        }
+        return null;
     }
 
     /**

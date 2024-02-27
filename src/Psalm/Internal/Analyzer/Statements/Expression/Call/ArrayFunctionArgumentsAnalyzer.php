@@ -50,6 +50,7 @@ use function assert;
 use function count;
 use function explode;
 use function is_numeric;
+use function max;
 use function str_contains;
 use function strtolower;
 use function substr;
@@ -337,36 +338,32 @@ final class ArrayFunctionArgumentsAnalyzer
             return false;
         }
 
-        $array_type = null;
-        $array_size = null;
+        $array_types = [];
+        $max_array_size = null;
 
         if (($array_arg_type = $statements_analyzer->node_data->getType($array_arg))
             && $array_arg_type->hasArray()
         ) {
-            /**
-             * @var TArray|TKeyedArray
-             */
-            $array_type = $array_arg_type->getArray();
-            if ($generic_array_type = ArrayType::infer($array_type)) {
-                $array_size = $generic_array_type->count;
-            }
+            foreach ($array_arg_type->getArrays() as $array_type) {
+                $max_array_size = max($max_array_size, $array_type->getMaxCount());
 
-            if ($array_type instanceof TKeyedArray) {
-                if ($array_type->is_list && isset($args[3])) {
-                    $array_type = Type::getNonEmptyListAtomic($array_type->getGenericValueType());
-                } else {
-                    $array_type = $array_type->getGenericArrayType();
+                if ($array_type instanceof TKeyedArray) {
+                    if ($array_type->is_list && isset($args[3])) {
+                        $array_type = Type::getNonEmptyListAtomic($array_type->getGenericValueType());
+                    } else {
+                        $array_type = $array_type->getGenericArrayType();
+                    }
                 }
-            }
 
-            if ($array_type instanceof TArray
-                && $array_type->type_params[0]->hasInt()
-                && !$array_type->type_params[0]->hasString()
-            ) {
-                if ($array_type instanceof TNonEmptyArray && isset($args[3])) {
-                    $array_type = Type::getNonEmptyListAtomic($array_type->type_params[1]);
-                } else {
-                    $array_type = Type::getListAtomic($array_type->type_params[1]);
+                if ($array_type instanceof TArray
+                    && $array_type->type_params[0]->hasInt()
+                    && !$array_type->type_params[0]->hasString()
+                ) {
+                    if ($array_type instanceof TNonEmptyArray && isset($args[3])) {
+                        $array_type = Type::getNonEmptyListAtomic($array_type->type_params[1]);
+                    } else {
+                        $array_type = Type::getListAtomic($array_type->type_params[1]);
+                    }
                 }
             }
         }
@@ -401,12 +398,12 @@ final class ArrayFunctionArgumentsAnalyzer
                     $context,
                     false,
                 );
-            } elseif ($array_type) {
+            } elseif ($array_types) {
                 AssignmentAnalyzer::assignByRefParam(
                     $statements_analyzer,
                     $array_arg,
-                    new Union([$array_type]),
-                    new Union([$array_type]),
+                    new Union($array_types),
+                    new Union($array_types),
                     $context,
                     false,
                 );
@@ -436,7 +433,7 @@ final class ArrayFunctionArgumentsAnalyzer
         }
 
         $cover_whole_arr = false;
-        if ($offset_arg_is_zero && is_numeric($array_size)) {
+        if ($offset_arg_is_zero && $max_array_size !== null) {
             if (($length_arg_type = $statements_analyzer->node_data->getType($length_arg))
                 && $length_arg_type->hasLiteralValue()
             ) {
@@ -459,7 +456,7 @@ final class ArrayFunctionArgumentsAnalyzer
                         }
                     }
                 }
-                $cover_whole_arr = isset($length_min) && $length_min>= $array_size;
+                $cover_whole_arr = isset($length_min) && $length_min>= $max_array_size;
             } elseif ($length_arg_type&& $length_arg_type->isNull()) {
                 $cover_whole_arr = true;
             }

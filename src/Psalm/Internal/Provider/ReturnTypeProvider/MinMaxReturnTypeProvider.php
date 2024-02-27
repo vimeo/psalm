@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
-use Psalm\Internal\Type\ArrayType;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
@@ -48,11 +47,9 @@ final class MinMaxReturnTypeProvider implements FunctionReturnTypeProviderInterf
 
         if (count($call_args) === 1
             && ($array_arg_type = $nodeTypeProvider->getType($call_args[0]->value))
-            && $array_arg_type->isSingle()
-            && $array_arg_type->hasArray()
-            && ($array_type = ArrayType::infer($array_arg_type->getSingleAtomic()))
+            && $array_arg_type->isArray()
         ) {
-            return $array_type->value;
+            return $array_arg_type->getArrayValueTypes();
         }
 
         $all_int = true;
@@ -135,9 +132,7 @@ final class MinMaxReturnTypeProvider implements FunctionReturnTypeProviderInterf
             if ($arg_type = $nodeTypeProvider->getType($arg->value)) {
                 if ($arg->unpack) {
                     if ($arg_type->isSingle() && $arg_type->isArray()) {
-                        $array_type = ArrayType::infer($arg_type->getSingleAtomic());
-                        assert($array_type !== null);
-                        $additional_type = $array_type->value;
+                        $additional_type = Type::combineUnionTypeArray($arg_type->getArrayValueTypes());
                     } else {
                         $additional_type = Type::getMixed();
                     }

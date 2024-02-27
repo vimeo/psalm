@@ -14,6 +14,19 @@ use Psalm\Type\Union;
  */
 final class TNonEmptyArray extends TArray
 {
+    public function getMinCount(): int
+    {
+        return $this->count ?? $this->min_count ?? 1;
+    }
+    public function getMaxCount(): ?int
+    {
+        return $this->count;
+    }
+    public function getCount(): ?int
+    {
+        return $this->count;
+    }
+
     /**
      * @param array{Union, Union} $type_params
      * @param positive-int|null $count

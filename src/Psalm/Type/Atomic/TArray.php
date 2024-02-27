@@ -19,7 +19,7 @@ use function count;
  *
  * @psalm-immutable
  */
-class TArray extends Atomic
+class TArray extends Atomic implements ArrayInterface
 {
     use UnserializeMemoryUsageSuppressionTrait;
     /**
@@ -51,6 +51,27 @@ class TArray extends Atomic
     public function getKey(bool $include_extra = true): string
     {
         return $this->getId(true);
+    }
+
+    public function getMinCount(): int
+    {
+        return 0;
+    }
+    public function getMaxCount(): ?int
+    {
+        return null;
+    }
+    public function getCount(): ?int
+    {
+        return null;
+    }
+    public function getGenericKeyType(): Union
+    {
+        return $this->type_params[0];
+    }
+    public function getGenericValueType(): Union
+    {
+        return $this->type_params[1];
     }
 
     /**
