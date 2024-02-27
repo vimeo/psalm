@@ -229,18 +229,15 @@ final class ArrayFetchAnalyzer
                 null,
             );
 
-            if ($stmt->dim && $stmt_var_type->hasArray()) {
-                $array_type = $stmt_var_type->getArray();
-
-                if ($array_type instanceof TClassStringMap) {
-                    $array_value_type = Type::getMixed();
-                } elseif ($array_type instanceof TArray) {
-                    $array_value_type = $array_type->type_params[1];
-                } else {
-                    $array_value_type = $array_type->getGenericValueType();
+            if ($stmt->dim && ($array_value_type = $stmt_var_type->getArrayValueTypes())) {
+                $has_non_mixed = false;
+                foreach ($array_value_type as $t) {
+                    if (!$t->isMixed()) {
+                        $has_non_mixed = true;
+                        break;
+                    }
                 }
-
-                if ($context->inside_assignment || !$array_value_type->isMixed()) {
+                if ($context->inside_assignment || $has_non_mixed) {
                     $can_store_result = true;
                 }
             }

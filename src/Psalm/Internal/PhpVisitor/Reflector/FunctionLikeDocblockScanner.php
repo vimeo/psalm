@@ -841,16 +841,9 @@ final class FunctionLikeDocblockScanner
             }
 
             if (!$docblock_param_variadic && $storage_param->is_variadic) {
-                $array_param_types = [];
-                foreach ($new_param_type->getArrays() as $array_type) {
-                    if ($array_type instanceof TKeyedArray) {
-                        $array_param_types []= $array_type->getGenericValueType();
-                    } else {
-                        $array_param_types []= $array_type->type_params[1];
-                    }
-                }
+                $array_param_types = $new_param_type->getArrayValueTypes();
                 if ($array_param_types) {
-                    $new_param_type = new Union($array_param_types);
+                    $new_param_type = Type::combineUnionTypeArray($array_param_types, $codebase);
                 }
             }
 

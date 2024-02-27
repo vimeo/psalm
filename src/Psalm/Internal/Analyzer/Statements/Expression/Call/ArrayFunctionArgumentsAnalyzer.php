@@ -951,11 +951,7 @@ final class ArrayFunctionArgumentsAnalyzer
                 continue;
             }
 
-            foreach ($array_arg_types[$i]->getArrays() as $array_arg_type) {
-                $input_type = $array_arg_type instanceof TKeyedArray
-                    ? $array_arg_type->getGenericValueType()
-                    : $array_arg_type->type_params[1];
-
+            foreach ($array_arg_types[$i]->getArrayValueTypes() as $input_type) {
                 if ($input_type->hasMixed()) {
                     continue;
                 }

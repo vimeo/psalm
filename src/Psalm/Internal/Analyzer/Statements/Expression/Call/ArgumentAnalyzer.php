@@ -127,13 +127,7 @@ final class ArgumentAnalyzer
                     && $param_type
                     && $param_type->hasArray()
                 ) {
-                    foreach ($param_type->getArrays() as $array_type) {
-                        if ($array_type instanceof TKeyedArray && $array_type->is_list) {
-                            $param_types []= $array_type->getGenericValueType();
-                        } elseif ($array_type instanceof TArray) {
-                            $param_types []= $array_type->type_params[1];
-                        }
-                    }
+                    $param_types = $param_type->getArrayValueTypes();
                 } elseif ($param_type) {
                     $param_types = [$param_type];
                 }
@@ -1251,14 +1245,7 @@ final class ArgumentAnalyzer
             } elseif ($param_type_part instanceof TCallable) {
                 $can_be_callable_like_array = false;
                 
-                foreach ($param_type->getArrays() as $param_array_type) {
-                    $row_type = null;
-                    if ($param_array_type instanceof TArray) {
-                        $row_type = $param_array_type->type_params[1];
-                    } elseif ($param_array_type instanceof TKeyedArray) {
-                        $row_type = $param_array_type->getGenericValueType();
-                    }
-
+                foreach ($param_type->getArrayValueTypes() as $row_type) {
                     if ($row_type &&
                         ($row_type->hasMixed() || $row_type->hasString())
                     ) {

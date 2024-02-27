@@ -7,6 +7,7 @@ namespace Psalm\Type;
 use InvalidArgumentException;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
+use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\TypeVisitor\CanContainObjectTypeVisitor;
 use Psalm\Internal\TypeVisitor\ClasslikeReplacer;
 use Psalm\Internal\TypeVisitor\ContainsClassLikeVisitor;
@@ -16,6 +17,7 @@ use Psalm\Internal\TypeVisitor\TypeChecker;
 use Psalm\Internal\TypeVisitor\TypeScanner;
 use Psalm\StatementsSource;
 use Psalm\Storage\FileStorage;
+use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TClassString;
@@ -411,19 +413,59 @@ trait UnionTrait
     }
 
     /**
-     * @return list<(TArray|TKeyedArray)>
+     * @return list<(TArray|TKeyedArray|TClassStringMap)>
      */
     public function getArrays(): array
     {
         $result = [];
         foreach ($this->types as $t) {
-            if ($t instanceof TKeyedArray || $t instanceof TArray) {
+            if ($t instanceof TKeyedArray || $t instanceof TArray || $t instanceof TClassStringMap) {
                 $result []= $t;
             }
         }
         return $result;
     }
 
+
+    /**
+     * @return list<Union>
+     */
+    public function getArrayKeyTypes(): array
+    {
+        $result = [];
+        foreach ($this->types as $t) {
+            if ($t instanceof TKeyedArray) {
+                $result []= $t->getGenericKeyType();
+            } elseif ($t instanceof TArray) {
+                $result []= $t->type_params[0];
+            } elseif ($t instanceof TClassStringMap) {
+                $result []= Type::getClassString($t->as_type?->value ?? 'object');
+            }
+        }
+        return $result;
+    }
+
+    /**
+     * @return list<Union>
+     */
+    public function getArrayValueTypes(): array
+    {
+        $result = [];
+        foreach ($this->types as $t) {
+            if ($t instanceof TKeyedArray) {
+                $result []= $t->getGenericValueType();
+            } elseif ($t instanceof TArray) {
+                $result []= $t->type_params[1];
+            } elseif ($t instanceof TClassStringMap) {
+                if ($t->as_type) {
+                    $result []= new Union([$t->as_type]);
+                } else {
+                    $result []= Type::getObject();
+                }
+            }
+        }
+        return $result;
+    }
     /**
      * @psalm-mutation-free
      */
@@ -1090,6 +1132,7 @@ trait UnionTrait
         foreach ($this->types as $t) {
             if (!$t instanceof TKeyedArray
                 && !$t instanceof TArray
+                && !$t instanceof TClassStringMap
             ) {
                 return false;
             }

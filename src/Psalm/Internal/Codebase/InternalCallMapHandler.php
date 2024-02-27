@@ -13,7 +13,6 @@ use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\NodeTypeProvider;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
-use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\TaintKind;
