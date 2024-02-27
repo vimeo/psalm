@@ -23,7 +23,7 @@ use Psalm\Type\Reconciler;
 
 use function array_diff_key;
 use function array_filter;
-use function array_keys;
+use function array_key_first;
 use function array_merge;
 use function array_values;
 use function count;
@@ -80,7 +80,7 @@ final class IfConditionalAnalyzer
                             $entry_clauses,
                             static fn(Clause $c): bool => count($c->possibilities) > 1
                                 || $c->wedge
-                                || !isset($changed_var_ids[array_keys($c->possibilities)[0]])
+                                || !isset($changed_var_ids[array_key_first($c->possibilities)])
                         ),
                     );
                 }

@@ -120,12 +120,18 @@ final class ArrayFetchAnalyzer
             $was_inside_unset = $context->inside_unset;
             $context->inside_unset = false;
 
+            $was_inside_isset = $context->inside_isset;
+            $context->inside_isset = false;
+
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->dim, $context) === false) {
+                $context->inside_isset = $was_inside_isset;
                 $context->inside_unset = $was_inside_unset;
                 $context->inside_general_use = $was_inside_general_use;
 
                 return false;
             }
+
+            $context->inside_isset = $was_inside_isset;
 
             $context->inside_unset = $was_inside_unset;
 
