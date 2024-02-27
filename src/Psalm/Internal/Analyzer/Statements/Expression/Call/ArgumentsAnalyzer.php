@@ -722,56 +722,53 @@ final class ArgumentsAnalyzer
 
                 if (($arg_value_type = $statements_analyzer->node_data->getType($arg->value))
                     && $arg_value_type->hasArray()) {
-                    /**
-                     * @var TArray|TKeyedArray
-                     */
-                    $array_type = $arg_value_type->getArray();
+                    foreach ($arg_value_type->getArrays() as $array_type) {
+                        if ($array_type instanceof TKeyedArray) {
+                            $array_type = $array_type->getGenericArrayType();
+                            $key_types = $array_type->type_params[0]->getAtomicTypes();
 
-                    if ($array_type instanceof TKeyedArray) {
-                        $array_type = $array_type->getGenericArrayType();
-                        $key_types = $array_type->type_params[0]->getAtomicTypes();
+                            foreach ($key_types as $key_type) {
+                                if (!$key_type instanceof TLiteralString
+                                    || ($function_storage && !$function_storage->allow_named_arg_calls)) {
+                                    continue;
+                                }
 
-                        foreach ($key_types as $key_type) {
-                            if (!$key_type instanceof TLiteralString
-                                || ($function_storage && !$function_storage->allow_named_arg_calls)) {
-                                continue;
-                            }
+                                $param_found = false;
 
-                            $param_found = false;
+                                foreach ($function_params as $candidate_param) {
+                                    if ($candidate_param->name === $key_type->value || $candidate_param->is_variadic) {
+                                        if ($candidate_param->name === $key_type->value) {
+                                            if (isset($matched_args[$candidate_param->name])) {
+                                                IssueBuffer::maybeAdd(
+                                                    new InvalidNamedArgument(
+                                                        'Parameter $' . $key_type->value . ' has already been used in '
+                                                        . ($cased_method_id ?: $method_id),
+                                                        new CodeLocation($statements_analyzer, $arg),
+                                                        (string)$method_id,
+                                                    ),
+                                                    $statements_analyzer->getSuppressedIssues(),
+                                                );
+                                            }
 
-                            foreach ($function_params as $candidate_param) {
-                                if ($candidate_param->name === $key_type->value || $candidate_param->is_variadic) {
-                                    if ($candidate_param->name === $key_type->value) {
-                                        if (isset($matched_args[$candidate_param->name])) {
-                                            IssueBuffer::maybeAdd(
-                                                new InvalidNamedArgument(
-                                                    'Parameter $' . $key_type->value . ' has already been used in '
-                                                    . ($cased_method_id ?: $method_id),
-                                                    new CodeLocation($statements_analyzer, $arg),
-                                                    (string)$method_id,
-                                                ),
-                                                $statements_analyzer->getSuppressedIssues(),
-                                            );
+                                            $matched_args[$candidate_param->name] = true;
                                         }
 
-                                        $matched_args[$candidate_param->name] = true;
+                                        $param_found = true;
+                                        break;
                                     }
-
-                                    $param_found = true;
-                                    break;
                                 }
-                            }
 
-                            if (!$param_found) {
-                                IssueBuffer::maybeAdd(
-                                    new InvalidNamedArgument(
-                                        'Parameter $' . $key_type->value . ' does not exist on function '
+                                if (!$param_found) {
+                                    IssueBuffer::maybeAdd(
+                                        new InvalidNamedArgument(
+                                            'Parameter $' . $key_type->value . ' does not exist on function '
                                             . ($cased_method_id ?: $method_id),
-                                        new CodeLocation($statements_analyzer, $arg),
-                                        (string)$method_id,
-                                    ),
-                                    $statements_analyzer->getSuppressedIssues(),
-                                );
+                                            new CodeLocation($statements_analyzer, $arg),
+                                            (string)$method_id,
+                                        ),
+                                        $statements_analyzer->getSuppressedIssues(),
+                                    );
+                                }
                             }
                         }
                     }

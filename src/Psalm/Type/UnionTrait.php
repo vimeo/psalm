@@ -412,7 +412,7 @@ trait UnionTrait
     }
 
     /**
-     * @return Generator<int, (TArray|TKeyedArray|TClassStringMap)>
+     * @return Generator<int, (TArray|TKeyedArray)>
      */
     public function getArrays(): Generator
     {

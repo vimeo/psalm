@@ -81,20 +81,8 @@ final class ArrayFunctionArgumentsAnalyzer
             if ($i === 1 && $method_id === 'array_filter') {
                 break;
             }
-
-            /**
-             * @var TKeyedArray|TArray|null
-             */
-            $array_arg_type = ($arg_value_type = $statements_analyzer->node_data->getType($arg->value))
-                    && $arg_value_type->hasArray()
-                ? $arg_value_type->getArray()
-                : null;
-
-            if ($array_arg_type instanceof TKeyedArray) {
-                $array_arg_type = $array_arg_type->getGenericArrayType();
-            }
-
-            $array_arg_types[] = $array_arg_type;
+            $arg_value_type = $statements_analyzer->node_data->getType($arg->value);
+            $array_arg_types []= $arg_value_type;
         }
 
         $closure_arg = $args[$closure_index] ?? null;
@@ -727,7 +715,7 @@ final class ArrayFunctionArgumentsAnalyzer
     }
 
     /**
-     * @param  (TArray|null)[] $array_arg_types
+     * @param  list<Union> $array_arg_types
      */
     private static function checkClosureType(
         StatementsAnalyzer $statements_analyzer,
@@ -893,7 +881,7 @@ final class ArrayFunctionArgumentsAnalyzer
 
     /**
      * @param  TClosure|TCallable $closure_type
-     * @param  (TArray|null)[] $array_arg_types
+     * @param  list<Union> $array_arg_types
      */
     private static function checkClosureTypeArgs(
         StatementsAnalyzer $statements_analyzer,
@@ -963,136 +951,138 @@ final class ArrayFunctionArgumentsAnalyzer
                 continue;
             }
 
-            $array_arg_type = $array_arg_types[$i];
+            foreach ($array_arg_types[$i]->getArrays() as $array_arg_type) {
+                $input_type = $array_arg_type instanceof TKeyedArray
+                    ? $array_arg_type->getGenericValueType()
+                    : $array_arg_type->type_params[1];
 
-            $input_type = $array_arg_type->type_params[1];
+                if ($input_type->hasMixed()) {
+                    continue;
+                }
 
-            if ($input_type->hasMixed()) {
-                continue;
-            }
+                $closure_param_type = $closure_param->type;
 
-            $closure_param_type = $closure_param->type;
+                if (!$closure_param_type) {
+                    continue;
+                }
 
-            if (!$closure_param_type) {
-                continue;
-            }
-
-            if ($method_id === 'array_map'
+                if ($method_id === 'array_map'
                 && $i === 0
                 && $closure_type->return_type
                 && $closure_param_type->hasTemplate()
-            ) {
-                $template_result = new TemplateResult(
-                    [],
-                    [],
-                );
+                ) {
+                    $template_result = new TemplateResult(
+                        [],
+                        [],
+                    );
 
-                foreach ($closure_param_type->getTemplateTypes() as $template_type) {
-                    $template_result->template_types[$template_type->param_name] = [
-                        ($template_type->defining_class) => $template_type->as,
-                    ];
+                    foreach ($closure_param_type->getTemplateTypes() as $template_type) {
+                        $template_result->template_types[$template_type->param_name] = [
+                            ($template_type->defining_class) => $template_type->as,
+                        ];
+                    }
+
+                    $closure_param_type = TemplateStandinTypeReplacer::replace(
+                        $closure_param_type,
+                        $template_result,
+                        $codebase,
+                        $statements_analyzer,
+                        $input_type,
+                        $i,
+                        $context->self,
+                        $context->calling_method_id ?: $context->calling_function_id,
+                    );
+
+                    $closure_type = $closure_type->replaceTemplateTypesWithArgTypes(
+                        $template_result,
+                        $codebase,
+                    );
                 }
 
-                $closure_param_type = TemplateStandinTypeReplacer::replace(
-                    $closure_param_type,
-                    $template_result,
+                $closure_param_type = TypeExpander::expandUnion(
                     $codebase,
-                    $statements_analyzer,
-                    $input_type,
-                    $i,
+                    $closure_param_type,
                     $context->self,
-                    $context->calling_method_id ?: $context->calling_function_id,
+                    null,
+                    $statements_analyzer->getParentFQCLN(),
                 );
 
-                $closure_type = $closure_type->replaceTemplateTypesWithArgTypes(
-                    $template_result,
-                    $codebase,
-                );
-            }
+                $union_comparison_results = new TypeComparisonResult();
 
-            $closure_param_type = TypeExpander::expandUnion(
-                $codebase,
-                $closure_param_type,
-                $context->self,
-                null,
-                $statements_analyzer->getParentFQCLN(),
-            );
-
-            $union_comparison_results = new TypeComparisonResult();
-
-            $type_match_found = UnionTypeComparator::isContainedBy(
-                $codebase,
-                $input_type,
-                $closure_param_type,
-                $input_type->ignore_nullable_issues,
-                $input_type->ignore_falsable_issues,
-                $union_comparison_results,
-            );
-
-            if ($union_comparison_results->type_coerced) {
-                if ($union_comparison_results->type_coerced_from_mixed) {
-                    IssueBuffer::maybeAdd(
-                        new MixedArgumentTypeCoercion(
-                            'Parameter ' . ($i + 1) . ' of closure passed to function ' . $method_id . ' expects ' .
-                                $closure_param_type->getId() .
-                                ', but parent type ' . $input_type->getId() . ' provided',
-                            new CodeLocation($statements_analyzer->getSource(), $closure_arg),
-                            $method_id,
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
-                } else {
-                    IssueBuffer::maybeAdd(
-                        new ArgumentTypeCoercion(
-                            'Parameter ' . ($i + 1) . ' of closure passed to function ' . $method_id . ' expects ' .
-                                $closure_param_type->getId() .
-                                ', but parent type ' . $input_type->getId() . ' provided',
-                            new CodeLocation($statements_analyzer->getSource(), $closure_arg),
-                            $method_id,
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
-                }
-            }
-
-            if (!$union_comparison_results->type_coerced && !$type_match_found) {
-                $types_can_be_identical = UnionTypeComparator::canExpressionTypesBeIdentical(
+                $type_match_found = UnionTypeComparator::isContainedBy(
                     $codebase,
                     $input_type,
                     $closure_param_type,
+                    $input_type->ignore_nullable_issues,
+                    $input_type->ignore_falsable_issues,
+                    $union_comparison_results,
                 );
 
-                if ($union_comparison_results->scalar_type_match_found) {
-                    IssueBuffer::maybeAdd(
-                        new InvalidScalarArgument(
-                            'Parameter ' . ($i + 1) . ' of closure passed to function ' . $method_id . ' expects ' .
-                                $closure_param_type->getId() . ', but ' . $input_type->getId() . ' provided',
-                            new CodeLocation($statements_analyzer->getSource(), $closure_arg),
-                            $method_id,
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
+                if ($union_comparison_results->type_coerced) {
+                    if ($union_comparison_results->type_coerced_from_mixed) {
+                        IssueBuffer::maybeAdd(
+                            new MixedArgumentTypeCoercion(
+                                'Parameter ' . ($i + 1) . ' of closure passed to function ' . $method_id . ' expects ' .
+                                $closure_param_type->getId() .
+                                ', but parent type ' . $input_type->getId() . ' provided',
+                                new CodeLocation($statements_analyzer->getSource(), $closure_arg),
+                                $method_id,
+                            ),
+                            $statements_analyzer->getSuppressedIssues(),
+                        );
+                    } else {
+                        IssueBuffer::maybeAdd(
+                            new ArgumentTypeCoercion(
+                                'Parameter ' . ($i + 1) . ' of closure passed to function ' . $method_id . ' expects ' .
+                                $closure_param_type->getId() .
+                                ', but parent type ' . $input_type->getId() . ' provided',
+                                new CodeLocation($statements_analyzer->getSource(), $closure_arg),
+                                $method_id,
+                            ),
+                            $statements_analyzer->getSuppressedIssues(),
+                        );
+                    }
+                }
+
+                if (!$union_comparison_results->type_coerced && !$type_match_found) {
+                    $types_can_be_identical = UnionTypeComparator::canExpressionTypesBeIdentical(
+                        $codebase,
+                        $input_type,
+                        $closure_param_type,
                     );
-                } elseif ($types_can_be_identical) {
-                    IssueBuffer::maybeAdd(
-                        new PossiblyInvalidArgument(
-                            'Parameter ' . ($i + 1) . ' of closure passed to function ' . $method_id . ' expects '
+
+                    if ($union_comparison_results->scalar_type_match_found) {
+                        IssueBuffer::maybeAdd(
+                            new InvalidScalarArgument(
+                                'Parameter ' . ($i + 1) . ' of closure passed to function ' . $method_id . ' expects ' .
+                                $closure_param_type->getId() . ', but ' . $input_type->getId() . ' provided',
+                                new CodeLocation($statements_analyzer->getSource(), $closure_arg),
+                                $method_id,
+                            ),
+                            $statements_analyzer->getSuppressedIssues(),
+                        );
+                    } elseif ($types_can_be_identical) {
+                        IssueBuffer::maybeAdd(
+                            new PossiblyInvalidArgument(
+                                'Parameter ' . ($i + 1) . ' of closure passed to function ' . $method_id . ' expects '
                                 . $closure_param_type->getId() . ', but possibly different type '
                                 . $input_type->getId() . ' provided',
-                            new CodeLocation($statements_analyzer->getSource(), $closure_arg),
-                            $method_id,
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
-                } else {
-                    IssueBuffer::maybeAdd(
-                        new InvalidArgument(
-                            'Parameter ' . ($i + 1) . ' of closure passed to function ' . $method_id . ' expects ' .
-                            $closure_param_type->getId() . ', but ' . $input_type->getId() . ' provided',
-                            new CodeLocation($statements_analyzer->getSource(), $closure_arg),
-                            $method_id,
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
+                                new CodeLocation($statements_analyzer->getSource(), $closure_arg),
+                                $method_id,
+                            ),
+                            $statements_analyzer->getSuppressedIssues(),
+                        );
+                    } else {
+                        IssueBuffer::maybeAdd(
+                            new InvalidArgument(
+                                'Parameter ' . ($i + 1) . ' of closure passed to function ' . $method_id . ' expects ' .
+                                $closure_param_type->getId() . ', but ' . $input_type->getId() . ' provided',
+                                new CodeLocation($statements_analyzer->getSource(), $closure_arg),
+                                $method_id,
+                            ),
+                            $statements_analyzer->getSuppressedIssues(),
+                        );
+                    }
                 }
             }
         }
