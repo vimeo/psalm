@@ -17,6 +17,7 @@ use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\TaintKind;
+use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_shift;
@@ -159,17 +160,16 @@ final class InternalCallMapHandler
                 }
 
                 if ($arg->unpack && !$function_param->is_variadic) {
-                    if ($arg_type->hasArray()) {
-                        /**
-                         * @var TArray|TKeyedArray
-                         */
-                        $array_atomic_type = $arg_type->getArray();
-
+                    $array_types = [];
+                    foreach ($arg_type->getArrays() as $array_atomic_type) {
                         if ($array_atomic_type instanceof TKeyedArray) {
-                            $arg_type = $array_atomic_type->getGenericValueType();
+                            $array_types []= $array_atomic_type->getGenericValueType();
                         } else {
-                            $arg_type = $array_atomic_type->type_params[1];
+                            $array_types []= $array_atomic_type->type_params[1];
                         }
+                    }
+                    if ($array_types) {
+                        $arg_type = new Union([$array_types]);
                     }
                 }
 

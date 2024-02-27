@@ -20,7 +20,6 @@ use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
-use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Plugin\EventHandler\Event\AfterFunctionCallAnalysisEvent;
@@ -40,6 +39,7 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TString;
+use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -393,46 +393,6 @@ final class FunctionCallReturnTypeFetcher
                                     new TIntRange(0, null),
                                 ]);
                             }
-                            if ($t instanceof TCallableArray
-                                    || $t instanceof TCallableKeyedArray
-                                ) {
-                                $result []= new TLiteralInt(2);
-                                continue;
-                            }
-
-                            if ($t instanceof TNonEmptyArray) {
-                                $result []=
-                                    $t->count !== null
-                                        ? new TLiteralInt($t->count)
-                                        : new TIntRange(1, null)
-                                ;
-                                continue;
-                            }
-
-                            if ($t instanceof TKeyedArray) {
-                                $min = $t->getMinCount();
-                                $max = $t->getMaxCount();
-
-                                if ($min === $max) {
-                                    $result []= new TLiteralInt($max);
-                                    continue;
-                                }
-                                $result []= new TIntRange($min, $max);
-                                continue;
-                            }
-
-                            if ($t instanceof TArray) {
-                                if ($t->isEmptyArray()) {
-                                    $result []= new TLiteralInt(0);
-                                } else {
-                                    $result []= new TIntRange(0, null);
-                                }
-                                continue;
-                            }
-                        }
-
-                        if ($result) {
-                            return TypeCombiner::combine($result, $codebase);
                         }
                     }
 
@@ -682,9 +642,9 @@ final class FunctionCallReturnTypeFetcher
                             $pattern = substr($pattern, 2, -1);
 
                             if (self::simpleExclusion($pattern, $first_arg_value[0])) {
-                                $removed_taints[] = 'html';
-                                $removed_taints[] = 'has_quotes';
-                                $removed_taints[] = 'sql';
+                                $removed_taints[] = TaintKind::INPUT_HTML;
+                                $removed_taints[] = TaintKind::INPUT_HAS_QUOTES;
+                                $removed_taints[] = TaintKind::INPUT_SQL;
                             }
                         }
                     }

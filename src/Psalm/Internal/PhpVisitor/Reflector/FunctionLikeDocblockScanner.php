@@ -833,16 +833,17 @@ final class FunctionLikeDocblockScanner
                 }
             }
 
-            if (!$docblock_param_variadic && $storage_param->is_variadic && $new_param_type->hasArray()) {
-                /**
-                 * @var TArray|TKeyedArray
-                 */
-                $array_type = $new_param_type->getArray();
-
-                if ($array_type instanceof TKeyedArray) {
-                    $new_param_type = $array_type->getGenericValueType();
-                } else {
-                    $new_param_type = $array_type->type_params[1];
+            if (!$docblock_param_variadic && $storage_param->is_variadic) {
+                $array_param_types = [];
+                foreach ($new_param_type->getArrays() as $array_type) {
+                    if ($array_type instanceof TKeyedArray) {
+                        $array_param_types []= $array_type->getGenericValueType();
+                    } else {
+                        $array_param_types []= $array_type->type_params[1];
+                    }
+                }
+                if ($array_param_types) {
+                    $new_param_type = new Union($array_param_types);
                 }
             }
 
