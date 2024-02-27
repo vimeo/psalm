@@ -44,7 +44,6 @@ use Psalm\Storage\Possibilities;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TConditional;
-use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\TaintKindGroup;

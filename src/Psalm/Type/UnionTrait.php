@@ -7,7 +7,6 @@ namespace Psalm\Type;
 use InvalidArgumentException;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
-use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\TypeVisitor\CanContainObjectTypeVisitor;
 use Psalm\Internal\TypeVisitor\ClasslikeReplacer;
 use Psalm\Internal\TypeVisitor\ContainsClassLikeVisitor;
