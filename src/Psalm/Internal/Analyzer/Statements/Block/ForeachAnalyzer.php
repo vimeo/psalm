@@ -657,6 +657,7 @@ final class ForeachAnalyzer
                         $key_type,
                         $value_type,
                         $has_valid_iterator,
+                        $invalid_iterator_types,
                     );
                 } else {
                     $raw_object_types[] = $iterator_atomic_type->value;
@@ -725,6 +726,7 @@ final class ForeachAnalyzer
         return null;
     }
 
+    /** @param list<string> $invalid_iterator_types */
     public static function handleIterable(
         StatementsAnalyzer $statements_analyzer,
         TNamedObject $iterator_atomic_type,
@@ -733,7 +735,8 @@ final class ForeachAnalyzer
         Context $context,
         ?Union &$key_type,
         ?Union &$value_type,
-        bool &$has_valid_iterator
+        bool &$has_valid_iterator,
+        array &$invalid_iterator_types = []
     ): void {
         if ($iterator_atomic_type->extra_types) {
             $iterator_atomic_types = array_merge(
@@ -753,7 +756,6 @@ final class ForeachAnalyzer
             }
 
 
-            $has_valid_iterator = true;
 
             if ($iterator_atomic_type instanceof TIterable
                 || (strtolower($iterator_atomic_type->value) === 'traversable'
@@ -781,6 +783,8 @@ final class ForeachAnalyzer
                         )
                     )
                 ) {
+                    $has_valid_iterator = true;
+
                     $old_data_provider = $statements_analyzer->node_data;
 
                     $statements_analyzer->node_data = clone $statements_analyzer->node_data;
@@ -867,6 +871,7 @@ final class ForeachAnalyzer
                                             $key_type,
                                             $value_type,
                                             $has_valid_iterator,
+                                            $invalid_iterator_types,
                                         );
 
                                         continue;
@@ -899,6 +904,51 @@ final class ForeachAnalyzer
                             $value_type = Type::combineUnionTypes($value_type, $value_type_part);
                         }
                     }
+                } elseif ($iterator_atomic_type instanceof TGenericObject
+                    && strtolower($iterator_atomic_type->value) === 'generator'
+                ) {
+                    $type_params = $iterator_atomic_type->type_params;
+                    if (isset($type_params[2]) && !$type_params[2]->isNullable() && !$type_params[2]->isMixed()) {
+                        $invalid_iterator_types[] = $iterator_atomic_type->getKey();
+                    } else {
+                        $has_valid_iterator = true;
+                    }
+
+                    $iterator_value_type = self::getFakeMethodCallType(
+                        $statements_analyzer,
+                        $foreach_expr,
+                        $context,
+                        'current',
+                    );
+
+                    $iterator_key_type = self::getFakeMethodCallType(
+                        $statements_analyzer,
+                        $foreach_expr,
+                        $context,
+                        'key',
+                    );
+
+                    if ($iterator_value_type && !$iterator_value_type->isMixed()) {
+                        // remove null coming from current() to signify invalid iterations
+                        // we're in a foreach context, so we know we're not going iterate past the end
+                        if (isset($type_params[1]) && !$type_params[1]->isNullable()) {
+                            $iterator_value_type = $iterator_value_type->getBuilder();
+                            $iterator_value_type->removeType('null');
+                            $iterator_value_type = $iterator_value_type->freeze();
+                        }
+                        $value_type = Type::combineUnionTypes($value_type, $iterator_value_type);
+                    }
+
+                    if ($iterator_key_type && !$iterator_key_type->isMixed()) {
+                        // remove null coming from key() to signify invalid iterations
+                        // we're in a foreach context, so we know we're not going iterate past the end
+                        if (isset($type_params[0]) && !$type_params[0]->isNullable()) {
+                            $iterator_key_type = $iterator_key_type->getBuilder();
+                            $iterator_key_type->removeType('null');
+                            $iterator_key_type = $iterator_key_type->freeze();
+                        }
+                        $key_type = Type::combineUnionTypes($key_type, $iterator_key_type);
+                    }
                 } elseif ($codebase->classImplements(
                     $iterator_atomic_type->value,
                     'Iterator',
@@ -911,6 +961,7 @@ final class ForeachAnalyzer
                         )
                     )
                 ) {
+                    $has_valid_iterator = true;
                     $iterator_value_type = self::getFakeMethodCallType(
                         $statements_analyzer,
                         $foreach_expr,
