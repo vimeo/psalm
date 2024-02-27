@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Psalm\Type;
 
-use Generator;
 use InvalidArgumentException;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
