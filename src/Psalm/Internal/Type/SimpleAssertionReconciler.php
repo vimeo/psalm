@@ -2775,20 +2775,17 @@ final class SimpleAssertionReconciler extends Reconciler
             $types []= new TTrue;
         }
 
-        if (isset($types['array'])) {
-            $array_atomic_type = $types['array'];
-
-
+        foreach ($types as $k => $array_atomic_type) {
             if ($array_atomic_type instanceof TArray
                 && !$array_atomic_type instanceof TNonEmptyArray
             ) {
-                unset($types['array']);
+                unset($types[$k]);
                 $types [] = new TNonEmptyArray($array_atomic_type->type_params);
             } elseif ($array_atomic_type instanceof TKeyedArray
                 && $array_atomic_type->is_list
                 && $array_atomic_type->properties[0]->possibly_undefined
             ) {
-                unset($types['array']);
+                unset($types[$k]);
                 $properties = $array_atomic_type->properties;
                 $properties[0] = $properties[0]->setPossiblyUndefined(false);
                 $types [] = $array_atomic_type->setProperties($properties);

@@ -412,15 +412,17 @@ trait UnionTrait
     }
 
     /**
-     * @return Generator<int, (TArray|TKeyedArray)>
+     * @return list<(TArray|TKeyedArray)>
      */
-    public function getArrays(): Generator
+    public function getArrays(): array
     {
+        $result = [];
         foreach ($this->types as $t) {
             if ($t instanceof TKeyedArray || $t instanceof TArray) {
-                yield $t;
+                $result []= $t;
             }
         }
+        return $result;
     }
 
     /**

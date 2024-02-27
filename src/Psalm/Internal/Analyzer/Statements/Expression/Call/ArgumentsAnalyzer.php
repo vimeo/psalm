@@ -1403,17 +1403,7 @@ final class ArgumentsAnalyzer
             if (($arg_value_type = $statements_analyzer->node_data->getType($arg->value))
                 && $arg_value_type->hasArray()
             ) {
-                /**
-                 * @var TArray|TKeyedArray
-                 */
-                $array_type = $arg_value_type->getArray();
-
-                if ($array_type instanceof TKeyedArray) {
-                    $array_type = $array_type->getGenericArrayType();
-                }
-
-                $by_ref_type = new Union([$array_type]);
-
+                $by_ref_type = new Union($arg_value_type->getArrays());
                 AssignmentAnalyzer::assignByRefParam(
                     $statements_analyzer,
                     $arg->value,

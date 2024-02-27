@@ -104,7 +104,7 @@ class ArrayFilterParamsProvider implements FunctionParamsProviderInterface
         if (!$first_arg_type || $first_arg_type->isMixed()) {
             $first_arg_array = $fallback;
         } else {
-            $first_arg_array = $first_arg_type->hasType('array')
+            $first_arg_array = $first_arg_type->hasArray()
                                && ($array_atomic_type = $first_arg_type->getArray())
                                && ($array_atomic_type instanceof TArray
                                    || $array_atomic_type instanceof TKeyedArray)

@@ -38,7 +38,7 @@ final class ArrayRandReturnTypeProvider implements FunctionReturnTypeProviderInt
 
         $first_arg_array = $first_arg
             && ($first_arg_type = $statements_source->node_data->getType($first_arg))
-            && $first_arg_type->hasType('array')
+            && $first_arg_type->hasArray()
             && ($array_atomic_type = $first_arg_type->getArray())
             && ($array_atomic_type instanceof TArray
                 || $array_atomic_type instanceof TKeyedArray)
