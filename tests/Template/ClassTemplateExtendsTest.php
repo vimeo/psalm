@@ -1390,7 +1390,7 @@ class ClassTemplateExtendsTest extends TestCase
             'extendArrayObjectWithTemplateParams' => [
                 'code' => '<?php
                     /**
-                     * @template TKey
+                     * @template TKey of array-key
                      * @template TValue
                      * @template-extends \ArrayObject<TKey,TValue>
                      */

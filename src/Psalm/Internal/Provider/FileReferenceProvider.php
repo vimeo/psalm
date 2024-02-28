@@ -22,7 +22,7 @@ use function explode;
  * @psalm-import-type FileMapType from Analyzer
  * @internal
  */
-class FileReferenceProvider
+final class FileReferenceProvider
 {
     private bool $loaded_from_cache = false;
 

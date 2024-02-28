@@ -20,7 +20,7 @@ jobs:
       should_skip: ${{ steps.skip_check.outputs.should_skip }}
     steps:
       - id: skip_check
-        uses: fkirc/skip-duplicate-actions@v5.3.0
+        uses: fkirc/skip-duplicate-actions@v5.3.1
         with:
           concurrent_skipping: always
           cancel_others: true
@@ -44,7 +44,7 @@ jobs:
         env:
           fail-fast: true
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0 # required for composer to automatically detect root package version
 
@@ -59,7 +59,7 @@ jobs:
           composer update --no-install
 
       - name: Cache composer cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ${{ steps.composer-cache.outputs.files_cache }}

@@ -37,7 +37,7 @@ use function strtolower;
 /**
  * @internal
  */
-class StaticPropertyFetchAnalyzer
+final class StaticPropertyFetchAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
@@ -134,12 +134,26 @@ class StaticPropertyFetchAnalyzer
 
         if ($stmt->name instanceof PhpParser\Node\VarLikeIdentifier) {
             $prop_name = $stmt->name->name;
-        } elseif (($stmt_name_type = $statements_analyzer->node_data->getType($stmt->name))
-            && $stmt_name_type->isSingleStringLiteral()
-        ) {
-            $prop_name = $stmt_name_type->getSingleStringLiteral()->value;
         } else {
-            $prop_name = null;
+            $was_inside_general_use = $context->inside_general_use;
+
+            $context->inside_general_use = true;
+
+            if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->name, $context) === false) {
+                $context->inside_general_use = $was_inside_general_use;
+
+                return false;
+            }
+
+            $context->inside_general_use = $was_inside_general_use;
+
+            if (($stmt_name_type = $statements_analyzer->node_data->getType($stmt->name))
+                && $stmt_name_type->isSingleStringLiteral()
+            ) {
+                $prop_name = $stmt_name_type->getSingleStringLiteral()->value;
+            } else {
+                $prop_name = null;
+            }
         }
 
         if (!$prop_name) {
@@ -154,7 +168,6 @@ class StaticPropertyFetchAnalyzer
         }
 
         if (!$fq_class_name
-            || !$context->check_classes
             || !$context->check_variables
             || ExpressionAnalyzer::isMock($fq_class_name)
         ) {
@@ -249,7 +262,7 @@ class StaticPropertyFetchAnalyzer
                 : null,
         )
         ) {
-            if ($context->inside_isset) {
+            if ($context->inside_isset || !$context->check_classes) {
                 return true;
             }
 

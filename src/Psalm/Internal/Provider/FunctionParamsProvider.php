@@ -6,6 +6,8 @@ use Closure;
 use PhpParser\Node\Arg;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Internal\Provider\ParamsProvider\ArrayFilterParamsProvider;
+use Psalm\Internal\Provider\ParamsProvider\ArrayMultisortParamsProvider;
 use Psalm\Plugin\EventHandler\Event\FunctionParamsProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionParamsProviderInterface;
 use Psalm\StatementsSource;
@@ -16,7 +18,7 @@ use function strtolower;
 /**
  * @internal
  */
-class FunctionParamsProvider
+final class FunctionParamsProvider
 {
     /**
      * @var array<
@@ -29,6 +31,9 @@ class FunctionParamsProvider
     public function __construct()
     {
         self::$handlers = [];
+
+        $this->registerClass(ArrayFilterParamsProvider::class);
+        $this->registerClass(ArrayMultisortParamsProvider::class);
     }
 
     /**

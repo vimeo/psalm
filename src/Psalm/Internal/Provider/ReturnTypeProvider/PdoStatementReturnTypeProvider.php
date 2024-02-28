@@ -17,7 +17,7 @@ use Psalm\Type\Union;
 /**
  * @internal
  */
-class PdoStatementReturnTypeProvider implements MethodReturnTypeProviderInterface
+final class PdoStatementReturnTypeProvider implements MethodReturnTypeProviderInterface
 {
     public static function getClassLikeNames(): array
     {
@@ -49,12 +49,16 @@ class PdoStatementReturnTypeProvider implements MethodReturnTypeProviderInterfac
         $source = $event->getSource();
         $call_args = $event->getCallArgs();
         $fetch_mode = 0;
-
-        if (isset($call_args[0])
-            && ($first_arg_type = $source->getNodeTypeProvider()->getType($call_args[0]->value))
-            && $first_arg_type->isSingleIntLiteral()
-        ) {
-            $fetch_mode = $first_arg_type->getSingleIntLiteral()->value;
+        
+        foreach ($call_args as $call_arg) {
+            $arg_name = $call_arg->name;
+            if (!isset($arg_name) || $arg_name->name === "mode") {
+                $arg_type = $source->getNodeTypeProvider()->getType($call_arg->value);
+                if (isset($arg_type) && $arg_type->isSingleIntLiteral()) {
+                    $fetch_mode = $arg_type->getSingleIntLiteral()->value;
+                }
+                break;
+            }
         }
 
         switch ($fetch_mode) {

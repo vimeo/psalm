@@ -7,7 +7,7 @@ use PhpParser\Node\Stmt\ClassMethod;
 /**
  * @internal
  */
-class ClassLikeDocblockComment
+final class ClassLikeDocblockComment
 {
     /**
      * Whether or not the class is deprecated

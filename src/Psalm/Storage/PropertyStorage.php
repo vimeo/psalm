@@ -9,6 +9,7 @@ use Psalm\Type\Union;
 final class PropertyStorage implements HasAttributesInterface
 {
     use CustomMetadataTrait;
+    use UnserializeMemoryUsageSuppressionTrait;
 
     /**
      * @var ?bool

@@ -55,8 +55,8 @@ final class PluginFileExtensionsSocket implements FileExtensionsInterface
                 1_622_727_271,
             );
         }
-        if (!empty($this->config->getFiletypeScanners()[$fileExtension])
-            || !empty($this->additionalFileTypeScanners[$fileExtension])
+        if (isset($this->config->getFiletypeScanners()[$fileExtension])
+            || isset($this->additionalFileTypeScanners[$fileExtension])
         ) {
             throw new LogicException(
                 sprintf('Cannot redeclare scanner for file-type %s', $fileExtension),
@@ -91,8 +91,8 @@ final class PluginFileExtensionsSocket implements FileExtensionsInterface
                 1_622_727_281,
             );
         }
-        if (!empty($this->config->getFiletypeAnalyzers()[$fileExtension])
-            || !empty($this->additionalFileTypeAnalyzers[$fileExtension])
+        if (isset($this->config->getFiletypeAnalyzers()[$fileExtension])
+            || isset($this->additionalFileTypeAnalyzers[$fileExtension])
         ) {
             throw new LogicException(
                 sprintf('Cannot redeclare analyzer for file-type %s', $fileExtension),

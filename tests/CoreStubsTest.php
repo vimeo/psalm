@@ -125,6 +125,18 @@ class CoreStubsTest extends TestCase
                 '$a===' => 'string',
             ],
         ];
+        yield 'sprintf accepts Stringable values' => [
+            'code' => '<?php
+
+            $a = sprintf(
+                "%s",
+                new class implements Stringable { public function __toString(): string { return "hello"; } },
+            );
+            ',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '8.0',
+        ];
         yield 'json_encode returns a non-empty-string provided JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE' => [
             'code' => '<?php
                 $a = json_encode([], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
@@ -411,6 +423,20 @@ class CoreStubsTest extends TestCase
                 <?php
                 $globBrace = glob('abc', GLOB_BRACE);
                 PHP,
+        ];
+        yield "ownerDocument's type is non-nullable DOMDocument and always null on DOMDocument itself" => [
+            'code' => '<?php
+                $a = (new DOMDocument())->ownerDocument;
+                $b = (new DOMNode())->ownerDocument;
+                $c = (new DOMElement("p"))->ownerDocument;
+                $d = (new DOMNameSpaceNode())->ownerDocument;
+            ',
+            'assertions' => [
+                '$a===' => 'null',
+                '$b===' => 'DOMDocument',
+                '$c===' => 'DOMDocument',
+                '$d===' => 'DOMDocument',
+            ],
         ];
     }
 

@@ -1,6 +1,6 @@
 {
     "name": "vimeo/psalm",
-    "type": "library",
+    "type": "project",
     "description": "A static analysis tool for finding errors in PHP applications",
     "keywords": [
         "php",
@@ -31,13 +31,13 @@
         "dnoegel/php-xdg-base-dir": "^0.1.1",
         "felixfbecker/advanced-json-rpc": "^3.1",
         "felixfbecker/language-server-protocol": "^1.5.2",
-        "fidry/cpu-core-counter": "^0.4.1 || ^0.5.1",
+        "fidry/cpu-core-counter": "^0.4.1 || ^0.5.1 || ^1.0.0",
         "netresearch/jsonmapper": "^1.0 || ^2.0 || ^3.0 || ^4.0",
         "nikic/php-parser": "^4.16",
-        "sebastian/diff": "^4.0 || ^5.0",
+        "sebastian/diff": "^4.0 || ^5.0 || ^6.0",
         "spatie/array-to-xml": "^2.17.0 || ^3.0",
-        "symfony/console": "^4.1.6 || ^5.0 || ^6.0",
-        "symfony/filesystem": "^5.4 || ^6.0"
+        "symfony/console": "^4.1.6 || ^5.0 || ^6.0 || ^7.0",
+        "symfony/filesystem": "^5.4 || ^6.0 || ^7.0"
     },
     "conflict": {
       "nikic/php-parser": "4.17.0"
@@ -59,7 +59,7 @@
         "psalm/plugin-phpunit": "^0.18",
         "slevomat/coding-standard": "^8.4",
         "squizlabs/php_codesniffer": "^3.6",
-        "symfony/process": "^4.4 || ^5.0 || ^6.0"
+        "symfony/process": "^4.4 || ^5.0 || ^6.0 || ^7.0"
     },
     "suggest": {
         "ext-igbinary": "^2.0.5 is required, used to serialize caching data",
@@ -94,12 +94,6 @@
             "Psalm\\Tests\\": "tests/"
         }
     },
-    "repositories": [
-        {
-            "type": "path",
-            "url": "examples/plugins/composer-based/echo-checker"
-        }
-    ],
     "minimum-stability": "dev",
     "prefer-stable": true,
     "bin": [
@@ -110,16 +104,16 @@
         "psalter"
     ],
     "scripts": {
-        "cs": "phpcs -ps",
-        "cs-fix": "phpcbf -ps",
-        "lint": "parallel-lint ./src ./tests",
+        "cs": "@php phpcs -ps",
+        "cs-fix": "@php phpcbf -ps",
+        "lint": "@php parallel-lint ./src ./tests",
         "phpunit": [
             "Composer\\Config::disableProcessTimeout",
-            "paratest --runner=WrapperRunner"
+            "@php paratest --runner=WrapperRunner"
         ],
         "phpunit-std": [
             "Composer\\Config::disableProcessTimeout",
-            "phpunit"
+            "@php phpunit"
         ],
         "verify-callmap": "@php phpunit tests/Internal/Codebase/InternalCallMapHandlerTest.php",
         "psalm": "@php ./psalm",
@@ -134,10 +128,15 @@
     "scripts-descriptions": {
         "cs": "Checks that the code conforms to the coding standard.",
         "cs-fix": "Automatically correct coding standard violations.",
-        "lint": "Runs unit tests.",
+        "lint": "Lint php files.",
         "phpunit": "Runs unit tests in parallel.",
         "phpunit-std": "Runs unit tests.",
         "psalm": "Runs static analysis.",
         "tests": "Runs all available tests."
+    },
+    "support": {
+      "docs": "https://psalm.dev/docs",
+      "issues": "https://github.com/vimeo/psalm/issues",
+      "source": "https://github.com/vimeo/psalm"
     }
 }

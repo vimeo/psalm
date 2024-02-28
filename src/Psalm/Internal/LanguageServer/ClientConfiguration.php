@@ -9,7 +9,7 @@ use LanguageServerProtocol\MessageType;
 /**
  * @internal
  */
-class ClientConfiguration
+final class ClientConfiguration
 {
 
     /**

@@ -15,13 +15,15 @@ use Psalm\Internal\Scope\IfScope;
 use Psalm\Issue\DocblockTypeContradiction;
 use Psalm\Issue\RedundantCondition;
 use Psalm\Issue\RedundantConditionGivenDocblockType;
+use Psalm\Issue\RiskyTruthyFalsyComparison;
 use Psalm\Issue\TypeDoesNotContainType;
 use Psalm\IssueBuffer;
+use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Reconciler;
 
 use function array_diff_key;
 use function array_filter;
-use function array_keys;
+use function array_key_first;
 use function array_merge;
 use function array_values;
 use function count;
@@ -29,7 +31,7 @@ use function count;
 /**
  * @internal
  */
-class IfConditionalAnalyzer
+final class IfConditionalAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
@@ -78,7 +80,7 @@ class IfConditionalAnalyzer
                             $entry_clauses,
                             static fn(Clause $c): bool => count($c->possibilities) > 1
                                 || $c->wedge
-                                || !isset($changed_var_ids[array_keys($c->possibilities)[0]])
+                                || !isset($changed_var_ids[array_key_first($c->possibilities)])
                         ),
                     );
                 }
@@ -365,6 +367,36 @@ class IfConditionalAnalyzer
                         ),
                         $statements_analyzer->getSuppressedIssues(),
                     );
+                }
+            } elseif (!($stmt instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical)
+                && !($stmt instanceof PhpParser\Node\Expr\BinaryOp\Identical)
+                && !($stmt instanceof PhpParser\Node\Expr\BooleanNot)) {
+                if (count($type->getAtomicTypes()) > 1) {
+                    $has_truthy_or_falsy_exclusive_type = false;
+                    $both_types = $type->getBuilder();
+                    foreach ($both_types->getAtomicTypes() as $key => $atomic_type) {
+                        if ($atomic_type->isTruthy()
+                            || $atomic_type->isFalsy()
+                            || $atomic_type instanceof TBool) {
+                            $both_types->removeType($key);
+                            $has_truthy_or_falsy_exclusive_type = true;
+                        }
+                    }
+
+                    if (count($both_types->getAtomicTypes()) > 0 && $has_truthy_or_falsy_exclusive_type) {
+                        $both_types = $both_types->freeze();
+                        IssueBuffer::maybeAdd(
+                            new RiskyTruthyFalsyComparison(
+                                'Operand of type ' . $type->getId() . ' contains ' .
+                                'type' . (count($both_types->getAtomicTypes()) > 1 ? 's' : '') . ' ' .
+                                $both_types->getId() . ', which can be falsy and truthy. ' .
+                                'This can cause possibly unexpected behavior. Use strict comparison instead.',
+                                new CodeLocation($statements_analyzer, $stmt),
+                                $type->getId(),
+                            ),
+                            $statements_analyzer->getSuppressedIssues(),
+                        );
+                    }
                 }
             }
         }

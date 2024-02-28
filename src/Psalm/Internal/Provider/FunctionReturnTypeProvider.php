@@ -25,6 +25,7 @@ use Psalm\Internal\Provider\ReturnTypeProvider\ArraySpliceReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\BasenameReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\DateReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\DirnameReturnTypeProvider;
+use Psalm\Internal\Provider\ReturnTypeProvider\FilterInputReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\FilterVarReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\FirstArgStringReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\GetClassMethodsReturnTypeProvider;
@@ -55,7 +56,7 @@ use function strtolower;
 /**
  * @internal
  */
-class FunctionReturnTypeProvider
+final class FunctionReturnTypeProvider
 {
     /**
      * @var array<
@@ -85,6 +86,7 @@ class FunctionReturnTypeProvider
         $this->registerClass(ArrayReverseReturnTypeProvider::class);
         $this->registerClass(ArrayFillReturnTypeProvider::class);
         $this->registerClass(ArrayFillKeysReturnTypeProvider::class);
+        $this->registerClass(FilterInputReturnTypeProvider::class);
         $this->registerClass(FilterVarReturnTypeProvider::class);
         $this->registerClass(IteratorToArrayReturnTypeProvider::class);
         $this->registerClass(ParseUrlReturnTypeProvider::class);

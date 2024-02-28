@@ -41,7 +41,7 @@ use function strtolower;
 /**
  * @internal
  */
-class NegatedAssertionReconciler extends Reconciler
+final class NegatedAssertionReconciler extends Reconciler
 {
     /**
      * @param  string[]   $suppressed_issues
@@ -120,6 +120,11 @@ class NegatedAssertionReconciler extends Reconciler
             || $assertion instanceof IsNotCountable
         ) {
             $existing_var_type->removeType('array');
+        }
+
+        if ($assertion instanceof IsNotType && $assertion_type instanceof TClassString) {
+            $existing_var_type->removeType(TClassString::class);
+            $existing_var_type->addType(new TString);
         }
 
         if (!$is_equality
@@ -299,9 +304,7 @@ class NegatedAssertionReconciler extends Reconciler
 
             $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
 
-            return $existing_var_type->from_docblock
-                ? Type::getMixed()
-                : Type::getNever();
+            return Type::getNever();
         }
 
         return $existing_var_type;

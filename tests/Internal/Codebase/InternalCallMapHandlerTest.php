@@ -26,9 +26,11 @@ use ReflectionType;
 use function array_shift;
 use function class_exists;
 use function count;
+use function enum_exists;
 use function explode;
 use function function_exists;
 use function in_array;
+use function interface_exists;
 use function is_array;
 use function is_int;
 use function json_encode;
@@ -140,7 +142,6 @@ class InternalCallMapHandlerTest extends TestCase
         'oci_result',
         'ocigetbufferinglob',
         'ocisetbufferinglob',
-        'recursiveiteratoriterator::__construct', // Class used in CallMap does not exist: recursiveiterator
         'sqlsrv_fetch_array',
         'sqlsrv_fetch_object',
         'sqlsrv_get_field',
@@ -173,7 +174,6 @@ class InternalCallMapHandlerTest extends TestCase
     private static array $ignoredReturnTypeOnlyFunctions = [
         'appenditerator::getinneriterator' => ['8.1', '8.2', '8.3'],
         'appenditerator::getiteratorindex' => ['8.1', '8.2', '8.3'],
-        'arrayobject::getiterator' => ['8.1', '8.2', '8.3'],
         'cachingiterator::getinneriterator' => ['8.1', '8.2', '8.3'],
         'callbackfilteriterator::getinneriterator' => ['8.1', '8.2', '8.3'],
         'curl_multi_getcontent',
@@ -310,6 +310,26 @@ class InternalCallMapHandlerTest extends TestCase
                 self::assertStringIsParsableType($type, "Function " . $function . " in returned CallMap contains invalid type declaration " . $type);
             }
         }
+    }
+
+    public function testGetCallablesFromCallmapRemovesRwPrefixFromParameterNames(): void
+    {
+        $entries = InternalCallMapHandler::getCallablesFromCallMap('collator_sort'); // has &rw_array parameter as second parameter
+        $this->assertNotNull($entries);
+        $collator_sort_entry = $entries[0];
+        $this->assertIsArray($collator_sort_entry->params);
+        $this->assertArrayHasKey(1, $collator_sort_entry->params);
+        $this->assertEquals('array', $collator_sort_entry->params[1]->name);
+    }
+
+    public function testGetCallablesFromCallmapRemovesWPrefixFromParameterNames(): void
+    {
+        $entries = InternalCallMapHandler::getCallablesFromCallMap('curl_multi_exec'); // has &w_still_running parameter as second parameter
+        $this->assertNotNull($entries);
+        $curl_multi_exec_entry = $entries[0];
+        $this->assertIsArray($curl_multi_exec_entry->params);
+        $this->assertArrayHasKey(1, $curl_multi_exec_entry->params);
+        $this->assertEquals('still_running', $curl_multi_exec_entry->params[1]->name);
     }
 
     /**
@@ -631,6 +651,8 @@ class InternalCallMapHandlerTest extends TestCase
         } catch (InvalidArgumentException $e) {
             if (preg_match('/^Could not get class storage for (.*)$/', $e->getMessage(), $matches)
                 && !class_exists($matches[1])
+                && !interface_exists($matches[1])
+                && !enum_exists($matches[1])
             ) {
                 $this->fail("Class used in CallMap does not exist: {$matches[1]}");
             }

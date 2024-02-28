@@ -26,7 +26,7 @@ use function preg_quote;
 /**
  * @internal
  */
-class ElseAnalyzer
+final class ElseAnalyzer
 {
     /**
      * @return false|null

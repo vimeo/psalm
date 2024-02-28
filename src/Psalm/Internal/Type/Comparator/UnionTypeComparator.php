@@ -29,7 +29,7 @@ use const PHP_INT_MAX;
 /**
  * @internal
  */
-class UnionTypeComparator
+final class UnionTypeComparator
 {
     /**
      * Does the input param type match the given param type
@@ -145,7 +145,7 @@ class UnionTypeComparator
                     $container_all_param_count = count($container_type_part->params);
                     $container_required_param_count = 0;
                     foreach ($container_type_part->params as $index => $container_param) {
-                        if ($container_param->is_optional === false) {
+                        if (!$container_param->is_optional) {
                             $container_required_param_count = $index + 1;
                         }
 
@@ -161,7 +161,8 @@ class UnionTypeComparator
                     } else {
                         $input_all_param_count = count($input_type_part->params);
                         foreach ($input_type_part->params as $index => $input_param) {
-                            if ($input_param->is_optional === false) {
+                            // can be false or not set at all
+                            if (!$input_param->is_optional) {
                                 $input_required_param_count = $index + 1;
                             }
 
@@ -172,8 +173,10 @@ class UnionTypeComparator
                     }
 
                     // too few or too many non-optional params provided in callback
-                    if ($container_required_param_count > $input_all_param_count
-                        || $container_all_param_count < $input_required_param_count
+                    if ($container_all_param_count > $input_all_param_count
+                        || $container_required_param_count > $input_all_param_count
+                        || $input_required_param_count > $container_all_param_count
+                        || $input_required_param_count > $container_required_param_count
                     ) {
                         continue;
                     }

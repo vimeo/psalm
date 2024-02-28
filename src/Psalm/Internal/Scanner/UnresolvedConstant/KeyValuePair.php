@@ -8,7 +8,7 @@ use Psalm\Internal\Scanner\UnresolvedConstantComponent;
  * @psalm-immutable
  * @internal
  */
-class KeyValuePair extends UnresolvedConstantComponent
+final class KeyValuePair extends UnresolvedConstantComponent
 {
     public ?UnresolvedConstantComponent $key = null;
 

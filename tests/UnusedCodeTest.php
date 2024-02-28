@@ -467,6 +467,35 @@ class UnusedCodeTest extends TestCase
                         new A();
                     }',
             ],
+            'useMethodPropertiesAfterExtensionLoaded' => [
+                'code' => '<?php
+
+                    final class a {
+                        public static self $a;
+                        public static function get(): a {
+                            return new a;
+                        }
+                    }
+
+                    final class b {
+                        public function test(): a {
+                            return new a;
+                        }
+                    }
+
+                    function process(b $handler): a {
+                        if (\extension_loaded("fdsfdsfd")) {
+                            return $handler->test();
+                        }
+                        if (\extension_loaded("fdsfdsfd")) {
+                            return a::$a;
+                        }
+                        if (\extension_loaded("fdsfdsfd")) {
+                            return a::get();
+                        }
+                        return $handler->test();
+                    }',
+            ],
             'usedParamInIf' => [
                 'code' => '<?php
                     class O {}
@@ -1293,6 +1322,35 @@ class UnusedCodeTest extends TestCase
                     }
                     new A;
                     PHP,
+            ],
+            'callNeverReturnsSuppressed' => [
+                'code' => '<?php
+                    namespace Foo;
+                    /**
+                     * @psalm-suppress InvalidReturnType
+                     * @return never
+                     */
+                    function foo() : void {}
+
+                    /** @psalm-suppress NoValue */
+                    $a = foo();
+                    print_r($a);',
+            ],
+            'useNeverReturnsAsArgSuppressed' => [
+                'code' => '<?php
+                    namespace Foo;
+                    /**
+                     * @psalm-suppress InvalidReturnType
+                     * @return never
+                     */
+                    function foo() : void {}
+
+                    /** @psalm-suppress UnusedParam */
+                    function bar(string $s) : void {}
+
+                    /** @psalm-suppress NoValue */
+                    bar(foo());
+                    echo "hello";',
             ],
         ];
     }

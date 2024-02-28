@@ -12,7 +12,7 @@ use Psalm\Type;
 /**
  * @internal
  */
-class PdoStatementSetFetchMode implements MethodParamsProviderInterface
+final class PdoStatementSetFetchMode implements MethodParamsProviderInterface
 {
     public static function getClassLikeNames(): array
     {

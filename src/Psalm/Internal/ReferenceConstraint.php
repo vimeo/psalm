@@ -10,7 +10,7 @@ use Psalm\Type\Union;
 /**
  * @internal
  */
-class ReferenceConstraint
+final class ReferenceConstraint
 {
     public ?Union $type = null;
 

@@ -25,7 +25,7 @@ use function realpath;
  *
  * @internal
  */
-class Workspace
+final class Workspace
 {
     protected LanguageServer $server;
 

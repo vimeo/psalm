@@ -52,7 +52,7 @@ use function strtolower;
 /**
  * @internal
  */
-class ReturnAnalyzer
+final class ReturnAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
@@ -257,6 +257,18 @@ class ReturnAnalyzer
                         $statements_analyzer,
                         null,
                     );
+
+                    [, $method_name] = explode('::', $cased_method_id);
+                    if ($method_name === '__construct') {
+                        IssueBuffer::maybeAdd(
+                            new InvalidReturnStatement(
+                                'No return values are expected for ' . $cased_method_id,
+                                new CodeLocation($source, $stmt->expr),
+                            ),
+                            $statements_analyzer->getSuppressedIssues(),
+                        );
+                        return;
+                    }
                 } else {
                     $declared_return_type = $storage->return_type;
                 }

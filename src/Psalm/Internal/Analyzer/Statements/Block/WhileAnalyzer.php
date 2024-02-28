@@ -16,7 +16,7 @@ use function in_array;
 /**
  * @internal
  */
-class WhileAnalyzer
+final class WhileAnalyzer
 {
     /**
      * @return  false|null

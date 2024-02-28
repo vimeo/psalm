@@ -183,7 +183,7 @@ class PropertyTypeTest extends TestCase
                 }
 
                 function testX(X $x): void {
-                    if ($x->getX()) {
+                    if (is_int($x->getX())) {
                         XCollector::modify();
                         if ($x->getX() === null) {}
                     }
@@ -221,7 +221,7 @@ class PropertyTypeTest extends TestCase
                 }
 
                 function testX(X $x): void {
-                    if ($x->getX()) {
+                    if ($x->getX() !== null) {
                         XCollector::modify();
                         if ($x->getX() === null) {}
                     }
@@ -255,7 +255,7 @@ class PropertyTypeTest extends TestCase
                 }
 
                 function testX(X $x): void {
-                    if ($x->x) {
+                    if ($x->x !== null) {
                         XCollector::modify();
                         if ($x->x === null) {}
                     }
@@ -686,6 +686,8 @@ class PropertyTypeTest extends TestCase
                     }
 
                     echo substr($a->aa, 1);',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'nullableStaticPropertyWithIfCheck' => [
                 'code' => '<?php
@@ -716,7 +718,7 @@ class PropertyTypeTest extends TestCase
                     $a = new DOMElement("foo");
                     $owner = $a->ownerDocument;',
                 'assertions' => [
-                    '$owner' => 'DOMDocument|null',
+                    '$owner' => 'DOMDocument',
                 ],
             ],
             'propertyMapHydration' => [
@@ -1164,7 +1166,7 @@ class PropertyTypeTest extends TestCase
                          * Constructs a finally node.
                          *
                          * @param list<Node\Stmt> $stmts      Statements
-                         * @param array  $attributes Additional attributes
+                         * @param array<string, mixed>  $attributes Additional attributes
                          */
                         public function __construct(array $stmts = array(), array $attributes = array()) {
                             parent::__construct($attributes);
@@ -3825,21 +3827,14 @@ class PropertyTypeTest extends TestCase
                 ',
                 'error_message' => 'UndefinedPropertyAssignment',
             ],
-            'setPropertiesOfSimpleXMLElement1' => [
-                'code' => '<?php
-                    $a = new SimpleXMLElement("<person><child role=\"son\"></child></person>");
-                    $a->b = "c";
-                ',
-                'error_message' => 'UndefinedPropertyAssignment',
-            ],
-            'setPropertiesOfSimpleXMLElement2' => [
-                'code' => '<?php
-                    $a = new SimpleXMLElement("<person><child role=\"son\"></child></person>");
-                    if (isset($a->b)) {
-                        $a->b = "c";
+            'nativeMixedPropertyWithNoConstructor' => [
+                'code' => <<< 'PHP'
+                    <?php
+                    class A {
+                        public mixed $foo;
                     }
-                ',
-                'error_message' => 'UndefinedPropertyAssignment',
+                PHP,
+                'error_message' => 'MissingConstructor',
             ],
         ];
     }

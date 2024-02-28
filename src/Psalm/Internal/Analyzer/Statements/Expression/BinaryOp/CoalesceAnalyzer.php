@@ -18,7 +18,7 @@ use function substr;
 /**
  * @internal
  */
-class CoalesceAnalyzer
+final class CoalesceAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
@@ -39,6 +39,7 @@ class CoalesceAnalyzer
             || $root_expr instanceof PhpParser\Node\Expr\MethodCall
             || $root_expr instanceof PhpParser\Node\Expr\StaticCall
             || $root_expr instanceof PhpParser\Node\Expr\Cast
+            || $root_expr instanceof PhpParser\Node\Expr\Match_
             || $root_expr instanceof PhpParser\Node\Expr\NullsafePropertyFetch
             || $root_expr instanceof PhpParser\Node\Expr\NullsafeMethodCall
             || $root_expr instanceof PhpParser\Node\Expr\Ternary

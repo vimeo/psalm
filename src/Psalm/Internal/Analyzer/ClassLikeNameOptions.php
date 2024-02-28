@@ -5,7 +5,7 @@ namespace Psalm\Internal\Analyzer;
 /**
  * @internal
  */
-class ClassLikeNameOptions
+final class ClassLikeNameOptions
 {
     public bool $inferred;
 

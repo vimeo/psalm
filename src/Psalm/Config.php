@@ -21,6 +21,7 @@ use Psalm\Exception\ConfigNotFoundException;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\CliUtils;
 use Psalm\Internal\Composer;
 use Psalm\Internal\EventDispatcher;
 use Psalm\Internal\IncludeCollector;
@@ -243,7 +244,7 @@ class Config
     protected $extra_files;
 
     /**
-     * The base directory of this config file
+     * The base directory of this config file without trailing slash
      *
      * @var string
      */
@@ -445,6 +446,11 @@ class Config
     public $ensure_array_int_offsets_exist = false;
 
     /**
+     * @var bool
+     */
+    public $ensure_override_attribute = false;
+
+    /**
      * @var array<lowercase-string, bool>
      */
     public $forbidden_functions = [];
@@ -631,6 +637,7 @@ class Config
         "mysqli" => null,
         "pdo" => null,
         "random" => null,
+        "rdkafka" => null,
         "redis" => null,
         "simplexml" => null,
         "soap" => null,
@@ -785,7 +792,7 @@ class Config
     {
         $file_contents = file_get_contents($file_path);
 
-        $base_dir = dirname($file_path) . DIRECTORY_SEPARATOR;
+        $base_dir = dirname($file_path);
 
         if ($file_contents === false) {
             throw new InvalidArgumentException('Cannot open ' . $file_path);
@@ -1079,6 +1086,7 @@ class Config
             'includePhpVersionsInErrorBaseline' => 'include_php_versions_in_error_baseline',
             'ensureArrayStringOffsetsExist' => 'ensure_array_string_offsets_exist',
             'ensureArrayIntOffsetsExist' => 'ensure_array_int_offsets_exist',
+            'ensureOverrideAttribute' => 'ensure_override_attribute',
             'reportMixedIssues' => 'show_mixed_issues',
             'skipChecksOnUnresolvableIncludes' => 'skip_checks_on_unresolvable_includes',
             'sealAllMethods' => 'seal_all_methods',
@@ -1297,6 +1305,76 @@ class Config
             $config->project_files = ProjectFileFilter::loadFromXMLElement($config_xml->projectFiles, $base_dir, true);
         }
 
+        // any paths passed via CLI should be added to the projectFiles
+        // as they're getting analyzed like if they are part of the project
+        // ProjectAnalyzer::getInstance()->check_paths_files is not populated at this point in time
+
+        $paths_to_check = null;
+
+        global $argv;
+
+        // Hack for Symfonys own argv resolution.
+        // @see https://github.com/vimeo/psalm/issues/10465
+        if (!isset($argv[0]) || basename($argv[0]) !== 'psalm-plugin') {
+            $paths_to_check = CliUtils::getPathsToCheck(null);
+        }
+
+        if ($paths_to_check !== null) {
+            $paths_to_add_to_project_files = array();
+            foreach ($paths_to_check as $path) {
+                // if we have an .xml arg here, the files passed are invalid
+                // valid cases (in which we don't want to add CLI passed files to projectFiles though)
+                // are e.g. if running phpunit tests for psalm itself
+                if (substr($path, -4) === '.xml') {
+                    $paths_to_add_to_project_files = array();
+                    break;
+                }
+
+                // we need an absolute path for checks
+                if (Path::isRelative($path)) {
+                    $prospective_path = $base_dir . DIRECTORY_SEPARATOR . $path;
+                } else {
+                    $prospective_path = $path;
+                }
+
+                // will report an error when config is loaded anyway
+                if (!file_exists($prospective_path)) {
+                    continue;
+                }
+
+                if ($config->isInProjectDirs($prospective_path)) {
+                    continue;
+                }
+
+                $paths_to_add_to_project_files[] = $prospective_path;
+            }
+
+            if ($paths_to_add_to_project_files !== array() && !isset($config_xml->projectFiles)) {
+                if ($config_xml === null) {
+                    $config_xml = new SimpleXMLElement('<psalm/>');
+                }
+                $config_xml->addChild('projectFiles');
+            }
+
+            if ($paths_to_add_to_project_files !== array() && isset($config_xml->projectFiles)) {
+                foreach ($paths_to_add_to_project_files as $path) {
+                    if (is_dir($path)) {
+                        $child = $config_xml->projectFiles->addChild('directory');
+                    } else {
+                        $child = $config_xml->projectFiles->addChild('file');
+                    }
+
+                    $child->addAttribute('name', $path);
+                }
+
+                $config->project_files = ProjectFileFilter::loadFromXMLElement(
+                    $config_xml->projectFiles,
+                    $base_dir,
+                    true,
+                );
+            }
+        }
+
         if (isset($config_xml->extraFiles)) {
             $config->extra_files = ProjectFileFilter::loadFromXMLElement($config_xml->extraFiles, $base_dir, true);
         }
@@ -1373,7 +1451,7 @@ class Config
                 if (!$file_path) {
                     throw new ConfigException(
                         'Cannot resolve stubfile path '
-                            . rtrim($config->base_dir, DIRECTORY_SEPARATOR)
+                            . $config->base_dir
                             . DIRECTORY_SEPARATOR
                             . $stub_file['name'],
                     );
@@ -1401,7 +1479,7 @@ class Config
 
                     $path = Path::isAbsolute($plugin_file_name)
                         ? $plugin_file_name
-                        : $config->base_dir . $plugin_file_name;
+                        : $config->base_dir . DIRECTORY_SEPARATOR . $plugin_file_name;
 
                     $config->addPluginPath($path);
                 }
@@ -1481,10 +1559,27 @@ class Config
         $this->issue_handlers[$issue_key]->setCustomLevels($config, $this->base_dir);
     }
 
+    public function safeSetAdvancedErrorLevel(
+        string $issue_key,
+        array $config,
+        ?string $default_error_level = null
+    ): void {
+        if (!isset($this->issue_handlers[$issue_key])) {
+            $this->setAdvancedErrorLevel($issue_key, $config, $default_error_level);
+        }
+    }
+
     public function setCustomErrorLevel(string $issue_key, string $error_level): void
     {
         $this->issue_handlers[$issue_key] = new IssueHandler();
         $this->issue_handlers[$issue_key]->setErrorLevel($error_level);
+    }
+
+    public function safeSetCustomErrorLevel(string $issue_key, string $error_level): void
+    {
+        if (!isset($this->issue_handlers[$issue_key])) {
+            $this->setCustomErrorLevel($issue_key, $error_level);
+        }
     }
 
     /**
@@ -1493,11 +1588,11 @@ class Config
     private function loadFileExtensions(SimpleXMLElement $extensions): void
     {
         foreach ($extensions as $extension) {
-            $extension_name = preg_replace('/^\.?/', '', (string)$extension['name'], 1);
+            $extension_name = preg_replace('/^\.?/', '', (string) $extension['name'], 1);
             $this->file_extensions[] = $extension_name;
 
             if (isset($extension['scanner'])) {
-                $path = $this->base_dir . (string)$extension['scanner'];
+                $path = $this->base_dir . DIRECTORY_SEPARATOR . (string) $extension['scanner'];
 
                 if (!file_exists($path)) {
                     throw new ConfigException('Error parsing config: cannot find file ' . $path);
@@ -1507,7 +1602,7 @@ class Config
             }
 
             if (isset($extension['checker'])) {
-                $path = $this->base_dir . (string)$extension['checker'];
+                $path = $this->base_dir . DIRECTORY_SEPARATOR . (string) $extension['checker'];
 
                 if (!file_exists($path)) {
                     throw new ConfigException('Error parsing config: cannot find file ' . $path);
@@ -1728,7 +1823,13 @@ class Config
     public function shortenFileName(string $to): string
     {
         if (!is_file($to)) {
-            return preg_replace('/^' . preg_quote($this->base_dir, '/') . '/', '', $to, 1);
+            // if cwd is the root directory it will be just the directory separator - trim it off first
+            return preg_replace(
+                '/^' . preg_quote(rtrim($this->base_dir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR, '/') . '/',
+                '',
+                $to,
+                1,
+            );
         }
 
         $from = $this->base_dir;
@@ -2225,6 +2326,10 @@ class Config
 
         foreach ($stub_files as $file_path) {
             $file_path = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $file_path);
+            // fix mangled phar paths on Windows
+            if (strpos($file_path, 'phar:\\\\') === 0) {
+                $file_path = 'phar://'. substr($file_path, 7);
+            }
             $codebase->scanner->addFileToDeepScan($file_path);
         }
 
@@ -2322,6 +2427,10 @@ class Config
 
         foreach ($stub_files as $file_path) {
             $file_path = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $file_path);
+            // fix mangled phar paths on Windows
+            if (strpos($file_path, 'phar:\\\\') === 0) {
+                $file_path = 'phar://' . substr($file_path, 7);
+            }
             $codebase->scanner->addFileToDeepScan($file_path);
         }
 

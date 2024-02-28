@@ -15,7 +15,7 @@ jobs:
         env:
           fail-fast: true
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -30,7 +30,7 @@ jobs:
           composer update --no-install
 
       - name: Cache composer cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ${{ steps.composer-cache.outputs.files_cache }}

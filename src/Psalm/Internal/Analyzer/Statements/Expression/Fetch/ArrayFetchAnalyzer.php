@@ -100,7 +100,7 @@ use function strtolower;
 /**
  * @internal
  */
-class ArrayFetchAnalyzer
+final class ArrayFetchAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
@@ -120,12 +120,18 @@ class ArrayFetchAnalyzer
             $was_inside_unset = $context->inside_unset;
             $context->inside_unset = false;
 
+            $was_inside_isset = $context->inside_isset;
+            $context->inside_isset = false;
+
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->dim, $context) === false) {
+                $context->inside_isset = $was_inside_isset;
                 $context->inside_unset = $was_inside_unset;
                 $context->inside_general_use = $was_inside_general_use;
 
                 return false;
             }
+
+            $context->inside_isset = $was_inside_isset;
 
             $context->inside_unset = $was_inside_unset;
 
@@ -313,14 +319,18 @@ class ArrayFetchAnalyzer
                 && !$context->inside_unset
                 && ($stmt_var_type && !$stmt_var_type->hasMixed())
             ) {
-                IssueBuffer::maybeAdd(
+                if (IssueBuffer::accepts(
                     new PossiblyUndefinedArrayOffset(
                         'Possibly undefined array key ' . $keyed_array_var_id
                             . ' on ' . $stmt_var_type->getId(),
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                     ),
                     $statements_analyzer->getSuppressedIssues(),
-                );
+                )) {
+                    $stmt_type = $stmt_type->getBuilder()->addType(new TNull())->freeze();
+                }
+            } elseif ($stmt_type->possibly_undefined) {
+                $stmt_type = $stmt_type->getBuilder()->addType(new TNull())->freeze();
             }
 
             $stmt_type = $stmt_type->setPossiblyUndefined(false);
@@ -479,6 +489,17 @@ class ArrayFetchAnalyzer
         $expected_offset_types = [];
 
         $key_values = [];
+
+        if ($codebase->store_node_types
+            && !$context->collect_initializations
+            && !$context->collect_mutations
+        ) {
+            $codebase->analyzer->addNodeType(
+                $statements_analyzer->getFilePath(),
+                $stmt->var,
+                $array_type->getId(),
+            );
+        }
 
         if ($stmt->dim instanceof PhpParser\Node\Scalar\String_) {
             $value_type = Type::getAtomicStringFromLiteral($stmt->dim->value);
@@ -1737,8 +1758,10 @@ class ArrayFetchAnalyzer
         ?Union &$array_access_type,
         bool &$has_array_access
     ): void {
+        $codebase = $statements_analyzer->getCodebase();
         if (strtolower($type->value) === 'simplexmlelement'
-            || $statements_analyzer->getCodebase()->classExtendsOrImplements($type->value, 'SimpleXMLElement')
+            || ($codebase->classExists($type->value)
+                && $codebase->classExtendsOrImplements($type->value, 'SimpleXMLElement'))
         ) {
             $call_array_access_type = new Union([new TNull(), new TNamedObject('SimpleXMLElement')]);
         } elseif (strtolower($type->value) === 'domnodelist' && $stmt->dim) {

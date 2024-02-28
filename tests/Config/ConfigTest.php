@@ -17,7 +17,9 @@ use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\Internal\Scanner\FileScanner;
+use Psalm\Internal\VersionUtils;
 use Psalm\Issue\TooManyArguments;
+use Psalm\Issue\UndefinedFunction;
 use Psalm\Tests\Config\Plugin\FileTypeSelfRegisteringPlugin;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Tests\TestCase;
@@ -57,11 +59,11 @@ class ConfigTest extends TestCase
         self::$config = new TestConfig();
 
         if (!defined('PSALM_VERSION')) {
-            define('PSALM_VERSION', '4.0.0');
+            define('PSALM_VERSION', VersionUtils::getPsalmVersion());
         }
 
         if (!defined('PHP_PARSER_VERSION')) {
-            define('PHP_PARSER_VERSION', '4.0.0');
+            define('PHP_PARSER_VERSION', VersionUtils::getPhpParserVersion());
         }
     }
 
@@ -156,6 +158,9 @@ class ConfigTest extends TestCase
         $this->assertFalse($config->isInProjectDirs(realpath('examples/TemplateScanner.php')));
     }
 
+    /**
+     * @requires OS ^(?!WIN)
+     */
     public function testIgnoreSymlinkedProjectDirectory(): void
     {
         @unlink(dirname(__DIR__, 1) . '/fixtures/symlinktest/ignored/b');
@@ -978,6 +983,124 @@ class ConfigTest extends TestCase
         );
     }
 
+    public function testIssueHandlerOverride(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            Config::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                        <directory name="tests" />
+                    </projectFiles>
+                    <issueHandlers>
+                            <MissingReturnType errorLevel="error">
+                                <errorLevel type="info">
+                                    <directory name="tests" />
+                                </errorLevel>
+                                <errorLevel type="info">
+                                    <directory name="src/Psalm/Internal/Analyzer" />
+                                </errorLevel>
+                            </MissingReturnType>
+                            <UndefinedClass errorLevel="error"></UndefinedClass>
+                    </issueHandlers>
+                </psalm>',
+            ),
+        );
+
+        $config = $this->project_analyzer->getConfig();
+        $config->setAdvancedErrorLevel('MissingReturnType', [
+            [
+                'type' => 'error',
+                'directory' => [['name' => 'src/Psalm/Internal/Analyzer']],
+            ],
+        ], 'info');
+        $config->setCustomErrorLevel('UndefinedClass', 'suppress');
+
+        $this->assertSame(
+            'info',
+            $config->getReportingLevelForFile(
+                'MissingReturnType',
+                realpath('src/Psalm/Type.php'),
+            ),
+        );
+
+        $this->assertSame(
+            'error',
+            $config->getReportingLevelForFile(
+                'MissingReturnType',
+                realpath('src/Psalm/Internal/Analyzer/FileAnalyzer.php'),
+            ),
+        );
+        $this->assertSame(
+            'suppress',
+            $config->getReportingLevelForFile(
+                'UndefinedClass',
+                realpath('src/Psalm/Internal/Analyzer/FileAnalyzer.php'),
+            ),
+        );
+    }
+
+    public function testIssueHandlerSafeOverride(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            Config::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                        <directory name="tests" />
+                    </projectFiles>
+                    <issueHandlers>
+                            <MissingReturnType errorLevel="error">
+                                <errorLevel type="info">
+                                    <directory name="tests" />
+                                </errorLevel>
+                                <errorLevel type="info">
+                                    <directory name="src/Psalm/Internal/Analyzer" />
+                                </errorLevel>
+                            </MissingReturnType>
+                            <UndefinedClass errorLevel="info"></UndefinedClass>
+                    </issueHandlers>
+                </psalm>',
+            ),
+        );
+
+        $config = $this->project_analyzer->getConfig();
+        $config->safeSetAdvancedErrorLevel('MissingReturnType', [
+            [
+                'type' => 'error',
+                'directory' => [['name' => 'src/Psalm/Internal/Analyzer']],
+            ],
+        ], 'info');
+        $config->safeSetCustomErrorLevel('UndefinedClass', 'suppress');
+
+        $this->assertSame(
+            'error',
+            $config->getReportingLevelForFile(
+                'MissingReturnType',
+                realpath('src/Psalm/Type.php'),
+            ),
+        );
+
+        $this->assertSame(
+            'info',
+            $config->getReportingLevelForFile(
+                'MissingReturnType',
+                realpath('src/Psalm/Internal/Analyzer/FileAnalyzer.php'),
+            ),
+        );
+        $this->assertSame(
+            'info',
+            $config->getReportingLevelForFile(
+                'UndefinedClass',
+                realpath('src/Psalm/Internal/Analyzer/FileAnalyzer.php'),
+            ),
+        );
+    }
+
     public function testAllPossibleIssues(): void
     {
         $all_possible_handlers = implode(
@@ -987,7 +1110,7 @@ class ConfigTest extends TestCase
                  * @param string $issue_name
                  * @return string
                  */
-                fn($issue_name): string => '<' . $issue_name . ' errorLevel="suppress" />' . "\n",
+                static fn($issue_name): string => '<' . $issue_name . ' errorLevel="suppress" />' . "\n",
                 IssueHandler::getAllIssueTypes(),
             ),
         );
@@ -1852,6 +1975,36 @@ class ConfigTest extends TestCase
                     'too many',
                     new Raw('aaa', 'aaa.php', 'aaa.php', 1, 2),
                     'Foo\Bar::baZ',
+                ),
+            ),
+        );
+    }
+
+    public function testReferencedFunctionAllowsNamespacedFunctions(): void
+    {
+        $config_xml = Config::loadFromXML(
+            (string) getcwd(),
+            <<<XML
+            <?xml version="1.0"?>
+            <psalm>
+                <issueHandlers>
+                    <UndefinedFunction>
+                        <errorLevel type="suppress">
+                            <referencedFunction name="Foo\Bar\baz" />
+                        </errorLevel>
+                    </UndefinedFunction>
+                </issueHandlers>
+            </psalm>
+            XML,
+        );
+
+        $this->assertSame(
+            Config::REPORT_SUPPRESS,
+            $config_xml->getReportingLevelForIssue(
+                new UndefinedFunction(
+                    'Function Foo\Bar\baz does not exist',
+                    new Raw('aaa', 'aaa.php', 'aaa.php', 1, 2),
+                    'foo\bar\baz',
                 ),
             ),
         );

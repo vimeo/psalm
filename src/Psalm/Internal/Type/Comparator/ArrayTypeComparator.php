@@ -16,7 +16,7 @@ use Psalm\Type\Union;
 /**
  * @internal
  */
-class ArrayTypeComparator
+final class ArrayTypeComparator
 {
     /**
      * @param TArray|TKeyedArray|TClassStringMap $input_type_part
@@ -44,6 +44,19 @@ class ArrayTypeComparator
                     && !$container_type_part instanceof TNonEmptyArray)
                 || ($container_type_part instanceof TKeyedArray
                     && !$container_type_part->isNonEmpty())
+            )
+        ) {
+            return true;
+        }
+
+        if ($container_type_part instanceof TKeyedArray
+            && $input_type_part instanceof TArray
+            && !$container_type_part->is_list
+            && !$container_type_part->isNonEmpty()
+            && !$container_type_part->isSealed()
+            && $input_type_part->equals(
+                $container_type_part->getGenericArrayType($container_type_part->isNonEmpty()),
+                false,
             )
         ) {
             return true;

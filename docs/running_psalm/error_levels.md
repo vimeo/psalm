@@ -98,6 +98,7 @@ Level 5 and above allows a more non-verifiable code, and higher levels are even 
 - [CircularReference](issues/CircularReference.md)
 - [ConflictingReferenceConstraint](issues/ConflictingReferenceConstraint.md)
 - [ContinueOutsideLoop](issues/ContinueOutsideLoop.md)
+- [InvalidOverride](issues/InvalidOverride.md)
 - [InvalidTypeImport](issues/InvalidTypeImport.md)
 - [MethodSignatureMismatch](issues/MethodSignatureMismatch.md)
 - [OverriddenMethodAccess](issues/OverriddenMethodAccess.md)
@@ -244,6 +245,7 @@ Level 5 and above allows a more non-verifiable code, and higher levels are even 
 - [RedundantConditionGivenDocblockType](issues/RedundantConditionGivenDocblockType.md)
 - [RedundantFunctionCallGivenDocblockType](issues/RedundantFunctionCallGivenDocblockType.md)
 - [ReferenceConstraintViolation](issues/ReferenceConstraintViolation.md)
+- [RiskyTruthyFalsyComparison](issues/RiskyTruthyFalsyComparison.md)
 - [UndefinedTrace](issues/UndefinedTrace.md)
 - [UnresolvableInclude](issues/UnresolvableInclude.md)
 - [UnsafeInstantiation](issues/UnsafeInstantiation.md)
@@ -276,6 +278,7 @@ Level 5 and above allows a more non-verifiable code, and higher levels are even 
 
 ## Feature-specific errors
 
+ - [MissingOverrideAttribute](issues/MissingOverrideAttribute.md)
  - [PossiblyUndefinedIntArrayOffset](issues/PossiblyUndefinedIntArrayOffset.md)
  - [PossiblyUndefinedStringArrayOffset](issues/PossiblyUndefinedStringArrayOffset.md)
  - [PossiblyUnusedMethod](issues/PossiblyUnusedMethod.md)

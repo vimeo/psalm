@@ -100,6 +100,8 @@ class ReturnTypeTest extends TestCase
                             return $str;
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'returnTypeNotEmptyCheckInElseIf' => [
                 'code' => '<?php
@@ -118,6 +120,8 @@ class ReturnTypeTest extends TestCase
                             return $str;
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'returnTypeNotEmptyCheckInElse' => [
                 'code' => '<?php
@@ -136,6 +140,8 @@ class ReturnTypeTest extends TestCase
                             return $str;
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'returnTypeAfterIf' => [
                 'code' => '<?php
@@ -1279,6 +1285,26 @@ class ReturnTypeTest extends TestCase
                         return $t;
                     }',
             ],
+            'neverReturnType' => [
+                'code' => '<?php
+                    function exitProgram(bool $die): never
+                    {
+                        if ($die) {
+                            die;
+                        }
+
+                        exit;
+                    }
+
+                    function throwError(): never
+                    {
+                        throw new Exception();
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
@@ -1806,6 +1832,47 @@ class ReturnTypeTest extends TestCase
                 'error_message' => 'InvalidReturnStatement',
                 'ignored_issues' => [],
                 'php_version' => '8.0',
+            ],
+            'implicitReturnFromFunctionWithNeverReturnType' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function foo(): never
+                    {
+                        if (rand(0, 1)) {
+                            exit();
+                        }
+                    }
+                    PHP,
+                'error_message' => 'InvalidReturnType',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'implicitReturnFromFunctionWithNeverReturnType2' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function foo(bool $x): never
+                    {
+                        while (true) {
+                            if ($x) {
+                                break;
+                            }
+                        }
+                    }
+                    PHP,
+                'error_message' => 'InvalidReturnType',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'constructorsShouldReturnVoid' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class A {
+                        public function __construct() {
+                            return 5;
+                        }
+                    }
+                    PHP,
+                'error_message' => 'InvalidReturnStatement',
             ],
         ];
     }

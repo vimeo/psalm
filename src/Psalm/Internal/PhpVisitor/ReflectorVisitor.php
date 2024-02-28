@@ -51,7 +51,7 @@ use const PHP_VERSION_ID;
 /**
  * @internal
  */
-class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSource
+final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSource
 {
     private Aliases $aliases;
 
@@ -152,12 +152,12 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                 $this->namespace_name,
             );
 
-            $this->classlike_node_scanners[] = $classlike_node_scanner;
-
             if ($classlike_node_scanner->start($node) === false) {
                 $this->bad_classes[spl_object_id($node)] = true;
-                return PhpParser\NodeTraverser::DONT_TRAVERSE_CHILDREN;
+                return PhpParser\NodeTraverser::DONT_TRAVERSE_CURRENT_AND_CHILDREN;
             }
+
+            $this->classlike_node_scanners[] = $classlike_node_scanner;
 
             $this->type_aliases = array_merge($this->type_aliases, $classlike_node_scanner->type_aliases);
         } elseif ($node instanceof PhpParser\Node\Stmt\TryCatch) {
@@ -546,7 +546,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                 }
 
                 throw new UnexpectedValueException(
-                    'There should be function storages for line ' . $this->file_path . ':' . $node->getLine(),
+                    'There should be function storages for line ' . $this->file_path . ':' . $node->getStartLine(),
                 );
             }
 

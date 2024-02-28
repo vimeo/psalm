@@ -22,7 +22,7 @@ use function substr_count;
 /**
  * @internal
  */
-class PropertyDocblockManipulator
+final class PropertyDocblockManipulator
 {
     /**
      * @var array<string, array<int, self>>

@@ -50,7 +50,7 @@ use function strlen;
 /**
  * @internal
  */
-class ConcatAnalyzer
+final class ConcatAnalyzer
 {
     private const MAX_LITERALS = 64;
 
@@ -258,6 +258,19 @@ class ConcatAnalyzer
 
                 $has_numeric_and_non_empty = $has_numeric_type && $has_non_empty;
 
+                $non_falsy_string = $numeric_type->getBuilder()->addType(new TNonFalsyString())->freeze();
+                $left_non_falsy = UnionTypeComparator::isContainedBy(
+                    $codebase,
+                    $left_type,
+                    $non_falsy_string,
+                );
+
+                $right_non_falsy = UnionTypeComparator::isContainedBy(
+                    $codebase,
+                    $right_type,
+                    $non_falsy_string,
+                );
+
                 $all_literals = $left_type->allLiterals() && $right_type->allLiterals();
 
                 if ($has_non_empty) {
@@ -265,9 +278,10 @@ class ConcatAnalyzer
                         $result_type = new Union([new TNonEmptyNonspecificLiteralString]);
                     } elseif ($all_lowercase) {
                         $result_type = Type::getNonEmptyLowercaseString();
+                    } elseif ($all_non_empty || $has_numeric_and_non_empty || $left_non_falsy || $right_non_falsy) {
+                        $result_type = Type::getNonFalsyString();
                     } else {
-                        $result_type = $all_non_empty || $has_numeric_and_non_empty ?
-                            Type::getNonFalsyString() : Type::getNonEmptyString();
+                        $result_type = Type::getNonEmptyString();
                     }
                 } else {
                     if ($all_literals) {

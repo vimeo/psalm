@@ -4,12 +4,14 @@ namespace Psalm\Tests;
 
 use Psalm\Context;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
+use Psalm\Tests\Traits\InvalidCodeAnalysisWithIssuesTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 use const DIRECTORY_SEPARATOR;
 
 class MethodCallTest extends TestCase
 {
+    use InvalidCodeAnalysisWithIssuesTestTrait;
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
@@ -149,7 +151,7 @@ class MethodCallTest extends TestCase
 
                 $obj = new SomeClass();
 
-                if ($obj->getInt()) {
+                if ($obj->getInt() !== null) {
                     printInt($obj->getInt());
                 }',
         );
@@ -185,7 +187,7 @@ class MethodCallTest extends TestCase
 
                 $obj = new SomeClass();
 
-                if ($obj->getInt()) {
+                if ($obj->getInt() !== null) {
                     printInt($obj->getInt());
                 }',
         );
@@ -556,6 +558,22 @@ class MethodCallTest extends TestCase
                         );
                     }',
             ],
+            'methodExistsDoesntExhaustMemory' => [
+                'code' => '<?php
+                    class C {}
+
+                    function f(C $c): void {
+                        method_exists($c, \'a\') ? $c->a() : [];
+                        method_exists($c, \'b\') ? $c->b() : [];
+                        method_exists($c, \'c\') ? $c->c() : [];
+                        method_exists($c, \'d\') ? $c->d() : [];
+                        method_exists($c, \'e\') ? $c->e() : [];
+                        method_exists($c, \'f\') ? $c->f() : [];
+                        method_exists($c, \'g\') ? $c->g() : [];
+                        method_exists($c, \'h\') ? $c->h() : [];
+                        method_exists($c, \'i\') ? $c->i() : [];
+                    }',
+            ],
             'callMethodAfterCheckingExistence' => [
                 'code' => '<?php
                     class A {}
@@ -920,7 +938,7 @@ class MethodCallTest extends TestCase
 
                     $a = new A();
 
-                    if ($a->getA()) {
+                    if ($a->getA() !== null) {
                         echo strlen($a->getA());
                     }',
             ],
@@ -991,7 +1009,7 @@ class MethodCallTest extends TestCase
 
                     $obj = new SomeClass();
 
-                    if ($obj->getInt()) {
+                    if ($obj->getInt() !== null) {
                         printInt($obj->getInt());
                     }',
             ],
@@ -1015,7 +1033,7 @@ class MethodCallTest extends TestCase
 
                     $obj = new SomeClass();
 
-                    if ($obj->getInt()) {
+                    if ($obj->getInt() !== null) {
                         printInt($obj->getInt());
                     }',
             ],
@@ -1213,6 +1231,27 @@ class MethodCallTest extends TestCase
                     }
                     $x = new Foo();
                     $x->bar($x);',
+            ],
+            'conditional' => [
+                'code' => '<?php
+
+                    class Old {
+                        public function x(): void {}
+                    }
+                    class Child1 extends Old {}
+                    class Child2 extends Old {}
+
+                    /**
+                     * @template IsClient of bool
+                     */
+                    class A {
+                        /**
+                         * @psalm-param (IsClient is true ? Child1 : Child2) $var
+                         */
+                        public function test(Old $var): void {
+                            $var->x();
+                        }
+                    }',
             ],
         ];
     }
@@ -1615,7 +1654,7 @@ class MethodCallTest extends TestCase
                     }
 
                     function foo(A $a) : void {
-                        if ($a->getA()) {
+                        if ($a->getA() !== null) {
                             echo strlen($a->getA());
                         }
                     }
@@ -1681,7 +1720,7 @@ class MethodCallTest extends TestCase
 
                     $obj = new SomeClass();
 
-                    if ($obj->getInt()) {
+                    if ($obj->getInt() !== null) {
                         printInt($obj->getInt());
                     }',
                 'error_message' => 'PossiblyNullArgument',
@@ -1760,6 +1799,29 @@ class MethodCallTest extends TestCase
                     }
                 ',
                 'error_message' => 'InvalidParamDefault',
+            ],
+            'stdClassConstructorHasNoParameters' => [
+                'code' => <<<'PHP'
+                    <?php
+                    $a = new stdClass(5);
+                PHP,
+                'error_message' => 'TooManyArguments',
+            ],
+            'firstClassCallableWithUnknownStaticMethod' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class A {}
+                    $_a = A::foo(...);
+                PHP,
+                'error_message' => 'UndefinedMethod',
+            ],
+            'firstClassCallableWithUnknownInstanceMethod' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class A {}
+                    $_a = (new A)->foo(...);
+                PHP,
+                'error_message' => 'UndefinedMethod',
             ],
         ];
     }

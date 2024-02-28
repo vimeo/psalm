@@ -22,7 +22,7 @@ use const PHP_VERSION_ID;
 /**
  * @internal
  */
-class PsalmRestarter extends XdebugHandler
+final class PsalmRestarter extends XdebugHandler
 {
     private const REQUIRED_OPCACHE_SETTINGS = [
         'enable_cli' => true,
@@ -82,6 +82,11 @@ class PsalmRestarter extends XdebugHandler
                     return true;
                 }
             }
+        }
+
+        // opcache.save_comments is required for json mapper (used in language server) to work
+        if ($opcache_loaded && in_array(ini_get('opcache.save_comments'), ['0', 'false', 0, false])) {
+            return true;
         }
 
         return $default || $this->required;
@@ -150,6 +155,10 @@ class PsalmRestarter extends XdebugHandler
                 '-dopcache.preload=',
                 '-dopcache.log_verbosity_level=0',
             ];
+        }
+
+        if ($opcache_loaded) {
+            $additional_options[] = '-dopcache.save_comments=1';
         }
 
         array_splice(

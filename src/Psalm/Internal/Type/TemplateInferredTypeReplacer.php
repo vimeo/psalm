@@ -38,7 +38,7 @@ use function strpos;
 /**
  * @internal
  */
-class TemplateInferredTypeReplacer
+final class TemplateInferredTypeReplacer
 {
     /**
      * This replaces template types in unions with the inferred types they should be
@@ -226,7 +226,7 @@ class TemplateInferredTypeReplacer
             )->freeze();
         }
 
-        $atomic_types = array_merge($types, $new_types);
+        $atomic_types = [...$types, ...$new_types];
         if (!$atomic_types) {
             throw new UnexpectedValueException('This array should be full');
         }

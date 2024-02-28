@@ -68,6 +68,7 @@ class BadSqlTainter implements AfterExpressionAnalysisInterface
                 );
             }
         }
+        return null;
     }
 }
 ```

@@ -231,7 +231,7 @@ final class CliUtils
             }
 
             if ($input_path[0] === '-' && strlen($input_path) === 2) {
-                if ($input_path[1] === 'c' || $input_path[1] === 'f') {
+                if ($input_path[1] === 'c' || $input_path[1] === 'f' || $input_path[1] === 'r') {
                     ++$i;
                 }
                 continue;
@@ -271,7 +271,7 @@ final class CliUtils
             $input_path = $input_paths[$i];
 
             if ($input_path[0] === '-' && strlen($input_path) === 2) {
-                if ($input_path[1] === 'c' || $input_path[1] === 'f') {
+                if ($input_path[1] === 'c' || $input_path[1] === 'f' || $input_path[1] === 'r') {
                     ++$i;
                 }
                 continue;
@@ -282,7 +282,15 @@ final class CliUtils
             }
 
             if (strpos($input_path, '--') === 0 && strlen($input_path) > 2) {
-                if (substr($input_path, 2) === 'config') {
+                // ignore --config psalm.xml
+                // ignore common phpunit args that accept a class instead of a path, as this can cause issues on Windows
+                $ignored_arguments = array(
+                    'config',
+                    'printer',
+                    'root',
+                );
+
+                if (in_array(substr($input_path, 2), $ignored_arguments, true)) {
                     ++$i;
                 }
                 continue;
@@ -475,7 +483,8 @@ final class CliUtils
 
         if (isset($options['php-version'])) {
             if (!is_string($options['php-version'])) {
-                die('Expecting a version number in the format x.y' . PHP_EOL);
+                fwrite(STDERR, 'Expecting a version number in the format x.y' . PHP_EOL);
+                exit(1);
             }
             $version = $options['php-version'];
             $source = 'cli';
@@ -493,7 +502,7 @@ final class CliUtils
                     STDERR,
                     $e->getMessage() . PHP_EOL,
                 );
-                exit(2);
+                exit(1);
             }
         }
     }

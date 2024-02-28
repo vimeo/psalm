@@ -14,7 +14,7 @@ use function strtolower;
  * @internal
  * @extends FunctionLikeAnalyzer<PhpParser\Node\Stmt\Function_>
  */
-class FunctionAnalyzer extends FunctionLikeAnalyzer
+final class FunctionAnalyzer extends FunctionLikeAnalyzer
 {
     public function __construct(PhpParser\Node\Stmt\Function_ $function, SourceAnalyzer $source)
     {

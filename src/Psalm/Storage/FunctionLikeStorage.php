@@ -16,6 +16,7 @@ use function implode;
 abstract class FunctionLikeStorage implements HasAttributesInterface
 {
     use CustomMetadataTrait;
+    use UnserializeMemoryUsageSuppressionTrait;
 
     /**
      * @var CodeLocation|null
@@ -254,7 +255,7 @@ abstract class FunctionLikeStorage implements HasAttributesInterface
         $params = count($this->params) > 0 ? "\n" . implode(
             ",\n",
             array_map(
-                function (FunctionLikeParameter $param): string {
+                static function (FunctionLikeParameter $param): string {
                     $realType = $param->type ?: 'mixed';
                     return "    {$realType} \${$param->name}";
                 },
@@ -289,7 +290,7 @@ abstract class FunctionLikeStorage implements HasAttributesInterface
         $symbol_text = 'function ' . $this->cased_name . '('   . implode(
             ',',
             array_map(
-                fn(FunctionLikeParameter $param): string => ($param->type ?: 'mixed') . ' $' . $param->name,
+                static fn(FunctionLikeParameter $param): string => ($param->type ?: 'mixed') . ' $' . $param->name,
                 $this->params,
             ),
         ) .  ') : ' . ($this->return_type ?: 'mixed');

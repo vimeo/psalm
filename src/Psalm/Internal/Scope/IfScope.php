@@ -10,7 +10,7 @@ use Psalm\Type\Union;
 /**
  * @internal
  */
-class IfScope
+final class IfScope
 {
     /**
      * @var array<string, Union>|null

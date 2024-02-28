@@ -99,7 +99,7 @@ use const STDOUT;
  * @psalm-api
  * @internal
  */
-class LanguageServer extends Dispatcher
+final class LanguageServer extends Dispatcher
 {
     /**
      * Handles textDocument/* method calls
@@ -237,7 +237,7 @@ class LanguageServer extends Dispatcher
 
         $this->protocolReader->on(
             'readMessageGroup',
-            function (): void {
+            static function (): void {
                 //$this->verboseLog('Received message group');
                 //$this->doAnalysis();
             },
@@ -507,6 +507,11 @@ class LanguageServer extends Dispatcher
                  * Support "Hover"
                  */
                 $serverCapabilities->hoverProvider = true;
+                /**
+                 * The server does not support documentHighlight-ing
+                 * Ref: https://github.com/vimeo/psalm/issues/10397
+                 */
+                $serverCapabilities->documentHighlightProvider = false;
 
                 /**
                  * The server provides completion support.
@@ -716,7 +721,7 @@ class LanguageServer extends Dispatcher
             $diagnostics = array_map(
                 function (IssueData $issue_data): Diagnostic {
                     //$check_name = $issue->check_name;
-                    $description = $issue_data->message;
+                    $description = '[' . $issue_data->type . '] ' . $issue_data->message;
                     $severity = $issue_data->severity;
 
                     $start_line = max($issue_data->line_from, 1);
@@ -765,18 +770,15 @@ class LanguageServer extends Dispatcher
                     return $diagnostic;
                 },
                 array_filter(
-                    array_map(function (IssueData $issue_data) use (&$issue_baseline) {
+                    array_map(static function (IssueData $issue_data) use (&$issue_baseline) {
                         if (empty($issue_baseline)) {
                             return $issue_data;
                         }
                         //Process Baseline
                         $file = $issue_data->file_name;
                         $type = $issue_data->type;
-                        /** @psalm-suppress MixedArrayAccess */
                         if (isset($issue_baseline[$file][$type]) && $issue_baseline[$file][$type]['o'] > 0) {
-                            /** @psalm-suppress MixedArrayAccess, MixedArgument */
                             if ($issue_baseline[$file][$type]['o'] === count($issue_baseline[$file][$type]['s'])) {
-                                /** @psalm-suppress MixedArrayAccess, MixedAssignment */
                                 $position = array_search(
                                     str_replace("\r\n", "\n", trim($issue_data->selected_text)),
                                     $issue_baseline[$file][$type]['s'],
@@ -785,16 +787,12 @@ class LanguageServer extends Dispatcher
 
                                 if ($position !== false) {
                                     $issue_data->severity = IssueData::SEVERITY_INFO;
-                                    /** @psalm-suppress MixedArgument */
                                     array_splice($issue_baseline[$file][$type]['s'], $position, 1);
-                                    /** @psalm-suppress MixedArrayAssignment, MixedOperand, MixedAssignment */
                                     $issue_baseline[$file][$type]['o']--;
                                 }
                             } else {
-                                /** @psalm-suppress MixedArrayAssignment */
                                 $issue_baseline[$file][$type]['s'] = [];
                                 $issue_data->severity = IssueData::SEVERITY_INFO;
-                                /** @psalm-suppress MixedArrayAssignment, MixedOperand, MixedAssignment */
                                 $issue_baseline[$file][$type]['o']--;
                             }
                         }

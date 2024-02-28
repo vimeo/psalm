@@ -38,6 +38,7 @@ psl)
 	cd endtoend-test-psl
 	git checkout 2.3.x
 	composer install
+	sed 's/ErrorOutputBehavior::Packed, ErrorOutputBehavior::Discard/ErrorOutputBehavior::Discard/g' -i src/Psl/Shell/execute.php
 	"$PSALM" --monochrome -c config/psalm.xml
 	"$PSALM" --monochrome -c config/psalm.xml tests/static-analysis
 	;;

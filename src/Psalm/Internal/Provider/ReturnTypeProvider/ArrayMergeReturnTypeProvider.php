@@ -26,7 +26,7 @@ use function max;
 /**
  * @internal
  */
-class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterface
+final class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
      * @return array<lowercase-string>

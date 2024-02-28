@@ -348,13 +348,26 @@ class ArgTest extends TestCase
 
                     /**
                      * @param string $a
-                     * @param int $b
-                     * @param int $c
+                     * @param int ...$b
                      * @return void
                      */
-                    function foo($a, $b, $c) {}
+                    function foo($a, ...$b) {}
 
                     var_caller("foo");',
+            ],
+            'mixedNullable' => [
+                'code' => '<?php
+                    class A {
+                        public function __construct(public mixed $default = null) {
+                        }
+                    }
+                    $a = new A;
+                    $_v = $a->default;',
+                'assertions' => [
+                    '$_v===' => 'mixed',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
         ];
     }

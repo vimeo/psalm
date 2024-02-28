@@ -33,7 +33,7 @@ use function version_compare;
  *
  * Gets values from the call map array, which stores data about native functions and methods
  */
-class InternalCallMapHandler
+final class InternalCallMapHandler
 {
     private const PHP_MAJOR_VERSION = 8;
     private const PHP_MINOR_VERSION = 3;
@@ -285,9 +285,18 @@ class InternalCallMapHandler
 
                 $out_type = null;
 
-                if (strlen($arg_name) > 2 && $arg_name[0] === 'w' && $arg_name[1] === '_') {
+                if ($by_reference && strlen($arg_name) > 2 && $arg_name[0] === 'w' && $arg_name[1] === '_') {
+                    // strip prefix that is not actually a part of the parameter name
+                    $arg_name = substr($arg_name, 2);
                     $out_type = $param_type;
                     $param_type = Type::getMixed();
+                }
+
+                // removes `rw_` leftover from `&rw_haystack` or `&rw_needle` or `&rw_actual_name`
+                // it doesn't have any specific meaning apart from `&` signifying that
+                // the parameter is passed by reference (handled above)
+                if ($by_reference && strlen($arg_name) > 3 && strpos($arg_name, 'rw_') === 0) {
+                    $arg_name = substr($arg_name, 3);
                 }
 
                 $function_param = new FunctionLikeParameter(

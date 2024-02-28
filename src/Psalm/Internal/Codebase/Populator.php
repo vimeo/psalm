@@ -42,7 +42,7 @@ use function strtolower;
  *
  * Populates file and class information so that analysis can work properly
  */
-class Populator
+final class Populator
 {
     private ClassLikeStorageProvider $classlike_storage_provider;
 
@@ -450,6 +450,8 @@ class Populator
         $storage->pseudo_property_get_types += $trait_storage->pseudo_property_get_types;
         $storage->pseudo_property_set_types += $trait_storage->pseudo_property_set_types;
 
+        $storage->pseudo_static_methods += $trait_storage->pseudo_static_methods;
+        
         $storage->pseudo_methods += $trait_storage->pseudo_methods;
         $storage->declaring_pseudo_method_ids += $trait_storage->declaring_pseudo_method_ids;
     }
@@ -559,6 +561,8 @@ class Populator
         $storage->pseudo_property_set_types += $parent_storage->pseudo_property_set_types;
 
         $parent_storage->dependent_classlikes[strtolower($storage->name)] = true;
+
+        $storage->pseudo_static_methods += $parent_storage->pseudo_static_methods;
 
         $storage->pseudo_methods += $parent_storage->pseudo_methods;
         $storage->declaring_pseudo_method_ids += $parent_storage->declaring_pseudo_method_ids;
@@ -931,10 +935,10 @@ class Populator
             if ($parent_storage->is_trait
                 && $storage->trait_alias_map
             ) {
-                $aliased_method_names = array_merge(
-                    $aliased_method_names,
-                    array_keys($storage->trait_alias_map, $method_name_lc, true),
-                );
+                $aliased_method_names = [
+                    ...$aliased_method_names,
+                    ...array_keys($storage->trait_alias_map, $method_name_lc, true),
+                ];
             }
 
             foreach ($aliased_method_names as $aliased_method_name) {
@@ -1001,10 +1005,10 @@ class Populator
             if ($parent_storage->is_trait
                 && $storage->trait_alias_map
             ) {
-                $aliased_method_names = array_merge(
-                    $aliased_method_names,
-                    array_keys($storage->trait_alias_map, $method_name_lc, true),
-                );
+                $aliased_method_names = [
+                    ...$aliased_method_names,
+                    ...array_keys($storage->trait_alias_map, $method_name_lc, true),
+                ];
             }
 
             foreach ($aliased_method_names as $aliased_method_name) {

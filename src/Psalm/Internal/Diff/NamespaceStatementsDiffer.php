@@ -11,7 +11,7 @@ use function substr;
 /**
  * @internal
  */
-class NamespaceStatementsDiffer extends AstDiffer
+final class NamespaceStatementsDiffer extends AstDiffer
 {
     /**
      * Calculate diff (edit script) from $a to $b.

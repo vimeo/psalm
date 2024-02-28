@@ -22,9 +22,9 @@ class CallableTest extends TestCase
 
                     /**
                      * @return void
-                     * @psalm-suppress MixedArgument
                      */
                     function f() {
+                        $data = 0;
                         run_function(
                             /**
                              * @return void
@@ -1786,16 +1786,6 @@ class CallableTest extends TestCase
 
                     takesCallable(function() { return; });',
             ],
-            'byRefUsesAlwaysMixed' => [
-                'code' => '<?php
-                    $callback = function() use (&$isCalled) : void {
-                        $isCalled = true;
-                    };
-                    $isCalled = false;
-                    $callback();
-
-                    if ($isCalled === true) {}',
-            ],
             'notCallableListNoUndefinedClass' => [
                 'code' => '<?php
                     /**
@@ -1804,6 +1794,30 @@ class CallableTest extends TestCase
                     function foo($arg): void {}
 
                     foo(["a", "b"]);',
+            ],
+            'callableOptionalOrAdditionalOptional' => [
+                'code' => '<?php
+                    /**
+                     * @param callable(string, string, string, string=):bool $arg
+                     * @return void
+                     */
+                    function foo($arg) {}
+
+                    function bar(string $a, string $b, string $c, string $d = ""): bool {}
+
+                    foo("bar");
+
+                    /**
+                     * @param callable(string, string, string):bool $arg
+                     * @return void
+                     */
+                    function foo1($arg) {}
+
+                    function bar1(string $a, string $b, string $c, string $d = ""): bool {}
+
+                    foo1("bar1");',
+                'assertions' => [],
+                'ignored_issues' => ['InvalidReturnType'],
             ],
             'abstractInvokeInTrait' => [
                 'code' => '<?php
@@ -1827,22 +1841,72 @@ class CallableTest extends TestCase
                     {
                         return 0;
                     }
-                    
+
                     /** @param Closure(int, int): int $f */
                     function int_int(Closure $f): void {}
-                    
+
                     /** @param Closure(int, int, int): int $f */
                     function int_int_int(Closure $f): void {}
-                    
+
                     /** @param Closure(int, int, int, int): int $f */
                     function int_int_int_int(Closure $f): void {}
-                    
+
                     int_int(withVariadic(...));
                     int_int_int(withVariadic(...));
                     int_int_int_int(withVariadic(...));',
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
+            ],
+            'inferTypeWithNestedTemplatesAndExplicitTypeHint' => [
+                'code' => '<?php
+                    /**
+                     * @template TResult
+                     */
+                    interface Message {}
+
+                    /**
+                     * @implements Message<list<int>>
+                     */
+                    final class GetListOfNumbers implements Message {}
+
+                    /**
+                     * @template TResult
+                     * @template TMessage of Message<TResult>
+                     */
+                    final class Envelope {}
+
+                    /**
+                     * @template TResult
+                     * @template TMessage of Message<TResult>
+                     * @param class-string<TMessage> $_message
+                     * @param callable(TMessage, Envelope<TResult, TMessage>): TResult $_handler
+                     */
+                    function addHandler(string $_message, callable $_handler): void {}
+
+                    addHandler(GetListOfNumbers::class, function (Message $_message, Envelope $_envelope) {
+                        /**
+                         * @psalm-check-type-exact $_message = GetListOfNumbers
+                         * @psalm-check-type-exact $_envelope = Envelope<list<int>, GetListOfNumbers>
+                         */
+                        return [1, 2, 3];
+                    });',
+            ],
+            'unsealedAllOptionalCbParam' => [
+                'code' => '<?php
+                    /**
+                     * @param callable(array<string, string>) $arg
+                     * @return void
+                     */
+                    function foo($arg) {}
+
+                    /**
+                     * @param array{a?: string}&array<string, string> $cb_arg
+                     * @return void
+                     */
+                    function bar($cb_arg) {}
+
+                    foo("bar");',
             ],
         ];
     }
@@ -2075,6 +2139,128 @@ class CallableTest extends TestCase
                     new Func("f", ["Foo", "bar"]);',
                 'error_message' => 'InvalidArgument',
             ],
+            'invalidArrayCallable' => [
+                'code' => '<?php
+                    function foo(callable $callback) : void {
+                        $callback();
+                    }
+
+                    final class Bar {
+                        public static function baz() : void {}
+                    }
+
+                    foo([Bar::class, "baz", 1231233]);',
+                'error_message' => 'InvalidArgument',
+            ],
+            'callableMissingOptional' => [
+                'code' => '<?php
+                    /**
+                     * @param callable(string=):bool $arg
+                     * @return void
+                     */
+                    function foo($arg) {}
+
+                    function bar(): bool {
+                        return rand(0, 10) > 5 ? true : false;
+                    }
+
+                    foo("bar");',
+                'error_message' => 'PossiblyInvalidArgument',
+            ],
+            'callableMissingOptionalThisArray' => [
+                'code' => '<?php
+                    /**
+                     * @param callable(string=):bool $arg
+                     * @return void
+                     */
+                    function foo($arg) {}
+
+                    class A {
+                        public function __construct() {
+                            foo([$this, "bar"]);
+                        }
+
+                        public function bar(): bool {
+                            return true;
+                        }
+                    }',
+                'error_message' => 'PossiblyInvalidArgument',
+            ],
+            'callableMissingOptionalVariableInstanceArray' => [
+                'code' => '<?php
+                    /**
+                     * @param callable(string=):bool $arg
+                     * @return void
+                     */
+                    function foo($arg) {}
+
+                    class A {
+                        public function bar(): bool {
+                            return true;
+                        }
+                    }
+
+                    $a_instance = new A();
+                    $y = [$a_instance, "bar"];
+                    foo($y);',
+                'error_message' => 'PossiblyInvalidArgument',
+            ],
+            'callableMissingOptionalMultipleParams' => [
+                'code' => '<?php
+                    /**
+                     * @param callable(string, string, string, string=):bool $arg
+                     * @return void
+                     */
+                    function foo($arg) {}
+
+                    function bar(string $a, string $b, string $c): bool {}
+
+                    foo("bar");',
+                'error_message' => 'PossiblyInvalidArgument',
+                'ignored_issues' => ['InvalidReturnType'],
+            ],
+            'callableMissingRequiredMultipleParams' => [
+                'code' => '<?php
+                    /**
+                     * @param callable(string, string, string, string):bool $arg
+                     * @return void
+                     */
+                    function foo($arg) {}
+
+                    function bar(string $a, string $b, string $c): bool {}
+
+                    foo("bar");',
+                'error_message' => 'PossiblyInvalidArgument',
+                'ignored_issues' => ['InvalidReturnType'],
+            ],
+            'callableAdditionalRequiredParam' => [
+                'code' => '<?php
+                    /**
+                     * @param callable(string, string, string):bool $arg
+                     * @return void
+                     */
+                    function foo($arg) {}
+
+                    function bar(string $a, string $b, string $c, string $d): bool {}
+
+                    foo("bar");',
+                'error_message' => 'InvalidArgument',
+                'ignored_issues' => ['InvalidReturnType'],
+            ],
+            'callableMultipleParamsWithOptional' => [
+                'code' => '<?php
+                    /**
+                     * @param callable(string, string, string=):bool $arg
+                     * @return void
+                     */
+                    function foo($arg) {}
+
+                    function bar(string $a, string $b, string $c): bool {}
+
+                    foo("bar");',
+                'error_message' => 'PossiblyInvalidArgument',
+                'ignored_issues' => ['InvalidReturnType'],
+            ],
             'preventStringDocblockType' => [
                 'code' => '<?php
                     /**
@@ -2291,16 +2477,16 @@ class CallableTest extends TestCase
                     {
                         return 0;
                     }
-                    
+
                     /** @param Closure(int, int, string, int, int): int $f */
                     function int_int_string_int_int(Closure $f): void {}
-                    
+
                     /** @param Closure(int, int, int, string, int): int $f */
                     function int_int_int_string_int(Closure $f): void {}
-                    
+
                     /** @param Closure(int, int, int, int, string): int $f */
                     function int_int_int_int_string(Closure $f): void {}
-                    
+
                     int_int_string_int_int(add(...));
                     int_int_int_string_int(add(...));
                     int_int_int_int_string(add(...));',

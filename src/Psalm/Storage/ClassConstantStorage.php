@@ -19,6 +19,7 @@ final class ClassConstantStorage
     /** @psalm-suppress MutableDependency Mutable by design */
     use CustomMetadataTrait;
     use ImmutableNonCloneableTrait;
+    use UnserializeMemoryUsageSuppressionTrait;
 
     public ?CodeLocation $type_location;
 

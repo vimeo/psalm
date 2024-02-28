@@ -13,6 +13,7 @@ use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
+use Psalm\Internal\VersionUtils;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 
 use function define;
@@ -37,11 +38,11 @@ class StubTest extends TestCase
         self::$config = new TestConfig();
 
         if (!defined('PSALM_VERSION')) {
-            define('PSALM_VERSION', '4.0.0');
+            define('PSALM_VERSION', VersionUtils::getPsalmVersion());
         }
 
         if (!defined('PHP_PARSER_VERSION')) {
-            define('PHP_PARSER_VERSION', '4.0.0');
+            define('PHP_PARSER_VERSION', VersionUtils::getPhpParserVersion());
         }
     }
 
@@ -217,7 +218,7 @@ class StubTest extends TestCase
     public function testStubFileParentClass(): void
     {
         $this->expectException(CodeException::class);
-        $this->expectExceptionMessage('ImplementedParamTypeMismatch');
+        $this->expectExceptionMessage('MethodSignatureMismatch');
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__),
@@ -317,10 +318,10 @@ class StubTest extends TestCase
             '<?php
                 namespace Ns {
                     class MyClass {
-                    
+
                         public const OBJECT = "object";
                         private const EXCEPTION = "exception";
-                        
+
                         /**
                          * @return mixed
                          * @psalm-suppress InvalidReturnType
@@ -332,7 +333,7 @@ class StubTest extends TestCase
                          * @psalm-suppress InvalidReturnType
                          */
                         public function create2(string $s) {}
-                        
+
                         /**
                          * @return mixed
                          * @psalm-suppress InvalidReturnType
@@ -384,7 +385,7 @@ class StubTest extends TestCase
 
                     $y1 = (new \Ns\MyClass)->creAte2("object");
                     $y2 = (new \Ns\MyClass)->creaTe2("exception");
-                    
+
                     $const1 = (new \Ns\MyClass)->creAte3(\Ns\MyClass::OBJECT);
                     $const2 = (new \Ns\MyClass)->creaTe3("exception");
 
@@ -863,7 +864,7 @@ class StubTest extends TestCase
 
     public function testNoStubFunction(): void
     {
-        $this->expectExceptionMessage('UndefinedFunction - /src/somefile.php:2:22 - Function barBar does not exist');
+        $this->expectExceptionMessage('UndefinedFunction');
         $this->expectException(CodeException::class);
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
@@ -1189,94 +1190,6 @@ class StubTest extends TestCase
                 class Bar extends PartiallyStubbedClass  {}
 
                 new Bar();',
-        );
-
-        $this->analyzeFile($file_path, new Context());
-    }
-
-    public function testStubFileWithPartialClassDefinitionWithCoercion(): void
-    {
-        $this->expectExceptionMessage('TypeCoercion');
-        $this->expectException(CodeException::class);
-        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
-            TestConfig::loadFromXML(
-                dirname(__DIR__),
-                '<?xml version="1.0"?>
-                <psalm
-                    errorLevel="1"
-                >
-                    <projectFiles>
-                        <directory name="src" />
-                    </projectFiles>
-
-                    <stubs>
-                        <file name="tests/fixtures/stubs/partial_class.phpstub" />
-                    </stubs>
-                </psalm>',
-            ),
-        );
-
-        $file_path = getcwd() . '/src/somefile.php';
-
-        $this->addFile(
-            $file_path,
-            '<?php
-                namespace Foo;
-
-                class PartiallyStubbedClass  {
-                    /**
-                     * @param string $a
-                     * @return object
-                     */
-                    public function foo(string $a) {
-                        return new self;
-                    }
-                }
-
-                (new PartiallyStubbedClass())->foo("dasda");',
-        );
-
-        $this->analyzeFile($file_path, new Context());
-    }
-
-    public function testStubFileWithPartialClassDefinitionGeneralReturnType(): void
-    {
-        $this->expectExceptionMessage('InvalidReturnStatement');
-        $this->expectException(CodeException::class);
-        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
-            TestConfig::loadFromXML(
-                dirname(__DIR__),
-                '<?xml version="1.0"?>
-                <psalm
-                    errorLevel="1"
-                >
-                    <projectFiles>
-                        <directory name="src" />
-                    </projectFiles>
-
-                    <stubs>
-                        <file name="tests/fixtures/stubs/partial_class.phpstub" />
-                    </stubs>
-                </psalm>',
-            ),
-        );
-
-        $file_path = getcwd() . '/src/somefile.php';
-
-        $this->addFile(
-            $file_path,
-            '<?php
-                namespace Foo;
-
-                class PartiallyStubbedClass  {
-                    /**
-                     * @param string $a
-                     * @return object
-                     */
-                    public function foo(string $a) {
-                        return new \stdClass;
-                    }
-                }',
         );
 
         $this->analyzeFile($file_path, new Context());

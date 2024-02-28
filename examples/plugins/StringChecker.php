@@ -16,7 +16,7 @@ use function preg_split;
 use function strpos;
 use function strtolower;
 
-class StringChecker implements AfterExpressionAnalysisInterface
+final class StringChecker implements AfterExpressionAnalysisInterface
 {
     /**
      * Called after an expression has been checked

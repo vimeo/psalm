@@ -152,7 +152,10 @@ class PureAnnotationTest extends TestCase
                 'code' => '<?php
                     final class Date
                     {
-                        /** @psalm-pure */
+                        /**
+                         * @param non-empty-string $tzString
+                         * @psalm-pure
+                         */
                         public static function timeZone(string $tzString) : DateTimeZone
                         {
                             return new \DateTimeZone($tzString);
@@ -441,6 +444,81 @@ class PureAnnotationTest extends TestCase
                     function gimmeFoo(): MyEnum
                     {
                         return MyEnum::FOO();
+                    }',
+            ],
+            'pureThroughCallStaticInTrait' => [
+                'code' => '<?php
+                    /**
+                     * @method static static foo()
+                     */
+                    trait TestTrait {
+                        /** @psalm-pure */
+                        public static function __callStatic(string $name, array $params): static
+                        {
+                            throw new BadMethodCallException("not implemented");
+                        }
+                    }
+
+                    class Test {
+                        use TestTrait;
+                    }
+
+                    /** @psalm-pure */
+                    function gimmeFoo(): Test
+                    {
+                        return Test::foo();
+                    }',
+            ],
+            'pureThroughCallStaticInNestedTrait' => [
+                'code' => '<?php
+                    /**
+                     * @method static static foo()
+                     */
+                    trait InnerTestTrait {
+                        /** @psalm-pure */
+                        public static function __callStatic(string $name, array $params): static
+                        {
+                            throw new BadMethodCallException("not implemented");
+                        }
+                    }
+
+                    trait TestTrait {
+                        use InnerTestTrait;
+                    }
+
+                    class Test {
+                        use TestTrait;
+                    }
+
+                    /** @psalm-pure */
+                    function gimmeFoo(): Test
+                    {
+                        return Test::foo();
+                    }',
+            ],
+            'pureThroughAliasedCallStaticInTrait' => [
+                'code' => '<?php
+                    /**
+                     * @method static static foo()
+                     */
+                    trait TestTrait {
+                        /** @psalm-pure */
+                        public static function toBeCallStatic(string $name, array $params): static
+                        {
+                            throw new BadMethodCallException("not implemented");
+                        }
+                    }
+
+                    class Test {
+                        use TestTrait {
+                            TestTrait::toBeCallStatic as __callStatic;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function gimmeFoo(): Test
+                    {
+                        return Test::foo();
                     }',
             ],
             'dontCrashWhileCheckingPurityOnCallStaticInATrait' => [

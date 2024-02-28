@@ -78,7 +78,7 @@ use function strtolower;
 /**
  * @internal
  */
-class FunctionCallAnalyzer extends CallAnalyzer
+final class FunctionCallAnalyzer extends CallAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
@@ -205,7 +205,9 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     $statements_analyzer->node_data,
                 );
 
-                $function_call_info->function_params = $function_callable->params;
+                if (!$codebase->functions->params_provider->has($function_call_info->function_id)) {
+                    $function_call_info->function_params = $function_callable->params;
+                }
             }
         }
 
@@ -399,13 +401,6 @@ class FunctionCallAnalyzer extends CallAnalyzer
                     ),
                     $statements_analyzer->getSuppressedIssues(),
                 );
-            }
-        }
-
-        if ($function_call_info->byref_uses) {
-            foreach ($function_call_info->byref_uses as $byref_use_var => $_) {
-                $context->vars_in_scope['$' . $byref_use_var] = Type::getMixed();
-                $context->vars_possibly_in_scope['$' . $byref_use_var] = true;
             }
         }
 

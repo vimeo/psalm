@@ -76,7 +76,7 @@ use const ARRAY_FILTER_USE_KEY;
 /**
  * @internal
  */
-class AtomicPropertyFetchAnalyzer
+final class AtomicPropertyFetchAnalyzer
 {
     /**
      * @param array<string> $invalid_fetch_types $invalid_fetch_types
@@ -788,6 +788,7 @@ class AtomicPropertyFetchAnalyzer
                             $position = array_search(
                                 $param_name,
                                 array_keys($property_class_storage->template_types),
+                                true,
                             );
                         }
 
@@ -1000,7 +1001,7 @@ class AtomicPropertyFetchAnalyzer
             empty($relevant_enum_case_names)
                 ? Type::getNonEmptyString()
                 : new Union(array_map(
-                    fn(string $name): TString => Type::getAtomicStringFromLiteral($name),
+                    static fn(string $name): TString => Type::getAtomicStringFromLiteral($name),
                     $relevant_enum_case_names,
                 )),
         );
@@ -1034,10 +1035,11 @@ class AtomicPropertyFetchAnalyzer
         $case_values = [];
 
         foreach ($enum_cases as $enum_case) {
-            if (is_string($enum_case->value)) {
-                $case_values[] = Type::getAtomicStringFromLiteral($enum_case->value);
-            } elseif (is_int($enum_case->value)) {
-                $case_values[] = new TLiteralInt($enum_case->value);
+            $case_value = $enum_case->getValue($statements_analyzer->getCodebase()->classlikes);
+            if (is_string($case_value)) {
+                $case_values[] = Type::getAtomicStringFromLiteral($case_value);
+            } elseif (is_int($case_value)) {
+                $case_values[] = new TLiteralInt($case_value);
             } else {
                 // this should never happen
                 $case_values[] = new TMixed();
@@ -1140,6 +1142,8 @@ class AtomicPropertyFetchAnalyzer
 
             $override_property_visibility = $interface_storage->override_property_visibility;
 
+            $intersects_with_enum = false;
+
             foreach ($intersection_types as $intersection_type) {
                 if ($intersection_type instanceof TNamedObject
                     && $codebase->classExists($intersection_type->value)
@@ -1148,12 +1152,19 @@ class AtomicPropertyFetchAnalyzer
                     $class_exists = true;
                     return;
                 }
+                if ($intersection_type instanceof TNamedObject
+                    && (in_array($intersection_type->value, ['UnitEnum', 'BackedEnum'], true)
+                        || in_array('UnitEnum', $codebase->getParentInterfaces($intersection_type->value)))
+                ) {
+                    $intersects_with_enum = true;
+                }
             }
 
             if (!$class_exists &&
                 //interfaces can't have properties. Except when they do... In PHP Core, they can
                 !in_array($fq_class_name, ['UnitEnum', 'BackedEnum'], true) &&
-                !in_array('UnitEnum', $codebase->getParentInterfaces($fq_class_name))
+                !in_array('UnitEnum', $codebase->getParentInterfaces($fq_class_name)) &&
+                !$intersects_with_enum
             ) {
                 if (IssueBuffer::accepts(
                     new NoInterfaceProperties(

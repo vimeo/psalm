@@ -13,7 +13,6 @@ use Psalm\Internal\CliUtils;
 use Psalm\Internal\Codebase\ReferenceMapGenerator;
 use Psalm\Internal\Composer;
 use Psalm\Internal\ErrorHandler;
-use Psalm\Internal\Fork\Pool;
 use Psalm\Internal\Fork\PsalmRestarter;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\Provider\ClassLikeStorageCacheProvider;
@@ -73,15 +72,12 @@ use function str_replace;
 use function strlen;
 use function strpos;
 use function substr;
-use function version_compare;
 
 use const DIRECTORY_SEPARATOR;
 use const JSON_THROW_ON_ERROR;
 use const LC_CTYPE;
 use const PHP_EOL;
-use const PHP_OS;
 use const PHP_URL_SCHEME;
-use const PHP_VERSION;
 use const STDERR;
 
 // phpcs:disable PSR1.Files.SideEffects
@@ -269,8 +265,6 @@ final class Psalm
 
         $progress = self::initProgress($options, $config);
 
-        self::emitMacPcreWarning($options, $threads);
-
         self::restart($options, $threads, $progress);
 
         if (isset($options['debug-emitted-issues'])) {
@@ -282,7 +276,8 @@ final class Psalm
 
         if (isset($options['set-baseline'])) {
             if (is_array($options['set-baseline'])) {
-                die('Only one baseline file can be created at a time' . PHP_EOL);
+                fwrite(STDERR, 'Only one baseline file can be created at a time' . PHP_EOL);
+                exit(1);
             }
         }
 
@@ -401,7 +396,7 @@ final class Psalm
                 !$paths_to_check,
                 $start_time,
                 isset($options['stats']),
-                self::initBaseline($options, $config, $current_dir, $path_to_config),
+                self::initBaseline($options, $config, $current_dir, $path_to_config, $paths_to_check),
             );
         } else {
             self::autoGenerateConfig($project_analyzer, $current_dir, $init_source_dir, $vendor_dir);
@@ -491,8 +486,9 @@ final class Psalm
      */
     private static function generateConfig(string $current_dir, array &$args): void
     {
-        if (file_exists($current_dir . 'psalm.xml')) {
-            die('A config file already exists in the current directory' . PHP_EOL);
+        if (file_exists($current_dir . DIRECTORY_SEPARATOR . 'psalm.xml')) {
+            fwrite(STDERR, 'A config file already exists in the current directory' . PHP_EOL);
+            exit(1);
         }
 
         $args = array_values(array_filter(
@@ -513,12 +509,14 @@ final class Psalm
         $init_source_dir = null;
         if (count($args)) {
             if (count($args) > 2) {
-                die('Too many arguments provided for psalm --init' . PHP_EOL);
+                fwrite(STDERR, 'Too many arguments provided for psalm --init' . PHP_EOL);
+                exit(1);
             }
 
             if (isset($args[1])) {
                 if (!preg_match('/^[1-8]$/', $args[1])) {
-                    die('Config strictness must be a number between 1 and 8 inclusive' . PHP_EOL);
+                    fwrite(STDERR, 'Config strictness must be a number between 1 and 8 inclusive' . PHP_EOL);
+                    exit(1);
                 }
 
                 $init_level = (int)$args[1];
@@ -538,11 +536,13 @@ final class Psalm
                     $vendor_dir,
                 );
             } catch (ConfigCreationException $e) {
-                die($e->getMessage() . PHP_EOL);
+                fwrite(STDERR, $e->getMessage() . PHP_EOL);
+                exit(1);
             }
 
-            if (!file_put_contents($current_dir . 'psalm.xml', $template_contents)) {
-                die('Could not write to psalm.xml' . PHP_EOL);
+            if (file_put_contents($current_dir . DIRECTORY_SEPARATOR . 'psalm.xml', $template_contents) === false) {
+                fwrite(STDERR, 'Could not write to psalm.xml' . PHP_EOL);
+                exit(1);
             }
 
             exit('Config file created successfully. Please re-run psalm.' . PHP_EOL);
@@ -687,7 +687,8 @@ final class Psalm
         $baselineFile = $config->error_baseline;
 
         if (empty($baselineFile)) {
-            die('Cannot update baseline, because no baseline file is configured.' . PHP_EOL);
+            fwrite(STDERR, 'Cannot update baseline, because no baseline file is configured.' . PHP_EOL);
+            exit(1);
         }
 
         try {
@@ -782,11 +783,13 @@ final class Psalm
                 $vendor_dir,
             );
         } catch (ConfigCreationException $e) {
-            die($e->getMessage() . PHP_EOL);
+            fwrite(STDERR, $e->getMessage() . PHP_EOL);
+            exit(1);
         }
 
-        if (!file_put_contents($current_dir . 'psalm.xml', $template_contents)) {
-            die('Could not write to psalm.xml' . PHP_EOL);
+        if (file_put_contents($current_dir . DIRECTORY_SEPARATOR . 'psalm.xml', $template_contents) === false) {
+            fwrite(STDERR, 'Could not write to psalm.xml' . PHP_EOL);
+            exit(1);
         }
 
         exit('Config file created successfully. Please re-run psalm.' . PHP_EOL);
@@ -846,12 +849,12 @@ final class Psalm
             exit(1);
         }
 
-        $current_dir = $cwd . DIRECTORY_SEPARATOR;
+        $current_dir = $cwd;
 
         if (isset($options['r']) && is_string($options['r'])) {
             $root_path = realpath($options['r']);
 
-            if (!$root_path) {
+            if ($root_path === false) {
                 fwrite(
                     STDERR,
                     'Could not locate root directory ' . $current_dir . DIRECTORY_SEPARATOR . $options['r'] . PHP_EOL,
@@ -859,28 +862,10 @@ final class Psalm
                 exit(1);
             }
 
-            $current_dir = $root_path . DIRECTORY_SEPARATOR;
+            $current_dir = $root_path;
         }
 
         return $current_dir;
-    }
-
-    private static function emitMacPcreWarning(array $options, int $threads): void
-    {
-        if (!isset($options['threads'])
-            && !isset($options['debug'])
-            && $threads === 1
-            && ini_get('pcre.jit') === '1'
-            && PHP_OS === 'Darwin'
-            && version_compare(PHP_VERSION, '7.3.0') >= 0
-            && version_compare(PHP_VERSION, '7.4.0') < 0
-        ) {
-            echo(
-                'If you want to run Psalm as a language server, or run Psalm with' . PHP_EOL
-                    . 'multiple processes (--threads=4), beware:' . PHP_EOL
-                    . Pool::MAC_PCRE_MESSAGE . PHP_EOL . PHP_EOL
-            );
-        }
     }
 
     private static function restart(array $options, int $threads, Progress $progress): void
@@ -1036,17 +1021,23 @@ final class Psalm
     }
 
     /**
+     * @param ?list<string> $paths_to_check
      * @return array<string,array<string,array{o:int, s: list<string>}>>
      */
     private static function initBaseline(
         array $options,
         Config $config,
         string $current_dir,
-        ?string $path_to_config
+        ?string $path_to_config,
+        ?array $paths_to_check
     ): array {
         $issue_baseline = [];
 
         if (isset($options['set-baseline']) && is_string($options['set-baseline'])) {
+            if ($paths_to_check !== null) {
+                fwrite(STDERR, PHP_EOL . 'Cannot generate baseline when checking specific files' . PHP_EOL);
+                exit(1);
+            }
             $issue_baseline = self::generateBaseline($options, $config, $current_dir, $path_to_config);
         }
 
@@ -1063,6 +1054,10 @@ final class Psalm
         }
 
         if (isset($options['update-baseline'])) {
+            if ($paths_to_check !== null) {
+                fwrite(STDERR, PHP_EOL . 'Cannot update baseline when checking specific files' . PHP_EOL);
+                exit(1);
+            }
             $issue_baseline = self::updateBaseline($options, $config);
         }
 
@@ -1076,6 +1071,18 @@ final class Psalm
                 fwrite(STDERR, 'Error while reading baseline: ' . $exception->getMessage() . PHP_EOL);
                 exit(1);
             }
+        }
+
+        if ($paths_to_check !== null) {
+            $filtered_issue_baseline = [];
+            foreach ($paths_to_check as $path_to_check) {
+                // +1 to remove the initial slash from $path_to_check
+                $path_to_check = substr($path_to_check, strlen($config->base_dir) + 1);
+                if (isset($issue_baseline[$path_to_check])) {
+                    $filtered_issue_baseline[$path_to_check] = $issue_baseline[$path_to_check];
+                }
+            }
+            $issue_baseline = $filtered_issue_baseline;
         }
 
         return $issue_baseline;

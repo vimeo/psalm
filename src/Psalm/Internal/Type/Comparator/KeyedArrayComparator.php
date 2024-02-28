@@ -19,7 +19,7 @@ use function is_string;
 /**
  * @internal
  */
-class KeyedArrayComparator
+final class KeyedArrayComparator
 {
     /**
      * @param TKeyedArray|TObjectWithProperties $input_type_part

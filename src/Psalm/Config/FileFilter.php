@@ -7,6 +7,7 @@ use Psalm\Exception\ConfigException;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use SimpleXMLElement;
+use Symfony\Component\Filesystem\Path;
 
 use function array_filter;
 use function array_map;
@@ -127,7 +128,7 @@ class FileFilter
                 $resolve_symlinks = (bool) ($directory['resolveSymlinks'] ?? false);
                 $declare_strict_types = (bool) ($directory['useStrictTypes'] ?? false);
 
-                if ($directory_path[0] === '/' && DIRECTORY_SEPARATOR === '/') {
+                if (Path::isAbsolute($directory_path)) {
                     /** @var non-empty-string */
                     $prospective_directory_path = $directory_path;
                 } else {
@@ -246,7 +247,7 @@ class FileFilter
             foreach ($config['file'] as $file) {
                 $file_path = (string) ($file['name'] ?? '');
 
-                if ($file_path[0] === '/' && DIRECTORY_SEPARATOR === '/') {
+                if (Path::isAbsolute($file_path)) {
                     /** @var non-empty-string */
                     $prospective_file_path = $file_path;
                 } else {
@@ -336,7 +337,7 @@ class FileFilter
             foreach ($config['referencedFunction'] as $referenced_function) {
                 $function_id = $referenced_function['name'] ?? '';
                 if (!is_string($function_id)
-                    || (!preg_match('/^[a-zA-Z_\x80-\xff][a-zA-Z0-9_\x80-\xff]*$/', $function_id)
+                    || (!preg_match('/^[a-zA-Z_\x80-\xff](?:[\\\\]?[a-zA-Z0-9_\x80-\xff]+)*$/', $function_id)
                         && !preg_match('/^[^:]+::[^:]+$/', $function_id) // methods are also allowed
                         && !static::isRegularExpression($function_id))) {
                     throw new ConfigException(

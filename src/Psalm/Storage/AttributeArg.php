@@ -12,6 +12,7 @@ use Psalm\Type\Union;
 final class AttributeArg
 {
     use ImmutableNonCloneableTrait;
+    use UnserializeMemoryUsageSuppressionTrait;
     /**
      * @var ?string
      * @psalm-suppress PossiblyUnusedProperty It's part of the public API for now

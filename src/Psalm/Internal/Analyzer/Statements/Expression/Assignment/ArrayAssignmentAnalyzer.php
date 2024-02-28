@@ -55,7 +55,7 @@ use function strpos;
 /**
  * @internal
  */
-class ArrayAssignmentAnalyzer
+final class ArrayAssignmentAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
@@ -349,29 +349,25 @@ class ArrayAssignmentAnalyzer
         }
 
         if (!$has_matching_objectlike_property && !$has_matching_string) {
-            if (count($key_values) === 1) {
-                $key_value = $key_values[0];
-
-                $object_like = new TKeyedArray(
-                    [$key_value->value => $current_type],
-                    $key_value instanceof TLiteralClassString
-                        ? [$key_value->value => true]
-                        : null,
-                );
-
-                $array_assignment_type = new Union([
-                    $object_like,
-                ]);
-            } else {
-                $array_assignment_literals = $key_values;
-
-                $array_assignment_type = new Union([
-                    new TNonEmptyArray([
-                        new Union($array_assignment_literals),
-                        $current_type,
-                    ]),
-                ]);
+            $properties = [];
+            $classStrings = [];
+            $current_type = $current_type->setPossiblyUndefined(
+                $current_type->possibly_undefined || count($key_values) > 1,
+            );
+            foreach ($key_values as $key_value) {
+                $properties[$key_value->value] = $current_type;
+                if ($key_value instanceof TLiteralClassString) {
+                    $classStrings[$key_value->value] = true;
+                }
             }
+            $object_like = new TKeyedArray(
+                $properties,
+                $classStrings ?: null,
+            );
+
+            $array_assignment_type = new Union([
+                $object_like,
+            ]);
 
             return Type::combineUnionTypes(
                 $child_stmt_type,

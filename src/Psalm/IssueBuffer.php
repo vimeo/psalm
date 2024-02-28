@@ -133,6 +133,14 @@ final class IssueBuffer
      */
     public static function accepts(CodeIssue $e, array $suppressed_issues = [], bool $is_fixable = false): bool
     {
+        $config = Config::getInstance();
+        $project_analyzer = ProjectAnalyzer::getInstance();
+        $codebase = $project_analyzer->getCodebase();
+        $event = new BeforeAddIssueEvent($e, $is_fixable, $codebase);
+        if ($config->eventDispatcher->dispatchBeforeAddIssue($event) === false) {
+            return false;
+        }
+
         if (self::isSuppressed($e, $suppressed_issues)) {
             return false;
         }
@@ -190,7 +198,7 @@ final class IssueBuffer
             return true;
         }
 
-        $suppressed_issue_position = array_search($issue_type, $suppressed_issues);
+        $suppressed_issue_position = array_search($issue_type, $suppressed_issues, true);
 
         if ($suppressed_issue_position !== false) {
             if (is_int($suppressed_issue_position)) {
@@ -203,7 +211,7 @@ final class IssueBuffer
         $parent_issue_type = Config::getParentIssueType($issue_type);
 
         if ($parent_issue_type) {
-            $suppressed_issue_position = array_search($parent_issue_type, $suppressed_issues);
+            $suppressed_issue_position = array_search($parent_issue_type, $suppressed_issues, true);
 
             if ($suppressed_issue_position !== false) {
                 if (is_int($suppressed_issue_position)) {
@@ -216,7 +224,7 @@ final class IssueBuffer
 
         $suppress_all_position = $config->disable_suppress_all
             ? false
-            : array_search('all', $suppressed_issues);
+            : array_search('all', $suppressed_issues, true);
 
         if ($suppress_all_position !== false) {
             if (is_int($suppress_all_position)) {
@@ -257,11 +265,6 @@ final class IssueBuffer
         $config = Config::getInstance();
         $project_analyzer = ProjectAnalyzer::getInstance();
         $codebase = $project_analyzer->getCodebase();
-
-        $event = new BeforeAddIssueEvent($e, $is_fixable, $codebase);
-        if ($config->eventDispatcher->dispatchBeforeAddIssue($event) === false) {
-            return false;
-        }
 
         $fqcn_parts = explode('\\', get_class($e));
         $issue_type = array_pop($fqcn_parts);
@@ -706,7 +709,7 @@ final class IssueBuffer
 
         if (in_array(
             $project_analyzer->stdout_report_options->format,
-            [Report::TYPE_CONSOLE, Report::TYPE_PHP_STORM],
+            [Report::TYPE_CONSOLE, Report::TYPE_PHP_STORM, Report::TYPE_GITHUB_ACTIONS],
         )) {
             echo str_repeat('-', 30) . "\n";
 
@@ -831,7 +834,7 @@ final class IssueBuffer
         $foreground = "30";
 
         // text style, 1 = bold
-        $style = "1";
+        $style = "2";
 
         if ($project_analyzer->stdout_report_options->use_color) {
             echo "\e[{$background};{$style}m{$paddingTop}\e[0m" . "\n";

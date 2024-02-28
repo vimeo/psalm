@@ -58,7 +58,7 @@ use function strtolower;
 /**
  * @internal
  */
-class CastAnalyzer
+final class CastAnalyzer
 {
     /** @var string[] */
     private const PSEUDO_CASTABLE_CLASSES = [
@@ -485,7 +485,7 @@ class CastAnalyzer
             // todo: emit error here
         }
 
-        $valid_types = array_merge($valid_ints, $castable_types);
+        $valid_types = [...$valid_ints, ...$castable_types];
 
         if (!$valid_types) {
             $int_type = Type::getInt();
@@ -674,7 +674,7 @@ class CastAnalyzer
             // todo: emit error here
         }
 
-        $valid_types = array_merge($valid_floats, $castable_types);
+        $valid_types = [...$valid_floats, ...$castable_types];
 
         if (!$valid_types) {
             $float_type = Type::getFloat();
@@ -817,10 +817,7 @@ class CastAnalyzer
                                 $parent_nodes = array_merge($return_type->parent_nodes, $parent_nodes);
                             }
 
-                            $castable_types = array_merge(
-                                $castable_types,
-                                array_values($return_type->getAtomicTypes()),
-                            );
+                            $castable_types = [...$castable_types, ...array_values($return_type->getAtomicTypes())];
 
                             continue 2;
                         }

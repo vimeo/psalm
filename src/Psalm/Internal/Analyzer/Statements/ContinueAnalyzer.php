@@ -16,7 +16,7 @@ use function end;
 /**
  * @internal
  */
-class ContinueAnalyzer
+final class ContinueAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,

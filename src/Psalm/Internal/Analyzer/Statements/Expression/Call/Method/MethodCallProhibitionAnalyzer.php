@@ -15,7 +15,7 @@ use Psalm\IssueBuffer;
 /**
  * @internal
  */
-class MethodCallProhibitionAnalyzer
+final class MethodCallProhibitionAnalyzer
 {
     /**
      * @param  string[]     $suppressed_issues

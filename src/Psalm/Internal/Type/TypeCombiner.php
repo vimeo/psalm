@@ -74,7 +74,7 @@ use function substr;
 /**
  * @internal
  */
-class TypeCombiner
+final class TypeCombiner
 {
     /**
      * Combines types together
@@ -667,6 +667,7 @@ class TypeCombiner
 
             $has_defined_keys = false;
 
+            $class_strings = $type->class_strings ?? [];
             foreach ($type->properties as $candidate_property_name => $candidate_property_type) {
                 $value_type = $combination->objectlike_entries[$candidate_property_name] ?? null;
 
@@ -706,6 +707,19 @@ class TypeCombiner
                 }
 
                 unset($missing_entries[$candidate_property_name]);
+
+                if (is_int($candidate_property_name)) {
+                    continue;
+                }
+
+                if (isset($combination->objectlike_class_string_keys[$candidate_property_name])) {
+                    $combination->objectlike_class_string_keys[$candidate_property_name] =
+                        $combination->objectlike_class_string_keys[$candidate_property_name]
+                        && ($class_strings[$candidate_property_name] ?? false);
+                } else {
+                    $combination->objectlike_class_string_keys[$candidate_property_name] =
+                        ($class_strings[$candidate_property_name] ?? false);
+                }
             }
 
             if ($type->fallback_params) {
@@ -1034,11 +1048,18 @@ class TypeCombiner
                 ) {
                     // do nothing
                 } elseif (isset($combination->value_types['string'])
+                    && $combination->value_types['string'] instanceof TNonFalsyString
+                    && $type->value
+                ) {
+                    // do nothing
+                } elseif (isset($combination->value_types['string'])
+                    && $combination->value_types['string'] instanceof TNonFalsyString
+                    && $type->value === '0'
+                ) {
+                    $combination->value_types['string'] = new TNonEmptyString();
+                } elseif (isset($combination->value_types['string'])
                     && $combination->value_types['string'] instanceof TNonEmptyString
-                    && ($combination->value_types['string'] instanceof TNonFalsyString
-                        ? $type->value
-                        : $type->value !== ''
-                    )
+                    && $type->value !== ''
                 ) {
                     // do nothing
                 } else {
@@ -1066,6 +1087,9 @@ class TypeCombiner
 
                         if ($has_only_numeric_strings) {
                             $combination->value_types['string'] = $type;
+                        } elseif (count($combination->strings) === 1 && !$has_only_non_empty_strings) {
+                            $combination->value_types['string'] = $type;
+                            return;
                         } elseif ($has_only_non_empty_strings) {
                             $combination->value_types['string'] = new TNonEmptyString();
                         } else {
@@ -1086,18 +1110,53 @@ class TypeCombiner
                         } else {
                             $combination->value_types['string'] = $type;
                         }
-                    } elseif ($type instanceof TNonEmptyString) {
+                    } elseif ($type instanceof TNonFalsyString) {
                         $has_empty_string = false;
+                        $has_falsy_string = false;
 
                         foreach ($combination->strings as $string_type) {
-                            if (!$string_type->value) {
+                            if ($string_type->value === '') {
                                 $has_empty_string = true;
+                                $has_falsy_string = true;
                                 break;
+                            }
+
+                            if ($string_type->value === '0') {
+                                $has_falsy_string = true;
                             }
                         }
 
                         if ($has_empty_string) {
                             $combination->value_types['string'] = new TString();
+                        } elseif ($has_falsy_string) {
+                            $combination->value_types['string'] = new TNonEmptyString();
+                        } else {
+                            $combination->value_types['string'] = $type;
+                        }
+                    } elseif ($type instanceof TNonEmptyString) {
+                        $has_empty_string = false;
+
+                        foreach ($combination->strings as $string_type) {
+                            if ($string_type->value === '') {
+                                $has_empty_string = true;
+                                break;
+                            }
+                        }
+
+                        $has_non_lowercase_string = false;
+                        if ($type instanceof TNonEmptyLowercaseString) {
+                            foreach ($combination->strings as $string_type) {
+                                if (strtolower($string_type->value) !== $string_type->value) {
+                                    $has_non_lowercase_string = true;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if ($has_empty_string) {
+                            $combination->value_types['string'] = new TString();
+                        } elseif ($has_non_lowercase_string && get_class($type) !== TNonEmptyString::class) {
+                            $combination->value_types['string'] = new TNonEmptyString();
                         } else {
                             $combination->value_types['string'] = $type;
                         }
@@ -1421,7 +1480,7 @@ class TypeCombiner
                 } else {
                     $objectlike = new TKeyedArray(
                         $combination->objectlike_entries,
-                        null,
+                        array_filter($combination->objectlike_class_string_keys),
                         $sealed || $fallback_key_type === null || $fallback_value_type === null
                             ? null
                             : [$fallback_key_type, $fallback_value_type],

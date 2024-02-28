@@ -21,6 +21,7 @@ use Psalm\Internal\Analyzer\Statements\Block\TryAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\WhileAnalyzer;
 use Psalm\Internal\Analyzer\Statements\BreakAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ContinueAnalyzer;
+use Psalm\Internal\Analyzer\Statements\DeclareAnalyzer;
 use Psalm\Internal\Analyzer\Statements\EchoAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
@@ -44,6 +45,8 @@ use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\ReferenceConstraint;
 use Psalm\Internal\Scanner\ParsedDocblock;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\TypeParser;
+use Psalm\Internal\Type\TypeTokenizer;
 use Psalm\Issue\CheckType;
 use Psalm\Issue\ComplexFunction;
 use Psalm\Issue\ComplexMethod;
@@ -92,7 +95,7 @@ use const STDERR;
 /**
  * @internal
  */
-class StatementsAnalyzer extends SourceAnalyzer
+final class StatementsAnalyzer extends SourceAnalyzer
 {
     protected SourceAnalyzer $source;
 
@@ -597,14 +600,7 @@ class StatementsAnalyzer extends SourceAnalyzer
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Label) {
             // do nothing
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Declare_) {
-            foreach ($stmt->declares as $declaration) {
-                if ((string) $declaration->key === 'strict_types'
-                    && $declaration->value instanceof PhpParser\Node\Scalar\LNumber
-                    && $declaration->value->value === 1
-                ) {
-                    $context->strict_types = true;
-                }
-            }
+            DeclareAnalyzer::analyze($statements_analyzer, $stmt, $context);
         } elseif ($stmt instanceof PhpParser\Node\Stmt\HaltCompiler) {
             $context->has_returned = true;
         } else {
@@ -684,7 +680,23 @@ class StatementsAnalyzer extends SourceAnalyzer
                 } else {
                     try {
                         $checked_type = $context->vars_in_scope[$checked_var_id];
-                        $check_type = Type::parseString($check_type_string);
+
+                        $path = $statements_analyzer->getRootFilePath();
+                        $file_storage = $codebase->file_storage_provider->get($path);
+
+                        $check_tokens = TypeTokenizer::getFullyQualifiedTokens(
+                            $check_type_string,
+                            $statements_analyzer->getAliases(),
+                            $statements_analyzer->getTemplateTypeMap(),
+                            $file_storage->type_aliases,
+                        );
+                        $check_type = TypeParser::parseTokens(
+                            $check_tokens,
+                            null,
+                            $statements_analyzer->getTemplateTypeMap() ?? [],
+                            $file_storage->type_aliases,
+                            true,
+                        );
                         /** @psalm-suppress InaccessibleProperty We just created this type */
                         $check_type->possibly_undefined = $possibly_undefined;
 
@@ -871,7 +883,7 @@ class StatementsAnalyzer extends SourceAnalyzer
             }
 
             if ($function_storage) {
-                $param_index = array_search(substr($var_id, 1), array_keys($function_storage->param_lookup));
+                $param_index = array_search(substr($var_id, 1), array_keys($function_storage->param_lookup), true);
                 if ($param_index !== false) {
                     $param = $function_storage->params[$param_index];
 

@@ -51,6 +51,10 @@ return [
        'old' => ['non-empty-list<string>', 'string'=>'string', 'length='=>'positive-int'],
        'new' => ['list<non-empty-string>', 'string'=>'string', 'length='=>'positive-int'],
     ],
+    'mb_get_info' => [
+        'old' => ['array|string|int|false', 'type='=>'string'],
+        'new' => ['array|string|int|false|null', 'type='=>'string'],
+    ],
   ],
 
   'removed' => [

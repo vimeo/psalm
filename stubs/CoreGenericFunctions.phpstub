@@ -1292,7 +1292,7 @@ function preg_quote(string $str, ?string $delimiter = null) : string {}
 /**
  * @psalm-pure
  *
- * @param string|int|float $values
+ * @param string|stringable-object|int|float $values
  * @return (PHP_MAJOR_VERSION is 8 ? string : string|false)
  * @psalm-ignore-falsable-return
  *
@@ -1786,3 +1786,20 @@ if (defined('GLOB_BRACE')) {
     function glob (string $pattern, int $flags = 0): array|false {}
 }
 
+/**
+ * @psalm-template TOutput of array|null
+ *
+ * @param TOutput $output
+ * @param-out (TOutput is null ? list<string> : array) $output
+ * @param-out int $result_code
+ *
+ * @psalm-taint-specialize
+ * @psalm-taint-sink shell $command
+ */
+function exec(string $command, &$output = null, int &$result_code = null): string|false {}
+
+/**
+* @return ($return_array is true ? array|false : object|false)
+* @psalm-ignore-falsable-return
+*/
+function get_browser(?string $user_agent = null, bool $return_array = false): object|array|false {}

@@ -53,7 +53,7 @@ use function usort;
 /**
  * @internal
  */
-class TemplateStandinTypeReplacer
+final class TemplateStandinTypeReplacer
 {
     /**
      * This method fills in the values in $template_result based on how the various atomic types
@@ -1254,7 +1254,6 @@ class TemplateStandinTypeReplacer
         Atomic $container_type_part,
         ?array &$container_type_params_covariant = null
     ): array {
-        $_ = null;
         if ($input_type_part instanceof TGenericObject || $input_type_part instanceof TIterable) {
             $input_type_params = $input_type_part->type_params;
         } elseif ($codebase->classlike_storage_provider->has($input_type_part->value)) {
@@ -1290,7 +1289,6 @@ class TemplateStandinTypeReplacer
             $replacement_templates = [];
 
             if ($input_template_types
-                && (!$input_type_part instanceof TGenericObject || !$input_type_part->remapped_params)
                 && (!$container_type_part instanceof TGenericObject || !$container_type_part->remapped_params)
             ) {
                 foreach ($input_template_types as $template_name => $_) {
@@ -1343,6 +1341,7 @@ class TemplateStandinTypeReplacer
                                 $old_params_offset = (int) array_search(
                                     $template->param_name,
                                     array_keys($input_class_storage->template_types),
+                                    true,
                                 );
 
                                 $candidate_param_types[] = ($input_type_params[$old_params_offset] ?? Type::getMixed())

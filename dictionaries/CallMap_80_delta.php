@@ -27,6 +27,9 @@ return [
     'ReflectionFunctionAbstract::getAttributes' => ['list<ReflectionAttribute>', 'name='=>'?string', 'flags='=>'int'],
     'ReflectionParameter::getAttributes' => ['list<ReflectionAttribute>', 'name='=>'?string', 'flags='=>'int'],
     'ReflectionProperty::getAttributes' => ['list<ReflectionAttribute>', 'name='=>'?string', 'flags='=>'int'],
+    'ReflectionProperty::getDefaultValue' => ['mixed'],
+    'ReflectionProperty::hasDefaultValue' => ['bool'],
+    'ReflectionProperty::isPromoted' => ['bool'],
     'ReflectionUnionType::getTypes' => ['list<ReflectionNamedType>'],
     'SplFixedArray::getIterator' => ['Iterator'],
     'WeakMap::count' => ['int'],
@@ -424,6 +427,10 @@ return [
       'old' => ['mixed', 'object='=>'object'],
       'new' => ['mixed', 'object='=>'null|object'],
     ],
+    'ReflectionProperty::isInitialized' => [
+      'old' => ['bool', 'object'=>'object'],
+      'new' => ['bool', 'object='=>'null|object'],
+    ],
     'SplFileInfo::getFileInfo' => [
       'old' => ['SplFileInfo', 'class='=>'class-string'],
       'new' => ['SplFileInfo', 'class='=>'?class-string'],
@@ -553,8 +560,8 @@ return [
       'new' => ['array', 'array'=>'array', '...arrays='=>'array'],
     ],
     'array_filter' => [
-      'old' => ['array', 'array'=>'array', 'callback='=>'callable(mixed,mixed=):scalar', 'mode='=>'int'],
-      'new' => ['array', 'array'=>'array', 'callback='=>'callable(mixed,mixed=):scalar|null', 'mode='=>'int'],
+      'old' => ['array', 'array'=>'array', 'callback='=>'callable(mixed,array-key=):mixed', 'mode='=>'int'],
+      'new' => ['array', 'array'=>'array', 'callback='=>'callable(mixed,array-key=):mixed|null', 'mode='=>'int'],
     ],
     'array_key_exists' => [
       'old' => ['bool', 'key'=>'string|int', 'array'=>'array|object'],
@@ -2589,8 +2596,12 @@ return [
       'new' => ['string', 'string'=>'string', 'offset'=>'int', 'length='=>'?int'],
     ],
     'substr_replace' => [
-      'old' => ['string|string[]', 'string'=>'string|string[]', 'replace'=>'string|string[]', 'offset'=>'int|int[]', 'length='=>'int|int[]'],
-      'new' => ['string|string[]', 'string'=>'string|string[]', 'replace'=>'string|string[]', 'offset'=>'int|int[]', 'length='=>'int|int[]|null'],
+      'old' => ['string', 'string'=>'string', 'replace'=>'string|string[]', 'offset'=>'int|int[]', 'length='=>'int|int[]'],
+      'new' => ['string', 'string'=>'string', 'replace'=>'string|string[]', 'offset'=>'int|int[]', 'length='=>'int|int[]|null'],
+    ],
+    'substr_replace\'1' => [
+      'old' => ['string[]', 'string'=>'string[]', 'replace'=>'string|string[]', 'offset'=>'int|int[]', 'length='=>'int|int[]'],
+      'new' => ['string[]', 'string'=>'string[]', 'replace'=>'string|string[]', 'offset'=>'int|int[]', 'length='=>'int|int[]|null'],
     ],
     'tidy_parse_file' => [
       'old' => ['tidy', 'filename'=>'string', 'config='=>'array|string', 'encoding='=>'string', 'useIncludePath='=>'bool'],

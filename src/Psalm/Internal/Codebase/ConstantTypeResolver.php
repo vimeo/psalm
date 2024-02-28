@@ -53,7 +53,7 @@ use function spl_object_id;
 /**
  * @internal
  */
-class ConstantTypeResolver
+final class ConstantTypeResolver
 {
     public static function resolve(
         ClassLikes $classlikes,
@@ -216,8 +216,8 @@ class ConstantTypeResolver
                         return new TArray([Type::getArrayKey(), Type::getMixed()]);
                     }
 
-                    foreach ($spread_array->properties as $spread_array_type) {
-                        $properties[$auto_key++] = $spread_array_type;
+                    foreach ($spread_array->properties as $k => $spread_array_type) {
+                        $properties[is_string($k) ? $k : $auto_key++] = $spread_array_type;
                     }
                     continue;
                 }
@@ -344,6 +344,13 @@ class ConstantTypeResolver
                             return Type::getString($value)->getSingleAtomic();
                         } elseif (is_int($value)) {
                             return Type::getInt(false, $value)->getSingleAtomic();
+                        } elseif ($value instanceof UnresolvedConstantComponent) {
+                            return self::resolve(
+                                $classlikes,
+                                $value,
+                                $statements_analyzer,
+                                $visited_constant_ids + [$c_id => true],
+                            );
                         }
                     } elseif ($c instanceof EnumNameFetch) {
                         return Type::getString($c->case)->getSingleAtomic();

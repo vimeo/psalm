@@ -61,6 +61,7 @@ class ReconcilerTest extends TestCase
             class B {}
             interface SomeInterface {}
         ');
+        $this->project_analyzer->getCodebase()->queueClassLikeForScanning('Countable');
         $this->project_analyzer->getCodebase()->scanFiles();
     }
 

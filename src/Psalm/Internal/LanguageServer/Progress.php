@@ -9,7 +9,7 @@ use function str_replace;
 /**
  * @internal
  */
-class Progress extends Base
+final class Progress extends Base
 {
 
     private ?LanguageServer $server = null;

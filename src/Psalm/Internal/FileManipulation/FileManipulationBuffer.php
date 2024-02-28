@@ -19,7 +19,7 @@ use function substr_replace;
 /**
  * @internal
  */
-class FileManipulationBuffer
+final class FileManipulationBuffer
 {
     /** @var array<string, FileManipulation[]> */
     private static array $file_manipulations = [];

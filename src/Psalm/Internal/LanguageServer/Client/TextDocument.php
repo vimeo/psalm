@@ -13,7 +13,7 @@ use Psalm\Internal\LanguageServer\LanguageServer;
  *
  * @internal
  */
-class TextDocument
+final class TextDocument
 {
     private ClientHandler $handler;
 

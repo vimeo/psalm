@@ -10,6 +10,7 @@ use Psalm\Exception\CircularReferenceException;
 use Psalm\FileSource;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\ArithmeticOpAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Type\TypeCombiner;
@@ -45,7 +46,7 @@ use const PHP_INT_MAX;
  *
  * @internal
  */
-class SimpleTypeInferer
+final class SimpleTypeInferer
 {
     /**
      * @param   ?array<string, ClassConstantStorage> $existing_class_constants
@@ -143,6 +144,17 @@ class SimpleTypeInferer
                 $fq_classlike_name,
             );
 
+            if (!$stmt_left_type
+                && $file_source instanceof StatementsAnalyzer
+                && $stmt->left instanceof PhpParser\Node\Expr\ConstFetch) {
+                $stmt_left_type = ConstFetchAnalyzer::getConstType(
+                    $file_source,
+                    $stmt->left->name->toString(),
+                    true,
+                    null,
+                );
+            }
+
             $stmt_right_type = self::infer(
                 $codebase,
                 $nodes,
@@ -152,6 +164,17 @@ class SimpleTypeInferer
                 $existing_class_constants,
                 $fq_classlike_name,
             );
+
+            if (!$stmt_right_type
+                && $file_source instanceof StatementsAnalyzer
+                && $stmt->right instanceof PhpParser\Node\Expr\ConstFetch) {
+                $stmt_right_type = ConstFetchAnalyzer::getConstType(
+                    $file_source,
+                    $stmt->right->name->toString(),
+                    true,
+                    null,
+                );
+            }
 
             if (!$stmt_left_type || !$stmt_right_type) {
                 return null;
@@ -260,21 +283,26 @@ class SimpleTypeInferer
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\ConstFetch) {
-            $name = strtolower($stmt->name->getFirst());
-            if ($name === 'false') {
+            $name = $stmt->name->getFirst();
+            $name_lowercase = strtolower($name);
+            if ($name_lowercase === 'false') {
                 return Type::getFalse();
             }
 
-            if ($name === 'true') {
+            if ($name_lowercase === 'true') {
                 return Type::getTrue();
             }
 
-            if ($name === 'null') {
+            if ($name_lowercase === 'null') {
                 return Type::getNull();
             }
 
-            if ($stmt->name->getFirst() === '__NAMESPACE__') {
+            if ($name === '__NAMESPACE__') {
                 return Type::getString($aliases->namespace);
+            }
+
+            if ($type = ConstFetchAnalyzer::getGlobalConstType($codebase, $name, $name)) {
+                return $type;
             }
 
             return null;
@@ -338,14 +366,15 @@ class SimpleTypeInferer
                 }
 
                 if ($existing_class_constants === null
-                    && $file_source instanceof StatementsAnalyzer
+                    || $existing_class_constants === []
+                    && $file_source !== null
                 ) {
                     try {
                         $foreign_class_constant = $codebase->classlikes->getClassConstantType(
                             $const_fq_class_name,
                             $stmt->name->name,
                             ReflectionProperty::IS_PRIVATE,
-                            $file_source,
+                            $file_source instanceof StatementsAnalyzer ? $file_source : null,
                         );
 
                         if ($foreign_class_constant) {

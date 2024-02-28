@@ -8,7 +8,6 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
-use function array_merge;
 use function count;
 use function implode;
 use function strrpos;
@@ -112,7 +111,7 @@ final class TGenericObject extends TNamedObject
         }
 
         foreach ($this->type_params as $i => $type_param) {
-            if (!$type_param->equals($other_type->type_params[$i], $ensure_source_equality)) {
+            if (!$type_param->equals($other_type->type_params[$i], $ensure_source_equality, false)) {
                 return false;
             }
         }
@@ -127,7 +126,7 @@ final class TGenericObject extends TNamedObject
 
     protected function getChildNodeKeys(): array
     {
-        return array_merge(parent::getChildNodeKeys(), ['type_params']);
+        return [...parent::getChildNodeKeys(), 'type_params'];
     }
 
     /**

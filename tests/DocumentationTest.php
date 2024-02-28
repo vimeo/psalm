@@ -221,6 +221,8 @@ class DocumentationTest extends TestCase
         $this->project_analyzer->getConfig()->ensure_array_string_offsets_exist = $is_array_offset_test;
         $this->project_analyzer->getConfig()->ensure_array_int_offsets_exist = $is_array_offset_test;
 
+        $this->project_analyzer->getConfig()->ensure_override_attribute = $error_message === 'MissingOverrideAttribute';
+
         foreach ($ignored_issues as $error_level) {
             $this->project_analyzer->getCodebase()->config->setCustomErrorLevel($error_level, Config::REPORT_SUPPRESS);
         }
@@ -311,6 +313,11 @@ class DocumentationTest extends TestCase
                 case 'InvalidInterfaceImplementation':
                     $php_version = '8.1';
                     break;
+
+                case 'InvalidOverride':
+                case 'MissingOverrideAttribute':
+                    $php_version = '8.3';
+                    break;
             }
 
             $invalid_code_data[$issue_name] = [
@@ -342,7 +349,7 @@ class DocumentationTest extends TestCase
 
         $duplicate_shortcodes = array_filter(
             $all_shortcodes,
-            fn($issues): bool => count($issues) > 1
+            static fn($issues): bool => count($issues) > 1
         );
 
         $this->assertEquals(

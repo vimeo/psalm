@@ -20,6 +20,7 @@ use Psalm\Issue\UnresolvableInclude;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type\TaintKind;
+use Symfony\Component\Filesystem\Path;
 
 use function constant;
 use function defined;
@@ -47,7 +48,7 @@ use const PHP_EOL;
 /**
  * @internal
  */
-class IncludeAnalyzer
+final class IncludeAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
@@ -93,13 +94,7 @@ class IncludeAnalyzer
             $include_path = self::resolveIncludePath($path_to_file, dirname($statements_analyzer->getFilePath()));
             $path_to_file = $include_path ?: $path_to_file;
 
-            if (DIRECTORY_SEPARATOR === '/') {
-                $is_path_relative = $path_to_file[0] !== DIRECTORY_SEPARATOR;
-            } else {
-                $is_path_relative = !preg_match('~^[A-Z]:\\\\~i', $path_to_file);
-            }
-
-            if ($is_path_relative) {
+            if (Path::isRelative($path_to_file)) {
                 $path_to_file = $config->base_dir . DIRECTORY_SEPARATOR . $path_to_file;
             }
         } else {
@@ -285,13 +280,7 @@ class IncludeAnalyzer
         string $file_name,
         Config $config
     ): ?string {
-        if (DIRECTORY_SEPARATOR === '/') {
-            $is_path_relative = $file_name[0] !== DIRECTORY_SEPARATOR;
-        } else {
-            $is_path_relative = !preg_match('~^[A-Z]:\\\\~i', $file_name);
-        }
-
-        if ($is_path_relative) {
+        if (Path::isRelative($file_name)) {
             $file_name = $config->base_dir . DIRECTORY_SEPARATOR . $file_name;
         }
 

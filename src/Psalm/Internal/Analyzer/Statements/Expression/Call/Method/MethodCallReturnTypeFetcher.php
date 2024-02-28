@@ -41,7 +41,7 @@ use function strtolower;
 /**
  * @internal
  */
-class MethodCallReturnTypeFetcher
+final class MethodCallReturnTypeFetcher
 {
     /**
      * @param  TNamedObject|TTemplateParam|null  $static_type
@@ -183,6 +183,7 @@ class MethodCallReturnTypeFetcher
                 $self_fq_class_name,
                 $statements_analyzer,
                 $args,
+                $template_result,
             );
 
             if ($return_type_candidate) {
@@ -449,7 +450,7 @@ class MethodCallReturnTypeFetcher
                 $stmt_var_type = $context->vars_in_scope[$var_id]->setParentNodes(
                     $var_nodes,
                 );
-                
+
                 $context->vars_in_scope[$var_id] = $stmt_var_type;
             } else {
                 $method_call_node = DataFlowNode::getForMethodReturn(

@@ -32,6 +32,7 @@ use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Scanner\ClassLikeDocblockComment;
 use Psalm\Internal\Scanner\FileScanner;
+use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Internal\Type\TypeAlias;
 use Psalm\Internal\Type\TypeAlias\ClassTypeAlias;
 use Psalm\Internal\Type\TypeAlias\InlineTypeAlias;
@@ -65,7 +66,6 @@ use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
-use RuntimeException;
 use UnexpectedValueException;
 
 use function array_merge;
@@ -78,10 +78,10 @@ use function get_class;
 use function implode;
 use function is_int;
 use function is_string;
+use function ltrim;
 use function preg_match;
 use function preg_replace;
 use function preg_split;
-use function str_replace;
 use function strtolower;
 use function trim;
 use function usort;
@@ -92,7 +92,7 @@ use const PREG_SPLIT_NO_EMPTY;
 /**
  * @internal
  */
-class ClassLikeNodeScanner
+final class ClassLikeNodeScanner
 {
     private FileScanner $file_scanner;
 
@@ -175,6 +175,15 @@ class ClassLikeNodeScanner
 
             if ($this->codebase->classlike_storage_provider->has($fq_classlike_name_lc)) {
                 $duplicate_storage = $this->codebase->classlike_storage_provider->get($fq_classlike_name_lc);
+
+                // don't override data from files that are getting analyzed with data from stubs
+                // if the stubs contain the same class
+                if (!$duplicate_storage->stubbed
+                    && $this->codebase->register_stub_files
+                    && $duplicate_storage->stmt_location
+                    && $this->config->isInProjectDirs($duplicate_storage->stmt_location->file_path)) {
+                    return false;
+                }
 
                 if (!$this->codebase->register_stub_files) {
                     if (!$duplicate_storage->stmt_location
@@ -744,6 +753,9 @@ class ClassLikeNodeScanner
                         $values_types[] = Type::getAtomicStringFromLiteral($enumCaseStorage->value);
                     } elseif (is_int($enumCaseStorage->value)) {
                         $values_types[] = new Type\Atomic\TLiteralInt($enumCaseStorage->value);
+                    } elseif ($enumCaseStorage->value instanceof UnresolvedConstantComponent) {
+                        // backed enum with a type yet unknown
+                        $values_types[] = new Type\Atomic\TMixed;
                     }
                 }
             }
@@ -1454,7 +1466,12 @@ class ClassLikeNodeScanner
                     );
                 }
             } else {
-                throw new RuntimeException('Failed to infer case value for ' . $stmt->name->name);
+                $enum_value = ExpressionResolver::getUnresolvedClassConstExpr(
+                    $stmt->expr,
+                    $this->aliases,
+                    $fq_classlike_name,
+                    $storage->parent_class,
+                );
             }
         }
 
@@ -1904,10 +1921,6 @@ class ClassLikeNodeScanner
                 continue;
             }
 
-            $var_line = preg_replace('/[ \t]+/', ' ', preg_replace('@^[ \t]*\*@m', '', $var_line));
-            $var_line = preg_replace('/,\n\s+\}/', '}', $var_line);
-            $var_line = str_replace("\n", '', $var_line);
-
             $var_line_parts = preg_split('/( |=)/', $var_line, -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY);
 
             if (!$var_line_parts) {
@@ -1920,7 +1933,7 @@ class ClassLikeNodeScanner
                 continue;
             }
 
-            if ($var_line_parts[0] === ' ') {
+            while (isset($var_line_parts[0]) && $var_line_parts[0] === ' ') {
                 array_shift($var_line_parts);
             }
 
@@ -1936,11 +1949,12 @@ class ClassLikeNodeScanner
                 continue;
             }
 
-            if ($var_line_parts[0] === ' ') {
+            while (isset($var_line_parts[0]) && $var_line_parts[0] === ' ') {
                 array_shift($var_line_parts);
             }
 
-            $type_string = str_replace("\n", '', implode('', $var_line_parts));
+            $type_string = implode('', $var_line_parts);
+            $type_string = ltrim($type_string, "* \n\r");
             try {
                 $type_string = CommentAnalyzer::splitDocLine($type_string)[0];
             } catch (DocblockParseException $e) {

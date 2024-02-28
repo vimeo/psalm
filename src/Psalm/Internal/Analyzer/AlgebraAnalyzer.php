@@ -20,7 +20,7 @@ use function implode;
 /**
  * @internal
  */
-class AlgebraAnalyzer
+final class AlgebraAnalyzer
 {
     /**
      * This looks to see if there are any clauses in one formula that contradict

@@ -14,6 +14,68 @@ class FunctionTemplateTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'extractTypeParameterValue' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     */
+                    interface Type {}
+
+                    /**
+                     * @implements Type<int>
+                     */
+                    final readonly class IntType implements Type {}
+
+                    /**
+                     * @template T
+                     * @implements Type<list<T>>
+                     */
+                    final readonly class ListType implements Type
+                    {
+                        /**
+                         * @param Type<T> $type
+                         */
+                        public function __construct(
+                            public Type $type,
+                        ) {
+                        }
+                    }
+
+                    /**
+                     * @template T
+                     * @param Type<T> $type
+                     * @return T
+                     */
+                    function extractType(Type $type): mixed
+                    {
+                        throw new \RuntimeException("Should never be called at runtime");
+                    }
+
+                    /**
+                     * @template T
+                     * @param Type<T> $t
+                     * @return ListType<T>
+                     */
+                    function listType(Type $t): ListType
+                    {
+                        return new ListType($t);
+                    }
+
+                    function intType(): IntType
+                    {
+                        return new IntType();
+                    }
+
+                    $listType = listType(intType());
+                    $list = extractType($listType);
+                ',
+                'assertions' => [
+                    '$listType===' => 'ListType<int>',
+                    '$list' => 'list<int>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
             'validTemplatedType' => [
                 'code' => '<?php
                     namespace FooFoo;
@@ -727,6 +789,29 @@ class FunctionTemplateTest extends TestCase
                 'code' => '<?php
                     /**
                      * @template I
+                     * @param I $foo
+                     */
+                    function bar($foo): void {
+                        if (is_string($foo)) {}
+                        if (!is_string($foo)) {}
+                        if (is_int($foo)) {}
+                        if (!is_int($foo)) {}
+                        if (is_numeric($foo)) {}
+                        if (!is_numeric($foo)) {}
+                        if (is_scalar($foo)) {}
+                        if (!is_scalar($foo)) {}
+                        if (is_bool($foo)) {}
+                        if (!is_bool($foo)) {}
+                        if (is_object($foo)) {}
+                        if (!is_object($foo)) {}
+                        if (is_callable($foo)) {}
+                        if (!is_callable($foo)) {}
+                    }',
+            ],
+            'assertOnUnionTemplatedValue' => [
+                'code' => '<?php
+                    /**
+                     * @template I of bool|string|int|stdClass
                      * @param I $foo
                      */
                     function bar($foo): void {
@@ -1673,6 +1758,29 @@ class FunctionTemplateTest extends TestCase
                         return $t;
                     }',
             ],
+            'typeWithNestedTemplates' => [
+                'code' => '<?php
+                    /**
+                     * @template T of object
+                     */
+                    interface AType {}
+
+                    /**
+                     * @template T of object
+                     * @template B of AType<T>
+                     */
+                    final class BType {}
+
+                    /**
+                     * @param BType<object, AType<object>> $_value
+                     */
+                    function test1(BType $_value): void {}
+
+                    /**
+                     * @param BType<stdClass, AType<stdClass>> $_value
+                     */
+                    function test2(BType $_value): void {}',
+            ],
         ];
     }
 
@@ -2267,6 +2375,30 @@ class FunctionTemplateTest extends TestCase
                         }
                     }',
                 'error_message' => 'InvalidArgument',
+            ],
+            'catchInvalidTemplateTypeWithNestedTemplates' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     */
+                    interface AType {}
+
+                    /**
+                     * @template T
+                     * @template B of AType<T>
+                     */
+                    final class BType {}
+
+                    /**
+                     * @param BType<string, AType<int>> $_value
+                     */
+                    function test1(BType $_value): void {}
+
+                    /**
+                     * @param BType<int, AType<string>> $_value
+                     */
+                    function test2(BType $_value): void {}',
+                'error_message' => 'InvalidTemplateParam',
             ],
         ];
     }

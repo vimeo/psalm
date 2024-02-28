@@ -17,7 +17,7 @@ use function count;
 /**
  * @internal
  */
-class TypeLocalizer extends MutableTypeVisitor
+final class TypeLocalizer extends MutableTypeVisitor
 {
     /**
      * @var array<string, array<string, Union>>

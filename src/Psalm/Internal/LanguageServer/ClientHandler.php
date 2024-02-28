@@ -17,7 +17,7 @@ use function Amp\call;
 /**
  * @internal
  */
-class ClientHandler
+final class ClientHandler
 {
     public ProtocolReader $protocolReader;
 

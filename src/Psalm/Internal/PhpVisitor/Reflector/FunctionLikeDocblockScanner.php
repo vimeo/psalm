@@ -50,6 +50,9 @@ use Psalm\Type\Union;
 
 use function array_filter;
 use function array_merge;
+use function array_search;
+use function array_splice;
+use function array_unique;
 use function array_values;
 use function count;
 use function explode;
@@ -69,7 +72,7 @@ use function trim;
 /**
  * @internal
  */
-class FunctionLikeDocblockScanner
+final class FunctionLikeDocblockScanner
 {
     /**
      * @param array<string, non-empty-array<string, Union>> $existing_function_template_types
@@ -352,16 +355,20 @@ class FunctionLikeDocblockScanner
             }
         }
 
-        foreach ($docblock_info->taint_source_types as $taint_source_type) {
-            if ($taint_source_type === 'input') {
-                $storage->taint_source_types = array_merge(
-                    $storage->taint_source_types,
-                    TaintKindGroup::ALL_INPUT,
-                );
-            } else {
-                $storage->taint_source_types[] = $taint_source_type;
-            }
+        $docblock_info->taint_source_types = array_values(array_unique($docblock_info->taint_source_types));
+        // expand 'input' group to all items, e.g. `['other', 'input']` -> `['other', 'html', 'sql', 'shell', ...]`
+        $inputIndex = array_search(TaintKindGroup::GROUP_INPUT, $docblock_info->taint_source_types, true);
+        if ($inputIndex !== false) {
+            array_splice(
+                $docblock_info->taint_source_types,
+                $inputIndex,
+                1,
+                TaintKindGroup::ALL_INPUT,
+            );
         }
+        // merge taints from doc block to storage, enforce uniqueness and having consecutive index keys
+        $storage->taint_source_types = array_merge($storage->taint_source_types, $docblock_info->taint_source_types);
+        $storage->taint_source_types = array_values(array_unique($storage->taint_source_types));
 
         $storage->added_taints = $docblock_info->added_taints;
 
@@ -624,7 +631,7 @@ class FunctionLikeDocblockScanner
             );
         } catch (TypeParseTreeException $e) {
             $storage->docblock_issues[] = new InvalidDocblock(
-                'Invalid @psalm-assert union type ' . $e,
+                'Invalid @psalm-assert union type: ' . $e->getMessage(),
                 new CodeLocation($file_scanner, $stmt, null, true),
             );
 

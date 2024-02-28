@@ -13,7 +13,6 @@ use Psalm\Issue\PossiblyUndefinedVariable;
 use Psalm\Issue\UndefinedVariable;
 use Psalm\IssueBuffer;
 use Psalm\Type;
-use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 
@@ -27,7 +26,7 @@ use function strtolower;
  * @internal
  * @extends FunctionLikeAnalyzer<PhpParser\Node\Expr\Closure|PhpParser\Node\Expr\ArrowFunction>
  */
-class ClosureAnalyzer extends FunctionLikeAnalyzer
+final class ClosureAnalyzer extends FunctionLikeAnalyzer
 {
     /**
      * @param PhpParser\Node\Expr\Closure|PhpParser\Node\Expr\ArrowFunction $function
@@ -133,12 +132,6 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
 
                 $use_var_id = '$' . $use->var->name;
 
-                // insert the ref into the current context if passed by ref, as whatever we're passing
-                // the closure to could execute it straight away.
-                if ($use->byRef && !$context->hasVariable($use_var_id)) {
-                    $context->vars_in_scope[$use_var_id] = new Union([new TMixed()], ['by_ref' => true]);
-                }
-
                 if ($statements_analyzer->data_flow_graph instanceof VariableUseGraph
                     && $context->hasVariable($use_var_id)
                 ) {
@@ -154,7 +147,7 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
                 }
 
                 $use_context->vars_in_scope[$use_var_id] =
-                    $context->hasVariable($use_var_id) && !$use->byRef
+                    $context->hasVariable($use_var_id)
                     ? $context->vars_in_scope[$use_var_id]
                     : Type::getMixed();
 
@@ -205,7 +198,12 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
         $use_context->calling_method_id = $context->calling_method_id;
         $use_context->phantom_classes = $context->phantom_classes;
 
-        $closure_analyzer->analyze($use_context, $statements_analyzer->node_data, $context, false);
+        $byref_vars = [];
+        $closure_analyzer->analyze($use_context, $statements_analyzer->node_data, $context, false, $byref_vars);
+
+        foreach ($byref_vars as $key => $value) {
+            $context->vars_in_scope[$key] = $value;
+        }
 
         if ($closure_analyzer->inferred_impure
             && $statements_analyzer->getSource() instanceof FunctionLikeAnalyzer
@@ -229,7 +227,7 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
     /**
      * @return  false|null
      */
-    public static function analyzeClosureUses(
+    private static function analyzeClosureUses(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\Closure $stmt,
         Context $context
@@ -266,21 +264,6 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
             if (!$context->hasVariable($use_var_id)) {
                 if ($use_var_id === '$argv' || $use_var_id === '$argc') {
                     continue;
-                }
-
-                if ($use->byRef) {
-                    $context->vars_in_scope[$use_var_id] = Type::getMixed();
-                    $context->vars_possibly_in_scope[$use_var_id] = true;
-
-                    if (!$statements_analyzer->hasVariable($use_var_id)) {
-                        $statements_analyzer->registerVariable(
-                            $use_var_id,
-                            new CodeLocation($statements_analyzer, $use->var),
-                            null,
-                        );
-                    }
-
-                    return null;
                 }
 
                 if (!isset($context->vars_possibly_in_scope[$use_var_id])) {
@@ -329,14 +312,6 @@ class ClosureAnalyzer extends FunctionLikeAnalyzer
 
                     continue;
                 }
-            } elseif ($use->byRef) {
-                $new_type = new Union([new TMixed()], [
-                    'parent_nodes' => $context->vars_in_scope[$use_var_id]->parent_nodes,
-                ]);
-
-                $context->remove($use_var_id);
-
-                $context->vars_in_scope[$use_var_id] = $new_type;
             }
         }
 
