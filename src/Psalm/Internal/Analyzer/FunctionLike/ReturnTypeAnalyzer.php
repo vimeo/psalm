@@ -31,6 +31,7 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\ImplicitToStringCast;
+use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidFalsableReturnType;
 use Psalm\Issue\InvalidNullableReturnType;
 use Psalm\Issue\InvalidParent;
@@ -827,6 +828,28 @@ final class ReturnTypeAnalyzer
         if ($context->self) {
             $classlike_storage = $codebase->classlike_storage_provider->get($context->self);
             $parent_class = $classlike_storage->parent_class;
+        }
+
+        if ($storage->return_type->isVoid() || $storage->return_type->isNever()) {
+            $incompatible_annotation_text = false;
+            if ($storage->require_usage) {
+                $incompatible_annotation_text = '@psalm-require-usage';
+            } elseif ($storage->pure) {
+                $incompatible_annotation_text = '@psalm-pure';
+            } elseif ($storage->removed_taints || $storage->conditionally_removed_taints) {
+                $incompatible_annotation_text = '@psalm-taint-escape';
+            }
+
+            if ($incompatible_annotation_text !== false) {
+                $return_type_text = $storage->return_type->isVoid() ? 'void' : 'never';
+                IssueBuffer::maybeAdd(
+                    new InvalidDocblock(
+                        'Return type "' . $return_type_text . '" is incompatible with '
+                        . $incompatible_annotation_text,
+                        $storage->return_type_location,
+                    ),
+                );
+            }
         }
 
         if (!$storage->signature_return_type || $storage->signature_return_type === $storage->return_type) {
