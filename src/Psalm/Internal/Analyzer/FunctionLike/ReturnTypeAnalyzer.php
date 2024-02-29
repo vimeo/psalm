@@ -834,7 +834,7 @@ final class ReturnTypeAnalyzer
             $incompatible_annotation_text = false;
             if ($storage->require_usage) {
                 $incompatible_annotation_text = '@psalm-require-usage';
-            } elseif ($storage->pure && !$storage->return_type->isNever()) {
+            } elseif ($storage->pure && !$storage->assertions && !$storage->return_type->isNever()) {
                 // currently not for "never", since exit is pure atm
                 // see https://github.com/vimeo/psalm/issues/10762
                 $incompatible_annotation_text = '@psalm-pure';
