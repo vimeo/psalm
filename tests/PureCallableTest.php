@@ -109,7 +109,9 @@ class PureCallableTest extends TestCase
                         /**
                          * @psalm-pure
                          */
-                        public function __invoke(): void {}
+                        public function __invoke(): int {
+                            return 20;
+                        }
                     }
 
                     /**

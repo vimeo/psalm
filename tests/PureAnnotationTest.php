@@ -185,6 +185,8 @@ class PureAnnotationTest extends TestCase
                         exit;
                     }
                 ',
+                'assertions' => [],
+                'ignored_issues' => ['InvalidDocblock'],
             ],
             'exitFunctionWithIntegerArgumentIsPure' => [
                 'code' => '<?php
@@ -193,6 +195,8 @@ class PureAnnotationTest extends TestCase
                         exit(0);
                     }
                 ',
+                'assertions' => [],
+                'ignored_issues' => ['InvalidDocblock'],
             ],
             'dieFunctionWithNoArgumentIsPure' => [
                 'code' => '<?php
@@ -201,6 +205,8 @@ class PureAnnotationTest extends TestCase
                         die;
                     }
                 ',
+                'assertions' => [],
+                'ignored_issues' => ['InvalidDocblock'],
             ],
             'dieFunctionWithIntegerArgumentIsPure' => [
                 'code' => '<?php
@@ -209,6 +215,8 @@ class PureAnnotationTest extends TestCase
                         die(0);
                     }
                 ',
+                'assertions' => [],
+                'ignored_issues' => ['InvalidDocblock'],
             ],
             'allowPureToString' => [
                 'code' => '<?php
