@@ -325,14 +325,30 @@ final class FunctionLikeDocblockParser
         if (isset($parsed_docblock->tags['psalm-taint-unescape'])) {
             foreach ($parsed_docblock->tags['psalm-taint-unescape'] as $param) {
                 $param = trim($param);
-                $info->added_taints[] = $param;
+                if ($param === '') {
+                    IssueBuffer::maybeAdd(
+                        new InvalidDocblock(
+                            '@psalm-taint-unescape expects 1 argument',
+                            $code_location,
+                        ),
+                    );
+                } else {
+                    $info->added_taints[] = $param;
+                }
             }
         }
 
         if (isset($parsed_docblock->tags['psalm-taint-escape'])) {
             foreach ($parsed_docblock->tags['psalm-taint-escape'] as $param) {
                 $param = trim($param);
-                if ($param[0] === '(') {
+                if ($param === '') {
+                    IssueBuffer::maybeAdd(
+                        new InvalidDocblock(
+                            '@psalm-taint-escape expects 1 argument',
+                            $code_location,
+                        ),
+                    );
+                } elseif ($param[0] === '(') {
                     $line_parts = CommentAnalyzer::splitDocLine($param);
 
                     $info->removed_taints[] = CommentAnalyzer::sanitizeDocblockType($line_parts[0]);
