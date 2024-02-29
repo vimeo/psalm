@@ -68,7 +68,9 @@ class PureCallableTest extends TestCase
                     /**
                      * @psalm-pure
                      */
-                    function asd(): void {}
+                    function asd(): int {
+                        return 15;
+                    }
                     class B {}
 
                     /**
@@ -83,7 +85,9 @@ class PureCallableTest extends TestCase
                     /**
                      * @psalm-pure
                      */
-                    function asd(): void {}
+                    function asd(): int {
+                        return 15;
+                    }
                     class A {public function __invoke(): void {} }
 
                     /**
@@ -98,7 +102,9 @@ class PureCallableTest extends TestCase
                     /**
                      * @psalm-pure
                      */
-                    function asd(): void {}
+                    function asd(): int {
+                        return 15;
+                    }
                     class A {
                         /**
                          * @psalm-pure
