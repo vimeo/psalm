@@ -117,8 +117,11 @@ final class MethodCallPurityAnalyzer
                     && !$method_storage->assertions
                     && (!$method_storage->throws
                         || !$context->inside_try)
-                    && !($method_storage->return_type
-                          && ($method_storage->return_type->isVoid() || $method_storage->return_type->isNever()))
+                    && (($stmt->var instanceof PhpParser\Node\Expr\New_
+                         && $stmt->var->getAttribute('external_mutation_free') === true)
+                         || !($method_storage->return_type
+                            && ($method_storage->return_type->isVoid() || $method_storage->return_type->isNever()))
+                    )
                 ) {
                     IssueBuffer::maybeAdd(
                         new UnusedMethodCall(
