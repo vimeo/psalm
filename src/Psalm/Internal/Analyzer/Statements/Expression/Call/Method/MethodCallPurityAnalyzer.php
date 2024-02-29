@@ -95,6 +95,7 @@ final class MethodCallPurityAnalyzer
                 if ($context->inside_conditional
                     && !$method_storage->assertions
                     && !$method_storage->if_true_assertions
+                    && !$method_storage->if_false_assertions
                 ) {
                     $stmt->setAttribute('memoizable', true);
 
