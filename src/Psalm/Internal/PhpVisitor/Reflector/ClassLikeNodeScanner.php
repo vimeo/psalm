@@ -494,7 +494,7 @@ final class ClassLikeNodeScanner
                         $this->type_aliases,
                         true,
                     );
-                    /** @psalm-suppress UnusedMethodCall */
+
                     $yield_type->queueClassLikesForScanning(
                         $this->codebase,
                         $this->file_storage,
@@ -580,7 +580,7 @@ final class ClassLikeNodeScanner
                             $this->type_aliases,
                             true,
                         );
-                        /** @psalm-suppress UnusedMethodCall */
+
                         $pseudo_property_type->queueClassLikesForScanning(
                             $this->codebase,
                             $this->file_storage,
@@ -679,7 +679,6 @@ final class ClassLikeNodeScanner
                     true,
                 );
 
-                /** @psalm-suppress UnusedMethodCall */
                 $mixin_type->queueClassLikesForScanning(
                     $this->codebase,
                     $this->file_storage,
@@ -834,7 +833,6 @@ final class ClassLikeNodeScanner
             foreach ($mapped_properties as $property_name => $public_mapped_property) {
                 $property_type = Type::parseString($public_mapped_property);
 
-                /** @psalm-suppress UnusedMethodCall */
                 $property_type->queueClassLikesForScanning($this->codebase, $this->file_storage);
 
                 if (!isset($classlike_storage->properties[$property_name])) {
@@ -1005,7 +1003,6 @@ final class ClassLikeNodeScanner
             );
         }
 
-        /** @psalm-suppress UnusedMethodCall */
         $extended_union_type->queueClassLikesForScanning(
             $this->codebase,
             $this->file_storage,
@@ -1091,7 +1088,6 @@ final class ClassLikeNodeScanner
             return;
         }
 
-        /** @psalm-suppress UnusedMethodCall */
         $implemented_union_type->queueClassLikesForScanning(
             $this->codebase,
             $this->file_storage,
@@ -1177,7 +1173,6 @@ final class ClassLikeNodeScanner
             return;
         }
 
-        /** @psalm-suppress UnusedMethodCall */
         $used_union_type->queueClassLikesForScanning(
             $this->codebase,
             $this->file_storage,
@@ -1642,7 +1637,6 @@ final class ClassLikeNodeScanner
         $doc_var_group_type = $var_comment->type ?? null;
 
         if ($doc_var_group_type) {
-            /** @psalm-suppress UnusedMethodCall */
             $doc_var_group_type->queueClassLikesForScanning($this->codebase, $this->file_storage);
         }
 
@@ -1755,7 +1749,6 @@ final class ClassLikeNodeScanner
                     }
                 }
 
-                /** @psalm-suppress UnusedMethodCall */
                 $property_storage->type->queueClassLikesForScanning($this->codebase, $this->file_storage);
             }
 

@@ -1625,6 +1625,7 @@ final class UnusedCodeTest extends TestCase
                         (new A("hello"))->setFoo("goodbye");
                     }',
                 'error_message' => 'UnusedMethodCall',
+                'ignored_issues' => ['UnusedProperty'],
             ],
             'unusedMethodCallForGeneratingMethod' => [
                 'code' => '<?php
