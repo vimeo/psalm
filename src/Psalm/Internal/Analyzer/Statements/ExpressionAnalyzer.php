@@ -44,6 +44,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\YieldFromAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Issue\RiskyTruthyFalsyComparison;
 use Psalm\Issue\UnrecognizedExpression;
 use Psalm\Issue\UnsupportedReferenceUsage;
 use Psalm\IssueBuffer;
@@ -54,7 +55,9 @@ use Psalm\Node\VirtualName;
 use Psalm\Plugin\EventHandler\Event\AfterExpressionAnalysisEvent;
 use Psalm\Plugin\EventHandler\Event\BeforeExpressionAnalysisEvent;
 use Psalm\Type;
+use Psalm\Type\Atomic\TBool;
 
+use function count;
 use function get_class;
 use function in_array;
 use function strtolower;
@@ -133,6 +136,40 @@ final class ExpressionAnalyzer
         }
 
         return true;
+    }
+
+    public static function checkRiskyTruthyFalsyComparison(
+        Type\Union $type,
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $stmt
+    ): void {
+        if (count($type->getAtomicTypes()) > 1) {
+            $has_truthy_or_falsy_exclusive_type = false;
+            $both_types = $type->getBuilder();
+            foreach ($both_types->getAtomicTypes() as $key => $atomic_type) {
+                if ($atomic_type->isTruthy()
+                    || $atomic_type->isFalsy()
+                    || $atomic_type instanceof TBool) {
+                    $both_types->removeType($key);
+                    $has_truthy_or_falsy_exclusive_type = true;
+                }
+            }
+
+            if (count($both_types->getAtomicTypes()) > 0 && $has_truthy_or_falsy_exclusive_type) {
+                $both_types = $both_types->freeze();
+                IssueBuffer::maybeAdd(
+                    new RiskyTruthyFalsyComparison(
+                        'Operand of type ' . $type->getId() . ' contains ' .
+                        'type' . (count($both_types->getAtomicTypes()) > 1 ? 's' : '') . ' ' .
+                        $both_types->getId() . ', which can be falsy and truthy. ' .
+                        'This can cause possibly unexpected behavior. Use strict comparison instead.',
+                        new CodeLocation($statements_analyzer, $stmt),
+                        $type->getId(),
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            }
+        }
     }
 
     /**
