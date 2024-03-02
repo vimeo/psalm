@@ -23,6 +23,7 @@ use function count;
 use function explode;
 use function implode;
 use function in_array;
+use function pathinfo;
 use function preg_last_error_msg;
 use function preg_match;
 use function preg_replace;
@@ -36,6 +37,8 @@ use function strtolower;
 use function substr;
 use function substr_count;
 use function trim;
+
+use const PATHINFO_EXTENSION;
 
 /**
  * @internal
@@ -417,11 +420,15 @@ final class FunctionLikeDocblockParser
 
         if (isset($parsed_docblock->tags['since'])) {
             $since = trim(reset($parsed_docblock->tags['since']));
-            if (preg_match('/^[4578]\.\d(\.\d+)?$/', $since)) {
-                $since_parts = explode('.', $since);
-
-                $info->since_php_major_version = (int)$since_parts[0];
-                $info->since_php_minor_version = (int)$since_parts[1];
+            // only for phpstub files or @since 8.0.0 PHP
+            // since @since is commonly used with the project version, not the PHP version
+            // https://docs.phpdoc.org/3.0/guide/references/phpdoc/tags/since.html
+            // https://github.com/vimeo/psalm/issues/10761
+            if (preg_match('/^([4578])\.(\d)(\.\d+)?(\s+PHP)?$/i', $since, $since_match)
+                && isset($since_match[1])&& isset($since_match[2])
+                && (!empty($since_match[4]) || pathinfo($code_location->file_name, PATHINFO_EXTENSION) === 'phpstub')) {
+                $info->since_php_major_version = (int)$since_match[1];
+                $info->since_php_minor_version = (int)$since_match[2];
             }
         }
 
