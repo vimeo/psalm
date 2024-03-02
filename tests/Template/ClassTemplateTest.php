@@ -3498,6 +3498,9 @@ class ClassTemplateTest extends TestCase
                         $wm[$ex] = 42;
                     }
                 ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'combineTwoTemplatedArrays' => [
                 'code' => '<?php
