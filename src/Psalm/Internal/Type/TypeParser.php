@@ -1277,6 +1277,7 @@ final class TypeParser
         foreach ($parse_tree->children as $child_tree) {
             $is_variadic = false;
             $is_optional = false;
+            $param_name = '';
 
             if ($child_tree instanceof CallableParamTree) {
                 if (isset($child_tree->children[0])) {
@@ -1294,6 +1295,7 @@ final class TypeParser
 
                 $is_variadic = $child_tree->variadic;
                 $is_optional = $child_tree->has_default;
+                $param_name = $child_tree->name ?? '';
             } else {
                 if ($child_tree instanceof Value && strpos($child_tree->value, '$') > 0) {
                     $child_tree->value = preg_replace('/(.+)\$.*/', '$1', $child_tree->value);
@@ -1310,7 +1312,7 @@ final class TypeParser
             }
 
             $param = new FunctionLikeParameter(
-                '',
+                $param_name,
                 false,
                 $tree_type instanceof Union ? $tree_type : new Union([$tree_type]),
                 null,

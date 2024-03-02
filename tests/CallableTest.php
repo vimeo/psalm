@@ -1908,6 +1908,18 @@ class CallableTest extends TestCase
 
                     foo("bar");',
             ],
+            'callableWithNamedArguments' => [
+                'code' => <<<'PHP'
+                <?php
+                /** @param callable(int $i) $c */
+                function f(callable $c): void {
+                    $c(i: 1);
+                }
+                PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -2491,6 +2503,18 @@ class CallableTest extends TestCase
                     int_int_int_string_int(add(...));
                     int_int_int_int_string(add(...));',
                 'error_message' => 'InvalidScalarArgument',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'callableWithInvalidNamedArguments' => [
+                'code' => <<<'PHP'
+                <?php
+                /** @param callable(int $a) $c */
+                function f(callable $c): void {
+                    $c(b: 1);
+                }
+                PHP,
+                'error_message' => 'InvalidNamedArgument',
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
