@@ -3462,7 +3462,7 @@ class ClassTemplateTest extends TestCase
 
                     /**
                      * @param WeakMap<Throwable,int> $wm
-                     * @return array{Throwable,int}
+                     * @return list{Throwable,int}
                      */
                     function isTraverable(WeakMap $wm): array {
                         foreach ($wm as $k => $v) {
