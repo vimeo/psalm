@@ -15,6 +15,8 @@ final class FunctionLikeParameter implements HasAttributesInterface, TypeNode
     use UnserializeMemoryUsageSuppressionTrait;
 
     /**
+     * Parameter name, without `$`
+     *
      * @var string
      */
     public $name;

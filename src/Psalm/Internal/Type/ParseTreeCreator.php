@@ -30,6 +30,7 @@ use function in_array;
 use function preg_match;
 use function strlen;
 use function strtolower;
+use function substr;
 
 /**
  * @internal
@@ -258,13 +259,17 @@ final class ParseTreeCreator
             $current_token = $this->t < $this->type_token_count ? $this->type_tokens[$this->t] : null;
         }
 
-        if (!$current_token || $current_token[0][0] !== '$') {
+        if (!$current_token || $current_token[0][0] !== '$' || strlen($current_token[0]) < 2) {
             throw new TypeParseTreeException('Unexpected token after space');
         }
 
         $new_leaf = new CallableParamTree($current_parent);
         $new_leaf->has_default = $has_default;
         $new_leaf->variadic = $variadic;
+        $potential_name = substr($current_token[0], 1);
+        if ($potential_name !== false && $potential_name !== '') {
+            $new_leaf->name = $potential_name;
+        }
 
         if ($current_parent !== $this->current_leaf) {
             $new_leaf->children = [$this->current_leaf];
