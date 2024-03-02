@@ -1283,6 +1283,11 @@ class ArrayAccessTest extends TestCase
                     echo $a[0];',
                 'error_message' => 'PossiblyInvalidArrayAccess',
             ],
+            'insideIssetDisabledForDim' => [
+                'code' => '<?php
+                    isset($a[$b]);',
+                'error_message' => 'UndefinedGlobalVariable',
+            ],
             'mixedArrayAccess' => [
                 'code' => '<?php
                     /** @var mixed */

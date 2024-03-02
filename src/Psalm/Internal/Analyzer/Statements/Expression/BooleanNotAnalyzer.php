@@ -5,19 +5,14 @@ declare(strict_types=1);
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
-use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Issue\RiskyTruthyFalsyComparison;
-use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Union;
-
-use function count;
 
 /**
  * @internal
@@ -47,34 +42,7 @@ final class BooleanNotAnalyzer
             } elseif ($expr_type->isAlwaysFalsy()) {
                 $stmt_type = new TTrue($expr_type->from_docblock);
             } else {
-                if (count($expr_type->getAtomicTypes()) > 1) {
-                    $has_truthy_or_falsy_exclusive_type = false;
-                    $both_types = $expr_type->getBuilder();
-                    foreach ($both_types->getAtomicTypes() as $key => $atomic_type) {
-                        if ($atomic_type->isTruthy()
-                            || $atomic_type->isFalsy()
-                            || $atomic_type instanceof TBool) {
-                            $both_types->removeType($key);
-                            $has_truthy_or_falsy_exclusive_type = true;
-                        }
-                    }
-
-                    if (count($both_types->getAtomicTypes()) > 0 && $has_truthy_or_falsy_exclusive_type) {
-                        $both_types = $both_types->freeze();
-                        IssueBuffer::maybeAdd(
-                            new RiskyTruthyFalsyComparison(
-                                'Operand of type ' . $expr_type->getId() . ' contains ' .
-                                'type' . (count($both_types->getAtomicTypes()) > 1 ? 's' : '') . ' ' .
-                                $both_types->getId() . ', which can be falsy and truthy. ' .
-                                'This can cause possibly unexpected behavior. Use strict comparison instead.',
-                                new CodeLocation($statements_analyzer, $stmt),
-                                $expr_type->getId(),
-                            ),
-                            $statements_analyzer->getSuppressedIssues(),
-                        );
-                    }
-                }
-
+                ExpressionAnalyzer::checkRiskyTruthyFalsyComparison($expr_type, $statements_analyzer, $stmt);
                 $stmt_type = new TBool();
             }
 

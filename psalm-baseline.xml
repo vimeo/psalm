@@ -1513,7 +1513,6 @@
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$line_parts[0]]]></code>
       <code><![CDATA[$line_parts[1]]]></code>
-      <code><![CDATA[$since_parts[1]]]></code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/PhpVisitor/Reflector/FunctionLikeDocblockScanner.php">

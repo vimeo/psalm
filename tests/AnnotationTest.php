@@ -1401,6 +1401,16 @@ class AnnotationTest extends TestCase
                     class Foo {}',
                 'assertions' => [],
             ],
+            'sinceTagNonPhpVersion' => [
+                'code' => '<?php
+                    class Foo {
+                        /**
+                         * @since 8.9.9
+                         */
+                        public function bar() : void {
+                        }
+                    };',
+            ],
         ];
     }
 
@@ -1648,6 +1658,16 @@ class AnnotationTest extends TestCase
                     }
                     ',
                 'error_message' => 'UndefinedDocblockClass',
+            ],
+            'invalidTaintEscapeAnnotation' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-taint-escape
+                     */
+                    function takesInt(int $i): int {
+                        return $i;
+                    }',
+                'error_message' => 'InvalidDocblock',
             ],
             'noPhpStormAnnotationsThankYou' => [
                 'code' => '<?php
