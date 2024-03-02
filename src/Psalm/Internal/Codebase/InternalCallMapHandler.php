@@ -48,9 +48,19 @@ final class InternalCallMapHandler
     private static ?array $call_map = null;
 
     /**
-     * @var array<string, non-empty-list<TCallable>>|null
+     * @var array<lowercase-string, true>
      */
-    private static ?array $call_map_callables = [];
+    private static array $call_map_delta_added = array();
+
+    /**
+     * @var array<lowercase-string, true>
+     */
+    private static array $call_map_delta_changed = array();
+
+    /**
+     * @var array<string, non-empty-list<TCallable>>
+     */
+    private static array $call_map_callables = [];
 
     /**
      * @var non-empty-array<string, non-empty-list<list<TaintKind::*>>>|null
@@ -362,6 +372,12 @@ final class InternalCallMapHandler
             && $analyzer_minor_version === self::$loaded_php_minor_version
         ) {
             return self::$call_map;
+        } elseif (self::$call_map !== null) {
+            // reset it since the PHP version analyzed changed
+            self::$call_map_callables = [];
+            self::$call_map_delta_added = [];
+            self::$call_map_delta_changed = [];
+            Reflection::clearCache();
         }
 
         /** @var non-empty-array<string, array<int|string, string>> */
@@ -411,16 +427,23 @@ final class InternalCallMapHandler
                 foreach ($diff_call_map['added'] as $key => $_) {
                     $cased_key = strtolower($key);
                     unset(self::$call_map[$cased_key]);
+                    self::$call_map_delta_added[$cased_key] = true;
                 }
 
                 foreach ($diff_call_map['removed'] as $key => $value) {
                     $cased_key = strtolower($key);
                     self::$call_map[$cased_key] = $value;
+
+                    // if something was removed but added back in a newer version, we need unset
+                    if (isset(self::$call_map_delta_added[$cased_key])) {
+                        unset(self::$call_map_delta_added[$cased_key]);
+                    }
                 }
 
                 foreach ($diff_call_map['changed'] as $key => ['old' => $value]) {
                     $cased_key = strtolower($key);
                     self::$call_map[$cased_key] = $value;
+                    self::$call_map_delta_changed[$cased_key] = true;
                 }
             }
         }
@@ -435,6 +458,22 @@ final class InternalCallMapHandler
     public static function inCallMap(string $key): bool
     {
         return isset(self::getCallMap()[strtolower($key)]);
+    }
+
+    public static function hasDelta(string $function_id): bool
+    {
+        // make sure it's populated and correct for the currently checked versions everytime
+        self::getCallMap();
+
+        $function_id_lc = strtolower($function_id);
+
+        // e.g. running psalm with PHP 8.3 but with --php-version=7.4
+        if (isset(self::$call_map_delta_added[$function_id_lc])
+            || isset(self::$call_map_delta_changed[$function_id_lc])) {
+            return true;
+        }
+
+        return false;
     }
 
     public static function clearCache(): void

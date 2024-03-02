@@ -31,6 +31,10 @@ use function array_merge;
 use function get_class;
 use function implode;
 use function strtolower;
+use function version_compare;
+
+use const PHP_MAJOR_VERSION;
+use const PHP_MINOR_VERSION;
 
 /**
  * @internal
@@ -204,8 +208,27 @@ final class Reflection
             }
         }
 
+        $analyzer_major_version = $this->codebase->getMajorAnalysisPhpVersion();
+        $analyzer_minor_version = $this->codebase->getMinorAnalysisPhpVersion();
+
         foreach ($reflection_methods as $reflection_method) {
             $method_reflection_class = $reflection_method->getDeclaringClass();
+
+            if (InternalCallMapHandler::inCallMap($reflection_method->class . '::' . $reflection_method->getName())
+                && version_compare(
+                    PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION,
+                    $analyzer_major_version . '.' . $analyzer_minor_version,
+                    '<',
+                )) {
+                // don't try to reflect if function exists in the callmap
+                // and the PHP version running psalm is lower than the analyzed version
+                // psalm run with 8.1 and --php-version 8.2
+                continue;
+            }
+
+            if (InternalCallMapHandler::hasDelta($reflection_method->class . '::' . $reflection_method->getName())) {
+                continue;
+            }
 
             $this->registerClass($method_reflection_class);
 
@@ -359,25 +382,40 @@ final class Reflection
      */
     public function registerFunction(string $function_id): ?bool
     {
-        try {
-            $reflection_function = new ReflectionFunction($function_id);
+        if (isset(self::$builtin_functions[$function_id])) {
+            return null;
+        }
 
-            $callmap_callable = null;
+        $callmap_callable = null;
+        if (InternalCallMapHandler::inCallMap($function_id)) {
+            $analyzer_major_version = $this->codebase->getMajorAnalysisPhpVersion();
+            $analyzer_minor_version = $this->codebase->getMinorAnalysisPhpVersion();
 
-            if (isset(self::$builtin_functions[$function_id])) {
-                return null;
+            if (version_compare(
+                PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION,
+                $analyzer_major_version . '.' . $analyzer_minor_version,
+                '<',
+            )) {
+                // don't try to reflect if function exists in the callmap
+                // and the PHP version running psalm is lower than the analyzed version
+                // psalm run with 8.1 and --php-version 8.2
+                return false;
             }
 
+            $callmap_callable = InternalCallMapHandler::getCallableFromCallMapById(
+                $this->codebase,
+                $function_id,
+                [],
+                null,
+            );
+        } elseif (InternalCallMapHandler::hasDelta($function_id)) {
+            return false;
+        }
+
+        try {
             $storage = self::$builtin_functions[$function_id] = new FunctionStorage();
 
-            if (InternalCallMapHandler::inCallMap($function_id)) {
-                $callmap_callable = InternalCallMapHandler::getCallableFromCallMapById(
-                    $this->codebase,
-                    $function_id,
-                    [],
-                    null,
-                );
-            }
+            $reflection_function = new ReflectionFunction($function_id);
 
             if ($callmap_callable !== null
                 && $callmap_callable->params !== null
@@ -410,6 +448,7 @@ final class Reflection
 
             $storage->cased_name = $reflection_function->getName();
         } catch (ReflectionException $e) {
+            unset(self::$builtin_functions[$function_id]);
             return false;
         }
 

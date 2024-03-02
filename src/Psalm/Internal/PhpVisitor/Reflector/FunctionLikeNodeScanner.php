@@ -24,6 +24,7 @@ use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
+use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Scanner\FileScanner;
@@ -435,7 +436,6 @@ final class FunctionLikeNodeScanner
 
         $doc_comment = $stmt->getDocComment();
 
-
         if ($classlike_storage && !$classlike_storage->is_trait) {
             $storage->internal = [...$classlike_storage->internal, ...$storage->internal];
         }
@@ -510,7 +510,8 @@ final class FunctionLikeNodeScanner
             && $function_id
             && $storage instanceof FunctionStorage
         ) {
-            if ($this->codebase->register_stub_files
+            if (($this->codebase->register_stub_files && !InternalCallMapHandler::hasDelta($function_id))
+                // if the function is autoloaded we want to register it even if it has a delta, since there's a polyfill
                 || ($this->codebase->register_autoload_files
                     && !$this->codebase->functions->hasStubbedFunction($function_id))
             ) {

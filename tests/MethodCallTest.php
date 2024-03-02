@@ -1253,6 +1253,14 @@ class MethodCallTest extends TestCase
                         }
                     }',
             ],
+            'methodAddedBeforeAnalyzedVersion' => [
+                'code' => '<?php
+                    $w = new WeakMap();
+                    $w->count();',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -1822,6 +1830,14 @@ class MethodCallTest extends TestCase
                     $_a = (new A)->foo(...);
                 PHP,
                 'error_message' => 'UndefinedMethod',
+            ],
+            'methodDoesNotExistYetInAnalyzedVersion' => [
+                'code' => '<?php
+                    $w = new WeakMap();
+                    $w->count();',
+                'error_message' => 'UndefinedMethod',
+                'ignored_issues' => [],
+                'php_version' => '7.4',
             ],
         ];
     }
