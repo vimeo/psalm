@@ -308,15 +308,6 @@ final class ReturnTypeAnalyzer
             $source->getParentFQCLN(),
         );
 
-        // hack until we have proper yield type collection
-        if ($function_like_storage
-            && $function_like_storage->has_yield
-            && !$inferred_yield_type
-            && !$inferred_return_type->isVoid()
-        ) {
-            $inferred_return_type = new Union([new TNamedObject('Generator')]);
-        }
-
         if ($is_to_string) {
             $union_comparison_results = new TypeComparisonResult();
             if (!$inferred_return_type->hasMixed() &&
