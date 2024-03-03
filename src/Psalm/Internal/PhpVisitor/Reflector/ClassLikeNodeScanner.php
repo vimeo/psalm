@@ -161,7 +161,7 @@ final class ClassLikeNodeScanner
                 throw new LogicException('Anonymous classes are always classes');
             }
 
-            $fq_classlike_name = ClassAnalyzer::getAnonymousClassName($node, $this->file_path);
+            $fq_classlike_name = ClassAnalyzer::getAnonymousClassName($node, $this->aliases, $this->file_path);
         } else {
             $name_location = new CodeLocation($this->file_scanner, $node->name);
 
