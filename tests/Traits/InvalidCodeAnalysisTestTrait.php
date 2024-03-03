@@ -11,10 +11,9 @@ use function str_replace;
 use function strpos;
 use function strtoupper;
 use function substr;
-use function version_compare;
 
 use const PHP_OS;
-use const PHP_VERSION;
+use const PHP_VERSION_ID;
 
 /**
  * @psalm-type DeprecatedDataProviderArrayNotation = array{
@@ -53,7 +52,7 @@ trait InvalidCodeAnalysisTestTrait
     ): void {
         $test_name = $this->getTestName();
         if (strpos($test_name, 'PHP80-') !== false) {
-            if (version_compare(PHP_VERSION, '8.0.0', '<')) {
+            if (PHP_VERSION_ID < 8_00_00) {
                 $this->markTestSkipped('Test case requires PHP 8.0.');
             }
 
