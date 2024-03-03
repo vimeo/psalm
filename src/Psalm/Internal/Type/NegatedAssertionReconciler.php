@@ -119,7 +119,7 @@ final class NegatedAssertionReconciler extends Reconciler
                 && $assertion_type->type_params[1]->isMixed())
             || $assertion instanceof IsNotCountable
         ) {
-            $existing_var_type->removeType('array');
+            $existing_var_type->removeArrays();
         }
 
         if ($assertion instanceof IsNotType && $assertion_type instanceof TClassString) {
@@ -216,7 +216,7 @@ final class NegatedAssertionReconciler extends Reconciler
                 array_merge(array_values($existing_var_type->getAtomicTypes()), [$assertion->getAtomicType()]),
                 $codebase,
             );
-            $existing_var_type->removeType('array');
+            $existing_var_type->removeArrays();
             if ($combined_type->isSingle()) {
                 $existing_var_type->addType($combined_type->getSingleAtomic());
             }

@@ -235,18 +235,15 @@ final class ArrayFetchAnalyzer
                 null,
             );
 
-            if ($stmt->dim && $stmt_var_type->hasArray()) {
-                $array_type = $stmt_var_type->getArray();
-
-                if ($array_type instanceof TClassStringMap) {
-                    $array_value_type = Type::getMixed();
-                } elseif ($array_type instanceof TArray) {
-                    $array_value_type = $array_type->type_params[1];
-                } else {
-                    $array_value_type = $array_type->getGenericValueType();
+            if ($stmt->dim && ($array_value_type = $stmt_var_type->getArrayValueTypes())) {
+                $has_non_mixed = false;
+                foreach ($array_value_type as $t) {
+                    if (!$t->isMixed()) {
+                        $has_non_mixed = true;
+                        break;
+                    }
                 }
-
-                if ($context->inside_assignment || !$array_value_type->isMixed()) {
+                if ($context->inside_assignment || $has_non_mixed) {
                     $can_store_result = true;
                 }
             }
@@ -1129,7 +1126,7 @@ final class ArrayFetchAnalyzer
 
         if ($in_assignment) {
             if ($type instanceof TArray) {
-                $from_empty_array = $type->isEmptyArray();
+                $from_empty_array = $type->isEmpty();
 
                 if (count($key_values) === 1) {
                     $single_atomic = $key_values[0];
@@ -1258,7 +1255,7 @@ final class ArrayFetchAnalyzer
     ): void {
         // if we're assigning to an empty array with a key offset, refashion that array
         if ($in_assignment) {
-            if ($type->isEmptyArray()) {
+            if ($type->isEmpty()) {
                 $type = $type->setTypeParams([
                     $offset_type->isMixed()
                         ? Type::getArrayKey()
@@ -1266,7 +1263,7 @@ final class ArrayFetchAnalyzer
                     $type->type_params[1],
                 ]);
             }
-        } elseif (!$type->isEmptyArray()) {
+        } elseif (!$type->isEmpty()) {
             $expected_offset_type = $type->type_params[0]->hasMixed()
                 ? new Union([new TArrayKey])
                 : $type->type_params[0];

@@ -588,7 +588,7 @@ final class TypeCombiner
                 $combination->array_always_filled = false;
             }
 
-            if (!$type->isEmptyArray()) {
+            if (!$type->isEmpty()) {
                 $combination->all_arrays_lists = false;
                 $combination->all_arrays_class_string_maps = false;
             }

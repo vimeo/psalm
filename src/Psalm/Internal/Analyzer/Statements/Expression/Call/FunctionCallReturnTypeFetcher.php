@@ -25,6 +25,7 @@ use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Plugin\EventHandler\Event\AfterFunctionCallAnalysisEvent;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic\ArrayInterface;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCallableKeyedArray;
@@ -383,8 +384,8 @@ final class FunctionCallReturnTypeFetcher
                                     return Type::getIntRange($min, $max);
                                 }
 
-                                if ($atomic_types['array'] instanceof TArray
-                                    && $atomic_types['array']->isEmptyArray()
+                                if ($atomic_types['array'] instanceof ArrayInterface
+                                    && $atomic_types['array']->isEmpty()
                                 ) {
                                     return Type::getInt(false, 0);
                                 }
