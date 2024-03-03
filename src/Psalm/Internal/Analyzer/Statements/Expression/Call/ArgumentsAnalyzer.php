@@ -1127,12 +1127,18 @@ final class ArgumentsAnalyzer
                 }
 
                 if ($by_ref_type && $function_param->is_variadic && $arg->unpack) {
-                    $by_ref_type = new Union([
-                        new TArray([
-                            Type::getInt(),
-                            $by_ref_type,
-                        ]),
-                    ]);
+                    if ($codebase->analysis_php_version_id >= 80000
+                        && $codebase->getFunctionLikeStorage($statements_analyzer, $method_id)->allow_named_arg_calls
+                    ) {
+                        $by_ref_type = new Union([
+                            new TArray([
+                                Type::getArrayKey(),
+                                $by_ref_type,
+                            ]),
+                        ]);
+                    } else {
+                        $by_ref_type = new Union([Type::getListAtomic($by_ref_type)]);
+                    }
                 }
             }
 
