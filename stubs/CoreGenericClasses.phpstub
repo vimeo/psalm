@@ -492,6 +492,11 @@ final class WeakMap implements ArrayAccess, Countable, IteratorAggregate, Traver
      * @return void
      */
     public function offsetUnset($offset) {}
+
+    /**
+     * @return Traversable<TKey, TVal>
+     */
+    public function getIterator() { }
 }
 
 class mysqli
