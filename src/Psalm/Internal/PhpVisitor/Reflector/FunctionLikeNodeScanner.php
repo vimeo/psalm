@@ -834,7 +834,7 @@ final class FunctionLikeNodeScanner
             }
         }
 
-        $is_optional = $param->default !== null;
+        $is_optional = $param->default !== null || $param->variadic;
 
         if ($param->var instanceof PhpParser\Node\Expr\Error || !is_string($param->var->name)) {
             throw new UnexpectedValueException('Not expecting param name to be non-string');
