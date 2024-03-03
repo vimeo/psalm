@@ -3498,10 +3498,6 @@ class ClassTemplateTest extends TestCase
                         $wm[$ex] = 42;
                     }
                 ',
-                'assertions' => [],
-                'ignored_issues' => [],
-                // temporarily keep the old value until https://github.com/vimeo/psalm/issues/10773 is fixed by @weirdan
-                'php_version' => '7.4',
             ],
             'combineTwoTemplatedArrays' => [
                 'code' => '<?php
