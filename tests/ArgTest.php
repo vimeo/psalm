@@ -385,6 +385,40 @@ class ArgTest extends TestCase
                     array_push($a, ...$b);',
                 'error_message' => 'InvalidArgument',
             ],
+            'inCallmapVariadicParamCalledNamedInvalid' => [
+                'code' => '<?php
+                    /**
+                     * @var array $a
+                     * @var array $b
+                     */
+                    array_intersect(arrays: $a, array: $b);',
+                'error_message' => 'NamedArgumentNotAllowed',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'inCallmapVariadicParamCalledNamedInvalidCorrectOrder' => [
+                'code' => '<?php
+                    /**
+                     * @var array $a
+                     * @var array $b
+                     */
+                    array_intersect(array: $b, arrays: $a);',
+                'error_message' => 'NamedArgumentNotAllowed',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'inCallmapVariadicParamWrongNameCalledNamedInvalid' => [
+                'code' => '<?php
+                    /**
+                     * @var array $a
+                     * @var array $b
+                     * @var array $c
+                     */
+                    array_intersect(hello: $a, array: $b);',
+                'error_message' => 'NamedArgumentNotAllowed',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'possiblyInvalidArgument' => [
                 'code' => '<?php
                     $foo = [

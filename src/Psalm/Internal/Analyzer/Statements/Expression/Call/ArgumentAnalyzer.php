@@ -243,6 +243,8 @@ final class ArgumentAnalyzer
     ): ?bool {
         if ($codebase->analysis_php_version_id < 8_00_00 || !$codebase->config->allow_named_arg_calls) {
             $allow_named_args = false;
+        } elseif ($function_param->is_variadic && $in_call_map === true) {
+            $allow_named_args = false;
         }
 
         // before we possibly return early
