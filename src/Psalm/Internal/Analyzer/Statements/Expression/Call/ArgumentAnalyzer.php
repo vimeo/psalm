@@ -241,6 +241,22 @@ final class ArgumentAnalyzer
         bool $specialize_taint,
         bool $in_call_map
     ): ?bool {
+        if ($codebase->analysis_php_version_id < 8_00_00 || !$codebase->config->allow_named_arg_calls) {
+            $allow_named_args = false;
+        }
+
+        // before we possibly return early
+        if (!$allow_named_args && $arg->name !== null) {
+            IssueBuffer::maybeAdd(
+                new NamedArgumentNotAllowed(
+                    'Method ' . $cased_method_id. ' called with named argument ' . $arg->name->name,
+                    new CodeLocation($statements_analyzer->getSource(), $arg->value),
+                    $cased_method_id,
+                ),
+                $statements_analyzer->getSuppressedIssues(),
+            );
+        }
+
         if (!$function_param->type) {
             if (!$codebase->infer_types_from_usage && !$statements_analyzer->data_flow_graph) {
                 return null;
@@ -608,17 +624,6 @@ final class ArgumentAnalyzer
                 }
 
                 return null;
-            }
-        } else {
-            if (!$allow_named_args && $arg->name !== null) {
-                IssueBuffer::maybeAdd(
-                    new NamedArgumentNotAllowed(
-                        'Method ' . $cased_method_id. ' called with named argument ' . $arg->name->name,
-                        new CodeLocation($statements_analyzer->getSource(), $arg->value),
-                        $cased_method_id,
-                    ),
-                    $statements_analyzer->getSuppressedIssues(),
-                );
             }
         }
 

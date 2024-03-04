@@ -464,6 +464,20 @@ class ArgTest extends TestCase
                     }',
                 'error_message' => 'InvalidNamedArgument',
             ],
+            'invalidNamedArgumentPHP7' => [
+                'code' => '<?php
+                    /**
+                     * @param int $a
+                     * @param string $b
+                     * @return void
+                     */
+                    function foo($a, $b) {}
+
+                    foo(b: "hello", a: 15);',
+                'error_message' => 'NamedArgumentNotAllowed',
+                'ignored_issues' => [],
+                'php_version' => '7.4',
+            ],
             'usePositionalArgAfterNamed' => [
                 'code' => '<?php
                     final class Person
