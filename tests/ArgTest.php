@@ -851,6 +851,30 @@ class ArgTest extends TestCase
                 ',
                 'error_message' => 'InvalidArgument - src'  . DIRECTORY_SEPARATOR . 'somefile.php:8:23 - Argument 1 of a expects array{test: string}, but array{somethingElse: \'test\', test: \'str\'} with additional array shape fields (somethingElse) was provided',
             ],
+            'unpackTooFewFallback' => [
+                'code' => '<?php
+                    function Foo(string $a, string $b) : void {}
+
+                    /** @param array{a: string}&array<string, string> $c */
+                    function Baz($c) :void  {
+                        Foo(...$c);
+                    }
+                ',
+                'error_message' => 'TooFewArguments',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'unpackTooFewGenericArray' => [
+                'code' => '<?php
+                    function Foo(string $a, string $b) : void {}
+
+                    /** @param array<int, string> $c */
+                    function Baz($c) :void  {
+                        Foo("hello", ...$c);
+                    }
+                ',
+                'error_message' => 'TooFewArguments',
+            ],
             'callbackArgsCountMismatch' => [
                 'code' => '<?php
                     /**
