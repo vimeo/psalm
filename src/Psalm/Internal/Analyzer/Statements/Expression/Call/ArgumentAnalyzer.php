@@ -491,16 +491,21 @@ final class ArgumentAnalyzer
 
             if ($arg_value_type->hasArray()) {
                 $unpacked_atomic_array = $arg_value_type->getArray();
+                $has_string_key = false;
                 $arg_key_allowed = true;
 
                 if ($unpacked_atomic_array instanceof TKeyedArray) {
-                    if (!$allow_named_args && !$unpacked_atomic_array->getGenericKeyType()->isInt()) {
-                        $arg_key_allowed = false;
+                    if (!$unpacked_atomic_array->getGenericKeyType()->isInt()) {
+                        $has_string_key = true;
+
+                        if (!$allow_named_args) {
+                            $arg_key_allowed = false;
+                        }
                     }
 
                     if ($function_param->is_variadic) {
                         $arg_value_type = $unpacked_atomic_array->getGenericValueType();
-                    } elseif ($codebase->analysis_php_version_id >= 8_00_00
+                    } elseif ($codebase->analysis_php_version_id >= 8_01_00
                         && $allow_named_args
                         && isset($unpacked_atomic_array->properties[$function_param->name])
                     ) {
@@ -527,12 +532,30 @@ final class ArgumentAnalyzer
                         $arg_value_type = Type::getMixed();
                     }
                 } elseif ($unpacked_atomic_array instanceof TClassStringMap) {
-                    $arg_value_type = Type::getMixed();
+                    $has_string_key = true;
+                    $arg_value_type = $unpacked_atomic_array->value_param;
                 } else {
-                    if (!$allow_named_args && !$unpacked_atomic_array->type_params[0]->isInt()) {
-                        $arg_key_allowed = false;
+                    if (!$unpacked_atomic_array->type_params[0]->isInt()) {
+                        $has_string_key = true;
+
+                        if (!$allow_named_args) {
+                            $arg_key_allowed = false;
+                        }
                     }
+
                     $arg_value_type = $unpacked_atomic_array->type_params[1];
+                }
+
+                if ($codebase->analysis_php_version_id < 8_01_00
+                    && $has_string_key) {
+                    IssueBuffer::maybeAdd(
+                        new InvalidArgument(
+                            'String keys not supported in unpacked arguments',
+                            new CodeLocation($statements_analyzer->getSource(), $arg->value),
+                            $cased_method_id,
+                        ),
+                        $statements_analyzer->getSuppressedIssues(),
+                    );
                 }
 
                 if (!$arg_key_allowed) {
@@ -566,7 +589,9 @@ final class ArgumentAnalyzer
 
                             continue;
                         }
-                        if (($codebase->analysis_php_version_id < 8_00_00 || !$allow_named_args)
+
+                        // string unpacking is supported from PHP 8.1
+                        if (($codebase->analysis_php_version_id < 8_01_00 || !$allow_named_args)
                             && !$key_type->isInt()
                         ) {
                             $invalid_string_key = true;
@@ -594,7 +619,7 @@ final class ArgumentAnalyzer
                             'Method ' . $cased_method_id
                                 . ' called with unpacked iterable ' . $arg_value_type->getId()
                                 . ' with invalid key (must be '
-                                . ($codebase->analysis_php_version_id < 8_00_00 ? 'int' : 'int|string') . ')',
+                                . ($codebase->analysis_php_version_id < 8_01_00 ? 'int' : 'int|string') . ')',
                             new CodeLocation($statements_analyzer->getSource(), $arg->value),
                             $cased_method_id,
                         ),
@@ -602,7 +627,7 @@ final class ArgumentAnalyzer
                     );
                 }
                 if ($invalid_string_key) {
-                    if ($codebase->analysis_php_version_id < 8_00_00) {
+                    if ($codebase->analysis_php_version_id < 8_01_00) {
                         IssueBuffer::maybeAdd(
                             new $issue_type(
                                 'String keys not supported in unpacked arguments',

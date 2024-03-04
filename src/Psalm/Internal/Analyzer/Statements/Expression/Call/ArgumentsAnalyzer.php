@@ -1127,7 +1127,8 @@ final class ArgumentsAnalyzer
                 }
 
                 if ($by_ref_type && $function_param->is_variadic && $arg->unpack) {
-                    if ($codebase->analysis_php_version_id >= 80000
+                    // string unpacking available since 8.1
+                    if ($codebase->analysis_php_version_id >= 8_01_00
                         && $codebase->getFunctionLikeStorage($statements_analyzer, $method_id)->allow_named_arg_calls
                     ) {
                         $by_ref_type = new Union([
