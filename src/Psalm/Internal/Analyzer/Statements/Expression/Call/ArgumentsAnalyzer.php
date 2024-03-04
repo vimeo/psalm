@@ -1627,6 +1627,14 @@ final class ArgumentsAnalyzer
                             && $atomic_arg_type instanceof TKeyedArray
                             && !$atomic_arg_type->is_list
                         ) {
+                            if ($atomic_arg_type->fallback_params !== null) {
+                                return;
+                            }
+
+                            if (!$atomic_arg_type->allShapeKeysAlwaysDefined()) {
+                                return;
+                            }
+
                             //if we have a single shape, we'll check param names
                             foreach ($atomic_arg_type->properties as $property_name => $_property_type) {
                                 foreach ($function_params as $k => $param) {
