@@ -421,7 +421,7 @@ final class AtomicStaticCallAnalyzer
 
                     $mixin_candidates_no_generic = array_filter(
                         $mixin_candidates,
-                        static fn(Atomic $check): bool => !($check instanceof TGenericObject)
+                        static fn(Atomic $check): bool => !($check instanceof TGenericObject),
                     );
 
                     // $mixin_candidates_no_generic will only be empty when there are TGenericObject entries.

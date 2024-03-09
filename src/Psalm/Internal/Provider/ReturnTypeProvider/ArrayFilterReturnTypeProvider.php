@@ -108,7 +108,7 @@ final class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderI
                         },
                         $first_arg_array->properties,
                     ),
-                    static fn($keyed_type) => !$keyed_type->isNever()
+                    static fn($keyed_type) => !$keyed_type->isNever(),
                 );
 
                 if (!$new_properties) {
