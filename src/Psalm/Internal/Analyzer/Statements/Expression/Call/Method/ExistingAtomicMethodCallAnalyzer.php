@@ -446,7 +446,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                         $possibilities,
                         static fn(Possibilities $assertion): bool => !(is_string($assertion->var_id)
                             && strpos($assertion->var_id, '$this->') === 0
-                        )
+                        ),
                     );
                 }
                 $statements_analyzer->node_data->setIfTrueAssertions(
@@ -469,7 +469,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                         $possibilities,
                         static fn(Possibilities $assertion): bool => !(is_string($assertion->var_id)
                             && strpos($assertion->var_id, '$this->') === 0
-                        )
+                        ),
                     );
                 }
                 $statements_analyzer->node_data->setIfFalseAssertions(

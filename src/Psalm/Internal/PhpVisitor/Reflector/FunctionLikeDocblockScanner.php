@@ -917,7 +917,7 @@ final class FunctionLikeDocblockScanner
 
         $params_without_docblock_type = array_filter(
             $storage->params,
-            static fn(FunctionLikeParameter $p): bool => !$p->has_docblock_type && (!$p->type || $p->type->hasArray())
+            static fn(FunctionLikeParameter $p): bool => !$p->has_docblock_type && (!$p->type || $p->type->hasArray()),
         );
 
         if ($params_without_docblock_type) {

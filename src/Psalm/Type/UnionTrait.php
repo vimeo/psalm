@@ -381,7 +381,7 @@ trait UnionTrait
 
         return !array_filter(
             $types,
-            static fn($atomic_type): bool => !$atomic_type->canBeFullyExpressedInPhp($analysis_php_version_id)
+            static fn($atomic_type): bool => !$atomic_type->canBeFullyExpressedInPhp($analysis_php_version_id),
         );
     }
 
@@ -459,7 +459,7 @@ trait UnionTrait
     {
         return (bool)array_filter(
             $this->types,
-            static fn($type): bool => $type->hasArrayAccessInterface($codebase)
+            static fn($type): bool => $type->hasArrayAccessInterface($codebase),
         );
     }
 
@@ -750,7 +750,7 @@ trait UnionTrait
                         $type->extra_types,
                         static fn($t): bool => $t instanceof TTemplateParam,
                     )
-                )
+                ),
         );
     }
 
@@ -782,7 +782,7 @@ trait UnionTrait
                             )
                         )
                     )
-                )
+                ),
         );
     }
 
@@ -993,7 +993,7 @@ trait UnionTrait
                     || ($check_templates
                         && $type instanceof TTemplateParam
                         && $type->as->isInt()
-                    )
+                    ),
             ),
         ) === count($this->types);
     }
@@ -1024,7 +1024,7 @@ trait UnionTrait
                     || ($check_templates
                         && $type instanceof TTemplateParam
                         && $type->as->isString()
-                    )
+                    ),
             ),
         ) === count($this->types);
     }
@@ -1043,7 +1043,7 @@ trait UnionTrait
                     || ($check_templates
                         && $type instanceof TTemplateParam
                         && $type->as->isNonEmptyString()
-                    )
+                    ),
             ),
         ) === count($this->types);
     }

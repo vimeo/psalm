@@ -946,7 +946,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     $stmts,
                     static fn($stmt): bool => $stmt instanceof PhpParser\Node\Stmt\Property
                         && isset($stmt->props[0]->name->name)
-                        && $stmt->props[0]->name->name === $property_name
+                        && $stmt->props[0]->name->name === $property_name,
                 );
 
                 $suppressed = [];
