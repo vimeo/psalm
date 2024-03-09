@@ -194,7 +194,7 @@ class CoreStubsTest extends TestCase
                 '$c3===' => 'bool',
             ],
         ];
-        yield 'PHP8 str_* function assert non-empty-string' => [
+        yield 'PHP80-str_* function assert non-empty-string' => [
             'code' => '<?php
                 /** @return non-empty-string */
                 function after_str_contains(): string
@@ -260,7 +260,7 @@ class CoreStubsTest extends TestCase
                 '$e===' => 'non-empty-string',
             ],
         ];
-        yield "PHP8 str_* function doesn't subtract string after assertion" => [
+        yield "PHP80-str_* function doesn't subtract string after assertion" => [
             'code' => '<?php
                 /** @return false|string */
                 function after_str_contains()

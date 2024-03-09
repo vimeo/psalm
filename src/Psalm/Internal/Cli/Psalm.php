@@ -228,7 +228,7 @@ final class Psalm
             // we ignore the FQN because of a hack in scoper.inc that needs full path
             // phpcs:ignore SlevomatCodingStandard.Namespaces.ReferenceUsedNamesOnly.ReferenceViaFullyQualifiedName
             static fn(): ?\Composer\Autoload\ClassLoader =>
-                CliUtils::requireAutoloaders($current_dir, isset($options['r']), $vendor_dir)
+                CliUtils::requireAutoloaders($current_dir, isset($options['r']), $vendor_dir),
         );
 
         $run_taint_analysis = self::shouldRunTaintAnalysis($options);
@@ -503,7 +503,7 @@ final class Psalm
                 && $arg !== '--debug-emitted-issues'
                 && !str_starts_with($arg, '--disable-extension=')
                 && !str_starts_with($arg, '--root=')
-                && !str_starts_with($arg, '--r=')
+                && !str_starts_with($arg, '--r='),
         ));
 
         $init_level = null;

@@ -246,7 +246,7 @@ final class ReturnTypeAnalyzer
         if (count($inferred_return_type_parts) > 1) {
             $inferred_return_type_parts = array_filter(
                 $inferred_return_type_parts,
-                static fn(Union $union_type): bool => !$union_type->isNever()
+                static fn(Union $union_type): bool => !$union_type->isNever(),
             );
         }
         $inferred_return_type_parts = array_values($inferred_return_type_parts);

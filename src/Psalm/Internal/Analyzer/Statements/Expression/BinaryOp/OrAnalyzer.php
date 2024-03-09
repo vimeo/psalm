@@ -181,7 +181,7 @@ final class OrAnalyzer
             $negated_left_clauses = array_values(
                 array_filter(
                     $negated_left_clauses,
-                    static fn(Clause $c): bool => !in_array($c->hash, $reconciled_expression_clauses)
+                    static fn(Clause $c): bool => !in_array($c->hash, $reconciled_expression_clauses),
                 ),
             );
 

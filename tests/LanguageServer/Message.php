@@ -19,8 +19,6 @@ abstract class Message extends AdvancedJsonRpcMessage
 {
     /**
      * Returns the appropriate Message subclass
-     *
-     * @param array $msg
      */
     public static function parseArray(array $msg): AdvancedJsonRpcMessage
     {
