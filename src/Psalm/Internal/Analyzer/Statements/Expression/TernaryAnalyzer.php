@@ -139,7 +139,7 @@ final class TernaryAnalyzer
             $ternary_context_clauses = array_values(
                 array_filter(
                     $ternary_context_clauses,
-                    static fn(Clause $c): bool => !in_array($c->hash, $reconciled_expression_clauses)
+                    static fn(Clause $c): bool => !in_array($c->hash, $reconciled_expression_clauses),
                 ),
             );
 

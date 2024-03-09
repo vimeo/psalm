@@ -145,8 +145,6 @@ final class LanguageClient
 
     /**
      * Configuration Refreshed from Client
-     *
-     * @param array $config
      */
     private function configurationRefreshed(array $config): void
     {

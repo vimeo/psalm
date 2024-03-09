@@ -182,7 +182,7 @@ final class IfElseAnalyzer
             $if_context->clauses = array_values(
                 array_filter(
                     $if_context->clauses,
-                    static fn(Clause $c): bool => !in_array($c->hash, $reconciled_expression_clauses)
+                    static fn(Clause $c): bool => !in_array($c->hash, $reconciled_expression_clauses),
                 ),
             );
 

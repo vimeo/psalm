@@ -61,7 +61,7 @@ final class PsalmRestarter extends XdebugHandler
     {
         $this->required = (bool) array_filter(
             $this->disabled_extensions,
-            static fn(string $extension): bool => extension_loaded($extension)
+            static fn(string $extension): bool => extension_loaded($extension),
         );
 
         $opcache_loaded = extension_loaded('opcache') || extension_loaded('Zend OPcache');

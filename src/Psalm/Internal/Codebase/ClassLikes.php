@@ -1599,7 +1599,7 @@ final class ClassLikes
                 $storage->constants,
                 static fn(ClassConstantStorage $constant): bool => $constant->type
                     && ($constant->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC
-                        || $constant->visibility === ClassLikeAnalyzer::VISIBILITY_PROTECTED)
+                        || $constant->visibility === ClassLikeAnalyzer::VISIBILITY_PROTECTED),
             );
         }
 
@@ -2410,7 +2410,7 @@ final class ClassLikes
             fn(ClassConstantStorage $resolved_constant) => $this->filterConstantNameByVisibility(
                 $resolved_constant,
                 $visibility,
-            )
+            ),
         );
 
         if ($filtered_constants_by_visibility === []) {

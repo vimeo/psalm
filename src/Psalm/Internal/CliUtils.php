@@ -549,7 +549,7 @@ final class CliUtils
 
         $missing_extensions = array_filter(
             $required_extensions,
-            static fn(string $ext) => !extension_loaded($ext)
+            static fn(string $ext) => !extension_loaded($ext),
         );
 
         if ($missing_extensions) {
