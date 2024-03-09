@@ -6857,7 +6857,7 @@ return [
 'ming_setswfcompression' => ['void', 'level'=>'int'],
 'ming_useconstants' => ['void', 'use'=>'int'],
 'ming_useswfversion' => ['void', 'version'=>'int'],
-'mkdir' => ['bool', 'directory'=>'string', 'permissions='=>'int', 'recursive='=>'bool', 'context='=>'resource'],
+'mkdir' => ['bool', 'directory'=>'string', 'permissions='=>'int', 'recursive='=>'bool', 'context='=>'null|resource'],
 'mktime' => ['int|false', 'hour'=>'int', 'minute='=>'int|null', 'second='=>'int|null', 'month='=>'int|null', 'day='=>'int|null', 'year='=>'int|null'],
 'money_format' => ['string', 'format'=>'string', 'value'=>'float'],
 'Mongo::__construct' => ['void', 'server='=>'string', 'options='=>'array', 'driver_options='=>'array'],
