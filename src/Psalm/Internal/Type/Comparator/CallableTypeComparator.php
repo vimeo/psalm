@@ -19,6 +19,9 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCallableArray;
+use Psalm\Type\Atomic\TCallableKeyedArray;
+use Psalm\Type\Atomic\TCallableObject;
+use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TKeyedArray;
@@ -41,7 +44,7 @@ use function substr;
 final class CallableTypeComparator
 {
     /**
-     * @param  TCallable|TClosure   $input_type_part
+     * @param  TCallable|TClosure|TCallableArray|TCallableString|TCallableKeyedArray|TCallableObject   $input_type_part
      * @param  TCallable|TClosure   $container_type_part
      */
     public static function isContainedBy(
@@ -50,6 +53,26 @@ final class CallableTypeComparator
         Atomic $container_type_part,
         ?TypeComparisonResult $atomic_comparison_result
     ): bool {
+        if ($container_type_part instanceof TClosure) {
+            if ($input_type_part instanceof TCallableArray
+                || $input_type_part instanceof TCallableString
+                || $input_type_part instanceof TCallableKeyedArray
+                || $input_type_part instanceof TCallableObject
+            ) {
+                if ($atomic_comparison_result) {
+                    $atomic_comparison_result->type_coerced = true;
+                }
+                return false;
+            }
+        }
+        if ($input_type_part instanceof TCallableArray
+            || $input_type_part instanceof TCallableString
+            || $input_type_part instanceof TCallableKeyedArray
+            || $input_type_part instanceof TCallableObject
+        ) {
+            return true;
+        }
+
         if ($container_type_part->is_pure && !$input_type_part->is_pure) {
             if ($atomic_comparison_result) {
                 $atomic_comparison_result->type_coerced = $input_type_part->is_pure === null;

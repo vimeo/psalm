@@ -1920,6 +1920,21 @@ class CallableTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'callableArrayPassedAsCallable' => [
+                'code' => <<<'PHP'
+                <?php
+                function f(callable $c): void {
+                    $c();
+                }
+                /** @var object $o */;
+
+                $ca = [$o::class, 'createFromFormat'];
+                if (!is_callable($ca)) {
+                    exit;
+                }
+                f($ca);
+                PHP,
+            ],
         ];
     }
 

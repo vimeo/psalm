@@ -8,6 +8,7 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TCallableArray;
 use Psalm\Type\Atomic\TCallableKeyedArray;
 use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TCallableString;
@@ -191,7 +192,12 @@ final class AtomicTypeComparator
         }
 
         if (($container_type_part instanceof TCallable
-                && $input_type_part instanceof TCallable)
+            && ($input_type_part instanceof TCallable
+                || $input_type_part instanceof TCallableArray
+                || $input_type_part instanceof TCallableObject
+                || $input_type_part instanceof TCallableString
+                || $input_type_part instanceof TCallableKeyedArray
+            ))
             || ($container_type_part instanceof TClosure
                 && $input_type_part instanceof TClosure)
         ) {
