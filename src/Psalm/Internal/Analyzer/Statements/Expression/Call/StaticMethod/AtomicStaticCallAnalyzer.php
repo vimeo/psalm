@@ -789,7 +789,7 @@ final class AtomicStaticCallAnalyzer
             }
         }
 
-        if (!$callstatic_method_exists || $class_storage->hasSealedMethods($config)) {
+        if ($naive_method_exists || !$callstatic_method_exists || $class_storage->hasSealedMethods($config)) {
             $does_method_exist = MethodAnalyzer::checkMethodExists(
                 $codebase,
                 $method_id,
