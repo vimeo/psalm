@@ -434,9 +434,11 @@ final class ClassLikeNodeScanner
                             try {
                                 $type_string = CommentAnalyzer::splitDocLine($type_string)[0];
                             } catch (DocblockParseException $e) {
-                                throw new DocblockParseException(
-                                    $type_string . ' is not a valid type: ' . $e->getMessage(),
+                                $storage->docblock_issues[] = new InvalidDocblock(
+                                    $e->getMessage() . ' in docblock for ' . $fq_classlike_name,
+                                    $name_location ?? $class_location,
                                 );
+                                continue;
                             }
                             $type_string = CommentAnalyzer::sanitizeDocblockType($type_string);
                             try {
