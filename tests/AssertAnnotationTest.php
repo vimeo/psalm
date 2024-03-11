@@ -90,7 +90,7 @@ class AssertAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    public function testAssertFromImportedClassesWork(): void
+    public function testAssertsAllongCallStaticMethodWork(): void
     {
         $this->addFile(
             'somefile.php',
