@@ -402,10 +402,11 @@ final class ConstantTypeResolver
             return new TTrue();
         }
 
-        if ($value === null) {
-            return new TNull();
+        /** @psalm-suppress DocblockTypeContradiction */
+        if ($value !== null) {
+            throw new InvalidArgumentException('$value must be a scalar.');
         }
 
-        throw new InvalidArgumentException('$value must be a scalar.');
+        return new TNull();
     }
 }

@@ -204,7 +204,6 @@ final class ArrayFetchAnalyzer
 
         if ($stmt_var_type) {
             if ($stmt_var_type->isNull()) {
-                if (!$context->inside_isset) {
                     IssueBuffer::maybeAdd(
                         new NullArrayAccess(
                             'Cannot access array value on null variable ' . $extended_var_id,
@@ -212,12 +211,11 @@ final class ArrayFetchAnalyzer
                         ),
                         $statements_analyzer->getSuppressedIssues(),
                     );
-                }
 
                 $stmt_type = $statements_analyzer->node_data->getType($stmt);
                 $statements_analyzer->node_data->setType(
                     $stmt,
-                    Type::combineUnionTypes($stmt_type, Type::getNull()),
+                    Type::combineUnionTypes($stmt_type, Type::getNever()),
                 );
 
                 return true;
@@ -1400,7 +1398,7 @@ final class ArrayFetchAnalyzer
         if ($array_access_type->isNever()
             && !$hasMixed
             && !$in_assignment
-            && !$context->inside_isset
+            && !$context->inside_loop
         ) {
             IssueBuffer::maybeAdd(
                 new EmptyArrayAccess(
@@ -1409,10 +1407,6 @@ final class ArrayFetchAnalyzer
                 ),
                 $statements_analyzer->getSuppressedIssues(),
             );
-
-            if (!IssueBuffer::isRecording()) {
-                $array_access_type = Type::getMixed(true);
-            }
         }
     }
 
