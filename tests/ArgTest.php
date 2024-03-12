@@ -697,7 +697,7 @@ class ArgTest extends TestCase
                 ',
                 'error_message' => 'PossiblyInvalidArgument',
             ],
-            'SKIPPED-preventUnpackingPossiblyArray' => [
+            'preventUnpackingPossiblyArray' => [
                 'code' => '<?php
                     function foo(int $arg1, int $arg2): void {}
 
