@@ -2988,6 +2988,8 @@ class ArrayFunctionCallTest extends TestCase
                     array_merge(...$map);
                 ',
                 'error_message' => 'NamedArgumentNotAllowed',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'arrayMergeRecursiveNoNamed' => [
                 'code' => '<?php
@@ -2995,6 +2997,8 @@ class ArrayFunctionCallTest extends TestCase
                     array_merge_recursive(...$map);
                 ',
                 'error_message' => 'NamedArgumentNotAllowed',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'arrayUniquePreservesEmptyInput' => [
                 'code' => '<?php

@@ -668,8 +668,8 @@ class IntRangeTest extends TestCase
                     $i = max($b, $c, $d);
                     $j = max($d, $e);
                     $k = max($e, 40);
-                    $l = min($a, ...[$b, $c], $d);
-                    $m = max(...[$a, ...[$b, $c]], $d);
+                    $l = min($a, $d, ...[$b, $c]);
+                    $m = max($d, ...[$a, ...[$b, $c]]);
                     ',
                 'assertions' => [
                     '$f===' => 'int<min, -16>',
