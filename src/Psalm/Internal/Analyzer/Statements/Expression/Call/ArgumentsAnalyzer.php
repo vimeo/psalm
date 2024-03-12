@@ -985,7 +985,9 @@ final class ArgumentsAnalyzer
                 ),
                 $statements_analyzer->getSuppressedIssues(),
             );
-        } elseif ($has_unpacked_non_keyed_array && $args_provided_max > $function_param_count && !$is_variadic && $has_packed_var) {
+        } elseif ($has_unpacked_non_keyed_array
+                  && $args_provided_max > $function_param_count
+                  && !$is_variadic && $has_packed_var) {
             // only report it if we don't have TooFewArguments too, as this is less severe of an issue
             // as it would often together otherwise
             IssueBuffer::maybeAdd(
