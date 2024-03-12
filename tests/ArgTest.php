@@ -91,8 +91,23 @@ final class ArgTest extends TestCase
 
                     /** @return array<array-key, string> */
                     function Baz(string ...$c) {
-                        Foo(...$c);
+                        if ($c !== array()) {
+                            Foo(...array_values($c));
+                        }
+
                         return $c;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'unpackArgNonNamed' => [
+                'code' => '<?php
+                    function Foo(string $a, string ...$b) : void {}
+
+                    /** @param non-empty-array<int, string> $c */
+                    function Baz($c): void {
+                        Foo(...$c);
                     }',
             ],
             'unpackByRefArg' => [
@@ -104,7 +119,7 @@ final class ArgTest extends TestCase
                     example(...$z);',
                 'assertions' => [
                     '$y' => 'int',
-                    '$z' => 'array<int, int>',
+                    '$z' => 'list<int>',
                 ],
             ],
             'namedArgAfterUnpack' => [
@@ -138,6 +153,9 @@ final class ArgTest extends TestCase
                     function Baz($c) : void {
                         Foo("hello", ...$c);
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'callMapClassOptionalArg' => [
                 'code' => '<?php
@@ -285,6 +303,9 @@ final class ArgTest extends TestCase
                             email: $input["email"],
                         );
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'useNamedArgumentsSimple' => [
                 'code' => '<?php
@@ -292,6 +313,9 @@ final class ArgTest extends TestCase
 
                     takesArguments(name: "hello", age: 5);
                     takesArguments(age: 5, name: "hello");',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'useNamedArgumentsSpread' => [
                 'code' => '<?php
@@ -301,7 +325,7 @@ final class ArgTest extends TestCase
                     takesArguments(...$args);',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.0',
+                'php_version' => '8.1',
             ],
             'useNamedVariadicArguments' => [
                 'code' => '<?php
@@ -319,7 +343,7 @@ final class ArgTest extends TestCase
                     takesArguments(...["age" => 5]);',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.0',
+                'php_version' => '8.1',
             ],
             'variadicArgsOptional' => [
                 'code' => '<?php
@@ -412,6 +436,20 @@ final class ArgTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
+            'unpackArgPossiblyPositionalArrayKeyOrdering' => [
+                'code' => '<?php
+                    function Foo(string $a, string ...$b) : void {}
+
+                    /** @return array<array-key, string> */
+                    function Baz(string ...$c) {
+                        Foo(...$c);
+                        return $c;
+                    }',
+                // possibly positional after named
+                'error_message' => 'PossiblyInvalidArgument',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'arrayPushArgumentUnpackingWithBadArg' => [
                 'code' => '<?php
                     $a = [];
@@ -671,7 +709,7 @@ final class ArgTest extends TestCase
                     }',
                 'error_message' => 'MixedArgument',
                 'ignored_issues' => [],
-                'php_version' => '8.0',
+                'php_version' => '8.1',
             ],
             'arrayWithoutAllNamedParametersSuppressMixed' => [
                 'code' => '<?php
@@ -692,7 +730,7 @@ final class ArgTest extends TestCase
                     }',
                 'error_message' => 'TooFewArguments',
                 'ignored_issues' => [],
-                'php_version' => '8.0',
+                'php_version' => '8.1',
             ],
             'wrongTypeVariadicArguments' => [
                 'code' => '<?php
@@ -787,6 +825,8 @@ final class ArgTest extends TestCase
                     }
                 ',
                 'error_message' => 'LessSpecificReturnStatement',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'preventUnpackingPossiblyIterable' => [
                 'code' => '<?php
@@ -807,6 +847,7 @@ final class ArgTest extends TestCase
                     foo(...$test);
                 ',
                 'error_message' => 'PossiblyInvalidArgument',
+                'ignored_issues' => ['TooFewArguments'],
             ],
             'noNamedArguments' => [
                 'code' => '<?php
@@ -836,7 +877,7 @@ final class ArgTest extends TestCase
                 ',
                 'error_message' => 'NamedArgumentNotAllowed',
                 'ignored_issues' => [],
-                'php_version' => '8.0',
+                'php_version' => '8.1',
             ],
             'variadicArgumentWithNoNamedArgumentsPreventsPassingArrayWithStringKey' => [
                 'code' => '<?php
@@ -852,6 +893,8 @@ final class ArgTest extends TestCase
                     foo(...["a" => 0]);
                 ',
                 'error_message' => 'NamedArgumentNotAllowed',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'unpackNonArrayKeyIterable' => [
                 'code' => '<?php
@@ -926,6 +969,8 @@ final class ArgTest extends TestCase
                 );
                 ',
                 'error_message' => 'TooFewArguments',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'SealedRefuseUnsealed' => [
                 'code' => '<?php

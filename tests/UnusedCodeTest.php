@@ -1770,6 +1770,8 @@ final class UnusedCodeTest extends TestCase
                         return $f;
                     }',
                 'error_message' => 'UnusedFunctionCall',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'propertyWrittenButNotRead' => [
                 'code' => '<?php

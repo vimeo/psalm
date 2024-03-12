@@ -76,6 +76,9 @@ final class AttributeTest extends TestCase
                             public string $name = "",
                         ) {}
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'functionAttributeExists' => [
                 'code' => '<?php
@@ -149,6 +152,9 @@ final class AttributeTest extends TestCase
                     #[Route(methods: ["GET"])]
                     class HealthController
                     {}',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'allowsRepeatableFlag' => [
                 'code' => '<?php
@@ -172,6 +178,9 @@ final class AttributeTest extends TestCase
 
                     #[Foo(_className: Baz::class)]
                     class Baz {}',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'allowsClassStringFromDifferentNamespace' => [
                 'code' => '<?php
@@ -207,6 +216,9 @@ final class AttributeTest extends TestCase
                         class Baz {}
                     }
                 ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'returnTypeWillChange7.1' => [
                 'code' => '<?php
