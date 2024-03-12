@@ -818,7 +818,9 @@ final class ArgumentsAnalyzer
 
                         $args_provided_min += $array_type->count ? ($array_type->count - 1) : 0;
                     } else {
-                        if (isset($array_type->type_params[1]) && $array_type->type_params[1]->isNever()) {
+                        if (isset($array_type->type_params[1])
+                            && $array_type->type_params[1] instanceof Union
+                            && $array_type->type_params[1]->isNever()) {
                             $args_provided_max--;
                         } else {
                             $args_provided_max = $function_param_count + 10_00_00_00_00;
@@ -981,11 +983,12 @@ final class ArgumentsAnalyzer
         if ($has_unpacked_non_keyed_array && $args_provided_min < $required_args_count && $has_packed_var) {
             IssueBuffer::maybeAdd(
                 new TooFewArguments(
-                    'Possibly too few arguments for ' . ($cased_method_id ?: $method_id)
+                    'Possibly too few arguments for '
+                    . ($cased_method_id ?? (string) $method_id)
                     . ' - expecting ' . $required_args_count . ' but possibly only'
                     . ' ' . $args_provided_min . ' provided',
                     $code_location,
-                    ($cased_method_id ?: $method_id),
+                    ($cased_method_id ?? (string) $method_id),
                 ),
                 $statements_analyzer->getSuppressedIssues(),
             );
@@ -996,11 +999,12 @@ final class ArgumentsAnalyzer
             // as it would often together otherwise
             IssueBuffer::maybeAdd(
                 new TooManyArguments(
-                    'Possibly too many arguments for ' . ($cased_method_id ?: $method_id)
+                    'Possibly too many arguments for '
+                    . ($cased_method_id ?? (string) $method_id)
                     . ' - expecting ' . $function_param_count . ' but saw'
                     . ' ' . ($args_provided_max > 5000 ? 'unlimited from unpacking' : $args_provided_max),
                     $code_location,
-                    ($cased_method_id ?: $method_id),
+                    ($cased_method_id ?? (string) $method_id),
                 ),
                 $statements_analyzer->getSuppressedIssues(),
             );
@@ -1307,6 +1311,7 @@ final class ArgumentsAnalyzer
                 if ($by_ref_type && $function_param->is_variadic && $arg->unpack) {
                     // string unpacking available since 8.1
                     if ($codebase->analysis_php_version_id >= 8_01_00
+                        && $method_id
                         && $codebase->getFunctionLikeStorage($statements_analyzer, $method_id)->allow_named_arg_calls
                     ) {
                         $by_ref_type = new Union([
@@ -1775,7 +1780,8 @@ final class ArgumentsAnalyzer
         ) {
             IssueBuffer::maybeAdd(
                 new TooManyArguments(
-                    'Too many arguments for ' . ($cased_method_id ?: $method_id)
+                    'Too many arguments for '
+                    . ($cased_method_id ?? (string) $method_id)
                     . ' - expecting ' . count($function_params) . ' but saw ' . count($args),
                     $code_location,
                     (string)$method_id,

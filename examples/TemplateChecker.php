@@ -61,7 +61,7 @@ final class TemplateAnalyzer extends Psalm\Internal\Analyzer\FileAnalyzer
                     throw new InvalidArgumentException('Could not interpret doc comment correctly');
                 }
 
-                /** @psalm-suppress ArgumentTypeCoercion */
+                /** @psalm-suppress ArgumentTypeCoercion, TooFewArguments */
                 $method_id = new MethodIdentifier(...explode('::', $matches[1]));
 
                 $this_params = $this->checkMethod($method_id, $first_stmt, $codebase);
