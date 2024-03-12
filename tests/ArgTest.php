@@ -107,6 +107,20 @@ final class ArgTest extends TestCase
                     '$z' => 'array<int, int>',
                 ],
             ],
+            'namedArgAfterUnpack' => [
+                'code' => '<?php
+                    function Foo(string $a, string $b) : void {}
+
+                    /**
+                     * @param non-empty-array<int, string> $c
+                     */
+                    function Baz($c): void {
+                        Foo(...$c, b: "hello");
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['TooManyArguments'],
+                'php_version' => '8.0',
+            ],
             'callMapClassOptionalArg' => [
                 'code' => '<?php
                     class Hello {}
@@ -631,6 +645,31 @@ final class ArgTest extends TestCase
                 'error_message' => 'InvalidScalarArgument',
                 'ignored_issues' => [],
                 'php_version' => '8.0',
+            ],
+            'positionalArgAfterUnpackNotNamed' => [
+                'code' => '<?php
+                    function Foo(string $a, string $b) : void {}
+
+                    /**
+                     * @param array{0: string} $c
+                     */
+                    function Baz($c): void {
+                        Foo(...$c, "hello");
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'positionalArgAfterUnpackGenericArrayNotNamed' => [
+                'code' => '<?php
+                    function Foo(string $a, string $b) : void {}
+
+                    /**
+                     * @param non-empty-array<int, string> $c
+                     */
+                    function Baz($c): void {
+                        Foo(...$c, "hello");
+                    }',
+                'error_message' => 'InvalidArgument',
+                'ignored_issues' => ['TooManyArguments'],
             ],
             'byrefVarSetsPossible' => [
                 'code' => '<?php
