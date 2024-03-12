@@ -27,6 +27,7 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Issue\InvalidArgument;
 use Psalm\Issue\InvalidNamedArgument;
 use Psalm\Issue\InvalidPassByReference;
 use Psalm\Issue\PossiblyUndefinedVariable;
@@ -710,6 +711,7 @@ final class ArgumentsAnalyzer
         $arg_function_params = [];
         $matched_args = [];
         $named_args_was_used = false;
+        $unpacked_arg_was_used = false;
 
         $args_provided_max = 0;
         $args_provided_min = 0;
@@ -728,7 +730,20 @@ final class ArgumentsAnalyzer
                 );
             }
 
+            // this would be a fatal error in all PHP versions (7, 8, 8.3)
+            if ($unpacked_arg_was_used && !$arg->name && !$arg->unpack) {
+                IssueBuffer::maybeAdd(
+                    new InvalidArgument(
+                        'Cannot use positional argument after argument unpacking',
+                        new CodeLocation($statements_analyzer, $arg),
+                        (string) $method_id,
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            }
+
             if ($arg->unpack) {
+                $unpacked_arg_was_used = true;
                 if ($function_param_count > $argument_offset) {
                     for ($i = $argument_offset; $i < $function_param_count; $i++) {
                         $arg_function_params[$argument_offset][] = $function_params[$i];
