@@ -19,9 +19,7 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCallableArray;
-use Psalm\Type\Atomic\TCallableKeyedArray;
-use Psalm\Type\Atomic\TCallableObject;
-use Psalm\Type\Atomic\TCallableString;
+use Psalm\Type\Atomic\TCallableInterface;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TKeyedArray;
@@ -44,20 +42,18 @@ use function substr;
 final class CallableTypeComparator
 {
     /**
-     * @param  TCallable|TClosure|TCallableArray|TCallableString|TCallableKeyedArray|TCallableObject   $input_type_part
+     * @param  TClosure|TCallableInterface $input_type_part
      * @param  TCallable|TClosure   $container_type_part
      */
     public static function isContainedBy(
         Codebase $codebase,
-        Atomic $input_type_part,
+        $input_type_part,
         Atomic $container_type_part,
         ?TypeComparisonResult $atomic_comparison_result
     ): bool {
         if ($container_type_part instanceof TClosure) {
-            if ($input_type_part instanceof TCallableArray
-                || $input_type_part instanceof TCallableString
-                || $input_type_part instanceof TCallableKeyedArray
-                || $input_type_part instanceof TCallableObject
+            if ($input_type_part instanceof TCallableInterface
+                && !$input_type_part instanceof TCallable // it has stricter checks below
             ) {
                 if ($atomic_comparison_result) {
                     $atomic_comparison_result->type_coerced = true;
@@ -65,10 +61,8 @@ final class CallableTypeComparator
                 return false;
             }
         }
-        if ($input_type_part instanceof TCallableArray
-            || $input_type_part instanceof TCallableString
-            || $input_type_part instanceof TCallableKeyedArray
-            || $input_type_part instanceof TCallableObject
+        if ($input_type_part instanceof TCallableInterface
+            && !$input_type_part instanceof TCallable // it has stricter checks below
         ) {
             return true;
         }

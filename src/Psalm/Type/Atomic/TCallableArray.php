@@ -7,7 +7,7 @@ namespace Psalm\Type\Atomic;
  *
  * @psalm-immutable
  */
-final class TCallableArray extends TNonEmptyArray
+final class TCallableArray extends TNonEmptyArray implements TCallableInterface
 {
     /**
      * @var string

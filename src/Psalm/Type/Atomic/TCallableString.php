@@ -7,7 +7,7 @@ namespace Psalm\Type\Atomic;
  *
  * @psalm-immutable
  */
-final class TCallableString extends TNonFalsyString
+final class TCallableString extends TNonFalsyString implements TCallableInterface
 {
 
     public function getKey(bool $include_extra = true): string
