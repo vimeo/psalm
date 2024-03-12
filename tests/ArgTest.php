@@ -117,6 +117,24 @@ class ArgTest extends TestCase
                 'ignored_issues' => ['TooManyArguments'],
                 'php_version' => '8.0',
             ],
+            'unpackIntKeyedArg' => [
+                'code' => '<?php
+                    function Foo(string $a, string ...$b) : void {}
+
+                    /** @param non-empty-list<string> $c */
+                    function Baz($c) : void {
+                        Foo("hello", ...$c);
+                    }',
+            ],
+            'unpackStringKeyedArg' => [
+                'code' => '<?php
+                    function Foo(string $a, string ...$b) : void {}
+
+                    /** @param array<string, string> $c */
+                    function Baz($c) : void {
+                        Foo("hello", ...$c);
+                    }',
+            ],
             'callMapClassOptionalArg' => [
                 'code' => '<?php
                     class Hello {}
@@ -582,6 +600,45 @@ class ArgTest extends TestCase
                         );
                     }',
                 'error_message' => 'NamedArgumentNotAllowed',
+            ],
+            'unpackGenericArg' => [
+                'code' => '<?php
+                    function Foo(string $a, string ...$b) : void {}
+
+                    /** @param array<string> $c */
+                    function Baz($c) : void {
+                        Foo(...$c);
+                    }',
+                // possibly positional after named
+                'error_message' => 'PossiblyInvalidArgument',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'unpackGenericStringArgHasExistingNamed' => [
+                'code' => '<?php
+                    function Foo(string $a, string ...$b) : void {}
+
+                    /** @param array<string, string> $c */
+                    function Baz($c) : void {
+                        Foo(a: "hello", ...$c);
+                    }',
+                // "a" could be there twice
+                'error_message' => 'InvalidNamedArgument',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'unpackGenericArrayHasExistingNamed' => [
+                'code' => '<?php
+                    function Foo(string $a, string ...$b) : void {}
+
+                    /** @param array<string> $c */
+                    function Baz($c) : void {
+                        Foo(a: "hello", ...$c);
+                    }',
+                // possibly positional after named
+                'error_message' => 'InvalidNamedArgument',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'noNamedArgsFunction' => [
                 'code' => '<?php

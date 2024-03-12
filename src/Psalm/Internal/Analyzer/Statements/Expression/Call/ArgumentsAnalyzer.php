@@ -30,6 +30,7 @@ use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\InvalidArgument;
 use Psalm\Issue\InvalidNamedArgument;
 use Psalm\Issue\InvalidPassByReference;
+use Psalm\Issue\PossiblyInvalidArgument;
 use Psalm\Issue\PossiblyUndefinedVariable;
 use Psalm\Issue\TooFewArguments;
 use Psalm\Issue\TooManyArguments;
@@ -50,6 +51,8 @@ use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyArray;
+use Psalm\Type\Atomic\TNumericString;
+use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 use UnexpectedValueException;
@@ -712,6 +715,7 @@ final class ArgumentsAnalyzer
         $matched_args = [];
         $named_args_was_used = false;
         $unpacked_arg_was_used = false;
+        $generic_named_used = false;
 
         $args_provided_max = 0;
         $args_provided_min = 0;
@@ -723,6 +727,15 @@ final class ArgumentsAnalyzer
                 IssueBuffer::maybeAdd(
                     new InvalidNamedArgument(
                         'Cannot use positional argument after named argument',
+                        new CodeLocation($statements_analyzer, $arg),
+                        (string)$method_id,
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            } elseif ($generic_named_used && ($arg->name || $arg->unpack)) {
+                IssueBuffer::maybeAdd(
+                    new InvalidNamedArgument(
+                        'Possibly the named parameter has already been used from unpack',
                         new CodeLocation($statements_analyzer, $arg),
                         (string)$method_id,
                     ),
@@ -752,6 +765,8 @@ final class ArgumentsAnalyzer
 
                 if (($arg_value_type = $statements_analyzer->node_data->getType($arg->value))
                     && $arg_value_type->hasArray()) {
+                    $named_args_was_used_before_array = $named_args_was_used;
+
                     /**
                      * @var TArray|TKeyedArray
                      */
@@ -776,13 +791,11 @@ final class ArgumentsAnalyzer
                             }
 
                             if ($named_args_was_used) {
-                                // the docblock annotation syntax is insensitive to position
-                                // maybe change it to PossiblyInvalidArgument for $arg_value_type->from_docblock
                                 IssueBuffer::maybeAdd(
-                                    new InvalidNamedArgument(
-                                        'Cannot use positional argument after named argument',
+                                    new PossiblyInvalidArgument(
+                                        'Possibly used positional argument after named argument',
                                         new CodeLocation($statements_analyzer, $arg),
-                                        (string) $method_id,
+                                        (string)$method_id,
                                     ),
                                     $statements_analyzer->getSuppressedIssues(),
                                 );
@@ -821,13 +834,60 @@ final class ArgumentsAnalyzer
 
                     $key_types = $array_type->type_params[0]->getAtomicTypes();
 
+                    if ($array_type->type_params[0]->isString()) {
+                        $named_args_was_used = true;
+                    } elseif ($named_args_was_used) {
+                        IssueBuffer::maybeAdd(
+                            new InvalidNamedArgument(
+                                'Cannot use positional argument after named argument',
+                                new CodeLocation($statements_analyzer, $arg),
+                                (string)$method_id,
+                            ),
+                            $statements_analyzer->getSuppressedIssues(),
+                        );
+                    } elseif (!$array_type->type_params[0]->isInt()) {
+                        // e.g. array-key or a mix of literal strings with int or just int|string
+                        IssueBuffer::maybeAdd(
+                            new PossiblyInvalidArgument(
+                                'Possibly used positional argument after named argument',
+                                new CodeLocation($statements_analyzer, $arg),
+                                (string)$method_id,
+                            ),
+                            $statements_analyzer->getSuppressedIssues(),
+                        );
+
+                        $named_args_was_used = true;
+                    }
+
                     foreach ($key_types as $key_type) {
-                        if (!$key_type instanceof TLiteralString
-                            || ($function_storage && !$function_storage->allow_named_arg_calls)) {
+                        if ($function_storage && !$function_storage->allow_named_arg_calls) {
                             continue;
                         }
 
-                        $named_args_was_used = true;
+                        if ($key_type instanceof TString
+                            && !$key_type instanceof TNumericString
+                            && !$key_type instanceof TLiteralString
+                            && !$generic_named_used) {
+                            // only report an error if the named args were used before this array
+                            // since array keys are unique, this isn't an issue within the array
+                            if ($named_args_was_used_before_array && $argument_offset !== 0) {
+                                IssueBuffer::maybeAdd(
+                                    new InvalidNamedArgument(
+                                        'Possibly the generic named parameter from unpack has already been used',
+                                        new CodeLocation($statements_analyzer, $arg),
+                                        (string)$method_id,
+                                    ),
+                                    $statements_analyzer->getSuppressedIssues(),
+                                );
+                            }
+
+                            $generic_named_used = true;
+                            $named_args_was_used = true;
+                        }
+
+                        if (!$key_type instanceof TLiteralString) {
+                            continue;
+                        }
 
                         $param_found = false;
 
