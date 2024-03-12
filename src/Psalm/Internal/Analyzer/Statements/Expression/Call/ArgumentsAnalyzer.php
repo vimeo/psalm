@@ -767,9 +767,6 @@ final class ArgumentsAnalyzer
                     && $arg_value_type->hasArray()) {
                     $named_args_was_used_before_array = $named_args_was_used;
 
-                    /**
-                     * @var TArray|TKeyedArray
-                     */
                     $array_type = $arg_value_type->getArray();
 
                     if ($array_type instanceof TCallableArray ||
@@ -821,7 +818,7 @@ final class ArgumentsAnalyzer
 
                         $args_provided_min += $array_type->count ? ($array_type->count - 1) : 0;
                     } else {
-                        if ($array_type->type_params[1]->isNever()) {
+                        if (isset($array_type->type_params[1]) && $array_type->type_params[1]->isNever()) {
                             $args_provided_max--;
                         } else {
                             $args_provided_max = $function_param_count + 10_00_00_00_00;
@@ -832,9 +829,16 @@ final class ArgumentsAnalyzer
                         $has_unpacked_non_keyed_array = true;
                     }
 
-                    $key_types = $array_type->type_params[0]->getAtomicTypes();
+                    $key_types = Type::getArrayKey();
+                    if ($array_type instanceof Type\Atomic\TClassStringMap) {
+                        $key_types = Type::getNonFalsyString();
+                    } elseif ($array_type instanceof TCallableKeyedArray) {
+                        $key_types = Type::getInt();
+                    } elseif (isset($array_type->type_params[0])) {
+                        $key_types = $array_type->type_params[0];
+                    }
 
-                    if ($array_type->type_params[0]->isString()) {
+                    if ($key_types->isString()) {
                         $named_args_was_used = true;
                     } elseif ($named_args_was_used) {
                         IssueBuffer::maybeAdd(
@@ -845,7 +849,7 @@ final class ArgumentsAnalyzer
                             ),
                             $statements_analyzer->getSuppressedIssues(),
                         );
-                    } elseif (!$array_type->type_params[0]->isInt()) {
+                    } elseif (!$key_types->isInt()) {
                         // e.g. array-key or a mix of literal strings with int or just int|string
                         IssueBuffer::maybeAdd(
                             new PossiblyInvalidArgument(
@@ -859,7 +863,7 @@ final class ArgumentsAnalyzer
                         $named_args_was_used = true;
                     }
 
-                    foreach ($key_types as $key_type) {
+                    foreach ($key_types->getAtomicTypes() as $key_type) {
                         if ($function_storage && !$function_storage->allow_named_arg_calls) {
                             continue;
                         }

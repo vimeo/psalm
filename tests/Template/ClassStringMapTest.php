@@ -82,6 +82,9 @@ class ClassStringMapTest extends TestCase
                     function foo(array $arr) : void {
                         takesVariadic(...$arr);
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'assignClassStringMapInConstruct' => [
                 'code' => '<?php

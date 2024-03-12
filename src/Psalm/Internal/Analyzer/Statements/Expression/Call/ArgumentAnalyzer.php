@@ -501,7 +501,7 @@ final class ArgumentAnalyzer
             $invalid_string_key = false;
             $possibly_matches = false;
             foreach ($arg_value_type->getAtomicTypes() as $atomic_type) {
-                if (!$atomic_type->isIterable($codebase)) {
+                if (!$atomic_type->isIterable($codebase) && !$atomic_type instanceof TClassStringMap) {
                     $non_iterable = true;
                     continue;
                 }
