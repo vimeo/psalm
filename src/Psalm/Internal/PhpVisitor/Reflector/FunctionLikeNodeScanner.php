@@ -32,6 +32,7 @@ use Psalm\Issue\DuplicateFunction;
 use Psalm\Issue\DuplicateMethod;
 use Psalm\Issue\DuplicateParam;
 use Psalm\Issue\InvalidDocblock;
+use Psalm\Issue\InvalidPropertyAssignment;
 use Psalm\Issue\MissingDocblockType;
 use Psalm\Issue\ParseError;
 use Psalm\Issue\PrivateFinalMethod;
@@ -619,6 +620,18 @@ final class FunctionLikeNodeScanner
                         new InvalidDocblock(
                             'Param ' . $param_storage->name . ' of ' . $cased_function_id .
                             ' should be documented as a param or a property, not both',
+                            new CodeLocation($this->file_scanner, $param, null, true),
+                        ),
+                    )) {
+                        return false;
+                    }
+                }
+
+                if ($this->codebase->analysis_php_version_id < 8_00_00) {
+                    if (IssueBuffer::accepts(
+                        new InvalidPropertyAssignment(
+                            'Promoted properties are only supported in PHP 8 or newer,'
+                            . ' but promoted property ' . $param_storage->name . ' found',
                             new CodeLocation($this->file_scanner, $param, null, true),
                         ),
                     )) {
