@@ -1075,6 +1075,9 @@ class FunctionCallTest extends TestCase
             ],
             'filterInput' => [
                 'code' => '<?php
+                    $a = filter_input(INPUT_GET, "foo", options: FILTER_FORCE_ARRAY);
+                    assert(is_array($a));
+
                     function filterInt(string $s) : int {
                         $filtered = filter_var($s, FILTER_VALIDATE_INT);
                         if ($filtered === false) {
@@ -1110,6 +1113,11 @@ class FunctionCallTest extends TestCase
             ],
             'filterVar' => [
                 'code' => '<?php
+                    function namedArgs(): string {
+                        $a = filter_var("a", options: FILTER_FORCE_ARRAY);
+                        return $a[0];
+                    }
+
                     function filterInt(string $s) : int {
                         $filtered = filter_var($s, FILTER_VALIDATE_INT);
                         if ($filtered === false) {
