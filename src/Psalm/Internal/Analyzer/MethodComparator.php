@@ -38,7 +38,6 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
 use function array_filter;
-use function count;
 use function in_array;
 use function strpos;
 use function strtolower;
@@ -457,10 +456,8 @@ final class MethodComparator
                     $implementer_param->location->file_path,
                 )
             ) {
-                if (!$guide_classlike_storage->user_defined && $i === 0 && count($guide_method_storage->params) < 2) {
-                    // if it's third party defined and a single arg, renaming is unnecessary
-                    // if we still want to psalter it, move this if and change the else below to elseif
-                } elseif ($config->allow_named_arg_calls
+                // even if it's just a single arg, it needs to be renamed in case it's called with a single named arg
+                if ($config->allow_named_arg_calls
                     || ($guide_classlike_storage->location
                         && !$config->isInProjectDirs($guide_classlike_storage->location->file_path)
                     )
