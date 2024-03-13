@@ -985,6 +985,29 @@ class ClassTest extends TestCase
                     echo A::HELLO;',
                 'error_message' => 'UndefinedConstant',
             ],
+            'consistentNamesConstructor' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-consistent-constructor
+                     */
+                    class A
+                    {
+                        public function __construct(
+                            string $name,
+                            string $email,
+                        ) {}
+                    }
+
+                    class B extends A
+                    {
+                        public function __construct(
+                            string $names,
+                            string $email,
+                        ) {}
+                    }
+                    ',
+                'error_message' => 'ParamNameMismatch',
+            ],
             'overridePublicAccessLevelToPrivate' => [
                 'code' => '<?php
                     class A {
