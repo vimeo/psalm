@@ -232,6 +232,7 @@ Level 5 and above allows a more non-verifiable code, and higher levels are even 
 - [InvalidDocblockParamName](issues/InvalidDocblockParamName.md)
 - [InvalidFalsableReturnType](issues/InvalidFalsableReturnType.md)
 - [InvalidStringClass](issues/InvalidStringClass.md)
+- [MissingClassConstType](issues/MissingClassConstType.md)
 - [MissingClosureParamType](issues/MissingClosureParamType.md)
 - [MissingClosureReturnType](issues/MissingClosureReturnType.md)
 - [MissingConstructor](issues/MissingConstructor.md)
