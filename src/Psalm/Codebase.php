@@ -889,7 +889,7 @@ final class Codebase
      */
     public function getMethodReturnTypeLocation(
         $method_id,
-        CodeLocation &$defined_location = null
+        ?CodeLocation &$defined_location = null
     ): ?CodeLocation {
         return $this->methods->getMethodReturnTypeLocation(
             MethodIdentifier::wrap($method_id),
@@ -1651,7 +1651,7 @@ final class Codebase
      */
     public function getSignatureInformation(
         string $function_symbol,
-        string $file_path = null
+        ?string $file_path = null
     ): ?SignatureInformation {
         $signature_label = '';
         $signature_documentation = null;
@@ -1876,7 +1876,7 @@ final class Codebase
         string $type_string,
         string $gap,
         bool $snippets_supported = false,
-        array $allow_visibilities = null,
+        ?array $allow_visibilities = null,
         array $ignore_fq_class_names = []
     ): array {
         if ($allow_visibilities === null) {

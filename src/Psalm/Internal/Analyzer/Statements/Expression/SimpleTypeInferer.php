@@ -56,7 +56,7 @@ final class SimpleTypeInferer
         NodeDataProvider $nodes,
         PhpParser\Node\Expr $stmt,
         Aliases $aliases,
-        FileSource $file_source = null,
+        ?FileSource $file_source = null,
         ?array $existing_class_constants = null,
         ?string $fq_classlike_name = null
     ): ?Union {
@@ -544,7 +544,7 @@ final class SimpleTypeInferer
         NodeDataProvider $nodes,
         PhpParser\Node\Expr\Array_ $stmt,
         Aliases $aliases,
-        FileSource $file_source = null,
+        ?FileSource $file_source = null,
         ?array $existing_class_constants = null,
         ?string $fq_classlike_name = null
     ): ?Union {
@@ -628,7 +628,7 @@ final class SimpleTypeInferer
         ArrayCreationInfo $array_creation_info,
         PhpParser\Node\Expr\ArrayItem $item,
         Aliases $aliases,
-        FileSource $file_source = null,
+        ?FileSource $file_source = null,
         ?array $existing_class_constants = null,
         ?string $fq_classlike_name = null
     ): bool {
