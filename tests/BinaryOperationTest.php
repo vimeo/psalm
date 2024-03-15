@@ -1218,6 +1218,62 @@ class BinaryOperationTest extends TestCase
                     }',
                 'error_message' => 'LessSpecificReturnStatement',
             ],
+            'greaterEqualRedundant' => [
+                'code' => '<?php
+                    $a = array();
+                    if ($a > PHP_INT_MAX) {
+                        echo "yes";
+                    }',
+                'error_message' => 'PossiblyInvalidOperand',
+            ],
+            'lessEqualThanImpossible' => [
+                'code' => '<?php
+                    $a = array();
+                    if ($a < PHP_INT_MAX) {
+                        echo "yes";
+                    }',
+                'error_message' => 'PossiblyInvalidOperand',
+            ],
+            'greaterRisky' => [
+                'code' => '<?php
+                    $a = rand(0, 1) > 0 ? array() : rand();
+                    if ($a > 0) {
+                        echo "yes";
+                    }',
+                'error_message' => 'PossiblyInvalidOperand',
+            ],
+            'greaterEqualRisky' => [
+                'code' => '<?php
+                    $a = rand(0, 1) > 0 ? false : rand();
+                    if ($a >= 0) {
+                        echo "yes";
+                    }',
+                'error_message' => 'PossiblyInvalidOperand',
+            ],
+            'lessEqualRisky' => [
+                'code' => '<?php
+                    $a = rand(0, 1) > 0 ? false : rand();
+                    if ($a <= 0) {
+                        echo "yes";
+                    }',
+                'error_message' => 'PossiblyInvalidOperand',
+            ],
+            'greaterObjectNotice' => [
+                'code' => '<?php
+                    $a = new stdClass();
+                    if ($a > 0) {
+                        echo "yes";
+                    }',
+                'error_message' => 'PossiblyInvalidOperand',
+            ],
+            'greaterEqualObjectNotice' => [
+                'code' => '<?php
+                    $a = rand(0, 1) > 0 ? rand() : new stdClass();
+                    if ($a >= 0) {
+                        echo "yes";
+                    }',
+                'error_message' => 'PossiblyInvalidOperand',
+            ],
         ];
     }
 }

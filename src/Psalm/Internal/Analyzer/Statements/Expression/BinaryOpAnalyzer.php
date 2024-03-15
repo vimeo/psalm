@@ -20,15 +20,20 @@ use Psalm\Internal\MethodIdentifier;
 use Psalm\Issue\DocblockTypeContradiction;
 use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\InvalidOperand;
+use Psalm\Issue\PossiblyInvalidOperand;
 use Psalm\Issue\RedundantCondition;
 use Psalm\Issue\RedundantConditionGivenDocblockType;
 use Psalm\Issue\TypeDoesNotContainType;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type;
+use Psalm\Type\Atomic\TFloat;
+use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TResource;
+use Psalm\Type\Atomic\TString;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -240,19 +245,65 @@ final class BinaryOpAnalyzer
                     || $stmt instanceof PhpParser\Node\Expr\BinaryOp\GreaterOrEqual
                     || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Smaller
                     || $stmt instanceof PhpParser\Node\Expr\BinaryOp\SmallerOrEqual)
-                && $statements_analyzer->getCodebase()->config->strict_binary_operands
                 && $stmt_left_type
                 && $stmt_right_type
-                && (($stmt_left_type->isSingle() && $stmt_left_type->hasBool())
-                    || ($stmt_right_type->isSingle() && $stmt_right_type->hasBool()))
             ) {
-                IssueBuffer::maybeAdd(
-                    new InvalidOperand(
-                        'Cannot compare ' . $stmt_left_type->getId() . ' to ' . $stmt_right_type->getId(),
-                        new CodeLocation($statements_analyzer, $stmt),
-                    ),
-                    $statements_analyzer->getSuppressedIssues(),
-                );
+                if ($statements_analyzer->getCodebase()->config->strict_binary_operands
+                    && (($stmt_left_type->isSingle() && $stmt_left_type->hasBool())
+                        || ($stmt_right_type->isSingle() && $stmt_right_type->hasBool()))) {
+                    IssueBuffer::maybeAdd(
+                        new InvalidOperand(
+                            'Cannot compare ' . $stmt_left_type->getId() . ' to ' . $stmt_right_type->getId(),
+                            new CodeLocation($statements_analyzer, $stmt),
+                        ),
+                        $statements_analyzer->getSuppressedIssues(),
+                    );
+                } else {
+                    foreach ($stmt_left_type->getAtomicTypes() as $atomic_type) {
+                        if ($atomic_type instanceof TString
+                            || $atomic_type instanceof TInt
+                            || $atomic_type instanceof TFloat
+                            || $atomic_type instanceof TResource) {
+                            continue;
+                        }
+
+                        // array and object behave extremely unexpectedly and might accidentally end up in a comparison
+                        // this can be further improved upon to reduce false positives, e.g. for keyed arrays
+                        // however these will mostly be fringe cases
+                        // https://www.php.net/manual/en/language.operators.comparison.php#language.operators.comparison.types
+                        IssueBuffer::maybeAdd(
+                            new PossiblyInvalidOperand(
+                                'Greater/Less than comparisons with type'
+                                . ' ' . $stmt_left_type->getId()
+                                . ' can behave unexpectedly.',
+                                new CodeLocation($statements_analyzer, $stmt),
+                            ),
+                            $statements_analyzer->getSuppressedIssues(),
+                        );
+
+                        break;
+                    }
+
+                    foreach ($stmt_right_type->getAtomicTypes() as $atomic_type) {
+                        if ($atomic_type instanceof TString
+                            || $atomic_type instanceof TInt
+                            || $atomic_type instanceof TFloat
+                            || $atomic_type instanceof TResource) {
+                            continue;
+                        }
+
+                        IssueBuffer::maybeAdd(
+                            new PossiblyInvalidOperand(
+                                'Greater/Less than comparisons with type'
+                                . ' ' . $stmt_right_type->getId()
+                                . ' can behave unexpectedly.',
+                                new CodeLocation($statements_analyzer, $stmt),
+                            ),
+                            $statements_analyzer->getSuppressedIssues(),
+                        );
+                        break;
+                    }
+                }
             }
 
             if (($stmt instanceof PhpParser\Node\Expr\BinaryOp\Equal
