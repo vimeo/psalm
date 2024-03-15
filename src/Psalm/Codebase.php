@@ -47,7 +47,6 @@ use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\Provider\StatementsProvider;
-use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Progress\Progress;
 use Psalm\Progress\VoidProgress;
@@ -2367,7 +2366,7 @@ final class Codebase
             $ignore_false,
             null,
             $allow_interface_equality,
-            $allow_float_int_equality
+            $allow_float_int_equality,
         );
     }
 
