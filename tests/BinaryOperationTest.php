@@ -1327,6 +1327,22 @@ class BinaryOperationTest extends TestCase
                     }',
                 'error_message' => 'PossiblyInvalidOperand',
             ],
+            'greaterEqualIntNull' => [
+                'code' => '<?php
+                    $a = $a = rand(0, 1) > 0 ? rand(0, 1000) : null;
+                    if ($a >= 0) {
+                        echo "can be null";
+                    }',
+                'error_message' => 'PossiblyInvalidOperand',
+            ],
+            'smallerIntNull' => [
+                'code' => '<?php
+                    $a = $a = rand(0, 1) > 0 ? rand(0, 1000) : null;
+                    if ($a < rand(0, 1000)) {
+                        echo "can be null";
+                    }',
+                'error_message' => 'PossiblyInvalidOperand',
+            ],
         ];
     }
 }
