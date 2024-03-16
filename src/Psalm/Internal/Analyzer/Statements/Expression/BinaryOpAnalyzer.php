@@ -42,6 +42,8 @@ use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function in_array;
+use function max;
+use function min;
 use function strlen;
 
 /**
@@ -263,6 +265,9 @@ final class BinaryOpAnalyzer
                         $statements_analyzer->getSuppressedIssues(),
                     );
                 } else {
+                    $left_literal_int_floats = self::getMinMaxLiteralIntFloat($stmt_left_type);
+                    $right_literal_int_floats = self::getMinMaxLiteralIntFloat($stmt_right_type);
+
                     foreach ($stmt_left_type->getAtomicTypes() as $atomic_type) {
                         if ($atomic_type instanceof TString
                             || $atomic_type instanceof TInt
@@ -282,19 +287,20 @@ final class BinaryOpAnalyzer
 
                         if (($atomic_type instanceof TNull || $atomic_type instanceof TFalse)
                             && !$stmt_left_type->isSingle()
-                            && $stmt_right_type->isSingleIntLiteral()
+                            && $right_literal_int_floats !== []
                             && (($stmt instanceof PhpParser\Node\Expr\BinaryOp\Greater
-                                 && $stmt_right_type->getSingleIntLiteral()->value >= 0)
+                                 && min($right_literal_int_floats) >= 0)
                                 || ($stmt instanceof PhpParser\Node\Expr\BinaryOp\GreaterOrEqual
-                                    && $stmt_right_type->getSingleIntLiteral()->value > 0)
+                                    && min($right_literal_int_floats) > 0)
                                 || ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Smaller
-                                    && $stmt_right_type->getSingleIntLiteral()->value <= 0)
+                                    && max($right_literal_int_floats) <= 0)
                                 || ($stmt instanceof PhpParser\Node\Expr\BinaryOp\SmallerOrEqual
-                                    && $stmt_right_type->getSingleIntLiteral()->value < 0))
+                                    && max($right_literal_int_floats) < 0))
                         ) {
                             continue;
                         }
 
+                        // @todo for cases like int|null >= int report RiskyTruthyFalsyComparison instead?
                         // array and object behave extremely unexpectedly and might accidentally end up in a comparison
                         // this can be further improved upon to reduce false positives, e.g. for keyed arrays
                         // however these will mostly be fringe cases
@@ -331,15 +337,15 @@ final class BinaryOpAnalyzer
 
                         if (($atomic_type instanceof TNull || $atomic_type instanceof TFalse)
                             && !$stmt_right_type->isSingle()
-                            && $stmt_left_type->isSingleIntLiteral()
+                            && $left_literal_int_floats !== []
                             && (($stmt instanceof PhpParser\Node\Expr\BinaryOp\Greater
-                                    && $stmt_left_type->getSingleIntLiteral()->value >= 0)
+                                    && min($left_literal_int_floats) >= 0)
                                 || ($stmt instanceof PhpParser\Node\Expr\BinaryOp\GreaterOrEqual
-                                    && $stmt_left_type->getSingleIntLiteral()->value > 0)
+                                    && min($left_literal_int_floats) > 0)
                                 || ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Smaller
-                                    && $stmt_left_type->getSingleIntLiteral()->value <= 0)
+                                    && max($left_literal_int_floats) <= 0)
                                 || ($stmt instanceof PhpParser\Node\Expr\BinaryOp\SmallerOrEqual
-                                    && $stmt_left_type->getSingleIntLiteral()->value < 0))
+                                    && max($left_literal_int_floats) < 0))
                         ) {
                             continue;
                         }
@@ -469,6 +475,54 @@ final class BinaryOpAnalyzer
         );
 
         return true;
+    }
+
+    /**
+     * @return list<int|float>
+     */
+    private static function getMinMaxLiteralIntFloat(Union $union): array
+    {
+        if ($union->hasArrayKey()
+            || $union->hasScalar()
+            || $union->hasNumeric()
+            || (isset($union->getAtomicTypes()['int'])
+                && $union->getLiteralInts() === array())
+            || (isset($union->getAtomicTypes()['float'])
+                && $union->getLiteralFloats() === array())) {
+            return [];
+        }
+
+        $literal_int_float_values = [];
+        foreach ($union->getLiteralInts() as $literal_int) {
+            $literal_int_float_values[] = $literal_int->value;
+        }
+
+        foreach ($union->getRangeInts() as $int_range) {
+            if ($int_range->isNegative()) {
+                $literal_int_float_values[] = -1;
+                continue;
+            }
+
+            if ($int_range->isNegativeOrZero()) {
+                $literal_int_float_values[] = 0;
+                $literal_int_float_values[] = -1;
+                continue;
+            }
+
+            if ($int_range->isPositive()) {
+                $literal_int_float_values[] = 1;
+                continue;
+            }
+
+            $literal_int_float_values[] = 0;
+            $literal_int_float_values[] = 1;
+        }
+
+        foreach ($union->getLiteralFloats() as $literal_float) {
+            $literal_int_float_values[] = $literal_float->value;
+        }
+
+        return $literal_int_float_values;
     }
 
     public static function addDataFlow(

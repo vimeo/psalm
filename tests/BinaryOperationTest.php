@@ -1119,6 +1119,14 @@ class BinaryOperationTest extends TestCase
                         echo "yes";
                     }',
             ],
+            'positiveRangeIntNull' => [
+                'code' => '<?php
+                    $a = rand(0, 1) > 0 ? rand() : null;
+                    $b = rand(1, PHP_INT_MAX);
+                    if ($a >= $b) {
+                        echo "yes";
+                    }',
+            ],
         ];
     }
 
@@ -1340,6 +1348,15 @@ class BinaryOperationTest extends TestCase
                     $a = $a = rand(0, 1) > 0 ? rand(0, 1000) : null;
                     if ($a < rand(0, 1000)) {
                         echo "can be null";
+                    }',
+                'error_message' => 'PossiblyInvalidOperand',
+            ],
+            'rangeIntNull' => [
+                'code' => '<?php
+                    $a = rand(0, 1) > 0 ? rand() : null;
+                    $b = rand(0, PHP_INT_MAX);
+                    if ($a >= $b) {
+                        echo "yes";
                     }',
                 'error_message' => 'PossiblyInvalidOperand',
             ],
