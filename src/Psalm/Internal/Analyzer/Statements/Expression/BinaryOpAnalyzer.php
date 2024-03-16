@@ -28,6 +28,7 @@ use Psalm\Issue\TypeDoesNotContainType;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type;
+use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TLiteralInt;
@@ -263,6 +264,7 @@ final class BinaryOpAnalyzer
                     foreach ($stmt_left_type->getAtomicTypes() as $atomic_type) {
                         if ($atomic_type instanceof TString
                             || $atomic_type instanceof TInt
+                            || $atomic_type instanceof TArrayKey
                             || $atomic_type instanceof TFloat
                             || $atomic_type instanceof TResource) {
                             continue;
@@ -296,6 +298,7 @@ final class BinaryOpAnalyzer
                     foreach ($stmt_right_type->getAtomicTypes() as $atomic_type) {
                         if ($atomic_type instanceof TString
                             || $atomic_type instanceof TInt
+                            || $atomic_type instanceof TArrayKey
                             || $atomic_type instanceof TFloat
                             || $atomic_type instanceof TResource) {
                             continue;
