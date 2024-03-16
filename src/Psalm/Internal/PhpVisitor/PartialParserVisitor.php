@@ -315,7 +315,8 @@ final class PartialParserVisitor extends PhpParser\NodeVisitorAbstract
                         ) + 1;
 
                         if ($stmt_inner_end_pos < $this->a_file_contents_length) {
-                            $stmt_inner_end_pos = strpos($this->a_file_contents, '}', $stmt_inner_end_pos + 1);
+                            $new_pos = strpos($this->a_file_contents, '}', $stmt_inner_end_pos + 1);
+                            $stmt_inner_end_pos = $new_pos !== false ? $new_pos : $stmt_inner_end_pos;
                         }
                     }
 

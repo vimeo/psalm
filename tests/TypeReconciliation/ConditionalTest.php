@@ -2817,6 +2817,7 @@ class ConditionalTest extends TestCase
                         echo $a + 3;
                     }
 
+                    /** @psalm-suppress PossiblyInvalidOperand */
                     if ($a <= 0) {
                         /** @psalm-suppress PossiblyNullOperand */
                         echo $a + 3;
@@ -2826,6 +2827,7 @@ class ConditionalTest extends TestCase
                         echo $a + 3;
                     }
 
+                    /** @psalm-suppress PossiblyInvalidOperand */
                     if ($a >= 0) {
                         /** @psalm-suppress PossiblyNullOperand */
                         echo $a + 3;
@@ -2835,6 +2837,7 @@ class ConditionalTest extends TestCase
                         echo $a + 3;
                     }
 
+                    /** @psalm-suppress PossiblyInvalidOperand */
                     if (0 <= $a) {
                         /** @psalm-suppress PossiblyNullOperand */
                         echo $a + 3;
@@ -2844,6 +2847,7 @@ class ConditionalTest extends TestCase
                         echo $a + 3;
                     }
 
+                    /** @psalm-suppress PossiblyInvalidOperand */
                     if (0 >= $a) {
                         /** @psalm-suppress PossiblyNullOperand */
                         echo $a + 3;
@@ -2860,6 +2864,7 @@ class ConditionalTest extends TestCase
                         echo $a + 3;
                     }
 
+                    /** @psalm-suppress PossiblyInvalidOperand */
                     if ($a <= 0) {
                         /** @psalm-suppress PossiblyFalseOperand */
                         echo $a + 3;
@@ -2869,6 +2874,7 @@ class ConditionalTest extends TestCase
                         echo $a + 3;
                     }
 
+                    /** @psalm-suppress PossiblyInvalidOperand */
                     if ($a >= 0) {
                         /** @psalm-suppress PossiblyFalseOperand */
                         echo $a + 3;
@@ -2878,6 +2884,7 @@ class ConditionalTest extends TestCase
                         echo $a + 3;
                     }
 
+                    /** @psalm-suppress PossiblyInvalidOperand */
                     if (0 <= $a) {
                         /** @psalm-suppress PossiblyFalseOperand */
                         echo $a + 3;
@@ -2887,6 +2894,7 @@ class ConditionalTest extends TestCase
                         echo $a + 3;
                     }
 
+                    /** @psalm-suppress PossiblyInvalidOperand */
                     if (0 >= $a) {
                         /** @psalm-suppress PossiblyFalseOperand */
                         echo $a + 3;

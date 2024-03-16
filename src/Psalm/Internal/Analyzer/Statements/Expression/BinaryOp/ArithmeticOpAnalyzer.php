@@ -1188,7 +1188,7 @@ final class ArithmeticOpAnalyzer
             $min_value = $calculated_min_type !== null ? $calculated_min_type->getSingleIntLiteral()->value : null;
             $max_value = $calculated_max_type !== null ? $calculated_max_type->getSingleIntLiteral()->value : null;
 
-            if ($min_value > $max_value) {
+            if ($max_value === null || ($min_value !== null && $min_value > $max_value)) {
                 [$min_value, $max_value] = [$max_value, $min_value];
             }
 
@@ -1226,7 +1226,7 @@ final class ArithmeticOpAnalyzer
             $min_value = $calculated_min_type !== null ? $calculated_min_type->getSingleIntLiteral()->value : null;
             $max_value = $calculated_max_type !== null ? $calculated_max_type->getSingleIntLiteral()->value : null;
 
-            if ($min_value > $max_value) {
+            if ($max_value === null || ($min_value !== null && $min_value > $max_value)) {
                 [$min_value, $max_value] = [$max_value, $min_value];
             }
 
