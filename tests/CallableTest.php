@@ -2457,6 +2457,125 @@ class CallableTest extends TestCase
                     }',
                 'error_message' => 'InvalidArgument',
             ],
+            'callableArrayParentConstantDeprecated' => [
+                'code' => '<?php
+                class Z {
+                    public static function hello(): void {
+                        echo "hello";
+                    }
+                }
+
+                class A extends Z {
+                    public function __construct() {
+                        $this->run(["parent", "hello"]);
+                    }
+
+                    /**
+                     * @param callable $callable
+                     * @return void
+                     */
+                    public function run($callable) {
+                        call_user_func($callable);
+                    }
+                }',
+                'error_message' => 'DeprecatedConstant',
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'callableParentConstantDeprecated' => [
+                'code' => '<?php
+                class Z {
+                    public static function hello(): void {
+                        echo "hello";
+                    }
+                }
+
+                class A extends Z {
+                    public function __construct() {
+                        $this->run("parent::hello");
+                    }
+
+                    /**
+                     * @param callable $callable
+                     * @return void
+                     */
+                    public function run($callable) {
+                        call_user_func($callable);
+                    }
+                }',
+                'error_message' => 'DeprecatedConstant',
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'callableSelfConstantDeprecated' => [
+                'code' => '<?php
+                class A {
+                    public function __construct() {
+                        $this->run("self::hello");
+                    }
+
+                    public static function hello(): void {
+                        echo "hello";
+                    }
+
+                    /**
+                     * @param callable $callable
+                     * @return void
+                     */
+                    public function run($callable) {
+                        call_user_func($callable);
+                    }
+                }',
+                'error_message' => 'DeprecatedConstant',
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'callableStaticConstantDeprecated' => [
+                'code' => '<?php
+                class A {
+                    public function __construct() {
+                        $this->run("static::hello");
+                    }
+
+                    public static function hello(): void {
+                        echo "hello";
+                    }
+
+                    /**
+                     * @param callable $callable
+                     * @return void
+                     */
+                    public function run($callable) {
+                        call_user_func($callable);
+                    }
+                }',
+                'error_message' => 'DeprecatedConstant',
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'callableArrayStaticConstantDeprecated' => [
+                'code' => '<?php
+                class A {
+                    public function __construct() {
+                        $this->run(["static", "hello"]);
+                    }
+
+                    public static function hello(): void {
+                        echo "hello";
+                    }
+
+                    /**
+                     * @param callable $callable
+                     * @return void
+                     */
+                    public function run($callable) {
+                        call_user_func($callable);
+                    }
+                }',
+                'error_message' => 'DeprecatedConstant',
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
             'invalidFirstClassCallableCannotBeInferred' => [
                 'code' => '<?php
                     /**

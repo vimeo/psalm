@@ -29,6 +29,7 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\ArgumentTypeCoercion;
+use Psalm\Issue\DeprecatedConstant;
 use Psalm\Issue\ImplicitToStringCast;
 use Psalm\Issue\InvalidArgument;
 use Psalm\Issue\InvalidLiteralArgument;
@@ -951,6 +952,24 @@ final class ArgumentAnalyzer
                         $statements_analyzer->getFilePath(),
                     );
 
+                    if ($potential_method_id === null && $codebase->analysis_php_version_id >= 8_02_00) {
+                        [$lhs,] = $input_type_part->properties;
+                        if ($lhs->isSingleStringLiteral()
+                            && in_array(
+                                strtolower($lhs->getSingleStringLiteral()->value),
+                                ['self', 'parent', 'static'],
+                                true,
+                            )) {
+                            IssueBuffer::maybeAdd(
+                                new DeprecatedConstant(
+                                    'Use of "' . $lhs->getSingleStringLiteral()->value . '" in callables is deprecated',
+                                    $arg_location,
+                                ),
+                                $statements_analyzer->getSuppressedIssues(),
+                            );
+                        }
+                    }
+
                     if ($potential_method_id && $potential_method_id !== 'not-callable') {
                         $potential_method_ids[] = $potential_method_id;
                     }
@@ -959,10 +978,27 @@ final class ArgumentAnalyzer
                 ) {
                     $parts = explode('::', $input_type_part->value);
                     /** @psalm-suppress PossiblyUndefinedIntArrayOffset */
-                    $potential_method_ids[] = new MethodIdentifier(
+                    $potential_method_id = new MethodIdentifier(
                         $parts[0],
                         strtolower($parts[1]),
                     );
+
+                    if ($codebase->analysis_php_version_id >= 8_02_00
+                        && in_array(
+                            strtolower($potential_method_id->fq_class_name),
+                            ['self', 'parent', 'static'],
+                            true,
+                        )) {
+                        IssueBuffer::maybeAdd(
+                            new DeprecatedConstant(
+                                'Use of "' . $potential_method_id->fq_class_name . '" in callables is deprecated',
+                                $arg_location,
+                            ),
+                            $statements_analyzer->getSuppressedIssues(),
+                        );
+                    }
+
+                    $potential_method_ids[] = $potential_method_id;
                 }
             }
 
