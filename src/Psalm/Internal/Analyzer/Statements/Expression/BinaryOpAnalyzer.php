@@ -29,11 +29,13 @@ use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArrayKey;
+use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Union;
@@ -278,6 +280,21 @@ final class BinaryOpAnalyzer
                             continue;
                         }
 
+                        if (($atomic_type instanceof TNull || $atomic_type instanceof TFalse)
+                            && !$stmt_left_type->isSingle()
+                            && $stmt_right_type->isSingleIntLiteral()
+                            && (($stmt instanceof PhpParser\Node\Expr\BinaryOp\Greater
+                                 && $stmt_right_type->getSingleIntLiteral()->value >= 0)
+                                || ($stmt instanceof PhpParser\Node\Expr\BinaryOp\GreaterOrEqual
+                                    && $stmt_right_type->getSingleIntLiteral()->value > 0)
+                                || ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Smaller
+                                    && $stmt_right_type->getSingleIntLiteral()->value <= 0)
+                                || ($stmt instanceof PhpParser\Node\Expr\BinaryOp\SmallerOrEqual
+                                    && $stmt_right_type->getSingleIntLiteral()->value < 0))
+                        ) {
+                            continue;
+                        }
+
                         // array and object behave extremely unexpectedly and might accidentally end up in a comparison
                         // this can be further improved upon to reduce false positives, e.g. for keyed arrays
                         // however these will mostly be fringe cases
@@ -309,6 +326,21 @@ final class BinaryOpAnalyzer
                             $atomic_type,
                             new TNamedObject('DateTimeInterface'),
                         )) {
+                            continue;
+                        }
+
+                        if (($atomic_type instanceof TNull || $atomic_type instanceof TFalse)
+                            && !$stmt_right_type->isSingle()
+                            && $stmt_left_type->isSingleIntLiteral()
+                            && (($stmt instanceof PhpParser\Node\Expr\BinaryOp\Greater
+                                    && $stmt_left_type->getSingleIntLiteral()->value >= 0)
+                                || ($stmt instanceof PhpParser\Node\Expr\BinaryOp\GreaterOrEqual
+                                    && $stmt_left_type->getSingleIntLiteral()->value > 0)
+                                || ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Smaller
+                                    && $stmt_left_type->getSingleIntLiteral()->value <= 0)
+                                || ($stmt instanceof PhpParser\Node\Expr\BinaryOp\SmallerOrEqual
+                                    && $stmt_left_type->getSingleIntLiteral()->value < 0))
+                        ) {
                             continue;
                         }
 
