@@ -1083,6 +1083,14 @@ class BinaryOperationTest extends TestCase
                 ],
                 'ignored_issues' => ['InvalidOperand'],
             ],
+            'lessDateTimeInterface' => [
+                'code' => '<?php
+                    $a = new DateTime();
+                    $b = new DateTimeImmutable(rand(0, 1) > 0 ? "now" : "yesterday");
+                    if ($a < $b) {
+                        echo "yes";
+                    }',
+            ],
         ];
     }
 
@@ -1270,6 +1278,15 @@ class BinaryOperationTest extends TestCase
                 'code' => '<?php
                     $a = rand(0, 1) > 0 ? rand() : new stdClass();
                     if ($a >= 0) {
+                        echo "yes";
+                    }',
+                'error_message' => 'PossiblyInvalidOperand',
+            ],
+            'lessDateTimeInterfaceInvalid' => [
+                'code' => '<?php
+                    $a = new DateTime();
+                    $b = new stdClass();
+                    if ($a < $b) {
                         echo "yes";
                     }',
                 'error_message' => 'PossiblyInvalidOperand',

@@ -17,6 +17,7 @@ use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Issue\DocblockTypeContradiction;
 use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\InvalidOperand;
@@ -267,6 +268,14 @@ final class BinaryOpAnalyzer
                             continue;
                         }
 
+                        if (AtomicTypeComparator::isContainedBy(
+                            $statements_analyzer->getCodebase(),
+                            $atomic_type,
+                            new TNamedObject('DateTimeInterface'),
+                        )) {
+                            continue;
+                        }
+
                         // array and object behave extremely unexpectedly and might accidentally end up in a comparison
                         // this can be further improved upon to reduce false positives, e.g. for keyed arrays
                         // however these will mostly be fringe cases
@@ -289,6 +298,14 @@ final class BinaryOpAnalyzer
                             || $atomic_type instanceof TInt
                             || $atomic_type instanceof TFloat
                             || $atomic_type instanceof TResource) {
+                            continue;
+                        }
+
+                        if (AtomicTypeComparator::isContainedBy(
+                            $statements_analyzer->getCodebase(),
+                            $atomic_type,
+                            new TNamedObject('DateTimeInterface'),
+                        )) {
                             continue;
                         }
 
