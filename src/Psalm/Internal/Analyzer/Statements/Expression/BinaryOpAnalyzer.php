@@ -339,13 +339,13 @@ final class BinaryOpAnalyzer
                             && !$stmt_right_type->isSingle()
                             && $left_literal_int_floats !== []
                             && (($stmt instanceof PhpParser\Node\Expr\BinaryOp\Greater
-                                    && min($left_literal_int_floats) >= 0)
+                                    && min($left_literal_int_floats) <= 0)
                                 || ($stmt instanceof PhpParser\Node\Expr\BinaryOp\GreaterOrEqual
-                                    && min($left_literal_int_floats) > 0)
+                                    && min($left_literal_int_floats) < 0)
                                 || ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Smaller
-                                    && max($left_literal_int_floats) <= 0)
+                                    && max($left_literal_int_floats) >= 0)
                                 || ($stmt instanceof PhpParser\Node\Expr\BinaryOp\SmallerOrEqual
-                                    && max($left_literal_int_floats) < 0))
+                                    && max($left_literal_int_floats) > 0))
                         ) {
                             continue;
                         }
