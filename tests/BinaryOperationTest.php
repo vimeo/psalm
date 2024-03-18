@@ -1477,6 +1477,14 @@ final class BinaryOperationTest extends TestCase
                     }',
                 'error_message' => 'PossiblyInvalidOperand',
             ],
+            'reverseGreaterEqualMinusOneFalse' => [
+                'code' => '<?php
+                    $a = $a = rand(0, 1) > 0 ? rand() : false;
+                    if (-1 < $a) {
+                        echo "yes";
+                    }',
+                'error_message' => 'PossiblyInvalidOperand',
+            ],
             'greaterEqualIntNull' => [
                 'code' => '<?php
                     $a = $a = rand(0, 1) > 0 ? rand(0, 1000) : null;
