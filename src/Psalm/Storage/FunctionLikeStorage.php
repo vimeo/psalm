@@ -329,7 +329,7 @@ abstract class FunctionLikeStorage implements HasAttributesInterface
     /**
      * @internal
      */
-    public function addParam(FunctionLikeParameter $param, bool $lookup_value = null): void
+    public function addParam(FunctionLikeParameter $param, ?bool $lookup_value = null): void
     {
         $this->params[] = $param;
         $this->param_lookup[$param->name] = $lookup_value ?? true;

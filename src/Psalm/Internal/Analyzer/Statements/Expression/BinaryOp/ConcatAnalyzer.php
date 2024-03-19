@@ -59,7 +59,7 @@ final class ConcatAnalyzer
         PhpParser\Node\Expr $left,
         PhpParser\Node\Expr $right,
         Context $context,
-        Union &$result_type = null
+        ?Union &$result_type = null
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 

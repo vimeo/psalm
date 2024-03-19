@@ -23,7 +23,7 @@ final class DynamicTemplateProvider
     /**
      * If {@see DynamicFunctionStorage} requires template params this method can create it.
      */
-    public function createTemplate(string $param_name, Union $as = null): TTemplateParam
+    public function createTemplate(string $param_name, ?Union $as = null): TTemplateParam
     {
         return new TTemplateParam($param_name, $as ?? Type::getMixed(), $this->defining_class);
     }

@@ -44,7 +44,7 @@ final class LoopAnalyzer
         array $pre_conditions,
         array $post_expressions,
         LoopScope $loop_scope,
-        Context &$continue_context = null,
+        ?Context &$continue_context = null,
         bool $is_do = false,
         bool $always_enters_loop = false
     ): ?bool {

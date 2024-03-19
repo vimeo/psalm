@@ -475,8 +475,8 @@ final class ArrayFetchAnalyzer
         bool $in_assignment,
         ?string $extended_var_id,
         Context $context,
-        PhpParser\Node\Expr $assign_value = null,
-        Union $replacement_type = null
+        ?PhpParser\Node\Expr $assign_value = null,
+        ?Union $replacement_type = null
     ): Union {
         $offset_type = $offset_type_original->getBuilder();
 
