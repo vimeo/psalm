@@ -2352,9 +2352,22 @@ final class Codebase
      */
     public function isTypeContainedByType(
         Union $input_type,
-        Union $container_type
+        Union $container_type,
+        bool $ignore_null = false,
+        bool $ignore_false = false,
+        bool $allow_interface_equality = false,
+        bool $allow_float_int_equality = true
     ): bool {
-        return UnionTypeComparator::isContainedBy($this, $input_type, $container_type);
+        return UnionTypeComparator::isContainedBy(
+            $this,
+            $input_type,
+            $container_type,
+            $ignore_null,
+            $ignore_false,
+            null,
+            $allow_interface_equality,
+            $allow_float_int_equality,
+        );
     }
 
     /**
