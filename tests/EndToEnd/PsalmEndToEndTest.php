@@ -25,6 +25,7 @@ use function tempnam;
 use function unlink;
 
 use const DIRECTORY_SEPARATOR;
+use const PHP_BINARY;
 
 /**
  * Tests some of the most important use cases of the psalm and psalter commands, by launching a new
@@ -116,7 +117,7 @@ class PsalmEndToEndTest extends TestCase
     public function testPsalter(): void
     {
         $this->runPsalmInit();
-        (new Process(['php', $this->psalter, '--alter', '--issues=InvalidReturnType'], self::$tmpDir))->mustRun();
+        (new Process([PHP_BINARY, $this->psalter, '--alter', '--issues=InvalidReturnType'], self::$tmpDir))->mustRun();
         $this->assertSame(0, $this->runPsalm([], self::$tmpDir)['CODE']);
     }
 
@@ -229,7 +230,7 @@ class PsalmEndToEndTest extends TestCase
 
         file_put_contents(self::$tmpDir . '/src/psalm.xml', $psalmXmlContent);
 
-        $process = new Process(['php', $this->psalm, '--config=src/psalm.xml'], self::$tmpDir);
+        $process = new Process([PHP_BINARY, $this->psalm, '--config=src/psalm.xml'], self::$tmpDir);
         $process->run();
         $this->assertSame(2, $process->getExitCode());
         $this->assertStringContainsString('InvalidReturnType', $process->getOutput());
