@@ -38,6 +38,7 @@ use Psalm\Issue\MixedArgumentTypeCoercion;
 use Psalm\Issue\NamedArgumentNotAllowed;
 use Psalm\Issue\NoValue;
 use Psalm\Issue\NullArgument;
+use Psalm\Issue\ParentNotFound;
 use Psalm\Issue\PossiblyFalseArgument;
 use Psalm\Issue\PossiblyInvalidArgument;
 use Psalm\Issue\PossiblyNullArgument;
@@ -1297,6 +1298,16 @@ final class ArgumentAnalyzer
 
                                         if ($callable_fq_class_name === 'parent') {
                                             $container_class = $statements_analyzer->getParentFQCLN();
+                                            if ($container_class === null) {
+                                                IssueBuffer::accepts(
+                                                    new ParentNotFound(
+                                                        'Cannot call method on parent'
+                                                        . ' as this class does not extend another',
+                                                        $arg_location,
+                                                    ),
+                                                    $statements_analyzer->getSuppressedIssues(),
+                                                );
+                                            }
                                         }
 
                                         if (!$container_class) {

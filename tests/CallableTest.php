@@ -2533,6 +2533,40 @@ class CallableTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'parentCallableArrayWithoutParent' => [
+                'code' => '<?php
+                class A {
+                    public function __construct() {
+                        $this->run(["parent", "hello"]);
+                    }
+
+                    /**
+                     * @param callable $callable
+                     * @return void
+                     */
+                    public function run($callable) {
+                        call_user_func($callable);
+                    }
+                }',
+                'error_message' => 'ParentNotFound',
+            ],
+            'parentCallableWithoutParent' => [
+                'code' => '<?php
+                class A {
+                    public function __construct() {
+                        $this->run("parent::hello");
+                    }
+
+                    /**
+                     * @param callable $callable
+                     * @return void
+                     */
+                    public function run($callable) {
+                        call_user_func($callable);
+                    }
+                }',
+                'error_message' => 'ParentNotFound',
+            ],
         ];
     }
 }
