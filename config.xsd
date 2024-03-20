@@ -313,6 +313,7 @@
             <xs:element name="MismatchingDocblockParamType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MismatchingDocblockPropertyType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MismatchingDocblockReturnType" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="MissingClassConstType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingClosureParamType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingClosureReturnType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MissingConstructor" type="IssueHandlerType" minOccurs="0" />
