@@ -2637,7 +2637,7 @@ class CallableTest extends TestCase
                     function foo($arg) {}
 
                     class A {
-                        public static function bar(): bool {
+                        public function bar(): bool {
                             return true;
                         }
                     }
