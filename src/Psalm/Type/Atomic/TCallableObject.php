@@ -7,7 +7,7 @@ namespace Psalm\Type\Atomic;
  *
  * @psalm-immutable
  */
-final class TCallableObject extends TObject
+final class TCallableObject extends TObject implements TCallableInterface
 {
     use HasIntersectionTrait;
 

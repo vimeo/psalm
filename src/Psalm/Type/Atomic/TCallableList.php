@@ -12,7 +12,7 @@ use function array_fill;
  * @deprecated Will be removed in Psalm v6, please use TCallableKeyedArrays with is_list=true instead.
  * @psalm-immutable
  */
-final class TCallableList extends TNonEmptyList
+final class TCallableList extends TNonEmptyList implements TCallableInterface
 {
     public const KEY = 'callable-list';
     public function getKeyedArray(): TKeyedArray

@@ -8,6 +8,8 @@ use function array_merge;
 use function array_unshift;
 use function in_array;
 
+use const PHP_BINARY;
+
 trait PsalmRunnerTrait
 {
     private string $psalm = __DIR__ . '/../../psalm';
@@ -37,9 +39,9 @@ trait PsalmRunnerTrait
         // we run `php psalm` rather than just `psalm`.
 
         if ($relyOnConfigDir) {
-            $process = new Process(array_merge(['php', $this->psalm, '-c=' . $workingDir . '/psalm.xml'], $args), null);
+            $process = new Process(array_merge([PHP_BINARY, $this->psalm, '-c=' . $workingDir . '/psalm.xml'], $args), null);
         } else {
-            $process = new Process(array_merge(['php', $this->psalm], $args), $workingDir);
+            $process = new Process(array_merge([PHP_BINARY, $this->psalm], $args), $workingDir);
         }
 
         if (!$shouldFail) {

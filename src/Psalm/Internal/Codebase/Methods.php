@@ -941,7 +941,7 @@ final class Methods
 
     public function getMethodReturnTypeLocation(
         MethodIdentifier $method_id,
-        CodeLocation &$defined_location = null
+        ?CodeLocation &$defined_location = null
     ): ?CodeLocation {
         $method_id = $this->getDeclaringMethodId($method_id);
 

@@ -81,6 +81,28 @@ final class StaticCallAnalyzer extends CallAnalyzer
                     $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
                     $fq_class_name = $class_storage->name;
+
+                    if ($context->collect_initializations
+                        && isset($stmt->name->name)
+                        && $stmt->name->name === '__construct'
+                        && isset($class_storage->declaring_method_ids['__construct'])) {
+                        $construct_fq_class_name = $class_storage->declaring_method_ids['__construct']->fq_class_name;
+                        $construct_class_storage = $codebase->classlike_storage_provider->get($construct_fq_class_name);
+                        $construct_fq_class_name = $construct_class_storage->name;
+
+                        foreach ($construct_class_storage->properties as $property_name => $property_storage) {
+                            if ($property_storage->is_promoted
+                                && isset($context->vars_in_scope['$this->' . $property_name])) {
+                                $context_type = $context->vars_in_scope['$this->' . $property_name];
+                                $context->vars_in_scope['$this->' . $property_name] = $context_type->setProperties(
+                                    [
+                                        'initialized_class' => $construct_fq_class_name,
+                                        'initialized' => true,
+                                    ],
+                                );
+                            }
+                        }
+                    }
                 } elseif ($context->self) {
                     if ($stmt->class->getFirst() === 'static' && isset($context->vars_in_scope['$this'])) {
                         $fq_class_name = (string) $context->vars_in_scope['$this'];

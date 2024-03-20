@@ -9,6 +9,7 @@ use Psalm\Type;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_flip;
 use function is_array;
 use function is_int;
 
@@ -37,7 +38,16 @@ final class FilterVarReturnTypeProvider implements FunctionReturnTypeProviderInt
             throw new UnexpectedValueException();
         }
 
-        $call_args = $event->getCallArgs();
+        $arg_names = array_flip(['value', 'filter', 'options']);
+        $call_args = [];
+        foreach ($event->getCallArgs() as $idx => $arg) {
+            if (isset($arg->name)) {
+                $call_args[$arg_names[$arg->name->name]] = $arg;
+            } else {
+                $call_args[$idx] = $arg;
+            }
+        }
+
         $function_id = $event->getFunctionId();
         $code_location = $event->getCodeLocation();
         $codebase      = $statements_analyzer->getCodebase();

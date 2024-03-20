@@ -2602,6 +2602,7 @@ class ArrayFunctionCallTest extends TestCase
                 'assertions' => [
                     '$line===' => 'array{0: int, ...<array-key, int>}',
                 ],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'arrayUnshiftOnEmptyArrayMeansNonEmptyList' => [
                 'code' => '<?php

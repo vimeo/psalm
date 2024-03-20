@@ -122,7 +122,7 @@ final class IssueData
         int $shortcode = 0,
         int $error_level = -1,
         ?array $taint_trace = null,
-        array $other_references = null,
+        ?array $other_references = null,
         ?string $dupe_key = null
     ) {
         $this->severity = $severity;

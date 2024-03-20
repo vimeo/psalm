@@ -78,6 +78,8 @@ class InternalCallMapHandlerTest extends TestCase
         'array_multisort',
         'datefmt_create' => ['8.0'],
         'fiber::start',
+        'get_class' => ['8.3'],
+        'get_parent_class' => ['8.3'],
         'imagefilledpolygon',
         'imagegd',
         'imagegd2',
@@ -95,6 +97,7 @@ class InternalCallMapHandlerTest extends TestCase
         'mailparse_msg_get_structure',
         'mailparse_msg_parse',
         'mailparse_stream_encode',
+        'mb_check_encoding' => ['8.1', '8.2', '8.3'],
         'memcached::cas', // memcached 3.2.0 has incorrect reflection
         'memcached::casbykey', // memcached 3.2.0 has incorrect reflection
         'oauth::fetch',

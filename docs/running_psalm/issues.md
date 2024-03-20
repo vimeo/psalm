@@ -113,6 +113,7 @@
  - [MismatchingDocblockParamType](issues/MismatchingDocblockParamType.md)
  - [MismatchingDocblockPropertyType](issues/MismatchingDocblockPropertyType.md)
  - [MismatchingDocblockReturnType](issues/MismatchingDocblockReturnType.md)
+ - [MissingClassConstType](issues/MissingClassConstType.md)
  - [MissingClosureParamType](issues/MissingClosureParamType.md)
  - [MissingClosureReturnType](issues/MissingClosureReturnType.md)
  - [MissingConstructor](issues/MissingConstructor.md)
