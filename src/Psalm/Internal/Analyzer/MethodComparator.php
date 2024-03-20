@@ -451,7 +451,9 @@ final class MethodComparator
                 && $implementer_classlike_storage->user_defined
                 && $implementer_param->location
                 && $guide_method_storage->cased_name
-                && strpos($guide_method_storage->cased_name, '__') !== 0
+                && (strpos($guide_method_storage->cased_name, '__') !== 0
+                    || ($guide_classlike_storage->preserve_constructor_signature
+                        && $guide_method_storage->cased_name === '__construct'))
                 && $config->isInProjectDirs(
                     $implementer_param->location->file_path,
                 )

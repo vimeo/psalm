@@ -9,7 +9,7 @@ Emitted when a constructor parameter differs from a parent constructor parameter
  * @psalm-consistent-constructor
  */
 class A {
-    public function __construct(int $i) {}
+    public function __construct(int $s) {}
 }
 class B extends A {
     public function __construct(string $s) {}
