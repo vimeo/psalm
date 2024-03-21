@@ -135,14 +135,20 @@ class PluginTest extends TestCase
 
         $file_path = (string) getcwd() . '/src/somefile.php';
 
+
         $this->addFile(
             $file_path,
-            '<?php
-                class A {
-                    const C = [
-                        "foo" => "Psalm\Internal\Analyzer\ProjectAnalyzer",
-                    ];
-                }',
+            sprintf(
+                <<<'PHP'
+                    <?php
+                    class A {
+                        const %s C = [
+                            "foo" => "Psalm\Internal\Analyzer\ProjectAnalyzer",
+                        ];
+                    }
+                    PHP,
+                $this->project_analyzer->getCodebase()->analysis_php_version_id >= 8_03_00 ? 'array' : '',
+            ),
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -175,14 +181,18 @@ class PluginTest extends TestCase
 
         $this->addFile(
             $file_path,
-            '<?php
-                namespace Psalm;
-
-                class A {
-                    const C = [
-                        "foo" => \Psalm\Internal\Analyzer\ProjectAnalyzer::class . "::foo",
-                    ];
-                }',
+            sprintf(
+                <<<'PHP'
+                    <?php
+                    namespace Psalm;
+                    class A {
+                        const %s C = [
+                            "foo" => \Psalm\Internal\Analyzer\ProjectAnalyzer::class . "::foo",
+                        ];
+                    }
+                    PHP,
+                $this->project_analyzer->getCodebase()->analysis_php_version_id >= 8_03_00 ? 'array' : '',
+            ),
         );
 
         $this->analyzeFile($file_path, new Context());

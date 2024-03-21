@@ -172,7 +172,7 @@ final class ArrayFetchAnalyzer
 
         $codebase = $statements_analyzer->getCodebase();
 
-        if ($keyed_array_var_id
+        if ($keyed_array_var_id !== null
             && $context->hasVariable($keyed_array_var_id)
             && !$context->vars_in_scope[$keyed_array_var_id]->possibly_undefined
             && $stmt_var_type
@@ -251,6 +251,10 @@ final class ArrayFetchAnalyzer
                 }
             }
 
+            if ($context->inside_isset && !$stmt_type->hasMixed()) {
+                $stmt_type = Type::combineUnionTypes($stmt_type, Type::getNull());
+            }
+
             $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
             if ($context->inside_isset
@@ -305,7 +309,7 @@ final class ArrayFetchAnalyzer
             }
         }
 
-        if ($keyed_array_var_id
+        if ($keyed_array_var_id !== null
             && $context->hasVariable($keyed_array_var_id)
             && (!($stmt_type = $statements_analyzer->node_data->getType($stmt)) || $stmt_type->isVanillaMixed())
         ) {
@@ -476,8 +480,8 @@ final class ArrayFetchAnalyzer
         bool $in_assignment,
         ?string $extended_var_id,
         Context $context,
-        PhpParser\Node\Expr $assign_value = null,
-        Union $replacement_type = null,
+        ?PhpParser\Node\Expr $assign_value = null,
+        ?Union $replacement_type = null,
     ): Union {
         $offset_type = $offset_type_original->getBuilder();
 

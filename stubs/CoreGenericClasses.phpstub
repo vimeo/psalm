@@ -82,6 +82,7 @@ interface ArrayAccess {
      *              The return value will be casted to boolean if non-boolean was returned.
      *
      * @since 5.0.0
+     * @no-named-arguments because of conflict with ArrayObject
      */
     public function offsetExists($offset);
 
@@ -94,6 +95,7 @@ interface ArrayAccess {
      * @psalm-ignore-nullable-return
      *
      * @since 5.0.0
+     * @no-named-arguments because of conflict with ArrayObject
      */
     public function offsetGet($offset);
 
@@ -106,6 +108,7 @@ interface ArrayAccess {
      * @return void
      *
      * @since 5.0.0
+     * @no-named-arguments because of conflict with ArrayObject
      */
     public function offsetSet($offset, $value);
 
@@ -117,6 +120,7 @@ interface ArrayAccess {
      * @return void
      *
      * @since 5.0.0
+     * @no-named-arguments because of conflict with ArrayObject
      */
     public function offsetUnset($offset);
 }
@@ -162,6 +166,7 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      * @return bool true if the requested index exists, otherwise false
      *
      * @since 5.0.0
+     * @no-named-arguments because of conflict with ArrayAccess
      */
     public function offsetExists($offset) { }
 
@@ -173,6 +178,7 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      * @return TValue The value at the specified index or false.
      *
      * @since 5.0.0
+     * @no-named-arguments because of conflict with ArrayAccess
      */
     public function offsetGet($offset) { }
 
@@ -185,6 +191,7 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      * @return void
      *
      * @since 5.0.0
+     * @no-named-arguments because of conflict with ArrayAccess
      */
     public function offsetSet($offset, $value) { }
 
@@ -196,6 +203,7 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      * @return void
      *
      * @since 5.0.0
+     * @no-named-arguments because of conflict with ArrayAccess
      */
     public function offsetUnset($offset) { }
 

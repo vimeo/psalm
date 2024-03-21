@@ -744,7 +744,7 @@ abstract class Atomic implements TypeNode, Stringable
         TemplateResult $template_result,
         Codebase $codebase,
         ?StatementsAnalyzer $statements_analyzer = null,
-        Atomic $input_type = null,
+        ?Atomic $input_type = null,
         ?int $input_arg_offset = null,
         ?string $calling_class = null,
         ?string $calling_function = null,

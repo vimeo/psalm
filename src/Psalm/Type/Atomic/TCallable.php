@@ -17,7 +17,7 @@ use Psalm\Type\Union;
  *
  * @psalm-immutable
  */
-final class TCallable extends Atomic
+final class TCallable extends Atomic implements TCallableInterface
 {
     use UnserializeMemoryUsageSuppressionTrait;
     use CallableTrait;

@@ -463,13 +463,13 @@ class MethodSignatureTest extends TestCase
                         private $id = 1;
 
                         /**
-                         * @param string $serialized
+                         * @param string $data
                          */
-                        public function unserialize($serialized) : void
+                        public function unserialize($data) : void
                         {
                             [
                                 $this->id,
-                            ] = (array) \unserialize($serialized);
+                            ] = (array) \unserialize($data);
                         }
 
                         public function serialize() : string
@@ -1074,6 +1074,21 @@ class MethodSignatureTest extends TestCase
                     }',
                 'error_message' => 'ParamNameMismatch',
             ],
+            'differentArgumentName' => [
+                'code' => '<?php
+                    class A {
+                        public function fooFoo(int $a): void {
+
+                        }
+                    }
+
+                    class B extends A {
+                        public function fooFoo(int $b): void {
+
+                        }
+                    }',
+                'error_message' => 'ParamNameMismatch',
+            ],
             'nonNullableSubclassParam' => [
                 'code' => '<?php
                     class A {
@@ -1412,8 +1427,8 @@ class MethodSignatureTest extends TestCase
             'preventImplementingSerializableWithWrongDocblockType' => [
                 'code' => '<?php
                     class Foo implements \Serializable {
-                        /** @param int $serialized */
-                        public function unserialize($serialized) {}
+                        /** @param int $data */
+                        public function unserialize($data) {}
                         public function serialize() {}
                     }',
                 'error_message' => 'ImplementedParamTypeMismatch',

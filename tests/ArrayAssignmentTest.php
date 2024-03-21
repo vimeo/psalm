@@ -1236,6 +1236,8 @@ class ArrayAssignmentTest extends TestCase
                             foreach ($arr[0] as $k => $v) {}
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'nonEmptyAssignmentToListElement' => [
                 'code' => '<?php

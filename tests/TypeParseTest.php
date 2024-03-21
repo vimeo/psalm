@@ -1158,6 +1158,14 @@ class TypeParseTest extends TestCase
         $this->assertSame('int-mask-of<value-of<A::FOO>>', $docblock_type->getId());
     }
 
+    public function testUnionOfClassStringAndClassStringWithIntersection(): void
+    {
+        $this->assertSame(
+            'class-string<IFoo>',
+            (string) Type::parseString('class-string<IFoo>|class-string<IFoo&IBar>'),
+        );
+    }
+
     public function testReflectionTypeParse(): void
     {
         if (!function_exists('Psalm\Tests\someFunction')) {

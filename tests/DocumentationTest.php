@@ -320,6 +320,7 @@ class DocumentationTest extends TestCase
 
                 case 'InvalidOverride':
                 case 'MissingOverrideAttribute':
+                case 'MissingClassConstType':
                     $php_version = '8.3';
                     break;
             }
