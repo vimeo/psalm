@@ -11100,7 +11100,7 @@ return [
 'session_destroy' => ['bool'],
 'session_encode' => ['string|false'],
 'session_gc' => ['int|false'],
-'session_get_cookie_params' => ['array'],
+'session_get_cookie_params' => ['array{lifetime:?int,path:?string,domain:?string,secure:?bool,httponly:?bool,samesite:?string}'],
 'session_id' => ['string|false', 'id='=>'?string'],
 'session_is_registered' => ['bool', 'name'=>'string'],
 'session_module_name' => ['string|false', 'module='=>'?string'],
