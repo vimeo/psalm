@@ -1001,7 +1001,20 @@ final class TypeCombiner
             if (!$type->as_type) {
                 $combination->class_string_types['object'] = new TObject();
             } else {
-                $combination->class_string_types[$type->as] = $type->as_type;
+                if (isset($combination->class_string_types[$type->as])
+                    && $combination->class_string_types[$type->as] instanceof TNamedObject
+                ) {
+                    if ($combination->class_string_types[$type->as]->extra_types === []) {
+                        // do nothing, existing type is wider or the same
+                    } elseif ($type->as_type->extra_types === []) {
+                        $combination->class_string_types[$type->as] = $type->as_type;
+                    } else {
+                        // todo: figure out what to do with class-string<A&B>|class-string<A&C>
+                        $combination->class_string_types[$type->as] = $type->as_type;
+                    }
+                } else {
+                    $combination->class_string_types[$type->as] = $type->as_type;
+                }
             }
         } elseif ($type instanceof TLiteralString) {
             if ($combination->strings !== null && count($combination->strings) < $literal_limit) {

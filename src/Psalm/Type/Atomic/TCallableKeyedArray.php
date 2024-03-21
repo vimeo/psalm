@@ -11,7 +11,7 @@ use Psalm\Type\Union;
  *
  * @psalm-immutable
  */
-final class TCallableKeyedArray extends TKeyedArray
+final class TCallableKeyedArray extends TKeyedArray implements TCallableInterface
 {
     protected const NAME_ARRAY = 'callable-array';
     protected const NAME_LIST = 'callable-array';

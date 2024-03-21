@@ -165,6 +165,22 @@ class TypeComparatorTest extends TestCase
                 '(callable(int,string[]): void)|(callable(int): void)',
                 '(callable(int): void)|(callable(int,string[]): void)',
             ],
+            'callableAcceptsCallableArray' => [
+                'callable',
+                "callable-array{0: class-string, 1: 'from'}",
+            ],
+            'callableAcceptsCallableObject' => [
+                'callable',
+                "callable-object",
+            ],
+            'callableAcceptsCallableString' => [
+                'callable',
+                'callable-string',
+            ],
+            'callableAcceptsCallableKeyedList' => [
+                'callable',
+                "callable-list{class-string, 'from'}",
+            ],
         ];
     }
 

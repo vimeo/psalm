@@ -589,6 +589,22 @@ class PropertyTypeTest extends TestCase
                     'MixedAssignment',
                 ],
             ],
+            'promotedPropertyNoExtendedConstructor' => [
+                'code' => '<?php
+                    class A
+                    {
+                        public function __construct(
+                            public string $name,
+                        ) {}
+                    }
+
+                    class B extends A
+                    {
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'propertyWithoutTypeSuppressingIssueAndAssertingNull' => [
                 'code' => '<?php
                     class A {
@@ -3574,6 +3590,23 @@ class PropertyTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'PropertyNotSetInConstructor',
+            ],
+            'promotedPropertyNotSetInExtendedConstructor' => [
+                'code' => '<?php
+                    class A
+                    {
+                        public function __construct(
+                            public string $name,
+                        ) {}
+                    }
+
+                    class B extends A
+                    {
+                        public function __construct() {}
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'nullableTypedPropertyNoConstructor' => [
                 'code' => '<?php

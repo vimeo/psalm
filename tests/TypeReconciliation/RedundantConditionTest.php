@@ -635,6 +635,8 @@ class RedundantConditionTest extends TestCase
                             if (empty($a["foo"])) {}
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'suppressRedundantConditionAfterAssertNonEmpty' => [
                 'code' => '<?php

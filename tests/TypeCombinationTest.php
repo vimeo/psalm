@@ -942,6 +942,13 @@ class TypeCombinationTest extends TestCase
                     '"0"',
                 ],
             ],
+            'unionOfClassStringAndClassStringWithIntersection' => [
+                'class-string<IFoo>',
+                [
+                    'class-string<IFoo>',
+                    'class-string<IFoo & IBar>',
+                ],
+            ],
         ];
     }
 

@@ -5027,6 +5027,16 @@ class ClassTemplateTest extends TestCase
                     }',
                 'error_message' => 'InvalidReturnStatement',
             ],
+            'noCrashOnBrokenTemplate' => [
+                'code' => <<<'PHP'
+                <?php
+                /**
+                 * @template TValidationRule of callable>|string
+                 */
+                class C {}
+                PHP,
+                'error_message' => 'InvalidDocblock',
+            ],
         ];
     }
 }
