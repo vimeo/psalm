@@ -132,6 +132,23 @@ class TypeParseTest extends TestCase
         $this->assertSame('non-empty-array<array-key, int>', (string) Type::parseString('non-empty-array<int>'));
     }
 
+    public function testArrayWithLiteralKeys(): void
+    {
+        $this->assertSame('array{0?: string, 1?: string}', (string) Type::parseString('array<0|1, string>'));
+        $this->assertSame('array{a?: string, b?: string}', (string) Type::parseString('array<"a"|"b", string>'));
+
+        // TODO: needs some improvements in the TypeCombiner
+        //$this->assertSame('array{0?: string, 1?: string, ...<int, string>}', (string) Type::parseString('array<0|1|int, string>'));
+        //$this->assertSame('array{a?: string, b?: string, ...<string, string>}', (string) Type::parseString('array<"a"|"b"|string, string>'));
+
+        $this->assertSame('array{0?: string, 1?: string, ...<string, string>}', (string) Type::parseString('array<0|1|string, string>'));
+        $this->assertSame('array{a?: string, b?: string, ...<int, string>}', (string) Type::parseString('array<"a"|"b"|int, string>'));
+
+        // TODO: needs a non-empty flag for unsealed arrays
+        $this->assertSame('non-empty-array<0|1, string>', Type::parseString('non-empty-array<0|1, string>')->getId(true));
+        $this->assertSame("non-empty-array<'a'|'b', string>", Type::parseString('non-empty-array<"a"|"b", string>')->getId(true));
+    }
+
     public function testGeneric(): void
     {
         $this->assertSame('B<int>', (string) Type::parseString('B<int>'));

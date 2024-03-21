@@ -573,7 +573,7 @@ class TypeCombinationTest extends TestCase
                 ],
             ],
             'objectLikePlusArrayEqualsArray' => [
-                "array<'a'|'b'|'c', 1|2|3>",
+                "array{a?: 1|2|3, b?: 1|2|3, c?: 1|2|3}",
                 [
                     'array<"a"|"b"|"c", 1|2|3>',
                     'array{a: 1|2, b: 2|3, c: 1|3}',
