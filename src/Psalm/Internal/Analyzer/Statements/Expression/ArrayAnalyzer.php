@@ -44,10 +44,15 @@ use Psalm\Type\Union;
 use function array_merge;
 use function array_values;
 use function count;
+use function filter_var;
 use function in_array;
+use function is_int;
+use function is_numeric;
 use function is_string;
 use function preg_match;
+use function trim;
 
+use const FILTER_VALIDATE_INT;
 use const PHP_INT_MAX;
 
 /**
@@ -235,6 +240,38 @@ final class ArrayAnalyzer
         $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
         return true;
+    }
+
+    /**
+     * @param string|int $literal_array_key
+     * @return false|int
+     * @psalm-assert-if-false !numeric $literal_array_key
+     */
+    public static function getLiteralArrayKeyInt(
+        $literal_array_key
+    ) {
+        if (is_int($literal_array_key)) {
+            return $literal_array_key;
+        }
+
+        if (!is_numeric($literal_array_key)) {
+            return false;
+        }
+
+        // PHP 8 values with whitespace after number are counted as numeric
+        // and filter_var treats them as such too
+        // ensures that '15 ' will stay '15 '
+        if (trim($literal_array_key) !== $literal_array_key) {
+            return false;
+        }
+
+        // '+5' will pass the filter_var check but won't be changed in keys
+        if ($literal_array_key[0] === '+') {
+            return false;
+        }
+
+        // e.g. 015 is numeric but won't be typecast as it's not a valid int
+        return filter_var($literal_array_key, FILTER_VALIDATE_INT);
     }
 
     private static function analyzeArrayItem(
