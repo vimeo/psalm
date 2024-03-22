@@ -1576,6 +1576,15 @@ class RedundantConditionTest extends TestCase
                     }',
                 'error_message' => 'DocblockTypeContradiction',
             ],
+            'array_key_exists_int_string_juggle' => [
+                'code' => '<?php
+                    /**
+                     * @var string[] $a
+                     */
+
+                    if (array_key_exists("10", $a) && array_key_exists(10, $a)) {}',
+                'error_message' => 'RedundantCondition',
+            ],
         ];
     }
 }

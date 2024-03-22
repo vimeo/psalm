@@ -9,6 +9,7 @@ use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -48,7 +49,6 @@ use function end;
 use function implode;
 use function in_array;
 use function is_string;
-use function preg_match;
 use function strlen;
 use function strpos;
 
@@ -1084,8 +1084,9 @@ final class ArrayAssignmentAnalyzer
                 $offset_type = $child_stmt_dim_type->getSingleStringLiteral();
             }
 
-            if (preg_match('/^(0|[1-9][0-9]*)$/', $offset_type->value)) {
-                $var_id_addition = '[' . $offset_type->value . ']';
+            $string_to_int = ArrayAnalyzer::getLiteralArrayKeyInt($offset_type->value);
+            if ($string_to_int !== false) {
+                $var_id_addition = '[' . $string_to_int . ']';
             } else {
                 $var_id_addition = '[\'' . $offset_type->value . '\']';
             }

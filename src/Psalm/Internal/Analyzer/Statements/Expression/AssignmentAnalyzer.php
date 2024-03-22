@@ -1217,6 +1217,13 @@ final class AssignmentAnalyzer
                 $offset_value = $assign_var_item->key->value;
             }
 
+            if ($offset_value !== null) {
+                $string_to_int = ArrayAnalyzer::getLiteralArrayKeyInt($offset_value);
+                if ($string_to_int !== false) {
+                    $offset_value = $string_to_int;
+                }
+            }
+
             $list_var_id = ExpressionIdentifier::getExtendedVarId(
                 $var,
                 $statements_analyzer->getFQCLN(),

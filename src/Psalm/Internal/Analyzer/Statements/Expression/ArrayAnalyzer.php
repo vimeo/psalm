@@ -49,7 +49,6 @@ use function in_array;
 use function is_int;
 use function is_numeric;
 use function is_string;
-use function preg_match;
 use function trim;
 
 use const FILTER_VALIDATE_INT;
@@ -351,20 +350,17 @@ final class ArrayAnalyzer
                 }
 
                 if ($item->key instanceof PhpParser\Node\Scalar\String_
-                    && preg_match('/^(0|[1-9][0-9]*)$/', $item->key->value)
-                    && (
-                        (int) $item->key->value < PHP_INT_MAX ||
-                        $item->key->value === (string) PHP_INT_MAX
-                    )
+                    && self::getLiteralArrayKeyInt($item->key->value) !== false
                 ) {
                     $key_type = Type::getInt(false, (int) $item->key->value);
                 }
 
                 if ($key_type->isSingleStringLiteral()) {
                     $item_key_literal_type = $key_type->getSingleStringLiteral();
-                    $item_key_value = $item_key_literal_type->value;
+                    $string_to_int = self::getLiteralArrayKeyInt($item_key_literal_type->value);
+                    $item_key_value = $string_to_int === false ? $item_key_literal_type->value : $string_to_int;
 
-                    if ($item_key_literal_type instanceof TLiteralClassString) {
+                    if (is_string($item_key_value) && $item_key_literal_type instanceof TLiteralClassString) {
                         $array_creation_info->class_strings[$item_key_value] = true;
                     }
                 } elseif ($key_type->isSingleIntLiteral()) {
@@ -420,7 +416,6 @@ final class ArrayAnalyzer
 
             $array_creation_info->array_keys[$item_key_value] = true;
         }
-
 
         if (($data_flow_graph = $statements_analyzer->data_flow_graph)
             && ($data_flow_graph instanceof VariableUseGraph

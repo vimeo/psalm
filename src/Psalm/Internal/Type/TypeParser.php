@@ -1475,7 +1475,7 @@ final class TypeParser
                     $property_key = $property_branch->value;
                 }
                 if ($is_list && (
-                        !is_numeric($property_key)
+                        ArrayAnalyzer::getLiteralArrayKeyInt($property_key) === false
                         || ($had_optional && !$property_maybe_undefined)
                         || $type === 'array'
                         || $type === 'callable-array'

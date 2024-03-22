@@ -116,9 +116,10 @@ final class ExpressionIdentifier
                 if ($stmt->dim instanceof PhpParser\Node\Scalar\String_
                     || $stmt->dim instanceof PhpParser\Node\Scalar\LNumber
                 ) {
-                    $offset = $stmt->dim instanceof PhpParser\Node\Scalar\String_
+                    $string_to_int = ArrayAnalyzer::getLiteralArrayKeyInt($stmt->dim->value);
+                    $offset = $string_to_int === false
                         ? '\'' . $stmt->dim->value . '\''
-                        : $stmt->dim->value;
+                        : (int) $stmt->dim->value;
                 } elseif ($stmt->dim instanceof PhpParser\Node\Expr\Variable
                     && is_string($stmt->dim->name)
                 ) {
@@ -146,7 +147,13 @@ final class ExpressionIdentifier
                     )
                 ) {
                     if ($stmt_dim_type->isSingleStringLiteral()) {
-                        $offset = '\'' . $stmt_dim_type->getSingleStringLiteral()->value . '\'';
+                        $string_to_int = ArrayAnalyzer::getLiteralArrayKeyInt(
+                            $stmt_dim_type->getSingleStringLiteral()->value,
+                        );
+
+                        $offset = $string_to_int === false
+                            ? '\'' . $stmt_dim_type->getSingleStringLiteral()->value . '\''
+                            : (int) $stmt_dim_type->getSingleStringLiteral()->value;
                     } elseif ($stmt_dim_type->isSingleIntLiteral()) {
                         $offset = $stmt_dim_type->getSingleIntLiteral()->value;
                     }
