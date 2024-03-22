@@ -1232,6 +1232,13 @@ final class BinaryOperationTest extends TestCase
                         echo "yes";
                     }',
             ],
+            'greaterThanGmp' => [
+                'code' => '<?php
+                    $a = gmp_init(15);
+                    if ($a > 0) {
+                        echo "yes";
+                    }',
+            ],
             'greaterThanZeroFalse' => [
                 'code' => '<?php
                     $a = $a = rand(0, 1) > 0 ? rand() : false;
@@ -1465,6 +1472,14 @@ final class BinaryOperationTest extends TestCase
                     $a = new DateTime();
                     $b = new stdClass();
                     if ($a < $b) {
+                        echo "yes";
+                    }',
+                'error_message' => 'PossiblyInvalidOperand',
+            ],
+            'greaterDateTimeInterfaceInvalid' => [
+                'code' => '<?php
+                    $a = new DateTime();
+                    if ($a > 0) {
                         echo "yes";
                     }',
                 'error_message' => 'PossiblyInvalidOperand',
