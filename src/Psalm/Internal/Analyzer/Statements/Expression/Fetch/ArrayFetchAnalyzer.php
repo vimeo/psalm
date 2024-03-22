@@ -7,6 +7,7 @@ use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -92,8 +93,6 @@ use function count;
 use function implode;
 use function in_array;
 use function is_int;
-use function is_numeric;
-use function preg_match;
 use function strlen;
 use function strtolower;
 
@@ -968,16 +967,25 @@ final class ArrayFetchAnalyzer
             $found_match = false;
 
             foreach ($offset_type->getAtomicTypes() as $offset_type_part) {
-                if ($extended_var_id
-                    && $offset_type_part instanceof TLiteralString
-                    && isset(
-                        $context->vars_in_scope[
-                            $extended_var_id . '[\'' . $offset_type_part->value . '\']'
-                        ],
-                    )
-                    && !$context->vars_in_scope[
-                            $extended_var_id . '[\'' . $offset_type_part->value . '\']'
-                        ]->possibly_undefined
+                if ($extended_var_id === null
+                    || !($offset_type_part instanceof TLiteralString)) {
+                    continue;
+                }
+
+                $string_to_int = ArrayAnalyzer::getLiteralArrayKeyInt(
+                    $offset_type_part->value,
+                );
+
+                $literal_access = $string_to_int === false
+                    ? '\'' . $offset_type_part->value . '\''
+                    : $string_to_int;
+                if (isset(
+                    $context->vars_in_scope[
+                        $extended_var_id . '[' . $literal_access . ']'
+                    ],
+                ) && !$context->vars_in_scope[
+                        $extended_var_id . '[' . $literal_access . ']'
+                    ]->possibly_undefined
                 ) {
                     $found_match = true;
                     break;
@@ -1007,8 +1015,9 @@ final class ArrayFetchAnalyzer
 
         foreach ($offset_types as $key => $offset_type_part) {
             if ($offset_type_part instanceof TLiteralString) {
-                if (preg_match('/^(0|[1-9][0-9]*)$/', $offset_type_part->value)) {
-                    $offset_type->addType(new TLiteralInt((int) $offset_type_part->value));
+                $string_to_int = ArrayAnalyzer::getLiteralArrayKeyInt($offset_type_part->value);
+                if ($string_to_int !== false) {
+                    $offset_type->addType(new TLiteralInt($string_to_int));
                     $offset_type->removeType($key);
                 }
             } elseif ($offset_type_part instanceof TBool) {
@@ -1546,7 +1555,10 @@ final class ArrayFetchAnalyzer
         if ($key_values) {
             $properties = $type->properties;
             foreach ($key_values as $key_value) {
-                if ($type->is_list && (!is_numeric($key_value->value) || $key_value->value < 0)) {
+                $string_to_int = ArrayAnalyzer::getLiteralArrayKeyInt($key_value->value);
+                $key_value = $string_to_int === false ? $key_value : new TLiteralInt($string_to_int);
+
+                if ($type->is_list && (!is_int($key_value->value) || $key_value->value < 0)) {
                     $expected_offset_types[] = $type->getGenericKeyType();
                     $has_valid_offset = false;
                 } elseif ((isset($properties[$key_value->value]) && !(
