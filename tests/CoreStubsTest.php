@@ -437,6 +437,7 @@ class CoreStubsTest extends TestCase
                 '$c===' => 'DOMDocument',
                 '$d===' => 'DOMDocument',
             ],
+            'ignored_issues' => ['InternalMethod'],
         ];
     }
 
