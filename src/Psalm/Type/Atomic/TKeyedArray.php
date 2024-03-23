@@ -720,6 +720,19 @@ class TKeyedArray extends Atomic
                 $quote = true;
             }
 
+            if (preg_match('/^[1-9][0-9]*_([0-9]+_)*[0-9]+$/', $name)) {
+                $quote = true;
+            }
+
+            // 08 should be quoted since it's numeric but it's handled as string and not cast to int
+            if (preg_match('/^0[0-9]+$/', $name)) {
+                $quote = true;
+            }
+
+            if (preg_match('/^[0-9]+e-?[0-9]+$/', $name)) {
+                $quote = true;
+            }
+
             if ($quote) {
                 $name = '\'' . str_replace("\n", '\n', addslashes($name)) . '\'';
             }

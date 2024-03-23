@@ -3742,7 +3742,7 @@ final class AssertionFinder
         if (isset($expr->getArgs()[0])
             && isset($expr->getArgs()[1])
             && $first_var_type
-            && $first_var_name
+            && $first_var_name !== null
             && !$expr->getArgs()[0]->value instanceof PhpParser\Node\Expr\ClassConstFetch
             && $source instanceof StatementsAnalyzer
             && ($second_var_type = $source->node_data->getType($expr->getArgs()[1]->value))
@@ -3765,7 +3765,12 @@ final class AssertionFinder
 
                     if ($key_type->allStringLiterals() && !$key_type->possibly_undefined) {
                         foreach ($key_type->getLiteralStrings() as $array_literal_type) {
-                            $literal_assertions[] = new IsIdentical($array_literal_type);
+                            $string_to_int = ArrayAnalyzer::getLiteralArrayKeyInt($array_literal_type->value);
+                            if ($string_to_int === false) {
+                                $literal_assertions[] = new IsIdentical($array_literal_type);
+                            } else {
+                                $literal_assertions[] = new IsLooselyEqual(new TLiteralInt($string_to_int));
+                            }
                         }
                     } elseif ($key_type->allIntLiterals() && !$key_type->possibly_undefined) {
                         foreach ($key_type->getLiteralInts() as $array_literal_type) {
@@ -3778,7 +3783,7 @@ final class AssertionFinder
             }
         }
 
-        if ($literal_assertions && $first_var_name && $safe_to_track_literals) {
+        if ($literal_assertions && $first_var_name !== null && $safe_to_track_literals) {
             $if_types[$first_var_name] = [$literal_assertions];
         } else {
             $array_root = isset($expr->getArgs()[1]->value)
@@ -3794,7 +3799,10 @@ final class AssertionFinder
                     $first_arg = $expr->getArgs()[0];
 
                     if ($first_arg->value instanceof PhpParser\Node\Scalar\String_) {
-                        $first_var_name = '\'' . $first_arg->value->value . '\'';
+                        $string_to_int = ArrayAnalyzer::getLiteralArrayKeyInt($first_arg->value->value);
+                        $first_var_name = $string_to_int === false
+                            ? '\'' . $first_arg->value->value . '\''
+                            : (string) $string_to_int;
                     } elseif ($first_arg->value instanceof PhpParser\Node\Scalar\LNumber) {
                         $first_var_name = (string)$first_arg->value->value;
                     }
@@ -3812,7 +3820,12 @@ final class AssertionFinder
 
                     if ($const_type) {
                         if ($const_type->isSingleStringLiteral()) {
-                            $first_var_name = '\''.$const_type->getSingleStringLiteral()->value.'\'';
+                            $string_to_int = ArrayAnalyzer::getLiteralArrayKeyInt(
+                                $const_type->getSingleStringLiteral()->value,
+                            );
+                            $first_var_name = $string_to_int === false
+                                ? '\'' . $const_type->getSingleStringLiteral()->value . '\''
+                                : (string) $string_to_int;
                         } elseif ($const_type->isSingleIntLiteral()) {
                             $first_var_name = (string)$const_type->getSingleIntLiteral()->value;
                         } else {
@@ -3829,7 +3842,11 @@ final class AssertionFinder
                     && ($first_var_type = $source->node_data->getType($expr->getArgs()[0]->value))
                 ) {
                     foreach ($first_var_type->getLiteralStrings() as $array_literal_type) {
-                        $if_types[$array_root . "['" . $array_literal_type->value . "']"] = [[new ArrayKeyExists()]];
+                        $string_to_int = ArrayAnalyzer::getLiteralArrayKeyInt($array_literal_type->value);
+                        $literal_key = $string_to_int === false
+                            ? "'" . $array_literal_type->value . "'"
+                            : $string_to_int;
+                        $if_types[$array_root . "[" . $literal_key . "]"] = [[new ArrayKeyExists()]];
                     }
                     foreach ($first_var_type->getLiteralInts() as $array_literal_type) {
                         $if_types[$array_root . "[" . $array_literal_type->value . "]"] = [[new ArrayKeyExists()]];
