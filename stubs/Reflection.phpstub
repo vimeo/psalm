@@ -640,8 +640,8 @@ class ReflectionParameter implements Reflector {
     public function getAttributes(?string $name = null, int $flags = 0): array {}
 
     /**
-    * @since 8.0
-    */
+     * @since 8.0
+     */
     public function isPromoted(): bool {}
 
     /**

@@ -5,6 +5,7 @@ namespace Psalm\Internal;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Codebase\Functions;
+use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\Reflection;
 use Psalm\Internal\FileManipulation\ClassDocblockManipulator;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
@@ -27,6 +28,7 @@ abstract class RuntimeCaches
     {
         IssueBuffer::clearCache();
         Reflection::clearCache();
+        InternalCallMapHandler::clearCache();
         Functions::clearCache();
         TypeTokenizer::clearCache();
         FileReferenceProvider::clearCache();
