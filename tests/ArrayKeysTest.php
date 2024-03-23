@@ -193,6 +193,8 @@ class ArrayKeysTest extends TestCase
                     // see https://github.com/php/php-src/issues/9029#issuecomment-1186226676
                     $e = ["+15" => "a"];
                     $f = ["015" => "a"];
+                    $g = ["1e2" => "a"];
+                    $h = ["1_0" => "a"];
                     ',
                 'assertions' => [
                     '$a===' => "array{15: 'a'}",
@@ -201,6 +203,8 @@ class ArrayKeysTest extends TestCase
                     '$d===' => "array{-15: 'a'}",
                     '$e===' => "array{'+15': 'a'}",
                     '$f===' => "array{'015': 'a'}",
+                    '$g===' => "array{'1e2': 'a'}",
+                    '$h===' => "array{'1_0': 'a'}",
                 ],
             ],
         ];
