@@ -1685,7 +1685,9 @@ final class TypeParser
         $normalized_intersection_types = [];
         $modified = false;
         foreach ($intersection_types as $intersection_type) {
-            if (!$intersection_type instanceof TTypeAlias) {
+            if (!$intersection_type instanceof TTypeAlias
+                || !$codebase->classlike_storage_provider->has($intersection_type->declaring_fq_classlike_name)
+            ) {
                 $normalized_intersection_types[] = [$intersection_type];
                 continue;
             }
