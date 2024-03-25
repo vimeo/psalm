@@ -120,6 +120,10 @@ return [
         'old' => ['bool', 'directory'=>'string', 'permissions='=>'int', 'recursive='=>'bool', 'context='=>'resource'],
         'new' => ['bool', 'directory'=>'string', 'permissions='=>'int', 'recursive='=>'bool', 'context='=>'null|resource'],
     ],
+    'session_start' => [
+        'old' => ['bool', 'options='=>'array{read_and_close?:bool,save_handler?:string,save_path?:string,name?:string,serialize_handler?:string,gc_probability?:int,gc_divisor?:int,gc_maxlifetime?:int,referer_check?:string,use_strict_mode?:bool,use_cookies?:bool,use_only_cookies?:bool,cookie_lifetime?:int,cookie_path?:string,cookie_domain?:string,cookie_secure?:bool,cookie_httponly?:bool,cache_limiter?:string,cache_expire?:int,use_trans_sid?:bool,trans_sid_tags?:string,trans_sid_hosts?:string,sid_length?: int<22,256>,sid_bits_per_character?: int<4,6>,lazy_write?:bool}'],
+        'new' => ['bool', 'options='=>'array{read_and_close?:bool,save_handler?:string,save_path?:string,name?:string,serialize_handler?:string,gc_probability?:int,gc_divisor?:int,gc_maxlifetime?:int,referer_check?:string,use_strict_mode?:bool,use_cookies?:bool,use_only_cookies?:bool,cookie_lifetime?:int,cookie_path?:string,cookie_domain?:string,cookie_secure?:bool,cookie_httponly?:bool,cookie_samesite?:string,cache_limiter?:string,cache_expire?:int,use_trans_sid?:bool,trans_sid_tags?:string,trans_sid_hosts?:string,sid_length?: int<22,256>,sid_bits_per_character?: int<4,6>,lazy_write?:bool}'],
+    ]
   ],
   'removed' => [
   ],
