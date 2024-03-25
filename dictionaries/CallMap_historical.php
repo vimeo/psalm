@@ -13840,7 +13840,7 @@ return [
     'session_decode' => ['bool', 'data'=>'string'],
     'session_destroy' => ['bool'],
     'session_encode' => ['string|false'],
-    'session_get_cookie_params' => ['array'],
+    'session_get_cookie_params' => ['array{lifetime:?int,path:?string,domain:?string,secure:?bool,httponly:?bool}'],
     'session_id' => ['string|false', 'id='=>'string'],
     'session_is_registered' => ['bool', 'name'=>'string'],
     'session_module_name' => ['string|false', 'module='=>'string'],
