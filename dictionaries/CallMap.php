@@ -11121,7 +11121,7 @@ return [
 'session_set_save_handler' => ['bool', 'open'=>'callable(string,string):bool', 'close'=>'callable():bool', 'read'=>'callable(string):string', 'write'=>'callable(string,string):bool', 'destroy'=>'callable(string):bool', 'gc'=>'callable(string):bool', 'create_sid='=>'callable():string', 'validate_sid='=>'callable(string):bool', 'update_timestamp='=>'callable(string):bool'],
 'session_set_save_handler\'1' => ['bool', 'open'=>'SessionHandlerInterface', 'close='=>'bool'],
 'session_start' => ['bool', 'options='=>'array'],
-'session_status' => ['int'],
+'session_status' => ['PHP_SESSION_ACTIVE|PHP_SESSION_NONE|PHP_SESSION_ACTIVE'],
 'session_unregister' => ['bool', 'name'=>'string'],
 'session_unset' => ['bool'],
 'session_write_close' => ['bool'],
