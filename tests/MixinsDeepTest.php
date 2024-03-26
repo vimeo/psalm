@@ -122,6 +122,112 @@ class MixinsDeepTest extends TestCase
                     '$b' => 'int',
                 ],
             ],
+            'CombineNamedAndTemplatedMixins_WithObjectMethods' => [
+                'code' => <<<'PHP'
+                    <?php
+                    abstract class Foo {
+                        abstract public function getString(): string;
+                    }
+
+                    /**
+                     * @template T
+                     * @mixin T
+                     */
+                    abstract class Bar {
+                        abstract public function getInt(): int;
+                        public function __call(string $name, array $arguments) {}
+                    }
+
+                    /**
+                     * @template T
+                     * @mixin Bar<T>
+                     */
+                    class Baz {
+                        public function __call(string $name, array $arguments) {}
+                    }
+
+                    /** @var Baz<Foo> */
+                    $baz = new Baz();
+                    $a = $baz->getString();
+                    $b = $baz->getInt();
+                    PHP,
+                'assertions' => [
+                    '$a' => 'string',
+                    '$b' => 'int',
+                ],
+            ],
+            'CombineTemplatedAndNamedMixinsWithoutT_WithObjectMethods' => [
+                'code' => <<<'PHP'
+                    <?php
+                    abstract class Foo {
+                        abstract public function getString(): string;
+                    }
+
+                    /**
+                     * @mixin Foo
+                     */
+                    abstract class Bar {
+                        abstract public function getInt(): int;
+                        public function __call(string $name, array $arguments) {}
+                    }
+
+                    /**
+                     * @template T
+                     * @mixin T
+                     */
+                    class Baz {
+                        public function __call(string $name, array $arguments) {}
+                    }
+
+                    /** @var Baz<Bar> $baz */
+                    $baz = new Baz();
+                    $a = $baz->getString();
+                    $b = $baz->getInt();
+                    PHP,
+                'assertions' => [
+                    '$a' => 'string',
+                    '$b' => 'int',
+                ],
+            ],
+            'CombineTemplatedAndNamedMixinsWithT_WithObjectMethods' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T
+                     */
+                    abstract class Foo {
+                        /**
+                         * @return T
+                         */
+                        abstract public function getString();
+                    }
+
+                    /**
+                     * @mixin Foo<string>
+                     */
+                    abstract class Bar {
+                        abstract public function getInt(): int;
+                        public function __call(string $name, array $arguments) {}
+                    }
+
+                    /**
+                     * @template T
+                     * @mixin T
+                     */
+                    class Baz {
+                        public function __call(string $name, array $arguments) {}
+                    }
+
+                    /** @var Baz<Bar> $baz */
+                    $baz = new Baz();
+                    $a = $baz->getString();
+                    $b = $baz->getInt();
+                    PHP,
+                'assertions' => [
+                    '$a' => 'string',
+                    '$b' => 'int',
+                ],
+            ],
         ];
     }
 }
