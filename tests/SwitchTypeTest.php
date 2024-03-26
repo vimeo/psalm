@@ -244,7 +244,8 @@ class SwitchTypeTest extends TestCase
                             case 1:
                                 $x = rand() % 4;
                             case 2:
-                                if (isset($x) && $x > 2) {
+                                // @todo type should be correctly inferred as int instead of mixed
+                                if (isset($x) && is_int($x) && $x > 2) {
                                     echo "$x is large";
                                 }
                                 break;

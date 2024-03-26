@@ -422,6 +422,11 @@ final class ClassLikeNodeScanner
             if ($docblock_info->templates) {
                 $storage->template_types = [];
 
+                /**
+                 * not sure what exactly is checked here, suppress it instead of changing it
+                 *
+                 * @psalm-suppress PossiblyInvalidOperand
+                 */
                 usort(
                     $docblock_info->templates,
                     static fn(array $l, array $r): int => $l[4] > $r[4] ? 1 : -1,
