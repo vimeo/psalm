@@ -88,6 +88,40 @@ class MixinsDeepTest extends TestCase
                     '$b' => 'int',
                 ],
             ],
+            'TemplatedMixins_WithObjectMethods' => [
+                'code' => <<<'PHP'
+                    <?php
+                    abstract class Foo {
+                        abstract public function getString(): string;
+                    }
+
+                    /**
+                     * @template T
+                     * @mixin T
+                     */
+                    abstract class Bar {
+                        abstract public function getInt(): int;
+                        public function __call(string $name, array $arguments) {}
+                    }
+
+                    /**
+                     * @template T
+                     * @mixin T
+                     */
+                    class Baz {
+                        public function __call(string $name, array $arguments) {}
+                    }
+
+                    /** @var Baz<Bar<Foo>> */
+                    $baz = new Baz();
+                    $a = $baz->getString();
+                    $b = $baz->getInt();
+                    PHP,
+                'assertions' => [
+                    '$a' => 'string',
+                    '$b' => 'int',
+                ],
+            ],
         ];
     }
 }
