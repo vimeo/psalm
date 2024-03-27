@@ -50,6 +50,7 @@ use function array_shift;
 use function array_values;
 use function count;
 use function get_class;
+use function in_array;
 use function reset;
 use function strtolower;
 
@@ -702,6 +703,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
 
     /**
      * @param lowercase-string $method_name_lc
+     * @param string[] $ignore_mixins
      * @return array{TNamedObject, ClassLikeStorage, bool, bool, MethodIdentifier, string}
      */
     private static function handleMixins(
@@ -715,7 +717,8 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
         PhpParser\Node\Expr\MethodCall $stmt,
         StatementsAnalyzer $statements_analyzer,
         string $fq_class_name,
-        ?string $lhs_var_id
+        ?string $lhs_var_id,
+        array $ignore_mixins = []
     ): array {
         $method_exists = false;
         $naive_method_exists = false;
@@ -739,6 +742,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                     $statements_analyzer,
                     $fq_class_name,
                     $lhs_var_id,
+                    $ignore_mixins,
                 );
         } elseif ($class_storage->mixin_declaring_fqcln
             && $class_storage->namedMixins
@@ -756,6 +760,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                     $statements_analyzer,
                     $fq_class_name,
                     $lhs_var_id,
+                    $ignore_mixins,
                 );
         }
 
@@ -771,6 +776,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
 
     /**
      * @param lowercase-string $method_name_lc
+     * @param string[] $ignore_mixins
      * @return array{TNamedObject, ClassLikeStorage, bool, bool, MethodIdentifier, string}
      */
     private static function handleTemplatedMixins(
@@ -784,10 +790,13 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
         PhpParser\Node\Expr\MethodCall $stmt,
         StatementsAnalyzer $statements_analyzer,
         string $fq_class_name,
-        ?string $lhs_var_id
+        ?string $lhs_var_id,
+        array $ignore_mixins
     ): array {
         $method_exists = false;
         $naive_method_exists = false;
+
+        $ignore_mixins[] = $fq_class_name;
 
         if ($class_storage->templatedMixins
             && $lhs_type_part instanceof TGenericObject
@@ -845,7 +854,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                                 $method_exists = isset($mixin_class_storage->pseudo_methods[$method_name_lc]);
                             }
 
-                            if (!$method_exists) {
+                            if (!$method_exists && !in_array($mixin_fq_class_name, $ignore_mixins)) {
                                 [
                                     $lhs_type_part_new,
                                     $mixin_class_storage,
@@ -865,6 +874,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                                     $statements_analyzer,
                                     $mixin_fq_class_name,
                                     $lhs_var_id,
+                                    $ignore_mixins,
                                 );
                             }
 
@@ -893,6 +903,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
 
     /**
      * @param lowercase-string $method_name_lc
+     * @param string[] $ignore_mixins
      * @return array{TNamedObject, ClassLikeStorage, bool, bool, MethodIdentifier, string}
      */
     private static function handleRegularMixins(
@@ -906,10 +917,13 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
         PhpParser\Node\Expr\MethodCall $stmt,
         StatementsAnalyzer $statements_analyzer,
         string $fq_class_name,
-        ?string $lhs_var_id
+        ?string $lhs_var_id,
+        array $ignore_mixins
     ): array {
         $method_exists = false;
         $naive_method_exists = false;
+
+        $ignore_mixins[] = $fq_class_name;
 
         foreach ($class_storage->namedMixins as $mixin) {
             if (!$class_storage->mixin_declaring_fqcln) {
@@ -980,7 +994,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                 $naive_method_exists = true;
             }
 
-            if (!$method_exists) {
+            if (!$method_exists && !in_array($mixin_fq_class_name, $ignore_mixins)) {
                 [
                     $mixin_lhs_type_part,
                     $mixin_class_storage,
@@ -1000,6 +1014,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                     $statements_analyzer,
                     $mixin_fq_class_name,
                     $lhs_var_id,
+                    $ignore_mixins,
                 );
             }
 

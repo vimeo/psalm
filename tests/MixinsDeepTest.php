@@ -344,6 +344,56 @@ class MixinsDeepTest extends TestCase
                     '$b' => 'int',
                 ],
             ],
+            'LowMixinCollision_WithObjectMethods' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @mixin Foo
+                     */
+                    class Foo {
+                        public function __call(string $name, array $arguments) {}
+                    }
+
+                    $foo = new Foo();
+                    $a = $foo->notExistsMethod();
+                    PHP,
+                'assertions' => [
+                    '$a' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'DeepMixinCollision_WithObjectMethods' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @mixin Baz
+                     */
+                    abstract class Foo {
+                        public function __call(string $name, array $arguments) {}
+                    }
+
+                    /**
+                     * @mixin Foo
+                     */
+                    abstract class Bar {
+                        public function __call(string $name, array $arguments) {}
+                    }
+
+                    /**
+                     * @mixin Bar
+                     */
+                    class Baz {
+                        public function __call(string $name, array $arguments) {}
+                    }
+
+                    $baz = new Baz();
+                    $a = $baz->notExistsMethod();
+                    PHP,
+                'assertions' => [
+                    '$a' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
         ];
     }
 }
