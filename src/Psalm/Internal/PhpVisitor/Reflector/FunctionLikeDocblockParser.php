@@ -575,6 +575,8 @@ final class FunctionLikeDocblockParser
         $info->pure = isset($parsed_docblock->tags['psalm-pure'])
             || isset($parsed_docblock->tags['pure']);
 
+        $info->require_usage = isset($parsed_docblock->tags['psalm-require-usage']);
+
         if (isset($parsed_docblock->tags['psalm-mutation-free'])) {
             $info->mutation_free = true;
         }
