@@ -925,6 +925,7 @@ final class AtomicStaticCallAnalyzer
 
     /**
      * @param lowercase-string $method_name_lc
+     * @param string[] $ignore_mixins
      */
     private static function handleRegularMixins(
         ClassLikeStorage $class_storage,
@@ -934,11 +935,15 @@ final class AtomicStaticCallAnalyzer
         Context $context,
         PhpParser\Node\Identifier $stmt_name,
         StatementsAnalyzer $statements_analyzer,
-        string $fq_class_name
+        string $fq_class_name,
+        array $ignore_mixins = []
     ): ?Union {
         if ($class_storage->mixin_declaring_fqcln === null) {
             return null;
         }
+
+        $ignore_mixins[] = $fq_class_name;
+
         foreach ($class_storage->namedMixins as $mixin) {
             $new_method_id = new MethodIdentifier(
                 $mixin->value,
@@ -1023,6 +1028,9 @@ final class AtomicStaticCallAnalyzer
             }
             $mixin_class_storage = $codebase->classlike_storage_provider->get($mixin->value);
             $mixin_fq_class_name = $mixin_class_storage->name;
+            if (in_array($mixin_fq_class_name, $ignore_mixins)) {
+                continue;
+            }
             $new_lhs_type = self::handleRegularMixins(
                 $mixin_class_storage,
                 $lhs_type_part,
@@ -1032,6 +1040,7 @@ final class AtomicStaticCallAnalyzer
                 $stmt_name,
                 $statements_analyzer,
                 $mixin_fq_class_name,
+                $ignore_mixins,
             );
             if ($new_lhs_type) {
                 return $new_lhs_type;

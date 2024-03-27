@@ -394,6 +394,54 @@ class MixinsDeepTest extends TestCase
                 ],
                 'ignored_issues' => ['MixedAssignment'],
             ],
+            'LowMixinCollision_WithStaticMethods' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @mixin Foo
+                     */
+                    class Foo {
+                        public static function __callStatic(string $name, array $arguments) {}
+                    }
+
+                    $a = Foo::notExistsMethod();
+                    PHP,
+                'assertions' => [
+                    '$a' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'DeepMixinCollision_WithStaticMethods' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @mixin Baz
+                     */
+                    abstract class Foo {
+                        public static function __callStatic(string $name, array $arguments) {}
+                    }
+
+                    /**
+                     * @mixin Foo
+                     */
+                    abstract class Bar {
+                        public static function __callStatic(string $name, array $arguments) {}
+                    }
+
+                    /**
+                     * @mixin Bar
+                     */
+                    class Baz {
+                        public static function __callStatic(string $name, array $arguments) {}
+                    }
+
+                    $a = Baz::notExistsMethod();
+                    PHP,
+                'assertions' => [
+                    '$a' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
         ];
     }
 }
