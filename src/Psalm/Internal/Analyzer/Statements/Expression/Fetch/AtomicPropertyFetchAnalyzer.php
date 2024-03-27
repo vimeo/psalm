@@ -1259,6 +1259,7 @@ final class AtomicPropertyFetchAnalyzer
     }
 
     /**
+     * @param string[] $ignore_mixins
      * @return array{TNamedObject, ClassLikeStorage, bool, bool, string, string}
      */
     private static function handleRegularMixins(
@@ -1271,10 +1272,14 @@ final class AtomicPropertyFetchAnalyzer
         string $property_id,
         PhpParser\Node\Expr\PropertyFetch $stmt,
         StatementsAnalyzer $statements_analyzer,
-        string $fq_class_name
+        string $fq_class_name,
+        array $ignore_mixins = []
     ): array {
         $property_exists = false;
         $naive_property_exists = false;
+
+        $ignore_mixins[] = $fq_class_name;
+
         foreach ($class_storage->namedMixins as $mixin) {
             $new_property_id = $mixin->value . '::$' . $prop_name;
 
@@ -1317,6 +1322,9 @@ final class AtomicPropertyFetchAnalyzer
                 }
                 $mixin_lhs_type_part = $mixin;
                 $mixin_fq_class_name = $mixin_class_storage->name;
+                if (in_array($mixin_fq_class_name, $ignore_mixins)) {
+                    continue;
+                }
                 
                 [
                     $new_lhs_type_part,
@@ -1336,6 +1344,7 @@ final class AtomicPropertyFetchAnalyzer
                     $stmt,
                     $statements_analyzer,
                     $mixin_fq_class_name,
+                    $ignore_mixins,
                 );
 
                 if ($property_exists) {
