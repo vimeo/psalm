@@ -1448,6 +1448,90 @@ class InternalAnnotationTest extends TestCase
                 ',
                 'error_message' => 'InternalMethod',
             ],
+            'accessPrivateClass' => [
+                'code' => '<?php
+                    namespace A {
+                        /**
+                         * @access private
+                         */
+                        class C {}
+                    }
+                    namespace B {
+                        use A\C;
+                        new C;
+                    }
+                ',
+                'error_message' => 'InternalClass',
+            ],
+            'accessPrivateConstructor' => [
+                'code' => '<?php
+                    namespace A {
+                        class C {
+                            /**
+                             * @access private
+                             */
+                            public function __construct() {}
+                        }
+                    }
+                    namespace B {
+                        use A\C;
+                        new C;
+                    }
+                ',
+                'error_message' => 'InternalMethod',
+            ],
+            'accessPrivateMethod' => [
+                'code' => '<?php
+                    namespace A {
+                        class C {
+                            /**
+                             * @access private
+                             */
+                            public function run(): void {}
+                        }
+                    }
+                    namespace B {
+                        use A\C;
+                        $c = new C;
+                        $c->run();
+                    }
+                ',
+                'error_message' => 'InternalMethod',
+            ],
+            'accessPrivateFunction' => [
+                'code' => '<?php
+                    namespace A {
+                        /**
+                         * @access private
+                         */
+                        function run(): void {}
+                    }
+                    namespace B {
+                        \A\run();
+                    }
+                ',
+                'error_message' => 'InternalMethod',
+            ],
+            'accessPrivateProperty' => [
+                'code' => '<?php
+                    namespace A {
+                        class C {
+                            /**
+                             * @access private
+                             *
+                             * @var string
+                             */
+                            public $foo = "hello";
+                        }
+                    }
+                    namespace B {
+                        use A\C;
+                        $c = new C;
+                        echo $c->foo;
+                    }
+                ',
+                'error_message' => 'InternalProperty',
+            ],
             'psalmInternalClassWithCallClass' => [
                 'code' => '<?php
                     namespace A {
