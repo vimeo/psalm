@@ -1024,6 +1024,62 @@ class InternalAnnotationTest extends TestCase
                     }',
                 'error_message' => 'InternalProperty',
             ],
+            'internalClassOutsideClass' => [
+                'code' => '<?php
+                    namespace A {
+                        /**
+                         * @internal
+                         */
+                        class Foo {}
+                    }
+                    namespace B {
+                        $f = new \A\Foo();
+                    }',
+                'error_message' => 'InternalClass',
+            ],
+            'internalClassOutsideClassGlobalNamespace' => [
+                'code' => '<?php
+                    namespace A {
+                        /**
+                         * @internal
+                         */
+                        class Foo {}
+                    }
+                    namespace {
+                        $f = new \A\Foo();
+                    }',
+                'error_message' => 'InternalClass',
+            ],
+            'internalClassInsideFunction' => [
+                'code' => '<?php
+                    namespace A {
+                        /**
+                         * @internal
+                         */
+                        class Foo {}
+                    }
+                    namespace B {
+                        function hello(): void {
+                            $f = new \A\Foo();
+                        }
+                    }',
+                'error_message' => 'InternalClass',
+            ],
+            'internalClassInsideFunctionGlobalNamespace' => [
+                'code' => '<?php
+                    namespace A {
+                        /**
+                         * @internal
+                         */
+                        class Foo {}
+                    }
+                    namespace {
+                        function hello(): void {
+                            $f = new \A\Foo();
+                        }
+                    }',
+                'error_message' => 'InternalClass',
+            ],
             'magicPropertyGetInternalExplicit' => [
                 'code' => '<?php
                     namespace A {

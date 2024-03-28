@@ -840,11 +840,13 @@ final class AtomicStaticCallAnalyzer
             );
         }
 
-        if ($context->self && ! NamespaceAnalyzer::isWithinAny($context->self, $class_storage->internal)) {
+        $caller_identifier = $context->self ?? $statements_analyzer->getNamespace();
+        if ($caller_identifier !== null
+            && !NamespaceAnalyzer::isWithinAny($caller_identifier, $class_storage->internal)) {
             IssueBuffer::maybeAdd(
                 new InternalClass(
                     $fq_class_name . ' is internal to ' . InternalClass::listToPhrase($class_storage->internal)
-                        . ' but called from ' . $context->self,
+                        . ' but called from ' . ($caller_identifier ?: 'root namespace'),
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
                     $fq_class_name,
                 ),
