@@ -900,6 +900,130 @@ class InternalAnnotationTest extends TestCase
                     }',
                 'error_message' => 'InternalProperty',
             ],
+            'internalPropertyStatic' => [
+                'code' => '<?php
+                    namespace A {
+                        class Foo {
+                            /**
+                             * @internal
+                             * @var string
+                             */
+                            public static $foo = "bar";
+                        }
+                    }
+                    namespace B {
+                        class Bat {
+                            public function batBat() : void {
+                                echo \A\Foo::$foo;
+                            }
+                        }
+                    }',
+                'error_message' => 'InternalProperty',
+            ],
+            'internalPropertyStaticOutsideClass' => [
+                'code' => '<?php
+                    namespace A {
+                        class Foo {
+                            /**
+                             * @internal
+                             * @var string
+                             */
+                            public static $foo = "bar";
+                        }
+                    }
+                    namespace B {
+                        echo \A\Foo::$foo;
+                    }',
+                'error_message' => 'InternalProperty',
+            ],
+            'internalPropertyStaticOutsideClassGlobalNamespace' => [
+                'code' => '<?php
+                    namespace A {
+                        class Foo {
+                            /**
+                             * @internal
+                             * @var string
+                             */
+                            public static $foo = "bar";
+                        }
+                    }
+                    namespace {
+                        echo \A\Foo::$foo;
+                    }',
+                'error_message' => 'InternalProperty',
+            ],
+            'internalPropertyInsideFunction' => [
+                'code' => '<?php
+                    namespace A {
+                        class Foo {
+                            /**
+                             * @internal
+                             * @var string
+                             */
+                            public $foo = "bar";
+                        }
+                    }
+                    namespace B {
+                        function hello(): void {
+                            $f = new \A\Foo();
+                            echo $f->foo;
+                        }
+                    }',
+                'error_message' => 'InternalProperty',
+            ],
+            'internalPropertyInsideFunctionGlobalNamespace' => [
+                'code' => '<?php
+                    namespace A {
+                        class Foo {
+                            /**
+                             * @internal
+                             * @var string
+                             */
+                            public $foo = "bar";
+                        }
+                    }
+                    namespace {
+                        function hello(): void {
+                            $f = new \A\Foo();
+                            echo $f->foo;
+                        }
+                    }',
+                'error_message' => 'InternalProperty',
+            ],
+            'internalPropertyOutsideClass' => [
+                'code' => '<?php
+                    namespace A {
+                        class Foo {
+                            /**
+                             * @internal
+                             * @var string
+                             */
+                            public $foo = "bar";
+                        }
+                    }
+                    namespace B {
+                        $f = new \A\Foo();
+                        echo $f->foo;
+                    }',
+                'error_message' => 'InternalProperty',
+            ],
+            'internalPropertyOutsideClassGlobalNamespace' => [
+                'code' => '<?php
+                    namespace A {
+                        class Foo {
+                            /**
+                             * @internal
+                             * @var string
+                             */
+                            public $foo = "bar";
+                        }
+                    }
+                    namespace {
+                        $f = new \A\Foo();
+                        echo $f->foo;
+                    }',
+                'error_message' => 'InternalProperty',
+            ],
             'magicPropertyGetInternalExplicit' => [
                 'code' => '<?php
                     namespace A {
