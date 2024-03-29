@@ -51,7 +51,7 @@ final class ClassLikeStorage implements HasAttributesInterface
     public $deprecated = false;
 
     /**
-     * @var list<non-empty-string>
+     * @var list<string>
      */
     public $internal = [];
 

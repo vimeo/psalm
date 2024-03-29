@@ -646,6 +646,30 @@ class InternalAnnotationTest extends TestCase
                         }
                     }',
             ],
+            'globalNamespaceInternalValidClass' => [
+                'code' => '<?php
+                    namespace {
+                        /**
+                         * @internal
+                         */
+                        class C {}
+
+                        new C;
+                    }
+                ',
+            ],
+            'globalNamespaceInternalValidFunction' => [
+                'code' => '<?php
+                    namespace {
+                        /**
+                         * @internal
+                         */
+                        function run(): void {}
+
+                        run();
+                    }
+                ',
+            ],
             'psalmInternalMethodWithMethod' => [
                 'code' => '<?php
                     namespace X {
@@ -1526,6 +1550,90 @@ class InternalAnnotationTest extends TestCase
                     }
                     namespace B {
                         use A\C;
+                        $c = new C;
+                        echo $c->foo;
+                    }
+                ',
+                'error_message' => 'InternalProperty',
+            ],
+            'globalNamespaceInternalClass' => [
+                'code' => '<?php
+                    namespace {
+                        /**
+                         * @access private
+                         */
+                        class C {}
+                    }
+                    namespace B {
+                        use C;
+                        new C;
+                    }
+                ',
+                'error_message' => 'InternalClass',
+            ],
+            'globalNamespaceInternalConstructor' => [
+                'code' => '<?php
+                    namespace {
+                        class C {
+                            /**
+                             * @internal
+                             */
+                            public function __construct() {}
+                        }
+                    }
+                    namespace B {
+                        use C;
+                        new C;
+                    }
+                ',
+                'error_message' => 'InternalMethod',
+            ],
+            'globalNamespaceInternalMethod' => [
+                'code' => '<?php
+                    namespace {
+                        class C {
+                            /**
+                             * @internal
+                             */
+                            public function run(): void {}
+                        }
+                    }
+                    namespace B {
+                        use C;
+                        $c = new C;
+                        $c->run();
+                    }
+                ',
+                'error_message' => 'InternalMethod',
+            ],
+            'globalNamespaceInternalFunction' => [
+                'code' => '<?php
+                    namespace {
+                        /**
+                         * @internal
+                         */
+                        function run(): void {}
+                    }
+                    namespace B {
+                        run();
+                    }
+                ',
+                'error_message' => 'InternalMethod',
+            ],
+            'globalNamespaceInternalProperty' => [
+                'code' => '<?php
+                    namespace {
+                        class C {
+                            /**
+                             * @internal
+                             *
+                             * @var string
+                             */
+                            public $foo = "hello";
+                        }
+                    }
+                    namespace B {
+                        use C;
                         $c = new C;
                         echo $c->foo;
                     }
