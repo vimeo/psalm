@@ -125,7 +125,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 throw new UnexpectedValueException('Anonymous enums are not allowed');
             }
 
-            $fq_class_name = self::getAnonymousClassName($class, $source->getFilePath());
+            $fq_class_name = self::getAnonymousClassName($class, $source->getAliases(), $source->getFilePath());
         }
 
         parent::__construct($class, $source, $fq_class_name);
@@ -139,10 +139,25 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
     }
 
     /** @return non-empty-string */
-    public static function getAnonymousClassName(PhpParser\Node\Stmt\Class_ $class, string $file_path): string
-    {
-        return preg_replace('/[^A-Za-z0-9]/', '_', $file_path)
-            . '_' . $class->getLine() . '_' . (int)$class->getAttribute('startFilePos');
+    public static function getAnonymousClassName(
+        PhpParser\Node\Stmt\Class_ $class,
+        Aliases $aliases,
+        string $file_path,
+    ): string {
+        $class_name = preg_replace('/[^A-Za-z0-9]/', '_', $file_path)
+            . '_' . $class->getLine()
+            . '_' . (int)$class->getAttribute('startFilePos');
+
+        $fq_class_name = Type::getFQCLNFromString(
+            $class_name,
+            $aliases,
+        );
+
+        if ($fq_class_name === '') {
+            throw new LogicException('Invalid class name, should never happen');
+        }
+
+        return $fq_class_name;
     }
 
     public function analyze(
@@ -895,7 +910,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     $stmts,
                     static fn($stmt): bool => $stmt instanceof PhpParser\Node\Stmt\Property
                         && isset($stmt->props[0]->name->name)
-                        && $stmt->props[0]->name->name === $property_name
+                        && $stmt->props[0]->name->name === $property_name,
                 );
 
                 $suppressed = [];

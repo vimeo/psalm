@@ -723,19 +723,27 @@ final class ClassConstAnalyzer
 
             // Check assigned type matches docblock type
             if ($assigned_type = $statements_analyzer->node_data->getType($const->value)) {
-                if ($const_storage->type !== null
+                $const_storage_type = $const_storage->type;
+
+                if ($const_storage_type !== null
                     && $const_storage->stmt_location !== null
-                    && $assigned_type !== $const_storage->type
+                    && $assigned_type !== $const_storage_type
+                    // Check if this type was defined via a dockblock or type hint otherwise the inferred type
+                    // should always match the assigned type and we don't even need to do additional checks
+                    // There is an issue with constants over a certain length where additional values
+                    // are added to fallback_params in the assigned_type but not in const_storage_type
+                    // which causes a false flag for this error to appear. Usually happens with arrays
+                    && ($const_storage_type->from_docblock || $const_storage_type->from_property)
                     && !UnionTypeComparator::isContainedBy(
                         $statements_analyzer->getCodebase(),
                         $assigned_type,
-                        $const_storage->type,
+                        $const_storage_type,
                     )
                 ) {
                     IssueBuffer::maybeAdd(
                         new InvalidConstantAssignmentValue(
                             "{$class_storage->name}::{$const->name->name} with declared type "
-                            . "{$const_storage->type->getId()} cannot be assigned type {$assigned_type->getId()}",
+                            . "{$const_storage_type->getId()} cannot be assigned type {$assigned_type->getId()}",
                             $const_storage->stmt_location,
                             "{$class_storage->name}::{$const->name->name}",
                         ),

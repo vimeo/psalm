@@ -246,7 +246,7 @@ final class ReturnTypeAnalyzer
         if (count($inferred_return_type_parts) > 1) {
             $inferred_return_type_parts = array_filter(
                 $inferred_return_type_parts,
-                static fn(Union $union_type): bool => !$union_type->isNever()
+                static fn(Union $union_type): bool => !$union_type->isNever(),
             );
         }
         $inferred_return_type_parts = array_values($inferred_return_type_parts);
@@ -307,15 +307,6 @@ final class ReturnTypeAnalyzer
             $source->getFQCLN(),
             $source->getParentFQCLN(),
         );
-
-        // hack until we have proper yield type collection
-        if ($function_like_storage
-            && $function_like_storage->has_yield
-            && !$inferred_yield_type
-            && !$inferred_return_type->isVoid()
-        ) {
-            $inferred_return_type = new Union([new TNamedObject('Generator')]);
-        }
 
         if ($is_to_string) {
             $union_comparison_results = new TypeComparisonResult();

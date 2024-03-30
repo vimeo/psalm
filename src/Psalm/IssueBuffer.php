@@ -575,7 +575,7 @@ final class IssueBuffer
                     $file_issues,
                     static fn(IssueData $d1, IssueData $d2): int => [$d1->file_path, $d1->line_from, $d1->column_from]
                         <=>
-                        [$d2->file_path, $d2->line_from, $d2->column_from]
+                        [$d2->file_path, $d2->line_from, $d2->column_from],
                 );
                 self::$issues_data[$file_path] = $file_issues;
             }

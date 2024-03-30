@@ -2508,6 +2508,16 @@ class FunctionCallTest extends TestCase
                     }',
                 'error_message' => 'InvalidArgument',
             ],
+            'clearIssetContext' => [
+                'code' => '<?php
+                    function greet(bool $arg): ?string
+                    {
+                        return $arg ? "hi" : null;
+                    }
+
+                    echo greet($undef) ?? "bye";',
+                'error_message' => 'UndefinedGlobalVariable',
+            ],
             'mixedArgument' => [
                 'code' => '<?php
                     function fooFoo(int $a): void {}

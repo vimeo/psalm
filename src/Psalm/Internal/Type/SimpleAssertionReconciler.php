@@ -2964,7 +2964,7 @@ final class SimpleAssertionReconciler extends Reconciler
                 continue;
             }
 
-            $enum_case = $class_storage->enum_cases[$atomic_type->const_name] ?? null;
+            $enum_case = $class_storage->enum_cases[$enum_case_to_assert] ?? null;
             if ($enum_case === null) {
                 return null;
             }

@@ -161,7 +161,11 @@ final class NewAnalyzer extends CallAnalyzer
             }
         } elseif ($stmt->class instanceof PhpParser\Node\Stmt\Class_) {
             $statements_analyzer->analyze([$stmt->class], $context);
-            $fq_class_name = ClassAnalyzer::getAnonymousClassName($stmt->class, $statements_analyzer->getFilePath());
+            $fq_class_name = ClassAnalyzer::getAnonymousClassName(
+                $stmt->class,
+                $statements_analyzer->getAliases(),
+                $statements_analyzer->getFilePath(),
+            );
         } else {
             self::analyzeConstructorExpression(
                 $statements_analyzer,
