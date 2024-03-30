@@ -20,7 +20,6 @@ use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
-use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\ArgumentTypeCoercion;
 use Psalm\Issue\InvalidArgument;
@@ -337,6 +336,7 @@ final class ArrayFunctionArgumentsAnalyzer
         ) === false) {
             return false;
         }
+        $codebase = $statements_analyzer->getCodebase();
 
         $array_types = [];
         $max_array_size = null;
@@ -555,7 +555,7 @@ final class ArrayFunctionArgumentsAnalyzer
                 }
             }
 
-            $by_ref_type = TypeCombiner::combine([$array_type, ...$replacement_arg_type->getArrayValueTypes()]);
+            $by_ref_type = Type::combineUnionTypeArray([new Union([$array_type]), ...$replacement_arg_type->getArrayValueTypes()], $codebase);
 
             AssignmentAnalyzer::assignByRefParam(
                 $statements_analyzer,

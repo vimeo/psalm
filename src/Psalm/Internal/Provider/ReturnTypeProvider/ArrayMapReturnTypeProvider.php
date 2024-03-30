@@ -149,7 +149,7 @@ final class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInte
 
             if (count($call_args) === 2) {
                 $generic_key_type = $array_arg_type
-                    ? Type::combineUnionTypeArray($array_arg_union_type->getArrayKeyTypes(), $codebase)
+                    ? $array_arg_union_type->getArrayKeyType($codebase)
                     : Type::getArrayKey();
             } else {
                 $generic_key_type = Type::getInt();

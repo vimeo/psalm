@@ -42,10 +42,10 @@ final class ArrayChunkReturnTypeProvider implements FunctionReturnTypeProviderIn
                 new Union([
                     $preserve_keys
                         ? new TNonEmptyArray([
-                            Type::combineUnionTypeArray($array_arg_type->getArrayKeyTypes(), $codebase),
-                            Type::combineUnionTypeArray($array_arg_type->getArrayValueTypes(), $codebase),
+                            $array_arg_type->getArrayKeyType($codebase),
+                            $array_arg_type->getArrayValueType($codebase),
                         ])
-                        : Type::getNonEmptyListAtomic(Type::combineUnionTypeArray($array_arg_type->getArrayValueTypes(), $codebase)),
+                        : Type::getNonEmptyListAtomic($array_arg_type->getArrayValueType($codebase)),
                 ]),
             );
         }

@@ -61,6 +61,7 @@ use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 
+use function assert;
 use function count;
 use function explode;
 use function implode;
@@ -508,6 +509,7 @@ final class ArgumentAnalyzer
                     } elseif ($unpacked_atomic_array instanceof TClassStringMap) {
                         $arg_value_type = Type::getMixed();
                     } else {
+                        assert($unpacked_atomic_array instanceof TArray);
                         if (!$allow_named_args && !$unpacked_atomic_array->type_params[0]->isInt()) {
                             $arg_key_allowed = false;
                         }

@@ -103,8 +103,8 @@ class ArrayFilterParamsProvider implements FunctionParamsProviderInterface
             $key_type = Type::getArrayKey();
             $inner_type = Type::getMixed();
         } else {
-            $inner_type = Type::combineUnionTypeArray($first_arg_type->getArrayValueTypes(), $codebase);
-            $key_type = Type::combineUnionTypeArray($first_arg_type->getArrayKeyTypes(), $codebase);
+            $inner_type = $first_arg_type->getArrayValueType($codebase);
+            $key_type = $first_arg_type->getArrayKeyType($codebase);
         }
 
         $has_both = false;

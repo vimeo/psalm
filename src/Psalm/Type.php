@@ -72,6 +72,26 @@ use function substr;
 abstract class Type
 {
     /**
+     * @internal
+     * @return array<Union>
+     */
+    public static function mergeKeyedArrayProperties(Union $union, Codebase $codebase): array
+    {
+        $properties = [];
+        foreach ($union->getArrays() as $atomic_type) {
+            if (!$atomic_type instanceof TKeyedArray) {
+                continue;
+            }
+            foreach ($atomic_type->properties as $key => $val) {
+                if (isset($properties[$key])) {
+                    $val = self::combineUnionTypes($properties[$key], $val, $codebase);
+                }
+                $properties[$key] = $val;
+            }
+        }
+        return $properties;
+    }
+    /**
      * Parses a string type representation
      *
      * @param  array<string, array<string, Union>> $template_type_map
