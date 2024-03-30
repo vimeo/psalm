@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Psalm\Internal\TypeVisitor;
 
 use Psalm\Type\Atomic\ArrayInterface;
-use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;

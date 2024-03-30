@@ -7,6 +7,7 @@ namespace Psalm\Type;
 use InvalidArgumentException;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
+use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\TypeVisitor\CanContainObjectTypeVisitor;
 use Psalm\Internal\TypeVisitor\ClasslikeReplacer;
 use Psalm\Internal\TypeVisitor\ContainsClassLikeVisitor;
@@ -16,9 +17,7 @@ use Psalm\Internal\TypeVisitor\TypeChecker;
 use Psalm\Internal\TypeVisitor\TypeScanner;
 use Psalm\StatementsSource;
 use Psalm\Storage\FileStorage;
-use Psalm\Type;
 use Psalm\Type\Atomic\ArrayInterface;
-use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClassStringMap;
@@ -47,9 +46,12 @@ use Psalm\Type\Atomic\TTrue;
 
 use function array_filter;
 use function array_unique;
+use function assert;
 use function count;
 use function implode;
 use function ksort;
+use function max;
+use function min;
 use function reset;
 use function sort;
 use function str_contains;
@@ -450,6 +452,16 @@ trait UnionTrait
             }
         }
         return $result;
+    }
+
+    public function getArrayKeyType(Codebase $codebase): Union
+    {
+        return TypeCombiner::combine($this->getArrayKeyTypes(), $codebase);
+    }
+
+    public function getArrayValueType(Codebase $codebase): Union
+    {
+        return TypeCombiner::combine($this->getArrayValueTypes(), $codebase);
     }
 
     /**

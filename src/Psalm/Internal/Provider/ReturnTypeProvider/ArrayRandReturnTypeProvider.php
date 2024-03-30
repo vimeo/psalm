@@ -8,8 +8,6 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
-use Psalm\Type\Atomic\TArray;
-use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Union;
 
 /**

@@ -8,6 +8,7 @@ use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TKeyedArray;
@@ -16,6 +17,8 @@ use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_filter;
+use function array_merge;
+use function array_values;
 use function assert;
 use function count;
 use function in_array;
@@ -44,12 +47,13 @@ final class MinMaxReturnTypeProvider implements FunctionReturnTypeProviderInterf
 
         $statements_source = $event->getStatementsSource();
         $nodeTypeProvider = $statements_source->getNodeTypeProvider();
+        $codebase = $statements_source->getCodebase();
 
         if (count($call_args) === 1
             && ($array_arg_type = $nodeTypeProvider->getType($call_args[0]->value))
             && $array_arg_type->isArray()
         ) {
-            return $array_arg_type->getArrayValueTypes();
+            return $array_arg_type->getArrayValueType($codebase);
         }
 
         $all_int = true;
@@ -61,12 +65,18 @@ final class MinMaxReturnTypeProvider implements FunctionReturnTypeProviderInterf
                     if (!$arg_type->isSingle() || !$arg_type->isArray()) {
                         return Type::getMixed();
                     } else {
-                        $array_arg_type = $arg_type->getArray();
-                        if ($array_arg_type instanceof TKeyedArray) {
-                            $possibly_unpacked_arg_types = $array_arg_type->properties;
-                        } else {
-                            assert($array_arg_type instanceof TArray);
-                            $possibly_unpacked_arg_types = [$array_arg_type->type_params[1]];
+                        $possibly_unpacked_arg_types = [];
+                        foreach ($arg_type->getArrays() as $t) {
+                            if ($t instanceof TKeyedArray) {
+                                $possibly_unpacked_arg_types = array_merge(
+                                    $possibly_unpacked_arg_types,
+                                    array_values($t->properties),
+                                );
+                            } elseif ($t instanceof TArray) {
+                                $possibly_unpacked_arg_types []= $t->type_params[1];
+                            } elseif ($t instanceof TClassStringMap && $t->as_type) {
+                                $possibly_unpacked_arg_types []= $t->getGenericValueType();
+                            }
                         }
                     }
                 } else {

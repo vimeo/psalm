@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
-use Psalm\Internal\Type\ArrayType;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
@@ -44,7 +43,7 @@ final class ArrayChunkReturnTypeProvider implements FunctionReturnTypeProviderIn
                     $preserve_keys
                         ? new TNonEmptyArray([
                             Type::combineUnionTypeArray($array_arg_type->getArrayKeyTypes(), $codebase),
-                            Type::combineUnionTypeArray($array_arg_type->getArrayValueTypes(), $codebase)
+                            Type::combineUnionTypeArray($array_arg_type->getArrayValueTypes(), $codebase),
                         ])
                         : Type::getNonEmptyListAtomic(Type::combineUnionTypeArray($array_arg_type->getArrayValueTypes(), $codebase)),
                 ]),

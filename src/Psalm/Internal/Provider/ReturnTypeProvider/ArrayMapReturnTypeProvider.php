@@ -12,7 +12,6 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\StaticCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Type\ArrayType;
 use Psalm\Node\Expr\VirtualArrayDimFetch;
 use Psalm\Node\Expr\VirtualFuncCall;
 use Psalm\Node\Expr\VirtualMethodCall;
@@ -149,8 +148,8 @@ final class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInte
             $codebase = $statements_source->getCodebase();
 
             if (count($call_args) === 2) {
-                $generic_key_type = $array_arg_type 
-                    ? Type::combineUnionTypeArray($array_arg_union_type->getArrayKeyTypes(), $codebase) 
+                $generic_key_type = $array_arg_type
+                    ? Type::combineUnionTypeArray($array_arg_union_type->getArrayKeyTypes(), $codebase)
                     : Type::getArrayKey();
             } else {
                 $generic_key_type = Type::getInt();
