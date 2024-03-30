@@ -26,7 +26,6 @@ use Psalm\Plugin\EventHandler\Event\AfterFunctionCallAnalysisEvent;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\ArrayInterface;
-use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCallableKeyedArray;
 use Psalm\Type\Atomic\TClassString;
@@ -429,14 +428,7 @@ final class FunctionCallReturnTypeFetcher
 
                         if ($first_arg_type = $statements_analyzer->node_data->getType($first_arg)) {
                             if ($first_arg_type->hasArray()) {
-                                $array_type = $first_arg_type->getArray();
-                                if ($array_type instanceof TKeyedArray) {
-                                    return $array_type->getGenericValueType();
-                                }
-
-                                if ($array_type instanceof TArray) {
-                                    return $array_type->type_params[1];
-                                }
+                                return $first_arg_type->getArrayValueType($codebase);
                             } elseif ($first_arg_type->hasScalarType()
                                 && ($second_arg = ($call_args[1]->value ?? null))
                                 && ($second_arg_type = $statements_analyzer->node_data->getType($second_arg))

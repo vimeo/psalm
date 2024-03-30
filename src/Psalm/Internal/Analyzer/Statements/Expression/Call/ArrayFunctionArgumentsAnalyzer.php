@@ -204,100 +204,101 @@ final class ArrayFunctionArgumentsAnalyzer
         if (($array_arg_type = $statements_analyzer->node_data->getType($array_arg))
             && $array_arg_type->hasArray()
         ) {
-            $array_type = $array_arg_type->getArray();
+            $array_types = $array_arg_type->getArrays();
+            $by_ref_type = new Union([$array_types]);
 
-            $objectlike_list = null;
+            foreach ($array_types as $array_type) {
+                $objectlike_list = null;
 
-            if ($array_type instanceof TKeyedArray) {
-                if ($array_type->is_list) {
-                    $objectlike_list = $array_type;
-                }
-            }
-
-            $by_ref_type = new Union([$array_type]);
-
-            foreach ($args as $argument_offset => $arg) {
-                if ($argument_offset === 0) {
-                    continue;
-                }
-
-                if (ExpressionAnalyzer::analyze(
-                    $statements_analyzer,
-                    $arg->value,
-                    $context,
-                ) === false) {
-                    return false;
-                }
-
-                if ($method_id === 'array_unshift' && $nb_args === 2 && !$unpacked_args) {
-                    $new_offset_type = Type::getInt(false, 0);
-                } else {
-                    $new_offset_type = Type::getInt();
-                }
-
-                if (!($arg_value_type = $statements_analyzer->node_data->getType($arg->value))
-                    || $arg_value_type->hasMixed()
-                ) {
-                    $by_ref_type = Type::combineUnionTypes(
-                        $by_ref_type,
-                        new Union([new TArray([$new_offset_type, Type::getMixed()])]),
-                    );
-                } elseif ($arg->unpack) {
-                    $arg_value_type = $arg_value_type->getBuilder();
-
-                    foreach ($arg_value_type->getAtomicTypes() as $arg_value_atomic_type) {
-                        if ($arg_value_atomic_type instanceof TKeyedArray) {
-                            $was_list = $arg_value_atomic_type->is_list;
-
-                            $arg_value_atomic_type = $arg_value_atomic_type->getGenericArrayType();
-
-                            if ($was_list) {
-                                if ($arg_value_atomic_type instanceof TNonEmptyArray) {
-                                    $arg_value_atomic_type = Type::getNonEmptyListAtomic(
-                                        $arg_value_atomic_type->type_params[1],
-                                    );
-                                } else {
-                                    $arg_value_atomic_type = Type::getListAtomic(
-                                        $arg_value_atomic_type->type_params[1],
-                                    );
-                                }
-                            }
-
-                            $arg_value_type->addType($arg_value_atomic_type);
-                        }
+                if ($array_type instanceof TKeyedArray) {
+                    if ($array_type->is_list) {
+                        $objectlike_list = $array_type;
                     }
-                    $arg_value_type = $arg_value_type->freeze();
+                }
 
-                    $by_ref_type = Type::combineUnionTypes(
-                        $by_ref_type,
-                        $arg_value_type,
-                    );
-                } else {
-                    if ($objectlike_list) {
-                        $properties = $objectlike_list->properties;
-                        array_unshift($properties, $arg_value_type);
+                foreach ($args as $argument_offset => $arg) {
+                    if ($argument_offset === 0) {
+                        continue;
+                    }
 
-                        $by_ref_type = new Union([$objectlike_list->setProperties($properties)]);
-                    } elseif ($array_type instanceof TArray && $array_type->isEmpty()) {
-                        $by_ref_type = new Union([new TKeyedArray([
-                            $arg_value_type,
-                        ], null, null, true)]);
+                    if (ExpressionAnalyzer::analyze(
+                        $statements_analyzer,
+                        $arg->value,
+                        $context,
+                    ) === false) {
+                        return false;
+                    }
+
+                    if ($method_id === 'array_unshift' && $nb_args === 2 && !$unpacked_args) {
+                        $new_offset_type = Type::getInt(false, 0);
                     } else {
+                        $new_offset_type = Type::getInt();
+                    }
+
+                    if (!($arg_value_type = $statements_analyzer->node_data->getType($arg->value))
+                    || $arg_value_type->hasMixed()
+                    ) {
                         $by_ref_type = Type::combineUnionTypes(
                             $by_ref_type,
-                            new Union(
-                                [
+                            new Union([new TArray([$new_offset_type, Type::getMixed()])]),
+                        );
+                    } elseif ($arg->unpack) {
+                        $arg_value_type = $arg_value_type->getBuilder();
+
+                        foreach ($arg_value_type->getAtomicTypes() as $arg_value_atomic_type) {
+                            if ($arg_value_atomic_type instanceof TKeyedArray) {
+                                $was_list = $arg_value_atomic_type->is_list;
+
+                                $arg_value_atomic_type = $arg_value_atomic_type->getGenericArrayType();
+
+                                if ($was_list) {
+                                    if ($arg_value_atomic_type instanceof TNonEmptyArray) {
+                                        $arg_value_atomic_type = Type::getNonEmptyListAtomic(
+                                            $arg_value_atomic_type->type_params[1],
+                                        );
+                                    } else {
+                                        $arg_value_atomic_type = Type::getListAtomic(
+                                            $arg_value_atomic_type->type_params[1],
+                                        );
+                                    }
+                                }
+
+                                $arg_value_type->addType($arg_value_atomic_type);
+                            }
+                        }
+                        $arg_value_type = $arg_value_type->freeze();
+
+                        $by_ref_type = Type::combineUnionTypes(
+                            $by_ref_type,
+                            $arg_value_type,
+                        );
+                    } else {
+                        if ($objectlike_list) {
+                            $properties = $objectlike_list->properties;
+                            array_unshift($properties, $arg_value_type);
+
+                            $by_ref_type = new Union([$objectlike_list->setProperties($properties)]);
+                        } elseif ($array_type instanceof TArray && $array_type->isEmpty()) {
+                            $by_ref_type = new Union([new TKeyedArray([
+                            $arg_value_type,
+                            ], null, null, true)]);
+                        } else {
+                            $by_ref_type = Type::combineUnionTypes(
+                                $by_ref_type,
+                                new Union(
+                                    [
                                     new TNonEmptyArray(
                                         [
                                             $new_offset_type,
                                             $arg_value_type,
                                         ],
                                     ),
-                                ],
-                            ),
-                            null,
-                            true,
-                        );
+                                    ],
+                                ),
+                                null,
+                                true,
+                            );
+                        }
                     }
                 }
             }

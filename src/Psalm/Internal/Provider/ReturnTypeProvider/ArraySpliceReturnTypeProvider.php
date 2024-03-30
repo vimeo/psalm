@@ -8,7 +8,6 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
-use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Union;
 
@@ -35,33 +34,32 @@ final class ArraySpliceReturnTypeProvider implements FunctionReturnTypeProviderI
 
         $first_arg = $call_args[0]->value ?? null;
 
-        $array_type = $first_arg
-            && ($first_arg_type = $statements_source->node_data->getType($first_arg))
-            && $first_arg_type->hasType('array')
-            && ($array_atomic_type = $first_arg_type->getArray())
-            && ($array_atomic_type instanceof TArray
-                || $array_atomic_type instanceof TKeyedArray)
-        ? $array_atomic_type
-        : null;
-
-        if (!$array_type) {
+        if (!$first_arg
+            || !($first_arg_type = $statements_source->node_data->getType($first_arg))
+            || !$first_arg_type->hasArray()
+        ) {
             return Type::getArray();
         }
 
-        if ($array_type instanceof TKeyedArray) {
-            $array_type = $array_type->getGenericArrayType();
-        }
-
-        if (!$array_type->type_params[0]->hasString()) {
-            if ($array_type->type_params[1]->isString()) {
-                $array_type = Type::getListAtomic(Type::getString());
-            } elseif ($array_type->type_params[1]->isInt()) {
-                $array_type = Type::getListAtomic(Type::getInt());
-            } else {
-                $array_type = Type::getListAtomic(Type::getMixed());
+        // TODO improve this logic
+        $results = [];
+        foreach ($first_arg_type->getArrays() as $array_type) {
+            if ($array_type instanceof TKeyedArray) {
+                $array_type = $array_type->getGenericArrayType();
             }
+
+            if (!$array_type->type_params[0]->hasString()) {
+                if ($array_type->type_params[1]->isString()) {
+                    $array_type = Type::getListAtomic(Type::getString());
+                } elseif ($array_type->type_params[1]->isInt()) {
+                    $array_type = Type::getListAtomic(Type::getInt());
+                } else {
+                    $array_type = Type::getListAtomic(Type::getMixed());
+                }
+            }
+            $results []= $array_type;
         }
 
-        return new Union([$array_type]);
+        return new Union($results);
     }
 }
