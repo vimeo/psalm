@@ -649,12 +649,26 @@ final class Populator
                 $backedEnumDefaultTemplateType = self::getBackedEnumDefaultTemplateTypeIfNotImplemented($storage);
 
                 if ($backedEnumDefaultTemplateType !== null) {
-                    $storage->template_extended_offsets["BackedEnum"] = $backedEnumDefaultTemplateType;
+                    /**
+                     * @psalm-suppress TypeDoesNotContainNull It contains it according to the code
+                     */
+                    if ($storage->template_extended_offsets === null) {
+                        $storage->template_extended_offsets = [];
+                    }
+
+                    $storage->template_extended_offsets['BackedEnum'] = $backedEnumDefaultTemplateType;
                 }
             } else {
                 $backedEnumDefaultTemplateType = self::getBackedEnumDefaultTemplateTypeIfNotImplemented($storage);
 
                 if ($backedEnumDefaultTemplateType !== null) {
+                    /**
+                     * @psalm-suppress DocblockTypeContradiction It contains it according to the code
+                     */
+                    if ($storage->template_extended_params === null) {
+                        $storage->template_extended_params = [];
+                    }
+
                     $storage->template_extended_params['BackedEnum'] = $backedEnumDefaultTemplateType;
                 } else {
                     foreach ($parent_storage->template_types as $template_name => $template_type_map) {
@@ -696,13 +710,14 @@ final class Populator
             return null;
         }
 
+        /**
+         * The T comes from the BackedEnum stub
+         */
         if ($enum_type === 'string') {
             return ['T' => new Union(['string' => new TString()])];
-        } elseif ($enum_type === 'int') {
-            return ['T' => new Union(['int' => new TInt()])];
         }
 
-        return null;
+        return ['T' => new Union(['int' => new TInt()])];
     }
 
     private function populateInterfaceDataFromParentInterface(

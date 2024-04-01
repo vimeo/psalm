@@ -645,7 +645,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                 $enum_type,
                 array_keys(
                     count($parent_storage_class_template_types) ?
-                        $parent_storage_class_template_types[0]->getAtomicTypes() ?? []
+                        $parent_storage_class_template_types[0]->getAtomicTypes()
                         : [],
                     true,
                 ),

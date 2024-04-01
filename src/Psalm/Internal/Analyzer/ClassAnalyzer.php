@@ -2592,6 +2592,8 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 }
 
                 if ($is_string_case_value && $storage->enum_type === 'string') {
+                    $case_value = (string) $case_value;
+
                     if ($enum_implemented_type instanceof Type\Atomic\TNonEmptyString) {
                         if (trim($case_value) === '') {
                             IssueBuffer::maybeAdd(
@@ -2610,6 +2612,8 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 }
 
                 if ($is_int_case_value && $storage->enum_type === 'int') {
+                    $case_value = (int) $case_value;
+
                     if ($enum_implemented_type instanceof Type\Atomic\TIntRange) {
                         if ($enum_implemented_type->isPositive() && $case_value < 1) {
                             IssueBuffer::maybeAdd(
