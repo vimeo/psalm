@@ -354,7 +354,7 @@ final class ClassLikeStorage implements HasAttributesInterface
     /**
      * A map of which generic classlikes are extended or implemented by this class or interface.
      *
-     * This is only used in the populator, which poulates the $template_extended_params property below.
+     * This is only used in the populator, which populates the $template_extended_params property below.
      *
      * @internal
      * @var array<string, non-empty-array<int, Union>>|null
