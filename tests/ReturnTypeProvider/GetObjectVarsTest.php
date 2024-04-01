@@ -291,6 +291,10 @@ class GetObjectVarsTest extends TestCase
         yield 'Interface extending BackedEnum' => [
             'code' => <<<'PHP'
                 <?php
+                /**
+                 * @template T of int|string
+                 * @extends BackedEnum<T>
+                 */
                 interface A extends BackedEnum {}
                 enum B: int implements A { case One = 1; }
                 function getA(): A { return B::One; }

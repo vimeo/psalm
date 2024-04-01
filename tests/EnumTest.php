@@ -436,6 +436,10 @@ class EnumTest extends TestCase
                     interface ExtendedUnitEnum extends \UnitEnum {}
                     static fn (ExtendedUnitEnum $tag): string => $tag->name;
 
+                    /**
+                     * @template T of int|string
+                     * @extends BackedEnum<T>
+                     */
                     interface ExtendedBackedEnum extends \BackedEnum {}
                     static fn (ExtendedBackedEnum $tag): string|int => $tag->value;
                     ',
@@ -513,6 +517,10 @@ class EnumTest extends TestCase
             ],
             'methodInheritanceByInterfaces' => [
                 'code' => '<?php
+                    /**
+                     * @template T of int|string
+                     * @extends BackedEnum<T>
+                     */
                     interface I extends BackedEnum {}
                     /** @var I $i */
                     $a = $i::cases();
@@ -636,6 +644,10 @@ class EnumTest extends TestCase
                     interface I {}
 
                     interface UE extends UnitEnum {}
+                    /**
+                     * @template T of int|string
+                     * @extends BackedEnum<T>
+                     */
                     interface BE extends BackedEnum {}
 
                     function f(I $i): void {
