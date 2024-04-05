@@ -10,10 +10,9 @@ use function strlen;
 use function strpos;
 use function strtoupper;
 use function substr;
-use function version_compare;
 
 use const PHP_OS;
-use const PHP_VERSION;
+use const PHP_VERSION_ID;
 
 trait ValidCodeAnalysisTestTrait
 {
@@ -39,20 +38,37 @@ trait ValidCodeAnalysisTestTrait
     public function testValidCode(
         string $code,
         array $assertions = [],
-        $ignored_issues = [],
-        string $php_version = '7.3'
+        array $ignored_issues = [],
+        ?string $php_version = null
     ): void {
         $test_name = $this->getTestName();
         if (strpos($test_name, 'PHP80-') !== false) {
-            if (version_compare(PHP_VERSION, '8.0.0', '<')) {
+            if (PHP_VERSION_ID < 8_00_00) {
                 $this->markTestSkipped('Test case requires PHP 8.0.');
             }
+
+            if ($php_version === null) {
+                $php_version = '8.0';
+            }
         } elseif (strpos($test_name, 'PHP81-') !== false) {
-            if (version_compare(PHP_VERSION, '8.1.0', '<')) {
+            if (PHP_VERSION_ID < 8_01_00) {
                 $this->markTestSkipped('Test case requires PHP 8.1.');
+            }
+
+            if ($php_version === null) {
+                $php_version = '8.1';
             }
         } elseif (strpos($test_name, 'SKIPPED-') !== false) {
             $this->markTestSkipped('Skipped due to a bug.');
+        }
+
+        if ($php_version === null) {
+            $php_version = '7.4';
+        }
+
+        // sanity check - do we have a PHP tag?
+        if (strpos($code, '<?php') === false) {
+            $this->fail('Test case must have a <?php tag');
         }
 
         foreach ($ignored_issues as $issue_name) {
@@ -68,6 +84,7 @@ trait ValidCodeAnalysisTestTrait
         $this->project_analyzer->setPhpVersion($php_version, 'tests');
 
         $codebase = $this->project_analyzer->getCodebase();
+        $codebase->enterServerMode();
         $codebase->config->visitPreloadedStubFiles($codebase);
 
         $file_path = self::$src_dir_path . 'somefile.php';

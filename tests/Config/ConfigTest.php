@@ -4,6 +4,7 @@ namespace Psalm\Tests\Config;
 
 use Composer\Autoload\ClassLoader;
 use ErrorException;
+use Psalm\CodeLocation\Raw;
 use Psalm\Config;
 use Psalm\Config\IssueHandler;
 use Psalm\Context;
@@ -16,6 +17,9 @@ use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\Internal\Scanner\FileScanner;
+use Psalm\Internal\VersionUtils;
+use Psalm\Issue\TooManyArguments;
+use Psalm\Issue\UndefinedFunction;
 use Psalm\Tests\Config\Plugin\FileTypeSelfRegisteringPlugin;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Tests\TestCase;
@@ -55,11 +59,11 @@ class ConfigTest extends TestCase
         self::$config = new TestConfig();
 
         if (!defined('PSALM_VERSION')) {
-            define('PSALM_VERSION', '4.0.0');
+            define('PSALM_VERSION', VersionUtils::getPsalmVersion());
         }
 
         if (!defined('PHP_PARSER_VERSION')) {
-            define('PHP_PARSER_VERSION', '4.0.0');
+            define('PHP_PARSER_VERSION', VersionUtils::getPhpParserVersion());
         }
     }
 
@@ -154,6 +158,9 @@ class ConfigTest extends TestCase
         $this->assertFalse($config->isInProjectDirs(realpath('examples/TemplateScanner.php')));
     }
 
+    /**
+     * @requires OS ^(?!WIN)
+     */
     public function testIgnoreSymlinkedProjectDirectory(): void
     {
         @unlink(dirname(__DIR__, 1) . '/fixtures/symlinktest/ignored/b');
@@ -233,7 +240,7 @@ class ConfigTest extends TestCase
                     <projectFiles>
                         <directory name="src" />
                         <ignoreFiles>
-                            <directory name="src/**/Internal/Analyzer" />
+                            <directory name="src/*/Internal/Analyzer" />
                         </ignoreFiles>
                     </projectFiles>
                 </psalm>',
@@ -246,6 +253,54 @@ class ConfigTest extends TestCase
         $this->assertFalse($config->isInProjectDirs(realpath('src/Psalm/Internal/Analyzer/FileAnalyzer.php')));
         $this->assertFalse($config->isInProjectDirs(realpath('src/Psalm/Internal/Analyzer/Statements/ReturnAnalyzer.php')));
         $this->assertFalse($config->isInProjectDirs(realpath('examples/TemplateScanner.php')));
+    }
+
+    public function testIgnoreRecursiveWildcardProjectDirectory(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            Config::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                        <ignoreFiles>
+                            <directory name="src/**/BinaryOp*" />
+                        </ignoreFiles>
+                    </projectFiles>
+                </psalm>',
+            ),
+        );
+
+        $config = $this->project_analyzer->getConfig();
+
+        $this->assertTrue($config->isInProjectDirs(realpath('src/Psalm/Internal/Analyzer/Statements/Expression/BinaryOpAnalyzer.php')));
+        $this->assertFalse($config->isInProjectDirs(realpath('src/Psalm/Internal/Analyzer/Statements/Expression/BinaryOp/OrAnalyzer.php')));
+        $this->assertFalse($config->isInProjectDirs(realpath('src/Psalm/Node/Expr/BinaryOp/VirtualPlus.php')));
+    }
+
+    public function testIgnoreRecursiveDoubleWildcardProjectFiles(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            Config::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                        <ignoreFiles>
+                            <file name="src/**/*Analyzer.php" />
+                        </ignoreFiles>
+                    </projectFiles>
+                </psalm>',
+            ),
+        );
+
+        $config = $this->project_analyzer->getConfig();
+
+        $this->assertTrue($config->isInProjectDirs(realpath('src/Psalm/Type.php')));
+        $this->assertFalse($config->isInProjectDirs(realpath('src/Psalm/Internal/Analyzer/FileAnalyzer.php')));
+        $this->assertFalse($config->isInProjectDirs(realpath('src/Psalm/Internal/Analyzer/Statements/ReturnAnalyzer.php')));
     }
 
     public function testIgnoreWildcardFiles(): void
@@ -351,6 +406,77 @@ class ConfigTest extends TestCase
 
         $this->assertFalse($config->reportIssueInFile('MissingReturnType', realpath(__FILE__)));
         $this->assertFalse($config->reportIssueInFile('MissingReturnType', realpath('src/Psalm/Type.php')));
+    }
+
+    public function testReportMixedIssues(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            Config::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                        <directory name="tests" />
+                    </projectFiles>
+                </psalm>',
+            ),
+        );
+        $config = $this->project_analyzer->getConfig();
+
+        $this->assertNull($config->show_mixed_issues);
+        $this->assertTrue($config->reportIssueInFile('MixedArgument', realpath(__FILE__)));
+
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            Config::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm reportMixedIssues="false">
+                    <projectFiles>
+                        <directory name="src" />
+                        <directory name="tests" />
+                    </projectFiles>
+                </psalm>',
+            ),
+        );
+        $config = $this->project_analyzer->getConfig();
+
+        $this->assertFalse($config->show_mixed_issues);
+        $this->assertFalse($config->reportIssueInFile('MixedArgument', realpath(__FILE__)));
+
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            Config::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm errorLevel="5">
+                    <projectFiles>
+                        <directory name="src" />
+                        <directory name="tests" />
+                    </projectFiles>
+                </psalm>',
+            ),
+        );
+        $config = $this->project_analyzer->getConfig();
+
+        $this->assertNull($config->show_mixed_issues);
+        $this->assertFalse($config->reportIssueInFile('MixedArgument', realpath(__FILE__)));
+
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            Config::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm errorLevel="5" reportMixedIssues="true">
+                    <projectFiles>
+                        <directory name="src" />
+                        <directory name="tests" />
+                    </projectFiles>
+                </psalm>',
+            ),
+        );
+        $config = $this->project_analyzer->getConfig();
+
+        $this->assertTrue($config->show_mixed_issues);
+        $this->assertTrue($config->reportIssueInFile('MixedArgument', realpath(__FILE__)));
     }
 
     public function testGlobalUndefinedFunctionSuppression(): void
@@ -857,6 +983,124 @@ class ConfigTest extends TestCase
         );
     }
 
+    public function testIssueHandlerOverride(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            Config::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                        <directory name="tests" />
+                    </projectFiles>
+                    <issueHandlers>
+                            <MissingReturnType errorLevel="error">
+                                <errorLevel type="info">
+                                    <directory name="tests" />
+                                </errorLevel>
+                                <errorLevel type="info">
+                                    <directory name="src/Psalm/Internal/Analyzer" />
+                                </errorLevel>
+                            </MissingReturnType>
+                            <UndefinedClass errorLevel="error"></UndefinedClass>
+                    </issueHandlers>
+                </psalm>',
+            ),
+        );
+
+        $config = $this->project_analyzer->getConfig();
+        $config->setAdvancedErrorLevel('MissingReturnType', [
+            [
+                'type' => 'error',
+                'directory' => [['name' => 'src/Psalm/Internal/Analyzer']],
+            ],
+        ], 'info');
+        $config->setCustomErrorLevel('UndefinedClass', 'suppress');
+
+        $this->assertSame(
+            'info',
+            $config->getReportingLevelForFile(
+                'MissingReturnType',
+                realpath('src/Psalm/Type.php'),
+            ),
+        );
+
+        $this->assertSame(
+            'error',
+            $config->getReportingLevelForFile(
+                'MissingReturnType',
+                realpath('src/Psalm/Internal/Analyzer/FileAnalyzer.php'),
+            ),
+        );
+        $this->assertSame(
+            'suppress',
+            $config->getReportingLevelForFile(
+                'UndefinedClass',
+                realpath('src/Psalm/Internal/Analyzer/FileAnalyzer.php'),
+            ),
+        );
+    }
+
+    public function testIssueHandlerSafeOverride(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            Config::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                        <directory name="tests" />
+                    </projectFiles>
+                    <issueHandlers>
+                            <MissingReturnType errorLevel="error">
+                                <errorLevel type="info">
+                                    <directory name="tests" />
+                                </errorLevel>
+                                <errorLevel type="info">
+                                    <directory name="src/Psalm/Internal/Analyzer" />
+                                </errorLevel>
+                            </MissingReturnType>
+                            <UndefinedClass errorLevel="info"></UndefinedClass>
+                    </issueHandlers>
+                </psalm>',
+            ),
+        );
+
+        $config = $this->project_analyzer->getConfig();
+        $config->safeSetAdvancedErrorLevel('MissingReturnType', [
+            [
+                'type' => 'error',
+                'directory' => [['name' => 'src/Psalm/Internal/Analyzer']],
+            ],
+        ], 'info');
+        $config->safeSetCustomErrorLevel('UndefinedClass', 'suppress');
+
+        $this->assertSame(
+            'error',
+            $config->getReportingLevelForFile(
+                'MissingReturnType',
+                realpath('src/Psalm/Type.php'),
+            ),
+        );
+
+        $this->assertSame(
+            'info',
+            $config->getReportingLevelForFile(
+                'MissingReturnType',
+                realpath('src/Psalm/Internal/Analyzer/FileAnalyzer.php'),
+            ),
+        );
+        $this->assertSame(
+            'info',
+            $config->getReportingLevelForFile(
+                'UndefinedClass',
+                realpath('src/Psalm/Internal/Analyzer/FileAnalyzer.php'),
+            ),
+        );
+    }
+
     public function testAllPossibleIssues(): void
     {
         $all_possible_handlers = implode(
@@ -866,7 +1110,7 @@ class ConfigTest extends TestCase
                  * @param string $issue_name
                  * @return string
                  */
-                fn($issue_name): string => '<' . $issue_name . ' errorLevel="suppress" />' . "\n",
+                static fn($issue_name): string => '<' . $issue_name . ' errorLevel="suppress" />' . "\n",
                 IssueHandler::getAllIssueTypes(),
             ),
         );
@@ -1609,5 +1853,160 @@ class ConfigTest extends TestCase
         $config = $this->project_analyzer->getConfig();
 
         $this->assertFalse($config->reportIssueInFile('MixedAssignment', realpath('src/Psalm/Type.php')));
+    }
+
+    public function testConfigFileWithWildcardPathIssueHandler(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            Config::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                        <directory name="tests" />
+                    </projectFiles>
+
+                    <issueHandlers>
+                        <MissingReturnType>
+                            <errorLevel type="suppress">
+                                <file name="src/**/*TypeAlias.php" />
+                                <directory name="src/**/BinaryOp*" />
+                            </errorLevel>
+                        </MissingReturnType>
+                    </issueHandlers>
+                </psalm>',
+            ),
+        );
+
+        $config = $this->project_analyzer->getConfig();
+
+        $this->assertTrue($config->reportIssueInFile('MissingReturnType', realpath(__FILE__)));
+        $this->assertTrue($config->reportIssueInFile('MissingReturnType', realpath('src/Psalm/Type.php')));
+        $this->assertTrue($config->reportIssueInFile('MissingReturnType', realpath('src/Psalm/Internal/Analyzer/Statements/ReturnAnalyzer.php')));
+
+        $this->assertFalse($config->reportIssueInFile('MissingReturnType', realpath('src/Psalm/Node/Expr/BinaryOp/VirtualPlus.php')));
+        $this->assertFalse($config->reportIssueInFile('MissingReturnType', realpath('src/Psalm/Internal/Analyzer/Statements/Expression/BinaryOp/OrAnalyzer.php')));
+        $this->assertFalse($config->reportIssueInFile('MissingReturnType', realpath('src/Psalm/Internal/Type/TypeAlias.php')));
+        $this->assertFalse($config->reportIssueInFile('MissingReturnType', realpath('src/Psalm/Internal/Type/TypeAlias/ClassTypeAlias.php')));
+    }
+
+    /**
+     * @requires extension apcu
+     * @deprecated Remove in Psalm 6.
+     */
+    public function testConfigWarnsAboutDeprecatedWayToLoadStubsButLoadsTheStub(): void
+    {
+        $config_xml = Config::loadFromXML(
+            (string)getcwd(),
+            '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                </psalm>',
+        );
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig($config_xml);
+        $codebase = $this->project_analyzer->getCodebase();
+        $config = $this->project_analyzer->getConfig();
+
+        $config->visitStubFiles($codebase);
+
+        $this->assertContains(realpath('stubs/extensions/apcu.phpstub'), $config->internal_stubs);
+        $this->assertContains(
+            'Psalm 6 will not automatically load stubs for ext-apcu. You should explicitly enable or disable this ext in composer.json or Psalm config.',
+            $config->config_warnings,
+        );
+    }
+
+    /**
+     * @requires extension apcu
+     * @deprecated Remove deprecation warning part in Psalm 6.
+     */
+    public function testConfigWithDisableExtensionsDoesNotLoadExtensionStubsAndHidesDeprecationWarning(): void
+    {
+        $config_xml = Config::loadFromXML(
+            (string)getcwd(),
+            '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <disableExtensions>
+                        <extension name="apcu"/>
+                    </disableExtensions>
+                </psalm>',
+        );
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig($config_xml);
+        $codebase = $this->project_analyzer->getCodebase();
+        $config = $this->project_analyzer->getConfig();
+
+        $config->visitStubFiles($codebase);
+
+        $this->assertNotContains(realpath('stubs/extensions/apcu.phpstub'), $config->internal_stubs);
+        $this->assertNotContains(
+            'Psalm 6 will not automatically load stubs for ext-apcu. You should explicitly enable or disable this ext in composer.json or Psalm config.',
+            $config->internal_stubs,
+        );
+    }
+
+    public function testReferencedFunctionAllowsMethods(): void
+    {
+        $config_xml = Config::loadFromXML(
+            (string) getcwd(),
+            <<<XML
+            <?xml version="1.0"?>
+            <psalm>
+                <issueHandlers>
+                    <TooManyArguments>
+                        <errorLevel type="suppress">
+                            <referencedFunction name="Foo\Bar::baz" />
+                        </errorLevel>
+                    </TooManyArguments>
+                </issueHandlers>
+            </psalm>
+            XML,
+        );
+
+        $this->assertSame(
+            Config::REPORT_SUPPRESS,
+            $config_xml->getReportingLevelForIssue(
+                new TooManyArguments(
+                    'too many',
+                    new Raw('aaa', 'aaa.php', 'aaa.php', 1, 2),
+                    'Foo\Bar::baZ',
+                ),
+            ),
+        );
+    }
+
+    public function testReferencedFunctionAllowsNamespacedFunctions(): void
+    {
+        $config_xml = Config::loadFromXML(
+            (string) getcwd(),
+            <<<XML
+            <?xml version="1.0"?>
+            <psalm>
+                <issueHandlers>
+                    <UndefinedFunction>
+                        <errorLevel type="suppress">
+                            <referencedFunction name="Foo\Bar\baz" />
+                        </errorLevel>
+                    </UndefinedFunction>
+                </issueHandlers>
+            </psalm>
+            XML,
+        );
+
+        $this->assertSame(
+            Config::REPORT_SUPPRESS,
+            $config_xml->getReportingLevelForIssue(
+                new UndefinedFunction(
+                    'Function Foo\Bar\baz does not exist',
+                    new Raw('aaa', 'aaa.php', 'aaa.php', 1, 2),
+                    'foo\bar\baz',
+                ),
+            ),
+        );
     }
 }

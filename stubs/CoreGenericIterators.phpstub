@@ -114,7 +114,7 @@ class IteratorIterator implements OuterIterator {
     /**
      * @param TIterator $iterator
      */
-    public function __construct(Traversable $iterator) {}
+    public function __construct(Traversable $iterator, ?string $class = null) {}
 
     /**
      * @return TValue|null current value or null when iterator is drained
@@ -185,30 +185,30 @@ class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Coun
     public function __construct($array = array(), $flags = 0) { }
 
     /**
-     * @param TKey $index The offset being checked.
+     * @param TKey $offset The offset being checked.
      * @return bool true if the offset exists, otherwise false
      */
-    public function offsetExists($index) { }
+    public function offsetExists($offset) { }
 
     /**
-     * @param TKey $index The offset to get the value from.
+     * @param TKey $offset The offset to get the value from.
      * @return TValue|null The value at offset index, null when accessing invalid indexes
      * @psalm-ignore-nullable-return
      */
-    public function offsetGet($index) { }
+    public function offsetGet($offset) { }
 
     /**
-     * @param TKey $index The index to set for.
-     * @param TValue $newval The new value to store at the index.
+     * @param TKey $offset The index to set for.
+     * @param TValue $value The new value to store at the index.
      * @return void
      */
-    public function offsetSet($index, $newval) { }
+    public function offsetSet($offset, $value) { }
 
     /**
-     * @param TKey $index The offset to unset.
+     * @param TKey $offset The offset to unset.
      * @return void
      */
-    public function offsetUnset($index) { }
+    public function offsetUnset($offset) { }
 
     /**
      * @param TValue $value The value to append.

@@ -7,7 +7,6 @@ use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
-use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Union;
@@ -15,7 +14,7 @@ use Psalm\Type\Union;
 /**
  * @internal
  */
-class ArrayFillReturnTypeProvider implements FunctionReturnTypeProviderInterface
+final class ArrayFillReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
      * @return array<lowercase-string>
@@ -99,10 +98,10 @@ class ArrayFillReturnTypeProvider implements FunctionReturnTypeProviderInterface
             ) {
                 return new Union([
                     new TNonEmptyArray([
-                        new Union([new TIntRange(
+                        Type::getIntRange(
                             $first_arg_type->getSingleIntLiteral()->value,
                             $second_arg_type->getSingleIntLiteral()->value,
-                        )]),
+                        ),
                         $value_type_from_third_arg,
                     ]),
                 ]);

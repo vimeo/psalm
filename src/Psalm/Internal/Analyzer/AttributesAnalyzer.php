@@ -33,7 +33,7 @@ use function strtolower;
 /**
  * @internal
  */
-class AttributesAnalyzer
+final class AttributesAnalyzer
 {
     private const TARGET_DESCRIPTIONS = [
         1 => 'class',

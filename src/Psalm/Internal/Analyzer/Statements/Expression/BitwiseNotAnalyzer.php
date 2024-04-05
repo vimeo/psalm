@@ -24,7 +24,7 @@ use Psalm\Type\Union;
 /**
  * @internal
  */
-class BitwiseNotAnalyzer
+final class BitwiseNotAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
@@ -50,7 +50,7 @@ class BitwiseNotAnalyzer
                     if ($type_part instanceof TLiteralInt) {
                         $type_part = new TLiteralInt(~$type_part->value);
                     } elseif ($type_part instanceof TLiteralString) {
-                        $type_part = new TLiteralString(~$type_part->value);
+                        $type_part = Type::getAtomicStringFromLiteral(~$type_part->value);
                     }
 
                     $acceptable_types[] = $type_part;

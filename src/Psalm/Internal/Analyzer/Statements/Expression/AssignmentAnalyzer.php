@@ -56,6 +56,7 @@ use Psalm\Issue\PossiblyUndefinedIntArrayOffset;
 use Psalm\Issue\ReferenceConstraintViolation;
 use Psalm\Issue\ReferenceReusedFromConfusingScope;
 use Psalm\Issue\UnnecessaryVarAnnotation;
+use Psalm\Issue\UnsupportedPropertyReferenceUsage;
 use Psalm\IssueBuffer;
 use Psalm\Node\Expr\BinaryOp\VirtualBitwiseAnd;
 use Psalm\Node\Expr\BinaryOp\VirtualBitwiseOr;
@@ -96,7 +97,7 @@ use function strtolower;
 /**
  * @internal
  */
-class AssignmentAnalyzer
+final class AssignmentAnalyzer
 {
     /**
      * @param  PhpParser\Node\Expr|null $assign_value  This has to be null to support list destructuring
@@ -270,7 +271,7 @@ class AssignmentAnalyzer
                 && $extended_var_id
                 && (!$not_ignored_docblock_var_ids || isset($not_ignored_docblock_var_ids[$extended_var_id]))
                 && $temp_assign_value_type->getId() === $comment_type->getId()
-                && !$comment_type->isMixed()
+                && !$comment_type->isMixed(true)
             ) {
                 if ($codebase->alter_code
                     && isset($statements_analyzer->getProjectAnalyzer()->getIssuesToFix()['UnnecessaryVarAnnotation'])
@@ -527,21 +528,23 @@ class AssignmentAnalyzer
             }
 
             if ($context->vars_in_scope[$var_id]->isNever()) {
-                if (IssueBuffer::accepts(
+                if (!IssueBuffer::accepts(
                     new NoValue(
                         'All possible types for this assignment were invalidated - This may be dead code',
                         new CodeLocation($statements_analyzer->getSource(), $assign_var),
                     ),
                     $statements_analyzer->getSuppressedIssues(),
                 )) {
-                    return false;
+                    // if the error is suppressed, do not treat it as never anymore
+                    $new_mutable = $context->vars_in_scope[$var_id]->getBuilder()->addType(new TMixed);
+                    $new_mutable->removeType('never');
+                    $context->vars_in_scope[$var_id] = $new_mutable->freeze();
+                    $context->has_returned = false;
+                } else {
+                    $context->inside_assignment = $was_in_assignment;
+
+                    return $context->vars_in_scope[$var_id];
                 }
-
-                $context->vars_in_scope[$var_id] = Type::getNever();
-
-                $context->inside_assignment = $was_in_assignment;
-
-                return $context->vars_in_scope[$var_id];
             }
 
             if ($statements_analyzer->data_flow_graph) {
@@ -670,16 +673,14 @@ class AssignmentAnalyzer
                 return false;
             }
 
-            if ($context->check_classes) {
-                if (StaticPropertyAssignmentAnalyzer::analyze(
-                    $statements_analyzer,
-                    $assign_var,
-                    $assign_value,
-                    $assign_value_type,
-                    $context,
-                ) === false) {
-                    return false;
-                }
+            if (StaticPropertyAssignmentAnalyzer::analyze(
+                $statements_analyzer,
+                $assign_var,
+                $assign_value,
+                $assign_value_type,
+                $context,
+            ) === false) {
+                return false;
             }
 
             if ($var_id) {
@@ -980,9 +981,23 @@ class AssignmentAnalyzer
             $context->references_to_external_scope[$lhs_var_id] = true;
         }
         if (strpos($rhs_var_id, '->') !== false) {
+            IssueBuffer::maybeAdd(
+                new UnsupportedPropertyReferenceUsage(
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                ),
+                $statements_analyzer->getSuppressedIssues(),
+            );
             // Reference to object property, we always consider object properties to be an external scope for references
             // TODO handle differently so it's detected as unused if the object is unused?
             $context->references_to_external_scope[$lhs_var_id] = true;
+        }
+        if (strpos($rhs_var_id, '::') !== false) {
+            IssueBuffer::maybeAdd(
+                new UnsupportedPropertyReferenceUsage(
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                ),
+                $statements_analyzer->getSuppressedIssues(),
+            );
         }
 
         $lhs_location = new CodeLocation($statements_analyzer->getSource(), $stmt->var);

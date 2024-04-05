@@ -7,15 +7,22 @@ use Psalm\Exception\ConfigException;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use SimpleXMLElement;
+use Symfony\Component\Filesystem\Path;
 
 use function array_filter;
 use function array_map;
+use function array_merge;
+use function array_shift;
+use function count;
 use function explode;
 use function glob;
 use function in_array;
 use function is_dir;
 use function is_iterable;
+use function is_string;
 use function preg_match;
+use function preg_replace;
+use function preg_split;
 use function readlink;
 use function realpath;
 use function restore_error_handler;
@@ -52,12 +59,12 @@ class FileFilter
     protected $fq_classlike_names = [];
 
     /**
-     * @var array<string>
+     * @var array<non-empty-string>
      */
     protected $fq_classlike_patterns = [];
 
     /**
-     * @var array<string>
+     * @var array<non-empty-string>
      */
     protected $method_ids = [];
 
@@ -121,17 +128,20 @@ class FileFilter
                 $resolve_symlinks = (bool) ($directory['resolveSymlinks'] ?? false);
                 $declare_strict_types = (bool) ($directory['useStrictTypes'] ?? false);
 
-                if ($directory_path[0] === '/' && DIRECTORY_SEPARATOR === '/') {
+                if (Path::isAbsolute($directory_path)) {
+                    /** @var non-empty-string */
                     $prospective_directory_path = $directory_path;
                 } else {
                     $prospective_directory_path = $base_dir . DIRECTORY_SEPARATOR . $directory_path;
                 }
 
                 if (strpos($prospective_directory_path, '*') !== false) {
-                    $globs = array_map(
-                        'realpath',
-                        glob($prospective_directory_path, GLOB_ONLYDIR),
-                    );
+                    // Strip meaningless trailing recursive wildcard like "path/**/" or "path/**"
+                    $prospective_directory_path = preg_replace('#(\/\*\*)+\/?$#', '/', $prospective_directory_path);
+                    // Split by /**/, allow duplicated wildcards like "path/**/**/path" and any leading dir separator.
+                    /** @var non-empty-list<non-empty-string> $path_parts */
+                    $path_parts = preg_split('#(\/|\\\)(\*\*\/)+#', $prospective_directory_path);
+                    $globs = self::recursiveGlob($path_parts, true);
 
                     if (empty($globs)) {
                         if ($allow_missing_files) {
@@ -144,8 +154,8 @@ class FileFilter
                         );
                     }
 
-                    foreach ($globs as $glob_index => $directory_path) {
-                        if (!$directory_path) {
+                    foreach ($globs as $glob_index => $glob_directory_path) {
+                        if (!$glob_directory_path) {
                             if ($allow_missing_files) {
                                 continue;
                             }
@@ -157,14 +167,14 @@ class FileFilter
                         }
 
                         if ($ignore_type_stats && $filter instanceof ProjectFileFilter) {
-                            $filter->ignore_type_stats[$directory_path] = true;
+                            $filter->ignore_type_stats[$glob_directory_path] = true;
                         }
 
                         if ($declare_strict_types && $filter instanceof ProjectFileFilter) {
-                            $filter->declare_strict_types[$directory_path] = true;
+                            $filter->declare_strict_types[$glob_directory_path] = true;
                         }
 
-                        $filter->addDirectory($directory_path);
+                        $filter->addDirectory($glob_directory_path);
                     }
                     continue;
                 }
@@ -237,20 +247,18 @@ class FileFilter
             foreach ($config['file'] as $file) {
                 $file_path = (string) ($file['name'] ?? '');
 
-                if ($file_path[0] === '/' && DIRECTORY_SEPARATOR === '/') {
+                if (Path::isAbsolute($file_path)) {
+                    /** @var non-empty-string */
                     $prospective_file_path = $file_path;
                 } else {
                     $prospective_file_path = $base_dir . DIRECTORY_SEPARATOR . $file_path;
                 }
 
                 if (strpos($prospective_file_path, '*') !== false) {
-                    $globs = array_map(
-                        'realpath',
-                        array_filter(
-                            glob($prospective_file_path, GLOB_NOSORT),
-                            'file_exists',
-                        ),
-                    );
+                    // Split by /**/, allow duplicated wildcards like "path/**/**/path" and any leading dir separator.
+                    /** @var non-empty-list<non-empty-string> $path_parts */
+                    $path_parts = preg_split('#(\/|\\\)(\*\*\/)+#', $prospective_file_path);
+                    $globs = self::recursiveGlob($path_parts, false);
 
                     if (empty($globs)) {
                         if ($allow_missing_files) {
@@ -263,14 +271,18 @@ class FileFilter
                         );
                     }
 
-                    foreach ($globs as $glob_index => $file_path) {
-                        if (!$file_path && !$allow_missing_files) {
+                    foreach ($globs as $glob_index => $glob_file_path) {
+                        if (!$glob_file_path) {
+                            if ($allow_missing_files) {
+                                continue;
+                            }
+
                             throw new ConfigException(
                                 'Could not resolve config path to ' . $base_dir . DIRECTORY_SEPARATOR .
                                 $file_path . ':' . $glob_index,
                             );
                         }
-                        $filter->addFile($file_path);
+                        $filter->addFile($glob_file_path);
                     }
                     continue;
                 }
@@ -304,12 +316,16 @@ class FileFilter
         if (isset($config['referencedMethod']) && is_iterable($config['referencedMethod'])) {
             /** @var array $referenced_method */
             foreach ($config['referencedMethod'] as $referenced_method) {
-                $method_id = (string) ($referenced_method['name'] ?? '');
-
-                if (!preg_match('/^[^:]+::[^:]+$/', $method_id) && !static::isRegularExpression($method_id)) {
+                $method_id = $referenced_method['name'] ?? '';
+                if (!is_string($method_id)
+                    || (!preg_match('/^[^:]+::[^:]+$/', $method_id) && !static::isRegularExpression($method_id))) {
                     throw new ConfigException(
-                        'Invalid referencedMethod ' . $method_id,
+                        'Invalid referencedMethod ' . ((string) $method_id),
                     );
+                }
+
+                if ($method_id === '') {
+                    continue;
                 }
 
                 $filter->method_ids[] = strtolower($method_id);
@@ -319,7 +335,21 @@ class FileFilter
         if (isset($config['referencedFunction']) && is_iterable($config['referencedFunction'])) {
             /** @var array $referenced_function */
             foreach ($config['referencedFunction'] as $referenced_function) {
-                $filter->method_ids[] = strtolower((string) ($referenced_function['name'] ?? ''));
+                $function_id = $referenced_function['name'] ?? '';
+                if (!is_string($function_id)
+                    || (!preg_match('/^[a-zA-Z_\x80-\xff](?:[\\\\]?[a-zA-Z0-9_\x80-\xff]+)*$/', $function_id)
+                        && !preg_match('/^[^:]+::[^:]+$/', $function_id) // methods are also allowed
+                        && !static::isRegularExpression($function_id))) {
+                    throw new ConfigException(
+                        'Invalid referencedFunction ' . ((string) $function_id),
+                    );
+                }
+
+                if ($function_id === '') {
+                    continue;
+                }
+
+                $filter->method_ids[] = strtolower($function_id);
             }
         }
 
@@ -360,7 +390,6 @@ class FileFilter
 
         if ($e->directory) {
             $config['directory'] = [];
-            /** @var SimpleXMLElement $directory */
             foreach ($e->directory as $directory) {
                 $config['directory'][] = [
                     'name' => (string) $directory['name'],
@@ -373,7 +402,6 @@ class FileFilter
 
         if ($e->file) {
             $config['file'] = [];
-            /** @var SimpleXMLElement $file */
             foreach ($e->file as $file) {
                 $config['file'][]['name'] = (string) $file['name'];
             }
@@ -381,7 +409,6 @@ class FileFilter
 
         if ($e->referencedClass) {
             $config['referencedClass'] = [];
-            /** @var SimpleXMLElement $referenced_class */
             foreach ($e->referencedClass as $referenced_class) {
                 $config['referencedClass'][]['name'] = strtolower((string)$referenced_class['name']);
             }
@@ -389,7 +416,6 @@ class FileFilter
 
         if ($e->referencedMethod) {
             $config['referencedMethod'] = [];
-            /** @var SimpleXMLElement $referenced_method */
             foreach ($e->referencedMethod as $referenced_method) {
                 $config['referencedMethod'][]['name'] = (string)$referenced_method['name'];
             }
@@ -397,7 +423,6 @@ class FileFilter
 
         if ($e->referencedFunction) {
             $config['referencedFunction'] = [];
-            /** @var SimpleXMLElement $referenced_function */
             foreach ($e->referencedFunction as $referenced_function) {
                 $config['referencedFunction'][]['name'] = strtolower((string)$referenced_function['name']);
             }
@@ -405,7 +430,6 @@ class FileFilter
 
         if ($e->referencedProperty) {
             $config['referencedProperty'] = [];
-            /** @var SimpleXMLElement $referenced_property */
             foreach ($e->referencedProperty as $referenced_property) {
                 $config['referencedProperty'][]['name'] = strtolower((string)$referenced_property['name']);
             }
@@ -413,7 +437,6 @@ class FileFilter
 
         if ($e->referencedConstant) {
             $config['referencedConstant'] = [];
-            /** @var SimpleXMLElement $referenced_constant */
             foreach ($e->referencedConstant as $referenced_constant) {
                 $config['referencedConstant'][]['name'] = strtolower((string)$referenced_constant['name']);
             }
@@ -421,8 +444,6 @@ class FileFilter
 
         if ($e->referencedVariable) {
             $config['referencedVariable'] = [];
-
-            /** @var SimpleXMLElement $referenced_variable */
             foreach ($e->referencedVariable as $referenced_variable) {
                 $config['referencedVariable'][]['name'] = strtolower((string)$referenced_variable['name']);
             }
@@ -431,8 +452,15 @@ class FileFilter
         return self::loadFromArray($config, $base_dir, $inclusive);
     }
 
+    /**
+     * @psalm-assert-if-true non-empty-string $string
+     */
     private static function isRegularExpression(string $string): bool
     {
+        if ($string === '') {
+            return false;
+        }
+
         set_error_handler(
             static fn(): bool => true,
             E_WARNING,
@@ -441,6 +469,39 @@ class FileFilter
         restore_error_handler();
 
         return $is_regexp;
+    }
+
+    /**
+     * @mutation-free
+     * @param non-empty-list<non-empty-string> $parts
+     * @return array<string|false>
+     */
+    private static function recursiveGlob(array $parts, bool $only_dir): array
+    {
+        if (count($parts) < 2) {
+            if ($only_dir) {
+                $list = glob($parts[0], GLOB_ONLYDIR | GLOB_NOSORT) ?: [];
+            } else {
+                $list = array_filter(
+                    glob($parts[0], GLOB_NOSORT) ?: [],
+                    'file_exists',
+                );
+            }
+
+            return array_map('realpath', $list);
+        }
+
+        $first_dir = self::slashify($parts[0]);
+        $paths = glob($first_dir . '*', GLOB_ONLYDIR | GLOB_NOSORT);
+        $result = [];
+        foreach ($paths as $path) {
+            $parts[0] = $path;
+            $result = array_merge($result, self::recursiveGlob($parts, $only_dir));
+        }
+        array_shift($parts);
+        $parts[0] =  $first_dir . $parts[0];
+
+        return array_merge($result, self::recursiveGlob($parts, $only_dir));
     }
 
     /**

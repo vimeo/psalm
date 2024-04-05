@@ -47,6 +47,28 @@ class ArrayKeyExistsTest extends TestCase
                         echo $a["b"];
                     }',
             ],
+             'arrayKeyExistsNegation' => [
+                'code' => '<?php
+                    function getMethodName(array $data = []): void {
+                        if (\array_key_exists("custom_name", $data) && $data["custom_name"] !== null) {
+                        }
+                        /** @psalm-check-type-exact $data = array<array-key, mixed> */
+                    }
+                ',
+            ],
+            'arrayKeyExistsNoSideEffects' => [
+                'code' => '<?php
+                    function getMethodName(array $ddata = []): void {
+                        if (\array_key_exists("redirect", $ddata)) {
+                            return;
+                        }
+                        if (random_int(0, 1)) {
+                            $ddata["type"] = "test";
+                        }
+                        /** @psalm-check-type-exact $ddata = array<array-key, mixed> */
+                    }
+                ',
+            ],
             'arrayKeyExistsTwice' => [
                 'code' => '<?php
                     function two(array $a): void {
@@ -484,6 +506,19 @@ class ArrayKeyExistsTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
+            ],
+            'keyExistsAsAliasForArrayKeyExists' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param array<string, string> $arr
+                     */
+                    function foo(array $arr): void {
+                        if (key_exists("a", $arr)) {
+                            echo $arr["a"];
+                        }
+                    }
+                PHP,
             ],
         ];
     }

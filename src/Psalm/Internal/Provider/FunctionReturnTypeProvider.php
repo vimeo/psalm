@@ -22,9 +22,10 @@ use Psalm\Internal\Provider\ReturnTypeProvider\ArrayReduceReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ArrayReverseReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ArraySliceReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ArraySpliceReturnTypeProvider;
-use Psalm\Internal\Provider\ReturnTypeProvider\ArrayUniqueReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\BasenameReturnTypeProvider;
+use Psalm\Internal\Provider\ReturnTypeProvider\DateReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\DirnameReturnTypeProvider;
+use Psalm\Internal\Provider\ReturnTypeProvider\FilterInputReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\FilterVarReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\FirstArgStringReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\GetClassMethodsReturnTypeProvider;
@@ -36,8 +37,10 @@ use Psalm\Internal\Provider\ReturnTypeProvider\MbInternalEncodingReturnTypeProvi
 use Psalm\Internal\Provider\ReturnTypeProvider\MinMaxReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\MktimeReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ParseUrlReturnTypeProvider;
+use Psalm\Internal\Provider\ReturnTypeProvider\PowReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\RandReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\RoundReturnTypeProvider;
+use Psalm\Internal\Provider\ReturnTypeProvider\SprintfReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\StrReplaceReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\StrTrReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\TriggerErrorReturnTypeProvider;
@@ -53,7 +56,7 @@ use function strtolower;
 /**
  * @internal
  */
-class FunctionReturnTypeProvider
+final class FunctionReturnTypeProvider
 {
     /**
      * @var array<
@@ -81,9 +84,9 @@ class FunctionReturnTypeProvider
         $this->registerClass(ArraySliceReturnTypeProvider::class);
         $this->registerClass(ArraySpliceReturnTypeProvider::class);
         $this->registerClass(ArrayReverseReturnTypeProvider::class);
-        $this->registerClass(ArrayUniqueReturnTypeProvider::class);
         $this->registerClass(ArrayFillReturnTypeProvider::class);
         $this->registerClass(ArrayFillKeysReturnTypeProvider::class);
+        $this->registerClass(FilterInputReturnTypeProvider::class);
         $this->registerClass(FilterVarReturnTypeProvider::class);
         $this->registerClass(IteratorToArrayReturnTypeProvider::class);
         $this->registerClass(ParseUrlReturnTypeProvider::class);
@@ -103,6 +106,9 @@ class FunctionReturnTypeProvider
         $this->registerClass(InArrayReturnTypeProvider::class);
         $this->registerClass(RoundReturnTypeProvider::class);
         $this->registerClass(MbInternalEncodingReturnTypeProvider::class);
+        $this->registerClass(DateReturnTypeProvider::class);
+        $this->registerClass(PowReturnTypeProvider::class);
+        $this->registerClass(SprintfReturnTypeProvider::class);
     }
 
     /**

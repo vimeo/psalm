@@ -24,7 +24,7 @@ use function array_merge;
  *
  * @internal
  */
-class ReturnTypeCollector
+final class ReturnTypeCollector
 {
     /**
      * Gets the return types from a list of statements
@@ -90,6 +90,8 @@ class ReturnTypeCollector
                 }
 
                 if ($stmt->expr instanceof PhpParser\Node\Expr\FuncCall
+                    || $stmt->expr instanceof PhpParser\Node\Expr\MethodCall
+                    || $stmt->expr instanceof PhpParser\Node\Expr\NullsafeMethodCall
                     || $stmt->expr instanceof PhpParser\Node\Expr\StaticCall) {
                     $stmt_type = $nodes->getType($stmt->expr);
                     if ($stmt_type && ($stmt_type->isNever() || $stmt_type->explicit_never)) {

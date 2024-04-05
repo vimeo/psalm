@@ -10,11 +10,6 @@ use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Type;
 use Psalm\Type\Atomic;
-use Psalm\Type\Atomic\TArray;
-use Psalm\Type\Atomic\TLiteralClassString;
-use Psalm\Type\Atomic\TLiteralInt;
-use Psalm\Type\Atomic\TLiteralString;
-use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -50,7 +45,7 @@ class TKeyedArray extends Atomic
     /**
      * If the shape has fallback params then they are here
      *
-     * @var ?list{Union, Union}
+     * @var array{Union, Union}|null
      */
     public $fallback_params;
 
@@ -68,7 +63,7 @@ class TKeyedArray extends Atomic
      * Constructs a new instance of a generic type
      *
      * @param non-empty-array<string|int, Union> $properties
-     * @param ?list{Union, Union} $fallback_params
+     * @param array{Union, Union}|null $fallback_params
      * @param array<string, bool> $class_strings
      */
     public function __construct(
@@ -85,7 +80,6 @@ class TKeyedArray extends Atomic
         $this->class_strings = $class_strings;
         $this->fallback_params = $fallback_params;
         $this->is_list = $is_list;
-        $this->from_docblock = $from_docblock;
         if ($this->is_list) {
             $last_k = -1;
             $had_possibly_undefined = false;
@@ -101,6 +95,7 @@ class TKeyedArray extends Atomic
                 $last_k = $k;
             }
         }
+        parent::__construct($from_docblock);
     }
 
     /**
@@ -117,6 +112,8 @@ class TKeyedArray extends Atomic
         if ($cloned->is_list) {
             $last_k = -1;
             $had_possibly_undefined = false;
+
+            /** @psalm-suppress InaccessibleProperty */
             ksort($cloned->properties);
             foreach ($cloned->properties as $k => $v) {
                 if (is_string($k) || $last_k !== ($k-1) || ($had_possibly_undefined && !$v->possibly_undefined)) {
@@ -145,15 +142,29 @@ class TKeyedArray extends Atomic
         return $cloned;
     }
 
+    public function isSealed(): bool
+    {
+        return $this->fallback_params === null;
+    }
+
+    /**
+     * @psalm-assert-if-true list{Union} $this->properties
+     * @psalm-assert-if-true list{Union, Union} $this->fallback_params
+     */
+    public function isGenericList(): bool
+    {
+        return $this->is_list
+            && count($this->properties) === 1
+            && $this->fallback_params
+            && $this->properties[0]->equals($this->fallback_params[1], true, true, false);
+    }
+
     public function getId(bool $exact = true, bool $nested = false): string
     {
         $property_strings = [];
 
         if ($this->is_list) {
-            if (count($this->properties) === 1
-                && $this->fallback_params
-                && $this->properties[0]->equals($this->fallback_params[1], true, true, false)
-            ) {
+            if ($this->isGenericList()) {
                 $t = $this->properties[0]->possibly_undefined ? 'list' : 'non-empty-list';
                 return "$t<".$this->fallback_params[1]->getId($exact).'>';
             }
@@ -193,8 +204,11 @@ class TKeyedArray extends Atomic
         }
 
         $params_part = $this->fallback_params !== null
-            ? ', ...<' . $this->fallback_params[0]->getId($exact) . ', '
-                . $this->fallback_params[1]->getId($exact) . '>'
+            ? ', ...<' . ($this->is_list
+                ? $this->fallback_params[1]->getId($exact)
+                : $this->fallback_params[0]->getId($exact) . ', '
+                    . $this->fallback_params[1]->getId($exact)
+            ) . '>'
             : '';
 
         return $key . '{' . implode(', ', $property_strings) . $params_part . '}';
@@ -298,7 +312,7 @@ class TKeyedArray extends Atomic
             if (count($this->properties) === 1) {
                 return new Union([new TLiteralInt(0)]);
             }
-            return new Union([new TIntRange(0, count($this->properties)-1)]);
+            return Type::getIntRange(0, count($this->properties)-1);
         }
 
         $key_types = [];
@@ -309,7 +323,8 @@ class TKeyedArray extends Atomic
             } elseif (isset($this->class_strings[$key])) {
                 $key_types[] = new TLiteralClassString($key);
             } else {
-                $key_types[] = new TLiteralString($key);
+                /** @psalm-suppress ImpureMethodCall let's assume string interpreters are pure */
+                $key_types[] = Type::getAtomicStringFromLiteral($key);
             }
         }
 
@@ -362,7 +377,8 @@ class TKeyedArray extends Atomic
             } elseif (isset($this->class_strings[$key])) {
                 $key_types[] = new TLiteralClassString($key);
             } else {
-                $key_types[] = new TLiteralString($key);
+                /** @psalm-suppress ImpureMethodCall let's assume string interpreters are pure */
+                $key_types[] = Type::getAtomicStringFromLiteral($key);
             }
 
             $value_type = Type::combineUnionTypes($property, $value_type);
@@ -409,7 +425,7 @@ class TKeyedArray extends Atomic
 
     public function isNonEmpty(): bool
     {
-        if ($this->is_list) {
+        if ($this->isGenericList()) {
             return !$this->properties[0]->possibly_undefined;
         }
         foreach ($this->properties as $property) {
@@ -497,6 +513,35 @@ class TKeyedArray extends Atomic
         bool $add_lower_bound = false,
         int $depth = 0
     ): self {
+        if ($input_type instanceof TKeyedArray
+            && $input_type->is_list
+            && $input_type->isSealed()
+            && $this->isGenericList()
+        ) {
+            $replaced_list_type = $this
+                ->getGenericArrayType()
+                ->replaceTemplateTypesWithStandins(
+                    $template_result,
+                    $codebase,
+                    $statements_analyzer,
+                    $input_type->getGenericArrayType(),
+                    $input_arg_offset,
+                    $calling_class,
+                    $calling_function,
+                    $replace,
+                    $add_lower_bound,
+                    $depth,
+                )
+                ->type_params[1]
+                ->setPossiblyUndefined(!$this->isNonEmpty());
+
+            $cloned = clone $this;
+            $cloned->properties = [$replaced_list_type];
+            $cloned->fallback_params = [$this->fallback_params[1], $replaced_list_type];
+
+            return $cloned;
+        }
+
         $properties = $this->properties;
 
         foreach ($properties as $offset => $property) {
@@ -615,11 +660,11 @@ class TKeyedArray extends Atomic
         }
 
         if ($this->fallback_params !== null && $other_type->fallback_params !== null) {
-            if (!$this->fallback_params[0]->equals($other_type->fallback_params[0])) {
+            if (!$this->fallback_params[0]->equals($other_type->fallback_params[0], false, false)) {
                 return false;
             }
 
-            if (!$this->fallback_params[1]->equals($other_type->fallback_params[1])) {
+            if (!$this->fallback_params[1]->equals($other_type->fallback_params[1], false, false)) {
                 return false;
             }
         }
@@ -629,7 +674,7 @@ class TKeyedArray extends Atomic
                 return false;
             }
 
-            if (!$property_type->equals($other_type->properties[$property_name], $ensure_source_equality)) {
+            if (!$property_type->equals($other_type->properties[$property_name], $ensure_source_equality, false)) {
                 return false;
             }
         }
@@ -662,8 +707,22 @@ class TKeyedArray extends Atomic
      */
     private function escapeAndQuote($name)
     {
-        if (is_string($name) && ($name === '' || preg_match('/[^a-zA-Z0-9_]/', $name))) {
-            $name = '\'' . str_replace("\n", '\n', addslashes($name)) . '\'';
+        if (is_string($name)) {
+            $quote = false;
+
+            if ($name === '' || preg_match('/[^a-zA-Z0-9_]/', $name)) {
+                $quote = true;
+            }
+
+            if (preg_match('/^-?[1-9][0-9]*$/', $name)
+                && (string)(int) $name !== $name // overflow occured
+            ) {
+                $quote = true;
+            }
+
+            if ($quote) {
+                $name = '\'' . str_replace("\n", '\n', addslashes($name)) . '\'';
+            }
         }
 
         return $name;

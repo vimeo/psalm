@@ -178,6 +178,21 @@ class TypeParseTest extends TestCase
         );
     }
 
+    public function testUnsealedArray(): void
+    {
+        $this->assertSame('array{a: int, ...<string, string>}', Type::parseString('array{a: int, ...<string, string>}')->getId());
+    }
+
+    public function testUnsealedList(): void
+    {
+        $this->assertSame('list{int, ...<string>}', Type::parseString('list{int, ...<string>}')->getId());
+    }
+
+    public function testUnsealedListComplex(): void
+    {
+        $this->assertSame('list{array{a: 123}, ...<123>}', Type::parseString('list{0: array{a: 123}, ...<123>}')->getId());
+    }
+
     public function testIntersectionAfterGeneric(): void
     {
         $this->assertSame('Countable&iterable<mixed, int>&I', (string) Type::parseString('Countable&iterable<int>&I'));
@@ -341,6 +356,11 @@ class TypeParseTest extends TestCase
         $this->assertSame('array{\'\\"\': int, \'\\\'\': string}', (string) Type::parseString('array{"\\"": int, "\\\'": string}'));
     }
 
+    public function testTKeyedArrayWithClassConstantValueType(): void
+    {
+        $this->assertSame('list{A::X|A::Y, B::X}', (string) Type::parseString('list{A::X|A::Y, B::X}'));
+    }
+
     public function testTKeyedArrayWithClassConstantKey(): void
     {
         $this->expectException(TypeParseTreeException::class);
@@ -473,52 +493,58 @@ class TypeParseTest extends TestCase
 
     public function testTKeyedListNonList(): void
     {
-        $this->expectExceptionMessage('A list shape cannot describe a non-list!');
+        $this->expectExceptionMessage('A list shape cannot describe a non-list');
         Type::parseString('list{a: 0, b: 1, c: 2}');
     }
 
 
     public function testTKeyedListNonListOptional(): void
     {
-        $this->expectExceptionMessage('A list shape cannot describe a non-list!');
+        $this->expectExceptionMessage('A list shape cannot describe a non-list');
         Type::parseString('list{a: 0, b?: 1, c?: 2}');
     }
 
     public function testTKeyedListNonListOptionalWrongOrder1(): void
     {
-        $this->expectExceptionMessage('A list shape cannot describe a non-list!');
+        $this->expectExceptionMessage('A list shape cannot describe a non-list');
         Type::parseString('list{0?: 0, 1: 1, 2: 2}');
     }
 
     public function testTKeyedListNonListOptionalWrongOrder2(): void
     {
-        $this->expectExceptionMessage('A list shape cannot describe a non-list!');
+        $this->expectExceptionMessage('A list shape cannot describe a non-list');
         Type::parseString('list{0: 0, 1?: 1, 2: 2}');
     }
 
 
     public function testTKeyedListWrongOrder(): void
     {
-        $this->expectExceptionMessage('A list shape cannot describe a non-list!');
+        $this->expectExceptionMessage('A list shape cannot describe a non-list');
         Type::parseString('list{1: 1, 0: 0}');
     }
 
     public function testTKeyedListNonListKeys(): void
     {
-        $this->expectExceptionMessage('A list shape cannot describe a non-list!');
+        $this->expectExceptionMessage('A list shape cannot describe a non-list');
         Type::parseString('list{1: 1, 2: 2}');
     }
 
     public function testTKeyedListNoExplicitAndImplicitKeys(): void
     {
-        $this->expectExceptionMessage('Cannot mix explicit and implicit keys!');
+        $this->expectExceptionMessage('Cannot mix explicit and implicit keys');
         Type::parseString('list{0: 0, 1}');
     }
 
     public function testTKeyedArrayNoExplicitAndImplicitKeys(): void
     {
-        $this->expectExceptionMessage('Cannot mix explicit and implicit keys!');
+        $this->expectExceptionMessage('Cannot mix explicit and implicit keys');
         Type::parseString('array{0, test: 1}');
+    }
+
+    public function testTKeyedArrayNoDuplicateKeys(): void
+    {
+        $this->expectExceptionMessage('Duplicate key a detected');
+        Type::parseString('array{a: int, a: int}');
     }
 
     public function testSimpleCallable(): void
@@ -1026,6 +1052,26 @@ class TypeParseTest extends TestCase
         );
     }
 
+    public function testSingleLiteralIntWithSeparators(): void
+    {
+        $this->assertSame('10', Type::parseString('1_0')->getId());
+    }
+
+    public function testIntRangeWithSeparators(): void
+    {
+        $this->assertSame('int<10, 20>', Type::parseString('int<1_0, 2_0>')->getId());
+    }
+
+    public function testLiteralIntUnionWithSeparators(): void
+    {
+        $this->assertSame('10|20', Type::parseString('1_0|2_0')->getId());
+    }
+
+    public function testIntMaskWithIntsWithSeparators(): void
+    {
+        $this->assertSame('0|10|20|30', Type::parseString('int-mask<1_0, 2_0>')->getId());
+    }
+
     public function testSingleLiteralFloat(): void
     {
         $this->assertSame(
@@ -1100,6 +1146,14 @@ class TypeParseTest extends TestCase
         $docblock_type = Type::parseString('int-mask-of<value-of<A::FOO>>');
 
         $this->assertSame('int-mask-of<value-of<A::FOO>>', $docblock_type->getId());
+    }
+
+    public function testUnionOfClassStringAndClassStringWithIntersection(): void
+    {
+        $this->assertSame(
+            'class-string<IFoo>',
+            (string) Type::parseString('class-string<IFoo>|class-string<IFoo&IBar>'),
+        );
     }
 
     public function testReflectionTypeParse(): void

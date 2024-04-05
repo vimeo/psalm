@@ -2,13 +2,14 @@
 
 Psalm supports some _magical_ utility types that brings superpower to the PHP type system.
 
-## `key-of<T>`
+## key-of&lt;T&gt;
 
 (Psalm 5.0+)
 
 The `key-of` utility returns the offset-type for any [array type](array_types.md).
 
 Some examples:
+
 - `key-of<Foo\Bar::ARRAY_CONST>` evaluates to offset-type of `ARRAY_CONST` (Psalm 3.3+)
 - `key-of<list<mixed>>` evaluates to `int`
 - `key-of<array{a: mixed, b: mixed}|array{c: mixed}>` evaluates to `'a'|'b'|'c'`
@@ -18,6 +19,7 @@ Some examples:
 ### Notes on template usage
 
 If you use `key-of` with a template param, you can fulfill the type check only with these allowed methods:
+
 - `array_keys($t)`
 - `array_key_first($t)`
 - `array_key_last($t)`
@@ -35,23 +37,31 @@ function getKeys($array) {
 }
 ```
 
-
-## `value-of<T>`
+## value-of&lt;T&gt;
 
 (Psalm 5.0+)
 
 The `value-of` utility returns the value-type for any [array type](array_types.md).
 
 Some examples:
+
 - `value-of<Foo\Bar::ARRAY_CONST>` evaluates to value-type of `ARRAY_CONST` (Psalm 3.3+)
 - `value-of<list<float>>` evaluates to `float`
 - `value-of<array{a: bool, b: int}|array{c: string}>` evaluates to `bool|int|string`
 - `value-of<string[]>` evaluates to `string`
 - `value-of<T>` evaluates to the template param's value-type (ensure `@template T of array`)
 
+### Use with enumerations
+
+In addition to array-types, `value-of` can also be used to specify an `int` or `string` that contains one of the possible values of a `BackedEnum`:
+
+- `value-of<Suit>` evaluates to `'H'|'D'|'C'|'S'` (see [Backed enumerations](https://www.php.net/manual/en/language.enumerations.backed.php))
+- `value-of<BinaryDigits>` evaluates to `0|1`
+
 ### Notes on template usage
 
 If you use `value-of` with a template param, you can fulfill the type check only with these allowed methods:
+
 - `array_values`
 
 ```php
@@ -67,8 +77,7 @@ function getValues($array) {
 
 Currently `in_array($value, $t)` **does not** infer that `$value` is of `value-of<T>`.
 
-
-## `properties-of<T>`
+## properties-of&lt;T&gt;
 
 (Psalm 5.0+)
 
@@ -103,10 +112,10 @@ class A {
 
 Note that `properties-of<T>` will return **all non-static** properties. There are the following subtypes to pick only
 properties with a certain visibility:
+
 - `public-properties-of<T>`
 - `protected-properties-of<T>`
 - `private-properties-of<T>`
-
 
 ### Sealed array support
 
@@ -139,7 +148,7 @@ $b = asArray(new B);
 /** @psalm-trace $b */; // array{foo: string, bar: int, baz: float}
 ```
 
-## `class-string-map<T as Foo, T>`
+## class-string-map&lt;T of Foo, T&gt;
 
 Used to indicate an array where each value is equal an instance of the class string contained in the key:
 
@@ -157,11 +166,11 @@ class Foo {}
 class Bar extends Foo {}
 
 class A {
-  /** @var class-string-map<T as Foo, T> */
+  /** @var class-string-map<T of Foo, T> */
   private static array $map = [];
 
   /**
-   * @template U as Foo
+   * @template U of Foo
    * @param class-string<U> $class
    * @return U
    */
@@ -182,7 +191,7 @@ $bar = A::get(Bar::class);
 /** @psalm-trace $bar */; // Bar
 ```
 
-If we had used an `array<class-string<Foo>, Foo>` instead of a `class-string-map<T as Foo, T>` in the above example, we would've gotten some false positive `InvalidReturnStatement` issues, caused by the lack of a type assertion inside the `isset`.  
+If we had used an `array<class-string<Foo>, Foo>` instead of a `class-string-map<T of Foo, T>` in the above example, we would've gotten some false positive `InvalidReturnStatement` issues, caused by the lack of a type assertion inside the `isset`.  
 On the other hand, when using `class-string-map`, Psalm assumes that the value obtained by using a key `class-string<T>` is always equal to `T`.  
 
 Unbounded templates can also be used for unrelated classes:
@@ -241,8 +250,8 @@ Used to get the value corresponding to the specified key:
 <?php
 
 /**
- * @template T as array
- * @template TKey as string
+ * @template T of array
+ * @template TKey of string
  * @param T $arr
  * @param TKey $k
  * @return T[TKey]
@@ -316,9 +325,9 @@ Variable templates allow directly using variables instead of template types, for
 <?php
 
 /**
- * @template TA as string
- * @template TB as string
- * @template TChoose as bool
+ * @template TA of string
+ * @template TB of string
+ * @template TChoose of bool
  * @param TA $a
  * @param TB $b
  * @param TChoose $choose

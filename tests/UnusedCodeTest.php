@@ -467,6 +467,35 @@ class UnusedCodeTest extends TestCase
                         new A();
                     }',
             ],
+            'useMethodPropertiesAfterExtensionLoaded' => [
+                'code' => '<?php
+
+                    final class a {
+                        public static self $a;
+                        public static function get(): a {
+                            return new a;
+                        }
+                    }
+
+                    final class b {
+                        public function test(): a {
+                            return new a;
+                        }
+                    }
+
+                    function process(b $handler): a {
+                        if (\extension_loaded("fdsfdsfd")) {
+                            return $handler->test();
+                        }
+                        if (\extension_loaded("fdsfdsfd")) {
+                            return a::$a;
+                        }
+                        if (\extension_loaded("fdsfdsfd")) {
+                            return a::get();
+                        }
+                        return $handler->test();
+                    }',
+            ],
             'usedParamInIf' => [
                 'code' => '<?php
                     class O {}
@@ -666,6 +695,13 @@ class UnusedCodeTest extends TestCase
                         return $c;
                     }',
             ],
+            'setRawCookieImpure' => [
+                'code' => '<?php
+                    setrawcookie(
+                        "name",
+                        "value",
+                    );',
+            ],
             'usedUsort' => [
                 'code' => '<?php
                     /** @param string[] $arr */
@@ -701,6 +737,10 @@ class UnusedCodeTest extends TestCase
                         assertInt($i);
                         return $i;
                     }',
+            ],
+            'usedFunctionCallInEval' => [
+                'code' => '<?php
+                    eval(str_repeat("a", 10));',
             ],
             'usedFunctionCallInsideSwitchWithTernary' => [
                 'code' => '<?php
@@ -1256,6 +1296,62 @@ class UnusedCodeTest extends TestCase
                     }
                     PHP,
             ],
+            'psalm-api on unused public method' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class A {
+                        /** @psalm-api */
+                        public function b(): void {}
+                    }
+                    new A;
+                    PHP,
+            ],
+            'api with unused class' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @api */
+                    class A {}
+                    PHP,
+            ],
+            'api on unused public method' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class A {
+                        /** @api */
+                        public function b(): void {}
+                    }
+                    new A;
+                    PHP,
+            ],
+            'callNeverReturnsSuppressed' => [
+                'code' => '<?php
+                    namespace Foo;
+                    /**
+                     * @psalm-suppress InvalidReturnType
+                     * @return never
+                     */
+                    function foo() : void {}
+
+                    /** @psalm-suppress NoValue */
+                    $a = foo();
+                    print_r($a);',
+            ],
+            'useNeverReturnsAsArgSuppressed' => [
+                'code' => '<?php
+                    namespace Foo;
+                    /**
+                     * @psalm-suppress InvalidReturnType
+                     * @return never
+                     */
+                    function foo() : void {}
+
+                    /** @psalm-suppress UnusedParam */
+                    function bar(string $s) : void {}
+
+                    /** @psalm-suppress NoValue */
+                    bar(foo());
+                    echo "hello";',
+            ],
         ];
     }
 
@@ -1757,7 +1853,7 @@ class UnusedCodeTest extends TestCase
             'exitInlineHtml' => [
                 'code' => '<?php
                     exit(0);
-                    ?'.'>foo
+                    ?' . '>foo
                 ',
                 'error_message' => 'UnevaluatedCode',
             ],
@@ -1835,6 +1931,16 @@ class UnusedCodeTest extends TestCase
                     }
                     PHP,
                 'error_message' => 'PossiblyUnusedParam',
+            ],
+            'unused param tag' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param string $param
+                     */
+                    function f(): void {}
+                    PHP,
+                'error_message' => 'UnusedDocblockParam',
             ],
         ];
     }

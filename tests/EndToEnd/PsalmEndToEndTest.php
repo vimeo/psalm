@@ -20,10 +20,11 @@ use function preg_replace;
 use function readdir;
 use function rmdir;
 use function str_replace;
-use function substr_count;
 use function sys_get_temp_dir;
 use function tempnam;
 use function unlink;
+
+use const DIRECTORY_SEPARATOR;
 
 /**
  * Tests some of the most important use cases of the psalm and psalter commands, by launching a new
@@ -48,8 +49,6 @@ class PsalmEndToEndTest extends TestCase
             throw new Exception('Couldn\'t get working directory');
         }
 
-        mkdir(self::$tmpDir . '/src');
-
         copy(__DIR__ . '/../fixtures/DummyProjectWithErrors/composer.json', self::$tmpDir . '/composer.json');
 
         $process = new Process(['composer', 'install', '--no-plugins'], self::$tmpDir, null, null, 120);
@@ -64,7 +63,8 @@ class PsalmEndToEndTest extends TestCase
 
     public function setUp(): void
     {
-        @unlink(self::$tmpDir . '/psalm.xml');
+        mkdir(self::$tmpDir . '/src');
+
         copy(
             __DIR__ . '/../fixtures/DummyProjectWithErrors/src/FileWithErrors.php',
             self::$tmpDir . '/src/FileWithErrors.php',
@@ -74,9 +74,16 @@ class PsalmEndToEndTest extends TestCase
 
     public function tearDown(): void
     {
+        @unlink(self::$tmpDir . '/psalm.xml');
+
         if (file_exists(self::$tmpDir . '/cache')) {
             self::recursiveRemoveDirectory(self::$tmpDir . '/cache');
         }
+
+        if (file_exists(self::$tmpDir . '/src')) {
+            self::recursiveRemoveDirectory(self::$tmpDir . '/src');
+        }
+
         parent::tearDown();
     }
 
@@ -121,10 +128,9 @@ class PsalmEndToEndTest extends TestCase
             'Target PHP version: 7.1 (inferred from composer.json)',
             $result['STDERR'],
         );
-        $this->assertStringContainsString('UnusedParam', $result['STDOUT']);
         $this->assertStringContainsString('InvalidReturnType', $result['STDOUT']);
         $this->assertStringContainsString('InvalidReturnStatement', $result['STDOUT']);
-        $this->assertStringContainsString('3 errors', $result['STDOUT']);
+        $this->assertStringContainsString('2 errors', $result['STDOUT']);
         $this->assertSame(2, $result['CODE']);
     }
 
@@ -154,21 +160,19 @@ class PsalmEndToEndTest extends TestCase
 
         $this->runPsalmInit(1);
         $result = $this->runPsalm(['--diff', '-m'], self::$tmpDir, true);
-        $this->assertStringContainsString('UnusedParam', $result['STDOUT']);
         $this->assertStringContainsString('InvalidReturnType', $result['STDOUT']);
         $this->assertStringContainsString('InvalidReturnStatement', $result['STDOUT']);
-        $this->assertStringContainsString('3 errors', $result['STDOUT']);
+        $this->assertStringContainsString('2 errors', $result['STDOUT']);
         $this->assertStringContainsString('E', $result['STDERR']);
 
         $this->assertSame(2, $result['CODE']);
 
         $result = $this->runPsalm(['--diff', '-m'], self::$tmpDir, true);
 
-        $this->assertStringContainsString('UnusedParam', $result['STDOUT']);
         $this->assertStringContainsString('InvalidReturnType', $result['STDOUT']);
         $this->assertStringContainsString('InvalidReturnStatement', $result['STDOUT']);
-        $this->assertStringContainsString('3 errors', $result['STDOUT']);
-        $this->assertEquals(1, substr_count($result['STDERR'], 'E')); // Should only have 'E' from 'Extensions' in version message
+        $this->assertStringContainsString('2 errors', $result['STDOUT']);
+        $this->assertStringNotContainsString('E', $result['STDERR']);
 
         $this->assertSame(2, $result['CODE']);
 
@@ -231,6 +235,19 @@ class PsalmEndToEndTest extends TestCase
         $this->assertStringContainsString('InvalidReturnType', $process->getOutput());
     }
 
+    public function testPsalmWithNoProgressDoesNotProduceOutputOnStderr(): void
+    {
+        $this->runPsalmInit();
+
+        $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
+        $psalmXml = preg_replace('/findUnusedCode="(true|false)"/', '', $psalmXml, 1);
+        file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
+
+        $result = $this->runPsalm(['--no-progress'], self::$tmpDir);
+
+        $this->assertSame('', $result['STDERR']);
+    }
+
     /**
      * @return array{STDOUT: string, STDERR: string, CODE: int|null}
      */
@@ -266,7 +283,7 @@ class PsalmEndToEndTest extends TestCase
         $dir = opendir($src);
         while (false !== ($file = readdir($dir))) {
             if (($file !== '.') && ($file !== '..')) {
-                $full = $src . '/' . $file;
+                $full = $src . DIRECTORY_SEPARATOR . $file;
                 if (is_dir($full)) {
                     self::recursiveRemoveDirectory($full);
                 } else {

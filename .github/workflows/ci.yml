@@ -15,17 +15,25 @@ jobs:
           php-version: '7.4'
           tools: composer:v2
           coverage: none
+        env:
+          fail-fast: true
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Get Composer Cache Directories
         id: composer-cache
         run: |
-          echo "::set-output name=files_cache::$(composer config cache-files-dir)"
-          echo "::set-output name=vcs_cache::$(composer config cache-vcs-dir)"
+          echo "files_cache=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+          echo "vcs_cache=$(composer config cache-vcs-dir)" >> $GITHUB_OUTPUT
+
+      - name: Generate composer.lock
+        run: |
+          composer update --no-install
+        env:
+          COMPOSER_ROOT_VERSION: dev-master
 
       - name: Cache composer cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ${{ steps.composer-cache.outputs.files_cache }}
@@ -41,6 +49,51 @@ jobs:
 
       - run: |
           git ls-files | grep \\\.php$ | grep -v ^dictionaries/scripts/* | ./vendor/bin/parallel-lint --stdin
+
+  code-style:
+    name: Code Style Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          tools: composer:v2
+          coverage: none
+        env:
+          fail-fast: true
+
+      - uses: actions/checkout@v4
+
+      - name: Get Composer Cache Directories
+        id: composer-cache
+        run: |
+          echo "files_cache=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+          echo "vcs_cache=$(composer config cache-vcs-dir)" >> $GITHUB_OUTPUT
+
+      - name: Generate composer.lock
+        run: composer update --no-install
+        env:
+          COMPOSER_ROOT_VERSION: dev-master
+
+      - name: Cache composer cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ steps.composer-cache.outputs.files_cache }}
+            ${{ steps.composer-cache.outputs.vcs_cache }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: Run composer install
+        run: composer install -o
+        env:
+          COMPOSER_ROOT_VERSION: dev-master
+
+      - name: Code Style Analysis with PHPCS
+        run: vendor/bin/phpcs -d memory_limit=512M
+
   chunk-matrix:
     permissions:
       contents: none
@@ -58,11 +111,11 @@ jobs:
       - id: chunk-matrix
         name: Generates the Chunk Matrix
         run: |
-          echo "::set-output name=count::$(php -r 'echo json_encode([ ${{ env.CHUNK_COUNT }} ]);')"
-          echo "::set-output name=chunks::$(php -r 'echo json_encode(range(1, ${{ env.CHUNK_COUNT }} ));')"
+          echo "count=$(php -r 'echo json_encode([ ${{ env.CHUNK_COUNT }} ]);')" >> $GITHUB_OUTPUT
+          echo "chunks=$(php -r 'echo json_encode(range(1, ${{ env.CHUNK_COUNT }} ));')" >> $GITHUB_OUTPUT
 
   tests:
-    name: "Unit Tests - ${{ matrix.chunk }}"
+    name: "Unit Tests - PHP ${{ matrix.php-version }} ${{ matrix.chunk }}/${{ matrix.count }}"
 
     runs-on: ubuntu-latest
     needs:
@@ -71,6 +124,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        php-version:
+          - "8.0"
+          - "8.1"
+          - "8.2"
+          - "8.3"
         count: ${{ fromJson(needs.chunk-matrix.outputs.count) }}
         chunk: ${{ fromJson(needs.chunk-matrix.outputs.chunks) }}
 
@@ -78,27 +136,36 @@ jobs:
       CHUNK_COUNT: "${{ matrix.count }}"
       CHUNK_NUMBER: "${{ matrix.chunk }}"
       PARALLEL_PROCESSES: 5
+      BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
 
     steps:
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.1'
-          ini-values: zend.assertions=1, assert.exception=1
+          php-version: "${{ matrix.php-version }}"
+          ini-values: zend.assertions=1, assert.exception=1, opcache.enable_cli=1, opcache.jit=function, opcache.jit_buffer_size=512M
           tools: composer:v2
           coverage: none
-          extensions: none, curl, dom, filter, intl, json, libxml, mbstring, openssl, pcre, phar, reflection, simplexml, spl, tokenizer, xml, xmlwriter
+          extensions: none, curl, dom, filter, intl, json, libxml, mbstring, opcache, openssl, pcre, phar, reflection, simplexml, spl, tokenizer, xml, xmlwriter
+        env:
+          fail-fast: true
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Get Composer Cache Directories
         id: composer-cache
         run: |
-          echo "::set-output name=files_cache::$(composer config cache-files-dir)"
-          echo "::set-output name=vcs_cache::$(composer config cache-vcs-dir)"
+          echo "files_cache=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+          echo "vcs_cache=$(composer config cache-vcs-dir)" >> $GITHUB_OUTPUT
+
+      - name: Generate composer.lock
+        run: |
+          composer update --no-install
+        env:
+          COMPOSER_ROOT_VERSION: dev-master
 
       - name: Cache composer cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ${{ steps.composer-cache.outputs.files_cache }}

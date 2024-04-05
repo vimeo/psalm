@@ -41,7 +41,7 @@ use function strtolower;
 /**
  * @internal
  */
-class NegatedAssertionReconciler extends Reconciler
+final class NegatedAssertionReconciler extends Reconciler
 {
     /**
      * @param  string[]   $suppressed_issues
@@ -59,6 +59,11 @@ class NegatedAssertionReconciler extends Reconciler
         int &$failed_reconciliation,
         bool $inside_loop
     ): Union {
+        $existing_var_type = ClosedInheritanceToUnion::map(
+            $existing_var_type,
+            $statements_analyzer->getCodebase(),
+        );
+
         $is_equality = $assertion->hasEquality();
 
         $assertion_type = $assertion->getAtomicType();
@@ -115,6 +120,11 @@ class NegatedAssertionReconciler extends Reconciler
             || $assertion instanceof IsNotCountable
         ) {
             $existing_var_type->removeType('array');
+        }
+
+        if ($assertion instanceof IsNotType && $assertion_type instanceof TClassString) {
+            $existing_var_type->removeType(TClassString::class);
+            $existing_var_type->addType(new TString);
         }
 
         if (!$is_equality
@@ -182,6 +192,10 @@ class NegatedAssertionReconciler extends Reconciler
         ) {
             $existing_var_type->removeType('array-key');
             $existing_var_type->addType(new TString);
+        } elseif ($assertion_type instanceof TNonEmptyString
+            && $existing_var_type->hasString()
+        ) {
+            // do nothing
         } elseif ($assertion instanceof IsClassNotEqual) {
             // do nothing
         } elseif ($assertion_type instanceof TClassString && $assertion_type->is_loaded) {
@@ -290,9 +304,7 @@ class NegatedAssertionReconciler extends Reconciler
 
             $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
 
-            return $existing_var_type->from_docblock
-                ? Type::getMixed()
-                : Type::getNever();
+            return Type::getNever();
         }
 
         return $existing_var_type;
@@ -316,7 +328,7 @@ class NegatedAssertionReconciler extends Reconciler
         $existing_var_type = $existing_var_type->getBuilder();
         $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
 
-        $did_remove_type = false;
+        $redundant = true;
         $did_match_literal_type = false;
 
         $scalar_var_type = null;
@@ -327,7 +339,7 @@ class NegatedAssertionReconciler extends Reconciler
                     $did_match_literal_type = true;
 
                     if ($existing_var_type->removeType($assertion_type->getKey())) {
-                        $did_remove_type = true;
+                        $redundant = false;
                     }
                 }
 
@@ -336,7 +348,7 @@ class NegatedAssertionReconciler extends Reconciler
                 if ($existing_range_types) {
                     foreach ($existing_range_types as $int_key => $literal_type) {
                         if ($literal_type->contains($assertion_type->value)) {
-                            $did_remove_type = true;
+                            $redundant = false;
                             $existing_var_type->removeType($int_key);
                             if ($literal_type->min_bound === null
                                 || $literal_type->min_bound <= $assertion_type->value - 1
@@ -361,7 +373,7 @@ class NegatedAssertionReconciler extends Reconciler
                 if (isset($existing_var_type->getAtomicTypes()['int'])
                     && get_class($existing_var_type->getAtomicTypes()['int']) === Type\Atomic\TInt::class
                 ) {
-                    $did_remove_type = true;
+                    $redundant = false;
                     //this may be used to generate a range containing any int except the one that was asserted against
                     //but this is failing some tests
                     /*$existing_var_type->removeType('int');
@@ -377,7 +389,7 @@ class NegatedAssertionReconciler extends Reconciler
                     $did_match_literal_type = true;
 
                     if ($existing_var_type->removeType($assertion_type->getKey())) {
-                        $did_remove_type = true;
+                        $redundant = false;
                     }
                 } elseif ($assertion_type->value === "") {
                     $existing_var_type->addType(new TNonEmptyString());
@@ -391,7 +403,7 @@ class NegatedAssertionReconciler extends Reconciler
                     $did_match_literal_type = true;
 
                     if ($existing_var_type->removeType($assertion_type->getKey())) {
-                        $did_remove_type = true;
+                        $redundant = false;
                     }
                 }
             } else {
@@ -413,7 +425,7 @@ class NegatedAssertionReconciler extends Reconciler
                         $scalar_var_type = $assertion_type;
                     } else {
                         $existing_var_type->removeType($atomic_type->getKey());
-                        $did_remove_type = true;
+                        $redundant = false;
 
                         foreach ($enum_storage->enum_cases as $alt_case_name => $_) {
                             if ($alt_case_name === $case_name) {
@@ -430,7 +442,7 @@ class NegatedAssertionReconciler extends Reconciler
                     $did_match_literal_type = true;
                 } elseif ($atomic_key === $assertion_type->getKey()) {
                     $existing_var_type->removeType($assertion_type->getKey());
-                    $did_remove_type = true;
+                    $redundant = false;
                 }
             }
         }
@@ -439,14 +451,14 @@ class NegatedAssertionReconciler extends Reconciler
 
         if ($key && $code_location) {
             if ($did_match_literal_type
-                && (!$did_remove_type || count($existing_var_atomic_types) === 1)
+                && ($redundant || count($existing_var_atomic_types) === 1)
             ) {
                 self::triggerIssueForImpossible(
                     $existing_var_type,
                     $old_var_type_string,
                     $key,
                     $assertion,
-                    !$did_remove_type,
+                    $redundant,
                     $negated,
                     $code_location,
                     $suppressed_issues,

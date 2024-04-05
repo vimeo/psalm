@@ -38,7 +38,6 @@ use function array_search;
 use function count;
 use function explode;
 use function gettype;
-use function implode;
 use function in_array;
 use function preg_match;
 use function preg_replace;
@@ -91,11 +90,6 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
      * The parent class
      */
     protected ?string $parent_fq_class_name = null;
-
-    /**
-     * @var PhpParser\Node\Stmt[]
-     */
-    protected array $leftover_stmts = [];
 
     protected ClassLikeStorage $storage;
 
@@ -209,7 +203,8 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         ?string $calling_fq_class_name,
         ?string $calling_method_id,
         array $suppressed_issues,
-        ?ClassLikeNameOptions $options = null
+        ?ClassLikeNameOptions $options = null,
+        bool $check_classes = true
     ): ?bool {
         if ($options === null) {
             $options = new ClassLikeNameOptions();
@@ -282,6 +277,9 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
             && !($interface_exists && $options->allow_interface)
             && !($enum_exists && $options->allow_enum)
         ) {
+            if (!$check_classes) {
+                return null;
+            }
             if (!$options->allow_trait || !$codebase->classlikes->traitExists($fq_class_name, $code_location)) {
                 if ($options->from_docblock) {
                     if (IssueBuffer::accepts(
@@ -407,15 +405,15 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         }
 
         if ($class_name instanceof PhpParser\Node\Name\FullyQualified) {
-            return implode('\\', $class_name->parts);
+            return $class_name->toString();
         }
 
-        if (in_array($class_name->parts[0], ['self', 'static', 'parent'], true)) {
-            return $class_name->parts[0];
+        if (in_array($class_name->getFirst(), ['self', 'static', 'parent'], true)) {
+            return $class_name->getFirst();
         }
 
         return Type::getFQCLNFromString(
-            implode('\\', $class_name->parts),
+            $class_name->toString(),
             $aliases,
         );
     }
@@ -709,7 +707,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                                 && $storage->template_types
                                 && $storage->template_covariants
                                 && ($local_offset
-                                    = array_search($t->param_name, array_keys($storage->template_types)))
+                                    = array_search($t->param_name, array_keys($storage->template_types), true))
                                     !== false
                                 && !empty($storage->template_covariants[$local_offset])
                             ) {

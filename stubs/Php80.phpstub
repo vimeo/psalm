@@ -28,7 +28,7 @@ class ReflectionAttribute
 
     /**
      * @psalm-pure
-     * @return int-mask-of<Attribute::TARGET_*>
+     * @return Attribute::TARGET_*
      */
     public function getTarget() : int
     {
@@ -110,6 +110,13 @@ class ReflectionClass implements Reflector {
      * @psalm-pure
      */
     public function getExtensionName(): string|false {}
+
+    /**
+     * @param list<mixed>|array<string, mixed> $args
+     *
+     * @return T
+     */
+    public function newInstanceArgs(array $args): object {}
 }
 
 /** @psalm-immutable */
@@ -152,6 +159,13 @@ abstract class ReflectionFunctionAbstract implements Reflector
      * @psalm-pure
      */
     public function getFileName(): string|false {}
+
+    /**
+     * @return non-empty-string|false
+     *
+     * @psalm-pure
+     */
+    public function getExtensionName(): string|false {}
 }
 
 /** @psalm-immutable */
@@ -206,11 +220,50 @@ class DatePeriod implements IteratorAggregate
     /**
      * @param Start $start
      * @param (Start is string ? 0|self::EXCLUDE_START_DATE : DateInterval) $interval
-     * @param (Start is string ? never : DateTimeInterface|positive-int) $end
+     * @param (Start is string ? never : (DateTimeInterface|positive-int)) $end
      * @param (Start is string ? never : 0|self::EXCLUDE_START_DATE) $options
      */
     public function __construct($start, $interval = 0, $end = 1, $options = 0) {}
 
-    /** @psalm-return (Start is string ? (Traversable<int, DateTime>&Iterator) : (Traversable<int, Start>&Iterator)) */
+    /** @psalm-return (Start is string ? Iterator<int, DateTime> : Iterator<int, Start>) */
     public function getIterator(): Iterator {}
+}
+
+/**
+ * @psalm-pure
+ *
+ * @param resource|null $context
+ *
+ * @return ($associative is false|0 ? list<string> : array<string, string|list<string>>)|false
+ *
+ * @psalm-taint-sink ssrf $url
+ */
+function get_headers(string $url, bool $associative = false, $context = null) : array|false {}
+
+/**
+ * @psalm-pure
+ *
+ * @psalm-flow ($values) -> return
+ */
+function pack(string $format, mixed ...$values): string {}
+
+final class CurlHandle
+{
+    private function __construct()
+    {
+    }
+}
+
+final class CurlMultiHandle
+{
+    private function __construct()
+    {
+    }
+}
+
+final class CurlShareHandle
+{
+    private function __construct()
+    {
+    }
 }

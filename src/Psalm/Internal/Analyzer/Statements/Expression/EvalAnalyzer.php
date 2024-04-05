@@ -19,14 +19,17 @@ use function in_array;
 /**
  * @internal
  */
-class EvalAnalyzer
+final class EvalAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\Eval_ $stmt,
         Context $context
     ): void {
+        $was_inside_call = $context->inside_call;
+        $context->inside_call = true;
         ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context);
+        $context->inside_call = $was_inside_call;
 
         $codebase = $statements_analyzer->getCodebase();
 

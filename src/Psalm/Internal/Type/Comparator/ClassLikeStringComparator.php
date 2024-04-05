@@ -14,7 +14,7 @@ use function get_class;
 /**
  * @internal
  */
-class ClassLikeStringComparator
+final class ClassLikeStringComparator
 {
     /**
      * @param TClassString|TLiteralClassString $input_type_part
@@ -80,7 +80,7 @@ class ClassLikeStringComparator
                     : $input_type_part->value,
             );
 
-        return AtomicTypeComparator::isContainedBy(
+        $isContainedBy = AtomicTypeComparator::isContainedBy(
             $codebase,
             $fake_input_object,
             $fake_container_object,
@@ -88,5 +88,16 @@ class ClassLikeStringComparator
             false,
             $atomic_comparison_result,
         );
+
+        if ($atomic_comparison_result
+            && $atomic_comparison_result->replacement_atomic_type instanceof TNamedObject
+        ) {
+            $atomic_comparison_result->replacement_atomic_type = new TClassString(
+                'object',
+                $atomic_comparison_result->replacement_atomic_type,
+            );
+        }
+
+        return $isContainedBy;
     }
 }

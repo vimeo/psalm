@@ -9,25 +9,23 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TMixed;
 
 use function array_merge;
-use function array_values;
-use function preg_match;
-use function sprintf;
-use function str_replace;
 
 /**
  * @internal
  */
 final class ClassConstantByWildcardResolver
 {
+    private StorageByPatternResolver $resolver;
     private Codebase $codebase;
 
     public function __construct(Codebase $codebase)
     {
+        $this->resolver = new StorageByPatternResolver();
         $this->codebase = $codebase;
     }
 
     /**
-     * @return list<Atomic>|null
+     * @return non-empty-array<array-key,Atomic>|null
      */
     public function resolve(string $class_name, string $constant_pattern): ?array
     {
@@ -35,24 +33,27 @@ final class ClassConstantByWildcardResolver
             return null;
         }
 
-        $constant_regex_pattern = sprintf('#^%s$#', str_replace('*', '.*', $constant_pattern));
+        $classlike_storage = $this->codebase->classlike_storage_provider->get($class_name);
 
-        $class_like_storage = $this->codebase->classlike_storage_provider->get($class_name);
-        $matched_class_constant_types = [];
+        $constants = $this->resolver->resolveConstants(
+            $classlike_storage,
+            $constant_pattern,
+        );
 
-        foreach ($class_like_storage->constants as $constant => $class_constant_storage) {
-            if (preg_match($constant_regex_pattern, $constant) === 0) {
-                continue;
-            }
-
+        $types = [];
+        foreach ($constants as $class_constant_storage) {
             if (! $class_constant_storage->type) {
-                $matched_class_constant_types[] = [new TMixed()];
+                $types[] = [new TMixed()];
                 continue;
             }
 
-            $matched_class_constant_types[] = $class_constant_storage->type->getAtomicTypes();
+            $types[] = $class_constant_storage->type->getAtomicTypes();
         }
 
-        return array_values(array_merge([], ...$matched_class_constant_types));
+        if ($types === []) {
+            return null;
+        }
+
+        return array_merge([], ...$types);
     }
 }

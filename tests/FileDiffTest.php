@@ -62,7 +62,7 @@ class FileDiffTest extends TestCase
              * @param array{0: int, 1: int, 2: int, 3: int} $arr
              * @return array{0: int, 1: int}
              */
-            fn(array $arr): array => [$arr[2], $arr[3]],
+            static fn(array $arr): array => [$arr[2], $arr[3]],
             $diff[3],
         );
 
@@ -133,7 +133,7 @@ class FileDiffTest extends TestCase
              * @param array{0: int, 1: int, 2: int, 3: int} $arr
              * @return array{0: int, 1: int}
              */
-            fn(array $arr): array => [$arr[2], $arr[3]],
+            static fn(array $arr): array => [$arr[2], $arr[3]],
             $diff[3],
         );
 
@@ -543,6 +543,63 @@ class FileDiffTest extends TestCase
                 ['foo\a::$a', 'foo\a::$a'],
                 [],
                 [[84, 133]],
+            ],
+            'propertyTypeAddition' => [
+                '<?php
+                namespace Foo;
+
+                class A {
+                    public $a;
+                }',
+                '<?php
+                namespace Foo;
+
+                class A {
+                    public string $a;
+                }',
+                [],
+                [],
+                ['foo\a::$a', 'foo\a::$a'],
+                [],
+                [[84, 93]],
+            ],
+            'propertyTypeRemoval' => [
+                '<?php
+                namespace Foo;
+
+                class A {
+                    public string $a;
+                }',
+                '<?php
+                namespace Foo;
+
+                class A {
+                    public $a;
+                }',
+                [],
+                [],
+                ['foo\a::$a', 'foo\a::$a'],
+                [],
+                [[84, 100]],
+            ],
+            'propertyTypeChange' => [
+                '<?php
+                namespace Foo;
+
+                class A {
+                    public string $a;
+                }',
+                '<?php
+                namespace Foo;
+
+                class A {
+                    public ?string $a;
+                }',
+                [],
+                [],
+                ['foo\a::$a', 'foo\a::$a'],
+                [],
+                [[84, 100]],
             ],
             'addDocblockToFirst' => [
                 '<?php

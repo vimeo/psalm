@@ -25,17 +25,28 @@ class AnnotationTest extends TestCase
     public function testLessSpecificImplementedReturnTypeWithDocblockOnMultipleLines(): void
     {
         $this->expectException(CodeException::class);
-        $this->expectExceptionMessage('LessSpecificImplementedReturnType - somefile.php:5:');
+        $this->expectExceptionMessage('LessSpecificImplementedReturnType - somefile.php:16:');
 
         $this->addFile(
             'somefile.php',
             '<?php
 
+                class ParentClass
+                {
+                    /**
+                     * @return $this
+                     */
+                    public function execute()
+                    {
+                        return $this;
+                    }
+                }
+
                 /**
                  * @method int test()
-                 * @method \DateTime modify($modify)
+                 * @method self execute()
                  */
-                class WTF extends \DateTime { }',
+                class BreakingThings extends ParentClass { }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -50,23 +61,23 @@ class AnnotationTest extends TestCase
             'somefile.php',
             '<?php
 
-            class ParentClass
-            {
-                /**
-                 * @return $this
-                 */
-                public function execute()
+                class ParentClass
                 {
-                    return $this;
+                    /**
+                     * @return $this
+                     */
+                    public function execute()
+                    {
+                        return $this;
+                    }
                 }
-            }
 
-            /**
-             * @method self execute()
-             */
-            class BreakingThings extends ParentClass
-            {
-            }',
+                /**
+                 * @method self execute()
+                 */
+                class BreakingThings extends ParentClass
+                {
+                }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -75,19 +86,31 @@ class AnnotationTest extends TestCase
     public function testLessSpecificImplementedReturnTypeWithDescription(): void
     {
         $this->expectException(CodeException::class);
-        $this->expectExceptionMessage('LessSpecificImplementedReturnType - somefile.php:7:');
+        $this->expectExceptionMessage('LessSpecificImplementedReturnType - somefile.php:19:');
 
         $this->addFile(
             'somefile.php',
             '<?php
+
+                class ParentClass
+                {
+                    /**
+                     * @return $this
+                     */
+                    public function execute()
+                    {
+                        return $this;
+                    }
+                }
+
                 /**
                  * test test test
                  * test rambling text
                  * test test text
                  *
-                 * @method \DateTime modify($modify)
+                 * @method self execute()
                  */
-                class WTF extends \DateTime { }',
+                class BreakingThings extends ParentClass { }',
         );
 
         $this->analyzeFile('somefile.php', new Context());
@@ -489,6 +512,28 @@ class AnnotationTest extends TestCase
                      * Foo Bar
                      */
                     class A {}',
+            ],
+            'multipeLineGenericArray2' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type TRelAlternate =
+                     * list<
+                     *      array{
+                     *          href: string,
+                     *          lang: string
+                     *      }
+                     * >
+                     */
+                    class A {
+                        /** @return TRelAlternate */
+                        public function ret(): array { return []; }
+                    }
+
+                    $_ = (new A)->ret();
+                ',
+                'assertions' => [
+                    '$_===' => 'list<array{href: string, lang: string}>',
+                ],
             ],
             'builtInClassInAShape' => [
                 'code' => '<?php
@@ -1248,6 +1293,107 @@ class AnnotationTest extends TestCase
                         }
                     }',
             ],
+            'globalDocBlock' => [
+                'code' => '<?php
+                    function f(): string {
+                        /** @var string $a */
+                        global $a;
+                        return $a;
+                    }',
+            ],
+            'globalDocBlockInGlobalScope' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-suppress InvalidGlobal
+                     * @var string $a
+                     */
+                    global $a;
+                    echo strlen($a);
+                ',
+            ],
+            'multiLineArrayShapeWithComments' => [
+                'code' =>
+                    <<<EOT
+                    <?php
+                    /**
+                     * @return array { // Array with comments
+                     *     // Array with single quoted keys
+                     *     'single quote keys': array {           // Single quoted key
+                     *         'single_quote_key//1': int,        // Single quoted key with //
+                     *         'single_quote_key\'//2': string,   // Single quoted key with ' and //
+                     *         'single_quote_key\'//\'3': bool,   // Single quoted key with 2x ' and //
+                     *         'single_quote_key"//"4': float,    // Single quoted key with 2x " and //
+                     *         'single_quote_key"//\'5': array {  // Single quoted key with ', " and //
+                     *             'single_quote_key//5//1': int, // Single quoted key with 2x //
+                     *         },
+                     *         // 'commented_out_array_element//1': int
+                     *         'single_quote_key//no_whitespace':int,//Single quoted key without whitespace
+                     *     },
+                     *     // Array with double quoted keys
+                     *     "double quote keys": array {           // Double quoted key
+                     *         "double_quote_key//1": int,        // Double quoted key with //
+                     *         "double_quote_key'//2": string,    // Double quoted key with ' and //
+                     *         "double_quote_key\"//\"3": bool,   // Double quoted key with 2x ' and //
+                     *         "double_quote_key'//'4": float,    // Double quoted key with 2x " and //
+                     *         "double_quote_key\"//'5": array {  // Double quoted key with ', " and //
+                     *             "double_quote_key//5//1": int, // Double quoted key with 2x //
+                     *         },
+                     *         // "commented_out_array_element//1": int
+                     *         "double_quote_key//no_whitespace":int,//Double quoted key without whitespace
+                     *     },
+                     * }
+                     */
+                    function f(): array
+                    {
+                        return [
+                            'single quote keys' => [
+                                'single_quote_key//1' => 1,
+                                'single_quote_key\'//2' => 'string',
+                                'single_quote_key\'//\'3' => true,
+                                'single_quote_key"//"4' => 0.1,
+                                'single_quote_key"//\'5' => [
+                                    'single_quote_key//5//1' => 1,
+                                ],
+                                'single_quote_key//no_whitespace' => 1
+                            ],
+                            "double quote keys" => [
+                                "double_quote_key//1" => 1,
+                                "double_quote_key'//2" => 'string',
+                                "double_quote_key\"//\"3" => true,
+                                "double_quote_key'//'4" => 0.1,
+                                "double_quote_key\"//'5" => [
+                                    "double_quote_key//5//1" => 1,
+                                ],
+                                "double_quote_key//no_whitespace" => 1
+                            ],
+                        ];
+                    }
+                    EOT,
+            ],
+            'validArrayKeyAlias' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type ArrayKeyType array-key
+                     */
+                    class Bar {}
+
+                    /**
+                     * @psalm-import-type ArrayKeyType from Bar
+                     * @psalm-type UsesArrayKeyType array<ArrayKeyType, bool>
+                     */
+                    class Foo {}',
+                'assertions' => [],
+            ],
+            'sinceTagNonPhpVersion' => [
+                'code' => '<?php
+                    class Foo {
+                        /**
+                         * @since 8.9.9
+                         */
+                        public function bar() : void {
+                        }
+                    };',
+            ],
         ];
     }
 
@@ -1266,7 +1412,15 @@ class AnnotationTest extends TestCase
                     }',
                 'error_message' => 'MissingDocblockType',
             ],
-
+            'invalidArrayKeyType' => [
+                'code' => '<?php
+                    /**
+                     * @param array<float, string> $arg
+                     * @return void
+                     */
+                    function foo($arg) {}',
+                'error_message' => 'InvalidDocblock',
+            ],
             'invalidClassMethodReturnBrackets' => [
                 'code' => '<?php
                     class C {
@@ -1487,6 +1641,16 @@ class AnnotationTest extends TestCase
                     }
                     ',
                 'error_message' => 'UndefinedDocblockClass',
+            ],
+            'invalidTaintEscapeAnnotation' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-taint-escape
+                     */
+                    function takesInt(int $i): int {
+                        return $i;
+                    }',
+                'error_message' => 'InvalidDocblock',
             ],
             'noPhpStormAnnotationsThankYou' => [
                 'code' => '<?php

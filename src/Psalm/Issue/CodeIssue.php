@@ -68,6 +68,9 @@ abstract class CodeIssue
         return array_pop($fqcn_parts);
     }
 
+    /**
+     * @param IssueData::SEVERITY_* $severity
+     */
     public function toIssueData(string $severity): IssueData
     {
         $location = $this->code_location;

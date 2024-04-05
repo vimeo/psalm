@@ -41,7 +41,7 @@ class TArray extends Atomic
     public function __construct(array $type_params, bool $from_docblock = false)
     {
         $this->type_params = $type_params;
-        $this->from_docblock = $from_docblock;
+        parent::__construct($from_docblock);
     }
 
     public function getKey(bool $include_extra = true): string
@@ -84,7 +84,7 @@ class TArray extends Atomic
         }
 
         foreach ($this->type_params as $i => $type_param) {
-            if (!$type_param->equals($other_type->type_params[$i], $ensure_source_equality)) {
+            if (!$type_param->equals($other_type->type_params[$i], $ensure_source_equality, false)) {
                 return false;
             }
         }

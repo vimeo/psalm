@@ -3,6 +3,7 @@
 namespace Psalm\Internal\Codebase;
 
 use BackedEnum;
+use Exception;
 use InvalidArgumentException;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\MethodIdentifier;
@@ -24,6 +25,7 @@ use Psalm\Type\Union;
 use UnitEnum;
 
 use function array_filter;
+use function array_flip;
 use function array_intersect_key;
 use function array_keys;
 use function array_merge;
@@ -40,7 +42,7 @@ use function strtolower;
  *
  * Populates file and class information so that analysis can work properly
  */
-class Populator
+final class Populator
 {
     private ClassLikeStorageProvider $classlike_storage_provider;
 
@@ -439,6 +441,7 @@ class Populator
 
         $this->populateClassLikeStorage($trait_storage, $dependent_classlikes);
 
+        $this->inheritConstantsFromTrait($storage, $trait_storage);
         $this->inheritMethodsFromParent($storage, $trait_storage);
         $this->inheritPropertiesFromParent($storage, $trait_storage);
 
@@ -447,6 +450,8 @@ class Populator
         $storage->pseudo_property_get_types += $trait_storage->pseudo_property_get_types;
         $storage->pseudo_property_set_types += $trait_storage->pseudo_property_set_types;
 
+        $storage->pseudo_static_methods += $trait_storage->pseudo_static_methods;
+        
         $storage->pseudo_methods += $trait_storage->pseudo_methods;
         $storage->declaring_pseudo_method_ids += $trait_storage->declaring_pseudo_method_ids;
     }
@@ -556,6 +561,8 @@ class Populator
         $storage->pseudo_property_set_types += $parent_storage->pseudo_property_set_types;
 
         $parent_storage->dependent_classlikes[strtolower($storage->name)] = true;
+
+        $storage->pseudo_static_methods += $parent_storage->pseudo_static_methods;
 
         $storage->pseudo_methods += $parent_storage->pseudo_methods;
         $storage->declaring_pseudo_method_ids += $parent_storage->declaring_pseudo_method_ids;
@@ -874,6 +881,42 @@ class Populator
         $storage->populated = true;
     }
 
+    private function inheritConstantsFromTrait(
+        ClassLikeStorage $storage,
+        ClassLikeStorage $trait_storage
+    ): void {
+        if (!$trait_storage->is_trait) {
+            throw new Exception('Class like storage is not for a trait.');
+        }
+        foreach ($trait_storage->constants as $constant_name => $class_constant_storage) {
+            $trait_alias_map_cased = array_flip($storage->trait_alias_map_cased);
+            if (isset($trait_alias_map_cased[$constant_name])) {
+                $aliased_constant_name_lc = strtolower($trait_alias_map_cased[$constant_name]);
+                $aliased_constant_name = $trait_alias_map_cased[$constant_name];
+            } else {
+                $aliased_constant_name_lc = strtolower($constant_name);
+                $aliased_constant_name = $constant_name;
+            }
+            $visibility = $storage->trait_visibility_map[$aliased_constant_name_lc]
+                ?? $class_constant_storage->visibility;
+            $final = $storage->trait_final_map[$aliased_constant_name_lc] ?? $class_constant_storage->final;
+            $storage->constants[$aliased_constant_name] = new ClassConstantStorage(
+                $class_constant_storage->type,
+                $class_constant_storage->inferred_type,
+                $visibility,
+                $class_constant_storage->location,
+                $class_constant_storage->type_location,
+                $class_constant_storage->stmt_location,
+                $class_constant_storage->deprecated,
+                $final,
+                $class_constant_storage->unresolved_node,
+                $class_constant_storage->attributes,
+                $class_constant_storage->suppressed_issues,
+                $class_constant_storage->description,
+            );
+        }
+    }
+
     protected function inheritMethodsFromParent(
         ClassLikeStorage $storage,
         ClassLikeStorage $parent_storage
@@ -881,8 +924,8 @@ class Populator
         $fq_class_name = $storage->name;
         $fq_class_name_lc = strtolower($fq_class_name);
 
-        if ($parent_storage->sealed_methods) {
-            $storage->sealed_methods = true;
+        if ($parent_storage->sealed_methods !== null) {
+            $storage->sealed_methods = $parent_storage->sealed_methods;
         }
 
         // register where they appear (can never be in a trait)
@@ -892,10 +935,10 @@ class Populator
             if ($parent_storage->is_trait
                 && $storage->trait_alias_map
             ) {
-                $aliased_method_names = array_merge(
-                    $aliased_method_names,
-                    array_keys($storage->trait_alias_map, $method_name_lc, true),
-                );
+                $aliased_method_names = [
+                    ...$aliased_method_names,
+                    ...array_keys($storage->trait_alias_map, $method_name_lc, true),
+                ];
             }
 
             foreach ($aliased_method_names as $aliased_method_name) {
@@ -962,10 +1005,10 @@ class Populator
             if ($parent_storage->is_trait
                 && $storage->trait_alias_map
             ) {
-                $aliased_method_names = array_merge(
-                    $aliased_method_names,
-                    array_keys($storage->trait_alias_map, $method_name_lc, true),
-                );
+                $aliased_method_names = [
+                    ...$aliased_method_names,
+                    ...array_keys($storage->trait_alias_map, $method_name_lc, true),
+                ];
             }
 
             foreach ($aliased_method_names as $aliased_method_name) {
@@ -993,8 +1036,8 @@ class Populator
         ClassLikeStorage $storage,
         ClassLikeStorage $parent_storage
     ): void {
-        if ($parent_storage->sealed_properties) {
-            $storage->sealed_properties = true;
+        if ($parent_storage->sealed_properties !== null) {
+            $storage->sealed_properties = $parent_storage->sealed_properties;
         }
 
         // register where they appear (can never be in a trait)

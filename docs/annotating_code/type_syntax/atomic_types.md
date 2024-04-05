@@ -2,6 +2,8 @@
 
 Atomic types are the basic building block of all type information used in Psalm. Multiple atomic types can be combined, either with [union types](union_types.md) or [intersection types](intersection_types.md). Psalm allows many different sorts of atomic types to be expressed in docblock syntax:
 
+**Note**: you can view detailed documentation and usage examples for all atomic types by clicking on each type in the following list.
+
 * [Scalar types](scalar_types.md)
     * [bool](scalar_types.md#scalar)
     * [int](scalar_types.md#scalar)
@@ -26,7 +28,7 @@ Atomic types are the basic building block of all type information used in Psalm.
     * [Exception, Foo\MyClass and `Foo\MyClass<Bar>`](object_types.md#named-objectsmd)
     * [Generator](object_types.md#generators)
 * [Array types](array_types.md)
-    * [array&lt;int, string&gt; ](array_types.md#generic-arrays)
+    * [array&lt;int, string&gt;](array_types.md#generic-arrays)
     * [non-empty-array](array_types.md#non-empty-array)
     * [string\[\]](array_types.md#phpdoc-syntax)
     * [list & non-empty-list](array_types.md#lists)
@@ -44,7 +46,7 @@ Atomic types are the basic building block of all type information used in Psalm.
     * [`key-of<T>`](utility_types.md#key-oft)
     * [`value-of<T>`](utility_types.md#value-oft)
     * [`properties-of<T>`](utility_types.md#properties-oft)
-    * [`class-string-map<T as Foo, T>`](utility_types.md#class-string-mapt-as-foo-t)
+    * [`class-string-map<T of Foo, T>`](utility_types.md#class-string-mapt-of-foo-t)
     * [`T[K]`](utility_types.md#tk)
     * [Type aliases](utility_types.md#type-aliases)
     * [Variable templates](utility_types.md#variable-templates)

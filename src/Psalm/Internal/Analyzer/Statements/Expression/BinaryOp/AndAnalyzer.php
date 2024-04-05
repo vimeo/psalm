@@ -28,7 +28,7 @@ use function spl_object_id;
 /**
  * @internal
  */
-class AndAnalyzer
+final class AndAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
@@ -105,7 +105,7 @@ class AndAnalyzer
             $context_clauses = array_values(
                 array_filter(
                     $context_clauses,
-                    static fn(Clause $c): bool => !in_array($c->hash, $reconciled_expression_clauses, true)
+                    static fn(Clause $c): bool => !in_array($c->hash, $reconciled_expression_clauses, true),
                 ),
             );
 
@@ -151,7 +151,10 @@ class AndAnalyzer
             $right_context = clone $left_context;
         }
 
-        $partitioned_clauses = Context::removeReconciledClauses($left_clauses, $changed_var_ids);
+        $partitioned_clauses = Context::removeReconciledClauses(
+            [...$left_context->clauses, ...$left_clauses],
+            $changed_var_ids,
+        );
 
         $right_context->clauses = $partitioned_clauses[0];
 

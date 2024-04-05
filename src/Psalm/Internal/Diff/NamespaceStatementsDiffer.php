@@ -11,7 +11,7 @@ use function substr;
 /**
  * @internal
  */
-class NamespaceStatementsDiffer extends AstDiffer
+final class NamespaceStatementsDiffer extends AstDiffer
 {
     /**
      * Calculate diff (edit script) from $a to $b.
@@ -114,7 +114,7 @@ class NamespaceStatementsDiffer extends AstDiffer
                         if ($use->alias) {
                             $add_or_delete[] = 'use:' . (string) $use->alias;
                         } else {
-                            $name_parts = $use->name->parts;
+                            $name_parts = $use->name->getParts();
 
                             $add_or_delete[] = 'use:' . end($name_parts);
                         }
@@ -128,7 +128,7 @@ class NamespaceStatementsDiffer extends AstDiffer
                         if ($use->alias) {
                             $add_or_delete[] = 'use:' . (string) $use->alias;
                         } else {
-                            $name_parts = $use->name->parts;
+                            $name_parts = $use->name->getParts();
 
                             $add_or_delete[] = 'use:' . end($name_parts);
                         }

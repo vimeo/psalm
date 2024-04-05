@@ -8,7 +8,7 @@ use Psalm\Type\Union;
 /**
  * @internal
  */
-class CaseScope
+final class CaseScope
 {
     public Context $parent_context;
 

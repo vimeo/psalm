@@ -1027,9 +1027,7 @@ class ForeachTest extends TestCase
                         $arr = [];
 
                         foreach ([1, 2, 3] as $i) {
-                            if (!isset($arr[$i]["a"])) {
-                                $arr[$i]["a"] = 0;
-                            }
+                            $arr[$i]["a"] ??= 0;
 
                             $arr[$i]["a"] += 5;
                         }
@@ -1158,6 +1156,75 @@ class ForeachTest extends TestCase
                             $file = 0;
                         }
                     }',
+            ],
+            'arrayIsNotEmptyInForeachLoop' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return non-empty-array */
+                    function f(array $a): array {
+                        foreach ($a as $_) {
+                            return $a;
+                        }
+                        throw new RuntimeException;
+                    }
+                    PHP,
+            ],
+            'generatorWithUnspecifiedSend' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return Generator<int,int> */
+                    function gen() : Generator {
+                        return yield 1;
+                    }
+                    $gen = gen();
+                    foreach ($gen as $i) {}
+                PHP,
+            ],
+            'generatorWithMixedSend' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return Generator<int,int, mixed, mixed> */
+                    function gen() : Generator {
+                        return yield 1;
+                    }
+                    $gen = gen();
+                    foreach ($gen as $i) {}
+                PHP,
+            ],
+            'nullableGenerator' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return Generator<int,int|null> */
+                    function gen() : Generator {
+                        yield null;
+                        yield 1;
+                    }
+                    $gen = gen();
+                    $a = "";
+                    foreach ($gen as $i) {
+                        $a = $i;
+                    }
+                PHP,
+                'assertions' => [
+                    '$a===' => "''|int|null",
+                ],
+            ],
+            'nonNullableGenerator' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return Generator<int,int> */
+                    function gen() : Generator {
+                        yield 1;
+                    }
+                    $gen = gen();
+                    $a = "";
+                    foreach ($gen as $i) {
+                $a = $i;
+                    }
+                PHP,
+                'assertions' => [
+                    '$a===' => "''|int",
+                ],
             ],
         ];
     }
@@ -1372,6 +1439,30 @@ class ForeachTest extends TestCase
 
                     if ($a) {}',
                 'error_message' => 'RedundantCondition',
+            ],
+            'arrayCanBeEmptyOutsideTheLoop' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return non-empty-array */
+                    function f(array $a): array {
+                        foreach ($a as $_) {
+                        }
+                        return $a;
+                    }
+                    PHP,
+                'error_message' => 'LessSpecificReturnStatement',
+            ],
+            'generatorWithNonNullableSend' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return Generator<int,int,string,string> */
+                    function gen() : Generator {
+                        return yield 1;
+                    }
+                    $gen = gen();
+                    foreach ($gen as $i) {}
+                PHP,
+                'error_message' => 'InvalidIterator',
             ],
         ];
     }

@@ -10,6 +10,7 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
+use Psalm\Type;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
@@ -25,7 +26,7 @@ use function in_array;
 /**
  * @internal
  */
-class EncapsulatedStringAnalyzer
+final class EncapsulatedStringAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
@@ -45,9 +46,12 @@ class EncapsulatedStringAnalyzer
                 return false;
             }
 
-            $part_type = $statements_analyzer->node_data->getType($part);
-
-            if ($part_type !== null) {
+            if ($part instanceof EncapsedStringPart) {
+                if ($literal_string !== null) {
+                    $literal_string .= $part->value;
+                }
+                $non_empty = $non_empty || $part->value !== "";
+            } elseif ($part_type = $statements_analyzer->node_data->getType($part)) {
                 $casted_part_type = CastAnalyzer::castStringAttempt(
                     $statements_analyzer,
                     $context,
@@ -109,11 +113,6 @@ class EncapsulatedStringAnalyzer
                         }
                     }
                 }
-            } elseif ($part instanceof EncapsedStringPart) {
-                if ($literal_string !== null) {
-                    $literal_string .= $part->value;
-                }
-                $non_empty = $non_empty || $part->value !== "";
             } else {
                 $all_literals = false;
                 $literal_string = null;
@@ -123,7 +122,7 @@ class EncapsulatedStringAnalyzer
         if ($non_empty) {
             if ($literal_string !== null) {
                 $stmt_type = new Union(
-                    [new TLiteralString($literal_string)],
+                    [Type::getAtomicStringFromLiteral($literal_string)],
                     ['parent_nodes' => $parent_nodes],
                 );
             } elseif ($all_literals) {

@@ -122,7 +122,7 @@ class ConstantTest extends TestCase
                     $a = __LINE__;
                     $b = __file__;',
                 'assertions' => [
-                    '$a' => 'int',
+                    '$a' => 'int<1, max>',
                     '$b' => 'string',
                 ],
             ],
@@ -824,6 +824,242 @@ class ConstantTest extends TestCase
                     A::foo(2);
                     A::foo(3);',
             ],
+            'tooLongArrayInvalidConstantAssignmentValueFalsePositiveWithArray' => [
+                'code' => '<?php
+                    class TestInvalidConstantAssignmentValueFalsePositiveWithArray {
+                        const LOOKUP = [
+                            "00" => null,
+                            "01" => null,
+                            "02" => null,
+                            "03" => null,
+                            "04" => null,
+                            "05" => null,
+                            "06" => null,
+                            "07" => null,
+                            "08" => null,
+                            "09" => null,
+                            "10" => null,
+                            "11" => null,
+                            "12" => null,
+                            "13" => null,
+                            "14" => null,
+                            "15" => null,
+                            "16" => null,
+                            "17" => null,
+                            "18" => null,
+                            "19" => null,
+                            "20" => null,
+                            "21" => null,
+                            "22" => null,
+                            "23" => null,
+                            "24" => null,
+                            "25" => null,
+                            "26" => null,
+                            "27" => null,
+                            "28" => null,
+                            "29" => null,
+                            "30" => null,
+                            "31" => null,
+                            "32" => null,
+                            "33" => null,
+                            "34" => null,
+                            "35" => null,
+                            "36" => null,
+                            "37" => null,
+                            "38" => null,
+                            "39" => null,
+                            "40" => null,
+                            "41" => null,
+                            "42" => null,
+                            "43" => null,
+                            "44" => null,
+                            "45" => null,
+                            "46" => null,
+                            "47" => null,
+                            "48" => null,
+                            "49" => null,
+                            "50" => null,
+                            "51" => null,
+                            "52" => null,
+                            "53" => null,
+                            "54" => null,
+                            "55" => null,
+                            "56" => null,
+                            "57" => null,
+                            "58" => null,
+                            "59" => null,
+                            "60" => null,
+                            "61" => null,
+                            "62" => null,
+                            "63" => null,
+                            "64" => null,
+                            "65" => null,
+                            "66" => null,
+                            "67" => null,
+                            "68" => null,
+                            "69" => null,
+                            "70" => self::SUCCEED,
+                            "71" => self::FAIL,
+                            "72" => null,
+                            "73" => null,
+                            "74" => null,
+                            "75" => null,
+                            "76" => null,
+                            "77" => null,
+                            "78" => null,
+                            "79" => null,
+                            "80" => null,
+                            "81" => null,
+                            "82" => null,
+                            "83" => null,
+                            "84" => null,
+                            "85" => null,
+                            "86" => null,
+                            "87" => null,
+                            "88" => null,
+                            "89" => null,
+                            "90" => null,
+                            "91" => null,
+                            "92" => null,
+                            "93" => null,
+                            "94" => null,
+                            "95" => null,
+                            "96" => null,
+                            "97" => null,
+                            "98" => null,
+                            "99" => null,
+                            "100" => null,
+                            "101" => null,
+                        ];
+
+                        const SUCCEED = "SUCCEED";
+                        const FAIL = "FAIL";
+
+                        public static function will_succeed(string $code) : bool {
+                            // Seems to fail when the array has over 100+ entries, and at least one value references
+                            // another constant from the same class (even nested)
+                            return (self::LOOKUP[$code] ?? null) === self::SUCCEED;
+                        }
+                    }',
+            ],
+            'tooLongArrayInvalidConstantAssignmentValueFalsePositiveWithList' => [
+                'code' => '<?php
+                    class TestInvalidConstantAssignmentValueFalsePositiveWithList {
+                        const LOOKUP = [
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            self::SUCCEED,
+                            self::FAIL,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                        ];
+
+                        const SUCCEED = "SUCCEED";
+                        const FAIL = "FAIL";
+
+                        public static function will_succeed(int $code) : bool {
+                            // Seems to fail when the array has over 100+ entries, and at least one value references
+                            // another constant from the same class (even nested)
+                            return (self::LOOKUP[$code] ?? null) === self::SUCCEED;
+                        }
+                    }',
+            ],
             'valueOf' => [
                 'code' => '<?php
                     class A {
@@ -1184,7 +1420,7 @@ class ConstantTest extends TestCase
                     $line = C::LINE;
                 ',
                 'assertions' => [
-                    '$line' => 'int',
+                    '$line' => 'int<1, max>',
                 ],
             ],
             'classMethodTraitAndFunctionInConstInitializersAreStrings' => [
@@ -1337,6 +1573,339 @@ class ConstantTest extends TestCase
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
+            ],
+            'classConstantArrayWithEnumCaseKey' => [
+                'code' => '<?php
+                    enum E {
+                        case K1;
+                        case K2;
+                    }
+                    enum BEI: int {
+                        case K3 = 1;
+                        case K4 = 2;
+                    }
+                    enum BES: string {
+                        case K5 = "a";
+                        case K6 = "b";
+                    }
+                    class A {
+                        public const C = [
+                            BEI::K3->value => "e",
+                            BEI::K4->value => 5,
+                            E::K1->name => "c",
+                            E::K2->name => 3,
+                            BEI::K3->name => "d",
+                            BEI::K4->name => 4,
+                            BES::K5->name => "f",
+                            BES::K6->name => 6,
+                            BES::K5->value => "g",
+                            BES::K6->value => 7,
+                        ];
+                    }
+                    $c = A::C;
+                ',
+                'assertions' => [
+                    '$c===' => "array{1: 'e', 2: 5, K1: 'c', K2: 3, K3: 'd', K4: 4, K5: 'f', K6: 6, a: 'g', b: 7}",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'classConstantArrayWithEnumCaseKeyEnumDefinedAfterClass' => [
+                'code' => '<?php
+                    class A {
+                        public const C = [
+                            BEI::K3->value => "e",
+                            BEI::K4->value => 5,
+                            E::K1->name => "c",
+                            E::K2->name => 3,
+                            BEI::K3->name => "d",
+                            BEI::K4->name => 4,
+                            BES::K5->name => "f",
+                            BES::K6->name => 6,
+                            BES::K5->value => "g",
+                            BES::K6->value => 7,
+                        ];
+                    }
+                    enum E {
+                        case K1;
+                        case K2;
+                    }
+                    enum BEI: int {
+                        case K3 = 1;
+                        case K4 = 2;
+                    }
+                    enum BES: string {
+                        case K5 = "a";
+                        case K6 = "b";
+                    }
+                    $c = A::C;
+                ',
+                'assertions' => [
+                    '$c===' => "array{1: 'e', 2: 5, K1: 'c', K2: 3, K3: 'd', K4: 4, K5: 'f', K6: 6, a: 'g', b: 7}",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'classConstantArrayWithEnumCaseKeyNamespaced' => [
+                'code' => '<?php
+                    namespace OtherNamespace;
+                    enum E: int {
+                        case K1 = 1;
+                        case K2 = 2;
+                    }
+
+                    namespace UsedNamespace;
+                    enum E: int {
+                        case K3 = 3;
+                        case K4 = 4;
+                    }
+
+                    namespace AliasedNamespace;
+                    enum E: int {
+                        case K5 = 5;
+                        case K6 = 6;
+                    }
+
+                    namespace SameNamespace;
+                    use UsedNamespace\E;
+                    use AliasedNamespace\E as E2;
+
+                    enum E3: int {
+                        case K7 = 7;
+                        case K8 = 8;
+                    }
+                    class A {
+                        public const C = [
+                            \OtherNamespace\E::K1->name => "a",
+                            \OtherNamespace\E::K2->name => 10,
+                            \OtherNamespace\E::K1->value => "b",
+                            \OtherNamespace\E::K2->value => 11,
+                            E::K3->name => "c",
+                            E::K4->name => 12,
+                            E::K3->value => "d",
+                            E::K4->value => 13,
+                            E2::K5->name => "e",
+                            E2::K6->name => 14,
+                            E2::K5->value => "f",
+                            E2::K6->value => 15,
+                            E3::K7->name => "g",
+                            E3::K8->name => 16,
+                            E3::K7->value => "h",
+                            E3::K8->value => 17,
+                        ];
+                    }
+                    $c = A::C;
+                ',
+                'assertions' => [
+                    '$c===' => "array{1: 'b', 2: 11, 3: 'd', 4: 13, 5: 'f', 6: 15, 7: 'h', 8: 17, K1: 'a', K2: 10, K3: 'c', K4: 12, K5: 'e', K6: 14, K7: 'g', K8: 16}",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'classConstantArrayWithEnumCaseKeyDirectAccess' => [
+                'code' => '<?php
+                    enum E {
+                        case K1;
+                        case K2;
+                    }
+                    enum BEI: int {
+                        case K3 = 1;
+                        case K4 = 2;
+                    }
+                    enum BES: string {
+                        case K5 = "a";
+                        case K6 = "b";
+                    }
+                    class A {
+                        public const C = [
+                            E::K1->name => "c",
+                            E::K2->name => 3,
+                            BEI::K3->name => "d",
+                            BEI::K4->name => 4,
+                            BEI::K3->value => "e",
+                            BEI::K4->value => 5,
+                            BES::K5->name => "f",
+                            BES::K6->name => 6,
+                            BES::K5->value => "g",
+                            BES::K6->value => 7,
+                        ];
+                    }
+                    $a = A::C[E::K1->name];
+                    $b = A::C[E::K2->name];
+                    $c = A::C[BEI::K3->name];
+                    $d = A::C[BEI::K4->name];
+                    $e = A::C[BEI::K3->value];
+                    $f = A::C[BEI::K4->value];
+                    $g = A::C[BES::K5->name];
+                    $h = A::C[BES::K6->name];
+                    $i = A::C[BES::K5->value];
+                    $j = A::C[BES::K6->value];
+                    $k = A::C["K1"];
+                    $l = A::C["K2"];
+                    $m = A::C["K3"];
+                    $n = A::C["K4"];
+                    $o = A::C[1];
+                    $p = A::C[2];
+                    $q = A::C["K5"];
+                    $r = A::C["K6"];
+                    $s = A::C["a"];
+                    $t = A::C["b"];
+                ',
+                'assertions' => [
+                    '$a===' => "'c'",
+                    '$b===' => '3',
+                    '$c===' => "'d'",
+                    '$d===' => '4',
+                    '$e===' => "'e'",
+                    '$f===' => '5',
+                    '$g===' => "'f'",
+                    '$h===' => '6',
+                    '$i===' => "'g'",
+                    '$j===' => '7',
+                    '$k===' => "'c'",
+                    '$l===' => '3',
+                    '$m===' => "'d'",
+                    '$n===' => '4',
+                    '$o===' => "'e'",
+                    '$p===' => '5',
+                    '$q===' => "'f'",
+                    '$r===' => '6',
+                    '$s===' => "'g'",
+                    '$t===' => '7',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'classConstantNestedArrayWithEnumCaseKey' => [
+                'code' => '<?php
+                    enum E: string {
+                        case K1 = "a";
+                        case K2 = "b";
+                        case K3 = "c";
+                        case K4 = "d";
+                        case K5 = "e";
+                        case K6 = "f";
+                        case K7 = "g";
+                    }
+                    class A {
+                        public const C = [
+                            E::K1->name => [
+                                E::K2->name => [
+                                    E::K3->name => "h",
+                                    E::K4->name => "i",
+                                ],
+                                E::K5->name => [
+                                    E::K6->name => "j",
+                                    E::K7->name => "k",
+                                ],
+                            ],
+                            E::K1->value => [
+                                E::K2->value => [
+                                    E::K3->value => "l",
+                                    E::K4->value => "m",
+                                ],
+                                E::K5->value => [
+                                    E::K6->value => "n",
+                                    E::K7->value => "o",
+                                ],
+                            ]
+                        ];
+                    }
+                    $c = A::C;
+                ',
+                'assertions' => [
+                    '$c===' => "array{K1: array{K2: array{K3: 'h', K4: 'i'}, K5: array{K6: 'j', K7: 'k'}}, a: array{b: array{c: 'l', d: 'm'}, e: array{f: 'n', g: 'o'}}}",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'constantArrayWithEnumCaseKey' => [
+                'code' => '<?php
+                    enum E {
+                        case K1;
+                        case K2;
+                    }
+                    enum BEI: int {
+                        case K3 = 1;
+                        case K4 = 2;
+                    }
+                    enum BES: string {
+                        case K5 = "a";
+                        case K6 = "b";
+                    }
+                    const C = [
+                        E::K1->name => "c",
+                        E::K2->name => 3,
+                        BEI::K3->name => "d",
+                        BEI::K4->name => 4,
+                        BEI::K3->value => "e",
+                        BEI::K4->value => 5,
+                        BES::K5->name => "f",
+                        BES::K6->name => 6,
+                        BES::K5->value => "g",
+                        BES::K6->value => 7,
+                    ];
+                    $a = C[E::K1->name];
+                    $b = C[E::K2->name];
+                    $c = C[BEI::K3->name];
+                    $d = C[BEI::K4->name];
+                    $e = C[BEI::K3->value];
+                    $f = C[BEI::K4->value];
+                    $g = C[BES::K5->name];
+                    $h = C[BES::K6->name];
+                    $i = C[BES::K5->value];
+                    $j = C[BES::K6->value];
+                    $k = C["K1"];
+                    $l = C["K2"];
+                    $m = C["K3"];
+                    $n = C["K4"];
+                    $o = C[1];
+                    $p = C[2];
+                    $q = C["K5"];
+                    $r = C["K6"];
+                    $s = C["a"];
+                    $t = C["b"];
+                ',
+                'assertions' => [
+                    '$a===' => "'c'",
+                    '$b===' => '3',
+                    '$c===' => "'d'",
+                    '$d===' => '4',
+                    '$e===' => "'e'",
+                    '$f===' => '5',
+                    '$g===' => "'f'",
+                    '$h===' => '6',
+                    '$i===' => "'g'",
+                    '$j===' => '7',
+                    '$k===' => "'c'",
+                    '$l===' => '3',
+                    '$m===' => "'d'",
+                    '$n===' => '4',
+                    '$o===' => "'e'",
+                    '$p===' => '5',
+                    '$q===' => "'f'",
+                    '$r===' => '6',
+                    '$s===' => "'g'",
+                    '$t===' => '7',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'constantEnumSelfReference' => [
+                'code' => '<?php
+                    enum Bar: string {
+                        case A = "a";
+                        case B = "b";
+                        public const STR = self::A->value . self::B->value;
+                    }
+
+                    class Foo {
+                        public const CONCAT_STR = "a" . Bar::STR . "e";
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
             ],
             'classConstWithParamOut' => [
                 'code' => '<?php
@@ -1520,6 +2089,73 @@ class ConstantTest extends TestCase
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
+            ],
+            'constantTypeRespectsLiteralStringLimit' => [
+                'code' => <<<'PHP'
+                    <?php
+
+                    class A {
+                        const T = 'TEXT';
+                    }
+
+                    class B
+                    {
+                        const ARRAY = [
+                            'a' => A::T,
+                            'b' => 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+                        ];
+                    }
+                    $z = B::ARRAY['b'];
+                    PHP,
+            ],
+            'maxIntegerInArrayKey' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class A {
+                        // PHP_INT_MAX
+                        public const S = ['9223372036854775807' => 1];
+                        public const I = [9223372036854775807 => 1];
+
+                        // PHP_INT_MAX + 1
+                        public const SO = ['9223372036854775808' => 1];
+                    }
+                    $s = A::S;
+                    $i = A::I;
+                    $so = A::SO;
+                    PHP,
+                'assertions' => [
+                    '$s===' => 'array{9223372036854775807: 1}',
+                    '$i===' => 'array{9223372036854775807: 1}',
+                    '$so===' => "array{'9223372036854775808': 1}",
+                ],
+            ],
+            'autoincrementAlmostOverflow' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class A {
+                        public const I = [
+                            9223372036854775806 => 0,
+                            1, // expected key = PHP_INT_MAX
+                        ];
+                    }
+                    $s = A::I;
+                    PHP,
+                'assertions' => [
+                    '$s===' => 'array{9223372036854775806: 0, 9223372036854775807: 1}',
+                ],
+            ],
+            'inheritedConstantIsNotAmbiguous' => [
+                'code' => <<<'PHP'
+                    <?php
+                    interface MainInterface {
+                        public const TEST = 'test';
+                    }
+
+                    interface FooInterface extends MainInterface {}
+                    interface BarInterface extends MainInterface {}
+
+                    class FooBar implements FooInterface, BarInterface {}
+                    PHP,
             ],
         ];
     }
@@ -1752,7 +2388,7 @@ class ConstantTest extends TestCase
                     function foo(int $s): string {
                         return [1 => "a", 2 => "b"][$s];
                     }',
-                'error_message' => "offset value of '1|0",
+                'error_message' => "offset value of '0|1",
             ],
             'constantWithMissingClass' => [
                 'code' => '<?php
@@ -2029,6 +2665,64 @@ class ConstantTest extends TestCase
                 'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:44',
                 'ignored_issues' => [],
                 'php_version' => '8.0',
+            ],
+            'classStringIsRequiredToAccessClassConstant' => [
+                'code' => '<?php
+                    class Foo {
+                        public const BAR = "bar";
+                    }
+
+                    $class = "Foo";
+
+                    $class::BAR;
+                ',
+                'error_message' => 'InvalidStringClass',
+            ],
+            'integerOverflowInArrayKey' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class A {
+                        // PHP_INT_MAX + 1
+                        public const IO = [9223372036854775808 => 1];
+                    }
+                    PHP,
+                'error_message' => 'InvalidArrayOffset',
+            ],
+            'autoincrementOverflow' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class A {
+                        public const I = [
+                            9223372036854775807 => 0,
+                            1, // this is a fatal error
+                        ];
+                    }
+                    PHP,
+                'error_message' => 'InvalidArrayOffset',
+            ],
+            'autoincrementOverflowWithUnpack' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class A {
+                        public const I = [
+                            9223372036854775807 => 0,
+                            ...[1], // this is a fatal error
+                        ];
+                    }
+                    PHP,
+                'error_message' => 'InvalidArrayOffset',
+            ],
+            'unsupportedDynamicFetch' => [
+                'code' => '<?php
+                    class C {
+                        const A = 0;
+                    }
+
+                    $a = C::{"A"};
+                ',
+                'error_message' => 'ParseError',
+                'error_levels' => [],
+                'php_version' => '8.2',
             ],
         ];
     }

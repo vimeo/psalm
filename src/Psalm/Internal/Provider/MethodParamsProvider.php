@@ -19,7 +19,7 @@ use function strtolower;
 /**
  * @internal
  */
-class MethodParamsProvider
+final class MethodParamsProvider
 {
     /**
      * @var array<

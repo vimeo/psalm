@@ -30,6 +30,7 @@ final class TDependentGetClass extends TString implements DependentType
     {
         $this->typeof = $typeof;
         $this->as_type = $as_type;
+        parent::__construct(false);
     }
 
     public function getId(bool $exact = true, bool $nested = false): string

@@ -16,7 +16,7 @@ use function count;
 /**
  * @internal
  */
-class ArrayChunkReturnTypeProvider implements FunctionReturnTypeProviderInterface
+final class ArrayChunkReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
      * @return array<lowercase-string>

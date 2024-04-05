@@ -27,6 +27,8 @@ use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TEmptyMixed;
 use Psalm\Type\Atomic\TFalse;
@@ -60,7 +62,7 @@ use function strtolower;
  *
  * @internal
  */
-class AtomicMethodCallAnalyzer extends CallAnalyzer
+final class AtomicMethodCallAnalyzer extends CallAnalyzer
 {
     /**
      * @param  TNamedObject|TTemplateParam|null $static_type
@@ -103,6 +105,18 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
         }
 
         $source = $statements_analyzer->getSource();
+
+        if ($lhs_type_part instanceof TCallableObject) {
+            self::handleCallableObject(
+                $statements_analyzer,
+                $stmt,
+                $context,
+                $lhs_type_part->callable,
+                $result,
+                $inferred_template_result,
+            );
+            return;
+        }
 
         if (!$lhs_type_part instanceof TNamedObject) {
             self::handleInvalidClass(
@@ -170,6 +184,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                 $context->calling_method_id,
                 $statements_analyzer->getSuppressedIssues(),
                 new ClassLikeNameOptions(true, false, true, true, $lhs_type_part->from_docblock),
+                $context->check_classes,
             );
         }
 
@@ -324,7 +339,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
         $all_intersection_return_type = null;
         $all_intersection_existent_method_ids = [];
 
-        // insersection types are also fun, they also complicate matters
+        // intersection types are also fun, they also complicate matters
         if ($intersection_types) {
             [$all_intersection_return_type, $all_intersection_existent_method_ids]
                 = self::getIntersectionReturnType(
@@ -511,7 +526,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
     /**
      * @param  TNamedObject|TTemplateParam $lhs_type_part
      * @param   array<string, Atomic> $intersection_types
-     * @return  array{?Union, array<string>}
+     * @return  array{?Union, array<string, bool>}
      */
     private static function getIntersectionReturnType(
         StatementsAnalyzer $statements_analyzer,
@@ -632,7 +647,8 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                     && $stmt->name instanceof PhpParser\Node\Identifier
                     && isset($lhs_type_part->methods[strtolower($stmt->name->name)])
                 ) {
-                    $result->existent_method_ids[] = $lhs_type_part->methods[strtolower($stmt->name->name)];
+                    $method_id = $lhs_type_part->methods[strtolower($stmt->name->name)];
+                    $result->existent_method_ids[$method_id] = true;
                 } elseif (!$is_intersection) {
                     if ($stmt->name instanceof PhpParser\Node\Identifier) {
                         $codebase->analyzer->addMixedMemberName(
@@ -735,6 +751,7 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
                 $param_position = array_search(
                     $mixin->param_name,
                     $template_type_keys,
+                    true,
                 );
 
                 if ($param_position !== false
@@ -890,5 +907,56 @@ class AtomicMethodCallAnalyzer extends CallAnalyzer
             $method_id,
             $fq_class_name,
         ];
+    }
+
+    private static function handleCallableObject(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\MethodCall $stmt,
+        Context $context,
+        ?TCallable $lhs_type_part_callable,
+        AtomicMethodCallAnalysisResult $result,
+        ?TemplateResult $inferred_template_result = null
+    ): void {
+        $method_id = 'object::__invoke';
+        $result->existent_method_ids[$method_id] = true;
+        $result->has_valid_method_call_type = true;
+
+        if ($lhs_type_part_callable !== null) {
+            $result->return_type = $lhs_type_part_callable->return_type ?? Type::getMixed();
+            $callableArgumentCount = count($lhs_type_part_callable->params ?? []);
+            $providedArgumentsCount = count($stmt->getArgs());
+
+            if ($callableArgumentCount > $providedArgumentsCount) {
+                $result->too_few_arguments = true;
+                $result->too_few_arguments_method_ids[] = new MethodIdentifier('callable-object', '__invoke');
+            } elseif ($providedArgumentsCount > $callableArgumentCount) {
+                $result->too_many_arguments = true;
+                $result->too_many_arguments_method_ids[] = new MethodIdentifier('callable-object', '__invoke');
+            }
+
+            $template_result = $inferred_template_result ?? new TemplateResult([], []);
+
+            ArgumentsAnalyzer::analyze(
+                $statements_analyzer,
+                $stmt->getArgs(),
+                $lhs_type_part_callable->params,
+                $method_id,
+                false,
+                $context,
+                $template_result,
+            );
+
+            ArgumentsAnalyzer::checkArgumentsMatch(
+                $statements_analyzer,
+                $stmt->getArgs(),
+                $method_id,
+                $lhs_type_part_callable->params ?? [],
+                null,
+                null,
+                $template_result,
+                new CodeLocation($statements_analyzer->getSource(), $stmt),
+                $context,
+            );
+        }
     }
 }

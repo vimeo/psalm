@@ -1239,6 +1239,32 @@ class TypeTest extends TestCase
                         strlen($s);
                     }',
             ],
+            'testIsIntAndAliasesTypeNarrowing' => [
+                'code' => '<?php
+                    /** @var mixed $a */
+                    $a;
+                    /** @var never $b */
+                    $b;
+                    /** @var never $c */
+                    $c;
+                    /** @var never $d */
+                    $d;
+                    if (is_int($a)) {
+                        $b = $a;
+                    }
+                    if (is_integer($a)) {
+                        $c = $a;
+                    }
+                    if (is_long($a)) {
+                        $d = $a;
+                    }
+                ',
+                'assertions' => [
+                    '$b===' => 'int',
+                    '$c===' => 'int',
+                    '$d===' => 'int',
+                ],
+            ],
             'narrowWithCountToAllowNonTupleKeyedArray' => [
                 'code' => '<?php
                     /**
@@ -1307,6 +1333,16 @@ class TypeTest extends TestCase
                     }
                     /** @param non-empty-array $a */
                     function expectNonEmptyArray(array $a): array { return $a; }',
+            ],
+            'isObjectMakesObject' => [
+                'code' => '<?php
+
+                    final class test {}
+
+                    /** @var array|int|float|test|null */
+                    $a = null;
+                    if (\is_object($a)) {
+                    }',
             ],
         ];
     }

@@ -15,6 +15,7 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
+use Psalm\Issue\UnusedBaselineEntry;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use UnexpectedValueException;
 
@@ -220,6 +221,8 @@ class DocumentationTest extends TestCase
         $this->project_analyzer->getConfig()->ensure_array_string_offsets_exist = $is_array_offset_test;
         $this->project_analyzer->getConfig()->ensure_array_int_offsets_exist = $is_array_offset_test;
 
+        $this->project_analyzer->getConfig()->ensure_override_attribute = $error_message === 'MissingOverrideAttribute';
+
         foreach ($ignored_issues as $error_level) {
             $this->project_analyzer->getCodebase()->config->setCustomErrorLevel($error_level, Config::REPORT_SUPPRESS);
         }
@@ -262,6 +265,7 @@ class DocumentationTest extends TestCase
                 case 'RedundantIdentityWithTrue':
                 case 'TraitMethodSignatureMismatch':
                 case 'UncaughtThrowInGlobalScope':
+                case UnusedBaselineEntry::getIssueType():
                     continue 2;
 
                 /** @todo reinstate this test when the issue is restored */
@@ -306,7 +310,13 @@ class DocumentationTest extends TestCase
                 case 'InvalidEnumMethod':
                 case 'NoEnumProperties':
                 case 'OverriddenFinalConstant':
+                case 'InvalidInterfaceImplementation':
                     $php_version = '8.1';
+                    break;
+
+                case 'InvalidOverride':
+                case 'MissingOverrideAttribute':
+                    $php_version = '8.3';
                     break;
             }
 
@@ -330,6 +340,7 @@ class DocumentationTest extends TestCase
         $all_shortcodes = [];
 
         foreach ($all_issues as $issue_type) {
+            /** @var class-string $issue_class */
             $issue_class = '\\Psalm\\Issue\\' . $issue_type;
             /** @var int $shortcode */
             $shortcode = $issue_class::SHORTCODE;
@@ -338,7 +349,7 @@ class DocumentationTest extends TestCase
 
         $duplicate_shortcodes = array_filter(
             $all_shortcodes,
-            fn($issues): bool => count($issues) > 1
+            static fn($issues): bool => count($issues) > 1,
         );
 
         $this->assertEquals(

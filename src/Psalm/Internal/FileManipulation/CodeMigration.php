@@ -8,7 +8,7 @@ use Psalm\Storage\ImmutableNonCloneableTrait;
  * @psalm-immutable
  * @internal
  */
-class CodeMigration
+final class CodeMigration
 {
     use ImmutableNonCloneableTrait;
 

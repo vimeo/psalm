@@ -12,7 +12,7 @@ use function implode;
 use function strpos;
 use function strtolower;
 
-class ClassUnqualifier implements AfterClassLikeExistenceCheckInterface
+final class ClassUnqualifier implements AfterClassLikeExistenceCheckInterface
 {
     public static function afterClassLikeExistenceCheck(
         AfterClassLikeExistenceCheckEvent $event
@@ -44,7 +44,7 @@ class ClassUnqualifier implements AfterClassLikeExistenceCheckInterface
             $new_candidate_type = implode(
                 '',
                 array_map(
-                    fn($f) => $f[0],
+                    static fn($f) => $f[0],
                     $type_tokens,
                 ),
             );

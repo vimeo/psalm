@@ -230,19 +230,31 @@ class TaintTest extends TestCase
                         echo $a;
                     }',
             ],
-            'taintFilterVarInt' => [
+            'taintFilterVar' => [
                 'code' => '<?php
-                    echo filter_var($_GET["bad"], FILTER_VALIDATE_INT);
-                    echo filter_var($_GET["bad"], FILTER_SANITIZE_NUMBER_INT);',
-            ],
-            'taintFilterVarBoolean' => [
-                'code' => '<?php
-                    echo filter_var($_GET["bad"], FILTER_VALIDATE_BOOLEAN);',
-            ],
-            'taintFilterVarFloat' => [
-                'code' => '<?php
-                    echo filter_var($_GET["bad"], FILTER_VALIDATE_FLOAT);
-                    echo filter_var($_GET["bad"], FILTER_SANITIZE_NUMBER_FLOAT);',
+                    $args = [
+                        filter_var($_GET["bad"], FILTER_VALIDATE_INT),
+                        filter_var($_GET["bad"], FILTER_VALIDATE_BOOLEAN),
+                        filter_var($_GET["bad"], FILTER_VALIDATE_FLOAT),
+                        filter_var($_GET["bad"], FILTER_SANITIZE_NUMBER_INT),
+                        filter_var($_GET["bad"], FILTER_SANITIZE_NUMBER_FLOAT),
+                    ];
+
+                    foreach($args as $arg){
+                        new $arg;
+                        unserialize($arg);
+                        require_once $arg;
+                        eval($arg);
+                        ldap_connect($arg);
+                        ldap_search("", "", $arg);
+                        mysqli_query($conn, $arg);
+                        echo $arg;
+                        system($arg);
+                        curl_init($arg);
+                        file_get_contents($arg);
+                        setcookie($arg);
+                        header($arg);
+                    }',
             ],
             'taintLdapEscape' => [
                 'code' => '<?php
@@ -2413,6 +2425,14 @@ class TaintTest extends TestCase
                     ',
                 'error_message' => 'TaintedShell',
             ],
+            'shellExecBacktickConcat' => [
+                'code' => '<?php
+
+                    $input = $_GET["input"];
+                    $x = `ls $input`;
+                    ',
+                'error_message' => 'TaintedShell',
+            ],
             /*
             // TODO: Stubs do not support this type of inference even with $this->message = $message.
             // Most uses of getMessage() would be with caught exceptions, so this is not representative of real code.
@@ -2598,6 +2618,20 @@ class TaintTest extends TestCase
                     echo pg_escape_string($conn, $_GET["a"]);',
                 'error_message' => 'TaintedHtml',
             ],
+            'taintedReflectionClass' => [
+                'code' => '<?php
+                    $name = $_GET["name"];
+                    $reflector = new ReflectionClass($name);
+                    $reflector->newInstance();',
+                'error_message' => 'TaintedCallable',
+            ],
+            'taintedReflectionFunction' => [
+                'code' => '<?php
+                    $name = $_GET["name"];
+                    $function = new ReflectionFunction($name);
+                    $function->invoke();',
+                'error_message' => 'TaintedCallable',
+            ],
         ];
 
         $dataSetsArrays = [
@@ -2636,7 +2670,7 @@ class TaintTest extends TestCase
         $this->analyzeFile($filePath, new Context(), false);
 
         $actualIssueTypes = array_map(
-            fn(IssueData $issue): string => $issue->type . '{ ' . trim($issue->snippet) . ' }',
+            static fn(IssueData $issue): string => $issue->type . '{ ' . trim($issue->snippet) . ' }',
             IssueBuffer::getIssuesDataForFile($filePath),
         );
         self::assertSame($expectedIssuesTypes, $actualIssueTypes);

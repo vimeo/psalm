@@ -53,7 +53,7 @@ use function substr;
 /**
  * @internal
  */
-class SwitchCaseAnalyzer
+final class SwitchCaseAnalyzer
 {
     /**
      * @return null|false
@@ -209,7 +209,7 @@ class SwitchCaseAnalyzer
             }
 
             if ($switch_condition instanceof PhpParser\Node\Expr\ConstFetch
-                && $switch_condition->name->parts === ['true']
+                && $switch_condition->name->getParts() === ['true']
             ) {
                 $case_equality_expr = $case->cond;
             } elseif (($switch_condition_type = $statements_analyzer->node_data->getType($switch_condition))

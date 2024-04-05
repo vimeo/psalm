@@ -6,6 +6,7 @@ use PhpParser;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TKeyedArray;
@@ -23,7 +24,7 @@ use function is_int;
 /**
  * @internal
  */
-class UnsetAnalyzer
+final class UnsetAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
@@ -90,7 +91,7 @@ class UnsetAnalyzer
 
                                 if ($atomic_root_type->is_list && !$is_list && is_int($key_value)) {
                                     if ($key_value === 0) {
-                                        $list_key = new Union([new TIntRange(1, null)]);
+                                        $list_key = Type::getIntRange(1, null);
                                     } elseif ($key_value === 1) {
                                         $list_key = new Union([
                                             new TLiteralInt(0),

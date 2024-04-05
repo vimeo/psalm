@@ -88,6 +88,79 @@ class TypeCombinationTest extends TestCase
                     }
                     ',
             ],
+            'emptyStringNumericStringDontCombine' => [
+                'code' => '<?php
+                    /**
+                     * @param numeric-string $arg
+                     * @return void
+                     */
+                    function takesNumeric($arg) {}
+
+                    $b = rand(0, 10);
+                    $a = $b < 5 ? "" : (string) $b;
+                    if ($a !== "") {
+                        takesNumeric($a);
+                    }
+
+                    /** @var ""|numeric-string $c */
+                    if (is_numeric($c)) {
+                        takesNumeric($c);
+                    }',
+            ],
+            'emptyStringNumericStringDontCombineNegation' => [
+                'code' => '<?php
+                    /**
+                     * @param ""|"hello" $arg
+                     * @return void
+                     */
+                    function takesLiteralString($arg) {}
+
+                    /** @var ""|numeric-string $c */
+                    if (!is_numeric($c)) {
+                        takesLiteralString($c);
+                    }',
+            ],
+            'tooLongLiteralShouldBeNonFalsyString' => [
+                'code' => '<?php
+                    $x = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";',
+                'assertions' => [
+                    '$x===' => 'non-falsy-string',
+                ],
+            ],
+            'loopNonFalsyWithZeroShouldBeNonEmpty' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-suppress InvalidReturnType
+                     * @return string[]
+                     */
+                    function getStringArray() {}
+
+                    $x = array();
+                    foreach (getStringArray() as $id) {
+                        $x[] = "0";
+                        $x[] = "some_" . $id;
+                    }',
+                'assertions' => [
+                    '$x===' => 'list<non-empty-string>',
+                ],
+            ],
+            'loopNonLowercaseLiteralWithNonEmptyLowercaseShouldBeNonEmptyAndNotLowercase' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-suppress InvalidReturnType
+                     * @return int[]
+                     */
+                    function getIntArray() {}
+
+                    $x = array();
+                    foreach (getIntArray() as $id) {
+                        $x[] = "TEXT";
+                        $x[] = "some_" . $id;
+                    }',
+                'assertions' => [
+                    '$x===' => 'list<non-empty-string>',
+                ],
+            ],
         ];
     }
 
@@ -105,7 +178,7 @@ class TypeCombinationTest extends TestCase
                 ],
             ],
             'complexArrayFallback2' => [
-                'list{0?: 0|a, 1?: 0|a, ...<int<0, max>, a>}',
+                'list{0?: 0|a, 1?: 0|a, ...<a>}',
                 [
                     'list<a>',
                     'list{0, 0}',
@@ -336,6 +409,28 @@ class TypeCombinationTest extends TestCase
                 [
                     'array<never, never>',
                     'ArrayObject<int, string>',
+                ],
+            ],
+            'emptyArrayAndFalse' => [
+                'array<never, never>|false',
+                [
+                    'array<never, never>',
+                    'false',
+                ],
+            ],
+            'emptyArrayAndTrue' => [
+                'array<never, never>|true',
+                [
+                    'array<never, never>',
+                    'true',
+                ],
+            ],
+            'emptyArrayWithTrueAndFalse' => [
+                'array<never, never>|bool',
+                [
+                    'array<never, never>',
+                    'true',
+                    'false',
                 ],
             ],
             'falseDestruction' => [
@@ -639,7 +734,7 @@ class TypeCombinationTest extends TestCase
                 ],
             ],
             'combineNonEmptyListWithTKeyedArrayList' => [
-                'list{null|string, ...<int<0, max>, string>}',
+                'list{null|string, ...<string>}',
                 [
                     'non-empty-list<string>',
                     'array{null}',
@@ -836,6 +931,20 @@ class TypeCombinationTest extends TestCase
                 [
                     'non-empty-string',
                     'non-empty-literal-string',
+                ],
+            ],
+            'nonFalsyStringAndFalsyLiteral' => [
+                'non-empty-string',
+                [
+                    'non-falsy-string',
+                    '"0"',
+                ],
+            ],
+            'unionOfClassStringAndClassStringWithIntersection' => [
+                'class-string<IFoo>',
+                [
+                    'class-string<IFoo>',
+                    'class-string<IFoo & IBar>',
                 ],
             ],
         ];

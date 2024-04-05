@@ -590,7 +590,9 @@ class ClassTemplateExtendsTest extends TestCase
                     /** @template T1 */
                     class Repo {
                         /** @return ?T1 */
-                        public function findOne() {}
+                        public function findOne() {
+                            return null;
+                        }
                     }
 
                     class SpecificEntity {}
@@ -610,7 +612,9 @@ class ClassTemplateExtendsTest extends TestCase
                     /** @template T1 */
                     class Repo {
                         /** @return ?T1 */
-                        public function findOne() {}
+                        public function findOne() {
+                            return null;
+                        }
                     }
 
                     /**
@@ -1386,7 +1390,7 @@ class ClassTemplateExtendsTest extends TestCase
             'extendArrayObjectWithTemplateParams' => [
                 'code' => '<?php
                     /**
-                     * @template TKey
+                     * @template TKey of array-key
                      * @template TValue
                      * @template-extends \ArrayObject<TKey,TValue>
                      */

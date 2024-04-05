@@ -3,9 +3,11 @@
 namespace Psalm\Internal\Diff;
 
 use PhpParser;
+use UnexpectedValueException;
 
 use function count;
 use function get_class;
+use function is_string;
 use function strpos;
 use function strtolower;
 use function substr;
@@ -14,7 +16,7 @@ use function trim;
 /**
  * @internal
  */
-class ClassStatementsDiffer extends AstDiffer
+final class ClassStatementsDiffer extends AstDiffer
 {
     /**
      * Calculate diff (edit script) from $a to $b.
@@ -87,7 +89,6 @@ class ClassStatementsDiffer extends AstDiffer
                     $start_diff = $b_start - $a_start;
                     $line_diff = $b->getLine() - $a->getLine();
 
-                    /** @psalm-suppress MixedArrayAssignment */
                     $diff_map[] = [$a_start, $a_end, $start_diff, $line_diff];
 
                     return true;
@@ -158,6 +159,22 @@ class ClassStatementsDiffer extends AstDiffer
                         return false;
                     }
 
+                    if ($a->type xor $b->type) {
+                        return false;
+                    }
+
+                    if ($a->type && $b->type) {
+                        $a_type_start = (int) $a->type->getAttribute('startFilePos');
+                        $a_type_end = (int) $a->type->getAttribute('endFilePos');
+                        $b_type_start = (int) $b->type->getAttribute('startFilePos');
+                        $b_type_end = (int) $b->type->getAttribute('endFilePos');
+                        if (substr($a_code, $a_type_start, $a_type_end - $a_type_start + 1)
+                            !== substr($b_code, $b_type_start, $b_type_end - $b_type_start + 1)
+                        ) {
+                            return false;
+                        }
+                    }
+
                     $body_change = substr($a_code, $a_comments_end, $a_end - $a_comments_end)
                         !== substr($b_code, $b_comments_end, $b_end - $b_comments_end);
                 } else {
@@ -165,7 +182,6 @@ class ClassStatementsDiffer extends AstDiffer
                 }
 
                 if (!$signature_change && !$body_change) {
-                    /** @psalm-suppress MixedArrayAssignment */
                     $diff_map[] = [$a_start, $a_end, $b_start - $a_start, $b->getLine() - $a->getLine()];
                 }
 
@@ -214,7 +230,19 @@ class ClassStatementsDiffer extends AstDiffer
                 /** @var PhpParser\Node */
                 $affected_elem = $diff_elem->type === DiffElem::TYPE_REMOVE ? $diff_elem->old : $diff_elem->new;
                 if ($affected_elem instanceof PhpParser\Node\Stmt\ClassMethod) {
-                    $add_or_delete[] = $name_lc . '::' . strtolower((string) $affected_elem->name);
+                    $method_name = strtolower((string) $affected_elem->name);
+                    $add_or_delete[] = $name_lc . '::' . $method_name;
+                    if ($method_name === '__construct') {
+                        foreach ($affected_elem->getParams() as $param) {
+                            if (!$param->flags || !$param->var instanceof PhpParser\Node\Expr\Variable) {
+                                continue;
+                            }
+                            if ($param->var instanceof PhpParser\Node\Expr\Error || !is_string($param->var->name)) {
+                                throw new UnexpectedValueException('Not expecting param name to be non-string');
+                            }
+                            $add_or_delete[] = $name_lc . '::$' . $param->var->name;
+                        }
+                    }
                 } elseif ($affected_elem instanceof PhpParser\Node\Stmt\Property) {
                     foreach ($affected_elem->props as $prop) {
                         $add_or_delete[] = $name_lc . '::$' . $prop->name;

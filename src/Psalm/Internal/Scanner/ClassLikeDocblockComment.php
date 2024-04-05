@@ -7,7 +7,7 @@ use PhpParser\Node\Stmt\ClassMethod;
 /**
  * @internal
  */
-class ClassLikeDocblockComment
+final class ClassLikeDocblockComment
 {
     /**
      * Whether or not the class is deprecated
@@ -63,9 +63,9 @@ class ClassLikeDocblockComment
      */
     public array $methods = [];
 
-    public bool $sealed_properties = false;
+    public ?bool $sealed_properties = null;
 
-    public bool $sealed_methods = false;
+    public ?bool $sealed_methods = null;
 
     public bool $override_property_visibility = false;
 
@@ -86,6 +86,8 @@ class ClassLikeDocblockComment
      * @var list<array{line_number:int,start_offset:int,end_offset:int,parts:list<string>}>
      */
     public array $imported_types = [];
+
+    public ?string $inheritors = null;
 
     public bool $consistent_constructor = false;
 

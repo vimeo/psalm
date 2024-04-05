@@ -194,6 +194,13 @@ class ScopeTest extends TestCase
                 ?>
                 <h1><?= $this->getMessage() ?></h1>',
             ],
+            'psalmScopeThisInTemplateFQCN' => [
+                'code' => '<?php
+                    $e = new Exception(); // necessary to trick Psalm’s scanner for test
+                    /** @psalm-scope-this \Exception */
+                ?>
+                <h1><?= $this->getMessage() ?></h1>',
+            ],
             'psalmVarThisInTemplate' => [
                 'code' => '<?php
                     $e = new Exception(); // necessary to trick Psalm’s scanner for test
@@ -207,6 +214,21 @@ class ScopeTest extends TestCase
                     /** @var \Exception $this */
                 ?>
                 <h1><?= $this->getMessage() ?></h1>',
+            ],
+            'psalmScopeWithNamespace' => [
+                'code' => <<<'PHP'
+                    <?php
+                    namespace A {
+                        class C { public function f(): void {} }
+                    }
+                    namespace B {
+                        use A\C;
+                        /** @psalm-scope-this C */
+                        ?>
+                        <h1><?php $this->f(); ?></h1>
+                        <?php
+                    }
+                    PHP,
             ],
         ];
     }

@@ -3,9 +3,9 @@
 namespace Psalm\Type\Atomic;
 
 /**
- * @deprecated Will be removed in Psalm v6, use TIntRange instead
- *
  * Represents a list key created from foreach ($list as $key => $value)
+ *
+ * @deprecated Will be removed in Psalm v6, use TIntRange instead
  * @psalm-immutable
  */
 final class TDependentListKey extends TInt implements DependentType
@@ -23,6 +23,7 @@ final class TDependentListKey extends TInt implements DependentType
     public function __construct(string $var_id)
     {
         $this->var_id = $var_id;
+        parent::__construct(false);
     }
 
     public function getId(bool $exact = true, bool $nested = false): string

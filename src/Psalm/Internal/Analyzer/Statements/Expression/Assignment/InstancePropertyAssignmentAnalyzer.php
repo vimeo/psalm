@@ -87,7 +87,7 @@ use function strtolower;
 /**
  * @internal
  */
-class InstancePropertyAssignmentAnalyzer
+final class InstancePropertyAssignmentAnalyzer
 {
     /**
      * @param   PropertyFetch|PropertyProperty  $stmt
@@ -1087,7 +1087,7 @@ class InstancePropertyAssignmentAnalyzer
              * If we have an explicit list of all allowed magic properties on the class, and we're
              * not in that list, fall through
              */
-            if (!$var_id || !$class_storage->sealed_properties) {
+            if (!$var_id || !$class_storage->hasSealedProperties($codebase->config)) {
                 if (!$context->collect_initializations && !$context->collect_mutations) {
                     self::taintProperty(
                         $statements_analyzer,

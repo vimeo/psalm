@@ -50,10 +50,6 @@ const DOM_NAMESPACE_ERR = 14;
 const DOM_INVALID_ACCESS_ERR = 15;
 const DOM_VALIDATION_ERR = 16;
 
-function dom_import_simplexml(object $node): ?DOMElement {}
-/** @php-from 8.0 */
-function dom_import_simplexml(object $node): DOMElement {}
-
 final class DOMException extends Exception
 {
     public int $code;
@@ -158,7 +154,7 @@ class DOMNode
      */
     public ?DOMNamedNodeMap $attributes;
     /** @readonly */
-    public ?DOMDocument $ownerDocument;
+    public DOMDocument $ownerDocument;
     /** @readonly */
     public ?string $namespaceURI;
     public string $prefix;
@@ -246,7 +242,7 @@ class DOMNameSpaceNode
     /** @readonly */
     public ?string $namespaceURI;
     /** @readonly */
-    public ?DOMDocument $ownerDocument;
+    public DOMDocument $ownerDocument;
     /** @readonly */
     public ?DOMNode $parentNode;
 }
@@ -285,6 +281,8 @@ class DOMDocument extends DOMNode implements DOMParentNode
     public DOMImplementation $implementation;
     /** @readonly */
     public ?DOMElement $documentElement;
+    /** @readonly */
+    public null $ownerDocument;
 
     /**
      * @deprecated
@@ -475,13 +473,13 @@ class DOMDocument extends DOMNode implements DOMParentNode
     public function importNode(DOMNode $node, bool $deep = false) {}
 
     /**
-     * @return DOMDocument|false
+     * @return bool
      * @psalm-ignore-falsable-return
      **/
     public function load(string $filename, int $options = 0) {}
 
     /**
-     * @return DOMDocument|false
+     * @return bool
      * @psalm-ignore-falsable-return
      */
     public function loadXML(string $source, int $options = 0) {}
@@ -496,10 +494,10 @@ class DOMDocument extends DOMNode implements DOMParentNode
      */
     public function save(string $filename, int $options = 0) {}
 
-    /** @return DOMDocument|bool */
+    /** @return bool */
     public function loadHTML(string $source, int $options = 0) {}
 
-    /** @return DOMDocument|bool */
+    /** @return bool */
     public function loadHTMLFile(string $filename, int $options = 0) {}
 
     /**
@@ -978,6 +976,9 @@ class DOMXPath
 
     public function evaluate(string $expression, ?DOMNode $contextNode = null, bool $registerNodeNS = true): mixed {}
 
+    /**
+     * @return DOMNodeList<DOMNode|DOMNameSpaceNode>|false
+     */
     public function query(string $expression, ?DOMNode $contextNode = null, bool $registerNodeNS = true): mixed {}
 
     public function registerNamespace(string $prefix, string $namespace): bool {}

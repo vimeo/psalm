@@ -21,7 +21,7 @@ use function array_search;
 /**
  * @internal
  */
-class ClassTemplateParamCollector
+final class ClassTemplateParamCollector
 {
     /**
      * @param lowercase-string $method_name
@@ -48,9 +48,6 @@ class ClassTemplateParamCollector
         if ($static_class_storage->template_extended_params
             && $method_name
             && !empty($non_trait_class_storage->overridden_method_ids[$method_name])
-            && isset($class_storage->methods[$method_name])
-            && (!isset($non_trait_class_storage->methods[$method_name]->return_type)
-                || $class_storage->methods[$method_name]->inherited_return_type)
         ) {
             foreach ($non_trait_class_storage->overridden_method_ids[$method_name] as $overridden_method_id) {
                 $overridden_storage = $codebase->methods->getStorage($overridden_method_id);
@@ -144,11 +141,10 @@ class ClassTemplateParamCollector
                         $template_result,
                     );
 
-                    $class_template_params[$type_name][$class_storage->name]
-                        = $output_type_extends ?? Type::getMixed();
-                }
-
-                if (!isset($class_template_params[$type_name][$class_storage->name])) {
+                    $class_template_params[$type_name] = [
+                        $class_storage->name => $output_type_extends ?? Type::getMixed(),
+                    ];
+                } else {
                     $class_template_params[$type_name] = [$class_storage->name => Type::getMixed()];
                 }
             }

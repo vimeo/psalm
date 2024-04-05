@@ -13,7 +13,7 @@ use function end;
 /**
  * @internal
  */
-class BreakAnalyzer
+final class BreakAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,

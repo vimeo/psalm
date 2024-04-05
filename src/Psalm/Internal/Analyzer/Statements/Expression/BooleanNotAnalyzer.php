@@ -15,7 +15,7 @@ use Psalm\Type\Union;
 /**
  * @internal
  */
-class BooleanNotAnalyzer
+final class BooleanNotAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
@@ -40,6 +40,7 @@ class BooleanNotAnalyzer
             } elseif ($expr_type->isAlwaysFalsy()) {
                 $stmt_type = new TTrue($expr_type->from_docblock);
             } else {
+                ExpressionAnalyzer::checkRiskyTruthyFalsyComparison($expr_type, $statements_analyzer, $stmt);
                 $stmt_type = new TBool();
             }
 

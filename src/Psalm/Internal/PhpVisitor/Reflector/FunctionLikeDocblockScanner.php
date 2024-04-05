@@ -9,8 +9,10 @@ use Psalm\CodeLocation;
 use Psalm\CodeLocation\DocblockTypeLocation;
 use Psalm\Codebase;
 use Psalm\Config;
+use Psalm\Exception\DocblockParseException;
 use Psalm\Exception\InvalidMethodOverrideException;
 use Psalm\Exception\TypeParseTreeException;
+use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Internal\Scanner\FunctionDocblockComment;
@@ -48,6 +50,9 @@ use Psalm\Type\Union;
 
 use function array_filter;
 use function array_merge;
+use function array_search;
+use function array_splice;
+use function array_unique;
 use function array_values;
 use function count;
 use function explode;
@@ -61,12 +66,13 @@ use function strlen;
 use function strpos;
 use function strtolower;
 use function substr;
+use function substr_replace;
 use function trim;
 
 /**
  * @internal
  */
-class FunctionLikeDocblockScanner
+final class FunctionLikeDocblockScanner
 {
     /**
      * @param array<string, non-empty-array<string, Union>> $existing_function_template_types
@@ -349,16 +355,20 @@ class FunctionLikeDocblockScanner
             }
         }
 
-        foreach ($docblock_info->taint_source_types as $taint_source_type) {
-            if ($taint_source_type === 'input') {
-                $storage->taint_source_types = array_merge(
-                    $storage->taint_source_types,
-                    TaintKindGroup::ALL_INPUT,
-                );
-            } else {
-                $storage->taint_source_types[] = $taint_source_type;
-            }
+        $docblock_info->taint_source_types = array_values(array_unique($docblock_info->taint_source_types));
+        // expand 'input' group to all items, e.g. `['other', 'input']` -> `['other', 'html', 'sql', 'shell', ...]`
+        $inputIndex = array_search(TaintKindGroup::GROUP_INPUT, $docblock_info->taint_source_types, true);
+        if ($inputIndex !== false) {
+            array_splice(
+                $docblock_info->taint_source_types,
+                $inputIndex,
+                1,
+                TaintKindGroup::ALL_INPUT,
+            );
         }
+        // merge taints from doc block to storage, enforce uniqueness and having consecutive index keys
+        $storage->taint_source_types = array_merge($storage->taint_source_types, $docblock_info->taint_source_types);
+        $storage->taint_source_types = array_values(array_unique($storage->taint_source_types));
 
         $storage->added_taints = $docblock_info->added_taints;
 
@@ -417,6 +427,8 @@ class FunctionLikeDocblockScanner
         if ($docblock_info->description) {
             $storage->description = $docblock_info->description;
         }
+
+        $storage->public_api = $docblock_info->public_api;
     }
 
     /**
@@ -489,7 +501,8 @@ class FunctionLikeDocblockScanner
 
                         // spaces are allowed before $foo in get(string $foo) magic method
                         // definitions, but we want to remove them in this instance
-                        if (isset($fixed_type_tokens[$i - 1])
+                        if ($i > 0
+                            && isset($fixed_type_tokens[$i - 1])
                             && $fixed_type_tokens[$i - 1][0][0] === ' '
                         ) {
                             unset($fixed_type_tokens[$i - 1]);
@@ -618,7 +631,7 @@ class FunctionLikeDocblockScanner
             );
         } catch (TypeParseTreeException $e) {
             $storage->docblock_issues[] = new InvalidDocblock(
-                'Invalid @psalm-assert union type ' . $e,
+                'Invalid @psalm-assert union type: ' . $e->getMessage(),
                 new CodeLocation($file_scanner, $stmt, null, true),
             );
 
@@ -904,12 +917,16 @@ class FunctionLikeDocblockScanner
 
         $params_without_docblock_type = array_filter(
             $storage->params,
-            static fn(FunctionLikeParameter $p): bool => !$p->has_docblock_type && (!$p->type || $p->type->hasArray())
+            static fn(FunctionLikeParameter $p): bool => !$p->has_docblock_type && (!$p->type || $p->type->hasArray()),
         );
 
         if ($params_without_docblock_type) {
+            /** @psalm-suppress DeprecatedProperty remove in Psalm 6 */
             $storage->unused_docblock_params = $unused_docblock_params;
         }
+
+        $storage->has_undertyped_native_parameters = $params_without_docblock_type !== [];
+        $storage->unused_docblock_parameters = $unused_docblock_params;
     }
 
     /**
@@ -1245,7 +1262,7 @@ class FunctionLikeDocblockScanner
 
                     if (strpos($assertion['param_name'], $param->name.'->') === 0) {
                         $storage->assertions[] = new Possibilities(
-                            str_replace($param->name, (string) $i, $assertion['param_name']),
+                            substr_replace($assertion['param_name'], (string) $i, 0, strlen($param->name)),
                             $assertion_type_parts,
                         );
                         continue 2;
@@ -1432,10 +1449,17 @@ class FunctionLikeDocblockScanner
 
             if ($template_map[1] !== null && $template_map[2] !== null) {
                 if (trim($template_map[2])) {
+                    $type_string = $template_map[2];
+                    try {
+                        $type_string = CommentAnalyzer::splitDocLine($type_string)[0];
+                    } catch (DocblockParseException $e) {
+                        throw new DocblockParseException($type_string . ' is not a valid type: '.$e->getMessage());
+                    }
+                    $type_string = CommentAnalyzer::sanitizeDocblockType($type_string);
                     try {
                         $template_type = TypeParser::parseTokens(
                             TypeTokenizer::getFullyQualifiedTokens(
-                                $template_map[2],
+                                $type_string,
                                 $aliases,
                                 $storage->template_types + ($template_types ?: []),
                                 $type_aliases,

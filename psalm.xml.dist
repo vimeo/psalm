@@ -12,6 +12,7 @@
     limitMethodComplexity="true"
     errorBaseline="psalm-baseline.xml"
     findUnusedPsalmSuppress="true"
+    findUnusedBaselineEntry="false"
 >
     <stubs>
         <file name="stubs/phpparser.phpstub"/>
@@ -53,6 +54,7 @@
     </plugins>
 
     <issueHandlers>
+        <Trace errorLevel="error"/>
         <PossiblyNullOperand errorLevel="suppress"/>
 
         <DeprecatedMethod>
@@ -91,6 +93,7 @@
         <MissingConstructor>
             <errorLevel type="suppress">
                 <directory name="tests"/>
+                <file name="vendor/nikic/php-parser/lib/PhpParser/Node/Name.php" />
             </errorLevel>
         </MissingConstructor>
 
@@ -170,4 +173,8 @@
             </errorLevel>
         </MixedAssignment>
     </issueHandlers>
+
+    <forbiddenFunctions>
+        <function name="die" />
+    </forbiddenFunctions>
 </psalm>

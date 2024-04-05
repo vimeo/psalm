@@ -19,7 +19,7 @@ use function count;
 /**
  * @internal
  */
-class ArrayCombineReturnTypeProvider implements FunctionReturnTypeProviderInterface
+final class ArrayCombineReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
      * @return array<lowercase-string>

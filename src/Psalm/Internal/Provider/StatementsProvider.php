@@ -39,7 +39,7 @@ use const PHP_VERSION_ID;
 /**
  * @internal
  */
-class StatementsProvider
+final class StatementsProvider
 {
     private FileProvider $file_provider;
 
@@ -51,8 +51,6 @@ class StatementsProvider
     private $this_modified_time;
 
     private ?FileStorageCacheProvider $file_storage_cache_provider = null;
-
-    private StatementsVolatileCache $statements_volatile_cache;
 
     /**
      * @var array<string, array<string, bool>>
@@ -97,7 +95,6 @@ class StatementsProvider
         $this->parser_cache_provider = $parser_cache_provider;
         $this->this_modified_time = filemtime(__FILE__);
         $this->file_storage_cache_provider = $file_storage_cache_provider;
-        $this->statements_volatile_cache = StatementsVolatileCache::getInstance();
     }
 
     /**
@@ -132,20 +129,11 @@ class StatementsProvider
         if (!$this->parser_cache_provider
             || (!$config->isInProjectDirs($file_path) && strpos($file_path, 'vendor'))
         ) {
-            $cache_key = "{$file_content_hash}:{$analysis_php_version_id}";
-            if ($this->statements_volatile_cache->has($cache_key)) {
-                return $this->statements_volatile_cache->get($cache_key);
-            }
-
             $progress->debug('Parsing ' . $file_path . "\n");
 
             $has_errors = false;
 
-            $stmts = self::parseStatements($file_contents, $analysis_php_version_id, $has_errors, $file_path);
-
-            $this->statements_volatile_cache->set($cache_key, $stmts);
-
-            return $stmts;
+            return self::parseStatements($file_contents, $analysis_php_version_id, $has_errors, $file_path);
         }
 
         $stmts = $this->parser_cache_provider->loadStatementsFromCache(

@@ -8,7 +8,7 @@ use Psalm\Internal\Scanner\UnresolvedConstantComponent;
  * @psalm-immutable
  * @internal
  */
-class ArrayOffsetFetch extends UnresolvedConstantComponent
+final class ArrayOffsetFetch extends UnresolvedConstantComponent
 {
     public UnresolvedConstantComponent $array;
 

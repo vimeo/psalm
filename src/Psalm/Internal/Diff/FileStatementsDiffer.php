@@ -11,7 +11,7 @@ use function substr;
 /**
  * @internal
  */
-class FileStatementsDiffer extends AstDiffer
+final class FileStatementsDiffer extends AstDiffer
 {
     /**
      * Calculate diff (edit script) from $a to $b.
@@ -115,7 +115,11 @@ class FileStatementsDiffer extends AstDiffer
                         $b_code,
                     );
 
-                    $keep = [...$keep, ...$class_keep[0]];
+                    if ($diff_elem->old->getDocComment() === $diff_elem->new->getDocComment()) {
+                        $keep = [...$keep, ...$class_keep[0]];
+                    } else {
+                        $add_or_delete = [...$add_or_delete, ...$class_keep[0]];
+                    }
                     $keep_signature = [...$keep_signature, ...$class_keep[1]];
                     $add_or_delete = [...$add_or_delete, ...$class_keep[2]];
                     $diff_map = [...$diff_map, ...$class_keep[3]];
@@ -129,7 +133,7 @@ class FileStatementsDiffer extends AstDiffer
                         if ($use->alias) {
                             $add_or_delete[] = 'use:' . (string) $use->alias;
                         } else {
-                            $name_parts = $use->name->parts;
+                            $name_parts = $use->name->getParts();
 
                             $add_or_delete[] = 'use:' . end($name_parts);
                         }
@@ -156,7 +160,7 @@ class FileStatementsDiffer extends AstDiffer
                         if ($use->alias) {
                             $add_or_delete[] = 'use:' . (string) $use->alias;
                         } else {
-                            $name_parts = $use->name->parts;
+                            $name_parts = $use->name->getParts();
 
                             $add_or_delete[] = 'use:' . end($name_parts);
                         }

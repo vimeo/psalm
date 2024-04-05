@@ -48,7 +48,7 @@ use const PREG_OFFSET_CAPTURE;
 /**
  * @internal
  */
-class ClassLikeDocblockParser
+final class ClassLikeDocblockParser
 {
     /**
      * @throws DocblockParseException if there was a problem parsing the docblock
@@ -241,9 +241,23 @@ class ClassLikeDocblockParser
         if (isset($parsed_docblock->tags['psalm-seal-properties'])) {
             $info->sealed_properties = true;
         }
+        if (isset($parsed_docblock->tags['psalm-no-seal-properties'])) {
+            $info->sealed_properties = false;
+        }
 
         if (isset($parsed_docblock->tags['psalm-seal-methods'])) {
             $info->sealed_methods = true;
+        }
+        if (isset($parsed_docblock->tags['psalm-no-seal-methods'])) {
+            $info->sealed_methods = false;
+        }
+
+        if (isset($parsed_docblock->tags['psalm-inheritors'])) {
+            foreach ($parsed_docblock->tags['psalm-inheritors'] as $template_line) {
+                $doc_line_parts = CommentAnalyzer::splitDocLine($template_line);
+                $doc_line_parts[0] = CommentAnalyzer::sanitizeDocblockType($doc_line_parts[0]);
+                $info->inheritors = $doc_line_parts[0];
+            }
         }
 
         if (isset($parsed_docblock->tags['psalm-immutable'])
@@ -296,6 +310,9 @@ class ClassLikeDocblockParser
         }
 
         if (isset($parsed_docblock->combined_tags['method'])) {
+            if ($info->sealed_methods === null) {
+                $info->sealed_methods = true;
+            }
             foreach ($parsed_docblock->combined_tags['method'] as $offset => $method_entry) {
                 $method_entry = preg_replace('/[ \t]+/', ' ', trim($method_entry));
 
@@ -305,14 +322,19 @@ class ClassLikeDocblockParser
 
                 $has_return = false;
 
-                if (!preg_match('/^([a-z_A-Z][a-z_0-9A-Z]+) *\(/', $method_entry, $matches)) {
+                $doc_line_parts = CommentAnalyzer::splitDocLine($method_entry);
+
+                if (count($doc_line_parts) > 2
+                    && $doc_line_parts[0] === 'static'
+                    && !strpos($doc_line_parts[1], '(')
+                ) {
+                    $is_static = true;
+                    array_shift($doc_line_parts);
+                    $method_entry = implode(' ', $doc_line_parts);
                     $doc_line_parts = CommentAnalyzer::splitDocLine($method_entry);
+                }
 
-                    if ($doc_line_parts[0] === 'static' && !strpos($doc_line_parts[1], '(')) {
-                        $is_static = true;
-                        array_shift($doc_line_parts);
-                    }
-
+                if (!preg_match('/^([a-z_A-Z][a-z_0-9A-Z]+) *\(/', $method_entry, $matches)) {
                     if (count($doc_line_parts) > 1) {
                         $docblock_lines[] = '@return ' . array_shift($doc_line_parts);
                         $has_return = true;
@@ -356,7 +378,12 @@ class ClassLikeDocblockParser
 
                     $method_tree = $parse_tree_creator->create();
                 } catch (TypeParseTreeException $e) {
-                    throw new DocblockParseException($method_entry . ' is not a valid method');
+                    throw new DocblockParseException(
+                        $method_entry . ' is not a valid method: '
+                        . $e->getMessage(),
+                        0,
+                        $e,
+                    );
                 }
 
                 if (!$method_tree instanceof MethodWithReturnTypeTree
@@ -475,6 +502,13 @@ class ClassLikeDocblockParser
         }
 
         $info->public_api = isset($parsed_docblock->tags['psalm-api']) || isset($parsed_docblock->tags['api']);
+
+        if (isset($parsed_docblock->tags['property'])
+            && $codebase->config->docblock_property_types_seal_properties
+            && $info->sealed_properties === null
+        ) {
+            $info->sealed_properties = true;
+        }
 
         self::addMagicPropertyToInfo($comment, $info, $parsed_docblock->tags, 'property');
         self::addMagicPropertyToInfo($comment, $info, $parsed_docblock->tags, 'psalm-property');

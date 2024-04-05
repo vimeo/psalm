@@ -29,6 +29,8 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_slice;
+use function count;
 use function end;
 use function strtolower;
 use function substr;
@@ -36,7 +38,7 @@ use function substr;
 /**
  * @internal
  */
-class CallableTypeComparator
+final class CallableTypeComparator
 {
     /**
      * @param  TCallable|TClosure   $input_type_part
@@ -65,6 +67,8 @@ class CallableTypeComparator
             return false;
         }
 
+        $input_variadic_param_idx = null;
+
         if ($input_type_part->params !== null && $container_type_part->params !== null) {
             foreach ($input_type_part->params as $i => $input_param) {
                 $container_param = null;
@@ -79,7 +83,15 @@ class CallableTypeComparator
                     }
                 }
 
+                if ($input_param->is_variadic) {
+                    $input_variadic_param_idx = $i;
+                }
+
                 if (!$container_param) {
+                    if ($input_param->is_variadic) {
+                        break;
+                    }
+
                     if ($input_param->is_optional) {
                         break;
                     }
@@ -87,6 +99,26 @@ class CallableTypeComparator
                     return false;
                 }
 
+                if ($container_param->type
+                    && !$container_param->type->hasMixed()
+                    && !UnionTypeComparator::isContainedBy(
+                        $codebase,
+                        $container_param->type,
+                        $input_param->type ?: Type::getMixed(),
+                        false,
+                        false,
+                        $atomic_comparison_result,
+                    )
+                ) {
+                    return false;
+                }
+            }
+        }
+
+        if ($input_variadic_param_idx && isset($input_type_part->params[$input_variadic_param_idx])) {
+            $input_param = $input_type_part->params[$input_variadic_param_idx];
+
+            foreach (array_slice($container_type_part->params ?? [], $input_variadic_param_idx) as $container_param) {
                 if ($container_param->type
                     && !$container_param->type->hasMixed()
                     && !UnionTypeComparator::isContainedBy(
@@ -446,6 +478,7 @@ class CallableTypeComparator
     ) {
         if (!isset($input_type_part->properties[0])
             || !isset($input_type_part->properties[1])
+            || count($input_type_part->properties) > 2
         ) {
             return 'not-callable';
         }

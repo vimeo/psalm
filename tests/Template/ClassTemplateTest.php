@@ -2348,7 +2348,7 @@ class ClassTemplateTest extends TestCase
 
                         /**
                          * @template U
-                         * @param callable(T=):U $callback
+                         * @param callable(T):U $callback
                          * @return static<U>
                          */
                         public function map(callable $callback) {
@@ -2357,13 +2357,16 @@ class ClassTemplateTest extends TestCase
                         }
                     }
 
-                    /** @param ArrayCollection<int> $ints */
+                    /** @param ArrayCollection<int<0, max>> $ints */
                     function takesInts(ArrayCollection $ints) :void {}
 
                     /** @param ArrayCollection<int|string> $ints */
                     function takesIntsOrStrings(ArrayCollection $ints) :void {}
 
-                    takesInts((new ArrayCollection([ "a", "bc" ]))->map("strlen"));
+                    /** @return list<string> */
+                    function getList() :array {return [];}
+
+                    takesInts((new ArrayCollection(getList()))->map("strlen"));
 
                     /** @return ($s is "string" ? string : int) */
                     function foo(string $s) {
@@ -2373,7 +2376,7 @@ class ClassTemplateTest extends TestCase
                         return 5;
                     }
 
-                    takesIntsOrStrings((new ArrayCollection([ "a", "bc" ]))->map("foo"));
+                    takesIntsOrStrings((new ArrayCollection(getList()))->map("foo"));
 
                     /**
                      * @template T
@@ -2875,6 +2878,8 @@ class ClassTemplateTest extends TestCase
                     ): void {
                     }
                 }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'noCrashTemplateInsideGenerator' => [
                 'code' => '<?php
@@ -4029,6 +4034,181 @@ class ClassTemplateTest extends TestCase
                     $baz = new DoesNotExist();
                     foobar($baz);',
             ],
+            'promoted property with template' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     */
+                    class A {
+                        public function __construct(
+                            /** @var T */
+                            public mixed $t
+                        ) {}
+                    }
+
+                    $a = new A(5);
+                    $t = $a->t;
+                ',
+                'assertions' => [
+                    '$a' => 'A<int>',
+                    '$t' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'template of simple type with additional comment without dot' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-template T of string
+                     *
+                     * lorem ipsum
+                     */
+                    class Foo {
+                        /** @psalm-var T */
+                        public string $t;
+
+                        /** @psalm-param T $t */
+                        public function __construct(string $t) {
+                            $this->t = $t;
+                        }
+
+                        /**
+                         * @psalm-return T
+                         */
+                        public function t(): string {
+                            return $this->t;
+                        }
+                    }
+                    $t = (new Foo(\'\'))->t();
+                ',
+                'assertions' => [
+                    '$t===' => '\'\'',
+                ],
+            ],
+            'template of simple type with additional comment with dot' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-template T of string
+                     *
+                     * lorem ipsum.
+                     */
+                    class Foo {
+                        /** @psalm-var T */
+                        public string $t;
+
+                        /** @psalm-param T $t */
+                        public function __construct(string $t) {
+                            $this->t = $t;
+                        }
+
+                        /**
+                         * @psalm-return T
+                         */
+                        public function t(): string {
+                            return $this->t;
+                        }
+                    }
+                    $t = (new Foo(\'\'))->t();
+                ',
+                'assertions' => [
+                    '$t===' => '\'\'',
+                ],
+            ],
+            'mixedAssignment' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class Foo {
+                        /** @psalm-var T */
+                        protected $value;
+
+                        /** @psalm-param T $value */
+                        public function __construct($value)
+                        {
+                            /** @var T */
+                            $value = $this->normalize($value);
+                            $this->value = $value;
+                        }
+
+                        /**
+                         * @psalm-param T $value
+                         * @psalm-return T
+                         */
+                        protected function normalize($value)
+                        {
+                            return $value;
+                        }
+                    }
+                ',
+            ],
+            'typesOrderInsideImplementsNotMatter' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface I {}
+
+                    /**
+                     * @template T
+                     * @extends I<T>
+                     */
+                    interface ExtendedI extends I {}
+
+                    /**
+                     * @template T
+                     * @implements ExtendedI<T|null>
+                     */
+                    final class TWithNull implements ExtendedI
+                    {
+                        /** @param T $_value */
+                        public function __construct($_value) {}
+                    }
+
+                    /**
+                     * @template T
+                     * @implements ExtendedI<null|T>
+                     */
+                    final class NullWithT implements ExtendedI
+                    {
+                        /** @param T $_value */
+                        public function __construct($_value) {}
+                    }
+
+                    /** @param I<null|int> $_type */
+                    function nullWithInt(I $_type): void {}
+
+                    /** @param I<int|null> $_type */
+                    function intWithNull(I $_type): void {}
+
+                    nullWithInt(new TWithNull(1));
+                    nullWithInt(new NullWithT(1));
+                    intWithNull(new TWithNull(1));
+                    intWithNull(new NullWithT(1));',
+            ],
+            'intersectParentTemplateReturnWithConcreteChildReturn' => [
+                'code' => '<?php
+                    /**  @template T  */
+                    interface Aggregator
+                    {
+                        /**
+                         * @psalm-param T ...$values
+                         * @psalm-return T
+                         */
+                        public function aggregate(...$values): mixed;
+                    }
+
+                    /** @implements Aggregator<int|float|null> */
+                    final class AverageAggregator implements Aggregator
+                    {
+                        public function aggregate(...$values): null|int|float
+                        {
+                            if (!$values) {
+                                return null;
+                            }
+                            return array_sum($values) / count($values);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -4601,7 +4781,7 @@ class ClassTemplateTest extends TestCase
 
                     $m = new Map(fn(int $num) => (string) $num);
                     $m(["a"]);',
-                'error_message' => 'InvalidArgument',
+                'error_message' => 'InvalidScalarArgument',
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],

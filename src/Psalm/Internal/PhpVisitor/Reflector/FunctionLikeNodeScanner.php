@@ -34,6 +34,7 @@ use Psalm\Issue\DuplicateParam;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\MissingDocblockType;
 use Psalm\Issue\ParseError;
+use Psalm\Issue\PrivateFinalMethod;
 use Psalm\IssueBuffer;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
@@ -56,7 +57,6 @@ use function array_search;
 use function count;
 use function end;
 use function explode;
-use function implode;
 use function in_array;
 use function is_string;
 use function spl_object_id;
@@ -66,7 +66,7 @@ use function strtolower;
 /**
  * @internal
  */
-class FunctionLikeNodeScanner
+final class FunctionLikeNodeScanner
 {
     private FileScanner $file_scanner;
 
@@ -370,7 +370,7 @@ class FunctionLikeNodeScanner
                     && $function_stmt->expr->expr instanceof PhpParser\Node\Expr\FuncCall
                     && $function_stmt->expr->expr->name instanceof PhpParser\Node\Name
                 ) {
-                    $inner_function_id = implode('\\', $function_stmt->expr->expr->name->parts);
+                    $inner_function_id = $function_stmt->expr->expr->name->toString();
 
                     if ($inner_function_id === 'func_get_arg'
                         || $inner_function_id === 'func_get_args'
@@ -384,7 +384,7 @@ class FunctionLikeNodeScanner
                     && $function_stmt->cond->left->left instanceof PhpParser\Node\Expr\FuncCall
                     && $function_stmt->cond->left->left->name instanceof PhpParser\Node\Name
                 ) {
-                    $inner_function_id = implode('\\', $function_stmt->cond->left->left->name->parts);
+                    $inner_function_id = $function_stmt->cond->left->left->name->toString();
 
                     if ($inner_function_id === 'func_get_arg'
                         || $inner_function_id === 'func_get_args'
@@ -463,7 +463,7 @@ class FunctionLikeNodeScanner
             if ($docblock_info) {
                 if ($docblock_info->since_php_major_version && !$this->aliases->namespace) {
                     $analysis_major_php_version = $this->codebase->getMajorAnalysisPhpVersion();
-                    $analysis_minor_php_version = $this->codebase->getMajorAnalysisPhpVersion();
+                    $analysis_minor_php_version = $this->codebase->getMinorAnalysisPhpVersion();
                     if ($docblock_info->since_php_major_version > $analysis_major_php_version) {
                         return false;
                     }
@@ -592,11 +592,15 @@ class FunctionLikeNodeScanner
                 $var_comment_readonly = false;
                 $var_comment_allow_private_mutation = false;
                 if ($doc_comment) {
+                    $template_types = ($this->existing_function_template_types ?: [])
+                        + ($classlike_storage->template_types ?: [])
+                    ;
+
                     $var_comments = CommentAnalyzer::getTypeFromComment(
                         $doc_comment,
                         $this->file_scanner,
                         $this->aliases,
-                        $this->existing_function_template_types ?: [],
+                        $template_types,
                         $this->type_aliases,
                     );
 
@@ -801,7 +805,7 @@ class FunctionLikeNodeScanner
         $param_type = null;
 
         $is_nullable = $param->default instanceof PhpParser\Node\Expr\ConstFetch &&
-            strtolower($param->default->name->parts[0]) === 'null';
+            strtolower($param->default->name->getFirst()) === 'null';
 
         $param_typehint = $param->type;
 
@@ -821,7 +825,9 @@ class FunctionLikeNodeScanner
                 $this->codebase->analysis_php_version_id,
             );
 
-            if ($is_nullable) {
+            if ($param_type->isMixed()) {
+                $is_nullable = false;
+            } elseif ($is_nullable) {
                 $param_type = $param_type->getBuilder()->addType(new TNull)->freeze();
             } else {
                 $is_nullable = $param_type->isNullable();
@@ -1041,7 +1047,7 @@ class FunctionLikeNodeScanner
                     if ($docblock_info) {
                         if ($docblock_info->since_php_major_version && !$this->aliases->namespace) {
                             $analysis_major_php_version = $this->codebase->getMajorAnalysisPhpVersion();
-                            $analysis_minor_php_version = $this->codebase->getMajorAnalysisPhpVersion();
+                            $analysis_minor_php_version = $this->codebase->getMinorAnalysisPhpVersion();
                             if ($docblock_info->since_php_major_version > $analysis_major_php_version) {
                                 return false;
                             }
@@ -1097,7 +1103,24 @@ class FunctionLikeNodeScanner
             $storage->is_static = $stmt->isStatic();
             $storage->abstract = $stmt->isAbstract();
 
-            $storage->final = $classlike_storage->final || $stmt->isFinal();
+            if ($stmt->isPrivate() && $stmt->isFinal() && $method_name_lc !== '__construct') {
+                IssueBuffer::maybeAdd(
+                    new PrivateFinalMethod(
+                        'Private methods cannot be final',
+                        new CodeLocation($this->file_scanner, $stmt, null, true),
+                        (string) $method_id,
+                    ),
+                );
+                if ($this->codebase->analysis_php_version_id >= 8_00_00) {
+                    // ignore `final` on the method as that's what PHP does
+                    $storage->final = $classlike_storage->final;
+                } else {
+                    $storage->final = true;
+                }
+            } else {
+                $storage->final = $classlike_storage->final || $stmt->isFinal();
+            }
+
             $storage->final_from_docblock = $classlike_storage->final_from_docblock;
 
             if ($stmt->isPrivate()) {
@@ -1115,6 +1138,8 @@ class FunctionLikeNodeScanner
                 . ':' . (int)$stmt->getAttribute('startFilePos') . ':-:closure';
 
             $storage = $this->storage = $this->file_storage->functions[$function_id] = new FunctionStorage();
+
+            $storage->is_static = $stmt->static;
 
             if ($stmt instanceof PhpParser\Node\Expr\Closure) {
                 foreach ($stmt->uses as $closure_use) {

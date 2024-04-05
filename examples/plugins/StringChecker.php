@@ -16,7 +16,7 @@ use function preg_split;
 use function strpos;
 use function strtolower;
 
-class StringChecker implements AfterExpressionAnalysisInterface
+final class StringChecker implements AfterExpressionAnalysisInterface
 {
     /**
      * Called after an expression has been checked
@@ -50,7 +50,7 @@ class StringChecker implements AfterExpressionAnalysisInterface
             && $expr->left->class instanceof PhpParser\Node\Name
             && $expr->left->name instanceof PhpParser\Node\Identifier
             && strtolower($expr->left->name->name) === 'class'
-            && !in_array(strtolower($expr->left->class->parts[0]), ['self', 'static', 'parent'])
+            && !in_array(strtolower($expr->left->class->getFirst()), ['self', 'static', 'parent'])
             && $expr->right instanceof PhpParser\Node\Scalar\String_
             && preg_match('/^::[A-Za-z0-9]+$/', $expr->right->value)
         ) {

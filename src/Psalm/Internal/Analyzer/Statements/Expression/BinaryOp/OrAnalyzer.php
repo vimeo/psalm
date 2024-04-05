@@ -36,7 +36,7 @@ use function spl_object_id;
 /**
  * @internal
  */
-class OrAnalyzer
+final class OrAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
@@ -173,7 +173,7 @@ class OrAnalyzer
             $negated_left_clauses = array_values(
                 array_filter(
                     $negated_left_clauses,
-                    static fn(Clause $c): bool => !in_array($c->hash, $reconciled_expression_clauses)
+                    static fn(Clause $c): bool => !in_array($c->hash, $reconciled_expression_clauses),
                 ),
             );
 

@@ -17,7 +17,9 @@ use Psalm\Internal\Scanner\ParsedDocblock;
 use function array_key_exists;
 use function array_merge;
 use function array_reduce;
+use function array_slice;
 use function count;
+use function implode;
 use function is_string;
 use function ltrim;
 use function preg_match;
@@ -32,7 +34,7 @@ use function substr;
 /**
  * @internal
  */
-class FunctionDocblockManipulator
+final class FunctionDocblockManipulator
 {
     /**
      * Manipulators ordered by line number
@@ -42,7 +44,7 @@ class FunctionDocblockManipulator
     private static array $manipulators = [];
 
     /** @var Closure|Function_|ClassMethod|ArrowFunction */
-    private $stmt;
+    private FunctionLike $stmt;
 
     private int $docblock_start;
 
@@ -135,7 +137,7 @@ class FunctionDocblockManipulator
                 if ($param->type) {
                     $this->param_typehint_offsets[$param->var->name] = [
                         (int) $param->type->getAttribute('startFilePos'),
-                        (int) $param->type->getAttribute('endFilePos'),
+                        (int) $param->type->getAttribute('endFilePos') + 1,
                     ];
                 }
             }
@@ -332,7 +334,29 @@ class FunctionDocblockManipulator
                 foreach ($parsed_docblock->tags['param'] as &$param_block) {
                     $doc_parts = CommentAnalyzer::splitDocLine($param_block);
 
+                    // If there's no type
+                    if (($doc_parts[0] ?? null) === '$' . $param_name) {
+                        // If the parameter has a description add that back
+                        if (count($doc_parts) > 1) {
+                            $new_param_block .= " ". implode(" ", array_slice($doc_parts, 1));
+                        }
+
+                        if ($param_block !== $new_param_block) {
+                            $modified_docblock = true;
+                        }
+
+                        $param_block = $new_param_block;
+                        $found_in_params = true;
+                        break;
+                    }
+
+                    // If there is a type
                     if (($doc_parts[1] ?? null) === '$' . $param_name) {
+                        // If the parameter has a description add that back
+                        if (count($doc_parts) > 2) {
+                            $new_param_block .= " ". implode(" ", array_slice($doc_parts, 2));
+                        }
+
                         if ($param_block !== $new_param_block) {
                             $modified_docblock = true;
                         }
@@ -391,7 +415,7 @@ class FunctionDocblockManipulator
             $modified_docblock = true;
             $inferredThrowsClause = array_reduce(
                 $this->throwsExceptions,
-                fn(string $throwsClause, string $exception) => $throwsClause === ''
+                static fn(string $throwsClause, string $exception) => $throwsClause === ''
                     ? $exception
                     : $throwsClause.'|'.$exception,
                 '',

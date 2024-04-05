@@ -9,9 +9,24 @@ namespace Psalm\Type\Atomic;
  */
 final class TCallableObject extends TObject
 {
+    use HasIntersectionTrait;
+
+    public ?TCallable $callable;
+
+    public function __construct(bool $from_docblock = false, ?TCallable $callable = null)
+    {
+        parent::__construct($from_docblock);
+        $this->callable = $callable;
+    }
+
     public function getKey(bool $include_extra = true): string
     {
-        return 'callable-object';
+        $key = 'callable-object';
+        if ($this->callable !== null) {
+            $key .= $this->callable->getParamString() . $this->callable->getReturnTypeString();
+        }
+
+        return $key;
     }
 
     /**

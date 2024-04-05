@@ -17,28 +17,63 @@ class ClosureTest extends TestCase
         return [
             'byRefUseVar' => [
                 'code' => '<?php
-                    /** @return void */
-                    function run_function(\Closure $fnc) {
-                        $fnc();
-                    }
+                    $doNotContaminate = 123;
 
-                    /**
-                     * @return void
-                     * @psalm-suppress MixedArgument
-                     */
-                    function f() {
-                        run_function(
-                            /**
-                             * @return void
-                             */
-                            function() use(&$data) {
-                                $data = 1;
+                    $test = 123;
+                    
+                    $testBefore = $test;
+
+                    $testInsideBefore = null;
+                    $testInsideAfter = null;
+
+                    $v = function () use (&$test, &$testInsideBefore, &$testInsideAfter, $doNotContaminate): void {
+                        $testInsideBefore = $test;
+                        $test = "test";
+                        $testInsideAfter = $test;
+
+                        $doNotContaminate = "test";
+                    };
+                ',
+                'assertions' => [
+                    '$testBefore===' => '123',
+                    '$testInsideBefore===' => "'test'|123|null",
+                    '$testInsideAfter===' => "'test'|null",
+                    '$test===' => "'test'|123",
+
+                    '$doNotContaminate===' => '123',
+                ],
+            ],
+            'byRefUseSelf' => [
+                'code' => '<?php
+                    $external = random_int(0, 1);
+                    
+                    $v = function (bool $callMe) use (&$v, $external): void {
+                        echo($external.PHP_EOL);
+                        if ($callMe) {
+                            $v(false);
+                        }
+                    };
+                    
+                    $v(true);',
+            ],
+            'byRefUseVarChangeType' => [
+                'code' => '<?php
+
+                    function a(string $arg): int {
+                        $v = function() use (&$arg): void {
+                            if (is_integer($arg)) {
+                                echo $arg;
                             }
-                        );
-                        echo $data;
+                            if (random_bytes(1)) {
+                                $arg = 123;
+                            }
+                        };
+                        $v();
+                        $v();
+                        return 0;
                     }
 
-                    f();',
+                    a("test");',
             ],
             'inferredArg' => [
                 'code' => '<?php
@@ -934,6 +969,29 @@ class ClosureTest extends TestCase
                             echo $var;  // $var should be string, instead it\'s considered to be Closure|string.
                     }',
             ],
+            'classExistsInOuterScopeOfArrowFunction' => [
+                'code' => <<<'PHP'
+                    <?php
+                    if (class_exists(Foo::class)) {
+                        /** @return mixed */
+                        fn() => Foo::bar(23, []);
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.4',
+            ],
+            'classExistsInOuterScopeOfAClosure' => [
+                'code' => <<<'PHP'
+                    <?php
+                    if (class_exists(Foo::class)) {
+                        /** @return mixed */
+                        function () {
+                            return Foo::bar(23, []);
+                        };
+                    }
+                    PHP,
+            ],
         ];
     }
 
@@ -1245,19 +1303,6 @@ class ClosureTest extends TestCase
                     takesB($getAButReallyB());',
                 'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:28 - Argument 1 of takesB expects B, but parent type A provided',
             ],
-            'closureByRefUseToMixed' => [
-                'code' => '<?php
-                    function assertInt(int $int): int {
-                        $s = static function() use(&$int): void {
-                            $int = "42";
-                        };
-
-                        $s();
-
-                        return $int;
-                    }',
-                'error_message' => 'MixedReturnStatement',
-            ],
             'noCrashWhenComparingIllegitimateCallable' => [
                 'code' => '<?php
                     class C {}
@@ -1365,6 +1410,43 @@ class ClosureTest extends TestCase
                     $length = $closure();
                 ',
                 'error_message' => 'MixedAssignment',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'thisInStaticClosure' => [
+                'code' => '<?php
+                    class C {
+                        public string $a = "zzz";
+                        public function f(): void {
+                            $f = static function (): void {
+                                echo $this->a;
+                            };
+                            $f();
+                        }
+                    }
+                ',
+                'error_message' => 'InvalidScope',
+            ],
+            'thisInStaticArrowFunction' => [
+                'code' => '<?php
+                    class C {
+                        public int $a = 1;
+                        public function f(): int {
+                            $f = static fn(): int => $this->a;
+                            return $f();;
+                        }
+                    }
+                ',
+                'error_message' => 'InvalidScope',
+                'ignored_issues' => [],
+                'php_version' => '7.4',
+            ],
+            'FirstClassCallable:WithNew' => [
+                'code' => <<<'PHP'
+                    <?php
+                        new stdClass(...);
+                    PHP,
+                'error_message' => 'ParseError',
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],

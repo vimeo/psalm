@@ -183,7 +183,7 @@ class PropertyTypeTest extends TestCase
                 }
 
                 function testX(X $x): void {
-                    if ($x->getX()) {
+                    if (is_int($x->getX())) {
                         XCollector::modify();
                         if ($x->getX() === null) {}
                     }
@@ -221,7 +221,7 @@ class PropertyTypeTest extends TestCase
                 }
 
                 function testX(X $x): void {
-                    if ($x->getX()) {
+                    if ($x->getX() !== null) {
                         XCollector::modify();
                         if ($x->getX() === null) {}
                     }
@@ -255,7 +255,7 @@ class PropertyTypeTest extends TestCase
                 }
 
                 function testX(X $x): void {
-                    if ($x->x) {
+                    if ($x->x !== null) {
                         XCollector::modify();
                         if ($x->x === null) {}
                     }
@@ -686,6 +686,8 @@ class PropertyTypeTest extends TestCase
                     }
 
                     echo substr($a->aa, 1);',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'nullableStaticPropertyWithIfCheck' => [
                 'code' => '<?php
@@ -716,7 +718,7 @@ class PropertyTypeTest extends TestCase
                     $a = new DOMElement("foo");
                     $owner = $a->ownerDocument;',
                 'assertions' => [
-                    '$owner' => 'DOMDocument|null',
+                    '$owner' => 'DOMDocument',
                 ],
             ],
             'propertyMapHydration' => [
@@ -1164,7 +1166,7 @@ class PropertyTypeTest extends TestCase
                          * Constructs a finally node.
                          *
                          * @param list<Node\Stmt> $stmts      Statements
-                         * @param array  $attributes Additional attributes
+                         * @param array<string, mixed>  $attributes Additional attributes
                          */
                         public function __construct(array $stmts = array(), array $attributes = array()) {
                             parent::__construct($attributes);
@@ -1375,18 +1377,23 @@ class PropertyTypeTest extends TestCase
                     /** @psalm-suppress UndefinedPropertyFetch */
                     if ($a->bar === null && rand(0, 1)) {}',
             ],
-            'setPropertiesOfSpecialObjects' => [
+            'setPropertiesOfStdClass' => [
                 'code' => '<?php
                     $a = new stdClass();
-                    $a->b = "c";
-
-                    $d = new SimpleXMLElement("<person><child role=\"son\"></child></person>");
-                    $d->e = "f";',
+                    $a->b = "c";',
                 'assertions' => [
                     '$a' => 'stdClass',
                     '$a->b' => 'string',
-                    '$d' => 'SimpleXMLElement',
-                    '$d->e' => 'mixed',
+                ],
+            ],
+            'getPropertiesOfSimpleXmlElement' => [
+                'code' => '<?php
+                    $a = new SimpleXMLElement("<person><child role=\"son\"></child></person>");
+                    $b = $a->b;',
+                'assertions' => [
+                    '$a' => 'SimpleXMLElement',
+                    '$a->b' => 'SimpleXMLElement|null',
+                    '$b' => 'SimpleXMLElement|null',
                 ],
             ],
             'allowLessSpecificReturnTypeForOverriddenMethod' => [
@@ -1749,6 +1756,15 @@ class PropertyTypeTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => ['PropertyNotSetInConstructor'],
+            ],
+            'unitializedPropertySuppressPropertyNotSetInAbstractConstructor' => [
+                'code' => '<?php
+                    abstract class A {
+                          /** @readonly */
+                          public string $s;
+
+                          abstract public function __construct(string $s);
+                    }',
             ],
             'setTKeyedArrayPropertyType' => [
                 'code' => '<?php
@@ -2686,6 +2702,27 @@ class PropertyTypeTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
+            ],
+            'intersectionPropertyAccess' => [
+                'code' => '<?php
+
+                    /** @property int $test1 */
+                    class a {
+                        public function __get(string $name)
+                        {
+                            return 0;
+                        }
+                    }
+
+                    /** @var a&object{test2: "lmao"} */
+                    $r = null;
+
+                    $test1 = $r->test1;
+                    $test2 = $r->test2;',
+                'assertions' => [
+                    '$test1===' => 'int',
+                    '$test2===' => "'lmao'",
+                ],
             ],
         ];
     }
@@ -3789,6 +3826,15 @@ class PropertyTypeTest extends TestCase
                     (new A)->prop = 42;
                 ',
                 'error_message' => 'UndefinedPropertyAssignment',
+            ],
+            'nativeMixedPropertyWithNoConstructor' => [
+                'code' => <<< 'PHP'
+                    <?php
+                    class A {
+                        public mixed $foo;
+                    }
+                PHP,
+                'error_message' => 'MissingConstructor',
             ],
         ];
     }

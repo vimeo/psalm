@@ -117,7 +117,7 @@ final class ErrorBaseline
 
                 foreach ($codeSamples as $codeSample) {
                     $files[$fileName][$issueType]['o'] += 1;
-                    $files[$fileName][$issueType]['s'][] = trim($codeSample->textContent);
+                    $files[$fileName][$issueType]['s'][] = str_replace("\r\n", "\n", trim($codeSample->textContent));
                 }
 
                 // TODO: Remove in Psalm 6
@@ -266,7 +266,8 @@ final class ErrorBaseline
 
                 foreach ($existingIssueType['s'] as $selection) {
                     $codeNode = $baselineDoc->createElement('code');
-                    $codeNode->textContent = trim($selection);
+                    $textContent = trim($selection);
+                    $codeNode->appendChild($baselineDoc->createCDATASection($textContent));
                     $issueNode->appendChild($codeNode);
                 }
                 $fileNode->appendChild($issueNode);

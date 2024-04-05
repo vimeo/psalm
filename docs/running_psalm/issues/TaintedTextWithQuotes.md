@@ -35,6 +35,7 @@ Passing `');alert('injection');//` as a `GET` param here would cause the `alert`
 - Sanitize user input by using functions such as `htmlentities` with the `ENT_QUOTES` flag or use an allowlist.
 - Set all cookies to `HTTPOnly`.
 - Consider using Content Security Policy (CSP), to limit the risk of XSS vulnerabilities.
+- If user input itself is HTML, see [Sanitizing HTML User Input](../../security_analysis/avoiding_false_positives.md#sanitizing-html-user-input)
 
 ## Further resources
 

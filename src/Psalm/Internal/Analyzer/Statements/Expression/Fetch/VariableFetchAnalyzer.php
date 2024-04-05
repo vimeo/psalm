@@ -41,7 +41,7 @@ use function time;
 /**
  * @internal
  */
-class VariableFetchAnalyzer
+final class VariableFetchAnalyzer
 {
     public const SUPER_GLOBALS = [
         '$GLOBALS',
@@ -321,11 +321,9 @@ class VariableFetchAnalyzer
                         (bool) $statements_analyzer->getBranchPoint($var_name),
                     );
                 } else {
-                    if ($codebase->alter_code) {
-                        if (!isset($project_analyzer->getIssuesToFix()['PossiblyUndefinedVariable'])) {
-                            return true;
-                        }
-
+                    if ($codebase->alter_code
+                        && isset($project_analyzer->getIssuesToFix()['PossiblyUndefinedVariable'])
+                    ) {
                         $branch_point = $statements_analyzer->getBranchPoint($var_name);
 
                         if ($branch_point) {
@@ -785,7 +783,7 @@ class VariableFetchAnalyzer
                 'type' => $str,
                 'tmp_name' => $str,
                 'size' => Type::getListKey(),
-                'error' => new Union([new TIntRange(0, 8)]),
+                'error' => Type::getIntRange(0, 8),
             ];
 
             if ($files_full_path) {

@@ -6,6 +6,7 @@ use JsonException;
 use PhpParser;
 use PhpParser\Node\Stmt;
 use Psalm\Config;
+use Psalm\Internal\Cache;
 use RuntimeException;
 use UnexpectedValueException;
 
@@ -15,20 +16,15 @@ use function file_put_contents;
 use function filemtime;
 use function gettype;
 use function hash;
-use function igbinary_serialize;
-use function igbinary_unserialize;
 use function is_array;
 use function is_dir;
 use function is_readable;
-use function is_writable;
+use function is_string;
 use function json_decode;
 use function json_encode;
 use function mkdir;
 use function scandir;
-use function serialize;
 use function touch;
-use function unlink;
-use function unserialize;
 
 use const DIRECTORY_SEPARATOR;
 use const JSON_THROW_ON_ERROR;
@@ -45,7 +41,7 @@ class ParserCacheProvider
     private const PARSER_CACHE_DIRECTORY = 'php-parser';
     private const FILE_CONTENTS_CACHE_DIRECTORY = 'file-caches';
 
-    private Config $config;
+    private Cache $cache;
 
     /**
      * A map of filename hashes to contents hashes
@@ -65,7 +61,7 @@ class ParserCacheProvider
 
     public function __construct(Config $config, bool $use_file_cache = true)
     {
-        $this->config = $config;
+        $this->cache = new Cache($config);
         $this->use_file_cache = $use_file_cache;
     }
 
@@ -92,15 +88,12 @@ class ParserCacheProvider
             && is_readable($cache_location)
             && filemtime($cache_location) > $file_modified_time
         ) {
-            if ($this->config->use_igbinary) {
-                /** @var list<Stmt> */
-                $stmts = igbinary_unserialize(Providers::safeFileGetContents($cache_location));
-            } else {
-                /** @var list<Stmt> */
-                $stmts = unserialize(Providers::safeFileGetContents($cache_location));
-            }
+            $stmts = $this->cache->getItem($cache_location);
 
-            return $stmts;
+            if (is_array($stmts)) {
+                /** @var list<Stmt> $stmts */
+                return $stmts;
+            }
         }
 
         return null;
@@ -118,13 +111,12 @@ class ParserCacheProvider
         $cache_location = $this->getCacheLocationForPath($file_path, self::PARSER_CACHE_DIRECTORY);
 
         if (is_readable($cache_location)) {
-            if ($this->config->use_igbinary) {
-                /** @var list<Stmt> */
-                return igbinary_unserialize(Providers::safeFileGetContents($cache_location)) ?: null;
-            }
+            $stmts = $this->cache->getItem($cache_location);
 
-            /** @var list<Stmt> */
-            return unserialize(Providers::safeFileGetContents($cache_location)) ?: null;
+            if (is_array($stmts)) {
+                /** @var list<Stmt> $stmts */
+                return $stmts;
+            }
         }
 
         return null;
@@ -138,11 +130,13 @@ class ParserCacheProvider
 
         $cache_location = $this->getCacheLocationForPath($file_path, self::FILE_CONTENTS_CACHE_DIRECTORY);
 
-        if (is_readable($cache_location)) {
-            return Providers::safeFileGetContents($cache_location);
+        $cache_item = $this->cache->getItem($cache_location);
+
+        if (!is_string($cache_item)) {
+            return null;
         }
 
-        return null;
+        return $cache_item;
     }
 
     /**
@@ -155,7 +149,7 @@ class ParserCacheProvider
         }
 
         if ($this->existing_file_content_hashes === null) {
-            $root_cache_directory = $this->config->getCacheDirectory();
+            $root_cache_directory = $this->cache->getCacheDirectory();
             $file_hashes_path = $root_cache_directory . DIRECTORY_SEPARATOR . self::FILE_HASHES;
 
             if (!$root_cache_directory) {
@@ -234,11 +228,7 @@ class ParserCacheProvider
         if ($touch_only) {
             touch($cache_location);
         } else {
-            if ($this->config->use_igbinary) {
-                file_put_contents($cache_location, igbinary_serialize($stmts), LOCK_EX);
-            } else {
-                file_put_contents($cache_location, serialize($stmts), LOCK_EX);
-            }
+            $this->cache->saveItem($cache_location, $stmts);
 
             $file_cache_key = $this->getParserCacheKey($file_path);
             $this->new_file_content_hashes[$file_cache_key] = $file_content_hash;
@@ -267,7 +257,7 @@ class ParserCacheProvider
             return;
         }
 
-        $root_cache_directory = $this->config->getCacheDirectory();
+        $root_cache_directory = $this->cache->getCacheDirectory();
 
         if (!$root_cache_directory) {
             return;
@@ -299,13 +289,12 @@ class ParserCacheProvider
         }
 
         $cache_location = $this->getCacheLocationForPath($file_path, self::FILE_CONTENTS_CACHE_DIRECTORY, true);
-
-        file_put_contents($cache_location, $file_contents, LOCK_EX);
+        $this->cache->saveItem($cache_location, $file_contents);
     }
 
     public function deleteOldParserCaches(float $time_before): int
     {
-        $cache_directory = $this->config->getCacheDirectory();
+        $cache_directory = $this->cache->getCacheDirectory();
 
         $this->existing_file_content_hashes = null;
         $this->new_file_content_hashes = [];
@@ -328,8 +317,8 @@ class ParserCacheProvider
                     continue;
                 }
 
-                if (filemtime($full_path) < $time_before && is_writable($full_path)) {
-                    unlink($full_path);
+                if (filemtime($full_path) < $time_before) {
+                    $this->cache->deleteItem($full_path);
                     ++$removed_count;
                 }
             }
@@ -346,7 +335,7 @@ class ParserCacheProvider
             $hash = hash('md4', $file_path);
         }
 
-        return $hash . ($this->config->use_igbinary ? '-igbinary' : '') . '-r';
+        return $hash . ($this->cache->use_igbinary ? '-igbinary' : '') . '-r';
     }
 
 
@@ -355,7 +344,7 @@ class ParserCacheProvider
         string $subdirectory,
         bool $create_directory = false
     ): string {
-        $root_cache_directory = $this->config->getCacheDirectory();
+        $root_cache_directory = $this->cache->getCacheDirectory();
 
         if (!$root_cache_directory) {
             throw new UnexpectedValueException('No cache directory defined');

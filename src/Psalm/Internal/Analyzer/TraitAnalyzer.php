@@ -5,13 +5,14 @@ namespace Psalm\Internal\Analyzer;
 use PhpParser\Node\Stmt\Trait_;
 use Psalm\Aliases;
 use Psalm\Context;
+use Psalm\IssueBuffer;
 
 use function assert;
 
 /**
  * @internal
  */
-class TraitAnalyzer extends ClassLikeAnalyzer
+final class TraitAnalyzer extends ClassLikeAnalyzer
 {
     private Aliases $aliases;
 
@@ -80,5 +81,9 @@ class TraitAnalyzer extends ClassLikeAnalyzer
             AttributesAnalyzer::TARGET_CLASS,
             $storage->suppressed_issues + $statements_analyzer->getSuppressedIssues(),
         );
+
+        foreach ($storage->docblock_issues as $docblock_issue) {
+            IssueBuffer::maybeAdd($docblock_issue);
+        }
     }
 }

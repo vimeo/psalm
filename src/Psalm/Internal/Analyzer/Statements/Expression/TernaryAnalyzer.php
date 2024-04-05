@@ -38,7 +38,7 @@ use function spl_object_id;
 /**
  * @internal
  */
-class TernaryAnalyzer
+final class TernaryAnalyzer
 {
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
@@ -139,7 +139,7 @@ class TernaryAnalyzer
             $ternary_context_clauses = array_values(
                 array_filter(
                     $ternary_context_clauses,
-                    static fn(Clause $c): bool => !in_array($c->hash, $reconciled_expression_clauses)
+                    static fn(Clause $c): bool => !in_array($c->hash, $reconciled_expression_clauses),
                 ),
             );
 

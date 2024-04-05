@@ -22,7 +22,7 @@ use function strtolower;
 /**
  * @internal
  */
-class TypeTokenizer
+final class TypeTokenizer
 {
     /**
      * @var array<string, bool>
@@ -41,6 +41,7 @@ class TypeTokenizer
         'non-empty-array' => true,
         'non-empty-string' => true,
         'non-falsy-string' => true,
+        'truthy-string' => true,
         'iterable' => true,
         'null' => true,
         'mixed' => true,
@@ -60,6 +61,9 @@ class TypeTokenizer
         'lowercase-string' => true,
         'non-empty-lowercase-string' => true,
         'positive-int' => true,
+        'non-negative-int' => true,
+        'negative-int' => true,
+        'non-positive-int' => true,
         'literal-int' => true,
         'boolean' => true,
         'integer' => true,
@@ -104,7 +108,6 @@ class TypeTokenizer
      * contains the string token and the second element contains its offset,
      *
      * @return list<array{0: string, 1: int}>
-     * @psalm-suppress PossiblyUndefinedIntArrayOffset
      */
     public static function tokenize(string $string_type, bool $ignore_space = true): array
     {

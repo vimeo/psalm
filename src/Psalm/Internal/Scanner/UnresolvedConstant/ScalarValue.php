@@ -8,7 +8,7 @@ use Psalm\Internal\Scanner\UnresolvedConstantComponent;
  * @psalm-immutable
  * @internal
  */
-class ScalarValue extends UnresolvedConstantComponent
+final class ScalarValue extends UnresolvedConstantComponent
 {
     /** @var string|int|float|bool|null */
     public $value;

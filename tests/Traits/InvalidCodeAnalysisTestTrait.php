@@ -11,15 +11,31 @@ use function str_replace;
 use function strpos;
 use function strtoupper;
 use function substr;
-use function version_compare;
 
 use const PHP_OS;
-use const PHP_VERSION;
+use const PHP_VERSION_ID;
 
+/**
+ * @psalm-type DeprecatedDataProviderArrayNotation = array{
+ *     code: string,
+ *     error_message: string,
+ *     ignored_issues?: list<string>,
+ *     php_version?: string
+ * }
+ * @psalm-type NamedArgumentsDataProviderArrayNotation = array{
+ *     code: string,
+ *     error_message: string,
+ *     error_levels?: list<string>,
+ *     php_version?: string
+ * }
+ */
 trait InvalidCodeAnalysisTestTrait
 {
     /**
-     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:list<string>,php_version?:string}>
+     * @return iterable<
+     *     string,
+     *     DeprecatedDataProviderArrayNotation|NamedArgumentsDataProviderArrayNotation
+     * >
      */
     abstract public function providerInvalidCodeParse(): iterable;
 
@@ -32,15 +48,28 @@ trait InvalidCodeAnalysisTestTrait
         string $code,
         string $error_message,
         array  $error_levels = [],
-        string $php_version = '7.3'
+        ?string $php_version = null
     ): void {
         $test_name = $this->getTestName();
         if (strpos($test_name, 'PHP80-') !== false) {
-            if (version_compare(PHP_VERSION, '8.0.0', '<')) {
+            if (PHP_VERSION_ID < 8_00_00) {
                 $this->markTestSkipped('Test case requires PHP 8.0.');
+            }
+
+            if ($php_version === null) {
+                $php_version = '8.0';
             }
         } elseif (strpos($test_name, 'SKIPPED-') !== false) {
             $this->markTestSkipped('Skipped due to a bug.');
+        }
+
+        if ($php_version === null) {
+            $php_version = '7.4';
+        }
+
+        // sanity check - do we have a PHP tag?
+        if (strpos($code, '<?php') === false) {
+            $this->fail('Test case must have a <?php tag');
         }
 
         if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
@@ -65,6 +94,7 @@ trait InvalidCodeAnalysisTestTrait
         $this->expectExceptionMessageMatches('/\b' . preg_quote($error_message, '/') . '\b/');
 
         $codebase = $this->project_analyzer->getCodebase();
+        $codebase->enterServerMode();
         $codebase->config->visitPreloadedStubFiles($codebase);
 
         $this->addFile($file_path, $code);

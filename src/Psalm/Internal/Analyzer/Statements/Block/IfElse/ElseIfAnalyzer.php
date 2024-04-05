@@ -40,7 +40,7 @@ use function spl_object_id;
 /**
  * @internal
  */
-class ElseIfAnalyzer
+final class ElseIfAnalyzer
 {
     /**
      * @return false|null
@@ -144,7 +144,7 @@ class ElseIfAnalyzer
             $elseif_context_clauses = array_values(
                 array_filter(
                     $elseif_context_clauses,
-                    static fn(Clause $c): bool => !in_array($c->hash, $reconciled_expression_clauses, true)
+                    static fn(Clause $c): bool => !in_array($c->hash, $reconciled_expression_clauses, true),
                 ),
             );
         }
@@ -358,16 +358,6 @@ class ElseIfAnalyzer
                         $elseif_context->inside_loop,
                         new CodeLocation($statements_analyzer->getSource(), $elseif, $outer_context->include_location),
                     );
-
-                $updated_vars = [];
-
-                $outer_context->update(
-                    $elseif_context,
-                    $implied_outer_context,
-                    false,
-                    array_keys($negated_elseif_types),
-                    $updated_vars,
-                );
             }
         }
 

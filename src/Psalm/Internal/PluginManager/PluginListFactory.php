@@ -7,16 +7,14 @@ use RuntimeException;
 
 use function array_filter;
 use function json_encode;
-use function rtrim;
 use function urlencode;
 
-use const DIRECTORY_SEPARATOR;
 use const JSON_THROW_ON_ERROR;
 
 /**
  * @internal
  */
-class PluginListFactory
+final class PluginListFactory
 {
     private string $project_root;
 
@@ -53,13 +51,13 @@ class PluginListFactory
         if ($this->psalm_root === $this->project_root) {
             // managing plugins for psalm itself
             $composer_lock_filenames = [
-                Composer::getLockFilePath(rtrim($this->psalm_root, DIRECTORY_SEPARATOR)),
+                Composer::getLockFilePath($this->psalm_root),
             ];
         } else {
             $composer_lock_filenames = [
-                Composer::getLockFilePath(rtrim($this->project_root, DIRECTORY_SEPARATOR)),
-                Composer::getLockFilePath(rtrim($this->psalm_root, DIRECTORY_SEPARATOR) . '/../../..'),
-                Composer::getLockFilePath(rtrim($this->psalm_root, DIRECTORY_SEPARATOR)),
+                Composer::getLockFilePath($this->project_root),
+                Composer::getLockFilePath($this->psalm_root . '/../../..'),
+                Composer::getLockFilePath($this->psalm_root),
             ];
         }
 

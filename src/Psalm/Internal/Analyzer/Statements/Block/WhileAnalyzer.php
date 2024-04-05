@@ -16,7 +16,7 @@ use function in_array;
 /**
  * @internal
  */
-class WhileAnalyzer
+final class WhileAnalyzer
 {
     /**
      * @return  false|null
@@ -26,7 +26,8 @@ class WhileAnalyzer
         PhpParser\Node\Stmt\While_ $stmt,
         Context $context
     ): ?bool {
-        $while_true = ($stmt->cond instanceof PhpParser\Node\Expr\ConstFetch && $stmt->cond->name->parts === ['true'])
+        $while_true = ($stmt->cond instanceof PhpParser\Node\Expr\ConstFetch
+                && $stmt->cond->name->getParts() === ['true'])
             || (($t = $statements_analyzer->node_data->getType($stmt->cond))
                 && $t->isAlwaysTruthy());
 

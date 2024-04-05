@@ -653,6 +653,285 @@ class TypeAnnotationTest extends TestCase
                     '$output===' => 'list<1|2>',
                 ],
             ],
+            'callableWithReturnTypeTypeAliasWithinBackets' => [
+                'code' => '<?php
+                    /** @psalm-type TCallback (callable():int) */
+                    class Foo {
+                        /** @psalm-var TCallback */
+                        public static callable $callback;
+                    }
+                    $output = Foo::$callback;
+                ',
+                'assertions' => [
+                    '$output===' => 'callable():int',
+                ],
+            ],
+            'callableWithReturnTypeTypeAlias' => [
+                'code' => '<?php
+                    /** @psalm-type TCallback callable():int */
+                    class Foo {
+                        /** @psalm-var TCallback */
+                        public static callable $callback;
+                    }
+                    $output = Foo::$callback;
+                ',
+                'assertions' => [
+                    '$output===' => 'callable():int',
+                ],
+            ],
+            'callableFormats' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type A callable(int, int): string
+                     * @psalm-type B callable(int, int=): string
+                     * @psalm-type C callable(int $a, string $b): void
+                     * @psalm-type D callable(string $c): mixed
+                     * @psalm-type E callable(string $c): mixed
+                     * @psalm-type F callable(float...): (int|null)
+                     * @psalm-type G callable(float ...$d): (int|null)
+                     * @psalm-type H callable(array<int>): array<string>
+                     * @psalm-type I callable(array<string, int> $e): array<int, string>
+                     * @psalm-type J callable(array<int> ...): string
+                     * @psalm-type K callable(array<int> ...$e): string
+                     * @psalm-type L \Closure(int, int): string
+                     *
+                     * @method ma(): A
+                     * @method mb(): B
+                     * @method mc(): C
+                     * @method md(): D
+                     * @method me(): E
+                     * @method mf(): F
+                     * @method mg(): G
+                     * @method mh(): H
+                     * @method mi(): I
+                     * @method mj(): J
+                     * @method mk(): K
+                     * @method ml(): L
+                     */
+                    class Foo {
+                        public function __call(string $method, array $params) { return 1; }
+                    }
+
+                    $foo = new \Foo();
+                    $output_ma = $foo->ma();
+                    $output_mb = $foo->mb();
+                    $output_mc = $foo->mc();
+                    $output_md = $foo->md();
+                    $output_me = $foo->me();
+                    $output_mf = $foo->mf();
+                    $output_mg = $foo->mg();
+                    $output_mh = $foo->mh();
+                    $output_mi = $foo->mi();
+                    $output_mj = $foo->mj();
+                    $output_mk = $foo->mk();
+                    $output_ml = $foo->ml();
+                ',
+                'assertions' => [
+                    '$output_ma===' => 'callable(int, int):string',
+                    '$output_mb===' => 'callable(int, int=):string',
+                    '$output_mc===' => 'callable(int, string):void',
+                    '$output_md===' => 'callable(string):mixed',
+                    '$output_me===' => 'callable(string):mixed',
+                    '$output_mf===' => 'callable(float...):(int|null)',
+                    '$output_mg===' => 'callable(float...):(int|null)',
+                    '$output_mh===' => 'callable(array<array-key, int>):array<array-key, string>',
+                    '$output_mi===' => 'callable(array<string, int>):array<int, string>',
+                    '$output_mj===' => 'callable(array<array-key, int>...):string',
+                    '$output_mk===' => 'callable(array<array-key, int>...):string',
+                    '$output_ml===' => 'Closure(int, int):string',
+                ],
+            ],
+            'unionOfStringsContainingBraceChar' => [
+                'code' => '<?php
+                    /** @psalm-type T \'{\'|\'}\' */
+                    class Foo {
+                        /** @psalm-var T */
+                        public static string $t;
+                    }
+                    $t = Foo::$t;
+                ',
+                'assertions' => [
+                    '$t===' => '\'{\'|\'}\'',
+                ],
+            ],
+            'unionOfStringsContainingGTChar' => [
+                'code' => '<?php
+                    /** @psalm-type T \'<\'|\'>\' */
+                    class Foo {
+                        /** @psalm-var T */
+                        public static string $t;
+                    }
+                    $t = Foo::$t;
+                ',
+                'assertions' => [
+                    '$t===' => '\'<\'|\'>\'',
+                ],
+            ],
+            'unionOfStringsContainingBracketChar' => [
+                'code' => '<?php
+                    /** @psalm-type T \'(\'|\')\' */
+                    class Foo {
+                        /** @psalm-var T */
+                        public static string $t;
+                    }
+                    $t = Foo::$t;
+                ',
+                'assertions' => [
+                    '$t===' => '\'(\'|\')\'',
+                ],
+            ],
+            'bareWordsCommentAfterType' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type T string
+                     *
+                     * Lorem ipsum
+                     */
+                    class Foo {
+                        /** @psalm-var T */
+                        public static string $t;
+                    }
+                    $t = Foo::$t;
+                ',
+                'assertions' => [
+                    '$t===' => 'string',
+                ],
+            ],
+            'handlesTypeWhichEndsWithRoundBracket' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type Foo=(iterable<mixed>)
+                     */
+                    class A {}
+                    ',
+            ],
+            'commentAfterType' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type TTest string
+                     *
+                     * This is a test class.
+                     */
+                    class Test {}',
+            ],
+            'multilineTypeWithComment' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type PhoneType = array{
+                     *    phone: string
+                     * }
+                     *
+                     * Bar
+                     */
+                    class Foo {
+                        /** @var PhoneType */
+                        public static $phone;
+                    }
+                    $output = Foo::$phone;
+                    ',
+                'assertions' => [
+                    '$output===' => 'array{phone: string}',
+                ],
+            ],
+            'combineAliasOfArrayAndArrayCorrectly' => [
+                'code' => '<?php
+
+                    /**
+                     * @psalm-type C = array{c: string}
+                     */
+                    class A {}
+
+                    /**
+                     * @template F
+                     */
+                    class D {
+                        /**
+                         * @param F $data
+                         */
+                        public function __construct(public $data) {}
+                    }
+
+
+                    /**
+                     * @psalm-import-type C from A
+                     */
+                    class G {
+
+                        /**
+                         * @param D<array{b: bool}>|D<C> $_doesNotWork
+                         */
+                        public function doesNotWork($_doesNotWork): void {
+                            /** @psalm-check-type-exact $_doesNotWork = D<array{b?: bool, c?: string}> */;
+                        }
+                    }',
+            ],
+            'importFromEnum' => [
+                'code' => <<<'PHP'
+                <?php
+                /** @psalm-type _Foo = array{foo: string} */
+                enum E {}
+                /**
+                 * @psalm-import-type _Foo from E
+                 */
+                class C {
+                    /** @param _Foo $foo */
+                    public function f(array $foo): void {
+                        echo $foo['foo'];
+                    }
+                }
+                PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'importFromTrait' => [
+                'code' => <<<'PHP'
+                <?php
+                /** @psalm-type _Foo = array{foo: string} */
+                trait T {}
+
+                /** @psalm-import-type _Foo from T */
+                class C {
+                    /** @param _Foo $foo */
+                    public function f(array $foo): void {
+                        echo $foo['foo'];
+                    }
+                }
+                PHP,
+            ],
+            'inlineComments' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @psalm-type Foo=array{
+                     *   a: string, // comment
+                     *   b: string, // comment
+                     * }
+                     */
+                    class A {
+                        /**
+                         * @psalm-param Foo $foo
+                         */
+                        public function bar(array $foo): void {}
+                    }
+                PHP,
+            ],
+            'typeWithMultipleSpaces' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @psalm-type Foo      =     string
+                     * @psalm-type Bar           int
+                     */
+                    class A {
+                        /**
+                         * @psalm-param Foo $foo
+                         * @psalm-param Bar $bar
+                         */
+                        public function bar(string $foo, int $bar): void {}
+                    }
+                PHP,
+            ],
         ];
     }
 
@@ -875,6 +1154,89 @@ class TypeAnnotationTest extends TestCase
                      */
                     class C implements B {}',
                 'error_message' => 'UndefinedDocblockClass',
+            ],
+            'duplicateKeyInArrayShapeOnInterfaceIsReported' => [
+                'code' => <<<'PHP'
+                    <?php
+
+                    /**
+                     * @psalm-type Attributes = array{
+                     *   name: string,
+                     *   email: string,
+                     *   email: string,
+                     * }
+                     */
+                    interface A {
+                        /**
+                         * @return Attributes
+                         */
+                        public function getAttributes(): array;
+                    }
+                    PHP,
+                'error_message' => 'InvalidDocblock',
+            ],
+            'duplicateKeyInArrayShapeOnAClassIsReported' => [
+                'code' => <<<'PHP'
+                    <?php
+
+                    /**
+                     * @psalm-type Attributes = array{
+                     *   name: string,
+                     *   email: string,
+                     *   email: string,
+                     * }
+                     */
+                    class A {
+                        /**
+                         * @return Attributes
+                         */
+                        public function getAttributes(): array {
+                            return [];
+                        }
+                    }
+                    PHP,
+                'error_message' => 'InvalidDocblock',
+            ],
+            'duplicateKeyInArrayShapeOnATraitIsReported' => [
+                'code' => <<<'PHP'
+                    <?php
+
+                    /**
+                     * @psalm-type Attributes = array{
+                     *   name: string,
+                     *   email: string,
+                     *   email: string,
+                     * }
+                     */
+                    trait A {
+                        /**
+                         * @return Attributes
+                         */
+                        public function getAttributes(): array {
+                            return [];
+                        }
+                    }
+                    PHP,
+                'error_message' => 'InvalidDocblock',
+            ],
+            'duplicateKeyInArrayShapeOnAnEnumIsReported' => [
+                'code' => <<<'PHP'
+                    <?php
+
+                    /**
+                     * @psalm-type Attributes = array{
+                     *   name: string,
+                     *   email: string,
+                     *   email: string,
+                     * }
+                     */
+                    enum A {
+                        case FOO;
+                    }
+                    PHP,
+                'error_message' => 'InvalidDocblock',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
         ];
     }

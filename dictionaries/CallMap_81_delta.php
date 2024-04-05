@@ -52,12 +52,53 @@ return [
     'ReflectionFunctionAbstract::hasTentativeReturnType' => ['bool'],
     'ReflectionFunctionAbstract::isStatic' => ['bool'],
     'ReflectionObject::isEnum' => ['bool'],
+    'ReflectionProperty::isReadonly' => ['bool'],
     'sodium_crypto_stream_xchacha20' => ['non-empty-string', 'length'=>'positive-int', 'nonce'=>'non-empty-string', 'key'=>'non-empty-string'],
     'sodium_crypto_stream_xchacha20_keygen' => ['non-empty-string'],
     'sodium_crypto_stream_xchacha20_xor' => ['string', 'message'=>'string', 'nonce'=>'non-empty-string', 'key'=>'non-empty-string'],
   ],
 
   'changed' => [
+    'DOMDocument::createComment' => [
+      'old' => ['DOMComment|false', 'data'=>'string'],
+      'new' => ['DOMComment', 'data'=>'string'],
+    ],
+    'DOMDocument::createDocumentFragment' => [
+      'old' => ['DOMDocumentFragment|false'],
+      'new' => ['DOMDocumentFragment'],
+    ],
+    'DOMDocument::createTextNode' => [
+      'old' => ['DOMText|false', 'data'=>'string'],
+      'new' => ['DOMText', 'data'=>'string'],
+    ],
+    'Phar::buildFromDirectory' => [
+      'old' => ['array|false', 'directory'=>'string', 'pattern='=>'string'],
+      'new' => ['array', 'directory'=>'string', 'pattern='=>'string'],
+    ],
+    'Phar::buildFromIterator' => [
+      'old' => ['array|false', 'iterator'=>'Traversable', 'baseDirectory='=>'?string'],
+      'new' => ['array', 'iterator'=>'Traversable', 'baseDirectory='=>'?string'],
+    ],
+    'PharData::buildFromDirectory' => [
+        'old' => ['array|false', 'directory'=>'string', 'pattern='=>'string'],
+        'new' => ['array', 'directory'=>'string', 'pattern='=>'string'],
+    ],
+    'PharData::buildFromIterator' => [
+      'old' => ['array|false', 'iterator'=>'Traversable', 'baseDirectory='=>'?string'],
+      'new' => ['array', 'iterator'=>'Traversable', 'baseDirectory='=>'?string'],
+    ],
+    'SplFileObject::fputcsv' => [
+      'old' => ['int|false', 'fields'=>'array<array-key, null|scalar|Stringable>', 'separator='=>'string', 'enclosure='=>'string', 'escape='=>'string'],
+      'new' => ['int|false', 'fields'=>'array<array-key, null|scalar|Stringable>', 'separator='=>'string', 'enclosure='=>'string', 'escape='=>'string', 'eol='=>'string'],
+    ],
+    'SplTempFileObject::fputcsv' => [
+      'old' => ['int|false', 'fields'=>'array<array-key, null|scalar|Stringable>', 'separator='=>'string', 'enclosure='=>'string', 'escape='=>'string'],
+      'new' => ['int|false', 'fields'=>'array<array-key, null|scalar|Stringable>', 'separator='=>'string', 'enclosure='=>'string', 'escape='=>'string', 'eol='=>'string'],
+    ],
+    'hash_pbkdf2' => [
+      'old' => ['non-empty-string', 'algo'=>'string', 'password'=>'string', 'salt'=>'string', 'iterations'=>'int', 'length='=>'int', 'binary='=>'bool'],
+      'new' => ['non-empty-string', 'algo'=>'string', 'password'=>'string', 'salt'=>'string', 'iterations'=>'int', 'length='=>'int', 'binary='=>'bool', 'options=' => 'array'],
+    ],
     'finfo_buffer' => [
        'old' => ['string|false', 'finfo'=>'resource', 'string'=>'string', 'flags='=>'int', 'context='=>'resource'],
        'new' => ['string|false', 'finfo'=>'finfo', 'string'=>'string', 'flags='=>'int', 'context='=>'resource'],
@@ -223,8 +264,8 @@ return [
       'new' => ['bool', 'ftp' => 'FTP\Connection', 'option' => 'int', 'value' => 'mixed'],
     ],
     'ftp_get_option' => [
-      'old' => ['mixed|false', 'ftp' => 'resource', 'option' => 'int'],
-      'new' => ['mixed|false', 'ftp' => 'FTP\Connection', 'option' => 'int'],
+      'old' => ['int|false', 'ftp' => 'resource', 'option' => 'int'],
+      'new' => ['int|false', 'ftp' => 'FTP\Connection', 'option' => 'int'],
     ],
     'hash' => [
       'old' => ['non-empty-string', 'algo'=>'string', 'data'=>'string', 'binary='=>'bool'],
@@ -238,9 +279,9 @@ return [
       'old' => ['HashContext', 'algo'=>'string', 'flags='=>'int', 'key='=>'string'],
       'new' => ['HashContext', 'algo'=>'string', 'flags='=>'int', 'key='=>'string', 'options='=>'array{seed:scalar}'],
     ],
-    'imageinterlace' => [
-      'old' => ['int|bool', 'image'=>'GdImage', 'enable='=>'bool|null'],
-      'new' => ['bool', 'image'=>'GdImage', 'enable='=>'bool|null'],
+    'imageloadfont' => [
+      'old' => ['int|false', 'filename'=>'string'],
+      'new' => ['GdFont|false', 'filename'=>'string'],
     ],
     'imap_append' => [
         'old' => ['bool', 'imap'=>'resource', 'folder'=>'string', 'message'=>'string', 'options='=>'?string', 'internal_date='=>'?string'],
@@ -371,24 +412,24 @@ return [
         'new' => ['bool', 'imap'=>'IMAP\Connection', 'message_nums'=>'string', 'mailbox'=>'string', 'flags='=>'int'],
     ],
     'imap_mailboxmsginfo' => [
-        'old' => ['stdClass|false', 'imap'=>'resource'],
-        'new' => ['stdClass|false', 'imap'=>'IMAP\Connection'],
+        'old' => ['stdClass', 'imap'=>'resource'],
+        'new' => ['stdClass', 'imap'=>'IMAP\Connection'],
     ],
     'imap_msgno' => [
-        'old' => ['int|false', 'imap'=>'resource', 'message_uid'=>'int'],
-        'new' => ['int|false', 'imap'=>'IMAP\Connection', 'message_uid'=>'int'],
+        'old' => ['int', 'imap'=>'resource', 'message_uid'=>'int'],
+        'new' => ['int', 'imap'=>'IMAP\Connection', 'message_uid'=>'int'],
     ],
     'imap_num_msg' => [
         'old' => ['int|false', 'imap'=>'resource'],
         'new' => ['int|false', 'imap'=>'IMAP\Connection'],
     ],
     'imap_num_recent' => [
-        'old' => ['int|false', 'imap'=>'resource'],
-        'new' => ['int|false', 'imap'=>'IMAP\Connection'],
+        'old' => ['int', 'imap'=>'resource'],
+        'new' => ['int', 'imap'=>'IMAP\Connection'],
     ],
     'imap_open' => [
-        'old' => ['resource|false', 'mailbox'=>'string', 'user'=>'string', 'password'=>'string', 'flags='=>'int', 'retries='=>'int', 'options='=>'?array'],
-        'new' => ['IMAP\Connection|false', 'mailbox'=>'string', 'user'=>'string', 'password'=>'string', 'flags='=>'int', 'retries='=>'int', 'options='=>'?array'],
+        'old' => ['resource|false', 'mailbox'=>'string', 'user'=>'string', 'password'=>'string', 'flags='=>'int', 'retries='=>'int', 'options='=>'array'],
+        'new' => ['IMAP\Connection|false', 'mailbox'=>'string', 'user'=>'string', 'password'=>'string', 'flags='=>'int', 'retries='=>'int', 'options='=>'array'],
     ],
     'imap_ping' => [
         'old' => ['bool', 'imap'=>'resource'],
@@ -435,8 +476,8 @@ return [
         'new' => ['bool', 'imap'=>'IMAP\Connection', 'sequence'=>'string', 'flag'=>'string', 'options='=>'int'],
     ],
     'imap_sort' => [
-        'old' => ['array|false', 'imap'=>'resource', 'criteria'=>'int', 'reverse'=>'int', 'flags='=>'int', 'search_criteria='=>'string', 'charset='=>'string'],
-        'new' => ['array|false', 'imap'=>'IMAP\Connection', 'criteria'=>'int', 'reverse'=>'int', 'flags='=>'int', 'search_criteria='=>'string', 'charset='=>'string'],
+        'old' => ['array|false', 'imap'=>'resource', 'criteria'=>'int', 'reverse'=>'bool', 'flags='=>'int', 'search_criteria='=>'?string', 'charset='=>'?string'],
+        'new' => ['array|false', 'imap'=>'IMAP\Connection', 'criteria'=>'int', 'reverse'=>'bool', 'flags='=>'int', 'search_criteria='=>'?string', 'charset='=>'?string'],
     ],
     'imap_status' => [
         'old' => ['stdClass|false', 'imap'=>'resource', 'mailbox'=>'string', 'flags'=>'int'],
@@ -499,7 +540,7 @@ return [
       'new' => ['bool', 'ldap'=>'LDAP\Connection'],
     ],
     'ldap_compare' => [
-      'old' => ['bool|int', 'ldap'=>'resource', 'dn'=>'string', 'attribute'=>'string', 'value'=>'string'],
+      'old' => ['bool|int', 'ldap'=>'resource', 'dn'=>'string', 'attribute'=>'string', 'value'=>'string', 'controls='=>'?array'],
       'new' => ['bool|int', 'ldap'=>'LDAP\Connection', 'dn'=>'string', 'attribute'=>'string', 'value'=>'string', 'controls='=>'?array'],
     ],
     'ldap_connect' => [
@@ -507,11 +548,11 @@ return [
       'new' => ['LDAP\Connection|false', 'uri='=>'?string', 'port='=>'int', 'wallet='=>'string', 'password='=>'string', 'auth_mode='=>'int'],
     ],
     'ldap_count_entries' => [
-      'old' => ['int|false', 'ldap'=>'resource', 'result'=>'resource'],
-      'new' => ['int|false', 'ldap'=>'LDAP\Connection', 'result'=>'LDAP\Result'],
+      'old' => ['int', 'ldap'=>'resource', 'result'=>'resource'],
+      'new' => ['int', 'ldap'=>'LDAP\Connection', 'result'=>'LDAP\Result'],
     ],
     'ldap_delete' => [
-      'old' => ['bool', 'ldap'=>'resource', 'dn'=>'string'],
+      'old' => ['bool', 'ldap'=>'resource', 'dn'=>'string', 'controls='=>'?array'],
       'new' => ['bool', 'ldap'=>'LDAP\Connection', 'dn'=>'string', 'controls='=>'?array'],
     ],
     'ldap_delete_ext' => [
@@ -559,8 +600,8 @@ return [
       'new' => ['bool', 'result'=>'LDAP\Result'],
     ],
     'ldap_get_attributes' => [
-      'old' => ['array|false', 'ldap'=>'resource', 'entry'=>'resource'],
-      'new' => ['array|false', 'ldap'=>'LDAP\Connection', 'entry'=>'LDAP\ResultEntry'],
+      'old' => ['array', 'ldap'=>'resource', 'entry'=>'resource'],
+      'new' => ['array', 'ldap'=>'LDAP\Connection', 'entry'=>'LDAP\ResultEntry'],
     ],
     'ldap_get_dn' => [
       'old' => ['string|false', 'ldap'=>'resource', 'entry'=>'resource'],
@@ -571,8 +612,8 @@ return [
       'new' => ['array|false', 'ldap'=>'LDAP\Connection', 'result'=>'LDAP\Result'],
     ],
     'ldap_get_option' => [
-      'old' => ['bool', 'ldap'=>'resource', 'option'=>'int', '&w_value'=>'mixed'],
-      'new' => ['bool', 'ldap'=>'LDAP\Connection', 'option'=>'int', '&w_value='=>'array|string|int|null'],
+      'old' => ['bool', 'ldap'=>'resource', 'option'=>'int', '&w_value='=>'array|string|int'],
+      'new' => ['bool', 'ldap'=>'LDAP\Connection', 'option'=>'int', '&w_value='=>'array|string|int'],
     ],
     'ldap_get_values' => [
       'old' => ['array|false', 'ldap'=>'resource', 'entry'=>'resource', 'attribute'=>'string'],
@@ -583,11 +624,11 @@ return [
       'new' => ['array|false', 'ldap'=>'LDAP\Connection', 'entry'=>'LDAP\ResultEntry', 'attribute'=>'string'],
     ],
     'ldap_list' => [
-      'old' => ['resource|false', 'ldap'=>'resource|array', 'base'=>'string', 'filter'=>'string', 'attributes='=>'array', 'attributes_only='=>'int', 'sizelimit='=>'int', 'timelimit='=>'int', 'deref='=>'int'],
-      'new' => ['LDAP\Result|LDAP\Result[]|false', 'ldap'=>'LDAP\Connection|LDAP\Connection[]', 'base'=>'string', 'filter'=>'string', 'attributes='=>'array', 'attributes_only='=>'int', 'sizelimit='=>'int', 'timelimit='=>'int', 'deref='=>'int', 'controls='=>'?array'],
+      'old' => ['resource|false', 'ldap'=>'resource|array', 'base'=>'array|string', 'filter'=>'array|string', 'attributes='=>'array', 'attributes_only='=>'int', 'sizelimit='=>'int', 'timelimit='=>'int', 'deref='=>'int', 'controls='=>'?array'],
+      'new' => ['LDAP\Result|LDAP\Result[]|false', 'ldap'=>'LDAP\Connection|LDAP\Connection[]', 'base'=>'array|string', 'filter'=>'array|string', 'attributes='=>'array', 'attributes_only='=>'int', 'sizelimit='=>'int', 'timelimit='=>'int', 'deref='=>'int', 'controls='=>'?array'],
     ],
     'ldap_mod_add' => [
-      'old' => ['bool', 'ldap'=>'resource', 'dn'=>'string', 'entry'=>'array'],
+      'old' => ['bool', 'ldap'=>'resource', 'dn'=>'string', 'entry'=>'array', 'controls='=>'?array'],
       'new' => ['bool', 'ldap'=>'LDAP\Connection', 'dn'=>'string', 'entry'=>'array', 'controls='=>'?array'],
     ],
     'ldap_mod_add_ext' => [
@@ -595,7 +636,7 @@ return [
       'new' => ['LDAP\Result|false', 'ldap'=>'LDAP\Connection', 'dn'=>'string', 'entry'=>'array', 'controls='=>'?array'],
     ],
     'ldap_mod_del' => [
-      'old' => ['bool', 'ldap'=>'resource', 'dn'=>'string', 'entry'=>'array'],
+      'old' => ['bool', 'ldap'=>'resource', 'dn'=>'string', 'entry'=>'array', 'controls='=>'?array'],
       'new' => ['bool', 'ldap'=>'LDAP\Connection', 'dn'=>'string', 'entry'=>'array', 'controls='=>'?array'],
     ],
     'ldap_mod_del_ext' => [
@@ -603,7 +644,7 @@ return [
       'new' => ['LDAP\Result|false', 'ldap'=>'LDAP\Connection', 'dn'=>'string', 'entry'=>'array', 'controls='=>'?array'],
     ],
     'ldap_mod_replace' => [
-      'old' => ['bool', 'ldap'=>'resource', 'dn'=>'string', 'entry'=>'array'],
+      'old' => ['bool', 'ldap'=>'resource', 'dn'=>'string', 'entry'=>'array', 'controls='=>'?array'],
       'new' => ['bool', 'ldap'=>'LDAP\Connection', 'dn'=>'string', 'entry'=>'array', 'controls='=>'?array'],
     ],
     'ldap_mod_replace_ext' => [
@@ -611,11 +652,11 @@ return [
       'new' => ['LDAP\Result|false', 'ldap'=>'LDAP\Connection', 'dn'=>'string', 'entry'=>'array', 'controls='=>'?array'],
     ],
     'ldap_modify' => [
-      'old' => ['bool', 'ldap'=>'resource', 'dn'=>'string', 'entry'=>'array'],
+      'old' => ['bool', 'ldap'=>'resource', 'dn'=>'string', 'entry'=>'array', 'controls='=>'?array'],
       'new' => ['bool', 'ldap'=>'LDAP\Connection', 'dn'=>'string', 'entry'=>'array', 'controls='=>'?array'],
     ],
     'ldap_modify_batch' => [
-      'old' => ['bool', 'ldap'=>'resource', 'dn'=>'string', 'modifications_info'=>'array'],
+      'old' => ['bool', 'ldap'=>'resource', 'dn'=>'string', 'modifications_info'=>'array', 'controls='=>'?array'],
       'new' => ['bool', 'ldap'=>'LDAP\Connection', 'dn'=>'string', 'modifications_info'=>'array', 'controls='=>'?array'],
     ],
     'ldap_next_attribute' => [
@@ -623,7 +664,7 @@ return [
       'new' => ['string|false', 'ldap'=>'LDAP\Connection', 'entry'=>'LDAP\ResultEntry'],
     ],
     'ldap_next_entry' => [
-      'old' => ['resource|false', 'ldap'=>'resource', 'result'=>'resource'],
+      'old' => ['resource|false', 'ldap'=>'resource', 'entry'=>'resource'],
       'new' => ['LDAP\ResultEntry|false', 'ldap'=>'LDAP\Connection', 'entry'=>'LDAP\ResultEntry'],
     ],
     'ldap_next_reference' => [
@@ -635,7 +676,7 @@ return [
       'new' => ['bool', 'ldap'=>'LDAP\Connection', 'result'=>'LDAP\Result', '&w_response_data='=>'string', '&w_response_oid='=>'string'],
     ],
     'ldap_parse_reference' => [
-      'old' => ['bool', 'ldap'=>'resource', 'entry'=>'resource', 'referrals'=>'array'],
+      'old' => ['bool', 'ldap'=>'resource', 'entry'=>'resource', '&w_referrals'=>'array'],
       'new' => ['bool', 'ldap'=>'LDAP\Connection', 'entry'=>'LDAP\ResultEntry', '&w_referrals'=>'array'],
     ],
     'ldap_parse_result' => [
@@ -643,11 +684,11 @@ return [
       'new' => ['bool', 'ldap'=>'LDAP\Connection', 'result'=>'LDAP\Result', '&w_error_code'=>'int', '&w_matched_dn='=>'string', '&w_error_message='=>'string', '&w_referrals='=>'array', '&w_controls='=>'array'],
     ],
     'ldap_read' => [
-      'old' => ['resource|false', 'ldap'=>'resource|array', 'base'=>'string', 'filter'=>'string', 'attributes='=>'array', 'attributes_only='=>'int', 'sizelimit='=>'int', 'timelimit='=>'int', 'deref='=>'int'],
-      'new' => ['LDAP\Result|LDAP\Result[]|false', 'ldap'=>'LDAP\Connection|LDAP\Connection[]', 'base'=>'string', 'filter'=>'string', 'attributes='=>'array', 'attributes_only='=>'int', 'sizelimit='=>'int', 'timelimit='=>'int', 'deref='=>'int', 'controls='=>'?array'],
+      'old' => ['resource|false', 'ldap'=>'resource|array', 'base'=>'array|string', 'filter'=>'array|string', 'attributes='=>'array', 'attributes_only='=>'int', 'sizelimit='=>'int', 'timelimit='=>'int', 'deref='=>'int', 'controls='=>'?array'],
+      'new' => ['LDAP\Result|LDAP\Result[]|false', 'ldap'=>'LDAP\Connection|LDAP\Connection[]', 'base'=>'array|string', 'filter'=>'array|string', 'attributes='=>'array', 'attributes_only='=>'int', 'sizelimit='=>'int', 'timelimit='=>'int', 'deref='=>'int', 'controls='=>'?array'],
     ],
     'ldap_rename' => [
-      'old' => ['bool', 'ldap'=>'resource', 'dn'=>'string', 'new_rdn'=>'string', 'new_parent'=>'string', 'delete_old_rdn'=>'bool'],
+      'old' => ['bool', 'ldap'=>'resource', 'dn'=>'string', 'new_rdn'=>'string', 'new_parent'=>'string', 'delete_old_rdn'=>'bool', 'controls='=>'?array'],
       'new' => ['bool', 'ldap'=>'LDAP\Connection', 'dn'=>'string', 'new_rdn'=>'string', 'new_parent'=>'string', 'delete_old_rdn'=>'bool', 'controls='=>'?array'],
     ],
     'ldap_rename_ext' => [
@@ -659,8 +700,8 @@ return [
       'new' => ['bool', 'ldap'=>'LDAP\Connection', 'dn='=>'?string', 'password='=>'?string', 'mech='=>'?string', 'realm='=>'?string', 'authc_id='=>'?string', 'authz_id='=>'?string', 'props='=>'?string'],
     ],
     'ldap_search' => [
-      'old' => ['resource|false', 'ldap'=>'resource|resource[]', 'base'=>'string', 'filter'=>'string', 'attributes='=>'array', 'attributes_only='=>'int', 'sizelimit='=>'int', 'timelimit='=>'int', 'deref='=>'int'],
-      'new' => ['LDAP\Result|LDAP\Result[]|false', 'ldap'=>'LDAP\Connection|LDAP\Connection[]', 'base'=>'string', 'filter'=>'string', 'attributes='=>'array', 'attributes_only='=>'int', 'sizelimit='=>'int', 'timelimit='=>'int', 'deref='=>'int', 'controls='=>'?array'],
+      'old' => ['resource[]|resource|false', 'ldap'=>'resource|resource[]', 'base'=>'array|string', 'filter'=>'array|string', 'attributes='=>'array', 'attributes_only='=>'int', 'sizelimit='=>'int', 'timelimit='=>'int', 'deref='=>'int', 'controls='=>'?array'],
+      'new' => ['LDAP\Result|LDAP\Result[]|false', 'ldap'=>'LDAP\Connection|LDAP\Connection[]', 'base'=>'array|string', 'filter'=>'array|string', 'attributes='=>'array', 'attributes_only='=>'int', 'sizelimit='=>'int', 'timelimit='=>'int', 'deref='=>'int', 'controls='=>'?array'],
     ],
     'ldap_set_option' => [
       'old' => ['bool', 'ldap'=>'resource|null', 'option'=>'int', 'value'=>'mixed'],
@@ -782,6 +823,10 @@ return [
       'old' => ['resource|false', 'connection' => 'resource', 'query' => 'string'],
       'new' => ['\PgSql\Result|false', 'connection' => '\PgSql\Connection', 'query' => 'string'],
     ],
+    'pg_exec\'1' => [
+      'old' => ['resource|false', 'connection' => 'string'],
+      'new' => ['\PgSql\Result|false', 'connection' => 'string'],
+    ],
     'pg_execute' => [
       'old' => ['resource|false', 'connection' => 'resource', 'statement_name' => 'string', 'params' => 'array'],
       'new' => ['\PgSql\Result|false', 'connection' => '\PgSql\Connection', 'statement_name' => 'string', 'params' => 'array'],
@@ -791,8 +836,8 @@ return [
       'new' => ['\PgSql\Result|false', 'connection' => 'string', 'statement_name' => 'array'],
     ],
     'pg_fetch_all' => [
-      'old' => ['array<array>', 'result' => 'resource', 'result_type=' => 'int'],
-      'new' => ['array<array>', 'result' => '\PgSql\Result', 'result_type=' => 'int'],
+      'old' => ['array<array>', 'result' => 'resource', 'mode=' => 'int'],
+      'new' => ['array<array>', 'result' => '\PgSql\Result', 'mode=' => 'int'],
     ],
     'pg_fetch_all_columns' => [
       'old' => ['array', 'result' => 'resource', 'field=' => 'int'],
@@ -871,16 +916,16 @@ return [
       'new' => ['bool', 'result' => '\PgSql\Result'],
     ],
     'pg_get_notify' => [
-      'old' => ['array|false', 'result' => 'resource', 'mode=' => 'int'],
-      'new' => ['array|false', 'result' => '\PgSql\Result', 'mode=' => 'int'],
+      'old' => ['array|false', 'connection' => 'resource', 'mode=' => 'int'],
+      'new' => ['array|false', 'connection' => '\PgSql\Connection', 'mode=' => 'int'],
     ],
     'pg_get_pid' => [
       'old' => ['int', 'connection' => 'resource'],
       'new' => ['int', 'connection' => '\PgSql\Connection'],
     ],
     'pg_get_result' => [
-      'old' => ['resource|false', 'connection=' => 'resource'],
-      'new' => ['\PgSql\Result|false', 'connection=' => '\PgSql\Connection'],
+      'old' => ['resource|false', 'connection' => 'resource'],
+      'new' => ['\PgSql\Result|false', 'connection' => '\PgSql\Connection'],
     ],
     'pg_host' => [
       'old' => ['string', 'connection=' => 'resource'],
@@ -975,8 +1020,8 @@ return [
       'new' => ['string|false', 'connection' => '\PgSql\Connection', 'name' => 'string'],
     ],
     'pg_pconnect' => [
-      'old' => ['resource|false', 'connection_string' => 'string', 'flags=' => 'string', 'port=' => 'string|int', 'options=' => 'string', 'tty=' => 'string', 'database=' => 'string'],
-      'new' => ['\PgSql\Connection|false', 'connection_string' => 'string', 'flags=' => 'string', 'port=' => 'string|int', 'options=' => 'string', 'tty=' => 'string', 'database=' => 'string'],
+      'old' => ['resource|false', 'connection_string' => 'string', 'flags=' => 'int'],
+      'new' => ['\PgSql\Connection|false', 'connection_string' => 'string', 'flags=' => 'int'],
     ],
     'pg_ping' => [
       'old' => ['bool', 'connection=' => '?resource'],
@@ -1031,12 +1076,12 @@ return [
       'new' => ['string|int', 'result' => '\PgSql\Result', 'mode=' => 'int'],
     ],
     'pg_select' => [
-      'old' => ['string|array|false', 'connection' => 'resource', 'table_name' => 'string', 'assoc_array' => 'array', 'options=' => 'int', 'result_type=' => 'int'],
-      'new' => ['string|array|false', 'connection' => '\PgSql\Connection', 'table_name' => 'string', 'assoc_array' => 'array', 'options=' => 'int', 'result_type=' => 'int'],
+      'old' => ['string|array|false', 'connection' => 'resource', 'table_name' => 'string', 'conditions' => 'array', 'flags=' => 'int', 'mode='=>'int'],
+      'new' => ['string|array|false', 'connection' => '\PgSql\Connection', 'table_name' => 'string', 'conditions' => 'array', 'flags=' => 'int', 'mode='=>'int'],
     ],
     'pg_send_execute' => [
-      'old' => ['bool|int', 'connection' => 'resource', 'query' => 'string', 'params' => 'array'],
-      'new' => ['bool|int', 'connection' => '\PgSql\Connection', 'query' => 'string', 'params' => 'array'],
+      'old' => ['bool|int', 'connection' => 'resource', 'statement_name' => 'string', 'params' => 'array'],
+      'new' => ['bool|int', 'connection' => '\PgSql\Connection', 'statement_name' => 'string', 'params' => 'array'],
     ],
     'pg_send_prepare' => [
       'old' => ['bool|int', 'connection' => 'resource', 'statement_name' => 'string', 'query' => 'string'],
@@ -1102,6 +1147,10 @@ return [
       'old' => ['bool', 'dictionary'=>'int'],
       'new' => ['bool', 'dictionary'=>'PSpell\Dictionary'],
     ],
+    'pspell_config_create' => [
+      'old' => ['int', 'language'=>'string', 'spelling='=>'string', 'jargon='=>'string', 'encoding='=>'string'],
+      'new' => ['PSpell\Config', 'language'=>'string', 'spelling='=>'string', 'jargon='=>'string', 'encoding='=>'string'],
+    ],
     'pspell_config_data_dir' => [
       'old' => ['bool', 'config'=>'int', 'directory'=>'string'],
       'new' => ['bool', 'config'=>'PSpell\Config', 'directory'=>'string'],
@@ -1134,9 +1183,17 @@ return [
       'old' => ['bool', 'config'=>'int', 'save'=>'bool'],
       'new' => ['bool', 'config'=>'PSpell\Config', 'save'=>'bool'],
     ],
+    'pspell_new' => [
+      'old' => ['int|false', 'language'=>'string', 'spelling='=>'string', 'jargon='=>'string', 'encoding='=>'string', 'mode='=>'int'],
+      'new' => ['PSpell\Dictionary|false', 'language'=>'string', 'spelling='=>'string', 'jargon='=>'string', 'encoding='=>'string', 'mode='=>'int'],
+    ],
     'pspell_new_config' => [
       'old' => ['int|false', 'config'=>'int'],
-      'new' => ['int|false', 'config'=>'PSpell\Config'],
+      'new' => ['PSpell\Dictionary|false', 'config'=>'PSpell\Config'],
+    ],
+    'pspell_new_personal' => [
+      'old' => ['int|false', 'filename'=>'string', 'language'=>'string', 'spelling='=>'string', 'jargon='=>'string', 'encoding='=>'string', 'mode='=>'int'],
+      'new' => ['PSpell\Dictionary|false', 'filename'=>'string', 'language'=>'string', 'spelling='=>'string', 'jargon='=>'string', 'encoding='=>'string', 'mode='=>'int'],
     ],
     'pspell_save_wordlist' => [
       'old' => ['bool', 'dictionary'=>'int'],

@@ -95,6 +95,93 @@ class MatchTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'multipleIdenticalChecksInOneArm' => [
+                'code' => '<?php
+                    function foo(?string $t1, string $t2): string
+                    {
+                        return match ($t1 ?? $t2) {
+                            "type1", "type2", "type3" => "1 or 2 or 3",
+                            "type4", "type5", "type6" => "4 or 5 or 6",
+                            default => "rest",
+                        };
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'multipleInstanceOfConditionsInOneArm' => [
+                'code' => '<?php
+                    interface Foo {}
+                    class A implements Foo {}
+                    class B implements Foo {}
+                    class C {}
+
+                    function baz(A|B $_): int {
+                        return 1;
+                    }
+
+                    function bar(Foo $foo): int {
+                        return match (true) {
+                            $foo instanceof A, $foo instanceof B => baz($foo),
+                            $foo instanceof C => 3,
+                            default => 0,
+                        };
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'multipleTypeCheckConditionsInOneArm' => [
+                'code' => '<?php
+                    function baz(int|string $_): int {
+                        return 1;
+                    }
+
+                    function bar(mixed $foo): int {
+                        return match (true) {
+                            is_string($foo), is_int($foo) => baz($foo),
+                            default => 0,
+                        };
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'matchOnConstClassFetch' => [
+                'code' => '<?php
+                    final class Obj1 {
+                        public string $propFromObj1 = "str";
+                    }
+                    final class Obj2 {
+                        public int $propFromObj2 = 42;
+                    }
+
+                    function process(Obj1|Obj2 $obj): int|string
+                    {
+                        return match ($obj::class) {
+                            Obj1::class => $obj->propFromObj1,
+                            Obj2::class => $obj->propFromObj2,
+                        };
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nullCoalesce' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function foo(): bool { return false; }
+                    $match = match (foo()) {
+                        false => null,
+                        true => 1,
+                    } ?? 2;
+                    PHP,
+                'assertions' => [
+                    '$match' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -240,6 +327,28 @@ class MatchTest extends TestCase
                         $foo instanceof \Exception => 1,
                     };',
                 'error_message' => 'TypeDoesNotContainType',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'multipleInstanceOfConditionsNotMetInOneArm' => [
+                'code' => '<?php
+                    interface Foo {}
+                    class A implements Foo {}
+                    class B implements Foo {}
+                    class C {}
+
+                    function baz(C $_): int {
+                        return 1;
+                    }
+
+                    function bar(Foo $foo): int {
+                        return match (true) {
+                            $foo instanceof A, $foo instanceof B => baz($foo),
+                            $foo instanceof C => 3,
+                            default => 0,
+                        };
+                    }',
+                'error_message' => 'InvalidArgument',
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],

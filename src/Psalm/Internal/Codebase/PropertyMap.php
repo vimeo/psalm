@@ -8,7 +8,7 @@ use function strtolower;
 /**
  * @internal
  */
-class PropertyMap
+final class PropertyMap
 {
     /**
      * @var array<lowercase-string, array<string, string>>|null

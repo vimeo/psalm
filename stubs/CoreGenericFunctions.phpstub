@@ -163,10 +163,25 @@ function array_diff_assoc(array $array, array ...$arrays)
  * @param array<TKey, TValue> $array
  *
  * @psalm-flow ($array) -> return
- * @return array<TValue, TKey>
+ * @return ($array is non-empty-array ? non-empty-array<TValue, TKey> : array<TValue, TKey>)
  * @psalm-pure
  */
 function array_flip(array $array)
+{
+}
+
+/**
+ * @psalm-template TKey as array-key
+ * @psalm-template TValue
+ * @psalm-template TArray as array<TKey, TValue>
+ *
+ * @param TArray $array
+ *
+ * @psalm-flow ($array) -> return
+ * @return (TArray is non-empty-array ? non-empty-array<TKey, TValue> : array<TKey, TValue>)
+ * @psalm-pure
+ */
+function array_unique(array $array, int $flags = 0)
 {
 }
 
@@ -570,15 +585,6 @@ function array_uintersect_uassoc(
 
 /**
  * @psalm-pure
- *
- * @psalm-flow ($array) -> return
- */
-function array_unique(array $array, int $flags = SORT_STRING): array
-{
-}
-
-/**
- * @psalm-pure
  * 
  * @no-named-arguments
  *
@@ -631,10 +637,10 @@ function array_filter(array $array, ?callable $callback = null, int $mode = 0): 
  *
  * @psalm-template TKey
  *
- * @param string $pattern
- * @param array<TKey,string> $array
+ * @param non-empty-string $pattern
+ * @param array<TKey, string> $array
  * @param 0|1 $flags 1=PREG_GREP_INVERT
- * @return array<TKey,string>
+ * @return array<TKey, string>
  */
 function preg_grep($pattern, array $array, $flags = 0)
 {
@@ -794,17 +800,6 @@ function range($start, $end, $step = 1) {}
 /**
  * @psalm-pure
  *
- * @return (
- *     $format is 'd'|'j'|'N'|'w'|'z'|'W'|'m'|'n'|'t'|'L'|'o'|'Y'|'y'|'B'|'g'|'G'|'h'|'H'|'i'|'s'|'u'|'v'|'Z'|'U'|'I'
- *     ? numeric-string
- *     : ($timestamp is numeric ? string : string|false)
- * )
- */
-function date(string $format, int $timestamp = 0) {}
-
-/**
- * @psalm-pure
- *
  * @param mixed $vars
  * @param-out string|int|float|null $vars
  * @psalm-flow ($string, $format) -> return
@@ -862,7 +857,7 @@ function strtoupper(string $string) : string {}
  * @param int|array<int> $offset
  * @param null|int|array<int> $length
  *
- * @return ($string is array<string> ? array<string> : string)
+ * @return ($string is array ? array<string> : string)
  *
  * @psalm-flow ($string, $replace) -> return
  */
@@ -870,12 +865,23 @@ function substr_replace($string, $replace, $offset, $length = null) {}
 
 /**
  * @psalm-pure
- *
  * @param string $haystack
- *
+ * @param string $needle
+ * @param int $offset
+ * @psalm-assert-if-true =non-empty-string $haystack
  * @psalm-return positive-int|0|false
  */
-function strpos($haystack, $needle, int $offset = 0) : int {}
+function strpos(string $haystack, string $needle, int $offset = 0) {}
+
+/**
+ * @psalm-pure
+ * @param string $haystack
+ * @param string $needle
+ * @param int $offset
+ * @psalm-assert-if-true =non-empty-string $haystack
+ * @psalm-return positive-int|0|false
+ */
+function stripos(string $haystack, string $needle, int $offset = 0) {}
 
 /**
  * @psalm-pure
@@ -1018,6 +1024,8 @@ function explode(string $separator, string $string, int $limit = -1) : array {}
 /**
  * @psalm-pure
  *
+ * @param non-empty-string $pattern
+ *
  * @psalm-flow ($subject) -(array-assignment)-> return
  *
  * @template TFlags as int-mask<0, 1, 2, 4>
@@ -1059,20 +1067,82 @@ function array_sum(array $array) {}
 function array_product(array $array) {}
 
 /**
+ * @psalm-pure
+ *
  * 257 is FILTER_VALIDATE_INT
+ * @psalm-taint-escape ($filter is 257 ? 'callable' : null)
+ * @psalm-taint-escape ($filter is 257 ? 'unserialize' : null)
+ * @psalm-taint-escape ($filter is 257 ? 'include' : null)
+ * @psalm-taint-escape ($filter is 257 ? 'eval' : null)
+ * @psalm-taint-escape ($filter is 257 ? 'ldap' : null)
+ * @psalm-taint-escape ($filter is 257 ? 'sql' : null)
  * @psalm-taint-escape ($filter is 257 ? 'html' : null)
+ * @psalm-taint-escape ($filter is 257 ? 'has_quotes' : null)
+ * @psalm-taint-escape ($filter is 257 ? 'shell' : null)
+ * @psalm-taint-escape ($filter is 257 ? 'ssrf' : null)
+ * @psalm-taint-escape ($filter is 257 ? 'file' : null)
+ * @psalm-taint-escape ($filter is 257 ? 'cookie' : null)
+ * @psalm-taint-escape ($filter is 257 ? 'header' : null)
  *
  * 258 is FILTER_VALIDATE_BOOLEAN
+ * @psalm-taint-escape ($filter is 258 ? 'callable' : null)
+ * @psalm-taint-escape ($filter is 258 ? 'unserialize' : null)
+ * @psalm-taint-escape ($filter is 258 ? 'include' : null)
+ * @psalm-taint-escape ($filter is 258 ? 'eval' : null)
+ * @psalm-taint-escape ($filter is 258 ? 'ldap' : null)
+ * @psalm-taint-escape ($filter is 258 ? 'sql' : null)
  * @psalm-taint-escape ($filter is 258 ? 'html' : null)
+ * @psalm-taint-escape ($filter is 258 ? 'has_quotes' : null)
+ * @psalm-taint-escape ($filter is 258 ? 'shell' : null)
+ * @psalm-taint-escape ($filter is 258 ? 'ssrf' : null)
+ * @psalm-taint-escape ($filter is 258 ? 'file' : null)
+ * @psalm-taint-escape ($filter is 258 ? 'cookie' : null)
+ * @psalm-taint-escape ($filter is 258 ? 'header' : null)
  *
  * 259 is FILTER_VALIDATE_FLOAT
+ * @psalm-taint-escape ($filter is 259 ? 'callable' : null)
+ * @psalm-taint-escape ($filter is 259 ? 'unserialize' : null)
+ * @psalm-taint-escape ($filter is 259 ? 'include' : null)
+ * @psalm-taint-escape ($filter is 259 ? 'eval' : null)
+ * @psalm-taint-escape ($filter is 259 ? 'ldap' : null)
+ * @psalm-taint-escape ($filter is 259 ? 'sql' : null)
  * @psalm-taint-escape ($filter is 259 ? 'html' : null)
+ * @psalm-taint-escape ($filter is 259 ? 'has_quotes' : null)
+ * @psalm-taint-escape ($filter is 259 ? 'shell' : null)
+ * @psalm-taint-escape ($filter is 259 ? 'ssrf' : null)
+ * @psalm-taint-escape ($filter is 259 ? 'file' : null)
+ * @psalm-taint-escape ($filter is 259 ? 'cookie' : null)
+ * @psalm-taint-escape ($filter is 259 ? 'header' : null)
  *
  * 519 is FILTER_SANITIZE_NUMBER_INT
+ * @psalm-taint-escape ($filter is 519 ? 'callable' : null)
+ * @psalm-taint-escape ($filter is 519 ? 'unserialize' : null)
+ * @psalm-taint-escape ($filter is 519 ? 'include' : null)
+ * @psalm-taint-escape ($filter is 519 ? 'eval' : null)
+ * @psalm-taint-escape ($filter is 519 ? 'ldap' : null)
+ * @psalm-taint-escape ($filter is 519 ? 'sql' : null)
  * @psalm-taint-escape ($filter is 519 ? 'html' : null)
+ * @psalm-taint-escape ($filter is 519 ? 'has_quotes' : null)
+ * @psalm-taint-escape ($filter is 519 ? 'shell' : null)
+ * @psalm-taint-escape ($filter is 519 ? 'ssrf' : null)
+ * @psalm-taint-escape ($filter is 519 ? 'file' : null)
+ * @psalm-taint-escape ($filter is 519 ? 'cookie' : null)
+ * @psalm-taint-escape ($filter is 519 ? 'header' : null)
  *
  * 520 is FILTER_SANITIZE_NUMBER_FLOAT
+ * @psalm-taint-escape ($filter is 520 ? 'callable' : null)
+ * @psalm-taint-escape ($filter is 520 ? 'unserialize' : null)
+ * @psalm-taint-escape ($filter is 520 ? 'include' : null)
+ * @psalm-taint-escape ($filter is 520 ? 'eval' : null)
+ * @psalm-taint-escape ($filter is 520 ? 'ldap' : null)
+ * @psalm-taint-escape ($filter is 520 ? 'sql' : null)
  * @psalm-taint-escape ($filter is 520 ? 'html' : null)
+ * @psalm-taint-escape ($filter is 520 ? 'has_quotes' : null)
+ * @psalm-taint-escape ($filter is 520 ? 'shell' : null)
+ * @psalm-taint-escape ($filter is 520 ? 'ssrf' : null)
+ * @psalm-taint-escape ($filter is 520 ? 'file' : null)
+ * @psalm-taint-escape ($filter is 520 ? 'cookie' : null)
+ * @psalm-taint-escape ($filter is 520 ? 'header' : null)
  *
  * @psalm-flow ($value, $filter, $options) -> return
  */
@@ -1168,11 +1238,13 @@ function strlen(string $string) : int {}
 /**
  * @psalm-pure
  *
+ * @template TKey of array-key
+ *
  * @param string|array<string|int|float> $search
  * @param string|array<string|int|float> $replace
- * @param string|array<string|int|float> $subject
- * @param int $count
- * @return ($subject is array ? array<string> : string)
+ * @param string|array<TKey, string|int|float> $subject
+ * @param int<0, max> $count
+ * @return ($subject is array ? array<TKey, string> : string)
  *
  * @psalm-flow ($replace, $subject) -> return
  */
@@ -1181,11 +1253,13 @@ function str_replace($search, $replace, $subject, &$count = null) {}
 /**
  * @psalm-pure
  *
+ * @template TKey of array-key
+ *
  * @param string|array<string|int|float> $search
  * @param string|array<string|int|float> $replace
- * @param string|array<string|int|float> $subject
- * @param int $count
- * @return ($subject is array ? array<string> : string)
+ * @param string|array<TKey, string|int|float> $subject
+ * @param int<0, max> $count
+ * @return ($subject is array ? array<TKey, string> : string)
  *
  * @psalm-flow ($replace, $subject) -> return
  */
@@ -1234,11 +1308,39 @@ function str_shuffle(string $string): string {}
 
 /**
  * @psalm-pure
- * @return ($length is positive-int ? list<string> : false)
+ * @param positive-int $length
+ * @return non-empty-list<string>
  *
  * @psalm-flow ($string) -> return
  */
 function str_split(string $string, int $length = 1) {}
+
+/**
+ * @psalm-pure
+ * @template T as string
+ * @param T $needle
+ * @psalm-assert-if-true =(T is '' ? string : non-empty-string) $haystack
+ * @return ($needle is '' ? true : ($haystack is '' ? false : bool))
+ */
+function str_starts_with(string $haystack, string $needle): bool {}
+
+/**
+ * @psalm-pure
+ * @template T as string
+ * @param T $needle
+ * @psalm-assert-if-true =(T is '' ? string : non-empty-string) $haystack
+ * @return ($needle is '' ? true : ($haystack is '' ? false : bool))
+ */
+function str_ends_with(string $haystack, string $needle): bool {}
+
+/**
+ * @psalm-pure
+ * @template T as string
+ * @param T $needle
+ * @psalm-assert-if-true =(T is '' ? string : non-empty-string) $haystack
+ * @return ($needle is '' ? true : ($haystack is '' ? false : bool))
+ */
+function str_contains(string $haystack, string $needle): bool {}
 
 /**
  * @psalm-pure
@@ -1311,10 +1413,10 @@ function str_word_count(string $string, int $format = 0, string|null $characters
 /**
  * @psalm-pure
  *
- * @param string|string[] $pattern
+ * @param non-empty-string|non-empty-string[] $pattern
  * @param string|array<string|int|float> $replacement
  * @param string|array<string|int|float> $subject
- * @param int $count
+ * @param int<0, max> $count
  * @return ($subject is array ? array<string> : string|null)
  *
  * @psalm-flow ($replacement, $subject) -> return
@@ -1324,22 +1426,30 @@ function preg_filter($pattern, $replacement, $subject, int $limit = -1, &$count 
 /**
  * @psalm-pure
  *
- * @param string|string[] $pattern
+ * @template TKey of array-key
+ *
+ * @param non-empty-string|non-empty-string[] $pattern
  * @param string|array<string|int|float> $replacement
- * @param string|array<string|int|float> $subject
- * @param int $count
- * @return ($subject is array ? array<string>|null : string|null)
+ * @param string|array<TKey, string|int|float> $subject
+ * @param int<0, max> $count
+ * @return ($subject is array ? array<TKey, string>|null : string|null)
+ *
+ * @psalm-ignore-nullable-return
  *
  * @psalm-flow ($replacement, $subject) -> return
  */
 function preg_replace($pattern, $replacement, $subject, int $limit = -1, &$count = null) {}
 
 /**
- * @param string|string[] $pattern
+ * @template TKey of array-key
+ *
+ * @param non-empty-string|non-empty-string[] $pattern
  * @param callable(string[]):string $callback
- * @param string|array<string|int|float> $subject
- * @param int $count
- * @return ($subject is array ? array<string>|null : string|null)
+ * @param string|array<TKey, string|int|float> $subject
+ * @param int<0, max> $count
+ * @return ($subject is array ? array<TKey, string>|null : string|null)
+ *
+ * @psalm-ignore-nullable-return
  *
  * @psalm-taint-specialize
  * @psalm-flow ($subject) -> return
@@ -1350,7 +1460,7 @@ function preg_replace_callback($pattern, $callback, $subject, int $limit = -1, &
  * @psalm-pure
  * @template TFlags as int
  *
- * @param string $pattern
+ * @param non-empty-string $pattern
  * @param string $subject
  * @param mixed $matches
  * @param TFlags $flags
@@ -1386,7 +1496,7 @@ function preg_match_all($pattern, $subject, &$matches = [], int $flags = 1, int 
  * @psalm-pure
  * @template TFlags as int-mask<0, 256, 512>
  *
- * @param string $pattern
+ * @param non-empty-string $pattern
  * @param string $subject
  * @param mixed $matches
  * @param TFlags $flags
@@ -1420,18 +1530,18 @@ function preg_quote(string $str, ?string $delimiter = null) : string {}
 /**
  * @psalm-pure
  *
- * @param string|int|float $values
- * @return ($format is non-empty-string
- *      ? ($values is non-empty-string|int|float ? non-empty-string : string)
- *      : string)
+ * @param string|stringable-object|int|float $values
+ * @return (PHP_MAJOR_VERSION is 8 ? string : string|false)
+ * @psalm-ignore-falsable-return
  *
  * @psalm-flow ($format, $values) -> return
  */
-function sprintf(string $format, ...$values) : string {}
+function sprintf(string $format, ...$values) {}
 
 /**
  * @psalm-pure
- * @return string|false
+ * @param array<string|int|float> $values
+ * @return (PHP_MAJOR_VERSION is 8 ? string : string|false)
  * @psalm-ignore-falsable-return
  *
  * @psalm-flow ($format, $values) -> return
@@ -1450,20 +1560,27 @@ function wordwrap(string $string, int $width = 75, string $break = "\n", bool $c
  * @psalm-pure
  *
  * @param string|int|float $values
+ * @return (PHP_MAJOR_VERSION is 8 ? int<0, max> : int<0, max>|false)
+ * @psalm-ignore-falsable-return
  *
  * @psalm-taint-specialize
  * @psalm-flow ($format, $values) -> return
  * @psalm-taint-sink html $format
  * @psalm-taint-sink html $values
  */
-function printf(string $format, ...$values) : string {}
+function printf(string $format, ...$values) {}
 
 /**
+ * @param array<string|int|float> $values
+ * @return (PHP_MAJOR_VERSION is 8 ? int<0, max> : int<0, max>|false)
+ * @psalm-ignore-falsable-return
+ *
+ * @psalm-pure
  * @psalm-taint-specialize
  * @psalm-taint-sink html $format
  * @psalm-taint-sink html $values
  */
-function vprintf(string $format, array $values) : int {}
+function vprintf(string $format, array $values) {}
 
 /**
  * @psalm-pure
@@ -1480,9 +1597,10 @@ function realpath(string $path) {}
  *
  * @param numeric-string $num1
  * @param numeric-string $num2
+ * @param int|null $scale
  * @return (PHP_MAJOR_VERSION is 8 ? numeric-string : ($num2 is "0" ? null : numeric-string))
  */
-function bcdiv(string $num1, string $num2, int $scale = 0): ?string {}
+function bcdiv(string $num1, string $num2, ?int $scale = null): ?string {}
 
 /**
  * @psalm-pure
@@ -1506,12 +1624,12 @@ function str_getcsv(string $string, string $separator = ',', string $enclosure =
 
 /**
  * @template TKey as array-key
- * @template TArray as array<mixed, TKey>
+ * @template TArray as array<TKey>
  *
  * @param TArray $array
  *
  * @psalm-flow ($array) -> return
- * @return (TArray is non-empty-array ? non-empty-array<TKey, positive-int> : array<TKey, positive-int>)
+ * @return (TArray is non-empty-array ? non-empty-array<TKey, int<1, max>> : array<TKey, int<1, max>>)
  *
  * @psalm-pure
  */
@@ -1644,15 +1762,19 @@ function ldap_escape(string $value, string $ignore = "", int $flags = 0) : strin
 /**
  * @psalm-pure
  *
+ * @param int<1, 2147483647> $depth
  * @return mixed
  * @psalm-flow ($json) -> return
  */
 function json_decode(string $json, ?bool $associative = null, int $depth = 512, int $flags = 0) {}
 
 /**
+ * The conditional return type below relies on the fact that JSON_THROW_ON_ERROR is
+ * the highest-valued of JSON constants
  * @psalm-pure
  *
- * @return ($flags is 4194304 ? non-empty-string : non-empty-string|false)
+ * @param int<1, 2147483647> $depth
+ * @return ($flags is int<4194304, 8388607> ? non-empty-string : non-empty-string|false)
  *
  * @psalm-flow ($value) -> return
  * @psalm-ignore-falsable-return
@@ -1681,6 +1803,8 @@ function sapi_windows_cp_conv($in_codepage, $out_codepage, string $subject) : ?s
 /**
  * @psalm-pure
  *
+ * @return non-empty-string
+ *
  * @psalm-flow ($prefix) -> return
  */
 function uniqid(string $prefix = "", bool $more_entropy = false) : string {}
@@ -1698,7 +1822,10 @@ function unpack(string $format, string $string, int $offset = 0) {}
 /**
  * @psalm-pure
  *
+ * @template T of bool
+ * @param T $strict
  * @return string|false
+ * @psalm-return (T is false ? string : string|false)
  *
  * @psalm-flow ($string) -> return
  * @psalm-ignore-falsable-return
@@ -1729,7 +1856,7 @@ function bin2hex(string $string): string {}
  *
  * @param resource|null $context
  *
- * @return ($associative is 0 ? list<string> : array<string, string|list<string>>)|false
+ * @return ($associative is false|0 ? list<string> : array<string, string|list<string>>)|false
  *
  * @psalm-taint-sink ssrf $url
  */
@@ -1843,3 +1970,75 @@ function pg_escape_literal($string1, $string2 = null) {}
  * @psalm-flow ($string1, $string2) -> return
  */
 function pg_escape_string($string1, $string2 = null) {}
+
+if (defined('GLOB_BRACE')) {
+    /**
+     * @psalm-template P of string
+     * @psalm-template F of int-mask<GLOB_MARK, GLOB_NOSORT, GLOB_NOCHECK, GLOB_NOESCAPE, GLOB_BRACE, GLOB_ONLYDIR, GLOB_ERR>
+     * @psalm-param P $pattern
+     * @psalm-param F $flags
+     * @psalm-return (
+     *     P is ''
+     *       ? (F is int-mask<GLOB_MARK, GLOB_NOSORT, GLOB_NOESCAPE, GLOB_BRACE, GLOB_ONLYDIR, GLOB_ERR>
+     *             ? false|list<never>
+     *         : (F is int-mask<GLOB_MARK, GLOB_NOSORT, GLOB_NOCHECK, GLOB_NOESCAPE, GLOB_BRACE, GLOB_ERR>
+     *             ? false|list{0:''}
+     *             : false|list<never>
+     *           )
+     *         )
+     *       : (F is int-mask<GLOB_MARK, GLOB_NOSORT, GLOB_NOESCAPE, GLOB_BRACE, GLOB_ONLYDIR, GLOB_ERR>
+     *             ? false|list<non-empty-string>
+     *         : (F is int-mask<GLOB_MARK, GLOB_NOSORT, GLOB_NOCHECK, GLOB_NOESCAPE, GLOB_BRACE, GLOB_ERR>
+     *             ? false|list{0:non-empty-string, ...<non-empty-string>}
+     *             : false|list<non-empty-string>
+     *           )
+     *         )
+     * )
+     * @psalm-ignore-falsable-return
+     */
+    function glob (string $pattern, int $flags = 0): array|false {}
+} else {
+    /**
+     * @psalm-template P of string
+     * @psalm-template F of int-mask<GLOB_MARK, GLOB_NOSORT, GLOB_NOCHECK, GLOB_NOESCAPE, GLOB_ONLYDIR, GLOB_ERR>
+     * @psalm-param P $pattern
+     * @psalm-param F $flags
+     * @psalm-return (
+     *     P is ''
+     *       ? (F is int-mask<GLOB_MARK, GLOB_NOSORT, GLOB_NOESCAPE, GLOB_ONLYDIR, GLOB_ERR>
+     *             ? false|list<never>
+     *         : (F is int-mask<GLOB_MARK, GLOB_NOSORT, GLOB_NOCHECK, GLOB_NOESCAPE, GLOB_ERR>
+     *             ? false|list{0:''}
+     *             : false|list<never>
+     *           )
+     *         )
+     *       : (F is int-mask<GLOB_MARK, GLOB_NOSORT, GLOB_NOESCAPE, GLOB_ONLYDIR, GLOB_ERR>
+     *             ? false|list<non-empty-string>
+     *         : (F is int-mask<GLOB_MARK, GLOB_NOSORT, GLOB_NOCHECK, GLOB_NOESCAPE, GLOB_ERR>
+     *             ? false|list{0:non-empty-string, ...<non-empty-string>}
+     *             : false|list<non-empty-string>
+     *           )
+     *         )
+     * )
+     * @psalm-ignore-falsable-return
+     */
+    function glob (string $pattern, int $flags = 0): array|false {}
+}
+
+/**
+ * @psalm-template TOutput of array|null
+ *
+ * @param TOutput $output
+ * @param-out (TOutput is null ? list<string> : array) $output
+ * @param-out int $result_code
+ *
+ * @psalm-taint-specialize
+ * @psalm-taint-sink shell $command
+ */
+function exec(string $command, &$output = null, int &$result_code = null): string|false {}
+
+/**
+* @return ($return_array is true ? array|false : object|false)
+* @psalm-ignore-falsable-return
+*/
+function get_browser(?string $user_agent = null, bool $return_array = false): object|array|false {}

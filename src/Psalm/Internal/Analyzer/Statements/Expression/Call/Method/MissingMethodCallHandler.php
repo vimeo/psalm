@@ -32,7 +32,7 @@ use function array_merge;
 /**
  * @internal
  */
-class MissingMethodCallHandler
+final class MissingMethodCallHandler
 {
     public static function handleMagicMethod(
         StatementsAnalyzer $statements_analyzer,
@@ -52,7 +52,7 @@ class MissingMethodCallHandler
         if ($stmt->isFirstClassCallable()) {
             if (isset($class_storage->pseudo_methods[$method_name_lc])) {
                 $result->has_valid_method_call_type = true;
-                $result->existent_method_ids[] = $method_id->__toString();
+                $result->existent_method_ids[$method_id->__toString()] = true;
                 $result->return_type = self::createFirstClassCallableReturnType(
                     $class_storage->pseudo_methods[$method_name_lc],
                 );
@@ -110,7 +110,7 @@ class MissingMethodCallHandler
 
         if ($found_method_and_class_storage) {
             $result->has_valid_method_call_type = true;
-            $result->existent_method_ids[] = $method_id->__toString();
+            $result->existent_method_ids[$method_id->__toString()] = true;
 
             [$pseudo_method_storage, $defining_class_storage] = $found_method_and_class_storage;
 
@@ -190,7 +190,7 @@ class MissingMethodCallHandler
                 $context,
             );
 
-            if ($class_storage->sealed_methods || $config->seal_all_methods) {
+            if ($class_storage->hasSealedMethods($config)) {
                 $result->non_existent_magic_method_ids[] = $method_id->__toString();
 
                 return null;
@@ -198,7 +198,7 @@ class MissingMethodCallHandler
         }
 
         $result->has_valid_method_call_type = true;
-        $result->existent_method_ids[] = $method_id->__toString();
+        $result->existent_method_ids[$method_id->__toString()] = true;
 
         $array_values = array_map(
             static fn(PhpParser\Node\Arg $arg): PhpParser\Node\Expr\ArrayItem => new VirtualArrayItem(
@@ -235,7 +235,7 @@ class MissingMethodCallHandler
     }
 
     /**
-     * @param array<string> $all_intersection_existent_method_ids
+     * @param array<string, bool> $all_intersection_existent_method_ids
      */
     public static function handleMissingOrMagicMethod(
         StatementsAnalyzer $statements_analyzer,
@@ -267,7 +267,7 @@ class MissingMethodCallHandler
             && $found_method_and_class_storage
         ) {
             $result->has_valid_method_call_type = true;
-            $result->existent_method_ids[] = $method_id->__toString();
+            $result->existent_method_ids[$method_id->__toString()] = true;
 
             [$pseudo_method_storage, $defining_class_storage] = $found_method_and_class_storage;
 

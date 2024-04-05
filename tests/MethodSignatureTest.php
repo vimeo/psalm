@@ -5,12 +5,14 @@ namespace Psalm\Tests;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
+use Psalm\Tests\Traits\InvalidCodeAnalysisWithIssuesTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 use const DIRECTORY_SEPARATOR;
 
 class MethodSignatureTest extends TestCase
 {
+    use InvalidCodeAnalysisWithIssuesTestTrait;
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
 
@@ -311,7 +313,7 @@ class MethodSignatureTest extends TestCase
 
                     class B extends A {
                         public function foo(?string $s): string {
-                            return $s ?: "hello";
+                            return $s !== null ? $s : "hello";
                         }
                     }
 
@@ -327,7 +329,7 @@ class MethodSignatureTest extends TestCase
 
                     class B extends A {
                         public function foo(string $s = null): string {
-                            return $s ?: "hello";
+                            return $s !== null ? $s : "hello";
                         }
                     }
 
@@ -499,22 +501,22 @@ class MethodSignatureTest extends TestCase
 
                     class Observer implements \SplObserver
                     {
-                        public function update(SplSubject $subject)
+                        public function update(SplSubject $subject): void
                         {
                         }
                     }
 
                     class Subject implements \SplSubject
                     {
-                        public function attach(SplObserver $observer)
+                        public function attach(SplObserver $observer): void
                         {
                         }
 
-                        public function detach(SplObserver $observer)
+                        public function detach(SplObserver $observer): void
                         {
                         }
 
-                        public function notify()
+                        public function notify(): void
                         {
                         }
                     }',
@@ -929,6 +931,52 @@ class MethodSignatureTest extends TestCase
                     }
                 ',
             ],
+            'allowByRefReturn' => [
+                'code' => '<?php
+                    interface Foo {
+                        public function &foo(): int;
+                    }
+
+                    class Bar implements Foo {
+                        private int $x = 0;
+                        public function &foo(): int {
+                            return $this->x;
+                        }
+                    }
+                ',
+            ],
+            'descendantAddsByRefReturn' => [
+                'code' => '<?php
+                    interface Foo {
+                        public function foo(): int;
+                    }
+
+                    class Bar implements Foo {
+                        private int $x = 0;
+                        public function &foo(): int {
+                            return $this->x;
+                        }
+                    }
+                ',
+            ],
+            'callmapInheritedMethodParamsDoNotHavePrefixes' => [
+                'code' => <<<'PHP'
+                    <?php
+
+                    class NoopFilter extends \php_user_filter
+                    {
+                        /**
+                         * @param resource $in
+                         * @param resource $out
+                         * @param int $consumed   -- this is called &rw_consumed in the callmap
+                         */
+                        public function filter($in, $out, &$consumed, bool $closing): int
+                        {
+                            return PSFS_PASS_ON;
+                        }
+                    }
+                PHP,
+            ],
         ];
     }
 
@@ -1016,7 +1064,7 @@ class MethodSignatureTest extends TestCase
                 'code' => '<?php
                     class A {
                         public function foo(?string $s): string {
-                            return $s ?: "hello";
+                            return $s !== null ? $s : "hello";
                         }
                     }
 
@@ -1585,6 +1633,20 @@ class MethodSignatureTest extends TestCase
                 'error_message' => 'MethodSignatureMustProvideReturnType',
                 'ignored_issues' => [],
                 'php_version' => '8.1',
+            ],
+            'absentByRefReturnInDescendant' => [
+                'code' => '<?php
+                    interface Foo {
+                        public function &foo(): int;
+                    }
+
+                    class Bar implements Foo {
+                        public function foo(): int {
+                            return 1;
+                        }
+                    }
+                ',
+                'error_message' => 'MethodSignatureMismatch',
             ],
         ];
     }

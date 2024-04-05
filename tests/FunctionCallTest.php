@@ -17,6 +17,233 @@ class FunctionCallTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'callTemplatedFunctionWithUnionArgument' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Message {}
+
+                    /** @implements Message<int> */
+                    final class FirstMessage implements Message {}
+
+                    /** @implements Message<int> */
+                    final class SecondMessage implements Message {}
+
+                    /**
+                     * @template T
+                     * @param Message<T> $msg
+                     */
+                    function test(Message $msg): void {}
+
+                    /** @var FirstMessage|SecondMessage $message */;
+                    test($message);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'callFunctionWithTemplateClassStringWillNotFail' => [
+                'code' => '<?php
+                    /** @param class-string<SplFixedArray<string>> $classString */
+                    function acceptTemplatedClassString(string $classString): void
+                    {
+                    }
+
+                    /** @param class-string<SplFixedArray<string>> $classString */
+                    function app(string $classString): void
+                    {
+                        acceptTemplatedClassString($classString);
+                    }',
+            ],
+            'inferGenericListFromTuple' => [
+                'code' => '<?php
+                    /**
+                     * @template A
+                     * @param list<A> $list
+                     * @return list<A>
+                     */
+                    function testList(array $list): array { return $list; }
+                    /**
+                     * @template A
+                     * @param non-empty-list<A> $list
+                     * @return non-empty-list<A>
+                     */
+                    function testNonEmptyList(array $list): array { return $list; }
+                    /**
+                     * @template A of list<mixed>
+                     * @param A $list
+                     * @return A
+                     */
+                    function testGenericList(array $list): array { return $list; }
+                    $list = testList([1, 2, 3]);
+                    $nonEmptyList = testNonEmptyList([1, 2, 3]);
+                    $genericList = testGenericList([1, 2, 3]);',
+                'assertions' => [
+                    '$list===' => 'list<1|2|3>',
+                    '$nonEmptyList===' => 'non-empty-list<1|2|3>',
+                    '$genericList===' => 'list{1, 2, 3}',
+                ],
+            ],
+            'inferIterableFromTraversable' => [
+                'code' => '<?php
+                    /**
+                     * @return SplFixedArray<string>
+                     */
+                    function getStrings(): SplFixedArray
+                    {
+                        return SplFixedArray::fromArray(["fst", "snd", "thr"]);
+                    }
+                    /**
+                     * @return SplFixedArray<int>
+                     */
+                    function getIntegers(): SplFixedArray
+                    {
+                        return SplFixedArray::fromArray([1, 2, 3]);
+                    }
+                    /**
+                     * @template K
+                     * @template A
+                     * @template B
+                     * @param iterable<K, A> $lhs
+                     * @param iterable<K, B> $rhs
+                     * @return iterable<K, A|B>
+                     */
+                    function mergeIterable(iterable $lhs, iterable $rhs): iterable
+                    {
+                        foreach ($lhs as $k => $v) { yield $k => $v; }
+                        foreach ($rhs as $k => $v) { yield $k => $v; }
+                    }
+                    $iterable = mergeIterable(getStrings(), getIntegers());',
+                'assertions' => [
+                    '$iterable===' => 'iterable<int, int|string>',
+                ],
+            ],
+            'inferTypeFromAnonymousObjectWithTemplatedProperty' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Value
+                    {
+                        /** @param T $value */
+                        public function __construct(public readonly mixed $value) {}
+                    }
+                    /**
+                     * @template T
+                     * @param object{value: T} $object
+                     * @return T
+                     */
+                    function getValue(object $object): mixed
+                    {
+                        return $object->value;
+                    }
+                    /**
+                     * @template T
+                     * @param object{value: object{value: T}} $object
+                     * @return T
+                     */
+                    function getNestedValue(object $object): mixed
+                    {
+                        return $object->value->value;
+                    }
+                    $object = new Value(new Value(42));
+                    $value = getValue($object);
+                    $nestedValue = getNestedValue($object);',
+                'assertions' => [
+                    '$value===' => 'Value<42>',
+                    '$nestedValue===' => '42',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'inferTypeFromAnonymousObjectWithTemplatedPropertyFromTemplatedAncestor' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class AbstractValue
+                    {
+                        /** @param T $value */
+                        public function __construct(public readonly mixed $value) {}
+                    }
+                    /**
+                     * @template TValue
+                     * @extends AbstractValue<TValue>
+                     */
+                    final class ConcreteValue extends AbstractValue
+                    {
+                        /**
+                         * @param TValue $value
+                         */
+                        public function __construct(mixed $value)
+                        {
+                            parent::__construct($value);
+                        }
+                    }
+                    /**
+                     * @template T
+                     * @param object{value: T} $object
+                     * @return T
+                     */
+                    function getValue(object $object): mixed
+                    {
+                        return $object->value;
+                    }
+                    /**
+                     * @template T
+                     * @param object{value: object{value: T}} $object
+                     * @return T
+                     */
+                    function getNestedValue(object $object): mixed
+                    {
+                        return $object->value->value;
+                    }
+                    $object = new ConcreteValue(new ConcreteValue(42));
+                    $value = getValue($object);
+                    $nestedValue = getNestedValue($object);',
+                'assertions' => [
+                    '$value===' => 'ConcreteValue<42>',
+                    '$nestedValue===' => '42',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'inferTypeFromAnonymousObjectWithTemplatedPropertyFromConcreteAncestor' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class AbstractValue
+                    {
+                        /** @param T $value */
+                        public function __construct(public readonly mixed $value) {}
+                    }
+                    /** @extends AbstractValue<int> */
+                    final class IntValue extends AbstractValue {}
+                    final class Nested
+                    {
+                        public function __construct(public readonly IntValue $value) {}
+                    }
+                    /**
+                     * @template T
+                     * @param object{value: T} $object
+                     * @return T
+                     */
+                    function getValue(object $object): mixed
+                    {
+                        return $object->value;
+                    }
+                    /**
+                     * @template T
+                     * @param object{value: object{value: T}} $object
+                     * @return T
+                     */
+                    function getNestedValue(object $object): mixed
+                    {
+                        return $object->value->value;
+                    }
+                    $object = new Nested(new IntValue(42));
+                    $value = getValue($object);
+                    $nestedValue = getNestedValue($object);',
+                'assertions' => [
+                    '$value===' => 'IntValue',
+                    '$nestedValue===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'countShapedArrays' => [
                 'code' => '<?php
                     /** @var array{a?: int} */
@@ -246,7 +473,7 @@ class FunctionCallTest extends TestCase
                      */
                     function route($callback) {
                       if (!is_callable($callback)) {  }
-                      $a = preg_match("", "", $b);
+                      $a = preg_match("//", "", $b);
                       if ($b[0]) {}
                     }',
                 'assertions' => [],
@@ -274,19 +501,51 @@ class FunctionCallTest extends TestCase
                         return $s;
                     }',
             ],
+            'pregReplaceArrayValueType' => [
+                'code' => '<?php
+                    /**
+                     * @param string[] $s
+                     * @return string[]
+                     */
+                    function foo($s): array {
+                        return preg_replace("/hello/", "", $s);
+                    }',
+            ],
             'extractVarCheck' => [
                 'code' => '<?php
+                    /**
+                     * @psalm-suppress InvalidReturnType
+                     * @return array{a: 15, ...}
+                     */
+                    function getUnsealedArray() {}
                     function takesString(string $str): void {}
 
-                    $foo = null;
-                    $a = ["$foo" => "bar"];
+                    $foo = "foo";
+                    $a = getUnsealedArray();
                     extract($a);
                     takesString($foo);',
                 'assertions' => [],
                 'ignored_issues' => [
-                    'MixedAssignment',
-                    'MixedArrayAccess',
                     'MixedArgument',
+                ],
+            ],
+            'extractVarCheckValid' => [
+                'code' => '<?php
+                    function takesInt(int $i): void {}
+
+                    $foo = "foo";
+                    $a = [$foo => 15];
+                    extract($a);
+                    takesInt($foo);',
+            ],
+            'extractSkipExtr' => [
+                'code' => '<?php
+                    $a = 1;
+
+                    extract(["a" => "x", "b" => "y"], EXTR_SKIP);',
+                'assertions' => [
+                    '$a===' => '1',
+                    '$b===' => '\'y\'',
                 ],
             ],
             'compact' => [
@@ -371,12 +630,6 @@ class FunctionCallTest extends TestCase
                         return $aTime - $bTime;
                     }',
             ],
-            'strposIntSecondParam' => [
-                'code' => '<?php
-                    function hasZeroByteOffset(string $s) : bool {
-                        return strpos($s, 0) !== false;
-                    }',
-            ],
             'functionCallInGlobalScope' => [
                 'code' => '<?php
                     $a = function() use ($argv) : void {};',
@@ -433,7 +686,7 @@ class FunctionCallTest extends TestCase
                      */
                     $elements = explode(" ", $string, $limit);',
                 'assertions' => [
-                    '$elements' => 'list{0?: string, 1?: string, 2?: string, ...<int<0, max>, string>}',
+                    '$elements' => 'list{0?: string, 1?: string, 2?: string, ...<string>}',
                 ],
             ],
             'explodeWithDynamicDelimiter' => [
@@ -489,7 +742,7 @@ class FunctionCallTest extends TestCase
                      */
                     $elements = explode($delim, $string, $limit);',
                 'assertions' => [
-                    '$elements' => 'list{0?: string, 1?: string, 2?: string, ...<int<0, max>, string>}',
+                    '$elements' => 'list{0?: string, 1?: string, 2?: string, ...<string>}',
                 ],
             ],
             'explodeWithDynamicNonEmptyDelimiter' => [
@@ -524,8 +777,31 @@ class FunctionCallTest extends TestCase
                     }',
             ],
             'allowPossiblyUndefinedClassInClassExists' => [
-                'code' => '<?php
-                    if (class_exists(Foo::class)) {}',
+                'code' => <<<'PHP'
+                    <?php
+                    if (class_exists(Foo::class)) {}
+                    PHP,
+            ],
+            'allowPossiblyUndefinedClassInInterfaceExists' => [
+                'code' => <<<'PHP'
+                    <?php
+                    if (interface_exists(Foo::class)) {}
+                    PHP,
+            ],
+            'allowPossiblyUndefinedClassInTraitExists' => [
+                'code' => <<<'PHP'
+                    <?php
+                    if (trait_exists(Foo::class)) {}
+                    PHP,
+            ],
+            'allowPossiblyUndefinedClassInEnumExists' => [
+                'code' => <<<'PHP'
+                    <?php
+                    if (enum_exists(Foo::class)) {}
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'allowConstructorAfterClassExists' => [
                 'code' => '<?php
@@ -797,6 +1073,41 @@ class FunctionCallTest extends TestCase
                     '$d' => 'string',
                 ],
             ],
+            'filterInput' => [
+                'code' => '<?php
+                    function filterInt(string $s) : int {
+                        $filtered = filter_var($s, FILTER_VALIDATE_INT);
+                        if ($filtered === false) {
+                            return 0;
+                        }
+                        return $filtered;
+                    }
+                    function filterNullableInt(string $s) : ?int {
+                        return filter_var($s, FILTER_VALIDATE_INT, ["options" => ["default" => null]]);
+                    }
+                    function filterIntWithDefault(string $s) : int {
+                        return filter_var($s, FILTER_VALIDATE_INT, ["options" => ["default" => 5]]);
+                    }
+                    function filterBool(string $s) : bool {
+                        return filter_var($s, FILTER_VALIDATE_BOOLEAN);
+                    }
+                    function filterNullableBool(string $s) : ?bool {
+                        return filter_var($s, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+                    }
+                    function filterNullableBoolWithFlagsArray(string $s) : ?bool {
+                        return filter_var($s, FILTER_VALIDATE_BOOLEAN, ["flags" => FILTER_NULL_ON_FAILURE]);
+                    }
+                    function filterFloat(string $s) : float {
+                        $filtered = filter_var($s, FILTER_VALIDATE_FLOAT);
+                        if ($filtered === false) {
+                            return 0.0;
+                        }
+                        return $filtered;
+                    }
+                    function filterFloatWithDefault(string $s) : float {
+                        return filter_var($s, FILTER_VALIDATE_FLOAT, ["options" => ["default" => 5.0]]);
+                    }',
+            ],
             'filterVar' => [
                 'code' => '<?php
                     function filterInt(string $s) : int {
@@ -830,6 +1141,24 @@ class FunctionCallTest extends TestCase
                     }
                     function filterFloatWithDefault(string $s) : float {
                         return filter_var($s, FILTER_VALIDATE_FLOAT, ["options" => ["default" => 5.0]]);
+                    }
+
+                    /**
+                     * @param mixed $c
+                     * @return int<1, 100>|stdClass|array<never, never>
+                     */
+                    function filterNumericIntWithDefault($c) {
+                        if (is_numeric($c)) {
+                            return filter_var($c, FILTER_VALIDATE_INT, [
+                             "options" => [
+                                "default"   => new stdClass(),
+                                "min_range" => 1,
+                                "max_range" => 100,
+                            ],
+                            ]);
+                        }
+
+                        return array();
                     }',
             ],
             'callVariableVar' => [
@@ -1359,6 +1688,14 @@ class FunctionCallTest extends TestCase
                         }
                     }',
             ],
+            'callableArgumentWithFunctionExists' => [
+                'code' => <<<'PHP'
+                    <?php
+                    if (function_exists('foo')) {
+                        register_shutdown_function('foo');
+                    }
+                    PHP,
+            ],
             'pregMatch' => [
                 'code' => '<?php
                     function takesInt(int $i) : void {}
@@ -1458,7 +1795,7 @@ class FunctionCallTest extends TestCase
                      */
                     function(array $ids): array {
                         return \preg_replace_callback(
-                            "",
+                            "//",
                             fn (array $matches) => $matches[4],
                             $ids
                         );
@@ -1540,19 +1877,38 @@ class FunctionCallTest extends TestCase
             'dateTest' => [
                 'code' => '<?php
                     $y = date("Y");
+                    $ym = date("Ym");
+                    $y_m = date("Y-m");
                     $m = date("m");
                     $F = date("F");
                     $y2 = date("Y", 10000);
                     $F2 = date("F", 10000);
                     /** @psalm-suppress MixedArgument */
-                    $F3 = date("F", $GLOBALS["F3"]);',
+                    $F3 = date("F", $GLOBALS["F3"]);
+                    $gm_y = gmdate("Y");
+                    $gm_ym = gmdate("Ym");
+                    $gm_m = gmdate("m");
+                    $gm_F = gmdate("F");
+                    $gm_y2 = gmdate("Y", 10000);
+                    $gm_F2 = gmdate("F", 10000);
+                    /** @psalm-suppress MixedArgument */
+                    $gm_F3 = gmdate("F", $GLOBALS["F3"]);',
                 'assertions' => [
                     '$y===' => 'numeric-string',
+                    '$ym===' => 'numeric-string',
+                    '$y_m===' => 'string',
                     '$m===' => 'numeric-string',
                     '$F===' => 'string',
                     '$y2===' => 'numeric-string',
                     '$F2===' => 'string',
-                    '$F3===' => 'false|string',
+                    '$F3===' => 'string',
+                    '$gm_y===' => 'numeric-string',
+                    '$gm_ym===' => 'numeric-string',
+                    '$gm_m===' => 'numeric-string',
+                    '$gm_F===' => 'string',
+                    '$gm_y2===' => 'numeric-string',
+                    '$gm_F2===' => 'string',
+                    '$gm_F3===' => 'string',
                 ],
             ],
             'sscanfReturnTypeWithTwoParameters' => [
@@ -1574,6 +1930,7 @@ class FunctionCallTest extends TestCase
             'writeArgsAllowed' => [
                 'code' => '<?php
                     /**
+                     * @param non-empty-string $pattern
                      * @param 0|256|512|768 $flags
                      * @return false|int
                      */
@@ -1629,7 +1986,7 @@ class FunctionCallTest extends TestCase
             'strposAllowDictionary' => [
                 'code' => '<?php
                     function sayHello(string $format): void {
-                        if (strpos("abcdefghijklmno", $format)) {}
+                        if (strpos("abcdefghijklmno", $format) !== false) {}
                     }',
             ],
             'curlInitIsResourceAllowedIn7x' => [
@@ -1830,25 +2187,51 @@ class FunctionCallTest extends TestCase
             'strposFirstParamAllowClassString' => [
                 'code' => '<?php
                     function sayHello(string $needle): void {
-                        if (strpos(DateTime::class, $needle)) {}
+                        if (strpos(DateTime::class, $needle) !== false) {}
                     }',
             ],
             'mb_strtolowerProducesStringWithSecondArgument' => [
                 'code' => '<?php
-                    $r = mb_strtolower("École", "BASE64");
+                    /** @var non-empty-string $a */
+                    $a = "École";
+                    $r = mb_strtolower($a, "BASE64");
+                    /** @var string $b */
+                    $b = "";
+                    $s = mb_strtolower($b, "BASE64");
+                    $t = mb_strtolower("ABC", "BASE64");
+                    $u = mb_strtolower("", "BASE64");
                 ',
                 'assertions' => [
-                    '$r===' => 'string',
+                    '$r===' => 'non-empty-string',
+                    '$s===' => 'string',
+                    '$t===' => 'non-empty-string',
+                    '$u===' => 'string',
                 ],
             ],
             'mb_strtolowerProducesLowercaseStringWithNullOrAbsentEncoding' => [
                 'code' => '<?php
-                    $a = mb_strtolower("AAA");
-                    $b = mb_strtolower("AAA", null);
+                    /** @var non-empty-string $i */
+                    $i = "École";
+                    /** @var string $j */
+                    $j = "";
+                    $a = mb_strtolower($i);
+                    $b = mb_strtolower($i, null);
+                    $c = mb_strtolower($j);
+                    $d = mb_strtolower($j, null);
+                    $e = mb_strtolower("AAA");
+                    $f = mb_strtolower("AAA", null);
+                    $g = mb_strtolower("");
+                    $h = mb_strtolower("", null);
                 ',
                 'assertions' => [
-                    '$a===' => 'lowercase-string',
-                    '$b===' => 'lowercase-string',
+                    '$a===' => 'non-empty-lowercase-string',
+                    '$b===' => 'non-empty-lowercase-string',
+                    '$c===' => 'lowercase-string',
+                    '$d===' => 'lowercase-string',
+                    '$e===' => 'non-empty-lowercase-string',
+                    '$f===' => 'non-empty-lowercase-string',
+                    '$g===' => 'lowercase-string',
+                    '$h===' => 'lowercase-string',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
@@ -2033,6 +2416,36 @@ class FunctionCallTest extends TestCase
                     }
                 ',
             ],
+            'noInvalidReturnTypeVoidNeverExplicit' => [
+                'code' => '<?php
+                    /**
+                     * @return void|never
+                     */
+                    function foo() {
+                        if ( rand( 0, 10 ) > 5 ) {
+                            exit;
+                        }
+                    }
+                ',
+            ],
+            'getHeadersAssociativeIn8x' => [
+                'code' => '<?php
+                    $a = get_headers("https://psalm.dev", true);',
+                'assertions' => [
+                    '$a' => 'array<string, list<string>|string>|false',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'getHeadersAssociativeIn7x' => [
+                'code' => '<?php
+                    $a = get_headers("https://psalm.dev", 0);',
+                'assertions' => [
+                    '$a' => 'false|list<string>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '7.0',
+            ],
         ];
     }
 
@@ -2045,10 +2458,33 @@ class FunctionCallTest extends TestCase
                     fooFoo("string");',
                 'error_message' => 'InvalidScalarArgument',
             ],
+            'invalidArgumentCallableWithoutArgsUnion' => [
+                'code' => '<?php
+                    function foo(int $a): void {}
+
+                    /**
+                     * @param callable()|float $callable
+                     * @return void
+                     */
+                    function acme($callable) {}
+                    acme("foo");',
+                'error_message' => 'InvalidArgument',
+            ],
             'invalidArgumentWithDeclareStrictTypes' => [
                 'code' => '<?php declare(strict_types=1);
                     function fooFoo(int $a): void {}
                     fooFoo("string");',
+                'error_message' => 'InvalidArgument',
+            ],
+            'invalidArgumentFalseTrueExpected' => [
+                'code' => '<?php
+                    /**
+                     * @param true|string $arg
+                     * @return void
+                     */
+                    function foo($arg) {}
+
+                    foo(false);',
                 'error_message' => 'InvalidArgument',
             ],
             'builtinFunctioninvalidArgumentWithWeakTypes' => [
@@ -2069,6 +2505,16 @@ class FunctionCallTest extends TestCase
                         }
                     }',
                 'error_message' => 'InvalidArgument',
+            ],
+            'clearIssetContext' => [
+                'code' => '<?php
+                    function greet(bool $arg): ?string
+                    {
+                        return $arg ? "hi" : null;
+                    }
+
+                    echo greet($undef) ?? "bye";',
+                'error_message' => 'UndefinedGlobalVariable',
             ],
             'mixedArgument' => [
                 'code' => '<?php
@@ -2661,7 +3107,89 @@ class FunctionCallTest extends TestCase
 
                     takesArrayShapeWithZeroOrPositiveInt(["bar" => $mayBeInt]);
                 ',
-                'error_message' => 'InvalidArgument',
+                'error_message' => 'ArgumentTypeCoercion',
+            ],
+            'is_a_withAStringAndNoThirdArg' => [
+                'code' => '<?php
+                    is_a("Foo", Exception::class);
+                ',
+                'error_message' => 'RedundantFunctionCall',
+            ],
+            'is_a_withAStringAndFalseThirdArg' => [
+                'code' => '<?php
+                    is_a("Foo", Exception::class, false);
+                ',
+                'error_message' => 'RedundantFunctionCall',
+            ],
+            'is_a_withAUnionOfStringsAndNoThirdArg' => [
+                'code' => '<?php
+                    is_a(rand(0, 1) ? "Foo" : "Bar", Exception::class);
+                ',
+                'error_message' => 'RedundantFunctionCall',
+            ],
+            'is_a_withAUnionOfStringsAndFalseThirdArg' => [
+                'code' => '<?php
+                    is_a(rand(0, 1) ? "Foo" : "Bar", Exception::class, false);
+                ',
+                'error_message' => 'RedundantFunctionCall',
+            ],
+            'is_a_withAClassStringAndNoThirdArg' => [
+                'code' => '<?php
+                    is_a(InvalidArgumentException::class, Exception::class);
+                ',
+                'error_message' => 'RedundantFunctionCall',
+            ],
+            'is_a_withAClassStringAndFalseThirdArg' => [
+                'code' => '<?php
+                    is_a(InvalidArgumentException::class, Exception::class, false);
+                ',
+                'error_message' => 'RedundantFunctionCall',
+            ],
+            'is_a_withAUnionOfClassStringsAndNoThirdArg' => [
+                'code' => '<?php
+                    is_a(rand(0, 1) ? InvalidArgumentException::class : RuntimeException::class, Exception::class);
+                ',
+                'error_message' => 'RedundantFunctionCall',
+            ],
+            'is_a_withAUnionOfClassStringsAndFalseThirdArg' => [
+                'code' => '<?php
+                    is_a(rand(0, 1) ? InvalidArgumentException::class : RuntimeException::class, Exception::class, false);
+                ',
+                'error_message' => 'RedundantFunctionCall',
+            ],
+            'incorrectCallableParamDefault' => [
+                'code' => '<?php
+                    function foo(callable $_a = "strlen"): void {}
+                ',
+                'error_message' => 'InvalidParamDefault',
+            ],
+            'disallowStrposIntSecondParam' => [
+                'code' => '<?php
+                    function hasZeroByteOffset(string $s) : bool {
+                        return strpos($s, 0) !== false;
+                    }',
+                'error_message' => 'InvalidScalarArgument',
+            ],
+            'disallowNeverTypeForParam' => [
+                'code' => '<?php
+                    function foo(never $_): void
+                    {
+                        return;
+                    }
+                    ',
+                'error_message' => 'ReservedWord',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'extractVarCheckInvalid' => [
+                'code' => '<?php
+                    function takesInt(int $i): void {}
+
+                    $foo = "123hello";
+                    $a = [$foo => 15];
+                    extract($a);
+                    takesInt($foo);',
+                'error_message' => 'InvalidScalarArgument',
             ],
         ];
     }

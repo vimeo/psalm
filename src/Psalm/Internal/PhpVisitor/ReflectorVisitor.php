@@ -39,7 +39,6 @@ use function array_pop;
 use function end;
 use function explode;
 use function get_class;
-use function implode;
 use function in_array;
 use function is_string;
 use function reset;
@@ -52,7 +51,7 @@ use const PHP_VERSION_ID;
 /**
  * @internal
  */
-class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSource
+final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSource
 {
     private Aliases $aliases;
 
@@ -153,12 +152,12 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                 $this->namespace_name,
             );
 
-            $this->classlike_node_scanners[] = $classlike_node_scanner;
-
             if ($classlike_node_scanner->start($node) === false) {
                 $this->bad_classes[spl_object_id($node)] = true;
-                return PhpParser\NodeTraverser::DONT_TRAVERSE_CHILDREN;
+                return PhpParser\NodeTraverser::DONT_TRAVERSE_CURRENT_AND_CHILDREN;
             }
+
+            $this->classlike_node_scanners[] = $classlike_node_scanner;
 
             $this->type_aliases = array_merge($this->type_aliases, $classlike_node_scanner->type_aliases);
         } elseif ($node instanceof PhpParser\Node\Stmt\TryCatch) {
@@ -238,6 +237,12 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                             $var_id = '$' . $var->name;
 
                             $functionlike_node_scanner->storage->global_variables[$var_id] = true;
+
+                            if (isset($this->codebase->config->globals[$var_id])) {
+                                $var_type = Type::parseString($this->codebase->config->globals[$var_id]);
+                                /** @psalm-suppress UnusedMethodCall */
+                                $var_type->queueClassLikesForScanning($this->codebase, $this->file_storage);
+                            }
                         }
                     }
                 }
@@ -389,7 +394,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
         $this->namespace_name = $node->name;
 
         $this->aliases = new Aliases(
-            $node->name ? implode('\\', $node->name->parts) : '',
+            $node->name ? $node->name->toString() : '',
             $this->aliases->uses,
             $this->aliases->functions,
             $this->aliases->constants,
@@ -408,7 +413,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
     private function handleUse(PhpParser\Node\Stmt\Use_ $node): void
     {
         foreach ($node->uses as $use) {
-            $use_path = implode('\\', $use->name->parts);
+            $use_path = $use->name->toString();
 
             $use_alias = $use->alias->name ?? $use->name->getLast();
 
@@ -439,10 +444,10 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
 
     private function handleGroupUse(PhpParser\Node\Stmt\GroupUse $node): void
     {
-        $use_prefix = implode('\\', $node->prefix->parts);
+        $use_prefix = $node->prefix->toString();
 
         foreach ($node->uses as $use) {
-            $use_path = $use_prefix . '\\' . implode('\\', $use->name->parts);
+            $use_path = $use_prefix . '\\' . $use->name->toString();
             $use_alias = $use->alias->name ?? $use->name->getLast();
 
             switch ($use->type !== PhpParser\Node\Stmt\Use_::TYPE_UNKNOWN ? $use->type : $node->type) {
@@ -484,13 +489,13 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
 
             if ($this->codebase->register_stub_files
                 && $node->name
-                && $node->name->parts === ['PHPSTORM_META']
+                && $node->name->getParts() === ['PHPSTORM_META']
             ) {
                 foreach ($node->stmts as $meta_stmt) {
                     if ($meta_stmt instanceof PhpParser\Node\Stmt\Expression
                         && $meta_stmt->expr instanceof PhpParser\Node\Expr\FuncCall
                         && $meta_stmt->expr->name instanceof Name
-                        && $meta_stmt->expr->name->parts === ['override']
+                        && $meta_stmt->expr->name->getParts() === ['override']
                     ) {
                         PhpStormMetaScanner::handleOverride($meta_stmt->expr->getArgs(), $this->codebase);
                     }
@@ -541,7 +546,7 @@ class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements FileSour
                 }
 
                 throw new UnexpectedValueException(
-                    'There should be function storages for line ' . $this->file_path . ':' . $node->getLine(),
+                    'There should be function storages for line ' . $this->file_path . ':' . $node->getStartLine(),
                 );
             }
 

@@ -3,6 +3,7 @@
 namespace Psalm\Internal\Provider;
 
 use Psalm\Config;
+use Psalm\Internal\Cache;
 use Psalm\Internal\Codebase\Analyzer;
 use Psalm\Internal\Provider\Providers;
 use RuntimeException;
@@ -10,23 +11,19 @@ use UnexpectedValueException;
 
 use function file_exists;
 use function file_put_contents;
-use function igbinary_serialize;
-use function igbinary_unserialize;
 use function is_array;
 use function is_dir;
 use function is_readable;
 use function mkdir;
-use function serialize;
-use function unserialize;
 
 use const DIRECTORY_SEPARATOR;
 use const LOCK_EX;
 
 /**
- * @psalm-import-type FileMapType from Analyzer
- *
  * Used to determine which files reference other files, necessary for using the --diff
  * option from the command line.
+ *
+ * @psalm-import-type FileMapType from Analyzer
  * @internal
  */
 class FileReferenceCacheProvider
@@ -53,10 +50,12 @@ class FileReferenceCacheProvider
     private const METHOD_PARAM_USE_CACHE_NAME = 'method_param_uses';
 
     protected Config $config;
+    protected Cache $cache;
 
     public function __construct(Config $config)
     {
         $this->config = $config;
+        $this->cache = new Cache($config);
     }
 
     public function hasConfigChanged(): bool
@@ -65,771 +64,164 @@ class FileReferenceCacheProvider
         return $new_hash !== $this->getConfigHashCache();
     }
 
-    /**
-     * @psalm-suppress MixedAssignment
-     */
     public function getCachedFileReferences(): ?array
     {
-        $cache_directory = $this->config->getCacheDirectory();
-
-        if (!$cache_directory) {
-            return null;
-        }
-
-        $reference_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::REFERENCE_CACHE_NAME;
-
-        if (!is_readable($reference_cache_location)) {
-            return null;
-        }
-
-        if ($this->config->use_igbinary) {
-            $reference_cache = igbinary_unserialize(Providers::safeFileGetContents($reference_cache_location));
-        } else {
-            $reference_cache = unserialize(Providers::safeFileGetContents($reference_cache_location));
-        }
-
-        if (!is_array($reference_cache)) {
-            throw new UnexpectedValueException('The reference cache must be an array');
-        }
-
-        return $reference_cache;
+        return $this->getCacheItem(self::REFERENCE_CACHE_NAME);
     }
 
-    /**
-     * @psalm-suppress MixedAssignment
-     */
     public function getCachedClassLikeFiles(): ?array
     {
-        $cache_directory = $this->config->getCacheDirectory();
-
-        if (!$cache_directory) {
-            return null;
-        }
-
-        $reference_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::CLASSLIKE_FILE_CACHE_NAME;
-
-        if (!is_readable($reference_cache_location)) {
-            return null;
-        }
-
-        if ($this->config->use_igbinary) {
-            $reference_cache = igbinary_unserialize(Providers::safeFileGetContents($reference_cache_location));
-        } else {
-            $reference_cache = unserialize(Providers::safeFileGetContents($reference_cache_location));
-        }
-
-        if (!is_array($reference_cache)) {
-            throw new UnexpectedValueException('The reference cache must be an array');
-        }
-
-        return $reference_cache;
+        return $this->getCacheItem(self::CLASSLIKE_FILE_CACHE_NAME);
     }
 
-    /**
-     * @psalm-suppress MixedAssignment
-     */
     public function getCachedNonMethodClassReferences(): ?array
     {
-        $cache_directory = $this->config->getCacheDirectory();
-
-        if (!$cache_directory) {
-            return null;
-        }
-
-        $reference_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::NONMETHOD_CLASS_REFERENCE_CACHE_NAME;
-
-        if (!is_readable($reference_cache_location)) {
-            return null;
-        }
-
-        if ($this->config->use_igbinary) {
-            $reference_cache = igbinary_unserialize(Providers::safeFileGetContents($reference_cache_location));
-        } else {
-            $reference_cache = unserialize(Providers::safeFileGetContents($reference_cache_location));
-        }
-
-        if (!is_array($reference_cache)) {
-            throw new UnexpectedValueException('The reference cache must be an array');
-        }
-
-        return $reference_cache;
+        return $this->getCacheItem(self::NONMETHOD_CLASS_REFERENCE_CACHE_NAME);
     }
 
-    /**
-     * @psalm-suppress MixedAssignment
-     */
     public function getCachedMethodClassReferences(): ?array
     {
-        $cache_directory = $this->config->getCacheDirectory();
-
-        if (!$cache_directory) {
-            return null;
-        }
-
-        $reference_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::METHOD_CLASS_REFERENCE_CACHE_NAME;
-
-        if (!is_readable($reference_cache_location)) {
-            return null;
-        }
-
-        if ($this->config->use_igbinary) {
-            $reference_cache = igbinary_unserialize(Providers::safeFileGetContents($reference_cache_location));
-        } else {
-            $reference_cache = unserialize(Providers::safeFileGetContents($reference_cache_location));
-        }
-
-        if (!is_array($reference_cache)) {
-            throw new UnexpectedValueException('The reference cache must be an array');
-        }
-
-        return $reference_cache;
+        return $this->getCacheItem(self::METHOD_CLASS_REFERENCE_CACHE_NAME);
     }
 
-    /**
-     * @psalm-suppress MixedAssignment
-     */
     public function getCachedMethodMemberReferences(): ?array
     {
-        $cache_directory = $this->config->getCacheDirectory();
-
-        if (!$cache_directory) {
-            return null;
-        }
-
-        $class_member_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::CLASS_METHOD_CACHE_NAME;
-
-        if (!is_readable($class_member_cache_location)) {
-            return null;
-        }
-
-        $class_member_reference_cache = Providers::safeFileGetContents($class_member_cache_location);
-        if ($this->config->use_igbinary) {
-            $class_member_reference_cache = igbinary_unserialize($class_member_reference_cache);
-        } else {
-            $class_member_reference_cache = unserialize($class_member_reference_cache);
-        }
-
-        if (!is_array($class_member_reference_cache)) {
-            throw new UnexpectedValueException('The reference cache must be an array');
-        }
-
-        return $class_member_reference_cache;
+        return $this->getCacheItem(self::CLASS_METHOD_CACHE_NAME);
     }
 
-    /**
-     * @psalm-suppress MixedAssignment
-     */
     public function getCachedMethodDependencies(): ?array
     {
-        $cache_directory = $this->config->getCacheDirectory();
-
-        if (!$cache_directory) {
-            return null;
-        }
-
-        $method_dependencies_cache_location
-            = $cache_directory . DIRECTORY_SEPARATOR . self::METHOD_DEPENDENCIES_CACHE_NAME;
-
-        if (!is_readable($method_dependencies_cache_location)) {
-            return null;
-        }
-
-        $method_dependencies_cache = Providers::safeFileGetContents($method_dependencies_cache_location);
-        if ($this->config->use_igbinary) {
-            $method_dependencies_cache = igbinary_unserialize($method_dependencies_cache);
-        } else {
-            $method_dependencies_cache = unserialize($method_dependencies_cache);
-        }
-
-        if (!is_array($method_dependencies_cache)) {
-            throw new UnexpectedValueException('The reference cache must be an array');
-        }
-
-        return $method_dependencies_cache;
+        return $this->getCacheItem(self::METHOD_DEPENDENCIES_CACHE_NAME);
     }
 
-    /**
-     * @psalm-suppress MixedAssignment
-     */
     public function getCachedMethodPropertyReferences(): ?array
     {
-        $cache_directory = $this->config->getCacheDirectory();
-
-        if (!$cache_directory) {
-            return null;
-        }
-
-        $class_member_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::CLASS_PROPERTY_CACHE_NAME;
-
-        if (!is_readable($class_member_cache_location)) {
-            return null;
-        }
-
-        $class_member_reference_cache = Providers::safeFileGetContents($class_member_cache_location);
-        if ($this->config->use_igbinary) {
-            $class_member_reference_cache = igbinary_unserialize($class_member_reference_cache);
-        } else {
-            $class_member_reference_cache = unserialize($class_member_reference_cache);
-        }
-
-        if (!is_array($class_member_reference_cache)) {
-            throw new UnexpectedValueException('The reference cache must be an array');
-        }
-
-        return $class_member_reference_cache;
+        return $this->getCacheItem(self::CLASS_PROPERTY_CACHE_NAME);
     }
 
-    /**
-     * @psalm-suppress MixedAssignment
-     */
     public function getCachedMethodMethodReturnReferences(): ?array
     {
-        $cache_directory = $this->config->getCacheDirectory();
-
-        if (!$cache_directory) {
-            return null;
-        }
-
-        $class_member_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::CLASS_METHOD_RETURN_CACHE_NAME;
-
-        if (!is_readable($class_member_cache_location)) {
-            return null;
-        }
-
-        $class_member_reference_cache = Providers::safeFileGetContents($class_member_cache_location);
-        if ($this->config->use_igbinary) {
-            $class_member_reference_cache = igbinary_unserialize($class_member_reference_cache);
-        } else {
-            $class_member_reference_cache = unserialize($class_member_reference_cache);
-        }
-
-        if (!is_array($class_member_reference_cache)) {
-            throw new UnexpectedValueException('The reference cache must be an array');
-        }
-
-        return $class_member_reference_cache;
+        return $this->getCacheItem(self::CLASS_METHOD_RETURN_CACHE_NAME);
     }
 
-    /**
-     * @psalm-suppress MixedAssignment
-     */
     public function getCachedMethodMissingMemberReferences(): ?array
     {
-        $cache_directory = $this->config->getCacheDirectory();
-
-        if (!$cache_directory) {
-            return null;
-        }
-
-        $class_member_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::METHOD_MISSING_MEMBER_CACHE_NAME;
-
-        if (!is_readable($class_member_cache_location)) {
-            return null;
-        }
-
-        $class_member_reference_cache = Providers::safeFileGetContents($class_member_cache_location);
-        if ($this->config->use_igbinary) {
-            $class_member_reference_cache = igbinary_unserialize($class_member_reference_cache);
-        } else {
-            $class_member_reference_cache = unserialize($class_member_reference_cache);
-        }
-
-        if (!is_array($class_member_reference_cache)) {
-            throw new UnexpectedValueException('The reference cache must be an array');
-        }
-
-        return $class_member_reference_cache;
+        return $this->getCacheItem(self::METHOD_MISSING_MEMBER_CACHE_NAME);
     }
 
-    /**
-     * @psalm-suppress MixedAssignment
-     */
     public function getCachedFileMemberReferences(): ?array
     {
-        $cache_directory = $this->config->getCacheDirectory();
-
-        if (!$cache_directory) {
-            return null;
-        }
-
-        $file_class_member_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::FILE_CLASS_MEMBER_CACHE_NAME;
-
-        if (!is_readable($file_class_member_cache_location)) {
-            return null;
-        }
-
-        $file_class_member_reference_cache = Providers::safeFileGetContents($file_class_member_cache_location);
-        if ($this->config->use_igbinary) {
-            $file_class_member_reference_cache = igbinary_unserialize($file_class_member_reference_cache);
-        } else {
-            $file_class_member_reference_cache = unserialize($file_class_member_reference_cache);
-        }
-
-        if (!is_array($file_class_member_reference_cache)) {
-            throw new UnexpectedValueException('The reference cache must be an array');
-        }
-
-        return $file_class_member_reference_cache;
+        return $this->getCacheItem(self::FILE_CLASS_MEMBER_CACHE_NAME);
     }
 
-    /**
-     * @psalm-suppress MixedAssignment
-     */
     public function getCachedFilePropertyReferences(): ?array
     {
-        $cache_directory = $this->config->getCacheDirectory();
-
-        if (!$cache_directory) {
-            return null;
-        }
-
-        $file_class_member_cache_location = $cache_directory
-            . DIRECTORY_SEPARATOR
-            . self::FILE_CLASS_PROPERTY_CACHE_NAME;
-
-        if (!is_readable($file_class_member_cache_location)) {
-            return null;
-        }
-
-        $file_class_member_reference_cache = Providers::safeFileGetContents($file_class_member_cache_location);
-        if ($this->config->use_igbinary) {
-            $file_class_member_reference_cache = igbinary_unserialize($file_class_member_reference_cache);
-        } else {
-            $file_class_member_reference_cache = unserialize($file_class_member_reference_cache);
-        }
-
-        if (!is_array($file_class_member_reference_cache)) {
-            throw new UnexpectedValueException('The reference cache must be an array');
-        }
-
-        return $file_class_member_reference_cache;
+        return $this->getCacheItem(self::FILE_CLASS_PROPERTY_CACHE_NAME);
     }
 
-    /**
-     * @psalm-suppress MixedAssignment
-     */
     public function getCachedFileMethodReturnReferences(): ?array
     {
-        $cache_directory = $this->config->getCacheDirectory();
-
-        if (!$cache_directory) {
-            return null;
-        }
-
-        $file_class_member_cache_location = $cache_directory
-            . DIRECTORY_SEPARATOR
-            . self::FILE_METHOD_RETURN_CACHE_NAME;
-
-        if (!is_readable($file_class_member_cache_location)) {
-            return null;
-        }
-
-        $file_class_member_reference_cache = Providers::safeFileGetContents($file_class_member_cache_location);
-        if ($this->config->use_igbinary) {
-            $file_class_member_reference_cache = igbinary_unserialize($file_class_member_reference_cache);
-        } else {
-            $file_class_member_reference_cache = unserialize($file_class_member_reference_cache);
-        }
-
-        if (!is_array($file_class_member_reference_cache)) {
-            throw new UnexpectedValueException('The reference cache must be an array');
-        }
-
-        return $file_class_member_reference_cache;
+        return $this->getCacheItem(self::FILE_METHOD_RETURN_CACHE_NAME);
     }
 
-    /**
-     * @psalm-suppress MixedAssignment
-     */
     public function getCachedFileMissingMemberReferences(): ?array
     {
-        $cache_directory = $this->config->getCacheDirectory();
-
-        if (!$cache_directory) {
-            return null;
-        }
-
-        $file_class_member_cache_location
-            = $cache_directory . DIRECTORY_SEPARATOR . self::FILE_MISSING_MEMBER_CACHE_NAME;
-
-        if (!is_readable($file_class_member_cache_location)) {
-            return null;
-        }
-
-        $file_class_member_reference_cache = Providers::safeFileGetContents($file_class_member_cache_location);
-        if ($this->config->use_igbinary) {
-            $file_class_member_reference_cache = igbinary_unserialize($file_class_member_reference_cache);
-        } else {
-            $file_class_member_reference_cache = unserialize($file_class_member_reference_cache);
-        }
-
-        if (!is_array($file_class_member_reference_cache)) {
-            throw new UnexpectedValueException('The reference cache must be an array');
-        }
-
-        return $file_class_member_reference_cache;
+        return $this->getCacheItem(self::FILE_MISSING_MEMBER_CACHE_NAME);
     }
 
-    /**
-     * @psalm-suppress MixedAssignment
-     */
     public function getCachedMixedMemberNameReferences(): ?array
     {
-        $cache_directory = $this->config->getCacheDirectory();
-
-        if (!$cache_directory) {
-            return null;
-        }
-
-        $reference_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::UNKNOWN_MEMBER_CACHE_NAME;
-
-        if (!is_readable($reference_cache_location)) {
-            return null;
-        }
-
-        if ($this->config->use_igbinary) {
-            $reference_cache = igbinary_unserialize(Providers::safeFileGetContents($reference_cache_location));
-        } else {
-            $reference_cache = unserialize(Providers::safeFileGetContents($reference_cache_location));
-        }
-
-        if (!is_array($reference_cache)) {
-            throw new UnexpectedValueException('The reference cache must be an array');
-        }
-
-        return $reference_cache;
+        return $this->getCacheItem(self::UNKNOWN_MEMBER_CACHE_NAME);
     }
 
-    /**
-     * @psalm-suppress MixedAssignment
-     */
     public function getCachedMethodParamUses(): ?array
     {
-        $cache_directory = $this->config->getCacheDirectory();
-
-        if (!$cache_directory) {
-            return null;
-        }
-
-        $reference_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::METHOD_PARAM_USE_CACHE_NAME;
-
-        if (!is_readable($reference_cache_location)) {
-            return null;
-        }
-
-        if ($this->config->use_igbinary) {
-            $reference_cache = igbinary_unserialize(Providers::safeFileGetContents($reference_cache_location));
-        } else {
-            $reference_cache = unserialize(Providers::safeFileGetContents($reference_cache_location));
-        }
-
-        if (!is_array($reference_cache)) {
-            throw new UnexpectedValueException('The method param use cache must be an array');
-        }
-
-        return $reference_cache;
+        return $this->getCacheItem(self::METHOD_PARAM_USE_CACHE_NAME);
     }
 
-    /**
-     * @psalm-suppress MixedAssignment
-     */
     public function getCachedIssues(): ?array
     {
-        $cache_directory = $this->config->getCacheDirectory();
-
-        if (!$cache_directory) {
-            return null;
-        }
-
-        $issues_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::ISSUES_CACHE_NAME;
-
-        if (!is_readable($issues_cache_location)) {
-            return null;
-        }
-
-        if ($this->config->use_igbinary) {
-            $issues_cache = igbinary_unserialize(Providers::safeFileGetContents($issues_cache_location));
-        } else {
-            $issues_cache = unserialize(Providers::safeFileGetContents($issues_cache_location));
-        }
-
-        if (!is_array($issues_cache)) {
-            throw new UnexpectedValueException('The reference cache must be an array');
-        }
-
-        return $issues_cache;
+        return $this->getCacheItem(self::ISSUES_CACHE_NAME);
     }
 
     public function setCachedFileReferences(array $file_references): void
     {
-        $cache_directory = $this->config->getCacheDirectory();
-
-        if (!$cache_directory) {
-            return;
-        }
-
-        $reference_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::REFERENCE_CACHE_NAME;
-
-        if ($this->config->use_igbinary) {
-            file_put_contents($reference_cache_location, igbinary_serialize($file_references), LOCK_EX);
-        } else {
-            file_put_contents($reference_cache_location, serialize($file_references), LOCK_EX);
-        }
+        $this->saveCacheItem(self::REFERENCE_CACHE_NAME, $file_references);
     }
 
     public function setCachedClassLikeFiles(array $file_references): void
     {
-        $cache_directory = $this->config->getCacheDirectory();
-
-        if (!$cache_directory) {
-            return;
-        }
-
-        $reference_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::CLASSLIKE_FILE_CACHE_NAME;
-
-        if ($this->config->use_igbinary) {
-            file_put_contents($reference_cache_location, igbinary_serialize($file_references), LOCK_EX);
-        } else {
-            file_put_contents($reference_cache_location, serialize($file_references), LOCK_EX);
-        }
+        $this->saveCacheItem(self::CLASSLIKE_FILE_CACHE_NAME, $file_references);
     }
 
     public function setCachedNonMethodClassReferences(array $file_class_references): void
     {
-        $cache_directory = $this->config->getCacheDirectory();
-
-        if (!$cache_directory) {
-            return;
-        }
-
-        $reference_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::NONMETHOD_CLASS_REFERENCE_CACHE_NAME;
-
-        if ($this->config->use_igbinary) {
-            file_put_contents($reference_cache_location, igbinary_serialize($file_class_references), LOCK_EX);
-        } else {
-            file_put_contents($reference_cache_location, serialize($file_class_references), LOCK_EX);
-        }
+        $this->saveCacheItem(self::NONMETHOD_CLASS_REFERENCE_CACHE_NAME, $file_class_references);
     }
 
     public function setCachedMethodClassReferences(array $method_class_references): void
     {
-        $cache_directory = $this->config->getCacheDirectory();
-
-        if (!$cache_directory) {
-            return;
-        }
-
-        $reference_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::METHOD_CLASS_REFERENCE_CACHE_NAME;
-
-        if ($this->config->use_igbinary) {
-            file_put_contents($reference_cache_location, igbinary_serialize($method_class_references), LOCK_EX);
-        } else {
-            file_put_contents($reference_cache_location, serialize($method_class_references), LOCK_EX);
-        }
+        $this->saveCacheItem(self::METHOD_CLASS_REFERENCE_CACHE_NAME, $method_class_references);
     }
 
     public function setCachedMethodMemberReferences(array $member_references): void
     {
-        $cache_directory = $this->config->getCacheDirectory();
-
-        if (!$cache_directory) {
-            return;
-        }
-
-        $member_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::CLASS_METHOD_CACHE_NAME;
-
-        if ($this->config->use_igbinary) {
-            file_put_contents($member_cache_location, igbinary_serialize($member_references), LOCK_EX);
-        } else {
-            file_put_contents($member_cache_location, serialize($member_references), LOCK_EX);
-        }
+        $this->saveCacheItem(self::CLASS_METHOD_CACHE_NAME, $member_references);
     }
 
     public function setCachedMethodDependencies(array $member_references): void
     {
-        $cache_directory = $this->config->getCacheDirectory();
-
-        if (!$cache_directory) {
-            return;
-        }
-
-        $member_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::METHOD_DEPENDENCIES_CACHE_NAME;
-
-        if ($this->config->use_igbinary) {
-            file_put_contents($member_cache_location, igbinary_serialize($member_references), LOCK_EX);
-        } else {
-            file_put_contents($member_cache_location, serialize($member_references), LOCK_EX);
-        }
+        $this->saveCacheItem(self::METHOD_DEPENDENCIES_CACHE_NAME, $member_references);
     }
 
     public function setCachedMethodPropertyReferences(array $property_references): void
     {
-        $cache_directory = $this->config->getCacheDirectory();
-
-        if (!$cache_directory) {
-            return;
-        }
-
-        $member_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::CLASS_PROPERTY_CACHE_NAME;
-
-        if ($this->config->use_igbinary) {
-            file_put_contents($member_cache_location, igbinary_serialize($property_references), LOCK_EX);
-        } else {
-            file_put_contents($member_cache_location, serialize($property_references), LOCK_EX);
-        }
+        $this->saveCacheItem(self::CLASS_PROPERTY_CACHE_NAME, $property_references);
     }
 
     public function setCachedMethodMethodReturnReferences(array $method_return_references): void
     {
-        $cache_directory = $this->config->getCacheDirectory();
-
-        if (!$cache_directory) {
-            return;
-        }
-
-        $member_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::CLASS_METHOD_RETURN_CACHE_NAME;
-
-        if ($this->config->use_igbinary) {
-            file_put_contents($member_cache_location, igbinary_serialize($method_return_references), LOCK_EX);
-        } else {
-            file_put_contents($member_cache_location, serialize($method_return_references), LOCK_EX);
-        }
+        $this->saveCacheItem(self::CLASS_METHOD_RETURN_CACHE_NAME, $method_return_references);
     }
 
     public function setCachedMethodMissingMemberReferences(array $member_references): void
     {
-        $cache_directory = $this->config->getCacheDirectory();
-
-        if (!$cache_directory) {
-            return;
-        }
-
-        $member_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::METHOD_MISSING_MEMBER_CACHE_NAME;
-
-        if ($this->config->use_igbinary) {
-            file_put_contents($member_cache_location, igbinary_serialize($member_references), LOCK_EX);
-        } else {
-            file_put_contents($member_cache_location, serialize($member_references), LOCK_EX);
-        }
+        $this->saveCacheItem(self::METHOD_MISSING_MEMBER_CACHE_NAME, $member_references);
     }
 
     public function setCachedFileMemberReferences(array $member_references): void
     {
-        $cache_directory = $this->config->getCacheDirectory();
-
-        if (!$cache_directory) {
-            return;
-        }
-
-        $member_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::FILE_CLASS_MEMBER_CACHE_NAME;
-
-        if ($this->config->use_igbinary) {
-            file_put_contents($member_cache_location, igbinary_serialize($member_references), LOCK_EX);
-        } else {
-            file_put_contents($member_cache_location, serialize($member_references), LOCK_EX);
-        }
+        $this->saveCacheItem(self::FILE_CLASS_MEMBER_CACHE_NAME, $member_references);
     }
 
     public function setCachedFilePropertyReferences(array $property_references): void
     {
-        $cache_directory = $this->config->getCacheDirectory();
-
-        if (!$cache_directory) {
-            return;
-        }
-
-        $member_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::FILE_CLASS_PROPERTY_CACHE_NAME;
-
-        if ($this->config->use_igbinary) {
-            file_put_contents($member_cache_location, igbinary_serialize($property_references), LOCK_EX);
-        } else {
-            file_put_contents($member_cache_location, serialize($property_references), LOCK_EX);
-        }
+        $this->saveCacheItem(self::FILE_CLASS_PROPERTY_CACHE_NAME, $property_references);
     }
 
     public function setCachedFileMethodReturnReferences(array $method_return_references): void
     {
-        $cache_directory = $this->config->getCacheDirectory();
-
-        if (!$cache_directory) {
-            return;
-        }
-
-        $member_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::FILE_METHOD_RETURN_CACHE_NAME;
-
-        if ($this->config->use_igbinary) {
-            file_put_contents($member_cache_location, igbinary_serialize($method_return_references), LOCK_EX);
-        } else {
-            file_put_contents($member_cache_location, serialize($method_return_references), LOCK_EX);
-        }
+        $this->saveCacheItem(self::FILE_METHOD_RETURN_CACHE_NAME, $method_return_references);
     }
 
     public function setCachedFileMissingMemberReferences(array $member_references): void
     {
-        $cache_directory = $this->config->getCacheDirectory();
-
-        if (!$cache_directory) {
-            return;
-        }
-
-        $member_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::FILE_MISSING_MEMBER_CACHE_NAME;
-
-        if ($this->config->use_igbinary) {
-            file_put_contents($member_cache_location, igbinary_serialize($member_references), LOCK_EX);
-        } else {
-            file_put_contents($member_cache_location, serialize($member_references), LOCK_EX);
-        }
+        $this->saveCacheItem(self::FILE_MISSING_MEMBER_CACHE_NAME, $member_references);
     }
 
     public function setCachedMixedMemberNameReferences(array $references): void
     {
-        $cache_directory = $this->config->getCacheDirectory();
-
-        if (!$cache_directory) {
-            return;
-        }
-
-        $reference_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::UNKNOWN_MEMBER_CACHE_NAME;
-
-        if ($this->config->use_igbinary) {
-            file_put_contents($reference_cache_location, igbinary_serialize($references), LOCK_EX);
-        } else {
-            file_put_contents($reference_cache_location, serialize($references), LOCK_EX);
-        }
+        $this->saveCacheItem(self::UNKNOWN_MEMBER_CACHE_NAME, $references);
     }
 
     public function setCachedMethodParamUses(array $uses): void
     {
-        $cache_directory = $this->config->getCacheDirectory();
-
-        if (!$cache_directory) {
-            return;
-        }
-
-        $reference_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::METHOD_PARAM_USE_CACHE_NAME;
-
-        if ($this->config->use_igbinary) {
-            file_put_contents($reference_cache_location, igbinary_serialize($uses), LOCK_EX);
-        } else {
-            file_put_contents($reference_cache_location, serialize($uses), LOCK_EX);
-        }
+        $this->saveCacheItem(self::METHOD_PARAM_USE_CACHE_NAME, $uses);
     }
 
     public function setCachedIssues(array $issues): void
     {
-        $cache_directory = $this->config->getCacheDirectory();
-
-        if (!$cache_directory) {
-            return;
-        }
-
-        $issues_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::ISSUES_CACHE_NAME;
-
-        if ($this->config->use_igbinary) {
-            file_put_contents($issues_cache_location, igbinary_serialize($issues), LOCK_EX);
-        } else {
-            file_put_contents($issues_cache_location, serialize($issues), LOCK_EX);
-        }
+        $this->saveCacheItem(self::ISSUES_CACHE_NAME, $issues);
     }
 
     /**
@@ -837,23 +229,10 @@ class FileReferenceCacheProvider
      */
     public function getAnalyzedMethodCache()
     {
-        $cache_directory = $this->config->getCacheDirectory();
+        /** @var null|array<string, array<string, int>> $cache_item */
+        $cache_item = $this->getCacheItem(self::ANALYZED_METHODS_CACHE_NAME);
 
-        $analyzed_methods_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::ANALYZED_METHODS_CACHE_NAME;
-
-        if ($cache_directory
-            && file_exists($analyzed_methods_cache_location)
-        ) {
-            if ($this->config->use_igbinary) {
-                /** @var array<string, array<string, int>> */
-                return igbinary_unserialize(Providers::safeFileGetContents($analyzed_methods_cache_location));
-            } else {
-                /** @var array<string, array<string, int>> */
-                return unserialize(Providers::safeFileGetContents($analyzed_methods_cache_location));
-            }
-        }
-
-        return false;
+        return $cache_item ?? false;
     }
 
     /**
@@ -861,19 +240,7 @@ class FileReferenceCacheProvider
      */
     public function setAnalyzedMethodCache(array $analyzed_methods): void
     {
-        $cache_directory = Config::getInstance()->getCacheDirectory();
-
-        if ($cache_directory) {
-            $analyzed_methods_cache_location = $cache_directory
-                . DIRECTORY_SEPARATOR
-                . self::ANALYZED_METHODS_CACHE_NAME;
-
-            if ($this->config->use_igbinary) {
-                file_put_contents($analyzed_methods_cache_location, igbinary_serialize($analyzed_methods), LOCK_EX);
-            } else {
-                file_put_contents($analyzed_methods_cache_location, serialize($analyzed_methods), LOCK_EX);
-            }
-        }
+        $this->saveCacheItem(self::ANALYZED_METHODS_CACHE_NAME, $analyzed_methods);
     }
 
     /**
@@ -881,29 +248,10 @@ class FileReferenceCacheProvider
      */
     public function getFileMapCache()
     {
-        $cache_directory = $this->config->getCacheDirectory();
+        /** @var array<string, FileMapType>|null $cache_item */
+        $cache_item = $this->getCacheItem(self::FILE_MAPS_CACHE_NAME);
 
-        $file_maps_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::FILE_MAPS_CACHE_NAME;
-
-        if ($cache_directory
-            && file_exists($file_maps_cache_location)
-        ) {
-            if ($this->config->use_igbinary) {
-                /**
-                 * @var array<string, FileMapType>
-                 */
-                $file_maps_cache = igbinary_unserialize(Providers::safeFileGetContents($file_maps_cache_location));
-            } else {
-                /**
-                 * @var array<string, FileMapType>
-                 */
-                $file_maps_cache = unserialize(Providers::safeFileGetContents($file_maps_cache_location));
-            }
-
-            return $file_maps_cache;
-        }
-
-        return false;
+        return $cache_item ?? false;
     }
 
     /**
@@ -911,17 +259,7 @@ class FileReferenceCacheProvider
      */
     public function setFileMapCache(array $file_maps): void
     {
-        $cache_directory = Config::getInstance()->getCacheDirectory();
-
-        if ($cache_directory) {
-            $file_maps_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::FILE_MAPS_CACHE_NAME;
-
-            if ($this->config->use_igbinary) {
-                file_put_contents($file_maps_cache_location, igbinary_serialize($file_maps), LOCK_EX);
-            } else {
-                file_put_contents($file_maps_cache_location, serialize($file_maps), LOCK_EX);
-            }
-        }
+        $this->saveCacheItem(self::FILE_MAPS_CACHE_NAME, $file_maps);
     }
 
     //phpcs:disable -- Remove this once the phpstan phpdoc parser MR is merged
@@ -931,29 +269,10 @@ class FileReferenceCacheProvider
     public function getTypeCoverage()
     {
         //phpcs:enable -- Remove this once the phpstan phpdoc parser MR is merged
-        $cache_directory = Config::getInstance()->getCacheDirectory();
+        /** @var array<string, array{int, int}>|null $cache_item */
+        $cache_item = $this->getCacheItem(self::TYPE_COVERAGE_CACHE_NAME);
 
-        $type_coverage_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::TYPE_COVERAGE_CACHE_NAME;
-
-        if ($cache_directory
-            && file_exists($type_coverage_cache_location)
-        ) {
-            if ($this->config->use_igbinary) {
-                /** @var array<string, array{int, int}> */
-                $type_coverage_cache = igbinary_unserialize(
-                    Providers::safeFileGetContents($type_coverage_cache_location),
-                );
-            } else {
-                /** @var array<string, array{int, int}> */
-                $type_coverage_cache = unserialize(
-                    Providers::safeFileGetContents($type_coverage_cache_location),
-                );
-            }
-
-            return $type_coverage_cache;
-        }
-
-        return false;
+        return $cache_item ?? false;
     }
 
     /**
@@ -961,17 +280,7 @@ class FileReferenceCacheProvider
      */
     public function setTypeCoverage(array $mixed_counts): void
     {
-        $cache_directory = Config::getInstance()->getCacheDirectory();
-
-        if ($cache_directory) {
-            $type_coverage_cache_location = $cache_directory . DIRECTORY_SEPARATOR . self::TYPE_COVERAGE_CACHE_NAME;
-
-            if ($this->config->use_igbinary) {
-                file_put_contents($type_coverage_cache_location, igbinary_serialize($mixed_counts), LOCK_EX);
-            } else {
-                file_put_contents($type_coverage_cache_location, serialize($mixed_counts), LOCK_EX);
-            }
-        }
+        $this->saveCacheItem(self::TYPE_COVERAGE_CACHE_NAME, $mixed_counts);
     }
 
     /**
@@ -1029,5 +338,38 @@ class FileReferenceCacheProvider
             $hash,
             LOCK_EX,
         );
+    }
+
+    private function getCacheItem(string $type): ?array
+    {
+        $cache_directory = $this->config->getCacheDirectory();
+        if (!$cache_directory) {
+            return null;
+        }
+
+        $cache_location = $cache_directory . DIRECTORY_SEPARATOR . $type;
+        if (!is_readable($cache_location)) {
+            return null;
+        }
+
+        $cache_item = $this->cache->getItem($cache_location);
+        if ($cache_item === null) {
+            return null;
+        } elseif (!is_array($cache_item)) {
+            throw new UnexpectedValueException('The reference cache must be an array');
+        }
+
+        return $cache_item;
+    }
+
+    private function saveCacheItem(string $type, array $cache_item): void
+    {
+        $cache_directory = $this->config->getCacheDirectory();
+        if (!$cache_directory) {
+            return;
+        }
+        $cache_location = $cache_directory . DIRECTORY_SEPARATOR . $type;
+
+        $this->cache->saveItem($cache_location, $cache_item);
     }
 }

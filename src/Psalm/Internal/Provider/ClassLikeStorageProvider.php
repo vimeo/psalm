@@ -12,7 +12,7 @@ use function strtolower;
 /**
  * @internal
  */
-class ClassLikeStorageProvider
+final class ClassLikeStorageProvider
 {
     /**
      * Storing this statically is much faster (at least in PHP 7.2.1)
@@ -49,10 +49,14 @@ class ClassLikeStorageProvider
         return self::$storage[$fq_classlike_name_lc];
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function has(string $fq_classlike_name): bool
     {
         $fq_classlike_name_lc = strtolower($fq_classlike_name);
 
+        /** @psalm-suppress ImpureStaticProperty Used only for caching */
         return isset(self::$storage[$fq_classlike_name_lc]);
     }
 

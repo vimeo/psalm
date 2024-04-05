@@ -5,6 +5,7 @@ namespace Psalm\Internal\Type\Comparator;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
@@ -17,11 +18,12 @@ use function current;
 use function in_array;
 use function strpos;
 use function strtolower;
+use function substr;
 
 /**
  * @internal
  */
-class ObjectComparator
+final class ObjectComparator
 {
     /**
      * @param  TNamedObject|TTemplateParam|TIterable  $input_type_part
@@ -37,22 +39,43 @@ class ObjectComparator
         if ($container_type_part instanceof TTemplateParam
             && $input_type_part instanceof TTemplateParam
             && $container_type_part->defining_class != $input_type_part->defining_class
-            && strpos($container_type_part->defining_class, 'fn-') !== 0
-            && strpos($input_type_part->defining_class, 'fn-') !== 0
             && 1 == count($container_type_part->as->getAtomicTypes())
             && 1 == count($input_type_part->as->getAtomicTypes())) {
-            $containerAs = current($container_type_part->as->getAtomicTypes());
-            $inputAs = current($input_type_part->as->getAtomicTypes());
-            if ($containerAs instanceof TNamedObject && $inputAs instanceof TNamedObject) {
-                return self::isShallowlyContainedBy(
-                    $codebase,
-                    $inputAs,
-                    $containerAs,
-                    $allow_interface_equality,
-                    $atomic_comparison_result,
-                );
-            } elseif ($containerAs instanceof TMixed && $inputAs instanceof TMixed) {
-                return true;
+            $containerDefinedInFunction = strpos($container_type_part->defining_class, 'fn-') === 0;
+            $inputDefinedInFunction = strpos($input_type_part->defining_class, 'fn-') === 0;
+            if ($inputDefinedInFunction) {
+                $separatorPos = strpos($input_type_part->defining_class, '::');
+                if ($separatorPos === false) {
+                    // Is that possible ? Falling back to default definition.
+                    $inputDefiningClass = $input_type_part->defining_class;
+                } else {
+                    $inputDefiningClass = substr($input_type_part->defining_class, 3, $separatorPos - 3);
+                }
+            } else {
+                $inputDefiningClass = $input_type_part->defining_class;
+            }
+
+            // FIXME Missing analysis for additional cases, for example :
+            // - input from a parameter in a static function that is defined in the container class
+            // - input and container are both defined on function parameters
+            if ((!$inputDefinedInFunction
+                 && !$containerDefinedInFunction)
+                || ($inputDefinedInFunction
+                    && !$containerDefinedInFunction
+                    && strtolower($inputDefiningClass) != strtolower($container_type_part->defining_class))) {
+                $containerAs = current($container_type_part->as->getAtomicTypes());
+                $inputAs = current($input_type_part->as->getAtomicTypes());
+                if ($containerAs instanceof TNamedObject && $inputAs instanceof TNamedObject) {
+                    return self::isShallowlyContainedBy(
+                        $codebase,
+                        $inputAs,
+                        $containerAs,
+                        $allow_interface_equality,
+                        $atomic_comparison_result,
+                    );
+                } elseif ($containerAs instanceof TMixed && $inputAs instanceof TMixed) {
+                    return true;
+                }
             }
         }
 
@@ -68,6 +91,8 @@ class ObjectComparator
                 $intersection_container_type_lower = 'object';
             } elseif ($intersection_container_type instanceof TTemplateParam) {
                 $intersection_container_type_lower = null;
+            } elseif ($intersection_container_type instanceof TCallableObject) {
+                $intersection_container_type_lower = 'callable-object';
             } else {
                 $container_was_static = $intersection_container_type->is_static;
 
@@ -112,7 +137,7 @@ class ObjectComparator
 
     /**
      * @param  TNamedObject|TTemplateParam|TIterable  $type_part
-     * @return array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties>
+     * @return array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties|TCallableObject>
      */
     private static function getIntersectionTypes(Atomic $type_part): array
     {
@@ -144,8 +169,8 @@ class ObjectComparator
     }
 
     /**
-     * @param  TNamedObject|TTemplateParam|TIterable|TObjectWithProperties  $intersection_input_type
-     * @param  TNamedObject|TTemplateParam|TIterable|TObjectWithProperties  $intersection_container_type
+     * @param  TNamedObject|TTemplateParam|TIterable|TObjectWithProperties|TCallableObject  $intersection_input_type
+     * @param  TNamedObject|TTemplateParam|TIterable|TObjectWithProperties|TCallableObject  $intersection_container_type
      */
     private static function isIntersectionShallowlyContainedBy(
         Codebase $codebase,
@@ -246,6 +271,8 @@ class ObjectComparator
             $intersection_input_type_lower = 'iterable';
         } elseif ($intersection_input_type instanceof TObjectWithProperties) {
             $intersection_input_type_lower = 'object';
+        } elseif ($intersection_input_type instanceof TCallableObject) {
+            $intersection_input_type_lower = 'callable-object';
         } else {
             $input_was_static = $intersection_input_type->is_static;
 

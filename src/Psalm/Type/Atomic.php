@@ -11,6 +11,7 @@ use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeAlias;
 use Psalm\Internal\Type\TypeAlias\LinkableTypeAlias;
 use Psalm\Internal\TypeVisitor\ClasslikeReplacer;
+use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
@@ -82,6 +83,8 @@ use function strtolower;
  */
 abstract class Atomic implements TypeNode
 {
+    use UnserializeMemoryUsageSuppressionTrait;
+
     public function __construct(bool $from_docblock = false)
     {
         $this->from_docblock = $from_docblock;
@@ -323,7 +326,7 @@ abstract class Atomic implements TypeNode
                 return $analysis_php_version_id !== null ? new TNamedObject($value) : new TScalar();
 
             case 'null':
-                if ($analysis_php_version_id === null || $analysis_php_version_id >= 8_00_00) {
+                if ($analysis_php_version_id === null || $analysis_php_version_id >= 7_00_00) {
                     return new TNull();
                 }
 
@@ -450,7 +453,7 @@ abstract class Atomic implements TypeNode
                 && ($this->as->hasNamedObjectType()
                     || array_filter(
                         $this->extra_types,
-                        static fn($extra_type): bool => $extra_type->isNamedObjectType()
+                        static fn($extra_type): bool => $extra_type->isNamedObjectType(),
                     )
                 )
             );
@@ -542,7 +545,7 @@ abstract class Atomic implements TypeNode
                     $this->extra_types
                     && array_filter(
                         $this->extra_types,
-                        static fn(Atomic $a): bool => $a->hasTraversableInterface($codebase)
+                        static fn(Atomic $a): bool => $a->hasTraversableInterface($codebase),
                     )
                 )
             );
@@ -565,7 +568,7 @@ abstract class Atomic implements TypeNode
                     $this->extra_types
                     && array_filter(
                         $this->extra_types,
-                        static fn(Atomic $a): bool => $a->hasCountableInterface($codebase)
+                        static fn(Atomic $a): bool => $a->hasCountableInterface($codebase),
                     )
                 )
             );
@@ -603,7 +606,7 @@ abstract class Atomic implements TypeNode
                     $this->extra_types
                     && array_filter(
                         $this->extra_types,
-                        static fn(Atomic $a): bool => $a->hasArrayAccessInterface($codebase)
+                        static fn(Atomic $a): bool => $a->hasArrayAccessInterface($codebase),
                     )
                 )
             );

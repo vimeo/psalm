@@ -90,6 +90,63 @@ class AssertAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testAssertsAllongCallStaticMethodWork(): void
+    {
+        $this->addFile(
+            'somefile.php',
+            '<?php
+
+            class ImportedAssert
+            {
+                /** @psalm-assert non-empty-string $b */
+                public static function notEmptyStrOnly(string $b): void
+                {
+                    if ("" === $b) throw new \Exception("");
+                }
+
+                public function __callStatic() {}
+            }
+
+            /** @return non-empty-string */
+            function returnNonEmpty(string $b): string
+            {
+                ImportedAssert::notEmptyStrOnly($b);
+
+                return $b;
+            }
+            ',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testAssertInvalidDocblockMessageDoesNotIncludeTrace(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessageMatches(
+            '!^InvalidDocblock - ' . 'somefile\\.php:10:5 - Invalid @psalm-assert union type: Invalid type \'\\$expected\'$!',
+        );
+
+        $this->addFile(
+            'somefile.php',
+            <<<'PHP'
+            <?php
+                /**
+                 * Asserts that two variables are not the same.
+                 *
+                 * @template T
+                 * @param T      $expected
+                 * @param mixed  $actual
+                 * @psalm-assert !=$expected $actual
+                 */
+                function assertNotSame($expected, $actual) : void {}
+            PHP,
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+
     public function providerValidCodeParse(): iterable
     {
         return [
@@ -2007,6 +2064,30 @@ class AssertAnnotationTest extends TestCase
                     function requiresString(string $_str): void {}
                 ',
             ],
+            'assertionOnPropertyReturnedByMethod' => [
+                'code' => '<?php
+                    class a {
+                        public ?int $id = null;
+                        /**
+                         * @psalm-mutation-free
+                         *
+                         * @psalm-assert-if-true !null $this->id
+                         */
+                        public function isExists(): bool {
+                            return $this->id !== null;
+                        }
+                    }
+
+                    class b {
+                        public ?int $id = null;
+                        public function __construct(private a $a) {
+                            if ($this->getA()->isExists()) {
+                                /** @psalm-check-type-exact $this->id = ?int */
+                            }
+                        }
+                        public function getA(): a { return $this->a; }
+                    }',
+            ],
             'assertWithEmptyStringOnKeyedArray' => [
                 'code' => '<?php
                     class A
@@ -2109,6 +2190,870 @@ class AssertAnnotationTest extends TestCase
                     assertOneOf($abc, ["a", "b"]);
                     consumeAOrB($abc);
                 ',
+            ],
+            'assertDocblockTypeContradictionCorrectType' => [
+                'code' => '<?php
+                    function takesAnInt(int $i): void {}
+
+                    function takesAFloat(float $i): void {}
+
+                    $foo = rand() / 2;
+
+                    /** @psalm-suppress TypeDoesNotContainType */
+                    if (is_int($foo) || !is_float($foo)) {
+                        takesAnInt($foo);
+                        exit;
+                    }
+
+                    takesAFloat($foo);',
+            ],
+            'assertOnPropertyValue' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Foo {
+                        public array $foo = [];
+                    };
+
+
+                    /** @psalm-assert array{a:1} $o->foo */
+                    function change(Foo $o): void
+                    {
+                        $o->foo = ["a" => 1];
+                    }
+                    $o = new Foo;
+                    change($o);
+                    PHP,
+                'assertions' => [
+                    '$o->foo===' => 'array{a: 1}',
+                ],
+            ],
+            'assertionOfBackedEnumValuesWithValueOf' => [
+                'code' => '<?php
+                    enum StringEnum: string
+                    {
+                        case FOO = "foo";
+                        case BAR = "bar";
+                        case BAZ = "baz";
+                    }
+
+                    enum IntEnum: int
+                    {
+                        case FOO = 1;
+                        case BAR = 2;
+                        case BAZ = 3;
+                    }
+
+                    /** @psalm-assert value-of<StringEnum::BAR|StringEnum::FOO> $foo */
+                    function assertSomeString(string $foo): void
+                    {}
+
+                    /** @psalm-assert value-of<IntEnum::BAR|IntEnum::FOO> $foo */
+                    function assertSomeInt(int $foo): void
+                    {}
+
+                    /** @psalm-assert value-of<StringEnum|IntEnum> $foo */
+                    function assertAnyEnumValue(string|int $foo): void
+                    {}
+
+                    /** @param "foo"|"bar" $foo */
+                    function takesSomeStringFromEnum(string $foo): StringEnum
+                    {
+                        return StringEnum::from($foo);
+                    }
+
+                    /** @param 1|2 $foo */
+                    function takesSomeIntFromEnum(int $foo): IntEnum
+                    {
+                        return IntEnum::from($foo);
+                    }
+
+                    /** @var non-empty-string $string */
+                    $string = null;
+                    /** @var positive-int $int */
+                    $int = null;
+
+                    assertSomeString($string);
+                    takesSomeStringFromEnum($string);
+
+                    assertSomeInt($int);
+                    takesSomeIntFromEnum($int);
+
+                    /** @var string|int $potentialEnumValue */
+                    $potentialEnumValue = null;
+                    assertAnyEnumValue($potentialEnumValue);
+                ',
+                'assertions' => [
+                    '$potentialEnumValue===' => "'bar'|'baz'|'foo'|1|2|3",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'assertStringIsNonEmptyString' => [
+                'code' => '<?php
+                    /** @var string $str */;
+                    /** @var string|int $stringOrInt */;
+
+                    if (isNonEmptyString($str)) {
+                        /** @psalm-check-type-exact $str = non-empty-string */;
+                    } else {
+                        /** @psalm-check-type-exact $str = string */;
+                    }
+
+                    if (isNonEmptyString($stringOrInt)) {
+                        /** @psalm-check-type-exact $stringOrInt = non-empty-string */;
+                    } else {
+                        /** @psalm-check-type-exact $stringOrInt = string|int */;
+                    }
+
+                    /**
+                     * @param mixed $_str
+                     * @psalm-assert-if-true non-empty-string $_str
+                     */
+                    function isNonEmptyString($_str): bool
+                    {
+                        return true;
+                    }
+                    ',
+            ],
+            'assertStringIsNonEmptyStringInNamespace' => [
+                'code' => '<?php
+                    namespace X;
+                    /** @var string $str */;
+                    /** @var string|int $stringOrInt */;
+
+                    if (isNonEmptyString($str)) {
+                        /** @psalm-check-type-exact $str = non-empty-string */;
+                    } else {
+                        /** @psalm-check-type-exact $str = string */;
+                    }
+
+                    if (isNonEmptyString($stringOrInt)) {
+                        /** @psalm-check-type-exact $stringOrInt = non-empty-string */;
+                    } else {
+                        /** @psalm-check-type-exact $stringOrInt = string|int */;
+                    }
+
+                    /**
+                     * @param mixed $_str
+                     * @psalm-assert-if-true non-empty-string $_str
+                     */
+                    function isNonEmptyString($_str): bool
+                    {
+                        return true;
+                    }
+                    ',
+            ],
+            'assertObjectWithClosedInheritance' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-inheritors FirstChoice|SecondChoice|ThirdChoice
+                     */
+                    interface Choice
+                    {
+                    }
+
+                    final class FirstChoice implements Choice
+                    {
+                    }
+
+                    final class SecondChoice implements Choice
+                    {
+                    }
+
+                    final class ThirdChoice implements Choice
+                    {
+                    }
+
+                    /**
+                     * @psalm-assert-if-true FirstChoice $choice
+                     */
+                    function isFirstChoice(Choice $choice): bool
+                    {
+                        return $choice instanceof FirstChoice;
+                    }
+
+                    /**
+                     * @psalm-assert-if-true SecondChoice $choice
+                     */
+                    function isSecondChoice(Choice $choice): bool
+                    {
+                        return $choice instanceof SecondChoice;
+                    }
+
+                    function testFirstChoice(Choice $choice): void
+                    {
+                        if (isFirstChoice($choice)) {
+                            /** @psalm-check-type-exact $choice = FirstChoice */
+                        } else {
+                            /** @psalm-check-type-exact $choice = SecondChoice|ThirdChoice */
+                        }
+                    }
+
+                    function testFirstAndSecondChoice(Choice $choice): void
+                    {
+                        if (isFirstChoice($choice)) {
+                            /** @psalm-check-type-exact $choice = FirstChoice */
+                        } elseif (isSecondChoice($choice)) {
+                            /** @psalm-check-type-exact $choice = SecondChoice */
+                        } else {
+                            /** @psalm-check-type-exact $choice = ThirdChoice */
+                        }
+                    }',
+            ],
+            'assertObjectWithClosedInheritanceWithMatch' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-inheritors FirstChoice|SecondChoice|ThirdChoice
+                     */
+                    interface Choice
+                    {
+                    }
+
+                    final class FirstChoice implements Choice {}
+                    final class SecondChoice implements Choice {}
+                    final class ThirdChoice implements Choice {}
+
+                    /**
+                     * @psalm-assert-if-true FirstChoice $choice
+                     */
+                    function isFirstChoice(Choice $choice): bool
+                    {
+                        return $choice instanceof FirstChoice;
+                    }
+
+                    /**
+                     * @psalm-assert-if-true SecondChoice $choice
+                     */
+                    function isSecondChoice(Choice $choice): bool
+                    {
+                        return $choice instanceof SecondChoice;
+                    }
+
+                    function testFirstChoice(FirstChoice $_first): string
+                    {
+                        return "first";
+                    }
+
+                    function testSecondOrThirdChoice(SecondChoice|ThirdChoice $_first): string
+                    {
+                        return "second or third";
+                    }
+
+                    function getLabel(Choice $choice): string
+                    {
+                        return match (true) {
+                            isFirstChoice($choice) => testFirstChoice($choice),
+                            default => testSecondOrThirdChoice($choice),
+                        };
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'assertTemplatedObjectWithClosedInheritance' => [
+                'code' => '<?php
+                    /**
+                     * @template-covariant E
+                     * @template-covariant A
+                     * @psalm-inheritors Left<E> | Right<A>
+                     */
+                    interface Either {
+                        /** @psalm-assert-if-true Left<E> $this */
+                        public function isLeft(): bool;
+
+                        /** @psalm-assert-if-true Right<A> $this */
+                        public function isRight(): bool;
+                    }
+
+                    /**
+                     * @template E
+                     * @implements Either<E, never>
+                     */
+                    final class Left implements Either {
+                        public function isLeft(): bool
+                        {
+                            return true;
+                        }
+                        public function isRight(): bool
+                        {
+                            return false;
+                        }
+                    }
+
+                    /**
+                     * @template A
+                     * @implements Either<never, A>
+                     */
+                    final class Right implements Either {
+                        public function isLeft(): bool
+                        {
+                            return false;
+                        }
+                        public function isRight(): bool
+                        {
+                            return true;
+                        }
+                    }
+
+                    /**
+                     * @template E
+                     * @template A
+                     * @param Either<E, A> $either
+                     * @psalm-assert-if-true Left<E> $either
+                     */
+                    function isLeft(Either $either): bool
+                    {
+                        return $either instanceof Left;
+                    }
+
+                    /**
+                     * @template E
+                     * @template A
+                     * @param Either<E, A> $either
+                     * @psalm-assert-if-true Right<A> $either
+                     */
+                    function isRight(Either $either): bool
+                    {
+                        return $either instanceof Right;
+                    }
+
+                    /**
+                     * @return Either<OutOfRangeException, int>
+                     */
+                    function getEither(): Either
+                    {
+                        throw new RuntimeException("???");
+                    }
+
+                    /**
+                     * @param Left<OutOfRangeException> $_left
+                     */
+                    function testLeft(Left $_left): void {}
+
+                    /**
+                     * @param Right<int> $_right
+                     */
+                    function testRight(Right $_right): void {}
+
+                    /** @param Either<OutOfRangeException, int> $either */
+                    function isLeftFunctionIfElse(Either $either): void
+                    {
+                        if (isLeft($either)) {
+                            /** @psalm-check-type-exact $either = Left<OutOfRangeException> */
+                            testLeft($either);
+                        } else {
+                            /** @psalm-check-type-exact $either = Right<int> */
+                            testRight($either);
+                        }
+                    }
+
+                    /** @param Either<OutOfRangeException, int> $either */
+                    function isRightFunctionIfElse(Either $either): void
+                    {
+                        if (isRight($either)) {
+                            testRight($either);
+                            /** @psalm-check-type-exact $either = Right<int> */
+                        } else {
+                            /** @psalm-check-type-exact $either = Left<OutOfRangeException> */
+                            testLeft($either);
+                        }
+                    }
+
+                    /** @param Either<OutOfRangeException, int> $either */
+                    function testRightFunctionTernary(Either $either): void
+                    {
+                        isRight($either) ? testRight($either) : testLeft($either);
+                    }
+
+                    /** @param Either<OutOfRangeException, int> $either */
+                    function testLeftFunctionTernary(Either $either): void
+                    {
+                        isLeft($either) ? testLeft($either) : testRight($either);
+                    }
+
+                    /** @param Either<OutOfRangeException, int> $either */
+                    function isLeftMethodIfElse(Either $either): void
+                    {
+                        if ($either->isLeft()) {
+                            /** @psalm-check-type-exact $either = Left<OutOfRangeException> */
+                            testLeft($either);
+                        } else {
+                            /** @psalm-check-type-exact $either = Right<int> */
+                            testRight($either);
+                        }
+                    }
+
+                    /** @param Either<OutOfRangeException, int> $either */
+                    function isRightMethodIfElse(Either $either): void
+                    {
+                        if ($either->isRight()) {
+                            testRight($either);
+                            /** @psalm-check-type-exact $either = Right<int> */
+                        } else {
+                            /** @psalm-check-type-exact $either = Left<OutOfRangeException> */
+                            testLeft($either);
+                        }
+                    }
+
+                    /** @param Either<OutOfRangeException, int> $either */
+                    function testRightMethodTernary(Either $either): void
+                    {
+                        $either->isRight() ? testRight($either) : testLeft($either);
+                    }
+
+                    /** @param Either<OutOfRangeException, int> $either */
+                    function testLeftMethodTernary(Either $either): void
+                    {
+                        $either->isLeft() ? testLeft($either) : testRight($either);
+                    }',
+            ],
+            'assertArrayListIfTrueFalseCompareTrue' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, string|int|float>|list<string> $arg
+                     * @return bool
+                     *
+                     * @psalm-assert-if-false array<string, string|int|float> $arg
+                     * @psalm-assert-if-true list<string> $arg
+                     */
+                    function is_array_or_list($arg) {
+                        // should be array_is_list($arg), but tests run in non-PHP 8 environment
+                        if (array_values($arg) === $arg) {
+                            return true;
+                        }
+                        return false;
+                    }
+                    /**
+                     * @param list<string> $arg
+                     * @return void
+                     */
+                    function takesAList($arg) {}
+                    /**
+                     * @param array<string, string|int|float> $arg
+                     * @return void
+                     */
+                    function takesAnArray($arg) {}
+                    /**
+                     * @var array<string, string|int|float>|list<string> $foo
+                     */
+                    $foo;
+                    if (is_array_or_list($foo) === true) {
+                        takesAList($foo);
+                    } else {
+                        takesAnArray($foo);
+                    }',
+            ],
+            'assertArrayListIfTrueFalseCompareTruthy' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, string|int|float>|list<string> $arg
+                     * @return bool
+                     *
+                     * @psalm-assert-if-false array<string, string|int|float> $arg
+                     * @psalm-assert-if-true list<string> $arg
+                     */
+                    function is_array_or_list($arg) {
+                        // should be array_is_list($arg), but tests run in non-PHP 8 environment
+                        if (array_values($arg) === $arg) {
+                            return true;
+                        }
+                        return false;
+                    }
+                    /**
+                     * @param list<string> $arg
+                     * @return void
+                     */
+                    function takesAList($arg) {}
+                    /**
+                     * @param array<string, string|int|float> $arg
+                     * @return void
+                     */
+                    function takesAnArray($arg) {}
+                    /**
+                     * @var array<string, string|int|float>|list<string> $foo
+                     */
+                    $foo;
+                    if (is_array_or_list($foo)) {
+                        takesAList($foo);
+                    } else {
+                        takesAnArray($foo);
+                    }',
+            ],
+            'assertArrayListIfTrueFalseCompareNotTrue' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, string|int|float>|list<string> $arg
+                     * @return bool
+                     *
+                     * @psalm-assert-if-false array<string, string|int|float> $arg
+                     * @psalm-assert-if-true list<string> $arg
+                     */
+                    function is_array_or_list($arg) {
+                        if (array_values($arg) === $arg) {
+                            return true;
+                        }
+                        return false;
+                    }
+                    /**
+                     * @param list<string> $arg
+                     * @return void
+                     */
+                    function takesAList($arg) {}
+                    /**
+                     * @param array<string, string|int|float> $arg
+                     * @return void
+                     */
+                    function takesAnArray($arg) {}
+                    /**
+                     * @var array<string, string|int|float>|list<string> $foo
+                     */
+                    $foo;
+                    if (is_array_or_list($foo) !== true) {
+                        takesAnArray($foo);
+                    } else {
+                        takesAList($foo);
+                    }',
+            ],
+            'assertArrayListIfTrueFalseCompareFalse' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, string|int|float>|list<string> $arg
+                     * @return bool
+                     *
+                     * @psalm-assert-if-false array<string, string|int|float> $arg
+                     * @psalm-assert-if-true list<string> $arg
+                     */
+                    function is_array_or_list($arg) {
+                        if (array_values($arg) === $arg) {
+                            return true;
+                        }
+                        return false;
+                    }
+                    /**
+                     * @param list<string> $arg
+                     * @return void
+                     */
+                    function takesAList($arg) {}
+                    /**
+                     * @param array<string, string|int|float> $arg
+                     * @return void
+                     */
+                    function takesAnArray($arg) {}
+                    /**
+                     * @var array<string, string|int|float>|list<string> $foo
+                     */
+                    $foo;
+                    if (is_array_or_list($foo) === false) {
+                        takesAnArray($foo);
+                    } else {
+                        takesAList($foo);
+                    }',
+            ],
+            'assertArrayListIfTrueFalseCompareNotFalse' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, string|int|float>|list<string> $arg
+                     * @return bool
+                     *
+                     * @psalm-assert-if-false array<string, string|int|float> $arg
+                     * @psalm-assert-if-true list<string> $arg
+                     */
+                    function is_array_or_list($arg) {
+                        if (array_values($arg) === $arg) {
+                            return true;
+                        }
+                        return false;
+                    }
+                    /**
+                     * @param list<string> $arg
+                     * @return void
+                     */
+                    function takesAList($arg) {}
+                    /**
+                     * @param array<string, string|int|float> $arg
+                     * @return void
+                     */
+                    function takesAnArray($arg) {}
+                    /**
+                     * @var array<string, string|int|float>|list<string> $foo
+                     */
+                    $foo;
+                    if (is_array_or_list($foo) !== false) {
+                        takesAList($foo);
+                    } else {
+                        takesAnArray($foo);
+                    }',
+            ],
+            'assertArrayListIfTrueFalseCompareFalsy' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, string|int|float>|list<string> $arg
+                     * @return bool
+                     *
+                     * @psalm-assert-if-false array<string, string|int|float> $arg
+                     * @psalm-assert-if-true list<string> $arg
+                     */
+                    function is_array_or_list($arg) {
+                        if (array_values($arg) === $arg) {
+                            return true;
+                        }
+                        return false;
+                    }
+                    /**
+                     * @param list<string> $arg
+                     * @return void
+                     */
+                    function takesAList($arg) {}
+                    /**
+                     * @param array<string, string|int|float> $arg
+                     * @return void
+                     */
+                    function takesAnArray($arg) {}
+                    /**
+                     * @var array<string, string|int|float>|list<string> $foo
+                     */
+                    $foo;
+                    if (!is_array_or_list($foo)) {
+                        takesAnArray($foo);
+                    } else {
+                        takesAList($foo);
+                    }',
+            ],
+            'assertArrayArrayIfTrueFalseCompareFalsy' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, string>|array<int, float> $arg
+                     * @return bool
+                     *
+                     * @psalm-suppress InvalidReturnType
+                     *
+                     * @psalm-assert-if-false array<string, string> $arg
+                     * @psalm-assert-if-true array<int, float> $arg
+                     */
+                    function is_array_a_or_b($arg) {}
+                    /**
+                     * @param array<string, string> $arg
+                     * @return void
+                     */
+                    function takesAnArrayA($arg) {}
+                    /**
+                     * @param array<int, float> $arg
+                     * @return void
+                     */
+                    function takesAnArrayB($arg) {}
+                    /**
+                     * @var array<string, string>|array<int, float> $foo
+                     */
+                    $foo;
+                    if (!is_array_a_or_b($foo)) {
+                        takesAnArrayA($foo);
+                    } else {
+                        takesAnArrayB($foo);
+                    }',
+            ],
+            'assertListListIfTrueFalseCompareFalsy' => [
+                'code' => '<?php
+                    /**
+                     * @param list<string>|list<int> $arg
+                     * @return bool
+                     *
+                     * @psalm-suppress InvalidReturnType
+                     *
+                     * @psalm-assert-if-false list<string> $arg
+                     * @psalm-assert-if-true list<int> $arg
+                     */
+                    function is_list_string_or_int($arg) {}
+                    /**
+                     * @param list<string> $arg
+                     * @return void
+                     */
+                    function takesAListString($arg) {}
+                    /**
+                     * @param list<int> $arg
+                     * @return void
+                     */
+                    function takesAListInt($arg) {}
+                    /**
+                     * @var list<string>|list<int> $foo
+                     */
+                    $foo;
+                    if (!is_list_string_or_int($foo)) {
+                        takesAListString($foo);
+                    } else {
+                        takesAListInt($foo);
+                    }',
+            ],
+            'assertKeyedArrayKeyedArrayIfTrueFalseCompareFalsy' => [
+                'code' => '<?php
+                    /**
+                     * @param array{hello: string}|array{world: string} $arg
+                     * @return bool
+                     *
+                     * @psalm-suppress InvalidReturnType
+                     *
+                     * @psalm-assert-if-false array{hello: string} $arg
+                     * @psalm-assert-if-true array{world: string} $arg
+                     */
+                    function is_array_a_or_b($arg) {}
+                    /**
+                     * @param array{hello: string} $arg
+                     * @return void
+                     */
+                    function takesAnArrayA($arg) {}
+                    /**
+                     * @param array{world: string} $arg
+                     * @return void
+                     */
+                    function takesAnArrayB($arg) {}
+                    /**
+                     * @var array{hello: string}|array{world: string} $foo
+                     */
+                    $foo;
+                    if (!is_array_a_or_b($foo)) {
+                        takesAnArrayA($foo);
+                    } else {
+                        takesAnArrayB($foo);
+                    }',
+            ],
+            'assertTemplateKeyedArrayTemplateKeyedArrayIfTrueFalseCompareFalsy' => [
+                'code' => '<?php
+                    /**
+                     * @template Ta of array{hello: string}
+                     * @template Tb of array{world: string}
+                     * @param Ta|Tb $arg
+                     * @return bool
+                     *
+                     * @psalm-suppress InvalidReturnType
+                     *
+                     * @psalm-assert-if-false Ta $arg
+                     * @psalm-assert-if-true Tb $arg
+                     */
+                    function is_array_a_or_b($arg) {}
+                    /**
+                     * @param array{hello: string} $arg
+                     * @return void
+                     */
+                    function takesAnArrayA($arg) {}
+                    /**
+                     * @param array{world: string} $arg
+                     * @return void
+                     */
+                    function takesAnArrayB($arg) {}
+                    /**
+                     * @var array{hello: string}|array{world: string} $foo
+                     */
+                    $foo;
+                    if (!is_array_a_or_b($foo)) {
+                        takesAnArrayA($foo);
+                    } else {
+                        takesAnArrayB($foo);
+                    }',
+            ],
+            'iterableToNonEmptyList' => [
+                'code' => '<?php
+                final class WhateverAssert
+                {
+                    /**
+                     * @param mixed $value
+                     * @psalm-assert non-empty-list $value
+                     */
+                    public static function doAssert($value): void
+                    {}
+                }
+
+                /** @var iterable<mixed,string> $iterable */
+                $iterable = [];
+
+                WhateverAssert::doAssert($iterable);',
+                'assertions' => [
+                    '$iterable===' => 'non-empty-list<string>',
+                ],
+            ],
+            'assertFromInheritedDocBlock' => [
+                'code' => '<?php
+                    namespace Namespace1 {
+
+                    /** @template InstanceType */
+                    interface PluginManagerInterface
+                    {
+                        /** @psalm-assert InstanceType $value */
+                        public function validate(mixed $value): void;
+                    }
+
+                    /**
+                     * @template InstanceType
+                     * @template-implements PluginManagerInterface<InstanceType>
+                     */
+                    abstract class AbstractPluginManager implements PluginManagerInterface
+                    {
+                    }
+
+                    /**
+                     * @template InstanceType of object
+                     * @template-extends AbstractPluginManager<InstanceType>
+                     */
+                    abstract class AbstractSingleInstancePluginManager extends AbstractPluginManager
+                    {
+                        public function validate(mixed $value): void
+                        {
+                        }
+                    }
+                }
+
+                namespace Namespace2 {
+                    use InvalidArgumentException;use Namespace1\AbstractSingleInstancePluginManager;
+                    use Namespace1\AbstractPluginManager;
+                    use stdClass;
+
+                    /** @template-extends AbstractSingleInstancePluginManager<stdClass> */
+                    final class Qoo extends AbstractSingleInstancePluginManager
+                    {
+                    }
+
+                    /** @template-extends AbstractPluginManager<callable> */
+                    final class Ooq extends AbstractPluginManager
+                    {
+                        public function validate(mixed $value): void
+                        {
+                        }
+                    }
+                }
+
+                namespace {
+                    $baz = new \Namespace2\Qoo();
+
+                    /** @var mixed $object */
+                    $object = null;
+                    $baz->validate($object);
+
+                    $ooq = new \Namespace2\Ooq();
+                    /** @var mixed $callable */
+                    $callable = null;
+                    $ooq->validate($callable);
+                }
+                ',
+                'assertions' => [
+                    '$object===' => 'stdClass',
+                    '$callable===' => 'callable',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'objectShapeAssertion' => [
+                'code' => '<?php
+                    /** @psalm-assert object{foo:string,bar:int} $value */
+                    function assertObjectShape(mixed $value): void
+                    {}
+
+                    /** @var mixed $value */
+                    $value = null;
+                    assertObjectShape($value);
+                ',
+                'assertions' => [
+                    '$value===' => 'object{foo:string, bar:int}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
         ];
     }
@@ -2461,6 +3406,7 @@ class AssertAnnotationTest extends TestCase
                     function requiresString(string $_str): void {}
                 ',
                 'error_message' => 'NullArgument',
+                'ignored_issues' => ['UnsupportedPropertyReferenceUsage'],
             ],
             'assertionOnMagicPropertyWithoutMutationFreeGet' => [
                 'code' => '<?php

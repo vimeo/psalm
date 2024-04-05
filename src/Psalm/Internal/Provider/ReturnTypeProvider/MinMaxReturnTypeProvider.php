@@ -27,7 +27,7 @@ use function min;
 /**
  * @internal
  */
-class MinMaxReturnTypeProvider implements FunctionReturnTypeProviderInterface
+final class MinMaxReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
      * @return array<lowercase-string>
@@ -127,7 +127,7 @@ class MinMaxReturnTypeProvider implements FunctionReturnTypeProviderInterface
                 return Type::getInt(false, $min_potential_int);
             }
 
-            return new Union([new TIntRange($min_potential_int, $max_potential_int)]);
+            return Type::getIntRange($min_potential_int, $max_potential_int);
         }
 
         //if we're dealing with non-int elements, just combine them all together

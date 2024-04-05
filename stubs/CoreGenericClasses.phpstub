@@ -125,7 +125,7 @@ interface ArrayAccess {
  * This class allows objects to work as arrays.
  * @link http://php.net/manual/en/class.arrayobject.php
  *
- * @template TKey
+ * @template TKey of array-key
  * @template TValue
  * @template-implements IteratorAggregate<TKey, TValue>
  * @template-implements ArrayAccess<TKey, TValue>
@@ -158,46 +158,46 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      * Returns whether the requested index exists
      * @link http://php.net/manual/en/arrayobject.offsetexists.php
      *
-     * @param TKey $index The index being checked.
+     * @param TKey $offset The index being checked.
      * @return bool true if the requested index exists, otherwise false
      *
      * @since 5.0.0
      */
-    public function offsetExists($index) { }
+    public function offsetExists($offset) { }
 
     /**
      * Returns the value at the specified index
      * @link http://php.net/manual/en/arrayobject.offsetget.php
      *
-     * @param TKey $index The index with the value.
+     * @param TKey $offset The index with the value.
      * @return TValue The value at the specified index or false.
      *
      * @since 5.0.0
      */
-    public function offsetGet($index) { }
+    public function offsetGet($offset) { }
 
     /**
      * Sets the value at the specified index to newval
      * @link http://php.net/manual/en/arrayobject.offsetset.php
      *
-     * @param TKey $index  The index being set.
-     * @param TValue $newval The new value for the index.
+     * @param TKey $offset  The index being set.
+     * @param TValue $value The new value for the index.
      * @return void
      *
      * @since 5.0.0
      */
-    public function offsetSet($index, $newval) { }
+    public function offsetSet($offset, $value) { }
 
     /**
      * Unsets the value at the specified index
      * @link http://php.net/manual/en/arrayobject.offsetunset.php
      *
-     * @param TKey $index The index being unset.
+     * @param TKey $offset The index being unset.
      * @return void
      *
      * @since 5.0.0
      */
-    public function offsetUnset($index) { }
+    public function offsetUnset($offset) { }
 
     /**
      * Appends the value
@@ -439,7 +439,6 @@ interface Serializable {
 
 /**
  * @template-covariant T as object
- * @psalm-immutable
  */
 final class WeakReference
 {
@@ -448,10 +447,10 @@ final class WeakReference
 
     /**
      * @template TIn as object
-     * @param TIn $referent
+     * @param TIn $object
      * @return WeakReference<TIn>
      */
-    public static function create(object $referent): WeakReference {}
+    public static function create(object $object): WeakReference {}
 
     /** @return ?T */
     public function get(): ?object {}
@@ -493,6 +492,11 @@ final class WeakMap implements ArrayAccess, Countable, IteratorAggregate, Traver
      * @return void
      */
     public function offsetUnset($offset) {}
+
+    /**
+     * @return Traversable<TKey, TVal>
+     */
+    public function getIterator() { }
 }
 
 class mysqli
@@ -532,14 +536,92 @@ final class ReturnTypeWillChange
     public function __construct() {}
 }
 
-#[Attribute(Attribute::TARGET_PARAMETER)]
-final class SensitiveParameter
+class DateInterval
 {
-    public function __construct() {}
+    /**
+     * Number of years
+     * @var int
+     * @readonly
+     */
+    public $y;
+
+    /**
+     * Number of months
+     * @var int
+     * @readonly
+     */
+    public $m;
+
+    /**
+     * Number of days
+     * @var int
+     * @readonly
+     */
+    public $d;
+
+    /**
+     * Number of hours
+     * @var int
+     * @readonly
+     */
+    public $h;
+
+    /**
+     * Number of minutes
+     * @var int
+     * @readonly
+     */
+    public $i;
+
+    /**
+     * Number of seconds
+     * @var int
+     * @readonly
+     */
+    public $s;
+
+    /**
+     * Number of microseconds
+     * @since 7.1.0
+     * @var float
+     * @readonly
+     */
+    public $f;
+
+    /**
+     * Is 1 if the interval is inverted and 0 otherwise
+     * @var int
+     */
+    public $invert;
+
+    /**
+     * Total number of days the interval spans. If this is unknown, days will be FALSE.
+     * @var int|false
+     * @readonly
+     */
+    public $days;
+
+    /**
+     * @throws Exception when the $duration cannot be parsed as an interval.
+     * @link https://php.net/manual/en/dateinterval.construct.php
+     */
+    public function __construct(string $duration = '') {}
+
+    /**
+     * Formats the interval
+     * @return string
+     * @link https://php.net/manual/en/dateinterval.format.php
+     * @psalm-pure
+     */
+    public function format(string $format = ''): string {}
+
+    /**
+     * Sets up a DateInterval from the relative parts of the string
+     * @return DateInterval|false Returns a new {@link https://www.php.net/manual/en/class.dateinterval.php DateInterval}
+     * instance on success, or <b>FALSE</b> on failure.
+     * @link https://php.net/manual/en/dateinterval.createfromdatestring.php
+     * @psalm-ignore-falsable-return
+     */
+    public static function createFromDateString(string $datetime = ''): DateInterval|false {}
 }
 
-#[Attribute(Attribute::TARGET_CLASS)]
-final class AllowDynamicProperties
-{
-    public function __construct() {}
-}

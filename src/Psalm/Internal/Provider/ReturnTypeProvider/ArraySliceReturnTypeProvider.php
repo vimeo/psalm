@@ -19,7 +19,7 @@ use function array_shift;
 /**
  * @internal
  */
-class ArraySliceReturnTypeProvider implements FunctionReturnTypeProviderInterface
+final class ArraySliceReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
      * @return array<lowercase-string>

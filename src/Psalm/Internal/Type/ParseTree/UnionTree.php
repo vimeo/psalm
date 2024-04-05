@@ -7,6 +7,6 @@ use Psalm\Internal\Type\ParseTree;
 /**
  * @internal
  */
-class UnionTree extends ParseTree
+final class UnionTree extends ParseTree
 {
 }

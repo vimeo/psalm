@@ -35,11 +35,11 @@ use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralInt;
-use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TString;
+use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -52,11 +52,12 @@ use function strlen;
 use function strpos;
 use function strtolower;
 use function substr;
+use function trim;
 
 /**
  * @internal
  */
-class FunctionCallReturnTypeFetcher
+final class FunctionCallReturnTypeFetcher
 {
     /**
      * @param non-empty-string $function_id
@@ -80,7 +81,7 @@ class FunctionCallReturnTypeFetcher
         if ($stmt->isFirstClassCallable()) {
             $candidate_callable = CallableTypeComparator::getCallableFromAtomic(
                 $codebase,
-                new TLiteralString($function_id),
+                Type::getAtomicStringFromLiteral($function_id),
                 null,
                 $statements_analyzer,
                 true,
@@ -354,6 +355,7 @@ class FunctionCallReturnTypeFetcher
         } else {
             switch ($call_map_key) {
                 case 'count':
+                case 'sizeof':
                     if (($first_arg_type = $statements_analyzer->node_data->getType($call_args[0]->value))) {
                         $atomic_types = $first_arg_type->getAtomicTypes();
 
@@ -383,7 +385,7 @@ class FunctionCallReturnTypeFetcher
                                     if ($min === $max) {
                                         return new Union([new TLiteralInt($max)]);
                                     }
-                                    return new Union([new TIntRange($min, $max)]);
+                                    return Type::getIntRange($min, $max);
                                 }
 
                                 if ($atomic_types['array'] instanceof TArray
@@ -482,15 +484,25 @@ class FunctionCallReturnTypeFetcher
 
                     return $call_map_return_type;
                 case 'mb_strtolower':
+                    $string_arg_type = $statements_analyzer->node_data->getType($call_args[0]->value);
+                    if ($string_arg_type !== null && $string_arg_type->isNonEmptyString()) {
+                        $returnType = Type::getNonEmptyLowercaseString();
+                    } else {
+                        $returnType = Type::getLowercaseString();
+                    }
                     if (count($call_args) < 2) {
-                        return Type::getLowercaseString();
+                        return $returnType;
                     } else {
                         $second_arg_type = $statements_analyzer->node_data->getType($call_args[1]->value);
                         if ($second_arg_type && $second_arg_type->isNull()) {
-                            return Type::getLowercaseString();
+                            return $returnType;
                         }
                     }
-                    return Type::getString();
+                    if ($string_arg_type !== null && $string_arg_type->isNonEmptyString()) {
+                        return Type::getNonEmptyString();
+                    } else {
+                        return Type::getString();
+                    }
             }
         }
 
@@ -626,17 +638,19 @@ class FunctionCallReturnTypeFetcher
                     $first_arg_value = $first_stmt_type->getSingleStringLiteral()->value;
 
                     $pattern = substr($first_arg_value, 1, -1);
+                    if (strlen(trim($pattern)) > 0) {
+                        $pattern = trim($pattern);
+                        if ($pattern[0] === '['
+                            && $pattern[1] === '^'
+                            && substr($pattern, -1) === ']'
+                        ) {
+                            $pattern = substr($pattern, 2, -1);
 
-                    if ($pattern[0] === '['
-                        && $pattern[1] === '^'
-                        && substr($pattern, -1) === ']'
-                    ) {
-                        $pattern = substr($pattern, 2, -1);
-
-                        if (self::simpleExclusion($pattern, $first_arg_value[0])) {
-                            $removed_taints[] = 'html';
-                            $removed_taints[] = 'has_quotes';
-                            $removed_taints[] = 'sql';
+                            if (self::simpleExclusion($pattern, $first_arg_value[0])) {
+                                $removed_taints[] = TaintKind::INPUT_HTML;
+                                $removed_taints[] = TaintKind::INPUT_HAS_QUOTES;
+                                $removed_taints[] = TaintKind::INPUT_SQL;
+                            }
                         }
                     }
                 }
@@ -658,7 +672,7 @@ class FunctionCallReturnTypeFetcher
                 $stmt->getArgs(),
                 $node_location,
                 $function_call_node,
-                $removed_taints,
+                array_merge($removed_taints, $conditionally_removed_taints),
                 $added_taints,
             );
         }

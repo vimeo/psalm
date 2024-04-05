@@ -26,6 +26,7 @@ use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonEmptyArray;
+use Psalm\Type\Atomic\TNonEmptyMixed;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
@@ -35,6 +36,7 @@ use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateValueOf;
 use Psalm\Type\Atomic\TValueOf;
+use Psalm\Type\Union;
 
 use function array_merge;
 use function array_values;
@@ -46,7 +48,7 @@ use function strtolower;
 /**
  * @internal
  */
-class AtomicTypeComparator
+final class AtomicTypeComparator
 {
     /**
      * Does the input param atomic type match the given param atomic type
@@ -81,14 +83,43 @@ class AtomicTypeComparator
             );
         }
 
+        if ($input_type_part instanceof TValueOf) {
+            if ($container_type_part instanceof TValueOf) {
+                return UnionTypeComparator::isContainedBy(
+                    $codebase,
+                    $input_type_part->type,
+                    $container_type_part->type,
+                    false,
+                    false,
+                    null,
+                    false,
+                    false,
+                );
+            } elseif ($container_type_part instanceof Scalar) {
+                return UnionTypeComparator::isContainedBy(
+                    $codebase,
+                    TValueOf::getValueType($input_type_part->type, $codebase) ?? $input_type_part->type,
+                    new Union([$container_type_part]),
+                    false,
+                    false,
+                    null,
+                    false,
+                    false,
+                );
+            }
+        }
+
         if ($container_type_part instanceof TMixed
             || ($container_type_part instanceof TTemplateParam
                 && $container_type_part->as->isMixed()
                 && !$container_type_part->extra_types
                 && $input_type_part instanceof TMixed)
         ) {
-            if (get_class($container_type_part) === TEmptyMixed::class
-                && get_class($input_type_part) === TMixed::class
+            if (get_class($input_type_part) === TMixed::class
+                && (
+                    get_class($container_type_part) === TEmptyMixed::class
+                    || get_class($container_type_part) === TNonEmptyMixed::class
+                )
             ) {
                 if ($atomic_comparison_result) {
                     $atomic_comparison_result->type_coerced = true;
@@ -298,7 +329,14 @@ class AtomicTypeComparator
                 $atomic_comparison_result->type_coerced = true;
             }
 
-            return false;
+            return true;
+        }
+
+        if ($container_type_part instanceof TEnumCase
+            && $input_type_part instanceof TEnumCase
+        ) {
+            return $container_type_part->value === $input_type_part->value
+                && $container_type_part->case_name === $input_type_part->case_name;
         }
 
         if (($input_type_part instanceof TNamedObject

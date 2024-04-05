@@ -154,6 +154,7 @@ class GetObjectVarsTest extends TestCase
             'assertions' => [
                 '$test===' => "array{t: 'test'}",
             ],
+            'ignored_issues' => [],
             'php_version' => '8.2',
         ];
 
@@ -168,6 +169,7 @@ class GetObjectVarsTest extends TestCase
             'assertions' => [
                 '$test===' => "array{t: 'test'}",
             ],
+            'ignored_issues' => [],
             'php_version' => '8.2',
         ];
 

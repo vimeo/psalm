@@ -42,6 +42,7 @@ use Psalm\Storage\Assertion\Truthy;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\Possibilities;
 use Psalm\Type;
+use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -504,7 +505,7 @@ class CallAnalyzer
                 && $callable_arg->left->class instanceof Name
                 && $callable_arg->left->name instanceof Identifier
                 && strtolower($callable_arg->left->name->name) === 'class'
-                && !in_array(strtolower($callable_arg->left->class->parts[0]), ['self', 'static', 'parent'])
+                && !in_array(strtolower($callable_arg->left->class->getFirst()), ['self', 'static', 'parent'])
                 && $callable_arg->right instanceof PhpParser\Node\Scalar\String_
                 && preg_match('/^::[A-Za-z0-9]+$/', $callable_arg->right->value)
             ) {
@@ -579,6 +580,7 @@ class CallAnalyzer
                 foreach ($type_part->extra_types as $extra_type) {
                     if ($extra_type instanceof TTemplateParam
                         || $extra_type instanceof TObjectWithProperties
+                        || $extra_type instanceof TCallableObject
                     ) {
                         throw new UnexpectedValueException('Shouldn’t get a generic param here');
                     }

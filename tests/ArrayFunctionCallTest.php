@@ -29,6 +29,39 @@ class ArrayFunctionCallTest extends TestCase
                     '$e' => 'array<string, int<0, 10>|null>',
                 ],
             ],
+            'arrayFilterObject' => [
+                'code' => '<?php
+                    $e = array_filter(
+                        [(object) [], null],
+                        function($i) {
+                            return $i;
+                        }
+                    );',
+                'assertions' => [
+                    '$e' => 'array<int<0, 1>, object>',
+                ],
+            ],
+            'arrayFilterStringCallable' => [
+                'code' => '<?php
+                    $arg = "is_string";
+
+                    /**
+                     * @var array<string|int, float> $bar
+                     */
+                    $keys = array_keys($bar);
+                    $strings = array_filter($keys, $arg);',
+                'assertions' => [
+                    '$strings' => 'array<int<0, max>, string>',
+                ],
+            ],
+            'arrayFilterMixed' => [
+                'code' => '<?php
+                    /** @psalm-suppress UndefinedGlobalVariable, MixedArgument, MixedArrayAccess */
+                    $x = array_filter($foo, "is_string");',
+                'assertions' => [
+                    '$x' => 'array<array-key, string>',
+                ],
+            ],
             'positiveIntArrayFilter' => [
                 'code' => '<?php
                     /**
@@ -140,6 +173,26 @@ class ArrayFunctionCallTest extends TestCase
                     /** @psalm-var array<Baz::STATUS_*> $statusList */
                     $statusList = [Baz::STATUS_FOO, Baz::STATUS_QUX];
                     $statusList = array_filter($statusList, [Baz::class, "isStatus"]);',
+            ],
+            'arrayFilterUseKeyCallback' => [
+                'code' => '<?php
+                    /**
+                     * @var array<string, float> $arg
+                     */
+                    $a = array_filter($arg, "strlen", ARRAY_FILTER_USE_KEY);',
+                'assertions' => [
+                    '$a' => 'array<string, float>',
+                ],
+            ],
+            'arrayFilterUseBothCallback' => [
+                'code' => '<?php
+                    /**
+                     * @var list<int> $arg
+                     */
+                    $a = array_filter($arg, function (int $v, int $k) { return ($v > $k);}, ARRAY_FILTER_USE_BOTH);',
+                'assertions' => [
+                    '$a' => 'array<int<0, max>, int>',
+                ],
             ],
             'arrayKeysNonEmpty' => [
                 'code' => '<?php
@@ -308,8 +361,8 @@ class ArrayFunctionCallTest extends TestCase
                 'assertions' => [
                     // todo: this first type is not entirely correct
                     //'$c===' => "list{int|string, ...<int<0, max>, int|string>}",
-                    '$c===' => "list{string, ...<int<0, max>, int|string>}",
-                    '$d===' => "list{string, ...<int<0, max>, int|string>}",
+                    '$c===' => "list{string, ...<int|string>}",
+                    '$d===' => "list{string, ...<int|string>}",
                 ],
             ],
             'arrayMergeEmpty' => [
@@ -1803,6 +1856,65 @@ class ArrayFunctionCallTest extends TestCase
                     '$d' => 'array<int, list{string}|string>',
                 ],
             ],
+            'arraySpliceRefWithoutReplacement' => [
+                'code' => '<?php
+                    $d = [1,2];
+                    $o = 0;
+                    array_splice($d, $o, 1);',
+                'assertions' => [
+                    '$d' => 'list<int>',
+                ],
+            ],
+            'arraySpliceEmptyRefWithoutReplacement' => [
+                'code' => '<?php
+                    $a = array( "hello" );
+                    $_b = array_splice( $a, 0, 1 );',
+                'assertions' => [
+                    '$a' => 'array<never, never>',
+                ],
+            ],
+            'arraySpliceEmptyRefWithEmptyReplacement' => [
+                'code' => '<?php
+                    $a = array( "hello" );
+                    $_b = array_splice( $a, 0, 1, [] );',
+                'assertions' => [
+                    '$a' => 'array<never, never>',
+                ],
+            ],
+            'arraySpliceWithBothMultipleLiterals' => [
+                'code' => '<?php
+                    $a = array( "hello" );
+                    /** @var 1|2|0 **/
+                    $b = 1;
+                    /** @var 4|5 **/
+                    $c = 4;
+                    $_d = array_splice( $a, $b, $c );',
+                'assertions' => [
+                    '$a' => 'list<string>',
+                ],
+            ],
+            'arraySpliceWithLengthMultipleLiterals' => [
+                'code' => '<?php
+                    $a = array( "hello", "world" );
+                    $b = 0;
+                    /** @var 2|3 **/
+                    $c = 3;
+                    array_splice( $a, $b, $c );',
+                'assertions' => [
+                    '$a' => 'array<never, never>',
+                ],
+            ],
+            'arraySpliceWithLengthMultipleLiteralsIntersect' => [
+                'code' => '<?php
+                    $a = array( "hello", "world", "world" );
+                    $b = 0;
+                    /** @var 2|6 **/
+                    $c = 3;
+                    array_splice( $a, $b, $c );',
+                'assertions' => [
+                    '$a' => 'list<string>',
+                ],
+            ],
             'ksortPreserveShape' => [
                 'code' => '<?php
                     $a = ["a" => 3, "b" => 4];
@@ -2422,8 +2534,29 @@ class ArrayFunctionCallTest extends TestCase
                      * @param array<string, array{x?:int, y?:int, width?:int, height?:int}> $foos
                      */
                     function foo(array $foos): void {
-                        array_multisort($formLayoutFields, SORT_ASC, array_column($foos, "y"));
+                        array_multisort(array_column($foos, "y"), SORT_ASC, $foos);
                     }',
+            ],
+            'arrayMultisortSortRestByRef' => [
+                'code' => '<?php
+                    /** @var non-empty-array<array{s: int, v: string}> $test */
+                    array_multisort(
+                        array_column($test, "s"),
+                        SORT_DESC,
+                        SORT_NATURAL|SORT_FLAG_CASE,
+                        $test
+                    );',
+                'assertions' => [
+                    '$test' => 'non-empty-array<array-key, array{s: int, v: string}>',
+                ],
+            ],
+            'arrayMultisortSort' => [
+                'code' => '<?php
+                    /** @var non-empty-array<array{s: int, v: string}> $test */
+                    array_multisort($test);',
+                'assertions' => [
+                    '$test' => 'non-empty-array<array-key, array{s: int, v: string}>',
+                ],
             ],
             'arrayMapGenericObject' => [
                 'code' => '<?php
@@ -2536,27 +2669,81 @@ class ArrayFunctionCallTest extends TestCase
                     consumeArray([makeKey() => null]);
                     ',
             ],
+            'arrayUniquePreservesNonEmptyInput' => [
+                'code' => '<?php
+                    /** @param non-empty-array<string, object> $input */
+                    function takes_non_empty_array(array $input): void {}
+
+                    takes_non_empty_array(array_unique(["test" => (object)[]]));
+
+                    /** @param non-empty-array<int, object> $input */
+                    function takes_non_empty_int_array(array $input): void {}
+
+                    takes_non_empty_int_array(array_unique([(object)[]]));
+                ',
+            ],
+            'arrayFlipPreservesNonEmptyInput' => [
+                'code' => '<?php
+                    /** @param non-empty-array<string, int> $input */
+                    function takes_non_empty_array(array $input): void {}
+
+                    $array = ["hi", "there"];
+                    $flipped = array_flip($array);
+
+                    takes_non_empty_array($flipped);
+                ',
+            ],
         ];
     }
 
     public function providerInvalidCodeParse(): iterable
     {
         return [
-            'arrayFilterWithoutTypes' => [
-                'code' => '<?php
-                    $e = array_filter(
-                        ["a" => 5, "b" => 12, "c" => null],
-                        function(?int $i) {
-                            return $GLOBALS["a"];
-                        }
-                    );',
-                'error_message' => 'MixedArgumentTypeCoercion',
-                'ignored_issues' => ['MissingClosureParamType', 'MissingClosureReturnType'],
-            ],
             'arrayFilterUseMethodOnInferrableInt' => [
                 'code' => '<?php
                     $a = array_filter([1, 2, 3, 4], function ($i) { return $i->foo(); });',
                 'error_message' => 'InvalidMethodCall',
+            ],
+            'arrayFilterThirdArgWillNotBeUsedWhenSecondNull' => [
+                'code' => '<?php
+                    array_filter( $arg, null, ARRAY_FILTER_USE_BOTH );',
+                'error_message' => 'InvalidArgument',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'arrayFilterThirdArgInvalidBehavesLike0' => [
+                'code' => '<?php
+                    array_filter( $arg, "strlen", 3 );',
+                'error_message' => 'PossiblyInvalidArgument',
+            ],
+            'arrayFilterCallbackValidationThirdArg0' => [
+                'code' => '<?php
+                    /**
+                     * @var array<int, string|int|float> $arg
+                     */
+                    array_filter($arg, "abs", 0);',
+                'error_message' => 'InvalidArgument',
+            ],
+            'arrayFilterKeyCallbackLiteral' => [
+                'code' => '<?php
+                    array_filter(["a" => 5, "b" => 12, "c" => null], "abs", ARRAY_FILTER_USE_KEY);',
+                'error_message' => 'InvalidArgument',
+            ],
+            'arrayFilterBothCallback' => [
+                'code' => '<?php
+                    /**
+                     * @var array<string, float> $arg
+                     */
+                    array_filter($arg, "strlen", ARRAY_FILTER_USE_BOTH);',
+                'error_message' => 'InvalidArgument',
+            ],
+            'arrayFilterKeyCallback' => [
+                'code' => '<?php
+                    /**
+                     * @var array<int, string> $arg
+                     */
+                    array_filter($arg, "strlen", ARRAY_FILTER_USE_KEY);',
+                'error_message' => 'InvalidScalarArgument',
             ],
             'arrayMapUseMethodOnInferrableInt' => [
                 'code' => '<?php
@@ -2596,7 +2783,7 @@ class ArrayFunctionCallTest extends TestCase
                     }
 
                     array_filter([1, 2, 3], "foo");',
-                'error_message' => 'TooFewArguments',
+                'error_message' => 'InvalidArgument',
             ],
             'arrayMapBadArgs' => [
                 'code' => '<?php
@@ -2808,6 +2995,110 @@ class ArrayFunctionCallTest extends TestCase
                     array_merge_recursive(...$map);
                 ',
                 'error_message' => 'NamedArgumentNotAllowed',
+            ],
+            'arrayUniquePreservesEmptyInput' => [
+                'code' => '<?php
+                    /** @param non-empty-array<string, object> $input */
+                    function takes_non_empty_array(array $input): void {}
+
+                    takes_non_empty_array(array_unique([]));
+                ',
+                'error_message' => 'InvalidArgument',
+            ],
+            'arrayUniqueConvertsListToArray' => [
+                'code' => '<?php
+                    /** @param non-empty-list<object> $input */
+                    function takes_non_empty_list(array $input): void {}
+
+                    takes_non_empty_list(array_unique([(object)[]]));
+                ',
+                'error_message' => 'ArgumentTypeCoercion',
+            ],
+            'arrayFlipPreservesEmptyInput' => [
+                'code' => '<?php
+                    /** @param non-empty-array<string, int> $input */
+                    function takes_non_empty_array(array $input): void {}
+
+                    takes_non_empty_array(array_flip([]));
+                ',
+                'error_message' => 'InvalidArgument',
+            ],
+            'arrayMultisortInvalidFlag' => [
+                'code' => '<?php
+                    /** @var array<string, array<string>> $test */
+                    array_multisort(
+                        $test,
+                        SORT_FLAG_CASE,
+                    );',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:21 - Argument 2 of array_multisort sort order/flag contains an invalid value of 8',
+            ],
+            'arrayMultisortInvalidSortFlags' => [
+                'code' => '<?php
+                    /** @var array<string, array<string>> $test */
+                    array_multisort(
+                        array_column($test, "s"),
+                        SORT_DESC,
+                        SORT_ASC,
+                        $test
+                    );',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:21 - Argument 3 of array_multisort contains sort order flags and can only be used after an array parameter',
+            ],
+            'arrayMultisortInvalidSortAfterFlags' => [
+                'code' => '<?php
+                    /** @var array<string, array<string>> $test */
+                    array_multisort(
+                        array_column($test, "s"),
+                        SORT_NATURAL,
+                        SORT_DESC,
+                        $test
+                    );',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:21 - Argument 3 of array_multisort contains sort order flags and can only be used after an array parameter',
+            ],
+            'arrayMultisortInvalidFlagsAfterFlags' => [
+                'code' => '<?php
+                    /** @var array<string, array<string>> $test */
+                    array_multisort(
+                        array_column($test, "s"),
+                        $test,
+                        SORT_NATURAL|SORT_FLAG_CASE,
+                        SORT_LOCALE_STRING,
+                    );',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:21 - Argument 4 of array_multisort are sort flags and cannot be used after a parameter with sort flags',
+            ],
+            'arrayMultisortNoByRef' => [
+                'code' => '<?php
+                    /** @var array<string, array{id: int, s: int, bar: string}> $test */
+                    array_multisort(
+                        array_column($test, "s"),
+                        SORT_DESC,
+                        array_column($test, "id")
+                    );',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:21 - At least 1 array argument of array_multisort must be a variable, since the sorting happens by reference and otherwise this function call does nothing',
+            ],
+            'arrayMultisortNotByRefAfterLastByRef' => [
+                'code' => '<?php
+                    /** @var array<string, array{id: int, s: int, bar: string}> $test */
+                    array_multisort(
+                        array_column($test, "s"),
+                        SORT_DESC,
+                        $test,
+                        SORT_ASC,
+                        array_column($test, "id"),
+                    );',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:21 - All arguments of array_multisort after argument 4, which are after the last by reference passed array argument and its flags, are redundant and can be removed, since the sorting happens by reference',
+            ],
+            'arrayMultisortNotByRefAfterLastByRefWithFlag' => [
+                'code' => '<?php
+                    /** @var array<string, array{id: int, s: int, bar: string}> $test */
+                    array_multisort(
+                        array_column($test, "s"),
+                        SORT_DESC,
+                        $test,
+                        SORT_ASC,
+                        array_column($test, "id"),
+                        SORT_NATURAL
+                    );',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:21 - All arguments of array_multisort after argument 4, which are after the last by reference passed array argument and its flags, are redundant and can be removed, since the sorting happens by reference',
             ],
         ];
     }

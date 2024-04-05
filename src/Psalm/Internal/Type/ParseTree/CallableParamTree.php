@@ -7,9 +7,16 @@ use Psalm\Internal\Type\ParseTree;
 /**
  * @internal
  */
-class CallableParamTree extends ParseTree
+final class CallableParamTree extends ParseTree
 {
     public bool $variadic = false;
 
     public bool $has_default = false;
+
+    /**
+     * Param name, without the $ prefix
+     *
+     * @var null|non-empty-string
+     */
+    public ?string $name = null;
 }

@@ -231,6 +231,23 @@ class PropertyTypeInvarianceTest extends TestCase
                         public $d;
                     }',
             ],
+            'allowReadonly' => [
+                'code' => '<?php
+                    class ParentClass
+                    {
+                        /**
+                         * @readonly
+                         * @var null|string
+                         */
+                        protected $mightExist;
+                    }
+
+                    class ChildClass extends ParentClass
+                    {
+                        /** @var string */
+                        protected $mightExist = "";
+                    }',
+            ],
         ];
     }
 

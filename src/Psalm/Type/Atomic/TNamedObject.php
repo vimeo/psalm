@@ -46,7 +46,7 @@ class TNamedObject extends Atomic
 
     /**
      * @param string $value the name of the object
-     * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties> $extra_types
+     * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties|TCallableObject> $extra_types
      */
     public function __construct(
         string $value,
@@ -63,7 +63,7 @@ class TNamedObject extends Atomic
         $this->is_static = $is_static;
         $this->definite_class = $definite_class;
         $this->extra_types = $extra_types;
-        $this->from_docblock = $from_docblock;
+        parent::__construct($from_docblock);
     }
 
     /**

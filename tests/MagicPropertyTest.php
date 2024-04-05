@@ -6,12 +6,14 @@ use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
+use Psalm\Tests\Traits\InvalidCodeAnalysisWithIssuesTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 use const DIRECTORY_SEPARATOR;
 
 class MagicPropertyTest extends TestCase
 {
+    use InvalidCodeAnalysisWithIssuesTestTrait;
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
@@ -1211,6 +1213,30 @@ class MagicPropertyTest extends TestCase
         $error_message = 'UndefinedMagicPropertyFetch';
         $this->expectException(CodeException::class);
         $this->expectExceptionMessage($error_message);
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testNoSealAllProperties(): void
+    {
+        Config::getInstance()->seal_all_properties = true;
+        Config::getInstance()->seal_all_methods = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+              /** @psalm-no-seal-properties */
+              class A {
+                public function __get(string $name) {}
+              }
+
+              class B extends A {}
+
+              $b = new B();
+              /** @var string $result */
+              $result = $b->foo;
+              ',
+        );
+
         $this->analyzeFile('somefile.php', new Context());
     }
 }

@@ -11,7 +11,6 @@ use Psalm\Internal\Provider\ReturnTypeProvider\DateTimeModifyReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\DomNodeAppendChild;
 use Psalm\Internal\Provider\ReturnTypeProvider\ImagickPixelColorReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\PdoStatementReturnTypeProvider;
-use Psalm\Internal\Provider\ReturnTypeProvider\SimpleXmlElementAsXml;
 use Psalm\Plugin\EventHandler\Event\MethodReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\MethodReturnTypeProviderInterface;
 use Psalm\StatementsSource;
@@ -23,7 +22,7 @@ use function strtolower;
 /**
  * @internal
  */
-class MethodReturnTypeProvider
+final class MethodReturnTypeProvider
 {
     /**
      * @var array<
@@ -39,7 +38,6 @@ class MethodReturnTypeProvider
 
         $this->registerClass(DomNodeAppendChild::class);
         $this->registerClass(ImagickPixelColorReturnTypeProvider::class);
-        $this->registerClass(SimpleXmlElementAsXml::class);
         $this->registerClass(PdoStatementReturnTypeProvider::class);
         $this->registerClass(ClosureFromCallableReturnTypeProvider::class);
         $this->registerClass(DateTimeModifyReturnTypeProvider::class);
@@ -74,7 +72,7 @@ class MethodReturnTypeProvider
 
     /**
      * @param PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall $stmt
-     * @param  ?array<Union> $template_type_parameters
+     * @param non-empty-list<Union>|null $template_type_parameters
      */
     public function getReturnType(
         StatementsSource $statements_source,

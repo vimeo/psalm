@@ -48,11 +48,8 @@ use function strpos;
 use function substr;
 use function unserialize;
 use function usleep;
-use function version_compare;
 
 use const PHP_EOL;
-use const PHP_OS;
-use const PHP_VERSION;
 use const SIGALRM;
 use const SIGTERM;
 use const STREAM_IPPROTO_IP;
@@ -70,7 +67,7 @@ use const STREAM_SOCK_STREAM;
  *
  * @internal
  */
-class Pool
+final class Pool
 {
     private const EXIT_SUCCESS = 0;
     private const EXIT_FAILURE = 1;
@@ -88,16 +85,11 @@ class Pool
     /** @var ?Closure(mixed): void */
     private ?Closure $task_done_closure = null;
 
-    public const MAC_PCRE_MESSAGE = 'Mac users: pcre.jit is set to 1 in your PHP config.' . PHP_EOL
-        . 'The pcre jit is known to cause segfaults in PHP 7.3 on Macs, and Psalm' . PHP_EOL
-        . 'will not execute in threaded mode to avoid indecipherable errors.' . PHP_EOL
-        . 'Consider adding pcre.jit=0 to your PHP config, or upgrade to PHP 7.4.' . PHP_EOL
-        . 'Relevant info: https://bugs.php.net/bug.php?id=77260';
-
     /**
      * @param array<int, array<int, mixed>> $process_task_data_iterator
      * An array of task data items to be divided up among the
      * workers. The size of this is the number of forked processes.
+     * @phpcsSuppress SlevomatCodingStandard.TypeHints.ParameterTypeHint
      * @param Closure $startup_closure
      * A closure to execute upon starting a child
      * @param Closure(int, mixed):mixed $task_closure
@@ -138,16 +130,6 @@ class Pool
             echo "pcntl_fork() is disabled by php configuration (disable_functions directive).\n"
                 . "Please enable it or run Psalm single-threaded with --threads=1 cli switch.\n";
             exit(1);
-        }
-
-        if (ini_get('pcre.jit') === '1'
-            && PHP_OS === 'Darwin'
-            && version_compare(PHP_VERSION, '7.3.0') >= 0
-            && version_compare(PHP_VERSION, '7.4.0') < 0
-        ) {
-            die(
-                self::MAC_PCRE_MESSAGE . PHP_EOL
-            );
         }
 
         // We'll keep track of if this is the parent process

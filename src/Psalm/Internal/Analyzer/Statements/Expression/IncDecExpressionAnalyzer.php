@@ -20,7 +20,7 @@ use Psalm\Type;
 /**
  * @internal
  */
-class IncDecExpressionAnalyzer
+final class IncDecExpressionAnalyzer
 {
     /**
      * @param PostInc|PostDec|PreInc|PreDec $stmt

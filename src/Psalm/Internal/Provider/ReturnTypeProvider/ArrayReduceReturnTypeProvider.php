@@ -31,7 +31,7 @@ use function substr;
 /**
  * @internal
  */
-class ArrayReduceReturnTypeProvider implements FunctionReturnTypeProviderInterface
+final class ArrayReduceReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
     /**
      * @return array<lowercase-string>

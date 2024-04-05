@@ -48,19 +48,6 @@ class ReferenceConstraintTest extends TestCase
 
                     useString($a->getString());',
             ],
-            'makeByRefUseMixed' => [
-                'code' => '<?php
-                    function s(?string $p): void {}
-
-                    $var = 1;
-                    $callback = function() use(&$var): void {
-                        s($var);
-                    };
-                    $var = null;
-                    $callback();',
-                'assertions' => [],
-                'ignored_issues' => ['MixedArgument'],
-            ],
             'assignByRefToMixed' => [
                 'code' => '<?php
                     function testRef() : array {
@@ -192,6 +179,24 @@ class ReferenceConstraintTest extends TestCase
                     } else {}
 
                     if ($a) {}',
+            ],
+            'PHP80-paramOutChangeTypeWithNamedArgument' => [
+                'code' => '<?php
+                    /**
+                     * @param-out int $s
+                     */
+                    function addFoo(bool $five = true, ?string &$s = null) : void {
+                        if ($five) {
+                            $s = 5;
+                            return;
+                        }
+                        $s = 4;
+                    }
+
+                    addFoo(s: $a);',
+                'assertions' => [
+                    '$a' => 'int',
+                ],
             ],
         ];
     }

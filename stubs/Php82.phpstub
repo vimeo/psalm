@@ -10,4 +10,54 @@ namespace {
         /** @return non-empty-list<ReflectionNamedType|ReflectionIntersectionType> */
         public function getTypes(): array {}
     }
+
+    /**
+    * @psalm-immutable
+    *
+    * @template-covariant Start of string|DateTimeInterface
+    * @implements IteratorAggregate<int, DateTimeInterface>
+    */
+    class DatePeriod implements IteratorAggregate
+    {
+        const EXCLUDE_START_DATE = 1;
+        const INCLUDE_END_DATE = 2;
+
+        /**
+        * @param Start $start
+        * @param (Start is string ? int-mask<self::EXCLUDE_START_DATE, self::INCLUDE_END_DATE> : DateInterval) $interval
+        * @param (Start is string ? never : (DateTimeInterface|positive-int)) $end
+        * @param (Start is string ? never : int-mask<self::EXCLUDE_START_DATE, self::INCLUDE_END_DATE>) $options
+        */
+        public function __construct($start, $interval = 0, $end = 1, $options = 0) {}
+
+        /** @psalm-return (Start is string ? Iterator<int, DateTime> : Iterator<int, Start>) */
+        public function getIterator(): Iterator {}
+    }
+
+    /**
+    * @psalm-pure
+    * @param positive-int $length
+    * @return list<non-empty-string>
+    *
+    * @psalm-flow ($string) -> return
+    */
+    function str_split(string $string, int $length = 1) {}
+
+    /**
+     * @psalm-immutable
+     * @template TValue
+     *
+     * @since 8.2.0
+     */
+    final class SensitiveParameterValue
+    {
+        /** @param TValue $value */
+        public function __construct(private readonly mixed $value) {}
+
+        /** @return array<never, never> */
+        public function __debugInfo(): array {}
+
+        /** @return TValue */
+        public function getValue(): mixed {}
+    }
 }

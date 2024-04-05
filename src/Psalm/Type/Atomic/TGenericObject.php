@@ -8,7 +8,6 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
-use function array_merge;
 use function count;
 use function implode;
 use function strrpos;
@@ -37,7 +36,7 @@ final class TGenericObject extends TNamedObject
     /**
      * @param string                $value the name of the object
      * @param non-empty-list<Union> $type_params
-     * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties> $extra_types
+     * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties|TCallableObject> $extra_types
      */
     public function __construct(
         string $value,
@@ -51,12 +50,15 @@ final class TGenericObject extends TNamedObject
             $value = substr($value, 1);
         }
 
-        $this->value = $value;
         $this->type_params = $type_params;
         $this->remapped_params = $remapped_params;
-        $this->is_static = $is_static;
-        $this->extra_types = $extra_types;
-        $this->from_docblock = $from_docblock;
+        parent::__construct(
+            $value,
+            $is_static,
+            false,
+            $extra_types,
+            $from_docblock,
+        );
     }
 
     public function getKey(bool $include_extra = true): string
@@ -109,7 +111,7 @@ final class TGenericObject extends TNamedObject
         }
 
         foreach ($this->type_params as $i => $type_param) {
-            if (!$type_param->equals($other_type->type_params[$i], $ensure_source_equality)) {
+            if (!$type_param->equals($other_type->type_params[$i], $ensure_source_equality, false)) {
                 return false;
             }
         }
@@ -124,7 +126,7 @@ final class TGenericObject extends TNamedObject
 
     protected function getChildNodeKeys(): array
     {
-        return array_merge(parent::getChildNodeKeys(), ['type_params']);
+        return [...parent::getChildNodeKeys(), 'type_params'];
     }
 
     /**

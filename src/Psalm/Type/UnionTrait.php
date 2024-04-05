@@ -34,6 +34,7 @@ use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonEmptyLowercaseString;
+use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TNonspecificLiteralInt;
 use Psalm\Type\Atomic\TNonspecificLiteralString;
 use Psalm\Type\Atomic\TString;
@@ -42,7 +43,6 @@ use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTrue;
 
 use function array_filter;
-use function array_merge;
 use function array_unique;
 use function count;
 use function get_class;
@@ -51,6 +51,8 @@ use function ksort;
 use function reset;
 use function sort;
 use function strpos;
+
+use const ARRAY_FILTER_USE_BOTH;
 
 /**
  * @psalm-immutable
@@ -270,13 +272,13 @@ trait UnionTrait
         }
 
         if (count($literal_ints) <= 3 && !$has_non_literal_int) {
-            $other_types = array_merge($other_types, $literal_ints);
+            $other_types = [...$other_types, ...$literal_ints];
         } else {
             $other_types[] = 'int';
         }
 
         if (count($literal_strings) <= 3 && !$has_non_literal_string) {
-            $other_types = array_merge($other_types, $literal_strings);
+            $other_types = [...$other_types, ...$literal_strings];
         } else {
             $other_types[] = 'string';
         }
@@ -379,7 +381,7 @@ trait UnionTrait
 
         return !array_filter(
             $types,
-            static fn($atomic_type): bool => !$atomic_type->canBeFullyExpressedInPhp($analysis_php_version_id)
+            static fn($atomic_type): bool => !$atomic_type->canBeFullyExpressedInPhp($analysis_php_version_id),
         );
     }
 
@@ -457,7 +459,7 @@ trait UnionTrait
     {
         return (bool)array_filter(
             $this->types,
-            static fn($type): bool => $type->hasArrayAccessInterface($codebase)
+            static fn($type): bool => $type->hasArrayAccessInterface($codebase),
         );
     }
 
@@ -748,7 +750,7 @@ trait UnionTrait
                         $type->extra_types,
                         static fn($t): bool => $t instanceof TTemplateParam,
                     )
-                )
+                ),
         );
     }
 
@@ -780,7 +782,7 @@ trait UnionTrait
                             )
                         )
                     )
-                )
+                ),
         );
     }
 
@@ -795,9 +797,20 @@ trait UnionTrait
     /**
      * @psalm-mutation-free
      */
-    public function isMixed(): bool
+    public function isMixed(bool $check_templates = false): bool
     {
-        return isset($this->types['mixed']) && count($this->types) === 1;
+        return count(
+            array_filter(
+                $this->types,
+                static fn($type, $key): bool => $key === 'mixed'
+                    || $type instanceof TMixed
+                    || ($check_templates
+                        && $type instanceof TTemplateParam
+                        && $type->as->isMixed()
+                    ),
+                ARRAY_FILTER_USE_BOTH,
+            ),
+        ) === count($this->types);
     }
 
     /**
@@ -980,7 +993,7 @@ trait UnionTrait
                     || ($check_templates
                         && $type instanceof TTemplateParam
                         && $type->as->isInt()
-                    )
+                    ),
             ),
         ) === count($this->types);
     }
@@ -1011,7 +1024,26 @@ trait UnionTrait
                     || ($check_templates
                         && $type instanceof TTemplateParam
                         && $type->as->isString()
-                    )
+                    ),
+            ),
+        ) === count($this->types);
+    }
+
+    /**
+     * @psalm-mutation-free
+     * @return bool true if this is a string
+     */
+    public function isNonEmptyString(bool $check_templates = false): bool
+    {
+        return count(
+            array_filter(
+                $this->types,
+                static fn($type): bool => $type instanceof TNonEmptyString
+                    || ($type instanceof TLiteralString && $type->value !== '')
+                    || ($check_templates
+                        && $type instanceof TTemplateParam
+                        && $type->as->isNonEmptyString()
+                    ),
             ),
         ) === count($this->types);
     }

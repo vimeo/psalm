@@ -1,0 +1,22 @@
+<?php
+
+/** @psalm-immutable */
+#[Attribute(Attribute::TARGET_CLASS)]
+final class AllowDynamicProperties
+{
+    public function __construct() {}
+}
+
+/** @psalm-immutable */
+#[Attribute(Attribute::TARGET_METHOD)]
+final class Override
+{
+    public function __construct() {}
+}
+
+/** @psalm-immutable */
+#[Attribute(Attribute::TARGET_PARAMETER)]
+final class SensitiveParameter
+{
+    public function __construct() {}
+}

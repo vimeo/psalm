@@ -18,6 +18,35 @@ class CheckTypeTest extends TestCase
                 $foo = 1;
             ',
         ];
+        yield 'allowNamespace' => [
+            'code' => '<?php
+
+                namespace X;
+
+                final class A {}
+
+                $_a = new A();
+                /** @psalm-check-type-exact $_a = A */',
+        ];
+        yield 'allowImport' => [
+            'code' => '<?php
+
+                namespace X;
+
+                use \stdClass;
+
+                $_a = new stdClass();
+                /** @psalm-check-type-exact $_a = \stdClass */',
+        ];
+        yield 'allowType' => [
+            'code' => '<?php
+                namespace X;
+
+                /** @psalm-type A = int|string */
+
+                $_a = 1;
+                /** @psalm-check-type $_a = A */',
+        ];
     }
 
     public function providerInvalidCodeParse(): iterable
@@ -63,6 +92,24 @@ class CheckTypeTest extends TestCase
                 /** @psalm-check-type $foo? = 1 */;
             ',
             'error_message' => 'Checked variable $foo? = 1 does not match $foo = 1',
+        ];
+        yield 'invalidIncompleteSyntax' => [
+            'code' => '<?php
+                /** @psalm-check-type */
+            ',
+            'error_message' => 'InvalidDocblock',
+        ];
+        yield 'invalidIncompleteSyntaxNoVar' => [
+            'code' => '<?php
+                /** @psalm-check-type = 1 */
+            ',
+            'error_message' => 'InvalidDocblock',
+        ];
+        yield 'invalidIncompleteSyntaxNoType' => [
+            'code' => '<?php
+                /** @psalm-check-type $var = */
+            ',
+            'error_message' => 'InvalidDocblock',
         ];
     }
 }

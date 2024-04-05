@@ -58,7 +58,7 @@ use function strtolower;
 /**
  * @internal
  */
-class ArithmeticOpAnalyzer
+final class ArithmeticOpAnalyzer
 {
     public static function analyze(
         ?StatementsSource $statements_source,
@@ -542,97 +542,97 @@ class ArithmeticOpAnalyzer
                     $has_valid_right_operand = true;
                 }
 
-                $result_type = Type::getArray();
-
                 return null;
             }
 
-            $has_valid_right_operand = true;
-            $has_valid_left_operand = true;
+            if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Plus) {
+                $has_valid_right_operand = true;
+                $has_valid_left_operand = true;
 
-            if ($left_type_part instanceof TKeyedArray
-                && $right_type_part instanceof TKeyedArray
-            ) {
-                $definitely_existing_mixed_right_properties = array_diff_key(
-                    $right_type_part->properties,
-                    $left_type_part->properties,
-                );
-
-                $properties = $left_type_part->properties;
-
-                foreach ($right_type_part->properties as $key => $type) {
-                    if (!isset($properties[$key])) {
-                        $properties[$key] = $type;
-                    } elseif ($properties[$key]->possibly_undefined) {
-                        $properties[$key] = Type::combineUnionTypes(
-                            $properties[$key],
-                            $type,
-                            $codebase,
-                            false,
-                            true,
-                            500,
-                            $type->possibly_undefined,
-                        );
-                    }
-                }
-
-                if ($left_type_part->fallback_params !== null) {
-                    foreach ($definitely_existing_mixed_right_properties as $key => $type) {
-                        $properties[$key] = Type::combineUnionTypes(Type::getMixed(), $type);
-                    }
-                }
-
-                if ($left_type_part->fallback_params === null
-                    && $right_type_part->fallback_params === null
+                if ($left_type_part instanceof TKeyedArray
+                    && $right_type_part instanceof TKeyedArray
                 ) {
-                    $fallback_params = null;
-                } elseif ($left_type_part->fallback_params !== null
-                    && $right_type_part->fallback_params !== null
-                ) {
-                    $fallback_params = [
-                        Type::combineUnionTypes(
-                            $left_type_part->fallback_params[0],
-                            $right_type_part->fallback_params[0],
-                        ),
-                        Type::combineUnionTypes(
-                            $left_type_part->fallback_params[1],
-                            $right_type_part->fallback_params[1],
-                        ),
-                    ];
+                    $definitely_existing_mixed_right_properties = array_diff_key(
+                        $right_type_part->properties,
+                        $left_type_part->properties,
+                    );
+
+                    $properties = $left_type_part->properties;
+
+                    foreach ($right_type_part->properties as $key => $type) {
+                        if (!isset($properties[$key])) {
+                            $properties[$key] = $type;
+                        } elseif ($properties[$key]->possibly_undefined) {
+                            $properties[$key] = Type::combineUnionTypes(
+                                $properties[$key],
+                                $type,
+                                $codebase,
+                                false,
+                                true,
+                                500,
+                                $type->possibly_undefined,
+                            );
+                        }
+                    }
+
+                    if ($left_type_part->fallback_params !== null) {
+                        foreach ($definitely_existing_mixed_right_properties as $key => $type) {
+                            $properties[$key] = Type::combineUnionTypes(Type::getMixed(), $type);
+                        }
+                    }
+
+                    if ($left_type_part->fallback_params === null
+                        && $right_type_part->fallback_params === null
+                    ) {
+                        $fallback_params = null;
+                    } elseif ($left_type_part->fallback_params !== null
+                        && $right_type_part->fallback_params !== null
+                    ) {
+                        $fallback_params = [
+                            Type::combineUnionTypes(
+                                $left_type_part->fallback_params[0],
+                                $right_type_part->fallback_params[0],
+                            ),
+                            Type::combineUnionTypes(
+                                $left_type_part->fallback_params[1],
+                                $right_type_part->fallback_params[1],
+                            ),
+                        ];
+                    } else {
+                        $fallback_params = $left_type_part->fallback_params ?: $right_type_part->fallback_params;
+                    }
+
+                    $new_keyed_array = new TKeyedArray(
+                        $properties,
+                        null,
+                        $fallback_params,
+                    );
+                    $result_type_member = new Union([$new_keyed_array]);
                 } else {
-                    $fallback_params = $left_type_part->fallback_params ?: $right_type_part->fallback_params;
+                    $result_type_member = TypeCombiner::combine(
+                        [$left_type_part, $right_type_part],
+                        $codebase,
+                        true,
+                    );
                 }
 
-                $new_keyed_array = new TKeyedArray(
-                    $properties,
-                    null,
-                    $fallback_params,
-                );
-                $result_type_member = new Union([$new_keyed_array]);
-            } else {
-                $result_type_member = TypeCombiner::combine(
-                    [$left_type_part, $right_type_part],
-                    $codebase,
-                    true,
-                );
+                $result_type = Type::combineUnionTypes($result_type_member, $result_type, $codebase, true);
+
+                if ($left instanceof PhpParser\Node\Expr\ArrayDimFetch
+                    && $context
+                    && $statements_source instanceof StatementsAnalyzer
+                ) {
+                    ArrayAssignmentAnalyzer::updateArrayType(
+                        $statements_source,
+                        $left,
+                        $right,
+                        $result_type,
+                        $context,
+                    );
+                }
+
+                return null;
             }
-
-            $result_type = Type::combineUnionTypes($result_type_member, $result_type, $codebase, true);
-
-            if ($left instanceof PhpParser\Node\Expr\ArrayDimFetch
-                && $context
-                && $statements_source instanceof StatementsAnalyzer
-            ) {
-                ArrayAssignmentAnalyzer::updateArrayType(
-                    $statements_source,
-                    $left,
-                    $right,
-                    $result_type,
-                    $context,
-                );
-            }
-
-            return null;
         }
 
         if (($left_type_part instanceof TNamedObject && strtolower($left_type_part->value) === 'gmp')
@@ -815,11 +815,9 @@ class ArithmeticOpAnalyzer
                         if ($right_type_part instanceof TLiteralInt) {
                             $literal_value_max = $right_type_part->value - 1;
                             if ($always_positive) {
-                                $result_type = new Union([new TIntRange(0, $literal_value_max)]);
+                                $result_type = Type::getIntRange(0, $literal_value_max);
                             } else {
-                                $result_type = new Union(
-                                    [new TIntRange(-$literal_value_max, $literal_value_max)],
-                                );
+                                $result_type = Type::getIntRange(-$literal_value_max, $literal_value_max);
                             }
                         } else {
                             if ($always_positive) {
@@ -830,7 +828,7 @@ class ArithmeticOpAnalyzer
                         }
                     } else {
                         $result_type = Type::combineUnionTypes(
-                            $always_positive ? new Union([new TIntRange(1, null)]) : Type::getInt(true),
+                            $always_positive ? Type::getIntRange(1, null) : Type::getInt(true),
                             $result_type,
                         );
                     }
@@ -962,7 +960,7 @@ class ArithmeticOpAnalyzer
         } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\ShiftRight) {
             $result = $operand1 >> $operand2;
         } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\Div) {
-            if ($operand2 === 0) {
+            if ($operand2 === 0 || $operand2 === 0.0) {
                 return Type::getNever();
             }
 
@@ -1072,7 +1070,7 @@ class ArithmeticOpAnalyzer
         $min_value = $calculated_min_type !== null ? $calculated_min_type->getSingleIntLiteral()->value : null;
         $max_value = $calculated_max_type !== null ? $calculated_max_type->getSingleIntLiteral()->value : null;
 
-        $new_result_type = new Union([new TIntRange($min_value, $max_value)]);
+        $new_result_type = Type::getIntRange($min_value, $max_value);
 
         $result_type = Type::combineUnionTypes($new_result_type, $result_type);
     }
@@ -1122,7 +1120,7 @@ class ArithmeticOpAnalyzer
             $min_value = min($x_1 * $y_1, $x_1 * $y_2, $x_2 * $y_1, $x_2 * $y_2);
             $max_value = max($x_1 * $y_1, $x_1 * $y_2, $x_2 * $y_1, $x_2 * $y_2);
 
-            $new_result_type = new Union([new TIntRange($min_value, $max_value)]);
+            $new_result_type = Type::getIntRange($min_value, $max_value);
         } elseif ($right_type_part->isPositiveOrZero() && $left_type_part->isPositiveOrZero()) {
             // both operands are positive, result will be only positive
             $min_operand1 = $left_type_part->min_bound;
@@ -1156,7 +1154,7 @@ class ArithmeticOpAnalyzer
             $min_value = $calculated_min_type !== null ? $calculated_min_type->getSingleIntLiteral()->value : null;
             $max_value = $calculated_max_type !== null ? $calculated_max_type->getSingleIntLiteral()->value : null;
 
-            $new_result_type = new Union([new TIntRange($min_value, $max_value)]);
+            $new_result_type = Type::getIntRange($min_value, $max_value);
         } elseif ($right_type_part->isPositiveOrZero() && $left_type_part->isNegativeOrZero()) {
             // one operand is negative, result will be negative and we have to check min vs max
             $min_operand1 = $left_type_part->max_bound;
@@ -1194,7 +1192,7 @@ class ArithmeticOpAnalyzer
                 [$min_value, $max_value] = [$max_value, $min_value];
             }
 
-            $new_result_type = new Union([new TIntRange($min_value, $max_value)]);
+            $new_result_type = Type::getIntRange($min_value, $max_value);
         } elseif ($right_type_part->isNegativeOrZero() && $left_type_part->isPositiveOrZero()) {
             // one operand is negative, result will be negative and we have to check min vs max
             $min_operand1 = $left_type_part->min_bound;
@@ -1232,7 +1230,7 @@ class ArithmeticOpAnalyzer
                 [$min_value, $max_value] = [$max_value, $min_value];
             }
 
-            $new_result_type = new Union([new TIntRange($min_value, $max_value)]);
+            $new_result_type = Type::getIntRange($min_value, $max_value);
         } elseif ($right_type_part->isNegativeOrZero() && $left_type_part->isNegativeOrZero()) {
             // both operand are negative, result will be positive
             $min_operand1 = $left_type_part->max_bound;
@@ -1266,7 +1264,7 @@ class ArithmeticOpAnalyzer
             $min_value = $calculated_min_type !== null ? $calculated_min_type->getSingleIntLiteral()->value : null;
             $max_value = $calculated_max_type !== null ? $calculated_max_type->getSingleIntLiteral()->value : null;
 
-            $new_result_type = new Union([new TIntRange($min_value, $max_value)]);
+            $new_result_type = Type::getIntRange($min_value, $max_value);
         } else {
             $new_result_type = Type::getInt(true);
         }
@@ -1283,7 +1281,7 @@ class ArithmeticOpAnalyzer
         //If Pow second operand is negative, the result will be float, if it's 0, it will be 1/-1, else positive
         if ($left_type_part->isPositive()) {
             if ($right_type_part->isPositive()) {
-                $new_result_type = new Union([new TIntRange(1, null)]);
+                $new_result_type = Type::getIntRange(1, null);
             } elseif ($right_type_part->isNegative()) {
                 $new_result_type = Type::getFloat();
             } elseif ($right_type_part->min_bound === 0 && $right_type_part->max_bound === 0) {
@@ -1296,9 +1294,9 @@ class ArithmeticOpAnalyzer
             if ($right_type_part->isPositive()) {
                 if ($right_type_part->min_bound === $right_type_part->max_bound) {
                     if ($right_type_part->max_bound % 2 === 0) {
-                        $new_result_type = new Union([new TIntRange(1, null)]);
+                        $new_result_type = Type::getIntRange(1, null);
                     } else {
-                        $new_result_type = new Union([new TIntRange(null, -1)]);
+                        $new_result_type = Type::getIntRange(null, -1);
                     }
                 } else {
                     $new_result_type = Type::getInt(true);
@@ -1330,7 +1328,7 @@ class ArithmeticOpAnalyzer
                 if ($right_type_part->min_bound === $right_type_part->max_bound
                     && $right_type_part->max_bound % 2 === 0
                 ) {
-                    $new_result_type = new Union([new TIntRange(1, null)]);
+                    $new_result_type = Type::getIntRange(1, null);
                 } else {
                     $new_result_type = Type::getInt(true);
                 }
@@ -1361,18 +1359,18 @@ class ArithmeticOpAnalyzer
                 if ($left_type_part->isPositiveOrZero()) {
                     if ($right_type_part->isPositive()) {
                         $max = $right_type_part->min_bound - 1;
-                        $new_result_type = new Union([new TIntRange(0, $max)]);
+                        $new_result_type = Type::getIntRange(0, $max);
                     } else {
                         $max = $right_type_part->min_bound + 1;
-                        $new_result_type = new Union([new TIntRange($max, 0)]);
+                        $new_result_type = Type::getIntRange($max, 0);
                     }
                 } elseif ($left_type_part->isNegativeOrZero()) {
                     if ($right_type_part->isPositive()) {
                         $max = $right_type_part->min_bound - 1;
-                        $new_result_type = new Union([new TIntRange(-$max, 0)]);
+                        $new_result_type = Type::getIntRange(-$max, 0);
                     } else {
                         $max = $right_type_part->min_bound + 1;
-                        $new_result_type = new Union([new TIntRange(-$max, 0)]);
+                        $new_result_type = Type::getIntRange(-$max, 0);
                     }
                 } else {
                     if ($right_type_part->isPositive()) {
@@ -1380,7 +1378,7 @@ class ArithmeticOpAnalyzer
                     } else {
                         $max = -$right_type_part->min_bound - 1;
                     }
-                    $new_result_type = new Union([new TIntRange(-$max, $max)]);
+                    $new_result_type = Type::getIntRange(-$max, $max);
                 }
             }
         } elseif ($right_type_part->isPositive()) {
@@ -1394,15 +1392,15 @@ class ArithmeticOpAnalyzer
                     $new_result_type = Type::getListKey();
                 }
             } elseif ($left_type_part->isNegativeOrZero()) {
-                $new_result_type = new Union([new TIntRange(null, 0)]);
+                $new_result_type = Type::getIntRange(null, 0);
             } else {
                 $new_result_type = Type::getInt(true);
             }
         } elseif ($right_type_part->isNegative()) {
             if ($left_type_part->isPositiveOrZero()) {
-                $new_result_type = new Union([new TIntRange(null, 0)]);
+                $new_result_type = Type::getIntRange(null, 0);
             } elseif ($left_type_part->isNegativeOrZero()) {
-                $new_result_type = new Union([new TIntRange(null, 0)]);
+                $new_result_type = Type::getIntRange(null, 0);
             } else {
                 $new_result_type = Type::getInt(true);
             }

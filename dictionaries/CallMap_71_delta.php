@@ -16,7 +16,7 @@
  */
 return [
   'added' => [
-    'Closure::fromCallable' => ['Closure', 'callable'=>'callable'],
+    'Closure::fromCallable' => ['Closure', 'callback'=>'callable'],
     'curl_multi_errno' => ['int|false', 'mh'=>'resource'],
     'curl_share_errno' => ['int|false', 'sh'=>'resource'],
     'curl_share_strerror' => ['?string', 'error_code'=>'int'],
@@ -27,10 +27,10 @@ return [
     'pcntl_async_signals' => ['bool', 'enable='=>'bool'],
     'pcntl_signal_get_handler' => ['int|string', 'signal'=>'int'],
     'sapi_windows_cp_conv' => ['?string', 'in_codepage'=>'int|string', 'out_codepage'=>'int|string', 'subject'=>'string'],
-    'sapi_windows_cp_get' => ['int'],
+    'sapi_windows_cp_get' => ['int', 'kind='=>'string'],
     'sapi_windows_cp_is_utf8' => ['bool'],
     'sapi_windows_cp_set' => ['bool', 'codepage'=>'int'],
-    'session_create_id' => ['string', 'prefix='=>'string'],
+    'session_create_id' => ['string|false', 'prefix='=>'string'],
     'session_gc' => ['int|false'],
   ],
   'changed' => [
@@ -42,13 +42,17 @@ return [
         'old' => ['string|false', 'value'=>'IntlCalendar|DateTime|array{0: int, 1: int, 2: int, 3: int, 4: int, 5: int, 6: int, 7: int, 8: int}|array{tm_sec: int, tm_min: int, tm_hour: int, tm_mday: int, tm_mon: int, tm_year: int, tm_wday: int, tm_yday: int, tm_isdst: int}|string|int|float'],
         'new' => ['string|false', 'value'=>'IntlCalendar|DateTimeInterface|array{0: int, 1: int, 2: int, 3: int, 4: int, 5: int, 6: int, 7: int, 8: int}|array{tm_sec: int, tm_min: int, tm_hour: int, tm_mday: int, tm_mon: int, tm_year: int, tm_wday: int, tm_yday: int, tm_isdst: int}|string|int|float'],
     ],
+    'SessionHandler::gc' => [
+      'old' => ['bool', 'max_lifetime'=>'int'],
+      'new' => ['int|false', 'max_lifetime'=>'int'],
+    ],
     'SQLite3::createFunction' => [
       'old' => ['bool', 'name'=>'string', 'callback'=>'callable', 'argCount='=>'int'],
       'new' => ['bool', 'name'=>'string', 'callback'=>'callable', 'argCount='=>'int', 'flags='=>'int'],
     ],
     'get_headers' => [
       'old' => ['array|false', 'url'=>'string', 'associative='=>'int'],
-      'new' => ['array|false', 'url'=>'string', 'associative='=>'int', 'context='=>'resource'],
+      'new' => ['array|false', 'url'=>'string', 'associative='=>'int', 'context='=>'?resource'],
     ],
     'getopt' => [
       'old' => ['array<string,string|false|list<string|false>>|false', 'short_options'=>'string', 'long_options='=>'array'],
@@ -56,11 +60,11 @@ return [
     ],
     'pg_fetch_all' => [
       'old' => ['array<array>', 'result'=>'resource'],
-      'new' => ['array<array>', 'result'=>'resource', 'result_type='=>'int'],
+      'new' => ['array<array>', 'result'=>'resource', 'mode='=>'int'],
     ],
     'pg_select' => [
-      'old' => ['string|array|false', 'connection'=>'resource', 'table_name'=>'string', 'assoc_array'=>'array', 'options='=>'int'],
-      'new' => ['string|array|false', 'connection'=>'resource', 'table_name'=>'string', 'assoc_array'=>'array', 'options='=>'int', 'result_type='=>'int'],
+      'old' => ['string|array|false', 'connection'=>'resource', 'table_name'=>'string', 'conditions'=>'array', 'flags='=>'int'],
+      'new' => ['string|array|false', 'connection'=>'resource', 'table_name'=>'string', 'conditions'=>'array', 'flags='=>'int', 'mode='=>'int'],
     ],
     'timezone_identifiers_list' => [
       'old' => ['list<string>|false', 'timezoneGroup='=>'int', 'countryCode='=>'string'],
