@@ -40,12 +40,16 @@ final class DocComment
     /**
      * Parse a docblock comment into its parts.
      */
-    public static function parsePreservingLength(Doc $docblock): ParsedDocblock
+    public static function parsePreservingLength(Doc $docblock, bool $no_psalm_error = false): ParsedDocblock
     {
         $parsed_docblock = DocblockParser::parse(
             $docblock->getText(),
             $docblock->getStartFilePos(),
         );
+
+        if ($no_psalm_error) {
+            return $parsed_docblock;
+        }
 
         foreach ($parsed_docblock->tags as $special_key => $_) {
             if (strpos($special_key, 'psalm-') === 0) {

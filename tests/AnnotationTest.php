@@ -535,6 +535,45 @@ class AnnotationTest extends TestCase
                     '$_===' => 'list<array{href: string, lang: string}>',
                 ],
             ],
+            'invalidPsalmForMethodShouldNotBreakDocblock' => [
+                'code' => '<?php
+                    class A {
+                        /**
+                         * @psalm-impure
+                         * @param string $arg
+                         * @return non-falsy-string
+                         */
+                        public function foo($arg) {
+                            return $arg . "bar";
+                        }
+                    }
+
+                    $a = new A();
+                    $_ = $a->foo("hello");
+                ',
+                'assertions' => [
+                    '$_===' => 'non-falsy-string',
+                ],
+                'ignored_issues' => ['InvalidDocblock'],
+            ],
+            'invalidPsalmForFunctionShouldNotBreakDocblock' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-impure
+                     * @param string $arg
+                     * @return non-falsy-string
+                     */
+                    function foo($arg) {
+                        return $arg . "bar";
+                    }
+
+                    $_ = foo("hello");
+                ',
+                'assertions' => [
+                    '$_===' => 'non-falsy-string',
+                ],
+                'ignored_issues' => ['InvalidDocblock'],
+            ],
             'builtInClassInAShape' => [
                 'code' => '<?php
                     /**
