@@ -25,7 +25,7 @@
         "ext-tokenizer": "*",
         "composer-runtime-api": "^2",
         "amphp/amp": "^2.4.2 || ^3.0",
-        "amphp/byte-stream": "^1.5",
+        "amphp/byte-stream": "^1.5 || ^2.1",
         "composer/semver": "^1.4 || ^2.0 || ^3.0",
         "composer/xdebug-handler": "^2.0 || ^3.0",
         "dnoegel/php-xdg-base-dir": "^0.1.1",
