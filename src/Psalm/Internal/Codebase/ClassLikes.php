@@ -1755,6 +1755,12 @@ final class ClassLikes
                             continue;
                         }
 
+                        if ($codebase->classImplements($classlike_storage->name, 'JsonSerializable')
+                            && ($method_name === 'jsonserialize')
+                        ) {
+                            continue;
+                        }
+
                         $has_variable_calls = $codebase->analyzer->hasMixedMemberName($method_name)
                             || $codebase->analyzer->hasMixedMemberName(strtolower($classlike_storage->name . '::'));
 
