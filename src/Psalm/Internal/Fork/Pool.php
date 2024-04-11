@@ -331,6 +331,7 @@ final class Pool
         $content = array_fill_keys(array_keys($streams), '');
 
         $terminationMessages = [];
+        $done = [];
 
         // Read the data off of all the stream.
         while (count($streams) > 0) {
