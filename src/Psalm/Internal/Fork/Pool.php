@@ -295,6 +295,20 @@ final class Pool
         return $for_write;
     }
 
+    private function killAllChildren(): void
+    {
+        foreach ($this->child_pid_list as $child_pid) {
+            /**
+             * SIGTERM does not exist on windows
+             *
+             * @psalm-suppress UnusedPsalmSuppress
+             * @psalm-suppress UndefinedConstant
+             * @psalm-suppress MixedArgument
+             */
+            posix_kill($child_pid, SIGTERM);
+        }
+    }
+
     /**
      * Read the results that each child process has serialized on their write streams.
      * The results are returned in an array, one for each worker. The order of the results
@@ -364,19 +378,10 @@ final class Pool
                                 ($this->task_done_closure)($message->data);
                             }
                         } elseif ($message instanceof ForkProcessErrorMessage) {
-                            // Kill all children
-                            foreach ($this->child_pid_list as $child_pid) {
-                                /**
-                                 * SIGTERM does not exist on windows
-                                 *
-                                 * @psalm-suppress UnusedPsalmSuppress
-                                 * @psalm-suppress UndefinedConstant
-                                 * @psalm-suppress MixedArgument
-                                 */
-                                posix_kill($child_pid, SIGTERM);
-                            }
+                            $this->killAllChildren();
                             throw new Exception($message->message);
                         } else {
+                            $this->killAllChildren();
                             throw new Exception('Child should return ForkMessage - response type=' . gettype($message));
                         }
                     }
@@ -385,6 +390,7 @@ final class Pool
                 // If the stream has closed, stop trying to select on it.
                 if (feof($file)) {
                     if ($content[(int)$file] !== '' || !isset($done[(int)$file])) {
+                        $this->killAllChildren();
                         throw new Exception('Child did not send full message before closing the connection');
                     }
 
@@ -447,6 +453,7 @@ final class Pool
                      * @psalm-suppress UndefinedConstant
                      */
                     if ($term_sig !== SIGALRM) {
+                        $this->killAllChildren();
                         throw new Exception("Child terminated with return code $return_code and signal $term_sig");
                     }
                 }
