@@ -140,7 +140,7 @@ final class PsalmRestarter extends XdebugHandler
     /**
      * No type hint to allow xdebug-handler v1 and v2 usage
      *
-     * @param string[] $command
+     * @param non-empty-list<string> $command
      * @phpcsSuppress SlevomatCodingStandard.TypeHints.ParameterTypeHint.MissingNativeTypeHint
      */
     protected function restart($command): void
@@ -178,6 +178,7 @@ final class PsalmRestarter extends XdebugHandler
             0,
             $additional_options,
         );
+        assert(count($command) > 0);
 
         parent::restart($command);
     }
