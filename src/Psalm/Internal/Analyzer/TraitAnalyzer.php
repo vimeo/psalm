@@ -24,7 +24,6 @@ final class TraitAnalyzer extends ClassLikeAnalyzer
     ) {
         $this->source = $source;
         $this->file_analyzer = $source->getFileAnalyzer();
-        $this->aliases = $source->getAliases();
         $this->class = $class;
         $this->fq_class_name = $fq_class_name;
         $codebase = $source->getCodebase();
