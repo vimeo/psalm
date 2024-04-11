@@ -80,8 +80,6 @@ final class Pool
     /** @var resource[] */
     private array $read_streams = [];
 
-    private bool $did_have_error = false;
-
     /** @var ?Closure(mixed): void */
     private ?Closure $task_done_closure = null;
 
@@ -361,6 +359,7 @@ final class Pool
                         if ($message instanceof ForkProcessDoneMessage) {
                             $terminationMessages[] = $message->data;
                         } elseif ($message instanceof ForkTaskDoneMessage) {
+                            $done[(int)$file] = true;
                             if ($this->task_done_closure !== null) {
                                 ($this->task_done_closure)($message->data);
                             }
@@ -378,17 +377,15 @@ final class Pool
                             }
                             throw new Exception($message->message);
                         } else {
-                            error_log('Child should return ForkMessage - response type=' . gettype($message));
-                            $this->did_have_error = true;
+                            throw new Exception('Child should return ForkMessage - response type=' . gettype($message));
                         }
                     }
                 }
 
                 // If the stream has closed, stop trying to select on it.
                 if (feof($file)) {
-                    if ($content[(int)$file] !== '') {
-                        error_log('Child did not send full message before closing the connection');
-                        $this->did_have_error = true;
+                    if ($content[(int)$file] !== '' || !isset($done[(int)$file])) {
+                        throw new Exception('Child did not send full message before closing the connection');
                     }
 
                     fclose($file);
@@ -450,21 +447,12 @@ final class Pool
                      * @psalm-suppress UndefinedConstant
                      */
                     if ($term_sig !== SIGALRM) {
-                        $this->did_have_error = true;
-                        error_log("Child terminated with return code $return_code and signal $term_sig");
+                        throw new Exception("Child terminated with return code $return_code and signal $term_sig");
                     }
                 }
             }
         }
 
         return $content;
-    }
-
-    /**
-     * Returns true if this had an error, e.g. due to memory limits or due to a child process crashing.
-     */
-    public function didHaveError(): bool
-    {
-        return $this->did_have_error;
     }
 }
