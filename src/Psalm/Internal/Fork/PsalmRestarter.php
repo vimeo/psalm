@@ -10,6 +10,7 @@ use function array_filter;
 use function array_merge;
 use function array_splice;
 use function assert;
+use function count;
 use function defined;
 use function extension_loaded;
 use function file_get_contents;
