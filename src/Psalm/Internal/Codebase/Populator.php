@@ -703,7 +703,7 @@ final class Populator
      */
     private static function getDefaultTemplateForInterfaceImplementingBackedEnum(
         ClassLikeStorage $storage,
-        ClassLikeStorage $parent_storage,
+        ClassLikeStorage $parent_storage
     ): ?array {
         $is_interface = $storage->is_interface;
 
@@ -729,7 +729,8 @@ final class Populator
      *
      * @return array{T: Union}|null
      */
-    private static function getDefaultTemplateForBackedEnum(ClassLikeStorage $storage): ?array {
+    private static function getDefaultTemplateForBackedEnum(ClassLikeStorage $storage): ?array
+    {
         $enum_type = $storage->enum_type;
 
         if ($enum_type === null || $storage->template_type_implements_count !== null) {
