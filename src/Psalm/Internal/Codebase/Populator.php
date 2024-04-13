@@ -699,19 +699,20 @@ final class Populator
     }
 
     /**
-     * @param non-empty-string $mapped_name from the BackedEnum stub
-     * @return array{Union}|null
+     * @return array{T: Union}|null
      */
     private static function getDefaultTemplateForInterfaceImplementingBackedEnum(
         ClassLikeStorage $storage,
         ClassLikeStorage $parent_storage,
-        string $mapped_name = 'T'
     ): ?array {
         $is_interface = $storage->is_interface;
 
-        if ($is_interface === null || $parent_storage->name !== "BackedEnum") {
+        if ($is_interface === false || $parent_storage->name !== "BackedEnum") {
             return null;
         }
+
+        // it comes from the BackedEnum stub
+        $mapped_name = 'T';
 
         $t_template_param = new TTemplateParam(
             $mapped_name,
@@ -726,18 +727,17 @@ final class Populator
      * This allows a BackedEnum to not implement any template via docblock as the default type is inferred
      * by the backed type, unless the user wants to define a more specific type for the backed enum.
      *
-     * @param non-empty-string           $mapped_name from the BackedEnum stub
-     * @return array{Union}|null
+     * @return array{T: Union}|null
      */
-    private static function getDefaultTemplateForBackedEnum(
-        ClassLikeStorage $storage,
-        string $mapped_name = 'T'
-    ): ?array {
+    private static function getDefaultTemplateForBackedEnum(ClassLikeStorage $storage): ?array {
         $enum_type = $storage->enum_type;
 
         if ($enum_type === null || $storage->template_type_implements_count !== null) {
             return null;
         }
+
+        // it comes from the BackedEnum stub
+        $mapped_name = 'T';
 
         if ($enum_type === 'string') {
             return [$mapped_name => new Union(['string' => new TString()])];
