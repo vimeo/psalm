@@ -662,7 +662,6 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
          */
         if (($is_backed_enum_like && $given_param_count === 0) ||
             (
-                $storage->is_interface === false &&
                 $is_backed_enum_like === false &&
                 $parent_storage->name === 'BackedEnum'
             )
