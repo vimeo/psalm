@@ -802,6 +802,14 @@ final class StatementsAnalyzer extends SourceAnalyzer
             $this->parsed_docblock = null;
         }
 
+        if ($this->parsed_docblock === null) {
+            try {
+                $this->parsed_docblock = DocComment::parsePreservingLength($docblock, true);
+            } catch (DocblockParseException $e) {
+                // already reported above
+            }
+        }
+
         $comments = $this->parsed_docblock;
 
         if (isset($comments->tags['psalm-scope-this'])) {

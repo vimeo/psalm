@@ -53,7 +53,8 @@ final class FunctionLikeDocblockParser
         CodeLocation $code_location,
         string $cased_function_id
     ): FunctionDocblockComment {
-        $parsed_docblock = DocComment::parsePreservingLength($comment);
+        // invalid @psalm annotations are already reported by the StatementsAnalyzer
+        $parsed_docblock = DocComment::parsePreservingLength($comment, true);
 
         $comment_text = $comment->getText();
 
