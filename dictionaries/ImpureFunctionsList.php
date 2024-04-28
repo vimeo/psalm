@@ -254,4 +254,6 @@ return [
     'openssl_pkcs12_export_to_file' => true,
     'openssl_pkey_export_to_file' => true,
     'openssl_x509_export_to_file' => true,
+    // mail
+    'mail' => true,
 ];
