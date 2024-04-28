@@ -511,10 +511,6 @@ final class Analyzer
                     $this->argument_map[$file_path] = $argument_map;
                 }
             }
-
-            if ($pool->didHaveError()) {
-                exit(1);
-            }
         } else {
             $i = 0;
 
