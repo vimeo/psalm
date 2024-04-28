@@ -451,7 +451,10 @@ final class TemplateInferredTypeReplacer
                     null,
                     false,
                     false,
-                )) {
+                )
+                    && ($candidate_atomic_type->getKey() !== 'string'
+                        || $conditional_type->getKey() !== 'string')
+                ) {
                     $matching_else_types[] = $candidate_atomic_type;
                 }
             }
