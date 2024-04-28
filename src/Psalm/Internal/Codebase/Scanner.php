@@ -417,10 +417,6 @@ final class Scanner
                     );
                 }
             }
-
-            if ($pool->didHaveError()) {
-                exit(1);
-            }
         } else {
             $i = 0;
 

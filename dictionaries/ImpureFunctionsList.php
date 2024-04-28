@@ -257,4 +257,6 @@ return [
     // xml
     'xml_parser_set_option' => true,
     'xml_parser_free' => true,
+    // mail
+    'mail' => true,
 ];

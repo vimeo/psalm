@@ -757,6 +757,16 @@ class UnusedCodeTest extends TestCase
                         }
                     }',
             ],
+            'ignoreJsonSerialize' => [
+                'code' => '<?php
+                    class Foo implements JsonSerializable {
+                        public function jsonSerialize() : array {
+                            return [];
+                        }
+                    }
+
+                    new Foo();',
+            ],
             'ignoreSerializerSerialize' => [
                 'code' => '<?php
                     class Foo implements Serializable {
