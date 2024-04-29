@@ -15,7 +15,7 @@
         }
     ],
     "require": {
-        "php": "^7.4 || ~8.0.0 || ~8.1.0 || ~8.2.0 || ~8.3.0",
+        "php": "^7.4 || ~8.0.0 || ~8.1.0 || ~8.2.0 || ~8.3.0 || ~8.4.0",
         "ext-SimpleXML": "*",
         "ext-ctype": "*",
         "ext-dom": "*",
@@ -30,7 +30,7 @@
         "composer/xdebug-handler": "^2.0 || ^3.0",
         "dnoegel/php-xdg-base-dir": "^0.1.1",
         "felixfbecker/advanced-json-rpc": "^3.1",
-        "felixfbecker/language-server-protocol": "^1.5.2",
+        "felixfbecker/language-server-protocol": "^1.5.3",
         "fidry/cpu-core-counter": "^0.4.1 || ^0.5.1 || ^1.0.0",
         "netresearch/jsonmapper": "^1.0 || ^2.0 || ^3.0 || ^4.0",
         "nikic/php-parser": "^4.17",
@@ -47,7 +47,7 @@
     },
     "require-dev": {
         "ext-curl": "*",
-        "amphp/phpunit-util": "^2.0",
+        "amphp/phpunit-util": "^2.0.1",
         "bamarni/composer-bin-plugin": "^1.4",
         "brianium/paratest": "^6.9",
         "mockery/mockery": "^1.5",
