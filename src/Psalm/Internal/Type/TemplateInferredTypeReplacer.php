@@ -9,7 +9,6 @@ use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TConditional;
-use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyOf;
@@ -452,17 +451,14 @@ final class TemplateInferredTypeReplacer
                     null,
                     false,
                     false,
+                ) && null === Type::intersectUnionTypes(
+                    new Union([$candidate_atomic_type]),
+                    $conditional_type,
+                    $codebase,
+                    false,
+                    false,
                 )) {
-                    $intersection = Type::intersectUnionTypes(
-                        new Union([$candidate_atomic_type]),
-                        $conditional_type,
-                        $codebase,
-                    );
-                    if (null === $intersection
-                        || ($candidate_atomic_type instanceof TFloat
-                            && $intersection->getKey() === 'int')) {
-                        $matching_else_types[] = $candidate_atomic_type;
-                    }
+                    $matching_else_types[] = $candidate_atomic_type;
                 }
             }
 
