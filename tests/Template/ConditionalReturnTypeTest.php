@@ -1007,6 +1007,34 @@ class ConditionalReturnTypeTest extends TestCase
                 ],
                 'ignored_issues' => [],
             ],
+            'literalStringIsNotNonEmptyWithUnion' => [
+                'code' => '<?php
+                    /**
+                     * @param literal-string|int $string
+                     * @psalm-return ($string is non-empty-string|int ? string : int)
+                     */
+                    function getSomething($string)
+                    {
+                        if (!$string) {
+                            return 1;
+                        }
+
+                        return "";
+                    }
+
+                    /** @var literal-string $literalString */
+                    $literalString;
+                    $something = getSomething($literalString);
+                    /** @var non-empty-literal-string $nonEmptyliteralString */
+                    $nonEmptyliteralString;
+                    $something2 = getSomething($nonEmptyliteralString);
+                ',
+                'assertions' => [
+                    '$something' => 'int|string',
+                    '$something2' => 'string',
+                ],
+                'ignored_issues' => [],
+            ],
         ];
     }
 }
