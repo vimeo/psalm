@@ -400,7 +400,8 @@ final class LanguageServer extends Dispatcher
             $this->path_mapper->configureClientRoot($this->getPathPart($rootUri));
         }
 
-        return call(
+        /** @var Promise<InitializeResult> $promise */
+        $promise = call(
             /** @return Generator<int, true, mixed, InitializeResult> */
             function () use ($workDoneToken) {
                 $progress = $this->client->makeProgress($workDoneToken ?? uniqid('tkn', true));
@@ -578,6 +579,8 @@ final class LanguageServer extends Dispatcher
                 return new InitializeResult($serverCapabilities, $initializeResultServerInfo);
             },
         );
+
+        return $promise;
     }
 
     /**
