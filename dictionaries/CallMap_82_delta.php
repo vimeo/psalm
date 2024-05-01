@@ -57,6 +57,30 @@ return [
         'old' => ['array|string|int|false', 'type='=>'string'],
         'new' => ['array|string|int|false|null', 'type='=>'string'],
     ],
+    'strcmp' => [
+        'old' => ['int', 'string1' => 'string', 'string2' => 'string'],
+        'new' => ['int<-1,1>', 'string1' => 'string', 'string2' => 'string'],
+    ],
+    'strcasecmp' => [
+        'old' => ['int', 'string1' => 'string', 'string2' => 'string'],
+        'new' => ['int<-1,1>', 'string1' => 'string', 'string2' => 'string'],
+    ],
+    'strnatcasecmp' => [
+        'old' => ['int', 'string1' => 'string', 'string2' => 'string'],
+        'new' => ['int<-1,1>', 'string1' => 'string', 'string2' => 'string'],
+    ],
+    'strnatcmp' => [
+        'old' => ['int', 'string1' => 'string', 'string2' => 'string'],
+        'new' => ['int<-1,1>', 'string1' => 'string', 'string2' => 'string'],
+    ],
+    'strncmp' => [
+        'old' => ['int', 'string1'=>'string', 'string2'=>'string', 'length'=>'int'],
+        'new' => ['int<-1,1>', 'string1' => 'string', 'string2' => 'string', 'length'=>'positive-int|0'],
+    ],
+    'strncasecmp' => [
+        'old' => ['int', 'string1'=>'string', 'string2'=>'string', 'length'=>'int'],
+        'new' => ['int<-1,1>', 'string1' => 'string', 'string2' => 'string', 'length'=>'positive-int|0'],
+    ],
   ],
 
   'removed' => [
