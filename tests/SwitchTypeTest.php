@@ -249,7 +249,7 @@ final class SwitchTypeTest extends TestCase
                                 $x = rand() % 4;
                             case 2:
                                 if (isset($x) && $x > 2) {
-                                    echo "$x is large";
+                                    echo "large " . (string) $x;
                                 }
                                 break;
                         }
