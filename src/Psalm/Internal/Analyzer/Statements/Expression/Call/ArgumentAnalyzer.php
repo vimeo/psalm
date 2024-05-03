@@ -1024,6 +1024,15 @@ final class ArgumentAnalyzer
                 } elseif ($input_type_part instanceof TLiteralString
                     && strpos($input_type_part->value, '::')
                 ) {
+                    // If the param also accept a string, we don't report string as wrong callbacks.
+                    if (null !== $param_type_without_callable && UnionTypeComparator::isContainedBy(
+                        $codebase,
+                        $input_type,
+                        $param_type_without_callable,
+                    )) {
+                        continue;
+                    }
+
                     $parts = explode('::', $input_type_part->value);
                     /** @psalm-suppress PossiblyUndefinedIntArrayOffset */
                     $potential_method_id = new MethodIdentifier(
