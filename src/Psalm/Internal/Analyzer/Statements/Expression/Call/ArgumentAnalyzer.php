@@ -955,9 +955,12 @@ final class ArgumentAnalyzer
         ) {
             $potential_method_ids = [];
 
-            $builder = $param_type->getBuilder();
-            $builder->removeType('callable');
-            $param_type_without_callable = $builder->freeze();
+            $param_type_without_callable = new Union(array_filter(
+                $param_type->getAtomicTypes(),
+                static function (Atomic $atomic) {
+                    return !$atomic instanceof Atomic\TCallableInterface;
+                })
+            );
 
             foreach ($input_type->getAtomicTypes() as $input_type_part) {
                 if ($input_type_part instanceof TList) {
