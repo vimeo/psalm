@@ -751,7 +751,7 @@ class RedundantConditionTest extends TestCase
                     /** @param mixed $value */
                     function test($value) : void {
                         if (!is_numeric($value)) {
-                            throw new Exception("Invalid $value");
+                            throw new Exception("Invalid");
                         }
                         if (!is_string($value)) {}
                     }',

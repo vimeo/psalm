@@ -1218,6 +1218,14 @@ class BinaryOperationTest extends TestCase
                     }',
                 'error_message' => 'LessSpecificReturnStatement',
             ],
+            'encapsedMixedIssue10942' => [
+                'code' => '<?php
+                    /**
+                     * @var mixed $y
+                     */
+                    $z = "hello {$y} world";',
+                'error_message' => 'MixedOperand',
+            ],
         ];
     }
 }

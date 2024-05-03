@@ -9,6 +9,8 @@ use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Issue\MixedOperand;
+use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type;
 use Psalm\Type\Atomic\TLiteralFloat;
@@ -52,6 +54,16 @@ final class EncapsulatedStringAnalyzer
                 }
                 $non_empty = $non_empty || $part->value !== "";
             } elseif ($part_type = $statements_analyzer->node_data->getType($part)) {
+                if ($part_type->hasMixed()) {
+                    IssueBuffer::maybeAdd(
+                        new MixedOperand(
+                            'Operands cannot be mixed',
+                            new CodeLocation($statements_analyzer, $part),
+                        ),
+                        $statements_analyzer->getSuppressedIssues(),
+                    );
+                }
+
                 $casted_part_type = CastAnalyzer::castStringAttempt(
                     $statements_analyzer,
                     $context,
