@@ -834,6 +834,42 @@ class BinaryOperationTest extends TestCase
                     $interpolated = "hello {$foo} bar";',
                 'assertions' => ['$interpolated===' => "non-falsy-string"],
             ],
+            'encapsedStringWithoutLiterals1' => [
+                'code' => '<?php
+                    /**
+                     * @var non-falsy-string $a
+                     * @var non-falsy-string $b
+                     */
+                    $interpolated = "{$a}{$b}";',
+                'assertions' => ['$interpolated===' => "non-falsy-string"],
+            ],
+            'encapsedStringWithoutLiterals2' => [
+                'code' => '<?php
+                    /**
+                     * @var string $a
+                     * @var non-empty-string $b
+                     */
+                    $interpolated = "{$a}{$b}";',
+                'assertions' => ['$interpolated===' => "non-empty-string"],
+            ],
+            'encapsedStringWithoutLiterals3' => [
+                'code' => '<?php
+                    /**
+                     * @var non-empty-string $a
+                     * @var non-falsy-string $b
+                     */
+                    $interpolated = "{$a}{$b}";',
+                'assertions' => ['$interpolated===' => "non-falsy-string"],
+            ],
+            'encapsedStringWithoutLiterals4' => [
+                'code' => '<?php
+                    /**
+                     * @var string $a
+                     * @var non-falsy-string $b
+                     */
+                    $interpolated = "{$a}{$b}";',
+                'assertions' => ['$interpolated===' => "non-falsy-string"],
+            ],
             'encapsedStringIsInferredAsLiteral' => [
                 'code' => '<?php
                     $int = 1;

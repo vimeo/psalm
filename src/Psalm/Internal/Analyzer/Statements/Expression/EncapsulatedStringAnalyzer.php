@@ -76,7 +76,9 @@ final class EncapsulatedStringAnalyzer
 
                 if (!$casted_part_type->allLiterals()) {
                     $all_literals = false;
-                } elseif (!$non_falsy) {
+                }
+
+                if (!$non_falsy) {
                     // Check if all literals are nonempty
                     $possibly_non_empty = true;
                     $non_falsy = true;
@@ -98,9 +100,16 @@ final class EncapsulatedStringAnalyzer
                             && !$atomic_literal instanceof TNonEmptyNonspecificLiteralString
                             && !($atomic_literal instanceof TLiteralString && $atomic_literal->value !== "")
                         ) {
-                            $possibly_non_empty = false;
-                            $non_falsy = false;
-                            break;
+                            if (!$atomic_literal instanceof TNonFalsyString) {
+                                $non_falsy = false;
+                            }
+
+                            if (!$atomic_literal instanceof TNonEmptyString) {
+                                $possibly_non_empty = false;
+                                $non_falsy = false;
+
+                                break;
+                            }
                         }
                     }
 
