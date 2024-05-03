@@ -18,6 +18,7 @@ use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
 use Psalm\Type\Atomic\TNonEmptyString;
+use Psalm\Type\Atomic\TNonFalsyString;
 use Psalm\Type\Atomic\TNonspecificLiteralInt;
 use Psalm\Type\Atomic\TNonspecificLiteralString;
 use Psalm\Type\Atomic\TString;
@@ -37,6 +38,7 @@ final class EncapsulatedStringAnalyzer
     ): bool {
         $parent_nodes = [];
 
+        $non_falsy = false;
         $non_empty = false;
 
         $all_literals = true;
@@ -52,6 +54,7 @@ final class EncapsulatedStringAnalyzer
                 if ($literal_string !== null) {
                     $literal_string .= $part->value;
                 }
+                $non_falsy = $non_falsy || $part->value;
                 $non_empty = $non_empty || $part->value !== "";
             } elseif ($part_type = $statements_analyzer->node_data->getType($part)) {
                 if ($part_type->hasMixed()) {
@@ -73,19 +76,36 @@ final class EncapsulatedStringAnalyzer
 
                 if (!$casted_part_type->allLiterals()) {
                     $all_literals = false;
-                } elseif (!$non_empty) {
+                } elseif (!$non_falsy) {
                     // Check if all literals are nonempty
-                    $non_empty = true;
+                    $possibly_non_empty = true;
+                    $non_falsy = true;
                     foreach ($casted_part_type->getAtomicTypes() as $atomic_literal) {
+                        if (($atomic_literal instanceof TLiteralInt && $atomic_literal->value === 0)
+                            || ($atomic_literal instanceof TLiteralFloat && $atomic_literal->value === (float) 0)
+                            || ($atomic_literal instanceof TLiteralString && $atomic_literal->value === "0")
+                        ) {
+                            $non_falsy = false;
+
+                            if ($non_empty) {
+                                break;
+                            }
+                        }
+
                         if (!$atomic_literal instanceof TLiteralInt
                             && !$atomic_literal instanceof TNonspecificLiteralInt
                             && !$atomic_literal instanceof TLiteralFloat
                             && !$atomic_literal instanceof TNonEmptyNonspecificLiteralString
                             && !($atomic_literal instanceof TLiteralString && $atomic_literal->value !== "")
                         ) {
-                            $non_empty = false;
+                            $possibly_non_empty = false;
+                            $non_falsy = false;
                             break;
                         }
+                    }
+
+                    if ($possibly_non_empty) {
+                        $non_empty = true;
                     }
                 }
 
@@ -131,7 +151,7 @@ final class EncapsulatedStringAnalyzer
             }
         }
 
-        if ($non_empty) {
+        if ($non_empty || $non_falsy) {
             if ($literal_string !== null) {
                 $stmt_type = new Union(
                     [Type::getAtomicStringFromLiteral($literal_string)],
@@ -140,6 +160,11 @@ final class EncapsulatedStringAnalyzer
             } elseif ($all_literals) {
                 $stmt_type = new Union(
                     [new TNonEmptyNonspecificLiteralString()],
+                    ['parent_nodes' => $parent_nodes],
+                );
+            } elseif ($non_falsy) {
+                $stmt_type = new Union(
+                    [new TNonFalsyString()],
                     ['parent_nodes' => $parent_nodes],
                 );
             } else {

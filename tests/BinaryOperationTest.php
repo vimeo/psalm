@@ -828,6 +828,12 @@ class BinaryOperationTest extends TestCase
                         return "Hello $s1 $s2";
                     }',
             ],
+            'encapsedStringIncludingLiterals3' => [
+                'code' => '<?php
+                    $foo = rand(0, 1) ? "" : random_bytes(1);
+                    $interpolated = "hello {$foo} bar";',
+                'assertions' => ['$interpolated===' => "non-falsy-string"],
+            ],
             'encapsedStringIsInferredAsLiteral' => [
                 'code' => '<?php
                     $int = 1;
