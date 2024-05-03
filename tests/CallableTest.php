@@ -2210,6 +2210,15 @@ class CallableTest extends TestCase
 
                     foo(["a", "b"]);',
             ],
+            'notCallableArray' => [
+                'code' => '<?php
+                    /**
+                     * @param array{class-string, string}|callable $arg
+                     */
+                    function foo($arg): void {}
+
+                    foo([\DateTime::class, "format"]);',
+            ],
             'callableOptionalOrAdditionalOptional' => [
                 'code' => '<?php
                     /**

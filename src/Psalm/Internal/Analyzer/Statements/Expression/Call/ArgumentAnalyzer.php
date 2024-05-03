@@ -955,12 +955,25 @@ final class ArgumentAnalyzer
         ) {
             $potential_method_ids = [];
 
+            $builder = $param_type->getBuilder();
+            $builder->removeType('callable');
+            $param_type_without_callable = $builder->freeze();
+
             foreach ($input_type->getAtomicTypes() as $input_type_part) {
                 if ($input_type_part instanceof TList) {
                     $input_type_part = $input_type_part->getKeyedArray();
                 }
 
                 if ($input_type_part instanceof TKeyedArray) {
+                    // If the param accept an array, we don't report arrays as wrong callbacks.
+                    if (UnionTypeComparator::isContainedBy(
+                        $codebase,
+                        $input_type,
+                        $param_type_without_callable,
+                    )) {
+                        continue;
+                    }
+
                     $potential_method_id = CallableTypeComparator::getCallableMethodIdFromTKeyedArray(
                         $input_type_part,
                         $codebase,
