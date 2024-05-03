@@ -18,6 +18,7 @@ cd phar
 rm -rf *
 cp ../build/psalm.phar ../assets/psalm-phar/* .
 cp ../build/psalm.phar.asc . || true # not all users have GPG keys
+cp ../config.xsd .
 mv dot-gitignore .gitignore
 git config user.email "github@muglug.com"
 git config user.name "Automated commit"
