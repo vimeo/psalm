@@ -1338,10 +1338,8 @@ final class ClassLikeNodeScanner
             );
 
             $type_location = null;
-            $suppressed_issues = [];
-            if ($var_comment !== null && $var_comment->type !== null) {
+            if ($var_comment && $var_comment->type !== null) {
                 $const_type = $var_comment->type;
-                $suppressed_issues = $var_comment->suppressed_issues;
 
                 if ($var_comment->type_start !== null
                     && $var_comment->type_end !== null
@@ -1357,6 +1355,7 @@ final class ClassLikeNodeScanner
             } else {
                 $const_type = $inferred_type;
             }
+            $suppressed_issues = $var_comment ? $var_comment->suppressed_issues : [];
 
             $attributes = [];
             foreach ($stmt->attrGroups as $attr_group) {
@@ -1420,8 +1419,8 @@ final class ClassLikeNodeScanner
                 $description,
             );
 
-
             if ($this->codebase->analysis_php_version_id >= 8_03_00
+                && !$storage->final
                 && $stmt->type === null
             ) {
                 IssueBuffer::maybeAdd(
