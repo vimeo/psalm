@@ -8,6 +8,7 @@
          beStrictAboutTestsThatDoNotTestAnything="false"
          beStrictAboutTodoAnnotatedTests="true"
          colors="true"
+         convertDeprecationsToExceptions="true"
          verbose="false"
          executionOrder="random"
 >
