@@ -63,6 +63,7 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_filter;
 use function count;
 use function explode;
 use function implode;
@@ -955,12 +956,29 @@ final class ArgumentAnalyzer
         ) {
             $potential_method_ids = [];
 
+            $param_types_without_callable = array_filter(
+                $param_type->getAtomicTypes(),
+                static fn(Atomic $atomic) => !$atomic instanceof Atomic\TCallableInterface,
+            );
+            $param_type_without_callable = [] !== $param_types_without_callable
+                ? new Union($param_types_without_callable)
+                : null;
+
             foreach ($input_type->getAtomicTypes() as $input_type_part) {
                 if ($input_type_part instanceof TList) {
                     $input_type_part = $input_type_part->getKeyedArray();
                 }
 
                 if ($input_type_part instanceof TKeyedArray) {
+                    // If the param accept an array, we don't report arrays as wrong callbacks.
+                    if (null !== $param_type_without_callable && UnionTypeComparator::isContainedBy(
+                        $codebase,
+                        $input_type,
+                        $param_type_without_callable,
+                    )) {
+                        continue;
+                    }
+
                     $potential_method_id = CallableTypeComparator::getCallableMethodIdFromTKeyedArray(
                         $input_type_part,
                         $codebase,
@@ -1006,6 +1024,15 @@ final class ArgumentAnalyzer
                 } elseif ($input_type_part instanceof TLiteralString
                     && strpos($input_type_part->value, '::')
                 ) {
+                    // If the param also accept a string, we don't report string as wrong callbacks.
+                    if (null !== $param_type_without_callable && UnionTypeComparator::isContainedBy(
+                        $codebase,
+                        $input_type,
+                        $param_type_without_callable,
+                    )) {
+                        continue;
+                    }
+
                     $parts = explode('::', $input_type_part->value);
                     /** @psalm-suppress PossiblyUndefinedIntArrayOffset */
                     $potential_method_id = new MethodIdentifier(
