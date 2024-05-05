@@ -36,6 +36,7 @@ class Redis {
 	/** @return false|int|Redis */
     public function append(string $key, string $value) {}
 
+    /** @param array{string,string}|array{string}|string $credentials */
     public function auth(mixed $credentials): bool {}
 
     public function bgSave(): bool {}
