@@ -22,6 +22,7 @@ use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntMask;
 use Psalm\Type\Atomic\TIntMaskOf;
+use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyOf;
 use Psalm\Type\Atomic\TKeyedArray;
@@ -46,6 +47,7 @@ use function array_merge;
 use function array_values;
 use function count;
 use function is_string;
+use function range;
 use function reset;
 use function strtolower;
 
@@ -409,6 +411,18 @@ final class TypeExpander
             }
 
             return TypeParser::getComputedIntsFromMask($potential_ints);
+        }
+
+        if ($return_type instanceof TIntRange
+            && $return_type->min_bound !== null
+            && $return_type->max_bound !== null
+            && ($return_type->max_bound - $return_type->min_bound) < 500
+        ) {
+            $literal_ints = [];
+            foreach (range($return_type->min_bound, $return_type->max_bound) as $literal_int) {
+                $literal_ints[] = new TLiteralInt($literal_int);
+            }
+            return $literal_ints;
         }
 
         if ($return_type instanceof TConditional) {
