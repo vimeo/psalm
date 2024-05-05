@@ -7,11 +7,10 @@ namespace Psalm\Internal\Scanner;
 use PhpParser;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\Event\MethodReturnTypeProviderEvent;
 use Psalm\Type;
-use Psalm\Type\Atomic\TArray;
-use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 use ReflectionProperty;
@@ -236,6 +235,7 @@ final class PhpStormMetaScanner
                         $element_type_offset,
                         $meta_fq_classlike_name,
                         $meta_method_name,
+                        $codebase,
                     ): ?Union {
                         $statements_analyzer = $event->getSource();
                         $call_args = $event->getCallArgs();
@@ -256,16 +256,7 @@ final class PhpStormMetaScanner
                                 = $statements_analyzer->node_data->getType($call_args[$element_type_offset]->value))
                             && $call_arg_type->hasArray()
                         ) {
-                            /**
-                             * @var TArray|TKeyedArray
-                             */
-                            $array_atomic_type = $call_arg_type->getArray();
-
-                            if ($array_atomic_type instanceof TKeyedArray) {
-                                return $array_atomic_type->getGenericValueType();
-                            }
-
-                            return $array_atomic_type->type_params[1];
+                            return TypeCombiner::combine($call_arg_type->getArrayValueTypes(), $codebase);
                         }
 
                         return null;
@@ -377,6 +368,7 @@ final class PhpStormMetaScanner
                         FunctionReturnTypeProviderEvent $event,
                     ) use (
                         $element_type_offset,
+                        $codebase,
                     ): Union {
                         $statements_analyzer = $event->getStatementsSource();
                         $call_args = $event->getCallArgs();
@@ -390,16 +382,7 @@ final class PhpStormMetaScanner
                                 = $statements_analyzer->node_data->getType($call_args[$element_type_offset]->value))
                             && $call_arg_type->hasArray()
                         ) {
-                            /**
-                             * @var TArray|TKeyedArray
-                             */
-                            $array_atomic_type = $call_arg_type->getArray();
-
-                            if ($array_atomic_type instanceof TKeyedArray) {
-                                return $array_atomic_type->getGenericValueType();
-                            }
-
-                            return $array_atomic_type->type_params[1];
+                            return TypeCombiner::combine($call_arg_type->getArrayValueTypes(), $codebase);
                         }
 
                         $storage = $statements_analyzer->getCodebase()->functions->getStorage(

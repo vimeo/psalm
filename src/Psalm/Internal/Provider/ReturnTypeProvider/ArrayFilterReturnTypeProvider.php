@@ -63,107 +63,109 @@ final class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderI
         $fallback = new TArray([Type::getArrayKey(), Type::getMixed()]);
         $array_arg = $call_args[0]->value ?? null;
         if (!$array_arg) {
-            $first_arg_array = $fallback;
+            $first_arg_arrays = [$fallback];
         } else {
             $first_arg_type = $statements_source->node_data->getType($array_arg);
-            if (!$first_arg_type || $first_arg_type->isMixed()) {
-                $first_arg_array = $fallback;
+            if (!$first_arg_type || $first_arg_type->isMixed() || !($arrays = $first_arg_type->getArrays())) {
+                $first_arg_arrays = [$fallback];
             } else {
-                $first_arg_array = $first_arg_type->hasType('array')
-                                   && ($array_atomic_type = $first_arg_type->getArray())
-                                   && ($array_atomic_type instanceof TArray
-                                       || $array_atomic_type instanceof TKeyedArray)
-                    ? $array_atomic_type
-                    : $fallback;
+                $first_arg_arrays = $arrays;
             }
         }
 
-        if ($first_arg_array instanceof TArray) {
-            $inner_type = $first_arg_array->type_params[1];
-            $key_type = $first_arg_array->type_params[0];
-        } else {
-            $inner_type = $first_arg_array->getGenericValueType();
-            $key_type = $first_arg_array->getGenericKeyType();
+        $out_types = [];
+        foreach ($first_arg_arrays as $first_arg_array) {
+            if ($first_arg_array instanceof TArray) {
+                $inner_type = $first_arg_array->type_params[1];
+                $key_type = $first_arg_array->type_params[0];
+            } else {
+                $inner_type = $first_arg_array->getGenericValueType();
+                $key_type = $first_arg_array->getGenericKeyType();
 
-            if (!isset($call_args[1]) && $first_arg_array->fallback_params === null) {
-                $had_one = count($first_arg_array->properties) === 1;
+                if (!isset($call_args[1]) && $first_arg_array->fallback_params === null) {
+                    $had_one = count($first_arg_array->properties) === 1;
 
-                $new_properties = array_filter(
-                    array_map(
-                        static function ($keyed_type) use ($statements_source, $context) {
-                            $prev_keyed_type = $keyed_type;
+                    $new_properties = array_filter(
+                        array_map(
+                            static function ($keyed_type) use ($statements_source, $context) {
+                                $prev_keyed_type = $keyed_type;
 
-                            $keyed_type = AssertionReconciler::reconcile(
-                                new Truthy(),
-                                $keyed_type,
-                                '',
-                                $statements_source,
-                                $context->inside_loop,
-                                [],
-                                null,
-                                $statements_source->getSuppressedIssues(),
-                            );
+                                $keyed_type = AssertionReconciler::reconcile(
+                                    new Truthy(),
+                                    $keyed_type,
+                                    '',
+                                    $statements_source,
+                                    $context->inside_loop,
+                                    [],
+                                    null,
+                                    $statements_source->getSuppressedIssues(),
+                                );
 
-                            return $keyed_type->setPossiblyUndefined(!$prev_keyed_type->isAlwaysTruthy());
-                        },
-                        $first_arg_array->properties,
-                    ),
-                    static fn($keyed_type) => !$keyed_type->isNever(),
+                                return $keyed_type->setPossiblyUndefined(!$prev_keyed_type->isAlwaysTruthy());
+                            },
+                            $first_arg_array->properties,
+                        ),
+                        static fn($keyed_type) => !$keyed_type->isNever()
+                    );
+
+                    if (!$new_properties) {
+                        $out_types []= Type::getEmptyArrayAtomic();
+                        continue;
+                    }
+
+                    $out_types []= new TKeyedArray(
+                        $new_properties,
+                        null,
+                        $first_arg_array->fallback_params,
+                        $first_arg_array->is_list && $had_one,
+                    );
+                }
+            }
+
+            if (!isset($call_args[1])) {
+                $inner_type = AssertionReconciler::reconcile(
+                    new Truthy(),
+                    $inner_type,
+                    '',
+                    $statements_source,
+                    $context->inside_loop,
+                    [],
+                    null,
+                    $statements_source->getSuppressedIssues(),
                 );
 
-                if (!$new_properties) {
-                    return Type::getEmptyArray();
+                if ($first_arg_array instanceof TKeyedArray
+                    && $first_arg_array->is_list
+                    && $key_type->isSingleIntLiteral()
+                    && $key_type->getSingleIntLiteral()->value === 0
+                ) {
+                    $out_types []= Type::getListAtomic(
+                        $inner_type,
+                    );
+                    continue;
                 }
 
-                return new Union([new TKeyedArray(
-                    $new_properties,
-                    null,
-                    $first_arg_array->fallback_params,
-                    $first_arg_array->is_list && $had_one,
-                )]);
+                if ($inner_type->isUnionEmpty()) {
+                    $out_types []= Type::getEmptyArrayAtomic();
+                }
+
+                if ($key_type->getLiteralStrings()) {
+                    $key_type = $key_type->getBuilder()->addType(new TString)->freeze();
+                }
+
+                if ($key_type->getLiteralInts()) {
+                    $key_type = $key_type->getBuilder()->addType(new TInt)->freeze();
+                }
+
+                $out_types []= new TArray([
+                    $key_type,
+                    $inner_type,
+                ]);
             }
         }
 
-        if (!isset($call_args[1])) {
-            $inner_type = AssertionReconciler::reconcile(
-                new Truthy(),
-                $inner_type,
-                '',
-                $statements_source,
-                $context->inside_loop,
-                [],
-                null,
-                $statements_source->getSuppressedIssues(),
-            );
-
-            if ($first_arg_array instanceof TKeyedArray
-                && $first_arg_array->is_list
-                && $key_type->isSingleIntLiteral()
-                && $key_type->getSingleIntLiteral()->value === 0
-            ) {
-                return Type::getList(
-                    $inner_type,
-                );
-            }
-
-            if ($key_type->getLiteralStrings()) {
-                $key_type = $key_type->getBuilder()->addType(new TString)->freeze();
-            }
-
-            if ($key_type->getLiteralInts()) {
-                $key_type = $key_type->getBuilder()->addType(new TInt)->freeze();
-            }
-
-            if ($inner_type->isUnionEmpty()) {
-                return Type::getEmptyArray();
-            }
-
-            return new Union([
-                new TArray([
-                    $key_type,
-                    $inner_type,
-                ]),
-            ]);
+        if ($out_types) {
+            return new Union([$out_types]);
         }
 
         if (!isset($call_args[2])) {

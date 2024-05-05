@@ -15,6 +15,7 @@ use Psalm\Internal\Type\TypeAlias\LinkableTypeAlias;
 use Psalm\Internal\TypeVisitor\ClasslikeReplacer;
 use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type;
+use Psalm\Type\Atomic\ArrayInterface;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
@@ -424,6 +425,7 @@ abstract class Atomic implements TypeNode, Stringable
      */
     abstract public function getKey(bool $include_extra = true): string;
 
+
     public function isNumericType(): bool
     {
         return $this instanceof TInt
@@ -468,6 +470,12 @@ abstract class Atomic implements TypeNode, Stringable
         return $this instanceof TIterable
             || $this->hasTraversableInterface($codebase)
             || $this instanceof TArray
+            || $this instanceof TKeyedArray;
+    }
+
+    public function isArray(): bool
+    {
+        return $this instanceof TArray
             || $this instanceof TKeyedArray;
     }
 
@@ -901,7 +909,7 @@ abstract class Atomic implements TypeNode, Stringable
             return true;
         }
 
-        if ($this instanceof TArray && $this->isEmptyArray()) {
+        if ($this instanceof ArrayInterface && $this->isEmpty()) {
             return true;
         }
 

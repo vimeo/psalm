@@ -512,18 +512,18 @@ final class ArrayAssignmentAnalyzer
                     && $key_type
                     && $key_type->isTemplatedClassString()
                 ) {
-                    /**
-                     * @var TClassStringMap
-                     */
-                    $class_string_map = $parent_type->getArray();
+                    foreach ($parent_type->getArrays() as $class_string_map) {
+                        if (!$class_string_map instanceof TClassStringMap) {
+                            continue;
+                        }
                     /**
                      * @var TTemplateParamClass
                      */
-                    $offset_type_part = $key_type->getSingleAtomic();
+                        $offset_type_part = $key_type->getSingleAtomic();
 
-                    $template_result = new TemplateResult(
-                        [],
-                        [
+                        $template_result = new TemplateResult(
+                            [],
+                            [
                             $offset_type_part->param_name => [
                                 $offset_type_part->defining_class => new Union([
                                     new TTemplateParam(
@@ -535,20 +535,21 @@ final class ArrayAssignmentAnalyzer
                                     ),
                                 ]),
                             ],
-                        ],
-                    );
+                            ],
+                        );
 
-                    $value_type = TemplateInferredTypeReplacer::replace(
-                        $value_type,
-                        $template_result,
-                        $codebase,
-                    );
+                        $value_type = TemplateInferredTypeReplacer::replace(
+                            $value_type,
+                            $template_result,
+                            $codebase,
+                        );
 
-                    $array_atomic_type_class_string = new TClassStringMap(
-                        $class_string_map->param_name,
-                        $class_string_map->as_type,
-                        $value_type,
-                    );
+                        $array_atomic_type_class_string = new TClassStringMap(
+                            $class_string_map->param_name,
+                            $class_string_map->as_type,
+                            $value_type,
+                        );
+                    }
                 } else {
                     $array_atomic_type_array = [
                         $array_atomic_key_type,
@@ -573,9 +574,12 @@ final class ArrayAssignmentAnalyzer
         if (!$current_dim && !$context->inside_loop) {
             $atomic_root_types = $root_type->getAtomicTypes();
 
-            if (isset($atomic_root_types['array'])) {
-                $atomic_root_type_array = $atomic_root_types['array'];
-
+            foreach ($atomic_root_types as $atomic_root_type_array) {
+                if (!$atomic_root_type_array instanceof TKeyedArray
+                    && !$atomic_root_type_array instanceof TArray
+                ) {
+                    continue;
+                }
 
                 if ($array_atomic_type_class_string) {
                     $array_atomic_type = new TNonEmptyArray([
@@ -695,16 +699,14 @@ final class ArrayAssignmentAnalyzer
         if ($from_countable_object_like) {
             $atomic_root_types = $new_child_type->getAtomicTypes();
 
-            if (isset($atomic_root_types['array'])) {
-                $atomic_root_type_array = $atomic_root_types['array'];
-
-
+            $changed = false;
+            foreach ($atomic_root_types as $k => $atomic_root_type_array) {
                 if ($atomic_root_type_array instanceof TNonEmptyArray
                     && $atomic_root_type_array->count !== null
                 ) {
-                    $atomic_root_types['array'] =
+                    $atomic_root_types[$k] =
                         $atomic_root_type_array->setCount($atomic_root_type_array->count+1);
-                    $new_child_type = new Union($atomic_root_types);
+                    $changed = true;
                 } elseif ($atomic_root_type_array instanceof TKeyedArray
                     && $atomic_root_type_array->is_list) {
                     $properties = $atomic_root_type_array->properties;
@@ -721,11 +723,13 @@ final class ArrayAssignmentAnalyzer
                         $properties []= $atomic_root_type_array->fallback_params[1];
                     }
 
-                    $atomic_root_types['array'] =
+                    $atomic_root_types[$k] =
                         $atomic_root_type_array->setProperties($properties);
-
-                    $new_child_type = new Union($atomic_root_types);
+                    $changed = true;
                 }
+            }
+            if ($changed) {
+                $new_child_type = new Union($atomic_root_types);
             }
         }
 

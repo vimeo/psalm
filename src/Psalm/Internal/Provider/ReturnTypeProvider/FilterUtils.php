@@ -149,7 +149,7 @@ final class FilterUtils
         return $filter_int_used;
     }
 
-    /** @return array{flags_int_used: int, options: TKeyedArray|null}|Union|null */
+    /** @return array{flags_int_used: int, options: array<Union>|null}|Union|null */
     public static function getOptionsArgValueOrError(
         Arg $options_arg,
         StatementsAnalyzer $statements_analyzer,
@@ -170,9 +170,10 @@ final class FilterUtils
                 'options' => null,
             );
 
-            $atomic_type = $options_arg_type->getArray();
-            if ($atomic_type instanceof TKeyedArray) {
-                $redundant_keys = array_diff(array_keys($atomic_type->properties), array('flags', 'options'));
+            $properties = Type::mergeKeyedArrayProperties($options_arg_type, $codebase);
+
+            if ($properties) {
+                $redundant_keys = array_diff(array_keys($properties), array('flags', 'options'));
                 if ($redundant_keys !== array()) {
                     // reported as it's usually an oversight/misunderstanding of how the function works
                     // it's silently ignored by the function though
@@ -186,10 +187,10 @@ final class FilterUtils
                     );
                 }
 
-                if (isset($atomic_type->properties['options'])) {
+                if (isset($properties['options'])) {
                     if ($filter_int_used === FILTER_CALLBACK) {
                         $only_callables = true;
-                        foreach ($atomic_type->properties['options']->getAtomicTypes() as $option_atomic) {
+                        foreach ($properties['options']->getAtomicTypes() as $option_atomic) {
                             if ($option_atomic->isCallableType()) {
                                 continue;
                             }
@@ -205,7 +206,7 @@ final class FilterUtils
 
                             $only_callables = false;
                         }
-                        if ($atomic_type->properties['options']->possibly_undefined) {
+                        if ($properties['options']->possibly_undefined) {
                             $only_callables = false;
                         }
 
@@ -230,7 +231,7 @@ final class FilterUtils
                         );
                     }
 
-                    if (! $atomic_type->properties['options']->isArray()) {
+                    if (! $properties['options']->isArray()) {
                         // silently ignored by the function, but this usually indicates a bug
                         IssueBuffer::maybeAdd(
                             new InvalidArgument(
@@ -241,8 +242,7 @@ final class FilterUtils
                             ),
                             $statements_analyzer->getSuppressedIssues(),
                         );
-                    } elseif (($options_array = $atomic_type->properties['options']->getArray())
-                              && $options_array instanceof TKeyedArray) {
+                    } elseif ($options_array = Type::mergeKeyedArrayProperties($properties['options'], $codebase)) {
                         $defaults['options'] = $options_array;
                     } else {
                         // cannot infer a 100% correct specific return type
@@ -250,10 +250,10 @@ final class FilterUtils
                     }
                 }
 
-                if (isset($atomic_type->properties['flags'])) {
-                    if ($atomic_type->properties['flags']->isSingleIntLiteral()) {
-                        $defaults['flags_int_used'] = $atomic_type->properties['flags']->getSingleIntLiteral()->value;
-                    } elseif ($atomic_type->properties['flags']->isInt()) {
+                if (isset($properties['flags'])) {
+                    if ($properties['flags']->isSingleIntLiteral()) {
+                        $defaults['flags_int_used'] = $properties['flags']->getSingleIntLiteral()->value;
+                    } elseif ($properties['flags']->isInt()) {
                         // cannot infer a 100% correct specific return type
                         $return_null = true;
                     } else {
@@ -494,11 +494,14 @@ final class FilterUtils
         return null;
     }
 
-    /** @return array{Union|null, float|int|null, float|int|null, bool, non-falsy-string|true|null} */
+    /**
+     * @param ?array<Union> $options
+     * @return array{Union|null, float|int|null, float|int|null, bool, non-falsy-string|true|null}
+     */
     public static function getOptions(
         int $filter_int_used,
         int $flags_int_used,
-        ?TKeyedArray $options,
+        ?array $options,
         StatementsAnalyzer $statements_analyzer,
         CodeLocation $code_location,
         Codebase $codebase,
@@ -515,7 +518,7 @@ final class FilterUtils
         }
 
         $all_filters = self::getFilters($codebase);
-        foreach ($options->properties as $option => $option_value) {
+        foreach ($options as $option => $option_value) {
             if (! isset($all_filters[ $filter_int_used ]['options'][ $option ])) {
                 IssueBuffer::maybeAdd(
                     new RedundantFlag(

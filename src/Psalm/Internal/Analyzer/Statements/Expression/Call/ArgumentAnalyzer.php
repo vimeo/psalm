@@ -61,6 +61,7 @@ use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 
+use function assert;
 use function count;
 use function explode;
 use function implode;
@@ -121,30 +122,29 @@ final class ArgumentAnalyzer
                 }
 
                 $param_type = $function_param->type;
-
+                
+                $param_types = [];
                 if ($function_param->is_variadic
                     && $param_type
                     && $param_type->hasArray()
                 ) {
-                    $array_type = $param_type->getArray();
-
-                    if ($array_type instanceof TKeyedArray && $array_type->is_list) {
-                        $param_type = $array_type->getGenericValueType();
-                    } elseif ($array_type instanceof TArray) {
-                        $param_type = $array_type->type_params[1];
-                    }
+                    $param_types = $param_type->getArrayValueTypes();
+                } elseif ($param_type) {
+                    $param_types = [$param_type];
                 }
 
-                if ($param_type && !$param_type->hasMixed()) {
-                    IssueBuffer::maybeAdd(
-                        new MixedArgument(
-                            'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id
-                                . ' cannot be mixed, expecting ' . $param_type,
-                            new CodeLocation($statements_analyzer->getSource(), $arg->value),
-                            $cased_method_id,
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
+                foreach ($param_types as $param_type) {
+                    if ($param_type->hasMixed()) {
+                        IssueBuffer::maybeAdd(
+                            new MixedArgument(
+                                'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id
+                                    . ' cannot be mixed, expecting ' . $param_type,
+                                new CodeLocation($statements_analyzer->getSource(), $arg->value),
+                                $cased_method_id,
+                            ),
+                            $statements_analyzer->getSuppressedIssues(),
+                        );
+                    }
                 }
             }
 
@@ -471,62 +471,63 @@ final class ArgumentAnalyzer
             }
 
             if ($arg_value_type->hasArray()) {
-                $unpacked_atomic_array = $arg_value_type->getArray();
                 $arg_key_allowed = true;
+                foreach ($arg_value_type->getArrays() as $unpacked_atomic_array) {
+                    if ($unpacked_atomic_array instanceof TKeyedArray) {
+                        if (!$allow_named_args && !$unpacked_atomic_array->getGenericKeyType()->isInt()) {
+                            $arg_key_allowed = false;
+                        }
 
-                if ($unpacked_atomic_array instanceof TKeyedArray) {
-                    if (!$allow_named_args && !$unpacked_atomic_array->getGenericKeyType()->isInt()) {
-                        $arg_key_allowed = false;
-                    }
-
-                    if ($function_param->is_variadic) {
-                        $arg_value_type = $unpacked_atomic_array->getGenericValueType();
-                    } elseif ($codebase->analysis_php_version_id >= 8_00_00
+                        if ($function_param->is_variadic) {
+                            $arg_value_type = $unpacked_atomic_array->getGenericValueType();
+                        } elseif ($codebase->analysis_php_version_id >= 8_00_00
                         && $allow_named_args
                         && isset($unpacked_atomic_array->properties[$function_param->name])
-                    ) {
-                        $arg_value_type = $unpacked_atomic_array->properties[$function_param->name];
-                    } elseif ($unpacked_atomic_array->is_list
+                        ) {
+                            $arg_value_type = $unpacked_atomic_array->properties[$function_param->name];
+                        } elseif ($unpacked_atomic_array->is_list
                         && isset($unpacked_atomic_array->properties[$unpacked_argument_offset])
-                    ) {
-                        $arg_value_type = $unpacked_atomic_array->properties[$unpacked_argument_offset];
-                    } elseif ($unpacked_atomic_array->fallback_params) {
-                        $arg_value_type = $unpacked_atomic_array->fallback_params[1];
-                    } elseif ($function_param->is_optional && $function_param->default_type) {
-                        if ($function_param->default_type instanceof Union) {
-                            $arg_value_type = $function_param->default_type;
+                        ) {
+                            $arg_value_type = $unpacked_atomic_array->properties[$unpacked_argument_offset];
+                        } elseif ($unpacked_atomic_array->fallback_params) {
+                            $arg_value_type = $unpacked_atomic_array->fallback_params[1];
+                        } elseif ($function_param->is_optional && $function_param->default_type) {
+                            if ($function_param->default_type instanceof Union) {
+                                $arg_value_type = $function_param->default_type;
+                            } else {
+                                $arg_value_type_atomic = ConstantTypeResolver::resolve(
+                                    $codebase->classlikes,
+                                    $function_param->default_type,
+                                    $statements_analyzer,
+                                );
+
+                                $arg_value_type = new Union([$arg_value_type_atomic]);
+                            }
                         } else {
-                            $arg_value_type_atomic = ConstantTypeResolver::resolve(
-                                $codebase->classlikes,
-                                $function_param->default_type,
-                                $statements_analyzer,
-                            );
-
-                            $arg_value_type = new Union([$arg_value_type_atomic]);
+                            $arg_value_type = Type::getMixed();
                         }
-                    } else {
+                    } elseif ($unpacked_atomic_array instanceof TClassStringMap) {
                         $arg_value_type = Type::getMixed();
+                    } else {
+                        assert($unpacked_atomic_array instanceof TArray);
+                        if (!$allow_named_args && !$unpacked_atomic_array->type_params[0]->isInt()) {
+                            $arg_key_allowed = false;
+                        }
+                        $arg_value_type = $unpacked_atomic_array->type_params[1];
                     }
-                } elseif ($unpacked_atomic_array instanceof TClassStringMap) {
-                    $arg_value_type = Type::getMixed();
-                } else {
-                    if (!$allow_named_args && !$unpacked_atomic_array->type_params[0]->isInt()) {
-                        $arg_key_allowed = false;
-                    }
-                    $arg_value_type = $unpacked_atomic_array->type_params[1];
-                }
 
-                if (!$arg_key_allowed) {
-                    IssueBuffer::maybeAdd(
-                        new NamedArgumentNotAllowed(
-                            'Method ' . $cased_method_id
+                    if (!$arg_key_allowed) {
+                        IssueBuffer::maybeAdd(
+                            new NamedArgumentNotAllowed(
+                                'Method ' . $cased_method_id
                                 . ' called with named unpacked array ' . $unpacked_atomic_array->getId()
                                 . ' (array with string keys)',
-                            new CodeLocation($statements_analyzer->getSource(), $arg->value),
-                            $cased_method_id,
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
+                                new CodeLocation($statements_analyzer->getSource(), $arg->value),
+                                $cased_method_id,
+                            ),
+                            $statements_analyzer->getSuppressedIssues(),
+                        );
+                    }
                 }
             } else {
                 $non_iterable = false;
@@ -1245,16 +1246,8 @@ final class ArgumentAnalyzer
                 }
             } elseif ($param_type_part instanceof TCallable) {
                 $can_be_callable_like_array = false;
-                if ($param_type->hasArray()) {
-                    $param_array_type = $param_type->getArray();
-
-                    $row_type = null;
-                    if ($param_array_type instanceof TArray) {
-                        $row_type = $param_array_type->type_params[1];
-                    } elseif ($param_array_type instanceof TKeyedArray) {
-                        $row_type = $param_array_type->getGenericValueType();
-                    }
-
+                
+                foreach ($param_type->getArrayValueTypes() as $row_type) {
                     if ($row_type &&
                         ($row_type->hasMixed() || $row_type->hasString())
                     ) {

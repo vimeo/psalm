@@ -6,6 +6,7 @@ namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
@@ -209,45 +210,46 @@ class FilterInputReturnTypeProvider implements FunctionReturnTypeProviderInterfa
         // @todo eventually this needs to be changed when we fully support filter_has_var
         $global_type = VariableFetchAnalyzer::getGlobalType($global_name, $codebase->analysis_php_version_id);
 
-        $input_type = null;
-        if ($global_type->isArray() && $global_type->getArray() instanceof TKeyedArray) {
-            $array_instance = $global_type->getArray();
-            if ($second_arg_type->isSingleStringLiteral()) {
-                $key = $second_arg_type->getSingleStringLiteral()->value;
+        $res = [];
+        foreach ($global_type->getArrays() as $array_atomic) {
+            $input_type = null;
+            if ($array_atomic instanceof TKeyedArray) {
+                if ($second_arg_type->isSingleStringLiteral()) {
+                    $key = $second_arg_type->getSingleStringLiteral()->value;
 
-                if (isset($array_instance->properties[ $key ])) {
-                    $input_type = $array_instance->properties[ $key ];
+                    if (isset($array_atomic->properties[ $key ])) {
+                        $input_type = $array_atomic->properties[ $key ];
+                    }
                 }
-            }
 
-            if ($input_type === null) {
-                $input_type = $array_instance->getGenericValueType();
+                if ($input_type === null) {
+                    $input_type = $array_atomic->getGenericValueType();
+                    $input_type = $input_type->setPossiblyUndefined(true);
+                }
+            } elseif ($array_atomic instanceof TArray) {
+                [$_, $input_type] = $array_atomic->type_params;
                 $input_type = $input_type->setPossiblyUndefined(true);
+            } else {
+                // this is impossible
+                throw new UnexpectedValueException('This should not happen');
             }
-        } elseif ($global_type->isArray()
-            && ($array_atomic = $global_type->getArray())
-            && $array_atomic instanceof TArray) {
-            [$_, $input_type] = $array_atomic->type_params;
-            $input_type = $input_type->setPossiblyUndefined(true);
-        } else {
-            // this is impossible
-            throw new UnexpectedValueException('This should not happen');
-        }
 
-        return FilterUtils::getReturnType(
-            $filter_int_used,
-            $flags_int_used,
-            $input_type,
-            $fails_type,
-            $not_set_type,
-            $statements_analyzer,
-            $code_location,
-            $codebase,
-            $function_id,
-            $has_range,
-            $min_range,
-            $max_range,
-            $regexp,
-        );
+            $res []= FilterUtils::getReturnType(
+                $filter_int_used,
+                $flags_int_used,
+                $input_type,
+                $fails_type,
+                $not_set_type,
+                $statements_analyzer,
+                $code_location,
+                $codebase,
+                $function_id,
+                $has_range,
+                $min_range,
+                $max_range,
+                $regexp,
+            );
+        }
+        return TypeCombiner::combine($res, $codebase);
     }
 }

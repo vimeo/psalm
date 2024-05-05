@@ -16,9 +16,7 @@ use Psalm\Plugin\EventHandler\Event\FunctionParamsProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionParamsProviderInterface;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
-use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
-use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Union;
 
 use function strtolower;
@@ -79,11 +77,12 @@ class ArrayFilterParamsProvider implements FunctionParamsProviderInterface
 
             return null;
         }
+        $codebase = $statements_source->getCodebase();
 
         // currently only supports literal types and variables (but not function calls)
         // due to https://github.com/vimeo/psalm/issues/8905
         $first_arg_type = SimpleTypeInferer::infer(
-            $statements_source->getCodebase(),
+            $codebase,
             $statements_source->node_data,
             $call_args[0]->value,
             $statements_source->getAliases(),
@@ -100,30 +99,18 @@ class ArrayFilterParamsProvider implements FunctionParamsProviderInterface
             $first_arg_type = $event->getContext()->vars_in_scope[$extended_var_id] ?? null;
         }
 
-        $fallback = new TArray([Type::getArrayKey(), Type::getMixed()]);
-        if (!$first_arg_type || $first_arg_type->isMixed()) {
-            $first_arg_array = $fallback;
+        if (!$first_arg_type || $first_arg_type->isMixed() || !$first_arg_type->hasArray()) {
+            $key_type = Type::getArrayKey();
+            $inner_type = Type::getMixed();
         } else {
-            $first_arg_array = $first_arg_type->hasType('array')
-                               && ($array_atomic_type = $first_arg_type->getArray())
-                               && ($array_atomic_type instanceof TArray
-                                   || $array_atomic_type instanceof TKeyedArray)
-                ? $array_atomic_type
-                : $fallback;
-        }
-
-        if ($first_arg_array instanceof TArray) {
-            $inner_type = $first_arg_array->type_params[1];
-            $key_type = $first_arg_array->type_params[0];
-        } else {
-            $inner_type = $first_arg_array->getGenericValueType();
-            $key_type   = $first_arg_array->getGenericKeyType();
+            $inner_type = $first_arg_type->getArrayValueType($codebase);
+            $key_type = $first_arg_type->getArrayKeyType($codebase);
         }
 
         $has_both = false;
         if (isset($call_args[2])) {
             $mode_type = SimpleTypeInferer::infer(
-                $statements_source->getCodebase(),
+                $codebase,
                 $statements_source->node_data,
                 $call_args[2]->value,
                 $statements_source->getAliases(),
@@ -168,7 +155,7 @@ class ArrayFilterParamsProvider implements FunctionParamsProviderInterface
                         $inner_type = Type::combineUnionTypes(
                             $inner_type,
                             $key_type,
-                            $statements_source->getCodebase(),
+                            $codebase,
                         );
 
                         continue;

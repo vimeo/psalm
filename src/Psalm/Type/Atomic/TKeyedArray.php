@@ -31,7 +31,7 @@ use function str_replace;
  *
  * @psalm-immutable
  */
-class TKeyedArray extends Atomic
+class TKeyedArray extends Atomic implements ArrayInterface
 {
     use UnserializeMemoryUsageSuppressionTrait;
     /**
@@ -50,6 +50,11 @@ class TKeyedArray extends Atomic
     protected const NAME_ARRAY = 'array';
     /** @var non-empty-lowercase-string */
     protected const NAME_LIST = 'list';
+
+    public function isEmpty(): bool
+    {
+        return false;
+    }
 
     /**
      * Constructs a new instance of a generic type
@@ -427,6 +432,15 @@ class TKeyedArray extends Atomic
         return false;
     }
 
+    public function getCount(): ?int
+    {
+        $min = $this->getMinCount();
+        if ($min === $this->getMaxCount()) {
+            return $min;
+        }
+        return null;
+    }
+
     /**
      * @return int<0, max>
      */
@@ -485,7 +499,7 @@ class TKeyedArray extends Atomic
 
     public function getKey(bool $include_extra = true): string
     {
-        return 'array';
+        return $this->getId(true);
     }
 
     /**

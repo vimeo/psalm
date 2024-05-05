@@ -47,15 +47,6 @@ final class ArrayCombineReturnTypeProvider implements FunctionReturnTypeProvider
             return null;
         }
 
-        $keys = $keys_type->getArray();
-        if ($keys instanceof TArray && $keys->isEmptyArray()) {
-            $keys = [];
-        } elseif (!$keys instanceof TKeyedArray || $keys->fallback_params) {
-            return null;
-        } else {
-            $keys = $keys->properties;
-        }
-
         if (!$values_type = $statements_source->node_data->getType($call_args[1]->value)) {
             return null;
         }
@@ -63,69 +54,92 @@ final class ArrayCombineReturnTypeProvider implements FunctionReturnTypeProvider
             return null;
         }
 
-        $values = $values_type->getArray();
-        if ($values instanceof TArray && $values->isEmptyArray()) {
-            $values = [];
-        } elseif (!$values instanceof TKeyedArray || $values->fallback_params) {
-            return null;
-        } else {
-            $values = $values->properties;
-        }
-
-
-        $keys_array = [];
-        $is_list = true;
-        $prev_key = -1;
-        foreach ($keys as $key) {
-            if ($key->possibly_undefined) {
-                return null;
-            }
-            if ($key->isSingleIntLiteral()) {
-                $key = $key->getSingleIntLiteral()->value;
-                $keys_array []= $key;
-                if ($is_list && $key-1 !== $prev_key) {
-                    $is_list = false;
-                }
-                $prev_key = $key;
-            } elseif ($key->isSingleStringLiteral()) {
-                $keys_array []= $key->getSingleStringLiteral()->value;
-                $is_list = false;
+        $has_fallback = false;
+        $result = [];
+        foreach ($values_type->getArrays() as $values) {
+            if ($values instanceof TArray && $values->isEmptyArray()) {
+                $values = [];
+            } elseif (!$values instanceof TKeyedArray || $values->fallback_params) {
+                $has_fallback = true;
+                continue;
             } else {
-                return null;
+                $values = $values->properties;
+                foreach ($values as $value) {
+                    if ($value->possibly_undefined) {
+                        $has_fallback = true;
+                        continue;
+                    }
+                }
             }
-        }
 
-        foreach ($values as $value) {
-            if ($value->possibly_undefined) {
-                return null;
-            }
-        }
+            foreach ($keys_type->getArrays() as $keys) {
+                $keys_array = [];
 
-        if (count($keys_array) !== count($values)) {
-            IssueBuffer::maybeAdd(
-                new InvalidArgument(
-                    'The keys array ' . $keys_type->getId() . ' must have exactly the same '
-                    . 'number of elements as the values array '
+                if ($keys instanceof TArray && $keys->isEmptyArray()) {
+                    $keys = [];
+                } elseif (!$keys instanceof TKeyedArray || $keys->fallback_params) {
+                    $has_fallback = true;
+                    continue;
+                } else {
+                    $keys = $keys->properties;
+                    $is_list = true;
+                    $prev_key = -1;
+
+                    foreach ($keys as $key) {
+                        if ($key->possibly_undefined) {
+                            $has_fallback = true;
+                            continue;
+                        }
+                        if ($key->isSingleIntLiteral()) {
+                            $key = $key->getSingleIntLiteral()->value;
+                            $keys_array []= $key;
+                            if ($is_list && $key-1 !== $prev_key) {
+                                $is_list = false;
+                            }
+                            $prev_key = $key;
+                        } elseif ($key->isSingleStringLiteral()) {
+                            $keys_array []= $key->getSingleStringLiteral()->value;
+                            $is_list = false;
+                        } else {
+                            $has_fallback = true;
+                            continue;
+                        }
+                    }
+                }
+
+                if (count($keys_array) !== count($values)) {
+                    IssueBuffer::maybeAdd(
+                        new InvalidArgument(
+                            'The keys array ' . $keys_type->getId() . ' must have exactly the same '
+                            . 'number of elements as the values array '
                             . $values_type->getId(),
-                    $event->getCodeLocation(),
-                    'array_combine',
-                ),
-                $statements_source->getSuppressedIssues(),
-            );
-            return $statements_source->getCodebase()->analysis_php_version_id >= 8_00_00
-                ? Type::getNever()
-                : Type::getFalse();
+                            $event->getCodeLocation(),
+                            'array_combine',
+                        ),
+                        $statements_source->getSuppressedIssues(),
+                    );
+                    return $statements_source->getCodebase()->analysis_php_version_id >= 8_00_00
+                        ? Type::getNever()
+                        : Type::getFalse();
+                }
+
+                $temp = array_combine(
+                    $keys_array,
+                    $values,
+                );
+
+                if ($temp) {
+                    $result []= Type::getEmptyArrayAtomic();
+                } else {
+                    $result []= new TKeyedArray($result, null, null, $is_list);
+                }
+            }
         }
 
-        $result = array_combine(
-            $keys_array,
-            $values,
-        );
-
-        if (!$result) {
-            return Type::getEmptyArray();
+        if ($has_fallback) {
+            $result []= new TArray([Type::getArrayKey(), Type::getMixed()]);
         }
 
-        return new Union([new TKeyedArray($result, null, null, $is_list)]);
+        return new Union($result);
     }
 }

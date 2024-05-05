@@ -15,6 +15,7 @@ use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
+use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
@@ -264,6 +265,23 @@ final class MutableUnion implements TypeNode
         return $this;
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
+    public function removeArrays(): bool
+    {
+        $did = false;
+        foreach ($this->types as $k => $t) {
+            if ($t instanceof TKeyedArray || $t instanceof TArray) {
+                unset($this->types[$k]);
+                $did = true;
+            }
+        }
+        if ($did) {
+            $this->bustCache();
+        }
+        return $did;
+    }
     /**
      * @psalm-external-mutation-free
      */
