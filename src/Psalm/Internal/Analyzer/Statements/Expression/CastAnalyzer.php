@@ -28,6 +28,7 @@ use Psalm\Type\Atomic\TClosedResource;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralFloat;
@@ -53,6 +54,7 @@ use function array_merge;
 use function array_pop;
 use function array_values;
 use function get_class;
+use function range;
 use function strtolower;
 
 /**
@@ -537,6 +539,18 @@ final class CastAnalyzer
                 continue;
             }
 
+            if ($atomic_type instanceof TIntRange
+                && $atomic_type->min_bound !== null
+                && $atomic_type->max_bound !== null
+                && ($atomic_type->max_bound - $atomic_type->min_bound) < 500
+            ) {
+                foreach (range($atomic_type->min_bound, $atomic_type->max_bound) as $literal_int_value) {
+                    $valid_floats[] = new TLiteralFloat((float) $literal_int_value);
+                }
+
+                continue;
+            }
+
             if ($atomic_type instanceof TInt) {
                 if ($atomic_type instanceof TLiteralInt) {
                     $valid_floats[] = new TLiteralFloat((float) $atomic_type->value);
@@ -721,9 +735,17 @@ final class CastAnalyzer
                 || $atomic_type instanceof TNumeric
             ) {
                 if ($atomic_type instanceof TLiteralInt || $atomic_type instanceof TLiteralFloat) {
-                    $castable_types[] = Type::getAtomicStringFromLiteral((string) $atomic_type->value);
+                    $valid_strings[] = Type::getAtomicStringFromLiteral((string) $atomic_type->value);
                 } elseif ($atomic_type instanceof TNonspecificLiteralInt) {
                     $castable_types[] = new TNonspecificLiteralString();
+                } elseif ($atomic_type instanceof TIntRange
+                    && $atomic_type->min_bound !== null
+                    && $atomic_type->max_bound !== null
+                    && ($atomic_type->max_bound - $atomic_type->min_bound) < 500
+                ) {
+                    foreach (range($atomic_type->min_bound, $atomic_type->max_bound) as $literal_int_value) {
+                        $valid_strings[] = Type::getAtomicStringFromLiteral((string) $literal_int_value);
+                    }
                 } else {
                     $castable_types[] = new TNumericString();
                 }
