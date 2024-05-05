@@ -1691,7 +1691,19 @@ class ArrayFunctionCallTest extends TestCase
 
                     $bar = array_intersect(... $foo);',
                 'assertions' => [
-                    '$bar' => 'array<int<0, 2>, int>',
+                    '$bar' => 'array<int, int>',
+                ],
+            ],
+            'splatArrayIntersectExact' => [
+                'code' => '<?php
+                    $foo = [
+                        [1, 2, 3],
+                        [1, 2],
+                    ];
+
+                    $bar = array_intersect(... $foo);',
+                'assertions' => [
+                    '$bar===' => 'array<0|1|2, 1|2|3>',
                 ],
             ],
             'arrayIntersectIsVariadic' => [
