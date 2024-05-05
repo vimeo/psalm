@@ -30,6 +30,6 @@ class TObject extends Atomic
 
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
-        return true;
+        return $analysis_php_version_id >= 7_02_00;
     }
 }
