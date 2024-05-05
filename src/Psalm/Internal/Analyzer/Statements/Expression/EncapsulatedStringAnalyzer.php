@@ -30,6 +30,10 @@ use Psalm\Type\Atomic\TString;
 use Psalm\Type\Union;
 
 use function array_diff;
+use function array_map;
+use function array_merge;
+use function array_unique;
+use function count;
 use function in_array;
 
 /**
@@ -37,6 +41,8 @@ use function in_array;
  */
 final class EncapsulatedStringAnalyzer
 {
+    private const MAX_LITERALS = 500;
+
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Scalar\InterpolatedString $stmt,
@@ -49,7 +55,7 @@ final class EncapsulatedStringAnalyzer
 
         $all_literals = true;
 
-        $literal_string = "";
+        $literal_strings = [];
 
         foreach ($stmt->parts as $part) {
             if ($part instanceof Expr) {
@@ -59,8 +65,8 @@ final class EncapsulatedStringAnalyzer
             }
 
             if ($part instanceof InterpolatedStringPart) {
-                if ($literal_string !== null) {
-                    $literal_string .= $part->value;
+                if ($literal_strings !== null) {
+                    $literal_strings = self::combineLiteral($literal_strings, $part->value);
                 }
                 $non_falsy = $non_falsy || $part->value;
                 $non_empty = $non_empty || $part->value !== "";
@@ -126,11 +132,22 @@ final class EncapsulatedStringAnalyzer
                     }
                 }
 
-                if ($literal_string !== null) {
-                    if ($casted_part_type->isSingleLiteral()) {
-                        $literal_string .= $casted_part_type->getSingleLiteral()->value;
+                if ($literal_strings !== null) {
+                    if ($casted_part_type->allSpecificLiterals()) {
+                        $new_literal_strings = [];
+                        foreach ($casted_part_type->getLiteralStrings() as $literal_string_atomic) {
+                            $new_literal_strings = array_merge(
+                                $new_literal_strings,
+                                self::combineLiteral($literal_strings, $literal_string_atomic->value),
+                            );
+                        }
+
+                        $literal_strings = array_unique($new_literal_strings);
+                        if (count($literal_strings) > self::MAX_LITERALS) {
+                            $literal_strings = null;
+                        }
                     } else {
-                        $literal_string = null;
+                        $literal_strings = null;
                     }
                 }
 
@@ -171,14 +188,14 @@ final class EncapsulatedStringAnalyzer
                 }
             } else {
                 $all_literals = false;
-                $literal_string = null;
+                $literal_strings = null;
             }
         }
 
         if ($non_empty || $non_falsy) {
-            if ($literal_string !== null) {
+            if ($literal_strings !== null && $literal_strings !== []) {
                 $stmt_type = new Union(
-                    [Type::getAtomicStringFromLiteral($literal_string)],
+                    array_map([Type::class, 'getAtomicStringFromLiteral'], $literal_strings),
                     ['parent_nodes' => $parent_nodes],
                 );
             } elseif ($all_literals) {
@@ -212,5 +229,29 @@ final class EncapsulatedStringAnalyzer
         $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
         return true;
+    }
+
+    /**
+     * @param string[] $literal_strings
+     * @return non-empty-array<string>
+     */
+    private static function combineLiteral(
+        array $literal_strings,
+        string $append
+    ): array {
+        if ($literal_strings === []) {
+            return [$append];
+        }
+
+        if ($append === '') {
+            return $literal_strings;
+        }
+
+        $new_literal_strings = array();
+        foreach ($literal_strings as $literal_string) {
+            $new_literal_strings[] = "{$literal_string}{$append}";
+        }
+
+        return $new_literal_strings;
     }
 }
