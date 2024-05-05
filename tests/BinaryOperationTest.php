@@ -977,6 +977,39 @@ class BinaryOperationTest extends TestCase
                         return "Hello $s1 $s2";
                     }',
             ],
+            'encapsedWithUnionLiteralsKeepsLiteral' => [
+                'code' => '<?php
+                    $foo = rand(0, 1) ? 0 : 2;
+                    $encapsed = "{$foo}";',
+                'assertions' => ['$encapsed===' => "'0'|'2'"],
+            ],
+            'encapsedWithUnionLiteralsKeepsLiteral2' => [
+                'code' => '<?php
+                    /**
+                     * @var "a"|"b" $a
+                     * @var "hello"|"world"|"bye" $b
+                     */
+                    $encapsed = "X{$a}Y{$b}Z";',
+                'assertions' => ['$encapsed===' => "'XaYbyeZ'|'XaYhelloZ'|'XaYworldZ'|'XbYbyeZ'|'XbYhelloZ'|'XbYworldZ'"],
+            ],
+            'encapsedWithIntsKeepsLiteral' => [
+                'code' => '<?php
+                    /**
+                     * @var "a"|"b" $a
+                     * @var 0|1|2 $b
+                     */
+                    $encapsed = "{$a}{$b}";',
+                'assertions' => ['$encapsed===' => "'a0'|'a1'|'a2'|'b0'|'b1'|'b2'"],
+            ],
+            'encapsedWithIntRangeKeepsLiteral' => [
+                'code' => '<?php
+                    /**
+                     * @var "a"|"b" $a
+                     * @var int<0, 2> $b
+                     */
+                    $encapsed = "{$a}{$b}";',
+                'assertions' => ['$encapsed===' => "'a0'|'a1'|'a2'|'b0'|'b1'|'b2'"],
+            ],
             'NumericStringIncrement' => [
                 'code' => '<?php
                     function scope(array $a): int|float {
