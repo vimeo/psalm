@@ -27,7 +27,7 @@ Some issue types allow the use of `referencedMethod`, `referencedClass` or `refe
 
 ```xml
 <issueHandlers>
-  <MissingPropertyType errorLevel="suppress" />
+  <MissingPropertyType errorLevel="suppress" /> <!-- supress MissingPropertyType everywhere in your code -->
 
   <InvalidReturnType>
     <errorLevel type="suppress">
