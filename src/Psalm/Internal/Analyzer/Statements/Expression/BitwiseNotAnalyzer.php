@@ -21,6 +21,10 @@ use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Union;
 
+use function filter_var;
+
+use const FILTER_VALIDATE_INT;
+
 /**
  * @internal
  */
@@ -56,8 +60,21 @@ final class BitwiseNotAnalyzer
                     $acceptable_types[] = $type_part;
                     $has_valid_operand = true;
                 } elseif ($type_part instanceof TFloat) {
+                    if (!$type_part instanceof TLiteralFloat
+                        || (int) $type_part->value !== filter_var($type_part->value, FILTER_VALIDATE_INT)
+                    ) {
+                        // deprecated since PHP 8, will trigger a notice
+                        IssueBuffer::maybeAdd(
+                            new InvalidOperand(
+                                'Implicit conversion from float to int',
+                                new CodeLocation($statements_analyzer, $stmt->expr),
+                            ),
+                            $statements_analyzer->getSuppressedIssues(),
+                        );
+                    }
+
                     $type_part = ($type_part instanceof TLiteralFloat) ?
-                        new TLiteralInt(~$type_part->value) :
+                        new TLiteralInt(~((int) $type_part->value)) :
                         new TInt;
 
                     $stmt_expr_type->removeType($type_string);
