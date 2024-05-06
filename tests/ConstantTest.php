@@ -2437,7 +2437,7 @@ class ConstantTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
-            'returnValueofNonExistantConstant' => [
+            'returnValueofNonExistentConstant' => [
                 'code' => '<?php
                     class Foo
                     {
@@ -2471,7 +2471,7 @@ class ConstantTest extends TestCase
                 ',
                 'error_message' => 'UnresolvableConstant',
             ],
-            'takeKeyofNonExistantConstant' => [
+            'takeKeyofNonExistentConstant' => [
                 'code' => '<?php
                     class Foo
                     {

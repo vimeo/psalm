@@ -6,7 +6,7 @@ use Psalm\Type\Atomic;
 
 /**
  * Type that resolves to a keyed-array with properties of a class as keys and
- * their apropriate types as values.
+ * their appropriate types as values.
  *
  * @psalm-type TokenName = 'properties-of'|'public-properties-of'|'protected-properties-of'|'private-properties-of'
  * @psalm-immutable
@@ -15,7 +15,7 @@ final class TPropertiesOf extends Atomic
 {
     // These should match the values of
     // `Psalm\Internal\Analyzer\ClassLikeAnalyzer::VISIBILITY_*`, as they are
-    // used to compared against properties visibililty.
+    // used to compared against properties visibility.
     public const VISIBILITY_PUBLIC = 1;
     public const VISIBILITY_PROTECTED = 2;
     public const VISIBILITY_PRIVATE = 3;

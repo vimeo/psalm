@@ -32,7 +32,7 @@ There a number of abstract classes you can extend:
 * `FunctionIssue` - issue related to a specific function. Can be suppressed with `referencedFunction` attribute.
 * `ArgumentIssue` - issue related to a specific argument. Can be targeted with `referencedFunction` attribute.
 * `MethodIssue` - issue related to a specific method. Can be targeted with `referencedMethod` attribute.
-* `ClassConstantIssue` - issue related ot a specific class constant. Can be targeted with `referencedConstant`.
+* `ClassConstantIssue` - issue related to a specific class constant. Can be targeted with `referencedConstant`.
 * `VariableIssue` - issue for a specific variable. Targeted with `referencedVariable`
 
 ## Add a `config.xsd` entry

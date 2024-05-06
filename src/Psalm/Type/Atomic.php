@@ -701,7 +701,7 @@ abstract class Atomic implements TypeNode
     }
 
     /**
-     * This is the true identifier for the type. It defaults to self::getKey() but can be overrided to be more precise
+     * This is the true identifier for the type. It defaults to self::getKey() but can be overridden to be more precise
      */
     public function getId(bool $exact = true, bool $nested = false): string
     {

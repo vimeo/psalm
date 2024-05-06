@@ -468,7 +468,7 @@ final class UnionTypeComparator
         foreach (self::getTypeParts($codebase, $type1) as $type1_part) {
             foreach (self::getTypeParts($codebase, $type2) as $type2_part) {
                 //special case for TIntRange because it can contain a part of another TIntRange.
-                //For exemple int<0,10> and int<5, 15> can be identical but none contain the other
+                //For example int<0,10> and int<5, 15> can be identical but none contain the other
                 if ($type1_part instanceof TIntRange && $type2_part instanceof TIntRange) {
                     $intersection_range = TIntRange::intersectIntRanges(
                         $type1_part,
