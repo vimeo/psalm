@@ -50,6 +50,8 @@ jobs:
 
       - name: Install Dependencies
         uses: ramsey/composer-install@v3
+        with:
+          composer-options: "--optimize-autoloader"
 
       - run: bin/build-phar.sh
         env:
