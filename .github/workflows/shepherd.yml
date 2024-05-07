@@ -20,8 +20,8 @@ jobs:
       env:
         fail-fast: true
 
-    - name: Install dependencies
-      run: composer install --prefer-dist --no-progress --no-suggest
+    - name: Install Dependencies
+      uses: ramsey/composer-install@v3
       env:
         COMPOSER_ROOT_VERSION: dev-master
 
