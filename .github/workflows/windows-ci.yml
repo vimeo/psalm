@@ -66,6 +66,8 @@ jobs:
 
       - name: Install Dependencies
         uses: ramsey/composer-install@v3
+        with:
+          composer-options: "--optimize-autoloader"
         env:
           COMPOSER_ROOT_VERSION: dev-master
 
