@@ -316,28 +316,22 @@ class BinaryOperationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    public function testTwoRandomObjects(): void
-    {
-        $config = Config::getInstance();
-        $config->strict_binary_operands = true;
-
-        $this->addFile(
-            'somefile.php',
-            <<<'PHP'
-                <?php
-                $a = new \stdClass() > new \DateTimeImmutable();
-                PHP,
-        );
-
-        $this->expectException(CodeException::class);
-        $this->expectExceptionMessage(InvalidOperand::getIssueType());
-
-        $this->analyzeFile('somefile.php', new Context());
-    }
-
     public function providerValidCodeParse(): iterable
     {
         return [
+            'strict_binary_operands: objects of different shape' => [
+                'code' =><<<'PHP'
+                    <?php
+                    new \DateTime() > new \DateTime();
+                    new \DateTimeImmutable() > new \DateTimeImmutable();
+                    // special case for DateTimeInterface
+                    new \DateTime() > new \DateTimeImmutable();
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => null,
+                'config_options' => ['strict_binary_operands' => true],
+            ],
             'regularAddition' => [
                 'code' => '<?php
                     $a = 5 + 4;',
@@ -1145,6 +1139,26 @@ class BinaryOperationTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
+            'strict_binary_operands: different objects' => [
+                'code' =><<<'PHP'
+                    <?php
+                    new \stdClass() > new \DateTimeImmutable();
+                    PHP,
+                'error_message' => InvalidOperand::getIssueType(),
+                'error_levels' => [],
+                'php_version' => null,
+                'config_options' => ['strict_binary_operands' => true],
+            ],
+            'strict_binary_operands: different object shapes' => [
+                'code' =><<<'PHP'
+                    <?php
+                    ((object) ['a' => 0, 'b' => 1]) > ((object) ['a' => 0, 'c' => 1]);
+                    PHP,
+                'error_message' => InvalidOperand::getIssueType(),
+                'error_levels' => [],
+                'php_version' => null,
+                'config_options' => ['strict_binary_operands' => true],
+            ],
             'badAddition' => [
                 'code' => '<?php
                     $a = "b" + 5;',

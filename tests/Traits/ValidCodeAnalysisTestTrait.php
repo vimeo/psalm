@@ -7,6 +7,8 @@ namespace Psalm\Tests\Traits;
 use Psalm\Config;
 use Psalm\Context;
 
+use function array_key_exists;
+use function str_contains;
 use function str_replace;
 use function strlen;
 use function strpos;
@@ -16,6 +18,11 @@ use function substr;
 use const PHP_OS;
 use const PHP_VERSION_ID;
 
+/**
+ * @psalm-type psalmConfigOptions = array{
+ *     strict_binary_operands?: bool,
+ * }
+ */
 trait ValidCodeAnalysisTestTrait
 {
     /**
@@ -25,7 +32,8 @@ trait ValidCodeAnalysisTestTrait
      *         code: string,
      *         assertions?: array<string, string>,
      *         ignored_issues?: list<string>,
-     *         php_version?: string,
+     *         php_version?: string|null,
+     *         config_options?: psalmConfigOptions,
      *     }
      * >
      */
@@ -35,6 +43,7 @@ trait ValidCodeAnalysisTestTrait
      * @dataProvider providerValidCodeParse
      * @param array<string, string> $assertions
      * @param list<string> $ignored_issues
+     * @param psalmConfigOptions $config_options
      * @small
      */
     public function testValidCode(
@@ -42,9 +51,10 @@ trait ValidCodeAnalysisTestTrait
         array $assertions = [],
         array $ignored_issues = [],
         ?string $php_version = null,
+        array $config_options = [],
     ): void {
         $test_name = $this->getTestName();
-        if (strpos($test_name, 'PHP80-') !== false) {
+        if (str_contains($test_name, 'PHP80-')) {
             if (PHP_VERSION_ID < 8_00_00) {
                 $this->markTestSkipped('Test case requires PHP 8.0.');
             }
@@ -52,7 +62,7 @@ trait ValidCodeAnalysisTestTrait
             if ($php_version === null) {
                 $php_version = '8.0';
             }
-        } elseif (strpos($test_name, 'PHP81-') !== false) {
+        } elseif (str_contains($test_name, 'PHP81-')) {
             if (PHP_VERSION_ID < 8_01_00) {
                 $this->markTestSkipped('Test case requires PHP 8.1.');
             }
@@ -60,7 +70,7 @@ trait ValidCodeAnalysisTestTrait
             if ($php_version === null) {
                 $php_version = '8.1';
             }
-        } elseif (strpos($test_name, 'SKIPPED-') !== false) {
+        } elseif (str_contains($test_name, 'SKIPPED-')) {
             $this->markTestSkipped('Skipped due to a bug.');
         }
 
@@ -69,12 +79,16 @@ trait ValidCodeAnalysisTestTrait
         }
 
         // sanity check - do we have a PHP tag?
-        if (strpos($code, '<?php') === false) {
+        if (!str_contains($code, '<?php')) {
             $this->fail('Test case must have a <?php tag');
         }
 
+        $config = Config::getInstance();
         foreach ($ignored_issues as $issue_name) {
-            Config::getInstance()->setCustomErrorLevel($issue_name, Config::REPORT_SUPPRESS);
+            $config->setCustomErrorLevel($issue_name, Config::REPORT_SUPPRESS);
+        }
+        if (array_key_exists('strict_binary_operands', $config_options)) {
+            $config->strict_binary_operands = $config_options['strict_binary_operands'];
         }
 
         if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {

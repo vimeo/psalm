@@ -8,9 +8,10 @@ use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
 
+use function array_key_exists;
 use function preg_quote;
+use function str_contains;
 use function str_replace;
-use function strpos;
 use function strtoupper;
 use function substr;
 
@@ -18,17 +19,22 @@ use const PHP_OS;
 use const PHP_VERSION_ID;
 
 /**
+ * @psalm-type psalmConfigOptions = array{
+ *     strict_binary_operands?: bool,
+ * }
  * @psalm-type DeprecatedDataProviderArrayNotation = array{
  *     code: string,
  *     error_message: string,
  *     ignored_issues?: list<string>,
- *     php_version?: string
+ *     php_version?: string,
+ *     config_options?: psalmConfigOptions,
  * }
  * @psalm-type NamedArgumentsDataProviderArrayNotation = array{
  *     code: string,
  *     error_message: string,
  *     error_levels?: list<string>,
- *     php_version?: string
+ *     php_version?: string|null,
+ *     config_options?: psalmConfigOptions,
  * }
  */
 trait InvalidCodeAnalysisTestTrait
@@ -45,15 +51,17 @@ trait InvalidCodeAnalysisTestTrait
      * @dataProvider providerInvalidCodeParse
      * @small
      * @param list<string> $error_levels
+     * @param psalmConfigOptions $config_options
      */
     public function testInvalidCode(
         string $code,
         string $error_message,
         array  $error_levels = [],
         ?string $php_version = null,
+        array $config_options = [],
     ): void {
         $test_name = $this->getTestName();
-        if (strpos($test_name, 'PHP80-') !== false) {
+        if (str_contains($test_name, 'PHP80-')) {
             if (PHP_VERSION_ID < 8_00_00) {
                 $this->markTestSkipped('Test case requires PHP 8.0.');
             }
@@ -61,7 +69,7 @@ trait InvalidCodeAnalysisTestTrait
             if ($php_version === null) {
                 $php_version = '8.0';
             }
-        } elseif (strpos($test_name, 'SKIPPED-') !== false) {
+        } elseif (str_contains($test_name, 'SKIPPED-')) {
             $this->markTestSkipped('Skipped due to a bug.');
         }
 
@@ -70,7 +78,7 @@ trait InvalidCodeAnalysisTestTrait
         }
 
         // sanity check - do we have a PHP tag?
-        if (strpos($code, '<?php') === false) {
+        if (!str_contains($code, '<?php')) {
             $this->fail('Test case must have a <?php tag');
         }
 
@@ -78,11 +86,15 @@ trait InvalidCodeAnalysisTestTrait
             $code = str_replace("\n", "\r\n", $code);
         }
 
+        $config = Config::getInstance();
         foreach ($error_levels as $error_level) {
             $issue_name = $error_level;
             $error_level = Config::REPORT_SUPPRESS;
 
-            Config::getInstance()->setCustomErrorLevel($issue_name, $error_level);
+            $config->setCustomErrorLevel($issue_name, $error_level);
+        }
+        if (array_key_exists('strict_binary_operands', $config_options)) {
+            $config->strict_binary_operands = $config_options['strict_binary_operands'];
         }
 
         $this->project_analyzer->setPhpVersion($php_version, 'tests');

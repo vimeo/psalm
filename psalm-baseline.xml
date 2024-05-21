@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<files psalm-version="dev-master@c488d40e6243536a42608bbe37245f07ebebe1ad">
+<files psalm-version="dev-master@16b24bdc94e052b5ce69fd232a77416a1f6ec3e6">
   <file src="examples/TemplateChecker.php">
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$comment_block->tags['variablesfrom'][0]]]></code>
@@ -2317,6 +2317,15 @@
       <code><![CDATA[public function getComposerFilePathForClassLike(string $fq_classlike_name): bool]]></code>
       <code><![CDATA[public function getProjectDirectories(): array]]></code>
     </MethodSignatureMismatch>
+  </file>
+  <file src="tests/Traits/InvalidCodeAnalysisTestTrait.php">
+    <InvalidArgument>
+      <code><![CDATA[testInvalidCode]]></code>
+      <code><![CDATA[testInvalidCode]]></code>
+      <code><![CDATA[testInvalidCode]]></code>
+      <code><![CDATA[testInvalidCode]]></code>
+      <code><![CDATA[testInvalidCode]]></code>
+    </InvalidArgument>
   </file>
   <file src="tests/TypeParseTest.php">
     <RiskyTruthyFalsyComparison>

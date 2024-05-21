@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
+use DateTimeInterface;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
@@ -272,6 +273,9 @@ final class BinaryOpAnalyzer
                 && ($stmt_left_type->hasObjectType() || $stmt_right_type->hasObjectType())
                 && (!UnionTypeComparator::isContainedBy($codebase, $stmt_left_type, $stmt_right_type)
                     || !UnionTypeComparator::isContainedBy($codebase, $stmt_right_type, $stmt_left_type))
+                // It is okay if both sides implement \DateTimeInterface
+                && !(UnionTypeComparator::isContainedBy($codebase, $stmt_left_type, new Union([new TNamedObject(DateTimeInterface::class)]))
+                    && UnionTypeComparator::isContainedBy($codebase, $stmt_right_type, new Union([new TNamedObject(DateTimeInterface::class)])))
             ) {
                 IssueBuffer::maybeAdd(
                     new InvalidOperand(
