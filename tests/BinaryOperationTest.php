@@ -7,6 +7,7 @@ namespace Psalm\Tests;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
+use Psalm\Issue\InvalidOperand;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
@@ -311,6 +312,25 @@ class BinaryOperationTest extends TestCase
 
         $this->expectException(CodeException::class);
         $this->expectExceptionMessage('ImplicitToStringCast');
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testTwoRandomObjects(): void
+    {
+        $config = Config::getInstance();
+        $config->strict_binary_operands = true;
+
+        $this->addFile(
+            'somefile.php',
+            <<<'PHP'
+                <?php
+                $a = new \stdClass() > new \DateTimeImmutable();
+                PHP,
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage(InvalidOperand::getIssueType());
 
         $this->analyzeFile('somefile.php', new Context());
     }

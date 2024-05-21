@@ -19,6 +19,7 @@ use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Issue\DocblockTypeContradiction;
 use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\InvalidOperand;
@@ -49,6 +50,8 @@ final class BinaryOpAnalyzer
         int $nesting = 0,
         bool $from_stmt = false,
     ): bool {
+        $codebase = $statements_analyzer->getCodebase();
+
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat && $nesting > 100) {
             $statements_analyzer->node_data->setType($stmt, Type::getString());
 
@@ -165,7 +168,6 @@ final class BinaryOpAnalyzer
                     $new_parent_node->id => $new_parent_node,
                 ]);
 
-                $codebase = $statements_analyzer->getCodebase();
                 $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);
 
                 $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
@@ -245,8 +247,8 @@ final class BinaryOpAnalyzer
                 && $statements_analyzer->getCodebase()->config->strict_binary_operands
                 && $stmt_left_type
                 && $stmt_right_type
-                && (($stmt_left_type->isSingle() && $stmt_left_type->hasBool())
-                    || ($stmt_right_type->isSingle() && $stmt_right_type->hasBool()))
+                && !UnionTypeComparator::isContainedBy($codebase, $stmt_left_type, $stmt_right_type)
+                && !UnionTypeComparator::isContainedBy($codebase, $stmt_right_type, $stmt_left_type)
             ) {
                 IssueBuffer::maybeAdd(
                     new InvalidOperand(
