@@ -225,6 +225,7 @@ class PureAnnotationTest extends TestCase
                      * @psalm-pure
                      */
                     function foo(string $s, A $a) : string {
+                        /** @psalm-suppress InvalidOperand */
                         if ($a == $s) {}
                         return $s;
                     }',
@@ -778,6 +779,7 @@ class PureAnnotationTest extends TestCase
                      * @psalm-pure
                      */
                     function foo(string $s, A $a) : string {
+                        /** @psalm-suppress InvalidOperand */
                         if ($a == $s) {}
                         return $s;
                     }',

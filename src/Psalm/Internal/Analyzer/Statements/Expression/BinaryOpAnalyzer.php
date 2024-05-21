@@ -32,7 +32,6 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
-use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -261,8 +260,7 @@ final class BinaryOpAnalyzer
             }
 
 
-            if (
-                $stmt instanceof PhpParser\Node\Expr\BinaryOp\Equal
+            if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Equal
                 || $stmt instanceof PhpParser\Node\Expr\BinaryOp\NotEqual
                 || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Greater
                 || $stmt instanceof PhpParser\Node\Expr\BinaryOp\GreaterOrEqual
@@ -272,8 +270,7 @@ final class BinaryOpAnalyzer
                 && $stmt_left_type
                 && $stmt_right_type
             ) {
-                if (
-                    ($stmt_left_type->hasObjectType() || $stmt_right_type->hasObjectType())
+                if (($stmt_left_type->hasObjectType() || $stmt_right_type->hasObjectType())
                     && (
                         !UnionTypeComparator::isContainedBy($codebase, $stmt_left_type, $stmt_right_type)
                         || !UnionTypeComparator::isContainedBy($codebase, $stmt_right_type, $stmt_left_type)

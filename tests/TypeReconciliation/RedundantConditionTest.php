@@ -1346,6 +1346,7 @@ class RedundantConditionTest extends TestCase
                      * @param  A $a
                      */
                     function foo($a, $b) : void {
+                        /** @psalm-suppress InvalidOperand */
                         if ([] == $a) {}
                     }',
                 'error_message' => 'DocblockTypeContradiction',
