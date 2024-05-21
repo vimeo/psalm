@@ -36,6 +36,7 @@ use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function in_array;
+use function sprintf;
 use function strlen;
 
 /**
@@ -269,21 +270,17 @@ final class BinaryOpAnalyzer
                 && $statements_analyzer->getCodebase()->config->strict_binary_operands
                 && $stmt_left_type
                 && $stmt_right_type
+                && ($stmt_left_type->hasObjectType() || $stmt_right_type->hasObjectType())
+                && (!UnionTypeComparator::isContainedBy($codebase, $stmt_left_type, $stmt_right_type)
+                    || !UnionTypeComparator::isContainedBy($codebase, $stmt_right_type, $stmt_left_type))
             ) {
-                if (($stmt_left_type->hasObjectType() || $stmt_right_type->hasObjectType())
-                    && (
-                        !UnionTypeComparator::isContainedBy($codebase, $stmt_left_type, $stmt_right_type)
-                        || !UnionTypeComparator::isContainedBy($codebase, $stmt_right_type, $stmt_left_type)
-                    )
-                ) {
-                    IssueBuffer::maybeAdd(
-                        new InvalidOperand(
-                            'Cannot compare ' . $stmt_left_type->getId() . ' to ' . $stmt_right_type->getId(),
-                            new CodeLocation($statements_analyzer, $stmt),
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
-                }
+                IssueBuffer::maybeAdd(
+                    new InvalidOperand(
+                        sprintf('Cannot compare %s to %s.', $stmt_left_type->getId(), $stmt_right_type->getId()),
+                        new CodeLocation($statements_analyzer, $stmt),
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
             }
 
             if (($stmt instanceof PhpParser\Node\Expr\BinaryOp\Equal
