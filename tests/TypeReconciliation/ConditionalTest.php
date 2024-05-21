@@ -3283,7 +3283,6 @@ class ConditionalTest extends TestCase
             'preventWeakEqualityToObject' => [
                 'code' => '<?php
                     function foo(int $i, stdClass $s) : void {
-                        /** @psalm-suppress InvalidOperand */
                         if ($i == $s) {}
                     }',
                 'error_message' => 'TypeDoesNotContainType',
