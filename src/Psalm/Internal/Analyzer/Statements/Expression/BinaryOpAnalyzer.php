@@ -32,6 +32,7 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -247,8 +248,8 @@ final class BinaryOpAnalyzer
                 && $statements_analyzer->getCodebase()->config->strict_binary_operands
                 && $stmt_left_type
                 && $stmt_right_type
-                && !UnionTypeComparator::isContainedBy($codebase, $stmt_left_type, $stmt_right_type)
-                && !UnionTypeComparator::isContainedBy($codebase, $stmt_right_type, $stmt_left_type)
+                && (($stmt_left_type->isSingle() && $stmt_left_type->hasBool())
+                    || ($stmt_right_type->isSingle() && $stmt_right_type->hasBool()))
             ) {
                 IssueBuffer::maybeAdd(
                     new InvalidOperand(
@@ -257,6 +258,35 @@ final class BinaryOpAnalyzer
                     ),
                     $statements_analyzer->getSuppressedIssues(),
                 );
+            }
+
+
+            if (
+                $stmt instanceof PhpParser\Node\Expr\BinaryOp\Equal
+                || $stmt instanceof PhpParser\Node\Expr\BinaryOp\NotEqual
+                || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Greater
+                || $stmt instanceof PhpParser\Node\Expr\BinaryOp\GreaterOrEqual
+                || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Smaller
+                || $stmt instanceof PhpParser\Node\Expr\BinaryOp\SmallerOrEqual
+                && $statements_analyzer->getCodebase()->config->strict_binary_operands
+                && $stmt_left_type
+                && $stmt_right_type
+            ) {
+                if (
+                    ($stmt_left_type->hasObjectType() || $stmt_right_type->hasObjectType())
+                    && (
+                        !UnionTypeComparator::isContainedBy($codebase, $stmt_left_type, $stmt_right_type)
+                        || !UnionTypeComparator::isContainedBy($codebase, $stmt_right_type, $stmt_left_type)
+                    )
+                ) {
+                    IssueBuffer::maybeAdd(
+                        new InvalidOperand(
+                            'Cannot compare ' . $stmt_left_type->getId() . ' to ' . $stmt_right_type->getId(),
+                            new CodeLocation($statements_analyzer, $stmt),
+                        ),
+                        $statements_analyzer->getSuppressedIssues(),
+                    );
+                }
             }
 
             if (($stmt instanceof PhpParser\Node\Expr\BinaryOp\Equal
