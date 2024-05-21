@@ -2,6 +2,7 @@
 
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
+use DateTimeInterface;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
@@ -17,6 +18,7 @@ use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Issue\DocblockTypeContradiction;
 use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\InvalidOperand;
@@ -33,6 +35,7 @@ use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function in_array;
+use function sprintf;
 use function strlen;
 
 /**
@@ -47,6 +50,8 @@ final class BinaryOpAnalyzer
         int $nesting = 0,
         bool $from_stmt = false
     ): bool {
+        $codebase = $statements_analyzer->getCodebase();
+
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat && $nesting > 100) {
             $statements_analyzer->node_data->setType($stmt, Type::getString());
 
@@ -163,7 +168,6 @@ final class BinaryOpAnalyzer
                     $new_parent_node->id => $new_parent_node,
                 ]);
 
-                $codebase = $statements_analyzer->getCodebase();
                 $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);
 
                 $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
@@ -249,6 +253,41 @@ final class BinaryOpAnalyzer
                 IssueBuffer::maybeAdd(
                     new InvalidOperand(
                         'Cannot compare ' . $stmt_left_type->getId() . ' to ' . $stmt_right_type->getId(),
+                        new CodeLocation($statements_analyzer, $stmt),
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            }
+
+            if (($stmt instanceof PhpParser\Node\Expr\BinaryOp\Equal
+                    || $stmt instanceof PhpParser\Node\Expr\BinaryOp\NotEqual
+                    || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Greater
+                    || $stmt instanceof PhpParser\Node\Expr\BinaryOp\GreaterOrEqual
+                    || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Smaller
+                    || $stmt instanceof PhpParser\Node\Expr\BinaryOp\SmallerOrEqual)
+                && $statements_analyzer->getCodebase()->config->strict_binary_operands
+                && $stmt_left_type
+                && $stmt_right_type
+                && ($stmt_left_type->hasObjectType() || $stmt_right_type->hasObjectType())
+                && (!UnionTypeComparator::isContainedBy($codebase, $stmt_left_type, $stmt_right_type)
+                    || !UnionTypeComparator::isContainedBy($codebase, $stmt_right_type, $stmt_left_type))
+                // It is okay if both sides implement \DateTimeInterface
+                && !(
+                    UnionTypeComparator::isContainedBy(
+                        $codebase,
+                        $stmt_left_type,
+                        new Union([new TNamedObject(DateTimeInterface::class)]),
+                    )
+                    && UnionTypeComparator::isContainedBy(
+                        $codebase,
+                        $stmt_right_type,
+                        new Union([new TNamedObject(DateTimeInterface::class)]),
+                    )
+                )
+            ) {
+                IssueBuffer::maybeAdd(
+                    new InvalidOperand(
+                        sprintf('Cannot compare %s to %s.', $stmt_left_type->getId(), $stmt_right_type->getId()),
                         new CodeLocation($statements_analyzer, $stmt),
                     ),
                     $statements_analyzer->getSuppressedIssues(),
