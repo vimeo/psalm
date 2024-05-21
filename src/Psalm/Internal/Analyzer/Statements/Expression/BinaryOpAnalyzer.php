@@ -274,16 +274,18 @@ final class BinaryOpAnalyzer
                 && (!UnionTypeComparator::isContainedBy($codebase, $stmt_left_type, $stmt_right_type)
                     || !UnionTypeComparator::isContainedBy($codebase, $stmt_right_type, $stmt_left_type))
                 // It is okay if both sides implement \DateTimeInterface
-                && !(UnionTypeComparator::isContainedBy(
-                    $codebase,
-                    $stmt_left_type,
-                    new Union([new TNamedObject(DateTimeInterface::class)]),
+                && !(
+                    UnionTypeComparator::isContainedBy(
+                        $codebase,
+                        $stmt_left_type,
+                        new Union([new TNamedObject(DateTimeInterface::class)]),
                     )
                     && UnionTypeComparator::isContainedBy(
                         $codebase,
                         $stmt_right_type,
                         new Union([new TNamedObject(DateTimeInterface::class)]),
-                    ))
+                    )
+                )
             ) {
                 IssueBuffer::maybeAdd(
                     new InvalidOperand(
