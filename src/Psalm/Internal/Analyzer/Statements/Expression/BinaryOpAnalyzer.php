@@ -260,12 +260,12 @@ final class BinaryOpAnalyzer
             }
 
 
-            if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Equal
-                || $stmt instanceof PhpParser\Node\Expr\BinaryOp\NotEqual
-                || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Greater
-                || $stmt instanceof PhpParser\Node\Expr\BinaryOp\GreaterOrEqual
-                || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Smaller
-                || $stmt instanceof PhpParser\Node\Expr\BinaryOp\SmallerOrEqual
+            if (($stmt instanceof PhpParser\Node\Expr\BinaryOp\Equal
+                    || $stmt instanceof PhpParser\Node\Expr\BinaryOp\NotEqual
+                    || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Greater
+                    || $stmt instanceof PhpParser\Node\Expr\BinaryOp\GreaterOrEqual
+                    || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Smaller
+                    || $stmt instanceof PhpParser\Node\Expr\BinaryOp\SmallerOrEqual)
                 && $statements_analyzer->getCodebase()->config->strict_binary_operands
                 && $stmt_left_type
                 && $stmt_right_type
