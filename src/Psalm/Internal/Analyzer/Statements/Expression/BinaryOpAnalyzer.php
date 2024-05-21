@@ -260,7 +260,6 @@ final class BinaryOpAnalyzer
                 );
             }
 
-
             if (($stmt instanceof PhpParser\Node\Expr\BinaryOp\Equal
                     || $stmt instanceof PhpParser\Node\Expr\BinaryOp\NotEqual
                     || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Greater
