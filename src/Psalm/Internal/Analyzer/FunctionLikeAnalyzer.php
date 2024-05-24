@@ -1995,6 +1995,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 if (!$has_override_attribute
                     && $codebase->config->ensure_override_attribute
                     && $overridden_method_ids
+                    && $storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PRIVATE
                     && $storage->cased_name !== '__construct'
                     && ($storage->cased_name !== '__toString'
                        || isset($appearing_class_storage->direct_class_interfaces['stringable']))
