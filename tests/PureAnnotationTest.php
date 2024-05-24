@@ -542,6 +542,30 @@ final class PureAnnotationTest extends TestCase
                     Date2::tt();
                     ',
             ],
+            'Issue #10974 - https://github.com/vimeo/psalm/issues/10974' => [
+                'code' => '<?php
+
+                    class Foo
+                    {
+                        private int $int;
+
+                        /** @psalm-pure */
+                        public function __construct(int $int)
+                        {
+                            $this->int = $int;
+                        }
+                    }
+
+                    class Factory
+                    {
+                        /** @psalm-pure */
+                        public function getFoo(): Foo
+                        {
+                            return new Foo(42);
+                        }
+                    }
+                    ',
+            ],
         ];
     }
 
