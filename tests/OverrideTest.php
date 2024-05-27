@@ -98,7 +98,7 @@ class OverrideTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.3',
             ],
-            'Issue #10982 - https://github.com/vimeo/psalm/issues/10982' => [
+            'Test case #10982 - https://github.com/vimeo/psalm/issues/10982' => [
                 'code' => '
                     <?php
                     trait Foo
@@ -122,6 +122,39 @@ class OverrideTest extends TestCase
                             $this->inTrait();
                         }
                     }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'Test case #10989 - https://github.com/vimeo/psalm/pull/10989#discussion_r1615149365' => [
+                'code' => '
+                    <?php
+
+                    trait Foo
+                    {
+                        protected function inTrait(): void { echo "foobar\n"; }
+                    }
+
+                    class A {
+                        use Foo;
+
+                        public function bar(): void {
+                            $this->inTrait();
+                        }
+                    }
+
+                    class B extends A {
+                        use Foo;
+
+                        function baz(): void
+                        {
+                            $this->inTrait();
+                        }
+                    }
+
+                    $b = new B();
+                    $b->baz();
                 ',
                 'assertions' => [],
                 'ignored_issues' => [],
