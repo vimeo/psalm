@@ -13501,7 +13501,7 @@ return [
     'preg_last_error' => ['int'],
     'preg_match' => ['0|1|false', 'pattern'=>'string', 'subject'=>'string', '&w_matches='=>'string[]', 'flags='=>'0', 'offset='=>'int'],
     'preg_match\'1' => ['0|1|false', 'pattern'=>'string', 'subject'=>'string', '&w_matches='=>'array', 'flags='=>'int', 'offset='=>'int'],
-    'preg_match_all' => ['0|positive-int|false', 'pattern'=>'string', 'subject'=>'string', '&w_matches='=>'array', 'flags='=>'int', 'offset='=>'int'],
+    'preg_match_all' => ['int<0,max>|false', 'pattern'=>'string', 'subject'=>'string', '&w_matches='=>'array', 'flags='=>'int', 'offset='=>'int'],
     'preg_quote' => ['string', 'str'=>'string', 'delimiter='=>'string'],
     'preg_replace' => ['string|string[]|null', 'pattern'=>'string|array', 'replacement'=>'string|array', 'subject'=>'string|array', 'limit='=>'int', '&w_count='=>'int'],
     'preg_replace_callback' => ['string|null', 'pattern'=>'string|array', 'callback'=>'callable(string[]):string', 'subject'=>'string', 'limit='=>'int', '&w_count='=>'int'],
