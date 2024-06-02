@@ -336,6 +336,7 @@ final class ProjectAnalyzer
             'summary.json' => Report::TYPE_JSON_SUMMARY,
             'junit.xml' => Report::TYPE_JUNIT,
             '.xml' => Report::TYPE_XML,
+            '.sarif.json' => Report::TYPE_SARIF,    // must be place here to avoid JSON type detection
             '.json' => Report::TYPE_JSON,
             '.txt' => Report::TYPE_TEXT,
             '.emacs' => Report::TYPE_EMACS,
