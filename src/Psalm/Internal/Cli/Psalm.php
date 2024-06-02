@@ -1265,6 +1265,7 @@ final class Psalm
         sort($formats);
         $outputFormats = wordwrap(implode(', ', $formats), 75, "\n            ");
 
+        /** @psalm-suppress ImpureMethodCall */
         $reports = array_keys(Report::getMapping());
         sort($reports);
         $reportFormats = wordwrap('"' . implode('", "', $reports) . '"', 75, "\n        ");

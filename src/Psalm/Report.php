@@ -98,6 +98,9 @@ abstract class Report
 
     abstract public function create(): string;
 
+    /**
+     * @return array<string, self::TYPE_*>
+     */
     public static function getMapping(): array
     {
         return [
