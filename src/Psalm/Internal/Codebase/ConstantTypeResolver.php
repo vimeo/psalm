@@ -58,7 +58,7 @@ final class ConstantTypeResolver
     public static function resolve(
         ClassLikes $classlikes,
         UnresolvedConstantComponent $c,
-        StatementsAnalyzer $statements_analyzer = null,
+        ?StatementsAnalyzer $statements_analyzer = null,
         array $visited_constant_ids = []
     ): Atomic {
         $c_id = spl_object_id($c);

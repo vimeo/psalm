@@ -48,6 +48,7 @@ use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidEnumBackingType;
 use Psalm\Issue\InvalidEnumCaseValue;
 use Psalm\Issue\InvalidTypeImport;
+use Psalm\Issue\MissingClassConstType;
 use Psalm\Issue\MissingDocblockType;
 use Psalm\Issue\MissingPropertyType;
 use Psalm\Issue\ParseError;
@@ -82,6 +83,7 @@ use function ltrim;
 use function preg_match;
 use function preg_replace;
 use function preg_split;
+use function sprintf;
 use function strtolower;
 use function trim;
 use function usort;
@@ -434,9 +436,11 @@ final class ClassLikeNodeScanner
                             try {
                                 $type_string = CommentAnalyzer::splitDocLine($type_string)[0];
                             } catch (DocblockParseException $e) {
-                                throw new DocblockParseException(
-                                    $type_string . ' is not a valid type: ' . $e->getMessage(),
+                                $storage->docblock_issues[] = new InvalidDocblock(
+                                    $e->getMessage() . ' in docblock for ' . $fq_classlike_name,
+                                    $name_location ?? $class_location,
                                 );
+                                continue;
                             }
                             $type_string = CommentAnalyzer::sanitizeDocblockType($type_string);
                             try {
@@ -1415,6 +1419,23 @@ final class ClassLikeNodeScanner
                 $suppressed_issues,
                 $description,
             );
+
+
+            if ($this->codebase->analysis_php_version_id >= 8_03_00
+                && $stmt->type === null
+            ) {
+                IssueBuffer::maybeAdd(
+                    new MissingClassConstType(
+                        sprintf(
+                            'Class constant "%s::%s" should have a declared type.',
+                            $storage->name,
+                            $const->name->name,
+                        ),
+                        new CodeLocation($this->file_scanner, $const),
+                    ),
+                    $suppressed_issues,
+                );
+            }
 
             if ($exists) {
                 $existing_constants[$const->name->name] = $constant_storage;

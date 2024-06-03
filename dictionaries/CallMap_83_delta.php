@@ -117,6 +117,14 @@ return [
       'old' => ['string|false', 'haystack'=>'string', 'needle'=>'string'],
       'new' => ['string|false', 'haystack'=>'string', 'needle'=>'string', 'before_needle='=>'bool'],
     ],
+    'get_class' => [
+        'old' => ['class-string', 'object='=>'object'],
+        'new' => ['class-string', 'object'=>'object'],
+    ],
+    'get_parent_class' => [
+        'old' => ['class-string|false', 'object_or_class='=>'object|class-string'],
+        'new' => ['class-string|false', 'object_or_class'=>'object|class-string'],
+    ],
   ],
 
   'removed' => [

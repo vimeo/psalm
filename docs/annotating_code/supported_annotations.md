@@ -252,9 +252,10 @@ $b = $a->bar(); // this call fails
 
 ### `@psalm-internal`
 
-Used to mark a class, property or function as internal to a given namespace. Psalm treats this slightly differently to
-the PHPDoc `@internal` tag. For `@internal`, an issue is raised if the calling code is in a namespace completely
-unrelated to the namespace of the calling code, i.e. not sharing the first element of the namespace.
+Used to mark a class, property or function as internal to a given namespace or class or even method. 
+Psalm treats this slightly differently to the PHPDoc `@internal` tag. For `@internal`,
+an issue is raised if the calling code is in a namespace completely unrelated to the namespace of the calling code,
+i.e. not sharing the first element of the namespace.
 
 In contrast for `@psalm-internal`, the docblock line must specify a namespace. An issue is raised if the calling code
 is not within the given namespace.
@@ -272,7 +273,15 @@ namespace A\B {
 namespace A\B\C {
     class Bat {
         public function batBat(): void {
-            $a = new \A\B\Foo();  // this is fine
+            $a = new \A\B\Foo(); // this is fine
+        }
+    }
+}
+
+namespace A {
+    class B {
+        public function batBat(): void {
+            $a = new \A\B\Foo(); // this is fine
         }
     }
 }
@@ -280,7 +289,28 @@ namespace A\B\C {
 namespace A\C {
     class Bat {
         public function batBat(): void {
-            $a = new \A\B\Foo();  // error
+            $a = new \A\B\Foo(); // error
+        }
+    }
+}
+
+namespace X {
+    class Foo {        
+        /**
+         * @psalm-internal Y\Bat::batBat
+         */
+        public static function barBar(): void {
+        }
+    }
+}
+
+namespace Y {
+    class Bat {
+        public function batBat() : void {
+            \X\Foo::barBar(); // this is fine
+        }
+        public function fooFoo(): void {
+            \X\Foo::barBar(); // error
         }
     }
 }

@@ -43,7 +43,7 @@ final class AfterMethodCallAnalysisEvent
         StatementsSource $statements_source,
         Codebase $codebase,
         array $file_replacements = [],
-        Union $return_type_candidate = null
+        ?Union $return_type_candidate = null
     ) {
         $this->expr = $expr;
         $this->method_id = $method_id;

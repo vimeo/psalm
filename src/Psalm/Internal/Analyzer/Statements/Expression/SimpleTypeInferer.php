@@ -36,7 +36,6 @@ use function array_merge;
 use function array_values;
 use function count;
 use function is_string;
-use function preg_match;
 use function strtolower;
 
 use const PHP_INT_MAX;
@@ -56,7 +55,7 @@ final class SimpleTypeInferer
         NodeDataProvider $nodes,
         PhpParser\Node\Expr $stmt,
         Aliases $aliases,
-        FileSource $file_source = null,
+        ?FileSource $file_source = null,
         ?array $existing_class_constants = null,
         ?string $fq_classlike_name = null
     ): ?Union {
@@ -544,7 +543,7 @@ final class SimpleTypeInferer
         NodeDataProvider $nodes,
         PhpParser\Node\Expr\Array_ $stmt,
         Aliases $aliases,
-        FileSource $file_source = null,
+        ?FileSource $file_source = null,
         ?array $existing_class_constants = null,
         ?string $fq_classlike_name = null
     ): ?Union {
@@ -628,7 +627,7 @@ final class SimpleTypeInferer
         ArrayCreationInfo $array_creation_info,
         PhpParser\Node\Expr\ArrayItem $item,
         Aliases $aliases,
-        FileSource $file_source = null,
+        ?FileSource $file_source = null,
         ?array $existing_class_constants = null,
         ?string $fq_classlike_name = null
     ): bool {
@@ -671,11 +670,7 @@ final class SimpleTypeInferer
                     $key_type = Type::getString('');
                 }
                 if ($item->key instanceof PhpParser\Node\Scalar\String_
-                    && preg_match('/^(0|[1-9][0-9]*)$/', $item->key->value)
-                    && (
-                        (int) $item->key->value < PHP_INT_MAX ||
-                        $item->key->value === (string) PHP_INT_MAX
-                    )
+                    && ArrayAnalyzer::getLiteralArrayKeyInt($item->key->value) !== false
                 ) {
                     $key_type = Type::getInt(false, (int) $item->key->value);
                 }
@@ -687,9 +682,10 @@ final class SimpleTypeInferer
 
                 if ($key_type->isSingleStringLiteral()) {
                     $item_key_literal_type = $key_type->getSingleStringLiteral();
-                    $item_key_value = $item_key_literal_type->value;
+                    $string_to_int = ArrayAnalyzer::getLiteralArrayKeyInt($item_key_literal_type->value);
+                    $item_key_value = $string_to_int === false ? $item_key_literal_type->value : $string_to_int;
 
-                    if ($item_key_literal_type instanceof TLiteralClassString) {
+                    if (is_string($item_key_value) && $item_key_literal_type instanceof TLiteralClassString) {
                         $array_creation_info->class_strings[$item_key_value] = true;
                     }
                 } elseif ($key_type->isSingleIntLiteral()) {

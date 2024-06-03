@@ -35,7 +35,7 @@ final class HighOrderFunctionArgInfo
     public function __construct(
         string $type,
         FunctionLikeStorage $function_storage,
-        ClassLikeStorage $class_storage = null
+        ?ClassLikeStorage $class_storage = null
     ) {
         $this->type = $type;
         $this->function_storage = $function_storage;

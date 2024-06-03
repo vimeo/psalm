@@ -12,6 +12,7 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_flip;
 use function array_search;
 use function in_array;
 use function is_array;
@@ -48,7 +49,16 @@ class FilterInputReturnTypeProvider implements FunctionReturnTypeProviderInterfa
             throw new UnexpectedValueException('Expected StatementsAnalyzer not StatementsSource');
         }
 
-        $call_args     = $event->getCallArgs();
+        $arg_names = array_flip(['type', 'var_name', 'filter', 'options']);
+        $call_args = [];
+        foreach ($event->getCallArgs() as $idx => $arg) {
+            if (isset($arg->name)) {
+                $call_args[$arg_names[$arg->name->name]] = $arg;
+            } else {
+                $call_args[$idx] = $arg;
+            }
+        }
+
         $function_id   = $event->getFunctionId();
         $code_location = $event->getCodeLocation();
         $codebase      = $statements_analyzer->getCodebase();

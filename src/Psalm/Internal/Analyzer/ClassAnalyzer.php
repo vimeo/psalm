@@ -870,7 +870,12 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 $property_type = $property_storage->type;
 
                 if (!$property_type->isMixed()
-                    && !$property_storage->is_promoted
+                    && (!$property_storage->is_promoted
+                        || (strtolower($fq_class_name) !== strtolower($property_class_name)
+                            && isset($storage->declaring_method_ids['__construct'])
+                            && strtolower(
+                                $storage->declaring_method_ids['__construct']->fq_class_name,
+                            ) === strtolower($fq_class_name)))
                     && !$property_storage->has_default
                     && !($property_type->isNullable() && $property_type->from_docblock)
                 ) {
@@ -881,7 +886,13 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     ]);
                 }
             } else {
-                if (!$property_storage->has_default && !$property_storage->is_promoted) {
+                if (!$property_storage->has_default
+                    && (!$property_storage->is_promoted
+                        || (strtolower($fq_class_name) !== strtolower($property_class_name)
+                            && isset($storage->declaring_method_ids['__construct'])
+                            && strtolower(
+                                $storage->declaring_method_ids['__construct']->fq_class_name,
+                            ) === strtolower($fq_class_name)))) {
                     $property_type = new Union([new TMixed()], [
                         'initialized' => false,
                         'from_property' => true,
@@ -1095,6 +1106,13 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
 
             if ($property->is_static) {
                 continue;
+            }
+
+            if ($property->is_promoted
+                && strtolower($property_class_name) !== $fq_class_name_lc
+                && isset($storage->declaring_method_ids['__construct'])
+                && strtolower($storage->declaring_method_ids['__construct']->fq_class_name) === $fq_class_name_lc) {
+                $property_is_initialized = false;
             }
 
             if ($property->has_default || $property_is_initialized) {

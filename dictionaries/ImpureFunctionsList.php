@@ -254,4 +254,9 @@ return [
     'openssl_pkcs12_export_to_file' => true,
     'openssl_pkey_export_to_file' => true,
     'openssl_x509_export_to_file' => true,
+    // xml
+    'xml_parser_set_option' => true,
+    'xml_parser_free' => true,
+    // mail
+    'mail' => true,
 ];

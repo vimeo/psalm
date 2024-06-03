@@ -1211,6 +1211,74 @@ return [
       'old' => ['int|false', '&rw_read'=>'?resource[]', '&rw_write'=>'?resource[]', '&rw_except'=>'?resource[]', 'seconds'=>'?int', 'microseconds='=>'int'],
       'new' => ['int|false', '&rw_read'=>'?resource[]', '&rw_write'=>'?resource[]', '&rw_except'=>'?resource[]', 'seconds'=>'?int', 'microseconds='=>'?int'],
     ],
+    'mb_check_encoding' => [
+        'old' => ['bool', 'value='=>'array|string|null', 'encoding='=>'string|null'],
+        'new' => ['bool', 'value'=>'array|string', 'encoding='=>'string|null'],
+    ],
+    'ctype_alnum' => [
+        'old' => ['bool', 'text'=>'string|int'],
+        'new' => ['bool', 'text'=>'string'],
+    ],
+    'ctype_alpha' => [
+        'old' => ['bool', 'text'=>'string|int'],
+        'new' => ['bool', 'text'=>'string'],
+    ],
+    'ctype_cntrl' => [
+        'old' => ['bool', 'text'=>'string|int'],
+        'new' => ['bool', 'text'=>'string'],
+    ],
+    'ctype_digit' => [
+        'old' => ['bool', 'text'=>'string|int'],
+        'new' => ['bool', 'text'=>'string'],
+    ],
+    'ctype_graph' => [
+        'old' => ['bool', 'text'=>'string|int'],
+        'new' => ['bool', 'text'=>'string'],
+    ],
+    'ctype_lower' => [
+        'old' => ['bool', 'text'=>'string|int'],
+        'new' => ['bool', 'text'=>'string'],
+    ],
+    'ctype_print' => [
+        'old' => ['bool', 'text'=>'string|int'],
+        'new' => ['bool', 'text'=>'string'],
+    ],
+    'ctype_punct' => [
+        'old' => ['bool', 'text'=>'string|int'],
+        'new' => ['bool', 'text'=>'string'],
+    ],
+    'ctype_space' => [
+        'old' => ['bool', 'text'=>'string|int'],
+        'new' => ['bool', 'text'=>'string'],
+    ],
+    'ctype_upper' => [
+        'old' => ['bool', 'text'=>'string|int'],
+        'new' => ['bool', 'text'=>'string'],
+    ],
+    'ctype_xdigit' => [
+        'old' => ['bool', 'text'=>'string|int'],
+        'new' => ['bool', 'text'=>'string'],
+    ],
+    'key' => [
+        'old' => ['int|string|null', 'array'=>'array|object'],
+        'new' => ['int|string|null', 'array'=>'array'],
+    ],
+    'current' => [
+        'old' => ['mixed|false', 'array'=>'array|object'],
+        'new' => ['mixed|false', 'array'=>'array'],
+    ],
+    'next' => [
+        'old' => ['mixed', '&r_array'=>'array|object'],
+        'new' => ['mixed', '&r_array'=>'array'],
+    ],
+    'prev' => [
+        'old' => ['mixed', '&r_array'=>'array|object'],
+        'new' => ['mixed', '&r_array'=>'array'],
+    ],
+    'reset' => [
+        'old' => ['mixed|false', '&r_array'=>'array|object'],
+        'new' => ['mixed|false', '&r_array'=>'array'],
+    ],
   ],
 
   'removed' => [

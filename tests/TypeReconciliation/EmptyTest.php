@@ -231,6 +231,8 @@ class EmptyTest extends TestCase
                     function foo(array $o) : void {
                         if (empty($o[0]) && empty($o[1])) {}
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'multipleEmptiesInConditionWithMixedOffset' => [
                 'code' => '<?php
@@ -315,6 +317,8 @@ class EmptyTest extends TestCase
                             if (empty($data[Foo::ONE])) {}
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'doubleEmptyCheckTwoArrays' => [
                 'code' => '<?php
@@ -330,6 +334,8 @@ class EmptyTest extends TestCase
                     function foo(array $arr) : void {
                         if (empty($arr["a"]) && empty($arr["b"])) {}
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'doubleEmptyCheckOnTKeyedArrayVariableOffsets' => [
                 'code' => '<?php
@@ -340,6 +346,8 @@ class EmptyTest extends TestCase
 
                         if (empty($arr[$i]) && empty($arr[$j])) {}
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'checkArrayEmptyUnknownRoot' => [
                 'code' => '<?php
@@ -626,6 +634,11 @@ class EmptyTest extends TestCase
                     '$x===' => 'true',
                 ],
             ],
+            'emptyArrayFetch' => [
+                'code' => '<?php
+                    /** @var array<true> $a */
+                    if (empty($a["a"])) {}',
+            ],
         ];
     }
 
@@ -757,6 +770,13 @@ class EmptyTest extends TestCase
                         echo "abc";
                     }',
                 'error_message' => 'RedundantConditionGivenDocblockType',
+            ],
+            'redundantEmptyArrayFetch' => [
+                'code' => '<?php
+                    /** @var array<true> $a */;
+                    assert(isset($a["a"]));
+                    if (empty($a["a"])) {}',
+                'error_message' => 'DocblockTypeContradiction',
             ],
         ];
     }
