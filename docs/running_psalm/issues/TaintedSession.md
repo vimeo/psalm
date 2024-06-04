@@ -1,4 +1,4 @@
-# TaintedExtract
+# TaintedSession
 
 Emitted when user-controlled input can be passed into the `$_SESSION` array.
 
