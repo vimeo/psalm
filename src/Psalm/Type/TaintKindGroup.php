@@ -28,5 +28,6 @@ final class TaintKindGroup
         TaintKind::INPUT_XPATH,
         TaintKind::INPUT_SLEEP,
         TaintKind::INPUT_EXTRACT,
+        TaintKind::INPUT_SESSION,
     ];
 }

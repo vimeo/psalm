@@ -21,6 +21,7 @@ use Psalm\Issue\TaintedHtml;
 use Psalm\Issue\TaintedInclude;
 use Psalm\Issue\TaintedLdap;
 use Psalm\Issue\TaintedSSRF;
+use Psalm\Issue\TaintedSession;
 use Psalm\Issue\TaintedShell;
 use Psalm\Issue\TaintedSleep;
 use Psalm\Issue\TaintedSql;
@@ -472,6 +473,15 @@ final class TaintFlowGraph extends DataFlowGraph
                             case TaintKind::INPUT_EXTRACT:
                                 $issue = new TaintedExtract(
                                     'Detected tainted extract',
+                                    $issue_location,
+                                    $issue_trace,
+                                    $path,
+                                );
+                                break;
+
+                            case TaintKind::INPUT_SESSION:
+                                $issue = new TaintedSession(
+                                    'Detected tainted session',
                                     $issue_location,
                                     $issue_trace,
                                     $path,
