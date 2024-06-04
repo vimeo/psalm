@@ -296,6 +296,7 @@ Level 5 and above allows a more non-verifiable code, and higher levels are even 
  - [TaintedInclude](issues/TaintedInclude.md)
  - [TaintedInput](issues/TaintedInput.md)
  - [TaintedLdap](issues/TaintedLdap.md)
+ - [TaintedSession](issues/TaintedSession.md)
  - [TaintedShell](issues/TaintedShell.md)
  - [TaintedSleep](issues/TaintedSleep.md)
  - [TaintedSql](issues/TaintedSql.md)

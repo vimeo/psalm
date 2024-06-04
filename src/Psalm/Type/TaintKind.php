@@ -25,6 +25,7 @@ final class TaintKind
     public const INPUT_XPATH = 'xpath';
     public const INPUT_SLEEP = 'sleep';
     public const INPUT_EXTRACT = 'extract';
+    public const INPUT_SESSION = 'session';
     public const USER_SECRET = 'user_secret';
     public const SYSTEM_SECRET = 'system_secret';
 }

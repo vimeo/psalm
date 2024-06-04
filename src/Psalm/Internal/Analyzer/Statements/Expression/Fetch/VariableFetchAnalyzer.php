@@ -15,6 +15,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\DataFlow\TaintSource;
+use Psalm\Internal\DataFlow\TaintSink;
 use Psalm\Issue\ImpureVariable;
 use Psalm\Issue\InvalidScope;
 use Psalm\Issue\PossiblyUndefinedGlobalVariable;
@@ -33,6 +34,7 @@ use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TString;
+use Psalm\Type\TaintKind;
 use Psalm\Type\TaintKindGroup;
 use Psalm\Type\Union;
 
@@ -532,6 +534,19 @@ final class VariableFetchAnalyzer
                 $type = $type->setParentNodes([
                     $server_taint_source->id => $server_taint_source,
                 ]);
+            }
+            if ($var_name === '$_SESSION') {
+                $sink_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
+
+                $echo_param_sink = TaintSink::getForAssignment($var_name, $sink_location);
+
+                $echo_param_sink->taints = [
+                    TaintKind::INPUT_SESSION,
+                    TaintKind::USER_SECRET,
+                    TaintKind::SYSTEM_SECRET,
+                ];
+
+                $statements_analyzer->data_flow_graph->addSink($echo_param_sink);
             }
         }
     }
