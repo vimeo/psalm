@@ -727,6 +727,30 @@ return [
       'old' => ['bool', 'statement' => 'mysqli_stmt'],
       'new' => ['bool', 'statement' => 'mysqli_stmt', 'params=' => 'list<mixed>|null'],
     ],
+    'mysqli_fetch_field' => [
+      'old' => ['object{name:string,orgname:string,table:string,orgtable:string,max_length:int,length:int,charsetnr:int,flags:int,type:int,decimals:int,db:string,def:\'\',catalog:\'def\'}|false', 'result'=>'mysqli_result'],
+      'new' => ['object{name:string,orgname:string,table:string,orgtable:string,max_length:0,length:int,charsetnr:int,flags:int,type:int,decimals:int,db:string,def:\'\',catalog:\'def\'}|false', 'result'=>'mysqli_result'],
+    ],
+    'mysqli_fetch_field_direct' => [
+      'old' => ['object{name:string,orgname:string,table:string,orgtable:string,max_length:int,length:int,charsetnr:int,flags:int,type:int,decimals:int,db:string,def:\'\',catalog:\'def\'}|false', 'result'=>'mysqli_result', 'index'=>'int'],
+      'new' => ['object{name:string,orgname:string,table:string,orgtable:string,max_length:0,length:int,charsetnr:int,flags:int,type:int,decimals:int,db:string,def:\'\',catalog:\'def\'}|false', 'result'=>'mysqli_result', 'index'=>'int'],
+    ],
+    'mysqli_fetch_fields' => [
+      'old' => ['list<object{name:string,orgname:string,table:string,orgtable:string,max_length:int,length:int,charsetnr:int,flags:int,type:int,decimals:int,db:string,def:\'\',catalog:\'def\'}>', 'result'=>'mysqli_result'],
+      'new' => ['list<object{name:string,orgname:string,table:string,orgtable:string,max_length:0,length:int,charsetnr:int,flags:int,type:int,decimals:int,db:string,def:\'\',catalog:\'def\'}>', 'result'=>'mysqli_result'],
+    ],
+    'mysqli_result::fetch_field' => [
+      'old' => ['object{name:string,orgname:string,table:string,orgtable:string,max_length:int,length:int,charsetnr:int,flags:int,type:int,decimals:int,db:string,def:\'\',catalog:\'def\'}|false'],
+      'new' => ['object{name:string,orgname:string,table:string,orgtable:string,max_length:0,length:int,charsetnr:int,flags:int,type:int,decimals:int,db:string,def:\'\',catalog:\'def\'}|false'],
+    ],
+    'mysqli_result::fetch_field_direct' => [
+      'old' => ['object{name:string,orgname:string,table:string,orgtable:string,max_length:int,length:int,charsetnr:int,flags:int,type:int,decimals:int,db:string,def:\'\',catalog:\'def\'}|false', 'index'=>'int'],
+      'new' => ['object{name:string,orgname:string,table:string,orgtable:string,max_length:0,length:int,charsetnr:int,flags:int,type:int,decimals:int,db:string,def:\'\',catalog:\'def\'}|false', 'index'=>'int'],
+    ],
+    'mysqli_result::fetch_fields' => [
+      'old' => ['list<object{name:string,orgname:string,table:string,orgtable:string,max_length:int,length:int,charsetnr:int,flags:int,type:int,decimals:int,db:string,def:\'\',catalog:\'def\'}>'],
+      'new' => ['list<object{name:string,orgname:string,table:string,orgtable:string,max_length:0,length:int,charsetnr:int,flags:int,type:int,decimals:int,db:string,def:\'\',catalog:\'def\'}>'],
+    ],
     'mysqli_stmt_execute' => [
       'old' => ['bool', 'statement' => 'mysqli_stmt'],
       'new' => ['bool', 'statement' => 'mysqli_stmt', 'params=' => 'list<mixed>|null'],
