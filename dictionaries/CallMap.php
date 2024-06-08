@@ -6446,7 +6446,7 @@ return [
 'litespeed_request_headers' => ['array'],
 'litespeed_response_headers' => ['array'],
 'Locale::acceptFromHttp' => ['string|false', 'header'=>'string'],
-'Locale::canonicalize' => ['string', 'locale'=>'string'],
+'Locale::canonicalize' => ['?string', 'locale'=>'string'],
 'Locale::composeLocale' => ['string', 'subtags'=>'array'],
 'Locale::filterMatches' => ['?bool', 'languageTag'=>'string', 'locale'=>'string', 'canonicalize='=>'bool'],
 'Locale::getAllVariants' => ['array', 'locale'=>'string'],
