@@ -198,7 +198,6 @@ class InternalCallMapHandlerTest extends TestCase
         'infiniteiterator::getinneriterator' => ['8.1', '8.2', '8.3'],
         'iteratoriterator::getinneriterator' => ['8.1', '8.2', '8.3'],
         'limititerator::getinneriterator' => ['8.1', '8.2', '8.3'],
-        'locale::canonicalize' => ['8.1', '8.2', '8.3'],
         'locale::getallvariants' => ['8.1', '8.2', '8.3'],
         'locale::getkeywords' => ['8.1', '8.2', '8.3'],
         'locale::getprimarylanguage' => ['8.1', '8.2', '8.3'],
