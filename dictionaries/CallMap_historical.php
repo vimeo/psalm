@@ -3393,7 +3393,7 @@ return [
     'LimitIterator::seek' => ['int', 'offset'=>'int'],
     'LimitIterator::valid' => ['bool'],
     'Locale::acceptFromHttp' => ['string|false', 'header'=>'string'],
-    'Locale::canonicalize' => ['string', 'locale'=>'string'],
+    'Locale::canonicalize' => ['?string', 'locale'=>'string'],
     'Locale::composeLocale' => ['string', 'subtags'=>'array'],
     'Locale::filterMatches' => ['?bool', 'languageTag'=>'string', 'locale'=>'string', 'canonicalize='=>'bool'],
     'Locale::getAllVariants' => ['array', 'locale'=>'string'],
