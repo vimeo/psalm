@@ -33,8 +33,10 @@ use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonEmptyLowercaseString;
+use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TNonFalsyString;
+use Psalm\Type\Atomic\TNonspecificLiteralString;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TNumericString;
@@ -787,8 +789,26 @@ abstract class Type
 
             //if a type is contained by the other, the intersection is the narrowest type
             if (!$intersection_performed) {
-                $type_1_in_2 = UnionTypeComparator::isContainedBy($codebase, $type_1, $type_2);
-                $type_2_in_1 = UnionTypeComparator::isContainedBy($codebase, $type_2, $type_1);
+                $type_1_in_2 = UnionTypeComparator::isContainedBy(
+                    $codebase,
+                    $type_1,
+                    $type_2,
+                    false,
+                    false,
+                    null,
+                    $allow_interface_equality,
+                    $allow_float_int_equality,
+                );
+                $type_2_in_1 = UnionTypeComparator::isContainedBy(
+                    $codebase,
+                    $type_2,
+                    $type_1,
+                    false,
+                    false,
+                    null,
+                    $allow_interface_equality,
+                    $allow_float_int_equality,
+                );
                 if ($type_1_in_2) {
                     $intersection_performed = true;
                     $combined_type = $type_1->getBuilder();
@@ -908,6 +928,13 @@ abstract class Type
                 )) {
                     $intersection_atomic = $type_1_atomic;
                     $wider_type = $type_2_atomic;
+                    $intersection_performed = true;
+                } elseif (($type_1_atomic instanceof TNonspecificLiteralString
+                    && $type_2_atomic instanceof TNonEmptyString)
+                    || ($type_1_atomic instanceof TNonEmptyString
+                    && $type_2_atomic instanceof TNonspecificLiteralString)
+                ) {
+                    $intersection_atomic = new TNonEmptyNonspecificLiteralString();
                     $intersection_performed = true;
                 }
 

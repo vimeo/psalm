@@ -18,7 +18,7 @@ interface Traversable {
  *
  * @template-implements Traversable<TKey, TValue>
  */
-class Generator implements Traversable {
+final class Generator implements Traversable {
     /**
      * @psalm-ignore-nullable-return
      * @return ?TValue Can return any type.
