@@ -17,7 +17,7 @@ function impure(array $a) : array {
 }
 
 /** @psalm-pure */
-function filterOdd(array $a) : void {
-    impure($a);
+function filterOdd(array $a) : array {
+    return impure($a);
 }
 ```
