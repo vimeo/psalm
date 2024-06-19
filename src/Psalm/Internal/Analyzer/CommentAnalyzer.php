@@ -27,6 +27,7 @@ use UnexpectedValueException;
 
 use function count;
 use function is_string;
+use function preg_grep;
 use function preg_match;
 use function preg_replace;
 use function preg_split;
@@ -196,6 +197,8 @@ final class CommentAnalyzer
         if (!$var_comments
             && (isset($parsed_docblock->tags['deprecated'])
                 || isset($parsed_docblock->tags['internal'])
+                || (isset($parsed_docblock->tags['access'])
+                    && preg_grep('/^private(?>\s|$)/', $parsed_docblock->tags['access']))
                 || isset($parsed_docblock->tags['readonly'])
                 || isset($parsed_docblock->tags['psalm-readonly'])
                 || isset($parsed_docblock->tags['psalm-readonly-allow-private-mutation'])
@@ -220,7 +223,11 @@ final class CommentAnalyzer
         ParsedDocblock $parsed_docblock
     ): void {
         $var_comment->deprecated = isset($parsed_docblock->tags['deprecated']);
-        $var_comment->internal = isset($parsed_docblock->tags['internal']);
+        if (isset($parsed_docblock->tags['internal'])
+            || (isset($parsed_docblock->tags['access'])
+                && preg_grep('/^private(?>\s|$)/', $parsed_docblock->tags['access']))) {
+            $var_comment->internal = true;
+        }
         $var_comment->readonly = isset($parsed_docblock->tags['readonly'])
             || isset($parsed_docblock->tags['psalm-readonly'])
             || isset($parsed_docblock->tags['psalm-readonly-allow-private-mutation']);

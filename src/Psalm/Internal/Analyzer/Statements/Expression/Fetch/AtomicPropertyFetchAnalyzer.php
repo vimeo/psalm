@@ -456,19 +456,9 @@ final class AtomicPropertyFetchAnalyzer
         if (isset($declaring_class_storage->properties[$prop_name])) {
             self::checkPropertyDeprecation($prop_name, $declaring_property_class, $stmt, $statements_analyzer);
 
-            $property_storage = $declaring_class_storage->properties[$prop_name];
+            self::checkPropertyInternal($prop_name, $declaring_property_class, $stmt, $statements_analyzer, $context);
 
-            if ($context->self && !NamespaceAnalyzer::isWithinAny($context->self, $property_storage->internal)) {
-                IssueBuffer::maybeAdd(
-                    new InternalProperty(
-                        $property_id . ' is internal to ' . InternalClass::listToPhrase($property_storage->internal)
-                            . ' but called from ' . $context->self,
-                        new CodeLocation($statements_analyzer->getSource(), $stmt),
-                        $property_id,
-                    ),
-                    $statements_analyzer->getSuppressedIssues(),
-                );
-            }
+            $property_storage = $declaring_class_storage->properties[$prop_name];
 
             if ($context->inside_unset) {
                 InstancePropertyAssignmentAnalyzer::trackPropertyImpurity(
@@ -563,6 +553,42 @@ final class AtomicPropertyFetchAnalyzer
                 IssueBuffer::maybeAdd(
                     new DeprecatedProperty(
                         $property_id . ' is marked deprecated',
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                        $property_id,
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            }
+        }
+    }
+
+    /**
+     * @param PropertyFetch|StaticPropertyFetch $stmt
+     */
+    public static function checkPropertyInternal(
+        string $prop_name,
+        string $declaring_property_class,
+        PhpParser\Node\Expr $stmt,
+        StatementsAnalyzer $statements_analyzer,
+        Context $context
+    ): void {
+        $property_id = $declaring_property_class . '::$' . $prop_name;
+        $codebase = $statements_analyzer->getCodebase();
+        $declaring_class_storage = $codebase->classlike_storage_provider->get(
+            $declaring_property_class,
+        );
+
+        if (isset($declaring_class_storage->properties[$prop_name])) {
+            $property_storage = $declaring_class_storage->properties[$prop_name];
+
+            $caller_identifier = $context->self ?? $statements_analyzer->getNamespace();
+
+            if ($caller_identifier !== null
+                && !NamespaceAnalyzer::isWithinAny($caller_identifier, $property_storage->internal)) {
+                IssueBuffer::maybeAdd(
+                    new InternalProperty(
+                        $property_id . ' is internal to ' . InternalClass::listToPhrase($property_storage->internal)
+                        . ' but called from ' . ($caller_identifier ?: 'root namespace'),
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                         $property_id,
                     ),
