@@ -20,6 +20,9 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_search;
+use function array_slice;
+use function in_array;
 use function strtolower;
 
 /**
@@ -155,7 +158,32 @@ final class InterfaceAnalyzer extends ClassLikeAnalyzer
         $member_stmts = [];
         foreach ($this->class->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
-                $method_analyzer = new MethodAnalyzer($stmt, $this);
+                try {
+                    $method_analyzer = new MethodAnalyzer($stmt, $this);
+                } catch (UnexpectedValueException $e) {
+                    $key = array_search($stmt, $this->class->stmts);
+                    if ($key === false) {
+                        continue;
+                    }
+                    $arr_stmts_wright = array_slice($this->class->stmts, $key + 1);
+                    $arr_stmts_left = array_slice($this->class->stmts, 0, $key);
+                    if (in_array($stmt, $arr_stmts_wright)) {
+                        $key_wright = array_search($stmt, $arr_stmts_wright);
+                        $stmt = $arr_stmts_wright[$key_wright];
+                        if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
+                            $method_analyzer = new MethodAnalyzer($stmt, $this);
+                        }
+                    } elseif (in_array($stmt, $arr_stmts_left)) {
+                        $key_left = array_search($stmt, $arr_stmts_left);
+                        $stmt = $arr_stmts_left[$key_left];
+                        if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
+                            $method_analyzer = new MethodAnalyzer($stmt, $this);
+                        }
+                    } else {
+                        // FIXME: if storage is null for $stmt skipp this $stmt. Maybe need more elegant fix.
+                        continue;
+                    }
+                }
 
                 $type_provider = new NodeDataProvider();
 
