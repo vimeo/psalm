@@ -636,7 +636,8 @@ final class SimpleAssertionReconciler extends Reconciler
             if ($array_atomic_type instanceof TArray) {
                 if (!$array_atomic_type instanceof TNonEmptyArray
                     || ($assertion instanceof HasAtLeastCount
-                        && $array_atomic_type->min_count < $assertion->count)
+                        && ($array_atomic_type->min_count === null
+                            || $array_atomic_type->min_count < $assertion->count))
                 ) {
                     if ($array_atomic_type->isEmptyArray()) {
                         $existing_var_type->removeType('array');
