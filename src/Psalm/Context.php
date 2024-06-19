@@ -82,7 +82,7 @@ final class Context
     /**
      * A set of references that might still be in scope from a scope likely to cause confusion. This applies
      * to references set inside a loop or if statement, since it's easy to forget about PHP's weird scope
-     * rules, and assinging to a reference will change the referenced variable rather than shadowing it.
+     * rules, and assigning to a reference will change the referenced variable rather than shadowing it.
      *
      * @var array<string, CodeLocation>
      */

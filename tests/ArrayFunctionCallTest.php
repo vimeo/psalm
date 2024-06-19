@@ -1164,7 +1164,7 @@ class ArrayFunctionCallTest extends TestCase
                 ',
                 'assertions' => [
                     '$a===' => 'list{0, 0, 0}',
-                    // Techinically this doesn't cover the case of running on 8.0 but nvm
+                    // Technically this doesn't cover the case of running on 8.0 but nvm
                     '$b===' => 'array{-1: 0, 0: 0, 1: 0}',
                     '$c===' => 'array{-2: 0, 0: 0, 1: 0}',
                 ],
@@ -2700,7 +2700,7 @@ class ArrayFunctionCallTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
-            'arrayFilterUseMethodOnInferrableInt' => [
+            'arrayFilterUseMethodOnInferableInt' => [
                 'code' => '<?php
                     $a = array_filter([1, 2, 3, 4], function ($i) { return $i->foo(); });',
                 'error_message' => 'InvalidMethodCall',
@@ -2746,7 +2746,7 @@ class ArrayFunctionCallTest extends TestCase
                     array_filter($arg, "strlen", ARRAY_FILTER_USE_KEY);',
                 'error_message' => 'InvalidScalarArgument',
             ],
-            'arrayMapUseMethodOnInferrableInt' => [
+            'arrayMapUseMethodOnInferableInt' => [
                 'code' => '<?php
                     $a = array_map(function ($i) { return $i->foo(); }, [1, 2, 3, 4]);',
                 'error_message' => 'InvalidMethodCall',

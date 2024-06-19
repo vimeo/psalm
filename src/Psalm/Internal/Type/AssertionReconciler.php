@@ -515,7 +515,7 @@ final class AssertionReconciler extends Reconciler
     }
 
     /**
-     * This method receives two types. The goal is to use datas in the new type to reduce the existing_type to a more
+     * This method receives two types. The goal is to use data in the new type to reduce the existing_type to a more
      * precise version. For example: new is `array<int>` old is `list<mixed>` so the result is `list<int>`
      */
     private static function filterTypeWithAnother(

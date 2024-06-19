@@ -280,10 +280,10 @@ class DeprecatedAnnotationTest extends TestCase
                         /**
                          * @deprecated
                          */
-                        public static bool $deprecatedPropery = false;
+                        public static bool $deprecatedProperty = false;
                     }
 
-                    Bar::$deprecatedPropery;
+                    Bar::$deprecatedProperty;
                     ',
                 'error_message' => 'DeprecatedProperty',
             ],

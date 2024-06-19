@@ -919,7 +919,7 @@ class ClosureTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
-            'arrowFunctionReturnsNeverImplictly' => [
+            'arrowFunctionReturnsNeverImplicitly' => [
                 'code' => '<?php
                     $bar = ["foo", "bar"];
 
@@ -931,7 +931,7 @@ class ClosureTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
-            'arrowFunctionReturnsNeverExplictly' => [
+            'arrowFunctionReturnsNeverExplicitly' => [
                 'code' => '<?php
                     $bar = ["foo", "bar"];
 
