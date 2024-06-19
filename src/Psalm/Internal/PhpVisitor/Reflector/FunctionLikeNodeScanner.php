@@ -22,6 +22,7 @@ use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
 use Psalm\Internal\MethodIdentifier;
@@ -769,15 +770,23 @@ final class FunctionLikeNodeScanner
 
                 $param_type = $storage->params[$param_index]->type;
 
-                $assigned_properties[$property_name] =
-                    $storage->params[$param_index]->is_variadic
-                        ? new Union([
+                if ($storage->params[$param_index]->is_variadic) {
+                    $codebase = ProjectAnalyzer::getInstance()->getCodebase();
+                    if ($codebase->analysis_php_version_id >= 8_00_00
+                        && $storage->allow_named_arg_calls
+                    ) {
+                        $assigned_properties[$property_name] = new Union([
                             new TArray([
-                                Type::getInt(),
+                                Type::getArrayKey(),
                                 $param_type,
                             ]),
-                        ])
-                        : $param_type;
+                        ]);
+                    } else {
+                        $assigned_properties[$property_name] = new Union([Type::getListAtomic($param_type)]);
+                    }
+                } else {
+                    $assigned_properties[$property_name] = $param_type;
+                }
             } else {
                 $assigned_properties = [];
                 break;
@@ -834,7 +843,7 @@ final class FunctionLikeNodeScanner
             }
         }
 
-        $is_optional = $param->default !== null;
+        $is_optional = $param->default !== null || $param->variadic;
 
         if ($param->var instanceof PhpParser\Node\Expr\Error || !is_string($param->var->name)) {
             throw new UnexpectedValueException('Not expecting param name to be non-string');

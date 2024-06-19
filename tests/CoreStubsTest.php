@@ -447,12 +447,16 @@ class CoreStubsTest extends TestCase
                 json_decode("true", depth: -1);
             ',
             'error_message' => 'InvalidArgument',
+            'ignored_issues' => [],
+            'php_version' => '8.0',
         ];
         yield 'json_encode invalid depth' => [
             'code' => '<?php
                 json_encode([], depth: 439877348953739);
             ',
             'error_message' => 'InvalidArgument',
+            'ignored_issues' => [],
+            'php_version' => '8.0',
         ];
         yield 'str_contains literal haystack' => [
             'code' => '<?php
