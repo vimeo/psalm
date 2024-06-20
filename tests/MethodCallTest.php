@@ -284,6 +284,23 @@ class MethodCallTest extends TestCase
                     '$s' => 'string',
                 ],
             ],
+            'magicCallOnAbstract' => [
+                'code' => '<?php
+
+                    /**
+                     * @method static getConfirmationUrl()
+                     */
+                    abstract class AbstractConfirmation
+                    {
+                        public function __call(string $name, array $args): self {
+                            return $this;
+                        }
+                    }
+
+                    function t(AbstractConfirmation $v): void {
+                        $v->getConfirmationUrl();
+                    }',
+            ],
             'canBeCalledOnMagic' => [
                 'code' => '<?php
                     class A {
