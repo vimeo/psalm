@@ -2511,6 +2511,22 @@ class TaintTest extends TestCase
                     $function->invoke();',
                 'error_message' => 'TaintedCallable',
             ],
+            'taintedExecuteQueryFunction' => [
+                'code' => '<?php
+                    $userId = $_GET["user_id"];
+                    $query = "delete from users where user_id = " . $userId;
+                    $link = mysqli_connect("localhost", "my_user", "my_password", "world");
+                    $result = mysqli_execute_query($link, $query);',
+                'error_message' => 'TaintedSql',
+            ],
+            'taintedExecuteQueryMethod' => [
+                'code' => '<?php
+                    $userId = $_GET["user_id"];
+                    $query = "delete from users where user_id = " . $userId;
+                    $mysqli = new mysqli("localhost", "my_user", "my_password", "world");
+                    $result = $mysqli->execute_query($query);',
+                'error_message' => 'TaintedSql',
+            ],
         ];
     }
 
