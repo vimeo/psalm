@@ -129,7 +129,11 @@ use const SCANDIR_SORT_NONE;
  */
 class Config
 {
-    private const DEFAULT_FILE_NAME = 'psalm.xml';
+    private const DEFAULT_FILE_NAMES = [
+        'psalm.xml',
+        'psalm.xml.dist',
+        'psalm.dist.xml',
+    ];
     public const CONFIG_NAMESPACE = 'https://getpsalm.org/schema/config';
     public const REPORT_INFO = 'info';
     public const REPORT_ERROR = 'error';
@@ -773,10 +777,10 @@ class Config
         }
 
         do {
-            $maybe_path = $dir_path . DIRECTORY_SEPARATOR . self::DEFAULT_FILE_NAME;
-
-            if (file_exists($maybe_path) || file_exists($maybe_path .= '.dist')) {
-                return $maybe_path;
+            foreach (self::DEFAULT_FILE_NAMES as $defaultFileName) {
+                if (file_exists($maybe_path = $dir_path . DIRECTORY_SEPARATOR . $defaultFileName)) {
+                    return $maybe_path;
+                }
             }
 
             $dir_path = dirname($dir_path);
