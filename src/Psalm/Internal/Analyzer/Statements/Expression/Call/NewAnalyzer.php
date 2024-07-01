@@ -19,6 +19,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\DataFlow\TaintSink;
+use Psalm\Internal\DataFlow\TaintSource;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
@@ -737,6 +738,11 @@ final class NewAnalyzer extends CallAnalyzer
 
                 $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
                 $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
+
+                if ($added_taints !== []) {
+                    $taint_source = TaintSource::fromNode($custom_call_sink);
+                    $statements_analyzer->data_flow_graph->addSource($taint_source);
+                }
 
                 foreach ($stmt_class_type->parent_nodes as $parent_node) {
                     $statements_analyzer->data_flow_graph->addPath(
