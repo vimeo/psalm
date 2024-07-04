@@ -49,5 +49,15 @@ class CastTest extends TestCase
                 '$a===' => 'array{a: int, b: string, ...<array-key, mixed>}',
             ],
         ];
+        yield 'castIntRangeToString' => [
+            'code' => '<?php
+                /** @var int<-5, 3> */
+                $int_range = 2;
+                $string = (string) $int_range;
+            ',
+            'assertions' => [
+                '$string===' => "'-1'|'-2'|'-3'|'-4'|'-5'|'0'|'1'|'2'|'3'",
+            ],
+        ];
     }
 }

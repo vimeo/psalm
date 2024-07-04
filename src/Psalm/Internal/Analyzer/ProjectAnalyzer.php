@@ -329,21 +329,7 @@ final class ProjectAnalyzer
     {
         $report_options = [];
 
-        $mapping = [
-            'checkstyle.xml' => Report::TYPE_CHECKSTYLE,
-            'sonarqube.json' => Report::TYPE_SONARQUBE,
-            'codeclimate.json' => Report::TYPE_CODECLIMATE,
-            'summary.json' => Report::TYPE_JSON_SUMMARY,
-            'junit.xml' => Report::TYPE_JUNIT,
-            '.xml' => Report::TYPE_XML,
-            '.json' => Report::TYPE_JSON,
-            '.txt' => Report::TYPE_TEXT,
-            '.emacs' => Report::TYPE_EMACS,
-            '.pylint' => Report::TYPE_PYLINT,
-            '.console' => Report::TYPE_CONSOLE,
-            '.sarif' => Report::TYPE_SARIF,
-            'count.txt' => Report::TYPE_COUNT,
-        ];
+        $mapping = Report::getMapping();
 
         foreach ($report_file_paths as $report_file_path) {
             foreach ($mapping as $extension => $type) {

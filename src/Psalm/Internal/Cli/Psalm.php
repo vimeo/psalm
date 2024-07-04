@@ -31,11 +31,13 @@ use Psalm\Progress\Progress;
 use Psalm\Progress\VoidProgress;
 use Psalm\Report;
 use Psalm\Report\ReportOptions;
+use ReflectionClass;
 use RuntimeException;
 use Symfony\Component\Filesystem\Path;
 
 use function array_filter;
 use function array_key_exists;
+use function array_keys;
 use function array_map;
 use function array_merge;
 use function array_slice;
@@ -67,11 +69,13 @@ use function preg_match;
 use function preg_replace;
 use function realpath;
 use function setlocale;
+use function sort;
 use function str_repeat;
 use function str_replace;
 use function strlen;
 use function strpos;
 use function substr;
+use function wordwrap;
 
 use const DIRECTORY_SEPARATOR;
 use const JSON_THROW_ON_ERROR;
@@ -87,6 +91,7 @@ require_once __DIR__ . '/../CliUtils.php';
 require_once __DIR__ . '/../Composer.php';
 require_once __DIR__ . '/../IncludeCollector.php';
 require_once __DIR__ . '/../../IssueBuffer.php';
+require_once __DIR__ . '/../../Report.php';
 
 /**
  * @internal
@@ -1250,6 +1255,21 @@ final class Psalm
      */
     private static function getHelpText(): string
     {
+        $formats = [];
+        /** @var string $value */
+        foreach ((new ReflectionClass(Report::class))->getConstants() as $constant => $value) {
+            if (strpos($constant, 'TYPE_') === 0) {
+                $formats[] = $value;
+            }
+        }
+        sort($formats);
+        $outputFormats = wordwrap(implode(', ', $formats), 75, "\n            ");
+
+        /** @psalm-suppress ImpureMethodCall */
+        $reports = array_keys(Report::getMapping());
+        sort($reports);
+        $reportFormats = wordwrap('"' . implode('", "', $reports) . '"', 75, "\n        ");
+
         return <<<HELP
         Usage:
             psalm [options] [file...]
@@ -1333,8 +1353,8 @@ final class Psalm
 
             --output-format=console
                 Changes the output format.
-                Available formats: compact, console, text, emacs, json, pylint, xml, checkstyle, junit, sonarqube,
-                                   github, phpstorm, codeclimate, by-issue-level
+                Available formats:
+                    $outputFormats
 
             --no-progress
                 Disable the progress indicator
@@ -1348,8 +1368,7 @@ final class Psalm
         Reports:
             --report=PATH
                 The path where to output report file. The output format is based on the file extension.
-                (Currently supported formats: ".json", ".xml", ".txt", ".emacs", ".pylint", ".console",
-                ".sarif", "checkstyle.xml", "sonarqube.json", "codeclimate.json", "summary.json", "junit.xml")
+                (Currently supported formats: $reportFormats)
 
             --report-show-info[=BOOLEAN]
                 Whether the report should include non-errors in its output (defaults to true)

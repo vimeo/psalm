@@ -2210,6 +2210,24 @@ class CallableTest extends TestCase
 
                     foo(["a", "b"]);',
             ],
+            'notCallableArray' => [
+                'code' => '<?php
+                    /**
+                     * @param array{class-string, string}|callable $arg
+                     */
+                    function foo($arg): void {}
+
+                    foo([\DateTime::class, "format"]);',
+            ],
+            'notCallableString' => [
+                'code' => '<?php
+                    /**
+                     * @param string|callable $arg
+                     */
+                    function foo($arg): void {}
+
+                    foo("notACallable");',
+            ],
             'callableOptionalOrAdditionalOptional' => [
                 'code' => '<?php
                     /**
@@ -3634,6 +3652,16 @@ class CallableTest extends TestCase
                     }
                 }',
                 'error_message' => 'ParentNotFound',
+            ],
+            'wrongCallableInUnion' => [
+                'code' => '<?php
+                    /**
+                     * @param int|callable $arg
+                     */
+                    function foo($arg): void {}
+
+                    foo([\DateTime::class, "wrongMethod"]);',
+                'error_message' => 'InvalidArgument',
             ],
         ];
     }
