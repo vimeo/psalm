@@ -10630,7 +10630,7 @@ return [
 'ReflectionParameter::getDeclaringFunction' => ['ReflectionFunctionAbstract'],
 'ReflectionParameter::getDefaultValue' => ['mixed'],
 'ReflectionParameter::getDefaultValueConstantName' => ['?string'],
-'ReflectionParameter::getName' => ['string'],
+'ReflectionParameter::getName' => ['non-empty-string'],
 'ReflectionParameter::getPosition' => ['int<0, max>'],
 'ReflectionParameter::getType' => ['?ReflectionType'],
 'ReflectionParameter::hasType' => ['bool'],
