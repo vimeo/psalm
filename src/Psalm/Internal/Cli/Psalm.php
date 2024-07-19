@@ -347,6 +347,7 @@ final class Psalm
                 isset($options['report-show-info'])
                     ? $options['report-show-info'] !== 'false' && $options['report-show-info'] !== '0'
                     : true,
+                $config->absolute_path_reporting,
             ),
             $threads,
             $progress,

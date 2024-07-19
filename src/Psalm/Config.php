@@ -727,6 +727,11 @@ class Config
     /** @var list<string> */
     public array $config_warnings = [];
 
+    /**
+     * Whether to report files with absolute path or relative path (default))
+     */
+    public bool $absolute_path_reporting = false;
+
     /** @internal */
     protected function __construct()
     {
@@ -1100,6 +1105,7 @@ class Config
             'reportInfo' => 'report_info',
             'restrictReturnTypes' => 'restrict_return_types',
             'limitMethodComplexity' => 'limit_method_complexity',
+            'absolutePathReporting' => 'absolute_path_reporting',
         ];
 
         foreach ($booleanAttributes as $xmlName => $internalName) {

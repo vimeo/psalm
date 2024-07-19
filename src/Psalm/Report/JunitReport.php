@@ -40,7 +40,7 @@ final class JunitReport extends Report
 
             $tests++;
 
-            $fname = $error->file_name;
+            $fname = $this->absolute_path ? $error->file_path : $error->file_name;
 
             if (!isset($ndata[$fname])) {
                 $ndata[$fname] = [

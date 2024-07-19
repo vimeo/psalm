@@ -43,4 +43,6 @@ final class ReportOptions
 
     /** @var bool */
     public $in_ci = false;
+
+    public bool $absolute_path = false;
 }

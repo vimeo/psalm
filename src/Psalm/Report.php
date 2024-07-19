@@ -60,6 +60,9 @@ abstract class Report
     /** @var int */
     protected $total_expression_count;
 
+    /** @var bool */
+    protected $absolute_path;
+
     /**
      * @param array<int, IssueData> $issues_data
      * @param array<string, int> $fixable_issue_counts
@@ -86,6 +89,7 @@ abstract class Report
         $this->show_info = $report_options->show_info;
         $this->pretty = $report_options->pretty;
         $this->in_ci = $report_options->in_ci;
+        $this->absolute_path = $report_options->absolute_path;
 
         $this->mixed_expression_count = $mixed_expression_count;
         $this->total_expression_count = $total_expression_count;

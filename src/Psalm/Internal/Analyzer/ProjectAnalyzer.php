@@ -325,8 +325,11 @@ final class ProjectAnalyzer
      * @param  array<string>  $report_file_paths
      * @return list<ReportOptions>
      */
-    public static function getFileReportOptions(array $report_file_paths, bool $show_info = true): array
-    {
+    public static function getFileReportOptions(
+        array $report_file_paths,
+        bool $show_info = true,
+        bool $absolute_path_reporting = false
+    ): array {
         $report_options = [];
 
         $mapping = Report::getMapping();
@@ -340,6 +343,13 @@ final class ProjectAnalyzer
                     $o->show_info = $show_info;
                     $o->output_path = $report_file_path;
                     $o->use_color = false;
+
+                    // list of report that allow absolute path reporting
+                    $allowedReports = [Report::TYPE_CHECKSTYLE, Report::TYPE_JUNIT];
+                    if (in_array($type, $allowedReports)) {
+                        $o->absolute_path = $absolute_path_reporting;
+                    }
+
                     $report_options[] = $o;
                     continue 2;
                 }

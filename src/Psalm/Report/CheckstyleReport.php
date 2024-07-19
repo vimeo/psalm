@@ -21,7 +21,9 @@ final class CheckstyleReport extends Report
                 $issue_data->message,
             );
 
-            $output .= '<file name="' . $this->xmlEncode($issue_data->file_name) . '">' . "\n";
+            $filename = $this->absolute_path ? $issue_data->file_path : $issue_data->file_name;
+
+            $output .= '<file name="' . $this->xmlEncode($filename) . '">' . "\n";
             $output .= ' ';
             $output .= '<error';
             $output .= ' line="' . $issue_data->line_from . '"';

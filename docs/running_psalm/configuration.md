@@ -342,6 +342,17 @@ When `true`, Psalm will run [Taint Analysis](../security_analysis/index.md) on y
 
 When `false`, Psalm will not consider issue at lower level than `errorLevel` as `info` (they will be suppressed instead). This can be a big improvement in analysis time for big projects. However, this config will prevent Psalm to count or suggest fixes for suppressed issue
 
+#### absolutePathReporting
+
+```xml
+<psalm 
+  absolutePathReporting="[bool]"
+/>
+```
+
+Setting this to `"true"` allows to use absolute paths on report that accept it (currently `junit` and `checkstyle`). 
+If not given, this defaults to `"false"` means report still use relative paths.
+
 #### allowNamedArgumentCalls
 
 ```xml
