@@ -240,7 +240,7 @@ final class ArgumentsAnalyzer
                 $context,
                 false,
                 null,
-                false,
+                null,
                 $high_order_template_result,
             ) === false) {
                 $context->inside_isset = $was_inside_isset;

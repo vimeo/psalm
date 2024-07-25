@@ -896,9 +896,10 @@ final class AssignmentAnalyzer
     public static function analyzeAssignmentRef(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\AssignRef $stmt,
-        Context $context
+        Context $context,
+        ?PhpParser\Node\Stmt $from_stmt
     ): bool {
-        ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context, false, null, false, null, true);
+        ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context, false, null, null, null, true);
 
         $lhs_var_id = ExpressionIdentifier::getExtendedVarId(
             $stmt->var,
@@ -912,7 +913,7 @@ final class AssignmentAnalyzer
             $statements_analyzer,
         );
 
-        $doc_comment = $stmt->getDocComment();
+        $doc_comment = $stmt->getDocComment() ?? ($from_stmt ? $from_stmt->getDocComment() : null);
         if ($doc_comment) {
             try {
                 $var_comments = CommentAnalyzer::getTypeFromComment(

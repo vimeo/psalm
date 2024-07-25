@@ -122,7 +122,11 @@ final class FunctionLikeNodeScanner
      * @param  bool $fake_method in the case of @method annotations we do something a little strange
      * @return FunctionStorage|MethodStorage|false
      */
-    public function start(PhpParser\Node\FunctionLike $stmt, bool $fake_method = false)
+    public function start(
+        PhpParser\Node\FunctionLike $stmt,
+        bool $fake_method = false,
+        PhpParser\Comment\Doc $doc_comment = null
+    )
     {
         if ($stmt instanceof PhpParser\Node\Expr\Closure
             || $stmt instanceof PhpParser\Node\Expr\ArrowFunction
@@ -433,7 +437,7 @@ final class FunctionLikeNodeScanner
             $storage->returns_by_ref = true;
         }
 
-        $doc_comment = $stmt->getDocComment();
+        $doc_comment = $stmt->getDocComment() ?? $doc_comment;
 
 
         if ($classlike_storage && !$classlike_storage->is_trait) {

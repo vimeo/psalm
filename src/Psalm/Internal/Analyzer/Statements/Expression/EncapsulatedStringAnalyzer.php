@@ -3,6 +3,7 @@
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
+use PhpParser\Node\Expr;
 use PhpParser\Node\Scalar\EncapsedStringPart;
 use Psalm\CodeLocation;
 use Psalm\Context;
@@ -42,7 +43,7 @@ final class EncapsulatedStringAnalyzer
         $literal_string = "";
 
         foreach ($stmt->parts as $part) {
-            if (ExpressionAnalyzer::analyze($statements_analyzer, $part, $context) === false) {
+            if ($part instanceof Expr && ExpressionAnalyzer::analyze($statements_analyzer, $part, $context) === false) {
                 return false;
             }
 

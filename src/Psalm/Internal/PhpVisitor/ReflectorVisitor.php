@@ -32,6 +32,7 @@ use Psalm\Plugin\EventHandler\Event\AfterClassLikeVisitEvent;
 use Psalm\Storage\FileStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
+use SplObjectStorage;
 use UnexpectedValueException;
 
 use function array_merge;
@@ -92,6 +93,11 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
     private array $bad_classes = [];
     private EventDispatcher $eventDispatcher;
 
+    /**
+     * @var SplObjectStorage<PhpParser\Node\FunctionLike, null>
+     */
+    private SplObjectStorage $closure_statements;
+
     public function __construct(
         Codebase $codebase,
         FileScanner $file_scanner,
@@ -104,6 +110,7 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
         $this->file_storage = $file_storage;
         $this->aliases = $this->file_storage->aliases = new Aliases();
         $this->eventDispatcher = $this->codebase->config->eventDispatcher;
+        $this->closure_statements = new SplObjectStorage();
     }
 
     public function enterNode(PhpParser\Node $node): ?int
@@ -171,13 +178,34 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
                     }
                 }
             }
-        } elseif ($node instanceof PhpParser\Node\FunctionLike) {
+        } elseif ($node instanceof PhpParser\Node\FunctionLike
+            || ($node instanceof PhpParser\Node\Stmt\Expression
+            && ($node->expr instanceof PhpParser\Node\Expr\ArrowFunction
+                || $node->expr instanceof PhpParser\Node\Expr\Closure))
+            || ($node instanceof PhpParser\Node\Arg
+            && ($node->value instanceof PhpParser\Node\Expr\ArrowFunction
+                || $node->value instanceof PhpParser\Node\Expr\Closure))
+        ) {
+            $doc_comment = null;
             if ($node instanceof PhpParser\Node\Stmt\Function_
                 || $node instanceof PhpParser\Node\Stmt\ClassMethod
             ) {
                 if ($this->skip_if_descendants) {
                     return null;
                 }
+            } elseif ($node instanceof PhpParser\Node\Stmt\Expression) {
+                $doc_comment = $node->getDocComment();
+                /** @var PhpParser\Node\FunctionLike */
+                $node = $node->expr;
+                $this->closure_statements->attach($node);
+            } elseif ($node instanceof PhpParser\Node\Arg) {
+                $doc_comment = $node->getDocComment();
+                /** @var PhpParser\Node\FunctionLike */
+                $node = $node->value;
+                $this->closure_statements->attach($node);
+            } elseif ($this->closure_statements->contains($node)) {
+                // This is a closure that was already processed at the statement level.
+                return null;
             }
 
             $classlike_storage = null;
@@ -204,7 +232,7 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
                 $functionlike_types,
             );
 
-            $functionlike_node_scanner->start($node);
+            $functionlike_node_scanner->start($node, false, $doc_comment);
 
             $this->functionlike_node_scanners[] = $functionlike_node_scanner;
 

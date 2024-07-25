@@ -63,6 +63,9 @@ final class CheckTrivialExprVisitor extends PhpParser\NodeVisitorAbstract
                 || $node instanceof PhpParser\Node\Expr\StaticPropertyFetch) {
                 return PhpParser\NodeTraverser::STOP_TRAVERSAL;
             }
+        } elseif ($node instanceof PhpParser\Node\ClosureUse) {
+            $this->has_non_trivial_expr = true;
+            return PhpParser\NodeTraverser::STOP_TRAVERSAL;
         }
         return null;
     }

@@ -316,6 +316,7 @@ final class MatchAnalyzer
 
     /**
      * @param non-empty-list<PhpParser\Node\Expr> $conds
+     * @param array<string, mixed>                $attributes
      */
     private static function convertCondsToConditional(
         array $conds,

@@ -566,7 +566,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
                 $context,
                 false,
                 $global_context,
-                true,
+                $stmt,
             ) === false) {
                 return false;
             }
