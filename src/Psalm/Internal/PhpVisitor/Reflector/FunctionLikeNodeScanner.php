@@ -126,8 +126,7 @@ final class FunctionLikeNodeScanner
         PhpParser\Node\FunctionLike $stmt,
         bool $fake_method = false,
         PhpParser\Comment\Doc $doc_comment = null
-    )
-    {
+    ) {
         if ($stmt instanceof PhpParser\Node\Expr\Closure
             || $stmt instanceof PhpParser\Node\Expr\ArrowFunction
         ) {

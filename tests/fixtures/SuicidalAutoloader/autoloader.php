@@ -18,6 +18,7 @@ spl_autoload_register(static function (string $className) {
         'PHPUnit\Framework\DOMElement',
         'Stringable',
         'AllowDynamicProperties',
+        'PhpParser\Node\Stmt\Throw', // BCHelper for nikic/php-parser v4/5
 
         // https://github.com/symfony/symfony/pull/40203
         // these are actually functions, referenced as `if (!function_exists(u::class))`
