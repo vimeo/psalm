@@ -4,6 +4,7 @@ namespace Psalm\Internal\Provider;
 
 use InvalidArgumentException;
 use LogicException;
+use Psalm\Internal\BCHelper;
 use Psalm\Storage\ClassLikeStorage;
 
 use function array_merge;
@@ -39,7 +40,7 @@ final class ClassLikeStorageProvider
      */
     public function get(string $fq_classlike_name): ClassLikeStorage
     {
-        $fq_classlike_name_lc = strtolower($fq_classlike_name);
+        $fq_classlike_name_lc = $this->formatClassName($fq_classlike_name);
         /** @psalm-suppress ImpureStaticProperty Used only for caching */
         if (!isset(self::$storage[$fq_classlike_name_lc])) {
             throw new InvalidArgumentException('Could not get class storage for ' . $fq_classlike_name_lc);
@@ -51,10 +52,20 @@ final class ClassLikeStorageProvider
 
     /**
      * @psalm-mutation-free
+     *
+     * @return lowercase-string
+     */
+    private function formatClassName(string $class): string
+    {
+        return strtolower(BCHelper::getPHPParserClassName($class));
+    }
+
+    /**
+     * @psalm-mutation-free
      */
     public function has(string $fq_classlike_name): bool
     {
-        $fq_classlike_name_lc = strtolower($fq_classlike_name);
+        $fq_classlike_name_lc = $this->formatClassName($fq_classlike_name);
 
         /** @psalm-suppress ImpureStaticProperty Used only for caching */
         return isset(self::$storage[$fq_classlike_name_lc]);
@@ -62,7 +73,7 @@ final class ClassLikeStorageProvider
 
     public function exhume(string $fq_classlike_name, string $file_path, string $file_contents): ClassLikeStorage
     {
-        $fq_classlike_name_lc = strtolower($fq_classlike_name);
+        $fq_classlike_name_lc = $this->formatClassName($fq_classlike_name);
 
         if (isset(self::$storage[$fq_classlike_name_lc])) {
             return self::$storage[$fq_classlike_name_lc];
@@ -112,7 +123,7 @@ final class ClassLikeStorageProvider
 
     public function create(string $fq_classlike_name): ClassLikeStorage
     {
-        $fq_classlike_name_lc = strtolower($fq_classlike_name);
+        $fq_classlike_name_lc = $this->formatClassName($fq_classlike_name);
 
         $storage = new ClassLikeStorage($fq_classlike_name);
         self::$storage[$fq_classlike_name_lc] = $storage;
@@ -123,7 +134,7 @@ final class ClassLikeStorageProvider
 
     public function remove(string $fq_classlike_name): void
     {
-        $fq_classlike_name_lc = strtolower($fq_classlike_name);
+        $fq_classlike_name_lc = $this->formatClassName($fq_classlike_name);
 
         unset(self::$storage[$fq_classlike_name_lc]);
     }

@@ -7,10 +7,10 @@ use PhpParser\ErrorHandler\Collecting;
 use PhpParser\Lexer\Emulative;
 use PhpParser\Node\Stmt;
 use PhpParser\Parser;
-use PhpParser\PhpVersion;
 use Psalm\CodeLocation\ParseErrorLocation;
 use Psalm\Codebase;
 use Psalm\Config;
+use Psalm\Internal\BCHelper;
 use Psalm\Internal\Diff\FileDiffer;
 use Psalm\Internal\Diff\FileStatementsDiffer;
 use Psalm\Internal\PhpTraverser\CustomTraverser;
@@ -394,7 +394,8 @@ final class StatementsProvider
         if (!self::$lexer) {
             $major_version = Codebase::transformPhpVersionId($analysis_php_version_id, 10_000);
             $minor_version = Codebase::transformPhpVersionId($analysis_php_version_id % 10_000, 100);
-            self::$lexer = new Emulative(PhpVersion::fromComponents($major_version, $minor_version));
+
+            self::$lexer = BCHelper::createEmulative($major_version, $minor_version);
         }
 
         if (!self::$parser) {

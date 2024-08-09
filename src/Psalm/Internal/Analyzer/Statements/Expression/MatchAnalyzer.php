@@ -332,7 +332,8 @@ final class MatchAnalyzer
         }
 
         $array_items = array_map(
-            static fn(PhpParser\Node\Expr $cond): PhpParser\Node\Expr\ArrayItem =>
+            /** @return PhpParser\Node\Expr\ArrayItem|PhpParser\Node\ArrayItem */
+            static fn(PhpParser\Node\Expr $cond) =>
                 new VirtualArrayItem($cond, null, false, $cond->getAttributes()),
             $conds,
         );

@@ -77,7 +77,7 @@ final class ReturnTypeCollector
                 break;
             }
 
-            if ($stmt instanceof PhpParser\Node\Stmt\Throw_) {
+            if (BCHelper::isThrowStatement($stmt)) {
                 $return_types[] = Type::getNever();
 
                 break;

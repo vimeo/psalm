@@ -169,7 +169,6 @@ final class ClassLikeNodeScanner
 
             $fq_classlike_name =
                 ($this->aliases->namespace ? $this->aliases->namespace . '\\' : '') . $node->name->name;
-            assert($fq_classlike_name !== "");
 
             $fq_classlike_name_lc = strtolower($fq_classlike_name);
 
