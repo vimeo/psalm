@@ -52,7 +52,6 @@ final class ClassLikeStorageProvider
 
     /**
      * @psalm-mutation-free
-     *
      * @return lowercase-string
      */
     private function formatClassName(string $class): string

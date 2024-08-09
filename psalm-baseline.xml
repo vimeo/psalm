@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<files psalm-version="5.x-dev@a46a07c5ca8bd7b54d1ca814c1f5b5ed38a0ba90">
+<files psalm-version="5.x-dev@8daf529735fe05652868d7426d2cbceac376d357">
   <file src="examples/TemplateChecker.php">
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$comment_block->tags['variablesfrom'][0]]]></code>
@@ -134,6 +134,9 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Analyzer/ClassAnalyzer.php">
+    <DeprecatedConstant>
+      <code><![CDATA[PhpParser\Node\Stmt\Class_::MODIFIER_PUBLIC]]></code>
+    </DeprecatedConstant>
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$comments[0]]]></code>
       <code><![CDATA[$property_name]]></code>
@@ -372,6 +375,15 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Block/SwitchCaseAnalyzer.php">
+    <InvalidArgument>
+      <code><![CDATA[$in_array_values]]></code>
+    </InvalidArgument>
+    <InvalidReturnStatement>
+      <code><![CDATA[$in_array_values]]></code>
+    </InvalidReturnStatement>
+    <InvalidReturnType>
+      <code><![CDATA[array<PhpParser\Node\Expr\ArrayItem|PhpParser\Node\ArrayItem>|null]]></code>
+    </InvalidReturnType>
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$new_case_equality_expr->getArgs()[1]]]></code>
       <code><![CDATA[$switch_scope->leftover_statements[0]]]></code>
@@ -446,8 +458,6 @@
       <code><![CDATA[$count_inequality_position]]></code>
       <code><![CDATA[$false_position]]></code>
       <code><![CDATA[$false_position]]></code>
-      <code><![CDATA[$first_var_name]]></code>
-      <code><![CDATA[$first_var_name]]></code>
       <code><![CDATA[$first_var_name]]></code>
       <code><![CDATA[$first_var_name]]></code>
       <code><![CDATA[$first_var_name]]></code>
@@ -797,6 +807,17 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Call/Method/MissingMethodCallHandler.php">
+    <InvalidReturnStatement>
+      <code><![CDATA[new VirtualArrayItem(
+                $arg->value,
+                null,
+                false,
+                $arg->getAttributes(),
+            )]]></code>
+    </InvalidReturnStatement>
+    <InvalidReturnType>
+      <code><![CDATA[PhpParser\Node\Expr\ArrayItem|PhpParser\Node\ArrayItem]]></code>
+    </InvalidReturnType>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$found_generic_params]]></code>
       <code><![CDATA[$found_generic_params]]></code>
@@ -825,6 +846,9 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Call/NamedFunctionCallHandler.php">
+    <InvalidArgument>
+      <code><![CDATA[$new_items]]></code>
+    </InvalidArgument>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$get_class_name = $statements_analyzer->getFQCLN()]]></code>
       <code><![CDATA[$path_to_file]]></code>
@@ -935,7 +959,6 @@
       <code><![CDATA[$dim_var_id]]></code>
       <code><![CDATA[$dim_var_id]]></code>
       <code><![CDATA[$extended_var_id]]></code>
-      <code><![CDATA[$extended_var_id]]></code>
       <code><![CDATA[$keyed_array_var_id]]></code>
       <code><![CDATA[$keyed_array_var_id]]></code>
     </RiskyTruthyFalsyComparison>
@@ -1014,6 +1037,12 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/MatchAnalyzer.php">
+    <InvalidReturnStatement>
+      <code><![CDATA[new VirtualArrayItem($cond, null, false, $cond->getAttributes())]]></code>
+    </InvalidReturnStatement>
+    <InvalidReturnType>
+      <code><![CDATA[PhpParser\Node\Expr\ArrayItem|PhpParser\Node\ArrayItem]]></code>
+    </InvalidReturnType>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$switch_var_id]]></code>
       <code><![CDATA[$switch_var_id]]></code>
@@ -1045,6 +1074,11 @@
       <code><![CDATA[$var_comment->type_start]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
+  <file src="src/Psalm/Internal/Analyzer/Statements/ExpressionAnalyzer.php">
+    <TypeDoesNotContainType>
+      <code><![CDATA[$stmt instanceof PhpParser\Node\Scalar\EncapsedStringPart]]></code>
+    </TypeDoesNotContainType>
+  </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/ReturnAnalyzer.php">
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$method_name]]></code>
@@ -1061,6 +1095,16 @@
       <code><![CDATA[$var_comment->type_end]]></code>
       <code><![CDATA[$var_comment->type_start]]></code>
     </RiskyTruthyFalsyComparison>
+  </file>
+  <file src="src/Psalm/Internal/Analyzer/Statements/ThrowAnalyzer.php">
+    <UndefinedDocblockClass>
+      <code><![CDATA[PhpParser\Node\Expr\Throw_|PhpParser\Node\Stmt\Throw_]]></code>
+    </UndefinedDocblockClass>
+    <UnusedParam>
+      <code><![CDATA[$context]]></code>
+      <code><![CDATA[$statements_analyzer]]></code>
+      <code><![CDATA[$stmt]]></code>
+    </UnusedParam>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/UnsetAnalyzer.php">
     <RiskyTruthyFalsyComparison>
@@ -1081,6 +1125,9 @@
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/Analyzer/StatementsAnalyzer.php">
+    <InvalidArgument>
+      <code><![CDATA[$stmt]]></code>
+    </InvalidArgument>
     <PossiblyUndefinedArrayOffset>
       <code><![CDATA[$stmt->expr->getArgs()[0]]]></code>
     </PossiblyUndefinedArrayOffset>
@@ -1092,6 +1139,24 @@
       <code><![CDATA[$this->fake_this_class]]></code>
       <code><![CDATA[$this->vars_to_initialize]]></code>
     </RiskyTruthyFalsyComparison>
+  </file>
+  <file src="src/Psalm/Internal/BCHelper.php">
+    <InvalidArgument>
+      <code><![CDATA[[
+            'usedAttributes' => [
+                'comments', 'startLine', 'startFilePos', 'endFilePos',
+            ],
+            'phpVersion' => $major_version . '.' . $minor_version,
+        ]]]></code>
+    </InvalidArgument>
+    <MixedInferredReturnType>
+      <code><![CDATA[bool]]></code>
+      <code><![CDATA[bool]]></code>
+    </MixedInferredReturnType>
+    <UndefinedClass>
+      <code><![CDATA[PhpParser\Node\Stmt\Throw_]]></code>
+      <code><![CDATA[PhpParser\Node\Stmt\Throw_]]></code>
+    </UndefinedClass>
   </file>
   <file src="src/Psalm/Internal/Cli/LanguageServer.php">
     <RiskyTruthyFalsyComparison>
@@ -1386,6 +1451,10 @@
     </PossiblyUndefinedIntArrayOffset>
   </file>
   <file src="src/Psalm/Internal/PhpVisitor/AssignmentMapVisitor.php">
+    <DeprecatedConstant>
+      <code><![CDATA[PhpParser\NodeTraverser::DONT_TRAVERSE_CHILDREN]]></code>
+      <code><![CDATA[PhpParser\NodeTraverser::DONT_TRAVERSE_CHILDREN]]></code>
+    </DeprecatedConstant>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$arg_var_id]]></code>
       <code><![CDATA[$arg_var_id]]></code>
@@ -1397,7 +1466,46 @@
       <code><![CDATA[$var_id]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
+  <file src="src/Psalm/Internal/PhpVisitor/CheckTrivialExprVisitor.php">
+    <DeprecatedConstant>
+      <code><![CDATA[PhpParser\NodeTraverser::STOP_TRAVERSAL]]></code>
+      <code><![CDATA[PhpParser\NodeTraverser::STOP_TRAVERSAL]]></code>
+      <code><![CDATA[PhpParser\NodeTraverser::STOP_TRAVERSAL]]></code>
+    </DeprecatedConstant>
+    <TypeDoesNotContainType>
+      <code><![CDATA[$node instanceof PhpParser\Node\Expr\ArrayDimFetch
+            || $node instanceof PhpParser\Node\Expr\Closure
+            || $node instanceof PhpParser\Node\Expr\ClosureUse
+            || $node instanceof PhpParser\Node\Expr\Eval_
+            || $node instanceof PhpParser\Node\Expr\Exit_
+            || $node instanceof PhpParser\Node\Expr\Include_
+            || $node instanceof PhpParser\Node\Expr\FuncCall
+            || $node instanceof PhpParser\Node\Expr\MethodCall
+            || $node instanceof PhpParser\Node\Expr\ArrowFunction
+            || $node instanceof PhpParser\Node\Expr\ShellExec
+            || $node instanceof PhpParser\Node\Expr\StaticCall
+            || $node instanceof PhpParser\Node\Expr\Yield_
+            || $node instanceof PhpParser\Node\Expr\YieldFrom
+            || $node instanceof PhpParser\Node\Expr\New_
+            || $node instanceof PhpParser\Node\Expr\Cast\String_]]></code>
+      <code><![CDATA[$node instanceof PhpParser\Node\Expr\ClosureUse]]></code>
+    </TypeDoesNotContainType>
+  </file>
+  <file src="src/Psalm/Internal/PhpVisitor/ParamReplacementVisitor.php">
+    <DeprecatedConstant>
+      <code><![CDATA[PhpParser\NodeTraverser::STOP_TRAVERSAL]]></code>
+      <code><![CDATA[PhpParser\NodeTraverser::STOP_TRAVERSAL]]></code>
+    </DeprecatedConstant>
+  </file>
   <file src="src/Psalm/Internal/PhpVisitor/PartialParserVisitor.php">
+    <DeprecatedConstant>
+      <code><![CDATA[PhpParser\NodeTraverser::STOP_TRAVERSAL]]></code>
+      <code><![CDATA[PhpParser\NodeTraverser::STOP_TRAVERSAL]]></code>
+      <code><![CDATA[PhpParser\NodeTraverser::STOP_TRAVERSAL]]></code>
+      <code><![CDATA[PhpParser\NodeTraverser::STOP_TRAVERSAL]]></code>
+      <code><![CDATA[PhpParser\NodeTraverser::STOP_TRAVERSAL]]></code>
+      <code><![CDATA[PhpParser\NodeTraverser::STOP_TRAVERSAL]]></code>
+    </DeprecatedConstant>
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$cs[0]]]></code>
       <code><![CDATA[$match[0]]]></code>
@@ -1511,6 +1619,13 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/PhpVisitor/Reflector/FunctionLikeNodeScanner.php">
+    <DeprecatedConstant>
+      <code><![CDATA[Class_::MODIFIER_PRIVATE]]></code>
+      <code><![CDATA[Class_::MODIFIER_PROTECTED]]></code>
+      <code><![CDATA[Class_::MODIFIER_PUBLIC]]></code>
+      <code><![CDATA[Class_::VISIBILITY_MODIFIER_MASK]]></code>
+      <code><![CDATA[PhpParser\Node\Stmt\Class_::MODIFIER_READONLY]]></code>
+    </DeprecatedConstant>
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$stmt->stmts[0]]]></code>
     </PossiblyUndefinedIntArrayOffset>
@@ -1537,6 +1652,10 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/PhpVisitor/ReflectorVisitor.php">
+    <DeprecatedConstant>
+      <code><![CDATA[PhpParser\NodeTraverser::DONT_TRAVERSE_CHILDREN]]></code>
+      <code><![CDATA[PhpParser\NodeTraverser::DONT_TRAVERSE_CURRENT_AND_CHILDREN]]></code>
+    </DeprecatedConstant>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$this->aliases->uses_start]]></code>
       <code><![CDATA[!$this->aliases->uses_start]]></code>
@@ -1553,6 +1672,9 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/PhpVisitor/SimpleNameResolver.php">
+    <DeprecatedConstant>
+      <code><![CDATA[PhpParser\NodeTraverser::DONT_TRAVERSE_CHILDREN]]></code>
+    </DeprecatedConstant>
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$cs[0]]]></code>
     </PossiblyUndefinedIntArrayOffset>
@@ -1561,6 +1683,16 @@
       <code><![CDATA[$this->end_change]]></code>
       <code><![CDATA[$this->start_change]]></code>
     </RiskyTruthyFalsyComparison>
+  </file>
+  <file src="src/Psalm/Internal/PhpVisitor/TraitFinder.php">
+    <DeprecatedConstant>
+      <code><![CDATA[PhpParser\NodeTraverser::DONT_TRAVERSE_CHILDREN]]></code>
+    </DeprecatedConstant>
+  </file>
+  <file src="src/Psalm/Internal/PhpVisitor/YieldTypeCollector.php">
+    <DeprecatedConstant>
+      <code><![CDATA[NodeTraverser::DONT_TRAVERSE_CHILDREN]]></code>
+    </DeprecatedConstant>
   </file>
   <file src="src/Psalm/Internal/PluginManager/Command/DisableCommand.php">
     <RedundantCondition>
@@ -1607,6 +1739,11 @@
       <code><![CDATA[$file_contents]]></code>
       <code><![CDATA[$file_path]]></code>
     </RiskyTruthyFalsyComparison>
+  </file>
+  <file src="src/Psalm/Internal/Provider/ClassLikeStorageProvider.php">
+    <ImpureMethodCall>
+      <code><![CDATA[getPHPParserClassName]]></code>
+    </ImpureMethodCall>
   </file>
   <file src="src/Psalm/Internal/Provider/FileReferenceCacheProvider.php">
     <RiskyTruthyFalsyComparison>
@@ -1733,6 +1870,30 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Stubs/Generator/ClassLikeStubGenerator.php">
+    <DeprecatedConstant>
+      <code><![CDATA[PhpParser\Node\Stmt\Class_::MODIFIER_ABSTRACT]]></code>
+      <code><![CDATA[PhpParser\Node\Stmt\Class_::MODIFIER_PRIVATE]]></code>
+      <code><![CDATA[PhpParser\Node\Stmt\Class_::MODIFIER_PRIVATE]]></code>
+      <code><![CDATA[PhpParser\Node\Stmt\Class_::MODIFIER_PRIVATE]]></code>
+      <code><![CDATA[PhpParser\Node\Stmt\Class_::MODIFIER_PROTECTED]]></code>
+      <code><![CDATA[PhpParser\Node\Stmt\Class_::MODIFIER_PROTECTED]]></code>
+      <code><![CDATA[PhpParser\Node\Stmt\Class_::MODIFIER_PROTECTED]]></code>
+      <code><![CDATA[PhpParser\Node\Stmt\Class_::MODIFIER_PUBLIC]]></code>
+      <code><![CDATA[PhpParser\Node\Stmt\Class_::MODIFIER_PUBLIC]]></code>
+      <code><![CDATA[PhpParser\Node\Stmt\Class_::MODIFIER_PUBLIC]]></code>
+      <code><![CDATA[PhpParser\Node\Stmt\Class_::MODIFIER_STATIC]]></code>
+      <code><![CDATA[PhpParser\Node\Stmt\Class_::MODIFIER_STATIC]]></code>
+    </DeprecatedConstant>
+    <InvalidArgument>
+      <code><![CDATA[[
+                    new VirtualPropertyProperty(
+                        $property_name,
+                        $property_storage->suggested_type
+                            ? StubsGenerator::getExpressionFromType($property_storage->suggested_type)
+                            : null
+                    )
+                ]]]></code>
+    </InvalidArgument>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$method_storage->cased_name]]></code>
       <code><![CDATA[$method_storage->template_types]]></code>
@@ -1741,6 +1902,9 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Stubs/Generator/StubsGenerator.php">
+    <InvalidArgument>
+      <code><![CDATA[$new_items]]></code>
+    </InvalidArgument>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$function_storage->cased_name]]></code>
       <code><![CDATA[!$function_storage->cased_name]]></code>
@@ -2001,6 +2165,135 @@
       <code><![CDATA[!$report_options->output_path]]></code>
       <code><![CDATA[$parent_issue_type]]></code>
     </RiskyTruthyFalsyComparison>
+  </file>
+  <file src="src/Psalm/Node/Expr/VirtualArrayItem.php">
+    <InvalidStaticInvocation>
+      <code><![CDATA[ArrayItem]]></code>
+    </InvalidStaticInvocation>
+    <PropertyNotSetInConstructor>
+      <code><![CDATA[VirtualArrayItem]]></code>
+      <code><![CDATA[VirtualArrayItem]]></code>
+      <code><![CDATA[VirtualArrayItem]]></code>
+      <code><![CDATA[VirtualArrayItem]]></code>
+      <code><![CDATA[VirtualArrayItem]]></code>
+    </PropertyNotSetInConstructor>
+  </file>
+  <file src="src/Psalm/Node/Expr/VirtualClosureUse.php">
+    <InvalidStaticInvocation>
+      <code><![CDATA[ClosureUse]]></code>
+    </InvalidStaticInvocation>
+    <PropertyNotSetInConstructor>
+      <code><![CDATA[VirtualClosureUse]]></code>
+      <code><![CDATA[VirtualClosureUse]]></code>
+      <code><![CDATA[VirtualClosureUse]]></code>
+    </PropertyNotSetInConstructor>
+  </file>
+  <file src="src/Psalm/Node/Scalar/VirtualDNumber.php">
+    <InvalidStaticInvocation>
+      <code><![CDATA[DNumber]]></code>
+    </InvalidStaticInvocation>
+    <PropertyNotSetInConstructor>
+      <code><![CDATA[VirtualDNumber]]></code>
+      <code><![CDATA[VirtualDNumber]]></code>
+    </PropertyNotSetInConstructor>
+  </file>
+  <file src="src/Psalm/Node/Scalar/VirtualEncapsed.php">
+    <InvalidStaticInvocation>
+      <code><![CDATA[Encapsed]]></code>
+    </InvalidStaticInvocation>
+    <PropertyNotSetInConstructor>
+      <code><![CDATA[VirtualEncapsed]]></code>
+      <code><![CDATA[VirtualEncapsed]]></code>
+    </PropertyNotSetInConstructor>
+  </file>
+  <file src="src/Psalm/Node/Scalar/VirtualEncapsedStringPart.php">
+    <InvalidStaticInvocation>
+      <code><![CDATA[EncapsedStringPart]]></code>
+    </InvalidStaticInvocation>
+    <PropertyNotSetInConstructor>
+      <code><![CDATA[VirtualEncapsedStringPart]]></code>
+      <code><![CDATA[VirtualEncapsedStringPart]]></code>
+    </PropertyNotSetInConstructor>
+  </file>
+  <file src="src/Psalm/Node/Scalar/VirtualLNumber.php">
+    <InvalidStaticInvocation>
+      <code><![CDATA[LNumber]]></code>
+    </InvalidStaticInvocation>
+    <PropertyNotSetInConstructor>
+      <code><![CDATA[VirtualLNumber]]></code>
+      <code><![CDATA[VirtualLNumber]]></code>
+    </PropertyNotSetInConstructor>
+  </file>
+  <file src="src/Psalm/Node/Stmt/VirtualClass.php">
+    <PropertyNotSetInConstructor>
+      <code><![CDATA[VirtualClass]]></code>
+    </PropertyNotSetInConstructor>
+  </file>
+  <file src="src/Psalm/Node/Stmt/VirtualDeclareDeclare.php">
+    <InvalidStaticInvocation>
+      <code><![CDATA[DeclareDeclare]]></code>
+    </InvalidStaticInvocation>
+    <PropertyNotSetInConstructor>
+      <code><![CDATA[VirtualDeclareDeclare]]></code>
+      <code><![CDATA[VirtualDeclareDeclare]]></code>
+      <code><![CDATA[VirtualDeclareDeclare]]></code>
+    </PropertyNotSetInConstructor>
+  </file>
+  <file src="src/Psalm/Node/Stmt/VirtualFunction.php">
+    <PropertyNotSetInConstructor>
+      <code><![CDATA[VirtualFunction]]></code>
+    </PropertyNotSetInConstructor>
+  </file>
+  <file src="src/Psalm/Node/Stmt/VirtualInterface.php">
+    <PropertyNotSetInConstructor>
+      <code><![CDATA[VirtualInterface]]></code>
+    </PropertyNotSetInConstructor>
+  </file>
+  <file src="src/Psalm/Node/Stmt/VirtualPropertyProperty.php">
+    <InvalidStaticInvocation>
+      <code><![CDATA[PropertyProperty]]></code>
+    </InvalidStaticInvocation>
+    <PropertyNotSetInConstructor>
+      <code><![CDATA[VirtualPropertyProperty]]></code>
+      <code><![CDATA[VirtualPropertyProperty]]></code>
+      <code><![CDATA[VirtualPropertyProperty]]></code>
+    </PropertyNotSetInConstructor>
+  </file>
+  <file src="src/Psalm/Node/Stmt/VirtualStaticVar.php">
+    <InvalidStaticInvocation>
+      <code><![CDATA[StaticVar]]></code>
+    </InvalidStaticInvocation>
+    <PropertyNotSetInConstructor>
+      <code><![CDATA[VirtualStaticVar]]></code>
+      <code><![CDATA[VirtualStaticVar]]></code>
+      <code><![CDATA[VirtualStaticVar]]></code>
+    </PropertyNotSetInConstructor>
+  </file>
+  <file src="src/Psalm/Node/Stmt/VirtualThrow.php">
+    <UndefinedClass>
+      <code><![CDATA[Throw_]]></code>
+    </UndefinedClass>
+  </file>
+  <file src="src/Psalm/Node/Stmt/VirtualTrait.php">
+    <PropertyNotSetInConstructor>
+      <code><![CDATA[VirtualTrait]]></code>
+    </PropertyNotSetInConstructor>
+  </file>
+  <file src="src/Psalm/Node/Stmt/VirtualUseUse.php">
+    <InvalidStaticInvocation>
+      <code><![CDATA[UseUse]]></code>
+    </InvalidStaticInvocation>
+    <PropertyNotSetInConstructor>
+      <code><![CDATA[VirtualUseUse]]></code>
+      <code><![CDATA[VirtualUseUse]]></code>
+      <code><![CDATA[VirtualUseUse]]></code>
+      <code><![CDATA[VirtualUseUse]]></code>
+    </PropertyNotSetInConstructor>
+  </file>
+  <file src="src/Psalm/Node/VirtualConst.php">
+    <PropertyNotSetInConstructor>
+      <code><![CDATA[VirtualConst]]></code>
+    </PropertyNotSetInConstructor>
   </file>
   <file src="src/Psalm/Report/ByIssueLevelAndTypeReport.php">
     <RiskyTruthyFalsyComparison>
@@ -2351,9 +2644,19 @@
       <code><![CDATA[$return_type]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
-  <file src="vendor/nikic/php-parser/lib/PhpParser/Node/Expr/ArrowFunction.php">
-    <PossiblyUndefinedStringArrayOffset>
-      <code><![CDATA[$subNodes['expr']]]></code>
-    </PossiblyUndefinedStringArrayOffset>
+  <file src="vendor/nikic/php-parser/lib/PhpParser/Node/MatchArm.php">
+    <InvalidPropertyAssignmentValue>
+      <code><![CDATA[$conds]]></code>
+    </InvalidPropertyAssignmentValue>
+  </file>
+  <file src="vendor/nikic/php-parser/lib/PhpParser/Node/Stmt/ClassMethod.php">
+    <InvalidArrayOffset>
+      <code><![CDATA[$subNodes['type']]]></code>
+    </InvalidArrayOffset>
+  </file>
+  <file src="vendor/nikic/php-parser/lib/PhpParser/Node/Stmt/Class_.php">
+    <InvalidArrayOffset>
+      <code><![CDATA[$subNodes['type']]]></code>
+    </InvalidArrayOffset>
   </file>
 </files>

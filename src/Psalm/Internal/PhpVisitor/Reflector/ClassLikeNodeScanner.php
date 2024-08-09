@@ -73,7 +73,6 @@ use function array_merge;
 use function array_pop;
 use function array_shift;
 use function array_values;
-use function assert;
 use function count;
 use function get_class;
 use function implode;
