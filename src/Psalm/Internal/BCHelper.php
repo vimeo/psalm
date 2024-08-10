@@ -38,7 +38,7 @@ final class BCHelper
 
     public static function usePHPParserV4(): bool
     {
-        return class_exists('\PhpParser\Node\Stmt\Throw');
+        return class_exists('\PhpParser\Node\Stmt\Throw_');
     }
 
     public static function isThrow(Node $stmt): bool

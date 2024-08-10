@@ -1,5 +1,9 @@
 <?php
 
+/**
+ * phpcs:disable PSR1.Classes.ClassDeclaration.MultipleClasses
+ */
+
 declare(strict_types=1);
 
 namespace Psalm\Internal\PhpTraverser;
@@ -7,16 +11,44 @@ namespace Psalm\Internal\PhpTraverser;
 use LogicException;
 use PhpParser\Node;
 use PhpParser\NodeTraverser;
+use Psalm\Internal\BCHelper;
 
 use function array_pop;
 use function array_splice;
 use function gettype;
 use function is_array;
 
+if (BCHelper::usePHPParserV4()) {
+    /**
+     * @internal
+     */
+    final class CustomTraverser extends InternalCustomTraverser
+    {
+        protected function traverseNode(Node $node): Node
+        {
+            $this->customTraverseNode($node);
+
+            return $node;
+        }
+    }
+} else {
+    /**
+     * @internal
+     */
+    final class CustomTraverser extends InternalCustomTraverser
+    {
+        protected function traverseNode(Node $node): void
+        {
+            $this->customTraverseNode($node);
+        }
+    }
+}
+
+
 /**
  * @internal
  */
-final class CustomTraverser extends NodeTraverser
+abstract class InternalCustomTraverser extends NodeTraverser
 {
     public function __construct()
     {
@@ -28,7 +60,7 @@ final class CustomTraverser extends NodeTraverser
      *
      * @param Node $node node to traverse
      */
-    protected function traverseNode(Node $node): void
+    protected function customTraverseNode(Node $node): void
     {
         foreach ($node->getSubNodeNames() as $name) {
             $subNode = &$node->$name;
