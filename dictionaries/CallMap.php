@@ -7920,7 +7920,7 @@ return [
 'mysqli_get_charset' => ['?object', 'mysql'=>'mysqli'],
 'mysqli_get_client_info' => ['string', 'mysql='=>'?mysqli'],
 'mysqli_get_client_stats' => ['array'],
-'mysqli_get_client_version' => ['int', 'link'=>'mysqli'],
+'mysqli_get_client_version' => ['int'],
 'mysqli_get_connection_stats' => ['array', 'mysql'=>'mysqli'],
 'mysqli_get_host_info' => ['string', 'mysql'=>'mysqli'],
 'mysqli_get_links_stats' => ['array'],
