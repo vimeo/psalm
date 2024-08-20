@@ -744,9 +744,9 @@ class TaintTest extends TestCase
                     $mysqli = new mysqli();
 
                     $a = $mysqli->escape_string($_GET["a"]);
-                    $b = mysqli_escape_string($_GET["b"]);
+                    $b = mysqli_escape_string($mysqli, $_GET["b"]);
                     $c = $mysqli->real_escape_string($_GET["c"]);
-                    $d = mysqli_real_escape_string($_GET["d"]);
+                    $d = mysqli_real_escape_string($mysqli, $_GET["d"]);
 
                     $mysqli->query("$a$b$c$d");',
             ],
@@ -2434,12 +2434,14 @@ class TaintTest extends TestCase
             ],
             'assertMysqliOnlyEscapesSqlTaints3' => [
                 'code' => '<?php
-                    echo mysqli_escape_string($_GET["a"]);',
+                    $mysqli = new mysqli();
+                    echo mysqli_escape_string($mysqli, $_GET["a"]);',
                 'error_message' => 'TaintedHtml',
             ],
             'assertMysqliOnlyEscapesSqlTaints4' => [
                 'code' => '<?php
-                    echo mysqli_real_escape_string($_GET["a"]);',
+                    $mysqli = new mysqli();
+                    echo mysqli_real_escape_string($mysqli, $_GET["a"]);',
                 'error_message' => 'TaintedHtml',
             ],
             'assertDb2OnlyEscapesSqlTaints' => [
