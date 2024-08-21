@@ -639,6 +639,34 @@ class MixinAnnotationTest extends TestCase
                     (new A)->foo = "bar";',
                 'error_message' => 'UndefinedPropertyAssignment',
             ],
+            'undefinedMixinClassWithPropertyAssignment_WithMagicMethod' => [
+                'code' => '<?php
+                    /**
+                     * @property string $baz
+                     * @mixin B
+                     */
+                    class A {
+                        public function __set(string $name, string $value) {}
+                    }
+
+                    (new A)->foo = "bar";',
+                'error_message' => 'UndefinedMagicPropertyAssignment',
+            ],
+            'undefinedMixinClassWithPropertyAssignment_WithMagicMethod_Similar' => [
+                'code' => '<?php
+                    /**
+                     * @property string $baz
+                     * @mixin B
+                     */
+                    class A {
+                        public function __set(string $name, string $value) {}
+                    }
+
+                    /* this is difference */
+                    $a = new A();
+                    $a->foo = "bar";',
+                'error_message' => 'UndefinedMagicPropertyAssignment',
+            ],
             'undefinedMixinClassWithMethodCall' => [
                 'code' => '<?php
                     /** @mixin B */
