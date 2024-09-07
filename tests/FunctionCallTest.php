@@ -402,6 +402,14 @@ class FunctionCallTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['MixedAssignment', 'MixedArgument'],
             ],
+            'noRedundantErrorForCallableStrToLower' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @var callable-string */
+                    $function = "strlen";
+                    strtolower($function);
+                PHP,
+            ],
             'objectLikeArrayAssignmentInConditional' => [
                 'code' => '<?php
                     $a = [];
