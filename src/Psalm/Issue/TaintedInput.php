@@ -10,6 +10,8 @@ abstract class TaintedInput extends CodeIssue
     public const ERROR_LEVEL = -2;
     /** @var int<0, max> */
     public const SHORTCODE = 205;
+    /** @var string */
+    public const MESSAGE = 'Detected generic tainted input';
 
     /**
      * @var string
