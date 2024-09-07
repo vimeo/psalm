@@ -6,6 +6,7 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
+use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TypeTokenizer;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
@@ -129,6 +130,43 @@ class TypeComparatorTest extends TestCase
         );
     }
 
+    /** @dataProvider getCoercibleComparisons */
+    public function testTypeIsCoercible(string $parent_type_string, string $child_type_string): void
+    {
+        $parent_type = Type::parseString($parent_type_string);
+        $child_type = Type::parseString($child_type_string);
+
+        $result = new TypeComparisonResult();
+
+        $contained = UnionTypeComparator::isContainedBy(
+            $this->project_analyzer->getCodebase(),
+            $child_type,
+            $parent_type,
+            false,
+            false,
+            $result,
+        );
+
+        $this->assertFalse($contained, 'Type ' . $parent_type_string . ' should not contain ' . $child_type_string);
+        $this->assertTrue(
+            $result->type_coerced,
+            'Type ' . $parent_type_string . ' should be coercible into ' . $child_type_string,
+        );
+    }
+
+    /** @return iterable<string, list{string, string}> */
+    public function getCoercibleComparisons(): iterable
+    {
+        yield 'callableStringIntoLowercaseString' => [
+            'lowercase-string',
+            'callable-string',
+        ];
+        yield 'lowercaseStringIntoCallableString' => [
+            'callable-string',
+            'lowercase-string',
+        ];
+    }
+
     /**
      * @return array<array{string, string}>
      */
@@ -154,10 +192,6 @@ class TypeComparatorTest extends TestCase
             'arrayOptionalKeyed2AcceptsEmptyArray' => [
                 'array{foo?: string}&array<string, mixed>',
                 'array<never, never>',
-            ],
-            'Lowercase-stringAndCallable-string' => [
-                'lowercase-string',
-                'callable-string',
             ],
             'callableUnionAcceptsCallableUnion' => [
                 '(callable(int,string[]): void)|(callable(int): void)',
