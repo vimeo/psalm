@@ -1803,3 +1803,23 @@ function exec(string $command, &$output = null, int &$result_code = null): strin
 * @psalm-ignore-falsable-return
 */
 function get_browser(?string $user_agent = null, bool $return_array = false): object|array|false {}
+
+/**
+ * @psalm-taint-sink callable $callback
+ */
+function forward_static_call(callable $callback, mixed ...$args): mixed {}
+
+/**
+ * @psalm-taint-sink callable $callback
+ */
+function forward_static_call_array(callable $callback, array $args): mixed {}
+
+/**
+ * @psalm-taint-sink callable $callback
+ */
+function register_shutdown_function(callable $callback, mixed ...$args): void {}
+
+/**
+ * @psalm-taint-sink callable $callback
+ */
+function register_tick_function(callable $callback, mixed ...$args): bool {}

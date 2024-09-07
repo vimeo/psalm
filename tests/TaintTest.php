@@ -2527,6 +2527,42 @@ class TaintTest extends TestCase
                     $result = $mysqli->execute_query($query);',
                 'error_message' => 'TaintedSql',
             ],
+            'taintedRegisterShutdownFunction' => [
+                'code' => '<?php
+                    $foo = $_GET["foo"];
+                    register_shutdown_function($foo);',
+                'error_message' => 'TaintedCallable',
+            ],
+            'taintedRegisterTickFunction' => [
+                'code' => '<?php
+                    $foo = $_GET["foo"];
+                    register_tick_function($foo);',
+                'error_message' => 'TaintedCallable',
+            ],
+            'taintedForwardStaticCall' => [
+                'code' => '<?php
+                    $foo = $_GET["foo"];
+                    class B
+                    {
+                        public static function test($foo) {
+                            forward_static_call($foo, "one", "two");
+                        }
+                    }
+                    B::test($foo);',
+                'error_message' => 'TaintedCallable',
+            ],
+            'taintedForwardStaticCallArray' => [
+                'code' => '<?php
+                    $foo = $_GET["foo"];
+                    class B
+                    {
+                        public static function test($foo) {
+                            forward_static_call_array($foo, array("one", "two"));
+                        }
+                    }
+                    B::test($foo);',
+                'error_message' => 'TaintedCallable',
+            ],
         ];
     }
 
