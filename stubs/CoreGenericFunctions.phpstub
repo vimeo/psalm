@@ -1674,7 +1674,7 @@ function stream_select(null|array &$read, null|array &$write, null|array &$excep
  * @psalm-taint-escape sql
  * @psalm-flow ($string) -> return
  */
-function mysqli_escape_string($string) {}
+function mysqli_escape_string(mysqli $mysqli, $string) {}
 
 /**
  * @psalm-pure
@@ -1682,7 +1682,7 @@ function mysqli_escape_string($string) {}
  * @psalm-taint-escape sql
  * @psalm-flow ($string) -> return
  */
-function mysqli_real_escape_string($string) {}
+function mysqli_real_escape_string(mysqli $mysqli, $string) {}
 
 /**
  * @psalm-pure
