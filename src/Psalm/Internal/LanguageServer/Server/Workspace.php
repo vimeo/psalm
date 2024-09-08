@@ -98,7 +98,7 @@ final class Workspace
                 continue;
             }
 
-            //If the file is currently open then dont analize it because its tracked in didChange
+            //If the file is currently open then dont analyze it because its tracked in didChange
             if (!$this->codebase->file_provider->isOpen($file_path)) {
                 $this->server->queueClosedFileAnalysis($file_path, $change->uri);
             }

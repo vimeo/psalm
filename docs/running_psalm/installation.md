@@ -38,7 +38,7 @@ Read more about plugins in [Using Plugins chapter](plugins/using_plugins.md).
 Sometimes your project can conflict with one or more of Psalm’s dependencies. In
 that case you may find the Phar (a self-contained PHP executable) useful.
 
-The Phar can be downloaded from Github:
+The Phar can be downloaded from GitHub:
 
 ```bash
 wget https://github.com/vimeo/psalm/releases/latest/download/psalm.phar

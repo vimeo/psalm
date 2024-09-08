@@ -300,7 +300,7 @@ final class ArgumentAnalyzer
             $readonly_template_result = new TemplateResult($class_generic_params, []);
 
             // This flag ensures that the template results will never be written to
-            // It also supercedes the `$add_lower_bounds` flag so that closure params
+            // It also supersedes the `$add_lower_bounds` flag so that closure params
             // don’t get overwritten
             $readonly_template_result->readonly = true;
 

@@ -118,14 +118,14 @@ class IssueBufferTest extends TestCase
         $codebase->analyzer = $analyzer;
         $codebase->config = $config;
 
-        $projectAnalzyer = $this->createMock(ProjectAnalyzer::class);
-        $projectAnalzyer->method('getCodebase')->willReturn($codebase);
+        $projectAnalyzer = $this->createMock(ProjectAnalyzer::class);
+        $projectAnalyzer->method('getCodebase')->willReturn($codebase);
 
-        $projectAnalzyer->stdout_report_options = new ReportOptions();
-        $projectAnalzyer->generated_report_options = [];
+        $projectAnalyzer->stdout_report_options = new ReportOptions();
+        $projectAnalyzer->generated_report_options = [];
 
         ob_start();
-        IssueBuffer::finish($projectAnalzyer, false, microtime(true), false, $baseline);
+        IssueBuffer::finish($projectAnalyzer, false, microtime(true), false, $baseline);
         $output = ob_get_clean();
         $this->assertStringNotContainsString("ERROR", $output, "all issues baselined");
         IssueBuffer::clear();

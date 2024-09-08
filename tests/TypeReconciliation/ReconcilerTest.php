@@ -66,9 +66,9 @@ class ReconcilerTest extends TestCase
     }
 
     /**
-     * @dataProvider providerTestReconcilation
+     * @dataProvider providerTestReconciliation
      */
-    public function testReconcilation(string $expected_type, Assertion $assertion, string $original_type): void
+    public function testReconciliation(string $expected_type, Assertion $assertion, string $original_type): void
     {
         $reconciled = AssertionReconciler::reconcile(
             $assertion,
@@ -104,7 +104,7 @@ class ReconcilerTest extends TestCase
     /**
      * @return array<string,array{string,Assertion,string}>
      */
-    public function providerTestReconcilation(): array
+    public function providerTestReconciliation(): array
     {
         return [
             'notNullWithObject' => ['SomeClass', new IsNotType(new TNull()), 'SomeClass'],

@@ -715,7 +715,7 @@ class TKeyedArray extends Atomic
             }
 
             if (preg_match('/^-?[1-9][0-9]*$/', $name)
-                && (string)(int) $name !== $name // overflow occured
+                && (string)(int) $name !== $name // overflow occurred
             ) {
                 $quote = true;
             }
