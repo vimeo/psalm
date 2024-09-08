@@ -434,6 +434,14 @@ final class InstancePropertyFetchAnalyzer
                             $stmt,
                             $statements_analyzer,
                         );
+
+                        AtomicPropertyFetchAnalyzer::checkPropertyInternal(
+                            $stmt->name->name,
+                            $declaring_property_class,
+                            $stmt,
+                            $statements_analyzer,
+                            $context,
+                        );
                     }
 
                     $codebase->properties->propertyExists(
