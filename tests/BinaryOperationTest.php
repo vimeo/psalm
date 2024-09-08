@@ -828,6 +828,48 @@ class BinaryOperationTest extends TestCase
                         return "Hello $s1 $s2";
                     }',
             ],
+            'encapsedStringIncludingLiterals3' => [
+                'code' => '<?php
+                    $foo = rand(0, 1) ? "" : random_bytes(1);
+                    $interpolated = "hello {$foo} bar";',
+                'assertions' => ['$interpolated===' => "non-falsy-string"],
+            ],
+            'encapsedStringWithoutLiterals1' => [
+                'code' => '<?php
+                    /**
+                     * @var non-falsy-string $a
+                     * @var non-falsy-string $b
+                     */
+                    $interpolated = "{$a}{$b}";',
+                'assertions' => ['$interpolated===' => "non-falsy-string"],
+            ],
+            'encapsedStringWithoutLiterals2' => [
+                'code' => '<?php
+                    /**
+                     * @var string $a
+                     * @var non-empty-string $b
+                     */
+                    $interpolated = "{$a}{$b}";',
+                'assertions' => ['$interpolated===' => "non-empty-string"],
+            ],
+            'encapsedStringWithoutLiterals3' => [
+                'code' => '<?php
+                    /**
+                     * @var non-empty-string $a
+                     * @var non-falsy-string $b
+                     */
+                    $interpolated = "{$a}{$b}";',
+                'assertions' => ['$interpolated===' => "non-falsy-string"],
+            ],
+            'encapsedStringWithoutLiterals4' => [
+                'code' => '<?php
+                    /**
+                     * @var string $a
+                     * @var non-falsy-string $b
+                     */
+                    $interpolated = "{$a}{$b}";',
+                'assertions' => ['$interpolated===' => "non-falsy-string"],
+            ],
             'encapsedStringIsInferredAsLiteral' => [
                 'code' => '<?php
                     $int = 1;
@@ -934,6 +976,39 @@ class BinaryOperationTest extends TestCase
                         $s2 = "foo";
                         return "Hello $s1 $s2";
                     }',
+            ],
+            'encapsedWithUnionLiteralsKeepsLiteral' => [
+                'code' => '<?php
+                    $foo = rand(0, 1) ? 0 : 2;
+                    $encapsed = "{$foo}";',
+                'assertions' => ['$encapsed===' => "'0'|'2'"],
+            ],
+            'encapsedWithUnionLiteralsKeepsLiteral2' => [
+                'code' => '<?php
+                    /**
+                     * @var "a"|"b" $a
+                     * @var "hello"|"world"|"bye" $b
+                     */
+                    $encapsed = "X{$a}Y{$b}Z";',
+                'assertions' => ['$encapsed===' => "'XaYbyeZ'|'XaYhelloZ'|'XaYworldZ'|'XbYbyeZ'|'XbYhelloZ'|'XbYworldZ'"],
+            ],
+            'encapsedWithIntsKeepsLiteral' => [
+                'code' => '<?php
+                    /**
+                     * @var "a"|"b" $a
+                     * @var 0|1|2 $b
+                     */
+                    $encapsed = "{$a}{$b}";',
+                'assertions' => ['$encapsed===' => "'a0'|'a1'|'a2'|'b0'|'b1'|'b2'"],
+            ],
+            'encapsedWithIntRangeKeepsLiteral' => [
+                'code' => '<?php
+                    /**
+                     * @var "a"|"b" $a
+                     * @var int<0, 2> $b
+                     */
+                    $encapsed = "{$a}{$b}";',
+                'assertions' => ['$encapsed===' => "'a0'|'a1'|'a2'|'b0'|'b1'|'b2'"],
             ],
             'NumericStringIncrement' => [
                 'code' => '<?php
@@ -1217,6 +1292,14 @@ class BinaryOperationTest extends TestCase
                         return "hello $s1 $s2";
                     }',
                 'error_message' => 'LessSpecificReturnStatement',
+            ],
+            'encapsedMixedIssue10942' => [
+                'code' => '<?php
+                    /**
+                     * @var mixed $y
+                     */
+                    $z = "hello {$y} world";',
+                'error_message' => 'MixedOperand',
             ],
         ];
     }
