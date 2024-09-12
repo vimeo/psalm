@@ -603,12 +603,14 @@ class MixinAnnotationTest extends TestCase
     {
         return [
             'undefinedMixinClass' => [
+                // Similar test in MixinsDeepTest.php
                 'code' => '<?php
                     /** @mixin B */
                     class A {}',
                 'error_message' => 'UndefinedDocblockClass',
             ],
             'undefinedMixinClassWithPropertyFetch' => [
+                // Similar test in MixinsDeepTest.php
                 'code' => '<?php
                     /** @mixin B */
                     class A {}
@@ -617,6 +619,7 @@ class MixinAnnotationTest extends TestCase
                 'error_message' => 'UndefinedPropertyFetch',
             ],
             'undefinedMixinClassWithPropertyFetch_WithMagicMethod' => [
+                // Similar test in MixinsDeepTest.php
                 'code' => '<?php
                     /**
                      * @property string $baz
@@ -632,6 +635,7 @@ class MixinAnnotationTest extends TestCase
                 'error_message' => 'UndefinedMagicPropertyFetch',
             ],
             'undefinedMixinClassWithPropertyAssignment' => [
+                // Similar test in MixinsDeepTest.php
                 'code' => '<?php
                     /** @mixin B */
                     class A {}
@@ -640,6 +644,7 @@ class MixinAnnotationTest extends TestCase
                 'error_message' => 'UndefinedPropertyAssignment',
             ],
             'undefinedMixinClassWithPropertyAssignment_WithMagicMethod' => [
+                // Similar test in MixinsDeepTest.php
                 'code' => '<?php
                     /**
                      * @property string $baz
@@ -653,6 +658,7 @@ class MixinAnnotationTest extends TestCase
                 'error_message' => 'UndefinedMagicPropertyAssignment',
             ],
             'undefinedMixinClassWithMethodCall' => [
+                // Similar test in MixinsDeepTest.php
                 'code' => '<?php
                     /** @mixin B */
                     class A {}
@@ -661,6 +667,7 @@ class MixinAnnotationTest extends TestCase
                 'error_message' => 'UndefinedMethod',
             ],
             'undefinedMixinClassWithMethodCall_WithMagicMethod' => [
+                // Similar test in MixinsDeepTest.php
                 'code' => '<?php
                     /**
                      * @method baz()
@@ -674,6 +681,7 @@ class MixinAnnotationTest extends TestCase
                 'error_message' => 'UndefinedMagicMethod',
             ],
             'undefinedMixinClassWithStaticMethodCall' => [
+                // Similar test in MixinsDeepTest.php
                 'code' => '<?php
                     /** @mixin B */
                     class A {}
@@ -682,6 +690,7 @@ class MixinAnnotationTest extends TestCase
                 'error_message' => 'UndefinedMethod',
             ],
             'undefinedMixinClassWithStaticMethodCall_WithMagicMethod' => [
+                // Similar test in MixinsDeepTest.php
                 'code' => '<?php
                     /**
                      * @method baz()
