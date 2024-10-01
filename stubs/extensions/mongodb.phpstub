@@ -84,7 +84,7 @@ namespace MongoDB\BSON
     /**
      * @psalm-template TKey of int|string
      * @psalm-template TValue
-     * $psalm-implements \Iterator<TKey, TValue>
+     * @psalm-implements \Iterator<TKey, TValue>
      */
     final class Iterator implements \Iterator
     {
@@ -133,6 +133,10 @@ namespace MongoDB\BSON
         {
         }
 
+        final static public function fromJSON(string $json): Document
+        {
+        }
+
         /** @return TValue */
         final public function get(int $index)
         {
@@ -149,6 +153,14 @@ namespace MongoDB\BSON
 
         /** @return array|object */
         final public function toPHP(?array $typeMap = null)
+        {
+        }
+
+        final public function toCanonicalExtendedJSON(): string
+        {
+        }
+
+        final public function toRelaxedExtendedJSON(): string
         {
         }
 
@@ -183,6 +195,7 @@ namespace MongoDB\Driver
 {
     use Iterator;
     use Traversable;
+    use MongoDB\BSON\Int64;
 
     /**
      * @template-covariant TKey
@@ -193,9 +206,24 @@ namespace MongoDB\Driver
     interface CursorInterface extends Traversable
     {
         /**
-         * @return array<TValue>
+         * @return TValue|null
+         * @psalm-ignore-nullable-return
          */
-        public function toArray();
+        public function current(): array|object|null;
+
+        public function getId(): Int64|CursorId;
+
+        public function getServer(): Server;
+
+        public function isDead(): bool;
+
+        /** @psalm-ignore-nullable-return */
+        public function key(): ?int;
+
+        public function setTypeMap(array $typemap): void;
+
+        /** @return array<TValue> */
+        public function toArray(): array;
     }
 
     /**
@@ -207,44 +235,48 @@ namespace MongoDB\Driver
     final class Cursor implements CursorInterface, Iterator
     {
         /**
-         * @return TValue
+         * @return TValue|null
+         * @psalm-ignore-nullable-return
          */
-        public function current()
+        public function current(): array|object|null
         {
         }
 
-        /**
-         * @return void
-         */
-        public function next()
+        public function next(): void
         {
         }
 
-        /**
-         * @return int
-         */
-        public function key()
+        /** @psalm-ignore-nullable-return */
+        public function key(): ?int
         {
         }
 
-        /**
-         * @return bool
-         */
-        public function valid()
+        public function valid(): bool
         {
         }
 
-        /**
-         * @return void
-         */
-        public function rewind()
+        public function rewind(): void
         {
         }
 
-        /**
-         * @return array<TValue>
-         */
-        public function toArray()
+        /** @return array<TValue> */
+        public function toArray(): array
+        {
+        }
+
+        public function getId(bool $asInt64 = false): Int64|CursorId
+        {
+        }
+
+        public function getServer(): Server
+        {
+        }
+
+        public function isDead(): bool
+        {
+        }
+
+        public function setTypeMap(array $typemap): void
         {
         }
     }
