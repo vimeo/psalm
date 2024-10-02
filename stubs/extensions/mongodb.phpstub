@@ -264,6 +264,7 @@ namespace MongoDB\Driver
         {
         }
 
+        /** @return ($asInt64 is true ? Int64 : CursorId)
         public function getId(bool $asInt64 = false): Int64|CursorId
         {
         }
