@@ -151,7 +151,7 @@ final class PsalmRestarter extends XdebugHandler
         if (PHP_VERSION_ID >= 8_00_00 && $opcache_loaded) {
             $additional_options = [
                 '-dopcache.enable_cli=true',
-                '-dopcache.jit_buffer_size=512M',
+                '-dopcache.jit_buffer_size=128M', // JIT on AArch64 doesn't support opcache.jit_buffer_size above 128M
                 '-dopcache.jit=1205',
                 '-dopcache.optimization_level=0x7FFEBFFF',
                 '-dopcache.preload=',
