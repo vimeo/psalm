@@ -521,10 +521,10 @@ class InternalCallMapHandlerTest extends TestCase
         try {
             if (strpos($functionName, '::') !== false) {
                 if (PHP_VERSION_ID < 8_03_00) {
-                    [$className, , $methodName] = explode(':', $functionName, 3);
-                    return new ReflectionMethod($className, $methodName);
+                    return new ReflectionMethod($functionName);
                 }
 
+                /** @psalm-suppress UndefinedMethod */
                 return ReflectionMethod::createFromMethodName($functionName);
             }
 
