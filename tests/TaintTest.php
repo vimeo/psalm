@@ -2596,6 +2596,11 @@ class TaintTest extends TestCase
                     extract($_POST);',
                 'error_message' => 'TaintedExtract',
             ],
+            'taintedSession' => [
+                'code' => '<?php
+                    $_SESSION["foo"] = $_GET["foo"];',
+                'error_message' => 'TaintedSession',
+            ],
         ];
     }
 
