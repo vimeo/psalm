@@ -744,9 +744,9 @@ class TaintTest extends TestCase
                     $mysqli = new mysqli();
 
                     $a = $mysqli->escape_string($_GET["a"]);
-                    $b = mysqli_escape_string($_GET["b"]);
+                    $b = mysqli_escape_string($mysqli, $_GET["b"]);
                     $c = $mysqli->real_escape_string($_GET["c"]);
-                    $d = mysqli_real_escape_string($_GET["d"]);
+                    $d = mysqli_real_escape_string($mysqli, $_GET["d"]);
 
                     $mysqli->query("$a$b$c$d");',
             ],
@@ -2555,12 +2555,14 @@ class TaintTest extends TestCase
             ],
             'assertMysqliOnlyEscapesSqlTaints3' => [
                 'code' => '<?php
-                    echo mysqli_escape_string($_GET["a"]);',
+                    $mysqli = new mysqli();
+                    echo mysqli_escape_string($mysqli, $_GET["a"]);',
                 'error_message' => 'TaintedHtml',
             ],
             'assertMysqliOnlyEscapesSqlTaints4' => [
                 'code' => '<?php
-                    echo mysqli_real_escape_string($_GET["a"]);',
+                    $mysqli = new mysqli();
+                    echo mysqli_real_escape_string($mysqli, $_GET["a"]);',
                 'error_message' => 'TaintedHtml',
             ],
             'assertDb2OnlyEscapesSqlTaints' => [
@@ -2630,6 +2632,58 @@ class TaintTest extends TestCase
                     $name = $_GET["name"];
                     $function = new ReflectionFunction($name);
                     $function->invoke();',
+                'error_message' => 'TaintedCallable',
+            ],
+            'taintedExecuteQueryFunction' => [
+                'code' => '<?php
+                    $userId = $_GET["user_id"];
+                    $query = "delete from users where user_id = " . $userId;
+                    $link = mysqli_connect("localhost", "my_user", "my_password", "world");
+                    $result = mysqli_execute_query($link, $query);',
+                'error_message' => 'TaintedSql',
+            ],
+            'taintedExecuteQueryMethod' => [
+                'code' => '<?php
+                    $userId = $_GET["user_id"];
+                    $query = "delete from users where user_id = " . $userId;
+                    $mysqli = new mysqli("localhost", "my_user", "my_password", "world");
+                    $result = $mysqli->execute_query($query);',
+                'error_message' => 'TaintedSql',
+            ],
+            'taintedRegisterShutdownFunction' => [
+                'code' => '<?php
+                    $foo = $_GET["foo"];
+                    register_shutdown_function($foo);',
+                'error_message' => 'TaintedCallable',
+            ],
+            'taintedRegisterTickFunction' => [
+                'code' => '<?php
+                    $foo = $_GET["foo"];
+                    register_tick_function($foo);',
+                'error_message' => 'TaintedCallable',
+            ],
+            'taintedForwardStaticCall' => [
+                'code' => '<?php
+                    $foo = $_GET["foo"];
+                    class B
+                    {
+                        public static function test($foo) {
+                            forward_static_call($foo, "one", "two");
+                        }
+                    }
+                    B::test($foo);',
+                'error_message' => 'TaintedCallable',
+            ],
+            'taintedForwardStaticCallArray' => [
+                'code' => '<?php
+                    $foo = $_GET["foo"];
+                    class B
+                    {
+                        public static function test($foo) {
+                            forward_static_call_array($foo, array("one", "two"));
+                        }
+                    }
+                    B::test($foo);',
                 'error_message' => 'TaintedCallable',
             ],
         ];
