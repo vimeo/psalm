@@ -10,6 +10,7 @@ use PhpParser\Parser;
 use Psalm\CodeLocation\ParseErrorLocation;
 use Psalm\Codebase;
 use Psalm\Config;
+use Psalm\Internal\BCHelper;
 use Psalm\Internal\Diff\FileDiffer;
 use Psalm\Internal\Diff\FileStatementsDiffer;
 use Psalm\Internal\PhpTraverser\CustomTraverser;
@@ -390,21 +391,15 @@ final class StatementsProvider
         ?array  $existing_statements = null,
         ?array  $file_changes = null
     ): array {
-        $attributes = [
-            'comments', 'startLine', 'startFilePos', 'endFilePos',
-        ];
-
         if (!self::$lexer) {
             $major_version = Codebase::transformPhpVersionId($analysis_php_version_id, 10_000);
             $minor_version = Codebase::transformPhpVersionId($analysis_php_version_id % 10_000, 100);
-            self::$lexer = new Emulative([
-                'usedAttributes' => $attributes,
-                'phpVersion' => $major_version . '.' . $minor_version,
-            ]);
+
+            self::$lexer = BCHelper::createEmulative($major_version, $minor_version);
         }
 
         if (!self::$parser) {
-            self::$parser = (new PhpParser\ParserFactory())->create(PhpParser\ParserFactory::ONLY_PHP7, self::$lexer);
+            self::$parser = new Parser\Php7(self::$lexer);
         }
 
         $used_cached_statements = false;
