@@ -44,6 +44,10 @@ class PluginTest extends TestCase
 
     public static function setUpBeforeClass(): void
     {
+        // hack to isolate Psalm from PHPUnit cli arguments
+        global $argv;
+        $argv = [];
+
         self::$config = new TestConfig();
 
         if (!defined('PSALM_VERSION')) {
