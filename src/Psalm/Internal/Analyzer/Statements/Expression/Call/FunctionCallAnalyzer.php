@@ -17,6 +17,7 @@ use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\TaintSink;
+use Psalm\Internal\DataFlow\TaintSource;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Internal\Type\TemplateResult;
@@ -865,6 +866,11 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                         $added_taints,
                         $removed_taints,
                     );
+                }
+
+                if ($added_taints !== []) {
+                    $taint_source = TaintSource::fromNode($custom_call_sink);
+                    $statements_analyzer->data_flow_graph->addSource($taint_source);
                 }
             }
         }

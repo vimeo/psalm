@@ -8,7 +8,9 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Internal\DataFlow\TaintSource;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type;
 use Psalm\Type\Atomic\TLiteralFloat;
@@ -100,6 +102,11 @@ final class EncapsulatedStringAnalyzer
 
                     $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
                     $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
+
+                    if ($added_taints !== [] && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+                        $taint_source = TaintSource::fromNode($new_parent_node);
+                        $statements_analyzer->data_flow_graph->addSource($taint_source);
+                    }
 
                     if ($casted_part_type->parent_nodes) {
                         foreach ($casted_part_type->parent_nodes as $parent_node) {
