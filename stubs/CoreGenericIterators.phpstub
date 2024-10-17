@@ -127,6 +127,11 @@ class IteratorIterator implements OuterIterator {
      * @psalm-ignore-nullable-return
      */
     public function key() {}
+
+    /**
+     * @return TIterator
+     */
+    public function getInnerIterator();
 }
 
 /**
