@@ -891,7 +891,7 @@ class ConditionalReturnTypeTest extends TestCase
                     interface ContainerInterface
                     {
                         /**
-                         * @template TRequestedInstance extends InstanceType
+                         * @template TRequestedInstance of InstanceType
                          * @param class-string<TRequestedInstance>|string $name
                          * @return ($name is class-string ? TRequestedInstance : InstanceType)
                          */
@@ -958,6 +958,62 @@ class ConditionalReturnTypeTest extends TestCase
                      * @psalm-return ($string is non-empty-literal-string ? string : int)
                      */
                     function getSomething(string $string)
+                    {
+                        if (!$string) {
+                            return 1;
+                        }
+
+                        return "";
+                    }
+
+                    /** @var literal-string $literalString */
+                    $literalString;
+                    $something = getSomething($literalString);
+                    /** @var non-empty-literal-string $nonEmptyliteralString */
+                    $nonEmptyliteralString;
+                    $something2 = getSomething($nonEmptyliteralString);
+                ',
+                'assertions' => [
+                    '$something' => 'int|string',
+                    '$something2' => 'string',
+                ],
+                'ignored_issues' => [],
+            ],
+            'literalStringIsNotNonEmpty' => [
+                'code' => '<?php
+                    /**
+                     * @param literal-string $string
+                     * @psalm-return ($string is non-empty-string ? string : int)
+                     */
+                    function getSomething(string $string)
+                    {
+                        if (!$string) {
+                            return 1;
+                        }
+
+                        return "";
+                    }
+
+                    /** @var literal-string $literalString */
+                    $literalString;
+                    $something = getSomething($literalString);
+                    /** @var non-empty-literal-string $nonEmptyliteralString */
+                    $nonEmptyliteralString;
+                    $something2 = getSomething($nonEmptyliteralString);
+                ',
+                'assertions' => [
+                    '$something' => 'int|string',
+                    '$something2' => 'string',
+                ],
+                'ignored_issues' => [],
+            ],
+            'literalStringIsNotNonEmptyWithUnion' => [
+                'code' => '<?php
+                    /**
+                     * @param literal-string|int $string
+                     * @psalm-return ($string is non-empty-string|int ? string : int)
+                     */
+                    function getSomething($string)
                     {
                         if (!$string) {
                             return 1;

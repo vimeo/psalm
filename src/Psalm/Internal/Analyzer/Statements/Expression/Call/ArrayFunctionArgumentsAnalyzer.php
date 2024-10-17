@@ -355,9 +355,6 @@ final class ArrayFunctionArgumentsAnalyzer
         if (($array_arg_type = $statements_analyzer->node_data->getType($array_arg))
             && $array_arg_type->hasArray()
         ) {
-            /**
-             * @var TArray|TKeyedArray
-             */
             $array_type = $array_arg_type->getArray();
             if ($generic_array_type = ArrayType::infer($array_type)) {
                 $array_size = $generic_array_type->count;

@@ -74,7 +74,10 @@ final class ScalarTypeComparator
         }
 
         if ($container_type_part instanceof TNonEmptyString
-            && get_class($input_type_part) === TString::class
+            && (
+                get_class($input_type_part) === TString::class
+                || get_class($input_type_part) === TNonspecificLiteralString::class
+            )
         ) {
             if ($atomic_comparison_result) {
                 $atomic_comparison_result->type_coerced = true;
