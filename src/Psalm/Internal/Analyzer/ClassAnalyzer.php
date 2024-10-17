@@ -74,6 +74,7 @@ use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
@@ -84,6 +85,7 @@ use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_filter;
+use function array_key_first;
 use function array_keys;
 use function array_map;
 use function array_merge;
@@ -99,9 +101,11 @@ use function is_string;
 use function preg_match;
 use function preg_replace;
 use function reset;
+use function sprintf;
 use function str_replace;
 use function strtolower;
 use function substr;
+use function trim;
 
 /**
  * @internal
@@ -2193,6 +2197,18 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 );
             }
 
+            if ($fq_interface_name_lc === 'backedenum' &&
+                $codebase->analysis_php_version_id >= 8_01_00
+            ) {
+                $this->checkTemplateParams(
+                    $codebase,
+                    $storage,
+                    $interface_storage,
+                    $code_location,
+                    $storage->template_type_implements_count[$fq_interface_name_lc] ?? 0,
+                );
+            }
+
             if (($fq_interface_name_lc === 'unitenum'
                     || $fq_interface_name_lc === 'backedenum')
                 && !$storage->is_enum
@@ -2521,6 +2537,25 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
     {
         $storage = $this->storage;
 
+        /** @var Atomic|null $enum_implemented_type */
+        $enum_implemented_type = null;
+
+        foreach ($storage->template_extended_params ?? [] as $template_extended_params_map) {
+            foreach ($template_extended_params_map as $template) {
+                if (count($template_extended_params_map) > 1) {
+                    throw new LogicException('BackedEnum should only have 1 template parameter in its stub');
+                }
+
+                $enum_implemented_types = $template->getAtomicTypes();
+
+                if (count($enum_implemented_types) === 1) {
+                    $enum_implemented_type = $enum_implemented_types[array_key_first($enum_implemented_types)] ?? null;
+
+                    break 2;
+                }
+            }
+        }
+
         $seen_values = [];
         foreach ($storage->enum_cases as $case_storage) {
             $case_value = $case_storage->getValue($this->getCodebase()->classlikes);
@@ -2541,8 +2576,11 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     ),
                 );
             } elseif ($case_value !== null) {
-                if ((is_int($case_value) && $storage->enum_type === 'string')
-                    || (is_string($case_value) && $storage->enum_type === 'int')
+                $is_int_case_value    = is_int($case_value);
+                $is_string_case_value = is_string($case_value);
+
+                if (($is_int_case_value && $storage->enum_type === 'string') ||
+                    ($is_string_case_value && $storage->enum_type === 'int')
                 ) {
                     IssueBuffer::maybeAdd(
                         new InvalidEnumCaseValue(
@@ -2551,6 +2589,102 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                             $storage->name,
                         ),
                     );
+                }
+
+                if ($is_string_case_value && $storage->enum_type === 'string') {
+                    $case_value = (string) $case_value;
+
+                    if ($enum_implemented_type instanceof Type\Atomic\TNonEmptyString) {
+                        if (trim($case_value) === '') {
+                            IssueBuffer::maybeAdd(
+                                new InvalidEnumCaseValue(
+                                    sprintf(
+                                        'Enum case value type should be %s, got `%s`',
+                                        $enum_implemented_type->getId(),
+                                        $case_value,
+                                    ),
+                                    $case_storage->stmt_location,
+                                    $storage->name,
+                                ),
+                            );
+                        }
+                    }
+                }
+
+                if ($is_int_case_value && $storage->enum_type === 'int') {
+                    $case_value = (int) $case_value;
+
+                    if ($enum_implemented_type instanceof Type\Atomic\TIntRange) {
+                        if ($enum_implemented_type->isPositive() && $case_value < 1) {
+                            IssueBuffer::maybeAdd(
+                                new InvalidEnumCaseValue(
+                                    sprintf(
+                                        'Enum case value type should be %s, got `%d`',
+                                        $enum_implemented_type->getId(),
+                                        $case_value,
+                                    ),
+                                    $case_storage->stmt_location,
+                                    $storage->name,
+                                ),
+                            );
+                        }
+
+                        if ($enum_implemented_type->isPositiveOrZero() && $case_value < 0) {
+                            IssueBuffer::maybeAdd(
+                                new InvalidEnumCaseValue(
+                                    sprintf(
+                                        'Enum case value type should be %s, got `%d`',
+                                        $enum_implemented_type->getId(),
+                                        $case_value,
+                                    ),
+                                    $case_storage->stmt_location,
+                                    $storage->name,
+                                ),
+                            );
+                        }
+
+                        if ($enum_implemented_type->isNegative() && $case_value >= 0) {
+                            IssueBuffer::maybeAdd(
+                                new InvalidEnumCaseValue(
+                                    sprintf(
+                                        'Enum case value type should be %s, got `%d`',
+                                        $enum_implemented_type->getId(),
+                                        $case_value,
+                                    ),
+                                    $case_storage->stmt_location,
+                                    $storage->name,
+                                ),
+                            );
+                        }
+
+                        if ($enum_implemented_type->isNegativeOrZero() && $case_value > 0) {
+                            IssueBuffer::maybeAdd(
+                                new InvalidEnumCaseValue(
+                                    sprintf(
+                                        'Enum case value type should be %s, got `%d`',
+                                        $enum_implemented_type->getId(),
+                                        $case_value,
+                                    ),
+                                    $case_storage->stmt_location,
+                                    $storage->name,
+                                ),
+                            );
+                        }
+
+                        if ($enum_implemented_type->contains($case_value) === false) {
+                            IssueBuffer::maybeAdd(
+                                new InvalidEnumCaseValue(
+                                    sprintf(
+                                        'Enum case value type should be %s, got `%d`',
+                                        $enum_implemented_type->getId(),
+                                        $case_value,
+                                    ),
+                                    $case_storage->stmt_location,
+                                    $storage->name,
+                                ),
+                            );
+                        }
+                    }
                 }
             }
 
