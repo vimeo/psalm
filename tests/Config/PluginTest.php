@@ -781,6 +781,60 @@ class PluginTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
+    public function testFunctionProviderHooksThisClassInvalidArg(): void
+    {
+        $this->expectExceptionMessage('InvalidScalarArgument');
+        $this->expectException(CodeException::class);
+        require_once __DIR__ . '/Plugin/FunctionPlugin.php';
+
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <plugins>
+                        <pluginClass class="Psalm\\Test\\Config\\Plugin\\FunctionPlugin" />
+                    </plugins>
+                </psalm>',
+            ),
+        );
+
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
+        $file_path = getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                namespace {
+                    /**
+                     * @param callable $callable
+                     * @param array $params
+                     */
+                    function call_user_func_like($callable, $params): void {}
+                }
+
+                namespace Foo\Acme {
+                    class Bar {
+                        public function run(int $a): int {
+                            return ($a + 2);
+                        }
+
+                        public function init(): void {
+                            call_user_func_like(array($this, "run"), array("hello"));
+                        }
+                    }
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
     public function testAfterAnalysisHooks(): void
     {
         require_once __DIR__ . '/Plugin/AfterAnalysisPlugin.php';
