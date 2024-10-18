@@ -457,7 +457,7 @@ final class ForeachAnalyzer
             }
 
             // if it's an empty array, we cannot iterate over it
-            if ($iterator_atomic_type instanceof TArray && $iterator_atomic_type->isEmptyArray()) {
+            if ($iterator_atomic_type instanceof TArray && $iterator_atomic_type->isEmpty()) {
                 $always_non_empty_array = false;
                 $has_valid_iterator = true;
                 continue;

@@ -74,19 +74,42 @@ final class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderI
             }
         }
 
+        $r = [];
+        foreach ($statements_source->node_data->getType($call_args[0]->value)?->getAtomicTypes() ?? [] as $t) {
+            $r []= self::handleInner(
+                $statements_source,
+                $context,
+                $code_location,
+                $t,
+                $key_column_name,
+                $key_column_name_is_null,
+                $value_column_name,
+                $value_column_name_is_null,
+                $third_arg_type,
+            );
+        }
+        return new Union($r);
+    }
 
+    private static function handleInner(
+        StatementsAnalyzer $statements_source,
+        Context $context,
+        CodeLocation $code_location,
+        ?Atomic $input_array,
+        string|int|null $key_column_name,
+        bool $key_column_name_is_null,
+        string|int|null $value_column_name,
+        bool $value_column_name_is_null,
+        ?Union $third_arg_type,
+    ): Atomic {
         $row_type = $row_shape = null;
         $input_array_not_empty = false;
 
         // calculate row shape
-        if (($first_arg_type = $statements_source->node_data->getType($call_args[0]->value))
-            && $first_arg_type->isSingle()
-            && $first_arg_type->hasArray()
-        ) {
-            $input_array = $first_arg_type->getArray();
+        if ($input_array) {
             if ($input_array instanceof TKeyedArray && !$input_array->fallback_params
                 && ($value_column_name !== null || $value_column_name_is_null)
-                && !($third_arg_type && !$key_column_name)
+                && !($third_arg_type && $key_column_name === null)
             ) {
                 $properties = [];
                 $ok = true;
@@ -108,7 +131,7 @@ final class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderI
                         continue;
                     }
                     if (!$row_shape instanceof TKeyedArray) {
-                        if ($row_shape instanceof TArray && $row_shape->isEmptyArray()) {
+                        if ($row_shape instanceof TArray && $row_shape->isEmpty()) {
                             continue;
                         }
                         $ok = false;
@@ -167,14 +190,14 @@ final class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderI
                 }
                 if ($ok) {
                     if (!$properties) {
-                        return Type::getEmptyArray();
+                        return Type::getEmptyArrayAtomic();
                     }
-                    return new Union([new TKeyedArray(
+                    return new TKeyedArray(
                         $properties,
                         null,
                         $input_array->fallback_params,
                         $is_list,
-                    )]);
+                    );
                 }
             }
 
@@ -228,7 +251,7 @@ final class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderI
                 : Type::getListAtomic($result_element_type ?? Type::getMixed());
         }
 
-        return new Union([$type]);
+        return $type;
     }
 
     /**

@@ -823,7 +823,7 @@ final class SimpleTypeInferer
                     );
                 }
             } elseif ($unpacked_atomic_type instanceof TArray) {
-                if ($unpacked_atomic_type->isEmptyArray()) {
+                if ($unpacked_atomic_type->isEmpty()) {
                     continue;
                 }
                 $array_creation_info->can_create_objectlike = false;

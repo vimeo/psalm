@@ -44,7 +44,6 @@ use Psalm\Storage\Possibilities;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TConditional;
-use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\TaintKindGroup;
@@ -840,16 +839,10 @@ final class FunctionLikeDocblockScanner
                 }
             }
 
-            if (!$docblock_param_variadic && $storage_param->is_variadic && $new_param_type->hasArray()) {
-                /**
-                 * @var TArray|TKeyedArray
-                 */
-                $array_type = $new_param_type->getArray();
-
-                if ($array_type instanceof TKeyedArray) {
-                    $new_param_type = $array_type->getGenericValueType();
-                } else {
-                    $new_param_type = $array_type->type_params[1];
+            if (!$docblock_param_variadic && $storage_param->is_variadic) {
+                $array_param_types = $new_param_type->getArrayValueTypes();
+                if ($array_param_types) {
+                    $new_param_type = Type::combineUnionTypeArray($array_param_types, $codebase);
                 }
             }
 

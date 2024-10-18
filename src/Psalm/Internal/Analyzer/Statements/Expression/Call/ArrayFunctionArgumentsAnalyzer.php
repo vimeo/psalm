@@ -16,12 +16,10 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\MethodIdentifier;
-use Psalm\Internal\Type\ArrayType;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
-use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\ArgumentTypeCoercion;
 use Psalm\Issue\InvalidArgument;
@@ -50,6 +48,7 @@ use function assert;
 use function count;
 use function explode;
 use function is_numeric;
+use function max;
 use function str_contains;
 use function strtolower;
 use function substr;
@@ -81,20 +80,8 @@ final class ArrayFunctionArgumentsAnalyzer
             if ($i === 1 && $method_id === 'array_filter') {
                 break;
             }
-
-            /**
-             * @var TKeyedArray|TArray|null
-             */
-            $array_arg_type = ($arg_value_type = $statements_analyzer->node_data->getType($arg->value))
-                    && $arg_value_type->hasArray()
-                ? $arg_value_type->getArray()
-                : null;
-
-            if ($array_arg_type instanceof TKeyedArray) {
-                $array_arg_type = $array_arg_type->getGenericArrayType();
-            }
-
-            $array_arg_types[] = $array_arg_type;
+            $arg_value_type = $statements_analyzer->node_data->getType($arg->value);
+            $array_arg_types []= $arg_value_type;
         }
 
         $closure_arg = $args[$closure_index] ?? null;
@@ -216,100 +203,101 @@ final class ArrayFunctionArgumentsAnalyzer
         if (($array_arg_type = $statements_analyzer->node_data->getType($array_arg))
             && $array_arg_type->hasArray()
         ) {
-            $array_type = $array_arg_type->getArray();
+            $array_types = $array_arg_type->getArrays();
+            $by_ref_type = new Union([$array_types]);
 
-            $objectlike_list = null;
+            foreach ($array_types as $array_type) {
+                $objectlike_list = null;
 
-            if ($array_type instanceof TKeyedArray) {
-                if ($array_type->is_list) {
-                    $objectlike_list = $array_type;
-                }
-            }
-
-            $by_ref_type = new Union([$array_type]);
-
-            foreach ($args as $argument_offset => $arg) {
-                if ($argument_offset === 0) {
-                    continue;
-                }
-
-                if (ExpressionAnalyzer::analyze(
-                    $statements_analyzer,
-                    $arg->value,
-                    $context,
-                ) === false) {
-                    return false;
-                }
-
-                if ($method_id === 'array_unshift' && $nb_args === 2 && !$unpacked_args) {
-                    $new_offset_type = Type::getInt(false, 0);
-                } else {
-                    $new_offset_type = Type::getInt();
-                }
-
-                if (!($arg_value_type = $statements_analyzer->node_data->getType($arg->value))
-                    || $arg_value_type->hasMixed()
-                ) {
-                    $by_ref_type = Type::combineUnionTypes(
-                        $by_ref_type,
-                        new Union([new TArray([$new_offset_type, Type::getMixed()])]),
-                    );
-                } elseif ($arg->unpack) {
-                    $arg_value_type = $arg_value_type->getBuilder();
-
-                    foreach ($arg_value_type->getAtomicTypes() as $arg_value_atomic_type) {
-                        if ($arg_value_atomic_type instanceof TKeyedArray) {
-                            $was_list = $arg_value_atomic_type->is_list;
-
-                            $arg_value_atomic_type = $arg_value_atomic_type->getGenericArrayType();
-
-                            if ($was_list) {
-                                if ($arg_value_atomic_type instanceof TNonEmptyArray) {
-                                    $arg_value_atomic_type = Type::getNonEmptyListAtomic(
-                                        $arg_value_atomic_type->type_params[1],
-                                    );
-                                } else {
-                                    $arg_value_atomic_type = Type::getListAtomic(
-                                        $arg_value_atomic_type->type_params[1],
-                                    );
-                                }
-                            }
-
-                            $arg_value_type->addType($arg_value_atomic_type);
-                        }
+                if ($array_type instanceof TKeyedArray) {
+                    if ($array_type->is_list) {
+                        $objectlike_list = $array_type;
                     }
-                    $arg_value_type = $arg_value_type->freeze();
+                }
 
-                    $by_ref_type = Type::combineUnionTypes(
-                        $by_ref_type,
-                        $arg_value_type,
-                    );
-                } else {
-                    if ($objectlike_list) {
-                        $properties = $objectlike_list->properties;
-                        array_unshift($properties, $arg_value_type);
+                foreach ($args as $argument_offset => $arg) {
+                    if ($argument_offset === 0) {
+                        continue;
+                    }
 
-                        $by_ref_type = new Union([$objectlike_list->setProperties($properties)]);
-                    } elseif ($array_type instanceof TArray && $array_type->isEmptyArray()) {
-                        $by_ref_type = new Union([new TKeyedArray([
-                            $arg_value_type,
-                        ], null, null, true)]);
+                    if (ExpressionAnalyzer::analyze(
+                        $statements_analyzer,
+                        $arg->value,
+                        $context,
+                    ) === false) {
+                        return false;
+                    }
+
+                    if ($method_id === 'array_unshift' && $nb_args === 2 && !$unpacked_args) {
+                        $new_offset_type = Type::getInt(false, 0);
                     } else {
+                        $new_offset_type = Type::getInt();
+                    }
+
+                    if (!($arg_value_type = $statements_analyzer->node_data->getType($arg->value))
+                    || $arg_value_type->hasMixed()
+                    ) {
                         $by_ref_type = Type::combineUnionTypes(
                             $by_ref_type,
-                            new Union(
-                                [
+                            new Union([new TArray([$new_offset_type, Type::getMixed()])]),
+                        );
+                    } elseif ($arg->unpack) {
+                        $arg_value_type = $arg_value_type->getBuilder();
+
+                        foreach ($arg_value_type->getAtomicTypes() as $arg_value_atomic_type) {
+                            if ($arg_value_atomic_type instanceof TKeyedArray) {
+                                $was_list = $arg_value_atomic_type->is_list;
+
+                                $arg_value_atomic_type = $arg_value_atomic_type->getGenericArrayType();
+
+                                if ($was_list) {
+                                    if ($arg_value_atomic_type instanceof TNonEmptyArray) {
+                                        $arg_value_atomic_type = Type::getNonEmptyListAtomic(
+                                            $arg_value_atomic_type->type_params[1],
+                                        );
+                                    } else {
+                                        $arg_value_atomic_type = Type::getListAtomic(
+                                            $arg_value_atomic_type->type_params[1],
+                                        );
+                                    }
+                                }
+
+                                $arg_value_type->addType($arg_value_atomic_type);
+                            }
+                        }
+                        $arg_value_type = $arg_value_type->freeze();
+
+                        $by_ref_type = Type::combineUnionTypes(
+                            $by_ref_type,
+                            $arg_value_type,
+                        );
+                    } else {
+                        if ($objectlike_list) {
+                            $properties = $objectlike_list->properties;
+                            array_unshift($properties, $arg_value_type);
+
+                            $by_ref_type = new Union([$objectlike_list->setProperties($properties)]);
+                        } elseif ($array_type instanceof TArray && $array_type->isEmpty()) {
+                            $by_ref_type = new Union([new TKeyedArray([
+                            $arg_value_type,
+                            ], null, null, true)]);
+                        } else {
+                            $by_ref_type = Type::combineUnionTypes(
+                                $by_ref_type,
+                                new Union(
+                                    [
                                     new TNonEmptyArray(
                                         [
                                             $new_offset_type,
                                             $arg_value_type,
                                         ],
                                     ),
-                                ],
-                            ),
-                            null,
-                            true,
-                        );
+                                    ],
+                                ),
+                                null,
+                                true,
+                            );
+                        }
                     }
                 }
             }
@@ -348,37 +336,34 @@ final class ArrayFunctionArgumentsAnalyzer
         ) === false) {
             return false;
         }
+        $codebase = $statements_analyzer->getCodebase();
 
-        $array_type = null;
-        $array_size = null;
+        $array_types = [];
+        $max_array_size = null;
 
         if (($array_arg_type = $statements_analyzer->node_data->getType($array_arg))
             && $array_arg_type->hasArray()
         ) {
-            /**
-             * @var TArray|TKeyedArray
-             */
-            $array_type = $array_arg_type->getArray();
-            if ($generic_array_type = ArrayType::infer($array_type)) {
-                $array_size = $generic_array_type->count;
-            }
+            foreach ($array_arg_type->getArrays() as $array_type) {
+                $max_array_size = max($max_array_size, $array_type->getMaxCount());
 
-            if ($array_type instanceof TKeyedArray) {
-                if ($array_type->is_list && isset($args[3])) {
-                    $array_type = Type::getNonEmptyListAtomic($array_type->getGenericValueType());
-                } else {
-                    $array_type = $array_type->getGenericArrayType();
+                if ($array_type instanceof TKeyedArray) {
+                    if ($array_type->is_list && isset($args[3])) {
+                        $array_type = Type::getNonEmptyListAtomic($array_type->getGenericValueType());
+                    } else {
+                        $array_type = $array_type->getGenericArrayType();
+                    }
                 }
-            }
 
-            if ($array_type instanceof TArray
-                && $array_type->type_params[0]->hasInt()
-                && !$array_type->type_params[0]->hasString()
-            ) {
-                if ($array_type instanceof TNonEmptyArray && isset($args[3])) {
-                    $array_type = Type::getNonEmptyListAtomic($array_type->type_params[1]);
-                } else {
-                    $array_type = Type::getListAtomic($array_type->type_params[1]);
+                if ($array_type instanceof TArray
+                    && $array_type->type_params[0]->hasInt()
+                    && !$array_type->type_params[0]->hasString()
+                ) {
+                    if ($array_type instanceof TNonEmptyArray && isset($args[3])) {
+                        $array_type = Type::getNonEmptyListAtomic($array_type->type_params[1]);
+                    } else {
+                        $array_type = Type::getListAtomic($array_type->type_params[1]);
+                    }
                 }
             }
         }
@@ -413,12 +398,12 @@ final class ArrayFunctionArgumentsAnalyzer
                     $context,
                     false,
                 );
-            } elseif ($array_type) {
+            } elseif ($array_types) {
                 AssignmentAnalyzer::assignByRefParam(
                     $statements_analyzer,
                     $array_arg,
-                    new Union([$array_type]),
-                    new Union([$array_type]),
+                    new Union($array_types),
+                    new Union($array_types),
                     $context,
                     false,
                 );
@@ -448,7 +433,7 @@ final class ArrayFunctionArgumentsAnalyzer
         }
 
         $cover_whole_arr = false;
-        if ($offset_arg_is_zero && is_numeric($array_size)) {
+        if ($offset_arg_is_zero && $max_array_size !== null) {
             if (($length_arg_type = $statements_analyzer->node_data->getType($length_arg))
                 && $length_arg_type->hasLiteralValue()
             ) {
@@ -471,7 +456,7 @@ final class ArrayFunctionArgumentsAnalyzer
                         }
                     }
                 }
-                $cover_whole_arr = isset($length_min) && $length_min>= $array_size;
+                $cover_whole_arr = isset($length_min) && $length_min>= $max_array_size;
             } elseif ($length_arg_type&& $length_arg_type->isNull()) {
                 $cover_whole_arr = true;
             }
@@ -542,14 +527,7 @@ final class ArrayFunctionArgumentsAnalyzer
             && $replacement_arg_type
             && $replacement_arg_type->hasArray()
         ) {
-            /**
-             * @var TArray|TKeyedArray
-             */
-            $replacement_array_type = $replacement_arg_type->getArray();
-
-            if (($replacement_array_type_generic = ArrayType::infer($replacement_array_type))
-                && $replacement_array_type_generic->count === 0
-                && $cover_whole_arr) {
+            if ($replacement_arg_type->areArraysAllEmpty() && $cover_whole_arr) {
                 $empty_array_type = Type::getEmptyArray();
                 AssignmentAnalyzer::assignByRefParam(
                     $statements_analyzer,
@@ -577,7 +555,7 @@ final class ArrayFunctionArgumentsAnalyzer
                 }
             }
 
-            $by_ref_type = TypeCombiner::combine([$array_type, $replacement_array_type]);
+            $by_ref_type = Type::combineUnionTypeArray([new Union([$array_type]), ...$replacement_arg_type->getArrayValueTypes()], $codebase);
 
             AssignmentAnalyzer::assignByRefParam(
                 $statements_analyzer,
@@ -727,7 +705,7 @@ final class ArrayFunctionArgumentsAnalyzer
     }
 
     /**
-     * @param  (TArray|null)[] $array_arg_types
+     * @param  list<Union> $array_arg_types
      */
     private static function checkClosureType(
         StatementsAnalyzer $statements_analyzer,
@@ -893,7 +871,7 @@ final class ArrayFunctionArgumentsAnalyzer
 
     /**
      * @param  TClosure|TCallable $closure_type
-     * @param  (TArray|null)[] $array_arg_types
+     * @param  list<Union> $array_arg_types
      */
     private static function checkClosureTypeArgs(
         StatementsAnalyzer $statements_analyzer,
@@ -963,136 +941,134 @@ final class ArrayFunctionArgumentsAnalyzer
                 continue;
             }
 
-            $array_arg_type = $array_arg_types[$i];
+            foreach ($array_arg_types[$i]->getArrayValueTypes() as $input_type) {
+                if ($input_type->hasMixed()) {
+                    continue;
+                }
 
-            $input_type = $array_arg_type->type_params[1];
+                $closure_param_type = $closure_param->type;
 
-            if ($input_type->hasMixed()) {
-                continue;
-            }
+                if (!$closure_param_type) {
+                    continue;
+                }
 
-            $closure_param_type = $closure_param->type;
-
-            if (!$closure_param_type) {
-                continue;
-            }
-
-            if ($method_id === 'array_map'
+                if ($method_id === 'array_map'
                 && $i === 0
                 && $closure_type->return_type
                 && $closure_param_type->hasTemplate()
-            ) {
-                $template_result = new TemplateResult(
-                    [],
-                    [],
-                );
+                ) {
+                    $template_result = new TemplateResult(
+                        [],
+                        [],
+                    );
 
-                foreach ($closure_param_type->getTemplateTypes() as $template_type) {
-                    $template_result->template_types[$template_type->param_name] = [
-                        ($template_type->defining_class) => $template_type->as,
-                    ];
+                    foreach ($closure_param_type->getTemplateTypes() as $template_type) {
+                        $template_result->template_types[$template_type->param_name] = [
+                            ($template_type->defining_class) => $template_type->as,
+                        ];
+                    }
+
+                    $closure_param_type = TemplateStandinTypeReplacer::replace(
+                        $closure_param_type,
+                        $template_result,
+                        $codebase,
+                        $statements_analyzer,
+                        $input_type,
+                        $i,
+                        $context->self,
+                        $context->calling_method_id ?: $context->calling_function_id,
+                    );
+
+                    $closure_type = $closure_type->replaceTemplateTypesWithArgTypes(
+                        $template_result,
+                        $codebase,
+                    );
                 }
 
-                $closure_param_type = TemplateStandinTypeReplacer::replace(
-                    $closure_param_type,
-                    $template_result,
+                $closure_param_type = TypeExpander::expandUnion(
                     $codebase,
-                    $statements_analyzer,
-                    $input_type,
-                    $i,
+                    $closure_param_type,
                     $context->self,
-                    $context->calling_method_id ?: $context->calling_function_id,
+                    null,
+                    $statements_analyzer->getParentFQCLN(),
                 );
 
-                $closure_type = $closure_type->replaceTemplateTypesWithArgTypes(
-                    $template_result,
-                    $codebase,
-                );
-            }
+                $union_comparison_results = new TypeComparisonResult();
 
-            $closure_param_type = TypeExpander::expandUnion(
-                $codebase,
-                $closure_param_type,
-                $context->self,
-                null,
-                $statements_analyzer->getParentFQCLN(),
-            );
-
-            $union_comparison_results = new TypeComparisonResult();
-
-            $type_match_found = UnionTypeComparator::isContainedBy(
-                $codebase,
-                $input_type,
-                $closure_param_type,
-                $input_type->ignore_nullable_issues,
-                $input_type->ignore_falsable_issues,
-                $union_comparison_results,
-            );
-
-            if ($union_comparison_results->type_coerced) {
-                if ($union_comparison_results->type_coerced_from_mixed) {
-                    IssueBuffer::maybeAdd(
-                        new MixedArgumentTypeCoercion(
-                            'Parameter ' . ($i + 1) . ' of closure passed to function ' . $method_id . ' expects ' .
-                                $closure_param_type->getId() .
-                                ', but parent type ' . $input_type->getId() . ' provided',
-                            new CodeLocation($statements_analyzer->getSource(), $closure_arg),
-                            $method_id,
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
-                } else {
-                    IssueBuffer::maybeAdd(
-                        new ArgumentTypeCoercion(
-                            'Parameter ' . ($i + 1) . ' of closure passed to function ' . $method_id . ' expects ' .
-                                $closure_param_type->getId() .
-                                ', but parent type ' . $input_type->getId() . ' provided',
-                            new CodeLocation($statements_analyzer->getSource(), $closure_arg),
-                            $method_id,
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
-                }
-            }
-
-            if (!$union_comparison_results->type_coerced && !$type_match_found) {
-                $types_can_be_identical = UnionTypeComparator::canExpressionTypesBeIdentical(
+                $type_match_found = UnionTypeComparator::isContainedBy(
                     $codebase,
                     $input_type,
                     $closure_param_type,
+                    $input_type->ignore_nullable_issues,
+                    $input_type->ignore_falsable_issues,
+                    $union_comparison_results,
                 );
 
-                if ($union_comparison_results->scalar_type_match_found) {
-                    IssueBuffer::maybeAdd(
-                        new InvalidScalarArgument(
-                            'Parameter ' . ($i + 1) . ' of closure passed to function ' . $method_id . ' expects ' .
-                                $closure_param_type->getId() . ', but ' . $input_type->getId() . ' provided',
-                            new CodeLocation($statements_analyzer->getSource(), $closure_arg),
-                            $method_id,
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
+                if ($union_comparison_results->type_coerced) {
+                    if ($union_comparison_results->type_coerced_from_mixed) {
+                        IssueBuffer::maybeAdd(
+                            new MixedArgumentTypeCoercion(
+                                'Parameter ' . ($i + 1) . ' of closure passed to function ' . $method_id . ' expects ' .
+                                $closure_param_type->getId() .
+                                ', but parent type ' . $input_type->getId() . ' provided',
+                                new CodeLocation($statements_analyzer->getSource(), $closure_arg),
+                                $method_id,
+                            ),
+                            $statements_analyzer->getSuppressedIssues(),
+                        );
+                    } else {
+                        IssueBuffer::maybeAdd(
+                            new ArgumentTypeCoercion(
+                                'Parameter ' . ($i + 1) . ' of closure passed to function ' . $method_id . ' expects ' .
+                                $closure_param_type->getId() .
+                                ', but parent type ' . $input_type->getId() . ' provided',
+                                new CodeLocation($statements_analyzer->getSource(), $closure_arg),
+                                $method_id,
+                            ),
+                            $statements_analyzer->getSuppressedIssues(),
+                        );
+                    }
+                }
+
+                if (!$union_comparison_results->type_coerced && !$type_match_found) {
+                    $types_can_be_identical = UnionTypeComparator::canExpressionTypesBeIdentical(
+                        $codebase,
+                        $input_type,
+                        $closure_param_type,
                     );
-                } elseif ($types_can_be_identical) {
-                    IssueBuffer::maybeAdd(
-                        new PossiblyInvalidArgument(
-                            'Parameter ' . ($i + 1) . ' of closure passed to function ' . $method_id . ' expects '
+
+                    if ($union_comparison_results->scalar_type_match_found) {
+                        IssueBuffer::maybeAdd(
+                            new InvalidScalarArgument(
+                                'Parameter ' . ($i + 1) . ' of closure passed to function ' . $method_id . ' expects ' .
+                                $closure_param_type->getId() . ', but ' . $input_type->getId() . ' provided',
+                                new CodeLocation($statements_analyzer->getSource(), $closure_arg),
+                                $method_id,
+                            ),
+                            $statements_analyzer->getSuppressedIssues(),
+                        );
+                    } elseif ($types_can_be_identical) {
+                        IssueBuffer::maybeAdd(
+                            new PossiblyInvalidArgument(
+                                'Parameter ' . ($i + 1) . ' of closure passed to function ' . $method_id . ' expects '
                                 . $closure_param_type->getId() . ', but possibly different type '
                                 . $input_type->getId() . ' provided',
-                            new CodeLocation($statements_analyzer->getSource(), $closure_arg),
-                            $method_id,
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
-                } else {
-                    IssueBuffer::maybeAdd(
-                        new InvalidArgument(
-                            'Parameter ' . ($i + 1) . ' of closure passed to function ' . $method_id . ' expects ' .
-                            $closure_param_type->getId() . ', but ' . $input_type->getId() . ' provided',
-                            new CodeLocation($statements_analyzer->getSource(), $closure_arg),
-                            $method_id,
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
+                                new CodeLocation($statements_analyzer->getSource(), $closure_arg),
+                                $method_id,
+                            ),
+                            $statements_analyzer->getSuppressedIssues(),
+                        );
+                    } else {
+                        IssueBuffer::maybeAdd(
+                            new InvalidArgument(
+                                'Parameter ' . ($i + 1) . ' of closure passed to function ' . $method_id . ' expects ' .
+                                $closure_param_type->getId() . ', but ' . $input_type->getId() . ' provided',
+                                new CodeLocation($statements_analyzer->getSource(), $closure_arg),
+                                $method_id,
+                            ),
+                            $statements_analyzer->getSuppressedIssues(),
+                        );
+                    }
                 }
             }
         }

@@ -8,6 +8,7 @@ use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
+use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Union;
 
@@ -18,7 +19,7 @@ use function count;
  *
  * @psalm-immutable
  */
-class TArray extends Atomic
+class TArray extends Atomic implements ArrayInterface
 {
     use UnserializeMemoryUsageSuppressionTrait;
     /**
@@ -40,13 +41,45 @@ class TArray extends Atomic
      */
     public function __construct(array $type_params, bool $from_docblock = false)
     {
+        if ($type_params[0]->isNever() !== $type_params[1]->isNever()) {
+            $type_params = [Type::getNever($from_docblock), Type::getNever($from_docblock)];
+        }
         $this->type_params = $type_params;
         parent::__construct($from_docblock);
     }
 
     public function getKey(bool $include_extra = true): string
     {
-        return 'array';
+        return $this->getId(true);
+    }
+
+    public function getMinCount(): int
+    {
+        return 0;
+    }
+    public function getMaxCount(): ?int
+    {
+        return null;
+    }
+    public function getCount(): ?int
+    {
+        return $this->isEmpty() ? 0 : null;
+    }
+    public function isEmpty(): bool
+    {
+        return $this->type_params[1]->isNever();
+    }
+    public function isNonEmpty(): bool
+    {
+        return false;
+    }
+    public function getGenericKeyType(): Union
+    {
+        return $this->type_params[0];
+    }
+    public function getGenericValueType(): Union
+    {
+        return $this->type_params[1];
     }
 
     /**
@@ -99,11 +132,6 @@ class TArray extends Atomic
         }
 
         return $this->getId();
-    }
-
-    public function isEmptyArray(): bool
-    {
-        return $this->type_params[1]->isNever();
     }
 
     /**
