@@ -10429,7 +10429,7 @@ return [
 'ReflectionClassConstant::isPrivate' => ['bool'],
 'ReflectionClassConstant::isProtected' => ['bool'],
 'ReflectionClassConstant::isPublic' => ['bool'],
-'ReflectionEnum::getBackingType' => ['?ReflectionType'],
+'ReflectionEnum::getBackingType' => ['?ReflectionNamedType'],
 'ReflectionEnum::getCase' => ['ReflectionEnumUnitCase', 'name' => 'string'],
 'ReflectionEnum::getCases' => ['list<ReflectionEnumUnitCase>'],
 'ReflectionEnum::hasCase' => ['bool', 'name' => 'string'],
