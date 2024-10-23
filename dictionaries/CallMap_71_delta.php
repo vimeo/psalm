@@ -17,9 +17,9 @@
 return [
   'added' => [
     'Closure::fromCallable' => ['Closure', 'callback'=>'callable'],
-    'curl_multi_errno' => ['int|false', 'mh'=>'resource'],
-    'curl_share_errno' => ['int|false', 'sh'=>'resource'],
-    'curl_share_strerror' => ['?string', 'error_code'=>'int'],
+    'curl_multi_errno' => ['int<0, 12>|false', 'mh'=>'resource'],
+    'curl_share_errno' => ['0|1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31|32|33|34|35|36|37|38|39|40|41|42|43|44|45|46|47|48|49|50|52|53|54|55|56|57|58|59|60|61|62|63|64|77|79|90|false', 'sh'=>'resource'],
+    'curl_share_strerror' => ['?string', 'error_code'=>'0|1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31|32|33|34|35|36|37|38|39|40|41|42|43|44|45|46|47|48|49|50|52|53|54|55|56|57|58|59|60|61|62|63|64|77|79|90'],
     'getenv\'1' => ['array<string,string>'],
     'hash_hkdf' => ['non-empty-string|false', 'algo'=>'string', 'key'=>'string', 'length='=>'int', 'info='=>'string', 'salt='=>'string'],
     'is_iterable' => ['bool', 'value'=>'mixed'],
@@ -49,6 +49,10 @@ return [
     'SQLite3::createFunction' => [
       'old' => ['bool', 'name'=>'string', 'callback'=>'callable', 'argCount='=>'int'],
       'new' => ['bool', 'name'=>'string', 'callback'=>'callable', 'argCount='=>'int', 'flags='=>'int'],
+    ],
+    'curl_multi_setopt' => [
+        'old' => ['bool', 'mh'=>'resource', 'option'=>'3|6', 'value'=>'int<0, max>'],
+        'new' => ['bool', 'mh'=>'resource', 'option'=>'3|6|7|8|13|16|20014|30009|30010', 'value'=>'int<0, max>|callable'],
     ],
     'get_headers' => [
       'old' => ['array|false', 'url'=>'string', 'associative='=>'int'],
