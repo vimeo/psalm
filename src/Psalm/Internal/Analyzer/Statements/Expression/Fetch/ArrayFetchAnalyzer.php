@@ -1151,7 +1151,7 @@ final class ArrayFetchAnalyzer
                     $single_atomic = $key_values[0];
                     $from_mixed_array = $type->type_params[1]->isMixed();
 
-                    // ok, type becomes an TKeyedArray
+                    // ok, type becomes a TKeyedArray
                     $type = new TKeyedArray(
                         [
                             $single_atomic->value => $from_mixed_array ? Type::getMixed() : Type::getNever(),

@@ -74,7 +74,7 @@ class Generator implements Traversable {
 interface ArrayAccess {
 
     /**
-     * Whether a offset exists
+     * Whether an offset exists
      * @link http://php.net/manual/en/arrayaccess.offsetexists.php
      *
      * @param TKey $offset An offset to check for.

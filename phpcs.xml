@@ -196,7 +196,7 @@
     </rule>
 
     <!--
-        Requires using a underscore separator for long numbers.
+        Requires using an underscore separator for long numbers.
         https://github.com/slevomat/coding-standard/#slevomatcodingstandardnumbersrequirenumericliteralseparator
     -->
     <rule ref="SlevomatCodingStandard.Numbers.RequireNumericLiteralSeparator">
