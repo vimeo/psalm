@@ -115,7 +115,7 @@ final class Context
     public $inside_unset = false;
 
     /**
-     * Whether or not we're inside an class_exists call, where
+     * Whether or not we're inside a class_exists call, where
      * we don't care about possibly undefined classes
      *
      * @var bool

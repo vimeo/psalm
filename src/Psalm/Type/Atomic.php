@@ -425,7 +425,7 @@ abstract class Atomic implements TypeNode
 
     /**
      * This is the string that will be used to represent the type in Union::$types. This means that two types sharing
-     * the same getKey value will override themselves in an Union
+     * the same getKey value will override themselves in a Union
      */
     abstract public function getKey(bool $include_extra = true): string;
 
