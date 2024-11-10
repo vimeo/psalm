@@ -60,6 +60,10 @@ final class ConfigTest extends TestCase
     #[Override]
     public static function setUpBeforeClass(): void
     {
+        // hack to isolate Psalm from PHPUnit cli arguments
+        global $argv;
+        $argv = [];
+
         self::$config = new TestConfig();
 
         if (!defined('PSALM_VERSION')) {
@@ -1339,10 +1343,6 @@ final class ConfigTest extends TestCase
 
     public function testModularConfig(): void
     {
-        // hack to isolate Psalm from PHPUnit arguments
-        global $argv;
-        $argv = [];
-
         $root = __DIR__ . '/../fixtures/ModularConfig';
         $config = Config::loadFromXMLFile($root . '/psalm.xml', $root);
         $this->assertEquals(
