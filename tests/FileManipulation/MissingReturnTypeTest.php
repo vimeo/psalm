@@ -897,6 +897,27 @@ class MissingReturnTypeTest extends FileManipulationTestCase
                 'issues_to_fix' => ['MissingReturnType'],
                 'safe_types' => false,
             ],
+            'returnNullAndReturnTrueNative' => [
+                'input' => '<?php
+                    function a() {
+                        if (rand(0,1)){
+                            return true;
+                        }
+
+                        return null;
+                    }',
+                'output' => '<?php
+                    function a(): true|null {
+                        if (rand(0,1)){
+                            return true;
+                        }
+
+                        return null;
+                    }',
+                'php_version' => '8.2',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => false,
+            ],
             'staticReturn5.6' => [
                 'input' => '<?php
                     class HelloWorld
