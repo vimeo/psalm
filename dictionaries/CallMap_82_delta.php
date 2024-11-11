@@ -81,6 +81,10 @@ return [
         'old' => ['int', 'string1'=>'string', 'string2'=>'string', 'length'=>'int'],
         'new' => ['int<-1,1>', 'string1' => 'string', 'string2' => 'string', 'length'=>'positive-int|0'],
     ],
+    'ReflectionEnum::getBackingType' => [
+        'old' => ['?ReflectionType'],
+        'new' => ['?ReflectionNamedType'],
+    ],
   ],
 
   'removed' => [
