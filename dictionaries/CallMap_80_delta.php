@@ -676,8 +676,8 @@ return [
       'new' => ['CurlHandle|false', 'handle'=>'CurlHandle'],
     ],
     'curl_errno' => [
-      'old' => ['int', 'ch'=>'resource'],
-      'new' => ['int', 'handle'=>'CurlHandle'],
+      'old' => ['0|1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31|32|33|34|35|36|37|38|39|40|41|42|43|44|45|46|47|48|49|50|52|53|54|55|56|57|58|59|60|61|62|63|64|77|79|90', 'ch'=>'resource'],
+      'new' => ['0|1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31|32|33|34|35|36|37|38|39|40|41|42|43|44|45|46|47|48|49|50|52|53|54|55|56|57|58|59|60|61|62|63|64|77|79|90', 'handle'=>'CurlHandle'],
     ],
     'curl_error' => [
       'old' => ['string', 'ch'=>'resource'],
@@ -704,48 +704,48 @@ return [
       'new' => ['CurlHandle|false', 'url='=>'?string'],
     ],
     'curl_multi_add_handle' => [
-      'old' => ['int', 'mh'=>'resource', 'ch'=>'resource'],
-      'new' => ['int', 'multi_handle'=>'CurlMultiHandle', 'handle'=>'CurlHandle'],
+      'old' => ['int<0, 12>', 'mh'=>'resource', 'ch'=>'resource'],
+      'new' => ['int<0, 12>', 'multi_handle'=>'CurlMultiHandle', 'handle'=>'CurlHandle'],
     ],
     'curl_multi_close' => [
       'old' => ['void', 'mh'=>'resource'],
       'new' => ['void', 'multi_handle'=>'CurlMultiHandle'],
     ],
     'curl_multi_errno' => [
-      'old' => ['int|false', 'mh'=>'resource'],
-      'new' => ['int', 'multi_handle'=>'CurlMultiHandle'],
+      'old' => ['int<0, 12>|false', 'mh'=>'resource'],
+      'new' => ['int<0, 12>', 'multi_handle'=>'CurlMultiHandle'],
     ],
     'curl_multi_exec' => [
-      'old' => ['int', 'mh'=>'resource', '&w_still_running'=>'int'],
-      'new' => ['int', 'multi_handle'=>'CurlMultiHandle', '&w_still_running'=>'int'],
+      'old' => ['0|3|4', 'mh'=>'resource', '&w_still_running'=>'int<0, max>'],
+      'new' => ['0|3|4', 'multi_handle'=>'CurlMultiHandle', '&w_still_running'=>'int<0, max>'],
     ],
     'curl_multi_getcontent' => [
       'old' => ['string', 'ch'=>'resource'],
       'new' => ['string', 'handle'=>'CurlHandle'],
     ],
     'curl_multi_info_read' => [
-      'old' => ['array|false', 'mh'=>'resource', '&w_msgs_in_queue='=>'int'],
-      'new' => ['array|false', 'multi_handle'=>'CurlMultiHandle', '&w_queued_messages='=>'int'],
+      'old' => ['array{msg: 1, result: 0|1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31|32|33|34|35|36|37|38|39|40|41|42|43|44|45|46|47|48|49|50|52|53|54|55|56|57|58|59|60|61|62|63|64|77|79|90, handle: resource}|false', 'mh'=>'resource', '&w_msgs_in_queue='=>'int<0, max>'],
+      'new' => ['array{msg: 1, result: 0|1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31|32|33|34|35|36|37|38|39|40|41|42|43|44|45|46|47|48|49|50|52|53|54|55|56|57|58|59|60|61|62|63|64|77|79|90, handle: CurlHandle}|false', 'multi_handle'=>'CurlMultiHandle', '&w_queued_messages='=>'int<0, max>'],
     ],
     'curl_multi_init' => [
       'old' => ['resource'],
       'new' => ['CurlMultiHandle'],
     ],
     'curl_multi_remove_handle' => [
-      'old' => ['int', 'mh'=>'resource', 'ch'=>'resource'],
-      'new' => ['int', 'multi_handle'=>'CurlMultiHandle', 'handle'=>'CurlHandle'],
+      'old' => ['0|1|2|3|4', 'mh'=>'resource', 'ch'=>'resource'],
+      'new' => ['0|1|2|3|4', 'multi_handle'=>'CurlMultiHandle', 'handle'=>'CurlHandle'],
     ],
     'curl_multi_select' => [
-      'old' => ['int', 'mh'=>'resource', 'timeout='=>'float'],
-      'new' => ['int', 'multi_handle'=>'CurlMultiHandle', 'timeout='=>'float'],
+      'old' => ['int<-1, max>', 'mh'=>'resource', 'timeout='=>'float'],
+      'new' => ['int<-1, max>', 'multi_handle'=>'CurlMultiHandle', 'timeout='=>'float'],
     ],
     'curl_multi_setopt' => [
-      'old' => ['bool', 'mh'=>'resource', 'option'=>'int', 'value'=>'mixed'],
-      'new' => ['bool', 'multi_handle'=>'CurlMultiHandle', 'option'=>'int', 'value'=>'mixed'],
+      'old' => ['bool', 'mh'=>'resource', 'option'=>'3|6|7|8|13|16|20014|30009|30010', 'value'=>'int<0, max>|callable'],
+      'new' => ['bool', 'multi_handle'=>'CurlMultiHandle', 'option'=>'3|6|7|8|13|16|20014|30009|30010', 'value'=>'int<0, max>|callable'],
     ],
     'curl_pause' => [
-      'old' => ['int', 'ch'=>'resource', 'bitmask'=>'int'],
-      'new' => ['int', 'handle'=>'CurlHandle', 'flags'=>'int'],
+      'old' => ['0|1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31|32|33|34|35|36|37|38|39|40|41|42|43|44|45|46|47|48|49|50|52|53|54|55|56|57|58|59|60|61|62|63|64|77|79|90', 'ch'=>'resource', 'bitmask'=>'0|1|4|5'],
+      'new' => ['0|1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31|32|33|34|35|36|37|38|39|40|41|42|43|44|45|46|47|48|49|50|52|53|54|55|56|57|58|59|60|61|62|63|64|77|79|90', 'handle'=>'CurlHandle', 'flags'=>'0|1|4|5'],
     ],
     'curl_reset' => [
       'old' => ['void', 'ch'=>'resource'],
@@ -764,16 +764,16 @@ return [
       'new' => ['void', 'share_handle'=>'CurlShareHandle'],
     ],
     'curl_share_errno' => [
-      'old' => ['int|false', 'sh'=>'resource'],
-      'new' => ['int', 'share_handle'=>'CurlShareHandle'],
+      'old' => ['0|1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31|32|33|34|35|36|37|38|39|40|41|42|43|44|45|46|47|48|49|50|52|53|54|55|56|57|58|59|60|61|62|63|64|77|79|90|false', 'sh'=>'resource'],
+      'new' => ['0|1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31|32|33|34|35|36|37|38|39|40|41|42|43|44|45|46|47|48|49|50|52|53|54|55|56|57|58|59|60|61|62|63|64|77|79|90', 'share_handle'=>'CurlShareHandle'],
     ],
     'curl_share_init' => [
       'old' => ['resource'],
       'new' => ['CurlShareHandle'],
     ],
     'curl_share_setopt' => [
-      'old' => ['bool', 'sh'=>'resource', 'option'=>'int', 'value'=>'mixed'],
-      'new' => ['bool', 'share_handle'=>'CurlShareHandle', 'option'=>'int', 'value'=>'mixed'],
+      'old' => ['bool', 'sh'=>'resource', 'option'=>'1|2', 'value'=>'2|3|4|5|6'],
+      'new' => ['bool', 'share_handle'=>'CurlShareHandle', 'option'=>'1|2', 'value'=>'2|3|4|5|6'],
     ],
     'curl_unescape' => [
       'old' => ['string|false', 'ch'=>'resource', 'string'=>'string'],

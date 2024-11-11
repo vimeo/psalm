@@ -19,7 +19,6 @@ return [
   'added' => [
     'json_validate' => ['bool', 'json'=>'string', 'depth='=>'positive-int', 'flags='=>'int'],
   ],
-
   'changed' => [
     'gc_status' => [
       'old' => ['array{runs:int,collected:int,threshold:int,roots:int}'],

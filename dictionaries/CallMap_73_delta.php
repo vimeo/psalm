@@ -64,6 +64,14 @@ return [
       'old' => ['int', 'scale'=>'int'],
       'new' => ['int', 'scale='=>'int'],
     ],
+    'curl_version' => [
+        'old' => ['array', 'age='=>'int'],
+        'new' => ['array'],
+    ],
+    'curl_share_setopt' => [
+        'old' => ['bool', 'sh'=>'resource', 'option'=>'1|2', 'value'=>'2|3|4'],
+        'new' => ['bool', 'sh'=>'resource', 'option'=>'1|2', 'value'=>'2|3|4|5|6'],
+    ],
     'define' => [
         'old' => ['bool', 'constant_name'=>'string', 'value'=>'array|scalar|null', 'case_insensitive='=>'bool'],
         'new' => ['bool', 'constant_name'=>'string', 'value'=>'array|scalar|null', 'case_insensitive='=>'false'],
