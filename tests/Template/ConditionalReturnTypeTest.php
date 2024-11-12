@@ -652,7 +652,7 @@ class ConditionalReturnTypeTest extends TestCase
                     '$expect_mixed_from_literal' => 'mixed',
                 ],
             ],
-            'isArryCheckOnTemplate' => [
+            'isArrayCheckOnTemplate' => [
                 'code' => '<?php
                     /**
                      * @template TResult as string|list<string>
@@ -885,7 +885,7 @@ class ConditionalReturnTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '7.2',
             ],
-            'ineritedConditionalTemplatedReturnType' => [
+            'inheritedConditionalTemplatedReturnType' => [
                 'code' => '<?php
                     /** @template InstanceType */
                     interface ContainerInterface
