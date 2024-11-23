@@ -166,7 +166,7 @@ class FilterInputReturnTypeProvider implements FunctionReturnTypeProviderInterfa
             '$_POST' => INPUT_POST,
             '$_COOKIE' => INPUT_COOKIE,
             '$_SERVER' => INPUT_SERVER,
-            '$_ENV' => INPUT_ENV
+            '$_ENV' => INPUT_ENV,
         ];
 
         $first_arg_type_type = $first_arg_type->getSingleIntLiteral();
