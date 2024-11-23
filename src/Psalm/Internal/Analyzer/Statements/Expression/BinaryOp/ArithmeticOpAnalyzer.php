@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Analyzer\Statements\Expression\BinaryOp;
 
+use Decimal\Decimal;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
@@ -688,7 +689,7 @@ final class ArithmeticOpAnalyzer
                         && strtolower($non_decimal_type->value) === "decimal\\decimal"
                 ) {
                     $result_type = Type::combineUnionTypes(
-                        new Union([new TNamedObject(\Decimal\Decimal::class)]),
+                        new Union([new TNamedObject(Decimal::class)]),
                         $result_type,
                     );
                 } else {

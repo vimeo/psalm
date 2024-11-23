@@ -63,7 +63,6 @@ use function array_merge;
 use function array_values;
 use function assert;
 use function count;
-use function get_class;
 use function is_int;
 use function is_numeric;
 use function min;

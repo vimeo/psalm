@@ -30,8 +30,8 @@ use function array_pop;
 use function count;
 use function in_array;
 use function preg_match;
+use function str_contains;
 use function strlen;
-use function strpos;
 use function strtolower;
 use function substr;
 

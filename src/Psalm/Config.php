@@ -99,6 +99,7 @@ use function scandir;
 use function sha1;
 use function simplexml_import_dom;
 use function str_contains;
+use function str_ends_with;
 use function str_replace;
 use function str_starts_with;
 use function strlen;

@@ -76,7 +76,6 @@ use function sort;
 use function str_repeat;
 use function str_starts_with;
 use function strlen;
-use function strpos;
 use function substr;
 use function wordwrap;
 
