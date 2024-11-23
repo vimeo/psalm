@@ -79,9 +79,6 @@ final class Pool
     /** @var resource[] */
     private array $read_streams = [];
 
-    /** @var ?Closure(mixed): void */
-    private ?Closure $task_done_closure = null;
-
     /**
      * @param array<int, array<int, mixed>> $process_task_data_iterator
      * An array of task data items to be divided up among the

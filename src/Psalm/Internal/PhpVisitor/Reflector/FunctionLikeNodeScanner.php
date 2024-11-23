@@ -100,7 +100,7 @@ final class FunctionLikeNodeScanner
     public function start(
         PhpParser\Node\FunctionLike $stmt,
         bool $fake_method = false,
-        PhpParser\Comment\Doc $doc_comment = null,
+        ?PhpParser\Comment\Doc $doc_comment = null,
     ): FunctionStorage|MethodStorage|false {
         if ($stmt instanceof PhpParser\Node\Expr\Closure
             || $stmt instanceof PhpParser\Node\Expr\ArrowFunction
