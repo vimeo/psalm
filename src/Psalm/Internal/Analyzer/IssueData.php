@@ -43,7 +43,7 @@ final class IssueData
         public int $error_level = -1,
         public ?array $taint_trace = null,
         public ?array $other_references = null,
-        public readonly ?string $dupe_key = null,
+        public readonly ?string $dupe_key = null
     ) {
         $this->link = $shortcode ? 'https://psalm.dev/' . str_pad((string) $shortcode, 3, "0", STR_PAD_LEFT) : '';
     }

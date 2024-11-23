@@ -62,7 +62,7 @@ use const ARRAY_FILTER_USE_BOTH;
 trait UnionTrait
 {
     /**
-     * Constructs an Union instance
+     * Constructs a Union instance
      *
      * @psalm-external-mutation-free
      * @param non-empty-array<Atomic>     $types
@@ -1245,7 +1245,7 @@ trait UnionTrait
 
     /**
      * @psalm-mutation-free
-     * @return bool true if this is a int literal with only one possible value
+     * @return bool true if this is an int literal with only one possible value
      */
     public function isSingleIntLiteral(): bool
     {

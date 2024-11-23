@@ -608,6 +608,66 @@ class InternalAnnotationTest extends TestCase
                     }
                 ',
             ],
+            'psalmInternalClassWithCallClass' => [
+                'code' => '<?php
+                    namespace A {
+                        /**
+                         * @psalm-internal B\Bat
+                         */
+                        class Foo {
+                            public static function barBar(): void {
+                            }
+                        }
+                    }
+
+                    namespace B {
+                        class Bat {
+                            public function batBat() : void {
+                                \A\Foo::barBar();
+                            }
+                        }
+                    }',
+            ],
+            'psalmInternalMethodWithCallClass' => [
+                'code' => '<?php
+                    namespace A {
+                        class Foo {
+                            /**
+                             * @psalm-internal B\Bat
+                             */
+                            public static function barBar(): void {
+                            }
+                        }
+                    }
+
+                    namespace B {
+                        class Bat {
+                            public function batBat() : void {
+                                \A\Foo::barBar();
+                            }
+                        }
+                    }',
+            ],
+            'psalmInternalMethodWithMethod' => [
+                'code' => '<?php
+                    namespace X {
+                        class Foo {
+                            /**
+                             * @psalm-internal Y\Bat::batBat
+                             */
+                            public static function barBar(): void {
+                            }
+                        }
+                    }
+
+                    namespace Y {
+                        class Bat {
+                            public function batBat() : void {
+                                \X\Foo::barBar();
+                            }
+                        }
+                    }',
+            ],
             'callToInternalMethodFromAnonymousClass' => [
                 'code' => <<<'PHP'
                 <?php
@@ -1118,6 +1178,69 @@ class InternalAnnotationTest extends TestCase
                         new C;
                     }
                 ',
+                'error_message' => 'InternalMethod',
+            ],
+            'psalmInternalClassWithCallClass' => [
+                'code' => '<?php
+                    namespace A {
+                        /**
+                         * @psalm-internal B\Bar
+                         */
+                        class Foo {
+                            public static function barBar(): void {
+                            }
+                        }
+                    }
+
+                    namespace B {
+                        class Bat {
+                            public function batBat() : void {
+                                \A\Foo::barBar();
+                            }
+                        }
+                    }',
+                'error_message' => 'InternalClass',
+            ],
+            'psalmInternalMethodWithCallClass' => [
+                'code' => '<?php
+                    namespace A {
+                        class Foo {
+                            /**
+                             * @psalm-internal B\Bar
+                             */
+                            public static function barBar(): void {
+                            }
+                        }
+                    }
+
+                    namespace B {
+                        class Bat {
+                            public function batBat() : void {
+                                \A\Foo::barBar();
+                            }
+                        }
+                    }',
+                'error_message' => 'InternalMethod',
+            ],
+            'psalmInternalMethodWithMethod' => [
+                'code' => '<?php
+                    namespace X {
+                        class Foo {
+                            /**
+                             * @psalm-internal Y\Bat::batBat
+                             */
+                            public static function barBar(): void {
+                            }
+                        }
+                    }
+
+                    namespace Y {
+                        class Bat {
+                            public function fooFoo(): void {
+                                \X\Foo::barBar();
+                            }
+                        }
+                    }',
                 'error_message' => 'InternalMethod',
             ],
         ];

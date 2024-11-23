@@ -179,7 +179,7 @@ final class PsalmRestarter extends XdebugHandler
             0,
             $additional_options,
         );
-        assert(count($command) > 0);
+        assert(count($command) > 1);
 
         parent::restart($command);
     }

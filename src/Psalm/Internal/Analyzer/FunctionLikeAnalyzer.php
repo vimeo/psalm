@@ -1593,7 +1593,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         StatementsAnalyzer $statements_analyzer,
         Context $context,
         Codebase $codebase,
-        PhpParser\Node $stmt = null,
+        ?PhpParser\Node $stmt = null
     ): void {
         $storage = $this->getFunctionLikeStorage($statements_analyzer);
 
@@ -1993,6 +1993,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     && $codebase->config->ensure_override_attribute
                     && $overridden_method_ids
                     && $storage->cased_name !== '__construct'
+                    && ($storage->cased_name !== '__toString'
+                       || isset($appearing_class_storage->direct_class_interfaces['stringable']))
                 ) {
                     IssueBuffer::maybeAdd(
                         new MissingOverrideAttribute(

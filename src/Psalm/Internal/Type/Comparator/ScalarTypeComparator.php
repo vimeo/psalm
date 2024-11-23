@@ -87,6 +87,11 @@ final class ScalarTypeComparator
         if ($container_type_part instanceof TNonspecificLiteralString
             && ($input_type_part instanceof TLiteralString || $input_type_part instanceof TNonspecificLiteralString)
         ) {
+            if ($container_type_part instanceof TNonEmptyNonspecificLiteralString) {
+                return ($input_type_part instanceof TLiteralString && $input_type_part->value !== '')
+                    || $input_type_part instanceof TNonEmptyNonspecificLiteralString;
+            }
+
             return true;
         }
 
@@ -117,13 +122,21 @@ final class ScalarTypeComparator
             return false;
         }
 
-        if ($input_type_part instanceof TCallableString
-            && ($container_type_part::class === TSingleLetter::class
-                || $container_type_part::class === TNonEmptyString::class
-                || $container_type_part::class === TNonFalsyString::class
-                || $container_type_part::class === TLowercaseString::class)
-        ) {
-            return true;
+        if ($input_type_part instanceof TCallableString) {
+            if (get_class($container_type_part) === TNonEmptyString::class
+                || get_class($container_type_part) === TNonFalsyString::class
+            ) {
+                return true;
+            }
+
+            if (get_class($container_type_part) === TLowercaseString::class
+                || get_class($container_type_part) === TSingleLetter::class
+            ) {
+                if ($atomic_comparison_result) {
+                    $atomic_comparison_result->type_coerced = true;
+                }
+                return false;
+            }
         }
 
         if (($container_type_part instanceof TLowercaseString

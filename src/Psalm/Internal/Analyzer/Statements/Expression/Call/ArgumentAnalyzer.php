@@ -31,6 +31,7 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\ArgumentTypeCoercion;
+use Psalm\Issue\DeprecatedConstant;
 use Psalm\Issue\ImplicitToStringCast;
 use Psalm\Issue\InvalidArgument;
 use Psalm\Issue\InvalidLiteralArgument;
@@ -40,6 +41,7 @@ use Psalm\Issue\MixedArgumentTypeCoercion;
 use Psalm\Issue\NamedArgumentNotAllowed;
 use Psalm\Issue\NoValue;
 use Psalm\Issue\NullArgument;
+use Psalm\Issue\ParentNotFound;
 use Psalm\Issue\PossiblyFalseArgument;
 use Psalm\Issue\PossiblyInvalidArgument;
 use Psalm\Issue\PossiblyNullArgument;
@@ -60,7 +62,9 @@ use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
+use UnexpectedValueException;
 
+use function array_filter;
 use function count;
 use function explode;
 use function implode;
@@ -881,6 +885,20 @@ final class ArgumentAnalyzer
                             true,
                             $context->insideUse(),
                         );
+
+                        if (self::verifyCallableInContext(
+                            $potential_method_id,
+                            $cased_method_id,
+                            $method_id,
+                            $atomic_type,
+                            $argument_offset,
+                            $arg_location,
+                            $context,
+                            $codebase,
+                            $statements_analyzer,
+                        ) === false) {
+                            continue;
+                        }
                     }
 
                     $input_type->removeType($key);
@@ -934,8 +952,25 @@ final class ArgumentAnalyzer
         ) {
             $potential_method_ids = [];
 
+            $param_types_without_callable = array_filter(
+                $param_type->getAtomicTypes(),
+                static fn(Atomic $atomic) => !$atomic instanceof Atomic\TCallableInterface,
+            );
+            $param_type_without_callable = [] !== $param_types_without_callable
+                ? new Union($param_types_without_callable)
+                : null;
+
             foreach ($input_type->getAtomicTypes() as $input_type_part) {
                 if ($input_type_part instanceof TKeyedArray) {
+                    // If the param accept an array, we don't report arrays as wrong callbacks.
+                    if (null !== $param_type_without_callable && UnionTypeComparator::isContainedBy(
+                        $codebase,
+                        $input_type,
+                        $param_type_without_callable,
+                    )) {
+                        continue;
+                    }
+
                     $potential_method_id = CallableTypeComparator::getCallableMethodIdFromTKeyedArray(
                         $input_type_part,
                         $codebase,
@@ -943,18 +978,90 @@ final class ArgumentAnalyzer
                         $statements_analyzer->getFilePath(),
                     );
 
+                    if ($potential_method_id === null && $codebase->analysis_php_version_id >= 8_02_00) {
+                        [$lhs,] = $input_type_part->properties;
+                        if ($lhs->isSingleStringLiteral()
+                            && in_array(
+                                strtolower($lhs->getSingleStringLiteral()->value),
+                                ['self', 'parent', 'static'],
+                                true,
+                            )) {
+                            IssueBuffer::maybeAdd(
+                                new DeprecatedConstant(
+                                    'Use of "' . $lhs->getSingleStringLiteral()->value . '" in callables is deprecated',
+                                    $arg_location,
+                                ),
+                                $statements_analyzer->getSuppressedIssues(),
+                            );
+                        }
+                    }
+
                     if ($potential_method_id && $potential_method_id !== 'not-callable') {
+                        if (self::verifyCallableInContext(
+                            $potential_method_id,
+                            $cased_method_id,
+                            $method_id,
+                            $input_type_part,
+                            $argument_offset,
+                            $arg_location,
+                            $context,
+                            $codebase,
+                            $statements_analyzer,
+                        ) === false) {
+                            continue;
+                        }
+
                         $potential_method_ids[] = $potential_method_id;
                     }
                 } elseif ($input_type_part instanceof TLiteralString
                     && strpos($input_type_part->value, '::')
                 ) {
+                    // If the param also accept a string, we don't report string as wrong callbacks.
+                    if (null !== $param_type_without_callable && UnionTypeComparator::isContainedBy(
+                        $codebase,
+                        $input_type,
+                        $param_type_without_callable,
+                    )) {
+                        continue;
+                    }
+
                     $parts = explode('::', $input_type_part->value);
                     /** @psalm-suppress PossiblyUndefinedIntArrayOffset */
-                    $potential_method_ids[] = new MethodIdentifier(
+                    $potential_method_id = new MethodIdentifier(
                         $parts[0],
                         strtolower($parts[1]),
                     );
+
+                    if ($codebase->analysis_php_version_id >= 8_02_00
+                        && in_array(
+                            strtolower($potential_method_id->fq_class_name),
+                            ['self', 'parent', 'static'],
+                            true,
+                        )) {
+                        IssueBuffer::maybeAdd(
+                            new DeprecatedConstant(
+                                'Use of "' . $potential_method_id->fq_class_name . '" in callables is deprecated',
+                                $arg_location,
+                            ),
+                            $statements_analyzer->getSuppressedIssues(),
+                        );
+                    }
+
+                    if (self::verifyCallableInContext(
+                        $potential_method_id,
+                        $cased_method_id,
+                        $method_id,
+                        $input_type_part,
+                        $argument_offset,
+                        $arg_location,
+                        $context,
+                        $codebase,
+                        $statements_analyzer,
+                    ) === false) {
+                        continue;
+                    }
+
+                    $potential_method_ids[] = $potential_method_id;
                 }
             }
 
@@ -1191,6 +1298,131 @@ final class ArgumentAnalyzer
         return null;
     }
 
+    private static function verifyCallableInContext(
+        MethodIdentifier $potential_method_id,
+        ?string $cased_method_id,
+        ?MethodIdentifier $method_id,
+        Atomic $input_type_part,
+        int $argument_offset,
+        CodeLocation $arg_location,
+        Context $context,
+        Codebase $codebase,
+        StatementsAnalyzer $statements_analyzer
+    ): ?bool {
+        $method_identifier = $cased_method_id !== null ? ' of ' . $cased_method_id : '';
+
+        if (!$method_id
+            || $potential_method_id->fq_class_name !== $context->self
+            || $method_id->fq_class_name !== $context->self) {
+            if ($input_type_part instanceof TKeyedArray) {
+                [$lhs,] = $input_type_part->properties;
+            } else {
+                $lhs = Type::getString($potential_method_id->fq_class_name);
+            }
+
+            try {
+                $method_storage = $codebase->methods->getStorage($potential_method_id);
+
+                $lhs_atomic = $lhs->getSingleAtomic();
+                if ($lhs->isSingle()
+                    && $lhs->hasNamedObjectType()
+                    && ($lhs->isStaticObject()
+                        || ($lhs_atomic instanceof TNamedObject
+                            && !$lhs_atomic->definite_class
+                            && $lhs_atomic->value === $context->self))) {
+                    // callable $this
+                    // some PHP-internal functions (e.g. array_filter) will call the callback within the current context
+                    // unlike user-defined functions which call the callback in their context
+                    // however this doesn't apply to all
+                    // e.g. header_register_callback will not throw an error immediately like user-land functions
+                    // however error log "Could not call the sapi_header_callback" if it's not public
+                    // this is NOT a complete list, but just what was easily available and to be extended
+                    $php_native_non_public_cb = [
+                        'array_diff_uassoc',
+                        'array_diff_ukey',
+                        'array_filter',
+                        'array_intersect_uassoc',
+                        'array_intersect_ukey',
+                        'array_map',
+                        'array_reduce',
+                        'array_udiff',
+                        'array_udiff_assoc',
+                        'array_udiff_uassoc',
+                        'array_uintersect',
+                        'array_uintersect_assoc',
+                        'array_uintersect_uassoc',
+                        'array_walk',
+                        'array_walk_recursive',
+                        'preg_replace_callback',
+                        'preg_replace_callback_array',
+                        'call_user_func',
+                        'call_user_func_array',
+                        'forward_static_call',
+                        'forward_static_call_array',
+                        'is_callable',
+                        'ob_start',
+                        'register_shutdown_function',
+                        'register_tick_function',
+                        'session_set_save_handler',
+                        'set_error_handler',
+                        'set_exception_handler',
+                        'spl_autoload_register',
+                        'spl_autoload_unregister',
+                        'uasort',
+                        'uksort',
+                        'usort',
+                    ];
+
+                    if ($potential_method_id->fq_class_name !== $context->self
+                        || ($cased_method_id !== null
+                            && !$method_id
+                            && !in_array($cased_method_id, $php_native_non_public_cb, true))
+                        || ($method_id
+                            && $method_id->fq_class_name !== $context->self
+                            && $method_id->fq_class_name !== 'Closure')
+                    ) {
+                        if ($method_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PUBLIC) {
+                            IssueBuffer::maybeAdd(
+                                new InvalidArgument(
+                                    'Argument ' . ($argument_offset + 1) . $method_identifier
+                                    . ' expects a public callable, but a non-public callable provided',
+                                    $arg_location,
+                                    $cased_method_id,
+                                ),
+                                $statements_analyzer->getSuppressedIssues(),
+                            );
+                            return false;
+                        }
+                    }
+                } elseif ($lhs->isSingle()) {
+                    // instance from e.g. new Foo() or static string like Foo::bar
+                    if ((!$method_storage->is_static && !$lhs->hasNamedObjectType())
+                        || $method_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PUBLIC) {
+                        IssueBuffer::maybeAdd(
+                            new InvalidArgument(
+                                'Argument ' . ($argument_offset + 1) . $method_identifier
+                                . ' expects a public static callable, but a '
+                                . ($method_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PUBLIC ?
+                                    'non-public ' : '')
+                                . (!$method_storage->is_static ? 'non-static ' : '')
+                                . 'callable provided',
+                                $arg_location,
+                                $cased_method_id,
+                            ),
+                            $statements_analyzer->getSuppressedIssues(),
+                        );
+
+                        return false;
+                    }
+                }
+            } catch (UnexpectedValueException $e) {
+                // do nothing
+            }
+        }
+
+        return null;
+    }
+
     /**
      * @param PhpParser\Node\Scalar\String_|PhpParser\Node\Expr\Array_|PhpParser\Node\Expr\BinaryOp\Concat $input_expr
      */
@@ -1289,6 +1521,16 @@ final class ArgumentAnalyzer
 
                                         if ($callable_fq_class_name === 'parent') {
                                             $container_class = $statements_analyzer->getParentFQCLN();
+                                            if ($container_class === null) {
+                                                IssueBuffer::accepts(
+                                                    new ParentNotFound(
+                                                        'Cannot call method on parent'
+                                                        . ' as this class does not extend another',
+                                                        $arg_location,
+                                                    ),
+                                                    $statements_analyzer->getSuppressedIssues(),
+                                                );
+                                            }
                                         }
 
                                         if (!$container_class) {

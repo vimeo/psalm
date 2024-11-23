@@ -234,8 +234,7 @@ final class FilterUtils
                         // silently ignored by the function, but this usually indicates a bug
                         IssueBuffer::maybeAdd(
                             new InvalidArgument(
-                                'The "options" key in ' . $function_id
-                                . ' must be a an array',
+                                'The "options" key in ' . $function_id . ' must be an array',
                                 $code_location,
                                 $function_id,
                             ),

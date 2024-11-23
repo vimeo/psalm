@@ -9,6 +9,7 @@ use LogicException;
 use Psalm\Codebase;
 use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Internal\Type\ParseTree\CallableParamTree;
 use Psalm\Internal\Type\ParseTree\CallableTree;
 use Psalm\Internal\Type\ParseTree\CallableWithReturnTypeTree;
@@ -89,6 +90,7 @@ use function defined;
 use function end;
 use function explode;
 use function filter_var;
+use function get_class;
 use function in_array;
 use function is_int;
 use function is_numeric;
@@ -103,9 +105,6 @@ use function strpos;
 use function strtolower;
 use function strtr;
 use function substr;
-use function trim;
-
-use const FILTER_VALIDATE_INT;
 
 /**
  * @psalm-suppress InaccessibleProperty Allowed during construction
@@ -671,11 +670,8 @@ final class TypeParser
             }
 
             foreach ($generic_params[0]->getAtomicTypes() as $key => $atomic_type) {
-                // PHP 8 values with whitespace after number are counted as numeric
-                // and filter_var treats them as such too
                 if ($atomic_type instanceof TLiteralString
-                    && ($string_to_int = filter_var($atomic_type->value, FILTER_VALIDATE_INT)) !== false
-                    && trim($atomic_type->value) === $atomic_type->value
+                    && ($string_to_int = ArrayAnalyzer::getLiteralArrayKeyInt($atomic_type->value)) !== false
                 ) {
                     $builder = $generic_params[0]->getBuilder();
                     $builder->removeType($key);
@@ -1482,7 +1478,7 @@ final class TypeParser
                     $property_key = $property_branch->value;
                 }
                 if ($is_list && (
-                        !is_numeric($property_key)
+                        ArrayAnalyzer::getLiteralArrayKeyInt($property_key) === false
                         || ($had_optional && !$property_maybe_undefined)
                         || $type === 'array'
                         || $type === 'callable-array'
@@ -1692,7 +1688,9 @@ final class TypeParser
         $normalized_intersection_types = [];
         $modified = false;
         foreach ($intersection_types as $intersection_type) {
-            if (!$intersection_type instanceof TTypeAlias) {
+            if (!$intersection_type instanceof TTypeAlias
+                || !$codebase->classlike_storage_provider->has($intersection_type->declaring_fq_classlike_name)
+            ) {
                 $normalized_intersection_types[] = [$intersection_type];
                 continue;
             }

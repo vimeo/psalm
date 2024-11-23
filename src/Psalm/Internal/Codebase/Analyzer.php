@@ -507,10 +507,6 @@ final class Analyzer
                     $this->argument_map[$file_path] = $argument_map;
                 }
             }
-
-            if ($pool->didHaveError()) {
-                exit(1);
-            }
         } else {
             $i = 0;
 
@@ -1184,7 +1180,7 @@ final class Analyzer
         string $file_path,
         PhpParser\Node $node,
         string $node_type,
-        PhpParser\Node $parent_node = null,
+        ?PhpParser\Node $parent_node = null
     ): void {
         if ($node_type === '') {
             throw new UnexpectedValueException('non-empty node_type expected');

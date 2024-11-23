@@ -120,6 +120,10 @@ return [
         'old' => ['bool', 'directory'=>'string', 'permissions='=>'int', 'recursive='=>'bool', 'context='=>'resource'],
         'new' => ['bool', 'directory'=>'string', 'permissions='=>'int', 'recursive='=>'bool', 'context='=>'null|resource'],
     ],
+    'session_get_cookie_params' => [
+        'old' => ['array{lifetime:?int,path:?string,domain:?string,secure:?bool,httponly:?bool}'],
+        'new' => ['array{lifetime:?int,path:?string,domain:?string,secure:?bool,httponly:?bool,samesite:?string}'],
+    ]
   ],
   'removed' => [
   ],

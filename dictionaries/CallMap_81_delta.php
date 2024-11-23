@@ -727,6 +727,30 @@ return [
       'old' => ['bool', 'statement' => 'mysqli_stmt'],
       'new' => ['bool', 'statement' => 'mysqli_stmt', 'params=' => 'list<mixed>|null'],
     ],
+    'mysqli_fetch_field' => [
+      'old' => ['object{name:string,orgname:string,table:string,orgtable:string,max_length:int,length:int,charsetnr:int,flags:int,type:int,decimals:int,db:string,def:\'\',catalog:\'def\'}|false', 'result'=>'mysqli_result'],
+      'new' => ['object{name:string,orgname:string,table:string,orgtable:string,max_length:0,length:int,charsetnr:int,flags:int,type:int,decimals:int,db:string,def:\'\',catalog:\'def\'}|false', 'result'=>'mysqli_result'],
+    ],
+    'mysqli_fetch_field_direct' => [
+      'old' => ['object{name:string,orgname:string,table:string,orgtable:string,max_length:int,length:int,charsetnr:int,flags:int,type:int,decimals:int,db:string,def:\'\',catalog:\'def\'}|false', 'result'=>'mysqli_result', 'index'=>'int'],
+      'new' => ['object{name:string,orgname:string,table:string,orgtable:string,max_length:0,length:int,charsetnr:int,flags:int,type:int,decimals:int,db:string,def:\'\',catalog:\'def\'}|false', 'result'=>'mysqli_result', 'index'=>'int'],
+    ],
+    'mysqli_fetch_fields' => [
+      'old' => ['list<object{name:string,orgname:string,table:string,orgtable:string,max_length:int,length:int,charsetnr:int,flags:int,type:int,decimals:int,db:string,def:\'\',catalog:\'def\'}>', 'result'=>'mysqli_result'],
+      'new' => ['list<object{name:string,orgname:string,table:string,orgtable:string,max_length:0,length:int,charsetnr:int,flags:int,type:int,decimals:int,db:string,def:\'\',catalog:\'def\'}>', 'result'=>'mysqli_result'],
+    ],
+    'mysqli_result::fetch_field' => [
+      'old' => ['object{name:string,orgname:string,table:string,orgtable:string,max_length:int,length:int,charsetnr:int,flags:int,type:int,decimals:int,db:string,def:\'\',catalog:\'def\'}|false'],
+      'new' => ['object{name:string,orgname:string,table:string,orgtable:string,max_length:0,length:int,charsetnr:int,flags:int,type:int,decimals:int,db:string,def:\'\',catalog:\'def\'}|false'],
+    ],
+    'mysqli_result::fetch_field_direct' => [
+      'old' => ['object{name:string,orgname:string,table:string,orgtable:string,max_length:int,length:int,charsetnr:int,flags:int,type:int,decimals:int,db:string,def:\'\',catalog:\'def\'}|false', 'index'=>'int'],
+      'new' => ['object{name:string,orgname:string,table:string,orgtable:string,max_length:0,length:int,charsetnr:int,flags:int,type:int,decimals:int,db:string,def:\'\',catalog:\'def\'}|false', 'index'=>'int'],
+    ],
+    'mysqli_result::fetch_fields' => [
+      'old' => ['list<object{name:string,orgname:string,table:string,orgtable:string,max_length:int,length:int,charsetnr:int,flags:int,type:int,decimals:int,db:string,def:\'\',catalog:\'def\'}>'],
+      'new' => ['list<object{name:string,orgname:string,table:string,orgtable:string,max_length:0,length:int,charsetnr:int,flags:int,type:int,decimals:int,db:string,def:\'\',catalog:\'def\'}>'],
+    ],
     'mysqli_stmt_execute' => [
       'old' => ['bool', 'statement' => 'mysqli_stmt'],
       'new' => ['bool', 'statement' => 'mysqli_stmt', 'params=' => 'list<mixed>|null'],
@@ -1210,6 +1234,74 @@ return [
     'stream_select' => [
       'old' => ['int|false', '&rw_read'=>'?resource[]', '&rw_write'=>'?resource[]', '&rw_except'=>'?resource[]', 'seconds'=>'?int', 'microseconds='=>'int'],
       'new' => ['int|false', '&rw_read'=>'?resource[]', '&rw_write'=>'?resource[]', '&rw_except'=>'?resource[]', 'seconds'=>'?int', 'microseconds='=>'?int'],
+    ],
+    'mb_check_encoding' => [
+        'old' => ['bool', 'value='=>'array|string|null', 'encoding='=>'string|null'],
+        'new' => ['bool', 'value'=>'array|string', 'encoding='=>'string|null'],
+    ],
+    'ctype_alnum' => [
+        'old' => ['bool', 'text'=>'string|int'],
+        'new' => ['bool', 'text'=>'string'],
+    ],
+    'ctype_alpha' => [
+        'old' => ['bool', 'text'=>'string|int'],
+        'new' => ['bool', 'text'=>'string'],
+    ],
+    'ctype_cntrl' => [
+        'old' => ['bool', 'text'=>'string|int'],
+        'new' => ['bool', 'text'=>'string'],
+    ],
+    'ctype_digit' => [
+        'old' => ['bool', 'text'=>'string|int'],
+        'new' => ['bool', 'text'=>'string'],
+    ],
+    'ctype_graph' => [
+        'old' => ['bool', 'text'=>'string|int'],
+        'new' => ['bool', 'text'=>'string'],
+    ],
+    'ctype_lower' => [
+        'old' => ['bool', 'text'=>'string|int'],
+        'new' => ['bool', 'text'=>'string'],
+    ],
+    'ctype_print' => [
+        'old' => ['bool', 'text'=>'string|int'],
+        'new' => ['bool', 'text'=>'string'],
+    ],
+    'ctype_punct' => [
+        'old' => ['bool', 'text'=>'string|int'],
+        'new' => ['bool', 'text'=>'string'],
+    ],
+    'ctype_space' => [
+        'old' => ['bool', 'text'=>'string|int'],
+        'new' => ['bool', 'text'=>'string'],
+    ],
+    'ctype_upper' => [
+        'old' => ['bool', 'text'=>'string|int'],
+        'new' => ['bool', 'text'=>'string'],
+    ],
+    'ctype_xdigit' => [
+        'old' => ['bool', 'text'=>'string|int'],
+        'new' => ['bool', 'text'=>'string'],
+    ],
+    'key' => [
+        'old' => ['int|string|null', 'array'=>'array|object'],
+        'new' => ['int|string|null', 'array'=>'array'],
+    ],
+    'current' => [
+        'old' => ['mixed|false', 'array'=>'array|object'],
+        'new' => ['mixed|false', 'array'=>'array'],
+    ],
+    'next' => [
+        'old' => ['mixed', '&r_array'=>'array|object'],
+        'new' => ['mixed', '&r_array'=>'array'],
+    ],
+    'prev' => [
+        'old' => ['mixed', '&r_array'=>'array|object'],
+        'new' => ['mixed', '&r_array'=>'array'],
+    ],
+    'reset' => [
+        'old' => ['mixed|false', '&r_array'=>'array|object'],
+        'new' => ['mixed|false', '&r_array'=>'array'],
     ],
   ],
 

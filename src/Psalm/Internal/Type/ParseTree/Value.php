@@ -18,7 +18,7 @@ final class Value extends ParseTree
         public int $offset_start,
         public int $offset_end,
         ?string $text,
-        ParseTree $parent = null,
+        ?ParseTree $parent = null
     ) {
         $this->parent = $parent;
         $this->text = $text === $value ? null : $text;

@@ -4,7 +4,7 @@ Emitted when user-controlled input that can contain HTML can be passed into an `
 
 ## Risk
 
-This could lead to a potential Cross Site Scripting (XSS) vulnerability. Using a XSS vulnerability, an attacker could inject malicious JavaScript and execute any action JavaScript could do. Examples include:
+This could lead to a potential Cross Site Scripting (XSS) vulnerability. Using an XSS vulnerability, an attacker could inject malicious JavaScript and execute any action JavaScript could do. Examples include:
 
 - Stealing authentication material (e.g. cookies, JWT tokens)
 - Exfiltrate sensitive information by reading the DOM
