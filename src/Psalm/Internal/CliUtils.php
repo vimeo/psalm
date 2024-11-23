@@ -289,11 +289,7 @@ final class CliUtils
             if (str_starts_with($input_path, '--') && strlen($input_path) > 2) {
                 // ignore --config psalm.xml
                 // ignore common phpunit args that accept a class instead of a path, as this can cause issues on Windows
-                $ignored_arguments = array(
-                    'config',
-                    'printer',
-                    'root',
-                );
+                $ignored_arguments = ['config', 'printer', 'root'];
 
                 if (in_array(substr($input_path, 2), $ignored_arguments, true)) {
                     ++$i;

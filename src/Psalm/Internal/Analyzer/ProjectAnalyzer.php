@@ -109,7 +109,7 @@ final class ProjectAnalyzer
     /**
      * An object representing everything we know about the code
      */
-    private Codebase $codebase;
+    private readonly Codebase $codebase;
 
     private readonly FileProvider $file_provider;
 

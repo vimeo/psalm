@@ -87,7 +87,7 @@ final class FunctionLikeNodeScanner
         private readonly FileStorage $file_storage,
         private readonly Aliases $aliases,
         private readonly array $type_aliases,
-        private ?ClassLikeStorage $classlike_storage,
+        private readonly ?ClassLikeStorage $classlike_storage,
         private readonly array $existing_function_template_types,
     ) {
         $this->file_path = $file_storage->file_path;

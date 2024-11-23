@@ -124,14 +124,14 @@ final class ScalarTypeComparator
         }
 
         if ($input_type_part instanceof TCallableString) {
-            if (get_class($container_type_part) === TNonEmptyString::class
-                || get_class($container_type_part) === TNonFalsyString::class
+            if ($container_type_part::class === TNonEmptyString::class
+                || $container_type_part::class === TNonFalsyString::class
             ) {
                 return true;
             }
 
-            if (get_class($container_type_part) === TLowercaseString::class
-                || get_class($container_type_part) === TSingleLetter::class
+            if ($container_type_part::class === TLowercaseString::class
+                || $container_type_part::class === TSingleLetter::class
             ) {
                 if ($atomic_comparison_result) {
                     $atomic_comparison_result->type_coerced = true;

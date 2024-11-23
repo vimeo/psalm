@@ -1166,13 +1166,13 @@ final class Config
         }
 
         if ($paths_to_check !== null) {
-            $paths_to_add_to_project_files = array();
+            $paths_to_add_to_project_files = [];
             foreach ($paths_to_check as $path) {
                 // if we have an .xml arg here, the files passed are invalid
                 // valid cases (in which we don't want to add CLI passed files to projectFiles though)
                 // are e.g. if running phpunit tests for psalm itself
-                if (substr($path, -4) === '.xml') {
-                    $paths_to_add_to_project_files = array();
+                if (str_ends_with($path, '.xml')) {
+                    $paths_to_add_to_project_files = [];
                     break;
                 }
 
@@ -1195,14 +1195,14 @@ final class Config
                 $paths_to_add_to_project_files[] = $prospective_path;
             }
 
-            if ($paths_to_add_to_project_files !== array() && !isset($config_xml->projectFiles)) {
+            if ($paths_to_add_to_project_files !== [] && !isset($config_xml->projectFiles)) {
                 if ($config_xml === null) {
                     $config_xml = new SimpleXMLElement('<psalm/>');
                 }
                 $config_xml->addChild('projectFiles');
             }
 
-            if ($paths_to_add_to_project_files !== array() && isset($config_xml->projectFiles)) {
+            if ($paths_to_add_to_project_files !== [] && isset($config_xml->projectFiles)) {
                 foreach ($paths_to_add_to_project_files as $path) {
                     if (is_dir($path)) {
                         $child = $config_xml->projectFiles->addChild('directory');
@@ -2201,7 +2201,7 @@ final class Config
         foreach ($stub_files as $file_path) {
             $file_path = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $file_path);
             // fix mangled phar paths on Windows
-            if (strpos($file_path, 'phar:\\\\') === 0) {
+            if (str_starts_with($file_path, 'phar:\\\\')) {
                 $file_path = 'phar://'. substr($file_path, 7);
             }
             $codebase->scanner->addFileToDeepScan($file_path);
@@ -2290,7 +2290,7 @@ final class Config
         foreach ($stub_files as $file_path) {
             $file_path = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $file_path);
             // fix mangled phar paths on Windows
-            if (strpos($file_path, 'phar:\\\\') === 0) {
+            if (str_starts_with($file_path, 'phar:\\\\')) {
                 $file_path = 'phar://' . substr($file_path, 7);
             }
             $codebase->scanner->addFileToDeepScan($file_path);

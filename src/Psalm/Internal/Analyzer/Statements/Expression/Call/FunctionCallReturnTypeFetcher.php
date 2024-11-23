@@ -637,7 +637,7 @@ final class FunctionCallReturnTypeFetcher
                         $pattern = trim($pattern);
                         if ($pattern[0] === '['
                             && $pattern[1] === '^'
-                            && substr($pattern, -1) === ']'
+                            && str_ends_with($pattern, ']')
                         ) {
                             $pattern = substr($pattern, 2, -1);
 

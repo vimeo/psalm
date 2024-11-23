@@ -97,7 +97,7 @@ final class ClassLikeNodeScanner
 {
     private readonly string $file_path;
 
-    private Config $config;
+    private readonly Config $config;
 
     /**
      * @var array<string, InlineTypeAlias>
@@ -120,7 +120,7 @@ final class ClassLikeNodeScanner
         private readonly Codebase $codebase,
         private readonly FileStorage $file_storage,
         private readonly FileScanner $file_scanner,
-        private Aliases $aliases,
+        private readonly Aliases $aliases,
         private readonly ?Name $namespace_name,
     ) {
         $this->file_path = $file_storage->file_path;

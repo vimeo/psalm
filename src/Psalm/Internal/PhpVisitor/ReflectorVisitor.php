@@ -54,7 +54,7 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
 {
     private Aliases $aliases;
 
-    private string $file_path;
+    private readonly string $file_path;
 
     private readonly bool $scan_deep;
 
@@ -88,7 +88,7 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
     /**
      * @var SplObjectStorage<PhpParser\Node\FunctionLike, null>
      */
-    private SplObjectStorage $closure_statements;
+    private readonly SplObjectStorage $closure_statements;
 
     public function __construct(
         private readonly Codebase $codebase,

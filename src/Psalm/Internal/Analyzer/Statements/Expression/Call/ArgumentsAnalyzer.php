@@ -1278,7 +1278,7 @@ final class ArgumentsAnalyzer
 
         try {
             $declaring_class_storage = $codebase->classlike_storage_provider->get($declaring_property_class);
-        } catch (InvalidArgumentException $_) {
+        } catch (InvalidArgumentException) {
             return;
         }
 

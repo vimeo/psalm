@@ -89,7 +89,7 @@ final class Json
              * @psalm-pure
              * @param mixed $value
              */
-            function (&$value): void {
+            function (mixed &$value): void {
                 if (is_string($value)) {
                     $value = preg_replace_callback(
                         self::INVALID_UTF_REGEXP,

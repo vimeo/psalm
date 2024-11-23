@@ -1153,7 +1153,7 @@ class Reconciler
             ;
         }
 
-        $base_key = implode($key_parts);
+        $base_key = implode('', $key_parts);
 
         $result_type = $result_type->setPossiblyUndefined(
             $result_type->possibly_undefined || count($array_key_offsets) > 1,

@@ -798,7 +798,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
         if ($this->parsed_docblock === null) {
             try {
                 $this->parsed_docblock = DocComment::parsePreservingLength($docblock, true);
-            } catch (DocblockParseException $e) {
+            } catch (DocblockParseException) {
                 // already reported above
             }
         }

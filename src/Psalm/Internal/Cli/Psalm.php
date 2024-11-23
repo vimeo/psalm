@@ -1241,7 +1241,7 @@ final class Psalm
         $formats = [];
         /** @var string $value */
         foreach ((new ReflectionClass(Report::class))->getConstants() as $constant => $value) {
-            if (strpos($constant, 'TYPE_') === 0) {
+            if (str_starts_with($constant, 'TYPE_')) {
                 $formats[] = $value;
             }
         }

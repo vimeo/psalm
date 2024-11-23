@@ -51,8 +51,6 @@ class CodeLocation
 
     protected int $file_end;
 
-    protected bool $single_line;
-
     protected int $preview_start;
 
     private int $preview_end = -1;
@@ -67,19 +65,11 @@ class CodeLocation
 
     private string $snippet = '';
 
-    private ?string $text = null;
-
     public ?int $docblock_start = null;
 
     private ?int $docblock_start_line_number = null;
 
-    protected ?int $docblock_line_number = null;
-
-    private ?int $regex_type = null;
-
     private bool $have_recalculated = false;
-
-    public ?CodeLocation $previous_location = null;
 
     public const VAR_TYPE = 0;
     public const FUNCTION_RETURN_TYPE = 1;
@@ -119,11 +109,11 @@ class CodeLocation
     public function __construct(
         FileSource $file_source,
         PhpParser\Node $stmt,
-        ?CodeLocation $previous_location = null,
-        bool $single_line = false,
-        ?int $regex_type = null,
-        ?string $selected_text = null,
-        ?int $comment_line = null,
+        public ?CodeLocation $previous_location = null,
+        protected bool $single_line = false,
+        private ?int $regex_type = null,
+        private ?string $text = null,
+        protected ?int $docblock_line_number = null,
     ) {
         /** @psalm-suppress ImpureMethodCall Actually mutation-free just not marked */
         $this->file_start = (int)$stmt->getAttribute('startFilePos');
@@ -133,10 +123,6 @@ class CodeLocation
         $this->raw_file_end = $this->file_end;
         $this->file_path = $file_source->getFilePath();
         $this->file_name = $file_source->getFileName();
-        $this->single_line = $single_line;
-        $this->regex_type = $regex_type;
-        $this->previous_location = $previous_location;
-        $this->text = $selected_text;
 
         /** @psalm-suppress ImpureMethodCall Actually mutation-free just not marked */
         $doc_comment = $stmt->getDocComment();
@@ -148,8 +134,6 @@ class CodeLocation
 
         /** @psalm-suppress ImpureMethodCall Actually mutation-free just not marked */
         $this->raw_line_number = $stmt->getStartLine();
-
-        $this->docblock_line_number = $comment_line;
     }
 
     /**

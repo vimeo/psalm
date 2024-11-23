@@ -1415,7 +1415,7 @@ final class ArgumentAnalyzer
                         return false;
                     }
                 }
-            } catch (UnexpectedValueException $e) {
+            } catch (UnexpectedValueException) {
                 // do nothing
             }
         }

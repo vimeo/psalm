@@ -1749,7 +1749,7 @@ final class Codebase
 
         $res = [];
         foreach ($items as $item) {
-            if ($item->insertText && strpos($item->insertText, $literal_part) === 0) {
+            if ($item->insertText && str_starts_with($item->insertText, $literal_part)) {
                 $res[] = $item;
             }
         }
