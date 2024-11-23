@@ -161,7 +161,13 @@ class FilterInputReturnTypeProvider implements FunctionReturnTypeProviderInterfa
             return $fails_or_not_set_type;
         }
 
-        $possible_types = ['$_GET'    => INPUT_GET, '$_POST'   => INPUT_POST, '$_COOKIE' => INPUT_COOKIE, '$_SERVER' => INPUT_SERVER, '$_ENV'    => INPUT_ENV];
+        $possible_types = [
+            '$_GET' => INPUT_GET,
+            '$_POST' => INPUT_POST,
+            '$_COOKIE' => INPUT_COOKIE,
+            '$_SERVER' => INPUT_SERVER,
+            '$_ENV' => INPUT_ENV
+        ];
 
         $first_arg_type_type = $first_arg_type->getSingleIntLiteral();
         $global_name = array_search($first_arg_type_type->value, $possible_types);
