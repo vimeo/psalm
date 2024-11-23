@@ -79,7 +79,7 @@ final class ExpressionAnalyzer
         Context $context,
         bool $array_assignment = false,
         ?Context $global_context = null,
-        PhpParser\Node\Stmt $from_stmt = null,
+        ?PhpParser\Node\Stmt $from_stmt = null,
         ?TemplateResult $template_result = null,
         bool $assigned_to_reference = false,
     ): bool {
