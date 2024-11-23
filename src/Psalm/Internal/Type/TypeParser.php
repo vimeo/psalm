@@ -89,8 +89,6 @@ use function count;
 use function defined;
 use function end;
 use function explode;
-use function filter_var;
-use function get_class;
 use function in_array;
 use function is_int;
 use function is_numeric;

@@ -20,7 +20,6 @@ use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
-use Psalm\Type\Atomic\TCallableArray;
 use Psalm\Type\Atomic\TCallableInterface;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClosure;
@@ -43,12 +42,11 @@ use function substr;
 final class CallableTypeComparator
 {
     /**
-     * @param  TClosure|TCallableInterface $input_type_part
      * @param  TCallable|TClosure   $container_type_part
      */
     public static function isContainedBy(
         Codebase $codebase,
-        $input_type_part,
+        TClosure|TCallableInterface $input_type_part,
         Atomic $container_type_part,
         ?TypeComparisonResult $atomic_comparison_result,
     ): bool {

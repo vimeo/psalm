@@ -78,7 +78,7 @@ final class NewAnalyzer extends CallAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\New_ $stmt,
         Context $context,
-        ?TemplateResult $template_result = null
+        ?TemplateResult $template_result = null,
     ): bool {
         $fq_class_name = null;
 
@@ -312,7 +312,7 @@ final class NewAnalyzer extends CallAnalyzer
         string $fq_class_name,
         bool $from_static,
         bool $can_extend,
-        ?TemplateResult $template_result = null
+        ?TemplateResult $template_result = null,
     ): void {
         $storage = $codebase->classlike_storage_provider->get($fq_class_name);
 

@@ -1307,7 +1307,7 @@ final class ArgumentAnalyzer
         CodeLocation $arg_location,
         Context $context,
         Codebase $codebase,
-        StatementsAnalyzer $statements_analyzer
+        StatementsAnalyzer $statements_analyzer,
     ): ?bool {
         $method_identifier = $cased_method_id !== null ? ' of ' . $cased_method_id : '';
 

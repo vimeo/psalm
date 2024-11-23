@@ -243,13 +243,11 @@ final class ArrayAnalyzer
     }
 
     /**
-     * @param string|int $literal_array_key
-     * @return false|int
      * @psalm-assert-if-false !numeric $literal_array_key
      */
     public static function getLiteralArrayKeyInt(
-        $literal_array_key
-    ) {
+        string|int $literal_array_key,
+    ): false|int {
         if (is_int($literal_array_key)) {
             return $literal_array_key;
         }

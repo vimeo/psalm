@@ -2055,7 +2055,7 @@ final class Codebase
         bool $ignore_null = false,
         bool $ignore_false = false,
         bool $allow_interface_equality = false,
-        bool $allow_float_int_equality = true
+        bool $allow_float_int_equality = true,
     ): bool {
         return UnionTypeComparator::isContainedBy(
             $this,

@@ -54,7 +54,6 @@ use Psalm\Type\Union;
 use function array_merge;
 use function array_pop;
 use function array_values;
-use function get_class;
 use function range;
 use function strtolower;
 

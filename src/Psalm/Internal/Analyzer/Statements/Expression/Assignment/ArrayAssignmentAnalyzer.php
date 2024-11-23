@@ -49,7 +49,6 @@ use function end;
 use function implode;
 use function in_array;
 use function is_string;
-use function preg_match;
 use function str_contains;
 use function strlen;
 

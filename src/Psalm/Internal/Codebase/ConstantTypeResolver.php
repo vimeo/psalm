@@ -61,7 +61,7 @@ final class ConstantTypeResolver
         ClassLikes $classlikes,
         UnresolvedConstantComponent $c,
         ?StatementsAnalyzer $statements_analyzer = null,
-        array $visited_constant_ids = []
+        array $visited_constant_ids = [],
     ): Atomic {
         $c_id = spl_object_id($c);
 

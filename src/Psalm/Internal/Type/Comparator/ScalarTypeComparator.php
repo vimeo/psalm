@@ -40,6 +40,7 @@ use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTraitString;
 use Psalm\Type\Atomic\TTrue;
 
+use function get_class;
 use function is_numeric;
 use function strtolower;
 
