@@ -26,4 +26,4 @@ jobs:
         COMPOSER_ROOT_VERSION: dev-master
 
     - name: Run Psalm
-      run: ./psalm --output-format=github --shepherd
+      run: ./psalm --output-format=github --shepherd --force-jit
