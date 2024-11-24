@@ -132,6 +132,7 @@ final class Psalm
         'memory-limit:',
         'monochrome',
         'no-diff',
+        'force-jit',
         'no-cache',
         'no-reflection-cache',
         'no-file-cache',
@@ -924,8 +925,10 @@ final class Psalm
         // If Xdebug is enabled, restart without it
         $ini_handler->check();
 
+        $hasJit = false;
         if (function_exists('opcache_get_status')) {
             if (true === (opcache_get_status()['jit']['on'] ?? false)) {
+                $hasJit = true;
                 $progress->write(PHP_EOL
                     . 'JIT acceleration: ON'
                     . PHP_EOL . PHP_EOL);
@@ -943,10 +946,14 @@ final class Psalm
                     . PHP_EOL . PHP_EOL);
             } else {
                 $progress->write(PHP_EOL
-                    . 'JIT acceleration: OFF (opcache not installed)' . PHP_EOL
-                    . 'Install the opcache extension to make use of JIT for a 20%+ performance boost!'
+                    . 'JIT acceleration: OFF (opcache not installed or not enabled)' . PHP_EOL
+                    . 'Install and enable the opcache extension to make use of JIT for a 20%+ performance boost!'
                     . PHP_EOL . PHP_EOL);
             }
+        }
+        if (isset($options['force-jit']) && !$hasJit) {
+            $progress->write('Exiting because JIT was requested but is not available.' . PHP_EOL . PHP_EOL);
+            exit(1);
         }
     }
 
@@ -1290,6 +1297,9 @@ final class Psalm
 
             --disable-extension=[extension]
                 Used to disable certain extensions while Psalm is running.
+
+            --force-jit
+                If set, requires JIT acceleration to be available in order to run Psalm, exiting immediately if it cannot be enabled.
 
             --threads=INT
                 If greater than one, Psalm will run analysis on multiple threads, speeding things up.
