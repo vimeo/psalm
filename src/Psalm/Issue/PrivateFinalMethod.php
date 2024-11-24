@@ -1,9 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Issue;
 
-class PrivateFinalMethod extends MethodIssue
+final class PrivateFinalMethod extends MethodIssue
 {
-    public const ERROR_LEVEL = 2;
-    public const SHORTCODE = 320;
+    final public const ERROR_LEVEL = 2;
+    final public const SHORTCODE = 320;
 }

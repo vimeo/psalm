@@ -27,7 +27,7 @@ Some issue types allow the use of `referencedMethod`, `referencedClass` or `refe
 
 ```xml
 <issueHandlers>
-  <MissingPropertyType errorLevel="suppress" />
+  <MissingPropertyType errorLevel="suppress" /> <!-- supress MissingPropertyType everywhere in your code -->
 
   <InvalidReturnType>
     <errorLevel type="suppress">
@@ -96,10 +96,16 @@ If you wish to suppress all issues, you can use `@psalm-suppress all` instead of
 If you have a bunch of errors and you don't want to fix them all at once, Psalm can grandfather-in errors in existing code, while ensuring that new code doesn't have those same sorts of errors.
 
 ```
+vendor/bin/psalm --set-baseline
+```
+
+will generate a file `psalm-baseline.xml` containing the current errors. Alternatively, you can specify the name of your baseline file.
+
+```
 vendor/bin/psalm --set-baseline=your-baseline.xml
 ```
 
-will generate a file containing the current errors. You should commit that generated file so that Psalm can use it when running in other places (e.g. CI). It won't complain about those errors either.
+You should commit that generated file so that Psalm can use it when running in other places (e.g. CI). It won't complain about those errors either.
 
 You have two options to use the generated baseline when running psalm:
 

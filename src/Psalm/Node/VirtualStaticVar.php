@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Psalm\Node\Stmt;
+namespace Psalm\Node;
 
-use PhpParser\Node\Stmt\StaticVar;
+use PhpParser\Node\StaticVar;
 use Psalm\Node\VirtualNode;
 
 final class VirtualStaticVar extends StaticVar implements VirtualNode

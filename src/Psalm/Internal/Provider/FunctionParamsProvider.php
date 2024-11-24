@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Provider;
 
 use Closure;
@@ -41,7 +43,7 @@ final class FunctionParamsProvider
      */
     public function registerClass(string $class): void
     {
-        $callable = Closure::fromCallable([$class, 'getFunctionParams']);
+        $callable = $class::getFunctionParams(...);
 
         foreach ($class::getFunctionIds() as $function_id) {
             $this->registerClosure($function_id, $callable);
@@ -70,7 +72,7 @@ final class FunctionParamsProvider
         string $function_id,
         array $call_args,
         ?Context $context = null,
-        ?CodeLocation $code_location = null
+        ?CodeLocation $code_location = null,
     ): ?array {
         foreach (self::$handlers[strtolower($function_id)] ?? [] as $class_handler) {
             $event = new FunctionParamsProviderEvent(

@@ -1,11 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\Assignment;
 
 use PhpParser;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\PropertyFetch;
-use PhpParser\Node\Stmt\PropertyProperty;
+use PhpParser\Node\PropertyItem;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Config;
@@ -90,8 +92,8 @@ use function strtolower;
 final class InstancePropertyAssignmentAnalyzer
 {
     /**
-     * @param   PropertyFetch|PropertyProperty  $stmt
-     * @param   bool                            $direct_assignment whether the variable is assigned explicitly
+     * @param   PropertyFetch|PropertyItem  $stmt
+     * @param   bool                        $direct_assignment whether the variable is assigned explicitly
      */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
@@ -100,11 +102,11 @@ final class InstancePropertyAssignmentAnalyzer
         ?PhpParser\Node\Expr $assignment_value,
         Union $assignment_value_type,
         Context $context,
-        bool $direct_assignment = true
+        bool $direct_assignment = true,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
-        if ($stmt instanceof PropertyProperty) {
+        if ($stmt instanceof PropertyItem) {
             if (!$context->self || !$stmt->default) {
                 return;
             }
@@ -120,7 +122,7 @@ final class InstancePropertyAssignmentAnalyzer
                     $statements_analyzer,
                     $context,
                 );
-            } catch (UnexpectedValueException $e) {
+            } catch (UnexpectedValueException) {
                 // do nothing
             }
 
@@ -360,7 +362,7 @@ final class InstancePropertyAssignmentAnalyzer
         string $property_id,
         PropertyStorage $property_storage,
         ClassLikeStorage $declaring_class_storage,
-        Context $context
+        Context $context,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -412,7 +414,7 @@ final class InstancePropertyAssignmentAnalyzer
     public static function analyzeStatement(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Property $stmt,
-        Context $context
+        Context $context,
     ): void {
         foreach ($stmt->props as $prop) {
             if ($prop->default) {
@@ -448,7 +450,7 @@ final class InstancePropertyAssignmentAnalyzer
         string $property_id,
         ClassLikeStorage $class_storage,
         Union &$assignment_value_type,
-        Context $context
+        Context $context,
     ): void {
         if (!$statements_analyzer->data_flow_graph) {
             return;
@@ -565,7 +567,7 @@ final class InstancePropertyAssignmentAnalyzer
         ClassLikeStorage $class_storage,
         Union $assignment_value_type,
         Context $context,
-        ?string $var_property_id
+        ?string $var_property_id,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -662,7 +664,7 @@ final class InstancePropertyAssignmentAnalyzer
         Codebase $codebase,
         Union $assignment_value_type,
         string $prop_name,
-        ?string &$var_id
+        ?string &$var_id,
     ): array {
         $was_inside_general_use = $context->inside_general_use;
         $context->inside_general_use = true;
@@ -882,7 +884,7 @@ final class InstancePropertyAssignmentAnalyzer
         Union $assignment_value_type,
         ?string $lhs_var_id,
         bool &$has_valid_assignment_type,
-        bool &$has_regular_setter
+        bool &$has_regular_setter,
     ): ?AssignedProperty {
         if ($lhs_type_part instanceof TNull) {
             return null;
@@ -1430,7 +1432,7 @@ final class InstancePropertyAssignmentAnalyzer
         string $declaring_property_class,
         string $prop_name,
         PropertyFetch $stmt,
-        string $file_path
+        string $file_path,
     ): void {
         if (!$codebase->properties_to_rename) {
             return;
@@ -1460,7 +1462,7 @@ final class InstancePropertyAssignmentAnalyzer
         Codebase $codebase,
         string $fq_class_name,
         string $property_name,
-        ClassLikeStorage $storage
+        ClassLikeStorage $storage,
     ): ?Union {
         $property_class_name = $codebase->properties->getDeclaringClassForProperty(
             $fq_class_name . '::$' . $property_name,
@@ -1528,7 +1530,7 @@ final class InstancePropertyAssignmentAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PropertyFetch $stmt,
         string $prop_name,
-        Expr $assignment_value
+        Expr $assignment_value,
     ): void {
         if ($var_id) {
             $context->removeVarFromConflictingClauses(

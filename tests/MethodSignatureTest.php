@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
 use Psalm\Context;
@@ -399,6 +401,15 @@ class MethodSignatureTest extends TestCase
                 'assertions' => [
                     '$b' => 'B',
                 ],
+            ],
+            'returnIgnoresInlineComments' => [
+                'code' => '<?php
+                    class A {
+                        /** @return bool {@see true}*/
+                        public static function foo():bool {
+                            return true;
+                        }
+                    }',
             ],
             'allowSomeCovariance' => [
                 'code' => '<?php
@@ -917,6 +928,9 @@ class MethodSignatureTest extends TestCase
                     {
                         public function a(mixed $a): void {}
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'doesNotRequireInterfaceDestructorsToHaveReturnType' => [
                 'code' => '<?php
@@ -1662,6 +1676,28 @@ class MethodSignatureTest extends TestCase
                     }
                 ',
                 'error_message' => 'MethodSignatureMismatch',
+            ],
+            'methodAnnotationReturnMismatch' => [
+                'code' => '<?php
+                /**
+                * @method array bar()
+                */
+                interface Foo
+                {
+                    public function bar(): string;
+                }',
+                'error_message' => 'MismatchingDocblockReturnType',
+            ],
+            'methodAnnotationParamMismatch' => [
+                'code' => '<?php
+                /**
+                * @method string bar(string $i)
+                */
+                interface Foo
+                {
+                    public function bar(int $i): string;
+                }',
+                'error_message' => 'MismatchingDocblockParamType',
             ],
         ];
     }

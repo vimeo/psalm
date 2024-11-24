@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Type;
 
 use Psalm\Exception\TypeParseTreeException;
@@ -28,6 +30,7 @@ use function array_pop;
 use function count;
 use function in_array;
 use function preg_match;
+use function str_contains;
 use function strlen;
 use function strtolower;
 use function substr;
@@ -41,19 +44,15 @@ final class ParseTreeCreator
 
     private ParseTree $current_leaf;
 
-    /** @var array<int, array{0: string, 1: int, 2?: string}> */
-    private array $type_tokens;
-
-    private int $type_token_count;
+    private readonly int $type_token_count;
 
     private int $t = 0;
 
     /**
      * @param list<array{0: string, 1: int, 2?: string}> $type_tokens
      */
-    public function __construct(array $type_tokens)
+    public function __construct(private array $type_tokens)
     {
-        $this->type_tokens = $type_tokens;
         $this->type_token_count = count($type_tokens);
         $this->parse_tree = new Root();
         $this->current_leaf = $this->parse_tree;
@@ -142,6 +141,7 @@ final class ParseTreeCreator
 
                 case 'is':
                 case 'as':
+                case 'of':
                     $this->handleIsOrAs($type_token);
                     break;
 
@@ -267,7 +267,7 @@ final class ParseTreeCreator
         $new_leaf->has_default = $has_default;
         $new_leaf->variadic = $variadic;
         $potential_name = substr($current_token[0], 1);
-        if ($potential_name !== false && $potential_name !== '') {
+        if ($potential_name !== '') {
             $new_leaf->name = $potential_name;
         }
 
@@ -774,7 +774,7 @@ final class ParseTreeCreator
                 array_pop($current_parent->children);
             }
 
-            if ($type_token[0] === 'as') {
+            if ($type_token[0] === 'as' || $type_token[0] == 'of') {
                 $next_token = $this->t + 1 < $this->type_token_count ? $this->type_tokens[$this->t + 1] : null;
 
                 if (!$this->current_leaf instanceof Value
@@ -827,13 +827,34 @@ final class ParseTreeCreator
                 break;
 
             case '{':
+                ++$this->t;
+
+                $nexter_token = $this->t + 1 < $this->type_token_count ? $this->type_tokens[$this->t + 1] : null;
+
+                if ($nexter_token
+                    && str_contains($nexter_token[0], '@')
+                    && $type_token[0] !== 'list'
+                    && $type_token[0] !== 'array'
+                ) {
+                    $this->t = $this->type_token_count;
+                    if ($type_token[0] === '$this') {
+                        $type_token[0] = 'static';
+                    }
+
+                    $new_leaf = new Value(
+                        $type_token[0],
+                        $type_token[1],
+                        $type_token[1] + strlen($type_token[0]),
+                        $type_token[2] ?? null,
+                        $new_parent,
+                    );
+                    break;
+                }
+
                 $new_leaf = new KeyedArrayTree(
                     $type_token[0],
                     $new_parent,
                 );
-                ++$this->t;
-
-                $nexter_token = $this->t + 1 < $this->type_token_count ? $this->type_tokens[$this->t + 1] : null;
 
                 if ($nexter_token !== null && $nexter_token[0] === '}') {
                     $new_leaf->terminated = true;

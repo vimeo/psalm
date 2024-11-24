@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\PhpVisitor\Reflector;
 
 use PhpParser;
@@ -51,7 +53,7 @@ final class ExpressionResolver
         PhpParser\Node\Expr $stmt,
         Aliases $aliases,
         ?string $fq_classlike_name,
-        ?string $parent_fq_class_name = null
+        ?string $parent_fq_class_name = null,
     ): ?UnresolvedConstantComponent {
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp) {
             $left = self::getUnresolvedClassConstExpr(
@@ -216,8 +218,8 @@ final class ExpressionResolver
         }
 
         if ($stmt instanceof PhpParser\Node\Scalar\String_
-            || $stmt instanceof PhpParser\Node\Scalar\LNumber
-            || $stmt instanceof PhpParser\Node\Scalar\DNumber
+            || $stmt instanceof PhpParser\Node\Scalar\Int_
+            || $stmt instanceof PhpParser\Node\Scalar\Float_
         ) {
             return new ScalarValue($stmt->value);
         }
@@ -339,7 +341,7 @@ final class ExpressionResolver
     public static function enterConditional(
         Codebase $codebase,
         string $file_path,
-        PhpParser\Node\Expr $expr
+        PhpParser\Node\Expr $expr,
     ): ?bool {
         if ($expr instanceof PhpParser\Node\Expr\BooleanNot) {
             $enter_negated = self::enterConditional($codebase, $file_path, $expr->expr);
@@ -371,11 +373,11 @@ final class ExpressionResolver
                     (
                         $expr->left instanceof PhpParser\Node\Expr\ConstFetch
                         && $expr->left->name->getParts() === ['PHP_VERSION_ID']
-                        && $expr->right instanceof PhpParser\Node\Scalar\LNumber
+                        && $expr->right instanceof PhpParser\Node\Scalar\Int_
                     ) || (
                         $expr->right instanceof PhpParser\Node\Expr\ConstFetch
                         && $expr->right->name->getParts() === ['PHP_VERSION_ID']
-                        && $expr->left instanceof PhpParser\Node\Scalar\LNumber
+                        && $expr->left instanceof PhpParser\Node\Scalar\Int_
                     )
                 )
             ) {
@@ -388,7 +390,7 @@ final class ExpressionResolver
                 });
                 try {
                     return (bool) $evaluator->evaluateSilently($expr);
-                } catch (ConstExprEvaluationException $e) {
+                } catch (ConstExprEvaluationException) {
                     return null;
                 }
             }
@@ -404,7 +406,7 @@ final class ExpressionResolver
     private static function functionEvaluatesToTrue(
         Codebase $codebase,
         string $file_path,
-        PhpParser\Node\Expr\FuncCall $function
+        PhpParser\Node\Expr\FuncCall $function,
     ): ?bool {
         if (!$function->name instanceof PhpParser\Node\Name) {
             return null;

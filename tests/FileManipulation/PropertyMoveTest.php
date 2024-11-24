@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests\FileManipulation;
 
 use Psalm\Context;
@@ -31,7 +33,7 @@ class PropertyMoveTest extends TestCase
     public function testValidCode(
         string $input_code,
         string $output_code,
-        array $properties_to_move
+        array $properties_to_move,
     ): void {
         $test_name = $this->getTestName();
         if (strpos($test_name, 'SKIPPED-') !== false) {

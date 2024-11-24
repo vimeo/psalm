@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type\Atomic;
 
+use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type\Atomic;
 
 /**
@@ -11,6 +14,7 @@ use Psalm\Type\Atomic;
  */
 final class TVoid extends Atomic
 {
+    use UnserializeMemoryUsageSuppressionTrait;
     public function getKey(bool $include_extra = true): string
     {
         return 'void';
@@ -23,7 +27,7 @@ final class TVoid extends Atomic
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        int $analysis_php_version_id
+        int $analysis_php_version_id,
     ): ?string {
         return $analysis_php_version_id >= 7_01_00 ? $this->getKey() : null;
     }

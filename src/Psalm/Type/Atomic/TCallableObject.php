@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Type\Atomic;
 
 /**
@@ -11,12 +13,9 @@ final class TCallableObject extends TObject implements TCallableInterface
 {
     use HasIntersectionTrait;
 
-    public ?TCallable $callable;
-
-    public function __construct(bool $from_docblock = false, ?TCallable $callable = null)
+    public function __construct(bool $from_docblock = false, public ?TCallable $callable = null)
     {
         parent::__construct($from_docblock);
-        $this->callable = $callable;
     }
 
     public function getKey(bool $include_extra = true): string
@@ -36,7 +35,7 @@ final class TCallableObject extends TObject implements TCallableInterface
         ?string $namespace,
         array $aliased_classes,
         ?string $this_class,
-        int $analysis_php_version_id
+        int $analysis_php_version_id,
     ): ?string {
         return $analysis_php_version_id >= 7_02_00 ? 'object' : null;
     }

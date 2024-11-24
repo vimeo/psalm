@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Type\Comparator;
 
 use Psalm\Codebase;
@@ -8,8 +10,6 @@ use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParamClass;
-
-use function get_class;
 
 /**
  * @internal
@@ -25,7 +25,7 @@ final class ClassLikeStringComparator
         Scalar $input_type_part,
         Scalar $container_type_part,
         bool $allow_interface_equality,
-        ?TypeComparisonResult $atomic_comparison_result = null
+        ?TypeComparisonResult $atomic_comparison_result = null,
     ): bool {
         if ($container_type_part instanceof TLiteralClassString
             && $input_type_part instanceof TLiteralClassString
@@ -34,7 +34,7 @@ final class ClassLikeStringComparator
         }
 
         if ($container_type_part instanceof TTemplateParamClass
-            && get_class($input_type_part) === TClassString::class
+            && $input_type_part::class === TClassString::class
         ) {
             if ($atomic_comparison_result) {
                 $atomic_comparison_result->type_coerced = true;

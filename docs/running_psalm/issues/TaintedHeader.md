@@ -1,6 +1,6 @@
 # TaintedHeader
 
-Potential header injection. This rule is emitted when user-controlled input can be passed into a HTTP header.
+Potential header injection. This rule is emitted when user-controlled input can be passed into an HTTP header.
 
 ## Risk
 

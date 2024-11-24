@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\LanguageServer\Server;
 
-use Amp\Promise;
-use Amp\Success;
 use InvalidArgumentException;
 use LanguageServerProtocol\FileChangeType;
 use LanguageServerProtocol\FileEvent;
@@ -27,20 +25,11 @@ use function realpath;
  */
 final class Workspace
 {
-    protected LanguageServer $server;
-
-    protected Codebase $codebase;
-
-    protected ProjectAnalyzer $project_analyzer;
-
     public function __construct(
-        LanguageServer $server,
-        Codebase $codebase,
-        ProjectAnalyzer $project_analyzer
+        protected LanguageServer $server,
+        protected Codebase $codebase,
+        protected ProjectAnalyzer $project_analyzer,
     ) {
-        $this->server = $server;
-        $this->codebase = $codebase;
-        $this->project_analyzer = $project_analyzer;
     }
 
     /**
@@ -64,7 +53,7 @@ final class Workspace
             array_map(function (FileEvent $change) {
                 try {
                     return $this->server->uriToPath($change->uri);
-                } catch (InvalidArgumentException $e) {
+                } catch (InvalidArgumentException) {
                     return null;
                 }
             }, $changes),
@@ -108,9 +97,9 @@ final class Workspace
     /**
      * A notification sent from the client to the server to signal the change of configuration settings.
      *
-     * @psalm-suppress PossiblyUnusedMethod
+     * @psalm-suppress PossiblyUnusedMethod, UnusedParam
      */
-    public function didChangeConfiguration(): void
+    public function didChangeConfiguration(mixed $settings): void
     {
         $this->server->logDebug(
             'workspace/didChangeConfiguration',
@@ -122,10 +111,9 @@ final class Workspace
      * The workspace/executeCommand request is sent from the client to the server to
      * trigger command execution on the server.
      *
-     * @param mixed $arguments
      * @psalm-suppress PossiblyUnusedMethod
      */
-    public function executeCommand(string $command, $arguments): Promise
+    public function executeCommand(string $command, mixed $arguments): void
     {
         $this->server->logDebug(
             'workspace/executeCommand',
@@ -154,7 +142,5 @@ final class Workspace
                 $this->server->emitVersionedIssues([$file => $arguments['uri']]);
                 break;
         }
-
-        return new Success(null);
     }
 }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\BinaryOp;
 
 use AssertionError;
@@ -59,7 +61,7 @@ final class ConcatAnalyzer
         PhpParser\Node\Expr $left,
         PhpParser\Node\Expr $right,
         Context $context,
-        ?Union &$result_type = null
+        ?Union &$result_type = null,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -179,9 +181,6 @@ final class ConcatAnalyzer
                     }
 
                     if ($literal_concat) {
-                        // Bypass opcache bug: https://github.com/php/php-src/issues/10635
-                        (function (int $_): void {
-                        })($combinations);
                         if (count($result_type_parts) === 0) {
                             throw new AssertionError("The number of parts cannot be 0!");
                         }
@@ -326,7 +325,7 @@ final class ConcatAnalyzer
         PhpParser\Node\Expr $operand,
         Union $operand_type,
         string $side,
-        Context $context
+        Context $context,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
         $config = Config::getInstance();
@@ -440,7 +439,7 @@ final class ConcatAnalyzer
                     )) {
                         try {
                             $storage = $codebase->methods->getStorage($to_string_method_id);
-                        } catch (UnexpectedValueException $e) {
+                        } catch (UnexpectedValueException) {
                             continue;
                         }
 

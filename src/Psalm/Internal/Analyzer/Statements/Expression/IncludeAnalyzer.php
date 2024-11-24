@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use AssertionError;
@@ -54,7 +56,7 @@ final class IncludeAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\Include_ $stmt,
         Context $context,
-        ?Context $global_context = null
+        ?Context $global_context = null,
     ): bool {
         $codebase = $statements_analyzer->getCodebase();
         $config = $codebase->config;
@@ -202,7 +204,7 @@ final class IncludeAnalyzer
                         $context,
                         $global_context,
                     );
-                } catch (UnpreparedAnalysisException $e) {
+                } catch (UnpreparedAnalysisException) {
                     if ($config->skip_checks_on_unresolvable_includes) {
                         $context->check_classes = false;
                         $context->check_variables = false;
@@ -278,7 +280,7 @@ final class IncludeAnalyzer
         ?NodeDataProvider $type_provider,
         ?StatementsAnalyzer $statements_analyzer,
         string $file_name,
-        Config $config
+        Config $config,
     ): ?string {
         if (Path::isRelative($file_name)) {
             $file_name = $config->base_dir . DIRECTORY_SEPARATOR . $file_name;
@@ -330,7 +332,7 @@ final class IncludeAnalyzer
                 $dir_level = 1;
 
                 if (isset($stmt->getArgs()[1])) {
-                    if ($stmt->getArgs()[1]->value instanceof PhpParser\Node\Scalar\LNumber) {
+                    if ($stmt->getArgs()[1]->value instanceof PhpParser\Node\Scalar\Int_) {
                         $dir_level = $stmt->getArgs()[1]->value->value;
                     } else {
                         if ($statements_analyzer) {
@@ -435,12 +437,12 @@ final class IncludeAnalyzer
         $path_to_file = str_replace('/./', '/', $path_to_file);
 
         // first remove unnecessary / duplicates
-        $path_to_file = preg_replace('/\/[\/]+/', '/', $path_to_file);
+        $path_to_file = (string) preg_replace('/\/[\/]+/', '/', $path_to_file);
 
         $reduce_pattern = '/\/[^\/]+\/\.\.\//';
 
         while (preg_match($reduce_pattern, $path_to_file)) {
-            $path_to_file = preg_replace($reduce_pattern, '/', $path_to_file, 1);
+            $path_to_file = (string) preg_replace($reduce_pattern, '/', $path_to_file, 1);
         }
 
         if (DIRECTORY_SEPARATOR !== '/') {
