@@ -1281,6 +1281,7 @@ final class Psalm
         sort($reports);
         $reportFormats = wordwrap('"' . implode('", "', $reports) . '"', 75, "\n        ");
 
+        // phpcs:disable Generic.Files.LineLength.TooLong
         return <<<HELP
         Usage:
             psalm [options] [file...]
@@ -1446,5 +1447,6 @@ final class Psalm
                 Run Psalm Language Server
 
         HELP;
+        // phpcs:enable
     }
 }
