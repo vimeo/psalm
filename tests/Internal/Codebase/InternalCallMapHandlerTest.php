@@ -526,7 +526,6 @@ class InternalCallMapHandlerTest extends TestCase
                     return new ReflectionMethod($functionName);
                 }
 
-                /** @psalm-suppress UndefinedMethod */
                 return ReflectionMethod::createFromMethodName($functionName);
             }
 
