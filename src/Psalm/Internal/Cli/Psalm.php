@@ -67,6 +67,7 @@ use function is_string;
 use function json_encode;
 use function max;
 use function microtime;
+use function opcache_get_status;
 use function parse_url;
 use function preg_match;
 use function preg_replace;
@@ -84,6 +85,7 @@ use const JSON_THROW_ON_ERROR;
 use const LC_CTYPE;
 use const PHP_EOL;
 use const PHP_URL_SCHEME;
+use const PHP_VERSION_ID;
 use const STDERR;
 
 // phpcs:disable PSR1.Files.SideEffects
@@ -914,17 +916,37 @@ final class Psalm
             'blackfire',
         ]);
 
-        if (defined('PHP_WINDOWS_VERSION_MAJOR')) {
+        $skipJit = defined('PHP_WINDOWS_VERSION_MAJOR') && PHP_VERSION_ID < 80401;
+        if ($skipJit) {
             $ini_handler->disableExtensions(['opcache', 'Zend OPcache']);
         }
 
         // If Xdebug is enabled, restart without it
         $ini_handler->check();
 
-        if (!function_exists('opcache_get_status') && !defined('PHP_WINDOWS_VERSION_MAJOR')) {
-            $progress->write(PHP_EOL
-                . 'Install the opcache extension to make use of JIT for a 20%+ performance boost!'
-                . PHP_EOL . PHP_EOL);
+        if (function_exists('opcache_get_status')) {
+            if (true === (opcache_get_status()['jit']['on'] ?? false)) {
+                $progress->write(PHP_EOL
+                    . 'JIT acceleration: ON'
+                    . PHP_EOL . PHP_EOL);
+            } else {
+                $progress->write(PHP_EOL
+                    . 'JIT acceleration: OFF (an error occurred while enabling JIT)' . PHP_EOL
+                    . 'Please report this to https://github.com/vimeo/psalm with your OS and PHP configuration!'
+                    . PHP_EOL . PHP_EOL);
+            }
+        } else {
+            if ($skipJit) {
+                $progress->write(PHP_EOL
+                    . 'JIT acceleration: OFF (disabled on Windows and PHP < 8.4)' . PHP_EOL
+                    . 'Install PHP 8.4+ to make use of JIT on Windows for a 20%+ performance boost!'
+                    . PHP_EOL . PHP_EOL);
+            } else {
+                $progress->write(PHP_EOL
+                    . 'JIT acceleration: OFF (opcache not installed)' . PHP_EOL
+                    . 'Install the opcache extension to make use of JIT for a 20%+ performance boost!'
+                    . PHP_EOL . PHP_EOL);
+            }
         }
     }
 
