@@ -1845,3 +1845,8 @@ function register_shutdown_function(callable $callback, mixed ...$args): void {}
  * @psalm-taint-sink callable $callback
  */
 function register_tick_function(callable $callback, mixed ...$args): bool {}
+
+/**
+ * @psalm-taint-sink extract $array
+ */
+function extract(array &$array, int $flags = EXTR_OVERWRITE, string $prefix = ""): int {}

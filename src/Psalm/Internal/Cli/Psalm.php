@@ -916,7 +916,7 @@ final class Psalm
             'blackfire',
         ]);
 
-        $skipJit = defined('PHP_WINDOWS_VERSION_MAJOR') && PHP_VERSION_ID < 80400;
+        $skipJit = defined('PHP_WINDOWS_VERSION_MAJOR') && PHP_VERSION_ID < PsalmRestarter::MIN_PHP_VERSION_WINDOWS_JIT;
         if ($skipJit) {
             $ini_handler->disableExtensions(['opcache', 'Zend OPcache']);
         }

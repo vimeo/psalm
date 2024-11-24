@@ -30,6 +30,7 @@ use const PHP_VERSION_ID;
  */
 final class PsalmRestarter extends XdebugHandler
 {
+    public const MIN_PHP_VERSION_WINDOWS_JIT = 8_04_00;
     private const REQUIRED_OPCACHE_SETTINGS = [
         'enable_cli' => 1,
         'jit' => 1205,
@@ -164,7 +165,9 @@ final class PsalmRestarter extends XdebugHandler
         // executed in the parent process (before restart)
         // if it wasn't loaded then we apparently don't have opcache installed and there's no point trying
         // to tweak it
-        if ($opcache_loaded && !(defined('PHP_WINDOWS_VERSION_MAJOR') && PHP_VERSION_ID < 80400)) {
+        if ($opcache_loaded &&
+            !(defined('PHP_WINDOWS_VERSION_MAJOR') && PHP_VERSION_ID < self::MIN_PHP_VERSION_WINDOWS_JIT)
+        ) {
             $additional_options = [];
             foreach (self::REQUIRED_OPCACHE_SETTINGS as $key => $value) {
                 $additional_options []= "-dopcache.{$key}={$value}";
