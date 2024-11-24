@@ -7,6 +7,7 @@ namespace Psalm\Type;
 use InvalidArgumentException;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
+use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
@@ -68,13 +69,13 @@ use function count;
 use function explode;
 use function implode;
 use function is_numeric;
+use function is_string;
 use function key;
 use function ksort;
 use function preg_match;
 use function preg_quote;
 use function str_contains;
 use function str_ends_with;
-use function str_replace;
 use function str_split;
 use function strlen;
 use function strpos;
@@ -473,9 +474,15 @@ class Reconciler
                             $array_key = (string) array_shift($key_parts);
                             array_shift($key_parts);
 
+                            if ($array_key[0] === '\'' || $array_key[0] === '"') {
+                                $possibly_property_key = substr($array_key, 1, -1);
+                                $string_to_int = ArrayAnalyzer::getLiteralArrayKeyInt($possibly_property_key);
+                                $array_key = $string_to_int === false ? $array_key : $string_to_int;
+                            }
+
                             $new_base_key = $base_key . '[' . $array_key . ']';
 
-                            if (str_contains($array_key, '\'')) {
+                            if (is_string($array_key) && str_contains($array_key, '\'')) {
                                 $new_types[$base_key][] = [new HasStringArrayAccess()];
                             } else {
                                 $new_types[$base_key][] = [new HasIntOrStringArrayAccess()];
@@ -782,7 +789,8 @@ class Reconciler
                             return null;
                         } elseif (!$existing_key_type_part instanceof TKeyedArray) {
                             return Type::getMixed();
-                        } elseif ($array_key[0] === '$' || ($array_key[0] !== '\'' && !is_numeric($array_key[0]))) {
+                        } elseif ($array_key[0] === '$'
+                            || ($array_key[0] !== '\'' && ArrayAnalyzer::getLiteralArrayKeyInt($array_key) === false)) {
                             if ($has_empty) {
                                 return null;
                             }
@@ -791,7 +799,10 @@ class Reconciler
                         } else {
                             $array_properties = $existing_key_type_part->properties;
 
-                            $key_parts_key = str_replace('\'', '', $array_key);
+                            $key_parts_key = $array_key;
+                            if ($array_key[0] === '\'' || $array_key[0] === '"') {
+                                $key_parts_key = substr($array_key, 1, -1);
+                            }
 
                             if (!isset($array_properties[$key_parts_key])) {
                                 if ($existing_key_type_part->fallback_params !== null) {
@@ -1142,7 +1153,7 @@ class Reconciler
             ;
         }
 
-        $base_key = implode($key_parts);
+        $base_key = implode('', $key_parts);
 
         $result_type = $result_type->setPossiblyUndefined(
             $result_type->possibly_undefined || count($array_key_offsets) > 1,
@@ -1175,13 +1186,14 @@ class Reconciler
                             $properties = $base_atomic_type->properties;
                             $properties[$array_key_offset] = $result_type;
                             if ($base_atomic_type->is_list
-                            && (!is_numeric($array_key_offset)
+                            && (ArrayAnalyzer::getLiteralArrayKeyInt($array_key_offset) === false
                                 || ($array_key_offset
                                     && !isset($properties[$array_key_offset-1])
                                 )
                             )
                             ) {
-                                if ($base_atomic_type->fallback_params && is_numeric($array_key_offset)) {
+                                if ($base_atomic_type->fallback_params
+                                    && ArrayAnalyzer::getLiteralArrayKeyInt($array_key_offset) !== false) {
                                     $fallback = $base_atomic_type->fallback_params[1]->setPossiblyUndefined(
                                         $result_type->isNever(),
                                     );

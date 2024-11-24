@@ -942,6 +942,27 @@ class TypeCombinationTest extends TestCase
                     '"0"',
                 ],
             ],
+            'unionOfClassStringAndClassStringWithIntersection' => [
+                'class-string<IFoo>',
+                [
+                    'class-string<IFoo>',
+                    'class-string<IFoo & IBar>',
+                ],
+            ],
+            'unionNonEmptyLiteralStringAndLiteralString' => [
+                'literal-string',
+                [
+                    'non-empty-literal-string',
+                    'literal-string',
+                ],
+            ],
+            'unionLiteralStringAndNonEmptyLiteralString' => [
+                'literal-string',
+                [
+                    'literal-string',
+                    'non-empty-literal-string',
+                ],
+            ],
         ];
     }
 

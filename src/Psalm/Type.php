@@ -919,7 +919,7 @@ abstract class Type
                 ) {
                     return $intersection_atomic;
                 }
-            } catch (InvalidArgumentException $e) {
+            } catch (InvalidArgumentException) {
                 // Ignore non-existing classes during initial scan
             }
         }

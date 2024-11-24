@@ -640,6 +640,21 @@ class MixinAnnotationTest extends TestCase
                     (new A)->foo;',
                 'error_message' => 'UndefinedPropertyFetch',
             ],
+            'undefinedMixinClassWithPropertyFetch_WithMagicMethod' => [
+                'code' => '<?php
+                    /**
+                     * @property string $baz
+                     * @mixin B
+                     */
+                    class A {
+                        public function __get(string $name): string {
+                            return "";
+                        }
+                    }
+
+                    (new A)->foo;',
+                'error_message' => 'UndefinedMagicPropertyFetch',
+            ],
             'undefinedMixinClassWithPropertyAssignment' => [
                 'code' => '<?php
                     /** @mixin B */
@@ -648,6 +663,19 @@ class MixinAnnotationTest extends TestCase
                     (new A)->foo = "bar";',
                 'error_message' => 'UndefinedPropertyAssignment',
             ],
+            'undefinedMixinClassWithPropertyAssignment_WithMagicMethod' => [
+                'code' => '<?php
+                    /**
+                     * @property string $baz
+                     * @mixin B
+                     */
+                    class A {
+                        public function __set(string $name, string $value) {}
+                    }
+
+                    (new A)->foo = "bar";',
+                'error_message' => 'UndefinedMagicPropertyAssignment',
+            ],
             'undefinedMixinClassWithMethodCall' => [
                 'code' => '<?php
                     /** @mixin B */
@@ -655,6 +683,40 @@ class MixinAnnotationTest extends TestCase
 
                     (new A)->foo();',
                 'error_message' => 'UndefinedMethod',
+            ],
+            'undefinedMixinClassWithMethodCall_WithMagicMethod' => [
+                'code' => '<?php
+                    /**
+                     * @method baz()
+                     * @mixin B
+                     */
+                    class A {
+                        public function __call(string $name, array $arguments) {}
+                    }
+
+                    (new A)->foo();',
+                'error_message' => 'UndefinedMagicMethod',
+            ],
+            'undefinedMixinClassWithStaticMethodCall' => [
+                'code' => '<?php
+                    /** @mixin B */
+                    class A {}
+
+                    A::foo();',
+                'error_message' => 'UndefinedMethod',
+            ],
+            'undefinedMixinClassWithStaticMethodCall_WithMagicMethod' => [
+                'code' => '<?php
+                    /**
+                     * @method baz()
+                     * @mixin B
+                     */
+                    class A {
+                        public static function __callStatic(string $name, array $arguments) {}
+                    }
+
+                    A::foo();',
+                'error_message' => 'UndefinedMagicMethod',
             ],
             'inheritTemplatedMixinWithSelf' => [
                 'code' => '<?php

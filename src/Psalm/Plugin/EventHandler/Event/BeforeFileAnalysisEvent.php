@@ -23,7 +23,7 @@ final class BeforeFileAnalysisEvent
         private readonly Context $file_context,
         private readonly FileStorage $file_storage,
         private readonly Codebase $codebase,
-        private array $stmts,
+        private readonly array $stmts,
     ) {
     }
 

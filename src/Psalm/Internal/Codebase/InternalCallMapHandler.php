@@ -27,7 +27,6 @@ use function file_exists;
 use function str_ends_with;
 use function str_starts_with;
 use function strlen;
-use function strpos;
 use function strtolower;
 use function substr;
 use function version_compare;
@@ -299,7 +298,7 @@ final class InternalCallMapHandler
                 // removes `rw_` leftover from `&rw_haystack` or `&rw_needle` or `&rw_actual_name`
                 // it doesn't have any specific meaning apart from `&` signifying that
                 // the parameter is passed by reference (handled above)
-                if ($by_reference && strlen($arg_name) > 3 && strpos($arg_name, 'rw_') === 0) {
+                if ($by_reference && strlen($arg_name) > 3 && str_starts_with($arg_name, 'rw_')) {
                     $arg_name = substr($arg_name, 3);
                 }
 

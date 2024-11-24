@@ -56,7 +56,6 @@ use function dirname;
 use function explode;
 use function file_put_contents;
 use function fwrite;
-use function get_class;
 use function implode;
 use function in_array;
 use function is_dir;
@@ -266,7 +265,7 @@ final class IssueBuffer
         $project_analyzer = ProjectAnalyzer::getInstance();
         $codebase = $project_analyzer->getCodebase();
 
-        $fqcn_parts = explode('\\', get_class($e));
+        $fqcn_parts = explode('\\', $e::class);
         $issue_type = array_pop($fqcn_parts);
 
         if (!$project_analyzer->show_issues) {

@@ -63,7 +63,6 @@ use function array_merge;
 use function array_values;
 use function assert;
 use function count;
-use function get_class;
 use function is_int;
 use function is_numeric;
 use function min;
@@ -1001,7 +1000,20 @@ final class TypeCombiner
             if (!$type->as_type) {
                 $combination->class_string_types['object'] = new TObject();
             } else {
-                $combination->class_string_types[$type->as] = $type->as_type;
+                if (isset($combination->class_string_types[$type->as])
+                    && $combination->class_string_types[$type->as] instanceof TNamedObject
+                ) {
+                    if ($combination->class_string_types[$type->as]->extra_types === []) {
+                        // do nothing, existing type is wider or the same
+                    } elseif ($type->as_type->extra_types === []) {
+                        $combination->class_string_types[$type->as] = $type->as_type;
+                    } else {
+                        // todo: figure out what to do with class-string<A&B>|class-string<A&C>
+                        $combination->class_string_types[$type->as] = $type->as_type;
+                    }
+                } else {
+                    $combination->class_string_types[$type->as] = $type->as_type;
+                }
             }
         } elseif ($type instanceof TLiteralString) {
             if ($combination->strings !== null && count($combination->strings) < $literal_limit) {
@@ -1151,7 +1163,7 @@ final class TypeCombiner
 
                         if ($has_empty_string) {
                             $combination->value_types['string'] = new TString();
-                        } elseif ($has_non_lowercase_string && get_class($type) !== TNonEmptyString::class) {
+                        } elseif ($has_non_lowercase_string && $type::class !== TNonEmptyString::class) {
                             $combination->value_types['string'] = new TNonEmptyString();
                         } else {
                             $combination->value_types['string'] = $type;
@@ -1210,9 +1222,16 @@ final class TypeCombiner
                     ) {
                         $combination->value_types['string'] = new TNonEmptyString();
                     } elseif ($type::class === TNonEmptyNonspecificLiteralString::class
-                        && $combination->value_types['string'] instanceof TNonEmptyString
+                        && (
+                            $combination->value_types['string'] instanceof TNonEmptyString
+                            || $combination->value_types['string'] instanceof TNonspecificLiteralString
+                        )
                     ) {
                         // do nothing
+                    } elseif ($type::class === TNonspecificLiteralString::class
+                        && $combination->value_types['string']::class === TNonEmptyNonspecificLiteralString::class
+                    ) {
+                        $combination->value_types['string'] = $type;
                     } else {
                         $combination->value_types['string'] = new TString();
                     }

@@ -162,6 +162,7 @@ class DocblockInheritanceTest extends TestCase
 
                     class B extends A
                     {
+                        /** @param array<int, int>|int|bool $className */
                         public function a(array|int|bool $className): int
                         {
                             return 0;

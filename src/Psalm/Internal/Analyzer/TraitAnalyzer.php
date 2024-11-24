@@ -20,7 +20,7 @@ final class TraitAnalyzer extends ClassLikeAnalyzer
         Trait_ $class,
         SourceAnalyzer $source,
         string $fq_class_name,
-        private Aliases $aliases,
+        private readonly Aliases $aliases,
     ) {
         $this->source = $source;
         $this->file_analyzer = $source->getFileAnalyzer();

@@ -4,9 +4,9 @@ Potential Server-Side Request Forgery vulnerability. This rule is emitted when u
 
 ## Risk
 
-Passing untrusted user input to network requests could be dangerous. 
+Passing untrusted user input to network requests could be dangerous.
 
-If an attacker can fully control a HTTP request they could connect to internal services. Depending on the nature of these, this can pose a security risk. (e.g. backend services, admin interfaces, AWS metadata, ...)
+If an attacker can fully control an HTTP request they could connect to internal services. Depending on the nature of these, this can pose a security risk. (e.g. backend services, admin interfaces, AWS metadata, ...)
 
 ## Example
 

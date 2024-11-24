@@ -420,7 +420,7 @@ abstract class Atomic implements TypeNode, Stringable
 
     /**
      * This is the string that will be used to represent the type in Union::$types. This means that two types sharing
-     * the same getKey value will override themselves in an Union
+     * the same getKey value will override themselves in a Union
      */
     abstract public function getKey(bool $include_extra = true): string;
 
@@ -744,7 +744,7 @@ abstract class Atomic implements TypeNode, Stringable
         TemplateResult $template_result,
         Codebase $codebase,
         ?StatementsAnalyzer $statements_analyzer = null,
-        Atomic $input_type = null,
+        ?Atomic $input_type = null,
         ?int $input_arg_offset = null,
         ?string $calling_class = null,
         ?string $calling_function = null,

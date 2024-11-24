@@ -33,11 +33,13 @@ use Psalm\Progress\Progress;
 use Psalm\Progress\VoidProgress;
 use Psalm\Report;
 use Psalm\Report\ReportOptions;
+use ReflectionClass;
 use RuntimeException;
 use Symfony\Component\Filesystem\Path;
 
 use function array_filter;
 use function array_key_exists;
+use function array_keys;
 use function array_map;
 use function array_merge;
 use function array_slice;
@@ -65,21 +67,25 @@ use function is_string;
 use function json_encode;
 use function max;
 use function microtime;
+use function opcache_get_status;
 use function parse_url;
 use function preg_match;
 use function preg_replace;
 use function realpath;
 use function setlocale;
+use function sort;
 use function str_repeat;
 use function str_starts_with;
 use function strlen;
 use function substr;
+use function wordwrap;
 
 use const DIRECTORY_SEPARATOR;
 use const JSON_THROW_ON_ERROR;
 use const LC_CTYPE;
 use const PHP_EOL;
 use const PHP_URL_SCHEME;
+use const PHP_VERSION_ID;
 use const STDERR;
 
 // phpcs:disable PSR1.Files.SideEffects
@@ -89,6 +95,7 @@ require_once __DIR__ . '/../CliUtils.php';
 require_once __DIR__ . '/../Composer.php';
 require_once __DIR__ . '/../IncludeCollector.php';
 require_once __DIR__ . '/../../IssueBuffer.php';
+require_once __DIR__ . '/../../Report.php';
 
 /**
  * @internal
@@ -909,17 +916,37 @@ final class Psalm
             'blackfire',
         ]);
 
-        if (defined('PHP_WINDOWS_VERSION_MAJOR')) {
+        $skipJit = defined('PHP_WINDOWS_VERSION_MAJOR') && PHP_VERSION_ID < PsalmRestarter::MIN_PHP_VERSION_WINDOWS_JIT;
+        if ($skipJit) {
             $ini_handler->disableExtensions(['opcache', 'Zend OPcache']);
         }
 
         // If Xdebug is enabled, restart without it
         $ini_handler->check();
 
-        if (!function_exists('opcache_get_status') && !defined('PHP_WINDOWS_VERSION_MAJOR')) {
-            $progress->write(PHP_EOL
-                . 'Install the opcache extension to make use of JIT for a 20%+ performance boost!'
-                . PHP_EOL . PHP_EOL);
+        if (function_exists('opcache_get_status')) {
+            if (true === (opcache_get_status()['jit']['on'] ?? false)) {
+                $progress->write(PHP_EOL
+                    . 'JIT acceleration: ON'
+                    . PHP_EOL . PHP_EOL);
+            } else {
+                $progress->write(PHP_EOL
+                    . 'JIT acceleration: OFF (an error occurred while enabling JIT)' . PHP_EOL
+                    . 'Please report this to https://github.com/vimeo/psalm with your OS and PHP configuration!'
+                    . PHP_EOL . PHP_EOL);
+            }
+        } else {
+            if ($skipJit) {
+                $progress->write(PHP_EOL
+                    . 'JIT acceleration: OFF (disabled on Windows and PHP < 8.4)' . PHP_EOL
+                    . 'Install PHP 8.4+ to make use of JIT on Windows for a 20%+ performance boost!'
+                    . PHP_EOL . PHP_EOL);
+            } else {
+                $progress->write(PHP_EOL
+                    . 'JIT acceleration: OFF (opcache not installed)' . PHP_EOL
+                    . 'Install the opcache extension to make use of JIT for a 20%+ performance boost!'
+                    . PHP_EOL . PHP_EOL);
+            }
         }
     }
 
@@ -1232,6 +1259,21 @@ final class Psalm
      */
     private static function getHelpText(): string
     {
+        $formats = [];
+        /** @var string $value */
+        foreach ((new ReflectionClass(Report::class))->getConstants() as $constant => $value) {
+            if (str_starts_with($constant, 'TYPE_')) {
+                $formats[] = $value;
+            }
+        }
+        sort($formats);
+        $outputFormats = wordwrap(implode(', ', $formats), 75, "\n            ");
+
+        /** @psalm-suppress ImpureMethodCall */
+        $reports = array_keys(Report::getMapping());
+        sort($reports);
+        $reportFormats = wordwrap('"' . implode('", "', $reports) . '"', 75, "\n        ");
+
         return <<<HELP
         Usage:
             psalm [options] [file...]
@@ -1317,8 +1359,8 @@ final class Psalm
 
             --output-format=console
                 Changes the output format.
-                Available formats: compact, console, text, emacs, json, pylint, xml, checkstyle, junit, sonarqube,
-                                   github, phpstorm, codeclimate, by-issue-level
+                Available formats:
+                    $outputFormats
 
             --no-progress
                 Disable the progress indicator
@@ -1332,8 +1374,7 @@ final class Psalm
         Reports:
             --report=PATH
                 The path where to output report file. The output format is based on the file extension.
-                (Currently supported formats: ".json", ".xml", ".txt", ".emacs", ".pylint", ".console",
-                ".sarif", "checkstyle.xml", "sonarqube.json", "codeclimate.json", "summary.json", "junit.xml")
+                (Currently supported formats: $reportFormats)
 
             --report-show-info[=BOOLEAN]
                 Whether the report should include non-errors in its output (defaults to true)

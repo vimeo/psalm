@@ -30,8 +30,8 @@ use function array_pop;
 use function count;
 use function in_array;
 use function preg_match;
+use function str_contains;
 use function strlen;
-use function strpos;
 use function strtolower;
 use function substr;
 
@@ -832,7 +832,7 @@ final class ParseTreeCreator
                 $nexter_token = $this->t + 1 < $this->type_token_count ? $this->type_tokens[$this->t + 1] : null;
 
                 if ($nexter_token
-                    && strpos($nexter_token[0], '@') !== false
+                    && str_contains($nexter_token[0], '@')
                     && $type_token[0] !== 'list'
                     && $type_token[0] !== 'array'
                 ) {

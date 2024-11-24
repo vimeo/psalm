@@ -453,13 +453,6 @@ final class Methods
             foreach ($params as $i => $param) {
                 if (isset($overridden_storage->params[$i]->type)
                     && $overridden_storage->params[$i]->has_docblock_type
-                    && (
-                        ! $param->type
-                        || $param->type->equals(
-                            $overridden_storage->params[$i]->signature_type
-                                ?? $overridden_storage->params[$i]->type,
-                        )
-                    )
                 ) {
                     $params[$i] = clone $param;
                     /** @var Union $params[$i]->type */
@@ -941,7 +934,7 @@ final class Methods
 
     public function getMethodReturnTypeLocation(
         MethodIdentifier $method_id,
-        CodeLocation &$defined_location = null,
+        ?CodeLocation &$defined_location = null,
     ): ?CodeLocation {
         $method_id = $this->getDeclaringMethodId($method_id);
 

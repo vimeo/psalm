@@ -27,7 +27,7 @@ final class FileBasedPluginAdapter implements PluginEntryPointInterface
     public function __construct(
         string $path,
         private readonly Config $config,
-        private Codebase $codebase,
+        private readonly Codebase $codebase,
     ) {
         if (!$path) {
             throw new UnexpectedValueException('$path cannot be empty');

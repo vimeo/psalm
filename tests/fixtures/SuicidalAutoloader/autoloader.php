@@ -10,7 +10,7 @@ spl_autoload_register(static function (string $className) {
         Transliterator::class, // symfony/string
         InstalledVersions::class, // composer v2
         'Mockery\Closure', // Mockery/mockery 1.6.1
-        'Mockery\Matcher\TExpected', // Mockery/mockery, invalid template usage
+        'Mockery\Matcher\TExpected', // Mockery/mockery 1.6.10, possibly before
         'parent', // it's unclear why Psalm tries to autoload parent
         'PHPUnit\Framework\ArrayAccess',
         'PHPUnit\Framework\Countable',

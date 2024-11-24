@@ -635,6 +635,8 @@ class RedundantConditionTest extends TestCase
                             if (empty($a["foo"])) {}
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'suppressRedundantConditionAfterAssertNonEmpty' => [
                 'code' => '<?php
@@ -1633,6 +1635,15 @@ class RedundantConditionTest extends TestCase
                         return null;
                     }',
                 'error_message' => 'DocblockTypeContradiction',
+            ],
+            'array_key_exists_int_string_juggle' => [
+                'code' => '<?php
+                    /**
+                     * @var string[] $a
+                     */
+
+                    if (array_key_exists("10", $a) && array_key_exists(10, $a)) {}',
+                'error_message' => 'RedundantCondition',
             ],
         ];
     }

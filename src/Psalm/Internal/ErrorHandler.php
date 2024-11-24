@@ -16,7 +16,6 @@ use function set_error_handler;
 use function set_exception_handler;
 
 use const E_ALL;
-use const E_STRICT;
 use const STDERR;
 
 /**
@@ -61,7 +60,7 @@ final class ErrorHandler
 
     private static function setErrorReporting(): void
     {
-        error_reporting(E_ALL | E_STRICT);
+        error_reporting(E_ALL);
         ini_set('display_errors', '1');
     }
 

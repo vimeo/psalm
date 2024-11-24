@@ -27,7 +27,7 @@ final class HighOrderFunctionArgInfo
      */
     public function __construct(
         private readonly string $type,
-        private functionLikeStorage $function_storage,
+        private readonly FunctionLikeStorage $function_storage,
         private readonly ?ClassLikeStorage $class_storage = null,
     ) {
     }

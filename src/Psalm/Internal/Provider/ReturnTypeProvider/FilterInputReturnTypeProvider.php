@@ -14,6 +14,7 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_flip;
 use function array_search;
 use function in_array;
 use function is_array;
@@ -50,7 +51,16 @@ class FilterInputReturnTypeProvider implements FunctionReturnTypeProviderInterfa
             throw new UnexpectedValueException('Expected StatementsAnalyzer not StatementsSource');
         }
 
-        $call_args     = $event->getCallArgs();
+        $arg_names = array_flip(['type', 'var_name', 'filter', 'options']);
+        $call_args = [];
+        foreach ($event->getCallArgs() as $idx => $arg) {
+            if (isset($arg->name)) {
+                $call_args[$arg_names[$arg->name->name]] = $arg;
+            } else {
+                $call_args[$idx] = $arg;
+            }
+        }
+
         $function_id   = $event->getFunctionId();
         $code_location = $event->getCodeLocation();
         $codebase      = $statements_analyzer->getCodebase();
@@ -151,13 +161,13 @@ class FilterInputReturnTypeProvider implements FunctionReturnTypeProviderInterfa
             return $fails_or_not_set_type;
         }
 
-        $possible_types = array(
-            '$_GET'    => INPUT_GET,
-            '$_POST'   => INPUT_POST,
+        $possible_types = [
+            '$_GET' => INPUT_GET,
+            '$_POST' => INPUT_POST,
             '$_COOKIE' => INPUT_COOKIE,
             '$_SERVER' => INPUT_SERVER,
-            '$_ENV'    => INPUT_ENV,
-        );
+            '$_ENV' => INPUT_ENV,
+        ];
 
         $first_arg_type_type = $first_arg_type->getSingleIntLiteral();
         $global_name = array_search($first_arg_type_type->value, $possible_types);
@@ -201,7 +211,7 @@ class FilterInputReturnTypeProvider implements FunctionReturnTypeProviderInterfa
         }
 
         if (FilterUtils::hasFlag($flags_int_used, FILTER_REQUIRE_ARRAY)
-            && in_array($first_arg_type_type->value, array(INPUT_COOKIE, INPUT_SERVER, INPUT_ENV), true)) {
+            && in_array($first_arg_type_type->value, [INPUT_COOKIE, INPUT_SERVER, INPUT_ENV], true)) {
             // these globals can never be an array
             return $fails_or_not_set_type;
         }

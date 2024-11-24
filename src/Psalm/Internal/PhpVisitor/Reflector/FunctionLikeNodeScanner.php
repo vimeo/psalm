@@ -87,7 +87,7 @@ final class FunctionLikeNodeScanner
         private readonly FileStorage $file_storage,
         private readonly Aliases $aliases,
         private readonly array $type_aliases,
-        private ?ClassLikeStorage $classlike_storage,
+        private readonly ?ClassLikeStorage $classlike_storage,
         private readonly array $existing_function_template_types,
     ) {
         $this->file_path = $file_storage->file_path;
@@ -100,7 +100,7 @@ final class FunctionLikeNodeScanner
     public function start(
         PhpParser\Node\FunctionLike $stmt,
         bool $fake_method = false,
-        PhpParser\Comment\Doc $doc_comment = null,
+        ?PhpParser\Comment\Doc $doc_comment = null,
     ): FunctionStorage|MethodStorage|false {
         if ($stmt instanceof PhpParser\Node\Expr\Closure
             || $stmt instanceof PhpParser\Node\Expr\ArrowFunction
