@@ -824,8 +824,8 @@ return [
       'new' => ['string|int|float|false', 'timestamp'=>'int', 'returnFormat='=>'int', 'latitude='=>'?float', 'longitude='=>'?float', 'zenith='=>'?float', 'utcOffset='=>'?float'],
     ],
     'date_time_set' => [
-      'old' => ['DateTime|false', 'object'=>'', 'hour'=>'', 'minute'=>'', 'second='=>'', 'microsecond='=>''],
-      'new' => ['DateTime', 'object'=>'', 'hour'=>'', 'minute'=>'', 'second='=>'', 'microsecond='=>''],
+      'old' => ['DateTime|false', 'object'=>'DateTime', 'hour'=>'int', 'minute'=>'int', 'second='=>'int', 'microsecond='=>'int'],
+      'new' => ['DateTime', 'object'=>'DateTime', 'hour'=>'int', 'minute'=>'int', 'second='=>'int', 'microsecond='=>'int'],
     ],
     'date_timestamp_set' => [
       'old' => ['DateTime|false', 'object'=>'DateTime', 'timestamp'=>'int'],
