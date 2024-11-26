@@ -19,13 +19,13 @@ return [
   'added' => [],
   'removed' => [],
   'changed' => [
-    'old' => [
-      'locale_set_default' => ['bool', 'locale'=>'string'],
-      'DateInterval::createFromDateString' => ['DateInterval|false', 'datetime'=>'string'],
+    'locale_set_default' => [
+      'old' => ['bool', 'locale'=>'string'],
+      'new' => ['true', 'locale'=>'string'],
     ],
-    'new' => [
-      'locale_set_default' => ['true', 'locale'=>'string'],
-      'DateInterval::createFromDateString' => ['DateInterval', 'datetime'=>'string'],
+    'DateInterval::createFromDateString' => [
+      'old' => ['DateInterval|false', 'datetime'=>'string'],
+      'new' => ['DateInterval', 'datetime'=>'string'],
     ]
   ]
 ];
