@@ -3172,7 +3172,7 @@ return array (
   ),
   'Collator::setStrength' => 
   array (
-    0 => 'bool',
+    0 => 'true',
     'strength' => 'int',
   ),
   'Collator::sort' => 
@@ -3247,7 +3247,7 @@ return array (
   ),
   'collator_set_strength' => 
   array (
-    0 => 'bool',
+    0 => 'true',
     'object' => 'collator',
     'strength' => 'int',
   ),
@@ -7370,7 +7370,7 @@ return array (
   ),
   'dba_open' => 
   array (
-    0 => 'resource',
+    0 => 'Dba\\Connection|false',
     'path' => 'string',
     'mode' => 'string',
     'handler=' => '?string',
@@ -7385,7 +7385,7 @@ return array (
   ),
   'dba_popen' => 
   array (
-    0 => 'resource',
+    0 => 'Dba\\Connection|false',
     'path' => 'string',
     'mode' => 'string',
     'handler=' => '?string',
@@ -8541,7 +8541,7 @@ return array (
   ),
   'DOMDocument::registerNodeClass' => 
   array (
-    0 => 'bool',
+    0 => 'true',
     'baseClass' => 'string',
     'extendedClass' => '?string',
   ),
@@ -8727,7 +8727,7 @@ return array (
   ),
   'DOMImplementation::createDocument' => 
   array (
-    0 => 'DOMDocument|false',
+    0 => 'DOMDocument',
     'namespace=' => '?string',
     'qualifiedName=' => 'string',
     'doctype=' => '?DOMDocumentType',
@@ -12696,7 +12696,7 @@ return array (
   ),
   'exit' => 
   array (
-    0 => '',
+    0 => 'never',
     'status' => 'string|int',
   ),
   'exp' => 
@@ -14883,7 +14883,7 @@ return array (
   ),
   'finfo::set_flags' => 
   array (
-    0 => 'bool',
+    0 => 'true',
     'flags' => 'int',
   ),
   'finfo_buffer' => 
@@ -14915,7 +14915,7 @@ return array (
   ),
   'finfo_set_flags' => 
   array (
-    0 => 'bool',
+    0 => 'true',
     'finfo' => 'finfo',
     'flags' => 'int',
   ),
@@ -20540,7 +20540,7 @@ return array (
   ),
   'hash_update' => 
   array (
-    0 => 'bool',
+    0 => 'true',
     'context' => 'HashContext',
     'data' => 'string',
   ),
@@ -20640,7 +20640,7 @@ return array (
   ),
   'highlight_string' => 
   array (
-    0 => 'string|bool',
+    0 => 'string|true',
     'string' => 'string',
     'return=' => 'bool',
   ),
@@ -30587,7 +30587,7 @@ return array (
   ),
   'intlcal_set' => 
   array (
-    0 => 'bool',
+    0 => 'true',
     'calendar' => 'IntlCalendar',
     'year' => 'int',
     'month' => 'int',
@@ -30666,7 +30666,7 @@ return array (
   ),
   'IntlCalendar::clear' => 
   array (
-    0 => 'bool',
+    0 => 'true',
     'field=' => '?int',
   ),
   'IntlCalendar::createInstance' => 
@@ -30824,7 +30824,7 @@ return array (
   ),
   'IntlCalendar::set' => 
   array (
-    0 => 'bool',
+    0 => 'true',
     'field' => 'int',
     'value' => 'int',
   ),
@@ -30840,7 +30840,7 @@ return array (
   ),
   'IntlCalendar::setFirstDayOfWeek' => 
   array (
-    0 => 'bool',
+    0 => 'true',
     'dayOfWeek' => 'int',
   ),
   'IntlCalendar::setLenient' => 
@@ -30850,7 +30850,7 @@ return array (
   ),
   'IntlCalendar::setMinimalDaysInFirstWeek' => 
   array (
-    0 => 'bool',
+    0 => 'true',
     'days' => 'int',
   ),
   'IntlCalendar::setRepeatedWallTimeOption' => 
@@ -31482,7 +31482,7 @@ return array (
   ),
   'IntlGregorianCalendar::clear' => 
   array (
-    0 => 'bool',
+    0 => 'true',
     'field=' => '?int',
   ),
   'IntlGregorianCalendar::createInstance' => 
@@ -31649,7 +31649,7 @@ return array (
   ),
   'IntlGregorianCalendar::set' => 
   array (
-    0 => 'bool',
+    0 => 'true',
     'field' => 'int',
     'value' => 'int',
   ),
@@ -31665,7 +31665,7 @@ return array (
   ),
   'IntlGregorianCalendar::setFirstDayOfWeek' => 
   array (
-    0 => 'bool',
+    0 => 'true',
     'dayOfWeek' => 'int',
   ),
   'IntlGregorianCalendar::setGregorianChange' => 
@@ -31680,7 +31680,7 @@ return array (
   ),
   'IntlGregorianCalendar::setMinimalDaysInFirstWeek' => 
   array (
-    0 => 'bool',
+    0 => 'true',
     'days' => 'int',
   ),
   'IntlGregorianCalendar::setRepeatedWallTimeOption' => 
@@ -34199,7 +34199,7 @@ return array (
   ),
   'Locale::setDefault' => 
   array (
-    0 => 'bool',
+    0 => 'true',
     'locale' => 'string',
   ),
   'locale_accept_from_http' => 
@@ -41867,7 +41867,7 @@ return array (
   ),
   'mysqli_report' => 
   array (
-    0 => 'bool',
+    0 => 'true',
     'flags' => 'int',
   ),
   'mysqli_result::__construct' => 
@@ -44294,7 +44294,7 @@ return array (
   ),
   'odbc_binmode' => 
   array (
-    0 => 'bool',
+    0 => 'true',
     'statement' => 'resource',
     'mode' => 'int',
   ),
@@ -44309,7 +44309,7 @@ return array (
   ),
   'odbc_columnprivileges' => 
   array (
-    0 => 'resource|false',
+    0 => 'Odbc\\Result|false',
     'odbc' => 'resource',
     'catalog' => '?string',
     'schema' => 'string',
@@ -44318,7 +44318,7 @@ return array (
   ),
   'odbc_columns' => 
   array (
-    0 => 'resource|false',
+    0 => 'Odbc\\Result|false',
     'odbc' => 'resource',
     'catalog=' => '?string',
     'schema=' => '?string',
@@ -44332,7 +44332,7 @@ return array (
   ),
   'odbc_connect' => 
   array (
-    0 => 'resource|false',
+    0 => 'Odbc\\Connection|false',
     'dsn' => 'string',
     'user' => 'string',
     'password' => 'string',
@@ -44351,7 +44351,7 @@ return array (
   ),
   'odbc_do' => 
   array (
-    0 => 'resource',
+    0 => 'Odbc\\Result|false',
     'odbc' => 'resource',
     'query' => 'string',
   ),
@@ -44367,7 +44367,7 @@ return array (
   ),
   'odbc_exec' => 
   array (
-    0 => 'resource',
+    0 => 'Odbc\\Result|false',
     'odbc' => 'resource',
     'query' => 'string',
   ),
@@ -44440,7 +44440,7 @@ return array (
   ),
   'odbc_foreignkeys' => 
   array (
-    0 => 'resource|false',
+    0 => 'Odbc\\Result|false',
     'odbc' => 'resource',
     'pk_catalog' => '?string',
     'pk_schema' => 'string',
@@ -44451,18 +44451,18 @@ return array (
   ),
   'odbc_free_result' => 
   array (
-    0 => 'bool',
+    0 => 'true',
     'statement' => 'resource',
   ),
   'odbc_gettypeinfo' => 
   array (
-    0 => 'resource',
+    0 => 'Odbc\\Result|false',
     'odbc' => 'resource',
     'data_type=' => 'int',
   ),
   'odbc_longreadlen' => 
   array (
-    0 => 'bool',
+    0 => 'true',
     'statement' => 'resource',
     'length' => 'int',
   ),
@@ -44483,7 +44483,7 @@ return array (
   ),
   'odbc_pconnect' => 
   array (
-    0 => 'resource|false',
+    0 => 'Odbc\\Connection|false',
     'dsn' => 'string',
     'user' => 'string',
     'password' => 'string',
@@ -44491,13 +44491,13 @@ return array (
   ),
   'odbc_prepare' => 
   array (
-    0 => 'resource|false',
+    0 => 'Odbc\\Result|false',
     'odbc' => 'resource',
     'query' => 'string',
   ),
   'odbc_primarykeys' => 
   array (
-    0 => 'resource|false',
+    0 => 'Odbc\\Result|false',
     'odbc' => 'resource',
     'catalog' => '?string',
     'schema' => 'string',
@@ -44505,7 +44505,7 @@ return array (
   ),
   'odbc_procedurecolumns' => 
   array (
-    0 => 'resource|false',
+    0 => 'Odbc\\Result|false',
     'odbc' => 'resource',
     'catalog=' => '?string',
     'schema=' => '?string',
@@ -44514,7 +44514,7 @@ return array (
   ),
   'odbc_procedures' => 
   array (
-    0 => 'resource|false',
+    0 => 'Odbc\\Result|false',
     'odbc' => 'resource',
     'catalog=' => '?string',
     'schema=' => '?string',
@@ -44547,7 +44547,7 @@ return array (
   ),
   'odbc_specialcolumns' => 
   array (
-    0 => 'resource|false',
+    0 => 'Odbc\\Result|false',
     'odbc' => 'resource',
     'type' => 'int',
     'catalog' => '?string',
@@ -44558,7 +44558,7 @@ return array (
   ),
   'odbc_statistics' => 
   array (
-    0 => 'resource|false',
+    0 => 'Odbc\\Result|false',
     'odbc' => 'resource',
     'catalog' => '?string',
     'schema' => 'string',
@@ -44568,7 +44568,7 @@ return array (
   ),
   'odbc_tableprivileges' => 
   array (
-    0 => 'resource|false',
+    0 => 'Odbc\\Result|false',
     'odbc' => 'resource',
     'catalog' => '?string',
     'schema' => 'string',
@@ -44576,7 +44576,7 @@ return array (
   ),
   'odbc_tables' => 
   array (
-    0 => 'resource|false',
+    0 => 'Odbc\\Result|false',
     'odbc' => 'resource',
     'catalog=' => '?string',
     'schema=' => '?string',
@@ -48511,7 +48511,7 @@ return array (
   ),
   'PDOStatement::setFetchMode' => 
   array (
-    0 => 'bool',
+    0 => 'true',
     'mode' => 'int',
     '...args=' => 'mixed',
   ),
@@ -48541,7 +48541,7 @@ return array (
   ),
   'pg_close' => 
   array (
-    0 => 'bool',
+    0 => 'true',
     'connection=' => '?\\PgSql\\Connection',
   ),
   'pg_connect' => 
@@ -49161,7 +49161,7 @@ return array (
   ),
   'pg_untrace' => 
   array (
-    0 => 'bool',
+    0 => 'true',
     'connection=' => '?\\PgSql\\Connection',
   ),
   'pg_update' => 
@@ -49254,7 +49254,7 @@ return array (
   ),
   'Phar::copy' => 
   array (
-    0 => 'bool',
+    0 => 'true',
     'from' => 'string',
     'to' => 'string',
   ),
@@ -49276,16 +49276,16 @@ return array (
   ),
   'Phar::decompressFiles' => 
   array (
-    0 => 'bool',
+    0 => 'true',
   ),
   'Phar::delete' => 
   array (
-    0 => 'bool',
+    0 => 'true',
     'localName' => 'string',
   ),
   'Phar::delMetadata' => 
   array (
-    0 => 'bool',
+    0 => 'true',
   ),
   'Phar::extractTo' => 
   array (
@@ -49413,12 +49413,12 @@ return array (
   ),
   'Phar::setAlias' => 
   array (
-    0 => 'bool',
+    0 => 'true',
     'alias' => 'string',
   ),
   'Phar::setDefaultStub' => 
   array (
-    0 => 'bool',
+    0 => 'true',
     'index=' => '?string',
     'webIndex=' => '?string',
   ),
@@ -49435,7 +49435,7 @@ return array (
   ),
   'Phar::setStub' => 
   array (
-    0 => 'bool',
+    0 => 'true',
     'stub' => 'string',
     'length=' => 'int',
   ),
@@ -49449,7 +49449,7 @@ return array (
   ),
   'Phar::unlinkArchive' => 
   array (
-    0 => 'bool',
+    0 => 'true',
     'filename' => 'string',
   ),
   'Phar::webPhar' => 
@@ -49525,7 +49525,7 @@ return array (
   ),
   'PharData::copy' => 
   array (
-    0 => 'bool',
+    0 => 'true',
     'from' => 'string',
     'to' => 'string',
   ),
@@ -49536,16 +49536,16 @@ return array (
   ),
   'PharData::decompressFiles' => 
   array (
-    0 => 'bool',
+    0 => 'true',
   ),
   'PharData::delete' => 
   array (
-    0 => 'bool',
+    0 => 'true',
     'localName' => 'string',
   ),
   'PharData::delMetadata' => 
   array (
-    0 => 'bool',
+    0 => 'true',
   ),
   'PharData::extractTo' => 
   array (
@@ -49603,7 +49603,7 @@ return array (
   ),
   'PharData::setStub' => 
   array (
-    0 => 'bool',
+    0 => 'true',
     'stub' => 'string',
     'length=' => 'int',
   ),
@@ -49619,16 +49619,16 @@ return array (
   ),
   'PharFileInfo::compress' => 
   array (
-    0 => 'bool',
+    0 => 'true',
     'compression' => 'int',
   ),
   'PharFileInfo::decompress' => 
   array (
-    0 => 'bool',
+    0 => 'true',
   ),
   'PharFileInfo::delMetadata' => 
   array (
-    0 => 'bool',
+    0 => 'true',
   ),
   'PharFileInfo::getCompressedSize' => 
   array (
@@ -57315,7 +57315,7 @@ return array (
   ),
   'ResourceBundle::get' => 
   array (
-    0 => 'mixed',
+    0 => 'ResourceBundle|array<array-key, mixed>|int|null|string',
     'index' => 'string|int',
     'fallback=' => 'bool',
   ),
@@ -57346,7 +57346,7 @@ return array (
   ),
   'resourcebundle_get' => 
   array (
-    0 => 'mixed|null',
+    0 => 'ResourceBundle|array<array-key, mixed>|int|null|string',
     'bundle' => 'ResourceBundle',
     'index' => 'string|int',
     'fallback=' => 'bool',
@@ -60512,7 +60512,7 @@ return array (
   ),
   'SoapClient::__setCookie' => 
   array (
-    0 => '',
+    0 => 'void',
     'name' => 'string',
     'value=' => 'string',
   ),
@@ -65578,7 +65578,7 @@ return array (
   ),
   'SplFixedArray::setSize' => 
   array (
-    0 => 'bool',
+    0 => 'true',
     'size' => 'int',
   ),
   'SplFixedArray::toArray' => 
@@ -65609,7 +65609,7 @@ return array (
   ),
   'SplHeap::insert' => 
   array (
-    0 => 'bool',
+    0 => 'true',
     'value' => 'mixed',
   ),
   'SplHeap::isCorrupted' => 
@@ -65846,7 +65846,7 @@ return array (
   ),
   'SplPriorityQueue::insert' => 
   array (
-    0 => 'bool',
+    0 => 'true',
     'value' => 'mixed',
     'priority' => 'mixed',
   ),
@@ -65868,7 +65868,7 @@ return array (
   ),
   'SplPriorityQueue::recoverFromCorruption' => 
   array (
-    0 => 'void',
+    0 => 'true',
   ),
   'SplPriorityQueue::rewind' => 
   array (
@@ -66546,7 +66546,7 @@ return array (
   ),
   'SQLite3Result::finalize' => 
   array (
-    0 => 'bool',
+    0 => 'true',
   ),
   'SQLite3Result::numColumns' => 
   array (
@@ -66582,7 +66582,7 @@ return array (
   ),
   'SQLite3Stmt::close' => 
   array (
-    0 => 'bool',
+    0 => 'true',
   ),
   'SQLite3Stmt::execute' => 
   array (
@@ -68374,12 +68374,12 @@ return array (
   ),
   'stream_bucket_make_writeable' => 
   array (
-    0 => '?object',
+    0 => 'StreamBucket|null',
     'brigade' => 'resource',
   ),
   'stream_bucket_new' => 
   array (
-    0 => 'object',
+    0 => 'StreamBucket',
     'stream' => 'resource',
     'buffer' => 'string',
   ),
@@ -68417,7 +68417,7 @@ return array (
   ),
   'stream_context_set_option' => 
   array (
-    0 => 'bool',
+    0 => 'true',
     'context' => '',
     'wrapper_or_options' => 'string',
     'option_name' => 'string',
@@ -68431,7 +68431,7 @@ return array (
   ),
   'stream_context_set_params' => 
   array (
-    0 => 'bool',
+    0 => 'true',
     'context' => 'resource',
     'params' => 'array',
   ),
@@ -74524,7 +74524,7 @@ return array (
   ),
   'trigger_error' => 
   array (
-    0 => 'bool',
+    0 => 'true',
     'message' => 'string',
     'error_level=' => '256|512|1024|16384',
   ),
@@ -76025,7 +76025,7 @@ return array (
   ),
   'user_error' => 
   array (
-    0 => 'bool',
+    0 => 'true',
     'message' => 'string',
     'error_level=' => 'int',
   ),
@@ -78421,7 +78421,7 @@ return array (
   ),
   'XMLReader::close' => 
   array (
-    0 => 'bool',
+    0 => 'true',
   ),
   'XMLReader::expand' => 
   array (
@@ -79097,7 +79097,7 @@ return array (
   ),
   'XSLTProcessor::setProfiling' => 
   array (
-    0 => 'bool',
+    0 => 'true',
     'filename' => '?string',
   ),
   'XsltProcessor::setSecurityPrefs' => 
