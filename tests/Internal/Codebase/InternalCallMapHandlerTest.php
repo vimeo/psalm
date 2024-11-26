@@ -195,7 +195,6 @@ class InternalCallMapHandlerTest extends TestCase
         'datetime::settimezone' => ['8.1', '8.2', '8.3', '8.4'], // DateTime does not contain static
         'datetime::sub' => ['8.1', '8.2', '8.3', '8.4'], // DateTime does not contain static
         'datetimeimmutable::createfrominterface',
-        'fiber::getcurrent',
         'filteriterator::getinneriterator' => ['8.1', '8.2', '8.3', '8.4'],
         'get_cfg_var', // Ignore array return type
         'infiniteiterator::getinneriterator' => ['8.1', '8.2', '8.3', '8.4'],
@@ -208,13 +207,8 @@ class InternalCallMapHandlerTest extends TestCase
         'locale::getscript' => ['8.1', '8.2', '8.3', '8.4'],
         'locale::parselocale' => ['8.1', '8.2', '8.3', '8.4'],
         'messageformatter::create' => ['8.1', '8.2', '8.3', '8.4'],
-        'multipleiterator::current' => ['8.1', '8.2', '8.3', '8.4'],
         'mysqli::get_charset' => ['8.1', '8.2', '8.3', '8.4'],
-        'mysqli_stmt::get_warnings' => ['8.1', '8.2', '8.3', '8.4'],
-        'mysqli_stmt_get_warnings',
-        'mysqli_stmt_insert_id',
         'norewinditerator::getinneriterator' => ['8.1', '8.2', '8.3', '8.4'],
-        'passthru',
         'recursivecachingiterator::getinneriterator' => ['8.1', '8.2', '8.3', '8.4'],
         'recursivecallbackfilteriterator::getinneriterator' => ['8.1', '8.2', '8.3', '8.4'],
         'recursivefilteriterator::getinneriterator' => ['8.1', '8.2', '8.3', '8.4'],
