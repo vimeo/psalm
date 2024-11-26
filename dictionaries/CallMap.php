@@ -1740,7 +1740,7 @@ return array (
   ),
   'array_walk' => 
   array (
-    0 => 'bool',
+    0 => 'true',
     '&rw_array' => 'array',
     'callback' => 'callable',
     'arg=' => 'mixed',
@@ -1754,7 +1754,7 @@ return array (
   ),
   'array_walk_recursive' => 
   array (
-    0 => 'bool',
+    0 => 'true',
     '&rw_array' => 'array',
     'callback' => 'callable',
     'arg=' => 'mixed',
@@ -14501,7 +14501,7 @@ return array (
   ),
   'Fiber::getCurrent' => 
   array (
-    0 => '?self',
+    0 => 'Fiber|null',
   ),
   'Fiber::suspend' => 
   array (
@@ -26523,17 +26523,17 @@ return array (
   ),
   'Imagick::autoGammaImage' => 
   array (
-    0 => 'bool',
+    0 => 'void',
     'channel=' => 'int',
   ),
   'Imagick::autoLevelImage' => 
   array (
-    0 => 'void',
+    0 => 'bool',
     'CHANNEL=' => 'string',
   ),
   'Imagick::autoOrient' => 
   array (
-    0 => 'bool',
+    0 => 'void',
   ),
   'Imagick::averageImages' => 
   array (
@@ -26546,7 +26546,7 @@ return array (
   ),
   'Imagick::blueShiftImage' => 
   array (
-    0 => 'void',
+    0 => 'bool',
     'factor=' => 'float',
   ),
   'Imagick::blurImage' => 
@@ -26565,7 +26565,7 @@ return array (
   ),
   'Imagick::brightnessContrastImage' => 
   array (
-    0 => 'void',
+    0 => 'bool',
     'brightness' => 'string',
     'contrast' => 'string',
     'CHANNEL=' => 'string',
@@ -26586,7 +26586,7 @@ return array (
   ),
   'Imagick::clampImage' => 
   array (
-    0 => 'void',
+    0 => 'bool',
     'CHANNEL=' => 'string',
   ),
   'Imagick::clear' => 
@@ -26640,7 +26640,7 @@ return array (
   ),
   'Imagick::colorMatrixImage' => 
   array (
-    0 => 'void',
+    0 => 'bool',
     'color_matrix' => 'string',
   ),
   'Imagick::combineImages' => 
@@ -26707,7 +26707,7 @@ return array (
   ),
   'Imagick::count' => 
   array (
-    0 => 'void',
+    0 => 'int',
     'mode=' => 'string',
   ),
   'Imagick::cropImage' => 
@@ -26750,7 +26750,7 @@ return array (
   ),
   'Imagick::deleteImageProperty' => 
   array (
-    0 => 'void',
+    0 => 'bool',
     'name' => 'string',
   ),
   'Imagick::deskewImage' => 
@@ -26873,7 +26873,7 @@ return array (
   ),
   'Imagick::forwardFourierTransformimage' => 
   array (
-    0 => 'void',
+    0 => 'bool',
     'magnitude' => 'bool',
   ),
   'Imagick::frameImage' => 
@@ -26925,7 +26925,7 @@ return array (
   ),
   'Imagick::getConfigureOptions' => 
   array (
-    0 => 'string',
+    0 => 'array<array-key, mixed>',
   ),
   'Imagick::getCopyright' => 
   array (
@@ -26941,7 +26941,7 @@ return array (
   ),
   'Imagick::getFont' => 
   array (
-    0 => 'string|false',
+    0 => 'string',
   ),
   'Imagick::getFormat' => 
   array (
@@ -26953,7 +26953,7 @@ return array (
   ),
   'Imagick::getHDRIEnabled' => 
   array (
-    0 => 'int',
+    0 => 'bool',
   ),
   'Imagick::getHomeURL' => 
   array (
@@ -26965,7 +26965,7 @@ return array (
   ),
   'Imagick::getImageAlphaChannel' => 
   array (
-    0 => 'int',
+    0 => 'bool',
   ),
   'Imagick::getImageArtifact' => 
   array (
@@ -27188,7 +27188,7 @@ return array (
   ),
   'Imagick::getImageProperty' => 
   array (
-    0 => 'string|false',
+    0 => 'string',
     'name' => 'string',
   ),
   'Imagick::getImageRedPrimary' => 
@@ -27310,7 +27310,7 @@ return array (
   ),
   'Imagick::getRegistry' => 
   array (
-    0 => 'string|false',
+    0 => 'string',
     'key' => 'string',
   ),
   'Imagick::getReleaseDate' => 
@@ -27359,7 +27359,7 @@ return array (
   ),
   'Imagick::identifyFormat' => 
   array (
-    0 => 'string|false',
+    0 => 'string',
     'embedText' => 'string',
   ),
   'Imagick::identifyImage' => 
@@ -27389,13 +27389,13 @@ return array (
   ),
   'Imagick::inverseFourierTransformImage' => 
   array (
-    0 => 'void',
+    0 => 'bool',
     'complement' => 'string',
     'magnitude' => 'string',
   ),
   'Imagick::key' => 
   array (
-    0 => 'int|string',
+    0 => 'int',
   ),
   'Imagick::labelImage' => 
   array (
@@ -27430,7 +27430,7 @@ return array (
   ),
   'Imagick::localContrastImage' => 
   array (
-    0 => 'bool',
+    0 => 'void',
     'radius' => 'float',
     'strength' => 'float',
   ),
@@ -27490,7 +27490,7 @@ return array (
   ),
   'Imagick::morphology' => 
   array (
-    0 => 'void',
+    0 => 'bool',
     'morphologyMethod' => 'int',
     'iterations' => 'int',
     'ImagickKernel' => 'ImagickKernel',
@@ -27710,7 +27710,7 @@ return array (
   ),
   'Imagick::readImages' => 
   array (
-    0 => 'Imagick',
+    0 => 'bool',
     'filenames' => 'string',
   ),
   'Imagick::recolorImage' => 
@@ -27757,7 +27757,7 @@ return array (
   ),
   'Imagick::resetIterator' => 
   array (
-    0 => '',
+    0 => 'void',
   ),
   'Imagick::resizeImage' => 
   array (
@@ -27786,7 +27786,7 @@ return array (
   ),
   'Imagick::rotationalBlurImage' => 
   array (
-    0 => 'void',
+    0 => 'bool',
     'angle' => 'string',
     'CHANNEL=' => 'string',
   ),
@@ -27801,7 +27801,7 @@ return array (
   ),
   'Imagick::roundCornersImage' => 
   array (
-    0 => '',
+    0 => 'bool',
     'xRounding' => '',
     'yRounding' => '',
     'strokeWidth' => '',
@@ -27831,7 +27831,7 @@ return array (
   ),
   'Imagick::selectiveBlurImage' => 
   array (
-    0 => 'void',
+    0 => 'bool',
     'radius' => 'float',
     'sigma' => 'float',
     'threshold' => 'float',
@@ -27849,7 +27849,7 @@ return array (
   ),
   'Imagick::setAntiAlias' => 
   array (
-    0 => 'int',
+    0 => 'void',
     'antialias' => 'bool',
   ),
   'Imagick::setBackgroundColor' => 
@@ -27957,7 +27957,7 @@ return array (
   ),
   'Imagick::setImageChannelMask' => 
   array (
-    0 => '',
+    0 => 'int',
     'channel' => 'int',
   ),
   'Imagick::setImageClipMask' => 
@@ -28094,7 +28094,7 @@ return array (
   ),
   'Imagick::setImageProgressMonitor' => 
   array (
-    0 => '',
+    0 => 'bool',
     'filename' => '',
   ),
   'Imagick::setImageProperty' => 
@@ -28186,12 +28186,12 @@ return array (
   ),
   'Imagick::setProgressMonitor' => 
   array (
-    0 => 'void',
+    0 => 'bool',
     'callback' => 'callable',
   ),
   'Imagick::setRegistry' => 
   array (
-    0 => 'void',
+    0 => 'bool',
     'key' => 'string',
     'value' => 'string',
   ),
@@ -28322,7 +28322,7 @@ return array (
   ),
   'Imagick::statisticImage' => 
   array (
-    0 => 'void',
+    0 => 'bool',
     'type' => 'int',
     'width' => 'int',
     'height' => 'int',
@@ -28357,7 +28357,7 @@ return array (
   ),
   'Imagick::textureImage' => 
   array (
-    0 => 'bool',
+    0 => 'Imagick',
     'texture_wand' => 'Imagick',
   ),
   'Imagick::thresholdImage' => 
@@ -28559,7 +28559,7 @@ return array (
   ),
   'ImagickDraw::getClipPath' => 
   array (
-    0 => 'string|false',
+    0 => 'string',
   ),
   'ImagickDraw::getClipRule' => 
   array (
@@ -28587,11 +28587,11 @@ return array (
   ),
   'ImagickDraw::getFont' => 
   array (
-    0 => 'string|false',
+    0 => 'string',
   ),
   'ImagickDraw::getFontFamily' => 
   array (
-    0 => 'string|false',
+    0 => 'string',
   ),
   'ImagickDraw::getFontResolution' => 
   array (
@@ -28671,7 +28671,7 @@ return array (
   ),
   'ImagickDraw::getTextDirection' => 
   array (
-    0 => 'bool',
+    0 => 'int',
   ),
   'ImagickDraw::getTextEncoding' => 
   array (
@@ -28922,7 +28922,7 @@ return array (
   ),
   'ImagickDraw::resetVectorGraphics' => 
   array (
-    0 => 'void',
+    0 => 'bool',
   ),
   'ImagickDraw::rotate' => 
   array (
@@ -29038,12 +29038,12 @@ return array (
   ),
   'ImagickDraw::setOpacity' => 
   array (
-    0 => 'void',
+    0 => 'bool',
     'opacity' => 'float',
   ),
   'ImagickDraw::setResolution' => 
   array (
-    0 => 'void',
+    0 => 'bool',
     'x_resolution' => 'float',
     'y_resolution' => 'float',
   ),
@@ -29129,17 +29129,17 @@ return array (
   ),
   'ImagickDraw::setTextInterlineSpacing' => 
   array (
-    0 => 'void',
+    0 => 'bool',
     'spacing' => 'float',
   ),
   'ImagickDraw::setTextInterwordSpacing' => 
   array (
-    0 => 'void',
+    0 => 'bool',
     'spacing' => 'float',
   ),
   'ImagickDraw::setTextKerning' => 
   array (
-    0 => 'void',
+    0 => 'bool',
     'kerning' => 'float',
   ),
   'ImagickDraw::setTextUnderColor' => 
@@ -29245,7 +29245,7 @@ return array (
   ),
   'ImagickPixel::getColorQuantum' => 
   array (
-    0 => 'mixed',
+    0 => 'array<array-key, mixed>',
   ),
   'ImagickPixel::getColorValue' => 
   array (
@@ -29254,7 +29254,7 @@ return array (
   ),
   'ImagickPixel::getColorValueQuantum' => 
   array (
-    0 => 'mixed',
+    0 => 'float',
   ),
   'ImagickPixel::getHSL' => 
   array (
@@ -29289,7 +29289,7 @@ return array (
   ),
   'ImagickPixel::setcolorcount' => 
   array (
-    0 => 'void',
+    0 => 'bool',
     'colorCount' => 'string',
   ),
   'ImagickPixel::setColorFromPixel' => 
@@ -29305,7 +29305,7 @@ return array (
   ),
   'ImagickPixel::setColorValueQuantum' => 
   array (
-    0 => 'void',
+    0 => 'bool',
     'color' => 'int',
     'value' => 'mixed',
   ),
@@ -29318,7 +29318,7 @@ return array (
   ),
   'ImagickPixel::setIndex' => 
   array (
-    0 => 'void',
+    0 => 'bool',
     'index' => 'int',
   ),
   'ImagickPixelIterator::__construct' => 
@@ -29332,7 +29332,7 @@ return array (
   ),
   'ImagickPixelIterator::current' => 
   array (
-    0 => 'mixed',
+    0 => 'array<array-key, mixed>',
   ),
   'ImagickPixelIterator::destroy' => 
   array (
@@ -29352,12 +29352,12 @@ return array (
   ),
   'ImagickPixelIterator::getpixeliterator' => 
   array (
-    0 => '',
+    0 => 'ImagickPixelIterator',
     'Imagick' => 'Imagick',
   ),
   'ImagickPixelIterator::getpixelregioniterator' => 
   array (
-    0 => '',
+    0 => 'ImagickPixelIterator',
     'Imagick' => 'Imagick',
     'x' => '',
     'y' => '',
@@ -29370,7 +29370,7 @@ return array (
   ),
   'ImagickPixelIterator::key' => 
   array (
-    0 => 'int|string',
+    0 => 'int',
   ),
   'ImagickPixelIterator::newPixelIterator' => 
   array (
@@ -40406,7 +40406,7 @@ return array (
   ),
   'MultipleIterator::current' => 
   array (
-    0 => 'array|false',
+    0 => 'array<array-key, mixed>',
   ),
   'MultipleIterator::detachIterator' => 
   array (
@@ -42113,7 +42113,7 @@ return array (
   ),
   'mysqli_stmt::get_warnings' => 
   array (
-    0 => 'object',
+    0 => 'false|mysqli_warning',
   ),
   'mysqli_stmt::more_results' => 
   array (
@@ -42237,7 +42237,7 @@ return array (
   ),
   'mysqli_stmt_get_warnings' => 
   array (
-    0 => 'object',
+    0 => 'false|mysqli_warning',
     'statement' => 'mysqli_stmt',
   ),
   'mysqli_stmt_init' => 
@@ -42247,7 +42247,7 @@ return array (
   ),
   'mysqli_stmt_insert_id' => 
   array (
-    0 => 'mixed',
+    0 => 'int|string',
     'statement' => 'mysqli_stmt',
   ),
   'mysqli_stmt_more_results' => 
@@ -45865,7 +45865,7 @@ return array (
   ),
   'passthru' => 
   array (
-    0 => 'void',
+    0 => 'false|null',
     'command' => 'string',
     '&w_result_code=' => 'int',
   ),
