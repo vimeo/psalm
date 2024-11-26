@@ -15470,7 +15470,7 @@ return [
     'xml_parser_free' => ['bool', 'parser'=>'resource'],
     'xml_parser_get_option' => ['string|int', 'parser'=>'resource', 'option'=>'int'],
     'xml_parser_set_option' => ['bool', 'parser'=>'resource', 'option'=>'int', 'value'=>'mixed'],
-    'xml_set_character_data_handler' => ['true', 'parser'=>'resource', 'handler'=>'callable'],
+    'xml_set_character_data_handler' => ['true', 'parser'=>'resource', 'handler'=>'callable|null'],
     'xml_set_default_handler' => ['true', 'parser'=>'resource', 'handler'=>'callable'],
     'xml_set_element_handler' => ['true', 'parser'=>'resource', 'start_handler'=>'callable', 'end_handler'=>'callable'],
     'xml_set_end_namespace_decl_handler' => ['true', 'parser'=>'resource', 'handler'=>'callable'],

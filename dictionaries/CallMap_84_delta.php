@@ -20,10 +20,12 @@ return [
   'removed' => [],
   'changed' => [
     'old' => [
-      'locale_set_default' => ['bool', 'locale'=>'string']
+      'locale_set_default' => ['bool', 'locale'=>'string'],
+      'DateInterval::createFromDateString' => ['DateInterval|false', 'datetime'=>'string'],
     ],
     'new' => [
-      'locale_set_default' => ['true', 'locale'=>'string']
+      'locale_set_default' => ['true', 'locale'=>'string'],
+      'DateInterval::createFromDateString' => ['DateInterval', 'datetime'=>'string'],
     ]
   ]
 ];

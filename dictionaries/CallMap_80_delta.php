@@ -2684,8 +2684,8 @@ return [
       'new' => ['bool', 'parser'=>'XMLParser', 'option'=>'int', 'value'=>'mixed'],
     ],
     'xml_set_character_data_handler' => [
-      'old' => ['true', 'parser'=>'resource', 'handler'=>'callable'],
-      'new' => ['true', 'parser'=>'XMLParser', 'handler'=>'callable'],
+      'old' => ['true', 'parser'=>'resource', 'handler'=>'callable|null'],
+      'new' => ['true', 'parser'=>'XMLParser', 'handler'=>'callable|null'],
     ],
     'xml_set_default_handler' => [
       'old' => ['true', 'parser'=>'resource', 'handler'=>'callable'],
