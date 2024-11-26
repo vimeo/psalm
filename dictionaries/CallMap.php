@@ -1323,7 +1323,7 @@ return [
 'date_sun_info' => ['array', 'timestamp'=>'int', 'latitude'=>'float', 'longitude'=>'float'],
 'date_sunrise' => ['string|int|float|false', 'timestamp'=>'int', 'returnFormat='=>'int', 'latitude='=>'?float', 'longitude='=>'?float', 'zenith='=>'?float', 'utcOffset='=>'?float'],
 'date_sunset' => ['string|int|float|false', 'timestamp'=>'int', 'returnFormat='=>'int', 'latitude='=>'?float', 'longitude='=>'?float', 'zenith='=>'?float', 'utcOffset='=>'?float'],
-'date_time_set' => ['DateTime', 'object'=>'int', 'hour'=>'int', 'minute'=>'int', 'second='=>'int', 'microsecond='=>'int'],
+'date_time_set' => ['DateTime', 'object'=>'DateTime', 'hour'=>'int', 'minute'=>'int', 'second='=>'int', 'microsecond='=>'int'],
 'date_timestamp_get' => ['int', 'object'=>'DateTimeInterface'],
 'date_timestamp_set' => ['DateTime', 'object'=>'DateTime', 'timestamp'=>'int'],
 'date_timezone_get' => ['DateTimeZone|false', 'object'=>'DateTimeInterface'],

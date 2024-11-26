@@ -16,6 +16,8 @@
  * @phan-file-suppress PhanPluginMixedKeyNoKey (read by Phan when analyzing this file)
  */
 return [
+  'added' => [],
+  'removed' => [],
   'changed' => [
     'old' => [
       'locale_set_default' => ['bool', 'locale'=>'string']
