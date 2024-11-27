@@ -45,7 +45,7 @@ function assertEntryParameters(ReflectionFunctionAbstract $function, array &$ent
      */
     $normalizedEntries = [];
 
-    foreach ($entryParameters as $key => $entry) {
+    foreach ($entryParameters as $key => &$entry) {
         if ($key === 0) {
             continue;
         }
@@ -57,7 +57,7 @@ function assertEntryParameters(ReflectionFunctionAbstract $function, array &$ent
             'variadic' => false,
             'byRef' => false,
             'optional' => false,
-            'type' => $entry,
+            'type' => &$entry,
         ];
         if (strncmp($normalizedKey, '&', 1) === 0) {
             $normalizedEntry['byRef'] = true;
@@ -91,6 +91,12 @@ function assertEntryParameters(ReflectionFunctionAbstract $function, array &$ent
 
         $normalizedEntry['name'] = $normalizedKey;
         $normalizedEntries[$normalizedKey] = $normalizedEntry;
+    }
+
+    foreach ($function->getParameters() as $parameter) {
+        if (isset($normalizedEntries[$parameter->getName()])) {
+            assertParameter($normalizedEntries[$parameter->getName()], $parameter);
+        }
     }
 }
 

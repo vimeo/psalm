@@ -34,7 +34,7 @@ return [
     'Fiber::isRunning' => ['bool'],
     'Fiber::isTerminated' => ['bool'],
     'Fiber::getReturn' => ['mixed'],
-    'Fiber::getCurrent' => ['?self'],
+    'Fiber::getCurrent' => ['Fiber|null'],
     'Fiber::suspend' => ['mixed', 'value='=>'null|mixed'],
     'FiberError::__construct' => ['void'],
     'GMP::__serialize' => ['array'],
