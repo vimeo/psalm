@@ -78321,7 +78321,7 @@ return array (
   array (
     0 => 'true',
     'parser' => 'XMLParser',
-    'start_handler' => 'callable',
+    'start_handler' => 'callable|null',
     'end_handler' => 'callable',
   ),
   'xml_set_end_namespace_decl_handler' => 
@@ -78352,13 +78352,13 @@ return array (
   array (
     0 => 'true',
     'parser' => 'XMLParser',
-    'handler' => 'callable',
+    'handler' => 'callable|null',
   ),
   'xml_set_start_namespace_decl_handler' => 
   array (
     0 => 'true',
     'parser' => 'XMLParser',
-    'handler' => 'callable',
+    'handler' => 'callable|null',
   ),
   'xml_set_unparsed_entity_decl_handler' => 
   array (

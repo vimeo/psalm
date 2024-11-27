@@ -1720,5 +1720,14 @@ return array (
         'bucket' => 'StreamBucket',
       ),
     ),
+
+    'xml_set_element_handler' => [
+      'old' => ['true', 'parser'=>'XMLParser', 'start_handler'=>'callable', 'end_handler'=>'callable'],
+      'new' => ['true', 'parser'=>'XMLParser', 'start_handler'=>'callable|null', 'end_handler'=>'callable'],
+    ],
+    'xml_set_start_namespace_decl_handler' => [
+      'old' => ['true', 'parser'=>'XMLParser', 'handler'=>'callable'],
+      'new' => ['true', 'parser'=>'XMLParser', 'handler'=>'callable|null'],
+    ],
   ),
 );
