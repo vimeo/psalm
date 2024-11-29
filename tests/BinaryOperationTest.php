@@ -785,6 +785,24 @@ class BinaryOperationTest extends TestCase
                     '$a' => 'float',
                 ],
             ],
+            'concatWithIntsKeepsLiteral' => [
+                'code' => '<?php
+                    /**
+                     * @var "a"|"b" $a
+                     * @var 0|1|2 $b
+                     */
+                    $interpolated = $a . $b;',
+                'assertions' => ['$interpolated===' => "'a0'|'a1'|'a2'|'b0'|'b1'|'b2'"],
+            ],
+            'concatWithIntRangeKeepsLiteral' => [
+                'code' => '<?php
+                    /**
+                     * @var "a"|"b" $a
+                     * @var int<0, 2> $b
+                     */
+                    $interpolated = $a . $b;',
+                'assertions' => ['$interpolated===' => "'a0'|'a1'|'a2'|'b0'|'b1'|'b2'"],
+            ],
             'literalConcatCreatesLiteral' => [
                 'code' => '<?php
                     /**

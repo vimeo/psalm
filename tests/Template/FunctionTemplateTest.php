@@ -350,7 +350,7 @@ class FunctionTemplateTest extends TestCase
 
                     $a = splat_proof(...$foo);',
                 'assertions' => [
-                    '$a' => 'array<int<0, 2>, int>',
+                    '$a===' => 'array<0|1|2, 1|2|3>',
                 ],
             ],
             'passArrayByRef' => [
