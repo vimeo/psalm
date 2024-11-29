@@ -163,7 +163,9 @@ final class MethodComparator
 
         foreach ($guide_method_storage->params as $i => $guide_param) {
             if (!isset($implementer_method_storage->params[$i])) {
-                if (!$prevent_abstract_override && $i >= $guide_method_storage->required_param_count) {
+                if (!$prevent_abstract_override
+                    && ($guide_method_storage->required_param_count === null
+                        || $i >= $guide_method_storage->required_param_count)) {
                     continue;
                 }
 

@@ -17,22 +17,33 @@ use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Issue\DocblockTypeContradiction;
 use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\InvalidOperand;
+use Psalm\Issue\PossiblyInvalidOperand;
 use Psalm\Issue\RedundantCondition;
 use Psalm\Issue\RedundantConditionGivenDocblockType;
 use Psalm\Issue\TypeDoesNotContainType;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type;
+use Psalm\Type\Atomic\TArrayKey;
+use Psalm\Type\Atomic\TFalse;
+use Psalm\Type\Atomic\TFloat;
+use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TResource;
+use Psalm\Type\Atomic\TString;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function in_array;
+use function max;
+use function min;
 use function strlen;
 
 /**
@@ -240,19 +251,146 @@ final class BinaryOpAnalyzer
                     || $stmt instanceof PhpParser\Node\Expr\BinaryOp\GreaterOrEqual
                     || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Smaller
                     || $stmt instanceof PhpParser\Node\Expr\BinaryOp\SmallerOrEqual)
-                && $statements_analyzer->getCodebase()->config->strict_binary_operands
                 && $stmt_left_type
                 && $stmt_right_type
-                && (($stmt_left_type->isSingle() && $stmt_left_type->hasBool())
-                    || ($stmt_right_type->isSingle() && $stmt_right_type->hasBool()))
             ) {
-                IssueBuffer::maybeAdd(
-                    new InvalidOperand(
-                        'Cannot compare ' . $stmt_left_type->getId() . ' to ' . $stmt_right_type->getId(),
-                        new CodeLocation($statements_analyzer, $stmt),
-                    ),
-                    $statements_analyzer->getSuppressedIssues(),
-                );
+                if ($statements_analyzer->getCodebase()->config->strict_binary_operands
+                    && (($stmt_left_type->isSingle() && $stmt_left_type->hasBool())
+                        || ($stmt_right_type->isSingle() && $stmt_right_type->hasBool()))) {
+                    IssueBuffer::maybeAdd(
+                        new InvalidOperand(
+                            'Cannot compare ' . $stmt_left_type->getId() . ' to ' . $stmt_right_type->getId(),
+                            new CodeLocation($statements_analyzer, $stmt),
+                        ),
+                        $statements_analyzer->getSuppressedIssues(),
+                    );
+                } else {
+                    $is_valid_object_comparison = false;
+                    if ($stmt_left_type->isSingle()
+                        && $stmt_right_type->isSingle()
+                        && $stmt_left_type->isObjectType()
+                        && $stmt_right_type->isObjectType()) {
+                        $comparable_objects = [
+                            // DateTime/DateTimeImmutable
+                            'DateTimeInterface',
+                            'DateTimeZone',
+                        ];
+
+                        foreach ($comparable_objects as $name) {
+                            if (AtomicTypeComparator::isContainedBy(
+                                $statements_analyzer->getCodebase(),
+                                $stmt_left_type->getSingleAtomic(),
+                                new TNamedObject($name),
+                            ) && AtomicTypeComparator::isContainedBy(
+                                $statements_analyzer->getCodebase(),
+                                $stmt_right_type->getSingleAtomic(),
+                                new TNamedObject($name),
+                            )) {
+                                $is_valid_object_comparison = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (!$is_valid_object_comparison) {
+                        $left_literal_int_floats = self::getMinMaxLiteralIntFloat($stmt_left_type);
+                        $right_literal_int_floats = self::getMinMaxLiteralIntFloat($stmt_right_type);
+                        foreach ($stmt_left_type->getAtomicTypes() as $atomic_type) {
+                            if ($atomic_type instanceof TString
+                                || $atomic_type instanceof TInt
+                                || $atomic_type instanceof TArrayKey
+                                || $atomic_type instanceof TFloat
+                                || $atomic_type instanceof TResource) {
+                                continue;
+                            }
+
+                            if (AtomicTypeComparator::isContainedBy(
+                                $statements_analyzer->getCodebase(),
+                                $atomic_type,
+                                new TNamedObject('GMP'),
+                            )) {
+                                continue;
+                            }
+
+                            if (($atomic_type instanceof TNull || $atomic_type instanceof TFalse)
+                                && !$stmt_left_type->isSingle()
+                                && $right_literal_int_floats !== []
+                                && (($stmt instanceof PhpParser\Node\Expr\BinaryOp\Greater
+                                     && min($right_literal_int_floats) >= 0)
+                                    || ($stmt instanceof PhpParser\Node\Expr\BinaryOp\GreaterOrEqual
+                                        && min($right_literal_int_floats) > 0)
+                                    || ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Smaller
+                                        && max($right_literal_int_floats) <= 0)
+                                    || ($stmt instanceof PhpParser\Node\Expr\BinaryOp\SmallerOrEqual
+                                        && max($right_literal_int_floats) < 0))
+                            ) {
+                                continue;
+                            }
+
+                            // @todo for cases like int|null >= int report RiskyTruthyFalsyComparison instead?
+                            // array and object behave extremely unexpectedly
+                            // and might accidentally end up in a comparison
+                            // this can be further improved upon to reduce false positives, e.g. for keyed arrays
+                            // however these will mostly be fringe cases
+                            // https://www.php.net/manual/en/language.operators.comparison.php#language.operators.comparison.types
+                            IssueBuffer::maybeAdd(
+                                new PossiblyInvalidOperand(
+                                    'Greater/Less than comparisons with type'
+                                    . ' ' . $stmt_left_type->getId()
+                                    . ' can behave unexpectedly.',
+                                    new CodeLocation($statements_analyzer, $stmt),
+                                ),
+                                $statements_analyzer->getSuppressedIssues(),
+                            );
+
+                            break;
+                        }
+
+                        foreach ($stmt_right_type->getAtomicTypes() as $atomic_type) {
+                            if ($atomic_type instanceof TString
+                                || $atomic_type instanceof TInt
+                                || $atomic_type instanceof TArrayKey
+                                || $atomic_type instanceof TFloat
+                                || $atomic_type instanceof TResource) {
+                                continue;
+                            }
+
+                            if (AtomicTypeComparator::isContainedBy(
+                                $statements_analyzer->getCodebase(),
+                                $atomic_type,
+                                new TNamedObject('GMP'),
+                            )) {
+                                continue;
+                            }
+
+                            if (($atomic_type instanceof TNull || $atomic_type instanceof TFalse)
+                                && !$stmt_right_type->isSingle()
+                                && $left_literal_int_floats !== []
+                                && (($stmt instanceof PhpParser\Node\Expr\BinaryOp\Greater
+                                        && min($left_literal_int_floats) <= 0)
+                                    || ($stmt instanceof PhpParser\Node\Expr\BinaryOp\GreaterOrEqual
+                                        && min($left_literal_int_floats) < 0)
+                                    || ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Smaller
+                                        && max($left_literal_int_floats) >= 0)
+                                    || ($stmt instanceof PhpParser\Node\Expr\BinaryOp\SmallerOrEqual
+                                        && max($left_literal_int_floats) > 0))
+                            ) {
+                                continue;
+                            }
+
+                            IssueBuffer::maybeAdd(
+                                new PossiblyInvalidOperand(
+                                    'Greater/Less than comparisons with type'
+                                    . ' ' . $stmt_right_type->getId()
+                                    . ' can behave unexpectedly.',
+                                    new CodeLocation($statements_analyzer, $stmt),
+                                ),
+                                $statements_analyzer->getSuppressedIssues(),
+                            );
+                            break;
+                        }
+                    }
+                }
             }
 
             if (($stmt instanceof PhpParser\Node\Expr\BinaryOp\Equal
@@ -366,6 +504,54 @@ final class BinaryOpAnalyzer
         );
 
         return true;
+    }
+
+    /**
+     * @return list<int|float>
+     */
+    private static function getMinMaxLiteralIntFloat(Union $union): array
+    {
+        if ($union->hasArrayKey()
+            || $union->hasScalar()
+            || $union->hasNumeric()
+            || (isset($union->getAtomicTypes()['int'])
+                && $union->getLiteralInts() === array())
+            || (isset($union->getAtomicTypes()['float'])
+                && $union->getLiteralFloats() === array())) {
+            return [];
+        }
+
+        $literal_int_float_values = [];
+        foreach ($union->getLiteralInts() as $literal_int) {
+            $literal_int_float_values[] = $literal_int->value;
+        }
+
+        foreach ($union->getRangeInts() as $int_range) {
+            if ($int_range->isNegative()) {
+                $literal_int_float_values[] = -1;
+                continue;
+            }
+
+            if ($int_range->isNegativeOrZero()) {
+                $literal_int_float_values[] = 0;
+                $literal_int_float_values[] = -1;
+                continue;
+            }
+
+            if ($int_range->isPositive()) {
+                $literal_int_float_values[] = 1;
+                continue;
+            }
+
+            $literal_int_float_values[] = 0;
+            $literal_int_float_values[] = 1;
+        }
+
+        foreach ($union->getLiteralFloats() as $literal_float) {
+            $literal_int_float_values[] = $literal_float->value;
+        }
+
+        return $literal_int_float_values;
     }
 
     public static function addDataFlow(
