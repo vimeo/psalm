@@ -5,6 +5,7 @@ namespace Psalm\Tests\Traits;
 use Psalm\Config;
 use Psalm\Context;
 
+use function array_key_exists;
 use function str_replace;
 use function strpos;
 use function strtoupper;
@@ -37,17 +38,22 @@ use const PHP_VERSION;
  * This is trait allows testing for the second case, when the value of
  * "throw_exception" will be "false".
  *
+ * @psalm-type psalmConfigOptions = array{
+ *      strict_binary_operands?: bool,
+ *  }
  * @psalm-type DeprecatedDataProviderArrayNotation = array{
  *     code: string,
  *     error_message: string,
  *     ignored_issues?: list<string>,
- *     php_version?: string
+ *     php_version?: string|null,
+ *     config_options?: psalmConfigOptions,
  * }
  * @psalm-type NamedArgumentsDataProviderArrayNotation = array{
  *     code: string,
  *     error_message: string,
  *     error_levels?: list<string>,
- *     php_version?: string
+ *     php_version?: string|null,
+ *     config_options?: psalmConfigOptions,
  * }
  */
 trait InvalidCodeAnalysisWithIssuesTestTrait
@@ -64,13 +70,16 @@ trait InvalidCodeAnalysisWithIssuesTestTrait
      * @dataProvider providerInvalidCodeParse
      * @small
      * @param list<string> $error_levels
+     * @param psalmConfigOptions $config_options
      */
     public function testInvalidCodeWithIssues(
         string $code,
         string $error_message,
         array  $error_levels = [],
-        string $php_version = '7.4'
+        ?string $php_version = null,
+        array $config_options = []
     ): void {
+        $php_version ??= '7.4';
         $test_name = $this->getTestName();
         if (strpos($test_name, 'PHP80-') !== false) {
             if (version_compare(PHP_VERSION, '8.0.0', '<')) {
@@ -89,11 +98,15 @@ trait InvalidCodeAnalysisWithIssuesTestTrait
             $code = str_replace("\n", "\r\n", $code);
         }
 
+        $config = Config::getInstance();
         foreach ($error_levels as $error_level) {
             $issue_name = $error_level;
             $error_level = Config::REPORT_SUPPRESS;
 
-            Config::getInstance()->setCustomErrorLevel($issue_name, $error_level);
+            $config->setCustomErrorLevel($issue_name, $error_level);
+        }
+        if (array_key_exists('strict_binary_operands', $config_options)) {
+            $config->strict_binary_operands = $config_options['strict_binary_operands'];
         }
 
         $this->project_analyzer->setPhpVersion($php_version, 'tests');

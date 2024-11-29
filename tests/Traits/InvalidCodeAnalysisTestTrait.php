@@ -6,6 +6,7 @@ use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
 
+use function array_key_exists;
 use function preg_quote;
 use function str_replace;
 use function strpos;
@@ -16,17 +17,22 @@ use const PHP_OS;
 use const PHP_VERSION_ID;
 
 /**
+ * @psalm-type psalmConfigOptions = array{
+ *     strict_binary_operands?: bool,
+ * }
  * @psalm-type DeprecatedDataProviderArrayNotation = array{
  *     code: string,
  *     error_message: string,
  *     ignored_issues?: list<string>,
- *     php_version?: string
+ *     php_version?: string,
+ *     config_options?: psalmConfigOptions,
  * }
  * @psalm-type NamedArgumentsDataProviderArrayNotation = array{
  *     code: string,
  *     error_message: string,
  *     error_levels?: list<string>,
- *     php_version?: string
+ *     php_version?: string|null,
+ *     config_options?: psalmConfigOptions,
  * }
  */
 trait InvalidCodeAnalysisTestTrait
@@ -43,12 +49,14 @@ trait InvalidCodeAnalysisTestTrait
      * @dataProvider providerInvalidCodeParse
      * @small
      * @param list<string> $error_levels
+     * @param psalmConfigOptions $config_options
      */
     public function testInvalidCode(
         string $code,
         string $error_message,
         array  $error_levels = [],
-        ?string $php_version = null
+        ?string $php_version = null,
+        array $config_options = []
     ): void {
         $test_name = $this->getTestName();
         if (strpos($test_name, 'PHP80-') !== false) {
@@ -76,18 +84,22 @@ trait InvalidCodeAnalysisTestTrait
             $code = str_replace("\n", "\r\n", $code);
         }
 
+        $config = Config::getInstance();
         foreach ($error_levels as $error_level) {
             $issue_name = $error_level;
             $error_level = Config::REPORT_SUPPRESS;
 
-            Config::getInstance()->setCustomErrorLevel($issue_name, $error_level);
+            $config->setCustomErrorLevel($issue_name, $error_level);
+        }
+        if (array_key_exists('strict_binary_operands', $config_options)) {
+            $config->strict_binary_operands = $config_options['strict_binary_operands'];
         }
 
         $this->project_analyzer->setPhpVersion($php_version, 'tests');
 
         $file_path = self::$src_dir_path . 'somefile.php';
 
-        // $error_message = preg_replace('/ src[\/\\\\]somefile\.php/', ' src/somefile.php', $error_message);
+        // $error_message = (string) preg_replace('/ src[\/\\\\]somefile\.php/', ' src/somefile.php', $error_message);
 
         $this->expectException(CodeException::class);
 
