@@ -171,7 +171,6 @@ BypassFinals::enable();
 
 function writeCallMap(string $file, array $callMap) {
     file_put_contents($file, '<?php // phpcs:ignoreFile
-namespace Phan\Language\Internal;
 
 return '.var_export($callMap, true).';');
 }

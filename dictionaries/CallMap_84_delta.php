@@ -1,5 +1,4 @@
 <?php // phpcs:ignoreFile
-namespace Phan\Language\Internal;
 
 return array (
   'added' => 
@@ -45,20 +44,20 @@ return array (
         0 => 'resource',
         'path' => 'string',
         'mode' => 'string',
-        'handler=' => '?string',
+        'handler=' => 'null|string',
         'permission=' => 'int',
         'map_size=' => 'int',
-        'flags=' => '?int',
+        'flags=' => 'int|null',
       ),
       'new' => 
       array (
         0 => 'Dba\\Connection|false',
         'path' => 'string',
         'mode' => 'string',
-        'handler=' => '?string',
+        'handler=' => 'null|string',
         'permission=' => 'int',
         'map_size=' => 'int',
-        'flags=' => '?int',
+        'flags=' => 'int|null',
       ),
     ),
     'dba_popen' => 
@@ -68,20 +67,20 @@ return array (
         0 => 'resource',
         'path' => 'string',
         'mode' => 'string',
-        'handler=' => '?string',
+        'handler=' => 'null|string',
         'permission=' => 'int',
         'map_size=' => 'int',
-        'flags=' => '?int',
+        'flags=' => 'int|null',
       ),
       'new' => 
       array (
         0 => 'Dba\\Connection|false',
         'path' => 'string',
         'mode' => 'string',
-        'handler=' => '?string',
+        'handler=' => 'null|string',
         'permission=' => 'int',
         'map_size=' => 'int',
-        'flags=' => '?int',
+        'flags=' => 'int|null',
       ),
     ),
     'DOMDocument::registerNodeClass' => 
@@ -90,13 +89,13 @@ return array (
       array (
         0 => 'bool',
         'baseClass' => 'string',
-        'extendedClass' => '?string',
+        'extendedClass' => 'null|string',
       ),
       'new' => 
       array (
         0 => 'true',
         'baseClass' => 'string',
-        'extendedClass' => '?string',
+        'extendedClass' => 'null|string',
       ),
     ),
     'DOMImplementation::createDocument' => 
@@ -104,29 +103,29 @@ return array (
       'old' => 
       array (
         0 => 'DOMDocument|false',
-        'namespace=' => '?string',
+        'namespace=' => 'null|string',
         'qualifiedName=' => 'string',
-        'doctype=' => '?DOMDocumentType',
+        'doctype=' => 'DOMDocumentType|null',
       ),
       'new' => 
       array (
         0 => 'DOMDocument',
-        'namespace=' => '?string',
+        'namespace=' => 'null|string',
         'qualifiedName=' => 'string',
-        'doctype=' => '?DOMDocumentType',
+        'doctype=' => 'DOMDocumentType|null',
       ),
     ),
     'exit' => 
     array (
       'old' => 
       array (
-        0 => '',
-        'status' => 'string|int',
+        0 => 'mixed',
+        'status' => 'int|string',
       ),
       'new' => 
       array (
         0 => 'never',
-        'status' => 'string|int',
+        'status' => 'int|string',
       ),
     ),
     'finfo::set_flags' => 
@@ -176,7 +175,7 @@ return array (
     array (
       'old' => 
       array (
-        0 => 'string|bool',
+        0 => 'bool|string',
         'string' => 'string',
         'return=' => 'bool',
       ),
@@ -209,12 +208,12 @@ return array (
       'old' => 
       array (
         0 => 'bool',
-        'field=' => '?int',
+        'field=' => 'int|null',
       ),
       'new' => 
       array (
         0 => 'true',
-        'field=' => '?int',
+        'field=' => 'int|null',
       ),
     ),
     'IntlCalendar::set' => 
@@ -263,12 +262,12 @@ return array (
       'old' => 
       array (
         0 => 'bool',
-        'field=' => '?int',
+        'field=' => 'int|null',
       ),
       'new' => 
       array (
         0 => 'true',
-        'field=' => '?int',
+        'field=' => 'int|null',
       ),
     ),
     'IntlGregorianCalendar::set' => 
@@ -359,7 +358,7 @@ return array (
       array (
         0 => 'Odbc\\Result|false',
         'odbc' => 'resource',
-        'catalog' => '?string',
+        'catalog' => 'null|string',
         'schema' => 'string',
         'table' => 'string',
         'column' => 'string',
@@ -368,7 +367,7 @@ return array (
       array (
         0 => 'Odbc\\Result|false',
         'odbc' => 'Odbc\\Connection',
-        'catalog' => '?string',
+        'catalog' => 'null|string',
         'schema' => 'string',
         'table' => 'string',
         'column' => 'string',
@@ -380,26 +379,26 @@ return array (
       array (
         0 => 'Odbc\\Result|false',
         'odbc' => 'resource',
-        'catalog=' => '?string',
-        'schema=' => '?string',
-        'table=' => '?string',
-        'column=' => '?string',
+        'catalog=' => 'null|string',
+        'schema=' => 'null|string',
+        'table=' => 'null|string',
+        'column=' => 'null|string',
       ),
       'new' => 
       array (
         0 => 'Odbc\\Result|false',
         'odbc' => 'Odbc\\Connection',
-        'catalog=' => '?string',
-        'schema=' => '?string',
-        'table=' => '?string',
-        'column=' => '?string',
+        'catalog=' => 'null|string',
+        'schema=' => 'null|string',
+        'table=' => 'null|string',
+        'column=' => 'null|string',
       ),
     ),
     'odbc_connect' => 
     array (
       'old' => 
       array (
-        0 => 'resource|false',
+        0 => 'false|resource',
         'dsn' => 'string',
         'user' => 'string',
         'password' => 'string',
@@ -450,7 +449,7 @@ return array (
       array (
         0 => 'Odbc\\Result|false',
         'odbc' => 'resource',
-        'pk_catalog' => '?string',
+        'pk_catalog' => 'null|string',
         'pk_schema' => 'string',
         'pk_table' => 'string',
         'fk_catalog' => 'string',
@@ -461,7 +460,7 @@ return array (
       array (
         0 => 'Odbc\\Result|false',
         'odbc' => 'Odbc\\Connection',
-        'pk_catalog' => '?string',
+        'pk_catalog' => 'null|string',
         'pk_schema' => 'string',
         'pk_table' => 'string',
         'fk_catalog' => 'string',
@@ -516,7 +515,7 @@ return array (
     array (
       'old' => 
       array (
-        0 => 'resource|false',
+        0 => 'false|resource',
         'dsn' => 'string',
         'user' => 'string',
         'password' => 'string',
@@ -552,7 +551,7 @@ return array (
       array (
         0 => 'Odbc\\Result|false',
         'odbc' => 'resource',
-        'catalog' => '?string',
+        'catalog' => 'null|string',
         'schema' => 'string',
         'table' => 'string',
       ),
@@ -560,7 +559,7 @@ return array (
       array (
         0 => 'Odbc\\Result|false',
         'odbc' => 'Odbc\\Connection',
-        'catalog' => '?string',
+        'catalog' => 'null|string',
         'schema' => 'string',
         'table' => 'string',
       ),
@@ -571,19 +570,19 @@ return array (
       array (
         0 => 'Odbc\\Result|false',
         'odbc' => 'resource',
-        'catalog=' => '?string',
-        'schema=' => '?string',
-        'procedure=' => '?string',
-        'column=' => '?string',
+        'catalog=' => 'null|string',
+        'schema=' => 'null|string',
+        'procedure=' => 'null|string',
+        'column=' => 'null|string',
       ),
       'new' => 
       array (
         0 => 'Odbc\\Result|false',
         'odbc' => 'Odbc\\Connection',
-        'catalog=' => '?string',
-        'schema=' => '?string',
-        'procedure=' => '?string',
-        'column=' => '?string',
+        'catalog=' => 'null|string',
+        'schema=' => 'null|string',
+        'procedure=' => 'null|string',
+        'column=' => 'null|string',
       ),
     ),
     'odbc_procedures' => 
@@ -592,17 +591,17 @@ return array (
       array (
         0 => 'Odbc\\Result|false',
         'odbc' => 'resource',
-        'catalog=' => '?string',
-        'schema=' => '?string',
-        'procedure=' => '?string',
+        'catalog=' => 'null|string',
+        'schema=' => 'null|string',
+        'procedure=' => 'null|string',
       ),
       'new' => 
       array (
         0 => 'Odbc\\Result|false',
         'odbc' => 'Odbc\\Connection',
-        'catalog=' => '?string',
-        'schema=' => '?string',
-        'procedure=' => '?string',
+        'catalog=' => 'null|string',
+        'schema=' => 'null|string',
+        'procedure=' => 'null|string',
       ),
     ),
     'odbc_specialcolumns' => 
@@ -612,7 +611,7 @@ return array (
         0 => 'Odbc\\Result|false',
         'odbc' => 'resource',
         'type' => 'int',
-        'catalog' => '?string',
+        'catalog' => 'null|string',
         'schema' => 'string',
         'table' => 'string',
         'scope' => 'int',
@@ -623,7 +622,7 @@ return array (
         0 => 'Odbc\\Result|false',
         'odbc' => 'Odbc\\Connection',
         'type' => 'int',
-        'catalog' => '?string',
+        'catalog' => 'null|string',
         'schema' => 'string',
         'table' => 'string',
         'scope' => 'int',
@@ -636,7 +635,7 @@ return array (
       array (
         0 => 'Odbc\\Result|false',
         'odbc' => 'resource',
-        'catalog' => '?string',
+        'catalog' => 'null|string',
         'schema' => 'string',
         'table' => 'string',
         'unique' => 'int',
@@ -646,7 +645,7 @@ return array (
       array (
         0 => 'Odbc\\Result|false',
         'odbc' => 'Odbc\\Connection',
-        'catalog' => '?string',
+        'catalog' => 'null|string',
         'schema' => 'string',
         'table' => 'string',
         'unique' => 'int',
@@ -659,7 +658,7 @@ return array (
       array (
         0 => 'Odbc\\Result|false',
         'odbc' => 'resource',
-        'catalog' => '?string',
+        'catalog' => 'null|string',
         'schema' => 'string',
         'table' => 'string',
       ),
@@ -667,7 +666,7 @@ return array (
       array (
         0 => 'Odbc\\Result|false',
         'odbc' => 'Odbc\\Connection',
-        'catalog' => '?string',
+        'catalog' => 'null|string',
         'schema' => 'string',
         'table' => 'string',
       ),
@@ -678,19 +677,19 @@ return array (
       array (
         0 => 'Odbc\\Result|false',
         'odbc' => 'resource',
-        'catalog=' => '?string',
-        'schema=' => '?string',
-        'table=' => '?string',
-        'types=' => '?string',
+        'catalog=' => 'null|string',
+        'schema=' => 'null|string',
+        'table=' => 'null|string',
+        'types=' => 'null|string',
       ),
       'new' => 
       array (
         0 => 'Odbc\\Result|false',
         'odbc' => 'Odbc\\Connection',
-        'catalog=' => '?string',
-        'schema=' => '?string',
-        'table=' => '?string',
-        'types=' => '?string',
+        'catalog=' => 'null|string',
+        'schema=' => 'null|string',
+        'table=' => 'null|string',
+        'types=' => 'null|string',
       ),
     ),
     'PDOStatement::setFetchMode' => 
@@ -713,12 +712,12 @@ return array (
       'old' => 
       array (
         0 => 'bool',
-        'connection=' => '?\\PgSql\\Connection',
+        'connection=' => 'PgSql\\Connection|null',
       ),
       'new' => 
       array (
         0 => 'true',
-        'connection=' => '?\\PgSql\\Connection',
+        'connection=' => 'PgSql\\Connection|null',
       ),
     ),
     'pg_untrace' => 
@@ -726,12 +725,12 @@ return array (
       'old' => 
       array (
         0 => 'bool',
-        'connection=' => '?\\PgSql\\Connection',
+        'connection=' => 'PgSql\\Connection|null',
       ),
       'new' => 
       array (
         0 => 'true',
-        'connection=' => '?\\PgSql\\Connection',
+        'connection=' => 'PgSql\\Connection|null',
       ),
     ),
     'Phar::copy' => 
@@ -802,14 +801,14 @@ return array (
       'old' => 
       array (
         0 => 'bool',
-        'index=' => '?string',
-        'webIndex=' => '?string',
+        'index=' => 'null|string',
+        'webIndex=' => 'null|string',
       ),
       'new' => 
       array (
         0 => 'true',
-        'index=' => '?string',
-        'webIndex=' => '?string',
+        'index=' => 'null|string',
+        'webIndex=' => 'null|string',
       ),
     ),
     'Phar::setStub' => 
@@ -945,13 +944,13 @@ return array (
       'old' => 
       array (
         0 => 'mixed',
-        'index' => 'string|int',
+        'index' => 'int|string',
         'fallback=' => 'bool',
       ),
       'new' => 
       array (
         0 => 'ResourceBundle|array<array-key, mixed>|int|null|string',
-        'index' => 'string|int',
+        'index' => 'int|string',
         'fallback=' => 'bool',
       ),
     ),
@@ -961,14 +960,14 @@ return array (
       array (
         0 => 'mixed|null',
         'bundle' => 'ResourceBundle',
-        'index' => 'string|int',
+        'index' => 'int|string',
         'fallback=' => 'bool',
       ),
       'new' => 
       array (
         0 => 'ResourceBundle|array<array-key, mixed>|int|null|string',
         'bundle' => 'ResourceBundle',
-        'index' => 'string|int',
+        'index' => 'int|string',
         'fallback=' => 'bool',
       ),
     ),
@@ -976,7 +975,7 @@ return array (
     array (
       'old' => 
       array (
-        0 => '',
+        0 => 'mixed',
         'name' => 'string',
         'value=' => 'string',
       ),
@@ -1065,7 +1064,7 @@ return array (
     array (
       'old' => 
       array (
-        0 => '?object',
+        0 => 'null|object',
         'brigade' => 'resource',
       ),
       'new' => 
@@ -1094,18 +1093,18 @@ return array (
       'old' => 
       array (
         0 => 'bool',
-        'context' => '',
+        'context' => 'mixed',
         'wrapper_or_options' => 'string',
         'option_name' => 'string',
-        'value' => '',
+        'value' => 'mixed',
       ),
       'new' => 
       array (
         0 => 'true',
-        'context' => '',
+        'context' => 'mixed',
         'wrapper_or_options' => 'string',
         'option_name' => 'string',
-        'value' => '',
+        'value' => 'mixed',
       ),
     ),
     'stream_context_set_params' => 
@@ -1114,13 +1113,13 @@ return array (
       array (
         0 => 'bool',
         'context' => 'resource',
-        'params' => 'array',
+        'params' => 'array<array-key, mixed>',
       ),
       'new' => 
       array (
         0 => 'true',
         'context' => 'resource',
-        'params' => 'array',
+        'params' => 'array<array-key, mixed>',
       ),
     ),
     'trigger_error' => 
@@ -1169,12 +1168,12 @@ return array (
       'old' => 
       array (
         0 => 'bool',
-        'filename' => '?string',
+        'filename' => 'null|string',
       ),
       'new' => 
       array (
         0 => 'true',
-        'filename' => '?string',
+        'filename' => 'null|string',
       ),
     ),
     'dba_close' => 
@@ -1195,13 +1194,13 @@ return array (
       'old' => 
       array (
         0 => 'bool',
-        'key' => 'array|string',
+        'key' => 'array<array-key, mixed>|string',
         'dba' => 'resource',
       ),
       'new' => 
       array (
         0 => 'bool',
-        'key' => 'array|string',
+        'key' => 'array<array-key, mixed>|string',
         'dba' => 'Dba\\Connection',
       ),
     ),
@@ -1210,13 +1209,13 @@ return array (
       'old' => 
       array (
         0 => 'bool',
-        'key' => 'array|string',
+        'key' => 'array<array-key, mixed>|string',
         'dba' => 'resource',
       ),
       'new' => 
       array (
         0 => 'bool',
-        'key' => 'array|string',
+        'key' => 'array<array-key, mixed>|string',
         'dba' => 'Dba\\Connection',
       ),
     ),
@@ -1238,14 +1237,14 @@ return array (
       'old' => 
       array (
         0 => 'bool',
-        'key' => 'array|string',
+        'key' => 'array<array-key, mixed>|string',
         'value' => 'string',
         'dba' => 'resource',
       ),
       'new' => 
       array (
         0 => 'bool',
-        'key' => 'array|string',
+        'key' => 'array<array-key, mixed>|string',
         'value' => 'string',
         'dba' => 'Dba\\Connection',
       ),
@@ -1281,14 +1280,14 @@ return array (
       'old' => 
       array (
         0 => 'bool',
-        'key' => 'array|string',
+        'key' => 'array<array-key, mixed>|string',
         'value' => 'string',
         'dba' => 'resource',
       ),
       'new' => 
       array (
         0 => 'bool',
-        'key' => 'array|string',
+        'key' => 'array<array-key, mixed>|string',
         'value' => 'string',
         'dba' => 'Dba\\Connection',
       ),
@@ -1312,7 +1311,7 @@ return array (
       array (
         0 => 'bool',
         'image' => 'GdImage',
-        'file=' => 'string|resource|null',
+        'file=' => 'null|resource|string',
       ),
       'new' => 
       array (
@@ -1327,7 +1326,7 @@ return array (
       array (
         0 => 'bool',
         'image' => 'GdImage',
-        'file=' => 'string|resource|null',
+        'file=' => 'null|resource|string',
         'chunk_size=' => 'int',
         'mode=' => 'int',
       ),
@@ -1344,13 +1343,13 @@ return array (
     array (
       'old' => 
       array (
-        0 => 'int|bool',
+        0 => 'bool|int',
         'odbc' => 'resource',
         'enable=' => 'bool',
       ),
       'new' => 
       array (
-        0 => 'int|bool',
+        0 => 'bool|int',
         'odbc' => 'Odbc\\Connection',
         'enable=' => 'bool',
       ),
@@ -1398,13 +1397,13 @@ return array (
     array (
       'old' => 
       array (
-        0 => 'array|false',
+        0 => 'array<array-key, mixed>|false',
         'odbc' => 'resource',
         'fetch_type' => 'int',
       ),
       'new' => 
       array (
-        0 => 'array|false',
+        0 => 'array<array-key, mixed>|false',
         'odbc' => 'Odbc\\Connection',
         'fetch_type' => 'int',
       ),
@@ -1441,13 +1440,13 @@ return array (
       array (
         0 => 'bool',
         'statement' => 'resource',
-        'params=' => 'array',
+        'params=' => 'array<array-key, mixed>',
       ),
       'new' => 
       array (
         0 => 'bool',
         'statement' => 'Odbc\\Result',
-        'params=' => 'array',
+        'params=' => 'array<array-key, mixed>',
       ),
     ),
     'odbc_fetch_row' => 
@@ -1456,26 +1455,26 @@ return array (
       array (
         0 => 'bool',
         'statement' => 'resource',
-        'row=' => '?int',
+        'row=' => 'int|null',
       ),
       'new' => 
       array (
         0 => 'bool',
         'statement' => 'Odbc\\Result',
-        'row=' => '?int',
+        'row=' => 'int|null',
       ),
     ),
     'odbc_field_len' => 
     array (
       'old' => 
       array (
-        0 => 'int|false',
+        0 => 'false|int',
         'statement' => 'resource',
         'field' => 'int',
       ),
       'new' => 
       array (
-        0 => 'int|false',
+        0 => 'false|int',
         'statement' => 'Odbc\\Result',
         'field' => 'int',
       ),
@@ -1484,13 +1483,13 @@ return array (
     array (
       'old' => 
       array (
-        0 => 'string|false',
+        0 => 'false|string',
         'statement' => 'resource',
         'field' => 'int',
       ),
       'new' => 
       array (
-        0 => 'string|false',
+        0 => 'false|string',
         'statement' => 'Odbc\\Result',
         'field' => 'int',
       ),
@@ -1499,13 +1498,13 @@ return array (
     array (
       'old' => 
       array (
-        0 => 'int|false',
+        0 => 'false|int',
         'statement' => 'resource',
         'field' => 'string',
       ),
       'new' => 
       array (
-        0 => 'int|false',
+        0 => 'false|int',
         'statement' => 'Odbc\\Result',
         'field' => 'string',
       ),
@@ -1529,13 +1528,13 @@ return array (
     array (
       'old' => 
       array (
-        0 => 'int|false',
+        0 => 'false|int',
         'statement' => 'resource',
         'field' => 'int',
       ),
       'new' => 
       array (
-        0 => 'int|false',
+        0 => 'false|int',
         'statement' => 'Odbc\\Result',
         'field' => 'int',
       ),
@@ -1544,13 +1543,13 @@ return array (
     array (
       'old' => 
       array (
-        0 => 'string|false',
+        0 => 'false|string',
         'statement' => 'resource',
         'field' => 'int',
       ),
       'new' => 
       array (
-        0 => 'string|false',
+        0 => 'false|string',
         'statement' => 'Odbc\\Result',
         'field' => 'int',
       ),
@@ -1598,28 +1597,28 @@ return array (
     array (
       'old' => 
       array (
-        0 => 'string|bool|null',
+        0 => 'bool|null|string',
         'statement' => 'resource',
-        'field' => 'string|int',
+        'field' => 'int|string',
       ),
       'new' => 
       array (
-        0 => 'string|bool|null',
+        0 => 'bool|null|string',
         'statement' => 'Odbc\\Result',
-        'field' => 'string|int',
+        'field' => 'int|string',
       ),
     ),
     'odbc_result_all' => 
     array (
       'old' => 
       array (
-        0 => 'int|false',
+        0 => 'false|int',
         'statement' => 'resource',
         'format=' => 'string',
       ),
       'new' => 
       array (
-        0 => 'int|false',
+        0 => 'false|int',
         'statement' => 'Odbc\\Result',
         'format=' => 'string',
       ),
@@ -1660,7 +1659,7 @@ return array (
     array (
       'old' => 
       array (
-        0 => 'list<string>|false',
+        0 => 'false|list<string>',
         'pattern' => 'string',
         'subject' => 'string',
         'limit' => 'int',
@@ -1668,7 +1667,7 @@ return array (
       ),
       'new' => 
       array (
-        0 => 'list<string>|false',
+        0 => 'false|list<string>',
         'pattern' => 'string',
         'subject' => 'string',
         'limit' => 'int',
@@ -1681,7 +1680,7 @@ return array (
       array (
         0 => 'void',
         'wsdl' => 'mixed',
-        'options=' => 'array|null',
+        'options=' => 'array<array-key, mixed>|null',
       ),
       'new' => 
       array (
