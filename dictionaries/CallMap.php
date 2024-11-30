@@ -43163,7 +43163,7 @@ return array (
   'NumberFormatter::format' => 
   array (
     0 => 'false|string',
-    'num' => 'mixed',
+    'num' => 'int|float',
     'type=' => 'int',
   ),
   'NumberFormatter::formatCurrency' => 
