@@ -3033,20 +3033,20 @@ return array (
       'old' => 
       array (
         0 => 'DateTime|false',
-        'object' => 'mixed',
-        'hour' => 'mixed',
-        'minute' => 'mixed',
-        'second=' => 'mixed',
-        'microsecond=' => 'mixed',
+        'object' => 'int',
+        'hour' => 'int',
+        'minute' => 'int',
+        'second=' => 'int',
+        'microsecond=' => 'int',
       ),
       'new' => 
       array (
         0 => 'DateTime',
-        'object' => 'mixed',
-        'hour' => 'mixed',
-        'minute' => 'mixed',
-        'second=' => 'mixed',
-        'microsecond=' => 'mixed',
+        'object' => 'int',
+        'hour' => 'int',
+        'minute' => 'int',
+        'second=' => 'int',
+        'microsecond=' => 'int',
       ),
     ),
     'date_timestamp_set' => 

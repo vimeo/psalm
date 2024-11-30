@@ -2556,7 +2556,7 @@ return array (
   array (
     0 => 'void',
     'iterator' => 'Iterator',
-    'flags=' => 'mixed',
+    'flags=' => 'int',
   ),
   'CachingIterator::__toString' => 
   array (
@@ -6558,11 +6558,11 @@ return array (
   'date_time_set' => 
   array (
     0 => 'DateTime',
-    'object' => 'mixed',
-    'hour' => 'mixed',
-    'minute' => 'mixed',
-    'second=' => 'mixed',
-    'microsecond=' => 'mixed',
+    'object' => 'int',
+    'hour' => 'int',
+    'minute' => 'int',
+    'second=' => 'int',
+    'microsecond=' => 'int',
   ),
   'date_timestamp_get' => 
   array (
