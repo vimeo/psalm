@@ -3033,11 +3033,11 @@ return array (
       'old' => 
       array (
         0 => 'DateTime|false',
-        'object' => 'mixed',
-        'hour' => 'mixed',
-        'minute' => 'mixed',
-        'second=' => 'mixed',
-        'microsecond=' => 'mixed',
+        'object' => 'DateTime',
+        'hour' => 'int',
+        'minute' => 'int',
+        'second=' => 'int',
+        'microsecond=' => 'int',
       ),
       'new' => 
       array (

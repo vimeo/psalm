@@ -1307,7 +1307,7 @@ return array (
   array (
     0 => 'void',
     'iterator' => 'Iterator',
-    'flags=' => 'mixed',
+    'flags=' => 'int',
   ),
   'CachingIterator::__toString' => 
   array (
@@ -21384,7 +21384,7 @@ return array (
   'NumberFormatter::format' => 
   array (
     0 => 'false|string',
-    'num' => 'mixed',
+    'num' => 'int|float',
     'type=' => 'int',
   ),
   'NumberFormatter::formatCurrency' => 
@@ -49572,11 +49572,11 @@ return array (
   'date_time_set' => 
   array (
     0 => 'DateTime|false',
-    'object' => 'mixed',
-    'hour' => 'mixed',
-    'minute' => 'mixed',
-    'second=' => 'mixed',
-    'microsecond=' => 'mixed',
+    'object' => 'DateTime',
+    'hour' => 'int',
+    'minute' => 'int',
+    'second=' => 'int',
+    'microsecond=' => 'int',
   ),
   'date_timestamp_get' => 
   array (
