@@ -3042,7 +3042,7 @@ return array (
       'new' => 
       array (
         0 => 'DateTime',
-        'object' => 'int',
+        'object' => 'DateTime',
         'hour' => 'int',
         'minute' => 'int',
         'second=' => 'int',
