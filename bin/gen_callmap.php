@@ -14,6 +14,7 @@ use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Tests\TestConfig;
 use Psalm\Type;
+use Psalm\Type\Atomic\TNull;
 
 /**
      * Returns the correct reflection type for function or method name.
@@ -22,7 +23,11 @@ function getReflectionFunction(string $functionName): ?ReflectionFunctionAbstrac
 {
     try {
         if (strpos($functionName, '::') !== false) {
-            return new ReflectionMethod($functionName);
+            if (PHP_VERSION_ID < 8_03_00) {
+                return new ReflectionMethod($functionName);
+            }
+
+            return ReflectionMethod::createFromMethodName($functionName);
         }
 
         /** @var callable-string $functionName */
@@ -143,14 +148,21 @@ function assertTypeValidity(ReflectionType $reflected, string &$specified, strin
     } catch (Throwable) {
     }
 
-    // Reflection::getPsalmTypeFromReflectionType adds |null to mixed types so skip comparison
-    /*if (!$expectedType->hasMixed()) {
-        $this->assertSame($expectedType->isNullable(), $callMapType->isNullable(), "{$msgPrefix} type '{$specified}' missing null from reflected type '{$reflected}'");
-        //$this->assertSame($expectedType->hasBool(), $callMapType->hasBool(), "{$msgPrefix} type '{$specified}' missing bool from reflected type '{$reflected}'");
-        $this->assertSame($expectedType->hasArray(), $callMapType->hasArray(), "{$msgPrefix} type '{$specified}' missing array from reflected type '{$reflected}'");
-        $this->assertSame($expectedType->hasInt(), $callMapType->hasInt(), "{$msgPrefix} type '{$specified}' missing int from reflected type '{$reflected}'");
-        $this->assertSame($expectedType->hasFloat(), $callMapType->hasFloat(), "{$msgPrefix} type '{$specified}' missing float from reflected type '{$reflected}'");
-    }*/
+    if ($expectedType->hasMixed()) {
+        return;
+    }
+    $callMapType = $callMapType->getBuilder();
+    if ($expectedType->isNullable() !== $callMapType->isNullable()) {
+        if ($expectedType->isNullable()) {
+            $callMapType->addType(new TNull());
+        } else {
+            $callMapType->removeType('null');
+        }
+    }
+    //    //$this->assertSame($expectedType->hasBool(), $callMapType->hasBool(), "{$msgPrefix} type '{$specified}' missing bool from reflected type '{$reflected}'");
+    //    $this->assertSame($expectedType->hasArray(), $callMapType->hasArray(), "{$msgPrefix} type '{$specified}' missing array from reflected type '{$reflected}'");
+    //    $this->assertSame($expectedType->hasInt(), $callMapType->hasInt(), "{$msgPrefix} type '{$specified}' missing int from reflected type '{$reflected}'");
+    //    $this->assertSame($expectedType->hasFloat(), $callMapType->hasFloat(), "{$msgPrefix} type '{$specified}' missing float from reflected type '{$reflected}'");
 }
 
 BypassFinals::enable();

@@ -12697,7 +12697,7 @@ return array (
   'exit' => 
   array (
     0 => 'never',
-    'status' => 'string|int',
+    'status=' => 'string|int',
   ),
   'exp' => 
   array (
@@ -44802,6 +44802,7 @@ return array (
     'days' => 'int',
     'options=' => 'array|null',
     'serial=' => 'int',
+    'serial_hex=' => 'string|null',
   ),
   'openssl_decrypt' => 
   array (
