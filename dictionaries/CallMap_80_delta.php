@@ -3033,7 +3033,7 @@ return array (
       'old' => 
       array (
         0 => 'DateTime|false',
-        'object' => 'int',
+        'object' => 'DateTime',
         'hour' => 'int',
         'minute' => 'int',
         'second=' => 'int',

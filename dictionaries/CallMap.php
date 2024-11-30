@@ -6558,7 +6558,7 @@ return array (
   'date_time_set' => 
   array (
     0 => 'DateTime',
-    'object' => 'int',
+    'object' => 'DateTime',
     'hour' => 'int',
     'minute' => 'int',
     'second=' => 'int',
