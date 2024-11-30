@@ -6,13 +6,10 @@ require 'vendor/autoload.php';
 
 use DG\BypassFinals;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
-use Psalm\Internal\Codebase\Reflection;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\Providers;
-use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Tests\TestConfig;
 use Psalm\Type;
-use Psalm\Type\Atomic\TNull;
 
 BypassFinals::enable();
 
@@ -32,7 +29,4 @@ foreach (glob("dictionaries/CallMap*.php") as $file) {
     file_put_contents($file, '<?php // phpcs:ignoreFile
 
 return '.var_export($callMap, true).';');
-
 }
-
-
