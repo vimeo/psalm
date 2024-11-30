@@ -115,7 +115,8 @@ function assertParameter(array &$normalizedEntry, ReflectionParameter $param): v
     $expectedType = $param->getType();
 
     if (isset($expectedType) && !empty($normalizedEntry['type'])) {
-        assertTypeValidity($expectedType, $normalizedEntry['type'], "Param '{$name}'");
+        $func = $param->getDeclaringFunction()->getName();
+        assertTypeValidity($expectedType, $normalizedEntry['type'], "Param $func '{$name}'");
     }
 }
 
@@ -159,6 +160,7 @@ function assertTypeValidity(ReflectionType $reflected, string &$specified, strin
             $callMapType->removeType('null');
         }
     }
+    $specified = $callMapType->getId(true);
     //    //$this->assertSame($expectedType->hasBool(), $callMapType->hasBool(), "{$msgPrefix} type '{$specified}' missing bool from reflected type '{$reflected}'");
     //    $this->assertSame($expectedType->hasArray(), $callMapType->hasArray(), "{$msgPrefix} type '{$specified}' missing array from reflected type '{$reflected}'");
     //    $this->assertSame($expectedType->hasInt(), $callMapType->hasInt(), "{$msgPrefix} type '{$specified}' missing int from reflected type '{$reflected}'");
