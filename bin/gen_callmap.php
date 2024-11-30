@@ -145,6 +145,7 @@ function assertTypeValidity(ReflectionType $reflected, string &$specified, strin
     try {
         if (!UnionTypeComparator::isContainedBy($codebase, $callMapType, $expectedType, false, false, null, false, false) && !str_contains($specified, 'static')) {
             $specified = $expectedType->getId(true);
+            $callMapType = $expectedType;
         }
     } catch (Throwable) {
     }

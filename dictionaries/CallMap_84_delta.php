@@ -398,7 +398,7 @@ return array (
     array (
       'old' => 
       array (
-        0 => 'false|resource',
+        0 => 'Odbc\\Connection|false',
         'dsn' => 'string',
         'user' => 'string',
         'password' => 'string',
@@ -408,8 +408,8 @@ return array (
       array (
         0 => 'Odbc\\Connection|false',
         'dsn' => 'string',
-        'user' => 'string',
-        'password' => 'string',
+        'user' => 'null|string',
+        'password' => 'null|string',
         'cursor_option=' => 'int',
       ),
     ),
@@ -515,7 +515,7 @@ return array (
     array (
       'old' => 
       array (
-        0 => 'false|resource',
+        0 => 'Odbc\\Connection|false',
         'dsn' => 'string',
         'user' => 'string',
         'password' => 'string',
@@ -525,8 +525,8 @@ return array (
       array (
         0 => 'Odbc\\Connection|false',
         'dsn' => 'string',
-        'user' => 'string',
-        'password' => 'string',
+        'user' => 'null|string',
+        'password' => 'null|string',
         'cursor_option=' => 'int',
       ),
     ),
@@ -975,7 +975,7 @@ return array (
     array (
       'old' => 
       array (
-        0 => 'mixed',
+        0 => 'void',
         'name' => 'string',
         'value=' => 'string',
       ),
@@ -983,7 +983,7 @@ return array (
       array (
         0 => 'void',
         'name' => 'string',
-        'value=' => 'string',
+        'value=' => 'null|string',
       ),
     ),
     'SplFixedArray::setSize' => 
@@ -1092,7 +1092,7 @@ return array (
     array (
       'old' => 
       array (
-        0 => 'bool',
+        0 => 'true',
         'context' => 'mixed',
         'wrapper_or_options' => 'string',
         'option_name' => 'string',
@@ -1103,7 +1103,7 @@ return array (
         0 => 'true',
         'context' => 'mixed',
         'wrapper_or_options' => 'string',
-        'option_name' => 'string',
+        'option_name' => 'null|string',
         'value' => 'mixed',
       ),
     ),
@@ -1344,14 +1344,14 @@ return array (
       'old' => 
       array (
         0 => 'bool|int',
-        'odbc' => 'resource',
+        'odbc' => 'Odbc\\Connection',
         'enable=' => 'bool',
       ),
       'new' => 
       array (
         0 => 'bool|int',
         'odbc' => 'Odbc\\Connection',
-        'enable=' => 'bool',
+        'enable=' => 'bool|null',
       ),
     ),
     'odbc_close' => 
@@ -1398,12 +1398,12 @@ return array (
       'old' => 
       array (
         0 => 'array<array-key, mixed>|false',
-        'odbc' => 'resource',
+        'odbc' => 'Odbc\\Connection',
         'fetch_type' => 'int',
       ),
       'new' => 
       array (
-        0 => 'array<array-key, mixed>|false',
+        0 => 'array<array-key, mixed>|false|null',
         'odbc' => 'Odbc\\Connection',
         'fetch_type' => 'int',
       ),
@@ -1725,7 +1725,7 @@ return array (
       array (
         0 => 'true',
         'parser' => 'XMLParser',
-        'start_handler' => 'callable',
+        'start_handler' => 'callable|null',
         'end_handler' => 'callable',
       ),
       'new' => 
@@ -1733,7 +1733,7 @@ return array (
         0 => 'true',
         'parser' => 'XMLParser',
         'start_handler' => 'callable|null',
-        'end_handler' => 'callable',
+        'end_handler' => 'callable|null',
       ),
     ),
     'xml_set_start_namespace_decl_handler' => 
@@ -1749,6 +1749,858 @@ return array (
         0 => 'true',
         'parser' => 'XMLParser',
         'handler' => 'callable|null',
+      ),
+    ),
+    'AppendIterator::getInnerIterator' => 
+    array (
+      'old' => 
+      array (
+        0 => 'Iterator',
+      ),
+      'new' => 
+      array (
+        0 => 'Iterator|null',
+      ),
+    ),
+    'AppendIterator::getIteratorIndex' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'int|null',
+      ),
+    ),
+    'CachingIterator::__construct' => 
+    array (
+      'old' => 
+      array (
+        0 => 'void',
+        'iterator' => 'Iterator',
+        'flags=' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'void',
+        'iterator' => 'Iterator',
+        'flags=' => 'int',
+      ),
+    ),
+    'CachingIterator::getInnerIterator' => 
+    array (
+      'old' => 
+      array (
+        0 => 'Iterator',
+      ),
+      'new' => 
+      array (
+        0 => 'Iterator|null',
+      ),
+    ),
+    'CallbackFilterIterator::getInnerIterator' => 
+    array (
+      'old' => 
+      array (
+        0 => 'Iterator',
+      ),
+      'new' => 
+      array (
+        0 => 'Iterator|null',
+      ),
+    ),
+    'curl_multi_getcontent' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'handle' => 'CurlHandle',
+      ),
+      'new' => 
+      array (
+        0 => 'null|string',
+        'handle' => 'CurlHandle',
+      ),
+    ),
+    'FilterIterator::getInnerIterator' => 
+    array (
+      'old' => 
+      array (
+        0 => 'Iterator',
+      ),
+      'new' => 
+      array (
+        0 => 'Iterator|null',
+      ),
+    ),
+    'fscanf' => 
+    array (
+      'old' => 
+      array (
+        0 => 'list<mixed>',
+        'stream' => 'resource',
+        'format' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'list<mixed>|null',
+        'stream' => 'resource',
+        'format' => 'string',
+      ),
+    ),
+    'getenv' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|string',
+        'name' => 'string',
+        'local_only=' => 'bool',
+      ),
+      'new' => 
+      array (
+        0 => 'false|string',
+        'name' => 'null|string',
+        'local_only=' => 'bool',
+      ),
+    ),
+    'imagefilledpolygon' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'image' => 'GdImage',
+        'points' => 'array<array-key, mixed>',
+        'num_points_or_color' => 'int',
+        'color' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'image' => 'GdImage',
+        'points' => 'array<array-key, mixed>',
+        'num_points_or_color' => 'int',
+        'color' => 'int|null',
+      ),
+    ),
+    'imageopenpolygon' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'image' => 'GdImage',
+        'points' => 'array<array-key, mixed>',
+        'num_points' => 'int',
+        'color' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'image' => 'GdImage',
+        'points' => 'array<array-key, mixed>',
+        'num_points' => 'int',
+        'color' => 'int|null',
+      ),
+    ),
+    'imagepolygon' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'image' => 'GdImage',
+        'points' => 'array<array-key, mixed>',
+        'num_points_or_color' => 'int',
+        'color' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'image' => 'GdImage',
+        'points' => 'array<array-key, mixed>',
+        'num_points_or_color' => 'int',
+        'color' => 'int|null',
+      ),
+    ),
+    'implode' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'separator' => 'string',
+        'array' => 'array<array-key, mixed>',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+        'separator' => 'string',
+        'array' => 'array<array-key, mixed>|null',
+      ),
+    ),
+    'InfiniteIterator::getInnerIterator' => 
+    array (
+      'old' => 
+      array (
+        0 => 'Iterator',
+      ),
+      'new' => 
+      array (
+        0 => 'Iterator|null',
+      ),
+    ),
+    'IteratorIterator::getInnerIterator' => 
+    array (
+      'old' => 
+      array (
+        0 => 'Iterator',
+      ),
+      'new' => 
+      array (
+        0 => 'Iterator|null',
+      ),
+    ),
+    'join' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'separator' => 'string',
+        'array' => 'array<array-key, mixed>',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+        'separator' => 'string',
+        'array' => 'array<array-key, mixed>|null',
+      ),
+    ),
+    'LimitIterator::getInnerIterator' => 
+    array (
+      'old' => 
+      array (
+        0 => 'Iterator',
+      ),
+      'new' => 
+      array (
+        0 => 'Iterator|null',
+      ),
+    ),
+    'Locale::getAllVariants' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>',
+        'locale' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|null',
+        'locale' => 'string',
+      ),
+    ),
+    'Locale::getKeywords' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'locale' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|false|null',
+        'locale' => 'string',
+      ),
+    ),
+    'Locale::getPrimaryLanguage' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'locale' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'null|string',
+        'locale' => 'string',
+      ),
+    ),
+    'Locale::getRegion' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'locale' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'null|string',
+        'locale' => 'string',
+      ),
+    ),
+    'Locale::getScript' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'locale' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'null|string',
+        'locale' => 'string',
+      ),
+    ),
+    'Locale::parseLocale' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>',
+        'locale' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|null',
+        'locale' => 'string',
+      ),
+    ),
+    'mb_check_encoding' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'value' => 'array<array-key, mixed>|string',
+        'encoding=' => 'null|string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'value' => 'array<array-key, mixed>|null|string',
+        'encoding=' => 'null|string',
+      ),
+    ),
+    'MessageFormatter::create' => 
+    array (
+      'old' => 
+      array (
+        0 => 'MessageFormatter',
+        'locale' => 'string',
+        'pattern' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'MessageFormatter|null',
+        'locale' => 'string',
+        'pattern' => 'string',
+      ),
+    ),
+    'mysqli::get_charset' => 
+    array (
+      'old' => 
+      array (
+        0 => 'object',
+      ),
+      'new' => 
+      array (
+        0 => 'null|object',
+      ),
+    ),
+    'NoRewindIterator::getInnerIterator' => 
+    array (
+      'old' => 
+      array (
+        0 => 'Iterator',
+      ),
+      'new' => 
+      array (
+        0 => 'Iterator|null',
+      ),
+    ),
+    'NumberFormatter::format' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|string',
+        'num' => 'mixed',
+        'type=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'false|string',
+        'num' => 'float|int',
+        'type=' => 'int',
+      ),
+    ),
+    'odbc_fetch_array' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'statement' => 'resource',
+        'row=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'statement' => 'resource',
+        'row=' => 'int|null',
+      ),
+    ),
+    'odbc_fetch_into' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+        'statement' => 'resource',
+        '&w_array' => 'array<array-key, mixed>',
+        'row=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+        'statement' => 'resource',
+        '&w_array' => 'array<array-key, mixed>',
+        'row=' => 'int|null',
+      ),
+    ),
+    'odbc_fetch_object' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|stdClass',
+        'statement' => 'resource',
+        'row=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'false|stdClass',
+        'statement' => 'resource',
+        'row=' => 'int|null',
+      ),
+    ),
+    'OuterIterator::getInnerIterator' => 
+    array (
+      'old' => 
+      array (
+        0 => 'Iterator',
+      ),
+      'new' => 
+      array (
+        0 => 'Iterator|null',
+      ),
+    ),
+    'RecursiveCachingIterator::getInnerIterator' => 
+    array (
+      'old' => 
+      array (
+        0 => 'Iterator',
+      ),
+      'new' => 
+      array (
+        0 => 'Iterator|null',
+      ),
+    ),
+    'RecursiveCallbackFilterIterator::getInnerIterator' => 
+    array (
+      'old' => 
+      array (
+        0 => 'Iterator',
+      ),
+      'new' => 
+      array (
+        0 => 'Iterator|null',
+      ),
+    ),
+    'RecursiveFilterIterator::getInnerIterator' => 
+    array (
+      'old' => 
+      array (
+        0 => 'Iterator',
+      ),
+      'new' => 
+      array (
+        0 => 'Iterator|null',
+      ),
+    ),
+    'RecursiveRegexIterator::getInnerIterator' => 
+    array (
+      'old' => 
+      array (
+        0 => 'Iterator',
+      ),
+      'new' => 
+      array (
+        0 => 'Iterator|null',
+      ),
+    ),
+    'ReflectionClass::newInstanceArgs' => 
+    array (
+      'old' => 
+      array (
+        0 => 'object',
+        'args=' => 'array<int<0, max>|string, mixed>',
+      ),
+      'new' => 
+      array (
+        0 => 'null|object',
+        'args=' => 'array<int<0, max>|string, mixed>',
+      ),
+    ),
+    'ReflectionFunction::getClosureScopeClass' => 
+    array (
+      'old' => 
+      array (
+        0 => 'ReflectionClass',
+      ),
+      'new' => 
+      array (
+        0 => 'ReflectionClass|null',
+      ),
+    ),
+    'ReflectionFunction::getClosureThis' => 
+    array (
+      'old' => 
+      array (
+        0 => 'object',
+      ),
+      'new' => 
+      array (
+        0 => 'null|object',
+      ),
+    ),
+    'ReflectionMethod::getClosureScopeClass' => 
+    array (
+      'old' => 
+      array (
+        0 => 'ReflectionClass',
+      ),
+      'new' => 
+      array (
+        0 => 'ReflectionClass|null',
+      ),
+    ),
+    'ReflectionMethod::getClosureThis' => 
+    array (
+      'old' => 
+      array (
+        0 => 'object',
+      ),
+      'new' => 
+      array (
+        0 => 'null|object',
+      ),
+    ),
+    'ReflectionObject::newInstanceArgs' => 
+    array (
+      'old' => 
+      array (
+        0 => 'object',
+        'args=' => 'array<int<0, max>|string, mixed>',
+      ),
+      'new' => 
+      array (
+        0 => 'null|object',
+        'args=' => 'array<int<0, max>|string, mixed>',
+      ),
+    ),
+    'RegexIterator::getInnerIterator' => 
+    array (
+      'old' => 
+      array (
+        0 => 'Iterator',
+      ),
+      'new' => 
+      array (
+        0 => 'Iterator|null',
+      ),
+    ),
+    'session_set_save_handler' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'open' => 'callable(string, string):bool',
+        'close' => 'callable():bool',
+        'read' => 'callable(string):string',
+        'write' => 'callable(string, string):bool',
+        'destroy' => 'callable(string):bool',
+        'gc' => 'callable(string):bool',
+        'create_sid=' => 'callable():string',
+        'validate_sid=' => 'callable(string):bool',
+        'update_timestamp=' => 'callable(string):bool',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'open' => 'callable(string, string):bool',
+        'close' => 'callable():bool',
+        'read' => 'callable(string):string',
+        'write' => 'callable(string, string):bool',
+        'destroy' => 'callable(string):bool',
+        'gc' => 'callable(string):bool',
+        'create_sid=' => 'callable():string|null',
+        'validate_sid=' => 'callable(string):bool|null',
+        'update_timestamp=' => 'callable(string):bool|null',
+      ),
+    ),
+    'SoapClient::__setLocation' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'new_location=' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'null|string',
+        'new_location=' => 'string',
+      ),
+    ),
+    'SoapClient::__soapCall' => 
+    array (
+      'old' => 
+      array (
+        0 => 'mixed',
+        'function_name' => 'string',
+        'arguments' => 'array<array-key, mixed>',
+        'options=' => 'array<array-key, mixed>',
+        'input_headers=' => 'SoapHeader|array<array-key, mixed>',
+        '&w_output_headers=' => 'array<array-key, mixed>',
+      ),
+      'new' => 
+      array (
+        0 => 'mixed',
+        'function_name' => 'string',
+        'arguments' => 'array<array-key, mixed>',
+        'options=' => 'array<array-key, mixed>|null',
+        'input_headers=' => 'SoapHeader|array<array-key, mixed>',
+        '&w_output_headers=' => 'array<array-key, mixed>',
+      ),
+    ),
+    'SoapHeader::__construct' => 
+    array (
+      'old' => 
+      array (
+        0 => 'void',
+        'namespace' => 'string',
+        'name' => 'string',
+        'data=' => 'mixed',
+        'mustunderstand=' => 'bool',
+        'actor=' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'void',
+        'namespace' => 'string',
+        'name' => 'string',
+        'data=' => 'mixed',
+        'mustunderstand=' => 'bool',
+        'actor=' => 'null|string',
+      ),
+    ),
+    'SoapVar::__construct' => 
+    array (
+      'old' => 
+      array (
+        0 => 'void',
+        'data' => 'mixed',
+        'encoding' => 'int',
+        'type_name=' => 'null|string',
+        'type_namespace=' => 'null|string',
+        'node_name=' => 'null|string',
+        'node_namespace=' => 'null|string',
+      ),
+      'new' => 
+      array (
+        0 => 'void',
+        'data' => 'mixed',
+        'encoding' => 'int|null',
+        'type_name=' => 'null|string',
+        'type_namespace=' => 'null|string',
+        'node_name=' => 'null|string',
+        'node_namespace=' => 'null|string',
+      ),
+    ),
+    'SplFileObject::fscanf' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|int',
+        'format' => 'string',
+        '&...w_vars=' => 'float|int|string',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|int|null',
+        'format' => 'string',
+        '&...w_vars=' => 'float|int|string',
+      ),
+    ),
+    'SplTempFileObject::fscanf' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|int',
+        'format' => 'string',
+        '&...w_vars=' => 'float|int|string',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|int|null',
+        'format' => 'string',
+        '&...w_vars=' => 'float|int|string',
+      ),
+    ),
+    'strtok' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|non-empty-string',
+        'string' => 'string',
+        'token' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'false|non-empty-string',
+        'string' => 'string',
+        'token' => 'null|string',
+      ),
+    ),
+    'strtr' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'string' => 'string',
+        'from' => 'string',
+        'to' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+        'string' => 'string',
+        'from' => 'string',
+        'to' => 'null|string',
+      ),
+    ),
+    'version_compare' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'version1' => 'string',
+        'version2' => 'string',
+        'operator' => '\'!=\'|\'<\'|\'<=\'|\'<>\'|\'=\'|\'==\'|\'>\'|\'>=\'|\'eq\'|\'ge\'|\'gt\'|\'le\'|\'lt\'|\'ne\'',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'version1' => 'string',
+        'version2' => 'string',
+        'operator' => '\'!=\'|\'<\'|\'<=\'|\'<>\'|\'=\'|\'==\'|\'>\'|\'>=\'|\'eq\'|\'ge\'|\'gt\'|\'le\'|\'lt\'|\'ne\'|null',
+      ),
+    ),
+    'xml_set_default_handler' => 
+    array (
+      'old' => 
+      array (
+        0 => 'true',
+        'parser' => 'XMLParser',
+        'handler' => 'callable',
+      ),
+      'new' => 
+      array (
+        0 => 'true',
+        'parser' => 'XMLParser',
+        'handler' => 'callable|null',
+      ),
+    ),
+    'xml_set_end_namespace_decl_handler' => 
+    array (
+      'old' => 
+      array (
+        0 => 'true',
+        'parser' => 'XMLParser',
+        'handler' => 'callable',
+      ),
+      'new' => 
+      array (
+        0 => 'true',
+        'parser' => 'XMLParser',
+        'handler' => 'callable|null',
+      ),
+    ),
+    'xml_set_external_entity_ref_handler' => 
+    array (
+      'old' => 
+      array (
+        0 => 'true',
+        'parser' => 'XMLParser',
+        'handler' => 'callable',
+      ),
+      'new' => 
+      array (
+        0 => 'true',
+        'parser' => 'XMLParser',
+        'handler' => 'callable|null',
+      ),
+    ),
+    'xml_set_notation_decl_handler' => 
+    array (
+      'old' => 
+      array (
+        0 => 'true',
+        'parser' => 'XMLParser',
+        'handler' => 'callable',
+      ),
+      'new' => 
+      array (
+        0 => 'true',
+        'parser' => 'XMLParser',
+        'handler' => 'callable|null',
+      ),
+    ),
+    'xml_set_unparsed_entity_decl_handler' => 
+    array (
+      'old' => 
+      array (
+        0 => 'true',
+        'parser' => 'XMLParser',
+        'handler' => 'callable',
+      ),
+      'new' => 
+      array (
+        0 => 'true',
+        'parser' => 'XMLParser',
+        'handler' => 'callable|null',
+      ),
+    ),
+    'XSLTProcessor::setParameter' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'namespace' => 'string',
+        'name' => 'string',
+        'value' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'namespace' => 'string',
+        'name' => 'string',
+        'value' => 'null|string',
+      ),
+    ),
+    'XSLTProcessor::transformToXML' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|string',
+        'document' => 'DOMDocument',
+      ),
+      'new' => 
+      array (
+        0 => 'false|null|string',
+        'document' => 'DOMDocument',
       ),
     ),
   ),
