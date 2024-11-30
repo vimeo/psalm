@@ -629,6 +629,7 @@ class Config
      * @var array<string, bool|null>
      */
     public $php_extensions = [
+        "amqp" => null,
         "apcu" => null,
         "decimal" => null,
         "dom" => null,
