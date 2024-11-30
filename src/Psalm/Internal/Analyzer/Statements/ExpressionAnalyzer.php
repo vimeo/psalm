@@ -42,6 +42,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\UnaryPlusMinusAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\YieldAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\YieldFromAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\BCHelper;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Issue\RiskyTruthyFalsyComparison;
@@ -77,7 +78,7 @@ final class ExpressionAnalyzer
         Context $context,
         bool $array_assignment = false,
         ?Context $global_context = null,
-        bool $from_stmt = false,
+        ?PhpParser\Node\Stmt $from_stmt = null,
         ?TemplateResult $template_result = null,
         bool $assigned_to_reference = false
     ): bool {
@@ -182,7 +183,7 @@ final class ExpressionAnalyzer
         Context $context,
         bool $array_assignment,
         ?Context $global_context,
-        bool $from_stmt,
+        ?PhpParser\Node\Stmt $from_stmt,
         ?TemplateResult $template_result = null,
         bool $assigned_to_reference = false
     ): bool {
@@ -292,7 +293,7 @@ final class ExpressionAnalyzer
                 $stmt,
                 $context,
                 0,
-                $from_stmt,
+                $from_stmt !== null,
             );
         }
 
@@ -379,7 +380,7 @@ final class ExpressionAnalyzer
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\AssignRef) {
-            if (!AssignmentAnalyzer::analyzeAssignmentRef($statements_analyzer, $stmt, $context)) {
+            if (!AssignmentAnalyzer::analyzeAssignmentRef($statements_analyzer, $stmt, $context, $from_stmt)) {
                 IssueBuffer::maybeAdd(
                     new UnsupportedReferenceUsage(
                         "This reference cannot be analyzed by Psalm",
@@ -456,7 +457,9 @@ final class ExpressionAnalyzer
             return MatchAnalyzer::analyze($statements_analyzer, $stmt, $context);
         }
 
-        if ($stmt instanceof PhpParser\Node\Expr\Throw_ && $analysis_php_version_id >= 8_00_00) {
+        if ($stmt instanceof PhpParser\Node\Expr\Throw_
+            && ($analysis_php_version_id >= 8_00_00 || !BCHelper::usePHPParserV4())
+        ) {
             return ThrowAnalyzer::analyze($statements_analyzer, $stmt, $context);
         }
 
@@ -496,7 +499,7 @@ final class ExpressionAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $stmt,
         Context $context,
-        bool $from_stmt
+        ?PhpParser\Node\Stmt $from_stmt
     ): bool {
         $assignment_type = AssignmentAnalyzer::analyze(
             $statements_analyzer,
@@ -504,7 +507,7 @@ final class ExpressionAnalyzer
             $stmt->expr,
             null,
             $context,
-            $stmt->getDocComment(),
+            $stmt->getDocComment() ?? ($from_stmt ? $from_stmt->getDocComment() : null),
             [],
             !$from_stmt ? $stmt : null,
         );
