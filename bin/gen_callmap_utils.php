@@ -2,6 +2,13 @@
 
 declare(strict_types=1);
 
+require 'vendor/autoload.php';
+
+use DG\BypassFinals;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Provider\FileProvider;
+use Psalm\Internal\Provider\Providers;
+use Psalm\Tests\TestConfig;
 use Psalm\Type;
 
 function internalNormalizeCallMap(array|string $callMap): array|string {
@@ -227,3 +234,19 @@ function assertTypeValidity(ReflectionType $reflected, string &$specified, strin
     //    $this->assertSame($expectedType->hasInt(), $callMapType->hasInt(), "{$msgPrefix} type '{$specified}' missing int from reflected type '{$reflected}'");
     //    $this->assertSame($expectedType->hasFloat(), $callMapType->hasFloat(), "{$msgPrefix} type '{$specified}' missing float from reflected type '{$reflected}'");
 }
+
+function writeCallMap(string $file, array $callMap): void
+{
+    file_put_contents($file, '<?php // phpcs:ignoreFile
+
+return '.var_export($callMap, true).';');
+}
+
+
+BypassFinals::enable();
+
+new ProjectAnalyzer(new TestConfig, new Providers(new FileProvider));
+$callMap = require "dictionaries/CallMap.php";
+$orig = $callMap;
+
+$codebase = ProjectAnalyzer::getInstance()->getCodebase();

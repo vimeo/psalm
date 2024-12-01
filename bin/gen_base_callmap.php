@@ -15,11 +15,17 @@ foreach (get_defined_functions()['internal'] as $name) {
 }
 
 foreach (get_declared_classes() as $class) {
-    foreach ((new ReflectionClass($class))->getMethods() as $method) {
+    $refl = new ReflectionClass($class);
+    if (!$refl->isInternal()) {
+        continue;
+    }
+
+    foreach ($refl->getMethods() as $method) {
         $args = paramsToEntries($method);
     
         $callmap[$class.'::'.$method->getName()] = $args;
     }
 }
 
+$callmap = normalizeCallMap($callmap);
 var_dump($callmap);
