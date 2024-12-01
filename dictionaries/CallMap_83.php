@@ -1224,11 +1224,11 @@ return array (
   ),
   'appenditerator::getinneriterator' => 
   array (
-    0 => 'Iterator|null',
+    0 => 'Iterator',
   ),
   'appenditerator::getiteratorindex' => 
   array (
-    0 => 'int|null',
+    0 => 'int',
   ),
   'appenditerator::key' => 
   array (
@@ -1332,18 +1332,6 @@ return array (
   array (
     0 => 'string',
   ),
-  'array_all' => 
-  array (
-    0 => 'bool',
-    'array' => 'array<array-key, mixed>',
-    'callback' => 'callable',
-  ),
-  'array_any' => 
-  array (
-    0 => 'bool',
-    'array' => 'array<array-key, mixed>',
-    'callback' => 'callable',
-  ),
   'array_change_key_case' => 
   array (
     0 => 'array<array-key, mixed>',
@@ -1426,18 +1414,6 @@ return array (
     'array' => 'array<array-key, mixed>',
     'callback=' => 'callable(mixed, array-key=):mixed|null',
     'mode=' => 'int',
-  ),
-  'array_find' => 
-  array (
-    0 => 'mixed|null',
-    'array' => 'array<array-key, mixed>',
-    'callback' => 'callable',
-  ),
-  'array_find_key' => 
-  array (
-    0 => 'mixed|null',
-    'array' => 'array<array-key, mixed>',
-    'callback' => 'callable',
   ),
   'array_flip' => 
   array (
@@ -2148,11 +2124,6 @@ return array (
     'num2' => 'numeric-string',
     'scale=' => 'int|null',
   ),
-  'bcceil' => 
-  array (
-    0 => 'string',
-    'num' => 'string',
-  ),
   'bccomp' => 
   array (
     0 => 'int',
@@ -2165,110 +2136,6 @@ return array (
     0 => 'numeric-string',
     'num1' => 'numeric-string',
     'num2' => 'numeric-string',
-    'scale=' => 'int|null',
-  ),
-  'bcdivmod' => 
-  array (
-    0 => 'array<array-key, mixed>',
-    'num1' => 'string',
-    'num2' => 'string',
-    'scale=' => 'int|null',
-  ),
-  'bcfloor' => 
-  array (
-    0 => 'string',
-    'num' => 'string',
-  ),
-  'bcmath\\number::__construct' => 
-  array (
-    0 => 'string',
-    'num' => 'int|string',
-  ),
-  'bcmath\\number::__serialize' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'bcmath\\number::__tostring' => 
-  array (
-    0 => 'string',
-  ),
-  'bcmath\\number::__unserialize' => 
-  array (
-    0 => 'void',
-    'data' => 'array<array-key, mixed>',
-  ),
-  'bcmath\\number::add' => 
-  array (
-    0 => 'BcMath\\Number',
-    'num' => 'BcMath\\Number|int|string',
-    'scale=' => 'int|null',
-  ),
-  'bcmath\\number::ceil' => 
-  array (
-    0 => 'BcMath\\Number',
-  ),
-  'bcmath\\number::compare' => 
-  array (
-    0 => 'int',
-    'num' => 'BcMath\\Number|int|string',
-    'scale=' => 'int|null',
-  ),
-  'bcmath\\number::div' => 
-  array (
-    0 => 'BcMath\\Number',
-    'num' => 'BcMath\\Number|int|string',
-    'scale=' => 'int|null',
-  ),
-  'bcmath\\number::divmod' => 
-  array (
-    0 => 'array<array-key, mixed>',
-    'num' => 'BcMath\\Number|int|string',
-    'scale=' => 'int|null',
-  ),
-  'bcmath\\number::floor' => 
-  array (
-    0 => 'BcMath\\Number',
-  ),
-  'bcmath\\number::mod' => 
-  array (
-    0 => 'BcMath\\Number',
-    'num' => 'BcMath\\Number|int|string',
-    'scale=' => 'int|null',
-  ),
-  'bcmath\\number::mul' => 
-  array (
-    0 => 'BcMath\\Number',
-    'num' => 'BcMath\\Number|int|string',
-    'scale=' => 'int|null',
-  ),
-  'bcmath\\number::pow' => 
-  array (
-    0 => 'BcMath\\Number',
-    'exponent' => 'BcMath\\Number|int|string',
-    'scale=' => 'int|null',
-  ),
-  'bcmath\\number::powmod' => 
-  array (
-    0 => 'BcMath\\Number',
-    'exponent' => 'BcMath\\Number|int|string',
-    'modulus' => 'BcMath\\Number|int|string',
-    'scale=' => 'int|null',
-  ),
-  'bcmath\\number::round' => 
-  array (
-    0 => 'BcMath\\Number',
-    'precision=' => 'int',
-    'mode=' => 'RoundingMode',
-  ),
-  'bcmath\\number::sqrt' => 
-  array (
-    0 => 'BcMath\\Number',
-    'scale=' => 'int|null',
-  ),
-  'bcmath\\number::sub' => 
-  array (
-    0 => 'BcMath\\Number',
-    'num' => 'BcMath\\Number|int|string',
     'scale=' => 'int|null',
   ),
   'bcmod' => 
@@ -2299,13 +2166,6 @@ return array (
     'exponent' => 'numeric-string',
     'modulus' => 'numeric-string',
     'scale=' => 'int|null',
-  ),
-  'bcround' => 
-  array (
-    0 => 'string',
-    'num' => 'string',
-    'precision=' => 'int',
-    'mode=' => 'RoundingMode',
   ),
   'bcscale' => 
   array (
@@ -2344,7 +2204,7 @@ return array (
   array (
     0 => 'void',
     'iterator' => 'Iterator',
-    'flags=' => 'int',
+    'flags=' => 'mixed',
   ),
   'cachingiterator::__tostring' => 
   array (
@@ -2368,7 +2228,7 @@ return array (
   ),
   'cachingiterator::getinneriterator' => 
   array (
-    0 => 'Iterator|null',
+    0 => 'Iterator',
   ),
   'cachingiterator::hasnext' => 
   array (
@@ -2444,7 +2304,7 @@ return array (
   ),
   'callbackfilteriterator::getinneriterator' => 
   array (
-    0 => 'Iterator|null',
+    0 => 'Iterator',
   ),
   'callbackfilteriterator::key' => 
   array (
@@ -2714,7 +2574,7 @@ return array (
   ),
   'collator::setstrength' => 
   array (
-    0 => 'true',
+    0 => 'bool',
     'strength' => 'int',
   ),
   'collator::sort' => 
@@ -2789,7 +2649,7 @@ return array (
   ),
   'collator_set_strength' => 
   array (
-    0 => 'true',
+    0 => 'bool',
     'object' => 'collator',
     'strength' => 'int',
   ),
@@ -3046,7 +2906,7 @@ return array (
   ),
   'curl_multi_getcontent' => 
   array (
-    0 => 'null|string',
+    0 => 'string',
     'handle' => 'CurlHandle',
   ),
   'curl_multi_info_read' => 
@@ -4006,11 +3866,6 @@ return array (
     0 => 'static',
     'object' => 'DateTimeInterface',
   ),
-  'datetime::createfromtimestamp' => 
-  array (
-    0 => 'string',
-    'timestamp' => 'float|int',
-  ),
   'datetime::diff' => 
   array (
     0 => 'DateInterval',
@@ -4025,10 +3880,6 @@ return array (
   'datetime::getlasterrors' => 
   array (
     0 => 'array{error_count: int, errors: array<int, string>, warning_count: int, warnings: array<int, string>}|false',
-  ),
-  'datetime::getmicrosecond' => 
-  array (
-    0 => 'int',
   ),
   'datetime::getoffset' => 
   array (
@@ -4060,11 +3911,6 @@ return array (
     'year' => 'int',
     'week' => 'int',
     'dayOfWeek=' => 'int',
-  ),
-  'datetime::setmicrosecond' => 
-  array (
-    0 => 'static',
-    'microsecond' => 'int',
   ),
   'datetime::settime' => 
   array (
@@ -4135,11 +3981,6 @@ return array (
     0 => 'string',
     'object' => 'DateTime',
   ),
-  'datetimeimmutable::createfromtimestamp' => 
-  array (
-    0 => 'string',
-    'timestamp' => 'float|int',
-  ),
   'datetimeimmutable::diff' => 
   array (
     0 => 'string',
@@ -4154,10 +3995,6 @@ return array (
   'datetimeimmutable::getlasterrors' => 
   array (
     0 => 'array{error_count: int, errors: array<int, string>, warning_count: int, warnings: array<int, string>}|false',
-  ),
-  'datetimeimmutable::getmicrosecond' => 
-  array (
-    0 => 'int',
   ),
   'datetimeimmutable::getoffset' => 
   array (
@@ -4189,11 +4026,6 @@ return array (
     'year' => 'int',
     'week' => 'int',
     'dayOfWeek=' => 'int',
-  ),
-  'datetimeimmutable::setmicrosecond' => 
-  array (
-    0 => 'static',
-    'microsecond' => 'int',
   ),
   'datetimeimmutable::settime' => 
   array (
@@ -4332,17 +4164,6 @@ return array (
   array (
     0 => 'float',
     'num' => 'float',
-  ),
-  'deprecated::__construct' => 
-  array (
-    0 => 'string',
-    'message=' => 'null|string',
-    'since=' => 'null|string',
-  ),
-  'die' => 
-  array (
-    0 => 'never',
-    'status=' => 'int|string',
   ),
   'dir' => 
   array (
@@ -4615,3294 +4436,6 @@ return array (
     '&w_additional_records=' => 'array<array-key, mixed>',
     'raw=' => 'bool',
   ),
-  'dom\\adjacentposition::cases' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'dom\\adjacentposition::from' => 
-  array (
-    0 => 'static',
-    'value' => 'int|string',
-  ),
-  'dom\\adjacentposition::tryfrom' => 
-  array (
-    0 => 'null|static',
-    'value' => 'int|string',
-  ),
-  'dom\\attr::__sleep' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'dom\\attr::__wakeup' => 
-  array (
-    0 => 'void',
-  ),
-  'dom\\attr::appendchild' => 
-  array (
-    0 => 'Dom\\Node',
-    'node' => 'Dom\\Node',
-  ),
-  'dom\\attr::c14n' => 
-  array (
-    0 => 'false|string',
-    'exclusive=' => 'bool',
-    'withComments=' => 'bool',
-    'xpath=' => 'array<array-key, mixed>|null',
-    'nsPrefixes=' => 'array<array-key, mixed>|null',
-  ),
-  'dom\\attr::c14nfile' => 
-  array (
-    0 => 'false|int',
-    'uri' => 'string',
-    'exclusive=' => 'bool',
-    'withComments=' => 'bool',
-    'xpath=' => 'array<array-key, mixed>|null',
-    'nsPrefixes=' => 'array<array-key, mixed>|null',
-  ),
-  'dom\\attr::clonenode' => 
-  array (
-    0 => 'Dom\\Node',
-    'deep=' => 'bool',
-  ),
-  'dom\\attr::comparedocumentposition' => 
-  array (
-    0 => 'int',
-    'other' => 'Dom\\Node',
-  ),
-  'dom\\attr::contains' => 
-  array (
-    0 => 'bool',
-    'other' => 'Dom\\Node|null',
-  ),
-  'dom\\attr::getlineno' => 
-  array (
-    0 => 'int',
-  ),
-  'dom\\attr::getnodepath' => 
-  array (
-    0 => 'string',
-  ),
-  'dom\\attr::getrootnode' => 
-  array (
-    0 => 'Dom\\Node',
-    'options=' => 'array<array-key, mixed>',
-  ),
-  'dom\\attr::haschildnodes' => 
-  array (
-    0 => 'bool',
-  ),
-  'dom\\attr::insertbefore' => 
-  array (
-    0 => 'Dom\\Node',
-    'node' => 'Dom\\Node',
-    'child' => 'Dom\\Node|null',
-  ),
-  'dom\\attr::isdefaultnamespace' => 
-  array (
-    0 => 'bool',
-    'namespace' => 'null|string',
-  ),
-  'dom\\attr::isequalnode' => 
-  array (
-    0 => 'bool',
-    'otherNode' => 'Dom\\Node|null',
-  ),
-  'dom\\attr::isid' => 
-  array (
-    0 => 'bool',
-  ),
-  'dom\\attr::issamenode' => 
-  array (
-    0 => 'bool',
-    'otherNode' => 'Dom\\Node|null',
-  ),
-  'dom\\attr::lookupnamespaceuri' => 
-  array (
-    0 => 'null|string',
-    'prefix' => 'null|string',
-  ),
-  'dom\\attr::lookupprefix' => 
-  array (
-    0 => 'null|string',
-    'namespace' => 'null|string',
-  ),
-  'dom\\attr::normalize' => 
-  array (
-    0 => 'void',
-  ),
-  'dom\\attr::removechild' => 
-  array (
-    0 => 'Dom\\Node',
-    'child' => 'Dom\\Node',
-  ),
-  'dom\\attr::rename' => 
-  array (
-    0 => 'void',
-    'namespaceURI' => 'null|string',
-    'qualifiedName' => 'string',
-  ),
-  'dom\\attr::replacechild' => 
-  array (
-    0 => 'Dom\\Node',
-    'node' => 'Dom\\Node',
-    'child' => 'Dom\\Node',
-  ),
-  'dom\\cdatasection::__sleep' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'dom\\cdatasection::__wakeup' => 
-  array (
-    0 => 'void',
-  ),
-  'dom\\cdatasection::after' => 
-  array (
-    0 => 'void',
-    '...nodes=' => 'Dom\\Node|string',
-  ),
-  'dom\\cdatasection::appendchild' => 
-  array (
-    0 => 'Dom\\Node',
-    'node' => 'Dom\\Node',
-  ),
-  'dom\\cdatasection::appenddata' => 
-  array (
-    0 => 'void',
-    'data' => 'string',
-  ),
-  'dom\\cdatasection::before' => 
-  array (
-    0 => 'void',
-    '...nodes=' => 'Dom\\Node|string',
-  ),
-  'dom\\cdatasection::c14n' => 
-  array (
-    0 => 'false|string',
-    'exclusive=' => 'bool',
-    'withComments=' => 'bool',
-    'xpath=' => 'array<array-key, mixed>|null',
-    'nsPrefixes=' => 'array<array-key, mixed>|null',
-  ),
-  'dom\\cdatasection::c14nfile' => 
-  array (
-    0 => 'false|int',
-    'uri' => 'string',
-    'exclusive=' => 'bool',
-    'withComments=' => 'bool',
-    'xpath=' => 'array<array-key, mixed>|null',
-    'nsPrefixes=' => 'array<array-key, mixed>|null',
-  ),
-  'dom\\cdatasection::clonenode' => 
-  array (
-    0 => 'Dom\\Node',
-    'deep=' => 'bool',
-  ),
-  'dom\\cdatasection::comparedocumentposition' => 
-  array (
-    0 => 'int',
-    'other' => 'Dom\\Node',
-  ),
-  'dom\\cdatasection::contains' => 
-  array (
-    0 => 'bool',
-    'other' => 'Dom\\Node|null',
-  ),
-  'dom\\cdatasection::deletedata' => 
-  array (
-    0 => 'void',
-    'offset' => 'int',
-    'count' => 'int',
-  ),
-  'dom\\cdatasection::getlineno' => 
-  array (
-    0 => 'int',
-  ),
-  'dom\\cdatasection::getnodepath' => 
-  array (
-    0 => 'string',
-  ),
-  'dom\\cdatasection::getrootnode' => 
-  array (
-    0 => 'Dom\\Node',
-    'options=' => 'array<array-key, mixed>',
-  ),
-  'dom\\cdatasection::haschildnodes' => 
-  array (
-    0 => 'bool',
-  ),
-  'dom\\cdatasection::insertbefore' => 
-  array (
-    0 => 'Dom\\Node',
-    'node' => 'Dom\\Node',
-    'child' => 'Dom\\Node|null',
-  ),
-  'dom\\cdatasection::insertdata' => 
-  array (
-    0 => 'void',
-    'offset' => 'int',
-    'data' => 'string',
-  ),
-  'dom\\cdatasection::isdefaultnamespace' => 
-  array (
-    0 => 'bool',
-    'namespace' => 'null|string',
-  ),
-  'dom\\cdatasection::isequalnode' => 
-  array (
-    0 => 'bool',
-    'otherNode' => 'Dom\\Node|null',
-  ),
-  'dom\\cdatasection::issamenode' => 
-  array (
-    0 => 'bool',
-    'otherNode' => 'Dom\\Node|null',
-  ),
-  'dom\\cdatasection::lookupnamespaceuri' => 
-  array (
-    0 => 'null|string',
-    'prefix' => 'null|string',
-  ),
-  'dom\\cdatasection::lookupprefix' => 
-  array (
-    0 => 'null|string',
-    'namespace' => 'null|string',
-  ),
-  'dom\\cdatasection::normalize' => 
-  array (
-    0 => 'void',
-  ),
-  'dom\\cdatasection::remove' => 
-  array (
-    0 => 'void',
-  ),
-  'dom\\cdatasection::removechild' => 
-  array (
-    0 => 'Dom\\Node',
-    'child' => 'Dom\\Node',
-  ),
-  'dom\\cdatasection::replacechild' => 
-  array (
-    0 => 'Dom\\Node',
-    'node' => 'Dom\\Node',
-    'child' => 'Dom\\Node',
-  ),
-  'dom\\cdatasection::replacedata' => 
-  array (
-    0 => 'void',
-    'offset' => 'int',
-    'count' => 'int',
-    'data' => 'string',
-  ),
-  'dom\\cdatasection::replacewith' => 
-  array (
-    0 => 'void',
-    '...nodes=' => 'Dom\\Node|string',
-  ),
-  'dom\\cdatasection::splittext' => 
-  array (
-    0 => 'Dom\\Text',
-    'offset' => 'int',
-  ),
-  'dom\\cdatasection::substringdata' => 
-  array (
-    0 => 'string',
-    'offset' => 'int',
-    'count' => 'int',
-  ),
-  'dom\\characterdata::__sleep' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'dom\\characterdata::__wakeup' => 
-  array (
-    0 => 'void',
-  ),
-  'dom\\characterdata::after' => 
-  array (
-    0 => 'void',
-    '...nodes=' => 'Dom\\Node|string',
-  ),
-  'dom\\characterdata::appendchild' => 
-  array (
-    0 => 'Dom\\Node',
-    'node' => 'Dom\\Node',
-  ),
-  'dom\\characterdata::appenddata' => 
-  array (
-    0 => 'void',
-    'data' => 'string',
-  ),
-  'dom\\characterdata::before' => 
-  array (
-    0 => 'void',
-    '...nodes=' => 'Dom\\Node|string',
-  ),
-  'dom\\characterdata::c14n' => 
-  array (
-    0 => 'false|string',
-    'exclusive=' => 'bool',
-    'withComments=' => 'bool',
-    'xpath=' => 'array<array-key, mixed>|null',
-    'nsPrefixes=' => 'array<array-key, mixed>|null',
-  ),
-  'dom\\characterdata::c14nfile' => 
-  array (
-    0 => 'false|int',
-    'uri' => 'string',
-    'exclusive=' => 'bool',
-    'withComments=' => 'bool',
-    'xpath=' => 'array<array-key, mixed>|null',
-    'nsPrefixes=' => 'array<array-key, mixed>|null',
-  ),
-  'dom\\characterdata::clonenode' => 
-  array (
-    0 => 'Dom\\Node',
-    'deep=' => 'bool',
-  ),
-  'dom\\characterdata::comparedocumentposition' => 
-  array (
-    0 => 'int',
-    'other' => 'Dom\\Node',
-  ),
-  'dom\\characterdata::contains' => 
-  array (
-    0 => 'bool',
-    'other' => 'Dom\\Node|null',
-  ),
-  'dom\\characterdata::deletedata' => 
-  array (
-    0 => 'void',
-    'offset' => 'int',
-    'count' => 'int',
-  ),
-  'dom\\characterdata::getlineno' => 
-  array (
-    0 => 'int',
-  ),
-  'dom\\characterdata::getnodepath' => 
-  array (
-    0 => 'string',
-  ),
-  'dom\\characterdata::getrootnode' => 
-  array (
-    0 => 'Dom\\Node',
-    'options=' => 'array<array-key, mixed>',
-  ),
-  'dom\\characterdata::haschildnodes' => 
-  array (
-    0 => 'bool',
-  ),
-  'dom\\characterdata::insertbefore' => 
-  array (
-    0 => 'Dom\\Node',
-    'node' => 'Dom\\Node',
-    'child' => 'Dom\\Node|null',
-  ),
-  'dom\\characterdata::insertdata' => 
-  array (
-    0 => 'void',
-    'offset' => 'int',
-    'data' => 'string',
-  ),
-  'dom\\characterdata::isdefaultnamespace' => 
-  array (
-    0 => 'bool',
-    'namespace' => 'null|string',
-  ),
-  'dom\\characterdata::isequalnode' => 
-  array (
-    0 => 'bool',
-    'otherNode' => 'Dom\\Node|null',
-  ),
-  'dom\\characterdata::issamenode' => 
-  array (
-    0 => 'bool',
-    'otherNode' => 'Dom\\Node|null',
-  ),
-  'dom\\characterdata::lookupnamespaceuri' => 
-  array (
-    0 => 'null|string',
-    'prefix' => 'null|string',
-  ),
-  'dom\\characterdata::lookupprefix' => 
-  array (
-    0 => 'null|string',
-    'namespace' => 'null|string',
-  ),
-  'dom\\characterdata::normalize' => 
-  array (
-    0 => 'void',
-  ),
-  'dom\\characterdata::remove' => 
-  array (
-    0 => 'void',
-  ),
-  'dom\\characterdata::removechild' => 
-  array (
-    0 => 'Dom\\Node',
-    'child' => 'Dom\\Node',
-  ),
-  'dom\\characterdata::replacechild' => 
-  array (
-    0 => 'Dom\\Node',
-    'node' => 'Dom\\Node',
-    'child' => 'Dom\\Node',
-  ),
-  'dom\\characterdata::replacedata' => 
-  array (
-    0 => 'void',
-    'offset' => 'int',
-    'count' => 'int',
-    'data' => 'string',
-  ),
-  'dom\\characterdata::replacewith' => 
-  array (
-    0 => 'void',
-    '...nodes=' => 'Dom\\Node|string',
-  ),
-  'dom\\characterdata::substringdata' => 
-  array (
-    0 => 'string',
-    'offset' => 'int',
-    'count' => 'int',
-  ),
-  'dom\\comment::__sleep' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'dom\\comment::__wakeup' => 
-  array (
-    0 => 'void',
-  ),
-  'dom\\comment::after' => 
-  array (
-    0 => 'void',
-    '...nodes=' => 'Dom\\Node|string',
-  ),
-  'dom\\comment::appendchild' => 
-  array (
-    0 => 'Dom\\Node',
-    'node' => 'Dom\\Node',
-  ),
-  'dom\\comment::appenddata' => 
-  array (
-    0 => 'void',
-    'data' => 'string',
-  ),
-  'dom\\comment::before' => 
-  array (
-    0 => 'void',
-    '...nodes=' => 'Dom\\Node|string',
-  ),
-  'dom\\comment::c14n' => 
-  array (
-    0 => 'false|string',
-    'exclusive=' => 'bool',
-    'withComments=' => 'bool',
-    'xpath=' => 'array<array-key, mixed>|null',
-    'nsPrefixes=' => 'array<array-key, mixed>|null',
-  ),
-  'dom\\comment::c14nfile' => 
-  array (
-    0 => 'false|int',
-    'uri' => 'string',
-    'exclusive=' => 'bool',
-    'withComments=' => 'bool',
-    'xpath=' => 'array<array-key, mixed>|null',
-    'nsPrefixes=' => 'array<array-key, mixed>|null',
-  ),
-  'dom\\comment::clonenode' => 
-  array (
-    0 => 'Dom\\Node',
-    'deep=' => 'bool',
-  ),
-  'dom\\comment::comparedocumentposition' => 
-  array (
-    0 => 'int',
-    'other' => 'Dom\\Node',
-  ),
-  'dom\\comment::contains' => 
-  array (
-    0 => 'bool',
-    'other' => 'Dom\\Node|null',
-  ),
-  'dom\\comment::deletedata' => 
-  array (
-    0 => 'void',
-    'offset' => 'int',
-    'count' => 'int',
-  ),
-  'dom\\comment::getlineno' => 
-  array (
-    0 => 'int',
-  ),
-  'dom\\comment::getnodepath' => 
-  array (
-    0 => 'string',
-  ),
-  'dom\\comment::getrootnode' => 
-  array (
-    0 => 'Dom\\Node',
-    'options=' => 'array<array-key, mixed>',
-  ),
-  'dom\\comment::haschildnodes' => 
-  array (
-    0 => 'bool',
-  ),
-  'dom\\comment::insertbefore' => 
-  array (
-    0 => 'Dom\\Node',
-    'node' => 'Dom\\Node',
-    'child' => 'Dom\\Node|null',
-  ),
-  'dom\\comment::insertdata' => 
-  array (
-    0 => 'void',
-    'offset' => 'int',
-    'data' => 'string',
-  ),
-  'dom\\comment::isdefaultnamespace' => 
-  array (
-    0 => 'bool',
-    'namespace' => 'null|string',
-  ),
-  'dom\\comment::isequalnode' => 
-  array (
-    0 => 'bool',
-    'otherNode' => 'Dom\\Node|null',
-  ),
-  'dom\\comment::issamenode' => 
-  array (
-    0 => 'bool',
-    'otherNode' => 'Dom\\Node|null',
-  ),
-  'dom\\comment::lookupnamespaceuri' => 
-  array (
-    0 => 'null|string',
-    'prefix' => 'null|string',
-  ),
-  'dom\\comment::lookupprefix' => 
-  array (
-    0 => 'null|string',
-    'namespace' => 'null|string',
-  ),
-  'dom\\comment::normalize' => 
-  array (
-    0 => 'void',
-  ),
-  'dom\\comment::remove' => 
-  array (
-    0 => 'void',
-  ),
-  'dom\\comment::removechild' => 
-  array (
-    0 => 'Dom\\Node',
-    'child' => 'Dom\\Node',
-  ),
-  'dom\\comment::replacechild' => 
-  array (
-    0 => 'Dom\\Node',
-    'node' => 'Dom\\Node',
-    'child' => 'Dom\\Node',
-  ),
-  'dom\\comment::replacedata' => 
-  array (
-    0 => 'void',
-    'offset' => 'int',
-    'count' => 'int',
-    'data' => 'string',
-  ),
-  'dom\\comment::replacewith' => 
-  array (
-    0 => 'void',
-    '...nodes=' => 'Dom\\Node|string',
-  ),
-  'dom\\comment::substringdata' => 
-  array (
-    0 => 'string',
-    'offset' => 'int',
-    'count' => 'int',
-  ),
-  'dom\\document::__sleep' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'dom\\document::__wakeup' => 
-  array (
-    0 => 'void',
-  ),
-  'dom\\document::adoptnode' => 
-  array (
-    0 => 'Dom\\Node',
-    'node' => 'Dom\\Node',
-  ),
-  'dom\\document::append' => 
-  array (
-    0 => 'void',
-    '...nodes=' => 'Dom\\Node|string',
-  ),
-  'dom\\document::appendchild' => 
-  array (
-    0 => 'Dom\\Node',
-    'node' => 'Dom\\Node',
-  ),
-  'dom\\document::c14n' => 
-  array (
-    0 => 'false|string',
-    'exclusive=' => 'bool',
-    'withComments=' => 'bool',
-    'xpath=' => 'array<array-key, mixed>|null',
-    'nsPrefixes=' => 'array<array-key, mixed>|null',
-  ),
-  'dom\\document::c14nfile' => 
-  array (
-    0 => 'false|int',
-    'uri' => 'string',
-    'exclusive=' => 'bool',
-    'withComments=' => 'bool',
-    'xpath=' => 'array<array-key, mixed>|null',
-    'nsPrefixes=' => 'array<array-key, mixed>|null',
-  ),
-  'dom\\document::clonenode' => 
-  array (
-    0 => 'Dom\\Node',
-    'deep=' => 'bool',
-  ),
-  'dom\\document::comparedocumentposition' => 
-  array (
-    0 => 'int',
-    'other' => 'Dom\\Node',
-  ),
-  'dom\\document::contains' => 
-  array (
-    0 => 'bool',
-    'other' => 'Dom\\Node|null',
-  ),
-  'dom\\document::createattribute' => 
-  array (
-    0 => 'Dom\\Attr',
-    'localName' => 'string',
-  ),
-  'dom\\document::createattributens' => 
-  array (
-    0 => 'Dom\\Attr',
-    'namespace' => 'null|string',
-    'qualifiedName' => 'string',
-  ),
-  'dom\\document::createcdatasection' => 
-  array (
-    0 => 'Dom\\CDATASection',
-    'data' => 'string',
-  ),
-  'dom\\document::createcomment' => 
-  array (
-    0 => 'Dom\\Comment',
-    'data' => 'string',
-  ),
-  'dom\\document::createdocumentfragment' => 
-  array (
-    0 => 'Dom\\DocumentFragment',
-  ),
-  'dom\\document::createelement' => 
-  array (
-    0 => 'Dom\\Element',
-    'localName' => 'string',
-  ),
-  'dom\\document::createelementns' => 
-  array (
-    0 => 'Dom\\Element',
-    'namespace' => 'null|string',
-    'qualifiedName' => 'string',
-  ),
-  'dom\\document::createprocessinginstruction' => 
-  array (
-    0 => 'Dom\\ProcessingInstruction',
-    'target' => 'string',
-    'data' => 'string',
-  ),
-  'dom\\document::createtextnode' => 
-  array (
-    0 => 'Dom\\Text',
-    'data' => 'string',
-  ),
-  'dom\\document::getelementbyid' => 
-  array (
-    0 => 'Dom\\Element|null',
-    'elementId' => 'string',
-  ),
-  'dom\\document::getelementsbytagname' => 
-  array (
-    0 => 'Dom\\HTMLCollection',
-    'qualifiedName' => 'string',
-  ),
-  'dom\\document::getelementsbytagnamens' => 
-  array (
-    0 => 'Dom\\HTMLCollection',
-    'namespace' => 'null|string',
-    'localName' => 'string',
-  ),
-  'dom\\document::getlineno' => 
-  array (
-    0 => 'int',
-  ),
-  'dom\\document::getnodepath' => 
-  array (
-    0 => 'string',
-  ),
-  'dom\\document::getrootnode' => 
-  array (
-    0 => 'Dom\\Node',
-    'options=' => 'array<array-key, mixed>',
-  ),
-  'dom\\document::haschildnodes' => 
-  array (
-    0 => 'bool',
-  ),
-  'dom\\document::importlegacynode' => 
-  array (
-    0 => 'Dom\\Node',
-    'node' => 'DOMNode',
-    'deep=' => 'bool',
-  ),
-  'dom\\document::importnode' => 
-  array (
-    0 => 'Dom\\Node',
-    'node' => 'Dom\\Node|null',
-    'deep=' => 'bool',
-  ),
-  'dom\\document::insertbefore' => 
-  array (
-    0 => 'Dom\\Node',
-    'node' => 'Dom\\Node',
-    'child' => 'Dom\\Node|null',
-  ),
-  'dom\\document::isdefaultnamespace' => 
-  array (
-    0 => 'bool',
-    'namespace' => 'null|string',
-  ),
-  'dom\\document::isequalnode' => 
-  array (
-    0 => 'bool',
-    'otherNode' => 'Dom\\Node|null',
-  ),
-  'dom\\document::issamenode' => 
-  array (
-    0 => 'bool',
-    'otherNode' => 'Dom\\Node|null',
-  ),
-  'dom\\document::lookupnamespaceuri' => 
-  array (
-    0 => 'null|string',
-    'prefix' => 'null|string',
-  ),
-  'dom\\document::lookupprefix' => 
-  array (
-    0 => 'null|string',
-    'namespace' => 'null|string',
-  ),
-  'dom\\document::normalize' => 
-  array (
-    0 => 'void',
-  ),
-  'dom\\document::prepend' => 
-  array (
-    0 => 'void',
-    '...nodes=' => 'Dom\\Node|string',
-  ),
-  'dom\\document::queryselector' => 
-  array (
-    0 => 'Dom\\Element|null',
-    'selectors' => 'string',
-  ),
-  'dom\\document::queryselectorall' => 
-  array (
-    0 => 'Dom\\NodeList',
-    'selectors' => 'string',
-  ),
-  'dom\\document::registernodeclass' => 
-  array (
-    0 => 'void',
-    'baseClass' => 'string',
-    'extendedClass' => 'null|string',
-  ),
-  'dom\\document::relaxngvalidate' => 
-  array (
-    0 => 'bool',
-    'filename' => 'string',
-  ),
-  'dom\\document::relaxngvalidatesource' => 
-  array (
-    0 => 'bool',
-    'source' => 'string',
-  ),
-  'dom\\document::removechild' => 
-  array (
-    0 => 'Dom\\Node',
-    'child' => 'Dom\\Node',
-  ),
-  'dom\\document::replacechild' => 
-  array (
-    0 => 'Dom\\Node',
-    'node' => 'Dom\\Node',
-    'child' => 'Dom\\Node',
-  ),
-  'dom\\document::replacechildren' => 
-  array (
-    0 => 'void',
-    '...nodes=' => 'Dom\\Node|string',
-  ),
-  'dom\\document::schemavalidate' => 
-  array (
-    0 => 'bool',
-    'filename' => 'string',
-    'flags=' => 'int',
-  ),
-  'dom\\document::schemavalidatesource' => 
-  array (
-    0 => 'bool',
-    'source' => 'string',
-    'flags=' => 'int',
-  ),
-  'dom\\documentfragment::__sleep' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'dom\\documentfragment::__wakeup' => 
-  array (
-    0 => 'void',
-  ),
-  'dom\\documentfragment::append' => 
-  array (
-    0 => 'void',
-    '...nodes=' => 'Dom\\Node|string',
-  ),
-  'dom\\documentfragment::appendchild' => 
-  array (
-    0 => 'Dom\\Node',
-    'node' => 'Dom\\Node',
-  ),
-  'dom\\documentfragment::appendxml' => 
-  array (
-    0 => 'bool',
-    'data' => 'string',
-  ),
-  'dom\\documentfragment::c14n' => 
-  array (
-    0 => 'false|string',
-    'exclusive=' => 'bool',
-    'withComments=' => 'bool',
-    'xpath=' => 'array<array-key, mixed>|null',
-    'nsPrefixes=' => 'array<array-key, mixed>|null',
-  ),
-  'dom\\documentfragment::c14nfile' => 
-  array (
-    0 => 'false|int',
-    'uri' => 'string',
-    'exclusive=' => 'bool',
-    'withComments=' => 'bool',
-    'xpath=' => 'array<array-key, mixed>|null',
-    'nsPrefixes=' => 'array<array-key, mixed>|null',
-  ),
-  'dom\\documentfragment::clonenode' => 
-  array (
-    0 => 'Dom\\Node',
-    'deep=' => 'bool',
-  ),
-  'dom\\documentfragment::comparedocumentposition' => 
-  array (
-    0 => 'int',
-    'other' => 'Dom\\Node',
-  ),
-  'dom\\documentfragment::contains' => 
-  array (
-    0 => 'bool',
-    'other' => 'Dom\\Node|null',
-  ),
-  'dom\\documentfragment::getlineno' => 
-  array (
-    0 => 'int',
-  ),
-  'dom\\documentfragment::getnodepath' => 
-  array (
-    0 => 'string',
-  ),
-  'dom\\documentfragment::getrootnode' => 
-  array (
-    0 => 'Dom\\Node',
-    'options=' => 'array<array-key, mixed>',
-  ),
-  'dom\\documentfragment::haschildnodes' => 
-  array (
-    0 => 'bool',
-  ),
-  'dom\\documentfragment::insertbefore' => 
-  array (
-    0 => 'Dom\\Node',
-    'node' => 'Dom\\Node',
-    'child' => 'Dom\\Node|null',
-  ),
-  'dom\\documentfragment::isdefaultnamespace' => 
-  array (
-    0 => 'bool',
-    'namespace' => 'null|string',
-  ),
-  'dom\\documentfragment::isequalnode' => 
-  array (
-    0 => 'bool',
-    'otherNode' => 'Dom\\Node|null',
-  ),
-  'dom\\documentfragment::issamenode' => 
-  array (
-    0 => 'bool',
-    'otherNode' => 'Dom\\Node|null',
-  ),
-  'dom\\documentfragment::lookupnamespaceuri' => 
-  array (
-    0 => 'null|string',
-    'prefix' => 'null|string',
-  ),
-  'dom\\documentfragment::lookupprefix' => 
-  array (
-    0 => 'null|string',
-    'namespace' => 'null|string',
-  ),
-  'dom\\documentfragment::normalize' => 
-  array (
-    0 => 'void',
-  ),
-  'dom\\documentfragment::prepend' => 
-  array (
-    0 => 'void',
-    '...nodes=' => 'Dom\\Node|string',
-  ),
-  'dom\\documentfragment::queryselector' => 
-  array (
-    0 => 'Dom\\Element|null',
-    'selectors' => 'string',
-  ),
-  'dom\\documentfragment::queryselectorall' => 
-  array (
-    0 => 'Dom\\NodeList',
-    'selectors' => 'string',
-  ),
-  'dom\\documentfragment::removechild' => 
-  array (
-    0 => 'Dom\\Node',
-    'child' => 'Dom\\Node',
-  ),
-  'dom\\documentfragment::replacechild' => 
-  array (
-    0 => 'Dom\\Node',
-    'node' => 'Dom\\Node',
-    'child' => 'Dom\\Node',
-  ),
-  'dom\\documentfragment::replacechildren' => 
-  array (
-    0 => 'void',
-    '...nodes=' => 'Dom\\Node|string',
-  ),
-  'dom\\documenttype::__sleep' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'dom\\documenttype::__wakeup' => 
-  array (
-    0 => 'void',
-  ),
-  'dom\\documenttype::after' => 
-  array (
-    0 => 'void',
-    '...nodes=' => 'Dom\\Node|string',
-  ),
-  'dom\\documenttype::appendchild' => 
-  array (
-    0 => 'Dom\\Node',
-    'node' => 'Dom\\Node',
-  ),
-  'dom\\documenttype::before' => 
-  array (
-    0 => 'void',
-    '...nodes=' => 'Dom\\Node|string',
-  ),
-  'dom\\documenttype::c14n' => 
-  array (
-    0 => 'false|string',
-    'exclusive=' => 'bool',
-    'withComments=' => 'bool',
-    'xpath=' => 'array<array-key, mixed>|null',
-    'nsPrefixes=' => 'array<array-key, mixed>|null',
-  ),
-  'dom\\documenttype::c14nfile' => 
-  array (
-    0 => 'false|int',
-    'uri' => 'string',
-    'exclusive=' => 'bool',
-    'withComments=' => 'bool',
-    'xpath=' => 'array<array-key, mixed>|null',
-    'nsPrefixes=' => 'array<array-key, mixed>|null',
-  ),
-  'dom\\documenttype::clonenode' => 
-  array (
-    0 => 'Dom\\Node',
-    'deep=' => 'bool',
-  ),
-  'dom\\documenttype::comparedocumentposition' => 
-  array (
-    0 => 'int',
-    'other' => 'Dom\\Node',
-  ),
-  'dom\\documenttype::contains' => 
-  array (
-    0 => 'bool',
-    'other' => 'Dom\\Node|null',
-  ),
-  'dom\\documenttype::getlineno' => 
-  array (
-    0 => 'int',
-  ),
-  'dom\\documenttype::getnodepath' => 
-  array (
-    0 => 'string',
-  ),
-  'dom\\documenttype::getrootnode' => 
-  array (
-    0 => 'Dom\\Node',
-    'options=' => 'array<array-key, mixed>',
-  ),
-  'dom\\documenttype::haschildnodes' => 
-  array (
-    0 => 'bool',
-  ),
-  'dom\\documenttype::insertbefore' => 
-  array (
-    0 => 'Dom\\Node',
-    'node' => 'Dom\\Node',
-    'child' => 'Dom\\Node|null',
-  ),
-  'dom\\documenttype::isdefaultnamespace' => 
-  array (
-    0 => 'bool',
-    'namespace' => 'null|string',
-  ),
-  'dom\\documenttype::isequalnode' => 
-  array (
-    0 => 'bool',
-    'otherNode' => 'Dom\\Node|null',
-  ),
-  'dom\\documenttype::issamenode' => 
-  array (
-    0 => 'bool',
-    'otherNode' => 'Dom\\Node|null',
-  ),
-  'dom\\documenttype::lookupnamespaceuri' => 
-  array (
-    0 => 'null|string',
-    'prefix' => 'null|string',
-  ),
-  'dom\\documenttype::lookupprefix' => 
-  array (
-    0 => 'null|string',
-    'namespace' => 'null|string',
-  ),
-  'dom\\documenttype::normalize' => 
-  array (
-    0 => 'void',
-  ),
-  'dom\\documenttype::remove' => 
-  array (
-    0 => 'void',
-  ),
-  'dom\\documenttype::removechild' => 
-  array (
-    0 => 'Dom\\Node',
-    'child' => 'Dom\\Node',
-  ),
-  'dom\\documenttype::replacechild' => 
-  array (
-    0 => 'Dom\\Node',
-    'node' => 'Dom\\Node',
-    'child' => 'Dom\\Node',
-  ),
-  'dom\\documenttype::replacewith' => 
-  array (
-    0 => 'void',
-    '...nodes=' => 'Dom\\Node|string',
-  ),
-  'dom\\domexception::__construct' => 
-  array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'int',
-    'previous=' => 'Throwable|null',
-  ),
-  'dom\\domexception::__tostring' => 
-  array (
-    0 => 'string',
-  ),
-  'dom\\domexception::__wakeup' => 
-  array (
-    0 => 'string',
-  ),
-  'dom\\domexception::getcode' => 
-  array (
-    0 => 'string',
-  ),
-  'dom\\domexception::getfile' => 
-  array (
-    0 => 'string',
-  ),
-  'dom\\domexception::getline' => 
-  array (
-    0 => 'int',
-  ),
-  'dom\\domexception::getmessage' => 
-  array (
-    0 => 'string',
-  ),
-  'dom\\domexception::getprevious' => 
-  array (
-    0 => 'Throwable|null',
-  ),
-  'dom\\domexception::gettrace' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'dom\\domexception::gettraceasstring' => 
-  array (
-    0 => 'string',
-  ),
-  'dom\\dtdnamednodemap::count' => 
-  array (
-    0 => 'int',
-  ),
-  'dom\\dtdnamednodemap::getiterator' => 
-  array (
-    0 => 'Iterator',
-  ),
-  'dom\\dtdnamednodemap::getnameditem' => 
-  array (
-    0 => 'Dom\\Entity|Dom\\Notation|null',
-    'qualifiedName' => 'string',
-  ),
-  'dom\\dtdnamednodemap::getnameditemns' => 
-  array (
-    0 => 'Dom\\Entity|Dom\\Notation|null',
-    'namespace' => 'null|string',
-    'localName' => 'string',
-  ),
-  'dom\\dtdnamednodemap::item' => 
-  array (
-    0 => 'Dom\\Entity|Dom\\Notation|null',
-    'index' => 'int',
-  ),
-  'dom\\element::__sleep' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'dom\\element::__wakeup' => 
-  array (
-    0 => 'void',
-  ),
-  'dom\\element::after' => 
-  array (
-    0 => 'void',
-    '...nodes=' => 'Dom\\Node|string',
-  ),
-  'dom\\element::append' => 
-  array (
-    0 => 'void',
-    '...nodes=' => 'Dom\\Node|string',
-  ),
-  'dom\\element::appendchild' => 
-  array (
-    0 => 'Dom\\Node',
-    'node' => 'Dom\\Node',
-  ),
-  'dom\\element::before' => 
-  array (
-    0 => 'void',
-    '...nodes=' => 'Dom\\Node|string',
-  ),
-  'dom\\element::c14n' => 
-  array (
-    0 => 'false|string',
-    'exclusive=' => 'bool',
-    'withComments=' => 'bool',
-    'xpath=' => 'array<array-key, mixed>|null',
-    'nsPrefixes=' => 'array<array-key, mixed>|null',
-  ),
-  'dom\\element::c14nfile' => 
-  array (
-    0 => 'false|int',
-    'uri' => 'string',
-    'exclusive=' => 'bool',
-    'withComments=' => 'bool',
-    'xpath=' => 'array<array-key, mixed>|null',
-    'nsPrefixes=' => 'array<array-key, mixed>|null',
-  ),
-  'dom\\element::clonenode' => 
-  array (
-    0 => 'Dom\\Node',
-    'deep=' => 'bool',
-  ),
-  'dom\\element::closest' => 
-  array (
-    0 => 'Dom\\Element|null',
-    'selectors' => 'string',
-  ),
-  'dom\\element::comparedocumentposition' => 
-  array (
-    0 => 'int',
-    'other' => 'Dom\\Node',
-  ),
-  'dom\\element::contains' => 
-  array (
-    0 => 'bool',
-    'other' => 'Dom\\Node|null',
-  ),
-  'dom\\element::getattribute' => 
-  array (
-    0 => 'null|string',
-    'qualifiedName' => 'string',
-  ),
-  'dom\\element::getattributenames' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'dom\\element::getattributenode' => 
-  array (
-    0 => 'Dom\\Attr|null',
-    'qualifiedName' => 'string',
-  ),
-  'dom\\element::getattributenodens' => 
-  array (
-    0 => 'Dom\\Attr|null',
-    'namespace' => 'null|string',
-    'localName' => 'string',
-  ),
-  'dom\\element::getattributens' => 
-  array (
-    0 => 'null|string',
-    'namespace' => 'null|string',
-    'localName' => 'string',
-  ),
-  'dom\\element::getdescendantnamespaces' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'dom\\element::getelementsbytagname' => 
-  array (
-    0 => 'Dom\\HTMLCollection',
-    'qualifiedName' => 'string',
-  ),
-  'dom\\element::getelementsbytagnamens' => 
-  array (
-    0 => 'Dom\\HTMLCollection',
-    'namespace' => 'null|string',
-    'localName' => 'string',
-  ),
-  'dom\\element::getinscopenamespaces' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'dom\\element::getlineno' => 
-  array (
-    0 => 'int',
-  ),
-  'dom\\element::getnodepath' => 
-  array (
-    0 => 'string',
-  ),
-  'dom\\element::getrootnode' => 
-  array (
-    0 => 'Dom\\Node',
-    'options=' => 'array<array-key, mixed>',
-  ),
-  'dom\\element::hasattribute' => 
-  array (
-    0 => 'bool',
-    'qualifiedName' => 'string',
-  ),
-  'dom\\element::hasattributens' => 
-  array (
-    0 => 'bool',
-    'namespace' => 'null|string',
-    'localName' => 'string',
-  ),
-  'dom\\element::hasattributes' => 
-  array (
-    0 => 'bool',
-  ),
-  'dom\\element::haschildnodes' => 
-  array (
-    0 => 'bool',
-  ),
-  'dom\\element::insertadjacentelement' => 
-  array (
-    0 => 'Dom\\Element|null',
-    'where' => 'Dom\\AdjacentPosition',
-    'element' => 'Dom\\Element',
-  ),
-  'dom\\element::insertadjacenttext' => 
-  array (
-    0 => 'void',
-    'where' => 'Dom\\AdjacentPosition',
-    'data' => 'string',
-  ),
-  'dom\\element::insertbefore' => 
-  array (
-    0 => 'Dom\\Node',
-    'node' => 'Dom\\Node',
-    'child' => 'Dom\\Node|null',
-  ),
-  'dom\\element::isdefaultnamespace' => 
-  array (
-    0 => 'bool',
-    'namespace' => 'null|string',
-  ),
-  'dom\\element::isequalnode' => 
-  array (
-    0 => 'bool',
-    'otherNode' => 'Dom\\Node|null',
-  ),
-  'dom\\element::issamenode' => 
-  array (
-    0 => 'bool',
-    'otherNode' => 'Dom\\Node|null',
-  ),
-  'dom\\element::lookupnamespaceuri' => 
-  array (
-    0 => 'null|string',
-    'prefix' => 'null|string',
-  ),
-  'dom\\element::lookupprefix' => 
-  array (
-    0 => 'null|string',
-    'namespace' => 'null|string',
-  ),
-  'dom\\element::matches' => 
-  array (
-    0 => 'bool',
-    'selectors' => 'string',
-  ),
-  'dom\\element::normalize' => 
-  array (
-    0 => 'void',
-  ),
-  'dom\\element::prepend' => 
-  array (
-    0 => 'void',
-    '...nodes=' => 'Dom\\Node|string',
-  ),
-  'dom\\element::queryselector' => 
-  array (
-    0 => 'Dom\\Element|null',
-    'selectors' => 'string',
-  ),
-  'dom\\element::queryselectorall' => 
-  array (
-    0 => 'Dom\\NodeList',
-    'selectors' => 'string',
-  ),
-  'dom\\element::remove' => 
-  array (
-    0 => 'void',
-  ),
-  'dom\\element::removeattribute' => 
-  array (
-    0 => 'void',
-    'qualifiedName' => 'string',
-  ),
-  'dom\\element::removeattributenode' => 
-  array (
-    0 => 'Dom\\Attr',
-    'attr' => 'Dom\\Attr',
-  ),
-  'dom\\element::removeattributens' => 
-  array (
-    0 => 'void',
-    'namespace' => 'null|string',
-    'localName' => 'string',
-  ),
-  'dom\\element::removechild' => 
-  array (
-    0 => 'Dom\\Node',
-    'child' => 'Dom\\Node',
-  ),
-  'dom\\element::rename' => 
-  array (
-    0 => 'void',
-    'namespaceURI' => 'null|string',
-    'qualifiedName' => 'string',
-  ),
-  'dom\\element::replacechild' => 
-  array (
-    0 => 'Dom\\Node',
-    'node' => 'Dom\\Node',
-    'child' => 'Dom\\Node',
-  ),
-  'dom\\element::replacechildren' => 
-  array (
-    0 => 'void',
-    '...nodes=' => 'Dom\\Node|string',
-  ),
-  'dom\\element::replacewith' => 
-  array (
-    0 => 'void',
-    '...nodes=' => 'Dom\\Node|string',
-  ),
-  'dom\\element::setattribute' => 
-  array (
-    0 => 'void',
-    'qualifiedName' => 'string',
-    'value' => 'string',
-  ),
-  'dom\\element::setattributenode' => 
-  array (
-    0 => 'Dom\\Attr|null',
-    'attr' => 'Dom\\Attr',
-  ),
-  'dom\\element::setattributenodens' => 
-  array (
-    0 => 'Dom\\Attr|null',
-    'attr' => 'Dom\\Attr',
-  ),
-  'dom\\element::setattributens' => 
-  array (
-    0 => 'void',
-    'namespace' => 'null|string',
-    'qualifiedName' => 'string',
-    'value' => 'string',
-  ),
-  'dom\\element::setidattribute' => 
-  array (
-    0 => 'void',
-    'qualifiedName' => 'string',
-    'isId' => 'bool',
-  ),
-  'dom\\element::setidattributenode' => 
-  array (
-    0 => 'void',
-    'attr' => 'Dom\\Attr',
-    'isId' => 'bool',
-  ),
-  'dom\\element::setidattributens' => 
-  array (
-    0 => 'void',
-    'namespace' => 'null|string',
-    'qualifiedName' => 'string',
-    'isId' => 'bool',
-  ),
-  'dom\\element::toggleattribute' => 
-  array (
-    0 => 'bool',
-    'qualifiedName' => 'string',
-    'force=' => 'bool|null',
-  ),
-  'dom\\entity::__sleep' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'dom\\entity::__wakeup' => 
-  array (
-    0 => 'void',
-  ),
-  'dom\\entity::appendchild' => 
-  array (
-    0 => 'Dom\\Node',
-    'node' => 'Dom\\Node',
-  ),
-  'dom\\entity::c14n' => 
-  array (
-    0 => 'false|string',
-    'exclusive=' => 'bool',
-    'withComments=' => 'bool',
-    'xpath=' => 'array<array-key, mixed>|null',
-    'nsPrefixes=' => 'array<array-key, mixed>|null',
-  ),
-  'dom\\entity::c14nfile' => 
-  array (
-    0 => 'false|int',
-    'uri' => 'string',
-    'exclusive=' => 'bool',
-    'withComments=' => 'bool',
-    'xpath=' => 'array<array-key, mixed>|null',
-    'nsPrefixes=' => 'array<array-key, mixed>|null',
-  ),
-  'dom\\entity::clonenode' => 
-  array (
-    0 => 'Dom\\Node',
-    'deep=' => 'bool',
-  ),
-  'dom\\entity::comparedocumentposition' => 
-  array (
-    0 => 'int',
-    'other' => 'Dom\\Node',
-  ),
-  'dom\\entity::contains' => 
-  array (
-    0 => 'bool',
-    'other' => 'Dom\\Node|null',
-  ),
-  'dom\\entity::getlineno' => 
-  array (
-    0 => 'int',
-  ),
-  'dom\\entity::getnodepath' => 
-  array (
-    0 => 'string',
-  ),
-  'dom\\entity::getrootnode' => 
-  array (
-    0 => 'Dom\\Node',
-    'options=' => 'array<array-key, mixed>',
-  ),
-  'dom\\entity::haschildnodes' => 
-  array (
-    0 => 'bool',
-  ),
-  'dom\\entity::insertbefore' => 
-  array (
-    0 => 'Dom\\Node',
-    'node' => 'Dom\\Node',
-    'child' => 'Dom\\Node|null',
-  ),
-  'dom\\entity::isdefaultnamespace' => 
-  array (
-    0 => 'bool',
-    'namespace' => 'null|string',
-  ),
-  'dom\\entity::isequalnode' => 
-  array (
-    0 => 'bool',
-    'otherNode' => 'Dom\\Node|null',
-  ),
-  'dom\\entity::issamenode' => 
-  array (
-    0 => 'bool',
-    'otherNode' => 'Dom\\Node|null',
-  ),
-  'dom\\entity::lookupnamespaceuri' => 
-  array (
-    0 => 'null|string',
-    'prefix' => 'null|string',
-  ),
-  'dom\\entity::lookupprefix' => 
-  array (
-    0 => 'null|string',
-    'namespace' => 'null|string',
-  ),
-  'dom\\entity::normalize' => 
-  array (
-    0 => 'void',
-  ),
-  'dom\\entity::removechild' => 
-  array (
-    0 => 'Dom\\Node',
-    'child' => 'Dom\\Node',
-  ),
-  'dom\\entity::replacechild' => 
-  array (
-    0 => 'Dom\\Node',
-    'node' => 'Dom\\Node',
-    'child' => 'Dom\\Node',
-  ),
-  'dom\\entityreference::__sleep' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'dom\\entityreference::__wakeup' => 
-  array (
-    0 => 'void',
-  ),
-  'dom\\entityreference::appendchild' => 
-  array (
-    0 => 'Dom\\Node',
-    'node' => 'Dom\\Node',
-  ),
-  'dom\\entityreference::c14n' => 
-  array (
-    0 => 'false|string',
-    'exclusive=' => 'bool',
-    'withComments=' => 'bool',
-    'xpath=' => 'array<array-key, mixed>|null',
-    'nsPrefixes=' => 'array<array-key, mixed>|null',
-  ),
-  'dom\\entityreference::c14nfile' => 
-  array (
-    0 => 'false|int',
-    'uri' => 'string',
-    'exclusive=' => 'bool',
-    'withComments=' => 'bool',
-    'xpath=' => 'array<array-key, mixed>|null',
-    'nsPrefixes=' => 'array<array-key, mixed>|null',
-  ),
-  'dom\\entityreference::clonenode' => 
-  array (
-    0 => 'Dom\\Node',
-    'deep=' => 'bool',
-  ),
-  'dom\\entityreference::comparedocumentposition' => 
-  array (
-    0 => 'int',
-    'other' => 'Dom\\Node',
-  ),
-  'dom\\entityreference::contains' => 
-  array (
-    0 => 'bool',
-    'other' => 'Dom\\Node|null',
-  ),
-  'dom\\entityreference::getlineno' => 
-  array (
-    0 => 'int',
-  ),
-  'dom\\entityreference::getnodepath' => 
-  array (
-    0 => 'string',
-  ),
-  'dom\\entityreference::getrootnode' => 
-  array (
-    0 => 'Dom\\Node',
-    'options=' => 'array<array-key, mixed>',
-  ),
-  'dom\\entityreference::haschildnodes' => 
-  array (
-    0 => 'bool',
-  ),
-  'dom\\entityreference::insertbefore' => 
-  array (
-    0 => 'Dom\\Node',
-    'node' => 'Dom\\Node',
-    'child' => 'Dom\\Node|null',
-  ),
-  'dom\\entityreference::isdefaultnamespace' => 
-  array (
-    0 => 'bool',
-    'namespace' => 'null|string',
-  ),
-  'dom\\entityreference::isequalnode' => 
-  array (
-    0 => 'bool',
-    'otherNode' => 'Dom\\Node|null',
-  ),
-  'dom\\entityreference::issamenode' => 
-  array (
-    0 => 'bool',
-    'otherNode' => 'Dom\\Node|null',
-  ),
-  'dom\\entityreference::lookupnamespaceuri' => 
-  array (
-    0 => 'null|string',
-    'prefix' => 'null|string',
-  ),
-  'dom\\entityreference::lookupprefix' => 
-  array (
-    0 => 'null|string',
-    'namespace' => 'null|string',
-  ),
-  'dom\\entityreference::normalize' => 
-  array (
-    0 => 'void',
-  ),
-  'dom\\entityreference::removechild' => 
-  array (
-    0 => 'Dom\\Node',
-    'child' => 'Dom\\Node',
-  ),
-  'dom\\entityreference::replacechild' => 
-  array (
-    0 => 'Dom\\Node',
-    'node' => 'Dom\\Node',
-    'child' => 'Dom\\Node',
-  ),
-  'dom\\htmlcollection::count' => 
-  array (
-    0 => 'int',
-  ),
-  'dom\\htmlcollection::getiterator' => 
-  array (
-    0 => 'Iterator',
-  ),
-  'dom\\htmlcollection::item' => 
-  array (
-    0 => 'Dom\\Element|null',
-    'index' => 'int',
-  ),
-  'dom\\htmlcollection::nameditem' => 
-  array (
-    0 => 'Dom\\Element|null',
-    'key' => 'string',
-  ),
-  'dom\\htmldocument::__sleep' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'dom\\htmldocument::__wakeup' => 
-  array (
-    0 => 'void',
-  ),
-  'dom\\htmldocument::adoptnode' => 
-  array (
-    0 => 'Dom\\Node',
-    'node' => 'Dom\\Node',
-  ),
-  'dom\\htmldocument::append' => 
-  array (
-    0 => 'void',
-    '...nodes=' => 'Dom\\Node|string',
-  ),
-  'dom\\htmldocument::appendchild' => 
-  array (
-    0 => 'Dom\\Node',
-    'node' => 'Dom\\Node',
-  ),
-  'dom\\htmldocument::c14n' => 
-  array (
-    0 => 'false|string',
-    'exclusive=' => 'bool',
-    'withComments=' => 'bool',
-    'xpath=' => 'array<array-key, mixed>|null',
-    'nsPrefixes=' => 'array<array-key, mixed>|null',
-  ),
-  'dom\\htmldocument::c14nfile' => 
-  array (
-    0 => 'false|int',
-    'uri' => 'string',
-    'exclusive=' => 'bool',
-    'withComments=' => 'bool',
-    'xpath=' => 'array<array-key, mixed>|null',
-    'nsPrefixes=' => 'array<array-key, mixed>|null',
-  ),
-  'dom\\htmldocument::clonenode' => 
-  array (
-    0 => 'Dom\\Node',
-    'deep=' => 'bool',
-  ),
-  'dom\\htmldocument::comparedocumentposition' => 
-  array (
-    0 => 'int',
-    'other' => 'Dom\\Node',
-  ),
-  'dom\\htmldocument::contains' => 
-  array (
-    0 => 'bool',
-    'other' => 'Dom\\Node|null',
-  ),
-  'dom\\htmldocument::createattribute' => 
-  array (
-    0 => 'Dom\\Attr',
-    'localName' => 'string',
-  ),
-  'dom\\htmldocument::createattributens' => 
-  array (
-    0 => 'Dom\\Attr',
-    'namespace' => 'null|string',
-    'qualifiedName' => 'string',
-  ),
-  'dom\\htmldocument::createcdatasection' => 
-  array (
-    0 => 'Dom\\CDATASection',
-    'data' => 'string',
-  ),
-  'dom\\htmldocument::createcomment' => 
-  array (
-    0 => 'Dom\\Comment',
-    'data' => 'string',
-  ),
-  'dom\\htmldocument::createdocumentfragment' => 
-  array (
-    0 => 'Dom\\DocumentFragment',
-  ),
-  'dom\\htmldocument::createelement' => 
-  array (
-    0 => 'Dom\\Element',
-    'localName' => 'string',
-  ),
-  'dom\\htmldocument::createelementns' => 
-  array (
-    0 => 'Dom\\Element',
-    'namespace' => 'null|string',
-    'qualifiedName' => 'string',
-  ),
-  'dom\\htmldocument::createempty' => 
-  array (
-    0 => 'Dom\\HTMLDocument',
-    'encoding=' => 'string',
-  ),
-  'dom\\htmldocument::createfromfile' => 
-  array (
-    0 => 'Dom\\HTMLDocument',
-    'path' => 'string',
-    'options=' => 'int',
-    'overrideEncoding=' => 'null|string',
-  ),
-  'dom\\htmldocument::createfromstring' => 
-  array (
-    0 => 'Dom\\HTMLDocument',
-    'source' => 'string',
-    'options=' => 'int',
-    'overrideEncoding=' => 'null|string',
-  ),
-  'dom\\htmldocument::createprocessinginstruction' => 
-  array (
-    0 => 'Dom\\ProcessingInstruction',
-    'target' => 'string',
-    'data' => 'string',
-  ),
-  'dom\\htmldocument::createtextnode' => 
-  array (
-    0 => 'Dom\\Text',
-    'data' => 'string',
-  ),
-  'dom\\htmldocument::getelementbyid' => 
-  array (
-    0 => 'Dom\\Element|null',
-    'elementId' => 'string',
-  ),
-  'dom\\htmldocument::getelementsbytagname' => 
-  array (
-    0 => 'Dom\\HTMLCollection',
-    'qualifiedName' => 'string',
-  ),
-  'dom\\htmldocument::getelementsbytagnamens' => 
-  array (
-    0 => 'Dom\\HTMLCollection',
-    'namespace' => 'null|string',
-    'localName' => 'string',
-  ),
-  'dom\\htmldocument::getlineno' => 
-  array (
-    0 => 'int',
-  ),
-  'dom\\htmldocument::getnodepath' => 
-  array (
-    0 => 'string',
-  ),
-  'dom\\htmldocument::getrootnode' => 
-  array (
-    0 => 'Dom\\Node',
-    'options=' => 'array<array-key, mixed>',
-  ),
-  'dom\\htmldocument::haschildnodes' => 
-  array (
-    0 => 'bool',
-  ),
-  'dom\\htmldocument::importlegacynode' => 
-  array (
-    0 => 'Dom\\Node',
-    'node' => 'DOMNode',
-    'deep=' => 'bool',
-  ),
-  'dom\\htmldocument::importnode' => 
-  array (
-    0 => 'Dom\\Node',
-    'node' => 'Dom\\Node|null',
-    'deep=' => 'bool',
-  ),
-  'dom\\htmldocument::insertbefore' => 
-  array (
-    0 => 'Dom\\Node',
-    'node' => 'Dom\\Node',
-    'child' => 'Dom\\Node|null',
-  ),
-  'dom\\htmldocument::isdefaultnamespace' => 
-  array (
-    0 => 'bool',
-    'namespace' => 'null|string',
-  ),
-  'dom\\htmldocument::isequalnode' => 
-  array (
-    0 => 'bool',
-    'otherNode' => 'Dom\\Node|null',
-  ),
-  'dom\\htmldocument::issamenode' => 
-  array (
-    0 => 'bool',
-    'otherNode' => 'Dom\\Node|null',
-  ),
-  'dom\\htmldocument::lookupnamespaceuri' => 
-  array (
-    0 => 'null|string',
-    'prefix' => 'null|string',
-  ),
-  'dom\\htmldocument::lookupprefix' => 
-  array (
-    0 => 'null|string',
-    'namespace' => 'null|string',
-  ),
-  'dom\\htmldocument::normalize' => 
-  array (
-    0 => 'void',
-  ),
-  'dom\\htmldocument::prepend' => 
-  array (
-    0 => 'void',
-    '...nodes=' => 'Dom\\Node|string',
-  ),
-  'dom\\htmldocument::queryselector' => 
-  array (
-    0 => 'Dom\\Element|null',
-    'selectors' => 'string',
-  ),
-  'dom\\htmldocument::queryselectorall' => 
-  array (
-    0 => 'Dom\\NodeList',
-    'selectors' => 'string',
-  ),
-  'dom\\htmldocument::registernodeclass' => 
-  array (
-    0 => 'void',
-    'baseClass' => 'string',
-    'extendedClass' => 'null|string',
-  ),
-  'dom\\htmldocument::relaxngvalidate' => 
-  array (
-    0 => 'bool',
-    'filename' => 'string',
-  ),
-  'dom\\htmldocument::relaxngvalidatesource' => 
-  array (
-    0 => 'bool',
-    'source' => 'string',
-  ),
-  'dom\\htmldocument::removechild' => 
-  array (
-    0 => 'Dom\\Node',
-    'child' => 'Dom\\Node',
-  ),
-  'dom\\htmldocument::replacechild' => 
-  array (
-    0 => 'Dom\\Node',
-    'node' => 'Dom\\Node',
-    'child' => 'Dom\\Node',
-  ),
-  'dom\\htmldocument::replacechildren' => 
-  array (
-    0 => 'void',
-    '...nodes=' => 'Dom\\Node|string',
-  ),
-  'dom\\htmldocument::savehtml' => 
-  array (
-    0 => 'string',
-    'node=' => 'Dom\\Node|null',
-  ),
-  'dom\\htmldocument::savehtmlfile' => 
-  array (
-    0 => 'false|int',
-    'filename' => 'string',
-  ),
-  'dom\\htmldocument::savexml' => 
-  array (
-    0 => 'false|string',
-    'node=' => 'Dom\\Node|null',
-    'options=' => 'int',
-  ),
-  'dom\\htmldocument::savexmlfile' => 
-  array (
-    0 => 'false|int',
-    'filename' => 'string',
-    'options=' => 'int',
-  ),
-  'dom\\htmldocument::schemavalidate' => 
-  array (
-    0 => 'bool',
-    'filename' => 'string',
-    'flags=' => 'int',
-  ),
-  'dom\\htmldocument::schemavalidatesource' => 
-  array (
-    0 => 'bool',
-    'source' => 'string',
-    'flags=' => 'int',
-  ),
-  'dom\\htmlelement::__sleep' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'dom\\htmlelement::__wakeup' => 
-  array (
-    0 => 'void',
-  ),
-  'dom\\htmlelement::after' => 
-  array (
-    0 => 'void',
-    '...nodes=' => 'Dom\\Node|string',
-  ),
-  'dom\\htmlelement::append' => 
-  array (
-    0 => 'void',
-    '...nodes=' => 'Dom\\Node|string',
-  ),
-  'dom\\htmlelement::appendchild' => 
-  array (
-    0 => 'Dom\\Node',
-    'node' => 'Dom\\Node',
-  ),
-  'dom\\htmlelement::before' => 
-  array (
-    0 => 'void',
-    '...nodes=' => 'Dom\\Node|string',
-  ),
-  'dom\\htmlelement::c14n' => 
-  array (
-    0 => 'false|string',
-    'exclusive=' => 'bool',
-    'withComments=' => 'bool',
-    'xpath=' => 'array<array-key, mixed>|null',
-    'nsPrefixes=' => 'array<array-key, mixed>|null',
-  ),
-  'dom\\htmlelement::c14nfile' => 
-  array (
-    0 => 'false|int',
-    'uri' => 'string',
-    'exclusive=' => 'bool',
-    'withComments=' => 'bool',
-    'xpath=' => 'array<array-key, mixed>|null',
-    'nsPrefixes=' => 'array<array-key, mixed>|null',
-  ),
-  'dom\\htmlelement::clonenode' => 
-  array (
-    0 => 'Dom\\Node',
-    'deep=' => 'bool',
-  ),
-  'dom\\htmlelement::closest' => 
-  array (
-    0 => 'Dom\\Element|null',
-    'selectors' => 'string',
-  ),
-  'dom\\htmlelement::comparedocumentposition' => 
-  array (
-    0 => 'int',
-    'other' => 'Dom\\Node',
-  ),
-  'dom\\htmlelement::contains' => 
-  array (
-    0 => 'bool',
-    'other' => 'Dom\\Node|null',
-  ),
-  'dom\\htmlelement::getattribute' => 
-  array (
-    0 => 'null|string',
-    'qualifiedName' => 'string',
-  ),
-  'dom\\htmlelement::getattributenames' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'dom\\htmlelement::getattributenode' => 
-  array (
-    0 => 'Dom\\Attr|null',
-    'qualifiedName' => 'string',
-  ),
-  'dom\\htmlelement::getattributenodens' => 
-  array (
-    0 => 'Dom\\Attr|null',
-    'namespace' => 'null|string',
-    'localName' => 'string',
-  ),
-  'dom\\htmlelement::getattributens' => 
-  array (
-    0 => 'null|string',
-    'namespace' => 'null|string',
-    'localName' => 'string',
-  ),
-  'dom\\htmlelement::getdescendantnamespaces' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'dom\\htmlelement::getelementsbytagname' => 
-  array (
-    0 => 'Dom\\HTMLCollection',
-    'qualifiedName' => 'string',
-  ),
-  'dom\\htmlelement::getelementsbytagnamens' => 
-  array (
-    0 => 'Dom\\HTMLCollection',
-    'namespace' => 'null|string',
-    'localName' => 'string',
-  ),
-  'dom\\htmlelement::getinscopenamespaces' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'dom\\htmlelement::getlineno' => 
-  array (
-    0 => 'int',
-  ),
-  'dom\\htmlelement::getnodepath' => 
-  array (
-    0 => 'string',
-  ),
-  'dom\\htmlelement::getrootnode' => 
-  array (
-    0 => 'Dom\\Node',
-    'options=' => 'array<array-key, mixed>',
-  ),
-  'dom\\htmlelement::hasattribute' => 
-  array (
-    0 => 'bool',
-    'qualifiedName' => 'string',
-  ),
-  'dom\\htmlelement::hasattributens' => 
-  array (
-    0 => 'bool',
-    'namespace' => 'null|string',
-    'localName' => 'string',
-  ),
-  'dom\\htmlelement::hasattributes' => 
-  array (
-    0 => 'bool',
-  ),
-  'dom\\htmlelement::haschildnodes' => 
-  array (
-    0 => 'bool',
-  ),
-  'dom\\htmlelement::insertadjacentelement' => 
-  array (
-    0 => 'Dom\\Element|null',
-    'where' => 'Dom\\AdjacentPosition',
-    'element' => 'Dom\\Element',
-  ),
-  'dom\\htmlelement::insertadjacenttext' => 
-  array (
-    0 => 'void',
-    'where' => 'Dom\\AdjacentPosition',
-    'data' => 'string',
-  ),
-  'dom\\htmlelement::insertbefore' => 
-  array (
-    0 => 'Dom\\Node',
-    'node' => 'Dom\\Node',
-    'child' => 'Dom\\Node|null',
-  ),
-  'dom\\htmlelement::isdefaultnamespace' => 
-  array (
-    0 => 'bool',
-    'namespace' => 'null|string',
-  ),
-  'dom\\htmlelement::isequalnode' => 
-  array (
-    0 => 'bool',
-    'otherNode' => 'Dom\\Node|null',
-  ),
-  'dom\\htmlelement::issamenode' => 
-  array (
-    0 => 'bool',
-    'otherNode' => 'Dom\\Node|null',
-  ),
-  'dom\\htmlelement::lookupnamespaceuri' => 
-  array (
-    0 => 'null|string',
-    'prefix' => 'null|string',
-  ),
-  'dom\\htmlelement::lookupprefix' => 
-  array (
-    0 => 'null|string',
-    'namespace' => 'null|string',
-  ),
-  'dom\\htmlelement::matches' => 
-  array (
-    0 => 'bool',
-    'selectors' => 'string',
-  ),
-  'dom\\htmlelement::normalize' => 
-  array (
-    0 => 'void',
-  ),
-  'dom\\htmlelement::prepend' => 
-  array (
-    0 => 'void',
-    '...nodes=' => 'Dom\\Node|string',
-  ),
-  'dom\\htmlelement::queryselector' => 
-  array (
-    0 => 'Dom\\Element|null',
-    'selectors' => 'string',
-  ),
-  'dom\\htmlelement::queryselectorall' => 
-  array (
-    0 => 'Dom\\NodeList',
-    'selectors' => 'string',
-  ),
-  'dom\\htmlelement::remove' => 
-  array (
-    0 => 'void',
-  ),
-  'dom\\htmlelement::removeattribute' => 
-  array (
-    0 => 'void',
-    'qualifiedName' => 'string',
-  ),
-  'dom\\htmlelement::removeattributenode' => 
-  array (
-    0 => 'Dom\\Attr',
-    'attr' => 'Dom\\Attr',
-  ),
-  'dom\\htmlelement::removeattributens' => 
-  array (
-    0 => 'void',
-    'namespace' => 'null|string',
-    'localName' => 'string',
-  ),
-  'dom\\htmlelement::removechild' => 
-  array (
-    0 => 'Dom\\Node',
-    'child' => 'Dom\\Node',
-  ),
-  'dom\\htmlelement::rename' => 
-  array (
-    0 => 'void',
-    'namespaceURI' => 'null|string',
-    'qualifiedName' => 'string',
-  ),
-  'dom\\htmlelement::replacechild' => 
-  array (
-    0 => 'Dom\\Node',
-    'node' => 'Dom\\Node',
-    'child' => 'Dom\\Node',
-  ),
-  'dom\\htmlelement::replacechildren' => 
-  array (
-    0 => 'void',
-    '...nodes=' => 'Dom\\Node|string',
-  ),
-  'dom\\htmlelement::replacewith' => 
-  array (
-    0 => 'void',
-    '...nodes=' => 'Dom\\Node|string',
-  ),
-  'dom\\htmlelement::setattribute' => 
-  array (
-    0 => 'void',
-    'qualifiedName' => 'string',
-    'value' => 'string',
-  ),
-  'dom\\htmlelement::setattributenode' => 
-  array (
-    0 => 'Dom\\Attr|null',
-    'attr' => 'Dom\\Attr',
-  ),
-  'dom\\htmlelement::setattributenodens' => 
-  array (
-    0 => 'Dom\\Attr|null',
-    'attr' => 'Dom\\Attr',
-  ),
-  'dom\\htmlelement::setattributens' => 
-  array (
-    0 => 'void',
-    'namespace' => 'null|string',
-    'qualifiedName' => 'string',
-    'value' => 'string',
-  ),
-  'dom\\htmlelement::setidattribute' => 
-  array (
-    0 => 'void',
-    'qualifiedName' => 'string',
-    'isId' => 'bool',
-  ),
-  'dom\\htmlelement::setidattributenode' => 
-  array (
-    0 => 'void',
-    'attr' => 'Dom\\Attr',
-    'isId' => 'bool',
-  ),
-  'dom\\htmlelement::setidattributens' => 
-  array (
-    0 => 'void',
-    'namespace' => 'null|string',
-    'qualifiedName' => 'string',
-    'isId' => 'bool',
-  ),
-  'dom\\htmlelement::toggleattribute' => 
-  array (
-    0 => 'bool',
-    'qualifiedName' => 'string',
-    'force=' => 'bool|null',
-  ),
-  'dom\\implementation::createdocument' => 
-  array (
-    0 => 'Dom\\XMLDocument',
-    'namespace' => 'null|string',
-    'qualifiedName' => 'string',
-    'doctype=' => 'Dom\\DocumentType|null',
-  ),
-  'dom\\implementation::createdocumenttype' => 
-  array (
-    0 => 'Dom\\DocumentType',
-    'qualifiedName' => 'string',
-    'publicId' => 'string',
-    'systemId' => 'string',
-  ),
-  'dom\\implementation::createhtmldocument' => 
-  array (
-    0 => 'Dom\\HTMLDocument',
-    'title=' => 'null|string',
-  ),
-  'dom\\import_simplexml' => 
-  array (
-    0 => 'Dom\\Attr|Dom\\Element',
-    'node' => 'object',
-  ),
-  'dom\\namednodemap::count' => 
-  array (
-    0 => 'int',
-  ),
-  'dom\\namednodemap::getiterator' => 
-  array (
-    0 => 'Iterator',
-  ),
-  'dom\\namednodemap::getnameditem' => 
-  array (
-    0 => 'Dom\\Attr|null',
-    'qualifiedName' => 'string',
-  ),
-  'dom\\namednodemap::getnameditemns' => 
-  array (
-    0 => 'Dom\\Attr|null',
-    'namespace' => 'null|string',
-    'localName' => 'string',
-  ),
-  'dom\\namednodemap::item' => 
-  array (
-    0 => 'Dom\\Attr|null',
-    'index' => 'int',
-  ),
-  'dom\\namespaceinfo::__construct' => 
-  array (
-    0 => 'string',
-  ),
-  'dom\\node::__construct' => 
-  array (
-    0 => 'string',
-  ),
-  'dom\\node::__sleep' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'dom\\node::__wakeup' => 
-  array (
-    0 => 'void',
-  ),
-  'dom\\node::appendchild' => 
-  array (
-    0 => 'Dom\\Node',
-    'node' => 'Dom\\Node',
-  ),
-  'dom\\node::c14n' => 
-  array (
-    0 => 'false|string',
-    'exclusive=' => 'bool',
-    'withComments=' => 'bool',
-    'xpath=' => 'array<array-key, mixed>|null',
-    'nsPrefixes=' => 'array<array-key, mixed>|null',
-  ),
-  'dom\\node::c14nfile' => 
-  array (
-    0 => 'false|int',
-    'uri' => 'string',
-    'exclusive=' => 'bool',
-    'withComments=' => 'bool',
-    'xpath=' => 'array<array-key, mixed>|null',
-    'nsPrefixes=' => 'array<array-key, mixed>|null',
-  ),
-  'dom\\node::clonenode' => 
-  array (
-    0 => 'Dom\\Node',
-    'deep=' => 'bool',
-  ),
-  'dom\\node::comparedocumentposition' => 
-  array (
-    0 => 'int',
-    'other' => 'Dom\\Node',
-  ),
-  'dom\\node::contains' => 
-  array (
-    0 => 'bool',
-    'other' => 'Dom\\Node|null',
-  ),
-  'dom\\node::getlineno' => 
-  array (
-    0 => 'int',
-  ),
-  'dom\\node::getnodepath' => 
-  array (
-    0 => 'string',
-  ),
-  'dom\\node::getrootnode' => 
-  array (
-    0 => 'Dom\\Node',
-    'options=' => 'array<array-key, mixed>',
-  ),
-  'dom\\node::haschildnodes' => 
-  array (
-    0 => 'bool',
-  ),
-  'dom\\node::insertbefore' => 
-  array (
-    0 => 'Dom\\Node',
-    'node' => 'Dom\\Node',
-    'child' => 'Dom\\Node|null',
-  ),
-  'dom\\node::isdefaultnamespace' => 
-  array (
-    0 => 'bool',
-    'namespace' => 'null|string',
-  ),
-  'dom\\node::isequalnode' => 
-  array (
-    0 => 'bool',
-    'otherNode' => 'Dom\\Node|null',
-  ),
-  'dom\\node::issamenode' => 
-  array (
-    0 => 'bool',
-    'otherNode' => 'Dom\\Node|null',
-  ),
-  'dom\\node::lookupnamespaceuri' => 
-  array (
-    0 => 'null|string',
-    'prefix' => 'null|string',
-  ),
-  'dom\\node::lookupprefix' => 
-  array (
-    0 => 'null|string',
-    'namespace' => 'null|string',
-  ),
-  'dom\\node::normalize' => 
-  array (
-    0 => 'void',
-  ),
-  'dom\\node::removechild' => 
-  array (
-    0 => 'Dom\\Node',
-    'child' => 'Dom\\Node',
-  ),
-  'dom\\node::replacechild' => 
-  array (
-    0 => 'Dom\\Node',
-    'node' => 'Dom\\Node',
-    'child' => 'Dom\\Node',
-  ),
-  'dom\\nodelist::count' => 
-  array (
-    0 => 'int',
-  ),
-  'dom\\nodelist::getiterator' => 
-  array (
-    0 => 'Iterator',
-  ),
-  'dom\\nodelist::item' => 
-  array (
-    0 => 'Dom\\Node|null',
-    'index' => 'int',
-  ),
-  'dom\\notation::__sleep' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'dom\\notation::__wakeup' => 
-  array (
-    0 => 'void',
-  ),
-  'dom\\notation::appendchild' => 
-  array (
-    0 => 'Dom\\Node',
-    'node' => 'Dom\\Node',
-  ),
-  'dom\\notation::c14n' => 
-  array (
-    0 => 'false|string',
-    'exclusive=' => 'bool',
-    'withComments=' => 'bool',
-    'xpath=' => 'array<array-key, mixed>|null',
-    'nsPrefixes=' => 'array<array-key, mixed>|null',
-  ),
-  'dom\\notation::c14nfile' => 
-  array (
-    0 => 'false|int',
-    'uri' => 'string',
-    'exclusive=' => 'bool',
-    'withComments=' => 'bool',
-    'xpath=' => 'array<array-key, mixed>|null',
-    'nsPrefixes=' => 'array<array-key, mixed>|null',
-  ),
-  'dom\\notation::clonenode' => 
-  array (
-    0 => 'Dom\\Node',
-    'deep=' => 'bool',
-  ),
-  'dom\\notation::comparedocumentposition' => 
-  array (
-    0 => 'int',
-    'other' => 'Dom\\Node',
-  ),
-  'dom\\notation::contains' => 
-  array (
-    0 => 'bool',
-    'other' => 'Dom\\Node|null',
-  ),
-  'dom\\notation::getlineno' => 
-  array (
-    0 => 'int',
-  ),
-  'dom\\notation::getnodepath' => 
-  array (
-    0 => 'string',
-  ),
-  'dom\\notation::getrootnode' => 
-  array (
-    0 => 'Dom\\Node',
-    'options=' => 'array<array-key, mixed>',
-  ),
-  'dom\\notation::haschildnodes' => 
-  array (
-    0 => 'bool',
-  ),
-  'dom\\notation::insertbefore' => 
-  array (
-    0 => 'Dom\\Node',
-    'node' => 'Dom\\Node',
-    'child' => 'Dom\\Node|null',
-  ),
-  'dom\\notation::isdefaultnamespace' => 
-  array (
-    0 => 'bool',
-    'namespace' => 'null|string',
-  ),
-  'dom\\notation::isequalnode' => 
-  array (
-    0 => 'bool',
-    'otherNode' => 'Dom\\Node|null',
-  ),
-  'dom\\notation::issamenode' => 
-  array (
-    0 => 'bool',
-    'otherNode' => 'Dom\\Node|null',
-  ),
-  'dom\\notation::lookupnamespaceuri' => 
-  array (
-    0 => 'null|string',
-    'prefix' => 'null|string',
-  ),
-  'dom\\notation::lookupprefix' => 
-  array (
-    0 => 'null|string',
-    'namespace' => 'null|string',
-  ),
-  'dom\\notation::normalize' => 
-  array (
-    0 => 'void',
-  ),
-  'dom\\notation::removechild' => 
-  array (
-    0 => 'Dom\\Node',
-    'child' => 'Dom\\Node',
-  ),
-  'dom\\notation::replacechild' => 
-  array (
-    0 => 'Dom\\Node',
-    'node' => 'Dom\\Node',
-    'child' => 'Dom\\Node',
-  ),
-  'dom\\processinginstruction::__sleep' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'dom\\processinginstruction::__wakeup' => 
-  array (
-    0 => 'void',
-  ),
-  'dom\\processinginstruction::after' => 
-  array (
-    0 => 'void',
-    '...nodes=' => 'Dom\\Node|string',
-  ),
-  'dom\\processinginstruction::appendchild' => 
-  array (
-    0 => 'Dom\\Node',
-    'node' => 'Dom\\Node',
-  ),
-  'dom\\processinginstruction::appenddata' => 
-  array (
-    0 => 'void',
-    'data' => 'string',
-  ),
-  'dom\\processinginstruction::before' => 
-  array (
-    0 => 'void',
-    '...nodes=' => 'Dom\\Node|string',
-  ),
-  'dom\\processinginstruction::c14n' => 
-  array (
-    0 => 'false|string',
-    'exclusive=' => 'bool',
-    'withComments=' => 'bool',
-    'xpath=' => 'array<array-key, mixed>|null',
-    'nsPrefixes=' => 'array<array-key, mixed>|null',
-  ),
-  'dom\\processinginstruction::c14nfile' => 
-  array (
-    0 => 'false|int',
-    'uri' => 'string',
-    'exclusive=' => 'bool',
-    'withComments=' => 'bool',
-    'xpath=' => 'array<array-key, mixed>|null',
-    'nsPrefixes=' => 'array<array-key, mixed>|null',
-  ),
-  'dom\\processinginstruction::clonenode' => 
-  array (
-    0 => 'Dom\\Node',
-    'deep=' => 'bool',
-  ),
-  'dom\\processinginstruction::comparedocumentposition' => 
-  array (
-    0 => 'int',
-    'other' => 'Dom\\Node',
-  ),
-  'dom\\processinginstruction::contains' => 
-  array (
-    0 => 'bool',
-    'other' => 'Dom\\Node|null',
-  ),
-  'dom\\processinginstruction::deletedata' => 
-  array (
-    0 => 'void',
-    'offset' => 'int',
-    'count' => 'int',
-  ),
-  'dom\\processinginstruction::getlineno' => 
-  array (
-    0 => 'int',
-  ),
-  'dom\\processinginstruction::getnodepath' => 
-  array (
-    0 => 'string',
-  ),
-  'dom\\processinginstruction::getrootnode' => 
-  array (
-    0 => 'Dom\\Node',
-    'options=' => 'array<array-key, mixed>',
-  ),
-  'dom\\processinginstruction::haschildnodes' => 
-  array (
-    0 => 'bool',
-  ),
-  'dom\\processinginstruction::insertbefore' => 
-  array (
-    0 => 'Dom\\Node',
-    'node' => 'Dom\\Node',
-    'child' => 'Dom\\Node|null',
-  ),
-  'dom\\processinginstruction::insertdata' => 
-  array (
-    0 => 'void',
-    'offset' => 'int',
-    'data' => 'string',
-  ),
-  'dom\\processinginstruction::isdefaultnamespace' => 
-  array (
-    0 => 'bool',
-    'namespace' => 'null|string',
-  ),
-  'dom\\processinginstruction::isequalnode' => 
-  array (
-    0 => 'bool',
-    'otherNode' => 'Dom\\Node|null',
-  ),
-  'dom\\processinginstruction::issamenode' => 
-  array (
-    0 => 'bool',
-    'otherNode' => 'Dom\\Node|null',
-  ),
-  'dom\\processinginstruction::lookupnamespaceuri' => 
-  array (
-    0 => 'null|string',
-    'prefix' => 'null|string',
-  ),
-  'dom\\processinginstruction::lookupprefix' => 
-  array (
-    0 => 'null|string',
-    'namespace' => 'null|string',
-  ),
-  'dom\\processinginstruction::normalize' => 
-  array (
-    0 => 'void',
-  ),
-  'dom\\processinginstruction::remove' => 
-  array (
-    0 => 'void',
-  ),
-  'dom\\processinginstruction::removechild' => 
-  array (
-    0 => 'Dom\\Node',
-    'child' => 'Dom\\Node',
-  ),
-  'dom\\processinginstruction::replacechild' => 
-  array (
-    0 => 'Dom\\Node',
-    'node' => 'Dom\\Node',
-    'child' => 'Dom\\Node',
-  ),
-  'dom\\processinginstruction::replacedata' => 
-  array (
-    0 => 'void',
-    'offset' => 'int',
-    'count' => 'int',
-    'data' => 'string',
-  ),
-  'dom\\processinginstruction::replacewith' => 
-  array (
-    0 => 'void',
-    '...nodes=' => 'Dom\\Node|string',
-  ),
-  'dom\\processinginstruction::substringdata' => 
-  array (
-    0 => 'string',
-    'offset' => 'int',
-    'count' => 'int',
-  ),
-  'dom\\text::__sleep' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'dom\\text::__wakeup' => 
-  array (
-    0 => 'void',
-  ),
-  'dom\\text::after' => 
-  array (
-    0 => 'void',
-    '...nodes=' => 'Dom\\Node|string',
-  ),
-  'dom\\text::appendchild' => 
-  array (
-    0 => 'Dom\\Node',
-    'node' => 'Dom\\Node',
-  ),
-  'dom\\text::appenddata' => 
-  array (
-    0 => 'void',
-    'data' => 'string',
-  ),
-  'dom\\text::before' => 
-  array (
-    0 => 'void',
-    '...nodes=' => 'Dom\\Node|string',
-  ),
-  'dom\\text::c14n' => 
-  array (
-    0 => 'false|string',
-    'exclusive=' => 'bool',
-    'withComments=' => 'bool',
-    'xpath=' => 'array<array-key, mixed>|null',
-    'nsPrefixes=' => 'array<array-key, mixed>|null',
-  ),
-  'dom\\text::c14nfile' => 
-  array (
-    0 => 'false|int',
-    'uri' => 'string',
-    'exclusive=' => 'bool',
-    'withComments=' => 'bool',
-    'xpath=' => 'array<array-key, mixed>|null',
-    'nsPrefixes=' => 'array<array-key, mixed>|null',
-  ),
-  'dom\\text::clonenode' => 
-  array (
-    0 => 'Dom\\Node',
-    'deep=' => 'bool',
-  ),
-  'dom\\text::comparedocumentposition' => 
-  array (
-    0 => 'int',
-    'other' => 'Dom\\Node',
-  ),
-  'dom\\text::contains' => 
-  array (
-    0 => 'bool',
-    'other' => 'Dom\\Node|null',
-  ),
-  'dom\\text::deletedata' => 
-  array (
-    0 => 'void',
-    'offset' => 'int',
-    'count' => 'int',
-  ),
-  'dom\\text::getlineno' => 
-  array (
-    0 => 'int',
-  ),
-  'dom\\text::getnodepath' => 
-  array (
-    0 => 'string',
-  ),
-  'dom\\text::getrootnode' => 
-  array (
-    0 => 'Dom\\Node',
-    'options=' => 'array<array-key, mixed>',
-  ),
-  'dom\\text::haschildnodes' => 
-  array (
-    0 => 'bool',
-  ),
-  'dom\\text::insertbefore' => 
-  array (
-    0 => 'Dom\\Node',
-    'node' => 'Dom\\Node',
-    'child' => 'Dom\\Node|null',
-  ),
-  'dom\\text::insertdata' => 
-  array (
-    0 => 'void',
-    'offset' => 'int',
-    'data' => 'string',
-  ),
-  'dom\\text::isdefaultnamespace' => 
-  array (
-    0 => 'bool',
-    'namespace' => 'null|string',
-  ),
-  'dom\\text::isequalnode' => 
-  array (
-    0 => 'bool',
-    'otherNode' => 'Dom\\Node|null',
-  ),
-  'dom\\text::issamenode' => 
-  array (
-    0 => 'bool',
-    'otherNode' => 'Dom\\Node|null',
-  ),
-  'dom\\text::lookupnamespaceuri' => 
-  array (
-    0 => 'null|string',
-    'prefix' => 'null|string',
-  ),
-  'dom\\text::lookupprefix' => 
-  array (
-    0 => 'null|string',
-    'namespace' => 'null|string',
-  ),
-  'dom\\text::normalize' => 
-  array (
-    0 => 'void',
-  ),
-  'dom\\text::remove' => 
-  array (
-    0 => 'void',
-  ),
-  'dom\\text::removechild' => 
-  array (
-    0 => 'Dom\\Node',
-    'child' => 'Dom\\Node',
-  ),
-  'dom\\text::replacechild' => 
-  array (
-    0 => 'Dom\\Node',
-    'node' => 'Dom\\Node',
-    'child' => 'Dom\\Node',
-  ),
-  'dom\\text::replacedata' => 
-  array (
-    0 => 'void',
-    'offset' => 'int',
-    'count' => 'int',
-    'data' => 'string',
-  ),
-  'dom\\text::replacewith' => 
-  array (
-    0 => 'void',
-    '...nodes=' => 'Dom\\Node|string',
-  ),
-  'dom\\text::splittext' => 
-  array (
-    0 => 'Dom\\Text',
-    'offset' => 'int',
-  ),
-  'dom\\text::substringdata' => 
-  array (
-    0 => 'string',
-    'offset' => 'int',
-    'count' => 'int',
-  ),
-  'dom\\tokenlist::__construct' => 
-  array (
-    0 => 'string',
-  ),
-  'dom\\tokenlist::add' => 
-  array (
-    0 => 'void',
-    '...tokens=' => 'string',
-  ),
-  'dom\\tokenlist::contains' => 
-  array (
-    0 => 'bool',
-    'token' => 'string',
-  ),
-  'dom\\tokenlist::count' => 
-  array (
-    0 => 'int',
-  ),
-  'dom\\tokenlist::getiterator' => 
-  array (
-    0 => 'Iterator',
-  ),
-  'dom\\tokenlist::item' => 
-  array (
-    0 => 'null|string',
-    'index' => 'int',
-  ),
-  'dom\\tokenlist::remove' => 
-  array (
-    0 => 'void',
-    '...tokens=' => 'string',
-  ),
-  'dom\\tokenlist::replace' => 
-  array (
-    0 => 'bool',
-    'token' => 'string',
-    'newToken' => 'string',
-  ),
-  'dom\\tokenlist::supports' => 
-  array (
-    0 => 'bool',
-    'token' => 'string',
-  ),
-  'dom\\tokenlist::toggle' => 
-  array (
-    0 => 'bool',
-    'token' => 'string',
-    'force=' => 'bool|null',
-  ),
-  'dom\\xmldocument::__sleep' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'dom\\xmldocument::__wakeup' => 
-  array (
-    0 => 'void',
-  ),
-  'dom\\xmldocument::adoptnode' => 
-  array (
-    0 => 'Dom\\Node',
-    'node' => 'Dom\\Node',
-  ),
-  'dom\\xmldocument::append' => 
-  array (
-    0 => 'void',
-    '...nodes=' => 'Dom\\Node|string',
-  ),
-  'dom\\xmldocument::appendchild' => 
-  array (
-    0 => 'Dom\\Node',
-    'node' => 'Dom\\Node',
-  ),
-  'dom\\xmldocument::c14n' => 
-  array (
-    0 => 'false|string',
-    'exclusive=' => 'bool',
-    'withComments=' => 'bool',
-    'xpath=' => 'array<array-key, mixed>|null',
-    'nsPrefixes=' => 'array<array-key, mixed>|null',
-  ),
-  'dom\\xmldocument::c14nfile' => 
-  array (
-    0 => 'false|int',
-    'uri' => 'string',
-    'exclusive=' => 'bool',
-    'withComments=' => 'bool',
-    'xpath=' => 'array<array-key, mixed>|null',
-    'nsPrefixes=' => 'array<array-key, mixed>|null',
-  ),
-  'dom\\xmldocument::clonenode' => 
-  array (
-    0 => 'Dom\\Node',
-    'deep=' => 'bool',
-  ),
-  'dom\\xmldocument::comparedocumentposition' => 
-  array (
-    0 => 'int',
-    'other' => 'Dom\\Node',
-  ),
-  'dom\\xmldocument::contains' => 
-  array (
-    0 => 'bool',
-    'other' => 'Dom\\Node|null',
-  ),
-  'dom\\xmldocument::createattribute' => 
-  array (
-    0 => 'Dom\\Attr',
-    'localName' => 'string',
-  ),
-  'dom\\xmldocument::createattributens' => 
-  array (
-    0 => 'Dom\\Attr',
-    'namespace' => 'null|string',
-    'qualifiedName' => 'string',
-  ),
-  'dom\\xmldocument::createcdatasection' => 
-  array (
-    0 => 'Dom\\CDATASection',
-    'data' => 'string',
-  ),
-  'dom\\xmldocument::createcomment' => 
-  array (
-    0 => 'Dom\\Comment',
-    'data' => 'string',
-  ),
-  'dom\\xmldocument::createdocumentfragment' => 
-  array (
-    0 => 'Dom\\DocumentFragment',
-  ),
-  'dom\\xmldocument::createelement' => 
-  array (
-    0 => 'Dom\\Element',
-    'localName' => 'string',
-  ),
-  'dom\\xmldocument::createelementns' => 
-  array (
-    0 => 'Dom\\Element',
-    'namespace' => 'null|string',
-    'qualifiedName' => 'string',
-  ),
-  'dom\\xmldocument::createempty' => 
-  array (
-    0 => 'Dom\\XMLDocument',
-    'version=' => 'string',
-    'encoding=' => 'string',
-  ),
-  'dom\\xmldocument::createentityreference' => 
-  array (
-    0 => 'Dom\\EntityReference',
-    'name' => 'string',
-  ),
-  'dom\\xmldocument::createfromfile' => 
-  array (
-    0 => 'Dom\\XMLDocument',
-    'path' => 'string',
-    'options=' => 'int',
-    'overrideEncoding=' => 'null|string',
-  ),
-  'dom\\xmldocument::createfromstring' => 
-  array (
-    0 => 'Dom\\XMLDocument',
-    'source' => 'string',
-    'options=' => 'int',
-    'overrideEncoding=' => 'null|string',
-  ),
-  'dom\\xmldocument::createprocessinginstruction' => 
-  array (
-    0 => 'Dom\\ProcessingInstruction',
-    'target' => 'string',
-    'data' => 'string',
-  ),
-  'dom\\xmldocument::createtextnode' => 
-  array (
-    0 => 'Dom\\Text',
-    'data' => 'string',
-  ),
-  'dom\\xmldocument::getelementbyid' => 
-  array (
-    0 => 'Dom\\Element|null',
-    'elementId' => 'string',
-  ),
-  'dom\\xmldocument::getelementsbytagname' => 
-  array (
-    0 => 'Dom\\HTMLCollection',
-    'qualifiedName' => 'string',
-  ),
-  'dom\\xmldocument::getelementsbytagnamens' => 
-  array (
-    0 => 'Dom\\HTMLCollection',
-    'namespace' => 'null|string',
-    'localName' => 'string',
-  ),
-  'dom\\xmldocument::getlineno' => 
-  array (
-    0 => 'int',
-  ),
-  'dom\\xmldocument::getnodepath' => 
-  array (
-    0 => 'string',
-  ),
-  'dom\\xmldocument::getrootnode' => 
-  array (
-    0 => 'Dom\\Node',
-    'options=' => 'array<array-key, mixed>',
-  ),
-  'dom\\xmldocument::haschildnodes' => 
-  array (
-    0 => 'bool',
-  ),
-  'dom\\xmldocument::importlegacynode' => 
-  array (
-    0 => 'Dom\\Node',
-    'node' => 'DOMNode',
-    'deep=' => 'bool',
-  ),
-  'dom\\xmldocument::importnode' => 
-  array (
-    0 => 'Dom\\Node',
-    'node' => 'Dom\\Node|null',
-    'deep=' => 'bool',
-  ),
-  'dom\\xmldocument::insertbefore' => 
-  array (
-    0 => 'Dom\\Node',
-    'node' => 'Dom\\Node',
-    'child' => 'Dom\\Node|null',
-  ),
-  'dom\\xmldocument::isdefaultnamespace' => 
-  array (
-    0 => 'bool',
-    'namespace' => 'null|string',
-  ),
-  'dom\\xmldocument::isequalnode' => 
-  array (
-    0 => 'bool',
-    'otherNode' => 'Dom\\Node|null',
-  ),
-  'dom\\xmldocument::issamenode' => 
-  array (
-    0 => 'bool',
-    'otherNode' => 'Dom\\Node|null',
-  ),
-  'dom\\xmldocument::lookupnamespaceuri' => 
-  array (
-    0 => 'null|string',
-    'prefix' => 'null|string',
-  ),
-  'dom\\xmldocument::lookupprefix' => 
-  array (
-    0 => 'null|string',
-    'namespace' => 'null|string',
-  ),
-  'dom\\xmldocument::normalize' => 
-  array (
-    0 => 'void',
-  ),
-  'dom\\xmldocument::prepend' => 
-  array (
-    0 => 'void',
-    '...nodes=' => 'Dom\\Node|string',
-  ),
-  'dom\\xmldocument::queryselector' => 
-  array (
-    0 => 'Dom\\Element|null',
-    'selectors' => 'string',
-  ),
-  'dom\\xmldocument::queryselectorall' => 
-  array (
-    0 => 'Dom\\NodeList',
-    'selectors' => 'string',
-  ),
-  'dom\\xmldocument::registernodeclass' => 
-  array (
-    0 => 'void',
-    'baseClass' => 'string',
-    'extendedClass' => 'null|string',
-  ),
-  'dom\\xmldocument::relaxngvalidate' => 
-  array (
-    0 => 'bool',
-    'filename' => 'string',
-  ),
-  'dom\\xmldocument::relaxngvalidatesource' => 
-  array (
-    0 => 'bool',
-    'source' => 'string',
-  ),
-  'dom\\xmldocument::removechild' => 
-  array (
-    0 => 'Dom\\Node',
-    'child' => 'Dom\\Node',
-  ),
-  'dom\\xmldocument::replacechild' => 
-  array (
-    0 => 'Dom\\Node',
-    'node' => 'Dom\\Node',
-    'child' => 'Dom\\Node',
-  ),
-  'dom\\xmldocument::replacechildren' => 
-  array (
-    0 => 'void',
-    '...nodes=' => 'Dom\\Node|string',
-  ),
-  'dom\\xmldocument::savexml' => 
-  array (
-    0 => 'false|string',
-    'node=' => 'Dom\\Node|null',
-    'options=' => 'int',
-  ),
-  'dom\\xmldocument::savexmlfile' => 
-  array (
-    0 => 'false|int',
-    'filename' => 'string',
-    'options=' => 'int',
-  ),
-  'dom\\xmldocument::schemavalidate' => 
-  array (
-    0 => 'bool',
-    'filename' => 'string',
-    'flags=' => 'int',
-  ),
-  'dom\\xmldocument::schemavalidatesource' => 
-  array (
-    0 => 'bool',
-    'source' => 'string',
-    'flags=' => 'int',
-  ),
-  'dom\\xmldocument::validate' => 
-  array (
-    0 => 'bool',
-  ),
-  'dom\\xmldocument::xinclude' => 
-  array (
-    0 => 'int',
-    'options=' => 'int',
-  ),
-  'dom\\xpath::__construct' => 
-  array (
-    0 => 'string',
-    'document' => 'Dom\\Document',
-    'registerNodeNS=' => 'bool',
-  ),
-  'dom\\xpath::evaluate' => 
-  array (
-    0 => 'Dom\\NodeList|bool|float|null|string',
-    'expression' => 'string',
-    'contextNode=' => 'Dom\\Node|null',
-    'registerNodeNS=' => 'bool',
-  ),
-  'dom\\xpath::query' => 
-  array (
-    0 => 'Dom\\NodeList',
-    'expression' => 'string',
-    'contextNode=' => 'Dom\\Node|null',
-    'registerNodeNS=' => 'bool',
-  ),
-  'dom\\xpath::quote' => 
-  array (
-    0 => 'string',
-    'str' => 'string',
-  ),
-  'dom\\xpath::registernamespace' => 
-  array (
-    0 => 'bool',
-    'prefix' => 'string',
-    'namespace' => 'string',
-  ),
-  'dom\\xpath::registerphpfunctionns' => 
-  array (
-    0 => 'void',
-    'namespaceURI' => 'string',
-    'name' => 'string',
-    'callable' => 'callable',
-  ),
-  'dom\\xpath::registerphpfunctions' => 
-  array (
-    0 => 'void',
-    'restrict=' => 'array<array-key, mixed>|null|string',
-  ),
   'dom_import_simplexml' => 
   array (
     0 => 'DOMElement',
@@ -7991,11 +4524,6 @@ return array (
   array (
     0 => 'string',
     'deep=' => 'bool',
-  ),
-  'domattr::comparedocumentposition' => 
-  array (
-    0 => 'int',
-    'other' => 'DOMNode',
   ),
   'domattr::contains' => 
   array (
@@ -8133,11 +4661,6 @@ return array (
   array (
     0 => 'string',
     'deep=' => 'bool',
-  ),
-  'domcdatasection::comparedocumentposition' => 
-  array (
-    0 => 'int',
-    'other' => 'DOMNode',
   ),
   'domcdatasection::contains' => 
   array (
@@ -8314,11 +4837,6 @@ return array (
     0 => 'string',
     'deep=' => 'bool',
   ),
-  'domcharacterdata::comparedocumentposition' => 
-  array (
-    0 => 'int',
-    'other' => 'DOMNode',
-  ),
   'domcharacterdata::contains' => 
   array (
     0 => 'bool',
@@ -8486,11 +5004,6 @@ return array (
     0 => 'string',
     'deep=' => 'bool',
   ),
-  'domcomment::comparedocumentposition' => 
-  array (
-    0 => 'int',
-    'other' => 'DOMNode',
-  ),
   'domcomment::contains' => 
   array (
     0 => 'bool',
@@ -8653,11 +5166,6 @@ return array (
   array (
     0 => 'string',
     'deep=' => 'bool',
-  ),
-  'domdocument::comparedocumentposition' => 
-  array (
-    0 => 'int',
-    'other' => 'DOMNode',
   ),
   'domdocument::contains' => 
   array (
@@ -8837,7 +5345,7 @@ return array (
   ),
   'domdocument::registernodeclass' => 
   array (
-    0 => 'true',
+    0 => 'bool',
     'baseClass' => 'string',
     'extendedClass' => 'null|string',
   ),
@@ -8958,11 +5466,6 @@ return array (
   array (
     0 => 'string',
     'deep=' => 'bool',
-  ),
-  'domdocumentfragment::comparedocumentposition' => 
-  array (
-    0 => 'int',
-    'other' => 'DOMNode',
   ),
   'domdocumentfragment::contains' => 
   array (
@@ -9086,11 +5589,6 @@ return array (
   array (
     0 => 'string',
     'deep=' => 'bool',
-  ),
-  'domdocumenttype::comparedocumentposition' => 
-  array (
-    0 => 'int',
-    'other' => 'DOMNode',
   ),
   'domdocumenttype::contains' => 
   array (
@@ -9226,11 +5724,6 @@ return array (
   array (
     0 => 'string',
     'deep=' => 'bool',
-  ),
-  'domelement::comparedocumentposition' => 
-  array (
-    0 => 'int',
-    'other' => 'DOMNode',
   ),
   'domelement::contains' => 
   array (
@@ -9488,11 +5981,6 @@ return array (
     0 => 'string',
     'deep=' => 'bool',
   ),
-  'domentity::comparedocumentposition' => 
-  array (
-    0 => 'int',
-    'other' => 'DOMNode',
-  ),
   'domentity::contains' => 
   array (
     0 => 'bool',
@@ -9610,11 +6098,6 @@ return array (
   array (
     0 => 'string',
     'deep=' => 'bool',
-  ),
-  'domentityreference::comparedocumentposition' => 
-  array (
-    0 => 'int',
-    'other' => 'DOMNode',
   ),
   'domentityreference::contains' => 
   array (
@@ -9739,7 +6222,7 @@ return array (
   ),
   'domimplementation::createdocument' => 
   array (
-    0 => 'DOMDocument',
+    0 => 'DOMDocument|false',
     'namespace=' => 'null|string',
     'qualifiedName=' => 'string',
     'doctype=' => 'DOMDocumentType|null',
@@ -9750,6 +6233,12 @@ return array (
     'qualifiedName' => 'string',
     'publicId=' => 'string',
     'systemId=' => 'string',
+  ),
+  'domimplementation::getfeature' => 
+  array (
+    0 => 'string',
+    'feature' => 'string',
+    'version' => 'string',
   ),
   'domimplementation::hasfeature' => 
   array (
@@ -9823,11 +6312,6 @@ return array (
   array (
     0 => 'DOMNode',
     'deep=' => 'bool',
-  ),
-  'domnode::comparedocumentposition' => 
-  array (
-    0 => 'int',
-    'other' => 'DOMNode',
   ),
   'domnode::contains' => 
   array (
@@ -9955,11 +6439,6 @@ return array (
     0 => 'string',
     'deep=' => 'bool',
   ),
-  'domnotation::comparedocumentposition' => 
-  array (
-    0 => 'int',
-    'other' => 'DOMNode',
-  ),
   'domnotation::contains' => 
   array (
     0 => 'bool',
@@ -10078,11 +6557,6 @@ return array (
   array (
     0 => 'string',
     'deep=' => 'bool',
-  ),
-  'domprocessinginstruction::comparedocumentposition' => 
-  array (
-    0 => 'int',
-    'other' => 'DOMNode',
   ),
   'domprocessinginstruction::contains' => 
   array (
@@ -10216,11 +6690,6 @@ return array (
   array (
     0 => 'string',
     'deep=' => 'bool',
-  ),
-  'domtext::comparedocumentposition' => 
-  array (
-    0 => 'int',
-    'other' => 'DOMNode',
   ),
   'domtext::contains' => 
   array (
@@ -10367,23 +6836,11 @@ return array (
     'contextNode=' => 'DOMNode|null',
     'registerNodeNS=' => 'bool',
   ),
-  'domxpath::quote' => 
-  array (
-    0 => 'string',
-    'str' => 'string',
-  ),
   'domxpath::registernamespace' => 
   array (
     0 => 'bool',
     'prefix' => 'string',
     'namespace' => 'string',
-  ),
-  'domxpath::registerphpfunctionns' => 
-  array (
-    0 => 'void',
-    'namespaceURI' => 'string',
-    'name' => 'string',
-    'callable' => 'callable',
   ),
   'domxpath::registerphpfunctions' => 
   array (
@@ -13387,11 +9844,6 @@ return array (
     '&w_output=' => 'array<array-key, mixed>',
     '&w_result_code=' => 'int',
   ),
-  'exit' => 
-  array (
-    0 => 'never',
-    'status=' => 'int|string',
-  ),
   'exp' => 
   array (
     0 => 'float',
@@ -13460,7 +9912,7 @@ return array (
   ),
   'ffi::cast' => 
   array (
-    0 => 'FFI\\CData',
+    0 => 'FFI\\CData|null',
     'type' => 'FFI\\CType|string',
     '&ptr' => 'string',
   ),
@@ -13508,7 +9960,7 @@ return array (
   ),
   'ffi::new' => 
   array (
-    0 => 'FFI\\CData',
+    0 => 'FFI\\CData|null',
     'type' => 'FFI\\CType|string',
     'owned=' => 'bool',
     'persistent=' => 'bool',
@@ -13531,7 +9983,7 @@ return array (
   ),
   'ffi::type' => 
   array (
-    0 => 'FFI\\CType',
+    0 => 'FFI\\CType|null',
     'type' => 'string',
   ),
   'ffi::typeof' => 
@@ -14111,7 +10563,7 @@ return array (
   ),
   'filteriterator::getinneriterator' => 
   array (
-    0 => 'Iterator|null',
+    0 => 'Iterator',
   ),
   'filteriterator::key' => 
   array (
@@ -14151,7 +10603,7 @@ return array (
   ),
   'finfo::set_flags' => 
   array (
-    0 => 'true',
+    0 => 'bool',
     'flags' => 'int',
   ),
   'finfo_buffer' => 
@@ -14183,7 +10635,7 @@ return array (
   ),
   'finfo_set_flags' => 
   array (
-    0 => 'true',
+    0 => 'bool',
     'finfo' => 'finfo',
     'flags' => 'int',
   ),
@@ -14246,12 +10698,6 @@ return array (
     0 => 'int',
     'stream' => 'resource',
   ),
-  'fpow' => 
-  array (
-    0 => 'float',
-    'num' => 'float',
-    'exponent' => 'float',
-  ),
   'fprintf' => 
   array (
     0 => 'int',
@@ -14284,7 +10730,7 @@ return array (
   ),
   'fscanf' => 
   array (
-    0 => 'list<mixed>|null',
+    0 => 'list<mixed>',
     'stream' => 'resource',
     'format' => 'string',
   ),
@@ -14381,10 +10827,6 @@ return array (
     0 => 'array{application_time: float, buffer_size: int, collected: int, collector_time: float, destructor_time: float, free_time: float, full: bool, protected: bool, roots: int, running: bool, runs: int, threshold: int}',
   ),
   'gd_info' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'generator::__debuginfo' => 
   array (
     0 => 'array<array-key, mixed>',
   ),
@@ -14571,7 +11013,7 @@ return array (
   'getenv' => 
   array (
     0 => 'false|string',
-    'name' => 'null|string',
+    'name' => 'string',
     'local_only=' => 'bool',
   ),
   'gethostbyaddr' => 
@@ -15207,12 +11649,6 @@ return array (
     'offset=' => 'int',
     '&w_next=' => 'int',
   ),
-  'grapheme_str_split' => 
-  array (
-    0 => 'array<array-key, mixed>|false',
-    'string' => 'string',
-    'length=' => 'int',
-  ),
   'grapheme_stripos' => 
   array (
     0 => 'false|int',
@@ -15469,7 +11905,7 @@ return array (
   ),
   'hash_update' => 
   array (
-    0 => 'true',
+    0 => 'bool',
     'context' => 'HashContext',
     'data' => 'string',
   ),
@@ -15490,10 +11926,6 @@ return array (
   'hashcontext::__construct' => 
   array (
     0 => 'string',
-  ),
-  'hashcontext::__debuginfo' => 
-  array (
-    0 => 'array<array-key, mixed>',
   ),
   'hashcontext::__serialize' => 
   array (
@@ -15555,7 +11987,7 @@ return array (
   ),
   'highlight_string' => 
   array (
-    0 => 'string|true',
+    0 => 'bool|string',
     'string' => 'string',
     'return=' => 'bool',
   ),
@@ -15600,14 +12032,6 @@ return array (
     'numeric_prefix=' => 'string',
     'arg_separator=' => 'null|string',
     'encoding_type=' => 'int',
-  ),
-  'http_clear_last_response_headers' => 
-  array (
-    0 => 'void',
-  ),
-  'http_get_last_response_headers' => 
-  array (
-    0 => 'array<array-key, mixed>|null',
   ),
   'http_response_code' => 
   array (
@@ -16172,7 +12596,7 @@ return array (
     'image' => 'GdImage',
     'points' => 'array<array-key, mixed>',
     'num_points_or_color' => 'int',
-    'color' => 'int|null',
+    'color' => 'int',
   ),
   'imagefilledrectangle' => 
   array (
@@ -16249,13 +12673,13 @@ return array (
   array (
     0 => 'bool',
     'image' => 'GdImage',
-    'file=' => 'null|string',
+    'file=' => 'null|resource|string',
   ),
   'imagegd2' => 
   array (
     0 => 'bool',
     'image' => 'GdImage',
-    'file=' => 'null|string',
+    'file=' => 'null|resource|string',
     'chunk_size=' => 'int',
     'mode=' => 'int',
   ),
@@ -16320,7 +12744,7 @@ return array (
     'image' => 'GdImage',
     'points' => 'array<array-key, mixed>',
     'num_points' => 'int',
-    'color' => 'int|null',
+    'color' => 'int',
   ),
   'imagepalettecopy' => 
   array (
@@ -16347,7 +12771,7 @@ return array (
     'image' => 'GdImage',
     'points' => 'array<array-key, mixed>',
     'num_points_or_color' => 'int',
-    'color' => 'int|null',
+    'color' => 'int',
   ),
   'imagerectangle' => 
   array (
@@ -19849,7 +16273,7 @@ return array (
   array (
     0 => 'string',
     'separator' => 'string',
-    'array' => 'array<array-key, mixed>|null',
+    'array' => 'array<array-key, mixed>',
   ),
   'in_array' => 
   array (
@@ -19879,7 +16303,7 @@ return array (
   ),
   'infiniteiterator::getinneriterator' => 
   array (
-    0 => 'Iterator|null',
+    0 => 'Iterator',
   ),
   'infiniteiterator::key' => 
   array (
@@ -20314,7 +16738,7 @@ return array (
   ),
   'intlcal_set' => 
   array (
-    0 => 'true',
+    0 => 'bool',
     'calendar' => 'IntlCalendar',
     'year' => 'int',
     'month' => 'int',
@@ -20388,7 +16812,7 @@ return array (
   ),
   'intlcalendar::clear' => 
   array (
-    0 => 'true',
+    0 => 'bool',
     'field=' => 'int|null',
   ),
   'intlcalendar::createinstance' => 
@@ -20546,7 +16970,7 @@ return array (
   ),
   'intlcalendar::set' => 
   array (
-    0 => 'true',
+    0 => 'bool',
     'field' => 'int',
     'value' => 'int',
   ),
@@ -20569,7 +16993,7 @@ return array (
   ),
   'intlcalendar::setfirstdayofweek' => 
   array (
-    0 => 'true',
+    0 => 'bool',
     'dayOfWeek' => 'int',
   ),
   'intlcalendar::setlenient' => 
@@ -20579,7 +17003,7 @@ return array (
   ),
   'intlcalendar::setminimaldaysinfirstweek' => 
   array (
-    0 => 'true',
+    0 => 'bool',
     'days' => 'int',
   ),
   'intlcalendar::setrepeatedwalltimeoption' => 
@@ -21103,12 +17527,6 @@ return array (
     'string' => 'string',
     '&rw_offset=' => 'int',
   ),
-  'intldateformatter::parsetocalendar' => 
-  array (
-    0 => 'false|float|int',
-    'string' => 'string',
-    '&offset=' => 'string',
-  ),
   'intldateformatter::setcalendar' => 
   array (
     0 => 'bool',
@@ -21236,7 +17654,7 @@ return array (
   ),
   'intlgregoriancalendar::clear' => 
   array (
-    0 => 'true',
+    0 => 'bool',
     'field=' => 'int|null',
   ),
   'intlgregoriancalendar::createfromdate' => 
@@ -21420,7 +17838,7 @@ return array (
   ),
   'intlgregoriancalendar::set' => 
   array (
-    0 => 'true',
+    0 => 'bool',
     'field' => 'int',
     'value' => 'int',
   ),
@@ -21443,7 +17861,7 @@ return array (
   ),
   'intlgregoriancalendar::setfirstdayofweek' => 
   array (
-    0 => 'true',
+    0 => 'bool',
     'dayOfWeek' => 'int',
   ),
   'intlgregoriancalendar::setgregorianchange' => 
@@ -21458,7 +17876,7 @@ return array (
   ),
   'intlgregoriancalendar::setminimaldaysinfirstweek' => 
   array (
-    0 => 'true',
+    0 => 'bool',
     'days' => 'int',
   ),
   'intlgregoriancalendar::setrepeatedwalltimeoption' => 
@@ -21721,11 +18139,6 @@ return array (
   array (
     0 => 'IntlTimeZone',
   ),
-  'intltimezone::getianaid' => 
-  array (
-    0 => 'false|string',
-    'timezoneId' => 'string',
-  ),
   'intltimezone::getid' => 
   array (
     0 => 'string',
@@ -21848,11 +18261,6 @@ return array (
   'intltz_get_gmt' => 
   array (
     0 => 'IntlTimeZone',
-  ),
-  'intltz_get_iana_id' => 
-  array (
-    0 => 'false|string',
-    'timezoneId' => 'string',
   ),
   'intltz_get_id' => 
   array (
@@ -22161,7 +18569,7 @@ return array (
   ),
   'iteratoriterator::getinneriterator' => 
   array (
-    0 => 'Iterator|null',
+    0 => 'Iterator',
   ),
   'iteratoriterator::key' => 
   array (
@@ -22183,7 +18591,7 @@ return array (
   array (
     0 => 'string',
     'separator' => 'string',
-    'array' => 'array<array-key, mixed>|null',
+    'array' => 'array<array-key, mixed>',
   ),
   'json_decode' => 
   array (
@@ -22400,7 +18808,7 @@ return array (
   ),
   'limititerator::getinneriterator' => 
   array (
-    0 => 'Iterator|null',
+    0 => 'Iterator',
   ),
   'limititerator::getposition' => 
   array (
@@ -22462,7 +18870,7 @@ return array (
   ),
   'locale::getallvariants' => 
   array (
-    0 => 'array<array-key, mixed>|null',
+    0 => 'array<array-key, mixed>',
     'locale' => 'string',
   ),
   'locale::getdefault' => 
@@ -22501,22 +18909,22 @@ return array (
   ),
   'locale::getkeywords' => 
   array (
-    0 => 'array<array-key, mixed>|false|null',
+    0 => 'array<array-key, mixed>|false',
     'locale' => 'string',
   ),
   'locale::getprimarylanguage' => 
   array (
-    0 => 'null|string',
+    0 => 'string',
     'locale' => 'string',
   ),
   'locale::getregion' => 
   array (
-    0 => 'null|string',
+    0 => 'string',
     'locale' => 'string',
   ),
   'locale::getscript' => 
   array (
-    0 => 'null|string',
+    0 => 'string',
     'locale' => 'string',
   ),
   'locale::lookup' => 
@@ -22529,12 +18937,12 @@ return array (
   ),
   'locale::parselocale' => 
   array (
-    0 => 'array<array-key, mixed>|null',
+    0 => 'array<array-key, mixed>',
     'locale' => 'string',
   ),
   'locale::setdefault' => 
   array (
-    0 => 'true',
+    0 => 'bool',
     'locale' => 'string',
   ),
   'locale_accept_from_http' => 
@@ -22738,7 +19146,7 @@ return array (
   'mb_check_encoding' => 
   array (
     0 => 'bool',
-    'value' => 'array<array-key, mixed>|null|string',
+    'value' => 'array<array-key, mixed>|string',
     'encoding=' => 'null|string',
   ),
   'mb_chr' => 
@@ -22930,22 +19338,9 @@ return array (
     0 => 'bool|string',
     'language=' => 'null|string',
   ),
-  'mb_lcfirst' => 
-  array (
-    0 => 'string',
-    'string' => 'string',
-    'encoding=' => 'null|string',
-  ),
   'mb_list_encodings' => 
   array (
     0 => 'list<string>',
-  ),
-  'mb_ltrim' => 
-  array (
-    0 => 'string',
-    'string' => 'string',
-    'characters=' => 'null|string',
-    'encoding=' => 'null|string',
   ),
   'mb_ord' => 
   array (
@@ -22979,13 +19374,6 @@ return array (
   array (
     0 => 'string',
     'options=' => 'null|string',
-  ),
-  'mb_rtrim' => 
-  array (
-    0 => 'string',
-    'string' => 'string',
-    'characters=' => 'null|string',
-    'encoding=' => 'null|string',
   ),
   'mb_scrub' => 
   array (
@@ -23150,19 +19538,6 @@ return array (
     'needle' => 'string',
     'encoding=' => 'null|string',
   ),
-  'mb_trim' => 
-  array (
-    0 => 'string',
-    'string' => 'string',
-    'characters=' => 'null|string',
-    'encoding=' => 'null|string',
-  ),
-  'mb_ucfirst' => 
-  array (
-    0 => 'string',
-    'string' => 'string',
-    'encoding=' => 'null|string',
-  ),
   'md5' => 
   array (
     0 => 'non-falsy-string',
@@ -23197,7 +19572,7 @@ return array (
   ),
   'messageformatter::create' => 
   array (
-    0 => 'MessageFormatter|null',
+    0 => 'MessageFormatter',
     'locale' => 'string',
     'pattern' => 'string',
   ),
@@ -25956,7 +22331,7 @@ return array (
   ),
   'norewinditerator::getinneriterator' => 
   array (
-    0 => 'Iterator|null',
+    0 => 'Iterator',
   ),
   'norewinditerator::key' => 
   array (
@@ -26035,7 +22410,7 @@ return array (
   'numberformatter::format' => 
   array (
     0 => 'false|string',
-    'num' => 'float|int',
+    'num' => 'mixed',
     'type=' => 'int',
   ),
   'numberformatter::formatcurrency' => 
@@ -26308,11 +22683,6 @@ return array (
   array (
     0 => 'bool',
     'filename' => 'string',
-  ),
-  'opcache_jit_blacklist' => 
-  array (
-    0 => 'void',
-    'closure' => 'Closure',
   ),
   'opcache_reset' => 
   array (
@@ -27103,10 +23473,6 @@ return array (
     0 => 'int',
     'handle' => 'resource',
   ),
-  'pcntl\\qosclass::cases' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
   'pcntl_alarm' => 
   array (
     0 => 'int',
@@ -27136,26 +23502,11 @@ return array (
   array (
     0 => 'int',
   ),
-  'pcntl_getcpu' => 
-  array (
-    0 => 'int',
-  ),
-  'pcntl_getcpuaffinity' => 
-  array (
-    0 => 'array<array-key, mixed>|false',
-    'process_id=' => 'int|null',
-  ),
   'pcntl_getpriority' => 
   array (
     0 => 'int',
     'process_id=' => 'int|null',
     'mode=' => 'int',
-  ),
-  'pcntl_setcpuaffinity' => 
-  array (
-    0 => 'bool',
-    'process_id=' => 'int|null',
-    'cpu_ids=' => 'array<array-key, mixed>',
   ),
   'pcntl_setpriority' => 
   array (
@@ -27218,14 +23569,6 @@ return array (
     'flags=' => 'int',
     '&w_resource_usage=' => 'array<array-key, mixed>',
   ),
-  'pcntl_waitid' => 
-  array (
-    0 => 'bool',
-    'idtype=' => 'int',
-    'id=' => 'int|null',
-    '&info=' => 'string',
-    'flags=' => 'int',
-  ),
   'pcntl_waitpid' => 
   array (
     0 => 'int',
@@ -27237,11 +23580,6 @@ return array (
   'pcntl_wexitstatus' => 
   array (
     0 => 'int',
-    'status' => 'int',
-  ),
-  'pcntl_wifcontinued' => 
-  array (
-    0 => 'bool',
     'status' => 'int',
   ),
   'pcntl_wifexited' => 
@@ -27284,14 +23622,6 @@ return array (
   'pdo::commit' => 
   array (
     0 => 'bool',
-  ),
-  'pdo::connect' => 
-  array (
-    0 => 'static',
-    'dsn' => 'string',
-    'username=' => 'null|string',
-    'password=' => 'null|string',
-    'options=' => 'array<array-key, mixed>|null',
   ),
   'pdo::errorcode' => 
   array (
@@ -27350,214 +23680,6 @@ return array (
     0 => 'bool',
     'attribute' => 'int',
     'value' => 'mixed',
-  ),
-  'pdo\\mysql::__construct' => 
-  array (
-    0 => 'string',
-    'dsn' => 'string',
-    'username=' => 'null|string',
-    'password=' => 'null|string',
-    'options=' => 'array<array-key, mixed>|null',
-  ),
-  'pdo\\mysql::begintransaction' => 
-  array (
-    0 => 'string',
-  ),
-  'pdo\\mysql::commit' => 
-  array (
-    0 => 'string',
-  ),
-  'pdo\\mysql::connect' => 
-  array (
-    0 => 'static',
-    'dsn' => 'string',
-    'username=' => 'null|string',
-    'password=' => 'null|string',
-    'options=' => 'array<array-key, mixed>|null',
-  ),
-  'pdo\\mysql::errorcode' => 
-  array (
-    0 => 'string',
-  ),
-  'pdo\\mysql::errorinfo' => 
-  array (
-    0 => 'string',
-  ),
-  'pdo\\mysql::exec' => 
-  array (
-    0 => 'string',
-    'statement' => 'string',
-  ),
-  'pdo\\mysql::getattribute' => 
-  array (
-    0 => 'string',
-    'attribute' => 'int',
-  ),
-  'pdo\\mysql::getavailabledrivers' => 
-  array (
-    0 => 'string',
-  ),
-  'pdo\\mysql::getwarningcount' => 
-  array (
-    0 => 'int',
-  ),
-  'pdo\\mysql::intransaction' => 
-  array (
-    0 => 'string',
-  ),
-  'pdo\\mysql::lastinsertid' => 
-  array (
-    0 => 'string',
-    'name=' => 'null|string',
-  ),
-  'pdo\\mysql::prepare' => 
-  array (
-    0 => 'string',
-    'query' => 'string',
-    'options=' => 'array<array-key, mixed>',
-  ),
-  'pdo\\mysql::query' => 
-  array (
-    0 => 'string',
-    'query' => 'string',
-    'fetchMode=' => 'int|null',
-    '...fetchModeArgs=' => 'mixed|null',
-  ),
-  'pdo\\mysql::quote' => 
-  array (
-    0 => 'string',
-    'string' => 'string',
-    'type=' => 'int',
-  ),
-  'pdo\\mysql::rollback' => 
-  array (
-    0 => 'string',
-  ),
-  'pdo\\mysql::setattribute' => 
-  array (
-    0 => 'string',
-    'attribute' => 'int',
-    'value' => 'mixed|null',
-  ),
-  'pdo\\sqlite::__construct' => 
-  array (
-    0 => 'string',
-    'dsn' => 'string',
-    'username=' => 'null|string',
-    'password=' => 'null|string',
-    'options=' => 'array<array-key, mixed>|null',
-  ),
-  'pdo\\sqlite::begintransaction' => 
-  array (
-    0 => 'string',
-  ),
-  'pdo\\sqlite::commit' => 
-  array (
-    0 => 'string',
-  ),
-  'pdo\\sqlite::connect' => 
-  array (
-    0 => 'static',
-    'dsn' => 'string',
-    'username=' => 'null|string',
-    'password=' => 'null|string',
-    'options=' => 'array<array-key, mixed>|null',
-  ),
-  'pdo\\sqlite::createaggregate' => 
-  array (
-    0 => 'bool',
-    'name' => 'string',
-    'step' => 'callable',
-    'finalize' => 'callable',
-    'numArgs=' => 'int',
-  ),
-  'pdo\\sqlite::createcollation' => 
-  array (
-    0 => 'bool',
-    'name' => 'string',
-    'callback' => 'callable',
-  ),
-  'pdo\\sqlite::createfunction' => 
-  array (
-    0 => 'bool',
-    'function_name' => 'string',
-    'callback' => 'callable',
-    'num_args=' => 'int',
-    'flags=' => 'int',
-  ),
-  'pdo\\sqlite::errorcode' => 
-  array (
-    0 => 'string',
-  ),
-  'pdo\\sqlite::errorinfo' => 
-  array (
-    0 => 'string',
-  ),
-  'pdo\\sqlite::exec' => 
-  array (
-    0 => 'string',
-    'statement' => 'string',
-  ),
-  'pdo\\sqlite::getattribute' => 
-  array (
-    0 => 'string',
-    'attribute' => 'int',
-  ),
-  'pdo\\sqlite::getavailabledrivers' => 
-  array (
-    0 => 'string',
-  ),
-  'pdo\\sqlite::intransaction' => 
-  array (
-    0 => 'string',
-  ),
-  'pdo\\sqlite::lastinsertid' => 
-  array (
-    0 => 'string',
-    'name=' => 'null|string',
-  ),
-  'pdo\\sqlite::loadextension' => 
-  array (
-    0 => 'void',
-    'name' => 'string',
-  ),
-  'pdo\\sqlite::openblob' => 
-  array (
-    0 => 'string',
-    'table' => 'string',
-    'column' => 'string',
-    'rowid' => 'int',
-    'dbname=' => 'null|string',
-    'flags=' => 'int',
-  ),
-  'pdo\\sqlite::prepare' => 
-  array (
-    0 => 'string',
-    'query' => 'string',
-    'options=' => 'array<array-key, mixed>',
-  ),
-  'pdo\\sqlite::query' => 
-  array (
-    0 => 'string',
-    'query' => 'string',
-    'fetchMode=' => 'int|null',
-    '...fetchModeArgs=' => 'mixed|null',
-  ),
-  'pdo\\sqlite::quote' => 
-  array (
-    0 => 'string',
-    'string' => 'string',
-    'type=' => 'int',
-  ),
-  'pdo\\sqlite::rollback' => 
-  array (
-    0 => 'string',
-  ),
-  'pdo\\sqlite::setattribute' => 
-  array (
-    0 => 'string',
-    'attribute' => 'int',
-    'value' => 'mixed|null',
   ),
   'pdo_drivers' => 
   array (
@@ -27710,7 +23832,7 @@ return array (
   ),
   'pdostatement::setfetchmode' => 
   array (
-    0 => 'true',
+    0 => 'bool',
     'mode' => 'int',
     '...args=' => 'mixed',
   ),
@@ -27733,13 +23855,6 @@ return array (
     0 => 'bool',
     'connection' => 'PgSql\\Connection',
   ),
-  'pg_change_password' => 
-  array (
-    0 => 'bool',
-    'connection' => 'PgSql\\Connection',
-    'user' => 'string',
-    'password' => 'string',
-  ),
   'pg_client_encoding' => 
   array (
     0 => 'string',
@@ -27752,7 +23867,7 @@ return array (
   ),
   'pg_close' => 
   array (
-    0 => 'true',
+    0 => 'bool',
     'connection=' => 'PgSql\\Connection|null',
   ),
   'pg_cmdtuples' => 
@@ -28058,11 +24173,6 @@ return array (
     'values' => 'array<array-key, mixed>',
     'flags=' => 'int',
   ),
-  'pg_jit' => 
-  array (
-    0 => 'array<array-key, mixed>',
-    'connection=' => 'PgSql\\Connection|null',
-  ),
   'pg_last_error' => 
   array (
     0 => 'string',
@@ -28270,18 +24380,6 @@ return array (
     'statement_name' => 'string',
     'query' => 'string',
   ),
-  'pg_put_copy_data' => 
-  array (
-    0 => 'int',
-    'connection' => 'PgSql\\Connection',
-    'cmd' => 'string',
-  ),
-  'pg_put_copy_end' => 
-  array (
-    0 => 'int',
-    'connection' => 'PgSql\\Connection',
-    'error=' => 'null|string',
-  ),
   'pg_put_line' => 
   array (
     0 => 'bool',
@@ -28318,11 +24416,6 @@ return array (
     0 => 'false|null|string',
     'result' => 'PgSql\\Result',
     'field_code' => 'int',
-  ),
-  'pg_result_memory_size' => 
-  array (
-    0 => 'int',
-    'result' => 'PgSql\\Result',
   ),
   'pg_result_seek' => 
   array (
@@ -28401,14 +24494,6 @@ return array (
     0 => 'false|resource',
     'connection' => 'PgSql\\Connection',
   ),
-  'pg_socket_poll' => 
-  array (
-    0 => 'int',
-    'socket' => 'string',
-    'read' => 'int',
-    'write' => 'int',
-    'timeout=' => 'int',
-  ),
   'pg_trace' => 
   array (
     0 => 'bool',
@@ -28433,7 +24518,7 @@ return array (
   ),
   'pg_untrace' => 
   array (
-    0 => 'true',
+    0 => 'bool',
     'connection=' => 'PgSql\\Connection|null',
   ),
   'pg_update' => 
@@ -28542,7 +24627,7 @@ return array (
   ),
   'phar::copy' => 
   array (
-    0 => 'true',
+    0 => 'bool',
     'from' => 'string',
     'to' => 'string',
   ),
@@ -28568,16 +24653,16 @@ return array (
   ),
   'phar::decompressfiles' => 
   array (
-    0 => 'true',
+    0 => 'bool',
   ),
   'phar::delete' => 
   array (
-    0 => 'true',
+    0 => 'bool',
     'localName' => 'string',
   ),
   'phar::delmetadata' => 
   array (
-    0 => 'true',
+    0 => 'bool',
   ),
   'phar::extractto' => 
   array (
@@ -28845,12 +24930,12 @@ return array (
   ),
   'phar::setalias' => 
   array (
-    0 => 'true',
+    0 => 'bool',
     'alias' => 'string',
   ),
   'phar::setdefaultstub' => 
   array (
-    0 => 'true',
+    0 => 'bool',
     'index=' => 'null|string',
     'webIndex=' => 'null|string',
   ),
@@ -28882,7 +24967,7 @@ return array (
   ),
   'phar::setstub' => 
   array (
-    0 => 'true',
+    0 => 'bool',
     'stub' => 'string',
     'length=' => 'int',
   ),
@@ -28896,7 +24981,7 @@ return array (
   ),
   'phar::unlinkarchive' => 
   array (
-    0 => 'true',
+    0 => 'bool',
     'filename' => 'string',
   ),
   'phar::valid' => 
@@ -29005,7 +25090,7 @@ return array (
   ),
   'phardata::copy' => 
   array (
-    0 => 'true',
+    0 => 'bool',
     'from' => 'string',
     'to' => 'string',
   ),
@@ -29031,16 +25116,16 @@ return array (
   ),
   'phardata::decompressfiles' => 
   array (
-    0 => 'true',
+    0 => 'bool',
   ),
   'phardata::delete' => 
   array (
-    0 => 'true',
+    0 => 'bool',
     'localName' => 'string',
   ),
   'phardata::delmetadata' => 
   array (
-    0 => 'true',
+    0 => 'bool',
   ),
   'phardata::extractto' => 
   array (
@@ -29345,7 +25430,7 @@ return array (
   ),
   'phardata::setstub' => 
   array (
-    0 => 'true',
+    0 => 'bool',
     'stub' => 'string',
     'length=' => 'int',
   ),
@@ -29359,7 +25444,7 @@ return array (
   ),
   'phardata::unlinkarchive' => 
   array (
-    0 => 'true',
+    0 => 'bool',
     'filename' => 'string',
   ),
   'phardata::valid' => 
@@ -29446,16 +25531,16 @@ return array (
   ),
   'pharfileinfo::compress' => 
   array (
-    0 => 'true',
+    0 => 'bool',
     'compression' => 'int',
   ),
   'pharfileinfo::decompress' => 
   array (
-    0 => 'true',
+    0 => 'bool',
   ),
   'pharfileinfo::delmetadata' => 
   array (
-    0 => 'true',
+    0 => 'bool',
   ),
   'pharfileinfo::getatime' => 
   array (
@@ -29989,7 +26074,7 @@ return array (
     'pattern' => 'string',
     'subject' => 'string',
     'limit' => 'int',
-    'flags=' => 'int',
+    'flags=' => 'null',
   ),
   'prev' => 
   array (
@@ -30043,20 +26128,6 @@ return array (
     0 => 'bool',
     'object_or_class' => 'object|string',
     'property' => 'string',
-  ),
-  'propertyhooktype::cases' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'propertyhooktype::from' => 
-  array (
-    0 => 'static',
-    'value' => 'int|string',
-  ),
-  'propertyhooktype::tryfrom' => 
-  array (
-    0 => 'null|static',
-    'value' => 'int|string',
   ),
   'putenv' => 
   array (
@@ -30700,7 +26771,7 @@ return array (
   ),
   'recursivecachingiterator::getinneriterator' => 
   array (
-    0 => 'Iterator|null',
+    0 => 'Iterator',
   ),
   'recursivecachingiterator::haschildren' => 
   array (
@@ -30772,7 +26843,7 @@ return array (
   ),
   'recursivecallbackfilteriterator::getinneriterator' => 
   array (
-    0 => 'Iterator|null',
+    0 => 'Iterator',
   ),
   'recursivecallbackfilteriterator::haschildren' => 
   array (
@@ -31002,7 +27073,7 @@ return array (
   ),
   'recursivefilteriterator::getinneriterator' => 
   array (
-    0 => 'Iterator|null',
+    0 => 'Iterator',
   ),
   'recursivefilteriterator::haschildren' => 
   array (
@@ -31128,7 +27199,7 @@ return array (
   ),
   'recursiveregexiterator::getinneriterator' => 
   array (
-    0 => 'Iterator|null',
+    0 => 'Iterator',
   ),
   'recursiveregexiterator::getmode' => 
   array (
@@ -34749,11 +30820,6 @@ return array (
   array (
     0 => 'array<class-string, ReflectionClass>',
   ),
-  'reflectionclass::getlazyinitializer' => 
-  array (
-    0 => 'callable|null',
-    'object' => 'object',
-  ),
   'reflectionclass::getmethod' => 
   array (
     0 => 'ReflectionMethod',
@@ -34850,11 +30916,6 @@ return array (
     0 => 'bool',
     'interface' => 'ReflectionClass|class-string',
   ),
-  'reflectionclass::initializelazyobject' => 
-  array (
-    0 => 'object',
-    'object' => 'object',
-  ),
   'reflectionclass::innamespace' => 
   array (
     0 => 'bool',
@@ -34917,19 +30978,9 @@ return array (
   array (
     0 => 'bool',
   ),
-  'reflectionclass::isuninitializedlazyobject' => 
-  array (
-    0 => 'bool',
-    'object' => 'object',
-  ),
   'reflectionclass::isuserdefined' => 
   array (
     0 => 'bool',
-  ),
-  'reflectionclass::marklazyobjectasinitialized' => 
-  array (
-    0 => 'object',
-    'object' => 'object',
   ),
   'reflectionclass::newinstance' => 
   array (
@@ -34938,38 +30989,12 @@ return array (
   ),
   'reflectionclass::newinstanceargs' => 
   array (
-    0 => 'null|object',
+    0 => 'object',
     'args=' => 'array<int<0, max>|string, mixed>',
   ),
   'reflectionclass::newinstancewithoutconstructor' => 
   array (
     0 => 'object',
-  ),
-  'reflectionclass::newlazyghost' => 
-  array (
-    0 => 'object',
-    'initializer' => 'callable',
-    'options=' => 'int',
-  ),
-  'reflectionclass::newlazyproxy' => 
-  array (
-    0 => 'object',
-    'factory' => 'callable',
-    'options=' => 'int',
-  ),
-  'reflectionclass::resetaslazyghost' => 
-  array (
-    0 => 'void',
-    'object' => 'object',
-    'initializer' => 'callable',
-    'options=' => 'int',
-  ),
-  'reflectionclass::resetaslazyproxy' => 
-  array (
-    0 => 'void',
-    'object' => 'object',
-    'factory' => 'callable',
-    'options=' => 'int',
   ),
   'reflectionclass::setstaticpropertyvalue' => 
   array (
@@ -35025,10 +31050,6 @@ return array (
   array (
     0 => 'bool',
   ),
-  'reflectionclassconstant::isdeprecated' => 
-  array (
-    0 => 'bool',
-  ),
   'reflectionclassconstant::isenumcase' => 
   array (
     0 => 'bool',
@@ -35046,35 +31067,6 @@ return array (
     0 => 'bool',
   ),
   'reflectionclassconstant::ispublic' => 
-  array (
-    0 => 'bool',
-  ),
-  'reflectionconstant::__construct' => 
-  array (
-    0 => 'string',
-    'name' => 'string',
-  ),
-  'reflectionconstant::__tostring' => 
-  array (
-    0 => 'string',
-  ),
-  'reflectionconstant::getname' => 
-  array (
-    0 => 'string',
-  ),
-  'reflectionconstant::getnamespacename' => 
-  array (
-    0 => 'string',
-  ),
-  'reflectionconstant::getshortname' => 
-  array (
-    0 => 'string',
-  ),
-  'reflectionconstant::getvalue' => 
-  array (
-    0 => 'mixed|null',
-  ),
-  'reflectionconstant::isdeprecated' => 
   array (
     0 => 'bool',
   ),
@@ -35151,11 +31143,6 @@ return array (
   'reflectionenum::getinterfaces' => 
   array (
     0 => 'string',
-  ),
-  'reflectionenum::getlazyinitializer' => 
-  array (
-    0 => 'callable|null',
-    'object' => 'object',
   ),
   'reflectionenum::getmethod' => 
   array (
@@ -35258,11 +31245,6 @@ return array (
     0 => 'string',
     'interface' => 'ReflectionClass|string',
   ),
-  'reflectionenum::initializelazyobject' => 
-  array (
-    0 => 'object',
-    'object' => 'object',
-  ),
   'reflectionenum::innamespace' => 
   array (
     0 => 'string',
@@ -35329,19 +31311,9 @@ return array (
   array (
     0 => 'string',
   ),
-  'reflectionenum::isuninitializedlazyobject' => 
-  array (
-    0 => 'bool',
-    'object' => 'object',
-  ),
   'reflectionenum::isuserdefined' => 
   array (
     0 => 'string',
-  ),
-  'reflectionenum::marklazyobjectasinitialized' => 
-  array (
-    0 => 'object',
-    'object' => 'object',
   ),
   'reflectionenum::newinstance' => 
   array (
@@ -35356,32 +31328,6 @@ return array (
   'reflectionenum::newinstancewithoutconstructor' => 
   array (
     0 => 'string',
-  ),
-  'reflectionenum::newlazyghost' => 
-  array (
-    0 => 'object',
-    'initializer' => 'callable',
-    'options=' => 'int',
-  ),
-  'reflectionenum::newlazyproxy' => 
-  array (
-    0 => 'object',
-    'factory' => 'callable',
-    'options=' => 'int',
-  ),
-  'reflectionenum::resetaslazyghost' => 
-  array (
-    0 => 'void',
-    'object' => 'object',
-    'initializer' => 'callable',
-    'options=' => 'int',
-  ),
-  'reflectionenum::resetaslazyproxy' => 
-  array (
-    0 => 'void',
-    'object' => 'object',
-    'factory' => 'callable',
-    'options=' => 'int',
   ),
   'reflectionenum::setstaticpropertyvalue' => 
   array (
@@ -35438,10 +31384,6 @@ return array (
     0 => 'UnitEnum',
   ),
   'reflectionenumbackedcase::hastype' => 
-  array (
-    0 => 'bool',
-  ),
-  'reflectionenumbackedcase::isdeprecated' => 
   array (
     0 => 'bool',
   ),
@@ -35510,10 +31452,6 @@ return array (
     0 => 'UnitEnum',
   ),
   'reflectionenumunitcase::hastype' => 
-  array (
-    0 => 'bool',
-  ),
-  'reflectionenumunitcase::isdeprecated' => 
   array (
     0 => 'bool',
   ),
@@ -35688,11 +31626,11 @@ return array (
   ),
   'reflectionfunction::getclosurescopeclass' => 
   array (
-    0 => 'ReflectionClass|null',
+    0 => 'ReflectionClass',
   ),
   'reflectionfunction::getclosurethis' => 
   array (
-    0 => 'null|object',
+    0 => 'object',
   ),
   'reflectionfunction::getclosureusedvariables' => 
   array (
@@ -35984,10 +31922,6 @@ return array (
     0 => 'array<array-key, mixed>',
     'options=' => 'int',
   ),
-  'reflectiongenerator::isclosed' => 
-  array (
-    0 => 'bool',
-  ),
   'reflectionintersectiontype::__tostring' => 
   array (
     0 => 'string',
@@ -36032,11 +31966,11 @@ return array (
   ),
   'reflectionmethod::getclosurescopeclass' => 
   array (
-    0 => 'ReflectionClass|null',
+    0 => 'ReflectionClass',
   ),
   'reflectionmethod::getclosurethis' => 
   array (
-    0 => 'null|object',
+    0 => 'object',
   ),
   'reflectionmethod::getclosureusedvariables' => 
   array (
@@ -36284,11 +32218,6 @@ return array (
   array (
     0 => 'array<string, ReflectionClass>',
   ),
-  'reflectionobject::getlazyinitializer' => 
-  array (
-    0 => 'callable|null',
-    'object' => 'object',
-  ),
   'reflectionobject::getmethod' => 
   array (
     0 => 'ReflectionMethod',
@@ -36385,11 +32314,6 @@ return array (
     0 => 'bool',
     'interface' => 'ReflectionClass|class-string',
   ),
-  'reflectionobject::initializelazyobject' => 
-  array (
-    0 => 'object',
-    'object' => 'object',
-  ),
   'reflectionobject::innamespace' => 
   array (
     0 => 'bool',
@@ -36452,19 +32376,9 @@ return array (
   array (
     0 => 'bool',
   ),
-  'reflectionobject::isuninitializedlazyobject' => 
-  array (
-    0 => 'bool',
-    'object' => 'object',
-  ),
   'reflectionobject::isuserdefined' => 
   array (
     0 => 'bool',
-  ),
-  'reflectionobject::marklazyobjectasinitialized' => 
-  array (
-    0 => 'object',
-    'object' => 'object',
   ),
   'reflectionobject::newinstance' => 
   array (
@@ -36474,38 +32388,12 @@ return array (
   ),
   'reflectionobject::newinstanceargs' => 
   array (
-    0 => 'null|object',
+    0 => 'object',
     'args=' => 'array<int<0, max>|string, mixed>',
   ),
   'reflectionobject::newinstancewithoutconstructor' => 
   array (
     0 => 'object',
-  ),
-  'reflectionobject::newlazyghost' => 
-  array (
-    0 => 'object',
-    'initializer' => 'callable',
-    'options=' => 'int',
-  ),
-  'reflectionobject::newlazyproxy' => 
-  array (
-    0 => 'object',
-    'factory' => 'callable',
-    'options=' => 'int',
-  ),
-  'reflectionobject::resetaslazyghost' => 
-  array (
-    0 => 'void',
-    'object' => 'object',
-    'initializer' => 'callable',
-    'options=' => 'int',
-  ),
-  'reflectionobject::resetaslazyproxy' => 
-  array (
-    0 => 'void',
-    'object' => 'object',
-    'factory' => 'callable',
-    'options=' => 'int',
   ),
   'reflectionobject::setstaticpropertyvalue' => 
   array (
@@ -36641,15 +32529,6 @@ return array (
   array (
     0 => 'false|string',
   ),
-  'reflectionproperty::gethook' => 
-  array (
-    0 => 'ReflectionMethod|null',
-    'type' => 'PropertyHookType',
-  ),
-  'reflectionproperty::gethooks' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
   'reflectionproperty::getmodifiers' => 
   array (
     0 => 'int',
@@ -36657,15 +32536,6 @@ return array (
   'reflectionproperty::getname' => 
   array (
     0 => 'string',
-  ),
-  'reflectionproperty::getrawvalue' => 
-  array (
-    0 => 'mixed|null',
-    'object' => 'object',
-  ),
-  'reflectionproperty::getsettabletype' => 
-  array (
-    0 => 'ReflectionType|null',
   ),
   'reflectionproperty::gettype' => 
   array (
@@ -36680,32 +32550,11 @@ return array (
   array (
     0 => 'bool',
   ),
-  'reflectionproperty::hashook' => 
-  array (
-    0 => 'bool',
-    'type' => 'PropertyHookType',
-  ),
-  'reflectionproperty::hashooks' => 
-  array (
-    0 => 'bool',
-  ),
   'reflectionproperty::hastype' => 
   array (
     0 => 'bool',
   ),
-  'reflectionproperty::isabstract' => 
-  array (
-    0 => 'bool',
-  ),
   'reflectionproperty::isdefault' => 
-  array (
-    0 => 'bool',
-  ),
-  'reflectionproperty::isdynamic' => 
-  array (
-    0 => 'bool',
-  ),
-  'reflectionproperty::isfinal' => 
   array (
     0 => 'bool',
   ),
@@ -36714,16 +32563,7 @@ return array (
     0 => 'bool',
     'object=' => 'null|object',
   ),
-  'reflectionproperty::islazy' => 
-  array (
-    0 => 'bool',
-    'object' => 'object',
-  ),
   'reflectionproperty::isprivate' => 
-  array (
-    0 => 'bool',
-  ),
-  'reflectionproperty::isprivateset' => 
   array (
     0 => 'bool',
   ),
@@ -36732,10 +32572,6 @@ return array (
     0 => 'bool',
   ),
   'reflectionproperty::isprotected' => 
-  array (
-    0 => 'bool',
-  ),
-  'reflectionproperty::isprotectedset' => 
   array (
     0 => 'bool',
   ),
@@ -36751,37 +32587,16 @@ return array (
   array (
     0 => 'bool',
   ),
-  'reflectionproperty::isvirtual' => 
-  array (
-    0 => 'bool',
-  ),
   'reflectionproperty::setaccessible' => 
   array (
     0 => 'void',
     'accessible' => 'bool',
-  ),
-  'reflectionproperty::setrawvalue' => 
-  array (
-    0 => 'void',
-    'object' => 'object',
-    'value' => 'mixed|null',
-  ),
-  'reflectionproperty::setrawvaluewithoutlazyinitialization' => 
-  array (
-    0 => 'void',
-    'object' => 'object',
-    'value' => 'mixed|null',
   ),
   'reflectionproperty::setvalue' => 
   array (
     0 => 'void',
     'object' => 'null|object',
     'value' => 'mixed',
-  ),
-  'reflectionproperty::skiplazyinitialization' => 
-  array (
-    0 => 'void',
-    'object' => 'object',
   ),
   'reflectionreference::__clone' => 
   array (
@@ -36881,7 +32696,7 @@ return array (
   ),
   'regexiterator::getinneriterator' => 
   array (
-    0 => 'Iterator|null',
+    0 => 'Iterator',
   ),
   'regexiterator::getmode' => 
   array (
@@ -36945,54 +32760,6 @@ return array (
     'to' => 'string',
     'context=' => 'resource',
   ),
-  'request_parse_body' => 
-  array (
-    0 => 'array<array-key, mixed>',
-    'options=' => 'array<array-key, mixed>|null',
-  ),
-  'requestparsebodyexception::__construct' => 
-  array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'int',
-    'previous=' => 'Throwable|null',
-  ),
-  'requestparsebodyexception::__tostring' => 
-  array (
-    0 => 'string',
-  ),
-  'requestparsebodyexception::__wakeup' => 
-  array (
-    0 => 'string',
-  ),
-  'requestparsebodyexception::getcode' => 
-  array (
-    0 => 'string',
-  ),
-  'requestparsebodyexception::getfile' => 
-  array (
-    0 => 'string',
-  ),
-  'requestparsebodyexception::getline' => 
-  array (
-    0 => 'int',
-  ),
-  'requestparsebodyexception::getmessage' => 
-  array (
-    0 => 'string',
-  ),
-  'requestparsebodyexception::getprevious' => 
-  array (
-    0 => 'Throwable|null',
-  ),
-  'requestparsebodyexception::gettrace' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'requestparsebodyexception::gettraceasstring' => 
-  array (
-    0 => 'string',
-  ),
   'reset' => 
   array (
     0 => 'false|mixed',
@@ -37018,7 +32785,7 @@ return array (
   ),
   'resourcebundle::get' => 
   array (
-    0 => 'ResourceBundle|array<array-key, mixed>|int|null|string',
+    0 => 'mixed',
     'index' => 'int|string',
     'fallback=' => 'bool',
   ),
@@ -37053,7 +32820,7 @@ return array (
   ),
   'resourcebundle_get' => 
   array (
-    0 => 'ResourceBundle|array<array-key, mixed>|int|null|string',
+    0 => 'mixed|null',
     'bundle' => 'ResourceBundle',
     'index' => 'int|string',
     'fallback=' => 'bool',
@@ -37107,10 +32874,6 @@ return array (
     'num' => 'float|int',
     'precision=' => 'int',
     'mode=' => 'int<0, max>',
-  ),
-  'roundingmode::cases' => 
-  array (
-    0 => 'array<array-key, mixed>',
   ),
   'rsort' => 
   array (
@@ -37291,9 +33054,9 @@ return array (
     'write' => 'callable(string, string):bool',
     'destroy' => 'callable(string):bool',
     'gc' => 'callable(string):bool',
-    'create_sid=' => 'callable():string|null',
-    'validate_sid=' => 'callable(string):bool|null',
-    'update_timestamp=' => 'callable(string):bool|null',
+    'create_sid=' => 'callable():string',
+    'validate_sid=' => 'callable(string):bool',
+    'update_timestamp=' => 'callable(string):bool',
   ),
   'session_start' => 
   array (
@@ -37753,69 +33516,9 @@ return array (
     'string1' => 'string',
     'string2' => 'string',
   ),
-  'sodium_crypto_aead_aegis128l_decrypt' => 
-  array (
-    0 => 'false|string',
-    'ciphertext' => 'string',
-    'additional_data' => 'string',
-    'nonce' => 'string',
-    'key' => 'string',
-  ),
-  'sodium_crypto_aead_aegis128l_encrypt' => 
-  array (
-    0 => 'string',
-    'message' => 'string',
-    'additional_data' => 'string',
-    'nonce' => 'string',
-    'key' => 'string',
-  ),
-  'sodium_crypto_aead_aegis128l_keygen' => 
-  array (
-    0 => 'string',
-  ),
-  'sodium_crypto_aead_aegis256_decrypt' => 
-  array (
-    0 => 'false|string',
-    'ciphertext' => 'string',
-    'additional_data' => 'string',
-    'nonce' => 'string',
-    'key' => 'string',
-  ),
-  'sodium_crypto_aead_aegis256_encrypt' => 
-  array (
-    0 => 'string',
-    'message' => 'string',
-    'additional_data' => 'string',
-    'nonce' => 'string',
-    'key' => 'string',
-  ),
-  'sodium_crypto_aead_aegis256_keygen' => 
-  array (
-    0 => 'string',
-  ),
-  'sodium_crypto_aead_aes256gcm_decrypt' => 
-  array (
-    0 => 'false|string',
-    'ciphertext' => 'string',
-    'additional_data' => 'string',
-    'nonce' => 'string',
-    'key' => 'string',
-  ),
-  'sodium_crypto_aead_aes256gcm_encrypt' => 
-  array (
-    0 => 'string',
-    'message' => 'string',
-    'additional_data' => 'string',
-    'nonce' => 'string',
-    'key' => 'string',
-  ),
   'sodium_crypto_aead_aes256gcm_is_available' => 
   array (
     0 => 'bool',
-  ),
-  'sodium_crypto_aead_aes256gcm_keygen' => 
-  array (
-    0 => 'non-empty-string',
   ),
   'sodium_crypto_aead_chacha20poly1305_decrypt' => 
   array (
@@ -38792,7 +34495,7 @@ return array (
   ),
   'splfileobject::fscanf' => 
   array (
-    0 => 'array<array-key, mixed>|int|null',
+    0 => 'array<array-key, mixed>|int',
     'format' => 'string',
     '&...w_vars=' => 'float|int|string',
   ),
@@ -39062,7 +34765,7 @@ return array (
   ),
   'splfixedarray::setsize' => 
   array (
-    0 => 'true',
+    0 => 'bool',
     'size' => 'int',
   ),
   'splfixedarray::toarray' => 
@@ -39093,7 +34796,7 @@ return array (
   ),
   'splheap::insert' => 
   array (
-    0 => 'true',
+    0 => 'bool',
     'value' => 'mixed',
   ),
   'splheap::iscorrupted' => 
@@ -39341,11 +35044,6 @@ return array (
   array (
     0 => 'void',
   ),
-  'splobjectstorage::seek' => 
-  array (
-    0 => 'void',
-    'offset' => 'int',
-  ),
   'splobjectstorage::serialize' => 
   array (
     0 => 'string',
@@ -39392,7 +35090,7 @@ return array (
   ),
   'splpriorityqueue::insert' => 
   array (
-    0 => 'true',
+    0 => 'bool',
     'value' => 'mixed',
     'priority' => 'mixed',
   ),
@@ -39414,7 +35112,7 @@ return array (
   ),
   'splpriorityqueue::recoverfromcorruption' => 
   array (
-    0 => 'true',
+    0 => 'void',
   ),
   'splpriorityqueue::rewind' => 
   array (
@@ -39744,7 +35442,7 @@ return array (
   ),
   'spltempfileobject::fscanf' => 
   array (
-    0 => 'array<array-key, mixed>|int|null',
+    0 => 'array<array-key, mixed>|int',
     'format' => 'string',
     '&...w_vars=' => 'float|int|string',
   ),
@@ -39968,12 +35666,6 @@ return array (
     'string' => 'string',
     '&w_errorCode=' => 'int',
   ),
-  'spoofchecker::setallowedchars' => 
-  array (
-    0 => 'void',
-    'pattern' => 'string',
-    'patternOptions=' => 'int',
-  ),
   'spoofchecker::setallowedlocales' => 
   array (
     0 => 'void',
@@ -40190,7 +35882,7 @@ return array (
   ),
   'sqlite3result::finalize' => 
   array (
-    0 => 'true',
+    0 => 'bool',
   ),
   'sqlite3result::numcolumns' => 
   array (
@@ -40226,7 +35918,7 @@ return array (
   ),
   'sqlite3stmt::close' => 
   array (
-    0 => 'true',
+    0 => 'bool',
   ),
   'sqlite3stmt::execute' => 
   array (
@@ -40398,16 +36090,16 @@ return array (
   array (
     0 => 'void',
     'brigade' => 'resource',
-    'bucket' => 'StreamBucket',
+    'bucket' => 'object',
   ),
   'stream_bucket_make_writeable' => 
   array (
-    0 => 'StreamBucket|null',
+    0 => 'null|object',
     'brigade' => 'resource',
   ),
   'stream_bucket_new' => 
   array (
-    0 => 'StreamBucket',
+    0 => 'object',
     'stream' => 'resource',
     'buffer' => 'string',
   ),
@@ -40415,7 +36107,7 @@ return array (
   array (
     0 => 'void',
     'brigade' => 'resource',
-    'bucket' => 'StreamBucket',
+    'bucket' => 'object',
   ),
   'stream_context_create' => 
   array (
@@ -40448,18 +36140,18 @@ return array (
     0 => 'true',
     'context' => 'mixed',
     'wrapper_or_options' => 'string',
-    'option_name' => 'null|string',
+    'option_name' => 'string',
     'value' => 'mixed',
   ),
   'stream_context_set_options' => 
   array (
-    0 => 'true',
+    0 => 'bool',
     'context' => 'string',
     'options' => 'array<array-key, mixed>',
   ),
   'stream_context_set_params' => 
   array (
-    0 => 'true',
+    0 => 'bool',
     'context' => 'resource',
     'params' => 'array<array-key, mixed>',
   ),
@@ -40813,7 +36505,7 @@ return array (
   array (
     0 => 'false|non-empty-string',
     'string' => 'string',
-    'token' => 'null|string',
+    'token' => 'string',
   ),
   'strtolower' => 
   array (
@@ -40836,7 +36528,7 @@ return array (
     0 => 'string',
     'string' => 'string',
     'from' => 'string',
-    'to' => 'null|string',
+    'to' => 'string',
   ),
   'strval' => 
   array (
@@ -41089,7 +36781,7 @@ return array (
   ),
   'trigger_error' => 
   array (
-    0 => 'true',
+    0 => 'bool',
     'message' => 'string',
     'error_level=' => '256|512|1024|16384',
   ),
@@ -41438,7 +37130,7 @@ return array (
   ),
   'user_error' => 
   array (
-    0 => 'true',
+    0 => 'bool',
     'message' => 'string',
     'error_level=' => 'int',
   ),
@@ -42417,7 +38109,7 @@ return array (
     0 => 'bool',
     'version1' => 'string',
     'version2' => 'string',
-    'operator' => '\'!=\'|\'<\'|\'<=\'|\'<>\'|\'=\'|\'==\'|\'>\'|\'>=\'|\'eq\'|\'ge\'|\'gt\'|\'le\'|\'lt\'|\'ne\'|null',
+    'operator' => '\'!=\'|\'<\'|\'<=\'|\'<>\'|\'=\'|\'==\'|\'>\'|\'>=\'|\'eq\'|\'ge\'|\'gt\'|\'le\'|\'lt\'|\'ne\'',
   ),
   'vfprintf' => 
   array (
@@ -42567,32 +38259,32 @@ return array (
   array (
     0 => 'true',
     'parser' => 'XMLParser',
-    'handler' => 'callable|null',
+    'handler' => 'callable',
   ),
   'xml_set_element_handler' => 
   array (
     0 => 'true',
     'parser' => 'XMLParser',
     'start_handler' => 'callable|null',
-    'end_handler' => 'callable|null',
+    'end_handler' => 'callable',
   ),
   'xml_set_end_namespace_decl_handler' => 
   array (
     0 => 'true',
     'parser' => 'XMLParser',
-    'handler' => 'callable|null',
+    'handler' => 'callable',
   ),
   'xml_set_external_entity_ref_handler' => 
   array (
     0 => 'true',
     'parser' => 'XMLParser',
-    'handler' => 'callable|null',
+    'handler' => 'callable',
   ),
   'xml_set_notation_decl_handler' => 
   array (
     0 => 'true',
     'parser' => 'XMLParser',
-    'handler' => 'callable|null',
+    'handler' => 'callable',
   ),
   'xml_set_object' => 
   array (
@@ -42610,44 +38302,22 @@ return array (
   array (
     0 => 'true',
     'parser' => 'XMLParser',
-    'handler' => 'callable|null',
+    'handler' => 'callable',
   ),
   'xml_set_unparsed_entity_decl_handler' => 
   array (
     0 => 'true',
     'parser' => 'XMLParser',
-    'handler' => 'callable|null',
+    'handler' => 'callable',
   ),
   'xmlreader::close' => 
   array (
-    0 => 'true',
+    0 => 'bool',
   ),
   'xmlreader::expand' => 
   array (
     0 => 'DOMNode|false',
     'baseNode=' => 'DOMNode|null',
-  ),
-  'xmlreader::fromstream' => 
-  array (
-    0 => 'static',
-    'stream' => 'string',
-    'encoding=' => 'null|string',
-    'flags=' => 'int',
-    'documentUri=' => 'null|string',
-  ),
-  'xmlreader::fromstring' => 
-  array (
-    0 => 'static',
-    'source' => 'string',
-    'encoding=' => 'null|string',
-    'flags=' => 'int',
-  ),
-  'xmlreader::fromuri' => 
-  array (
-    0 => 'static',
-    'uri' => 'string',
-    'encoding=' => 'null|string',
-    'flags=' => 'int',
   ),
   'xmlreader::getattribute' => 
   array (
@@ -42907,20 +38577,6 @@ return array (
   array (
     0 => 'bool',
     'content' => 'string',
-  ),
-  'xmlwriter::tomemory' => 
-  array (
-    0 => 'static',
-  ),
-  'xmlwriter::tostream' => 
-  array (
-    0 => 'static',
-    'stream' => 'string',
-  ),
-  'xmlwriter::touri' => 
-  array (
-    0 => 'static',
-    'uri' => 'string',
   ),
   'xmlwriter::writeattribute' => 
   array (
@@ -48403,19 +44059,19 @@ return array (
   'dba_close' => 
   array (
     0 => 'void',
-    'dba' => 'Dba\\Connection',
+    'dba' => 'resource',
   ),
   'dba_delete' => 
   array (
     0 => 'bool',
     'key' => 'array<array-key, mixed>|string',
-    'dba' => 'Dba\\Connection',
+    'dba' => 'resource',
   ),
   'dba_exists' => 
   array (
     0 => 'bool',
     'key' => 'array<array-key, mixed>|string',
-    'dba' => 'Dba\\Connection',
+    'dba' => 'resource',
   ),
   'dba_fetch' => 
   array (
@@ -48433,7 +44089,7 @@ return array (
   'dba_firstkey' => 
   array (
     0 => 'string',
-    'dba' => 'Dba\\Connection',
+    'dba' => 'resource',
   ),
   'dba_handlers' => 
   array (
@@ -48445,7 +44101,7 @@ return array (
     0 => 'bool',
     'key' => 'array<array-key, mixed>|string',
     'value' => 'string',
-    'dba' => 'Dba\\Connection',
+    'dba' => 'resource',
   ),
   'dba_key_split' => 
   array (
@@ -48459,11 +44115,11 @@ return array (
   'dba_nextkey' => 
   array (
     0 => 'string',
-    'dba' => 'Dba\\Connection',
+    'dba' => 'resource',
   ),
   'dba_open' => 
   array (
-    0 => 'Dba\\Connection|false',
+    0 => 'resource',
     'path' => 'string',
     'mode' => 'string',
     'handler=' => 'null|string',
@@ -48474,11 +44130,11 @@ return array (
   'dba_optimize' => 
   array (
     0 => 'bool',
-    'dba' => 'Dba\\Connection',
+    'dba' => 'resource',
   ),
   'dba_popen' => 
   array (
-    0 => 'Dba\\Connection|false',
+    0 => 'resource',
     'path' => 'string',
     'mode' => 'string',
     'handler=' => 'null|string',
@@ -48491,12 +44147,12 @@ return array (
     0 => 'bool',
     'key' => 'array<array-key, mixed>|string',
     'value' => 'string',
-    'dba' => 'Dba\\Connection',
+    'dba' => 'resource',
   ),
   'dba_sync' => 
   array (
     0 => 'bool',
-    'dba' => 'Dba\\Connection',
+    'dba' => 'resource',
   ),
   'dbase_add_record' => 
   array (
@@ -50165,6 +45821,11 @@ return array (
     '&w_width=' => 'int',
     '&w_height=' => 'int',
     '&w_image_type=' => 'int',
+  ),
+  'exit' => 
+  array (
+    0 => 'mixed',
+    'status' => 'int|string',
   ),
   'expect_expectl' => 
   array (
@@ -68406,7 +64067,7 @@ return array (
   ),
   'mysqli::get_charset' => 
   array (
-    0 => 'null|object',
+    0 => 'object',
   ),
   'mysqli::get_client_info' => 
   array (
@@ -68996,7 +64657,7 @@ return array (
   ),
   'mysqli_report' => 
   array (
-    0 => 'true',
+    0 => 'bool',
     'flags' => 'int',
   ),
   'mysqli_result::__construct' => 
@@ -71050,18 +66711,18 @@ return array (
   array (
     0 => 'bool|int',
     'odbc' => 'Odbc\\Connection',
-    'enable=' => 'bool|null',
+    'enable=' => 'bool',
   ),
   'odbc_binmode' => 
   array (
     0 => 'true',
-    'statement' => 'Odbc\\Result',
+    'statement' => 'resource',
     'mode' => 'int',
   ),
   'odbc_close' => 
   array (
     0 => 'void',
-    'odbc' => 'Odbc\\Connection',
+    'odbc' => 'resource',
   ),
   'odbc_close_all' => 
   array (
@@ -71070,7 +66731,7 @@ return array (
   'odbc_columnprivileges' => 
   array (
     0 => 'Odbc\\Result|false',
-    'odbc' => 'Odbc\\Connection',
+    'odbc' => 'resource',
     'catalog' => 'null|string',
     'schema' => 'string',
     'table' => 'string',
@@ -71079,7 +66740,7 @@ return array (
   'odbc_columns' => 
   array (
     0 => 'Odbc\\Result|false',
-    'odbc' => 'Odbc\\Connection',
+    'odbc' => 'resource',
     'catalog=' => 'null|string',
     'schema=' => 'null|string',
     'table=' => 'null|string',
@@ -71088,120 +66749,120 @@ return array (
   'odbc_commit' => 
   array (
     0 => 'bool',
-    'odbc' => 'Odbc\\Connection',
+    'odbc' => 'resource',
   ),
   'odbc_connect' => 
   array (
     0 => 'Odbc\\Connection|false',
     'dsn' => 'string',
-    'user' => 'null|string',
-    'password' => 'null|string',
+    'user' => 'string',
+    'password' => 'string',
     'cursor_option=' => 'int',
   ),
   'odbc_cursor' => 
   array (
     0 => 'string',
-    'statement' => 'Odbc\\Result',
+    'statement' => 'resource',
   ),
   'odbc_data_source' => 
   array (
-    0 => 'array<array-key, mixed>|false|null',
+    0 => 'array<array-key, mixed>|false',
     'odbc' => 'Odbc\\Connection',
     'fetch_type' => 'int',
   ),
   'odbc_do' => 
   array (
     0 => 'Odbc\\Result|false',
-    'odbc' => 'Odbc\\Connection',
+    'odbc' => 'resource',
     'query' => 'string',
   ),
   'odbc_error' => 
   array (
     0 => 'string',
-    'odbc=' => 'Odbc\\Connection|null',
+    'odbc=' => 'resource',
   ),
   'odbc_errormsg' => 
   array (
     0 => 'string',
-    'odbc=' => 'Odbc\\Connection|null',
+    'odbc=' => 'resource',
   ),
   'odbc_exec' => 
   array (
     0 => 'Odbc\\Result|false',
-    'odbc' => 'Odbc\\Connection',
+    'odbc' => 'resource',
     'query' => 'string',
   ),
   'odbc_execute' => 
   array (
     0 => 'bool',
-    'statement' => 'Odbc\\Result',
+    'statement' => 'resource',
     'params=' => 'array<array-key, mixed>',
   ),
   'odbc_fetch_array' => 
   array (
     0 => 'array<array-key, mixed>|false',
     'statement' => 'resource',
-    'row=' => 'int|null',
+    'row=' => 'int',
   ),
   'odbc_fetch_into' => 
   array (
     0 => 'int',
     'statement' => 'resource',
     '&w_array' => 'array<array-key, mixed>',
-    'row=' => 'int|null',
+    'row=' => 'int',
   ),
   'odbc_fetch_object' => 
   array (
     0 => 'false|stdClass',
     'statement' => 'resource',
-    'row=' => 'int|null',
+    'row=' => 'int',
   ),
   'odbc_fetch_row' => 
   array (
     0 => 'bool',
-    'statement' => 'Odbc\\Result',
+    'statement' => 'resource',
     'row=' => 'int|null',
   ),
   'odbc_field_len' => 
   array (
     0 => 'false|int',
-    'statement' => 'Odbc\\Result',
+    'statement' => 'resource',
     'field' => 'int',
   ),
   'odbc_field_name' => 
   array (
     0 => 'false|string',
-    'statement' => 'Odbc\\Result',
+    'statement' => 'resource',
     'field' => 'int',
   ),
   'odbc_field_num' => 
   array (
     0 => 'false|int',
-    'statement' => 'Odbc\\Result',
+    'statement' => 'resource',
     'field' => 'string',
   ),
   'odbc_field_precision' => 
   array (
     0 => 'int',
-    'statement' => 'Odbc\\Result',
+    'statement' => 'resource',
     'field' => 'int',
   ),
   'odbc_field_scale' => 
   array (
     0 => 'false|int',
-    'statement' => 'Odbc\\Result',
+    'statement' => 'resource',
     'field' => 'int',
   ),
   'odbc_field_type' => 
   array (
     0 => 'false|string',
-    'statement' => 'Odbc\\Result',
+    'statement' => 'resource',
     'field' => 'int',
   ),
   'odbc_foreignkeys' => 
   array (
     0 => 'Odbc\\Result|false',
-    'odbc' => 'Odbc\\Connection',
+    'odbc' => 'resource',
     'pk_catalog' => 'null|string',
     'pk_schema' => 'string',
     'pk_table' => 'string',
@@ -71212,53 +66873,53 @@ return array (
   'odbc_free_result' => 
   array (
     0 => 'true',
-    'statement' => 'Odbc\\Result',
+    'statement' => 'resource',
   ),
   'odbc_gettypeinfo' => 
   array (
     0 => 'Odbc\\Result|false',
-    'odbc' => 'Odbc\\Connection',
+    'odbc' => 'resource',
     'data_type=' => 'int',
   ),
   'odbc_longreadlen' => 
   array (
     0 => 'true',
-    'statement' => 'Odbc\\Result',
+    'statement' => 'resource',
     'length' => 'int',
   ),
   'odbc_next_result' => 
   array (
     0 => 'bool',
-    'statement' => 'Odbc\\Result',
+    'statement' => 'resource',
   ),
   'odbc_num_fields' => 
   array (
     0 => 'int',
-    'statement' => 'Odbc\\Result',
+    'statement' => 'resource',
   ),
   'odbc_num_rows' => 
   array (
     0 => 'int',
-    'statement' => 'Odbc\\Result',
+    'statement' => 'resource',
   ),
   'odbc_pconnect' => 
   array (
     0 => 'Odbc\\Connection|false',
     'dsn' => 'string',
-    'user' => 'null|string',
-    'password' => 'null|string',
+    'user' => 'string',
+    'password' => 'string',
     'cursor_option=' => 'int',
   ),
   'odbc_prepare' => 
   array (
     0 => 'Odbc\\Result|false',
-    'odbc' => 'Odbc\\Connection',
+    'odbc' => 'resource',
     'query' => 'string',
   ),
   'odbc_primarykeys' => 
   array (
     0 => 'Odbc\\Result|false',
-    'odbc' => 'Odbc\\Connection',
+    'odbc' => 'resource',
     'catalog' => 'null|string',
     'schema' => 'string',
     'table' => 'string',
@@ -71266,7 +66927,7 @@ return array (
   'odbc_procedurecolumns' => 
   array (
     0 => 'Odbc\\Result|false',
-    'odbc' => 'Odbc\\Connection',
+    'odbc' => 'resource',
     'catalog=' => 'null|string',
     'schema=' => 'null|string',
     'procedure=' => 'null|string',
@@ -71275,7 +66936,7 @@ return array (
   'odbc_procedures' => 
   array (
     0 => 'Odbc\\Result|false',
-    'odbc' => 'Odbc\\Connection',
+    'odbc' => 'resource',
     'catalog=' => 'null|string',
     'schema=' => 'null|string',
     'procedure=' => 'null|string',
@@ -71283,24 +66944,24 @@ return array (
   'odbc_result' => 
   array (
     0 => 'bool|null|string',
-    'statement' => 'Odbc\\Result',
+    'statement' => 'resource',
     'field' => 'int|string',
   ),
   'odbc_result_all' => 
   array (
     0 => 'false|int',
-    'statement' => 'Odbc\\Result',
+    'statement' => 'resource',
     'format=' => 'string',
   ),
   'odbc_rollback' => 
   array (
     0 => 'bool',
-    'odbc' => 'Odbc\\Connection',
+    'odbc' => 'resource',
   ),
   'odbc_setoption' => 
   array (
     0 => 'bool',
-    'odbc' => 'Odbc\\Connection|Odbc\\Result',
+    'odbc' => 'resource',
     'which' => 'int',
     'option' => 'int',
     'value' => 'int',
@@ -71308,7 +66969,7 @@ return array (
   'odbc_specialcolumns' => 
   array (
     0 => 'Odbc\\Result|false',
-    'odbc' => 'Odbc\\Connection',
+    'odbc' => 'resource',
     'type' => 'int',
     'catalog' => 'null|string',
     'schema' => 'string',
@@ -71319,7 +66980,7 @@ return array (
   'odbc_statistics' => 
   array (
     0 => 'Odbc\\Result|false',
-    'odbc' => 'Odbc\\Connection',
+    'odbc' => 'resource',
     'catalog' => 'null|string',
     'schema' => 'string',
     'table' => 'string',
@@ -71329,7 +66990,7 @@ return array (
   'odbc_tableprivileges' => 
   array (
     0 => 'Odbc\\Result|false',
-    'odbc' => 'Odbc\\Connection',
+    'odbc' => 'resource',
     'catalog' => 'null|string',
     'schema' => 'string',
     'table' => 'string',
@@ -71337,7 +66998,7 @@ return array (
   'odbc_tables' => 
   array (
     0 => 'Odbc\\Result|false',
-    'odbc' => 'Odbc\\Connection',
+    'odbc' => 'resource',
     'catalog=' => 'null|string',
     'schema=' => 'null|string',
     'table=' => 'null|string',
@@ -71473,7 +67134,7 @@ return array (
   ),
   'outeriterator::getinneriterator' => 
   array (
-    0 => 'Iterator|null',
+    0 => 'Iterator',
   ),
   'outeriterator::key' => 
   array (
@@ -71950,6 +67611,11 @@ return array (
     0 => 'int',
     'set' => 'array<array-key, mixed>',
     '&w_siginfo' => 'array<array-key, mixed>',
+  ),
+  'pcntl_wifcontinued' => 
+  array (
+    0 => 'bool',
+    'status' => 'int',
   ),
   'pdf_activate_item' => 
   array (
@@ -79282,8 +74948,8 @@ return array (
   'soapclient::__construct' => 
   array (
     0 => 'void',
-    'wsdl' => 'null|string',
-    'options=' => 'array<array-key, mixed>',
+    'wsdl' => 'mixed',
+    'options=' => 'array<array-key, mixed>|null',
   ),
   'soapclient::__dorequest' => 
   array (
@@ -79326,11 +74992,11 @@ return array (
   array (
     0 => 'void',
     'name' => 'string',
-    'value=' => 'null|string',
+    'value=' => 'string',
   ),
   'soapclient::__setlocation' => 
   array (
-    0 => 'null|string',
+    0 => 'string',
     'new_location=' => 'string',
   ),
   'soapclient::__setsoapheaders' => 
@@ -79343,7 +75009,7 @@ return array (
     0 => 'mixed',
     'function_name' => 'string',
     'arguments' => 'array<array-key, mixed>',
-    'options=' => 'array<array-key, mixed>|null',
+    'options=' => 'array<array-key, mixed>',
     'input_headers=' => 'SoapHeader|array<array-key, mixed>',
     '&w_output_headers=' => 'array<array-key, mixed>',
   ),
@@ -79420,7 +75086,7 @@ return array (
     'name' => 'string',
     'data=' => 'mixed',
     'mustunderstand=' => 'bool',
-    'actor=' => 'null|string',
+    'actor=' => 'string',
   ),
   'soapheader::soapheader' => 
   array (
@@ -79503,7 +75169,7 @@ return array (
   array (
     0 => 'void',
     'data' => 'mixed',
-    'encoding' => 'int|null',
+    'encoding' => 'int',
     'type_name=' => 'null|string',
     'type_namespace=' => 'null|string',
     'node_name=' => 'null|string',
@@ -79772,6 +75438,26 @@ return array (
   array (
     0 => 'bool',
     'info_id' => 'string',
+  ),
+  'sodium_crypto_aead_aes256gcm_decrypt' => 
+  array (
+    0 => 'false|string',
+    'ciphertext' => 'string',
+    'additional_data' => 'string',
+    'nonce' => 'string',
+    'key' => 'string',
+  ),
+  'sodium_crypto_aead_aes256gcm_encrypt' => 
+  array (
+    0 => 'string',
+    'message' => 'string',
+    'additional_data' => 'string',
+    'nonce' => 'string',
+    'key' => 'string',
+  ),
+  'sodium_crypto_aead_aes256gcm_keygen' => 
+  array (
+    0 => 'non-empty-string',
   ),
   'solid_fetch_prev' => 
   array (
@@ -93809,7 +89495,7 @@ return array (
     0 => 'bool',
     'namespace' => 'string',
     'name' => 'string',
-    'value' => 'null|string',
+    'value' => 'string',
   ),
   'xsltprocessor::setparameter\'1' => 
   array (
@@ -93819,7 +89505,7 @@ return array (
   ),
   'xsltprocessor::setprofiling' => 
   array (
-    0 => 'true',
+    0 => 'bool',
     'filename' => 'null|string',
   ),
   'xsltprocessor::setsecurityprefs' => 
@@ -93841,7 +89527,7 @@ return array (
   ),
   'xsltprocessor::transformtoxml' => 
   array (
-    0 => 'false|null|string',
+    0 => 'false|string',
     'document' => 'DOMDocument',
   ),
   'yac::__construct' => 
