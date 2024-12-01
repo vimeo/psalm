@@ -11,7 +11,8 @@ use Psalm\Internal\Provider\Providers;
 use Psalm\Tests\TestConfig;
 use Psalm\Type;
 
-function internalNormalizeCallMap(array|string $callMap, string|int $key = 0): array|string {
+function internalNormalizeCallMap(array|string $callMap, string|int $key = 0): array|string
+{
     if (is_string($callMap)) {
         return Type::parseString($callMap === '' ? 'mixed' : $callMap)->getId(true);
     }
@@ -29,62 +30,10 @@ function internalNormalizeCallMap(array|string $callMap, string|int $key = 0): a
     return $new;
 }
 
-function normalizeCallMap(array $callMap): array {
+function normalizeCallMap(array $callMap): array
+{
     return internalNormalizeCallMap($callMap);
 }
-
-function typeToString(?ReflectionType $reflection_type = null): string
-{
-    if (!$reflection_type) {
-        return 'string';
-    }
-
-    if ($reflection_type instanceof ReflectionNamedType) {
-        $type = $reflection_type->getName();
-    } elseif ($reflection_type instanceof ReflectionUnionType) {
-        $type = implode(
-            '|',
-            array_map(
-                static fn(ReflectionNamedType $reflection): string => $reflection->getName(),
-                $reflection_type->getTypes(),
-            ),
-        );
-    } else {
-        throw new LogicException('Unexpected reflection class ' . $reflection_type::class . ' found.');
-    }
-
-    if ($reflection_type->allowsNull()) {
-        $type .= '|null';
-    }
-
-    return $type;
-}
-
-/**
- * @return array<string, array{byRef: bool, refMode: 'rw'|'w'|'r', variadic: bool, optional: bool, type: string}>
- */
-function paramsToEntries(ReflectionFunctionAbstract $reflectionFunction): array
-{
-    $res = [typeToString($reflectionFunction->getReturnType())];
-
-    foreach ($reflectionFunction->getParameters() as $param) {
-        $key = $param->getName();
-        if ($param->isPassedByReference()) {
-            $key = "&$key";
-        }
-        if ($param->isVariadic()) {
-            $key = "...$key";
-        }
-        if ($param->isOptional()) {
-            $key .= '=';
-        }
-
-        $res[$key] = typeToString($param->getType());
-    }
-
-    return $res;
-}
-
 
 /**
      * Returns the correct reflection type for function or method name.
