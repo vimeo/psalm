@@ -13,6 +13,7 @@ foreach (glob(__DIR__."/../dictionaries/base/CallMap_*.php") as $file) {
     $version = $matches[1];
 
     $baseMaps[$version] = normalizeCallMap(require $file);
+    writeCallMap($file, $baseMaps[$version]);
 }
 
 ksort($baseMaps);
@@ -56,9 +57,8 @@ foreach ($customMaps as $version => $data) {
     foreach ($data as $name => $func) {
         if (($baseMaps[$version][$name] ?? null) === $func) {
             unset($customMaps[$version][$name]);
-        } else if(($baseMaps[$version][$name] ?? null))
-        var_dump($name, ($baseMaps[$version][$name] ?? null), $func);
+        }
     }
+    writeCallMap("dictionaries/CallMap_$version.php", array_replace($baseMaps[$version] ?? [], $data));
 }
-
-var_dump($customMaps);
+writeCallMap("dictionaries/CallMap.php", array_replace($baseMaps[$last] ?? [], $customMaps[$last] ?? []));
