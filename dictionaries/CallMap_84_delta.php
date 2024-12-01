@@ -9,7 +9,7 @@ return array (
   ),
   'changed' => 
   array (
-    'Collator::setStrength' => 
+    'collator::setstrength' => 
     array (
       'old' => 
       array (
@@ -83,7 +83,7 @@ return array (
         'flags=' => 'int|null',
       ),
     ),
-    'DOMDocument::registerNodeClass' => 
+    'domdocument::registernodeclass' => 
     array (
       'old' => 
       array (
@@ -98,7 +98,7 @@ return array (
         'extendedClass' => 'null|string',
       ),
     ),
-    'DOMImplementation::createDocument' => 
+    'domimplementation::createdocument' => 
     array (
       'old' => 
       array (
@@ -203,7 +203,7 @@ return array (
         'month' => 'int',
       ),
     ),
-    'IntlCalendar::clear' => 
+    'intlcalendar::clear' => 
     array (
       'old' => 
       array (
@@ -216,7 +216,7 @@ return array (
         'field=' => 'int|null',
       ),
     ),
-    'IntlCalendar::set' => 
+    'intlcalendar::set' => 
     array (
       'old' => 
       array (
@@ -231,7 +231,7 @@ return array (
         'value' => 'int',
       ),
     ),
-    'IntlCalendar::setFirstDayOfWeek' => 
+    'intlcalendar::setfirstdayofweek' => 
     array (
       'old' => 
       array (
@@ -244,7 +244,7 @@ return array (
         'dayOfWeek' => 'int',
       ),
     ),
-    'IntlCalendar::setMinimalDaysInFirstWeek' => 
+    'intlcalendar::setminimaldaysinfirstweek' => 
     array (
       'old' => 
       array (
@@ -257,7 +257,7 @@ return array (
         'days' => 'int',
       ),
     ),
-    'IntlGregorianCalendar::clear' => 
+    'intlgregoriancalendar::clear' => 
     array (
       'old' => 
       array (
@@ -270,7 +270,7 @@ return array (
         'field=' => 'int|null',
       ),
     ),
-    'IntlGregorianCalendar::set' => 
+    'intlgregoriancalendar::set' => 
     array (
       'old' => 
       array (
@@ -285,7 +285,7 @@ return array (
         'value' => 'int',
       ),
     ),
-    'IntlGregorianCalendar::setFirstDayOfWeek' => 
+    'intlgregoriancalendar::setfirstdayofweek' => 
     array (
       'old' => 
       array (
@@ -298,7 +298,7 @@ return array (
         'dayOfWeek' => 'int',
       ),
     ),
-    'IntlGregorianCalendar::setMinimalDaysInFirstWeek' => 
+    'intlgregoriancalendar::setminimaldaysinfirstweek' => 
     array (
       'old' => 
       array (
@@ -311,7 +311,7 @@ return array (
         'days' => 'int',
       ),
     ),
-    'Locale::setDefault' => 
+    'locale::setdefault' => 
     array (
       'old' => 
       array (
@@ -692,7 +692,7 @@ return array (
         'types=' => 'null|string',
       ),
     ),
-    'PDOStatement::setFetchMode' => 
+    'pdostatement::setfetchmode' => 
     array (
       'old' => 
       array (
@@ -733,7 +733,7 @@ return array (
         'connection=' => 'PgSql\\Connection|null',
       ),
     ),
-    'Phar::copy' => 
+    'phar::copy' => 
     array (
       'old' => 
       array (
@@ -748,7 +748,7 @@ return array (
         'to' => 'string',
       ),
     ),
-    'Phar::decompressFiles' => 
+    'phar::decompressfiles' => 
     array (
       'old' => 
       array (
@@ -759,7 +759,7 @@ return array (
         0 => 'true',
       ),
     ),
-    'Phar::delete' => 
+    'phar::delete' => 
     array (
       'old' => 
       array (
@@ -772,7 +772,7 @@ return array (
         'localName' => 'string',
       ),
     ),
-    'Phar::delMetadata' => 
+    'phar::delmetadata' => 
     array (
       'old' => 
       array (
@@ -783,7 +783,7 @@ return array (
         0 => 'true',
       ),
     ),
-    'Phar::setAlias' => 
+    'phar::setalias' => 
     array (
       'old' => 
       array (
@@ -796,7 +796,7 @@ return array (
         'alias' => 'string',
       ),
     ),
-    'Phar::setDefaultStub' => 
+    'phar::setdefaultstub' => 
     array (
       'old' => 
       array (
@@ -811,7 +811,7 @@ return array (
         'webIndex=' => 'null|string',
       ),
     ),
-    'Phar::setStub' => 
+    'phar::setstub' => 
     array (
       'old' => 
       array (
@@ -826,7 +826,7 @@ return array (
         'length=' => 'int',
       ),
     ),
-    'Phar::unlinkArchive' => 
+    'phar::unlinkarchive' => 
     array (
       'old' => 
       array (
@@ -839,7 +839,7 @@ return array (
         'filename' => 'string',
       ),
     ),
-    'PharData::copy' => 
+    'phardata::copy' => 
     array (
       'old' => 
       array (
@@ -854,7 +854,7 @@ return array (
         'to' => 'string',
       ),
     ),
-    'PharData::decompressFiles' => 
+    'phardata::decompressfiles' => 
     array (
       'old' => 
       array (
@@ -865,7 +865,7 @@ return array (
         0 => 'true',
       ),
     ),
-    'PharData::delete' => 
+    'phardata::delete' => 
     array (
       'old' => 
       array (
@@ -878,7 +878,7 @@ return array (
         'localName' => 'string',
       ),
     ),
-    'PharData::delMetadata' => 
+    'phardata::delmetadata' => 
     array (
       'old' => 
       array (
@@ -889,7 +889,7 @@ return array (
         0 => 'true',
       ),
     ),
-    'PharData::setStub' => 
+    'phardata::setstub' => 
     array (
       'old' => 
       array (
@@ -904,7 +904,7 @@ return array (
         'length=' => 'int',
       ),
     ),
-    'PharFileInfo::compress' => 
+    'pharfileinfo::compress' => 
     array (
       'old' => 
       array (
@@ -917,7 +917,7 @@ return array (
         'compression' => 'int',
       ),
     ),
-    'PharFileInfo::decompress' => 
+    'pharfileinfo::decompress' => 
     array (
       'old' => 
       array (
@@ -928,7 +928,7 @@ return array (
         0 => 'true',
       ),
     ),
-    'PharFileInfo::delMetadata' => 
+    'pharfileinfo::delmetadata' => 
     array (
       'old' => 
       array (
@@ -939,7 +939,7 @@ return array (
         0 => 'true',
       ),
     ),
-    'ResourceBundle::get' => 
+    'resourcebundle::get' => 
     array (
       'old' => 
       array (
@@ -971,7 +971,7 @@ return array (
         'fallback=' => 'bool',
       ),
     ),
-    'SoapClient::__setCookie' => 
+    'soapclient::__setcookie' => 
     array (
       'old' => 
       array (
@@ -986,7 +986,7 @@ return array (
         'value=' => 'null|string',
       ),
     ),
-    'SplFixedArray::setSize' => 
+    'splfixedarray::setsize' => 
     array (
       'old' => 
       array (
@@ -999,7 +999,7 @@ return array (
         'size' => 'int',
       ),
     ),
-    'SplHeap::insert' => 
+    'splheap::insert' => 
     array (
       'old' => 
       array (
@@ -1012,7 +1012,7 @@ return array (
         'value' => 'mixed',
       ),
     ),
-    'SplPriorityQueue::insert' => 
+    'splpriorityqueue::insert' => 
     array (
       'old' => 
       array (
@@ -1027,7 +1027,7 @@ return array (
         'priority' => 'mixed',
       ),
     ),
-    'SplPriorityQueue::recoverFromCorruption' => 
+    'splpriorityqueue::recoverfromcorruption' => 
     array (
       'old' => 
       array (
@@ -1038,7 +1038,7 @@ return array (
         0 => 'true',
       ),
     ),
-    'SQLite3Result::finalize' => 
+    'sqlite3result::finalize' => 
     array (
       'old' => 
       array (
@@ -1049,7 +1049,7 @@ return array (
         0 => 'true',
       ),
     ),
-    'SQLite3Stmt::close' => 
+    'sqlite3stmt::close' => 
     array (
       'old' => 
       array (
@@ -1152,7 +1152,7 @@ return array (
         'error_level=' => 'int',
       ),
     ),
-    'XMLReader::close' => 
+    'xmlreader::close' => 
     array (
       'old' => 
       array (
@@ -1163,7 +1163,7 @@ return array (
         0 => 'true',
       ),
     ),
-    'XSLTProcessor::setProfiling' => 
+    'xsltprocessor::setprofiling' => 
     array (
       'old' => 
       array (
@@ -1674,7 +1674,7 @@ return array (
         'flags=' => 'int',
       ),
     ),
-    'SoapClient::__construct' => 
+    'soapclient::__construct' => 
     array (
       'old' => 
       array (
@@ -1751,7 +1751,7 @@ return array (
         'handler' => 'callable|null',
       ),
     ),
-    'AppendIterator::getInnerIterator' => 
+    'appenditerator::getinneriterator' => 
     array (
       'old' => 
       array (
@@ -1762,7 +1762,7 @@ return array (
         0 => 'Iterator|null',
       ),
     ),
-    'AppendIterator::getIteratorIndex' => 
+    'appenditerator::getiteratorindex' => 
     array (
       'old' => 
       array (
@@ -1773,7 +1773,7 @@ return array (
         0 => 'int|null',
       ),
     ),
-    'CachingIterator::__construct' => 
+    'cachingiterator::__construct' => 
     array (
       'old' => 
       array (
@@ -1788,7 +1788,7 @@ return array (
         'flags=' => 'int',
       ),
     ),
-    'CachingIterator::getInnerIterator' => 
+    'cachingiterator::getinneriterator' => 
     array (
       'old' => 
       array (
@@ -1799,7 +1799,7 @@ return array (
         0 => 'Iterator|null',
       ),
     ),
-    'CallbackFilterIterator::getInnerIterator' => 
+    'callbackfilteriterator::getinneriterator' => 
     array (
       'old' => 
       array (
@@ -1823,7 +1823,7 @@ return array (
         'handle' => 'CurlHandle',
       ),
     ),
-    'FilterIterator::getInnerIterator' => 
+    'filteriterator::getinneriterator' => 
     array (
       'old' => 
       array (
@@ -1936,7 +1936,7 @@ return array (
         'array' => 'array<array-key, mixed>|null',
       ),
     ),
-    'InfiniteIterator::getInnerIterator' => 
+    'infiniteiterator::getinneriterator' => 
     array (
       'old' => 
       array (
@@ -1947,7 +1947,7 @@ return array (
         0 => 'Iterator|null',
       ),
     ),
-    'IteratorIterator::getInnerIterator' => 
+    'iteratoriterator::getinneriterator' => 
     array (
       'old' => 
       array (
@@ -1973,7 +1973,7 @@ return array (
         'array' => 'array<array-key, mixed>|null',
       ),
     ),
-    'LimitIterator::getInnerIterator' => 
+    'limititerator::getinneriterator' => 
     array (
       'old' => 
       array (
@@ -1984,7 +1984,7 @@ return array (
         0 => 'Iterator|null',
       ),
     ),
-    'Locale::getAllVariants' => 
+    'locale::getallvariants' => 
     array (
       'old' => 
       array (
@@ -1997,7 +1997,7 @@ return array (
         'locale' => 'string',
       ),
     ),
-    'Locale::getKeywords' => 
+    'locale::getkeywords' => 
     array (
       'old' => 
       array (
@@ -2010,7 +2010,7 @@ return array (
         'locale' => 'string',
       ),
     ),
-    'Locale::getPrimaryLanguage' => 
+    'locale::getprimarylanguage' => 
     array (
       'old' => 
       array (
@@ -2023,7 +2023,7 @@ return array (
         'locale' => 'string',
       ),
     ),
-    'Locale::getRegion' => 
+    'locale::getregion' => 
     array (
       'old' => 
       array (
@@ -2036,7 +2036,7 @@ return array (
         'locale' => 'string',
       ),
     ),
-    'Locale::getScript' => 
+    'locale::getscript' => 
     array (
       'old' => 
       array (
@@ -2049,7 +2049,7 @@ return array (
         'locale' => 'string',
       ),
     ),
-    'Locale::parseLocale' => 
+    'locale::parselocale' => 
     array (
       'old' => 
       array (
@@ -2077,7 +2077,7 @@ return array (
         'encoding=' => 'null|string',
       ),
     ),
-    'MessageFormatter::create' => 
+    'messageformatter::create' => 
     array (
       'old' => 
       array (
@@ -2103,7 +2103,7 @@ return array (
         0 => 'null|object',
       ),
     ),
-    'NoRewindIterator::getInnerIterator' => 
+    'norewinditerator::getinneriterator' => 
     array (
       'old' => 
       array (
@@ -2114,7 +2114,7 @@ return array (
         0 => 'Iterator|null',
       ),
     ),
-    'NumberFormatter::format' => 
+    'numberformatter::format' => 
     array (
       'old' => 
       array (
@@ -2176,7 +2176,7 @@ return array (
         'row=' => 'int|null',
       ),
     ),
-    'OuterIterator::getInnerIterator' => 
+    'outeriterator::getinneriterator' => 
     array (
       'old' => 
       array (
@@ -2187,7 +2187,7 @@ return array (
         0 => 'Iterator|null',
       ),
     ),
-    'RecursiveCachingIterator::getInnerIterator' => 
+    'recursivecachingiterator::getinneriterator' => 
     array (
       'old' => 
       array (
@@ -2198,7 +2198,7 @@ return array (
         0 => 'Iterator|null',
       ),
     ),
-    'RecursiveCallbackFilterIterator::getInnerIterator' => 
+    'recursivecallbackfilteriterator::getinneriterator' => 
     array (
       'old' => 
       array (
@@ -2209,7 +2209,7 @@ return array (
         0 => 'Iterator|null',
       ),
     ),
-    'RecursiveFilterIterator::getInnerIterator' => 
+    'recursivefilteriterator::getinneriterator' => 
     array (
       'old' => 
       array (
@@ -2220,7 +2220,7 @@ return array (
         0 => 'Iterator|null',
       ),
     ),
-    'RecursiveRegexIterator::getInnerIterator' => 
+    'recursiveregexiterator::getinneriterator' => 
     array (
       'old' => 
       array (
@@ -2231,7 +2231,7 @@ return array (
         0 => 'Iterator|null',
       ),
     ),
-    'ReflectionClass::newInstanceArgs' => 
+    'reflectionclass::newinstanceargs' => 
     array (
       'old' => 
       array (
@@ -2244,7 +2244,7 @@ return array (
         'args=' => 'array<int<0, max>|string, mixed>',
       ),
     ),
-    'ReflectionFunction::getClosureScopeClass' => 
+    'reflectionfunction::getclosurescopeclass' => 
     array (
       'old' => 
       array (
@@ -2255,7 +2255,7 @@ return array (
         0 => 'ReflectionClass|null',
       ),
     ),
-    'ReflectionFunction::getClosureThis' => 
+    'reflectionfunction::getclosurethis' => 
     array (
       'old' => 
       array (
@@ -2266,7 +2266,7 @@ return array (
         0 => 'null|object',
       ),
     ),
-    'ReflectionMethod::getClosureScopeClass' => 
+    'reflectionmethod::getclosurescopeclass' => 
     array (
       'old' => 
       array (
@@ -2277,7 +2277,7 @@ return array (
         0 => 'ReflectionClass|null',
       ),
     ),
-    'ReflectionMethod::getClosureThis' => 
+    'reflectionmethod::getclosurethis' => 
     array (
       'old' => 
       array (
@@ -2288,7 +2288,7 @@ return array (
         0 => 'null|object',
       ),
     ),
-    'ReflectionObject::newInstanceArgs' => 
+    'reflectionobject::newinstanceargs' => 
     array (
       'old' => 
       array (
@@ -2301,7 +2301,7 @@ return array (
         'args=' => 'array<int<0, max>|string, mixed>',
       ),
     ),
-    'RegexIterator::getInnerIterator' => 
+    'regexiterator::getinneriterator' => 
     array (
       'old' => 
       array (
@@ -2341,7 +2341,7 @@ return array (
         'update_timestamp=' => 'callable(string):bool|null',
       ),
     ),
-    'SoapClient::__setLocation' => 
+    'soapclient::__setlocation' => 
     array (
       'old' => 
       array (
@@ -2354,7 +2354,7 @@ return array (
         'new_location=' => 'string',
       ),
     ),
-    'SoapClient::__soapCall' => 
+    'soapclient::__soapcall' => 
     array (
       'old' => 
       array (
@@ -2375,7 +2375,7 @@ return array (
         '&w_output_headers=' => 'array<array-key, mixed>',
       ),
     ),
-    'SoapHeader::__construct' => 
+    'soapheader::__construct' => 
     array (
       'old' => 
       array (
@@ -2396,7 +2396,7 @@ return array (
         'actor=' => 'null|string',
       ),
     ),
-    'SoapVar::__construct' => 
+    'soapvar::__construct' => 
     array (
       'old' => 
       array (
@@ -2419,7 +2419,7 @@ return array (
         'node_namespace=' => 'null|string',
       ),
     ),
-    'SplFileObject::fscanf' => 
+    'splfileobject::fscanf' => 
     array (
       'old' => 
       array (
@@ -2434,7 +2434,7 @@ return array (
         '&...w_vars=' => 'float|int|string',
       ),
     ),
-    'SplTempFileObject::fscanf' => 
+    'spltempfileobject::fscanf' => 
     array (
       'old' => 
       array (
@@ -2573,7 +2573,7 @@ return array (
         'handler' => 'callable|null',
       ),
     ),
-    'XSLTProcessor::setParameter' => 
+    'xsltprocessor::setparameter' => 
     array (
       'old' => 
       array (
@@ -2590,7 +2590,7 @@ return array (
         'value' => 'null|string',
       ),
     ),
-    'XSLTProcessor::transformToXML' => 
+    'xsltprocessor::transformtoxml' => 
     array (
       'old' => 
       array (

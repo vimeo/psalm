@@ -52,27 +52,27 @@ return array (
       'counter' => 'int',
       'key' => 'non-empty-string',
     ),
-    'ZipArchive::clearError' => 
+    'ziparchive::clearerror' => 
     array (
       0 => 'void',
     ),
-    'ZipArchive::getStreamIndex' => 
+    'ziparchive::getstreamindex' => 
     array (
       0 => 'false|resource',
       'index' => 'int',
       'flags=' => 'int',
     ),
-    'ZipArchive::getStreamName' => 
+    'ziparchive::getstreamname' => 
     array (
       0 => 'false|resource',
       'name' => 'string',
       'flags=' => 'int',
     ),
-    'DateTimeInterface::__serialize' => 
+    'datetimeinterface::__serialize' => 
     array (
       0 => 'array<array-key, mixed>',
     ),
-    'DateTimeInterface::__unserialize' => 
+    'datetimeinterface::__unserialize' => 
     array (
       0 => 'void',
       'data' => 'array<array-key, mixed>',

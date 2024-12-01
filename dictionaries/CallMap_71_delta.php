@@ -3,7 +3,7 @@
 return array (
   'added' => 
   array (
-    'Closure::fromCallable' => 
+    'closure::fromcallable' => 
     array (
       0 => 'Closure',
       'callback' => 'callable',
@@ -88,7 +88,7 @@ return array (
   ),
   'changed' => 
   array (
-    'DateTimeZone::listIdentifiers' => 
+    'datetimezone::listidentifiers' => 
     array (
       'old' => 
       array (
@@ -103,7 +103,7 @@ return array (
         'countryCode=' => 'null|string',
       ),
     ),
-    'IntlDateFormatter::format' => 
+    'intldateformatter::format' => 
     array (
       'old' => 
       array (
@@ -116,7 +116,7 @@ return array (
         'value' => 'DateTimeInterface|IntlCalendar|array{0?: int, 1?: int, 2?: int, 3?: int, 4?: int, 5?: int, 6?: int, 7?: int, 8?: int, tm_hour?: int, tm_isdst?: int, tm_mday?: int, tm_min?: int, tm_mon?: int, tm_sec?: int, tm_wday?: int, tm_yday?: int, tm_year?: int}|float|int|string',
       ),
     ),
-    'SessionHandler::gc' => 
+    'sessionhandler::gc' => 
     array (
       'old' => 
       array (
@@ -129,7 +129,7 @@ return array (
         'max_lifetime' => 'int',
       ),
     ),
-    'SQLite3::createFunction' => 
+    'sqlite3::createfunction' => 
     array (
       'old' => 
       array (

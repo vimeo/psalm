@@ -367,15 +367,8 @@ final class InternalCallMapHandler
             return self::$call_map;
         }
 
-        /** @var non-empty-array<string, array<int|string, string>> */
-        $call_map_data = require(dirname(__DIR__, 4) . '/dictionaries/CallMap.php');
-
-        $call_map = [];
-
-        foreach ($call_map_data as $key => $value) {
-            $cased_key = strtolower($key);
-            $call_map[$cased_key] = $value;
-        }
+        /** @var non-empty-array<lowercase-string, array<int|string, string>> */
+        $call_map = require(dirname(__DIR__, 4) . '/dictionaries/CallMap.php');
 
         self::$call_map = $call_map;
 
@@ -412,18 +405,15 @@ final class InternalCallMapHandler
                 $diff_call_map = require($delta_file);
 
                 foreach ($diff_call_map['added'] as $key => $_) {
-                    $cased_key = strtolower($key);
-                    unset(self::$call_map[$cased_key]);
+                    unset(self::$call_map[$key]);
                 }
 
                 foreach ($diff_call_map['removed'] as $key => $value) {
-                    $cased_key = strtolower($key);
-                    self::$call_map[$cased_key] = $value;
+                    self::$call_map[$key] = $value;
                 }
 
                 foreach ($diff_call_map['changed'] as $key => ['old' => $value]) {
-                    $cased_key = strtolower($key);
-                    self::$call_map[$cased_key] = $value;
+                    self::$call_map[$key] = $value;
                 }
             }
         }

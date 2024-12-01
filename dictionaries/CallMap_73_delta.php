@@ -3,65 +3,65 @@
 return array (
   'added' => 
   array (
-    'DateTime::createFromImmutable' => 
+    'datetime::createfromimmutable' => 
     array (
       0 => 'static',
       'object' => 'DateTimeImmutable',
     ),
-    'JsonException::__clone' => 
+    'jsonexception::__clone' => 
     array (
       0 => 'void',
     ),
-    'JsonException::__construct' => 
+    'jsonexception::__construct' => 
     array (
       0 => 'void',
       'message=' => 'string',
       'code=' => 'int',
       'previous=' => 'Throwable|null',
     ),
-    'JsonException::__toString' => 
+    'jsonexception::__tostring' => 
     array (
       0 => 'string',
     ),
-    'JsonException::__wakeup' => 
+    'jsonexception::__wakeup' => 
     array (
       0 => 'void',
     ),
-    'JsonException::getCode' => 
+    'jsonexception::getcode' => 
     array (
       0 => 'int',
     ),
-    'JsonException::getFile' => 
+    'jsonexception::getfile' => 
     array (
       0 => 'string',
     ),
-    'JsonException::getLine' => 
+    'jsonexception::getline' => 
     array (
       0 => 'int',
     ),
-    'JsonException::getMessage' => 
+    'jsonexception::getmessage' => 
     array (
       0 => 'string',
     ),
-    'JsonException::getPrevious' => 
+    'jsonexception::getprevious' => 
     array (
       0 => 'Throwable|null',
     ),
-    'JsonException::getTrace' => 
+    'jsonexception::gettrace' => 
     array (
       0 => 'list<array{args?: array<array-key, mixed>, class?: class-string, file?: string, function: string, line?: int, type?: \'->\'|\'::\'}>',
     ),
-    'JsonException::getTraceAsString' => 
+    'jsonexception::gettraceasstring' => 
     array (
       0 => 'string',
     ),
-    'Normalizer::getRawDecomposition' => 
+    'normalizer::getrawdecomposition' => 
     array (
       0 => 'null|string',
       'string' => 'string',
       'form=' => 'int',
     ),
-    'SplPriorityQueue::isCorrupted' => 
+    'splpriorityqueue::iscorrupted' => 
     array (
       0 => 'bool',
     ),

@@ -3,110 +3,110 @@
 return array (
   'added' => 
   array (
-    'DateTime::createFromInterface' => 
+    'datetime::createfrominterface' => 
     array (
       0 => 'static',
       'object' => 'DateTimeInterface',
     ),
-    'DateTimeImmutable::createFromInterface' => 
+    'datetimeimmutable::createfrominterface' => 
     array (
       0 => 'static',
       'object' => 'DateTimeInterface',
     ),
-    'PhpToken::getTokenName' => 
+    'phptoken::gettokenname' => 
     array (
       0 => 'null|string',
     ),
-    'PhpToken::is' => 
+    'phptoken::is' => 
     array (
       0 => 'bool',
       'kind' => 'array<array-key, int|string>|int|string',
     ),
-    'PhpToken::isIgnorable' => 
+    'phptoken::isignorable' => 
     array (
       0 => 'bool',
     ),
-    'PhpToken::tokenize' => 
+    'phptoken::tokenize' => 
     array (
       0 => 'list<PhpToken>',
       'code' => 'string',
       'flags=' => 'int',
     ),
-    'ReflectionClass::getAttributes' => 
+    'reflectionclass::getattributes' => 
     array (
       0 => 'list<ReflectionAttribute>',
       'name=' => 'null|string',
       'flags=' => 'int',
     ),
-    'ReflectionClassConstant::getAttributes' => 
+    'reflectionclassconstant::getattributes' => 
     array (
       0 => 'list<ReflectionAttribute>',
       'name=' => 'null|string',
       'flags=' => 'int',
     ),
-    'ReflectionFunctionAbstract::getAttributes' => 
+    'reflectionfunctionabstract::getattributes' => 
     array (
       0 => 'list<ReflectionAttribute>',
       'name=' => 'null|string',
       'flags=' => 'int',
     ),
-    'ReflectionParameter::getAttributes' => 
+    'reflectionparameter::getattributes' => 
     array (
       0 => 'list<ReflectionAttribute>',
       'name=' => 'null|string',
       'flags=' => 'int',
     ),
-    'ReflectionProperty::getAttributes' => 
+    'reflectionproperty::getattributes' => 
     array (
       0 => 'list<ReflectionAttribute>',
       'name=' => 'null|string',
       'flags=' => 'int',
     ),
-    'ReflectionProperty::getDefaultValue' => 
+    'reflectionproperty::getdefaultvalue' => 
     array (
       0 => 'mixed',
     ),
-    'ReflectionProperty::hasDefaultValue' => 
+    'reflectionproperty::hasdefaultvalue' => 
     array (
       0 => 'bool',
     ),
-    'ReflectionProperty::isPromoted' => 
+    'reflectionproperty::ispromoted' => 
     array (
       0 => 'bool',
     ),
-    'ReflectionUnionType::getTypes' => 
+    'reflectionuniontype::gettypes' => 
     array (
       0 => 'list<ReflectionNamedType>',
     ),
-    'SplFixedArray::getIterator' => 
+    'splfixedarray::getiterator' => 
     array (
       0 => 'Iterator',
     ),
-    'WeakMap::count' => 
+    'weakmap::count' => 
     array (
       0 => 'int',
     ),
-    'WeakMap::getIterator' => 
+    'weakmap::getiterator' => 
     array (
       0 => 'Iterator',
     ),
-    'WeakMap::offsetExists' => 
+    'weakmap::offsetexists' => 
     array (
       0 => 'bool',
       'object' => 'object',
     ),
-    'WeakMap::offsetGet' => 
+    'weakmap::offsetget' => 
     array (
       0 => 'mixed',
       'object' => 'object',
     ),
-    'WeakMap::offsetSet' => 
+    'weakmap::offsetset' => 
     array (
       0 => 'void',
       'object' => 'object',
       'value' => 'mixed',
     ),
-    'WeakMap::offsetUnset' => 
+    'weakmap::offsetunset' => 
     array (
       0 => 'void',
       'object' => 'object',
@@ -153,7 +153,7 @@ return array (
   ),
   'changed' => 
   array (
-    'Collator::getStrength' => 
+    'collator::getstrength' => 
     array (
       'old' => 
       array (
@@ -164,7 +164,7 @@ return array (
         0 => 'int',
       ),
     ),
-    'CURLFile::__construct' => 
+    'curlfile::__construct' => 
     array (
       'old' => 
       array (
@@ -181,7 +181,7 @@ return array (
         'posted_filename=' => 'null|string',
       ),
     ),
-    'DateTime::format' => 
+    'datetime::format' => 
     array (
       'old' => 
       array (
@@ -194,7 +194,7 @@ return array (
         'format' => 'string',
       ),
     ),
-    'DateTime::getTimestamp' => 
+    'datetime::gettimestamp' => 
     array (
       'old' => 
       array (
@@ -205,7 +205,7 @@ return array (
         0 => 'int',
       ),
     ),
-    'DateTimeInterface::getTimestamp' => 
+    'datetimeinterface::gettimestamp' => 
     array (
       'old' => 
       array (
@@ -216,7 +216,7 @@ return array (
         0 => 'int',
       ),
     ),
-    'DateTimeZone::getOffset' => 
+    'datetimezone::getoffset' => 
     array (
       'old' => 
       array (
@@ -229,7 +229,7 @@ return array (
         'datetime' => 'DateTimeInterface',
       ),
     ),
-    'DateTimeZone::listIdentifiers' => 
+    'datetimezone::listidentifiers' => 
     array (
       'old' => 
       array (
@@ -244,7 +244,7 @@ return array (
         'countryCode=' => 'null|string',
       ),
     ),
-    'Directory::close' => 
+    'directory::close' => 
     array (
       'old' => 
       array (
@@ -256,7 +256,7 @@ return array (
         0 => 'void',
       ),
     ),
-    'Directory::read' => 
+    'directory::read' => 
     array (
       'old' => 
       array (
@@ -268,7 +268,7 @@ return array (
         0 => 'false|string',
       ),
     ),
-    'Directory::rewind' => 
+    'directory::rewind' => 
     array (
       'old' => 
       array (
@@ -280,7 +280,7 @@ return array (
         0 => 'void',
       ),
     ),
-    'DirectoryIterator::getFileInfo' => 
+    'directoryiterator::getfileinfo' => 
     array (
       'old' => 
       array (
@@ -293,7 +293,7 @@ return array (
         'class=' => 'class-string|null',
       ),
     ),
-    'DirectoryIterator::getPathInfo' => 
+    'directoryiterator::getpathinfo' => 
     array (
       'old' => 
       array (
@@ -306,7 +306,7 @@ return array (
         'class=' => 'class-string|null',
       ),
     ),
-    'DirectoryIterator::openFile' => 
+    'directoryiterator::openfile' => 
     array (
       'old' => 
       array (
@@ -323,7 +323,7 @@ return array (
         'context=' => 'null|resource',
       ),
     ),
-    'DOMDocument::getElementsByTagNameNS' => 
+    'domdocument::getelementsbytagnamens' => 
     array (
       'old' => 
       array (
@@ -338,7 +338,7 @@ return array (
         'localName' => 'string',
       ),
     ),
-    'DOMDocument::load' => 
+    'domdocument::load' => 
     array (
       'old' => 
       array (
@@ -353,7 +353,7 @@ return array (
         'options=' => 'int',
       ),
     ),
-    'DOMDocument::loadXML' => 
+    'domdocument::loadxml' => 
     array (
       'old' => 
       array (
@@ -368,7 +368,7 @@ return array (
         'options=' => 'int',
       ),
     ),
-    'DOMDocument::loadHTML' => 
+    'domdocument::loadhtml' => 
     array (
       'old' => 
       array (
@@ -383,7 +383,7 @@ return array (
         'options=' => 'int',
       ),
     ),
-    'DOMDocument::loadHTMLFile' => 
+    'domdocument::loadhtmlfile' => 
     array (
       'old' => 
       array (
@@ -398,7 +398,7 @@ return array (
         'options=' => 'int',
       ),
     ),
-    'DOMImplementation::createDocument' => 
+    'domimplementation::createdocument' => 
     array (
       'old' => 
       array (
@@ -415,7 +415,7 @@ return array (
         'doctype=' => 'DOMDocumentType|null',
       ),
     ),
-    'ErrorException::__construct' => 
+    'errorexception::__construct' => 
     array (
       'old' => 
       array (
@@ -438,7 +438,7 @@ return array (
         'previous=' => 'Throwable|null',
       ),
     ),
-    'FilesystemIterator::getFileInfo' => 
+    'filesystemiterator::getfileinfo' => 
     array (
       'old' => 
       array (
@@ -451,7 +451,7 @@ return array (
         'class=' => 'class-string|null',
       ),
     ),
-    'FilesystemIterator::getPathInfo' => 
+    'filesystemiterator::getpathinfo' => 
     array (
       'old' => 
       array (
@@ -464,7 +464,7 @@ return array (
         'class=' => 'class-string|null',
       ),
     ),
-    'FilesystemIterator::openFile' => 
+    'filesystemiterator::openfile' => 
     array (
       'old' => 
       array (
@@ -496,7 +496,7 @@ return array (
         'magic_database=' => 'null|string',
       ),
     ),
-    'GlobIterator::getFileInfo' => 
+    'globiterator::getfileinfo' => 
     array (
       'old' => 
       array (
@@ -509,7 +509,7 @@ return array (
         'class=' => 'class-string|null',
       ),
     ),
-    'GlobIterator::getPathInfo' => 
+    'globiterator::getpathinfo' => 
     array (
       'old' => 
       array (
@@ -522,7 +522,7 @@ return array (
         'class=' => 'class-string|null',
       ),
     ),
-    'GlobIterator::openFile' => 
+    'globiterator::openfile' => 
     array (
       'old' => 
       array (
@@ -539,7 +539,7 @@ return array (
         'context=' => 'null|resource',
       ),
     ),
-    'IntlDateFormatter::__construct' => 
+    'intldateformatter::__construct' => 
     array (
       'old' => 
       array (
@@ -562,7 +562,7 @@ return array (
         'pattern=' => 'null|string',
       ),
     ),
-    'IntlDateFormatter::create' => 
+    'intldateformatter::create' => 
     array (
       'old' => 
       array (
@@ -585,7 +585,7 @@ return array (
         'pattern=' => 'null|string',
       ),
     ),
-    'IntlDateFormatter::format' => 
+    'intldateformatter::format' => 
     array (
       'old' => 
       array (
@@ -598,7 +598,7 @@ return array (
         'datetime' => 'DateTimeInterface|IntlCalendar|array{0?: int, 1?: int, 2?: int, 3?: int, 4?: int, 5?: int, 6?: int, 7?: int, 8?: int, tm_hour?: int, tm_isdst?: int, tm_mday?: int, tm_min?: int, tm_mon?: int, tm_sec?: int, tm_wday?: int, tm_yday?: int, tm_year?: int}|float|int|string',
       ),
     ),
-    'IntlDateFormatter::formatObject' => 
+    'intldateformatter::formatobject' => 
     array (
       'old' => 
       array (
@@ -615,7 +615,7 @@ return array (
         'locale=' => 'null|string',
       ),
     ),
-    'IntlDateFormatter::getCalendar' => 
+    'intldateformatter::getcalendar' => 
     array (
       'old' => 
       array (
@@ -626,7 +626,7 @@ return array (
         0 => 'false|int',
       ),
     ),
-    'IntlDateFormatter::getCalendarObject' => 
+    'intldateformatter::getcalendarobject' => 
     array (
       'old' => 
       array (
@@ -637,7 +637,7 @@ return array (
         0 => 'IntlCalendar|false|null',
       ),
     ),
-    'IntlDateFormatter::getDateType' => 
+    'intldateformatter::getdatetype' => 
     array (
       'old' => 
       array (
@@ -648,7 +648,7 @@ return array (
         0 => 'false|int',
       ),
     ),
-    'IntlDateFormatter::getLocale' => 
+    'intldateformatter::getlocale' => 
     array (
       'old' => 
       array (
@@ -661,7 +661,7 @@ return array (
         'type=' => 'int',
       ),
     ),
-    'IntlDateFormatter::getPattern' => 
+    'intldateformatter::getpattern' => 
     array (
       'old' => 
       array (
@@ -672,7 +672,7 @@ return array (
         0 => 'false|string',
       ),
     ),
-    'IntlDateFormatter::getTimeType' => 
+    'intldateformatter::gettimetype' => 
     array (
       'old' => 
       array (
@@ -683,7 +683,7 @@ return array (
         0 => 'false|int',
       ),
     ),
-    'IntlDateFormatter::getTimeZoneId' => 
+    'intldateformatter::gettimezoneid' => 
     array (
       'old' => 
       array (
@@ -694,7 +694,7 @@ return array (
         0 => 'false|string',
       ),
     ),
-    'IntlDateFormatter::localtime' => 
+    'intldateformatter::localtime' => 
     array (
       'old' => 
       array (
@@ -709,7 +709,7 @@ return array (
         '&rw_offset=' => 'int',
       ),
     ),
-    'IntlDateFormatter::parse' => 
+    'intldateformatter::parse' => 
     array (
       'old' => 
       array (
@@ -724,7 +724,7 @@ return array (
         '&rw_offset=' => 'int',
       ),
     ),
-    'IntlDateFormatter::setCalendar' => 
+    'intldateformatter::setcalendar' => 
     array (
       'old' => 
       array (
@@ -737,7 +737,7 @@ return array (
         'calendar' => 'IntlCalendar|int|null',
       ),
     ),
-    'IntlDateFormatter::setLenient' => 
+    'intldateformatter::setlenient' => 
     array (
       'old' => 
       array (
@@ -750,7 +750,7 @@ return array (
         'lenient' => 'bool',
       ),
     ),
-    'IntlDateFormatter::setTimeZone' => 
+    'intldateformatter::settimezone' => 
     array (
       'old' => 
       array (
@@ -763,7 +763,7 @@ return array (
         'timezone' => 'DateTimeZone|IntlTimeZone|null|string',
       ),
     ),
-    'IntlTimeZone::getIDForWindowsID' => 
+    'intltimezone::getidforwindowsid' => 
     array (
       'old' => 
       array (
@@ -778,7 +778,7 @@ return array (
         'region=' => 'null|string',
       ),
     ),
-    'Locale::getDisplayLanguage' => 
+    'locale::getdisplaylanguage' => 
     array (
       'old' => 
       array (
@@ -793,7 +793,7 @@ return array (
         'displayLocale=' => 'null|string',
       ),
     ),
-    'Locale::getDisplayName' => 
+    'locale::getdisplayname' => 
     array (
       'old' => 
       array (
@@ -808,7 +808,7 @@ return array (
         'displayLocale=' => 'null|string',
       ),
     ),
-    'Locale::getDisplayRegion' => 
+    'locale::getdisplayregion' => 
     array (
       'old' => 
       array (
@@ -823,7 +823,7 @@ return array (
         'displayLocale=' => 'null|string',
       ),
     ),
-    'Locale::getDisplayScript' => 
+    'locale::getdisplayscript' => 
     array (
       'old' => 
       array (
@@ -838,7 +838,7 @@ return array (
         'displayLocale=' => 'null|string',
       ),
     ),
-    'Locale::getDisplayVariant' => 
+    'locale::getdisplayvariant' => 
     array (
       'old' => 
       array (
@@ -896,7 +896,7 @@ return array (
         'query=' => 'null|string',
       ),
     ),
-    'NumberFormatter::__construct' => 
+    'numberformatter::__construct' => 
     array (
       'old' => 
       array (
@@ -913,7 +913,7 @@ return array (
         'pattern=' => 'null|string',
       ),
     ),
-    'NumberFormatter::create' => 
+    'numberformatter::create' => 
     array (
       'old' => 
       array (
@@ -930,7 +930,7 @@ return array (
         'pattern=' => 'null|string',
       ),
     ),
-    'PDOStatement::debugDumpParams' => 
+    'pdostatement::debugdumpparams' => 
     array (
       'old' => 
       array (
@@ -941,7 +941,7 @@ return array (
         0 => 'bool|null',
       ),
     ),
-    'PDOStatement::errorCode' => 
+    'pdostatement::errorcode' => 
     array (
       'old' => 
       array (
@@ -952,7 +952,7 @@ return array (
         0 => 'null|string',
       ),
     ),
-    'PDOStatement::execute' => 
+    'pdostatement::execute' => 
     array (
       'old' => 
       array (
@@ -965,7 +965,7 @@ return array (
         'params=' => 'array<array-key, mixed>|null',
       ),
     ),
-    'PDOStatement::fetch' => 
+    'pdostatement::fetch' => 
     array (
       'old' => 
       array (
@@ -982,7 +982,7 @@ return array (
         'cursorOffset=' => 'int',
       ),
     ),
-    'PDOStatement::fetchAll' => 
+    'pdostatement::fetchall' => 
     array (
       'old' => 
       array (
@@ -998,7 +998,7 @@ return array (
         '...args=' => 'mixed',
       ),
     ),
-    'PDOStatement::fetchColumn' => 
+    'pdostatement::fetchcolumn' => 
     array (
       'old' => 
       array (
@@ -1011,7 +1011,7 @@ return array (
         'column=' => 'int',
       ),
     ),
-    'PDOStatement::setFetchMode' => 
+    'pdostatement::setfetchmode' => 
     array (
       'old' => 
       array (
@@ -1025,7 +1025,7 @@ return array (
         '...args=' => 'mixed',
       ),
     ),
-    'Phar::addFile' => 
+    'phar::addfile' => 
     array (
       'old' => 
       array (
@@ -1040,7 +1040,7 @@ return array (
         'localName=' => 'null|string',
       ),
     ),
-    'Phar::buildFromIterator' => 
+    'phar::buildfromiterator' => 
     array (
       'old' => 
       array (
@@ -1055,7 +1055,7 @@ return array (
         'baseDirectory=' => 'null|string',
       ),
     ),
-    'Phar::createDefaultStub' => 
+    'phar::createdefaultstub' => 
     array (
       'old' => 
       array (
@@ -1070,7 +1070,7 @@ return array (
         'webIndex=' => 'null|string',
       ),
     ),
-    'Phar::compress' => 
+    'phar::compress' => 
     array (
       'old' => 
       array (
@@ -1085,7 +1085,7 @@ return array (
         'extension=' => 'null|string',
       ),
     ),
-    'Phar::convertToData' => 
+    'phar::converttodata' => 
     array (
       'old' => 
       array (
@@ -1102,7 +1102,7 @@ return array (
         'extension=' => 'null|string',
       ),
     ),
-    'Phar::convertToExecutable' => 
+    'phar::converttoexecutable' => 
     array (
       'old' => 
       array (
@@ -1119,7 +1119,7 @@ return array (
         'extension=' => 'null|string',
       ),
     ),
-    'Phar::decompress' => 
+    'phar::decompress' => 
     array (
       'old' => 
       array (
@@ -1132,7 +1132,7 @@ return array (
         'extension=' => 'null|string',
       ),
     ),
-    'Phar::getMetadata' => 
+    'phar::getmetadata' => 
     array (
       'old' => 
       array (
@@ -1144,7 +1144,7 @@ return array (
         'unserializeOptions=' => 'array<array-key, mixed>',
       ),
     ),
-    'Phar::setDefaultStub' => 
+    'phar::setdefaultstub' => 
     array (
       'old' => 
       array (
@@ -1159,7 +1159,7 @@ return array (
         'webIndex=' => 'null|string',
       ),
     ),
-    'Phar::setSignatureAlgorithm' => 
+    'phar::setsignaturealgorithm' => 
     array (
       'old' => 
       array (
@@ -1174,7 +1174,7 @@ return array (
         'privateKey=' => 'null|string',
       ),
     ),
-    'Phar::webPhar' => 
+    'phar::webphar' => 
     array (
       'old' => 
       array (
@@ -1195,7 +1195,7 @@ return array (
         'rewrite=' => 'callable|null',
       ),
     ),
-    'PharData::addFile' => 
+    'phardata::addfile' => 
     array (
       'old' => 
       array (
@@ -1210,7 +1210,7 @@ return array (
         'localName=' => 'null|string',
       ),
     ),
-    'PharData::buildFromIterator' => 
+    'phardata::buildfromiterator' => 
     array (
       'old' => 
       array (
@@ -1225,7 +1225,7 @@ return array (
         'baseDirectory=' => 'null|string',
       ),
     ),
-    'PharData::compress' => 
+    'phardata::compress' => 
     array (
       'old' => 
       array (
@@ -1240,7 +1240,7 @@ return array (
         'extension=' => 'null|string',
       ),
     ),
-    'PharData::convertToData' => 
+    'phardata::converttodata' => 
     array (
       'old' => 
       array (
@@ -1257,7 +1257,7 @@ return array (
         'extension=' => 'null|string',
       ),
     ),
-    'PharData::convertToExecutable' => 
+    'phardata::converttoexecutable' => 
     array (
       'old' => 
       array (
@@ -1274,7 +1274,7 @@ return array (
         'extension=' => 'null|string',
       ),
     ),
-    'PharData::decompress' => 
+    'phardata::decompress' => 
     array (
       'old' => 
       array (
@@ -1287,7 +1287,7 @@ return array (
         'extension=' => 'null|string',
       ),
     ),
-    'PharData::setDefaultStub' => 
+    'phardata::setdefaultstub' => 
     array (
       'old' => 
       array (
@@ -1302,7 +1302,7 @@ return array (
         'webIndex=' => 'null|string',
       ),
     ),
-    'PharData::setSignatureAlgorithm' => 
+    'phardata::setsignaturealgorithm' => 
     array (
       'old' => 
       array (
@@ -1317,7 +1317,7 @@ return array (
         'privateKey=' => 'null|string',
       ),
     ),
-    'PharFileInfo::getMetadata' => 
+    'pharfileinfo::getmetadata' => 
     array (
       'old' => 
       array (
@@ -1329,7 +1329,7 @@ return array (
         'unserializeOptions=' => 'array<array-key, mixed>',
       ),
     ),
-    'PharFileInfo::isCompressed' => 
+    'pharfileinfo::iscompressed' => 
     array (
       'old' => 
       array (
@@ -1342,7 +1342,7 @@ return array (
         'compression=' => 'int|null',
       ),
     ),
-    'RecursiveDirectoryIterator::getFileInfo' => 
+    'recursivedirectoryiterator::getfileinfo' => 
     array (
       'old' => 
       array (
@@ -1355,7 +1355,7 @@ return array (
         'class=' => 'class-string|null',
       ),
     ),
-    'RecursiveDirectoryIterator::getPathInfo' => 
+    'recursivedirectoryiterator::getpathinfo' => 
     array (
       'old' => 
       array (
@@ -1368,7 +1368,7 @@ return array (
         'class=' => 'class-string|null',
       ),
     ),
-    'RecursiveDirectoryIterator::openFile' => 
+    'recursivedirectoryiterator::openfile' => 
     array (
       'old' => 
       array (
@@ -1385,7 +1385,7 @@ return array (
         'context=' => 'null|resource',
       ),
     ),
-    'RecursiveIteratorIterator::getSubIterator' => 
+    'recursiveiteratoriterator::getsubiterator' => 
     array (
       'old' => 
       array (
@@ -1398,7 +1398,7 @@ return array (
         'level=' => 'int|null',
       ),
     ),
-    'RecursiveTreeIterator::getSubIterator' => 
+    'recursivetreeiterator::getsubiterator' => 
     array (
       'old' => 
       array (
@@ -1411,7 +1411,7 @@ return array (
         'level=' => 'int|null',
       ),
     ),
-    'ReflectionClass::getConstants' => 
+    'reflectionclass::getconstants' => 
     array (
       'old' => 
       array (
@@ -1423,7 +1423,7 @@ return array (
         'filter=' => 'int|null',
       ),
     ),
-    'ReflectionClass::getReflectionConstants' => 
+    'reflectionclass::getreflectionconstants' => 
     array (
       'old' => 
       array (
@@ -1435,7 +1435,7 @@ return array (
         'filter=' => 'int|null',
       ),
     ),
-    'ReflectionClass::newInstanceArgs' => 
+    'reflectionclass::newinstanceargs' => 
     array (
       'old' => 
       array (
@@ -1448,7 +1448,7 @@ return array (
         'args=' => 'array<int<0, max>|string, mixed>',
       ),
     ),
-    'ReflectionMethod::getClosure' => 
+    'reflectionmethod::getclosure' => 
     array (
       'old' => 
       array (
@@ -1461,7 +1461,7 @@ return array (
         'object=' => 'null|object',
       ),
     ),
-    'ReflectionObject::getConstants' => 
+    'reflectionobject::getconstants' => 
     array (
       'old' => 
       array (
@@ -1473,7 +1473,7 @@ return array (
         'filter=' => 'int|null',
       ),
     ),
-    'ReflectionObject::getReflectionConstants' => 
+    'reflectionobject::getreflectionconstants' => 
     array (
       'old' => 
       array (
@@ -1485,7 +1485,7 @@ return array (
         'filter=' => 'int|null',
       ),
     ),
-    'ReflectionObject::newInstanceArgs' => 
+    'reflectionobject::newinstanceargs' => 
     array (
       'old' => 
       array (
@@ -1498,7 +1498,7 @@ return array (
         'args=' => 'array<int<0, max>|string, mixed>',
       ),
     ),
-    'ReflectionProperty::getValue' => 
+    'reflectionproperty::getvalue' => 
     array (
       'old' => 
       array (
@@ -1511,7 +1511,7 @@ return array (
         'object=' => 'null|object',
       ),
     ),
-    'ReflectionProperty::isInitialized' => 
+    'reflectionproperty::isinitialized' => 
     array (
       'old' => 
       array (
@@ -1524,7 +1524,7 @@ return array (
         'object=' => 'null|object',
       ),
     ),
-    'SplFileInfo::getFileInfo' => 
+    'splfileinfo::getfileinfo' => 
     array (
       'old' => 
       array (
@@ -1537,7 +1537,7 @@ return array (
         'class=' => 'class-string|null',
       ),
     ),
-    'SplFileInfo::getPathInfo' => 
+    'splfileinfo::getpathinfo' => 
     array (
       'old' => 
       array (
@@ -1550,7 +1550,7 @@ return array (
         'class=' => 'class-string|null',
       ),
     ),
-    'SplFileInfo::openFile' => 
+    'splfileinfo::openfile' => 
     array (
       'old' => 
       array (
@@ -1567,7 +1567,7 @@ return array (
         'context=' => 'null|resource',
       ),
     ),
-    'SplFileObject::getFileInfo' => 
+    'splfileobject::getfileinfo' => 
     array (
       'old' => 
       array (
@@ -1580,7 +1580,7 @@ return array (
         'class=' => 'class-string|null',
       ),
     ),
-    'SplFileObject::getPathInfo' => 
+    'splfileobject::getpathinfo' => 
     array (
       'old' => 
       array (
@@ -1593,7 +1593,7 @@ return array (
         'class=' => 'class-string|null',
       ),
     ),
-    'SplFileObject::openFile' => 
+    'splfileobject::openfile' => 
     array (
       'old' => 
       array (
@@ -1610,7 +1610,7 @@ return array (
         'context=' => 'null|resource',
       ),
     ),
-    'SplTempFileObject::getFileInfo' => 
+    'spltempfileobject::getfileinfo' => 
     array (
       'old' => 
       array (
@@ -1623,7 +1623,7 @@ return array (
         'class=' => 'class-string|null',
       ),
     ),
-    'SplTempFileObject::getPathInfo' => 
+    'spltempfileobject::getpathinfo' => 
     array (
       'old' => 
       array (
@@ -1636,7 +1636,7 @@ return array (
         'class=' => 'class-string|null',
       ),
     ),
-    'SplTempFileObject::openFile' => 
+    'spltempfileobject::openfile' => 
     array (
       'old' => 
       array (
@@ -1672,7 +1672,7 @@ return array (
         'useIncludePath=' => 'bool',
       ),
     ),
-    'tidy::parseFile' => 
+    'tidy::parsefile' => 
     array (
       'old' => 
       array (
@@ -1691,7 +1691,7 @@ return array (
         'useIncludePath=' => 'bool',
       ),
     ),
-    'tidy::parseString' => 
+    'tidy::parsestring' => 
     array (
       'old' => 
       array (
@@ -1708,7 +1708,7 @@ return array (
         'encoding=' => 'null|string',
       ),
     ),
-    'tidy::repairFile' => 
+    'tidy::repairfile' => 
     array (
       'old' => 
       array (
@@ -1727,7 +1727,7 @@ return array (
         'useIncludePath=' => 'bool',
       ),
     ),
-    'tidy::repairString' => 
+    'tidy::repairstring' => 
     array (
       'old' => 
       array (
@@ -1744,7 +1744,7 @@ return array (
         'encoding=' => 'null|string',
       ),
     ),
-    'XMLWriter::flush' => 
+    'xmlwriter::flush' => 
     array (
       'old' => 
       array (
@@ -1757,7 +1757,7 @@ return array (
         'empty=' => 'bool',
       ),
     ),
-    'SimpleXMLElement::asXML' => 
+    'simplexmlelement::asxml' => 
     array (
       'old' => 
       array (
@@ -1770,7 +1770,7 @@ return array (
         'filename=' => 'null|string',
       ),
     ),
-    'SimpleXMLElement::saveXML' => 
+    'simplexmlelement::savexml' => 
     array (
       'old' => 
       array (
@@ -1783,7 +1783,7 @@ return array (
         'filename=' => 'null|string',
       ),
     ),
-    'SoapClient::__doRequest' => 
+    'soapclient::__dorequest' => 
     array (
       'old' => 
       array (
@@ -1804,7 +1804,7 @@ return array (
         'one_way=' => 'bool',
       ),
     ),
-    'SplFileObject::fgets' => 
+    'splfileobject::fgets' => 
     array (
       'old' => 
       array (
@@ -1815,7 +1815,7 @@ return array (
         0 => 'string',
       ),
     ),
-    'SplFileObject::getCurrentLine' => 
+    'splfileobject::getcurrentline' => 
     array (
       'old' => 
       array (
@@ -1826,7 +1826,7 @@ return array (
         0 => 'string',
       ),
     ),
-    'XMLReader::next' => 
+    'xmlreader::next' => 
     array (
       'old' => 
       array (
@@ -1839,7 +1839,7 @@ return array (
         'name=' => 'null|string',
       ),
     ),
-    'XMLWriter::startAttributeNs' => 
+    'xmlwriter::startattributens' => 
     array (
       'old' => 
       array (
@@ -1856,7 +1856,7 @@ return array (
         'namespace' => 'null|string',
       ),
     ),
-    'XMLWriter::writeAttributeNs' => 
+    'xmlwriter::writeattributens' => 
     array (
       'old' => 
       array (
@@ -1875,7 +1875,7 @@ return array (
         'value' => 'string',
       ),
     ),
-    'XMLWriter::writeDtdEntity' => 
+    'xmlwriter::writedtdentity' => 
     array (
       'old' => 
       array (
@@ -1898,7 +1898,7 @@ return array (
         'notationData=' => 'null|string',
       ),
     ),
-    'ZipArchive::getStatusString' => 
+    'ziparchive::getstatusstring' => 
     array (
       'old' => 
       array (
@@ -1909,7 +1909,7 @@ return array (
         0 => 'string',
       ),
     ),
-    'ZipArchive::setEncryptionIndex' => 
+    'ziparchive::setencryptionindex' => 
     array (
       'old' => 
       array (
@@ -1926,7 +1926,7 @@ return array (
         'password=' => 'null|string',
       ),
     ),
-    'ZipArchive::setEncryptionName' => 
+    'ziparchive::setencryptionname' => 
     array (
       'old' => 
       array (
@@ -11684,7 +11684,7 @@ return array (
         'content' => 'string',
       ),
     ),
-    'ZipArchive::addEmptyDir' => 
+    'ziparchive::addemptydir' => 
     array (
       'old' => 
       array (
@@ -11698,7 +11698,7 @@ return array (
         'flags=' => 'int',
       ),
     ),
-    'ZipArchive::addFile' => 
+    'ziparchive::addfile' => 
     array (
       'old' => 
       array (
@@ -11718,7 +11718,7 @@ return array (
         'flags=' => 'int',
       ),
     ),
-    'ZipArchive::addFromString' => 
+    'ziparchive::addfromstring' => 
     array (
       'old' => 
       array (
@@ -11737,30 +11737,30 @@ return array (
   ),
   'removed' => 
   array (
-    'PDOStatement::setFetchMode\'1' => 
+    'pdostatement::setfetchmode\'1' => 
     array (
       0 => 'bool',
       'fetch_column' => 'int',
       'colno' => 'int',
     ),
-    'PDOStatement::setFetchMode\'2' => 
+    'pdostatement::setfetchmode\'2' => 
     array (
       0 => 'bool',
       'fetch_class' => 'int',
       'classname' => 'string',
       'ctorargs' => 'array<array-key, mixed>',
     ),
-    'PDOStatement::setFetchMode\'3' => 
+    'pdostatement::setfetchmode\'3' => 
     array (
       0 => 'bool',
       'fetch_into' => 'int',
       'object' => 'object',
     ),
-    'ReflectionType::isBuiltin' => 
+    'reflectiontype::isbuiltin' => 
     array (
       0 => 'bool',
     ),
-    'SplFileObject::fgetss' => 
+    'splfileobject::fgetss' => 
     array (
       0 => 'false|string',
       'allowable_tags=' => 'string',
@@ -11859,123 +11859,123 @@ return array (
       'sub_arrays=' => 'bool',
       'read_thumbnail=' => 'bool',
     ),
-    'Reflection::export' => 
+    'reflection::export' => 
     array (
       0 => 'null|string',
       'r' => 'reflector',
       'return=' => 'bool',
     ),
-    'ReflectionClass::export' => 
+    'reflectionclass::export' => 
     array (
       0 => 'null|string',
       'argument' => 'object|string',
       'return=' => 'bool',
     ),
-    'ReflectionClassConstant::export' => 
+    'reflectionclassconstant::export' => 
     array (
       0 => 'string',
       'class' => 'mixed',
       'name' => 'string',
       'return=' => 'bool',
     ),
-    'ReflectionExtension::export' => 
+    'reflectionextension::export' => 
     array (
       0 => 'null|string',
       'name' => 'string',
       'return=' => 'bool',
     ),
-    'ReflectionFunction::export' => 
+    'reflectionfunction::export' => 
     array (
       0 => 'null|string',
       'name' => 'string',
       'return=' => 'bool',
     ),
-    'ReflectionFunctionAbstract::export' => 
+    'reflectionfunctionabstract::export' => 
     array (
       0 => 'null|string',
     ),
-    'ReflectionMethod::export' => 
+    'reflectionmethod::export' => 
     array (
       0 => 'null|string',
       'class' => 'string',
       'name' => 'string',
       'return=' => 'bool',
     ),
-    'ReflectionObject::export' => 
+    'reflectionobject::export' => 
     array (
       0 => 'null|string',
       'argument' => 'object',
       'return=' => 'bool',
     ),
-    'ReflectionParameter::export' => 
+    'reflectionparameter::export' => 
     array (
       0 => 'null|string',
       'function' => 'string',
       'parameter' => 'string',
       'return=' => 'bool',
     ),
-    'ReflectionProperty::export' => 
+    'reflectionproperty::export' => 
     array (
       0 => 'null|string',
       'class' => 'mixed',
       'name' => 'string',
       'return=' => 'bool',
     ),
-    'ReflectionZendExtension::export' => 
+    'reflectionzendextension::export' => 
     array (
       0 => 'null|string',
       'name' => 'string',
       'return=' => 'bool',
     ),
-    'SimpleXMLIterator::rewind' => 
+    'simplexmliterator::rewind' => 
     array (
       0 => 'void',
     ),
-    'SimpleXMLIterator::valid' => 
+    'simplexmliterator::valid' => 
     array (
       0 => 'bool',
     ),
-    'SimpleXMLIterator::current' => 
+    'simplexmliterator::current' => 
     array (
       0 => 'SimpleXMLIterator|null',
     ),
-    'SimpleXMLIterator::key' => 
+    'simplexmliterator::key' => 
     array (
       0 => 'false|string',
     ),
-    'SimpleXMLIterator::next' => 
+    'simplexmliterator::next' => 
     array (
       0 => 'void',
     ),
-    'SimpleXMLIterator::hasChildren' => 
+    'simplexmliterator::haschildren' => 
     array (
       0 => 'bool',
     ),
-    'SimpleXMLIterator::getChildren' => 
+    'simplexmliterator::getchildren' => 
     array (
       0 => 'SimpleXMLIterator|null',
     ),
-    'SplFixedArray::current' => 
+    'splfixedarray::current' => 
     array (
       0 => 'mixed',
     ),
-    'SplFixedArray::key' => 
+    'splfixedarray::key' => 
     array (
       0 => 'int',
     ),
-    'SplFixedArray::next' => 
+    'splfixedarray::next' => 
     array (
       0 => 'void',
     ),
-    'SplFixedArray::rewind' => 
+    'splfixedarray::rewind' => 
     array (
       0 => 'void',
     ),
-    'SplFixedArray::valid' => 
+    'splfixedarray::valid' => 
     array (
       0 => 'bool',
     ),
-    'SplTempFileObject::fgetss' => 
+    'spltempfileobject::fgetss' => 
     array (
       0 => 'string',
       'allowable_tags=' => 'string',

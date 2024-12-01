@@ -282,7 +282,7 @@ return array (
         'timezone' => 'DateTimeZone|IntlTimeZone|null|string',
       ),
     ),
-    'IntlRuleBasedBreakIterator::setText' => 
+    'intlrulebasedbreakiterator::settext' => 
     array (
       'old' => 
       array (
@@ -295,7 +295,7 @@ return array (
         'text' => 'string',
       ),
     ),
-    'IntlCodePointBreakIterator::setText' => 
+    'intlcodepointbreakiterator::settext' => 
     array (
       'old' => 
       array (
@@ -308,7 +308,7 @@ return array (
         'text' => 'string',
       ),
     ),
-    'IntlDateFormatter::setTimeZone' => 
+    'intldateformatter::settimezone' => 
     array (
       'old' => 
       array (
@@ -321,7 +321,7 @@ return array (
         'timezone' => 'DateTimeZone|IntlTimeZone|null|string',
       ),
     ),
-    'IntlChar::enumCharNames' => 
+    'intlchar::enumcharnames' => 
     array (
       'old' => 
       array (
@@ -340,7 +340,7 @@ return array (
         'type=' => 'int',
       ),
     ),
-    'IntlBreakIterator::setText' => 
+    'intlbreakiterator::settext' => 
     array (
       'old' => 
       array (
@@ -398,99 +398,99 @@ return array (
   ),
   'removed' => 
   array (
-    'OutOfBoundsException::__clone' => 
+    'outofboundsexception::__clone' => 
     array (
       0 => 'void',
     ),
-    'ArgumentCountError::__clone' => 
+    'argumentcounterror::__clone' => 
     array (
       0 => 'void',
     ),
-    'ArithmeticError::__clone' => 
+    'arithmeticerror::__clone' => 
     array (
       0 => 'void',
     ),
-    'BadFunctionCallException::__clone' => 
+    'badfunctioncallexception::__clone' => 
     array (
       0 => 'void',
     ),
-    'BadMethodCallException::__clone' => 
+    'badmethodcallexception::__clone' => 
     array (
       0 => 'void',
     ),
-    'ClosedGeneratorException::__clone' => 
+    'closedgeneratorexception::__clone' => 
     array (
       0 => 'void',
     ),
-    'DomainException::__clone' => 
+    'domainexception::__clone' => 
     array (
       0 => 'void',
     ),
-    'ErrorException::__clone' => 
+    'errorexception::__clone' => 
     array (
       0 => 'void',
     ),
-    'IntlException::__clone' => 
+    'intlexception::__clone' => 
     array (
       0 => 'void',
     ),
-    'InvalidArgumentException::__clone' => 
+    'invalidargumentexception::__clone' => 
     array (
       0 => 'void',
     ),
-    'JsonException::__clone' => 
+    'jsonexception::__clone' => 
     array (
       0 => 'void',
     ),
-    'LengthException::__clone' => 
+    'lengthexception::__clone' => 
     array (
       0 => 'void',
     ),
-    'LogicException::__clone' => 
+    'logicexception::__clone' => 
     array (
       0 => 'void',
     ),
-    'OutOfRangeException::__clone' => 
+    'outofrangeexception::__clone' => 
     array (
       0 => 'void',
     ),
-    'OverflowException::__clone' => 
+    'overflowexception::__clone' => 
     array (
       0 => 'void',
     ),
-    'ParseError::__clone' => 
+    'parseerror::__clone' => 
     array (
       0 => 'void',
     ),
-    'RangeException::__clone' => 
+    'rangeexception::__clone' => 
     array (
       0 => 'void',
     ),
-    'ReflectionNamedType::__clone' => 
+    'reflectionnamedtype::__clone' => 
     array (
       0 => 'void',
     ),
-    'ReflectionObject::__clone' => 
+    'reflectionobject::__clone' => 
     array (
       0 => 'void',
     ),
-    'RuntimeException::__clone' => 
+    'runtimeexception::__clone' => 
     array (
       0 => 'void',
     ),
-    'TypeError::__clone' => 
+    'typeerror::__clone' => 
     array (
       0 => 'void',
     ),
-    'UnderflowException::__clone' => 
+    'underflowexception::__clone' => 
     array (
       0 => 'void',
     ),
-    'UnexpectedValueException::__clone' => 
+    'unexpectedvalueexception::__clone' => 
     array (
       0 => 'void',
     ),
-    'IntlCodePointBreakIterator::__construct' => 
+    'intlcodepointbreakiterator::__construct' => 
     array (
       0 => 'void',
     ),

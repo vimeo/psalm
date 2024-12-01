@@ -3,11 +3,11 @@
 return array (
   'added' => 
   array (
-    'ReflectionProperty::getType' => 
+    'reflectionproperty::gettype' => 
     array (
       0 => 'ReflectionType|null',
     ),
-    'ReflectionProperty::isInitialized' => 
+    'reflectionproperty::isinitialized' => 
     array (
       0 => 'bool',
       'object' => 'object',
@@ -28,7 +28,7 @@ return array (
   ),
   'changed' => 
   array (
-    'Locale::lookup' => 
+    'locale::lookup' => 
     array (
       'old' => 
       array (
@@ -47,7 +47,7 @@ return array (
         'defaultLocale=' => 'null|string',
       ),
     ),
-    'SplFileObject::fwrite' => 
+    'splfileobject::fwrite' => 
     array (
       'old' => 
       array (
@@ -62,7 +62,7 @@ return array (
         'length=' => 'int',
       ),
     ),
-    'SplTempFileObject::fwrite' => 
+    'spltempfileobject::fwrite' => 
     array (
       'old' => 
       array (

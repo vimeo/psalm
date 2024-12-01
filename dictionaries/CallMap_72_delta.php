@@ -3,26 +3,26 @@
 return array (
   'added' => 
   array (
-    'DOMNodeList::count' => 
+    'domnodelist::count' => 
     array (
       0 => 'int',
     ),
-    'ReflectionClass::isIterable' => 
+    'reflectionclass::isiterable' => 
     array (
       0 => 'bool',
     ),
-    'ZipArchive::count' => 
+    'ziparchive::count' => 
     array (
       0 => 'int',
     ),
-    'ZipArchive::setEncryptionIndex' => 
+    'ziparchive::setencryptionindex' => 
     array (
       0 => 'bool',
       'index' => 'int',
       'method' => 'int',
       'password=' => 'string',
     ),
-    'ZipArchive::setEncryptionName' => 
+    'ziparchive::setencryptionname' => 
     array (
       0 => 'bool',
       'name' => 'string',
@@ -694,7 +694,7 @@ return array (
   ),
   'changed' => 
   array (
-    'ReflectionClass::getMethods' => 
+    'reflectionclass::getmethods' => 
     array (
       'old' => 
       array (
@@ -707,7 +707,7 @@ return array (
         'filter=' => 'int|null',
       ),
     ),
-    'ReflectionClass::getProperties' => 
+    'reflectionclass::getproperties' => 
     array (
       'old' => 
       array (
@@ -720,7 +720,7 @@ return array (
         'filter=' => 'int|null',
       ),
     ),
-    'ReflectionObject::getMethods' => 
+    'reflectionobject::getmethods' => 
     array (
       'old' => 
       array (
@@ -733,7 +733,7 @@ return array (
         'filter=' => 'int|null',
       ),
     ),
-    'ReflectionObject::getProperties' => 
+    'reflectionobject::getproperties' => 
     array (
       'old' => 
       array (
@@ -746,7 +746,7 @@ return array (
         'filter=' => 'int|null',
       ),
     ),
-    'SQLite3::openBlob' => 
+    'sqlite3::openblob' => 
     array (
       'old' => 
       array (
@@ -912,24 +912,24 @@ return array (
   ),
   'removed' => 
   array (
-    'Sodium\\add' => 
+    'sodium\\add' => 
     array (
       0 => 'void',
       '&left' => 'string',
       'right' => 'string',
     ),
-    'Sodium\\bin2hex' => 
+    'sodium\\bin2hex' => 
     array (
       0 => 'string',
       'binary' => 'string',
     ),
-    'Sodium\\compare' => 
+    'sodium\\compare' => 
     array (
       0 => 'int',
       'left' => 'string',
       'right' => 'string',
     ),
-    'Sodium\\crypto_aead_aes256gcm_decrypt' => 
+    'sodium\\crypto_aead_aes256gcm_decrypt' => 
     array (
       0 => 'false|string',
       'msg' => 'string',
@@ -937,7 +937,7 @@ return array (
       'key' => 'string',
       'ad=' => 'string',
     ),
-    'Sodium\\crypto_aead_aes256gcm_encrypt' => 
+    'sodium\\crypto_aead_aes256gcm_encrypt' => 
     array (
       0 => 'string',
       'msg' => 'string',
@@ -945,11 +945,11 @@ return array (
       'key' => 'string',
       'ad=' => 'string',
     ),
-    'Sodium\\crypto_aead_aes256gcm_is_available' => 
+    'sodium\\crypto_aead_aes256gcm_is_available' => 
     array (
       0 => 'bool',
     ),
-    'Sodium\\crypto_aead_chacha20poly1305_decrypt' => 
+    'sodium\\crypto_aead_chacha20poly1305_decrypt' => 
     array (
       0 => 'string',
       'msg' => 'string',
@@ -957,7 +957,7 @@ return array (
       'key' => 'string',
       'ad=' => 'string',
     ),
-    'Sodium\\crypto_aead_chacha20poly1305_encrypt' => 
+    'sodium\\crypto_aead_chacha20poly1305_encrypt' => 
     array (
       0 => 'string',
       'msg' => 'string',
@@ -965,101 +965,101 @@ return array (
       'key' => 'string',
       'ad=' => 'string',
     ),
-    'Sodium\\crypto_auth' => 
+    'sodium\\crypto_auth' => 
     array (
       0 => 'string',
       'msg' => 'string',
       'key' => 'string',
     ),
-    'Sodium\\crypto_auth_verify' => 
+    'sodium\\crypto_auth_verify' => 
     array (
       0 => 'bool',
       'mac' => 'string',
       'msg' => 'string',
       'key' => 'string',
     ),
-    'Sodium\\crypto_box' => 
+    'sodium\\crypto_box' => 
     array (
       0 => 'string',
       'msg' => 'string',
       'nonce' => 'string',
       'keypair' => 'string',
     ),
-    'Sodium\\crypto_box_keypair' => 
+    'sodium\\crypto_box_keypair' => 
     array (
       0 => 'string',
     ),
-    'Sodium\\crypto_box_keypair_from_secretkey_and_publickey' => 
+    'sodium\\crypto_box_keypair_from_secretkey_and_publickey' => 
     array (
       0 => 'string',
       'secretkey' => 'string',
       'publickey' => 'string',
     ),
-    'Sodium\\crypto_box_open' => 
+    'sodium\\crypto_box_open' => 
     array (
       0 => 'string',
       'msg' => 'string',
       'nonce' => 'string',
       'keypair' => 'string',
     ),
-    'Sodium\\crypto_box_publickey' => 
+    'sodium\\crypto_box_publickey' => 
     array (
       0 => 'string',
       'keypair' => 'string',
     ),
-    'Sodium\\crypto_box_publickey_from_secretkey' => 
+    'sodium\\crypto_box_publickey_from_secretkey' => 
     array (
       0 => 'string',
       'secretkey' => 'string',
     ),
-    'Sodium\\crypto_box_seal' => 
+    'sodium\\crypto_box_seal' => 
     array (
       0 => 'string',
       'message' => 'string',
       'publickey' => 'string',
     ),
-    'Sodium\\crypto_box_seal_open' => 
+    'sodium\\crypto_box_seal_open' => 
     array (
       0 => 'string',
       'encrypted' => 'string',
       'keypair' => 'string',
     ),
-    'Sodium\\crypto_box_secretkey' => 
+    'sodium\\crypto_box_secretkey' => 
     array (
       0 => 'string',
       'keypair' => 'string',
     ),
-    'Sodium\\crypto_box_seed_keypair' => 
+    'sodium\\crypto_box_seed_keypair' => 
     array (
       0 => 'string',
       'seed' => 'string',
     ),
-    'Sodium\\crypto_generichash' => 
+    'sodium\\crypto_generichash' => 
     array (
       0 => 'string',
       'input' => 'string',
       'key=' => 'string',
       'length=' => 'int',
     ),
-    'Sodium\\crypto_generichash_final' => 
+    'sodium\\crypto_generichash_final' => 
     array (
       0 => 'string',
       'state' => 'string',
       'length=' => 'int',
     ),
-    'Sodium\\crypto_generichash_init' => 
+    'sodium\\crypto_generichash_init' => 
     array (
       0 => 'string',
       'key=' => 'string',
       'length=' => 'int',
     ),
-    'Sodium\\crypto_generichash_update' => 
+    'sodium\\crypto_generichash_update' => 
     array (
       0 => 'bool',
       '&hashState' => 'string',
       'append' => 'string',
     ),
-    'Sodium\\crypto_kx' => 
+    'sodium\\crypto_kx' => 
     array (
       0 => 'string',
       'secretkey' => 'string',
@@ -1067,7 +1067,7 @@ return array (
       'client_publickey' => 'string',
       'server_publickey' => 'string',
     ),
-    'Sodium\\crypto_pwhash' => 
+    'sodium\\crypto_pwhash' => 
     array (
       0 => 'string',
       'out_len' => 'int',
@@ -1076,7 +1076,7 @@ return array (
       'opslimit' => 'int',
       'memlimit' => 'int',
     ),
-    'Sodium\\crypto_pwhash_scryptsalsa208sha256' => 
+    'sodium\\crypto_pwhash_scryptsalsa208sha256' => 
     array (
       0 => 'string',
       'out_len' => 'int',
@@ -1085,186 +1085,186 @@ return array (
       'opslimit' => 'int',
       'memlimit' => 'int',
     ),
-    'Sodium\\crypto_pwhash_scryptsalsa208sha256_str' => 
+    'sodium\\crypto_pwhash_scryptsalsa208sha256_str' => 
     array (
       0 => 'string',
       'passwd' => 'string',
       'opslimit' => 'int',
       'memlimit' => 'int',
     ),
-    'Sodium\\crypto_pwhash_scryptsalsa208sha256_str_verify' => 
+    'sodium\\crypto_pwhash_scryptsalsa208sha256_str_verify' => 
     array (
       0 => 'bool',
       'hash' => 'string',
       'passwd' => 'string',
     ),
-    'Sodium\\crypto_pwhash_str' => 
+    'sodium\\crypto_pwhash_str' => 
     array (
       0 => 'string',
       'passwd' => 'string',
       'opslimit' => 'int',
       'memlimit' => 'int',
     ),
-    'Sodium\\crypto_pwhash_str_verify' => 
+    'sodium\\crypto_pwhash_str_verify' => 
     array (
       0 => 'bool',
       'hash' => 'string',
       'passwd' => 'string',
     ),
-    'Sodium\\crypto_scalarmult' => 
+    'sodium\\crypto_scalarmult' => 
     array (
       0 => 'string',
       'ecdhA' => 'string',
       'ecdhB' => 'string',
     ),
-    'Sodium\\crypto_scalarmult_base' => 
+    'sodium\\crypto_scalarmult_base' => 
     array (
       0 => 'string',
       'sk' => 'string',
     ),
-    'Sodium\\crypto_secretbox' => 
+    'sodium\\crypto_secretbox' => 
     array (
       0 => 'string',
       'plaintext' => 'string',
       'nonce' => 'string',
       'key' => 'string',
     ),
-    'Sodium\\crypto_secretbox_open' => 
+    'sodium\\crypto_secretbox_open' => 
     array (
       0 => 'string',
       'ciphertext' => 'string',
       'nonce' => 'string',
       'key' => 'string',
     ),
-    'Sodium\\crypto_shorthash' => 
+    'sodium\\crypto_shorthash' => 
     array (
       0 => 'string',
       'message' => 'string',
       'key' => 'string',
     ),
-    'Sodium\\crypto_sign' => 
+    'sodium\\crypto_sign' => 
     array (
       0 => 'string',
       'message' => 'string',
       'secretkey' => 'string',
     ),
-    'Sodium\\crypto_sign_detached' => 
+    'sodium\\crypto_sign_detached' => 
     array (
       0 => 'string',
       'message' => 'string',
       'secretkey' => 'string',
     ),
-    'Sodium\\crypto_sign_ed25519_pk_to_curve25519' => 
+    'sodium\\crypto_sign_ed25519_pk_to_curve25519' => 
     array (
       0 => 'string',
       'sign_pk' => 'string',
     ),
-    'Sodium\\crypto_sign_ed25519_sk_to_curve25519' => 
+    'sodium\\crypto_sign_ed25519_sk_to_curve25519' => 
     array (
       0 => 'string',
       'sign_sk' => 'string',
     ),
-    'Sodium\\crypto_sign_keypair' => 
+    'sodium\\crypto_sign_keypair' => 
     array (
       0 => 'string',
     ),
-    'Sodium\\crypto_sign_keypair_from_secretkey_and_publickey' => 
+    'sodium\\crypto_sign_keypair_from_secretkey_and_publickey' => 
     array (
       0 => 'string',
       'secretkey' => 'string',
       'publickey' => 'string',
     ),
-    'Sodium\\crypto_sign_open' => 
+    'sodium\\crypto_sign_open' => 
     array (
       0 => 'false|string',
       'signed_message' => 'string',
       'publickey' => 'string',
     ),
-    'Sodium\\crypto_sign_publickey' => 
+    'sodium\\crypto_sign_publickey' => 
     array (
       0 => 'string',
       'keypair' => 'string',
     ),
-    'Sodium\\crypto_sign_publickey_from_secretkey' => 
+    'sodium\\crypto_sign_publickey_from_secretkey' => 
     array (
       0 => 'string',
       'secretkey' => 'string',
     ),
-    'Sodium\\crypto_sign_secretkey' => 
+    'sodium\\crypto_sign_secretkey' => 
     array (
       0 => 'string',
       'keypair' => 'string',
     ),
-    'Sodium\\crypto_sign_seed_keypair' => 
+    'sodium\\crypto_sign_seed_keypair' => 
     array (
       0 => 'string',
       'seed' => 'string',
     ),
-    'Sodium\\crypto_sign_verify_detached' => 
+    'sodium\\crypto_sign_verify_detached' => 
     array (
       0 => 'bool',
       'signature' => 'string',
       'msg' => 'string',
       'publickey' => 'string',
     ),
-    'Sodium\\crypto_stream' => 
+    'sodium\\crypto_stream' => 
     array (
       0 => 'string',
       'length' => 'int',
       'nonce' => 'string',
       'key' => 'string',
     ),
-    'Sodium\\crypto_stream_xor' => 
+    'sodium\\crypto_stream_xor' => 
     array (
       0 => 'string',
       'plaintext' => 'string',
       'nonce' => 'string',
       'key' => 'string',
     ),
-    'Sodium\\hex2bin' => 
+    'sodium\\hex2bin' => 
     array (
       0 => 'string',
       'hex' => 'string',
     ),
-    'Sodium\\increment' => 
+    'sodium\\increment' => 
     array (
       0 => 'string',
       '&nonce' => 'string',
     ),
-    'Sodium\\library_version_major' => 
+    'sodium\\library_version_major' => 
     array (
       0 => 'int',
     ),
-    'Sodium\\library_version_minor' => 
+    'sodium\\library_version_minor' => 
     array (
       0 => 'int',
     ),
-    'Sodium\\memcmp' => 
+    'sodium\\memcmp' => 
     array (
       0 => 'int',
       'left' => 'string',
       'right' => 'string',
     ),
-    'Sodium\\memzero' => 
+    'sodium\\memzero' => 
     array (
       0 => 'void',
       '&target' => 'string',
     ),
-    'Sodium\\randombytes_buf' => 
+    'sodium\\randombytes_buf' => 
     array (
       0 => 'string',
       'length' => 'int',
     ),
-    'Sodium\\randombytes_random16' => 
+    'sodium\\randombytes_random16' => 
     array (
       0 => 'int|string',
     ),
-    'Sodium\\randombytes_uniform' => 
+    'sodium\\randombytes_uniform' => 
     array (
       0 => 'int',
       'upperBoundNonInclusive' => 'int',
     ),
-    'Sodium\\version_string' => 
+    'sodium\\version_string' => 
     array (
       0 => 'string',
     ),

@@ -48,130 +48,130 @@ return array (
       0 => 'false|float|int|null|string',
       'column=' => 'int',
     ),
-    'CURLStringFile::__construct' => 
+    'curlstringfile::__construct' => 
     array (
       0 => 'void',
       'data' => 'string',
       'postname' => 'string',
       'mime=' => 'string',
     ),
-    'Fiber::__construct' => 
+    'fiber::__construct' => 
     array (
       0 => 'void',
       'callback' => 'callable',
     ),
-    'Fiber::start' => 
+    'fiber::start' => 
     array (
       0 => 'mixed',
       '...args' => 'mixed',
     ),
-    'Fiber::resume' => 
+    'fiber::resume' => 
     array (
       0 => 'mixed',
       'value=' => 'mixed|null',
     ),
-    'Fiber::throw' => 
+    'fiber::throw' => 
     array (
       0 => 'mixed',
       'exception' => 'Throwable',
     ),
-    'Fiber::isStarted' => 
+    'fiber::isstarted' => 
     array (
       0 => 'bool',
     ),
-    'Fiber::isSuspended' => 
+    'fiber::issuspended' => 
     array (
       0 => 'bool',
     ),
-    'Fiber::isRunning' => 
+    'fiber::isrunning' => 
     array (
       0 => 'bool',
     ),
-    'Fiber::isTerminated' => 
+    'fiber::isterminated' => 
     array (
       0 => 'bool',
     ),
-    'Fiber::getReturn' => 
+    'fiber::getreturn' => 
     array (
       0 => 'mixed',
     ),
-    'Fiber::getCurrent' => 
+    'fiber::getcurrent' => 
     array (
       0 => 'Fiber|null',
     ),
-    'Fiber::suspend' => 
+    'fiber::suspend' => 
     array (
       0 => 'mixed',
       'value=' => 'mixed|null',
     ),
-    'FiberError::__construct' => 
+    'fibererror::__construct' => 
     array (
       0 => 'void',
     ),
-    'GMP::__serialize' => 
+    'gmp::__serialize' => 
     array (
       0 => 'array<array-key, mixed>',
     ),
-    'GMP::__unserialize' => 
+    'gmp::__unserialize' => 
     array (
       0 => 'void',
       'data' => 'array<array-key, mixed>',
     ),
-    'ReflectionClass::isEnum' => 
+    'reflectionclass::isenum' => 
     array (
       0 => 'bool',
     ),
-    'ReflectionEnum::getBackingType' => 
+    'reflectionenum::getbackingtype' => 
     array (
       0 => 'ReflectionType|null',
     ),
-    'ReflectionEnum::getCase' => 
+    'reflectionenum::getcase' => 
     array (
       0 => 'ReflectionEnumUnitCase',
       'name' => 'string',
     ),
-    'ReflectionEnum::getCases' => 
+    'reflectionenum::getcases' => 
     array (
       0 => 'list<ReflectionEnumUnitCase>',
     ),
-    'ReflectionEnum::hasCase' => 
+    'reflectionenum::hascase' => 
     array (
       0 => 'bool',
       'name' => 'string',
     ),
-    'ReflectionEnum::isBacked' => 
+    'reflectionenum::isbacked' => 
     array (
       0 => 'bool',
     ),
-    'ReflectionEnumUnitCase::getEnum' => 
+    'reflectionenumunitcase::getenum' => 
     array (
       0 => 'ReflectionEnum',
     ),
-    'ReflectionEnumUnitCase::getValue' => 
+    'reflectionenumunitcase::getvalue' => 
     array (
       0 => 'UnitEnum',
     ),
-    'ReflectionEnumBackedCase::getBackingValue' => 
+    'reflectionenumbackedcase::getbackingvalue' => 
     array (
       0 => 'int|string',
     ),
-    'ReflectionFunctionAbstract::getTentativeReturnType' => 
+    'reflectionfunctionabstract::gettentativereturntype' => 
     array (
       0 => 'ReflectionType|null',
     ),
-    'ReflectionFunctionAbstract::hasTentativeReturnType' => 
+    'reflectionfunctionabstract::hastentativereturntype' => 
     array (
       0 => 'bool',
     ),
-    'ReflectionFunctionAbstract::isStatic' => 
+    'reflectionfunctionabstract::isstatic' => 
     array (
       0 => 'bool',
     ),
-    'ReflectionObject::isEnum' => 
+    'reflectionobject::isenum' => 
     array (
       0 => 'bool',
     ),
-    'ReflectionProperty::isReadonly' => 
+    'reflectionproperty::isreadonly' => 
     array (
       0 => 'bool',
     ),
@@ -196,7 +196,7 @@ return array (
   ),
   'changed' => 
   array (
-    'DOMDocument::createComment' => 
+    'domdocument::createcomment' => 
     array (
       'old' => 
       array (
@@ -209,7 +209,7 @@ return array (
         'data' => 'string',
       ),
     ),
-    'DOMDocument::createDocumentFragment' => 
+    'domdocument::createdocumentfragment' => 
     array (
       'old' => 
       array (
@@ -220,7 +220,7 @@ return array (
         0 => 'DOMDocumentFragment',
       ),
     ),
-    'DOMDocument::createTextNode' => 
+    'domdocument::createtextnode' => 
     array (
       'old' => 
       array (
@@ -233,7 +233,7 @@ return array (
         'data' => 'string',
       ),
     ),
-    'Phar::buildFromDirectory' => 
+    'phar::buildfromdirectory' => 
     array (
       'old' => 
       array (
@@ -248,7 +248,7 @@ return array (
         'pattern=' => 'string',
       ),
     ),
-    'Phar::buildFromIterator' => 
+    'phar::buildfromiterator' => 
     array (
       'old' => 
       array (
@@ -263,7 +263,7 @@ return array (
         'baseDirectory=' => 'null|string',
       ),
     ),
-    'PharData::buildFromDirectory' => 
+    'phardata::buildfromdirectory' => 
     array (
       'old' => 
       array (
@@ -278,7 +278,7 @@ return array (
         'pattern=' => 'string',
       ),
     ),
-    'PharData::buildFromIterator' => 
+    'phardata::buildfromiterator' => 
     array (
       'old' => 
       array (
@@ -293,7 +293,7 @@ return array (
         'baseDirectory=' => 'null|string',
       ),
     ),
-    'SplFileObject::fputcsv' => 
+    'splfileobject::fputcsv' => 
     array (
       'old' => 
       array (
@@ -313,7 +313,7 @@ return array (
         'eol=' => 'string',
       ),
     ),
-    'SplTempFileObject::fputcsv' => 
+    'spltempfileobject::fputcsv' => 
     array (
       'old' => 
       array (
@@ -2080,7 +2080,7 @@ return array (
         'value' => 'null|scalar',
       ),
     ),
-    'IntlDateFormatter::__construct' => 
+    'intldateformatter::__construct' => 
     array (
       'old' => 
       array (
@@ -2103,7 +2103,7 @@ return array (
         'pattern=' => 'null|string',
       ),
     ),
-    'IntlDateFormatter::create' => 
+    'intldateformatter::create' => 
     array (
       'old' => 
       array (
@@ -5222,7 +5222,7 @@ return array (
   ),
   'removed' => 
   array (
-    'ReflectionMethod::isStatic' => 
+    'reflectionmethod::isstatic' => 
     array (
       0 => 'bool',
     ),
