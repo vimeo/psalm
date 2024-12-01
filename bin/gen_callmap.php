@@ -2,9 +2,10 @@
 
 declare(strict_types=1);
 
-// Written by SamMousa in https://github.com/vimeo/psalm/issues/8101, finalized by @danog
-
 require __DIR__ . '/gen_callmap_utils.php';
+
+$callMap = require "dictionaries/CallMap.php";
+$orig = $callMap;
 
 foreach ($callMap as $functionName => &$entry) {
     $refl = getReflectionFunction($functionName);

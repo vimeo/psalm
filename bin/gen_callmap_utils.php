@@ -199,7 +199,5 @@ return '.var_export($callMap, true).';');
 BypassFinals::enable();
 
 new ProjectAnalyzer(new TestConfig, new Providers(new FileProvider));
-$callMap = require "dictionaries/CallMap.php";
-$orig = $callMap;
 
 $codebase = ProjectAnalyzer::getInstance()->getCodebase();

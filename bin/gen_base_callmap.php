@@ -62,7 +62,7 @@ foreach (get_defined_functions()['internal'] as $name) {
 
     $args = paramsToEntries($func);
 
-    $callmap[$name] = $args;
+    $callmap[strtolower($name)] = $args;
 }
 
 foreach (get_declared_classes() as $class) {
@@ -74,7 +74,7 @@ foreach (get_declared_classes() as $class) {
     foreach ($refl->getMethods() as $method) {
         $args = paramsToEntries($method);
     
-        $callmap[$class.'::'.$method->getName()] = $args;
+        $callmap[strtolower($class.'::'.$method->getName())] = $args;
     }
 }
 
