@@ -7,28 +7,6 @@ return array (
     array (
       0 => 'int',
     ),
-    'reflectionclass::isiterable' => 
-    array (
-      0 => 'bool',
-    ),
-    'ziparchive::count' => 
-    array (
-      0 => 'int',
-    ),
-    'ziparchive::setencryptionindex' => 
-    array (
-      0 => 'bool',
-      'index' => 'int',
-      'method' => 'int',
-      'password=' => 'string',
-    ),
-    'ziparchive::setencryptionname' => 
-    array (
-      0 => 'bool',
-      'name' => 'string',
-      'method' => 'int',
-      'password=' => 'string',
-    ),
     'ftp_append' => 
     array (
       0 => 'bool',
@@ -150,6 +128,10 @@ return array (
     array (
       0 => 'bool',
       'connection' => 'resource',
+    ),
+    'reflectionclass::isiterable' => 
+    array (
+      0 => 'bool',
     ),
     'sapi_windows_vt100_support' => 
     array (
@@ -691,81 +673,27 @@ return array (
       0 => 'mixed',
       'category=' => 'string',
     ),
+    'ziparchive::count' => 
+    array (
+      0 => 'int',
+    ),
+    'ziparchive::setencryptionindex' => 
+    array (
+      0 => 'bool',
+      'index' => 'int',
+      'method' => 'int',
+      'password=' => 'string',
+    ),
+    'ziparchive::setencryptionname' => 
+    array (
+      0 => 'bool',
+      'name' => 'string',
+      'method' => 'int',
+      'password=' => 'string',
+    ),
   ),
   'changed' => 
   array (
-    'reflectionclass::getmethods' => 
-    array (
-      'old' => 
-      array (
-        0 => 'list<ReflectionMethod>',
-        'filter=' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'list<ReflectionMethod>',
-        'filter=' => 'int|null',
-      ),
-    ),
-    'reflectionclass::getproperties' => 
-    array (
-      'old' => 
-      array (
-        0 => 'list<ReflectionProperty>',
-        'filter=' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'list<ReflectionProperty>',
-        'filter=' => 'int|null',
-      ),
-    ),
-    'reflectionobject::getmethods' => 
-    array (
-      'old' => 
-      array (
-        0 => 'array<array-key, ReflectionMethod>',
-        'filter=' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'array<array-key, ReflectionMethod>',
-        'filter=' => 'int|null',
-      ),
-    ),
-    'reflectionobject::getproperties' => 
-    array (
-      'old' => 
-      array (
-        0 => 'array<array-key, ReflectionProperty>',
-        'filter=' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'array<array-key, ReflectionProperty>',
-        'filter=' => 'int|null',
-      ),
-    ),
-    'sqlite3::openblob' => 
-    array (
-      'old' => 
-      array (
-        0 => 'false|resource',
-        'table' => 'string',
-        'column' => 'string',
-        'rowid' => 'int',
-        'dbname=' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'false|resource',
-        'table' => 'string',
-        'column' => 'string',
-        'rowid' => 'int',
-        'database=' => 'string',
-        'flags=' => 'int',
-      ),
-    ),
     'hash_copy' => 
     array (
       'old' => 
@@ -907,6 +835,78 @@ return array (
         0 => 'string',
         'str' => 'string',
         'delimiter=' => 'null|string',
+      ),
+    ),
+    'reflectionclass::getmethods' => 
+    array (
+      'old' => 
+      array (
+        0 => 'list<ReflectionMethod>',
+        'filter=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'list<ReflectionMethod>',
+        'filter=' => 'int|null',
+      ),
+    ),
+    'reflectionclass::getproperties' => 
+    array (
+      'old' => 
+      array (
+        0 => 'list<ReflectionProperty>',
+        'filter=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'list<ReflectionProperty>',
+        'filter=' => 'int|null',
+      ),
+    ),
+    'reflectionobject::getmethods' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, ReflectionMethod>',
+        'filter=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, ReflectionMethod>',
+        'filter=' => 'int|null',
+      ),
+    ),
+    'reflectionobject::getproperties' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, ReflectionProperty>',
+        'filter=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, ReflectionProperty>',
+        'filter=' => 'int|null',
+      ),
+    ),
+    'sqlite3::openblob' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|resource',
+        'table' => 'string',
+        'column' => 'string',
+        'rowid' => 'int',
+        'dbname=' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'false|resource',
+        'table' => 'string',
+        'column' => 'string',
+        'rowid' => 'int',
+        'database=' => 'string',
+        'flags=' => 'int',
       ),
     ),
   ),

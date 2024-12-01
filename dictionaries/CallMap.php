@@ -6310,16 +6310,16 @@ return array (
     0 => 'null|string',
     'error_code' => 'int',
   ),
-  'curl_upkeep' => 
-  array (
-    0 => 'bool',
-    'handle' => 'CurlHandle',
-  ),
   'curl_unescape' => 
   array (
     0 => 'false|string',
     'handle' => 'CurlHandle',
     'string' => 'string',
+  ),
+  'curl_upkeep' => 
+  array (
+    0 => 'bool',
+    'handle' => 'CurlHandle',
   ),
   'curl_version' => 
   array (
@@ -6884,6 +6884,15 @@ return array (
   array (
     0 => 'array{error_count: int, errors: array<int, string>, warning_count: int, warnings: array<int, string>}|false',
   ),
+  'datetimeinterface::__serialize' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'datetimeinterface::__unserialize' => 
+  array (
+    0 => 'void',
+    'data' => 'array<array-key, mixed>',
+  ),
   'datetimeinterface::diff' => 
   array (
     0 => 'DateInterval',
@@ -6906,15 +6915,6 @@ return array (
   'datetimeinterface::gettimezone' => 
   array (
     0 => 'DateTimeZone|false',
-  ),
-  'datetimeinterface::__serialize' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'datetimeinterface::__unserialize' => 
-  array (
-    0 => 'void',
-    'data' => 'array<array-key, mixed>',
   ),
   'datetimezone::__construct' => 
   array (
@@ -14016,6 +14016,11 @@ return array (
     0 => 'bool',
     'stream' => 'resource',
   ),
+  'fdatasync' => 
+  array (
+    0 => 'bool',
+    'stream' => 'resource',
+  ),
   'fdf_add_doc_javascript' => 
   array (
     0 => 'bool',
@@ -14256,16 +14261,6 @@ return array (
     0 => 'bool',
     'stream' => 'resource',
   ),
-  'fsync' => 
-  array (
-    0 => 'bool',
-    'stream' => 'resource',
-  ),
-  'fdatasync' => 
-  array (
-    0 => 'bool',
-    'stream' => 'resource',
-  ),
   'ffmpeg_animated_gif::__construct' => 
   array (
     0 => 'void',
@@ -14463,20 +14458,17 @@ return array (
     0 => 'void',
     'callback' => 'callable',
   ),
-  'fiber::start' => 
+  'fiber::getcurrent' => 
   array (
-    0 => 'mixed',
-    '...args' => 'mixed',
+    0 => 'Fiber|null',
   ),
-  'fiber::resume' => 
+  'fiber::getreturn' => 
   array (
     0 => 'mixed',
-    'value=' => 'mixed|null',
   ),
-  'fiber::throw' => 
+  'fiber::isrunning' => 
   array (
-    0 => 'mixed',
-    'exception' => 'Throwable',
+    0 => 'bool',
   ),
   'fiber::isstarted' => 
   array (
@@ -14486,26 +14478,29 @@ return array (
   array (
     0 => 'bool',
   ),
-  'fiber::isrunning' => 
-  array (
-    0 => 'bool',
-  ),
   'fiber::isterminated' => 
   array (
     0 => 'bool',
   ),
-  'fiber::getreturn' => 
+  'fiber::resume' => 
   array (
     0 => 'mixed',
+    'value=' => 'mixed|null',
   ),
-  'fiber::getcurrent' => 
+  'fiber::start' => 
   array (
-    0 => 'Fiber|null',
+    0 => 'mixed',
+    '...args' => 'mixed',
   ),
   'fiber::suspend' => 
   array (
     0 => 'mixed',
     'value=' => 'mixed|null',
+  ),
+  'fiber::throw' => 
+  array (
+    0 => 'mixed',
+    'exception' => 'Throwable',
   ),
   'fibererror::__construct' => 
   array (
@@ -15057,6 +15052,11 @@ return array (
   'fstat' => 
   array (
     0 => 'array{0: int, 10: int, 11: int, 12: int, 1: int, 2: int, 3: int, 4: int, 5: int, 6: int, 7: int, 8: int, 9: int, atime: int, blksize: int, blocks: int, ctime: int, dev: int, gid: int, ino: int, mode: int, mtime: int, nlink: int, rdev: int, size: int, uid: int}|false',
+    'stream' => 'resource',
+  ),
+  'fsync' => 
+  array (
+    0 => 'bool',
     'stream' => 'resource',
   ),
   'ftell' => 
@@ -16618,17 +16618,13 @@ return array (
   array (
     0 => 'string',
   ),
-  'geosgeometry::project' => 
+  'geosgeometry::area' => 
   array (
     0 => 'float',
-    'other' => 'GEOSGeometry',
-    'normalized' => 'bool',
   ),
-  'geosgeometry::interpolate' => 
+  'geosgeometry::boundary' => 
   array (
     0 => 'GEOSGeometry',
-    'dist' => 'float',
-    'normalized' => 'bool',
   ),
   'geosgeometry::buffer' => 
   array (
@@ -16636,51 +16632,210 @@ return array (
     'dist' => 'float',
     'styleArray=' => 'array<array-key, mixed>',
   ),
-  'geosgeometry::offsetcurve' => 
-  array (
-    0 => 'GEOSGeometry',
-    'dist' => 'float',
-    'styleArray' => 'array<array-key, mixed>',
-  ),
-  'geosgeometry::envelope' => 
+  'geosgeometry::centroid' => 
   array (
     0 => 'GEOSGeometry',
   ),
-  'geosgeometry::intersection' => 
+  'geosgeometry::checkvalidity' => 
   array (
-    0 => 'GEOSGeometry',
+    0 => 'array{location?: GEOSGeometry, reason?: string, valid: bool}',
+  ),
+  'geosgeometry::contains' => 
+  array (
+    0 => 'bool',
     'geom' => 'GEOSGeometry',
   ),
   'geosgeometry::convexhull' => 
   array (
     0 => 'GEOSGeometry',
   ),
+  'geosgeometry::coordinatedimension' => 
+  array (
+    0 => 'int',
+  ),
+  'geosgeometry::coveredby' => 
+  array (
+    0 => 'bool',
+    'geom' => 'GEOSGeometry',
+  ),
+  'geosgeometry::covers' => 
+  array (
+    0 => 'bool',
+    'geom' => 'GEOSGeometry',
+  ),
+  'geosgeometry::crosses' => 
+  array (
+    0 => 'bool',
+    'geom' => 'GEOSGeometry',
+  ),
+  'geosgeometry::delaunaytriangulation' => 
+  array (
+    0 => 'GEOSGeometry',
+    'tolerance' => 'float',
+    'onlyEdges' => 'bool',
+  ),
   'geosgeometry::difference' => 
   array (
     0 => 'GEOSGeometry',
     'geom' => 'GEOSGeometry',
   ),
-  'geosgeometry::symdifference' => 
+  'geosgeometry::dimension' => 
+  array (
+    0 => 'int',
+  ),
+  'geosgeometry::disjoint' => 
+  array (
+    0 => 'bool',
+    'geom' => 'GEOSGeometry',
+  ),
+  'geosgeometry::distance' => 
+  array (
+    0 => 'float',
+    'geom' => 'GEOSGeometry',
+  ),
+  'geosgeometry::endpoint' => 
+  array (
+    0 => 'GEOSGeometry',
+  ),
+  'geosgeometry::envelope' => 
+  array (
+    0 => 'GEOSGeometry',
+  ),
+  'geosgeometry::equals' => 
+  array (
+    0 => 'bool',
+    'geom' => 'GEOSGeometry',
+  ),
+  'geosgeometry::equalsexact' => 
+  array (
+    0 => 'bool',
+    'geom' => 'GEOSGeometry',
+    'tolerance' => 'float',
+  ),
+  'geosgeometry::exteriorring' => 
+  array (
+    0 => 'GEOSGeometry',
+  ),
+  'geosgeometry::extractuniquepoints' => 
+  array (
+    0 => 'GEOSGeometry',
+  ),
+  'geosgeometry::geometryn' => 
+  array (
+    0 => 'GEOSGeometry',
+    'num' => 'int',
+  ),
+  'geosgeometry::getsrid' => 
+  array (
+    0 => 'int',
+  ),
+  'geosgeometry::getx' => 
+  array (
+    0 => 'float',
+  ),
+  'geosgeometry::gety' => 
+  array (
+    0 => 'float',
+  ),
+  'geosgeometry::hasz' => 
+  array (
+    0 => 'bool',
+  ),
+  'geosgeometry::hausdorffdistance' => 
+  array (
+    0 => 'float',
+    'geom' => 'GEOSGeometry',
+  ),
+  'geosgeometry::interiorringn' => 
+  array (
+    0 => 'GEOSGeometry',
+    'num' => 'int',
+  ),
+  'geosgeometry::interpolate' => 
+  array (
+    0 => 'GEOSGeometry',
+    'dist' => 'float',
+    'normalized' => 'bool',
+  ),
+  'geosgeometry::intersection' => 
   array (
     0 => 'GEOSGeometry',
     'geom' => 'GEOSGeometry',
   ),
-  'geosgeometry::boundary' => 
+  'geosgeometry::intersects' => 
+  array (
+    0 => 'bool',
+    'geom' => 'GEOSGeometry',
+  ),
+  'geosgeometry::isclosed' => 
+  array (
+    0 => 'bool',
+  ),
+  'geosgeometry::isempty' => 
+  array (
+    0 => 'bool',
+  ),
+  'geosgeometry::isring' => 
+  array (
+    0 => 'bool',
+  ),
+  'geosgeometry::issimple' => 
+  array (
+    0 => 'bool',
+  ),
+  'geosgeometry::length' => 
+  array (
+    0 => 'float',
+  ),
+  'geosgeometry::node' => 
   array (
     0 => 'GEOSGeometry',
   ),
-  'geosgeometry::union' => 
+  'geosgeometry::normalize' => 
   array (
     0 => 'GEOSGeometry',
-    'otherGeom=' => 'GEOSGeometry',
+  ),
+  'geosgeometry::numcoordinates' => 
+  array (
+    0 => 'int',
+  ),
+  'geosgeometry::numgeometries' => 
+  array (
+    0 => 'int',
+  ),
+  'geosgeometry::numinteriorrings' => 
+  array (
+    0 => 'int',
+  ),
+  'geosgeometry::numpoints' => 
+  array (
+    0 => 'int',
+  ),
+  'geosgeometry::offsetcurve' => 
+  array (
+    0 => 'GEOSGeometry',
+    'dist' => 'float',
+    'styleArray' => 'array<array-key, mixed>',
+  ),
+  'geosgeometry::overlaps' => 
+  array (
+    0 => 'bool',
+    'geom' => 'GEOSGeometry',
+  ),
+  'geosgeometry::pointn' => 
+  array (
+    0 => 'GEOSGeometry',
+    'num' => 'int',
   ),
   'geosgeometry::pointonsurface' => 
   array (
     0 => 'GEOSGeometry',
   ),
-  'geosgeometry::centroid' => 
+  'geosgeometry::project' => 
   array (
-    0 => 'GEOSGeometry',
+    0 => 'float',
+    'other' => 'GEOSGeometry',
+    'normalized' => 'bool',
   ),
   'geosgeometry::relate' => 
   array (
@@ -16694,193 +16849,16 @@ return array (
     'otherGeom' => 'GEOSGeometry',
     'rule' => 'int',
   ),
-  'geosgeometry::simplify' => 
-  array (
-    0 => 'GEOSGeometry',
-    'tolerance' => 'float',
-    'preserveTopology=' => 'bool',
-  ),
-  'geosgeometry::normalize' => 
-  array (
-    0 => 'GEOSGeometry',
-  ),
-  'geosgeometry::extractuniquepoints' => 
-  array (
-    0 => 'GEOSGeometry',
-  ),
-  'geosgeometry::disjoint' => 
-  array (
-    0 => 'bool',
-    'geom' => 'GEOSGeometry',
-  ),
-  'geosgeometry::touches' => 
-  array (
-    0 => 'bool',
-    'geom' => 'GEOSGeometry',
-  ),
-  'geosgeometry::intersects' => 
-  array (
-    0 => 'bool',
-    'geom' => 'GEOSGeometry',
-  ),
-  'geosgeometry::crosses' => 
-  array (
-    0 => 'bool',
-    'geom' => 'GEOSGeometry',
-  ),
-  'geosgeometry::within' => 
-  array (
-    0 => 'bool',
-    'geom' => 'GEOSGeometry',
-  ),
-  'geosgeometry::contains' => 
-  array (
-    0 => 'bool',
-    'geom' => 'GEOSGeometry',
-  ),
-  'geosgeometry::overlaps' => 
-  array (
-    0 => 'bool',
-    'geom' => 'GEOSGeometry',
-  ),
-  'geosgeometry::covers' => 
-  array (
-    0 => 'bool',
-    'geom' => 'GEOSGeometry',
-  ),
-  'geosgeometry::coveredby' => 
-  array (
-    0 => 'bool',
-    'geom' => 'GEOSGeometry',
-  ),
-  'geosgeometry::equals' => 
-  array (
-    0 => 'bool',
-    'geom' => 'GEOSGeometry',
-  ),
-  'geosgeometry::equalsexact' => 
-  array (
-    0 => 'bool',
-    'geom' => 'GEOSGeometry',
-    'tolerance' => 'float',
-  ),
-  'geosgeometry::isempty' => 
-  array (
-    0 => 'bool',
-  ),
-  'geosgeometry::checkvalidity' => 
-  array (
-    0 => 'array{location?: GEOSGeometry, reason?: string, valid: bool}',
-  ),
-  'geosgeometry::issimple' => 
-  array (
-    0 => 'bool',
-  ),
-  'geosgeometry::isring' => 
-  array (
-    0 => 'bool',
-  ),
-  'geosgeometry::hasz' => 
-  array (
-    0 => 'bool',
-  ),
-  'geosgeometry::isclosed' => 
-  array (
-    0 => 'bool',
-  ),
-  'geosgeometry::typename' => 
-  array (
-    0 => 'string',
-  ),
-  'geosgeometry::typeid' => 
-  array (
-    0 => 'int',
-  ),
-  'geosgeometry::getsrid' => 
-  array (
-    0 => 'int',
-  ),
   'geosgeometry::setsrid' => 
   array (
     0 => 'void',
     'srid' => 'int',
   ),
-  'geosgeometry::numgeometries' => 
-  array (
-    0 => 'int',
-  ),
-  'geosgeometry::geometryn' => 
+  'geosgeometry::simplify' => 
   array (
     0 => 'GEOSGeometry',
-    'num' => 'int',
-  ),
-  'geosgeometry::numinteriorrings' => 
-  array (
-    0 => 'int',
-  ),
-  'geosgeometry::numpoints' => 
-  array (
-    0 => 'int',
-  ),
-  'geosgeometry::getx' => 
-  array (
-    0 => 'float',
-  ),
-  'geosgeometry::gety' => 
-  array (
-    0 => 'float',
-  ),
-  'geosgeometry::interiorringn' => 
-  array (
-    0 => 'GEOSGeometry',
-    'num' => 'int',
-  ),
-  'geosgeometry::exteriorring' => 
-  array (
-    0 => 'GEOSGeometry',
-  ),
-  'geosgeometry::numcoordinates' => 
-  array (
-    0 => 'int',
-  ),
-  'geosgeometry::dimension' => 
-  array (
-    0 => 'int',
-  ),
-  'geosgeometry::coordinatedimension' => 
-  array (
-    0 => 'int',
-  ),
-  'geosgeometry::pointn' => 
-  array (
-    0 => 'GEOSGeometry',
-    'num' => 'int',
-  ),
-  'geosgeometry::startpoint' => 
-  array (
-    0 => 'GEOSGeometry',
-  ),
-  'geosgeometry::endpoint' => 
-  array (
-    0 => 'GEOSGeometry',
-  ),
-  'geosgeometry::area' => 
-  array (
-    0 => 'float',
-  ),
-  'geosgeometry::length' => 
-  array (
-    0 => 'float',
-  ),
-  'geosgeometry::distance' => 
-  array (
-    0 => 'float',
-    'geom' => 'GEOSGeometry',
-  ),
-  'geosgeometry::hausdorffdistance' => 
-  array (
-    0 => 'float',
-    'geom' => 'GEOSGeometry',
+    'tolerance' => 'float',
+    'preserveTopology=' => 'bool',
   ),
   'geosgeometry::snapto' => 
   array (
@@ -16888,15 +16866,32 @@ return array (
     'geom' => 'GEOSGeometry',
     'tolerance' => 'float',
   ),
-  'geosgeometry::node' => 
+  'geosgeometry::startpoint' => 
   array (
     0 => 'GEOSGeometry',
   ),
-  'geosgeometry::delaunaytriangulation' => 
+  'geosgeometry::symdifference' => 
   array (
     0 => 'GEOSGeometry',
-    'tolerance' => 'float',
-    'onlyEdges' => 'bool',
+    'geom' => 'GEOSGeometry',
+  ),
+  'geosgeometry::touches' => 
+  array (
+    0 => 'bool',
+    'geom' => 'GEOSGeometry',
+  ),
+  'geosgeometry::typeid' => 
+  array (
+    0 => 'int',
+  ),
+  'geosgeometry::typename' => 
+  array (
+    0 => 'string',
+  ),
+  'geosgeometry::union' => 
+  array (
+    0 => 'GEOSGeometry',
+    'otherGeom=' => 'GEOSGeometry',
   ),
   'geosgeometry::voronoidiagram' => 
   array (
@@ -16904,6 +16899,11 @@ return array (
     'tolerance' => 'float',
     'onlyEdges' => 'bool',
     'extent' => 'GEOSGeometry|null',
+  ),
+  'geosgeometry::within' => 
+  array (
+    0 => 'bool',
+    'geom' => 'GEOSGeometry',
   ),
   'geoslinemerge' => 
   array (
@@ -16949,16 +16949,15 @@ return array (
   array (
     0 => 'void',
   ),
-  'geoswkbwriter::getoutputdimension' => 
+  'geoswkbwriter::getbyteorder' => 
   array (
     0 => 'int',
   ),
-  'geoswkbwriter::setoutputdimension' => 
+  'geoswkbwriter::getincludesrid' => 
   array (
-    0 => 'void',
-    'dim' => 'int',
+    0 => 'bool',
   ),
-  'geoswkbwriter::getbyteorder' => 
+  'geoswkbwriter::getoutputdimension' => 
   array (
     0 => 'int',
   ),
@@ -16967,14 +16966,15 @@ return array (
     0 => 'void',
     'byteOrder' => 'int',
   ),
-  'geoswkbwriter::getincludesrid' => 
-  array (
-    0 => 'bool',
-  ),
   'geoswkbwriter::setincludesrid' => 
   array (
     0 => 'void',
     'inc' => 'bool',
+  ),
+  'geoswkbwriter::setoutputdimension' => 
+  array (
+    0 => 'void',
+    'dim' => 'int',
   ),
   'geoswkbwriter::write' => 
   array (
@@ -16999,26 +16999,6 @@ return array (
   array (
     0 => 'void',
   ),
-  'geoswktwriter::write' => 
-  array (
-    0 => 'string',
-    'geom' => 'GEOSGeometry',
-  ),
-  'geoswktwriter::settrim' => 
-  array (
-    0 => 'void',
-    'trim' => 'bool',
-  ),
-  'geoswktwriter::setroundingprecision' => 
-  array (
-    0 => 'void',
-    'prec' => 'int',
-  ),
-  'geoswktwriter::setoutputdimension' => 
-  array (
-    0 => 'void',
-    'dim' => 'int',
-  ),
   'geoswktwriter::getoutputdimension' => 
   array (
     0 => 'int',
@@ -17027,6 +17007,26 @@ return array (
   array (
     0 => 'void',
     'val' => 'bool',
+  ),
+  'geoswktwriter::setoutputdimension' => 
+  array (
+    0 => 'void',
+    'dim' => 'int',
+  ),
+  'geoswktwriter::setroundingprecision' => 
+  array (
+    0 => 'void',
+    'prec' => 'int',
+  ),
+  'geoswktwriter::settrim' => 
+  array (
+    0 => 'void',
+    'trim' => 'bool',
+  ),
+  'geoswktwriter::write' => 
+  array (
+    0 => 'string',
+    'geom' => 'GEOSGeometry',
   ),
   'get_browser' => 
   array (
@@ -30220,15 +30220,15 @@ return array (
     'extension=' => 'null|string',
     'details=' => 'bool',
   ),
-  'ini_restore' => 
-  array (
-    0 => 'void',
-    'option' => 'string',
-  ),
   'ini_parse_quantity' => 
   array (
     0 => 'int',
     'shorthand' => 'non-empty-string',
+  ),
+  'ini_restore' => 
+  array (
+    0 => 'void',
+    'option' => 'string',
   ),
   'ini_set' => 
   array (
@@ -33981,13 +33981,13 @@ return array (
   array (
     0 => 'list<LibXMLError>',
   ),
-  'libxml_get_last_error' => 
-  array (
-    0 => 'LibXMLError|false',
-  ),
   'libxml_get_external_entity_loader' => 
   array (
     0 => 'callable(string, string, array{directory: null|string, extSubSystem: null|string, extSubURI: null|string, intSubName: null|string}):(null|resource|string)|null',
+  ),
+  'libxml_get_last_error' => 
+  array (
+    0 => 'LibXMLError|false',
   ),
   'libxml_set_external_entity_loader' => 
   array (
@@ -37461,52 +37461,15 @@ return array (
     'w' => 'mixed',
     'wtimeout=' => 'int',
   ),
-  'mongodb\\bson\\fromjson' => 
-  array (
-    0 => 'string',
-    'json' => 'string',
-  ),
-  'mongodb\\bson\\fromphp' => 
-  array (
-    0 => 'string',
-    'value' => 'array<array-key, mixed>|object',
-  ),
-  'mongodb\\bson\\tocanonicalextendedjson' => 
-  array (
-    0 => 'string',
-    'bson' => 'string',
-  ),
-  'mongodb\\bson\\tojson' => 
-  array (
-    0 => 'string',
-    'bson' => 'string',
-  ),
-  'mongodb\\bson\\tophp' => 
-  array (
-    0 => 'array<array-key, mixed>|object',
-    'bson' => 'string',
-    'typemap=' => 'array<array-key, mixed>|null',
-  ),
-  'mongodb\\bson\\torelaxedextendedjson' => 
-  array (
-    0 => 'string',
-    'bson' => 'string',
-  ),
-  'mongodb\\driver\\monitoring\\addsubscriber' => 
-  array (
-    0 => 'void',
-    'subscriber' => 'MongoDB\\Driver\\Monitoring\\Subscriber',
-  ),
-  'mongodb\\driver\\monitoring\\removesubscriber' => 
-  array (
-    0 => 'void',
-    'subscriber' => 'MongoDB\\Driver\\Monitoring\\Subscriber',
-  ),
   'mongodb\\bson\\binary::__construct' => 
   array (
     0 => 'void',
     'data' => 'string',
     'type=' => 'int',
+  ),
+  'mongodb\\bson\\binary::__tostring' => 
+  array (
+    0 => 'string',
   ),
   'mongodb\\bson\\binary::getdata' => 
   array (
@@ -37516,9 +37479,9 @@ return array (
   array (
     0 => 'int',
   ),
-  'mongodb\\bson\\binary::__tostring' => 
+  'mongodb\\bson\\binary::jsonserialize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\bson\\binary::serialize' => 
   array (
@@ -37529,9 +37492,9 @@ return array (
     0 => 'void',
     'data' => 'string',
   ),
-  'mongodb\\bson\\binary::jsonserialize' => 
+  'mongodb\\bson\\binaryinterface::__tostring' => 
   array (
-    0 => 'mixed',
+    0 => 'string',
   ),
   'mongodb\\bson\\binaryinterface::getdata' => 
   array (
@@ -37541,13 +37504,13 @@ return array (
   array (
     0 => 'int',
   ),
-  'mongodb\\bson\\binaryinterface::__tostring' => 
-  array (
-    0 => 'string',
-  ),
   'mongodb\\bson\\dbpointer::__tostring' => 
   array (
     0 => 'string',
+  ),
+  'mongodb\\bson\\dbpointer::jsonserialize' => 
+  array (
+    0 => 'mixed',
   ),
   'mongodb\\bson\\dbpointer::serialize' => 
   array (
@@ -37558,10 +37521,6 @@ return array (
     0 => 'void',
     'data' => 'string',
   ),
-  'mongodb\\bson\\dbpointer::jsonserialize' => 
-  array (
-    0 => 'mixed',
-  ),
   'mongodb\\bson\\decimal128::__construct' => 
   array (
     0 => 'void',
@@ -37570,6 +37529,10 @@ return array (
   'mongodb\\bson\\decimal128::__tostring' => 
   array (
     0 => 'string',
+  ),
+  'mongodb\\bson\\decimal128::jsonserialize' => 
+  array (
+    0 => 'mixed',
   ),
   'mongodb\\bson\\decimal128::serialize' => 
   array (
@@ -37580,11 +37543,11 @@ return array (
     0 => 'void',
     'data' => 'string',
   ),
-  'mongodb\\bson\\decimal128::jsonserialize' => 
-  array (
-    0 => 'mixed',
-  ),
   'mongodb\\bson\\decimal128interface::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'mongodb\\bson\\document::__tostring' => 
   array (
     0 => 'string',
   ),
@@ -37617,19 +37580,6 @@ return array (
     0 => 'bool',
     'key' => 'string',
   ),
-  'mongodb\\bson\\document::tophp' => 
-  array (
-    0 => 'array<array-key, mixed>|object',
-    'typeMap=' => 'array<array-key, mixed>|null',
-  ),
-  'mongodb\\bson\\document::tocanonicalextendedjson' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\bson\\document::torelaxedextendedjson' => 
-  array (
-    0 => 'string',
-  ),
   'mongodb\\bson\\document::offsetexists' => 
   array (
     0 => 'bool',
@@ -37651,11 +37601,20 @@ return array (
     0 => 'void',
     'offset' => 'mixed',
   ),
-  'mongodb\\bson\\document::__tostring' => 
+  'mongodb\\bson\\document::serialize' => 
   array (
     0 => 'string',
   ),
-  'mongodb\\bson\\document::serialize' => 
+  'mongodb\\bson\\document::tocanonicalextendedjson' => 
+  array (
+    0 => 'string',
+  ),
+  'mongodb\\bson\\document::tophp' => 
+  array (
+    0 => 'array<array-key, mixed>|object',
+    'typeMap=' => 'array<array-key, mixed>|null',
+  ),
+  'mongodb\\bson\\document::torelaxedextendedjson' => 
   array (
     0 => 'string',
   ),
@@ -37663,6 +37622,16 @@ return array (
   array (
     0 => 'void',
     'data' => 'string',
+  ),
+  'mongodb\\bson\\fromjson' => 
+  array (
+    0 => 'string',
+    'json' => 'string',
+  ),
+  'mongodb\\bson\\fromphp' => 
+  array (
+    0 => 'string',
+    'value' => 'array<array-key, mixed>|object',
   ),
   'mongodb\\bson\\int64::__construct' => 
   array (
@@ -37673,6 +37642,10 @@ return array (
   array (
     0 => 'string',
   ),
+  'mongodb\\bson\\int64::jsonserialize' => 
+  array (
+    0 => 'mixed',
+  ),
   'mongodb\\bson\\int64::serialize' => 
   array (
     0 => 'string',
@@ -37681,10 +37654,6 @@ return array (
   array (
     0 => 'void',
     'data' => 'string',
-  ),
-  'mongodb\\bson\\int64::jsonserialize' => 
-  array (
-    0 => 'mixed',
   ),
   'mongodb\\bson\\iterator::current' => 
   array (
@@ -37712,6 +37681,10 @@ return array (
     'code' => 'string',
     'scope=' => 'array<array-key, mixed>|null|object',
   ),
+  'mongodb\\bson\\javascript::__tostring' => 
+  array (
+    0 => 'string',
+  ),
   'mongodb\\bson\\javascript::getcode' => 
   array (
     0 => 'string',
@@ -37720,9 +37693,9 @@ return array (
   array (
     0 => 'null|object',
   ),
-  'mongodb\\bson\\javascript::__tostring' => 
+  'mongodb\\bson\\javascript::jsonserialize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\bson\\javascript::serialize' => 
   array (
@@ -37733,9 +37706,9 @@ return array (
     0 => 'void',
     'data' => 'string',
   ),
-  'mongodb\\bson\\javascript::jsonserialize' => 
+  'mongodb\\bson\\javascriptinterface::__tostring' => 
   array (
-    0 => 'mixed',
+    0 => 'string',
   ),
   'mongodb\\bson\\javascriptinterface::getcode' => 
   array (
@@ -37745,9 +37718,9 @@ return array (
   array (
     0 => 'null|object',
   ),
-  'mongodb\\bson\\javascriptinterface::__tostring' => 
+  'mongodb\\bson\\maxkey::jsonserialize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\bson\\maxkey::serialize' => 
   array (
@@ -37758,7 +37731,7 @@ return array (
     0 => 'void',
     'data' => 'string',
   ),
-  'mongodb\\bson\\maxkey::jsonserialize' => 
+  'mongodb\\bson\\minkey::jsonserialize' => 
   array (
     0 => 'mixed',
   ),
@@ -37771,22 +37744,22 @@ return array (
     0 => 'void',
     'data' => 'string',
   ),
-  'mongodb\\bson\\minkey::jsonserialize' => 
-  array (
-    0 => 'mixed',
-  ),
   'mongodb\\bson\\objectid::__construct' => 
   array (
     0 => 'void',
     'id=' => 'null|string',
   ),
+  'mongodb\\bson\\objectid::__tostring' => 
+  array (
+    0 => 'string',
+  ),
   'mongodb\\bson\\objectid::gettimestamp' => 
   array (
     0 => 'int',
   ),
-  'mongodb\\bson\\objectid::__tostring' => 
+  'mongodb\\bson\\objectid::jsonserialize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\bson\\objectid::serialize' => 
   array (
@@ -37797,15 +37770,15 @@ return array (
     0 => 'void',
     'data' => 'string',
   ),
-  'mongodb\\bson\\objectid::jsonserialize' => 
+  'mongodb\\bson\\objectidinterface::__tostring' => 
   array (
-    0 => 'mixed',
+    0 => 'string',
   ),
   'mongodb\\bson\\objectidinterface::gettimestamp' => 
   array (
     0 => 'int',
   ),
-  'mongodb\\bson\\objectidinterface::__tostring' => 
+  'mongodb\\bson\\packedarray::__tostring' => 
   array (
     0 => 'string',
   ),
@@ -37828,11 +37801,6 @@ return array (
     0 => 'bool',
     'index' => 'int',
   ),
-  'mongodb\\bson\\packedarray::tophp' => 
-  array (
-    0 => 'array<array-key, mixed>|object',
-    'typeMap=' => 'array<array-key, mixed>|null',
-  ),
   'mongodb\\bson\\packedarray::offsetexists' => 
   array (
     0 => 'bool',
@@ -37854,13 +37822,14 @@ return array (
     0 => 'void',
     'offset' => 'mixed',
   ),
-  'mongodb\\bson\\packedarray::__tostring' => 
-  array (
-    0 => 'string',
-  ),
   'mongodb\\bson\\packedarray::serialize' => 
   array (
     0 => 'string',
+  ),
+  'mongodb\\bson\\packedarray::tophp' => 
+  array (
+    0 => 'array<array-key, mixed>|object',
+    'typeMap=' => 'array<array-key, mixed>|null',
   ),
   'mongodb\\bson\\packedarray::unserialize' => 
   array (
@@ -37877,7 +37846,7 @@ return array (
     'pattern' => 'string',
     'flags=' => 'string',
   ),
-  'mongodb\\bson\\regex::getpattern' => 
+  'mongodb\\bson\\regex::__tostring' => 
   array (
     0 => 'string',
   ),
@@ -37885,9 +37854,13 @@ return array (
   array (
     0 => 'string',
   ),
-  'mongodb\\bson\\regex::__tostring' => 
+  'mongodb\\bson\\regex::getpattern' => 
   array (
     0 => 'string',
+  ),
+  'mongodb\\bson\\regex::jsonserialize' => 
+  array (
+    0 => 'mixed',
   ),
   'mongodb\\bson\\regex::serialize' => 
   array (
@@ -37898,11 +37871,7 @@ return array (
     0 => 'void',
     'data' => 'string',
   ),
-  'mongodb\\bson\\regex::jsonserialize' => 
-  array (
-    0 => 'mixed',
-  ),
-  'mongodb\\bson\\regexinterface::getpattern' => 
+  'mongodb\\bson\\regexinterface::__tostring' => 
   array (
     0 => 'string',
   ),
@@ -37910,7 +37879,7 @@ return array (
   array (
     0 => 'string',
   ),
-  'mongodb\\bson\\regexinterface::__tostring' => 
+  'mongodb\\bson\\regexinterface::getpattern' => 
   array (
     0 => 'string',
   ),
@@ -37922,6 +37891,10 @@ return array (
   array (
     0 => 'string',
   ),
+  'mongodb\\bson\\symbol::jsonserialize' => 
+  array (
+    0 => 'mixed',
+  ),
   'mongodb\\bson\\symbol::serialize' => 
   array (
     0 => 'string',
@@ -37931,27 +37904,27 @@ return array (
     0 => 'void',
     'data' => 'string',
   ),
-  'mongodb\\bson\\symbol::jsonserialize' => 
-  array (
-    0 => 'mixed',
-  ),
   'mongodb\\bson\\timestamp::__construct' => 
   array (
     0 => 'void',
     'increment' => 'int|string',
     'timestamp' => 'int|string',
   ),
-  'mongodb\\bson\\timestamp::gettimestamp' => 
+  'mongodb\\bson\\timestamp::__tostring' => 
   array (
-    0 => 'int',
+    0 => 'string',
   ),
   'mongodb\\bson\\timestamp::getincrement' => 
   array (
     0 => 'int',
   ),
-  'mongodb\\bson\\timestamp::__tostring' => 
+  'mongodb\\bson\\timestamp::gettimestamp' => 
   array (
-    0 => 'string',
+    0 => 'int',
+  ),
+  'mongodb\\bson\\timestamp::jsonserialize' => 
+  array (
+    0 => 'mixed',
   ),
   'mongodb\\bson\\timestamp::serialize' => 
   array (
@@ -37962,59 +37935,46 @@ return array (
     0 => 'void',
     'data' => 'string',
   ),
-  'mongodb\\bson\\timestamp::jsonserialize' => 
+  'mongodb\\bson\\timestampinterface::__tostring' => 
   array (
-    0 => 'mixed',
-  ),
-  'mongodb\\bson\\timestampinterface::gettimestamp' => 
-  array (
-    0 => 'int',
+    0 => 'string',
   ),
   'mongodb\\bson\\timestampinterface::getincrement' => 
   array (
     0 => 'int',
   ),
-  'mongodb\\bson\\timestampinterface::__tostring' => 
+  'mongodb\\bson\\timestampinterface::gettimestamp' => 
+  array (
+    0 => 'int',
+  ),
+  'mongodb\\bson\\tocanonicalextendedjson' => 
   array (
     0 => 'string',
+    'bson' => 'string',
   ),
-  'mongodb\\bson\\utcdatetime::__construct' => 
-  array (
-    0 => 'void',
-    'milliseconds=' => 'DateTimeInterface|float|int|null|string',
-  ),
-  'mongodb\\bson\\utcdatetime::todatetime' => 
-  array (
-    0 => 'DateTime',
-  ),
-  'mongodb\\bson\\utcdatetime::__tostring' => 
+  'mongodb\\bson\\tojson' => 
   array (
     0 => 'string',
+    'bson' => 'string',
   ),
-  'mongodb\\bson\\utcdatetime::serialize' => 
+  'mongodb\\bson\\tophp' => 
+  array (
+    0 => 'array<array-key, mixed>|object',
+    'bson' => 'string',
+    'typemap=' => 'array<array-key, mixed>|null',
+  ),
+  'mongodb\\bson\\torelaxedextendedjson' => 
   array (
     0 => 'string',
-  ),
-  'mongodb\\bson\\utcdatetime::unserialize' => 
-  array (
-    0 => 'void',
-    'data' => 'string',
-  ),
-  'mongodb\\bson\\utcdatetime::jsonserialize' => 
-  array (
-    0 => 'mixed',
-  ),
-  'mongodb\\bson\\utcdatetimeinterface::todatetime' => 
-  array (
-    0 => 'DateTime',
-  ),
-  'mongodb\\bson\\utcdatetimeinterface::__tostring' => 
-  array (
-    0 => 'string',
+    'bson' => 'string',
   ),
   'mongodb\\bson\\undefined::__tostring' => 
   array (
     0 => 'string',
+  ),
+  'mongodb\\bson\\undefined::jsonserialize' => 
+  array (
+    0 => 'mixed',
   ),
   'mongodb\\bson\\undefined::serialize' => 
   array (
@@ -38025,14 +37985,44 @@ return array (
     0 => 'void',
     'data' => 'string',
   ),
-  'mongodb\\bson\\undefined::jsonserialize' => 
-  array (
-    0 => 'mixed',
-  ),
   'mongodb\\bson\\unserializable::bsonunserialize' => 
   array (
     0 => 'void',
     'data' => 'array<array-key, mixed>',
+  ),
+  'mongodb\\bson\\utcdatetime::__construct' => 
+  array (
+    0 => 'void',
+    'milliseconds=' => 'DateTimeInterface|float|int|null|string',
+  ),
+  'mongodb\\bson\\utcdatetime::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'mongodb\\bson\\utcdatetime::jsonserialize' => 
+  array (
+    0 => 'mixed',
+  ),
+  'mongodb\\bson\\utcdatetime::serialize' => 
+  array (
+    0 => 'string',
+  ),
+  'mongodb\\bson\\utcdatetime::todatetime' => 
+  array (
+    0 => 'DateTime',
+  ),
+  'mongodb\\bson\\utcdatetime::unserialize' => 
+  array (
+    0 => 'void',
+    'data' => 'string',
+  ),
+  'mongodb\\bson\\utcdatetimeinterface::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'mongodb\\bson\\utcdatetimeinterface::todatetime' => 
+  array (
+    0 => 'DateTime',
   ),
   'mongodb\\driver\\bulkwrite::__construct' => 
   array (
@@ -38215,13 +38205,13 @@ return array (
   array (
     0 => 'string',
   ),
-  'mongodb\\driver\\exception\\commandexception::getresultdocument' => 
-  array (
-    0 => 'object',
-  ),
   'mongodb\\driver\\exception\\commandexception::__tostring' => 
   array (
     0 => 'string',
+  ),
+  'mongodb\\driver\\exception\\commandexception::getresultdocument' => 
+  array (
+    0 => 'object',
   ),
   'mongodb\\driver\\exception\\connectionexception::__tostring' => 
   array (
@@ -38251,12 +38241,16 @@ return array (
   array (
     0 => 'string',
   ),
+  'mongodb\\driver\\exception\\runtimeexception::__tostring' => 
+  array (
+    0 => 'string',
+  ),
   'mongodb\\driver\\exception\\runtimeexception::haserrorlabel' => 
   array (
     0 => 'bool',
     'errorLabel' => 'string',
   ),
-  'mongodb\\driver\\exception\\runtimeexception::__tostring' => 
+  'mongodb\\driver\\exception\\serverexception::__tostring' => 
   array (
     0 => 'string',
   ),
@@ -38264,21 +38258,17 @@ return array (
   array (
     0 => 'string',
   ),
-  'mongodb\\driver\\exception\\serverexception::__tostring' => 
+  'mongodb\\driver\\exception\\unexpectedvalueexception::__tostring' => 
   array (
     0 => 'string',
   ),
-  'mongodb\\driver\\exception\\unexpectedvalueexception::__tostring' => 
+  'mongodb\\driver\\exception\\writeexception::__tostring' => 
   array (
     0 => 'string',
   ),
   'mongodb\\driver\\exception\\writeexception::getwriteresult' => 
   array (
     0 => 'MongoDB\\Driver\\WriteResult',
-  ),
-  'mongodb\\driver\\exception\\writeexception::__tostring' => 
-  array (
-    0 => 'string',
   ),
   'mongodb\\driver\\manager::__construct' => 
   array (
@@ -38374,6 +38364,11 @@ return array (
     0 => 'MongoDB\\Driver\\Session',
     'options=' => 'array<array-key, mixed>|null',
   ),
+  'mongodb\\driver\\monitoring\\addsubscriber' => 
+  array (
+    0 => 'void',
+    'subscriber' => 'MongoDB\\Driver\\Monitoring\\Subscriber',
+  ),
   'mongodb\\driver\\monitoring\\commandfailedevent::getcommandname' => 
   array (
     0 => 'string',
@@ -38402,13 +38397,13 @@ return array (
   array (
     0 => 'MongoDB\\Driver\\Server',
   ),
-  'mongodb\\driver\\monitoring\\commandfailedevent::getserviceid' => 
-  array (
-    0 => 'MongoDB\\BSON\\ObjectId|null',
-  ),
   'mongodb\\driver\\monitoring\\commandfailedevent::getserverconnectionid' => 
   array (
     0 => 'int|null',
+  ),
+  'mongodb\\driver\\monitoring\\commandfailedevent::getserviceid' => 
+  array (
+    0 => 'MongoDB\\BSON\\ObjectId|null',
   ),
   'mongodb\\driver\\monitoring\\commandstartedevent::getcommand' => 
   array (
@@ -38434,13 +38429,18 @@ return array (
   array (
     0 => 'MongoDB\\Driver\\Server',
   ),
+  'mongodb\\driver\\monitoring\\commandstartedevent::getserverconnectionid' => 
+  array (
+    0 => 'int|null',
+  ),
   'mongodb\\driver\\monitoring\\commandstartedevent::getserviceid' => 
   array (
     0 => 'MongoDB\\BSON\\ObjectId|null',
   ),
-  'mongodb\\driver\\monitoring\\commandstartedevent::getserverconnectionid' => 
+  'mongodb\\driver\\monitoring\\commandsubscriber::commandfailed' => 
   array (
-    0 => 'int|null',
+    0 => 'void',
+    'event' => 'MongoDB\\Driver\\Monitoring\\CommandFailedEvent',
   ),
   'mongodb\\driver\\monitoring\\commandsubscriber::commandstarted' => 
   array (
@@ -38451,11 +38451,6 @@ return array (
   array (
     0 => 'void',
     'event' => 'MongoDB\\Driver\\Monitoring\\CommandSucceededEvent',
-  ),
-  'mongodb\\driver\\monitoring\\commandsubscriber::commandfailed' => 
-  array (
-    0 => 'void',
-    'event' => 'MongoDB\\Driver\\Monitoring\\CommandFailedEvent',
   ),
   'mongodb\\driver\\monitoring\\commandsucceededevent::getcommandname' => 
   array (
@@ -38481,13 +38476,13 @@ return array (
   array (
     0 => 'MongoDB\\Driver\\Server',
   ),
-  'mongodb\\driver\\monitoring\\commandsucceededevent::getserviceid' => 
-  array (
-    0 => 'MongoDB\\BSON\\ObjectId|null',
-  ),
   'mongodb\\driver\\monitoring\\commandsucceededevent::getserverconnectionid' => 
   array (
     0 => 'int|null',
+  ),
+  'mongodb\\driver\\monitoring\\commandsucceededevent::getserviceid' => 
+  array (
+    0 => 'MongoDB\\BSON\\ObjectId|null',
   ),
   'mongodb\\driver\\monitoring\\logsubscriber::log' => 
   array (
@@ -38495,6 +38490,11 @@ return array (
     'level' => 'int',
     'domain' => 'string',
     'message' => 'string',
+  ),
+  'mongodb\\driver\\monitoring\\removesubscriber' => 
+  array (
+    0 => 'void',
+    'subscriber' => 'MongoDB\\Driver\\Monitoring\\Subscriber',
   ),
   'mongodb\\driver\\monitoring\\sdamsubscriber::serverchanged' => 
   array (
@@ -38505,11 +38505,6 @@ return array (
   array (
     0 => 'void',
     'event' => 'MongoDB\\Driver\\Monitoring\\ServerClosedEvent',
-  ),
-  'mongodb\\driver\\monitoring\\sdamsubscriber::serveropening' => 
-  array (
-    0 => 'void',
-    'event' => 'MongoDB\\Driver\\Monitoring\\ServerOpeningEvent',
   ),
   'mongodb\\driver\\monitoring\\sdamsubscriber::serverheartbeatfailed' => 
   array (
@@ -38526,6 +38521,11 @@ return array (
     0 => 'void',
     'event' => 'MongoDB\\Driver\\Monitoring\\ServerHeartbeatSucceededEvent',
   ),
+  'mongodb\\driver\\monitoring\\sdamsubscriber::serveropening' => 
+  array (
+    0 => 'void',
+    'event' => 'MongoDB\\Driver\\Monitoring\\ServerOpeningEvent',
+  ),
   'mongodb\\driver\\monitoring\\sdamsubscriber::topologychanged' => 
   array (
     0 => 'void',
@@ -38541,10 +38541,6 @@ return array (
     0 => 'void',
     'event' => 'MongoDB\\Driver\\Monitoring\\TopologyOpeningEvent',
   ),
-  'mongodb\\driver\\monitoring\\serverchangedevent::getport' => 
-  array (
-    0 => 'int',
-  ),
   'mongodb\\driver\\monitoring\\serverchangedevent::gethost' => 
   array (
     0 => 'string',
@@ -38552,6 +38548,10 @@ return array (
   'mongodb\\driver\\monitoring\\serverchangedevent::getnewdescription' => 
   array (
     0 => 'MongoDB\\Driver\\ServerDescription',
+  ),
+  'mongodb\\driver\\monitoring\\serverchangedevent::getport' => 
+  array (
+    0 => 'int',
   ),
   'mongodb\\driver\\monitoring\\serverchangedevent::getpreviousdescription' => 
   array (
@@ -38561,13 +38561,13 @@ return array (
   array (
     0 => 'MongoDB\\BSON\\ObjectId',
   ),
-  'mongodb\\driver\\monitoring\\serverclosedevent::getport' => 
-  array (
-    0 => 'int',
-  ),
   'mongodb\\driver\\monitoring\\serverclosedevent::gethost' => 
   array (
     0 => 'string',
+  ),
+  'mongodb\\driver\\monitoring\\serverclosedevent::getport' => 
+  array (
+    0 => 'int',
   ),
   'mongodb\\driver\\monitoring\\serverclosedevent::gettopologyid' => 
   array (
@@ -38581,25 +38581,25 @@ return array (
   array (
     0 => 'Exception',
   ),
-  'mongodb\\driver\\monitoring\\serverheartbeatfailedevent::getport' => 
-  array (
-    0 => 'int',
-  ),
   'mongodb\\driver\\monitoring\\serverheartbeatfailedevent::gethost' => 
   array (
     0 => 'string',
+  ),
+  'mongodb\\driver\\monitoring\\serverheartbeatfailedevent::getport' => 
+  array (
+    0 => 'int',
   ),
   'mongodb\\driver\\monitoring\\serverheartbeatfailedevent::isawaited' => 
   array (
     0 => 'bool',
   ),
-  'mongodb\\driver\\monitoring\\serverheartbeatstartedevent::getport' => 
-  array (
-    0 => 'int',
-  ),
   'mongodb\\driver\\monitoring\\serverheartbeatstartedevent::gethost' => 
   array (
     0 => 'string',
+  ),
+  'mongodb\\driver\\monitoring\\serverheartbeatstartedevent::getport' => 
+  array (
+    0 => 'int',
   ),
   'mongodb\\driver\\monitoring\\serverheartbeatstartedevent::isawaited' => 
   array (
@@ -38609,29 +38609,29 @@ return array (
   array (
     0 => 'int',
   ),
-  'mongodb\\driver\\monitoring\\serverheartbeatsucceededevent::getreply' => 
+  'mongodb\\driver\\monitoring\\serverheartbeatsucceededevent::gethost' => 
   array (
-    0 => 'object',
+    0 => 'string',
   ),
   'mongodb\\driver\\monitoring\\serverheartbeatsucceededevent::getport' => 
   array (
     0 => 'int',
   ),
-  'mongodb\\driver\\monitoring\\serverheartbeatsucceededevent::gethost' => 
+  'mongodb\\driver\\monitoring\\serverheartbeatsucceededevent::getreply' => 
   array (
-    0 => 'string',
+    0 => 'object',
   ),
   'mongodb\\driver\\monitoring\\serverheartbeatsucceededevent::isawaited' => 
   array (
     0 => 'bool',
   ),
-  'mongodb\\driver\\monitoring\\serveropeningevent::getport' => 
-  array (
-    0 => 'int',
-  ),
   'mongodb\\driver\\monitoring\\serveropeningevent::gethost' => 
   array (
     0 => 'string',
+  ),
+  'mongodb\\driver\\monitoring\\serveropeningevent::getport' => 
+  array (
+    0 => 'int',
   ),
   'mongodb\\driver\\monitoring\\serveropeningevent::gettopologyid' => 
   array (
@@ -38668,6 +38668,10 @@ return array (
     0 => 'void',
     'level=' => 'null|string',
   ),
+  'mongodb\\driver\\readconcern::bsonserialize' => 
+  array (
+    0 => 'stdClass',
+  ),
   'mongodb\\driver\\readconcern::getlevel' => 
   array (
     0 => 'null|string',
@@ -38675,10 +38679,6 @@ return array (
   'mongodb\\driver\\readconcern::isdefault' => 
   array (
     0 => 'bool',
-  ),
-  'mongodb\\driver\\readconcern::bsonserialize' => 
-  array (
-    0 => 'stdClass',
   ),
   'mongodb\\driver\\readconcern::serialize' => 
   array (
@@ -38695,6 +38695,10 @@ return array (
     'mode' => 'int|string',
     'tagSets=' => 'array<array-key, mixed>|null',
     'options=' => 'array<array-key, mixed>|null',
+  ),
+  'mongodb\\driver\\readpreference::bsonserialize' => 
+  array (
+    0 => 'stdClass',
   ),
   'mongodb\\driver\\readpreference::gethedge' => 
   array (
@@ -38715,10 +38719,6 @@ return array (
   'mongodb\\driver\\readpreference::gettagsets' => 
   array (
     0 => 'array<array-key, mixed>',
-  ),
-  'mongodb\\driver\\readpreference::bsonserialize' => 
-  array (
-    0 => 'stdClass',
   ),
   'mongodb\\driver\\readpreference::serialize' => 
   array (
@@ -38946,6 +38946,10 @@ return array (
     'wtimeout=' => 'int|null',
     'journal=' => 'bool|null',
   ),
+  'mongodb\\driver\\writeconcern::bsonserialize' => 
+  array (
+    0 => 'stdClass',
+  ),
   'mongodb\\driver\\writeconcern::getjournal' => 
   array (
     0 => 'bool|null',
@@ -38961,10 +38965,6 @@ return array (
   'mongodb\\driver\\writeconcern::isdefault' => 
   array (
     0 => 'bool',
-  ),
-  'mongodb\\driver\\writeconcern::bsonserialize' => 
-  array (
-    0 => 'stdClass',
   ),
   'mongodb\\driver\\writeconcern::serialize' => 
   array (
@@ -39003,6 +39003,14 @@ return array (
   array (
     0 => 'string',
   ),
+  'mongodb\\driver\\writeresult::getdeletedcount' => 
+  array (
+    0 => 'int|null',
+  ),
+  'mongodb\\driver\\writeresult::geterrorreplies' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
   'mongodb\\driver\\writeresult::getinsertedcount' => 
   array (
     0 => 'int|null',
@@ -39015,17 +39023,13 @@ return array (
   array (
     0 => 'int|null',
   ),
-  'mongodb\\driver\\writeresult::getdeletedcount' => 
+  'mongodb\\driver\\writeresult::getserver' => 
   array (
-    0 => 'int|null',
+    0 => 'MongoDB\\Driver\\Server',
   ),
   'mongodb\\driver\\writeresult::getupsertedcount' => 
   array (
     0 => 'int|null',
-  ),
-  'mongodb\\driver\\writeresult::getserver' => 
-  array (
-    0 => 'MongoDB\\Driver\\Server',
   ),
   'mongodb\\driver\\writeresult::getupsertedids' => 
   array (
@@ -39036,10 +39040,6 @@ return array (
     0 => 'MongoDB\\Driver\\WriteConcernError|null',
   ),
   'mongodb\\driver\\writeresult::getwriteerrors' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'mongodb\\driver\\writeresult::geterrorreplies' => 
   array (
     0 => 'array<array-key, mixed>',
   ),
@@ -43700,44 +43700,6 @@ return array (
     0 => 'bool',
     'connection' => 'resource',
   ),
-  'ocicollection::append' => 
-  array (
-    0 => 'bool',
-    'value' => 'mixed',
-  ),
-  'ocicollection::assign' => 
-  array (
-    0 => 'bool',
-    'from' => 'OCI_Collection',
-  ),
-  'ocicollection::assignelem' => 
-  array (
-    0 => 'bool',
-    'index' => 'int',
-    'value' => 'mixed',
-  ),
-  'ocicollection::free' => 
-  array (
-    0 => 'bool',
-  ),
-  'ocicollection::getelem' => 
-  array (
-    0 => 'mixed',
-    'index' => 'int',
-  ),
-  'ocicollection::max' => 
-  array (
-    0 => 'false|int',
-  ),
-  'ocicollection::size' => 
-  array (
-    0 => 'false|int',
-  ),
-  'ocicollection::trim' => 
-  array (
-    0 => 'bool',
-    'num' => 'int',
-  ),
   'oci_collection_append' => 
   array (
     0 => 'bool',
@@ -43914,117 +43876,6 @@ return array (
   array (
     0 => 'void',
     'onoff' => 'bool',
-  ),
-  'ocilob::append' => 
-  array (
-    0 => 'bool',
-    'lob_from' => 'OCILob',
-  ),
-  'ocilob::close' => 
-  array (
-    0 => 'bool',
-  ),
-  'ocilob::eof' => 
-  array (
-    0 => 'bool',
-  ),
-  'ocilob::erase' => 
-  array (
-    0 => 'false|int',
-    'offset=' => 'int',
-    'length=' => 'int',
-  ),
-  'ocilob::export' => 
-  array (
-    0 => 'bool',
-    'filename' => 'string',
-    'start=' => 'int',
-    'length=' => 'int',
-  ),
-  'ocilob::flush' => 
-  array (
-    0 => 'bool',
-    'flag=' => 'int',
-  ),
-  'ocilob::free' => 
-  array (
-    0 => 'bool',
-  ),
-  'ocilob::getbuffering' => 
-  array (
-    0 => 'bool',
-  ),
-  'ocilob::import' => 
-  array (
-    0 => 'bool',
-    'filename' => 'string',
-  ),
-  'ocilob::load' => 
-  array (
-    0 => 'false|string',
-  ),
-  'ocilob::read' => 
-  array (
-    0 => 'false|string',
-    'length' => 'int',
-  ),
-  'ocilob::rewind' => 
-  array (
-    0 => 'bool',
-  ),
-  'ocilob::save' => 
-  array (
-    0 => 'bool',
-    'data' => 'string',
-    'offset=' => 'int',
-  ),
-  'ocilob::savefile' => 
-  array (
-    0 => 'bool',
-    'filename' => 'mixed',
-  ),
-  'ocilob::seek' => 
-  array (
-    0 => 'bool',
-    'offset' => 'int',
-    'whence=' => 'int',
-  ),
-  'ocilob::setbuffering' => 
-  array (
-    0 => 'bool',
-    'on_off' => 'bool',
-  ),
-  'ocilob::size' => 
-  array (
-    0 => 'false|int',
-  ),
-  'ocilob::tell' => 
-  array (
-    0 => 'false|int',
-  ),
-  'ocilob::truncate' => 
-  array (
-    0 => 'bool',
-    'length=' => 'int',
-  ),
-  'ocilob::write' => 
-  array (
-    0 => 'false|int',
-    'data' => 'string',
-    'length=' => 'int',
-  ),
-  'ocilob::writetemporary' => 
-  array (
-    0 => 'bool',
-    'data' => 'string',
-    'lob_type=' => 'int',
-  ),
-  'ocilob::writetofile' => 
-  array (
-    0 => 'bool',
-    'filename' => 'mixed',
-    'start' => 'mixed',
-    'length' => 'mixed',
   ),
   'oci_lob_append' => 
   array (
@@ -44264,6 +44115,44 @@ return array (
     0 => 'bool',
     'connection' => 'resource',
   ),
+  'ocicollection::append' => 
+  array (
+    0 => 'bool',
+    'value' => 'mixed',
+  ),
+  'ocicollection::assign' => 
+  array (
+    0 => 'bool',
+    'from' => 'OCI_Collection',
+  ),
+  'ocicollection::assignelem' => 
+  array (
+    0 => 'bool',
+    'index' => 'int',
+    'value' => 'mixed',
+  ),
+  'ocicollection::free' => 
+  array (
+    0 => 'bool',
+  ),
+  'ocicollection::getelem' => 
+  array (
+    0 => 'mixed',
+    'index' => 'int',
+  ),
+  'ocicollection::max' => 
+  array (
+    0 => 'false|int',
+  ),
+  'ocicollection::size' => 
+  array (
+    0 => 'false|int',
+  ),
+  'ocicollection::trim' => 
+  array (
+    0 => 'bool',
+    'num' => 'int',
+  ),
   'ocifetchinto' => 
   array (
     0 => 'bool|int',
@@ -44274,6 +44163,117 @@ return array (
   'ocigetbufferinglob' => 
   array (
     0 => 'bool',
+  ),
+  'ocilob::append' => 
+  array (
+    0 => 'bool',
+    'lob_from' => 'OCILob',
+  ),
+  'ocilob::close' => 
+  array (
+    0 => 'bool',
+  ),
+  'ocilob::eof' => 
+  array (
+    0 => 'bool',
+  ),
+  'ocilob::erase' => 
+  array (
+    0 => 'false|int',
+    'offset=' => 'int',
+    'length=' => 'int',
+  ),
+  'ocilob::export' => 
+  array (
+    0 => 'bool',
+    'filename' => 'string',
+    'start=' => 'int',
+    'length=' => 'int',
+  ),
+  'ocilob::flush' => 
+  array (
+    0 => 'bool',
+    'flag=' => 'int',
+  ),
+  'ocilob::free' => 
+  array (
+    0 => 'bool',
+  ),
+  'ocilob::getbuffering' => 
+  array (
+    0 => 'bool',
+  ),
+  'ocilob::import' => 
+  array (
+    0 => 'bool',
+    'filename' => 'string',
+  ),
+  'ocilob::load' => 
+  array (
+    0 => 'false|string',
+  ),
+  'ocilob::read' => 
+  array (
+    0 => 'false|string',
+    'length' => 'int',
+  ),
+  'ocilob::rewind' => 
+  array (
+    0 => 'bool',
+  ),
+  'ocilob::save' => 
+  array (
+    0 => 'bool',
+    'data' => 'string',
+    'offset=' => 'int',
+  ),
+  'ocilob::savefile' => 
+  array (
+    0 => 'bool',
+    'filename' => 'mixed',
+  ),
+  'ocilob::seek' => 
+  array (
+    0 => 'bool',
+    'offset' => 'int',
+    'whence=' => 'int',
+  ),
+  'ocilob::setbuffering' => 
+  array (
+    0 => 'bool',
+    'on_off' => 'bool',
+  ),
+  'ocilob::size' => 
+  array (
+    0 => 'false|int',
+  ),
+  'ocilob::tell' => 
+  array (
+    0 => 'false|int',
+  ),
+  'ocilob::truncate' => 
+  array (
+    0 => 'bool',
+    'length=' => 'int',
+  ),
+  'ocilob::write' => 
+  array (
+    0 => 'false|int',
+    'data' => 'string',
+    'length=' => 'int',
+  ),
+  'ocilob::writetemporary' => 
+  array (
+    0 => 'bool',
+    'data' => 'string',
+    'lob_type=' => 'int',
+  ),
+  'ocilob::writetofile' => 
+  array (
+    0 => 'bool',
+    'filename' => 'mixed',
+    'start' => 'mixed',
+    'length' => 'mixed',
   ),
   'ocisetbufferinglob' => 
   array (
@@ -49855,11 +49855,9 @@ return array (
     0 => 'true',
     'flags=' => 'int',
   ),
-  'phptoken::tokenize' => 
+  'phptoken::gettokenname' => 
   array (
-    0 => 'list<PhpToken>',
-    'code' => 'string',
-    'flags=' => 'int',
+    0 => 'null|string',
   ),
   'phptoken::is' => 
   array (
@@ -49870,9 +49868,11 @@ return array (
   array (
     0 => 'bool',
   ),
-  'phptoken::gettokenname' => 
+  'phptoken::tokenize' => 
   array (
-    0 => 'null|string',
+    0 => 'list<PhpToken>',
+    'code' => 'string',
+    'flags=' => 'int',
   ),
   'phpversion' => 
   array (
@@ -56156,6 +56156,10 @@ return array (
   array (
     0 => 'bool',
   ),
+  'reflectionenumbackedcase::getbackingvalue' => 
+  array (
+    0 => 'int|string',
+  ),
   'reflectionenumunitcase::getenum' => 
   array (
     0 => 'ReflectionEnum',
@@ -56163,10 +56167,6 @@ return array (
   'reflectionenumunitcase::getvalue' => 
   array (
     0 => 'UnitEnum',
-  ),
-  'reflectionenumbackedcase::getbackingvalue' => 
-  array (
-    0 => 'int|string',
   ),
   'reflectionextension::__clone' => 
   array (
@@ -61440,13 +61440,6 @@ return array (
   array (
     0 => 'non-empty-string',
   ),
-  'sodium_crypto_stream_xor' => 
-  array (
-    0 => 'string',
-    'message' => 'string',
-    'nonce' => 'string',
-    'key' => 'string',
-  ),
   'sodium_crypto_stream_xchacha20' => 
   array (
     0 => 'non-empty-string',
@@ -61472,6 +61465,13 @@ return array (
     'nonce' => 'non-empty-string',
     'counter' => 'int',
     'key' => 'non-empty-string',
+  ),
+  'sodium_crypto_stream_xor' => 
+  array (
+    0 => 'string',
+    'message' => 'string',
+    'nonce' => 'string',
+    'key' => 'string',
   ),
   'sodium_hex2bin' => 
   array (

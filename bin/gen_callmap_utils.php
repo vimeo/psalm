@@ -11,15 +11,19 @@ use Psalm\Internal\Provider\Providers;
 use Psalm\Tests\TestConfig;
 use Psalm\Type;
 
-function internalNormalizeCallMap(array|string $callMap): array|string {
+function internalNormalizeCallMap(array|string $callMap, string|int $key = 0): array|string {
     if (is_string($callMap)) {
         return Type::parseString($callMap === '' ? 'mixed' : $callMap)->getId(true);
     }
 
     $new = [];
 
+    $value = null;
     foreach ($callMap as $key => $value) {
-        $new[is_string($key) && is_array($value) ? strtolower($key) : $key] = internalNormalizeCallMap($value);
+        $new[is_string($key) && is_array($value) ? strtolower($key) : $key] = internalNormalizeCallMap($value, $key);
+    }
+    if (is_array($value) && $key !== 'old' && $key !== 'new') {
+        ksort($new);
     }
 
     return $new;

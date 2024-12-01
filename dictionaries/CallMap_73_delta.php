@@ -3,10 +3,66 @@
 return array (
   'added' => 
   array (
+    'array_key_first' => 
+    array (
+      0 => 'int|null|string',
+      'array' => 'array<array-key, mixed>',
+    ),
+    'array_key_last' => 
+    array (
+      0 => 'int|null|string',
+      'array' => 'array<array-key, mixed>',
+    ),
     'datetime::createfromimmutable' => 
     array (
       0 => 'static',
       'object' => 'DateTimeImmutable',
+    ),
+    'fpm_get_status' => 
+    array (
+      0 => 'array<array-key, mixed>|false',
+    ),
+    'gc_status' => 
+    array (
+      0 => 'array{collected: int, roots: int, runs: int, threshold: int}',
+    ),
+    'gmp_binomial' => 
+    array (
+      0 => 'GMP|false',
+      'n' => 'GMP|int|string',
+      'k' => 'int',
+    ),
+    'gmp_kronecker' => 
+    array (
+      0 => 'int',
+      'num1' => 'GMP|int|string',
+      'num2' => 'GMP|int|string',
+    ),
+    'gmp_lcm' => 
+    array (
+      0 => 'GMP',
+      'num1' => 'GMP|int|string',
+      'num2' => 'GMP|int|string',
+    ),
+    'gmp_perfect_power' => 
+    array (
+      0 => 'bool',
+      'num' => 'GMP|int|string',
+    ),
+    'hrtime' => 
+    array (
+      0 => 'array{0: int, 1: int}|false',
+      'as_number=' => 'false',
+    ),
+    'hrtime\'1' => 
+    array (
+      0 => 'false|float|int',
+      'as_number=' => 'true',
+    ),
+    'is_countable' => 
+    array (
+      0 => 'bool',
+      'value' => 'mixed',
     ),
     'jsonexception::__clone' => 
     array (
@@ -55,81 +111,21 @@ return array (
     array (
       0 => 'string',
     ),
+    'net_get_interfaces' => 
+    array (
+      0 => 'array<string, array<string, mixed>>|false',
+    ),
     'normalizer::getrawdecomposition' => 
     array (
       0 => 'null|string',
       'string' => 'string',
       'form=' => 'int',
     ),
-    'splpriorityqueue::iscorrupted' => 
-    array (
-      0 => 'bool',
-    ),
-    'array_key_first' => 
-    array (
-      0 => 'int|null|string',
-      'array' => 'array<array-key, mixed>',
-    ),
-    'array_key_last' => 
-    array (
-      0 => 'int|null|string',
-      'array' => 'array<array-key, mixed>',
-    ),
-    'fpm_get_status' => 
-    array (
-      0 => 'array<array-key, mixed>|false',
-    ),
-    'gc_status' => 
-    array (
-      0 => 'array{collected: int, roots: int, runs: int, threshold: int}',
-    ),
-    'gmp_binomial' => 
-    array (
-      0 => 'GMP|false',
-      'n' => 'GMP|int|string',
-      'k' => 'int',
-    ),
-    'gmp_kronecker' => 
-    array (
-      0 => 'int',
-      'num1' => 'GMP|int|string',
-      'num2' => 'GMP|int|string',
-    ),
-    'gmp_lcm' => 
-    array (
-      0 => 'GMP',
-      'num1' => 'GMP|int|string',
-      'num2' => 'GMP|int|string',
-    ),
-    'gmp_perfect_power' => 
-    array (
-      0 => 'bool',
-      'num' => 'GMP|int|string',
-    ),
-    'hrtime' => 
-    array (
-      0 => 'array{0: int, 1: int}|false',
-      'as_number=' => 'false',
-    ),
-    'hrtime\'1' => 
-    array (
-      0 => 'false|float|int',
-      'as_number=' => 'true',
-    ),
-    'is_countable' => 
-    array (
-      0 => 'bool',
-      'value' => 'mixed',
-    ),
     'normalizer_get_raw_decomposition' => 
     array (
       0 => 'null|string',
       'string' => 'string',
       'form=' => 'int',
-    ),
-    'net_get_interfaces' => 
-    array (
-      0 => 'array<string, array<string, mixed>>|false',
     ),
     'openssl_pkey_derive' => 
     array (
@@ -172,6 +168,10 @@ return array (
     array (
       0 => 'bool',
       'info_id' => 'string',
+    ),
+    'splpriorityqueue::iscorrupted' => 
+    array (
+      0 => 'bool',
     ),
   ),
   'changed' => 

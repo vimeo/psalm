@@ -3,15 +3,6 @@
 return array (
   'added' => 
   array (
-    'reflectionproperty::gettype' => 
-    array (
-      0 => 'ReflectionType|null',
-    ),
-    'reflectionproperty::isinitialized' => 
-    array (
-      0 => 'bool',
-      'object' => 'object',
-    ),
     'mb_str_split' => 
     array (
       0 => 'false|list<string>',
@@ -25,58 +16,18 @@ return array (
       'certificate' => 'resource|string',
       'public_key' => 'array<array-key, mixed>|resource|string',
     ),
+    'reflectionproperty::gettype' => 
+    array (
+      0 => 'ReflectionType|null',
+    ),
+    'reflectionproperty::isinitialized' => 
+    array (
+      0 => 'bool',
+      'object' => 'object',
+    ),
   ),
   'changed' => 
   array (
-    'locale::lookup' => 
-    array (
-      'old' => 
-      array (
-        0 => 'null|string',
-        'languageTag' => 'array<array-key, mixed>',
-        'locale' => 'string',
-        'canonicalize=' => 'bool',
-        'defaultLocale=' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'null|string',
-        'languageTag' => 'array<array-key, mixed>',
-        'locale' => 'string',
-        'canonicalize=' => 'bool',
-        'defaultLocale=' => 'null|string',
-      ),
-    ),
-    'splfileobject::fwrite' => 
-    array (
-      'old' => 
-      array (
-        0 => 'int',
-        'data' => 'string',
-        'length=' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'false|int',
-        'data' => 'string',
-        'length=' => 'int',
-      ),
-    ),
-    'spltempfileobject::fwrite' => 
-    array (
-      'old' => 
-      array (
-        0 => 'int',
-        'data' => 'string',
-        'length=' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'false|int',
-        'data' => 'string',
-        'length=' => 'int',
-      ),
-    ),
     'array_merge' => 
     array (
       'old' => 
@@ -116,6 +67,25 @@ return array (
         0 => 'false|string',
         'stream' => 'resource',
         'length' => 'int',
+      ),
+    ),
+    'locale::lookup' => 
+    array (
+      'old' => 
+      array (
+        0 => 'null|string',
+        'languageTag' => 'array<array-key, mixed>',
+        'locale' => 'string',
+        'canonicalize=' => 'bool',
+        'defaultLocale=' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'null|string',
+        'languageTag' => 'array<array-key, mixed>',
+        'locale' => 'string',
+        'canonicalize=' => 'bool',
+        'defaultLocale=' => 'null|string',
       ),
     ),
     'locale_lookup' => 
@@ -291,6 +261,36 @@ return array (
         'cwd=' => 'null|string',
         'env_vars=' => 'array<array-key, mixed>|null',
         'options=' => 'array<array-key, mixed>|null',
+      ),
+    ),
+    'splfileobject::fwrite' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+        'data' => 'string',
+        'length=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'false|int',
+        'data' => 'string',
+        'length=' => 'int',
+      ),
+    ),
+    'spltempfileobject::fwrite' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+        'data' => 'string',
+        'length=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'false|int',
+        'data' => 'string',
+        'length=' => 'int',
       ),
     ),
     'strip_tags' => 

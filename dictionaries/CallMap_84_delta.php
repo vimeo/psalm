@@ -4,11 +4,67 @@ return array (
   'added' => 
   array (
   ),
-  'removed' => 
-  array (
-  ),
   'changed' => 
   array (
+    'appenditerator::getinneriterator' => 
+    array (
+      'old' => 
+      array (
+        0 => 'Iterator',
+      ),
+      'new' => 
+      array (
+        0 => 'Iterator|null',
+      ),
+    ),
+    'appenditerator::getiteratorindex' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'int|null',
+      ),
+    ),
+    'cachingiterator::__construct' => 
+    array (
+      'old' => 
+      array (
+        0 => 'void',
+        'iterator' => 'Iterator',
+        'flags=' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'void',
+        'iterator' => 'Iterator',
+        'flags=' => 'int',
+      ),
+    ),
+    'cachingiterator::getinneriterator' => 
+    array (
+      'old' => 
+      array (
+        0 => 'Iterator',
+      ),
+      'new' => 
+      array (
+        0 => 'Iterator|null',
+      ),
+    ),
+    'callbackfilteriterator::getinneriterator' => 
+    array (
+      'old' => 
+      array (
+        0 => 'Iterator',
+      ),
+      'new' => 
+      array (
+        0 => 'Iterator|null',
+      ),
+    ),
     'collator::setstrength' => 
     array (
       'old' => 
@@ -37,6 +93,105 @@ return array (
         'strength' => 'int',
       ),
     ),
+    'curl_multi_getcontent' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'handle' => 'CurlHandle',
+      ),
+      'new' => 
+      array (
+        0 => 'null|string',
+        'handle' => 'CurlHandle',
+      ),
+    ),
+    'dba_close' => 
+    array (
+      'old' => 
+      array (
+        0 => 'void',
+        'dba' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'void',
+        'dba' => 'Dba\\Connection',
+      ),
+    ),
+    'dba_delete' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'key' => 'array<array-key, mixed>|string',
+        'dba' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'key' => 'array<array-key, mixed>|string',
+        'dba' => 'Dba\\Connection',
+      ),
+    ),
+    'dba_exists' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'key' => 'array<array-key, mixed>|string',
+        'dba' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'key' => 'array<array-key, mixed>|string',
+        'dba' => 'Dba\\Connection',
+      ),
+    ),
+    'dba_firstkey' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'dba' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+        'dba' => 'Dba\\Connection',
+      ),
+    ),
+    'dba_insert' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'key' => 'array<array-key, mixed>|string',
+        'value' => 'string',
+        'dba' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'key' => 'array<array-key, mixed>|string',
+        'value' => 'string',
+        'dba' => 'Dba\\Connection',
+      ),
+    ),
+    'dba_nextkey' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'dba' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+        'dba' => 'Dba\\Connection',
+      ),
+    ),
     'dba_open' => 
     array (
       'old' => 
@@ -60,6 +215,19 @@ return array (
         'flags=' => 'int|null',
       ),
     ),
+    'dba_optimize' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'dba' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'dba' => 'Dba\\Connection',
+      ),
+    ),
     'dba_popen' => 
     array (
       'old' => 
@@ -81,6 +249,36 @@ return array (
         'permission=' => 'int',
         'map_size=' => 'int',
         'flags=' => 'int|null',
+      ),
+    ),
+    'dba_replace' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'key' => 'array<array-key, mixed>|string',
+        'value' => 'string',
+        'dba' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'key' => 'array<array-key, mixed>|string',
+        'value' => 'string',
+        'dba' => 'Dba\\Connection',
+      ),
+    ),
+    'dba_sync' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'dba' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'dba' => 'Dba\\Connection',
       ),
     ),
     'domdocument::registernodeclass' => 
@@ -128,6 +326,17 @@ return array (
         'status' => 'int|string',
       ),
     ),
+    'filteriterator::getinneriterator' => 
+    array (
+      'old' => 
+      array (
+        0 => 'Iterator',
+      ),
+      'new' => 
+      array (
+        0 => 'Iterator|null',
+      ),
+    ),
     'finfo::set_flags' => 
     array (
       'old' => 
@@ -154,6 +363,36 @@ return array (
         0 => 'true',
         'finfo' => 'finfo',
         'flags' => 'int',
+      ),
+    ),
+    'fscanf' => 
+    array (
+      'old' => 
+      array (
+        0 => 'list<mixed>',
+        'stream' => 'resource',
+        'format' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'list<mixed>|null',
+        'stream' => 'resource',
+        'format' => 'string',
+      ),
+    ),
+    'getenv' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|string',
+        'name' => 'string',
+        'local_only=' => 'bool',
+      ),
+      'new' => 
+      array (
+        0 => 'false|string',
+        'name' => 'null|string',
+        'local_only=' => 'bool',
       ),
     ),
     'hash_update' => 
@@ -184,6 +423,123 @@ return array (
         0 => 'string|true',
         'string' => 'string',
         'return=' => 'bool',
+      ),
+    ),
+    'imagefilledpolygon' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'image' => 'GdImage',
+        'points' => 'array<array-key, mixed>',
+        'num_points_or_color' => 'int',
+        'color' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'image' => 'GdImage',
+        'points' => 'array<array-key, mixed>',
+        'num_points_or_color' => 'int',
+        'color' => 'int|null',
+      ),
+    ),
+    'imagegd' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'image' => 'GdImage',
+        'file=' => 'null|resource|string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'image' => 'GdImage',
+        'file=' => 'null|string',
+      ),
+    ),
+    'imagegd2' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'image' => 'GdImage',
+        'file=' => 'null|resource|string',
+        'chunk_size=' => 'int',
+        'mode=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'image' => 'GdImage',
+        'file=' => 'null|string',
+        'chunk_size=' => 'int',
+        'mode=' => 'int',
+      ),
+    ),
+    'imageopenpolygon' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'image' => 'GdImage',
+        'points' => 'array<array-key, mixed>',
+        'num_points' => 'int',
+        'color' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'image' => 'GdImage',
+        'points' => 'array<array-key, mixed>',
+        'num_points' => 'int',
+        'color' => 'int|null',
+      ),
+    ),
+    'imagepolygon' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'image' => 'GdImage',
+        'points' => 'array<array-key, mixed>',
+        'num_points_or_color' => 'int',
+        'color' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'image' => 'GdImage',
+        'points' => 'array<array-key, mixed>',
+        'num_points_or_color' => 'int',
+        'color' => 'int|null',
+      ),
+    ),
+    'implode' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'separator' => 'string',
+        'array' => 'array<array-key, mixed>',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+        'separator' => 'string',
+        'array' => 'array<array-key, mixed>|null',
+      ),
+    ),
+    'infiniteiterator::getinneriterator' => 
+    array (
+      'old' => 
+      array (
+        0 => 'Iterator',
+      ),
+      'new' => 
+      array (
+        0 => 'Iterator|null',
       ),
     ),
     'intlcal_set' => 
@@ -311,6 +667,121 @@ return array (
         'days' => 'int',
       ),
     ),
+    'iteratoriterator::getinneriterator' => 
+    array (
+      'old' => 
+      array (
+        0 => 'Iterator',
+      ),
+      'new' => 
+      array (
+        0 => 'Iterator|null',
+      ),
+    ),
+    'join' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'separator' => 'string',
+        'array' => 'array<array-key, mixed>',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+        'separator' => 'string',
+        'array' => 'array<array-key, mixed>|null',
+      ),
+    ),
+    'limititerator::getinneriterator' => 
+    array (
+      'old' => 
+      array (
+        0 => 'Iterator',
+      ),
+      'new' => 
+      array (
+        0 => 'Iterator|null',
+      ),
+    ),
+    'locale::getallvariants' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>',
+        'locale' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|null',
+        'locale' => 'string',
+      ),
+    ),
+    'locale::getkeywords' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'locale' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|false|null',
+        'locale' => 'string',
+      ),
+    ),
+    'locale::getprimarylanguage' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'locale' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'null|string',
+        'locale' => 'string',
+      ),
+    ),
+    'locale::getregion' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'locale' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'null|string',
+        'locale' => 'string',
+      ),
+    ),
+    'locale::getscript' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'locale' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'null|string',
+        'locale' => 'string',
+      ),
+    ),
+    'locale::parselocale' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>',
+        'locale' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|null',
+        'locale' => 'string',
+      ),
+    ),
     'locale::setdefault' => 
     array (
       'old' => 
@@ -322,6 +793,47 @@ return array (
       array (
         0 => 'true',
         'locale' => 'string',
+      ),
+    ),
+    'mb_check_encoding' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'value' => 'array<array-key, mixed>|string',
+        'encoding=' => 'null|string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'value' => 'array<array-key, mixed>|null|string',
+        'encoding=' => 'null|string',
+      ),
+    ),
+    'messageformatter::create' => 
+    array (
+      'old' => 
+      array (
+        0 => 'MessageFormatter',
+        'locale' => 'string',
+        'pattern' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'MessageFormatter|null',
+        'locale' => 'string',
+        'pattern' => 'string',
+      ),
+    ),
+    'mysqli::get_charset' => 
+    array (
+      'old' => 
+      array (
+        0 => 'object',
+      ),
+      'new' => 
+      array (
+        0 => 'null|object',
       ),
     ),
     'mysqli_report' => 
@@ -337,6 +849,47 @@ return array (
         'flags' => 'int',
       ),
     ),
+    'norewinditerator::getinneriterator' => 
+    array (
+      'old' => 
+      array (
+        0 => 'Iterator',
+      ),
+      'new' => 
+      array (
+        0 => 'Iterator|null',
+      ),
+    ),
+    'numberformatter::format' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|string',
+        'num' => 'mixed',
+        'type=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'false|string',
+        'num' => 'float|int',
+        'type=' => 'int',
+      ),
+    ),
+    'odbc_autocommit' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool|int',
+        'odbc' => 'Odbc\\Connection',
+        'enable=' => 'bool',
+      ),
+      'new' => 
+      array (
+        0 => 'bool|int',
+        'odbc' => 'Odbc\\Connection',
+        'enable=' => 'bool|null',
+      ),
+    ),
     'odbc_binmode' => 
     array (
       'old' => 
@@ -350,6 +903,19 @@ return array (
         0 => 'true',
         'statement' => 'Odbc\\Result',
         'mode' => 'int',
+      ),
+    ),
+    'odbc_close' => 
+    array (
+      'old' => 
+      array (
+        0 => 'void',
+        'odbc' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'void',
+        'odbc' => 'Odbc\\Connection',
       ),
     ),
     'odbc_columnprivileges' => 
@@ -394,6 +960,19 @@ return array (
         'column=' => 'null|string',
       ),
     ),
+    'odbc_commit' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'odbc' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'odbc' => 'Odbc\\Connection',
+      ),
+    ),
     'odbc_connect' => 
     array (
       'old' => 
@@ -413,6 +992,34 @@ return array (
         'cursor_option=' => 'int',
       ),
     ),
+    'odbc_cursor' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'statement' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+        'statement' => 'Odbc\\Result',
+      ),
+    ),
+    'odbc_data_source' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'odbc' => 'Odbc\\Connection',
+        'fetch_type' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|false|null',
+        'odbc' => 'Odbc\\Connection',
+        'fetch_type' => 'int',
+      ),
+    ),
     'odbc_do' => 
     array (
       'old' => 
@@ -428,6 +1035,32 @@ return array (
         'query' => 'string',
       ),
     ),
+    'odbc_error' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'odbc=' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+        'odbc=' => 'Odbc\\Connection|null',
+      ),
+    ),
+    'odbc_errormsg' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'odbc=' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+        'odbc=' => 'Odbc\\Connection|null',
+      ),
+    ),
     'odbc_exec' => 
     array (
       'old' => 
@@ -441,6 +1074,173 @@ return array (
         0 => 'Odbc\\Result|false',
         'odbc' => 'Odbc\\Connection',
         'query' => 'string',
+      ),
+    ),
+    'odbc_execute' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'statement' => 'resource',
+        'params=' => 'array<array-key, mixed>',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'statement' => 'Odbc\\Result',
+        'params=' => 'array<array-key, mixed>',
+      ),
+    ),
+    'odbc_fetch_array' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'statement' => 'resource',
+        'row=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'statement' => 'resource',
+        'row=' => 'int|null',
+      ),
+    ),
+    'odbc_fetch_into' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+        'statement' => 'resource',
+        '&w_array' => 'array<array-key, mixed>',
+        'row=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+        'statement' => 'resource',
+        '&w_array' => 'array<array-key, mixed>',
+        'row=' => 'int|null',
+      ),
+    ),
+    'odbc_fetch_object' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|stdClass',
+        'statement' => 'resource',
+        'row=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'false|stdClass',
+        'statement' => 'resource',
+        'row=' => 'int|null',
+      ),
+    ),
+    'odbc_fetch_row' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'statement' => 'resource',
+        'row=' => 'int|null',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'statement' => 'Odbc\\Result',
+        'row=' => 'int|null',
+      ),
+    ),
+    'odbc_field_len' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|int',
+        'statement' => 'resource',
+        'field' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'false|int',
+        'statement' => 'Odbc\\Result',
+        'field' => 'int',
+      ),
+    ),
+    'odbc_field_name' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|string',
+        'statement' => 'resource',
+        'field' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'false|string',
+        'statement' => 'Odbc\\Result',
+        'field' => 'int',
+      ),
+    ),
+    'odbc_field_num' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|int',
+        'statement' => 'resource',
+        'field' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'false|int',
+        'statement' => 'Odbc\\Result',
+        'field' => 'string',
+      ),
+    ),
+    'odbc_field_precision' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+        'statement' => 'resource',
+        'field' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+        'statement' => 'Odbc\\Result',
+        'field' => 'int',
+      ),
+    ),
+    'odbc_field_scale' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|int',
+        'statement' => 'resource',
+        'field' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'false|int',
+        'statement' => 'Odbc\\Result',
+        'field' => 'int',
+      ),
+    ),
+    'odbc_field_type' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|string',
+        'statement' => 'resource',
+        'field' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'false|string',
+        'statement' => 'Odbc\\Result',
+        'field' => 'int',
       ),
     ),
     'odbc_foreignkeys' => 
@@ -509,6 +1309,45 @@ return array (
         0 => 'true',
         'statement' => 'Odbc\\Result',
         'length' => 'int',
+      ),
+    ),
+    'odbc_next_result' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'statement' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'statement' => 'Odbc\\Result',
+      ),
+    ),
+    'odbc_num_fields' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+        'statement' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+        'statement' => 'Odbc\\Result',
+      ),
+    ),
+    'odbc_num_rows' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+        'statement' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+        'statement' => 'Odbc\\Result',
       ),
     ),
     'odbc_pconnect' => 
@@ -604,6 +1443,68 @@ return array (
         'procedure=' => 'null|string',
       ),
     ),
+    'odbc_result' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool|null|string',
+        'statement' => 'resource',
+        'field' => 'int|string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool|null|string',
+        'statement' => 'Odbc\\Result',
+        'field' => 'int|string',
+      ),
+    ),
+    'odbc_result_all' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|int',
+        'statement' => 'resource',
+        'format=' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'false|int',
+        'statement' => 'Odbc\\Result',
+        'format=' => 'string',
+      ),
+    ),
+    'odbc_rollback' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'odbc' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'odbc' => 'Odbc\\Connection',
+      ),
+    ),
+    'odbc_setoption' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'odbc' => 'resource',
+        'which' => 'int',
+        'option' => 'int',
+        'value' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'odbc' => 'Odbc\\Connection|Odbc\\Result',
+        'which' => 'int',
+        'option' => 'int',
+        'value' => 'int',
+      ),
+    ),
     'odbc_specialcolumns' => 
     array (
       'old' => 
@@ -690,6 +1591,17 @@ return array (
         'schema=' => 'null|string',
         'table=' => 'null|string',
         'types=' => 'null|string',
+      ),
+    ),
+    'outeriterator::getinneriterator' => 
+    array (
+      'old' => 
+      array (
+        0 => 'Iterator',
+      ),
+      'new' => 
+      array (
+        0 => 'Iterator|null',
       ),
     ),
     'pdostatement::setfetchmode' => 
@@ -939,722 +1851,6 @@ return array (
         0 => 'true',
       ),
     ),
-    'resourcebundle::get' => 
-    array (
-      'old' => 
-      array (
-        0 => 'mixed',
-        'index' => 'int|string',
-        'fallback=' => 'bool',
-      ),
-      'new' => 
-      array (
-        0 => 'ResourceBundle|array<array-key, mixed>|int|null|string',
-        'index' => 'int|string',
-        'fallback=' => 'bool',
-      ),
-    ),
-    'resourcebundle_get' => 
-    array (
-      'old' => 
-      array (
-        0 => 'mixed|null',
-        'bundle' => 'ResourceBundle',
-        'index' => 'int|string',
-        'fallback=' => 'bool',
-      ),
-      'new' => 
-      array (
-        0 => 'ResourceBundle|array<array-key, mixed>|int|null|string',
-        'bundle' => 'ResourceBundle',
-        'index' => 'int|string',
-        'fallback=' => 'bool',
-      ),
-    ),
-    'soapclient::__setcookie' => 
-    array (
-      'old' => 
-      array (
-        0 => 'void',
-        'name' => 'string',
-        'value=' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'void',
-        'name' => 'string',
-        'value=' => 'null|string',
-      ),
-    ),
-    'splfixedarray::setsize' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'size' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'true',
-        'size' => 'int',
-      ),
-    ),
-    'splheap::insert' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'value' => 'mixed',
-      ),
-      'new' => 
-      array (
-        0 => 'true',
-        'value' => 'mixed',
-      ),
-    ),
-    'splpriorityqueue::insert' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'value' => 'mixed',
-        'priority' => 'mixed',
-      ),
-      'new' => 
-      array (
-        0 => 'true',
-        'value' => 'mixed',
-        'priority' => 'mixed',
-      ),
-    ),
-    'splpriorityqueue::recoverfromcorruption' => 
-    array (
-      'old' => 
-      array (
-        0 => 'void',
-      ),
-      'new' => 
-      array (
-        0 => 'true',
-      ),
-    ),
-    'sqlite3result::finalize' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-      ),
-      'new' => 
-      array (
-        0 => 'true',
-      ),
-    ),
-    'sqlite3stmt::close' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-      ),
-      'new' => 
-      array (
-        0 => 'true',
-      ),
-    ),
-    'stream_bucket_make_writeable' => 
-    array (
-      'old' => 
-      array (
-        0 => 'null|object',
-        'brigade' => 'resource',
-      ),
-      'new' => 
-      array (
-        0 => 'StreamBucket|null',
-        'brigade' => 'resource',
-      ),
-    ),
-    'stream_bucket_new' => 
-    array (
-      'old' => 
-      array (
-        0 => 'object',
-        'stream' => 'resource',
-        'buffer' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'StreamBucket',
-        'stream' => 'resource',
-        'buffer' => 'string',
-      ),
-    ),
-    'stream_context_set_option' => 
-    array (
-      'old' => 
-      array (
-        0 => 'true',
-        'context' => 'mixed',
-        'wrapper_or_options' => 'string',
-        'option_name' => 'string',
-        'value' => 'mixed',
-      ),
-      'new' => 
-      array (
-        0 => 'true',
-        'context' => 'mixed',
-        'wrapper_or_options' => 'string',
-        'option_name' => 'null|string',
-        'value' => 'mixed',
-      ),
-    ),
-    'stream_context_set_params' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'context' => 'resource',
-        'params' => 'array<array-key, mixed>',
-      ),
-      'new' => 
-      array (
-        0 => 'true',
-        'context' => 'resource',
-        'params' => 'array<array-key, mixed>',
-      ),
-    ),
-    'trigger_error' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'message' => 'string',
-        'error_level=' => '256|512|1024|16384',
-      ),
-      'new' => 
-      array (
-        0 => 'true',
-        'message' => 'string',
-        'error_level=' => '256|512|1024|16384',
-      ),
-    ),
-    'user_error' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'message' => 'string',
-        'error_level=' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'true',
-        'message' => 'string',
-        'error_level=' => 'int',
-      ),
-    ),
-    'xmlreader::close' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-      ),
-      'new' => 
-      array (
-        0 => 'true',
-      ),
-    ),
-    'xsltprocessor::setprofiling' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'filename' => 'null|string',
-      ),
-      'new' => 
-      array (
-        0 => 'true',
-        'filename' => 'null|string',
-      ),
-    ),
-    'dba_close' => 
-    array (
-      'old' => 
-      array (
-        0 => 'void',
-        'dba' => 'resource',
-      ),
-      'new' => 
-      array (
-        0 => 'void',
-        'dba' => 'Dba\\Connection',
-      ),
-    ),
-    'dba_delete' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'key' => 'array<array-key, mixed>|string',
-        'dba' => 'resource',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'key' => 'array<array-key, mixed>|string',
-        'dba' => 'Dba\\Connection',
-      ),
-    ),
-    'dba_exists' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'key' => 'array<array-key, mixed>|string',
-        'dba' => 'resource',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'key' => 'array<array-key, mixed>|string',
-        'dba' => 'Dba\\Connection',
-      ),
-    ),
-    'dba_firstkey' => 
-    array (
-      'old' => 
-      array (
-        0 => 'string',
-        'dba' => 'resource',
-      ),
-      'new' => 
-      array (
-        0 => 'string',
-        'dba' => 'Dba\\Connection',
-      ),
-    ),
-    'dba_insert' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'key' => 'array<array-key, mixed>|string',
-        'value' => 'string',
-        'dba' => 'resource',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'key' => 'array<array-key, mixed>|string',
-        'value' => 'string',
-        'dba' => 'Dba\\Connection',
-      ),
-    ),
-    'dba_nextkey' => 
-    array (
-      'old' => 
-      array (
-        0 => 'string',
-        'dba' => 'resource',
-      ),
-      'new' => 
-      array (
-        0 => 'string',
-        'dba' => 'Dba\\Connection',
-      ),
-    ),
-    'dba_optimize' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'dba' => 'resource',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'dba' => 'Dba\\Connection',
-      ),
-    ),
-    'dba_replace' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'key' => 'array<array-key, mixed>|string',
-        'value' => 'string',
-        'dba' => 'resource',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'key' => 'array<array-key, mixed>|string',
-        'value' => 'string',
-        'dba' => 'Dba\\Connection',
-      ),
-    ),
-    'dba_sync' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'dba' => 'resource',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'dba' => 'Dba\\Connection',
-      ),
-    ),
-    'imagegd' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'image' => 'GdImage',
-        'file=' => 'null|resource|string',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'image' => 'GdImage',
-        'file=' => 'null|string',
-      ),
-    ),
-    'imagegd2' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'image' => 'GdImage',
-        'file=' => 'null|resource|string',
-        'chunk_size=' => 'int',
-        'mode=' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'image' => 'GdImage',
-        'file=' => 'null|string',
-        'chunk_size=' => 'int',
-        'mode=' => 'int',
-      ),
-    ),
-    'odbc_autocommit' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool|int',
-        'odbc' => 'Odbc\\Connection',
-        'enable=' => 'bool',
-      ),
-      'new' => 
-      array (
-        0 => 'bool|int',
-        'odbc' => 'Odbc\\Connection',
-        'enable=' => 'bool|null',
-      ),
-    ),
-    'odbc_close' => 
-    array (
-      'old' => 
-      array (
-        0 => 'void',
-        'odbc' => 'resource',
-      ),
-      'new' => 
-      array (
-        0 => 'void',
-        'odbc' => 'Odbc\\Connection',
-      ),
-    ),
-    'odbc_commit' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'odbc' => 'resource',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'odbc' => 'Odbc\\Connection',
-      ),
-    ),
-    'odbc_cursor' => 
-    array (
-      'old' => 
-      array (
-        0 => 'string',
-        'statement' => 'resource',
-      ),
-      'new' => 
-      array (
-        0 => 'string',
-        'statement' => 'Odbc\\Result',
-      ),
-    ),
-    'odbc_data_source' => 
-    array (
-      'old' => 
-      array (
-        0 => 'array<array-key, mixed>|false',
-        'odbc' => 'Odbc\\Connection',
-        'fetch_type' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'array<array-key, mixed>|false|null',
-        'odbc' => 'Odbc\\Connection',
-        'fetch_type' => 'int',
-      ),
-    ),
-    'odbc_error' => 
-    array (
-      'old' => 
-      array (
-        0 => 'string',
-        'odbc=' => 'resource',
-      ),
-      'new' => 
-      array (
-        0 => 'string',
-        'odbc=' => 'Odbc\\Connection|null',
-      ),
-    ),
-    'odbc_errormsg' => 
-    array (
-      'old' => 
-      array (
-        0 => 'string',
-        'odbc=' => 'resource',
-      ),
-      'new' => 
-      array (
-        0 => 'string',
-        'odbc=' => 'Odbc\\Connection|null',
-      ),
-    ),
-    'odbc_execute' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'statement' => 'resource',
-        'params=' => 'array<array-key, mixed>',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'statement' => 'Odbc\\Result',
-        'params=' => 'array<array-key, mixed>',
-      ),
-    ),
-    'odbc_fetch_row' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'statement' => 'resource',
-        'row=' => 'int|null',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'statement' => 'Odbc\\Result',
-        'row=' => 'int|null',
-      ),
-    ),
-    'odbc_field_len' => 
-    array (
-      'old' => 
-      array (
-        0 => 'false|int',
-        'statement' => 'resource',
-        'field' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'false|int',
-        'statement' => 'Odbc\\Result',
-        'field' => 'int',
-      ),
-    ),
-    'odbc_field_name' => 
-    array (
-      'old' => 
-      array (
-        0 => 'false|string',
-        'statement' => 'resource',
-        'field' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'false|string',
-        'statement' => 'Odbc\\Result',
-        'field' => 'int',
-      ),
-    ),
-    'odbc_field_num' => 
-    array (
-      'old' => 
-      array (
-        0 => 'false|int',
-        'statement' => 'resource',
-        'field' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'false|int',
-        'statement' => 'Odbc\\Result',
-        'field' => 'string',
-      ),
-    ),
-    'odbc_field_precision' => 
-    array (
-      'old' => 
-      array (
-        0 => 'int',
-        'statement' => 'resource',
-        'field' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'int',
-        'statement' => 'Odbc\\Result',
-        'field' => 'int',
-      ),
-    ),
-    'odbc_field_scale' => 
-    array (
-      'old' => 
-      array (
-        0 => 'false|int',
-        'statement' => 'resource',
-        'field' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'false|int',
-        'statement' => 'Odbc\\Result',
-        'field' => 'int',
-      ),
-    ),
-    'odbc_field_type' => 
-    array (
-      'old' => 
-      array (
-        0 => 'false|string',
-        'statement' => 'resource',
-        'field' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'false|string',
-        'statement' => 'Odbc\\Result',
-        'field' => 'int',
-      ),
-    ),
-    'odbc_next_result' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'statement' => 'resource',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'statement' => 'Odbc\\Result',
-      ),
-    ),
-    'odbc_num_fields' => 
-    array (
-      'old' => 
-      array (
-        0 => 'int',
-        'statement' => 'resource',
-      ),
-      'new' => 
-      array (
-        0 => 'int',
-        'statement' => 'Odbc\\Result',
-      ),
-    ),
-    'odbc_num_rows' => 
-    array (
-      'old' => 
-      array (
-        0 => 'int',
-        'statement' => 'resource',
-      ),
-      'new' => 
-      array (
-        0 => 'int',
-        'statement' => 'Odbc\\Result',
-      ),
-    ),
-    'odbc_result' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool|null|string',
-        'statement' => 'resource',
-        'field' => 'int|string',
-      ),
-      'new' => 
-      array (
-        0 => 'bool|null|string',
-        'statement' => 'Odbc\\Result',
-        'field' => 'int|string',
-      ),
-    ),
-    'odbc_result_all' => 
-    array (
-      'old' => 
-      array (
-        0 => 'false|int',
-        'statement' => 'resource',
-        'format=' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'false|int',
-        'statement' => 'Odbc\\Result',
-        'format=' => 'string',
-      ),
-    ),
-    'odbc_rollback' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'odbc' => 'resource',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'odbc' => 'Odbc\\Connection',
-      ),
-    ),
-    'odbc_setoption' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'odbc' => 'resource',
-        'which' => 'int',
-        'option' => 'int',
-        'value' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'odbc' => 'Odbc\\Connection|Odbc\\Result',
-        'which' => 'int',
-        'option' => 'int',
-        'value' => 'int',
-      ),
-    ),
     'preg_split' => 
     array (
       'old' => 
@@ -1672,519 +1868,6 @@ return array (
         'subject' => 'string',
         'limit' => 'int',
         'flags=' => 'int',
-      ),
-    ),
-    'soapclient::__construct' => 
-    array (
-      'old' => 
-      array (
-        0 => 'void',
-        'wsdl' => 'mixed',
-        'options=' => 'array<array-key, mixed>|null',
-      ),
-      'new' => 
-      array (
-        0 => 'void',
-        'wsdl' => 'null|string',
-        'options=' => 'array<array-key, mixed>',
-      ),
-    ),
-    'stream_bucket_append' => 
-    array (
-      'old' => 
-      array (
-        0 => 'void',
-        'brigade' => 'resource',
-        'bucket' => 'object',
-      ),
-      'new' => 
-      array (
-        0 => 'void',
-        'brigade' => 'resource',
-        'bucket' => 'StreamBucket',
-      ),
-    ),
-    'stream_bucket_prepend' => 
-    array (
-      'old' => 
-      array (
-        0 => 'void',
-        'brigade' => 'resource',
-        'bucket' => 'object',
-      ),
-      'new' => 
-      array (
-        0 => 'void',
-        'brigade' => 'resource',
-        'bucket' => 'StreamBucket',
-      ),
-    ),
-    'xml_set_element_handler' => 
-    array (
-      'old' => 
-      array (
-        0 => 'true',
-        'parser' => 'XMLParser',
-        'start_handler' => 'callable|null',
-        'end_handler' => 'callable',
-      ),
-      'new' => 
-      array (
-        0 => 'true',
-        'parser' => 'XMLParser',
-        'start_handler' => 'callable|null',
-        'end_handler' => 'callable|null',
-      ),
-    ),
-    'xml_set_start_namespace_decl_handler' => 
-    array (
-      'old' => 
-      array (
-        0 => 'true',
-        'parser' => 'XMLParser',
-        'handler' => 'callable',
-      ),
-      'new' => 
-      array (
-        0 => 'true',
-        'parser' => 'XMLParser',
-        'handler' => 'callable|null',
-      ),
-    ),
-    'appenditerator::getinneriterator' => 
-    array (
-      'old' => 
-      array (
-        0 => 'Iterator',
-      ),
-      'new' => 
-      array (
-        0 => 'Iterator|null',
-      ),
-    ),
-    'appenditerator::getiteratorindex' => 
-    array (
-      'old' => 
-      array (
-        0 => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'int|null',
-      ),
-    ),
-    'cachingiterator::__construct' => 
-    array (
-      'old' => 
-      array (
-        0 => 'void',
-        'iterator' => 'Iterator',
-        'flags=' => 'mixed',
-      ),
-      'new' => 
-      array (
-        0 => 'void',
-        'iterator' => 'Iterator',
-        'flags=' => 'int',
-      ),
-    ),
-    'cachingiterator::getinneriterator' => 
-    array (
-      'old' => 
-      array (
-        0 => 'Iterator',
-      ),
-      'new' => 
-      array (
-        0 => 'Iterator|null',
-      ),
-    ),
-    'callbackfilteriterator::getinneriterator' => 
-    array (
-      'old' => 
-      array (
-        0 => 'Iterator',
-      ),
-      'new' => 
-      array (
-        0 => 'Iterator|null',
-      ),
-    ),
-    'curl_multi_getcontent' => 
-    array (
-      'old' => 
-      array (
-        0 => 'string',
-        'handle' => 'CurlHandle',
-      ),
-      'new' => 
-      array (
-        0 => 'null|string',
-        'handle' => 'CurlHandle',
-      ),
-    ),
-    'filteriterator::getinneriterator' => 
-    array (
-      'old' => 
-      array (
-        0 => 'Iterator',
-      ),
-      'new' => 
-      array (
-        0 => 'Iterator|null',
-      ),
-    ),
-    'fscanf' => 
-    array (
-      'old' => 
-      array (
-        0 => 'list<mixed>',
-        'stream' => 'resource',
-        'format' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'list<mixed>|null',
-        'stream' => 'resource',
-        'format' => 'string',
-      ),
-    ),
-    'getenv' => 
-    array (
-      'old' => 
-      array (
-        0 => 'false|string',
-        'name' => 'string',
-        'local_only=' => 'bool',
-      ),
-      'new' => 
-      array (
-        0 => 'false|string',
-        'name' => 'null|string',
-        'local_only=' => 'bool',
-      ),
-    ),
-    'imagefilledpolygon' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'image' => 'GdImage',
-        'points' => 'array<array-key, mixed>',
-        'num_points_or_color' => 'int',
-        'color' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'image' => 'GdImage',
-        'points' => 'array<array-key, mixed>',
-        'num_points_or_color' => 'int',
-        'color' => 'int|null',
-      ),
-    ),
-    'imageopenpolygon' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'image' => 'GdImage',
-        'points' => 'array<array-key, mixed>',
-        'num_points' => 'int',
-        'color' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'image' => 'GdImage',
-        'points' => 'array<array-key, mixed>',
-        'num_points' => 'int',
-        'color' => 'int|null',
-      ),
-    ),
-    'imagepolygon' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'image' => 'GdImage',
-        'points' => 'array<array-key, mixed>',
-        'num_points_or_color' => 'int',
-        'color' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'image' => 'GdImage',
-        'points' => 'array<array-key, mixed>',
-        'num_points_or_color' => 'int',
-        'color' => 'int|null',
-      ),
-    ),
-    'implode' => 
-    array (
-      'old' => 
-      array (
-        0 => 'string',
-        'separator' => 'string',
-        'array' => 'array<array-key, mixed>',
-      ),
-      'new' => 
-      array (
-        0 => 'string',
-        'separator' => 'string',
-        'array' => 'array<array-key, mixed>|null',
-      ),
-    ),
-    'infiniteiterator::getinneriterator' => 
-    array (
-      'old' => 
-      array (
-        0 => 'Iterator',
-      ),
-      'new' => 
-      array (
-        0 => 'Iterator|null',
-      ),
-    ),
-    'iteratoriterator::getinneriterator' => 
-    array (
-      'old' => 
-      array (
-        0 => 'Iterator',
-      ),
-      'new' => 
-      array (
-        0 => 'Iterator|null',
-      ),
-    ),
-    'join' => 
-    array (
-      'old' => 
-      array (
-        0 => 'string',
-        'separator' => 'string',
-        'array' => 'array<array-key, mixed>',
-      ),
-      'new' => 
-      array (
-        0 => 'string',
-        'separator' => 'string',
-        'array' => 'array<array-key, mixed>|null',
-      ),
-    ),
-    'limititerator::getinneriterator' => 
-    array (
-      'old' => 
-      array (
-        0 => 'Iterator',
-      ),
-      'new' => 
-      array (
-        0 => 'Iterator|null',
-      ),
-    ),
-    'locale::getallvariants' => 
-    array (
-      'old' => 
-      array (
-        0 => 'array<array-key, mixed>',
-        'locale' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'array<array-key, mixed>|null',
-        'locale' => 'string',
-      ),
-    ),
-    'locale::getkeywords' => 
-    array (
-      'old' => 
-      array (
-        0 => 'array<array-key, mixed>|false',
-        'locale' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'array<array-key, mixed>|false|null',
-        'locale' => 'string',
-      ),
-    ),
-    'locale::getprimarylanguage' => 
-    array (
-      'old' => 
-      array (
-        0 => 'string',
-        'locale' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'null|string',
-        'locale' => 'string',
-      ),
-    ),
-    'locale::getregion' => 
-    array (
-      'old' => 
-      array (
-        0 => 'string',
-        'locale' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'null|string',
-        'locale' => 'string',
-      ),
-    ),
-    'locale::getscript' => 
-    array (
-      'old' => 
-      array (
-        0 => 'string',
-        'locale' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'null|string',
-        'locale' => 'string',
-      ),
-    ),
-    'locale::parselocale' => 
-    array (
-      'old' => 
-      array (
-        0 => 'array<array-key, mixed>',
-        'locale' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'array<array-key, mixed>|null',
-        'locale' => 'string',
-      ),
-    ),
-    'mb_check_encoding' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'value' => 'array<array-key, mixed>|string',
-        'encoding=' => 'null|string',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'value' => 'array<array-key, mixed>|null|string',
-        'encoding=' => 'null|string',
-      ),
-    ),
-    'messageformatter::create' => 
-    array (
-      'old' => 
-      array (
-        0 => 'MessageFormatter',
-        'locale' => 'string',
-        'pattern' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'MessageFormatter|null',
-        'locale' => 'string',
-        'pattern' => 'string',
-      ),
-    ),
-    'mysqli::get_charset' => 
-    array (
-      'old' => 
-      array (
-        0 => 'object',
-      ),
-      'new' => 
-      array (
-        0 => 'null|object',
-      ),
-    ),
-    'norewinditerator::getinneriterator' => 
-    array (
-      'old' => 
-      array (
-        0 => 'Iterator',
-      ),
-      'new' => 
-      array (
-        0 => 'Iterator|null',
-      ),
-    ),
-    'numberformatter::format' => 
-    array (
-      'old' => 
-      array (
-        0 => 'false|string',
-        'num' => 'mixed',
-        'type=' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'false|string',
-        'num' => 'float|int',
-        'type=' => 'int',
-      ),
-    ),
-    'odbc_fetch_array' => 
-    array (
-      'old' => 
-      array (
-        0 => 'array<array-key, mixed>|false',
-        'statement' => 'resource',
-        'row=' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'array<array-key, mixed>|false',
-        'statement' => 'resource',
-        'row=' => 'int|null',
-      ),
-    ),
-    'odbc_fetch_into' => 
-    array (
-      'old' => 
-      array (
-        0 => 'int',
-        'statement' => 'resource',
-        '&w_array' => 'array<array-key, mixed>',
-        'row=' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'int',
-        'statement' => 'resource',
-        '&w_array' => 'array<array-key, mixed>',
-        'row=' => 'int|null',
-      ),
-    ),
-    'odbc_fetch_object' => 
-    array (
-      'old' => 
-      array (
-        0 => 'false|stdClass',
-        'statement' => 'resource',
-        'row=' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'false|stdClass',
-        'statement' => 'resource',
-        'row=' => 'int|null',
-      ),
-    ),
-    'outeriterator::getinneriterator' => 
-    array (
-      'old' => 
-      array (
-        0 => 'Iterator',
-      ),
-      'new' => 
-      array (
-        0 => 'Iterator|null',
       ),
     ),
     'recursivecachingiterator::getinneriterator' => 
@@ -2312,6 +1995,38 @@ return array (
         0 => 'Iterator|null',
       ),
     ),
+    'resourcebundle::get' => 
+    array (
+      'old' => 
+      array (
+        0 => 'mixed',
+        'index' => 'int|string',
+        'fallback=' => 'bool',
+      ),
+      'new' => 
+      array (
+        0 => 'ResourceBundle|array<array-key, mixed>|int|null|string',
+        'index' => 'int|string',
+        'fallback=' => 'bool',
+      ),
+    ),
+    'resourcebundle_get' => 
+    array (
+      'old' => 
+      array (
+        0 => 'mixed|null',
+        'bundle' => 'ResourceBundle',
+        'index' => 'int|string',
+        'fallback=' => 'bool',
+      ),
+      'new' => 
+      array (
+        0 => 'ResourceBundle|array<array-key, mixed>|int|null|string',
+        'bundle' => 'ResourceBundle',
+        'index' => 'int|string',
+        'fallback=' => 'bool',
+      ),
+    ),
     'session_set_save_handler' => 
     array (
       'old' => 
@@ -2339,6 +2054,36 @@ return array (
         'create_sid=' => 'callable():string|null',
         'validate_sid=' => 'callable(string):bool|null',
         'update_timestamp=' => 'callable(string):bool|null',
+      ),
+    ),
+    'soapclient::__construct' => 
+    array (
+      'old' => 
+      array (
+        0 => 'void',
+        'wsdl' => 'mixed',
+        'options=' => 'array<array-key, mixed>|null',
+      ),
+      'new' => 
+      array (
+        0 => 'void',
+        'wsdl' => 'null|string',
+        'options=' => 'array<array-key, mixed>',
+      ),
+    ),
+    'soapclient::__setcookie' => 
+    array (
+      'old' => 
+      array (
+        0 => 'void',
+        'name' => 'string',
+        'value=' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'void',
+        'name' => 'string',
+        'value=' => 'null|string',
       ),
     ),
     'soapclient::__setlocation' => 
@@ -2434,6 +2179,58 @@ return array (
         '&...w_vars=' => 'float|int|string',
       ),
     ),
+    'splfixedarray::setsize' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'size' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'true',
+        'size' => 'int',
+      ),
+    ),
+    'splheap::insert' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'value' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'true',
+        'value' => 'mixed',
+      ),
+    ),
+    'splpriorityqueue::insert' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'value' => 'mixed',
+        'priority' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'true',
+        'value' => 'mixed',
+        'priority' => 'mixed',
+      ),
+    ),
+    'splpriorityqueue::recoverfromcorruption' => 
+    array (
+      'old' => 
+      array (
+        0 => 'void',
+      ),
+      'new' => 
+      array (
+        0 => 'true',
+      ),
+    ),
     'spltempfileobject::fscanf' => 
     array (
       'old' => 
@@ -2447,6 +2244,120 @@ return array (
         0 => 'array<array-key, mixed>|int|null',
         'format' => 'string',
         '&...w_vars=' => 'float|int|string',
+      ),
+    ),
+    'sqlite3result::finalize' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+      ),
+      'new' => 
+      array (
+        0 => 'true',
+      ),
+    ),
+    'sqlite3stmt::close' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+      ),
+      'new' => 
+      array (
+        0 => 'true',
+      ),
+    ),
+    'stream_bucket_append' => 
+    array (
+      'old' => 
+      array (
+        0 => 'void',
+        'brigade' => 'resource',
+        'bucket' => 'object',
+      ),
+      'new' => 
+      array (
+        0 => 'void',
+        'brigade' => 'resource',
+        'bucket' => 'StreamBucket',
+      ),
+    ),
+    'stream_bucket_make_writeable' => 
+    array (
+      'old' => 
+      array (
+        0 => 'null|object',
+        'brigade' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'StreamBucket|null',
+        'brigade' => 'resource',
+      ),
+    ),
+    'stream_bucket_new' => 
+    array (
+      'old' => 
+      array (
+        0 => 'object',
+        'stream' => 'resource',
+        'buffer' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'StreamBucket',
+        'stream' => 'resource',
+        'buffer' => 'string',
+      ),
+    ),
+    'stream_bucket_prepend' => 
+    array (
+      'old' => 
+      array (
+        0 => 'void',
+        'brigade' => 'resource',
+        'bucket' => 'object',
+      ),
+      'new' => 
+      array (
+        0 => 'void',
+        'brigade' => 'resource',
+        'bucket' => 'StreamBucket',
+      ),
+    ),
+    'stream_context_set_option' => 
+    array (
+      'old' => 
+      array (
+        0 => 'true',
+        'context' => 'mixed',
+        'wrapper_or_options' => 'string',
+        'option_name' => 'string',
+        'value' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'true',
+        'context' => 'mixed',
+        'wrapper_or_options' => 'string',
+        'option_name' => 'null|string',
+        'value' => 'mixed',
+      ),
+    ),
+    'stream_context_set_params' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'context' => 'resource',
+        'params' => 'array<array-key, mixed>',
+      ),
+      'new' => 
+      array (
+        0 => 'true',
+        'context' => 'resource',
+        'params' => 'array<array-key, mixed>',
       ),
     ),
     'strtok' => 
@@ -2481,6 +2392,36 @@ return array (
         'to' => 'null|string',
       ),
     ),
+    'trigger_error' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'message' => 'string',
+        'error_level=' => '256|512|1024|16384',
+      ),
+      'new' => 
+      array (
+        0 => 'true',
+        'message' => 'string',
+        'error_level=' => '256|512|1024|16384',
+      ),
+    ),
+    'user_error' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'message' => 'string',
+        'error_level=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'true',
+        'message' => 'string',
+        'error_level=' => 'int',
+      ),
+    ),
     'version_compare' => 
     array (
       'old' => 
@@ -2511,6 +2452,23 @@ return array (
         0 => 'true',
         'parser' => 'XMLParser',
         'handler' => 'callable|null',
+      ),
+    ),
+    'xml_set_element_handler' => 
+    array (
+      'old' => 
+      array (
+        0 => 'true',
+        'parser' => 'XMLParser',
+        'start_handler' => 'callable|null',
+        'end_handler' => 'callable',
+      ),
+      'new' => 
+      array (
+        0 => 'true',
+        'parser' => 'XMLParser',
+        'start_handler' => 'callable|null',
+        'end_handler' => 'callable|null',
       ),
     ),
     'xml_set_end_namespace_decl_handler' => 
@@ -2558,6 +2516,21 @@ return array (
         'handler' => 'callable|null',
       ),
     ),
+    'xml_set_start_namespace_decl_handler' => 
+    array (
+      'old' => 
+      array (
+        0 => 'true',
+        'parser' => 'XMLParser',
+        'handler' => 'callable',
+      ),
+      'new' => 
+      array (
+        0 => 'true',
+        'parser' => 'XMLParser',
+        'handler' => 'callable|null',
+      ),
+    ),
     'xml_set_unparsed_entity_decl_handler' => 
     array (
       'old' => 
@@ -2571,6 +2544,17 @@ return array (
         0 => 'true',
         'parser' => 'XMLParser',
         'handler' => 'callable|null',
+      ),
+    ),
+    'xmlreader::close' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+      ),
+      'new' => 
+      array (
+        0 => 'true',
       ),
     ),
     'xsltprocessor::setparameter' => 
@@ -2590,6 +2574,19 @@ return array (
         'value' => 'null|string',
       ),
     ),
+    'xsltprocessor::setprofiling' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'filename' => 'null|string',
+      ),
+      'new' => 
+      array (
+        0 => 'true',
+        'filename' => 'null|string',
+      ),
+    ),
     'xsltprocessor::transformtoxml' => 
     array (
       'old' => 
@@ -2603,5 +2600,8 @@ return array (
         'document' => 'DOMDocument',
       ),
     ),
+  ),
+  'removed' => 
+  array (
   ),
 );

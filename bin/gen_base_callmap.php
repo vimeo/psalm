@@ -28,4 +28,4 @@ foreach (get_declared_classes() as $class) {
 }
 
 $callmap = normalizeCallMap($callmap);
-var_dump($callmap);
+writeCallMap(__DIR__.'/../dictionaries/CallMap.php', $callmap);
