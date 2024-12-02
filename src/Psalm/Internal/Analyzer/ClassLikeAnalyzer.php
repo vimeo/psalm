@@ -32,6 +32,7 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_filter;
 use function array_keys;
 use function array_pop;
 use function array_search;
@@ -636,9 +637,37 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         CodeLocation $code_location,
         int $given_param_count
     ): void {
+        $enum_type = $storage->enum_type;
+        $parent_storage_class_template_types = $parent_storage->getClassTemplateTypes();
+
+        $is_backed_enum_like = $storage->is_enum &&
+            in_array(
+                $enum_type,
+                array_keys(
+                    count($parent_storage_class_template_types) ?
+                        $parent_storage_class_template_types[0]->getAtomicTypes()
+                        : [],
+                    true,
+                ),
+            );
+
         $expected_param_count = $parent_storage->template_types === null
             ? 0
             : count($parent_storage->template_types);
+
+        /**
+         * 1) BackedEnum do not always need a template to infer the type as it must be specified by default when
+         * it is declared, the template is only needed for more specific types such as non-empty-string
+         * 2) BackedEnum can only be extended by interfaces and cannot be implemented by classes
+         */
+        if (($is_backed_enum_like && $given_param_count === 0) ||
+            (
+                $is_backed_enum_like === false &&
+                $parent_storage->name === 'BackedEnum'
+            )
+        ) {
+            $expected_param_count = 0;
+        }
 
         if ($expected_param_count > $given_param_count) {
             IssueBuffer::maybeAdd(
@@ -702,7 +731,13 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                     if (isset($parent_storage->template_covariants[$i])
                         && !$parent_storage->template_covariants[$i]
                     ) {
-                        foreach ($extended_type->getAtomicTypes() as $t) {
+                        $extended_type_atomic_types           = $extended_type->getAtomicTypes();
+                        $extended_type_atomic_types_int_string_diff = array_filter(
+                            $extended_type_atomic_types,
+                            fn($at) => !$at instanceof Type\Atomic\TInt && !$at instanceof Type\Atomic\TString,
+                        );
+
+                        foreach ($extended_type_atomic_types as $t) {
                             if ($t instanceof TTemplateParam
                                 && $storage->template_types
                                 && $storage->template_covariants
@@ -719,6 +754,30 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                                     ),
                                     $storage->suppressed_issues + $this->getSuppressedIssues(),
                                 );
+                            }
+
+                            if ($is_backed_enum_like && $extended_type_atomic_types_int_string_diff === []) {
+                                if ($t instanceof Type\Atomic\TInt && $enum_type === 'string') {
+                                    IssueBuffer::maybeAdd(
+                                        new InvalidTemplateParam(
+                                            'Extended template param ' . $template_name
+                                            . ' expects type ' . $enum_type
+                                            . ', type ' . $extended_type->getId() . ' given',
+                                            $code_location,
+                                        ),
+                                    );
+                                }
+
+                                if ($t instanceof Type\Atomic\TString && $enum_type === 'int') {
+                                    IssueBuffer::maybeAdd(
+                                        new InvalidTemplateParam(
+                                            'Extended template param ' . $template_name
+                                            . ' expects type ' . $enum_type
+                                            . ', type ' . $extended_type->getId() . ' given',
+                                            $code_location,
+                                        ),
+                                    );
+                                }
                             }
                         }
                     }
