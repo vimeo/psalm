@@ -47,13 +47,16 @@ use Psalm\Type\Union;
 use function array_diff_key;
 use function array_values;
 use function count;
+use function filter_var;
 use function get_class;
 use function is_int;
 use function is_numeric;
 use function max;
 use function min;
-use function preg_match;
 use function strtolower;
+
+use const FILTER_VALIDATE_FLOAT;
+use const FILTER_VALIDATE_INT;
 
 /**
  * @internal
@@ -311,6 +314,9 @@ final class ArithmeticOpAnalyzer
         bool &$has_string_increment,
         ?Union &$result_type = null
     ): ?Union {
+        $implicit_left = self::noFloatLikeToIntPrecisionLoss($parent, $left_type_part, $invalid_left_messages);
+        $implicit_right = self::noFloatLikeToIntPrecisionLoss($parent, $right_type_part, $invalid_right_messages);
+
         if (($left_type_part instanceof TLiteralInt || $left_type_part instanceof TLiteralFloat)
             && ($right_type_part instanceof TLiteralInt || $right_type_part instanceof TLiteralFloat)
             && (
@@ -349,8 +355,8 @@ final class ArithmeticOpAnalyzer
                     $result_type,
                 );
 
-                $has_valid_left_operand = true;
-                $has_valid_right_operand = true;
+                $has_valid_left_operand = $implicit_left;
+                $has_valid_right_operand = $implicit_right;
 
                 return null;
             }
@@ -406,6 +412,10 @@ final class ArithmeticOpAnalyzer
             if (count($combined_atomic_types) <= 2) {
                 $left_type_part = $combined_atomic_types[0];
                 $right_type_part = $combined_atomic_types[1] ?? $combined_atomic_types[0];
+
+                // check again, since the type changed
+                self::noFloatLikeToIntPrecisionLoss($parent, $left_type_part, $invalid_left_messages);
+                self::noFloatLikeToIntPrecisionLoss($parent, $right_type_part, $invalid_right_messages);
             }
         }
 
@@ -476,7 +486,9 @@ final class ArithmeticOpAnalyzer
                         $statements_source->getSuppressedIssues(),
                     );
                 }
-            } elseif ($right_type_part instanceof TTemplateParam
+            }
+
+            if ($right_type_part instanceof TTemplateParam
                 && !$right_type_part->as->isInt()
                 && !$right_type_part->as->isFloat()
             ) {
@@ -488,6 +500,18 @@ final class ArithmeticOpAnalyzer
                         ),
                         $statements_source->getSuppressedIssues(),
                     );
+                }
+            }
+
+            if ($left_type_part instanceof TTemplateParam && !$left_type_part->as->isInt()) {
+                foreach ($left_type_part->as->getAtomicTypes() as $atomic) {
+                    self::noFloatLikeToIntPrecisionLoss($parent, $atomic, $invalid_left_messages);
+                }
+            }
+
+            if ($right_type_part instanceof TTemplateParam && !$right_type_part->as->isInt()) {
+                foreach ($right_type_part->as->getAtomicTypes() as $atomic) {
+                    self::noFloatLikeToIntPrecisionLoss($parent, $atomic, $invalid_right_messages);
                 }
             }
 
@@ -711,19 +735,63 @@ final class ArithmeticOpAnalyzer
             }
         }
 
+        $left_from_literal_string = false;
         if ($left_type_part instanceof TLiteralString) {
-            if (preg_match('/^\-?\d+$/', $left_type_part->value)) {
-                $left_type_part = new TLiteralInt((int) $left_type_part->value);
-            } elseif (preg_match('/^\-?\d?\.\d+$/', $left_type_part->value)) {
-                $left_type_part = new TLiteralFloat((float) $left_type_part->value);
-            }
+            $left_from_literal_string = $left_type_part;
+            $left_type_part = self::literalStringToIntFloat($left_type_part);
         }
 
+        $right_from_literal_string = false;
         if ($right_type_part instanceof TLiteralString) {
-            if (preg_match('/^\-?\d+$/', $right_type_part->value)) {
-                $right_type_part = new TLiteralInt((int) $right_type_part->value);
-            } elseif (preg_match('/^\-?\d?\.\d+$/', $right_type_part->value)) {
-                $right_type_part = new TLiteralFloat((float) $right_type_part->value);
+            $right_from_literal_string = $right_type_part;
+            $right_type_part = self::literalStringToIntFloat($right_type_part);
+        }
+
+        if (($left_from_literal_string || $right_from_literal_string)
+            && ($left_type_part instanceof TLiteralInt || $left_type_part instanceof TLiteralFloat)
+            && ($right_type_part instanceof TLiteralInt || $right_type_part instanceof TLiteralFloat)
+            && (
+                //we don't try to do arithmetics on variables in loops
+                $context === null
+                || $context->inside_loop === false
+                || (!$left instanceof PhpParser\Node\Expr\Variable && !$right instanceof PhpParser\Node\Expr\Variable)
+            )
+        ) {
+            // get_class is fine here because both classes are final.
+            if ($statements_source !== null
+                && $config->strict_binary_operands
+                && (!$left_from_literal_string
+                    || !$right_from_literal_string
+                    || get_class($left_from_literal_string) !== get_class($right_from_literal_string))
+            ) {
+                IssueBuffer::maybeAdd(
+                    new InvalidOperand(
+                        'Cannot process numeric types together in strict operands mode, '.
+                        'please cast explicitly',
+                        new CodeLocation($statements_source, $parent),
+                    ),
+                    $statements_source->getSuppressedIssues(),
+                );
+            }
+
+            // time for some arithmetic!
+            $calculated_type = self::arithmeticOperation(
+                $parent,
+                $left_type_part->value,
+                $right_type_part->value,
+                true,
+            );
+
+            if ($calculated_type) {
+                $result_type = Type::combineUnionTypes(
+                    $calculated_type,
+                    $result_type,
+                );
+
+                $has_valid_left_operand = $implicit_left;
+                $has_valid_right_operand = $implicit_right;
+
+                return null;
             }
         }
 
@@ -752,8 +820,8 @@ final class ArithmeticOpAnalyzer
 
                 $result_type = Type::combineUnionTypes($new_result_type, $result_type);
 
-                $has_valid_right_operand = true;
-                $has_valid_left_operand = true;
+                $has_valid_right_operand = $implicit_right;
+                $has_valid_left_operand = $implicit_left;
 
                 return null;
             }
@@ -847,8 +915,8 @@ final class ArithmeticOpAnalyzer
                     $result_type = Type::combineUnionTypes(Type::getFloat(), $result_type);
                 }
 
-                $has_valid_right_operand = true;
-                $has_valid_left_operand = true;
+                $has_valid_right_operand = $implicit_right;
+                $has_valid_left_operand = $implicit_left;
 
                 return null;
             }
@@ -875,8 +943,8 @@ final class ArithmeticOpAnalyzer
                     $result_type = Type::combineUnionTypes(Type::getFloat(), $result_type);
                 }
 
-                $has_valid_right_operand = true;
-                $has_valid_left_operand = true;
+                $has_valid_right_operand = $implicit_right;
+                $has_valid_left_operand = $implicit_left;
 
                 return null;
             }
@@ -901,8 +969,8 @@ final class ArithmeticOpAnalyzer
                     $result_type = new Union([new TInt, new TFloat]);
                 }
 
-                $has_valid_right_operand = true;
-                $has_valid_left_operand = true;
+                $has_valid_right_operand = $implicit_right;
+                $has_valid_left_operand = $implicit_left;
 
                 return null;
             }
@@ -910,11 +978,11 @@ final class ArithmeticOpAnalyzer
             if (!$left_type_part->isNumericType()) {
                 $invalid_left_messages[] = 'Cannot perform a numeric operation with a non-numeric type '
                     . $left_type_part;
-                $has_valid_right_operand = true;
+                $has_valid_right_operand = $implicit_right;
             } else {
                 $invalid_right_messages[] = 'Cannot perform a numeric operation with a non-numeric type '
                     . $right_type_part;
-                $has_valid_left_operand = true;
+                $has_valid_left_operand = $implicit_left;
             }
         } else {
             $invalid_left_messages[] =
@@ -944,21 +1012,21 @@ final class ArithmeticOpAnalyzer
                 return Type::getNever();
             }
 
-            $result = $operand1 % $operand2;
+            $result = (int) $operand1 % (int) $operand2;
         } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\Mul) {
             $result = $operand1 * $operand2;
         } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\Pow) {
             $result = $operand1 ** $operand2;
         } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\BitwiseOr) {
-            $result = $operand1 | $operand2;
+            $result = (int) $operand1 | (int) $operand2;
         } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\BitwiseAnd) {
-            $result = $operand1 & $operand2;
+            $result = (int) $operand1 & (int) $operand2;
         } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\BitwiseXor) {
-            $result = $operand1 ^ $operand2;
+            $result = (int) $operand1 ^ (int) $operand2;
         } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\ShiftLeft) {
-            $result = $operand1 << $operand2;
+            $result = (int) $operand1 << (int) $operand2;
         } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\ShiftRight) {
-            $result = $operand1 >> $operand2;
+            $result = (int) $operand1 >> (int) $operand2;
         } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\Div) {
             if ($operand2 === 0 || $operand2 === 0.0) {
                 return Type::getNever();
@@ -1412,5 +1480,59 @@ final class ArithmeticOpAnalyzer
             $new_result_type,
             $result_type,
         );
+    }
+
+    /** @return TLiteralInt|TLiteralFloat|TLiteralString */
+    private static function literalStringToIntFloat(
+        TLiteralString $literal_atomic
+    ) {
+        $int = filter_var($literal_atomic->value, FILTER_VALIDATE_INT);
+        if ($int !== false) {
+            return new TLiteralInt($int);
+        }
+
+        $float = filter_var($literal_atomic->value, FILTER_VALIDATE_FLOAT);
+        if ($float !== false) {
+            return new TLiteralFloat($float);
+        }
+
+        return $literal_atomic;
+    }
+
+    /**
+     * @param string[] $invalid_messages
+     */
+    public static function noFloatLikeToIntPrecisionLoss(
+        PhpParser\Node $parent,
+        Atomic $type_part,
+        array &$invalid_messages
+    ): bool {
+        if ($type_part instanceof TLiteralString) {
+            $type_part = self::literalStringToIntFloat($type_part);
+        }
+
+        if ($type_part instanceof TLiteralFloat
+            && (int) $type_part->value === filter_var($type_part->value, FILTER_VALIDATE_INT)
+        ) {
+            // if we don't have precision loss, e.g. 2.0
+            return true;
+        }
+
+        if (($type_part instanceof TFloat
+                || $type_part instanceof TNumeric
+                || $type_part instanceof TNumericString)
+            && ($parent instanceof PhpParser\Node\Expr\BinaryOp\Mod
+                || $parent instanceof PhpParser\Node\Expr\BinaryOp\BitwiseOr
+                || $parent instanceof PhpParser\Node\Expr\BinaryOp\BitwiseAnd
+                || $parent instanceof PhpParser\Node\Expr\BinaryOp\BitwiseXor
+                || $parent instanceof PhpParser\Node\Expr\BinaryOp\ShiftLeft
+                || $parent instanceof PhpParser\Node\Expr\BinaryOp\ShiftRight)
+        ) {
+            // deprecated since PHP 8, will trigger a notice
+            $invalid_messages[] = 'Implicit conversion from float to int';
+            return false;
+        }
+
+        return true;
     }
 }
