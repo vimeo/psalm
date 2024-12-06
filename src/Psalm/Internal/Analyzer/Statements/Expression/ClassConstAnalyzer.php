@@ -365,16 +365,17 @@ final class ClassConstAnalyzer
                 }
             }
 
-            if ($context->self
+            $caller_identifier = $context->self ?? $statements_analyzer->getNamespace();
+            if ($caller_identifier !== null
                 && !$context->collect_initializations
                 && !$context->collect_mutations
-                && !NamespaceAnalyzer::isWithinAny($context->self, $const_class_storage->internal)
+                && !NamespaceAnalyzer::isWithinAny($caller_identifier, $const_class_storage->internal)
             ) {
                 IssueBuffer::maybeAdd(
                     new InternalClass(
                         $fq_class_name . ' is internal to '
                             . InternalClass::listToPhrase($const_class_storage->internal)
-                            . ' but called from ' . $context->self,
+                            . ' but called from ' . ($caller_identifier ?: 'root namespace'),
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                         $fq_class_name,
                     ),
@@ -656,16 +657,17 @@ final class ClassConstAnalyzer
                 }
             }
 
-            if ($context->self
+            $caller_identifier = $context->self ?? $statements_analyzer->getNamespace();
+            if ($caller_identifier !== null
                 && !$context->collect_initializations
                 && !$context->collect_mutations
-                && !NamespaceAnalyzer::isWithinAny($context->self, $const_class_storage->internal)
+                && !NamespaceAnalyzer::isWithinAny($caller_identifier, $const_class_storage->internal)
             ) {
                 IssueBuffer::maybeAdd(
                     new InternalClass(
                         $fq_class_name . ' is internal to '
                             . InternalClass::listToPhrase($const_class_storage->internal)
-                            . ' but called from ' . $context->self,
+                            . ' but called from ' . ($caller_identifier ?: 'root namespace'),
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                         $fq_class_name,
                     ),
