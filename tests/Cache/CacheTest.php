@@ -26,6 +26,15 @@ use const DIRECTORY_SEPARATOR;
 
 class CacheTest extends TestCase
 {
+    public static function setUpBeforeClass(): void
+    {
+        parent::setUpBeforeClass();
+
+        // hack to isolate Psalm from PHPUnit cli arguments
+        global $argv;
+        $argv = [];
+    }
+
     public function setUp(): void
     {
         parent::setUp();

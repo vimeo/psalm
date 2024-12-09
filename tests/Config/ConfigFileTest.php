@@ -23,6 +23,15 @@ class ConfigFileTest extends TestCase
 {
     private string $file_path;
 
+    public static function setUpBeforeClass(): void
+    {
+        parent::setUpBeforeClass();
+
+        // hack to isolate Psalm from PHPUnit cli arguments
+        global $argv;
+        $argv = [];
+    }
+
     public function setUp(): void
     {
         RuntimeCaches::clearAll();
