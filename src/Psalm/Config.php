@@ -476,7 +476,9 @@ final class Config
      * @psalm-readonly-allow-private-mutation
      * @var array<string, bool|null>
      */
+
     public array $php_extensions = [
+        "amqp" => null,
         "apcu" => null,
         "decimal" => null,
         "dom" => null,
