@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call\Method;
 
 use Exception;
@@ -60,7 +62,7 @@ final class MethodCallReturnTypeFetcher
         ?Atomic $static_type,
         array $args,
         AtomicMethodCallAnalysisResult $result,
-        TemplateResult $template_result
+        TemplateResult $template_result,
     ): Union {
         $call_map_id = $declaring_method_id ?? $method_id;
 
@@ -286,7 +288,7 @@ final class MethodCallReturnTypeFetcher
         MethodIdentifier $method_id,
         ?MethodIdentifier $declaring_method_id,
         string $cased_method_id,
-        Context $context
+        Context $context,
     ): void {
         if (!$statements_analyzer->data_flow_graph
             || !$declaring_method_id
@@ -560,7 +562,7 @@ final class MethodCallReturnTypeFetcher
         TemplateResult $template_result,
         MethodIdentifier $method_id,
         int $arg_count,
-        Codebase $codebase
+        Codebase $codebase,
     ): Union {
         if ($template_result->template_types) {
             $bindable_template_types = $return_type_candidate->getTemplateTypes();
@@ -575,7 +577,7 @@ final class MethodCallReturnTypeFetcher
                 ) {
                     if ($template_type->param_name === 'TFunctionArgCount') {
                         $template_result->lower_bounds[$template_type->param_name] = [
-                            'fn-' . strtolower((string) $method_id) => [
+                            'fn-' . $method_id->method_name => [
                                 new TemplateBound(
                                     Type::getInt(false, $arg_count),
                                 ),
@@ -583,7 +585,7 @@ final class MethodCallReturnTypeFetcher
                         ];
                     } elseif ($template_type->param_name === 'TPhpMajorVersion') {
                         $template_result->lower_bounds[$template_type->param_name] = [
-                            'fn-' . strtolower((string) $method_id) => [
+                            'fn-' . $method_id->method_name => [
                                 new TemplateBound(
                                     Type::getInt(false, $codebase->getMajorAnalysisPhpVersion()),
                                 ),
@@ -591,7 +593,7 @@ final class MethodCallReturnTypeFetcher
                         ];
                     } elseif ($template_type->param_name === 'TPhpVersionId') {
                         $template_result->lower_bounds[$template_type->param_name] = [
-                            'fn-' . strtolower((string) $method_id) => [
+                            'fn-' . $method_id->method_name => [
                                 new TemplateBound(
                                     Type::getInt(
                                         false,

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer;
 
 use PhpParser;
@@ -56,7 +58,7 @@ final class CommentAnalyzer
         FileSource $source,
         Aliases $aliases,
         ?array $template_type_map = null,
-        ?array $type_aliases = null
+        ?array $type_aliases = null,
     ): array {
         $parsed_docblock = DocComment::parsePreservingLength($comment);
 
@@ -82,7 +84,7 @@ final class CommentAnalyzer
         FileSource $source,
         Aliases $aliases,
         ?array $template_type_map = null,
-        ?array $type_aliases = null
+        ?array $type_aliases = null,
     ): array {
         $var_id = null;
 
@@ -136,7 +138,7 @@ final class CommentAnalyzer
                             $template_type_map,
                             $type_aliases,
                         );
-                    } catch (TypeParseTreeException $e) {
+                    } catch (TypeParseTreeException) {
                         throw new DocblockParseException($line_parts[0] . ' is not a valid type');
                     }
 
@@ -151,7 +153,7 @@ final class CommentAnalyzer
                         } else {
                             $description = trim(substr($var_line, strlen($line_parts[0]) + 1));
                         }
-                        $description = preg_replace('/\\n \\*\\s+/um', ' ', $description);
+                        $description = (string) preg_replace('/\\n \\*\\s+/um', ' ', $description);
                     }
                 }
 
@@ -217,7 +219,7 @@ final class CommentAnalyzer
 
     private static function decorateVarDocblockComment(
         VarDocblockComment $var_comment,
-        ParsedDocblock $parsed_docblock
+        ParsedDocblock $parsed_docblock,
     ): void {
         $var_comment->deprecated = isset($parsed_docblock->tags['deprecated']);
         $var_comment->internal = isset($parsed_docblock->tags['internal']);
@@ -258,10 +260,11 @@ final class CommentAnalyzer
      */
     public static function sanitizeDocblockType(string $docblock_type): string
     {
-        $docblock_type = preg_replace('@^[ \t]*\*@m', '', $docblock_type);
-        $docblock_type = preg_replace('/,\n\s+}/', '}', $docblock_type);
+        $docblock_type = (string) preg_replace('@^[ \t]*\*@m', '', $docblock_type);
+        $docblock_type = (string) preg_replace('/,[\n\s]+}/', '}', $docblock_type);
+        $docblock_type = (string) preg_replace('/[ \t]+/', ' ', $docblock_type);
 
-        return str_replace("\n", '', $docblock_type);
+        return trim(str_replace("\n", '', $docblock_type));
     }
 
     /**
@@ -396,7 +399,7 @@ final class CommentAnalyzer
                     continue;
                 }
 
-                $remaining = trim(preg_replace('@^[ \t]*\* *@m', ' ', substr($return_block, $i + 1)));
+                $remaining = trim((string) preg_replace('@^[ \t]*\* *@m', ' ', substr($return_block, $i + 1)));
 
                 if ($remaining) {
                     return [rtrim($type), ...preg_split('/\s+/', $remaining) ?: []];
@@ -417,7 +420,7 @@ final class CommentAnalyzer
     public static function getVarComments(
         PhpParser\Comment\Doc $doc_comment,
         StatementsAnalyzer $statements_analyzer,
-        PhpParser\Node\Expr\Variable $var
+        PhpParser\Node\Expr\Variable $var,
     ): array {
         $codebase = $statements_analyzer->getCodebase();
         $parsed_docblock = $statements_analyzer->getParsedDocblock();
@@ -429,6 +432,10 @@ final class CommentAnalyzer
         $var_comments = [];
 
         try {
+            $file_path = $statements_analyzer->getRootFilePath();
+            $file_storage_provider = $codebase->file_storage_provider;
+            $file_storage = $file_storage_provider->get($file_path);
+
             $var_comments = $codebase->config->disable_var_parsing
                 ? []
                 : self::arrayToDocblocks(
@@ -437,6 +444,7 @@ final class CommentAnalyzer
                     $statements_analyzer->getSource(),
                     $statements_analyzer->getSource()->getAliases(),
                     $statements_analyzer->getSource()->getTemplateTypeMap(),
+                    $file_storage->type_aliases,
                 );
         } catch (IncorrectDocblockException $e) {
             IssueBuffer::maybeAdd(
@@ -464,7 +472,7 @@ final class CommentAnalyzer
         array $var_comments,
         PhpParser\Node\Expr\Variable $var,
         Context $context,
-        StatementsAnalyzer $statements_analyzer
+        StatementsAnalyzer $statements_analyzer,
     ): ?Union {
         if (!is_string($var->name)) {
             return null;

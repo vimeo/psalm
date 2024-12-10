@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\PhpVisitor\Reflector;
 
 use PhpParser;
@@ -27,7 +29,7 @@ use function defined;
 use function dirname;
 use function explode;
 use function in_array;
-use function strpos;
+use function str_contains;
 use function strtolower;
 use function substr;
 
@@ -45,7 +47,7 @@ final class ExpressionScanner
         Aliases $aliases,
         PhpParser\Node\Expr $node,
         ?FunctionLikeStorage $functionlike_storage,
-        ?int $skip_if_descendants
+        ?int $skip_if_descendants,
     ): void {
         if ($node instanceof PhpParser\Node\Expr\Include_ && !$skip_if_descendants) {
             self::visitInclude(
@@ -106,7 +108,7 @@ final class ExpressionScanner
         string $function_id,
         PhpParser\Node\Expr\FuncCall $node,
         ?FunctionLikeStorage $functionlike_storage,
-        ?int $skip_if_descendants
+        ?int $skip_if_descendants,
     ): void {
         $callables = InternalCallMapHandler::getCallablesFromCallMap($function_id);
 
@@ -168,7 +170,7 @@ final class ExpressionScanner
                                 // only check the first @var comment
                                 break;
                             }
-                        } catch (DocblockParseException $e) {
+                        } catch (DocblockParseException) {
                             // do nothing
                         }
                     }
@@ -213,7 +215,7 @@ final class ExpressionScanner
             }
 
             foreach ($mapping_function_ids as $potential_method_id) {
-                if (strpos($potential_method_id, '::') === false) {
+                if (!str_contains($potential_method_id, '::')) {
                     continue;
                 }
 
@@ -299,7 +301,7 @@ final class ExpressionScanner
         Codebase $codebase,
         FileStorage $file_storage,
         PhpParser\Node\Expr\Include_ $stmt,
-        bool $scan_deep
+        bool $scan_deep,
     ): void {
         $config = Config::getInstance();
 

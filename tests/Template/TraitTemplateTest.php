@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests\Template;
 
 use Psalm\Tests\TestCase;
@@ -164,6 +166,32 @@ class TraitTemplateTest extends TestCase
                          * @template-use T<int|string>
                          */
                         use T;
+                    }',
+            ],
+            'multilineTemplateUse' => [
+                'code' => '<?php
+                    /**
+                     * @template T1
+                     * @template T2
+                     * @template T3
+                     */
+                    trait MyTrait {}
+
+                    class Foo {
+                        /**
+                         * @template-use MyTrait<int, int, array{
+                         * 	foo: mixed,
+                         * 	bar: mixed,
+                         * }>
+                         */
+                        use MyTrait;
+                    }
+
+                    class Bar {
+                        /**
+                         * @template-use MyTrait<int, string, bar>
+                         */
+                        use MyTrait;
                     }',
             ],
             'allowTraitExtendAndImplementWithExplicitParamType' => [

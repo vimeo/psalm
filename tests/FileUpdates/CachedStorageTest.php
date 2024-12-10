@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests\FileUpdates;
 
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
@@ -57,23 +59,23 @@ class CachedStorageTest extends TestCase
         $codebase = $this->project_analyzer->getCodebase();
 
         $vendor_files = [
-            getcwd() . DIRECTORY_SEPARATOR . 'V1.php' => '<?php
+            (string) getcwd() . DIRECTORY_SEPARATOR . 'V1.php' => '<?php
                 namespace AnotherPackage;
                 interface StorageInterface {
                    public function getRecord(): OperationInterface;
                 }',
-            getcwd() . DIRECTORY_SEPARATOR . 'V2.php' => '<?php
+            (string) getcwd() . DIRECTORY_SEPARATOR . 'V2.php' => '<?php
                 namespace AnotherPackage;
                 interface OperationInterface {
                    public function getResult(): ResultInterface;
                 }',
-            getcwd() . DIRECTORY_SEPARATOR . 'V3.php' => '<?php
+            (string) getcwd() . DIRECTORY_SEPARATOR . 'V3.php' => '<?php
                 namespace AnotherPackage;
                 interface ResultInterface {}',
         ];
 
         $analyzable_files = [
-            getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+            (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                 use AnotherPackage\StorageInterface;
                 class C {
                     /** @var ?StorageInterface */

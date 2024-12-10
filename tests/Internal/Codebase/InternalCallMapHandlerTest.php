@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests\Internal\Codebase;
 
 use InvalidArgumentException;
@@ -372,7 +374,7 @@ class InternalCallMapHandlerTest extends TestCase
                 continue;
             }
 
-            yield "$function: " . json_encode($entry) => [$function, $entry];
+            yield "$function: " . (string) json_encode($entry) => [$function, $entry];
         }
     }
 
@@ -628,7 +630,6 @@ class InternalCallMapHandlerTest extends TestCase
     public function assertEntryReturnType(ReflectionFunctionAbstract $function, string $entryReturnType): void
     {
         if (version_compare(PHP_VERSION, '8.1.0', '>=')) {
-            /** @var ReflectionType|null $expectedType */
             $expectedType = $function->hasTentativeReturnType() ? $function->getTentativeReturnType() : $function->getReturnType();
         } else {
             $expectedType = $function->getReturnType();

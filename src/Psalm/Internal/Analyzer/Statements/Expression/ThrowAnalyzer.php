@@ -1,10 +1,13 @@
 <?php
 
-namespace Psalm\Internal\Analyzer\Statements;
+declare(strict_types=1);
+
+namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Issue\InvalidThrow;
@@ -18,13 +21,10 @@ use Psalm\Type\Union;
  */
 final class ThrowAnalyzer
 {
-    /**
-     * @param PhpParser\Node\Stmt\Throw_|PhpParser\Node\Expr\Throw_ $stmt
-     */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
-        PhpParser\Node $stmt,
-        Context $context
+        PhpParser\Node\Expr\Throw_ $stmt,
+        Context $context,
     ): bool {
         $context->inside_throw = true;
         if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context) === false) {
@@ -85,9 +85,7 @@ final class ThrowAnalyzer
             }
         }
 
-        if ($stmt instanceof PhpParser\Node\Expr\Throw_) {
-            $statements_analyzer->node_data->setType($stmt, Type::getNever());
-        }
+        $statements_analyzer->node_data->setType($stmt, Type::getNever());
 
         return true;
     }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use PhpParser\Node\Arg;
@@ -22,7 +24,6 @@ use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TList;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
@@ -110,12 +111,11 @@ final class FilterUtils
         return Type::getNull();
     }
 
-    /** @return int|Union|null */
     public static function getFilterArgValueOrError(
         Arg $filter_arg,
         StatementsAnalyzer $statements_analyzer,
-        Codebase $codebase
-    ) {
+        Codebase $codebase,
+    ): int|Union|null {
         $filter_arg_type = $statements_analyzer->node_data->getType($filter_arg->value);
         if (!$filter_arg_type) {
             return null;
@@ -156,8 +156,8 @@ final class FilterUtils
         Codebase $codebase,
         CodeLocation $code_location,
         string $function_id,
-        int $filter_int_used
-    ) {
+        int $filter_int_used,
+    ): array|Union|null {
         $options_arg_type = $statements_analyzer->node_data->getType($options_arg->value);
         if (!$options_arg_type) {
             return null;
@@ -340,7 +340,7 @@ final class FilterUtils
         string $function_id,
         CodeLocation $code_location,
         StatementsAnalyzer $statements_analyzer,
-        Codebase $codebase
+        Codebase $codebase,
     ): Union {
         IssueBuffer::maybeAdd(
             new InvalidArgument(
@@ -398,7 +398,7 @@ final class FilterUtils
         Union $fails_type,
         StatementsAnalyzer $statements_analyzer,
         CodeLocation $code_location,
-        Codebase $codebase
+        Codebase $codebase,
     ): ?Union {
         $all_filters = self::getFilters($codebase);
         $flags_int_used_rest = $flags_int_used;
@@ -501,7 +501,7 @@ final class FilterUtils
         StatementsAnalyzer $statements_analyzer,
         CodeLocation $code_location,
         Codebase $codebase,
-        string $function_id
+        string $function_id,
     ): array {
         $default = null;
         $min_range = null;
@@ -606,16 +606,12 @@ final class FilterUtils
         return [$default, $min_range, $max_range, $has_range, $regexp];
     }
 
-    /**
-     * @param float|int|null $min_range
-     * @param float|int|null $max_range
-     */
     protected static function isRangeValid(
-        $min_range,
-        $max_range,
+        float|int|null $min_range,
+        float|int|null $max_range,
         StatementsAnalyzer $statements_analyzer,
         CodeLocation $code_location,
-        string $function_id
+        string $function_id,
     ): bool {
         if ($min_range !== null && $max_range !== null && $min_range > $max_range) {
             IssueBuffer::maybeAdd(
@@ -638,8 +634,6 @@ final class FilterUtils
      *
      * @psalm-suppress ComplexMethod
      * @param Union|null $not_set_type null if undefined filtered variable will return $fails_type
-     * @param float|int|null $min_range
-     * @param float|int|null $max_range
      * @param non-falsy-string|true|null $regexp
      */
     public static function getReturnType(
@@ -653,10 +647,10 @@ final class FilterUtils
         Codebase $codebase,
         string $function_id,
         bool $has_range,
-        $min_range,
-        $max_range,
-        $regexp,
-        bool $in_array_recursion = false
+        float|int|null $min_range,
+        float|int|null $max_range,
+        string|bool|null $regexp,
+        bool $in_array_recursion = false,
     ): Union {
         // if we are inside a recursion of e.g. array<never, never>
         // it will never fail or change the type, so we can immediately return
@@ -672,10 +666,6 @@ final class FilterUtils
             && !self::hasFlag($flags_int_used, FILTER_REQUIRE_SCALAR)
         ) {
             foreach ($input_type->getAtomicTypes() as $key => $atomic_type) {
-                if ($atomic_type instanceof TList) {
-                    $atomic_type = $atomic_type->getKeyedArray();
-                }
-
                 if ($atomic_type instanceof TKeyedArray) {
                     $input_type = $input_type->getBuilder();
                     $input_type->removeType($key);
@@ -1480,7 +1470,7 @@ final class FilterUtils
         StatementsAnalyzer $statements_analyzer,
         CodeLocation $code_location,
         Union $return_type,
-        string $function_id
+        string $function_id,
     ): Union {
         if ($statements_analyzer->data_flow_graph
             && !in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())

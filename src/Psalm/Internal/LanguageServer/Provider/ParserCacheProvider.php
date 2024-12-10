@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\LanguageServer\Provider;
 
 use PhpParser;
@@ -39,7 +41,7 @@ final class ParserCacheProvider extends InternalParserCacheProvider
     public function loadStatementsFromCache(
         string $file_path,
         int $file_modified_time,
-        string $file_content_hash
+        string $file_content_hash,
     ): ?array {
         if (isset($this->statements_cache[$file_path])
             && $this->statements_cache_time[$file_path] >= $file_modified_time
@@ -56,11 +58,7 @@ final class ParserCacheProvider extends InternalParserCacheProvider
      */
     public function loadExistingStatementsFromCache(string $file_path): ?array
     {
-        if (isset($this->statements_cache[$file_path])) {
-            return $this->statements_cache[$file_path];
-        }
-
-        return null;
+        return $this->statements_cache[$file_path] ?? null;
     }
 
     /**
@@ -70,7 +68,7 @@ final class ParserCacheProvider extends InternalParserCacheProvider
         string $file_path,
         string $file_content_hash,
         array $stmts,
-        bool $touch_only
+        bool $touch_only,
     ): void {
         $this->statements_cache[$file_path] = $stmts;
         $this->statements_cache_time[$file_path] = microtime(true);
@@ -79,11 +77,7 @@ final class ParserCacheProvider extends InternalParserCacheProvider
 
     public function loadExistingFileContentsFromCache(string $file_path): ?string
     {
-        if (isset($this->file_contents_cache[$file_path])) {
-            return $this->file_contents_cache[$file_path];
-        }
-
-        return null;
+        return $this->file_contents_cache[$file_path] ?? null;
     }
 
     public function cacheFileContents(string $file_path, string $file_contents): void

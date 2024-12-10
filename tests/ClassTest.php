@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
@@ -339,7 +341,6 @@ class ClassTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [
                     'UndefinedClass',
-                    'MixedInferredReturnType',
                     'InvalidArgument',
                 ],
             ],
@@ -354,7 +355,6 @@ class ClassTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [
                     'UndefinedClass',
-                    'MixedInferredReturnType',
                     'InvalidArgument',
                 ],
             ],
@@ -1459,6 +1459,50 @@ class ClassTest extends TestCase
                     class BazClass implements InterFaceA, InterFaceB {}
                     PHP,
                 'error_message' => 'InheritorViolation',
+                'ignored_issues' => [],
+            ],
+            'duplicateInstanceProperties' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Foo {
+                        public mixed $bar;
+                        public int $bar;
+                    }
+                    PHP,
+                'error_message' => 'DuplicateProperty',
+                'ignored_issues' => [],
+            ],
+            'duplicateStaticProperties' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Foo {
+                        public static mixed $bar = null;
+                        public static string $bar = 'bar';
+                    }
+                    PHP,
+                'error_message' => 'DuplicateProperty',
+                'ignored_issues' => [],
+            ],
+            'duplicateMixedProperties' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Foo {
+                        public bool $bar = true;
+                        public static bool $bar = false;
+                    }
+                    PHP,
+                'error_message' => 'DuplicateProperty',
+                'ignored_issues' => [],
+            ],
+            'duplicatePropertiesDifferentVisibility' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Foo {
+                        public bool $bar;
+                        private string $bar;
+                    }
+                    PHP,
+                'error_message' => 'DuplicateProperty',
                 'ignored_issues' => [],
             ],
         ];

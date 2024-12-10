@@ -1,11 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests\EndToEnd;
 
 use Exception;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Process\Process;
 
+use function assert;
 use function closedir;
 use function copy;
 use function file_exists;
@@ -42,6 +45,7 @@ class PsalmEndToEndTest extends TestCase
     public static function setUpBeforeClass(): void
     {
         self::$tmpDir = tempnam(sys_get_temp_dir(), 'PsalmEndToEndTest_');
+        assert(self::$tmpDir !== false);
         unlink(self::$tmpDir);
         mkdir(self::$tmpDir);
 
@@ -191,6 +195,22 @@ class PsalmEndToEndTest extends TestCase
         $this->assertSame(2, $result['CODE']);
     }
 
+    public function testPsalmSetBaseline(): void
+    {
+        $this->runPsalmInit(1);
+        $this->runPsalm(['--set-baseline'], self::$tmpDir, true);
+
+        $this->assertSame(0, $this->runPsalm([], self::$tmpDir)['CODE']);
+    }
+
+    public function testPsalmSetBaselineWithArgument(): void
+    {
+        $this->runPsalmInit(1);
+        $this->runPsalm(['--set-baseline=psalm-custom-baseline.xml'], self::$tmpDir, true);
+
+        $this->assertSame(0, $this->runPsalm([], self::$tmpDir)['CODE']);
+    }
+
     public function testTaintingWithoutInit(): void
     {
         $result = $this->runPsalm(['--taint-analysis'], self::$tmpDir, true, false);
@@ -207,7 +227,7 @@ class PsalmEndToEndTest extends TestCase
         $result = $this->runPsalm(
             [
                 '--taint-analysis',
-                '--dump-taint-graph='.self::$tmpDir.'/taints.dot',
+                '--dump-taint-graph=' . self::$tmpDir . '/taints.dot',
             ],
             self::$tmpDir,
             true,
@@ -216,7 +236,7 @@ class PsalmEndToEndTest extends TestCase
         $this->assertSame(2, $result['CODE']);
         $this->assertFileEquals(
             __DIR__ . '/../fixtures/expected_taint_graph.dot',
-            self::$tmpDir.'/taints.dot',
+            self::$tmpDir . '/taints.dot',
         );
     }
 
@@ -224,8 +244,9 @@ class PsalmEndToEndTest extends TestCase
     {
         $this->runPsalmInit(1);
         $psalmXmlContent = file_get_contents(self::$tmpDir . '/psalm.xml');
+        assert($psalmXmlContent !== false);
         $count = 0;
-        $psalmXmlContent = preg_replace('/resolveFromConfigFile="true"/', 'resolveFromConfigFile="false"', $psalmXmlContent, -1, $count);
+        $psalmXmlContent = (string) preg_replace('/resolveFromConfigFile="true"/', 'resolveFromConfigFile="false"', $psalmXmlContent, -1, $count);
         $this->assertEquals(1, $count);
 
         file_put_contents(self::$tmpDir . '/src/psalm.xml', $psalmXmlContent);
@@ -241,7 +262,8 @@ class PsalmEndToEndTest extends TestCase
         $this->runPsalmInit();
 
         $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
-        $psalmXml = preg_replace('/findUnusedCode="(true|false)"/', '', $psalmXml, 1);
+        assert($psalmXml !== false);
+        $psalmXml = (string) preg_replace('/findUnusedCode="(true|false)"/', '', $psalmXml, 1);
         file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
 
         $result = $this->runPsalm(['--no-progress'], self::$tmpDir);
@@ -258,12 +280,13 @@ class PsalmEndToEndTest extends TestCase
 
         if ($level) {
             $args[] = 'src';
-            $args[] = (string) $level;
+            $args[] = (string)$level;
         }
 
         $ret = $this->runPsalm($args, self::$tmpDir, false, false);
 
         $psalm_config_contents = file_get_contents(self::$tmpDir . '/psalm.xml');
+        assert($psalm_config_contents !== false);
         $psalm_config_contents = str_replace(
             'errorLevel="1"',
             'errorLevel="1" '
@@ -282,6 +305,7 @@ class PsalmEndToEndTest extends TestCase
     private static function recursiveRemoveDirectory(string $src): void
     {
         $dir = opendir($src);
+        assert($dir !== false);
         while (false !== ($file = readdir($dir))) {
             if (($file !== '.') && ($file !== '..')) {
                 $full = $src . DIRECTORY_SEPARATOR . $file;

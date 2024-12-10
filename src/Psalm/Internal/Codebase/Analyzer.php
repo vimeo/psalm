@@ -1,8 +1,9 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Codebase;
 
-use Closure;
 use InvalidArgumentException;
 use PhpParser;
 use Psalm\CodeLocation;
@@ -39,6 +40,8 @@ use function ksort;
 use function number_format;
 use function pathinfo;
 use function preg_replace;
+use function str_ends_with;
+use function str_starts_with;
 use function strlen;
 use function strpos;
 use function strtolower;
@@ -87,6 +90,7 @@ use const PHP_INT_MAX;
  *      used_suppressions: array<string, array<int, bool>>,
  *      function_docblock_manipulators: array<string, array<int, FunctionDocblockManipulator>>,
  *      mutable_classes: array<string, bool>,
+ *      issue_handlers: array{type: string, index: int, count: int}[],
  * }
  */
 
@@ -97,14 +101,6 @@ use const PHP_INT_MAX;
  */
 final class Analyzer
 {
-    private Config $config;
-
-    private FileProvider $file_provider;
-
-    private FileStorageProvider $file_storage_provider;
-
-    private Progress $progress;
-
     /**
      * Used to store counts of mixed vs non-mixed variables
      *
@@ -186,15 +182,11 @@ final class Analyzer
     public array $mutable_classes = [];
 
     public function __construct(
-        Config $config,
-        FileProvider $file_provider,
-        FileStorageProvider $file_storage_provider,
-        Progress $progress
+        private readonly Config $config,
+        private readonly FileProvider $file_provider,
+        private readonly FileStorageProvider $file_storage_provider,
+        private readonly Progress $progress,
     ) {
-        $this->config = $config;
-        $this->file_provider = $file_provider;
-        $this->file_storage_provider = $file_storage_provider;
-        $this->progress = $progress;
     }
 
     /**
@@ -233,7 +225,7 @@ final class Analyzer
     private function getFileAnalyzer(
         ProjectAnalyzer $project_analyzer,
         string $file_path,
-        array $filetype_analyzers
+        array $filetype_analyzers,
     ): FileAnalyzer {
         $extension = pathinfo($file_path, PATHINFO_EXTENSION);
 
@@ -254,7 +246,7 @@ final class Analyzer
         ProjectAnalyzer $project_analyzer,
         int $pool_size,
         bool $alter_code,
-        bool $consolidate_analyzed_data = false
+        bool $consolidate_analyzed_data = false,
     ): void {
         $this->loadCachedResults($project_analyzer);
 
@@ -266,7 +258,7 @@ final class Analyzer
 
         $this->files_to_analyze = array_filter(
             $this->files_to_analyze,
-            [$this->file_provider, 'fileExists'],
+            $this->file_provider->fileExists(...),
         );
 
         $this->doAnalysis($project_analyzer, $pool_size);
@@ -329,9 +321,9 @@ final class Analyzer
 
         $codebase = $project_analyzer->getCodebase();
 
-        $analysis_worker = Closure::fromCallable([$this, 'analysisWorker']);
+        $analysis_worker = $this->analysisWorker(...);
 
-        $task_done_closure = Closure::fromCallable([$this, 'taskDoneClosure']);
+        $task_done_closure = $this->taskDoneClosure(...);
 
         if ($pool_size > 1 && count($this->files_to_analyze) > $pool_size) {
             $shuffle_count = $pool_size + 1;
@@ -393,7 +385,7 @@ final class Analyzer
                     $file_reference_provider->setMethodParamUses([]);
                 },
                 $analysis_worker,
-                Closure::fromCallable([$this, 'getWorkerData']),
+                $this->getWorkerData(...),
                 $task_done_closure,
             );
 
@@ -414,6 +406,10 @@ final class Analyzer
                 if ($codebase->track_unused_suppressions) {
                     IssueBuffer::addUnusedSuppressions($pool_data['unused_suppressions']);
                     IssueBuffer::addUsedSuppressions($pool_data['used_suppressions']);
+                }
+
+                if ($codebase->config->find_unused_issue_handler_suppression) {
+                    $codebase->config->combineIssueHandlerSuppressions($pool_data['issue_handlers']);
                 }
 
                 if ($codebase->taint_flow_graph && $pool_data['taint_data']) {
@@ -596,7 +592,7 @@ final class Analyzer
                 [$base_class, $trait] = explode('&', $changed_member);
 
                 foreach ($all_referencing_methods as $member_id => $_) {
-                    if (strpos($member_id, $base_class . '::') !== 0) {
+                    if (!str_starts_with($member_id, $base_class . '::')) {
                         continue;
                     }
 
@@ -618,7 +614,7 @@ final class Analyzer
                 // also check for things that might invalidate constructor property initialisation
                 if (isset($all_referencing_methods[$unchanged_signature_member_id])) {
                     foreach ($all_referencing_methods[$unchanged_signature_member_id] as $referencing_method_id => $_) {
-                        if (substr($referencing_method_id, -13) === '::__construct') {
+                        if (str_ends_with($referencing_method_id, '::__construct')) {
                             $referencing_base_classlike = explode('::', $referencing_method_id)[0];
                             $unchanged_signature_classlike = explode('::', $unchanged_signature_member_id)[0];
 
@@ -629,7 +625,7 @@ final class Analyzer
                                     $referencing_storage = $codebase->classlike_storage_provider->get(
                                         $referencing_base_classlike,
                                     );
-                                } catch (InvalidArgumentException $_) {
+                                } catch (InvalidArgumentException) {
                                     // Workaround for #3671
                                     $newly_invalidated_methods[$referencing_method_id] = true;
                                     $referencing_storage = null;
@@ -672,7 +668,7 @@ final class Analyzer
                     $method_param_uses[$member_id],
                 );
 
-                $member_stub = preg_replace('/::.*$/', '::*', $member_id, 1);
+                $member_stub = (string) preg_replace('/::.*$/', '::*', $member_id, 1);
 
                 if (isset($all_referencing_methods[$member_stub])) {
                     $newly_invalidated_methods = array_merge(
@@ -1184,7 +1180,7 @@ final class Analyzer
         string $file_path,
         PhpParser\Node $node,
         string $node_type,
-        ?PhpParser\Node $parent_node = null
+        ?PhpParser\Node $parent_node = null,
     ): void {
         if ($node_type === '') {
             throw new UnexpectedValueException('non-empty node_type expected');
@@ -1201,7 +1197,7 @@ final class Analyzer
         int $start_position,
         int $end_position,
         string $reference,
-        int $argument_number
+        int $argument_number,
     ): void {
         if ($reference === '') {
             throw new UnexpectedValueException('non-empty reference expected');
@@ -1633,6 +1629,7 @@ final class Analyzer
             'used_suppressions'                          => $codebase->track_unused_suppressions ? IssueBuffer::getUsedSuppressions() : [],
             'function_docblock_manipulators'             => FunctionDocblockManipulator::getManipulators(),
             'mutable_classes'                            => $codebase->analyzer->mutable_classes,
+            'issue_handlers'                             => $this->config->getIssueHandlerSuppressions()
         ];
         // @codingStandardsIgnoreEnd
     }

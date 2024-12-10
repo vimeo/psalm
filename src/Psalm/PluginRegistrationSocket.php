@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm;
 
 use InvalidArgumentException;
@@ -21,17 +23,13 @@ use function is_subclass_of;
 
 final class PluginRegistrationSocket implements RegistrationInterface
 {
-    private Config $config;
-
-    private Codebase $codebase;
-
     /**
      * @internal
      */
-    public function __construct(Config $config, Codebase $codebase)
-    {
-        $this->config = $config;
-        $this->codebase = $codebase;
+    public function __construct(
+        private readonly Config $config,
+        private readonly Codebase $codebase,
+    ) {
     }
 
     public function addStubFile(string $file_name): void

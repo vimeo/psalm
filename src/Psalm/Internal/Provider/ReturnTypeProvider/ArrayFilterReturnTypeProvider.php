@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use PhpParser;
@@ -173,7 +175,7 @@ final class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderI
                 $statements_source,
             );
 
-            $mapping_function_ids = array();
+            $mapping_function_ids = [];
             if ($callable_extended_var_id) {
                 $possibly_function_ids = $context->vars_in_scope[$callable_extended_var_id] ?? null;
                 // @todo for array callables
@@ -187,9 +189,9 @@ final class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderI
             if ($function_call_arg->value instanceof PhpParser\Node\Scalar\String_
                 || $function_call_arg->value instanceof PhpParser\Node\Expr\Array_
                 || $function_call_arg->value instanceof PhpParser\Node\Expr\BinaryOp\Concat
-                || $mapping_function_ids !== array()
+                || $mapping_function_ids !== []
             ) {
-                if ($mapping_function_ids === array()) {
+                if ($mapping_function_ids === []) {
                     $mapping_function_ids = CallAnalyzer::getFunctionIdsFromCallableArg(
                         $statements_source,
                         $function_call_arg->value,
@@ -291,7 +293,7 @@ final class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderI
                                 $statements_source,
                                 $codebase,
                             );
-                        } catch (ComplicatedExpressionException $e) {
+                        } catch (ComplicatedExpressionException) {
                             $filter_clauses = [];
                         }
 
