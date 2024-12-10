@@ -246,12 +246,13 @@ final class ErrorBaseline
 
             usort($extensions, 'strnatcasecmp');
 
-            $filesNode->setAttribute('php-version', implode(';' . "\n\t", [...[
-                ('php:' . PHP_VERSION),
-            ], ...array_map(
-                static fn(string $extension): string => $extension . ':' . phpversion($extension),
-                $extensions,
-            )]));
+            $filesNode->setAttribute('php-version', implode(';' . "\n\t", [
+                'php:' . PHP_VERSION,
+                ...array_map(
+                    static fn(string $extension): string => $extension . ':' . phpversion($extension),
+                    $extensions,
+                ),
+            ]));
         }
 
         foreach ($groupedIssues as $file => $issueTypes) {
