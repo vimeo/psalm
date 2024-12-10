@@ -729,6 +729,7 @@
 
     <xs:simpleType name="ExtensionType">
         <xs:restriction base="xs:string">
+            <xs:enumeration value="amqp"/>
             <xs:enumeration value="apcu"/>
             <xs:enumeration value="decimal"/>
             <xs:enumeration value="dom"/>
