@@ -2,6 +2,7 @@
 
 namespace Psalm\Plugin\EventHandler\Event;
 
+use PhpParser\Node\ArrayItem;
 use PhpParser\Node\Expr;
 use Psalm\Codebase;
 use Psalm\Context;
@@ -9,7 +10,8 @@ use Psalm\StatementsSource;
 
 final class AddRemoveTaintsEvent
 {
-    private Expr $expr;
+    /** @var ArrayItem|Expr */
+    private $expr;
     private Context $context;
     private StatementsSource $statements_source;
     private Codebase $codebase;
@@ -17,10 +19,11 @@ final class AddRemoveTaintsEvent
     /**
      * Called after an expression has been checked
      *
+     * @param ArrayItem|Expr $expr
      * @internal
      */
     public function __construct(
-        Expr $expr,
+        $expr,
         Context $context,
         StatementsSource $statements_source,
         Codebase $codebase
@@ -31,7 +34,10 @@ final class AddRemoveTaintsEvent
         $this->codebase = $codebase;
     }
 
-    public function getExpr(): Expr
+    /**
+     * @return ArrayItem|Expr
+     */
+    public function getExpr()
     {
         return $this->expr;
     }

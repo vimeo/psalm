@@ -19,11 +19,11 @@ use Psalm\Type\Union;
 final class ThrowAnalyzer
 {
     /**
-     * @param PhpParser\Node\Stmt\Throw_|PhpParser\Node\Expr\Throw_ $stmt
+     * @param PhpParser\Node\Expr\Throw_|PhpParser\Node\Stmt\Throw_ $stmt
      */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
-        PhpParser\Node $stmt,
+        $stmt,
         Context $context
     ): bool {
         $context->inside_throw = true;

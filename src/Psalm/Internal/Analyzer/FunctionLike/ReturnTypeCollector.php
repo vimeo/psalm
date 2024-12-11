@@ -6,6 +6,7 @@ use PhpParser;
 use PhpParser\NodeTraverser;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
+use Psalm\Internal\BCHelper;
 use Psalm\Internal\PhpVisitor\YieldTypeCollector;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Type;
@@ -76,14 +77,15 @@ final class ReturnTypeCollector
                 break;
             }
 
-            if ($stmt instanceof PhpParser\Node\Stmt\Throw_) {
+            if (BCHelper::isThrowStatement($stmt)) {
                 $return_types[] = Type::getNever();
 
                 break;
             }
 
             if ($stmt instanceof PhpParser\Node\Stmt\Expression) {
-                if ($stmt->expr instanceof PhpParser\Node\Expr\Exit_) {
+                if ($stmt->expr instanceof PhpParser\Node\Expr\Exit_
+                    || (!BCHelper::usePHPParserV4() && $stmt->expr instanceof PhpParser\Node\Expr\Throw_)) {
                     $return_types[] = Type::getNever();
 
                     break;

@@ -3,6 +3,7 @@
 namespace Psalm\Internal\Analyzer;
 
 use PhpParser;
+use Psalm\Internal\BCHelper;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\NodeTypeProvider;
 
@@ -48,7 +49,7 @@ final class ScopeAnalyzer
 
         foreach ($stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\Return_ ||
-                $stmt instanceof PhpParser\Node\Stmt\Throw_ ||
+                BCHelper::isThrow($stmt) ||
                 ($stmt instanceof PhpParser\Node\Stmt\Expression && $stmt->expr instanceof PhpParser\Node\Expr\Exit_)
             ) {
                 if (!$return_is_exit && $stmt instanceof PhpParser\Node\Stmt\Return_) {
@@ -406,7 +407,7 @@ final class ScopeAnalyzer
         for ($i = count($stmts) - 1; $i >= 0; --$i) {
             $stmt = $stmts[$i];
 
-            if ($stmt instanceof PhpParser\Node\Stmt\Throw_
+            if (BCHelper::isThrow($stmt)
                 || ($stmt instanceof PhpParser\Node\Stmt\Expression
                     && $stmt->expr instanceof PhpParser\Node\Expr\Exit_)
             ) {
@@ -436,7 +437,7 @@ final class ScopeAnalyzer
         }
 
         foreach ($stmts as $stmt) {
-            if ($stmt instanceof PhpParser\Node\Stmt\Throw_) {
+            if (BCHelper::isThrow($stmt)) {
                 return true;
             }
         }
