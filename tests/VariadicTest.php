@@ -19,6 +19,15 @@ class VariadicTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
 
+    public static function setUpBeforeClass(): void
+    {
+        parent::setUpBeforeClass();
+
+        // hack to isolate Psalm from PHPUnit cli arguments
+        global $argv;
+        $argv = [];
+    }
+
     public function testVariadicArrayBadParam(): void
     {
         $this->expectExceptionMessage('InvalidScalarArgument');
