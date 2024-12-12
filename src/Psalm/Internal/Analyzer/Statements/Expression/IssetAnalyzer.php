@@ -5,6 +5,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\InstancePropertyFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Issue\InvalidArgument;
@@ -30,7 +31,16 @@ final class IssetAnalyzer
                 $var_id = '$this->' . $isset_var->name->name;
 
                 if (!isset($context->vars_in_scope[$var_id])) {
-                    $context->vars_in_scope[$var_id] = Type::getMixed();
+                    if (isset($context->vars_in_scope['$this'])) {
+                        InstancePropertyFetchAnalyzer::analyze(
+                            $statements_analyzer,
+                            $isset_var,
+                            $context,
+                        );
+                    }
+                    if (!isset($context->vars_in_scope[$var_id])) {
+                        $context->vars_in_scope[$var_id] = Type::getMixed();
+                    }
                     $context->vars_possibly_in_scope[$var_id] = true;
                 }
             } elseif (!self::isValidStatement($isset_var)) {
