@@ -3,7 +3,7 @@
 return array (
   'added' => 
   array (
-    'Closure::fromCallable' => 
+    'closure::fromcallable' => 
     array (
       0 => 'Closure',
       'callback' => 'callable',
@@ -88,7 +88,7 @@ return array (
   ),
   'changed' => 
   array (
-    'DateTimeZone::listIdentifiers' => 
+    'datetimezone::listidentifiers' => 
     array (
       'old' => 
       array (
@@ -101,50 +101,6 @@ return array (
         0 => 'false|list<string>',
         'timezoneGroup=' => 'int',
         'countryCode=' => 'null|string',
-      ),
-    ),
-    'IntlDateFormatter::format' => 
-    array (
-      'old' => 
-      array (
-        0 => 'false|string',
-        'value' => 'DateTime|IntlCalendar|array{0?: int, 1?: int, 2?: int, 3?: int, 4?: int, 5?: int, 6?: int, 7?: int, 8?: int, tm_hour?: int, tm_isdst?: int, tm_mday?: int, tm_min?: int, tm_mon?: int, tm_sec?: int, tm_wday?: int, tm_yday?: int, tm_year?: int}|float|int|string',
-      ),
-      'new' => 
-      array (
-        0 => 'false|string',
-        'value' => 'DateTimeInterface|IntlCalendar|array{0?: int, 1?: int, 2?: int, 3?: int, 4?: int, 5?: int, 6?: int, 7?: int, 8?: int, tm_hour?: int, tm_isdst?: int, tm_mday?: int, tm_min?: int, tm_mon?: int, tm_sec?: int, tm_wday?: int, tm_yday?: int, tm_year?: int}|float|int|string',
-      ),
-    ),
-    'SessionHandler::gc' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'max_lifetime' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'false|int',
-        'max_lifetime' => 'int',
-      ),
-    ),
-    'SQLite3::createFunction' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'name' => 'string',
-        'callback' => 'callable',
-        'argCount=' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'name' => 'string',
-        'callback' => 'callable',
-        'argCount=' => 'int',
-        'flags=' => 'int',
       ),
     ),
     'get_headers' => 
@@ -179,6 +135,19 @@ return array (
         '&w_rest_index=' => 'int',
       ),
     ),
+    'intldateformatter::format' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|string',
+        'value' => 'DateTime|IntlCalendar|array{0?: int, 1?: int, 2?: int, 3?: int, 4?: int, 5?: int, 6?: int, 7?: int, 8?: int, tm_hour?: int, tm_isdst?: int, tm_mday?: int, tm_min?: int, tm_mon?: int, tm_sec?: int, tm_wday?: int, tm_yday?: int, tm_year?: int}|float|int|string',
+      ),
+      'new' => 
+      array (
+        0 => 'false|string',
+        'value' => 'DateTimeInterface|IntlCalendar|array{0?: int, 1?: int, 2?: int, 3?: int, 4?: int, 5?: int, 6?: int, 7?: int, 8?: int, tm_hour?: int, tm_isdst?: int, tm_mday?: int, tm_min?: int, tm_mon?: int, tm_sec?: int, tm_wday?: int, tm_yday?: int, tm_year?: int}|float|int|string',
+      ),
+    ),
     'pg_fetch_all' => 
     array (
       'old' => 
@@ -211,6 +180,37 @@ return array (
         'conditions' => 'array<array-key, mixed>',
         'flags=' => 'int',
         'mode=' => 'int',
+      ),
+    ),
+    'sessionhandler::gc' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'max_lifetime' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'false|int',
+        'max_lifetime' => 'int',
+      ),
+    ),
+    'sqlite3::createfunction' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'name' => 'string',
+        'callback' => 'callable',
+        'argCount=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'name' => 'string',
+        'callback' => 'callable',
+        'argCount=' => 'int',
+        'flags=' => 'int',
       ),
     ),
     'timezone_identifiers_list' => 

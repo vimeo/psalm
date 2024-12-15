@@ -2330,6 +2330,9 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="tests/Internal/Codebase/InternalCallMapHandlerTest.php">
+    <MixedReturnStatement>
+      <code><![CDATA[ReflectionMethod::createFromMethodName($functionName)]]></code>
+    </MixedReturnStatement>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[empty($normalizedEntry['type'])]]></code>
     </RiskyTruthyFalsyComparison>

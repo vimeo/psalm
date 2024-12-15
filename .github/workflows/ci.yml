@@ -134,6 +134,7 @@ jobs:
           - "8.1"
           - "8.2"
           - "8.3"
+          - "8.4"
         count: ${{ fromJson(needs.chunk-matrix.outputs.count) }}
         chunk: ${{ fromJson(needs.chunk-matrix.outputs.chunks) }}
 
@@ -148,7 +149,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: "${{ matrix.php-version }}"
-          ini-values: zend.assertions=1, assert.exception=1, opcache.enable_cli=1, opcache.jit=function, opcache.jit_buffer_size=512M
+          ini-values: zend.assertions=1, assert.exception=1
           tools: composer:v2
           coverage: none
           extensions: none, curl, dom, filter, intl, json, libxml, mbstring, opcache, openssl, pcre, phar, reflection, simplexml, spl, tokenizer, xml, xmlwriter

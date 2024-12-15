@@ -2,31 +2,63 @@
 
 declare(strict_types=1);
 
-require 'vendor/autoload.php';
+use Webmozart\Assert\Assert;
 
-use DG\BypassFinals;
-use Psalm\Internal\Analyzer\ProjectAnalyzer;
-use Psalm\Internal\Provider\FileProvider;
-use Psalm\Internal\Provider\Providers;
-use Psalm\Tests\TestConfig;
-use Psalm\Type;
+require __DIR__ . '/gen_callmap_utils.php';
 
-BypassFinals::enable();
+$baseMaps = [];
 
-new ProjectAnalyzer(new TestConfig, new Providers(new FileProvider));
+foreach (glob(__DIR__."/../dictionaries/base/CallMap_*.php") as $file) {
+    Assert::eq(preg_match('/_(\d+)\.php/', $file, $matches), 1);
+    $version = $matches[1];
 
-$codebase = ProjectAnalyzer::getInstance()->getCodebase();
-
-chdir(__DIR__.'/../');
-
-foreach (glob("dictionaries/CallMap*.php") as $file) {
-    $callMap = require $file;
-
-    array_walk_recursive($callMap, function (string &$type): void {
-        $type = Type::parseString($type === '' ? 'mixed' : $type)->getId(true);
-    });
-
-    file_put_contents($file, '<?php // phpcs:ignoreFile
-
-return '.var_export($callMap, true).';');
+    $baseMaps[$version] = normalizeCallMap(require $file);
+    writeCallMap($file, $baseMaps[$version]);
 }
+
+ksort($baseMaps);
+$last = array_key_last($baseMaps);
+
+$customMaps = [
+    $last => normalizeCallMap(require __DIR__."/../dictionaries/override/CallMap.php")
+];
+
+$diffs = [];
+foreach (glob(__DIR__."/../dictionaries/override/CallMap_*.php") as $file) {
+    Assert::eq(preg_match('/_(\d+)_delta\.php/', $file, $matches), 1);
+    $version = $matches[1];
+    $diffs[$version] = normalizeCallMap(require $file);
+}
+krsort($diffs);
+
+$versions = array_reverse(array_keys($diffs));
+
+foreach ($diffs as $version => $diff) {
+    $callMap = $customMaps[$version];
+    $diff = normalizeCallMap(require $file);
+    foreach ($diff['removed'] as $func => $descr) {
+        $callMap[$func] = $descr;
+    }
+    foreach ($diff['added'] as $func => $descr) {
+        unset($callMap[$func]);
+    }
+    foreach ($diff['changed'] as $func => $sub) {
+        $callMap[$func] = $sub['old'];
+    }
+
+    $prevVersion = array_search($version, $versions)-1;
+    if ($prevVersion < 0) {
+        continue;
+    }
+    $customMaps[$versions[$prevVersion]] = $callMap;
+}
+
+foreach ($customMaps as $version => $data) {
+    foreach ($data as $name => $func) {
+        if (($baseMaps[$version][$name] ?? null) === $func) {
+            unset($customMaps[$version][$name]);
+        }
+    }
+    writeCallMap("dictionaries/CallMap_$version.php", array_replace($baseMaps[$version] ?? [], $data));
+}
+writeCallMap("dictionaries/CallMap.php", array_replace($baseMaps[$last] ?? [], $customMaps[$last] ?? []));
