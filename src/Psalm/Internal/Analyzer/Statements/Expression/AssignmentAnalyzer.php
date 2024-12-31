@@ -339,6 +339,34 @@ final class AssignmentAnalyzer
             $assign_value_type = $assign_value_type->setParentNodes($parent_nodes);
         }
 
+        if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+            && !in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())) {
+            $assign_value_location = new CodeLocation($statements_analyzer->getSource(), $assign_value);
+
+            $event = new AddRemoveTaintsEvent($assign_value, $context, $statements_analyzer, $codebase);
+
+            $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
+            $removed_taints = [
+                ...$removed_taints,
+                ...$codebase->config->eventDispatcher->dispatchRemoveTaints($event),
+            ];
+
+            $rhs_var_id = ExpressionIdentifier::getExtendedVarId(
+                $assign_value,
+                $statements_analyzer->getFQCLN(),
+                $statements_analyzer,
+            ) ?? 'assignment_expr';
+
+            self::taintAssignment(
+                $assign_value_type,
+                $statements_analyzer->data_flow_graph,
+                $rhs_var_id,
+                $assign_value_location,
+                $removed_taints,
+                $added_taints,
+            );
+        }
+
         if ($extended_var_id && isset($context->vars_in_scope[$extended_var_id])) {
             if ($context->vars_in_scope[$extended_var_id]->by_ref) {
                 if ($context->mutation_free) {
@@ -635,6 +663,7 @@ final class AssignmentAnalyzer
                 $assign_value_type,
                 $var_id,
                 $context,
+                $removed_taints,
             );
         } elseif ($assign_var instanceof PhpParser\Node\Expr\List_
             || $assign_var instanceof PhpParser\Node\Expr\Array_
@@ -1705,6 +1734,9 @@ final class AssignmentAnalyzer
         }
     }
 
+    /**
+     * @param list<string> $removed_taints
+     */
     private static function analyzeAssignmentToVariable(
         StatementsAnalyzer $statements_analyzer,
         Codebase $codebase,
@@ -1713,6 +1745,7 @@ final class AssignmentAnalyzer
         Union $assign_value_type,
         ?string $var_id,
         Context $context,
+        array $removed_taints
     ): void {
         if (is_string($assign_var->name)) {
             if ($var_id) {
@@ -1783,6 +1816,29 @@ final class AssignmentAnalyzer
                             );
                         }
                     }
+                }
+
+                if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+                    && !in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
+                ) {
+                    $assign_location = new CodeLocation($statements_analyzer->getSource(), $assign_var);
+
+                    $event = new AddRemoveTaintsEvent($assign_value, $context, $statements_analyzer, $codebase);
+
+                    $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
+                    $removed_taints = [
+                        ...$removed_taints,
+                        ...$codebase->config->eventDispatcher->dispatchRemoveTaints($event),
+                    ];
+
+                    self::taintAssignment(
+                        $context->vars_in_scope[$var_id],
+                        $statements_analyzer->data_flow_graph,
+                        $var_id,
+                        $assign_location,
+                        $removed_taints,
+                        $added_taints,
+                    );
                 }
 
                 if (isset($context->references_possibly_from_confusing_scope[$var_id])) {
