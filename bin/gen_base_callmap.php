@@ -78,6 +78,6 @@ foreach (get_declared_classes() as $class) {
     }
 }
 
-file_put_contents(__DIR__.'/../dictionaries/base/CallMap_'.PHP_MAJOR_VERSION.PHP_MINOR_VERSION.'.php', '<?php // phpcs:ignoreFile
+file_put_contents(__DIR__.'/../dictionaries/autogen/CallMap_'.PHP_MAJOR_VERSION.PHP_MINOR_VERSION.'.php', '<?php // phpcs:ignoreFile
 
 return '.var_export($callmap, true).';');

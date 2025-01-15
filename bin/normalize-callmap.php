@@ -8,7 +8,7 @@ require __DIR__ . '/gen_callmap_utils.php';
 
 $baseMaps = [];
 
-foreach (glob(__DIR__."/../dictionaries/base/CallMap_*.php") as $file) {
+foreach (glob(__DIR__."/../dictionaries/autogen/CallMap_*.php") as $file) {
     Assert::eq(preg_match('/_(\d+)\.php/', $file, $matches), 1);
     $version = $matches[1];
 
