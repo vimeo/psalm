@@ -3,6 +3,80 @@
 return array (
   'added' => 
   array (
+    'imagick::convolveimage' => 
+    array (
+      0 => 'bool',
+      'kernel' => 'array<array-key, mixed>',
+      'channel=' => 'int',
+    ),
+    'imagick::getimageblob' => 
+    array (
+      0 => 'string',
+    ),
+    'imagick::getregistry' => 
+    array (
+      0 => 'string',
+      'key' => 'string',
+    ),
+    'imagick::getresourcelimit' => 
+    array (
+      0 => 'int',
+      'type' => 'int',
+    ),
+    'imagick::localcontrastimage' => 
+    array (
+      0 => 'void',
+      'radius' => 'float',
+      'strength' => 'float',
+    ),
+    'imagick::optimizeimagelayers' => 
+    array (
+      0 => 'bool',
+    ),
+    'imagickdraw::getclippath' => 
+    array (
+      0 => 'string',
+    ),
+    'imagickdraw::gettextencoding' => 
+    array (
+      0 => 'string',
+    ),
+    'imagickpixeliterator::current' => 
+    array (
+      0 => 'array<array-key, mixed>',
+    ),
+    'imagickpixeliterator::getcurrentiteratorrow' => 
+    array (
+      0 => 'array<array-key, mixed>',
+    ),
+    'imagickpixeliterator::getnextiteratorrow' => 
+    array (
+      0 => 'array<array-key, mixed>',
+    ),
+    'locale::getprimarylanguage' => 
+    array (
+      0 => 'null|string',
+      'locale' => 'string',
+    ),
+    'locale::getregion' => 
+    array (
+      0 => 'null|string',
+      'locale' => 'string',
+    ),
+    'locale::getscript' => 
+    array (
+      0 => 'null|string',
+      'locale' => 'string',
+    ),
+    'pg_select' => 
+    array (
+      0 => 'array<array-key, mixed>|false|string',
+      'connection' => 'PgSql\\Connection',
+      'table_name' => 'string',
+      'conditions' => 'array<array-key, mixed>',
+      'flags=' => 'int',
+      'mode=' => 'int',
+    ),
   ),
   'changed' => 
   array (
@@ -91,19 +165,6 @@ return array (
         0 => 'true',
         'object' => 'collator',
         'strength' => 'int',
-      ),
-    ),
-    'curl_multi_getcontent' => 
-    array (
-      'old' => 
-      array (
-        0 => 'string',
-        'handle' => 'CurlHandle',
-      ),
-      'new' => 
-      array (
-        0 => 'null|string',
-        'handle' => 'CurlHandle',
       ),
     ),
     'dba_close' => 
@@ -313,19 +374,6 @@ return array (
         'doctype=' => 'DOMDocumentType|null',
       ),
     ),
-    'exit' => 
-    array (
-      'old' => 
-      array (
-        0 => 'mixed',
-        'status' => 'int|string',
-      ),
-      'new' => 
-      array (
-        0 => 'never',
-        'status' => 'int|string',
-      ),
-    ),
     'filteriterator::getinneriterator' => 
     array (
       'old' => 
@@ -347,21 +395,6 @@ return array (
       'new' => 
       array (
         0 => 'true',
-        'flags' => 'int',
-      ),
-    ),
-    'finfo_set_flags' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'finfo' => 'finfo',
-        'flags' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'true',
-        'finfo' => 'finfo',
         'flags' => 'int',
       ),
     ),
@@ -395,36 +428,6 @@ return array (
         'local_only=' => 'bool',
       ),
     ),
-    'hash_update' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'context' => 'HashContext',
-        'data' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'true',
-        'context' => 'HashContext',
-        'data' => 'string',
-      ),
-    ),
-    'highlight_string' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool|string',
-        'string' => 'string',
-        'return=' => 'bool',
-      ),
-      'new' => 
-      array (
-        0 => 'string|true',
-        'string' => 'string',
-        'return=' => 'bool',
-      ),
-    ),
     'imagefilledpolygon' => 
     array (
       'old' => 
@@ -442,40 +445,6 @@ return array (
         'points' => 'array<array-key, mixed>',
         'num_points_or_color' => 'int',
         'color' => 'int|null',
-      ),
-    ),
-    'imagegd' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'image' => 'GdImage',
-        'file=' => 'null|resource|string',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'image' => 'GdImage',
-        'file=' => 'null|string',
-      ),
-    ),
-    'imagegd2' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'image' => 'GdImage',
-        'file=' => 'null|resource|string',
-        'chunk_size=' => 'int',
-        'mode=' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'image' => 'GdImage',
-        'file=' => 'null|string',
-        'chunk_size=' => 'int',
-        'mode=' => 'int',
       ),
     ),
     'imageopenpolygon' => 
@@ -727,45 +696,6 @@ return array (
       'new' => 
       array (
         0 => 'array<array-key, mixed>|false|null',
-        'locale' => 'string',
-      ),
-    ),
-    'locale::getprimarylanguage' => 
-    array (
-      'old' => 
-      array (
-        0 => 'string',
-        'locale' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'null|string',
-        'locale' => 'string',
-      ),
-    ),
-    'locale::getregion' => 
-    array (
-      'old' => 
-      array (
-        0 => 'string',
-        'locale' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'null|string',
-        'locale' => 'string',
-      ),
-    ),
-    'locale::getscript' => 
-    array (
-      'old' => 
-      array (
-        0 => 'string',
-        'locale' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'null|string',
         'locale' => 'string',
       ),
     ),
@@ -1619,32 +1549,6 @@ return array (
         '...args=' => 'mixed',
       ),
     ),
-    'pg_close' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'connection=' => 'PgSql\\Connection|null',
-      ),
-      'new' => 
-      array (
-        0 => 'true',
-        'connection=' => 'PgSql\\Connection|null',
-      ),
-    ),
-    'pg_untrace' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'connection=' => 'PgSql\\Connection|null',
-      ),
-      'new' => 
-      array (
-        0 => 'true',
-        'connection=' => 'PgSql\\Connection|null',
-      ),
-    ),
     'phar::copy' => 
     array (
       'old' => 
@@ -1738,19 +1642,6 @@ return array (
         'length=' => 'int',
       ),
     ),
-    'phar::unlinkarchive' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'filename' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'true',
-        'filename' => 'string',
-      ),
-    ),
     'phardata::copy' => 
     array (
       'old' => 
@@ -1799,21 +1690,6 @@ return array (
       'new' => 
       array (
         0 => 'true',
-      ),
-    ),
-    'phardata::setstub' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'stub' => 'string',
-        'length=' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'true',
-        'stub' => 'string',
-        'length=' => 'int',
       ),
     ),
     'pharfileinfo::compress' => 
@@ -2006,23 +1882,6 @@ return array (
       'new' => 
       array (
         0 => 'ResourceBundle|array<array-key, mixed>|int|null|string',
-        'index' => 'int|string',
-        'fallback=' => 'bool',
-      ),
-    ),
-    'resourcebundle_get' => 
-    array (
-      'old' => 
-      array (
-        0 => 'mixed|null',
-        'bundle' => 'ResourceBundle',
-        'index' => 'int|string',
-        'fallback=' => 'bool',
-      ),
-      'new' => 
-      array (
-        0 => 'ResourceBundle|array<array-key, mixed>|int|null|string',
-        'bundle' => 'ResourceBundle',
         'index' => 'int|string',
         'fallback=' => 'bool',
       ),
@@ -2407,21 +2266,6 @@ return array (
         'error_level=' => '256|512|1024|16384',
       ),
     ),
-    'user_error' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'message' => 'string',
-        'error_level=' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'true',
-        'message' => 'string',
-        'error_level=' => 'int',
-      ),
-    ),
     'version_compare' => 
     array (
       'old' => 
@@ -2603,5 +2447,99 @@ return array (
   ),
   'removed' => 
   array (
+    'curl_multi_getcontent' => 
+    array (
+      0 => 'string',
+      'handle' => 'CurlHandle',
+    ),
+    'exit' => 
+    array (
+      0 => 'mixed',
+      'status' => 'int|string',
+    ),
+    'imagegd' => 
+    array (
+      0 => 'bool',
+      'image' => 'GdImage',
+      'file=' => 'null|resource|string',
+    ),
+    'imagegd2' => 
+    array (
+      0 => 'bool',
+      'image' => 'GdImage',
+      'file=' => 'null|resource|string',
+      'chunk_size=' => 'int',
+      'mode=' => 'int',
+    ),
+    'imagick::next' => 
+    array (
+      0 => 'void',
+    ),
+    'imagick::rewind' => 
+    array (
+      0 => 'void',
+    ),
+    'imagickpixeliterator::next' => 
+    array (
+      0 => 'void',
+    ),
+    'imagickpixeliterator::rewind' => 
+    array (
+      0 => 'void',
+    ),
+    'locale_set_default' => 
+    array (
+      0 => 'true',
+      'locale' => 'string',
+    ),
+    'long2ip' => 
+    array (
+      0 => 'string',
+      'ip' => 'int',
+    ),
+    'pcntl_wifcontinued' => 
+    array (
+      0 => 'bool',
+      'status' => 'int',
+    ),
+    'pg_close' => 
+    array (
+      0 => 'bool',
+      'connection=' => 'PgSql\\Connection|null',
+    ),
+    'pg_untrace' => 
+    array (
+      0 => 'bool',
+      'connection=' => 'PgSql\\Connection|null',
+    ),
+    'phardata::setstub' => 
+    array (
+      0 => 'bool',
+      'stub' => 'string',
+      'length=' => 'int',
+    ),
+    'resourcebundle_get' => 
+    array (
+      0 => 'mixed|null',
+      'bundle' => 'ResourceBundle',
+      'index' => 'int|string',
+      'fallback=' => 'bool',
+    ),
+    'sodium_crypto_aead_aes256gcm_decrypt' => 
+    array (
+      0 => 'false|string',
+      'ciphertext' => 'string',
+      'additional_data' => 'string',
+      'nonce' => 'string',
+      'key' => 'string',
+    ),
+    'sodium_crypto_aead_aes256gcm_encrypt' => 
+    array (
+      0 => 'string',
+      'message' => 'string',
+      'additional_data' => 'string',
+      'nonce' => 'string',
+      'key' => 'string',
+    ),
   ),
 );

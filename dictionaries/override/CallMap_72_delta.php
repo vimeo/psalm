@@ -51,8 +51,8 @@ return array (
       0 => 'bool',
       'image' => 'resource',
       'x1' => 'int',
-      'y1' => 'int',
       'x2' => 'int',
+      'y1' => 'int',
       'y2' => 'int',
     ),
     'ldap_exop' => 

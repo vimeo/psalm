@@ -3,23 +3,12 @@
 return array (
   'added' => 
   array (
-    'array_is_list' => 
-    array (
-      0 => 'bool',
-      'array' => 'array<array-key, mixed>',
-    ),
     'curlstringfile::__construct' => 
     array (
       0 => 'void',
       'data' => 'string',
       'postname' => 'string',
       'mime=' => 'string',
-    ),
-    'enum_exists' => 
-    array (
-      0 => 'bool',
-      'enum' => 'string',
-      'autoload=' => 'bool',
     ),
     'fdatasync' => 
     array (
@@ -31,29 +20,9 @@ return array (
       0 => 'void',
       'callback' => 'callable',
     ),
-    'fiber::getcurrent' => 
-    array (
-      0 => 'Fiber|null',
-    ),
     'fiber::getreturn' => 
     array (
       0 => 'mixed',
-    ),
-    'fiber::isrunning' => 
-    array (
-      0 => 'bool',
-    ),
-    'fiber::isstarted' => 
-    array (
-      0 => 'bool',
-    ),
-    'fiber::issuspended' => 
-    array (
-      0 => 'bool',
-    ),
-    'fiber::isterminated' => 
-    array (
-      0 => 'bool',
     ),
     'fiber::resume' => 
     array (
@@ -84,14 +53,13 @@ return array (
       0 => 'bool',
       'stream' => 'resource',
     ),
-    'gmp::__serialize' => 
+    'hash_init' => 
     array (
-      0 => 'array<array-key, mixed>',
-    ),
-    'gmp::__unserialize' => 
-    array (
-      0 => 'void',
-      'data' => 'array<array-key, mixed>',
+      0 => 'HashContext',
+      'algo' => 'string',
+      'flags=' => 'int',
+      'key=' => 'string',
+      'options=' => 'array{seed: scalar}',
     ),
     'imageavif' => 
     array (
@@ -101,10 +69,66 @@ return array (
       'quality=' => 'int',
       'speed=' => 'int',
     ),
-    'imagecreatefromavif' => 
+    'imagechar' => 
     array (
-      0 => 'GdImage|false',
-      'filename' => 'string',
+      0 => 'bool',
+      'image' => 'GdImage',
+      'font' => 'int',
+      'x' => 'int',
+      'y' => 'int',
+      'char' => 'string',
+      'color' => 'int',
+    ),
+    'imagecharup' => 
+    array (
+      0 => 'bool',
+      'image' => 'GdImage',
+      'font' => 'int',
+      'x' => 'int',
+      'y' => 'int',
+      'char' => 'string',
+      'color' => 'int',
+    ),
+    'imagefontheight' => 
+    array (
+      0 => 'int',
+      'font' => 'int',
+    ),
+    'imagefontwidth' => 
+    array (
+      0 => 'int',
+      'font' => 'int',
+    ),
+    'imagestring' => 
+    array (
+      0 => 'bool',
+      'image' => 'GdImage',
+      'font' => 'int',
+      'x' => 'int',
+      'y' => 'int',
+      'string' => 'string',
+      'color' => 'int',
+    ),
+    'imagestringup' => 
+    array (
+      0 => 'bool',
+      'image' => 'GdImage',
+      'font' => 'int',
+      'x' => 'int',
+      'y' => 'int',
+      'string' => 'string',
+      'color' => 'int',
+    ),
+    'key' => 
+    array (
+      0 => 'int|null|string',
+      'array' => 'array<array-key, mixed>',
+    ),
+    'mb_check_encoding' => 
+    array (
+      0 => 'bool',
+      'value' => 'array<array-key, mixed>|string',
+      'encoding=' => 'null|string',
     ),
     'mysqli_fetch_column' => 
     array (
@@ -117,61 +141,11 @@ return array (
       0 => 'false|float|int|null|string',
       'column=' => 'int',
     ),
-    'reflectionclass::isenum' => 
-    array (
-      0 => 'bool',
-    ),
-    'reflectionenum::getbackingtype' => 
-    array (
-      0 => 'ReflectionType|null',
-    ),
-    'reflectionenum::getcase' => 
-    array (
-      0 => 'ReflectionEnumUnitCase',
-      'name' => 'string',
-    ),
     'reflectionenum::getcases' => 
     array (
       0 => 'list<ReflectionEnumUnitCase>',
     ),
-    'reflectionenum::hascase' => 
-    array (
-      0 => 'bool',
-      'name' => 'string',
-    ),
-    'reflectionenum::isbacked' => 
-    array (
-      0 => 'bool',
-    ),
-    'reflectionenumbackedcase::getbackingvalue' => 
-    array (
-      0 => 'int|string',
-    ),
-    'reflectionenumunitcase::getenum' => 
-    array (
-      0 => 'ReflectionEnum',
-    ),
-    'reflectionenumunitcase::getvalue' => 
-    array (
-      0 => 'UnitEnum',
-    ),
-    'reflectionfunctionabstract::gettentativereturntype' => 
-    array (
-      0 => 'ReflectionType|null',
-    ),
-    'reflectionfunctionabstract::hastentativereturntype' => 
-    array (
-      0 => 'bool',
-    ),
     'reflectionfunctionabstract::isstatic' => 
-    array (
-      0 => 'bool',
-    ),
-    'reflectionobject::isenum' => 
-    array (
-      0 => 'bool',
-    ),
-    'reflectionproperty::isreadonly' => 
     array (
       0 => 'bool',
     ),
@@ -408,19 +382,6 @@ return array (
         'context=' => 'resource',
       ),
     ),
-    'finfo_close' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'finfo' => 'resource',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'finfo' => 'finfo',
-      ),
-    ),
     'finfo_file' => 
     array (
       'old' => 
@@ -438,36 +399,6 @@ return array (
         'filename' => 'string',
         'flags=' => 'int',
         'context=' => 'resource',
-      ),
-    ),
-    'finfo_open' => 
-    array (
-      'old' => 
-      array (
-        0 => 'false|resource',
-        'flags=' => 'int',
-        'magic_database=' => 'null|string',
-      ),
-      'new' => 
-      array (
-        0 => 'false|finfo',
-        'flags=' => 'int',
-        'magic_database=' => 'null|string',
-      ),
-    ),
-    'finfo_set_flags' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'finfo' => 'resource',
-        'flags' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'finfo' => 'finfo',
-        'flags' => 'int',
       ),
     ),
     'fputcsv' => 
@@ -507,130 +438,6 @@ return array (
         'ftp' => 'FTP\\Connection',
         'size' => 'int',
         '&w_response=' => 'string',
-      ),
-    ),
-    'ftp_append' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'ftp' => 'resource',
-        'remote_filename' => 'string',
-        'local_filename' => 'string',
-        'mode=' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'ftp' => 'FTP\\Connection',
-        'remote_filename' => 'string',
-        'local_filename' => 'string',
-        'mode=' => 'int',
-      ),
-    ),
-    'ftp_cdup' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'ftp' => 'resource',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'ftp' => 'FTP\\Connection',
-      ),
-    ),
-    'ftp_chdir' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'ftp' => 'resource',
-        'directory' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'ftp' => 'FTP\\Connection',
-        'directory' => 'string',
-      ),
-    ),
-    'ftp_chmod' => 
-    array (
-      'old' => 
-      array (
-        0 => 'false|int',
-        'ftp' => 'resource',
-        'permissions' => 'int',
-        'filename' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'false|int',
-        'ftp' => 'FTP\\Connection',
-        'permissions' => 'int',
-        'filename' => 'string',
-      ),
-    ),
-    'ftp_close' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'ftp' => 'resource',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'ftp' => 'FTP\\Connection',
-      ),
-    ),
-    'ftp_connect' => 
-    array (
-      'old' => 
-      array (
-        0 => 'false|resource',
-        'hostname' => 'string',
-        'port=' => 'int',
-        'timeout=' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'FTP\\Connection|false',
-        'hostname' => 'string',
-        'port=' => 'int',
-        'timeout=' => 'int',
-      ),
-    ),
-    'ftp_delete' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'ftp' => 'resource',
-        'filename' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'ftp' => 'FTP\\Connection',
-        'filename' => 'string',
-      ),
-    ),
-    'ftp_exec' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'ftp' => 'resource',
-        'command' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'ftp' => 'FTP\\Connection',
-        'command' => 'string',
       ),
     ),
     'ftp_fget' => 
@@ -675,27 +482,6 @@ return array (
         'offset=' => 'int',
       ),
     ),
-    'ftp_get' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'ftp' => 'resource',
-        'local_filename' => 'string',
-        'remote_filename' => 'string',
-        'mode=' => 'int',
-        'offset=' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'ftp' => 'FTP\\Connection',
-        'local_filename' => 'string',
-        'remote_filename' => 'string',
-        'mode=' => 'int',
-        'offset=' => 'int',
-      ),
-    ),
     'ftp_get_option' => 
     array (
       'old' => 
@@ -709,81 +495,6 @@ return array (
         0 => 'false|int',
         'ftp' => 'FTP\\Connection',
         'option' => 'int',
-      ),
-    ),
-    'ftp_login' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'ftp' => 'resource',
-        'username' => 'string',
-        'password' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'ftp' => 'FTP\\Connection',
-        'username' => 'string',
-        'password' => 'string',
-      ),
-    ),
-    'ftp_mdtm' => 
-    array (
-      'old' => 
-      array (
-        0 => 'int',
-        'ftp' => 'resource',
-        'filename' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'int',
-        'ftp' => 'FTP\\Connection',
-        'filename' => 'string',
-      ),
-    ),
-    'ftp_mkdir' => 
-    array (
-      'old' => 
-      array (
-        0 => 'false|string',
-        'ftp' => 'resource',
-        'directory' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'false|string',
-        'ftp' => 'FTP\\Connection',
-        'directory' => 'string',
-      ),
-    ),
-    'ftp_mlsd' => 
-    array (
-      'old' => 
-      array (
-        0 => 'array<array-key, mixed>|false',
-        'ftp' => 'resource',
-        'directory' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'array<array-key, mixed>|false',
-        'ftp' => 'FTP\\Connection',
-        'directory' => 'string',
-      ),
-    ),
-    'ftp_nb_continue' => 
-    array (
-      'old' => 
-      array (
-        0 => 'int',
-        'ftp' => 'resource',
-      ),
-      'new' => 
-      array (
-        0 => 'int',
-        'ftp' => 'FTP\\Connection',
       ),
     ),
     'ftp_nb_fget' => 
@@ -870,147 +581,6 @@ return array (
         'offset=' => 'int',
       ),
     ),
-    'ftp_nlist' => 
-    array (
-      'old' => 
-      array (
-        0 => 'array<array-key, mixed>|false',
-        'ftp' => 'resource',
-        'directory' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'array<array-key, mixed>|false',
-        'ftp' => 'FTP\\Connection',
-        'directory' => 'string',
-      ),
-    ),
-    'ftp_pasv' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'ftp' => 'resource',
-        'enable' => 'bool',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'ftp' => 'FTP\\Connection',
-        'enable' => 'bool',
-      ),
-    ),
-    'ftp_put' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'ftp' => 'resource',
-        'remote_filename' => 'string',
-        'local_filename' => 'string',
-        'mode=' => 'int',
-        'offset=' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'ftp' => 'FTP\\Connection',
-        'remote_filename' => 'string',
-        'local_filename' => 'string',
-        'mode=' => 'int',
-        'offset=' => 'int',
-      ),
-    ),
-    'ftp_pwd' => 
-    array (
-      'old' => 
-      array (
-        0 => 'false|string',
-        'ftp' => 'resource',
-      ),
-      'new' => 
-      array (
-        0 => 'false|string',
-        'ftp' => 'FTP\\Connection',
-      ),
-    ),
-    'ftp_quit' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'ftp' => 'resource',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'ftp' => 'FTP\\Connection',
-      ),
-    ),
-    'ftp_raw' => 
-    array (
-      'old' => 
-      array (
-        0 => 'array<array-key, mixed>|null',
-        'ftp' => 'resource',
-        'command' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'array<array-key, mixed>|null',
-        'ftp' => 'FTP\\Connection',
-        'command' => 'string',
-      ),
-    ),
-    'ftp_rawlist' => 
-    array (
-      'old' => 
-      array (
-        0 => 'array<array-key, mixed>|false',
-        'ftp' => 'resource',
-        'directory' => 'string',
-        'recursive=' => 'bool',
-      ),
-      'new' => 
-      array (
-        0 => 'array<array-key, mixed>|false',
-        'ftp' => 'FTP\\Connection',
-        'directory' => 'string',
-        'recursive=' => 'bool',
-      ),
-    ),
-    'ftp_rename' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'ftp' => 'resource',
-        'from' => 'string',
-        'to' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'ftp' => 'FTP\\Connection',
-        'from' => 'string',
-        'to' => 'string',
-      ),
-    ),
-    'ftp_rmdir' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'ftp' => 'resource',
-        'directory' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'ftp' => 'FTP\\Connection',
-        'directory' => 'string',
-      ),
-    ),
     'ftp_set_option' => 
     array (
       'old' => 
@@ -1026,66 +596,6 @@ return array (
         'ftp' => 'FTP\\Connection',
         'option' => 'int',
         'value' => 'mixed',
-      ),
-    ),
-    'ftp_site' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'ftp' => 'resource',
-        'command' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'ftp' => 'FTP\\Connection',
-        'command' => 'string',
-      ),
-    ),
-    'ftp_size' => 
-    array (
-      'old' => 
-      array (
-        0 => 'int',
-        'ftp' => 'resource',
-        'filename' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'int',
-        'ftp' => 'FTP\\Connection',
-        'filename' => 'string',
-      ),
-    ),
-    'ftp_ssl_connect' => 
-    array (
-      'old' => 
-      array (
-        0 => 'false|resource',
-        'hostname' => 'string',
-        'port=' => 'int',
-        'timeout=' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'FTP\\Connection|false',
-        'hostname' => 'string',
-        'port=' => 'int',
-        'timeout=' => 'int',
-      ),
-    ),
-    'ftp_systype' => 
-    array (
-      'old' => 
-      array (
-        0 => 'false|string',
-        'ftp' => 'resource',
-      ),
-      'new' => 
-      array (
-        0 => 'false|string',
-        'ftp' => 'FTP\\Connection',
       ),
     ),
     'hash' => 
@@ -1124,24 +634,6 @@ return array (
         'options=' => 'array{seed: scalar}',
       ),
     ),
-    'hash_init' => 
-    array (
-      'old' => 
-      array (
-        0 => 'HashContext',
-        'algo' => 'string',
-        'flags=' => 'int',
-        'key=' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'HashContext',
-        'algo' => 'string',
-        'flags=' => 'int',
-        'key=' => 'string',
-        'options=' => 'array{seed: scalar}',
-      ),
-    ),
     'hash_pbkdf2' => 
     array (
       'old' => 
@@ -1164,19 +656,6 @@ return array (
         'length=' => 'int',
         'binary=' => 'bool',
         'options=' => 'array<array-key, mixed>',
-      ),
-    ),
-    'imageloadfont' => 
-    array (
-      'old' => 
-      array (
-        0 => 'false|int',
-        'filename' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'GdFont|false',
-        'filename' => 'string',
       ),
     ),
     'imap_append' => 
@@ -2106,36 +1585,6 @@ return array (
         'mailbox' => 'string',
       ),
     ),
-    'ini_alter' => 
-    array (
-      'old' => 
-      array (
-        0 => 'false|string',
-        'option' => 'string',
-        'value' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'false|string',
-        'option' => 'string',
-        'value' => 'null|scalar',
-      ),
-    ),
-    'ini_set' => 
-    array (
-      'old' => 
-      array (
-        0 => 'false|string',
-        'option' => 'string',
-        'value' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'false|string',
-        'option' => 'string',
-        'value' => 'null|scalar',
-      ),
-    ),
     'intldateformatter::__construct' => 
     array (
       'old' => 
@@ -2180,19 +1629,6 @@ return array (
         'timezone=' => 'DateTimeZone|IntlTimeZone|null|string',
         'calendar=' => 'IntlCalendar|int|null',
         'pattern=' => 'null|string',
-      ),
-    ),
-    'key' => 
-    array (
-      'old' => 
-      array (
-        0 => 'int|null|string',
-        'array' => 'array<array-key, mixed>|object',
-      ),
-      'new' => 
-      array (
-        0 => 'int|null|string',
-        'array' => 'array<array-key, mixed>',
       ),
     ),
     'ldap_add' => 
@@ -3103,21 +2539,6 @@ return array (
         'ldap' => 'LDAP\\Connection',
       ),
     ),
-    'mb_check_encoding' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'value=' => 'array<array-key, mixed>|null|string',
-        'encoding=' => 'null|string',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'value' => 'array<array-key, mixed>|string',
-        'encoding=' => 'null|string',
-      ),
-    ),
     'mysqli::connect' => 
     array (
       'old' => 
@@ -3270,267 +2691,6 @@ return array (
         '&r_array' => 'array<array-key, mixed>',
       ),
     ),
-    'openssl_decrypt' => 
-    array (
-      'old' => 
-      array (
-        0 => 'false|string',
-        'data' => 'string',
-        'cipher_algo' => 'string',
-        'passphrase' => 'string',
-        'options=' => 'int',
-        'iv=' => 'string',
-        'tag=' => 'string',
-        'aad=' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'false|string',
-        'data' => 'string',
-        'cipher_algo' => 'string',
-        'passphrase' => 'string',
-        'options=' => 'int',
-        'iv=' => 'string',
-        'tag=' => 'null|string',
-        'aad=' => 'string',
-      ),
-    ),
-    'pg_affected_rows' => 
-    array (
-      'old' => 
-      array (
-        0 => 'int',
-        'result' => 'resource',
-      ),
-      'new' => 
-      array (
-        0 => 'int',
-        'result' => 'PgSql\\Result',
-      ),
-    ),
-    'pg_cancel_query' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'connection' => 'resource',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'connection' => 'PgSql\\Connection',
-      ),
-    ),
-    'pg_client_encoding' => 
-    array (
-      'old' => 
-      array (
-        0 => 'string',
-        'connection=' => 'null|resource',
-      ),
-      'new' => 
-      array (
-        0 => 'string',
-        'connection=' => 'PgSql\\Connection|null',
-      ),
-    ),
-    'pg_close' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'connection=' => 'null|resource',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'connection=' => 'PgSql\\Connection|null',
-      ),
-    ),
-    'pg_connect' => 
-    array (
-      'old' => 
-      array (
-        0 => 'false|resource',
-        'connection_string' => 'string',
-        'flags=' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'PgSql\\Connection|false',
-        'connection_string' => 'string',
-        'flags=' => 'int',
-      ),
-    ),
-    'pg_connect_poll' => 
-    array (
-      'old' => 
-      array (
-        0 => 'int',
-        'connection' => 'resource',
-      ),
-      'new' => 
-      array (
-        0 => 'int',
-        'connection' => 'PgSql\\Connection',
-      ),
-    ),
-    'pg_connection_busy' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'connection' => 'resource',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'connection' => 'PgSql\\Connection',
-      ),
-    ),
-    'pg_connection_reset' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'connection' => 'resource',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'connection' => 'PgSql\\Connection',
-      ),
-    ),
-    'pg_connection_status' => 
-    array (
-      'old' => 
-      array (
-        0 => 'int',
-        'connection' => 'resource',
-      ),
-      'new' => 
-      array (
-        0 => 'int',
-        'connection' => 'PgSql\\Connection',
-      ),
-    ),
-    'pg_consume_input' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'connection' => 'resource',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'connection' => 'PgSql\\Connection',
-      ),
-    ),
-    'pg_convert' => 
-    array (
-      'old' => 
-      array (
-        0 => 'array<array-key, mixed>|false',
-        'connection' => 'resource',
-        'table_name' => 'string',
-        'values' => 'array<array-key, mixed>',
-        'flags=' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'array<array-key, mixed>|false',
-        'connection' => 'PgSql\\Connection',
-        'table_name' => 'string',
-        'values' => 'array<array-key, mixed>',
-        'flags=' => 'int',
-      ),
-    ),
-    'pg_copy_from' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'connection' => 'resource',
-        'table_name' => 'string',
-        'rows' => 'array<array-key, mixed>',
-        'separator=' => 'string',
-        'null_as=' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'connection' => 'PgSql\\Connection',
-        'table_name' => 'string',
-        'rows' => 'array<array-key, mixed>',
-        'separator=' => 'string',
-        'null_as=' => 'string',
-      ),
-    ),
-    'pg_copy_to' => 
-    array (
-      'old' => 
-      array (
-        0 => 'array<array-key, mixed>|false',
-        'connection' => 'resource',
-        'table_name' => 'string',
-        'separator=' => 'string',
-        'null_as=' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'array<array-key, mixed>|false',
-        'connection' => 'PgSql\\Connection',
-        'table_name' => 'string',
-        'separator=' => 'string',
-        'null_as=' => 'string',
-      ),
-    ),
-    'pg_dbname' => 
-    array (
-      'old' => 
-      array (
-        0 => 'string',
-        'connection=' => 'null|resource',
-      ),
-      'new' => 
-      array (
-        0 => 'string',
-        'connection=' => 'PgSql\\Connection|null',
-      ),
-    ),
-    'pg_delete' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool|string',
-        'connection' => 'resource',
-        'table_name' => 'string',
-        'conditions' => 'array<array-key, mixed>',
-        'flags=' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'bool|string',
-        'connection' => 'PgSql\\Connection',
-        'table_name' => 'string',
-        'conditions' => 'array<array-key, mixed>',
-        'flags=' => 'int',
-      ),
-    ),
-    'pg_end_copy' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'connection=' => 'null|resource',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'connection=' => 'PgSql\\Connection|null',
-      ),
-    ),
     'pg_escape_bytea' => 
     array (
       'old' => 
@@ -3666,21 +2826,6 @@ return array (
         'mode=' => 'int',
       ),
     ),
-    'pg_fetch_all_columns' => 
-    array (
-      'old' => 
-      array (
-        0 => 'array<array-key, mixed>',
-        'result' => 'resource',
-        'field=' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'array<array-key, mixed>',
-        'result' => 'PgSql\\Result',
-        'field=' => 'int',
-      ),
-    ),
     'pg_fetch_array' => 
     array (
       'old' => 
@@ -3711,25 +2856,6 @@ return array (
         0 => 'array<string, mixed>|false',
         'result' => 'PgSql\\Result',
         'row=' => 'int|null',
-      ),
-    ),
-    'pg_fetch_object' => 
-    array (
-      'old' => 
-      array (
-        0 => 'false|object',
-        'result' => 'resource',
-        'row=' => 'int|null',
-        'class=' => 'string',
-        'constructor_args=' => 'array<array-key, mixed>',
-      ),
-      'new' => 
-      array (
-        0 => 'false|object',
-        'result' => 'PgSql\\Result',
-        'row=' => 'int|null',
-        'class=' => 'string',
-        'constructor_args=' => 'array<array-key, mixed>',
       ),
     ),
     'pg_fetch_result' => 
@@ -3764,23 +2890,6 @@ return array (
         'field' => 'int|string',
       ),
     ),
-    'pg_fetch_row' => 
-    array (
-      'old' => 
-      array (
-        0 => 'array<array-key, mixed>|false',
-        'result' => 'resource',
-        'row=' => 'int|null',
-        'mode=' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'array<array-key, mixed>|false',
-        'result' => 'PgSql\\Result',
-        'row=' => 'int|null',
-        'mode=' => 'int',
-      ),
-    ),
     'pg_field_is_null' => 
     array (
       'old' => 
@@ -3811,36 +2920,6 @@ return array (
         'result' => 'PgSql\\Result',
         'row' => 'int',
         'field' => 'int|string',
-      ),
-    ),
-    'pg_field_name' => 
-    array (
-      'old' => 
-      array (
-        0 => 'string',
-        'result' => 'resource',
-        'field' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'string',
-        'result' => 'PgSql\\Result',
-        'field' => 'int',
-      ),
-    ),
-    'pg_field_num' => 
-    array (
-      'old' => 
-      array (
-        0 => 'int',
-        'result' => 'resource',
-        'field' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'int',
-        'result' => 'PgSql\\Result',
-        'field' => 'string',
       ),
     ),
     'pg_field_prtlen' => 
@@ -3875,148 +2954,6 @@ return array (
         'field' => 'int|string',
       ),
     ),
-    'pg_field_size' => 
-    array (
-      'old' => 
-      array (
-        0 => 'int',
-        'result' => 'resource',
-        'field' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'int',
-        'result' => 'PgSql\\Result',
-        'field' => 'int',
-      ),
-    ),
-    'pg_field_table' => 
-    array (
-      'old' => 
-      array (
-        0 => 'false|int|string',
-        'result' => 'resource',
-        'field' => 'int',
-        'oid_only=' => 'bool',
-      ),
-      'new' => 
-      array (
-        0 => 'false|int|string',
-        'result' => 'PgSql\\Result',
-        'field' => 'int',
-        'oid_only=' => 'bool',
-      ),
-    ),
-    'pg_field_type' => 
-    array (
-      'old' => 
-      array (
-        0 => 'string',
-        'result' => 'resource',
-        'field' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'string',
-        'result' => 'PgSql\\Result',
-        'field' => 'int',
-      ),
-    ),
-    'pg_field_type_oid' => 
-    array (
-      'old' => 
-      array (
-        0 => 'int|string',
-        'result' => 'resource',
-        'field' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'int|string',
-        'result' => 'PgSql\\Result',
-        'field' => 'int',
-      ),
-    ),
-    'pg_flush' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool|int',
-        'connection' => 'resource',
-      ),
-      'new' => 
-      array (
-        0 => 'bool|int',
-        'connection' => 'PgSql\\Connection',
-      ),
-    ),
-    'pg_free_result' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'result' => 'resource',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'result' => 'PgSql\\Result',
-      ),
-    ),
-    'pg_get_notify' => 
-    array (
-      'old' => 
-      array (
-        0 => 'array<array-key, mixed>|false',
-        'connection' => 'resource',
-        'mode=' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'array<array-key, mixed>|false',
-        'connection' => 'PgSql\\Connection',
-        'mode=' => 'int',
-      ),
-    ),
-    'pg_get_pid' => 
-    array (
-      'old' => 
-      array (
-        0 => 'int',
-        'connection' => 'resource',
-      ),
-      'new' => 
-      array (
-        0 => 'int',
-        'connection' => 'PgSql\\Connection',
-      ),
-    ),
-    'pg_get_result' => 
-    array (
-      'old' => 
-      array (
-        0 => 'false|resource',
-        'connection' => 'resource',
-      ),
-      'new' => 
-      array (
-        0 => 'PgSql\\Result|false',
-        'connection' => 'PgSql\\Connection',
-      ),
-    ),
-    'pg_host' => 
-    array (
-      'old' => 
-      array (
-        0 => 'string',
-        'connection=' => 'resource',
-      ),
-      'new' => 
-      array (
-        0 => 'string',
-        'connection=' => 'PgSql\\Connection|null',
-      ),
-    ),
     'pg_insert' => 
     array (
       'old' => 
@@ -4034,60 +2971,6 @@ return array (
         'table_name' => 'string',
         'values' => 'array<array-key, mixed>',
         'flags=' => 'int',
-      ),
-    ),
-    'pg_last_error' => 
-    array (
-      'old' => 
-      array (
-        0 => 'string',
-        'connection=' => 'null|resource',
-      ),
-      'new' => 
-      array (
-        0 => 'string',
-        'connection=' => 'PgSql\\Connection|null',
-      ),
-    ),
-    'pg_last_notice' => 
-    array (
-      'old' => 
-      array (
-        0 => 'array<array-key, mixed>|bool|string',
-        'connection' => 'resource',
-        'mode=' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'array<array-key, mixed>|bool|string',
-        'connection' => 'PgSql\\Connection',
-        'mode=' => 'int',
-      ),
-    ),
-    'pg_last_oid' => 
-    array (
-      'old' => 
-      array (
-        0 => 'false|int|string',
-        'result' => 'resource',
-      ),
-      'new' => 
-      array (
-        0 => 'false|int|string',
-        'result' => 'PgSql\\Result',
-      ),
-    ),
-    'pg_lo_close' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'lob' => 'resource',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'lob' => 'PgSql\\Lob',
       ),
     ),
     'pg_lo_create' => 
@@ -4171,79 +3054,6 @@ return array (
         'oid' => 'string',
       ),
     ),
-    'pg_lo_read' => 
-    array (
-      'old' => 
-      array (
-        0 => 'false|string',
-        'lob' => 'resource',
-        'length=' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'false|string',
-        'lob' => 'PgSql\\Lob',
-        'length=' => 'int',
-      ),
-    ),
-    'pg_lo_read_all' => 
-    array (
-      'old' => 
-      array (
-        0 => 'int',
-        'lob' => 'resource',
-      ),
-      'new' => 
-      array (
-        0 => 'int',
-        'lob' => 'PgSql\\Lob',
-      ),
-    ),
-    'pg_lo_seek' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'lob' => 'resource',
-        'offset' => 'int',
-        'whence=' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'lob' => 'PgSql\\Lob',
-        'offset' => 'int',
-        'whence=' => 'int',
-      ),
-    ),
-    'pg_lo_tell' => 
-    array (
-      'old' => 
-      array (
-        0 => 'int',
-        'lob' => 'resource',
-      ),
-      'new' => 
-      array (
-        0 => 'int',
-        'lob' => 'PgSql\\Lob',
-      ),
-    ),
-    'pg_lo_truncate' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'lob' => 'resource',
-        'size' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'lob' => 'PgSql\\Lob',
-        'size' => 'int',
-      ),
-    ),
     'pg_lo_unlink' => 
     array (
       'old' => 
@@ -4259,79 +3069,6 @@ return array (
         'oid' => 'int|string',
       ),
     ),
-    'pg_lo_write' => 
-    array (
-      'old' => 
-      array (
-        0 => 'false|int',
-        'lob' => 'resource',
-        'data' => 'string',
-        'length=' => 'int|null',
-      ),
-      'new' => 
-      array (
-        0 => 'false|int',
-        'lob' => 'PgSql\\Lob',
-        'data' => 'string',
-        'length=' => 'int|null',
-      ),
-    ),
-    'pg_meta_data' => 
-    array (
-      'old' => 
-      array (
-        0 => 'array<array-key, mixed>|false',
-        'connection' => 'resource',
-        'table_name' => 'string',
-        'extended=' => 'bool',
-      ),
-      'new' => 
-      array (
-        0 => 'array<array-key, mixed>|false',
-        'connection' => 'PgSql\\Connection',
-        'table_name' => 'string',
-        'extended=' => 'bool',
-      ),
-    ),
-    'pg_num_fields' => 
-    array (
-      'old' => 
-      array (
-        0 => 'int',
-        'result' => 'resource',
-      ),
-      'new' => 
-      array (
-        0 => 'int',
-        'result' => 'PgSql\\Result',
-      ),
-    ),
-    'pg_num_rows' => 
-    array (
-      'old' => 
-      array (
-        0 => 'int',
-        'result' => 'resource',
-      ),
-      'new' => 
-      array (
-        0 => 'int',
-        'result' => 'PgSql\\Result',
-      ),
-    ),
-    'pg_options' => 
-    array (
-      'old' => 
-      array (
-        0 => 'string',
-        'connection=' => 'null|resource',
-      ),
-      'new' => 
-      array (
-        0 => 'string',
-        'connection=' => 'PgSql\\Connection|null',
-      ),
-    ),
     'pg_parameter_status' => 
     array (
       'old' => 
@@ -4345,47 +3082,6 @@ return array (
         0 => 'false|string',
         'connection' => 'PgSql\\Connection',
         'name' => 'string',
-      ),
-    ),
-    'pg_pconnect' => 
-    array (
-      'old' => 
-      array (
-        0 => 'false|resource',
-        'connection_string' => 'string',
-        'flags=' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'PgSql\\Connection|false',
-        'connection_string' => 'string',
-        'flags=' => 'int',
-      ),
-    ),
-    'pg_ping' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'connection=' => 'null|resource',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'connection=' => 'PgSql\\Connection|null',
-      ),
-    ),
-    'pg_port' => 
-    array (
-      'old' => 
-      array (
-        0 => 'string',
-        'connection=' => 'null|resource',
-      ),
-      'new' => 
-      array (
-        0 => 'string',
-        'connection=' => 'PgSql\\Connection|null',
       ),
     ),
     'pg_prepare' => 
@@ -4495,151 +3191,6 @@ return array (
         'query' => 'array<array-key, mixed>',
       ),
     ),
-    'pg_result_error' => 
-    array (
-      'old' => 
-      array (
-        0 => 'false|string',
-        'result' => 'resource',
-      ),
-      'new' => 
-      array (
-        0 => 'false|string',
-        'result' => 'PgSql\\Result',
-      ),
-    ),
-    'pg_result_error_field' => 
-    array (
-      'old' => 
-      array (
-        0 => 'false|null|string',
-        'result' => 'resource',
-        'field_code' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'false|null|string',
-        'result' => 'PgSql\\Result',
-        'field_code' => 'int',
-      ),
-    ),
-    'pg_result_seek' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'result' => 'resource',
-        'row' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'result' => 'PgSql\\Result',
-        'row' => 'int',
-      ),
-    ),
-    'pg_result_status' => 
-    array (
-      'old' => 
-      array (
-        0 => 'int|string',
-        'result' => 'resource',
-        'mode=' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'int|string',
-        'result' => 'PgSql\\Result',
-        'mode=' => 'int',
-      ),
-    ),
-    'pg_select' => 
-    array (
-      'old' => 
-      array (
-        0 => 'array<array-key, mixed>|false|string',
-        'connection' => 'resource',
-        'table_name' => 'string',
-        'conditions' => 'array<array-key, mixed>',
-        'flags=' => 'int',
-        'mode=' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'array<array-key, mixed>|false|string',
-        'connection' => 'PgSql\\Connection',
-        'table_name' => 'string',
-        'conditions' => 'array<array-key, mixed>',
-        'flags=' => 'int',
-        'mode=' => 'int',
-      ),
-    ),
-    'pg_send_execute' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool|int',
-        'connection' => 'resource',
-        'statement_name' => 'string',
-        'params' => 'array<array-key, mixed>',
-      ),
-      'new' => 
-      array (
-        0 => 'bool|int',
-        'connection' => 'PgSql\\Connection',
-        'statement_name' => 'string',
-        'params' => 'array<array-key, mixed>',
-      ),
-    ),
-    'pg_send_prepare' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool|int',
-        'connection' => 'resource',
-        'statement_name' => 'string',
-        'query' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'bool|int',
-        'connection' => 'PgSql\\Connection',
-        'statement_name' => 'string',
-        'query' => 'string',
-      ),
-    ),
-    'pg_send_query' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool|int',
-        'connection' => 'resource',
-        'query' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'bool|int',
-        'connection' => 'PgSql\\Connection',
-        'query' => 'string',
-      ),
-    ),
-    'pg_send_query_params' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool|int',
-        'connection' => 'resource',
-        'query' => 'string',
-        'params' => 'array<array-key, mixed>',
-      ),
-      'new' => 
-      array (
-        0 => 'bool|int',
-        'connection' => 'PgSql\\Connection',
-        'query' => 'string',
-        'params' => 'array<array-key, mixed>',
-      ),
-    ),
     'pg_set_client_encoding' => 
     array (
       'old' => 
@@ -4681,96 +3232,6 @@ return array (
       array (
         0 => 'false|resource',
         'connection' => 'PgSql\\Connection',
-      ),
-    ),
-    'pg_trace' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'filename' => 'string',
-        'mode=' => 'string',
-        'connection=' => 'null|resource',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'filename' => 'string',
-        'mode=' => 'string',
-        'connection=' => 'PgSql\\Connection|null',
-      ),
-    ),
-    'pg_transaction_status' => 
-    array (
-      'old' => 
-      array (
-        0 => 'int',
-        'connection' => 'resource',
-      ),
-      'new' => 
-      array (
-        0 => 'int',
-        'connection' => 'PgSql\\Connection',
-      ),
-    ),
-    'pg_tty' => 
-    array (
-      'old' => 
-      array (
-        0 => 'string',
-        'connection=' => 'null|resource',
-      ),
-      'new' => 
-      array (
-        0 => 'string',
-        'connection=' => 'PgSql\\Connection|null',
-      ),
-    ),
-    'pg_untrace' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'connection=' => 'null|resource',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'connection=' => 'PgSql\\Connection|null',
-      ),
-    ),
-    'pg_update' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool|string',
-        'connection' => 'resource',
-        'table_name' => 'string',
-        'values' => 'array<array-key, mixed>',
-        'conditions' => 'array<array-key, mixed>',
-        'flags=' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'bool|string',
-        'connection' => 'PgSql\\Connection',
-        'table_name' => 'string',
-        'values' => 'array<array-key, mixed>',
-        'conditions' => 'array<array-key, mixed>',
-        'flags=' => 'int',
-      ),
-    ),
-    'pg_version' => 
-    array (
-      'old' => 
-      array (
-        0 => 'array<array-key, mixed>',
-        'connection=' => 'null|resource',
-      ),
-      'new' => 
-      array (
-        0 => 'array<array-key, mixed>',
-        'connection=' => 'PgSql\\Connection|null',
       ),
     ),
     'phar::buildfromdirectory' => 
@@ -5222,6 +3683,566 @@ return array (
   ),
   'removed' => 
   array (
+    'finfo_close' => 
+    array (
+      0 => 'bool',
+      'finfo' => 'resource',
+    ),
+    'finfo_open' => 
+    array (
+      0 => 'false|resource',
+      'flags=' => 'int',
+      'magic_database=' => 'null|string',
+    ),
+    'finfo_set_flags' => 
+    array (
+      0 => 'bool',
+      'finfo' => 'resource',
+      'flags' => 'int',
+    ),
+    'ftp_append' => 
+    array (
+      0 => 'bool',
+      'ftp' => 'resource',
+      'remote_filename' => 'string',
+      'local_filename' => 'string',
+      'mode=' => 'int',
+    ),
+    'ftp_cdup' => 
+    array (
+      0 => 'bool',
+      'ftp' => 'resource',
+    ),
+    'ftp_chdir' => 
+    array (
+      0 => 'bool',
+      'ftp' => 'resource',
+      'directory' => 'string',
+    ),
+    'ftp_chmod' => 
+    array (
+      0 => 'false|int',
+      'ftp' => 'resource',
+      'permissions' => 'int',
+      'filename' => 'string',
+    ),
+    'ftp_close' => 
+    array (
+      0 => 'bool',
+      'ftp' => 'resource',
+    ),
+    'ftp_connect' => 
+    array (
+      0 => 'false|resource',
+      'hostname' => 'string',
+      'port=' => 'int',
+      'timeout=' => 'int',
+    ),
+    'ftp_delete' => 
+    array (
+      0 => 'bool',
+      'ftp' => 'resource',
+      'filename' => 'string',
+    ),
+    'ftp_exec' => 
+    array (
+      0 => 'bool',
+      'ftp' => 'resource',
+      'command' => 'string',
+    ),
+    'ftp_get' => 
+    array (
+      0 => 'bool',
+      'ftp' => 'resource',
+      'local_filename' => 'string',
+      'remote_filename' => 'string',
+      'mode=' => 'int',
+      'offset=' => 'int',
+    ),
+    'ftp_login' => 
+    array (
+      0 => 'bool',
+      'ftp' => 'resource',
+      'username' => 'string',
+      'password' => 'string',
+    ),
+    'ftp_mdtm' => 
+    array (
+      0 => 'int',
+      'ftp' => 'resource',
+      'filename' => 'string',
+    ),
+    'ftp_mkdir' => 
+    array (
+      0 => 'false|string',
+      'ftp' => 'resource',
+      'directory' => 'string',
+    ),
+    'ftp_mlsd' => 
+    array (
+      0 => 'array<array-key, mixed>|false',
+      'ftp' => 'resource',
+      'directory' => 'string',
+    ),
+    'ftp_nb_continue' => 
+    array (
+      0 => 'int',
+      'ftp' => 'resource',
+    ),
+    'ftp_nlist' => 
+    array (
+      0 => 'array<array-key, mixed>|false',
+      'ftp' => 'resource',
+      'directory' => 'string',
+    ),
+    'ftp_pasv' => 
+    array (
+      0 => 'bool',
+      'ftp' => 'resource',
+      'enable' => 'bool',
+    ),
+    'ftp_put' => 
+    array (
+      0 => 'bool',
+      'ftp' => 'resource',
+      'remote_filename' => 'string',
+      'local_filename' => 'string',
+      'mode=' => 'int',
+      'offset=' => 'int',
+    ),
+    'ftp_pwd' => 
+    array (
+      0 => 'false|string',
+      'ftp' => 'resource',
+    ),
+    'ftp_quit' => 
+    array (
+      0 => 'bool',
+      'ftp' => 'resource',
+    ),
+    'ftp_raw' => 
+    array (
+      0 => 'array<array-key, mixed>|null',
+      'ftp' => 'resource',
+      'command' => 'string',
+    ),
+    'ftp_rawlist' => 
+    array (
+      0 => 'array<array-key, mixed>|false',
+      'ftp' => 'resource',
+      'directory' => 'string',
+      'recursive=' => 'bool',
+    ),
+    'ftp_rename' => 
+    array (
+      0 => 'bool',
+      'ftp' => 'resource',
+      'from' => 'string',
+      'to' => 'string',
+    ),
+    'ftp_rmdir' => 
+    array (
+      0 => 'bool',
+      'ftp' => 'resource',
+      'directory' => 'string',
+    ),
+    'ftp_site' => 
+    array (
+      0 => 'bool',
+      'ftp' => 'resource',
+      'command' => 'string',
+    ),
+    'ftp_size' => 
+    array (
+      0 => 'int',
+      'ftp' => 'resource',
+      'filename' => 'string',
+    ),
+    'ftp_ssl_connect' => 
+    array (
+      0 => 'false|resource',
+      'hostname' => 'string',
+      'port=' => 'int',
+      'timeout=' => 'int',
+    ),
+    'ftp_systype' => 
+    array (
+      0 => 'false|string',
+      'ftp' => 'resource',
+    ),
+    'pg_affected_rows' => 
+    array (
+      0 => 'int',
+      'result' => 'resource',
+    ),
+    'pg_cancel_query' => 
+    array (
+      0 => 'bool',
+      'connection' => 'resource',
+    ),
+    'pg_client_encoding' => 
+    array (
+      0 => 'string',
+      'connection=' => 'null|resource',
+    ),
+    'pg_close' => 
+    array (
+      0 => 'bool',
+      'connection=' => 'null|resource',
+    ),
+    'pg_connect' => 
+    array (
+      0 => 'false|resource',
+      'connection_string' => 'string',
+      'flags=' => 'int',
+    ),
+    'pg_connect_poll' => 
+    array (
+      0 => 'int',
+      'connection' => 'resource',
+    ),
+    'pg_connection_busy' => 
+    array (
+      0 => 'bool',
+      'connection' => 'resource',
+    ),
+    'pg_connection_reset' => 
+    array (
+      0 => 'bool',
+      'connection' => 'resource',
+    ),
+    'pg_connection_status' => 
+    array (
+      0 => 'int',
+      'connection' => 'resource',
+    ),
+    'pg_consume_input' => 
+    array (
+      0 => 'bool',
+      'connection' => 'resource',
+    ),
+    'pg_convert' => 
+    array (
+      0 => 'array<array-key, mixed>|false',
+      'connection' => 'resource',
+      'table_name' => 'string',
+      'values' => 'array<array-key, mixed>',
+      'flags=' => 'int',
+    ),
+    'pg_copy_from' => 
+    array (
+      0 => 'bool',
+      'connection' => 'resource',
+      'table_name' => 'string',
+      'rows' => 'array<array-key, mixed>',
+      'separator=' => 'string',
+      'null_as=' => 'string',
+    ),
+    'pg_copy_to' => 
+    array (
+      0 => 'array<array-key, mixed>|false',
+      'connection' => 'resource',
+      'table_name' => 'string',
+      'separator=' => 'string',
+      'null_as=' => 'string',
+    ),
+    'pg_dbname' => 
+    array (
+      0 => 'string',
+      'connection=' => 'null|resource',
+    ),
+    'pg_delete' => 
+    array (
+      0 => 'bool|string',
+      'connection' => 'resource',
+      'table_name' => 'string',
+      'conditions' => 'array<array-key, mixed>',
+      'flags=' => 'int',
+    ),
+    'pg_end_copy' => 
+    array (
+      0 => 'bool',
+      'connection=' => 'null|resource',
+    ),
+    'pg_fetch_all_columns' => 
+    array (
+      0 => 'array<array-key, mixed>',
+      'result' => 'resource',
+      'field=' => 'int',
+    ),
+    'pg_fetch_object' => 
+    array (
+      0 => 'false|object',
+      'result' => 'resource',
+      'row=' => 'int|null',
+      'class=' => 'string',
+      'constructor_args=' => 'array<array-key, mixed>',
+    ),
+    'pg_fetch_row' => 
+    array (
+      0 => 'array<array-key, mixed>|false',
+      'result' => 'resource',
+      'row=' => 'int|null',
+      'mode=' => 'int',
+    ),
+    'pg_field_name' => 
+    array (
+      0 => 'string',
+      'result' => 'resource',
+      'field' => 'int',
+    ),
+    'pg_field_num' => 
+    array (
+      0 => 'int',
+      'result' => 'resource',
+      'field' => 'string',
+    ),
+    'pg_field_size' => 
+    array (
+      0 => 'int',
+      'result' => 'resource',
+      'field' => 'int',
+    ),
+    'pg_field_table' => 
+    array (
+      0 => 'false|int|string',
+      'result' => 'resource',
+      'field' => 'int',
+      'oid_only=' => 'bool',
+    ),
+    'pg_field_type' => 
+    array (
+      0 => 'string',
+      'result' => 'resource',
+      'field' => 'int',
+    ),
+    'pg_field_type_oid' => 
+    array (
+      0 => 'int|string',
+      'result' => 'resource',
+      'field' => 'int',
+    ),
+    'pg_flush' => 
+    array (
+      0 => 'bool|int',
+      'connection' => 'resource',
+    ),
+    'pg_free_result' => 
+    array (
+      0 => 'bool',
+      'result' => 'resource',
+    ),
+    'pg_get_notify' => 
+    array (
+      0 => 'array<array-key, mixed>|false',
+      'connection' => 'resource',
+      'mode=' => 'int',
+    ),
+    'pg_get_pid' => 
+    array (
+      0 => 'int',
+      'connection' => 'resource',
+    ),
+    'pg_get_result' => 
+    array (
+      0 => 'false|resource',
+      'connection' => 'resource',
+    ),
+    'pg_host' => 
+    array (
+      0 => 'string',
+      'connection=' => 'resource',
+    ),
+    'pg_last_error' => 
+    array (
+      0 => 'string',
+      'connection=' => 'null|resource',
+    ),
+    'pg_last_notice' => 
+    array (
+      0 => 'array<array-key, mixed>|bool|string',
+      'connection' => 'resource',
+      'mode=' => 'int',
+    ),
+    'pg_last_oid' => 
+    array (
+      0 => 'false|int|string',
+      'result' => 'resource',
+    ),
+    'pg_lo_close' => 
+    array (
+      0 => 'bool',
+      'lob' => 'resource',
+    ),
+    'pg_lo_read' => 
+    array (
+      0 => 'false|string',
+      'lob' => 'resource',
+      'length=' => 'int',
+    ),
+    'pg_lo_read_all' => 
+    array (
+      0 => 'int',
+      'lob' => 'resource',
+    ),
+    'pg_lo_seek' => 
+    array (
+      0 => 'bool',
+      'lob' => 'resource',
+      'offset' => 'int',
+      'whence=' => 'int',
+    ),
+    'pg_lo_tell' => 
+    array (
+      0 => 'int',
+      'lob' => 'resource',
+    ),
+    'pg_lo_truncate' => 
+    array (
+      0 => 'bool',
+      'lob' => 'resource',
+      'size' => 'int',
+    ),
+    'pg_lo_write' => 
+    array (
+      0 => 'false|int',
+      'lob' => 'resource',
+      'data' => 'string',
+      'length=' => 'int|null',
+    ),
+    'pg_meta_data' => 
+    array (
+      0 => 'array<array-key, mixed>|false',
+      'connection' => 'resource',
+      'table_name' => 'string',
+      'extended=' => 'bool',
+    ),
+    'pg_num_fields' => 
+    array (
+      0 => 'int',
+      'result' => 'resource',
+    ),
+    'pg_num_rows' => 
+    array (
+      0 => 'int',
+      'result' => 'resource',
+    ),
+    'pg_options' => 
+    array (
+      0 => 'string',
+      'connection=' => 'null|resource',
+    ),
+    'pg_pconnect' => 
+    array (
+      0 => 'false|resource',
+      'connection_string' => 'string',
+      'flags=' => 'int',
+    ),
+    'pg_ping' => 
+    array (
+      0 => 'bool',
+      'connection=' => 'null|resource',
+    ),
+    'pg_port' => 
+    array (
+      0 => 'string',
+      'connection=' => 'null|resource',
+    ),
+    'pg_result_error' => 
+    array (
+      0 => 'false|string',
+      'result' => 'resource',
+    ),
+    'pg_result_error_field' => 
+    array (
+      0 => 'false|null|string',
+      'result' => 'resource',
+      'field_code' => 'int',
+    ),
+    'pg_result_seek' => 
+    array (
+      0 => 'bool',
+      'result' => 'resource',
+      'row' => 'int',
+    ),
+    'pg_result_status' => 
+    array (
+      0 => 'int|string',
+      'result' => 'resource',
+      'mode=' => 'int',
+    ),
+    'pg_select' => 
+    array (
+      0 => 'array<array-key, mixed>|false|string',
+      'connection' => 'resource',
+      'table_name' => 'string',
+      'conditions' => 'array<array-key, mixed>',
+      'flags=' => 'int',
+      'mode=' => 'int',
+    ),
+    'pg_send_execute' => 
+    array (
+      0 => 'bool|int',
+      'connection' => 'resource',
+      'statement_name' => 'string',
+      'params' => 'array<array-key, mixed>',
+    ),
+    'pg_send_prepare' => 
+    array (
+      0 => 'bool|int',
+      'connection' => 'resource',
+      'statement_name' => 'string',
+      'query' => 'string',
+    ),
+    'pg_send_query' => 
+    array (
+      0 => 'bool|int',
+      'connection' => 'resource',
+      'query' => 'string',
+    ),
+    'pg_send_query_params' => 
+    array (
+      0 => 'bool|int',
+      'connection' => 'resource',
+      'query' => 'string',
+      'params' => 'array<array-key, mixed>',
+    ),
+    'pg_trace' => 
+    array (
+      0 => 'bool',
+      'filename' => 'string',
+      'mode=' => 'string',
+      'connection=' => 'null|resource',
+    ),
+    'pg_transaction_status' => 
+    array (
+      0 => 'int',
+      'connection' => 'resource',
+    ),
+    'pg_tty' => 
+    array (
+      0 => 'string',
+      'connection=' => 'null|resource',
+    ),
+    'pg_untrace' => 
+    array (
+      0 => 'bool',
+      'connection=' => 'null|resource',
+    ),
+    'pg_update' => 
+    array (
+      0 => 'bool|string',
+      'connection' => 'resource',
+      'table_name' => 'string',
+      'values' => 'array<array-key, mixed>',
+      'conditions' => 'array<array-key, mixed>',
+      'flags=' => 'int',
+    ),
+    'pg_version' => 
+    array (
+      0 => 'array<array-key, mixed>',
+      'connection=' => 'null|resource',
+    ),
     'reflectionmethod::isstatic' => 
     array (
       0 => 'bool',

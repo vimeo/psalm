@@ -3,12 +3,67 @@
 return array (
   'added' => 
   array (
+    'imagerotate' => 
+    array (
+      0 => 'GdImage|false',
+      'image' => 'GdImage',
+      'angle' => 'float',
+      'background_color' => 'int',
+      'ignore_transparent=' => 'bool',
+    ),
+    'imagick::setimageblueprimary' => 
+    array (
+      0 => 'bool',
+      'x' => 'float',
+      'y' => 'float',
+    ),
+    'imagick::setimagegreenprimary' => 
+    array (
+      0 => 'bool',
+      'x' => 'float',
+      'y' => 'float',
+    ),
+    'imagick::setimageredprimary' => 
+    array (
+      0 => 'bool',
+      'x' => 'float',
+      'y' => 'float',
+    ),
+    'imagick::setimagewhitepoint' => 
+    array (
+      0 => 'bool',
+      'x' => 'float',
+      'y' => 'float',
+    ),
     'json_validate' => 
     array (
       0 => 'bool',
       'json' => 'string',
       'depth=' => 'int<1, max>',
       'flags=' => 'int',
+    ),
+    'pg_close' => 
+    array (
+      0 => 'bool',
+      'connection=' => 'PgSql\\Connection|null',
+    ),
+    'pg_trace' => 
+    array (
+      0 => 'bool',
+      'filename' => 'string',
+      'mode=' => 'string',
+      'connection=' => 'PgSql\\Connection|null',
+    ),
+    'pg_untrace' => 
+    array (
+      0 => 'bool',
+      'connection=' => 'PgSql\\Connection|null',
+    ),
+    'xml_parser_get_option' => 
+    array (
+      0 => 'int|string',
+      'parser' => 'XMLParser',
+      'option' => 'int',
     ),
   ),
   'changed' => 
@@ -193,51 +248,6 @@ return array (
         'text' => 'string',
       ),
     ),
-    'intlcal_clear' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'calendar' => 'IntlCalendar',
-        'field=' => 'int|null',
-      ),
-      'new' => 
-      array (
-        0 => 'true',
-        'calendar' => 'IntlCalendar',
-        'field=' => 'int|null',
-      ),
-    ),
-    'intlcal_set_first_day_of_week' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'calendar' => 'IntlCalendar',
-        'dayOfWeek' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'true',
-        'calendar' => 'IntlCalendar',
-        'dayOfWeek' => 'int',
-      ),
-    ),
-    'intlcal_set_lenient' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'calendar' => 'IntlCalendar',
-        'lenient' => 'bool',
-      ),
-      'new' => 
-      array (
-        0 => 'true',
-        'calendar' => 'IntlCalendar',
-        'lenient' => 'bool',
-      ),
-    ),
     'intlchar::enumcharnames' => 
     array (
       'old' => 
@@ -296,21 +306,6 @@ return array (
         'text' => 'string',
       ),
     ),
-    'mt_srand' => 
-    array (
-      'old' => 
-      array (
-        0 => 'void',
-        'seed=' => 'int',
-        'mode=' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'void',
-        'seed=' => 'int|null',
-        'mode=' => 'int',
-      ),
-    ),
     'natcasesort' => 
     array (
       'old' => 
@@ -364,37 +359,6 @@ return array (
         'flags=' => 'int',
       ),
     ),
-    'srand' => 
-    array (
-      'old' => 
-      array (
-        0 => 'void',
-        'seed=' => 'int',
-        'mode=' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'void',
-        'seed=' => 'int|null',
-        'mode=' => 'int',
-      ),
-    ),
-    'strrchr' => 
-    array (
-      'old' => 
-      array (
-        0 => 'false|string',
-        'haystack' => 'string',
-        'needle' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'false|string',
-        'haystack' => 'string',
-        'needle' => 'string',
-        'before_needle=' => 'bool',
-      ),
-    ),
   ),
   'removed' => 
   array (
@@ -425,6 +389,18 @@ return array (
     'errorexception::__clone' => 
     array (
       0 => 'void',
+    ),
+    'intlcal_set_repeated_wall_time_option' => 
+    array (
+      0 => 'true',
+      'calendar' => 'IntlCalendar',
+      'option' => 'int',
+    ),
+    'intlcal_set_skipped_wall_time_option' => 
+    array (
+      0 => 'true',
+      'calendar' => 'IntlCalendar',
+      'option' => 'int',
     ),
     'intlcodepointbreakiterator::__construct' => 
     array (
