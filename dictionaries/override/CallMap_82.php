@@ -2560,16 +2560,6 @@ return array (
   array (
     0 => 'void',
   ),
-  'couchbase\\booleanfieldsearchquery::boost' => 
-  array (
-    0 => 'Couchbase\\BooleanFieldSearchQuery',
-    'boost' => 'float',
-  ),
-  'couchbase\\booleanfieldsearchquery::field' => 
-  array (
-    0 => 'Couchbase\\BooleanFieldSearchQuery',
-    'field' => 'string',
-  ),
   'couchbase\\booleanfieldsearchquery::jsonserialize' => 
   array (
     0 => 'array<array-key, mixed>',
@@ -3071,26 +3061,11 @@ return array (
   array (
     0 => 'void',
   ),
-  'couchbase\\daterangesearchquery::boost' => 
-  array (
-    0 => 'Couchbase\\DateRangeSearchQuery',
-    'boost' => 'float',
-  ),
-  'couchbase\\daterangesearchquery::datetimeparser' => 
-  array (
-    0 => 'Couchbase\\DateRangeSearchQuery',
-    'dateTimeParser' => 'string',
-  ),
   'couchbase\\daterangesearchquery::end' => 
   array (
     0 => 'Couchbase\\DateRangeSearchQuery',
     'end' => 'int|string',
     'inclusive=' => 'bool',
-  ),
-  'couchbase\\daterangesearchquery::field' => 
-  array (
-    0 => 'Couchbase\\DateRangeSearchQuery',
-    'field' => 'string',
   ),
   'couchbase\\daterangesearchquery::jsonserialize' => 
   array (
@@ -3118,11 +3093,6 @@ return array (
   array (
     0 => 'void',
   ),
-  'couchbase\\disjunctionsearchquery::boost' => 
-  array (
-    0 => 'Couchbase\\DisjunctionSearchQuery',
-    'boost' => 'float',
-  ),
   'couchbase\\disjunctionsearchquery::either' => 
   array (
     0 => 'Couchbase\\DisjunctionSearchQuery',
@@ -3132,29 +3102,14 @@ return array (
   array (
     0 => 'array<array-key, mixed>',
   ),
-  'couchbase\\disjunctionsearchquery::min' => 
-  array (
-    0 => 'Couchbase\\DisjunctionSearchQuery',
-    'min' => 'int',
-  ),
   'couchbase\\docidsearchquery::__construct' => 
   array (
     0 => 'void',
-  ),
-  'couchbase\\docidsearchquery::boost' => 
-  array (
-    0 => 'Couchbase\\DocIdSearchQuery',
-    'boost' => 'float',
   ),
   'couchbase\\docidsearchquery::docids' => 
   array (
     0 => 'Couchbase\\DocIdSearchQuery',
     '...documentIds=' => 'array<int, string>',
-  ),
-  'couchbase\\docidsearchquery::field' => 
-  array (
-    0 => 'Couchbase\\DocIdSearchQuery',
-    'field' => 'string',
   ),
   'couchbase\\docidsearchquery::jsonserialize' => 
   array (
@@ -3174,16 +3129,6 @@ return array (
   array (
     0 => 'void',
   ),
-  'couchbase\\geoboundingboxsearchquery::boost' => 
-  array (
-    0 => 'Couchbase\\GeoBoundingBoxSearchQuery',
-    'boost' => 'float',
-  ),
-  'couchbase\\geoboundingboxsearchquery::field' => 
-  array (
-    0 => 'Couchbase\\GeoBoundingBoxSearchQuery',
-    'field' => 'string',
-  ),
   'couchbase\\geoboundingboxsearchquery::jsonserialize' => 
   array (
     0 => 'array<array-key, mixed>',
@@ -3191,16 +3136,6 @@ return array (
   'couchbase\\geodistancesearchquery::__construct' => 
   array (
     0 => 'void',
-  ),
-  'couchbase\\geodistancesearchquery::boost' => 
-  array (
-    0 => 'Couchbase\\GeoDistanceSearchQuery',
-    'boost' => 'float',
-  ),
-  'couchbase\\geodistancesearchquery::field' => 
-  array (
-    0 => 'Couchbase\\GeoDistanceSearchQuery',
-    'field' => 'string',
   ),
   'couchbase\\geodistancesearchquery::jsonserialize' => 
   array (
@@ -3236,11 +3171,6 @@ return array (
   array (
     0 => 'void',
   ),
-  'couchbase\\matchallsearchquery::boost' => 
-  array (
-    0 => 'Couchbase\\MatchAllSearchQuery',
-    'boost' => 'float',
-  ),
   'couchbase\\matchallsearchquery::jsonserialize' => 
   array (
     0 => 'array<array-key, mixed>',
@@ -3248,11 +3178,6 @@ return array (
   'couchbase\\matchnonesearchquery::__construct' => 
   array (
     0 => 'void',
-  ),
-  'couchbase\\matchnonesearchquery::boost' => 
-  array (
-    0 => 'Couchbase\\MatchNoneSearchQuery',
-    'boost' => 'float',
   ),
   'couchbase\\matchnonesearchquery::jsonserialize' => 
   array (
@@ -3262,21 +3187,6 @@ return array (
   array (
     0 => 'void',
   ),
-  'couchbase\\matchphrasesearchquery::analyzer' => 
-  array (
-    0 => 'Couchbase\\MatchPhraseSearchQuery',
-    'analyzer' => 'string',
-  ),
-  'couchbase\\matchphrasesearchquery::boost' => 
-  array (
-    0 => 'Couchbase\\MatchPhraseSearchQuery',
-    'boost' => 'float',
-  ),
-  'couchbase\\matchphrasesearchquery::field' => 
-  array (
-    0 => 'Couchbase\\MatchPhraseSearchQuery',
-    'field' => 'string',
-  ),
   'couchbase\\matchphrasesearchquery::jsonserialize' => 
   array (
     0 => 'array<array-key, mixed>',
@@ -3285,34 +3195,9 @@ return array (
   array (
     0 => 'void',
   ),
-  'couchbase\\matchsearchquery::analyzer' => 
-  array (
-    0 => 'Couchbase\\MatchSearchQuery',
-    'analyzer' => 'string',
-  ),
-  'couchbase\\matchsearchquery::boost' => 
-  array (
-    0 => 'Couchbase\\MatchSearchQuery',
-    'boost' => 'float',
-  ),
-  'couchbase\\matchsearchquery::field' => 
-  array (
-    0 => 'Couchbase\\MatchSearchQuery',
-    'field' => 'string',
-  ),
-  'couchbase\\matchsearchquery::fuzziness' => 
-  array (
-    0 => 'Couchbase\\MatchSearchQuery',
-    'fuzziness' => 'int',
-  ),
   'couchbase\\matchsearchquery::jsonserialize' => 
   array (
     0 => 'array<array-key, mixed>',
-  ),
-  'couchbase\\matchsearchquery::prefixlength' => 
-  array (
-    0 => 'Couchbase\\MatchSearchQuery',
-    'prefixLength' => 'int',
   ),
   'couchbase\\mutateinbuilder::__construct' => 
   array (
@@ -3549,31 +3434,9 @@ return array (
   array (
     0 => 'void',
   ),
-  'couchbase\\numericrangesearchquery::boost' => 
-  array (
-    0 => 'Couchbase\\NumericRangeSearchQuery',
-    'boost' => 'float',
-  ),
-  'couchbase\\numericrangesearchquery::field' => 
-  array (
-    0 => 'Couchbase\\NumericRangeSearchQuery',
-    'field' => 'string',
-  ),
   'couchbase\\numericrangesearchquery::jsonserialize' => 
   array (
     0 => 'array<array-key, mixed>',
-  ),
-  'couchbase\\numericrangesearchquery::max' => 
-  array (
-    0 => 'Couchbase\\NumericRangeSearchQuery',
-    'max' => 'float',
-    'inclusive=' => 'bool',
-  ),
-  'couchbase\\numericrangesearchquery::min' => 
-  array (
-    0 => 'Couchbase\\NumericRangeSearchQuery',
-    'min' => 'float',
-    'inclusive=' => 'bool',
   ),
   'couchbase\\passthrudecoder' => 
   array (
@@ -3601,16 +3464,6 @@ return array (
   array (
     0 => 'void',
   ),
-  'couchbase\\phrasesearchquery::boost' => 
-  array (
-    0 => 'Couchbase\\PhraseSearchQuery',
-    'boost' => 'float',
-  ),
-  'couchbase\\phrasesearchquery::field' => 
-  array (
-    0 => 'Couchbase\\PhraseSearchQuery',
-    'field' => 'string',
-  ),
   'couchbase\\phrasesearchquery::jsonserialize' => 
   array (
     0 => 'array<array-key, mixed>',
@@ -3618,16 +3471,6 @@ return array (
   'couchbase\\prefixsearchquery::__construct' => 
   array (
     0 => 'void',
-  ),
-  'couchbase\\prefixsearchquery::boost' => 
-  array (
-    0 => 'Couchbase\\PrefixSearchQuery',
-    'boost' => 'float',
-  ),
-  'couchbase\\prefixsearchquery::field' => 
-  array (
-    0 => 'Couchbase\\PrefixSearchQuery',
-    'field' => 'string',
   ),
   'couchbase\\prefixsearchquery::jsonserialize' => 
   array (
@@ -3637,11 +3480,6 @@ return array (
   array (
     0 => 'void',
   ),
-  'couchbase\\querystringsearchquery::boost' => 
-  array (
-    0 => 'Couchbase\\QueryStringSearchQuery',
-    'boost' => 'float',
-  ),
   'couchbase\\querystringsearchquery::jsonserialize' => 
   array (
     0 => 'array<array-key, mixed>',
@@ -3649,16 +3487,6 @@ return array (
   'couchbase\\regexpsearchquery::__construct' => 
   array (
     0 => 'void',
-  ),
-  'couchbase\\regexpsearchquery::boost' => 
-  array (
-    0 => 'Couchbase\\RegexpSearchQuery',
-    'boost' => 'float',
-  ),
-  'couchbase\\regexpsearchquery::field' => 
-  array (
-    0 => 'Couchbase\\RegexpSearchQuery',
-    'field' => 'string',
   ),
   'couchbase\\regexpsearchquery::jsonserialize' => 
   array (
@@ -3861,11 +3689,6 @@ return array (
   array (
     0 => 'void',
   ),
-  'couchbase\\searchsortfield::descending' => 
-  array (
-    0 => 'Couchbase\\SearchSortField',
-    'descending' => 'bool',
-  ),
   'couchbase\\searchsortfield::field' => 
   array (
     0 => 'Couchbase\\SearchSortField',
@@ -3909,11 +3732,6 @@ return array (
   array (
     0 => 'void',
   ),
-  'couchbase\\searchsortgeodistance::descending' => 
-  array (
-    0 => 'Couchbase\\SearchSortGeoDistance',
-    'descending' => 'bool',
-  ),
   'couchbase\\searchsortgeodistance::field' => 
   array (
     0 => 'Couchbase\\SearchSortField',
@@ -3938,19 +3756,9 @@ return array (
   array (
     0 => 'Couchbase\\SearchSortScore',
   ),
-  'couchbase\\searchsortgeodistance::unit' => 
-  array (
-    0 => 'Couchbase\\SearchSortGeoDistance',
-    'unit' => 'string',
-  ),
   'couchbase\\searchsortid::__construct' => 
   array (
     0 => 'void',
-  ),
-  'couchbase\\searchsortid::descending' => 
-  array (
-    0 => 'Couchbase\\SearchSortId',
-    'descending' => 'bool',
   ),
   'couchbase\\searchsortid::field' => 
   array (
@@ -3979,11 +3787,6 @@ return array (
   'couchbase\\searchsortscore::__construct' => 
   array (
     0 => 'void',
-  ),
-  'couchbase\\searchsortscore::descending' => 
-  array (
-    0 => 'Couchbase\\SearchSortScore',
-    'descending' => 'bool',
   ),
   'couchbase\\searchsortscore::field' => 
   array (
@@ -4061,31 +3864,9 @@ return array (
   array (
     0 => 'void',
   ),
-  'couchbase\\termrangesearchquery::boost' => 
-  array (
-    0 => 'Couchbase\\TermRangeSearchQuery',
-    'boost' => 'float',
-  ),
-  'couchbase\\termrangesearchquery::field' => 
-  array (
-    0 => 'Couchbase\\TermRangeSearchQuery',
-    'field' => 'string',
-  ),
   'couchbase\\termrangesearchquery::jsonserialize' => 
   array (
     0 => 'array<array-key, mixed>',
-  ),
-  'couchbase\\termrangesearchquery::max' => 
-  array (
-    0 => 'Couchbase\\TermRangeSearchQuery',
-    'max' => 'string',
-    'inclusive=' => 'bool',
-  ),
-  'couchbase\\termrangesearchquery::min' => 
-  array (
-    0 => 'Couchbase\\TermRangeSearchQuery',
-    'min' => 'string',
-    'inclusive=' => 'bool',
   ),
   'couchbase\\termsearchfacet::__construct' => 
   array (
@@ -4099,29 +3880,9 @@ return array (
   array (
     0 => 'void',
   ),
-  'couchbase\\termsearchquery::boost' => 
-  array (
-    0 => 'Couchbase\\TermSearchQuery',
-    'boost' => 'float',
-  ),
-  'couchbase\\termsearchquery::field' => 
-  array (
-    0 => 'Couchbase\\TermSearchQuery',
-    'field' => 'string',
-  ),
-  'couchbase\\termsearchquery::fuzziness' => 
-  array (
-    0 => 'Couchbase\\TermSearchQuery',
-    'fuzziness' => 'int',
-  ),
   'couchbase\\termsearchquery::jsonserialize' => 
   array (
     0 => 'array<array-key, mixed>',
-  ),
-  'couchbase\\termsearchquery::prefixlength' => 
-  array (
-    0 => 'Couchbase\\TermSearchQuery',
-    'prefixLength' => 'int',
   ),
   'couchbase\\usersettings::fullname' => 
   array (
@@ -4229,16 +3990,6 @@ return array (
   'couchbase\\wildcardsearchquery::__construct' => 
   array (
     0 => 'void',
-  ),
-  'couchbase\\wildcardsearchquery::boost' => 
-  array (
-    0 => 'Couchbase\\WildcardSearchQuery',
-    'boost' => 'float',
-  ),
-  'couchbase\\wildcardsearchquery::field' => 
-  array (
-    0 => 'Couchbase\\WildcardSearchQuery',
-    'field' => 'string',
   ),
   'couchbase\\wildcardsearchquery::jsonserialize' => 
   array (

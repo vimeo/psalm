@@ -4153,6 +4153,188 @@ return array (
     0 => 'float',
     'num' => 'float',
   ),
+  'couchbase\\analyticsexception::__clone' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\analyticsexception::__construct' => 
+  array (
+    0 => 'string',
+    'message=' => 'string',
+    'code=' => 'string',
+    'previous=' => 'string',
+  ),
+  'couchbase\\analyticsexception::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\analyticsexception::__wakeup' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\analyticsexception::context' => 
+  array (
+    0 => 'Couchbase\\object|null',
+  ),
+  'couchbase\\analyticsexception::getcode' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\analyticsexception::getfile' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\analyticsexception::getline' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\analyticsexception::getmessage' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\analyticsexception::getprevious' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\analyticsexception::gettrace' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\analyticsexception::gettraceasstring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\analyticsexception::ref' => 
+  array (
+    0 => 'null|string',
+  ),
+  'couchbase\\analyticsindexmanager::connectlink' => 
+  array (
+    0 => 'string',
+    'options=' => 'Couchbase\\ConnectAnalyticsLinkOptions|null',
+  ),
+  'couchbase\\analyticsindexmanager::createdataset' => 
+  array (
+    0 => 'string',
+    'datasetName' => 'string',
+    'bucketName' => 'string',
+    'options=' => 'Couchbase\\CreateAnalyticsDatasetOptions|null',
+  ),
+  'couchbase\\analyticsindexmanager::createdataverse' => 
+  array (
+    0 => 'string',
+    'dataverseName' => 'string',
+    'options=' => 'Couchbase\\CreateAnalyticsDataverseOptions|null',
+  ),
+  'couchbase\\analyticsindexmanager::createindex' => 
+  array (
+    0 => 'string',
+    'datasetName' => 'string',
+    'indexName' => 'string',
+    'fields' => 'array<array-key, mixed>',
+    'options=' => 'Couchbase\\CreateAnalyticsIndexOptions|null',
+  ),
+  'couchbase\\analyticsindexmanager::createlink' => 
+  array (
+    0 => 'string',
+    'link' => 'Couchbase\\AnalyticsLink',
+    'options=' => 'Couchbase\\CreateAnalyticsLinkOptions|null',
+  ),
+  'couchbase\\analyticsindexmanager::disconnectlink' => 
+  array (
+    0 => 'string',
+    'options=' => 'Couchbase\\DisconnectAnalyticsLinkOptions|null',
+  ),
+  'couchbase\\analyticsindexmanager::dropdataset' => 
+  array (
+    0 => 'string',
+    'datasetName' => 'string',
+    'options=' => 'Couchbase\\DropAnalyticsDatasetOptions|null',
+  ),
+  'couchbase\\analyticsindexmanager::dropdataverse' => 
+  array (
+    0 => 'string',
+    'dataverseName' => 'string',
+    'options=' => 'Couchbase\\DropAnalyticsDataverseOptions|null',
+  ),
+  'couchbase\\analyticsindexmanager::dropindex' => 
+  array (
+    0 => 'string',
+    'datasetName' => 'string',
+    'indexName' => 'string',
+    'options=' => 'Couchbase\\DropAnalyticsIndexOptions|null',
+  ),
+  'couchbase\\analyticsindexmanager::droplink' => 
+  array (
+    0 => 'string',
+    'linkName' => 'string',
+    'dataverseName' => 'string',
+    'options=' => 'Couchbase\\DropAnalyticsLinkOptions|null',
+  ),
+  'couchbase\\analyticsindexmanager::getalldatasets' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\analyticsindexmanager::getallindexes' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\analyticsindexmanager::getlinks' => 
+  array (
+    0 => 'string',
+    'options=' => 'Couchbase\\GetAnalyticsLinksOptions|null',
+  ),
+  'couchbase\\analyticsindexmanager::getpendingmutations' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\analyticsindexmanager::replacelink' => 
+  array (
+    0 => 'string',
+    'link' => 'Couchbase\\AnalyticsLink',
+    'options=' => 'Couchbase\\ReplaceAnalyticsLinkOptions|null',
+  ),
+  'couchbase\\analyticsoptions::clientcontextid' => 
+  array (
+    0 => 'Couchbase\\AnalyticsOptions',
+    'value' => 'string',
+  ),
+  'couchbase\\analyticsoptions::namedparameters' => 
+  array (
+    0 => 'Couchbase\\AnalyticsOptions',
+    'pairs' => 'array<array-key, mixed>',
+  ),
+  'couchbase\\analyticsoptions::positionalparameters' => 
+  array (
+    0 => 'Couchbase\\AnalyticsOptions',
+    'args' => 'array<array-key, mixed>',
+  ),
+  'couchbase\\analyticsoptions::priority' => 
+  array (
+    0 => 'Couchbase\\AnalyticsOptions',
+    'urgent' => 'bool',
+  ),
+  'couchbase\\analyticsoptions::raw' => 
+  array (
+    0 => 'Couchbase\\AnalyticsOptions',
+    'key' => 'string',
+    'value' => 'string',
+  ),
+  'couchbase\\analyticsoptions::readonly' => 
+  array (
+    0 => 'Couchbase\\AnalyticsOptions',
+    'arg' => 'bool',
+  ),
+  'couchbase\\analyticsoptions::scanconsistency' => 
+  array (
+    0 => 'Couchbase\\AnalyticsOptions',
+    'arg' => 'string',
+  ),
+  'couchbase\\analyticsoptions::timeout' => 
+  array (
+    0 => 'Couchbase\\AnalyticsOptions',
+    'arg' => 'int',
+  ),
   'couchbase\\analyticsquery::__construct' => 
   array (
     0 => 'void',
@@ -4161,6 +4343,221 @@ return array (
   array (
     0 => 'Couchbase\\AnalyticsQuery',
     'statement' => 'string',
+  ),
+  'couchbase\\appendoptions::durabilitylevel' => 
+  array (
+    0 => 'Couchbase\\AppendOptions',
+    'arg' => 'int',
+  ),
+  'couchbase\\appendoptions::timeout' => 
+  array (
+    0 => 'Couchbase\\AppendOptions',
+    'arg' => 'int',
+  ),
+  'couchbase\\authenticationexception::__clone' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\authenticationexception::__construct' => 
+  array (
+    0 => 'string',
+    'message=' => 'string',
+    'code=' => 'string',
+    'previous=' => 'string',
+  ),
+  'couchbase\\authenticationexception::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\authenticationexception::__wakeup' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\authenticationexception::context' => 
+  array (
+    0 => 'Couchbase\\object|null',
+  ),
+  'couchbase\\authenticationexception::getcode' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\authenticationexception::getfile' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\authenticationexception::getline' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\authenticationexception::getmessage' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\authenticationexception::getprevious' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\authenticationexception::gettrace' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\authenticationexception::gettraceasstring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\authenticationexception::ref' => 
+  array (
+    0 => 'null|string',
+  ),
+  'couchbase\\azureblobexternalanalyticslink::accountkey' => 
+  array (
+    0 => 'Couchbase\\AzureBlobExternalAnalyticsLink',
+    'accountKey' => 'string',
+  ),
+  'couchbase\\azureblobexternalanalyticslink::accountname' => 
+  array (
+    0 => 'Couchbase\\AzureBlobExternalAnalyticsLink',
+    'accountName' => 'string',
+  ),
+  'couchbase\\azureblobexternalanalyticslink::blobendpoint' => 
+  array (
+    0 => 'Couchbase\\AzureBlobExternalAnalyticsLink',
+    'blobEndpoint' => 'string',
+  ),
+  'couchbase\\azureblobexternalanalyticslink::connectionstring' => 
+  array (
+    0 => 'Couchbase\\AzureBlobExternalAnalyticsLink',
+    'connectionString' => 'string',
+  ),
+  'couchbase\\azureblobexternalanalyticslink::dataverse' => 
+  array (
+    0 => 'Couchbase\\AzureBlobExternalAnalyticsLink',
+    'dataverse' => 'string',
+  ),
+  'couchbase\\azureblobexternalanalyticslink::endpointsuffix' => 
+  array (
+    0 => 'Couchbase\\AzureBlobExternalAnalyticsLink',
+    'suffix' => 'string',
+  ),
+  'couchbase\\azureblobexternalanalyticslink::name' => 
+  array (
+    0 => 'Couchbase\\AzureBlobExternalAnalyticsLink',
+    'name' => 'string',
+  ),
+  'couchbase\\azureblobexternalanalyticslink::sharedaccesssignature' => 
+  array (
+    0 => 'Couchbase\\AzureBlobExternalAnalyticsLink',
+    'signature' => 'string',
+  ),
+  'couchbase\\badinputexception::__clone' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\badinputexception::__construct' => 
+  array (
+    0 => 'string',
+    'message=' => 'string',
+    'code=' => 'string',
+    'previous=' => 'string',
+  ),
+  'couchbase\\badinputexception::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\badinputexception::__wakeup' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\badinputexception::context' => 
+  array (
+    0 => 'Couchbase\\object|null',
+  ),
+  'couchbase\\badinputexception::getcode' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\badinputexception::getfile' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\badinputexception::getline' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\badinputexception::getmessage' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\badinputexception::getprevious' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\badinputexception::gettrace' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\badinputexception::gettraceasstring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\badinputexception::ref' => 
+  array (
+    0 => 'null|string',
+  ),
+  'couchbase\\baseexception::__clone' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\baseexception::__construct' => 
+  array (
+    0 => 'string',
+    'message=' => 'string',
+    'code=' => 'string',
+    'previous=' => 'string',
+  ),
+  'couchbase\\baseexception::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\baseexception::__wakeup' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\baseexception::context' => 
+  array (
+    0 => 'Couchbase\\object|null',
+  ),
+  'couchbase\\baseexception::getcode' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\baseexception::getfile' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\baseexception::getline' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\baseexception::getmessage' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\baseexception::getprevious' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\baseexception::gettrace' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\baseexception::gettraceasstring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\baseexception::ref' => 
+  array (
+    0 => 'null|string',
   ),
   'couchbase\\basicdecoderv1' => 
   array (
@@ -4175,6 +4572,91 @@ return array (
     0 => 'array<array-key, mixed>',
     'value' => 'mixed',
     'options' => 'array<array-key, mixed>',
+  ),
+  'couchbase\\binarycollection::append' => 
+  array (
+    0 => 'Couchbase\\MutationResult',
+    'id' => 'string',
+    'value' => 'string',
+    'options=' => 'Couchbase\\AppendOptions|null',
+  ),
+  'couchbase\\binarycollection::decrement' => 
+  array (
+    0 => 'Couchbase\\CounterResult',
+    'id' => 'string',
+    'options=' => 'Couchbase\\DecrementOptions|null',
+  ),
+  'couchbase\\binarycollection::increment' => 
+  array (
+    0 => 'Couchbase\\CounterResult',
+    'id' => 'string',
+    'options=' => 'Couchbase\\IncrementOptions|null',
+  ),
+  'couchbase\\binarycollection::name' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\binarycollection::prepend' => 
+  array (
+    0 => 'Couchbase\\MutationResult',
+    'id' => 'string',
+    'value' => 'string',
+    'options=' => 'Couchbase\\PrependOptions|null',
+  ),
+  'couchbase\\bindingsexception::__clone' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\bindingsexception::__construct' => 
+  array (
+    0 => 'string',
+    'message=' => 'string',
+    'code=' => 'string',
+    'previous=' => 'string',
+  ),
+  'couchbase\\bindingsexception::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\bindingsexception::__wakeup' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\bindingsexception::context' => 
+  array (
+    0 => 'Couchbase\\object|null',
+  ),
+  'couchbase\\bindingsexception::getcode' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\bindingsexception::getfile' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\bindingsexception::getline' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\bindingsexception::getmessage' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\bindingsexception::getprevious' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\bindingsexception::gettrace' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\bindingsexception::gettraceasstring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\bindingsexception::ref' => 
+  array (
+    0 => 'null|string',
   ),
   'couchbase\\booleanfieldsearchquery::__construct' => 
   array (
@@ -4244,6 +4726,10 @@ return array (
     'value' => 'mixed',
     'options=' => 'array<array-key, mixed>',
   ),
+  'couchbase\\bucket::collections' => 
+  array (
+    0 => 'Couchbase\\CollectionManager',
+  ),
   'couchbase\\bucket::counter' => 
   array (
     0 => 'Couchbase\\Document|array<array-key, mixed>',
@@ -4258,10 +4744,23 @@ return array (
     'fieldOptions' => 'mixed',
     'prefix=' => 'string',
   ),
+  'couchbase\\bucket::defaultcollection' => 
+  array (
+    0 => 'Couchbase\\Collection',
+  ),
+  'couchbase\\bucket::defaultscope' => 
+  array (
+    0 => 'Couchbase\\Scope',
+  ),
   'couchbase\\bucket::diag' => 
   array (
     0 => 'array<array-key, mixed>',
     'reportId=' => 'string',
+  ),
+  'couchbase\\bucket::diagnostics' => 
+  array (
+    0 => 'string',
+    'reportId' => 'string',
   ),
   'couchbase\\bucket::encryptfields' => 
   array (
@@ -4388,6 +4887,10 @@ return array (
     'id' => 'string',
     'cas' => 'string',
   ),
+  'couchbase\\bucket::name' => 
+  array (
+    0 => 'string',
+  ),
   'couchbase\\bucket::ping' => 
   array (
     0 => 'array<array-key, mixed>',
@@ -4448,6 +4951,11 @@ return array (
     'id' => 'string',
     '...paths=' => 'array<int, string>',
   ),
+  'couchbase\\bucket::scope' => 
+  array (
+    0 => 'Couchbase\\Scope',
+    'name' => 'string',
+  ),
   'couchbase\\bucket::setadd' => 
   array (
     0 => 'mixed',
@@ -4497,9 +5005,25 @@ return array (
     'value' => 'mixed',
     'options=' => 'array<array-key, mixed>',
   ),
+  'couchbase\\bucket::viewindexes' => 
+  array (
+    0 => 'Couchbase\\ViewIndexManager',
+  ),
+  'couchbase\\bucket::viewquery' => 
+  array (
+    0 => 'Couchbase\\ViewResult',
+    'designDoc' => 'string',
+    'viewName' => 'string',
+    'options=' => 'Couchbase\\ViewOptions|null',
+  ),
   'couchbase\\bucketmanager::__construct' => 
   array (
     0 => 'void',
+  ),
+  'couchbase\\bucketmanager::createbucket' => 
+  array (
+    0 => 'string',
+    'settings' => 'Couchbase\\BucketSettings',
   ),
   'couchbase\\bucketmanager::createn1qlindex' => 
   array (
@@ -4533,6 +5057,15 @@ return array (
   array (
     0 => 'mixed',
   ),
+  'couchbase\\bucketmanager::getallbuckets' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'couchbase\\bucketmanager::getbucket' => 
+  array (
+    0 => 'Couchbase\\BucketSettings',
+    'name' => 'string',
+  ),
   'couchbase\\bucketmanager::getdesigndocument' => 
   array (
     0 => 'array<array-key, mixed>',
@@ -4556,6 +5089,11 @@ return array (
   array (
     0 => 'array<array-key, mixed>',
   ),
+  'couchbase\\bucketmanager::removebucket' => 
+  array (
+    0 => 'string',
+    'name' => 'string',
+  ),
   'couchbase\\bucketmanager::removedesigndocument' => 
   array (
     0 => 'mixed',
@@ -4566,6 +5104,215 @@ return array (
     0 => 'mixed',
     'name' => 'string',
     'document' => 'array<array-key, mixed>',
+  ),
+  'couchbase\\bucketmissingexception::__clone' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\bucketmissingexception::__construct' => 
+  array (
+    0 => 'string',
+    'message=' => 'string',
+    'code=' => 'string',
+    'previous=' => 'string',
+  ),
+  'couchbase\\bucketmissingexception::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\bucketmissingexception::__wakeup' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\bucketmissingexception::context' => 
+  array (
+    0 => 'Couchbase\\object|null',
+  ),
+  'couchbase\\bucketmissingexception::getcode' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\bucketmissingexception::getfile' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\bucketmissingexception::getline' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\bucketmissingexception::getmessage' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\bucketmissingexception::getprevious' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\bucketmissingexception::gettrace' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\bucketmissingexception::gettraceasstring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\bucketmissingexception::ref' => 
+  array (
+    0 => 'null|string',
+  ),
+  'couchbase\\bucketsettings::buckettype' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\bucketsettings::compressionmode' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\bucketsettings::enableflush' => 
+  array (
+    0 => 'Couchbase\\BucketSettings',
+    'enable' => 'bool',
+  ),
+  'couchbase\\bucketsettings::enablereplicaindexes' => 
+  array (
+    0 => 'Couchbase\\BucketSettings',
+    'enable' => 'bool',
+  ),
+  'couchbase\\bucketsettings::evictionpolicy' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\bucketsettings::flushenabled' => 
+  array (
+    0 => 'bool',
+  ),
+  'couchbase\\bucketsettings::maxttl' => 
+  array (
+    0 => 'int',
+  ),
+  'couchbase\\bucketsettings::minimaldurabilitylevel' => 
+  array (
+    0 => 'int',
+  ),
+  'couchbase\\bucketsettings::name' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\bucketsettings::numreplicas' => 
+  array (
+    0 => 'int',
+  ),
+  'couchbase\\bucketsettings::ramquotamb' => 
+  array (
+    0 => 'int',
+  ),
+  'couchbase\\bucketsettings::replicaindexes' => 
+  array (
+    0 => 'bool',
+  ),
+  'couchbase\\bucketsettings::setbuckettype' => 
+  array (
+    0 => 'Couchbase\\BucketSettings',
+    'type' => 'string',
+  ),
+  'couchbase\\bucketsettings::setcompressionmode' => 
+  array (
+    0 => 'Couchbase\\BucketSettings',
+    'mode' => 'string',
+  ),
+  'couchbase\\bucketsettings::setevictionpolicy' => 
+  array (
+    0 => 'Couchbase\\BucketSettings',
+    'policy' => 'string',
+  ),
+  'couchbase\\bucketsettings::setmaxttl' => 
+  array (
+    0 => 'Couchbase\\BucketSettings',
+    'ttlSeconds' => 'int',
+  ),
+  'couchbase\\bucketsettings::setminimaldurabilitylevel' => 
+  array (
+    0 => 'Couchbase\\BucketSettings',
+    'durabilityLevel' => 'int',
+  ),
+  'couchbase\\bucketsettings::setname' => 
+  array (
+    0 => 'Couchbase\\BucketSettings',
+    'name' => 'string',
+  ),
+  'couchbase\\bucketsettings::setnumreplicas' => 
+  array (
+    0 => 'Couchbase\\BucketSettings',
+    'numReplicas' => 'int',
+  ),
+  'couchbase\\bucketsettings::setramquotamb' => 
+  array (
+    0 => 'Couchbase\\BucketSettings',
+    'sizeInMb' => 'int',
+  ),
+  'couchbase\\bucketsettings::setstoragebackend' => 
+  array (
+    0 => 'Couchbase\\BucketSettings',
+    'policy' => 'string',
+  ),
+  'couchbase\\bucketsettings::storagebackend' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\casmismatchexception::__clone' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\casmismatchexception::__construct' => 
+  array (
+    0 => 'string',
+    'message=' => 'string',
+    'code=' => 'string',
+    'previous=' => 'string',
+  ),
+  'couchbase\\casmismatchexception::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\casmismatchexception::__wakeup' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\casmismatchexception::context' => 
+  array (
+    0 => 'Couchbase\\object|null',
+  ),
+  'couchbase\\casmismatchexception::getcode' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\casmismatchexception::getfile' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\casmismatchexception::getline' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\casmismatchexception::getmessage' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\casmismatchexception::getprevious' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\casmismatchexception::gettrace' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\casmismatchexception::gettraceasstring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\casmismatchexception::ref' => 
+  array (
+    0 => 'null|string',
   ),
   'couchbase\\classicauthenticator::bucket' => 
   array (
@@ -4584,6 +5331,16 @@ return array (
     0 => 'void',
     'connstr' => 'string',
   ),
+  'couchbase\\cluster::analyticsindexes' => 
+  array (
+    0 => 'Couchbase\\AnalyticsIndexManager',
+  ),
+  'couchbase\\cluster::analyticsquery' => 
+  array (
+    0 => 'Couchbase\\AnalyticsResult',
+    'statement' => 'string',
+    'options=' => 'Couchbase\\AnalyticsOptions|null',
+  ),
   'couchbase\\cluster::authenticate' => 
   array (
     0 => 'null',
@@ -4594,6 +5351,15 @@ return array (
     0 => 'null',
     'username' => 'string',
     'password' => 'string',
+  ),
+  'couchbase\\cluster::bucket' => 
+  array (
+    0 => 'Couchbase\\Bucket',
+    'name' => 'string',
+  ),
+  'couchbase\\cluster::buckets' => 
+  array (
+    0 => 'Couchbase\\BucketManager',
   ),
   'couchbase\\cluster::manager' => 
   array (
@@ -4606,6 +5372,31 @@ return array (
     0 => 'Couchbase\\Bucket',
     'name=' => 'string',
     'password=' => 'string',
+  ),
+  'couchbase\\cluster::query' => 
+  array (
+    0 => 'Couchbase\\QueryResult',
+    'statement' => 'string',
+    'options=' => 'Couchbase\\QueryOptions|null',
+  ),
+  'couchbase\\cluster::queryindexes' => 
+  array (
+    0 => 'Couchbase\\QueryIndexManager',
+  ),
+  'couchbase\\cluster::searchindexes' => 
+  array (
+    0 => 'Couchbase\\SearchIndexManager',
+  ),
+  'couchbase\\cluster::searchquery' => 
+  array (
+    0 => 'Couchbase\\SearchResult',
+    'indexName' => 'string',
+    'query' => 'Couchbase\\SearchQuery',
+    'options=' => 'Couchbase\\SearchOptions|null',
+  ),
+  'couchbase\\cluster::users' => 
+  array (
+    0 => 'Couchbase\\UserManager',
   ),
   'couchbase\\clustermanager::__construct' => 
   array (
@@ -4654,6 +5445,238 @@ return array (
     'settings' => 'Couchbase\\UserSettings',
     'domain=' => 'int',
   ),
+  'couchbase\\clusteroptions::credentials' => 
+  array (
+    0 => 'Couchbase\\ClusterOptions',
+    'username' => 'string',
+    'password' => 'string',
+  ),
+  'couchbase\\collection::binary' => 
+  array (
+    0 => 'Couchbase\\BinaryCollection',
+  ),
+  'couchbase\\collection::exists' => 
+  array (
+    0 => 'Couchbase\\ExistsResult',
+    'id' => 'string',
+    'options=' => 'Couchbase\\ExistsOptions|null',
+  ),
+  'couchbase\\collection::get' => 
+  array (
+    0 => 'Couchbase\\GetResult',
+    'id' => 'string',
+    'options=' => 'Couchbase\\GetOptions|null',
+  ),
+  'couchbase\\collection::getallreplicas' => 
+  array (
+    0 => 'array<array-key, mixed>',
+    'id' => 'string',
+    'options=' => 'Couchbase\\GetAllReplicasOptions|null',
+  ),
+  'couchbase\\collection::getandlock' => 
+  array (
+    0 => 'Couchbase\\GetResult',
+    'id' => 'string',
+    'lockTime' => 'int',
+    'options=' => 'Couchbase\\GetAndLockOptions|null',
+  ),
+  'couchbase\\collection::getandtouch' => 
+  array (
+    0 => 'Couchbase\\GetResult',
+    'id' => 'string',
+    'expiry' => 'int',
+    'options=' => 'Couchbase\\GetAndTouchOptions|null',
+  ),
+  'couchbase\\collection::getanyreplica' => 
+  array (
+    0 => 'Couchbase\\GetReplicaResult',
+    'id' => 'string',
+    'options=' => 'Couchbase\\GetAnyReplicaOptions|null',
+  ),
+  'couchbase\\collection::getmulti' => 
+  array (
+    0 => 'array<array-key, mixed>',
+    'ids' => 'array<array-key, mixed>',
+    'options=' => 'Couchbase\\RemoveOptions|null',
+  ),
+  'couchbase\\collection::insert' => 
+  array (
+    0 => 'Couchbase\\MutationResult',
+    'id' => 'string',
+    'value' => 'string',
+    'options=' => 'Couchbase\\InsertOptions|null',
+  ),
+  'couchbase\\collection::lookupin' => 
+  array (
+    0 => 'Couchbase\\LookupInResult',
+    'id' => 'string',
+    'specs' => 'array<array-key, mixed>',
+    'options=' => 'Couchbase\\LookupInOptions|null',
+  ),
+  'couchbase\\collection::mutatein' => 
+  array (
+    0 => 'Couchbase\\MutateInResult',
+    'id' => 'string',
+    'specs' => 'array<array-key, mixed>',
+    'options=' => 'Couchbase\\MutateInOptions|null',
+  ),
+  'couchbase\\collection::name' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\collection::remove' => 
+  array (
+    0 => 'Couchbase\\MutationResult',
+    'id' => 'string',
+    'options=' => 'Couchbase\\RemoveOptions|null',
+  ),
+  'couchbase\\collection::removemulti' => 
+  array (
+    0 => 'array<array-key, mixed>',
+    'entries' => 'array<array-key, mixed>',
+    'options=' => 'Couchbase\\RemoveOptions|null',
+  ),
+  'couchbase\\collection::replace' => 
+  array (
+    0 => 'Couchbase\\MutationResult',
+    'id' => 'string',
+    'value' => 'string',
+    'options=' => 'Couchbase\\ReplaceOptions|null',
+  ),
+  'couchbase\\collection::touch' => 
+  array (
+    0 => 'Couchbase\\MutationResult',
+    'id' => 'string',
+    'expiry' => 'int',
+    'options=' => 'Couchbase\\TouchOptions|null',
+  ),
+  'couchbase\\collection::unlock' => 
+  array (
+    0 => 'Couchbase\\Result',
+    'id' => 'string',
+    'cas' => 'string',
+    'options=' => 'Couchbase\\UnlockOptions|null',
+  ),
+  'couchbase\\collection::upsert' => 
+  array (
+    0 => 'Couchbase\\MutationResult',
+    'id' => 'string',
+    'value' => 'string',
+    'options=' => 'Couchbase\\UpsertOptions|null',
+  ),
+  'couchbase\\collection::upsertmulti' => 
+  array (
+    0 => 'array<array-key, mixed>',
+    'entries' => 'array<array-key, mixed>',
+    'options=' => 'Couchbase\\UpsertOptions|null',
+  ),
+  'couchbase\\collectionmanager::createcollection' => 
+  array (
+    0 => 'string',
+    'collection' => 'Couchbase\\CollectionSpec',
+  ),
+  'couchbase\\collectionmanager::createscope' => 
+  array (
+    0 => 'string',
+    'name' => 'string',
+  ),
+  'couchbase\\collectionmanager::dropcollection' => 
+  array (
+    0 => 'string',
+    'collection' => 'Couchbase\\CollectionSpec',
+  ),
+  'couchbase\\collectionmanager::dropscope' => 
+  array (
+    0 => 'string',
+    'name' => 'string',
+  ),
+  'couchbase\\collectionmanager::getallscopes' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'couchbase\\collectionmanager::getscope' => 
+  array (
+    0 => 'Couchbase\\ScopeSpec',
+    'name' => 'string',
+  ),
+  'couchbase\\collectionmissingexception::__clone' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\collectionmissingexception::__construct' => 
+  array (
+    0 => 'string',
+    'message=' => 'string',
+    'code=' => 'string',
+    'previous=' => 'string',
+  ),
+  'couchbase\\collectionmissingexception::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\collectionmissingexception::__wakeup' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\collectionmissingexception::context' => 
+  array (
+    0 => 'Couchbase\\object|null',
+  ),
+  'couchbase\\collectionmissingexception::getcode' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\collectionmissingexception::getfile' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\collectionmissingexception::getline' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\collectionmissingexception::getmessage' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\collectionmissingexception::getprevious' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\collectionmissingexception::gettrace' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\collectionmissingexception::gettraceasstring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\collectionmissingexception::ref' => 
+  array (
+    0 => 'null|string',
+  ),
+  'couchbase\\collectionspec::name' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\collectionspec::scopename' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\collectionspec::setmaxexpiry' => 
+  array (
+    0 => 'Couchbase\\CollectionSpec',
+    'ms' => 'int',
+  ),
+  'couchbase\\collectionspec::setname' => 
+  array (
+    0 => 'Couchbase\\CollectionSpec',
+    'name' => 'string',
+  ),
+  'couchbase\\collectionspec::setscopename' => 
+  array (
+    0 => 'Couchbase\\CollectionSpec',
+    'name' => 'string',
+  ),
   'couchbase\\conjunctionsearchquery::__construct' => 
   array (
     0 => 'void',
@@ -4671,6 +5694,131 @@ return array (
   'couchbase\\conjunctionsearchquery::jsonserialize' => 
   array (
     0 => 'array<array-key, mixed>',
+  ),
+  'couchbase\\connectanalyticslinkoptions::dataversename' => 
+  array (
+    0 => 'Couchbase\\ConnectAnalyticsLinkOptions',
+    'dataverseName' => 'string',
+  ),
+  'couchbase\\connectanalyticslinkoptions::linkname' => 
+  array (
+    0 => 'Couchbase\\ConnectAnalyticsLinkOptions',
+    'linkName' => 'Couchbase\\bstring',
+  ),
+  'couchbase\\coordinate::__construct' => 
+  array (
+    0 => 'string',
+    'longitude' => 'float',
+    'latitude' => 'float',
+  ),
+  'couchbase\\coordinate::jsonserialize' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\couchbaseremoteanalyticslink::dataverse' => 
+  array (
+    0 => 'Couchbase\\CouchbaseRemoteAnalyticsLink',
+    'dataverse' => 'string',
+  ),
+  'couchbase\\couchbaseremoteanalyticslink::encryption' => 
+  array (
+    0 => 'Couchbase\\CouchbaseRemoteAnalyticsLink',
+    'settings' => 'Couchbase\\EncryptionSettings',
+  ),
+  'couchbase\\couchbaseremoteanalyticslink::hostname' => 
+  array (
+    0 => 'Couchbase\\CouchbaseRemoteAnalyticsLink',
+    'hostname' => 'string',
+  ),
+  'couchbase\\couchbaseremoteanalyticslink::name' => 
+  array (
+    0 => 'Couchbase\\CouchbaseRemoteAnalyticsLink',
+    'name' => 'string',
+  ),
+  'couchbase\\couchbaseremoteanalyticslink::password' => 
+  array (
+    0 => 'Couchbase\\CouchbaseRemoteAnalyticsLink',
+    'password' => 'string',
+  ),
+  'couchbase\\couchbaseremoteanalyticslink::username' => 
+  array (
+    0 => 'Couchbase\\CouchbaseRemoteAnalyticsLink',
+    'username' => 'string',
+  ),
+  'couchbase\\createanalyticsdatasetoptions::condition' => 
+  array (
+    0 => 'Couchbase\\CreateAnalyticsDatasetOptions',
+    'condition' => 'string',
+  ),
+  'couchbase\\createanalyticsdatasetoptions::dataversename' => 
+  array (
+    0 => 'Couchbase\\CreateAnalyticsDatasetOptions',
+    'dataverseName' => 'string',
+  ),
+  'couchbase\\createanalyticsdatasetoptions::ignoreifexists' => 
+  array (
+    0 => 'Couchbase\\CreateAnalyticsDatasetOptions',
+    'shouldIgnore' => 'bool',
+  ),
+  'couchbase\\createanalyticsdataverseoptions::ignoreifexists' => 
+  array (
+    0 => 'Couchbase\\CreateAnalyticsDataverseOptions',
+    'shouldIgnore' => 'bool',
+  ),
+  'couchbase\\createanalyticsindexoptions::dataversename' => 
+  array (
+    0 => 'Couchbase\\CreateAnalyticsIndexOptions',
+    'dataverseName' => 'string',
+  ),
+  'couchbase\\createanalyticsindexoptions::ignoreifexists' => 
+  array (
+    0 => 'Couchbase\\CreateAnalyticsIndexOptions',
+    'shouldIgnore' => 'bool',
+  ),
+  'couchbase\\createanalyticslinkoptions::timeout' => 
+  array (
+    0 => 'Couchbase\\CreateAnalyticsLinkOptions',
+    'arg' => 'int',
+  ),
+  'couchbase\\createqueryindexoptions::condition' => 
+  array (
+    0 => 'Couchbase\\CreateQueryIndexOptions',
+    'condition' => 'string',
+  ),
+  'couchbase\\createqueryindexoptions::deferred' => 
+  array (
+    0 => 'Couchbase\\CreateQueryIndexOptions',
+    'isDeferred' => 'bool',
+  ),
+  'couchbase\\createqueryindexoptions::ignoreifexists' => 
+  array (
+    0 => 'Couchbase\\CreateQueryIndexOptions',
+    'shouldIgnore' => 'bool',
+  ),
+  'couchbase\\createqueryindexoptions::numreplicas' => 
+  array (
+    0 => 'Couchbase\\CreateQueryIndexOptions',
+    'number' => 'int',
+  ),
+  'couchbase\\createqueryprimaryindexoptions::deferred' => 
+  array (
+    0 => 'Couchbase\\CreateQueryPrimaryIndexOptions',
+    'isDeferred' => 'bool',
+  ),
+  'couchbase\\createqueryprimaryindexoptions::ignoreifexists' => 
+  array (
+    0 => 'Couchbase\\CreateQueryPrimaryIndexOptions',
+    'shouldIgnore' => 'bool',
+  ),
+  'couchbase\\createqueryprimaryindexoptions::indexname' => 
+  array (
+    0 => 'Couchbase\\CreateQueryPrimaryIndexOptions',
+    'name' => 'string',
+  ),
+  'couchbase\\createqueryprimaryindexoptions::numreplicas' => 
+  array (
+    0 => 'Couchbase\\CreateQueryPrimaryIndexOptions',
+    'number' => 'int',
   ),
   'couchbase\\daterangesearchfacet::__construct' => 
   array (
@@ -4722,6 +5870,31 @@ return array (
     'start' => 'int|string',
     'inclusive=' => 'bool',
   ),
+  'couchbase\\decrementoptions::delta' => 
+  array (
+    0 => 'Couchbase\\DecrementOptions',
+    'arg' => 'int',
+  ),
+  'couchbase\\decrementoptions::durabilitylevel' => 
+  array (
+    0 => 'Couchbase\\DecrementOptions',
+    'arg' => 'int',
+  ),
+  'couchbase\\decrementoptions::expiry' => 
+  array (
+    0 => 'Couchbase\\DecrementOptions',
+    'arg' => 'Couchbase\\mixed',
+  ),
+  'couchbase\\decrementoptions::initial' => 
+  array (
+    0 => 'Couchbase\\DecrementOptions',
+    'arg' => 'int',
+  ),
+  'couchbase\\decrementoptions::timeout' => 
+  array (
+    0 => 'Couchbase\\DecrementOptions',
+    'arg' => 'int',
+  ),
   'couchbase\\defaultdecoder' => 
   array (
     0 => 'mixed',
@@ -4733,6 +5906,34 @@ return array (
   array (
     0 => 'array<array-key, mixed>',
     'value' => 'mixed',
+  ),
+  'couchbase\\designdocument::name' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\designdocument::setname' => 
+  array (
+    0 => 'Couchbase\\DesignDocument',
+    'name' => 'string',
+  ),
+  'couchbase\\designdocument::setviews' => 
+  array (
+    0 => 'Couchbase\\DesignDocument',
+    'views' => 'array<array-key, mixed>',
+  ),
+  'couchbase\\designdocument::views' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'couchbase\\disconnectanalyticslinkoptions::dataversename' => 
+  array (
+    0 => 'Couchbase\\DisconnectAnalyticsLinkOptions',
+    'dataverseName' => 'string',
+  ),
+  'couchbase\\disconnectanalyticslinkoptions::linkname' => 
+  array (
+    0 => 'Couchbase\\DisconnectAnalyticsLinkOptions',
+    'linkName' => 'Couchbase\\bstring',
   ),
   'couchbase\\disjunctionsearchquery::__construct' => 
   array (
@@ -4757,6 +5958,61 @@ return array (
     0 => 'Couchbase\\DisjunctionSearchQuery',
     'min' => 'int',
   ),
+  'couchbase\\dmlfailureexception::__clone' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\dmlfailureexception::__construct' => 
+  array (
+    0 => 'string',
+    'message=' => 'string',
+    'code=' => 'string',
+    'previous=' => 'string',
+  ),
+  'couchbase\\dmlfailureexception::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\dmlfailureexception::__wakeup' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\dmlfailureexception::context' => 
+  array (
+    0 => 'Couchbase\\object|null',
+  ),
+  'couchbase\\dmlfailureexception::getcode' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\dmlfailureexception::getfile' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\dmlfailureexception::getline' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\dmlfailureexception::getmessage' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\dmlfailureexception::getprevious' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\dmlfailureexception::gettrace' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\dmlfailureexception::gettraceasstring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\dmlfailureexception::ref' => 
+  array (
+    0 => 'null|string',
+  ),
   'couchbase\\docidsearchquery::__construct' => 
   array (
     0 => 'void',
@@ -4779,6 +6035,191 @@ return array (
   'couchbase\\docidsearchquery::jsonserialize' => 
   array (
     0 => 'array<array-key, mixed>',
+  ),
+  'couchbase\\documentnotfoundexception::__clone' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\documentnotfoundexception::__construct' => 
+  array (
+    0 => 'string',
+    'message=' => 'string',
+    'code=' => 'string',
+    'previous=' => 'string',
+  ),
+  'couchbase\\documentnotfoundexception::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\documentnotfoundexception::__wakeup' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\documentnotfoundexception::context' => 
+  array (
+    0 => 'Couchbase\\object|null',
+  ),
+  'couchbase\\documentnotfoundexception::getcode' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\documentnotfoundexception::getfile' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\documentnotfoundexception::getline' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\documentnotfoundexception::getmessage' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\documentnotfoundexception::getprevious' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\documentnotfoundexception::gettrace' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\documentnotfoundexception::gettraceasstring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\documentnotfoundexception::ref' => 
+  array (
+    0 => 'null|string',
+  ),
+  'couchbase\\dropanalyticsdatasetoptions::dataversename' => 
+  array (
+    0 => 'Couchbase\\DropAnalyticsDatasetOptions',
+    'dataverseName' => 'string',
+  ),
+  'couchbase\\dropanalyticsdatasetoptions::ignoreifnotexists' => 
+  array (
+    0 => 'Couchbase\\DropAnalyticsDatasetOptions',
+    'shouldIgnore' => 'bool',
+  ),
+  'couchbase\\dropanalyticsdataverseoptions::ignoreifnotexists' => 
+  array (
+    0 => 'Couchbase\\DropAnalyticsDataverseOptions',
+    'shouldIgnore' => 'bool',
+  ),
+  'couchbase\\dropanalyticsindexoptions::dataversename' => 
+  array (
+    0 => 'Couchbase\\DropAnalyticsIndexOptions',
+    'dataverseName' => 'string',
+  ),
+  'couchbase\\dropanalyticsindexoptions::ignoreifnotexists' => 
+  array (
+    0 => 'Couchbase\\DropAnalyticsIndexOptions',
+    'shouldIgnore' => 'bool',
+  ),
+  'couchbase\\dropanalyticslinkoptions::timeout' => 
+  array (
+    0 => 'Couchbase\\DropAnalyticsLinkOptions',
+    'arg' => 'int',
+  ),
+  'couchbase\\dropqueryindexoptions::ignoreifnotexists' => 
+  array (
+    0 => 'Couchbase\\DropQueryIndexOptions',
+    'shouldIgnore' => 'bool',
+  ),
+  'couchbase\\dropqueryprimaryindexoptions::ignoreifnotexists' => 
+  array (
+    0 => 'Couchbase\\DropQueryPrimaryIndexOptions',
+    'shouldIgnore' => 'bool',
+  ),
+  'couchbase\\dropqueryprimaryindexoptions::indexname' => 
+  array (
+    0 => 'Couchbase\\DropQueryPrimaryIndexOptions',
+    'name' => 'string',
+  ),
+  'couchbase\\dropuseroptions::domainname' => 
+  array (
+    0 => 'Couchbase\\DropUserOptions',
+    'name' => 'string',
+  ),
+  'couchbase\\durabilityexception::__clone' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\durabilityexception::__construct' => 
+  array (
+    0 => 'string',
+    'message=' => 'string',
+    'code=' => 'string',
+    'previous=' => 'string',
+  ),
+  'couchbase\\durabilityexception::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\durabilityexception::__wakeup' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\durabilityexception::context' => 
+  array (
+    0 => 'Couchbase\\object|null',
+  ),
+  'couchbase\\durabilityexception::getcode' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\durabilityexception::getfile' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\durabilityexception::getline' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\durabilityexception::getmessage' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\durabilityexception::getprevious' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\durabilityexception::gettrace' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\durabilityexception::gettraceasstring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\durabilityexception::ref' => 
+  array (
+    0 => 'null|string',
+  ),
+  'couchbase\\encryptionsettings::certificate' => 
+  array (
+    0 => 'string',
+    'certificate' => 'string',
+  ),
+  'couchbase\\encryptionsettings::clientcertificate' => 
+  array (
+    0 => 'string',
+    'certificate' => 'string',
+  ),
+  'couchbase\\encryptionsettings::clientkey' => 
+  array (
+    0 => 'string',
+    'key' => 'string',
+  ),
+  'couchbase\\encryptionsettings::level' => 
+  array (
+    0 => 'string',
+    'level' => 'string',
+  ),
+  'couchbase\\existsoptions::timeout' => 
+  array (
+    0 => 'Couchbase\\ExistsOptions',
+    'arg' => 'int',
   ),
   'couchbase\\fastlzcompress' => 
   array (
@@ -4826,6 +6267,829 @@ return array (
   array (
     0 => 'array<array-key, mixed>',
   ),
+  'couchbase\\geopolygonquery::__construct' => 
+  array (
+    0 => 'string',
+    'coordinates' => 'array<array-key, mixed>',
+  ),
+  'couchbase\\geopolygonquery::boost' => 
+  array (
+    0 => 'Couchbase\\GeoPolygonQuery',
+    'boost' => 'float',
+  ),
+  'couchbase\\geopolygonquery::field' => 
+  array (
+    0 => 'Couchbase\\GeoPolygonQuery',
+    'field' => 'string',
+  ),
+  'couchbase\\geopolygonquery::jsonserialize' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\getallreplicasoptions::decoder' => 
+  array (
+    0 => 'Couchbase\\GetAllReplicasOptions',
+    'arg' => 'callable',
+  ),
+  'couchbase\\getallreplicasoptions::timeout' => 
+  array (
+    0 => 'Couchbase\\GetAllReplicasOptions',
+    'arg' => 'int',
+  ),
+  'couchbase\\getallusersoptions::domainname' => 
+  array (
+    0 => 'Couchbase\\GetAllUsersOptions',
+    'name' => 'string',
+  ),
+  'couchbase\\getanalyticslinksoptions::dataverse' => 
+  array (
+    0 => 'Couchbase\\DropAnalyticsLinkOptions',
+    'dataverse' => 'string',
+  ),
+  'couchbase\\getanalyticslinksoptions::linktype' => 
+  array (
+    0 => 'Couchbase\\DropAnalyticsLinkOptions',
+    'type' => 'string',
+  ),
+  'couchbase\\getanalyticslinksoptions::name' => 
+  array (
+    0 => 'Couchbase\\DropAnalyticsLinkOptions',
+    'name' => 'string',
+  ),
+  'couchbase\\getanalyticslinksoptions::timeout' => 
+  array (
+    0 => 'Couchbase\\DropAnalyticsLinkOptions',
+    'arg' => 'int',
+  ),
+  'couchbase\\getandlockoptions::decoder' => 
+  array (
+    0 => 'Couchbase\\GetAndLockOptions',
+    'arg' => 'callable',
+  ),
+  'couchbase\\getandlockoptions::timeout' => 
+  array (
+    0 => 'Couchbase\\GetAndLockOptions',
+    'arg' => 'int',
+  ),
+  'couchbase\\getandtouchoptions::decoder' => 
+  array (
+    0 => 'Couchbase\\GetAndTouchOptions',
+    'arg' => 'callable',
+  ),
+  'couchbase\\getandtouchoptions::timeout' => 
+  array (
+    0 => 'Couchbase\\GetAndTouchOptions',
+    'arg' => 'int',
+  ),
+  'couchbase\\getanyreplicaoptions::decoder' => 
+  array (
+    0 => 'Couchbase\\GetAnyReplicaOptions',
+    'arg' => 'callable',
+  ),
+  'couchbase\\getanyreplicaoptions::timeout' => 
+  array (
+    0 => 'Couchbase\\GetAnyReplicaOptions',
+    'arg' => 'int',
+  ),
+  'couchbase\\getoptions::decoder' => 
+  array (
+    0 => 'Couchbase\\GetOptions',
+    'arg' => 'callable',
+  ),
+  'couchbase\\getoptions::project' => 
+  array (
+    0 => 'Couchbase\\GetOptions',
+    'arg' => 'array<array-key, mixed>',
+  ),
+  'couchbase\\getoptions::timeout' => 
+  array (
+    0 => 'Couchbase\\GetOptions',
+    'arg' => 'int',
+  ),
+  'couchbase\\getoptions::withexpiry' => 
+  array (
+    0 => 'Couchbase\\GetOptions',
+    'arg' => 'bool',
+  ),
+  'couchbase\\getuseroptions::domainname' => 
+  array (
+    0 => 'Couchbase\\GetUserOptions',
+    'name' => 'string',
+  ),
+  'couchbase\\group::description' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\group::ldapgroupreference' => 
+  array (
+    0 => 'null|string',
+  ),
+  'couchbase\\group::name' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\group::roles' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'couchbase\\group::setdescription' => 
+  array (
+    0 => 'Couchbase\\Group',
+    'description' => 'string',
+  ),
+  'couchbase\\group::setname' => 
+  array (
+    0 => 'Couchbase\\Group',
+    'name' => 'string',
+  ),
+  'couchbase\\group::setroles' => 
+  array (
+    0 => 'Couchbase\\Group',
+    'roles' => 'array<array-key, mixed>',
+  ),
+  'couchbase\\httpexception::__clone' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\httpexception::__construct' => 
+  array (
+    0 => 'string',
+    'message=' => 'string',
+    'code=' => 'string',
+    'previous=' => 'string',
+  ),
+  'couchbase\\httpexception::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\httpexception::__wakeup' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\httpexception::context' => 
+  array (
+    0 => 'Couchbase\\object|null',
+  ),
+  'couchbase\\httpexception::getcode' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\httpexception::getfile' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\httpexception::getline' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\httpexception::getmessage' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\httpexception::getprevious' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\httpexception::gettrace' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\httpexception::gettraceasstring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\httpexception::ref' => 
+  array (
+    0 => 'null|string',
+  ),
+  'couchbase\\incrementoptions::delta' => 
+  array (
+    0 => 'Couchbase\\IncrementOptions',
+    'arg' => 'int',
+  ),
+  'couchbase\\incrementoptions::durabilitylevel' => 
+  array (
+    0 => 'Couchbase\\IncrementOptions',
+    'arg' => 'int',
+  ),
+  'couchbase\\incrementoptions::expiry' => 
+  array (
+    0 => 'Couchbase\\IncrementOptions',
+    'arg' => 'Couchbase\\mixed',
+  ),
+  'couchbase\\incrementoptions::initial' => 
+  array (
+    0 => 'Couchbase\\IncrementOptions',
+    'arg' => 'int',
+  ),
+  'couchbase\\incrementoptions::timeout' => 
+  array (
+    0 => 'Couchbase\\IncrementOptions',
+    'arg' => 'int',
+  ),
+  'couchbase\\indexfailureexception::__clone' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\indexfailureexception::__construct' => 
+  array (
+    0 => 'string',
+    'message=' => 'string',
+    'code=' => 'string',
+    'previous=' => 'string',
+  ),
+  'couchbase\\indexfailureexception::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\indexfailureexception::__wakeup' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\indexfailureexception::context' => 
+  array (
+    0 => 'Couchbase\\object|null',
+  ),
+  'couchbase\\indexfailureexception::getcode' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\indexfailureexception::getfile' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\indexfailureexception::getline' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\indexfailureexception::getmessage' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\indexfailureexception::getprevious' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\indexfailureexception::gettrace' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\indexfailureexception::gettraceasstring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\indexfailureexception::ref' => 
+  array (
+    0 => 'null|string',
+  ),
+  'couchbase\\indexnotfoundexception::__clone' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\indexnotfoundexception::__construct' => 
+  array (
+    0 => 'string',
+    'message=' => 'string',
+    'code=' => 'string',
+    'previous=' => 'string',
+  ),
+  'couchbase\\indexnotfoundexception::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\indexnotfoundexception::__wakeup' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\indexnotfoundexception::context' => 
+  array (
+    0 => 'Couchbase\\object|null',
+  ),
+  'couchbase\\indexnotfoundexception::getcode' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\indexnotfoundexception::getfile' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\indexnotfoundexception::getline' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\indexnotfoundexception::getmessage' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\indexnotfoundexception::getprevious' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\indexnotfoundexception::gettrace' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\indexnotfoundexception::gettraceasstring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\indexnotfoundexception::ref' => 
+  array (
+    0 => 'null|string',
+  ),
+  'couchbase\\insertoptions::durabilitylevel' => 
+  array (
+    0 => 'Couchbase\\InsertOptions',
+    'arg' => 'int',
+  ),
+  'couchbase\\insertoptions::encoder' => 
+  array (
+    0 => 'Couchbase\\InsertOptions',
+    'arg' => 'callable',
+  ),
+  'couchbase\\insertoptions::expiry' => 
+  array (
+    0 => 'Couchbase\\InsertOptions',
+    'arg' => 'int',
+  ),
+  'couchbase\\insertoptions::timeout' => 
+  array (
+    0 => 'Couchbase\\InsertOptions',
+    'arg' => 'int',
+  ),
+  'couchbase\\invalidconfigurationexception::__clone' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\invalidconfigurationexception::__construct' => 
+  array (
+    0 => 'string',
+    'message=' => 'string',
+    'code=' => 'string',
+    'previous=' => 'string',
+  ),
+  'couchbase\\invalidconfigurationexception::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\invalidconfigurationexception::__wakeup' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\invalidconfigurationexception::context' => 
+  array (
+    0 => 'Couchbase\\object|null',
+  ),
+  'couchbase\\invalidconfigurationexception::getcode' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\invalidconfigurationexception::getfile' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\invalidconfigurationexception::getline' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\invalidconfigurationexception::getmessage' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\invalidconfigurationexception::getprevious' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\invalidconfigurationexception::gettrace' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\invalidconfigurationexception::gettraceasstring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\invalidconfigurationexception::ref' => 
+  array (
+    0 => 'null|string',
+  ),
+  'couchbase\\invalidrangeexception::__clone' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\invalidrangeexception::__construct' => 
+  array (
+    0 => 'string',
+    'message=' => 'string',
+    'code=' => 'string',
+    'previous=' => 'string',
+  ),
+  'couchbase\\invalidrangeexception::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\invalidrangeexception::__wakeup' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\invalidrangeexception::context' => 
+  array (
+    0 => 'Couchbase\\object|null',
+  ),
+  'couchbase\\invalidrangeexception::getcode' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\invalidrangeexception::getfile' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\invalidrangeexception::getline' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\invalidrangeexception::getmessage' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\invalidrangeexception::getprevious' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\invalidrangeexception::gettrace' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\invalidrangeexception::gettraceasstring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\invalidrangeexception::ref' => 
+  array (
+    0 => 'null|string',
+  ),
+  'couchbase\\invalidstateexception::__clone' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\invalidstateexception::__construct' => 
+  array (
+    0 => 'string',
+    'message=' => 'string',
+    'code=' => 'string',
+    'previous=' => 'string',
+  ),
+  'couchbase\\invalidstateexception::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\invalidstateexception::__wakeup' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\invalidstateexception::context' => 
+  array (
+    0 => 'Couchbase\\object|null',
+  ),
+  'couchbase\\invalidstateexception::getcode' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\invalidstateexception::getfile' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\invalidstateexception::getline' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\invalidstateexception::getmessage' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\invalidstateexception::getprevious' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\invalidstateexception::gettrace' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\invalidstateexception::gettraceasstring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\invalidstateexception::ref' => 
+  array (
+    0 => 'null|string',
+  ),
+  'couchbase\\keydeletedexception::__clone' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\keydeletedexception::__construct' => 
+  array (
+    0 => 'string',
+    'message=' => 'string',
+    'code=' => 'string',
+    'previous=' => 'string',
+  ),
+  'couchbase\\keydeletedexception::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\keydeletedexception::__wakeup' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\keydeletedexception::context' => 
+  array (
+    0 => 'Couchbase\\object|null',
+  ),
+  'couchbase\\keydeletedexception::getcode' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\keydeletedexception::getfile' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\keydeletedexception::getline' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\keydeletedexception::getmessage' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\keydeletedexception::getprevious' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\keydeletedexception::gettrace' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\keydeletedexception::gettraceasstring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\keydeletedexception::ref' => 
+  array (
+    0 => 'null|string',
+  ),
+  'couchbase\\keyexistsexception::__clone' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\keyexistsexception::__construct' => 
+  array (
+    0 => 'string',
+    'message=' => 'string',
+    'code=' => 'string',
+    'previous=' => 'string',
+  ),
+  'couchbase\\keyexistsexception::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\keyexistsexception::__wakeup' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\keyexistsexception::context' => 
+  array (
+    0 => 'Couchbase\\object|null',
+  ),
+  'couchbase\\keyexistsexception::getcode' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\keyexistsexception::getfile' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\keyexistsexception::getline' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\keyexistsexception::getmessage' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\keyexistsexception::getprevious' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\keyexistsexception::gettrace' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\keyexistsexception::gettraceasstring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\keyexistsexception::ref' => 
+  array (
+    0 => 'null|string',
+  ),
+  'couchbase\\keylockedexception::__clone' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\keylockedexception::__construct' => 
+  array (
+    0 => 'string',
+    'message=' => 'string',
+    'code=' => 'string',
+    'previous=' => 'string',
+  ),
+  'couchbase\\keylockedexception::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\keylockedexception::__wakeup' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\keylockedexception::context' => 
+  array (
+    0 => 'Couchbase\\object|null',
+  ),
+  'couchbase\\keylockedexception::getcode' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\keylockedexception::getfile' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\keylockedexception::getline' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\keylockedexception::getmessage' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\keylockedexception::getprevious' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\keylockedexception::gettrace' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\keylockedexception::gettraceasstring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\keylockedexception::ref' => 
+  array (
+    0 => 'null|string',
+  ),
+  'couchbase\\keyspacenotfoundexception::__clone' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\keyspacenotfoundexception::__construct' => 
+  array (
+    0 => 'string',
+    'message=' => 'string',
+    'code=' => 'string',
+    'previous=' => 'string',
+  ),
+  'couchbase\\keyspacenotfoundexception::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\keyspacenotfoundexception::__wakeup' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\keyspacenotfoundexception::context' => 
+  array (
+    0 => 'Couchbase\\object|null',
+  ),
+  'couchbase\\keyspacenotfoundexception::getcode' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\keyspacenotfoundexception::getfile' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\keyspacenotfoundexception::getline' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\keyspacenotfoundexception::getmessage' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\keyspacenotfoundexception::getprevious' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\keyspacenotfoundexception::gettrace' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\keyspacenotfoundexception::gettraceasstring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\keyspacenotfoundexception::ref' => 
+  array (
+    0 => 'null|string',
+  ),
+  'couchbase\\keyvalueexception::__clone' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\keyvalueexception::__construct' => 
+  array (
+    0 => 'string',
+    'message=' => 'string',
+    'code=' => 'string',
+    'previous=' => 'string',
+  ),
+  'couchbase\\keyvalueexception::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\keyvalueexception::__wakeup' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\keyvalueexception::context' => 
+  array (
+    0 => 'Couchbase\\object|null',
+  ),
+  'couchbase\\keyvalueexception::getcode' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\keyvalueexception::getfile' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\keyvalueexception::getline' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\keyvalueexception::getmessage' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\keyvalueexception::getprevious' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\keyvalueexception::gettrace' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\keyvalueexception::gettraceasstring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\keyvalueexception::ref' => 
+  array (
+    0 => 'null|string',
+  ),
+  'couchbase\\loggingmeter::flushinterval' => 
+  array (
+    0 => 'Couchbase\\LoggingMeter',
+    'duration' => 'int',
+  ),
+  'couchbase\\loggingmeter::valuerecorder' => 
+  array (
+    0 => 'Couchbase\\ValueRecorder',
+    'name' => 'string',
+    'tags' => 'array<array-key, mixed>',
+  ),
+  'couchbase\\lookupcountspec::__construct' => 
+  array (
+    0 => 'string',
+    'path' => 'string',
+    'isXattr=' => 'bool',
+  ),
+  'couchbase\\lookupexistsspec::__construct' => 
+  array (
+    0 => 'string',
+    'path' => 'string',
+    'isXattr=' => 'bool',
+  ),
+  'couchbase\\lookupgetfullspec::__construct' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\lookupgetspec::__construct' => 
+  array (
+    0 => 'string',
+    'path' => 'string',
+    'isXattr=' => 'bool',
+  ),
   'couchbase\\lookupinbuilder::__construct' => 
   array (
     0 => 'void',
@@ -4851,6 +7115,16 @@ return array (
     0 => 'Couchbase\\LookupInBuilder',
     'path' => 'string',
     'options=' => 'array<array-key, mixed>',
+  ),
+  'couchbase\\lookupinoptions::timeout' => 
+  array (
+    0 => 'Couchbase\\LookupInOptions',
+    'arg' => 'int',
+  ),
+  'couchbase\\lookupinoptions::withexpiry' => 
+  array (
+    0 => 'Couchbase\\LookupInOptions',
+    'arg' => 'bool',
   ),
   'couchbase\\matchallsearchquery::__construct' => 
   array (
@@ -4933,6 +7207,50 @@ return array (
   array (
     0 => 'Couchbase\\MatchSearchQuery',
     'prefixLength' => 'int',
+  ),
+  'couchbase\\mutatearrayadduniquespec::__construct' => 
+  array (
+    0 => 'string',
+    'path' => 'string',
+    'value' => 'string',
+    'isXattr' => 'bool',
+    'createPath' => 'bool',
+    'expandMacros' => 'bool',
+  ),
+  'couchbase\\mutatearrayappendspec::__construct' => 
+  array (
+    0 => 'string',
+    'path' => 'string',
+    'values' => 'array<array-key, mixed>',
+    'isXattr' => 'bool',
+    'createPath' => 'bool',
+    'expandMacros' => 'bool',
+  ),
+  'couchbase\\mutatearrayinsertspec::__construct' => 
+  array (
+    0 => 'string',
+    'path' => 'string',
+    'values' => 'array<array-key, mixed>',
+    'isXattr' => 'bool',
+    'createPath' => 'bool',
+    'expandMacros' => 'bool',
+  ),
+  'couchbase\\mutatearrayprependspec::__construct' => 
+  array (
+    0 => 'string',
+    'path' => 'string',
+    'values' => 'array<array-key, mixed>',
+    'isXattr' => 'bool',
+    'createPath' => 'bool',
+    'expandMacros' => 'bool',
+  ),
+  'couchbase\\mutatecounterspec::__construct' => 
+  array (
+    0 => 'string',
+    'path' => 'string',
+    'delta' => 'int',
+    'isXattr' => 'bool',
+    'createPath' => 'bool',
   ),
   'couchbase\\mutateinbuilder::__construct' => 
   array (
@@ -5034,6 +7352,67 @@ return array (
   array (
     0 => 'Couchbase\\MutateInBuilder',
     'expiry' => 'Couchbase\\expiry',
+  ),
+  'couchbase\\mutateinoptions::cas' => 
+  array (
+    0 => 'Couchbase\\MutateInOptions',
+    'arg' => 'string',
+  ),
+  'couchbase\\mutateinoptions::durabilitylevel' => 
+  array (
+    0 => 'Couchbase\\MutateInOptions',
+    'arg' => 'int',
+  ),
+  'couchbase\\mutateinoptions::expiry' => 
+  array (
+    0 => 'Couchbase\\MutateInOptions',
+    'arg' => 'Couchbase\\mixed',
+  ),
+  'couchbase\\mutateinoptions::preserveexpiry' => 
+  array (
+    0 => 'Couchbase\\MutateInOptions',
+    'shouldPreserve' => 'bool',
+  ),
+  'couchbase\\mutateinoptions::storesemantics' => 
+  array (
+    0 => 'Couchbase\\MutateInOptions',
+    'arg' => 'int',
+  ),
+  'couchbase\\mutateinoptions::timeout' => 
+  array (
+    0 => 'Couchbase\\MutateInOptions',
+    'arg' => 'int',
+  ),
+  'couchbase\\mutateinsertspec::__construct' => 
+  array (
+    0 => 'string',
+    'path' => 'string',
+    'value' => 'string',
+    'isXattr' => 'bool',
+    'createPath' => 'bool',
+    'expandMacros' => 'bool',
+  ),
+  'couchbase\\mutateremovespec::__construct' => 
+  array (
+    0 => 'string',
+    'path' => 'string',
+    'isXattr' => 'bool',
+  ),
+  'couchbase\\mutatereplacespec::__construct' => 
+  array (
+    0 => 'string',
+    'path' => 'string',
+    'value' => 'string',
+    'isXattr' => 'bool',
+  ),
+  'couchbase\\mutateupsertspec::__construct' => 
+  array (
+    0 => 'string',
+    'path' => 'string',
+    'value' => 'string',
+    'isXattr' => 'bool',
+    'createPath' => 'bool',
+    'expandMacros' => 'bool',
   ),
   'couchbase\\mutationstate::__construct' => 
   array (
@@ -5150,6 +7529,73 @@ return array (
     0 => 'Couchbase\\N1qlQuery',
     'scanCap' => 'int',
   ),
+  'couchbase\\networkexception::__clone' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\networkexception::__construct' => 
+  array (
+    0 => 'string',
+    'message=' => 'string',
+    'code=' => 'string',
+    'previous=' => 'string',
+  ),
+  'couchbase\\networkexception::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\networkexception::__wakeup' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\networkexception::context' => 
+  array (
+    0 => 'Couchbase\\object|null',
+  ),
+  'couchbase\\networkexception::getcode' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\networkexception::getfile' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\networkexception::getline' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\networkexception::getmessage' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\networkexception::getprevious' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\networkexception::gettrace' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\networkexception::gettraceasstring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\networkexception::ref' => 
+  array (
+    0 => 'null|string',
+  ),
+  'couchbase\\noopmeter::valuerecorder' => 
+  array (
+    0 => 'Couchbase\\ValueRecorder',
+    'name' => 'string',
+    'tags' => 'array<array-key, mixed>',
+  ),
+  'couchbase\\nooptracer::requestspan' => 
+  array (
+    0 => 'string',
+    'name' => 'string',
+    'parent=' => 'Couchbase\\RequestSpan|null',
+  ),
   'couchbase\\numericrangesearchfacet::__construct' => 
   array (
     0 => 'void',
@@ -5195,6 +7641,124 @@ return array (
     'min' => 'float',
     'inclusive=' => 'bool',
   ),
+  'couchbase\\origin::name' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\origin::type' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\parsingfailureexception::__clone' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\parsingfailureexception::__construct' => 
+  array (
+    0 => 'string',
+    'message=' => 'string',
+    'code=' => 'string',
+    'previous=' => 'string',
+  ),
+  'couchbase\\parsingfailureexception::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\parsingfailureexception::__wakeup' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\parsingfailureexception::context' => 
+  array (
+    0 => 'Couchbase\\object|null',
+  ),
+  'couchbase\\parsingfailureexception::getcode' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\parsingfailureexception::getfile' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\parsingfailureexception::getline' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\parsingfailureexception::getmessage' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\parsingfailureexception::getprevious' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\parsingfailureexception::gettrace' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\parsingfailureexception::gettraceasstring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\parsingfailureexception::ref' => 
+  array (
+    0 => 'null|string',
+  ),
+  'couchbase\\partialviewexception::__clone' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\partialviewexception::__construct' => 
+  array (
+    0 => 'string',
+    'message=' => 'string',
+    'code=' => 'string',
+    'previous=' => 'string',
+  ),
+  'couchbase\\partialviewexception::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\partialviewexception::__wakeup' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\partialviewexception::context' => 
+  array (
+    0 => 'Couchbase\\object|null',
+  ),
+  'couchbase\\partialviewexception::getcode' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\partialviewexception::getfile' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\partialviewexception::getline' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\partialviewexception::getmessage' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\partialviewexception::getprevious' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\partialviewexception::gettrace' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\partialviewexception::gettraceasstring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\partialviewexception::ref' => 
+  array (
+    0 => 'null|string',
+  ),
   'couchbase\\passthrudecoder' => 
   array (
     0 => 'string',
@@ -5217,6 +7781,116 @@ return array (
     0 => 'Couchbase\\PasswordAuthenticator',
     'username' => 'string',
   ),
+  'couchbase\\pathexistsexception::__clone' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\pathexistsexception::__construct' => 
+  array (
+    0 => 'string',
+    'message=' => 'string',
+    'code=' => 'string',
+    'previous=' => 'string',
+  ),
+  'couchbase\\pathexistsexception::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\pathexistsexception::__wakeup' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\pathexistsexception::context' => 
+  array (
+    0 => 'Couchbase\\object|null',
+  ),
+  'couchbase\\pathexistsexception::getcode' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\pathexistsexception::getfile' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\pathexistsexception::getline' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\pathexistsexception::getmessage' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\pathexistsexception::getprevious' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\pathexistsexception::gettrace' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\pathexistsexception::gettraceasstring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\pathexistsexception::ref' => 
+  array (
+    0 => 'null|string',
+  ),
+  'couchbase\\pathnotfoundexception::__clone' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\pathnotfoundexception::__construct' => 
+  array (
+    0 => 'string',
+    'message=' => 'string',
+    'code=' => 'string',
+    'previous=' => 'string',
+  ),
+  'couchbase\\pathnotfoundexception::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\pathnotfoundexception::__wakeup' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\pathnotfoundexception::context' => 
+  array (
+    0 => 'Couchbase\\object|null',
+  ),
+  'couchbase\\pathnotfoundexception::getcode' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\pathnotfoundexception::getfile' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\pathnotfoundexception::getline' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\pathnotfoundexception::getmessage' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\pathnotfoundexception::getprevious' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\pathnotfoundexception::gettrace' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\pathnotfoundexception::gettraceasstring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\pathnotfoundexception::ref' => 
+  array (
+    0 => 'null|string',
+  ),
   'couchbase\\phrasesearchquery::__construct' => 
   array (
     0 => 'void',
@@ -5234,6 +7908,61 @@ return array (
   'couchbase\\phrasesearchquery::jsonserialize' => 
   array (
     0 => 'array<array-key, mixed>',
+  ),
+  'couchbase\\planningfailureexception::__clone' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\planningfailureexception::__construct' => 
+  array (
+    0 => 'string',
+    'message=' => 'string',
+    'code=' => 'string',
+    'previous=' => 'string',
+  ),
+  'couchbase\\planningfailureexception::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\planningfailureexception::__wakeup' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\planningfailureexception::context' => 
+  array (
+    0 => 'Couchbase\\object|null',
+  ),
+  'couchbase\\planningfailureexception::getcode' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\planningfailureexception::getfile' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\planningfailureexception::getline' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\planningfailureexception::getmessage' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\planningfailureexception::getprevious' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\planningfailureexception::gettrace' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\planningfailureexception::gettraceasstring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\planningfailureexception::ref' => 
+  array (
+    0 => 'null|string',
   ),
   'couchbase\\prefixsearchquery::__construct' => 
   array (
@@ -5253,6 +7982,400 @@ return array (
   array (
     0 => 'array<array-key, mixed>',
   ),
+  'couchbase\\preparedstatementexception::__clone' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\preparedstatementexception::__construct' => 
+  array (
+    0 => 'string',
+    'message=' => 'string',
+    'code=' => 'string',
+    'previous=' => 'string',
+  ),
+  'couchbase\\preparedstatementexception::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\preparedstatementexception::__wakeup' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\preparedstatementexception::context' => 
+  array (
+    0 => 'Couchbase\\object|null',
+  ),
+  'couchbase\\preparedstatementexception::getcode' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\preparedstatementexception::getfile' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\preparedstatementexception::getline' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\preparedstatementexception::getmessage' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\preparedstatementexception::getprevious' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\preparedstatementexception::gettrace' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\preparedstatementexception::gettraceasstring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\preparedstatementexception::ref' => 
+  array (
+    0 => 'null|string',
+  ),
+  'couchbase\\prependoptions::durabilitylevel' => 
+  array (
+    0 => 'Couchbase\\PrependOptions',
+    'arg' => 'int',
+  ),
+  'couchbase\\prependoptions::timeout' => 
+  array (
+    0 => 'Couchbase\\PrependOptions',
+    'arg' => 'int',
+  ),
+  'couchbase\\queryerrorexception::__clone' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\queryerrorexception::__construct' => 
+  array (
+    0 => 'string',
+    'message=' => 'string',
+    'code=' => 'string',
+    'previous=' => 'string',
+  ),
+  'couchbase\\queryerrorexception::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\queryerrorexception::__wakeup' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\queryerrorexception::context' => 
+  array (
+    0 => 'Couchbase\\object|null',
+  ),
+  'couchbase\\queryerrorexception::getcode' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\queryerrorexception::getfile' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\queryerrorexception::getline' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\queryerrorexception::getmessage' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\queryerrorexception::getprevious' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\queryerrorexception::gettrace' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\queryerrorexception::gettraceasstring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\queryerrorexception::ref' => 
+  array (
+    0 => 'null|string',
+  ),
+  'couchbase\\queryexception::__clone' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\queryexception::__construct' => 
+  array (
+    0 => 'string',
+    'message=' => 'string',
+    'code=' => 'string',
+    'previous=' => 'string',
+  ),
+  'couchbase\\queryexception::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\queryexception::__wakeup' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\queryexception::context' => 
+  array (
+    0 => 'Couchbase\\object|null',
+  ),
+  'couchbase\\queryexception::getcode' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\queryexception::getfile' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\queryexception::getline' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\queryexception::getmessage' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\queryexception::getprevious' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\queryexception::gettrace' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\queryexception::gettraceasstring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\queryexception::ref' => 
+  array (
+    0 => 'null|string',
+  ),
+  'couchbase\\queryindex::condition' => 
+  array (
+    0 => 'null|string',
+  ),
+  'couchbase\\queryindex::indexkey' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'couchbase\\queryindex::isprimary' => 
+  array (
+    0 => 'bool',
+  ),
+  'couchbase\\queryindex::keyspace' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\queryindex::name' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\queryindex::state' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\queryindex::type' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\queryindexmanager::builddeferredindexes' => 
+  array (
+    0 => 'string',
+    'bucketName' => 'string',
+  ),
+  'couchbase\\queryindexmanager::createindex' => 
+  array (
+    0 => 'string',
+    'bucketName' => 'string',
+    'indexName' => 'string',
+    'fields' => 'array<array-key, mixed>',
+    'options=' => 'Couchbase\\CreateQueryIndexOptions|null',
+  ),
+  'couchbase\\queryindexmanager::createprimaryindex' => 
+  array (
+    0 => 'string',
+    'bucketName' => 'string',
+    'options=' => 'Couchbase\\CreateQueryPrimaryIndexOptions|null',
+  ),
+  'couchbase\\queryindexmanager::dropindex' => 
+  array (
+    0 => 'string',
+    'bucketName' => 'string',
+    'indexName' => 'string',
+    'options=' => 'Couchbase\\DropQueryIndexOptions|null',
+  ),
+  'couchbase\\queryindexmanager::dropprimaryindex' => 
+  array (
+    0 => 'string',
+    'bucketName' => 'string',
+    'options=' => 'Couchbase\\DropQueryPrimaryIndexOptions|null',
+  ),
+  'couchbase\\queryindexmanager::getallindexes' => 
+  array (
+    0 => 'array<array-key, mixed>',
+    'bucketName' => 'string',
+  ),
+  'couchbase\\queryindexmanager::watchindexes' => 
+  array (
+    0 => 'string',
+    'bucketName' => 'string',
+    'indexNames' => 'array<array-key, mixed>',
+    'timeout' => 'int',
+    'options=' => 'Couchbase\\WatchQueryIndexesOptions|null',
+  ),
+  'couchbase\\queryoptions::adhoc' => 
+  array (
+    0 => 'Couchbase\\QueryOptions',
+    'arg' => 'bool',
+  ),
+  'couchbase\\queryoptions::clientcontextid' => 
+  array (
+    0 => 'Couchbase\\QueryOptions',
+    'arg' => 'string',
+  ),
+  'couchbase\\queryoptions::consistentwith' => 
+  array (
+    0 => 'Couchbase\\QueryOptions',
+    'arg' => 'Couchbase\\MutationState',
+  ),
+  'couchbase\\queryoptions::flexindex' => 
+  array (
+    0 => 'Couchbase\\QueryOptions',
+    'arg' => 'bool',
+  ),
+  'couchbase\\queryoptions::maxparallelism' => 
+  array (
+    0 => 'Couchbase\\QueryOptions',
+    'arg' => 'int',
+  ),
+  'couchbase\\queryoptions::metrics' => 
+  array (
+    0 => 'Couchbase\\QueryOptions',
+    'arg' => 'bool',
+  ),
+  'couchbase\\queryoptions::namedparameters' => 
+  array (
+    0 => 'Couchbase\\QueryOptions',
+    'pairs' => 'array<array-key, mixed>',
+  ),
+  'couchbase\\queryoptions::pipelinebatch' => 
+  array (
+    0 => 'Couchbase\\QueryOptions',
+    'arg' => 'int',
+  ),
+  'couchbase\\queryoptions::pipelinecap' => 
+  array (
+    0 => 'Couchbase\\QueryOptions',
+    'arg' => 'int',
+  ),
+  'couchbase\\queryoptions::positionalparameters' => 
+  array (
+    0 => 'Couchbase\\QueryOptions',
+    'args' => 'array<array-key, mixed>',
+  ),
+  'couchbase\\queryoptions::profile' => 
+  array (
+    0 => 'Couchbase\\QueryOptions',
+    'arg' => 'int',
+  ),
+  'couchbase\\queryoptions::raw' => 
+  array (
+    0 => 'Couchbase\\QueryOptions',
+    'key' => 'string',
+    'value' => 'string',
+  ),
+  'couchbase\\queryoptions::readonly' => 
+  array (
+    0 => 'Couchbase\\QueryOptions',
+    'arg' => 'bool',
+  ),
+  'couchbase\\queryoptions::scancap' => 
+  array (
+    0 => 'Couchbase\\QueryOptions',
+    'arg' => 'int',
+  ),
+  'couchbase\\queryoptions::scanconsistency' => 
+  array (
+    0 => 'Couchbase\\QueryOptions',
+    'arg' => 'int',
+  ),
+  'couchbase\\queryoptions::scopename' => 
+  array (
+    0 => 'Couchbase\\QueryOptions',
+    'arg' => 'string',
+  ),
+  'couchbase\\queryoptions::scopequalifier' => 
+  array (
+    0 => 'Couchbase\\QueryOptions',
+    'arg' => 'string',
+  ),
+  'couchbase\\queryoptions::timeout' => 
+  array (
+    0 => 'Couchbase\\QueryOptions',
+    'arg' => 'int',
+  ),
+  'couchbase\\queryserviceexception::__clone' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\queryserviceexception::__construct' => 
+  array (
+    0 => 'string',
+    'message=' => 'string',
+    'code=' => 'string',
+    'previous=' => 'string',
+  ),
+  'couchbase\\queryserviceexception::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\queryserviceexception::__wakeup' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\queryserviceexception::context' => 
+  array (
+    0 => 'Couchbase\\object|null',
+  ),
+  'couchbase\\queryserviceexception::getcode' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\queryserviceexception::getfile' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\queryserviceexception::getline' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\queryserviceexception::getmessage' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\queryserviceexception::getprevious' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\queryserviceexception::gettrace' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\queryserviceexception::gettraceasstring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\queryserviceexception::ref' => 
+  array (
+    0 => 'null|string',
+  ),
   'couchbase\\querystringsearchquery::__construct' => 
   array (
     0 => 'void',
@@ -5265,6 +8388,116 @@ return array (
   'couchbase\\querystringsearchquery::jsonserialize' => 
   array (
     0 => 'array<array-key, mixed>',
+  ),
+  'couchbase\\quotalimitedexception::__clone' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\quotalimitedexception::__construct' => 
+  array (
+    0 => 'string',
+    'message=' => 'string',
+    'code=' => 'string',
+    'previous=' => 'string',
+  ),
+  'couchbase\\quotalimitedexception::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\quotalimitedexception::__wakeup' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\quotalimitedexception::context' => 
+  array (
+    0 => 'Couchbase\\object|null',
+  ),
+  'couchbase\\quotalimitedexception::getcode' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\quotalimitedexception::getfile' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\quotalimitedexception::getline' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\quotalimitedexception::getmessage' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\quotalimitedexception::getprevious' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\quotalimitedexception::gettrace' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\quotalimitedexception::gettraceasstring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\quotalimitedexception::ref' => 
+  array (
+    0 => 'null|string',
+  ),
+  'couchbase\\ratelimitedexception::__clone' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\ratelimitedexception::__construct' => 
+  array (
+    0 => 'string',
+    'message=' => 'string',
+    'code=' => 'string',
+    'previous=' => 'string',
+  ),
+  'couchbase\\ratelimitedexception::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\ratelimitedexception::__wakeup' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\ratelimitedexception::context' => 
+  array (
+    0 => 'Couchbase\\object|null',
+  ),
+  'couchbase\\ratelimitedexception::getcode' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\ratelimitedexception::getfile' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\ratelimitedexception::getline' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\ratelimitedexception::getmessage' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\ratelimitedexception::getprevious' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\ratelimitedexception::gettrace' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\ratelimitedexception::gettraceasstring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\ratelimitedexception::ref' => 
+  array (
+    0 => 'null|string',
   ),
   'couchbase\\regexpsearchquery::__construct' => 
   array (
@@ -5283,6 +8516,535 @@ return array (
   'couchbase\\regexpsearchquery::jsonserialize' => 
   array (
     0 => 'array<array-key, mixed>',
+  ),
+  'couchbase\\removeoptions::cas' => 
+  array (
+    0 => 'Couchbase\\RemoveOptions',
+    'arg' => 'string',
+  ),
+  'couchbase\\removeoptions::durabilitylevel' => 
+  array (
+    0 => 'Couchbase\\RemoveOptions',
+    'arg' => 'int',
+  ),
+  'couchbase\\removeoptions::timeout' => 
+  array (
+    0 => 'Couchbase\\RemoveOptions',
+    'arg' => 'int',
+  ),
+  'couchbase\\replaceanalyticslinkoptions::timeout' => 
+  array (
+    0 => 'Couchbase\\ReplaceAnalyticsLinkOptions',
+    'arg' => 'int',
+  ),
+  'couchbase\\replaceoptions::cas' => 
+  array (
+    0 => 'Couchbase\\ReplaceOptions',
+    'arg' => 'string',
+  ),
+  'couchbase\\replaceoptions::durabilitylevel' => 
+  array (
+    0 => 'Couchbase\\ReplaceOptions',
+    'arg' => 'int',
+  ),
+  'couchbase\\replaceoptions::encoder' => 
+  array (
+    0 => 'Couchbase\\ReplaceOptions',
+    'arg' => 'callable',
+  ),
+  'couchbase\\replaceoptions::expiry' => 
+  array (
+    0 => 'Couchbase\\ReplaceOptions',
+    'arg' => 'Couchbase\\mixed',
+  ),
+  'couchbase\\replaceoptions::preserveexpiry' => 
+  array (
+    0 => 'Couchbase\\ReplaceOptions',
+    'shouldPreserve' => 'bool',
+  ),
+  'couchbase\\replaceoptions::timeout' => 
+  array (
+    0 => 'Couchbase\\ReplaceOptions',
+    'arg' => 'int',
+  ),
+  'couchbase\\requestcanceledexception::__clone' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\requestcanceledexception::__construct' => 
+  array (
+    0 => 'string',
+    'message=' => 'string',
+    'code=' => 'string',
+    'previous=' => 'string',
+  ),
+  'couchbase\\requestcanceledexception::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\requestcanceledexception::__wakeup' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\requestcanceledexception::context' => 
+  array (
+    0 => 'Couchbase\\object|null',
+  ),
+  'couchbase\\requestcanceledexception::getcode' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\requestcanceledexception::getfile' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\requestcanceledexception::getline' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\requestcanceledexception::getmessage' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\requestcanceledexception::getprevious' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\requestcanceledexception::gettrace' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\requestcanceledexception::gettraceasstring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\requestcanceledexception::ref' => 
+  array (
+    0 => 'null|string',
+  ),
+  'couchbase\\role::bucket' => 
+  array (
+    0 => 'null|string',
+  ),
+  'couchbase\\role::collection' => 
+  array (
+    0 => 'null|string',
+  ),
+  'couchbase\\role::name' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\role::scope' => 
+  array (
+    0 => 'null|string',
+  ),
+  'couchbase\\role::setbucket' => 
+  array (
+    0 => 'Couchbase\\Role',
+    'bucket' => 'string',
+  ),
+  'couchbase\\role::setcollection' => 
+  array (
+    0 => 'Couchbase\\Role',
+    'bucket' => 'string',
+  ),
+  'couchbase\\role::setname' => 
+  array (
+    0 => 'Couchbase\\Role',
+    'name' => 'string',
+  ),
+  'couchbase\\role::setscope' => 
+  array (
+    0 => 'Couchbase\\Role',
+    'bucket' => 'string',
+  ),
+  'couchbase\\roleanddescription::description' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\roleanddescription::displayname' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\roleanddescription::role' => 
+  array (
+    0 => 'Couchbase\\Role',
+  ),
+  'couchbase\\roleandorigin::origins' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'couchbase\\roleandorigin::role' => 
+  array (
+    0 => 'Couchbase\\Role',
+  ),
+  'couchbase\\s3externalanalyticslink::accesskeyid' => 
+  array (
+    0 => 'Couchbase\\S3ExternalAnalyticsLink',
+    'accessKeyId' => 'string',
+  ),
+  'couchbase\\s3externalanalyticslink::dataverse' => 
+  array (
+    0 => 'Couchbase\\S3ExternalAnalyticsLink',
+    'dataverse' => 'string',
+  ),
+  'couchbase\\s3externalanalyticslink::name' => 
+  array (
+    0 => 'Couchbase\\S3ExternalAnalyticsLink',
+    'name' => 'string',
+  ),
+  'couchbase\\s3externalanalyticslink::region' => 
+  array (
+    0 => 'Couchbase\\S3ExternalAnalyticsLink',
+    'region' => 'string',
+  ),
+  'couchbase\\s3externalanalyticslink::secretaccesskey' => 
+  array (
+    0 => 'Couchbase\\S3ExternalAnalyticsLink',
+    'secretAccessKey' => 'string',
+  ),
+  'couchbase\\s3externalanalyticslink::serviceendpoint' => 
+  array (
+    0 => 'Couchbase\\S3ExternalAnalyticsLink',
+    'serviceEndpoint' => 'string',
+  ),
+  'couchbase\\s3externalanalyticslink::sessiontoken' => 
+  array (
+    0 => 'Couchbase\\S3ExternalAnalyticsLink',
+    'sessionToken' => 'string',
+  ),
+  'couchbase\\scope::__construct' => 
+  array (
+    0 => 'string',
+    'bucket' => 'Couchbase\\Bucket',
+    'name' => 'string',
+  ),
+  'couchbase\\scope::analyticsquery' => 
+  array (
+    0 => 'Couchbase\\AnalyticsResult',
+    'statement' => 'string',
+    'options=' => 'Couchbase\\AnalyticsOptions|null',
+  ),
+  'couchbase\\scope::collection' => 
+  array (
+    0 => 'Couchbase\\Collection',
+    'name' => 'string',
+  ),
+  'couchbase\\scope::name' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\scope::query' => 
+  array (
+    0 => 'Couchbase\\QueryResult',
+    'statement' => 'string',
+    'options=' => 'Couchbase\\QueryOptions|null',
+  ),
+  'couchbase\\scopemissingexception::__clone' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\scopemissingexception::__construct' => 
+  array (
+    0 => 'string',
+    'message=' => 'string',
+    'code=' => 'string',
+    'previous=' => 'string',
+  ),
+  'couchbase\\scopemissingexception::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\scopemissingexception::__wakeup' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\scopemissingexception::context' => 
+  array (
+    0 => 'Couchbase\\object|null',
+  ),
+  'couchbase\\scopemissingexception::getcode' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\scopemissingexception::getfile' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\scopemissingexception::getline' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\scopemissingexception::getmessage' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\scopemissingexception::getprevious' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\scopemissingexception::gettrace' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\scopemissingexception::gettraceasstring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\scopemissingexception::ref' => 
+  array (
+    0 => 'null|string',
+  ),
+  'couchbase\\scopespec::collections' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'couchbase\\scopespec::name' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\searchexception::__clone' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\searchexception::__construct' => 
+  array (
+    0 => 'string',
+    'message=' => 'string',
+    'code=' => 'string',
+    'previous=' => 'string',
+  ),
+  'couchbase\\searchexception::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\searchexception::__wakeup' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\searchexception::context' => 
+  array (
+    0 => 'Couchbase\\object|null',
+  ),
+  'couchbase\\searchexception::getcode' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\searchexception::getfile' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\searchexception::getline' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\searchexception::getmessage' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\searchexception::getprevious' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\searchexception::gettrace' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\searchexception::gettraceasstring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\searchexception::ref' => 
+  array (
+    0 => 'null|string',
+  ),
+  'couchbase\\searchindex::jsonserialize' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\searchindex::params' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'couchbase\\searchindex::setparams' => 
+  array (
+    0 => 'Couchbase\\SearchIndex',
+    'params' => 'string',
+  ),
+  'couchbase\\searchindex::setsourcename' => 
+  array (
+    0 => 'Couchbase\\SearchIndex',
+    'params' => 'string',
+  ),
+  'couchbase\\searchindex::setsourceparams' => 
+  array (
+    0 => 'Couchbase\\SearchIndex',
+    'params' => 'string',
+  ),
+  'couchbase\\searchindex::setsourcetype' => 
+  array (
+    0 => 'Couchbase\\SearchIndex',
+    'type' => 'string',
+  ),
+  'couchbase\\searchindex::setsourceuuid' => 
+  array (
+    0 => 'Couchbase\\SearchIndex',
+    'uuid' => 'string',
+  ),
+  'couchbase\\searchindex::settype' => 
+  array (
+    0 => 'Couchbase\\SearchIndex',
+    'type' => 'string',
+  ),
+  'couchbase\\searchindex::setuuid' => 
+  array (
+    0 => 'Couchbase\\SearchIndex',
+    'uuid' => 'string',
+  ),
+  'couchbase\\searchindex::sourcename' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\searchindex::sourceparams' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'couchbase\\searchindex::sourcetype' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\searchindex::sourceuuid' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\searchindex::type' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\searchindex::uuid' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\searchindexmanager::allowquerying' => 
+  array (
+    0 => 'string',
+    'indexName' => 'string',
+  ),
+  'couchbase\\searchindexmanager::analyzedocument' => 
+  array (
+    0 => 'string',
+    'indexName' => 'string',
+    'document' => 'string',
+  ),
+  'couchbase\\searchindexmanager::disallowquerying' => 
+  array (
+    0 => 'string',
+    'indexName' => 'string',
+  ),
+  'couchbase\\searchindexmanager::dropindex' => 
+  array (
+    0 => 'string',
+    'name' => 'string',
+  ),
+  'couchbase\\searchindexmanager::freezeplan' => 
+  array (
+    0 => 'string',
+    'indexName' => 'string',
+  ),
+  'couchbase\\searchindexmanager::getallindexes' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'couchbase\\searchindexmanager::getindex' => 
+  array (
+    0 => 'Couchbase\\SearchIndex',
+    'name' => 'string',
+  ),
+  'couchbase\\searchindexmanager::getindexeddocumentscount' => 
+  array (
+    0 => 'int',
+    'indexName' => 'string',
+  ),
+  'couchbase\\searchindexmanager::pauseingest' => 
+  array (
+    0 => 'string',
+    'indexName' => 'string',
+  ),
+  'couchbase\\searchindexmanager::resumeingest' => 
+  array (
+    0 => 'string',
+    'indexName' => 'string',
+  ),
+  'couchbase\\searchindexmanager::unfreezeplan' => 
+  array (
+    0 => 'string',
+    'indexName' => 'string',
+  ),
+  'couchbase\\searchindexmanager::upsertindex' => 
+  array (
+    0 => 'string',
+    'indexDefinition' => 'Couchbase\\SearchIndex',
+  ),
+  'couchbase\\searchoptions::collections' => 
+  array (
+    0 => 'Couchbase\\SearchOptions',
+    'collectionNames' => 'array<array-key, mixed>',
+  ),
+  'couchbase\\searchoptions::consistentwith' => 
+  array (
+    0 => 'Couchbase\\SearchOptions',
+    'index' => 'string',
+    'state' => 'Couchbase\\MutationState',
+  ),
+  'couchbase\\searchoptions::disablescoring' => 
+  array (
+    0 => 'Couchbase\\SearchOptions',
+    'disabled' => 'bool',
+  ),
+  'couchbase\\searchoptions::explain' => 
+  array (
+    0 => 'Couchbase\\SearchOptions',
+    'explain' => 'bool',
+  ),
+  'couchbase\\searchoptions::facets' => 
+  array (
+    0 => 'Couchbase\\SearchOptions',
+    'facets' => 'array<array-key, mixed>',
+  ),
+  'couchbase\\searchoptions::fields' => 
+  array (
+    0 => 'Couchbase\\SearchOptions',
+    'fields' => 'array<array-key, mixed>',
+  ),
+  'couchbase\\searchoptions::highlight' => 
+  array (
+    0 => 'Couchbase\\SearchOptions',
+    'style=' => 'null|string',
+    'fields=' => 'array<array-key, mixed>|null',
+  ),
+  'couchbase\\searchoptions::jsonserialize' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\searchoptions::limit' => 
+  array (
+    0 => 'Couchbase\\SearchOptions',
+    'limit' => 'int',
+  ),
+  'couchbase\\searchoptions::skip' => 
+  array (
+    0 => 'Couchbase\\SearchOptions',
+    'skip' => 'int',
+  ),
+  'couchbase\\searchoptions::sort' => 
+  array (
+    0 => 'Couchbase\\SearchOptions',
+    'specs' => 'array<array-key, mixed>',
+  ),
+  'couchbase\\searchoptions::timeout' => 
+  array (
+    0 => 'Couchbase\\SearchOptions',
+    'ms' => 'int',
   ),
   'couchbase\\searchquery::__construct' => 
   array (
@@ -5629,6 +9391,61 @@ return array (
   array (
     0 => 'Couchbase\\SearchSortScore',
   ),
+  'couchbase\\servicemissingexception::__clone' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\servicemissingexception::__construct' => 
+  array (
+    0 => 'string',
+    'message=' => 'string',
+    'code=' => 'string',
+    'previous=' => 'string',
+  ),
+  'couchbase\\servicemissingexception::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\servicemissingexception::__wakeup' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\servicemissingexception::context' => 
+  array (
+    0 => 'Couchbase\\object|null',
+  ),
+  'couchbase\\servicemissingexception::getcode' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\servicemissingexception::getfile' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\servicemissingexception::getline' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\servicemissingexception::getmessage' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\servicemissingexception::getprevious' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\servicemissingexception::gettrace' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\servicemissingexception::gettraceasstring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\servicemissingexception::ref' => 
+  array (
+    0 => 'null|string',
+  ),
   'couchbase\\spatialviewquery::__construct' => 
   array (
     0 => 'void',
@@ -5676,6 +9493,116 @@ return array (
   array (
     0 => 'Couchbase\\SpatialViewQuery',
     'range' => 'array<array-key, mixed>',
+  ),
+  'couchbase\\subdocumentexception::__clone' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\subdocumentexception::__construct' => 
+  array (
+    0 => 'string',
+    'message=' => 'string',
+    'code=' => 'string',
+    'previous=' => 'string',
+  ),
+  'couchbase\\subdocumentexception::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\subdocumentexception::__wakeup' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\subdocumentexception::context' => 
+  array (
+    0 => 'Couchbase\\object|null',
+  ),
+  'couchbase\\subdocumentexception::getcode' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\subdocumentexception::getfile' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\subdocumentexception::getline' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\subdocumentexception::getmessage' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\subdocumentexception::getprevious' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\subdocumentexception::gettrace' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\subdocumentexception::gettraceasstring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\subdocumentexception::ref' => 
+  array (
+    0 => 'null|string',
+  ),
+  'couchbase\\tempfailexception::__clone' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\tempfailexception::__construct' => 
+  array (
+    0 => 'string',
+    'message=' => 'string',
+    'code=' => 'string',
+    'previous=' => 'string',
+  ),
+  'couchbase\\tempfailexception::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\tempfailexception::__wakeup' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\tempfailexception::context' => 
+  array (
+    0 => 'Couchbase\\object|null',
+  ),
+  'couchbase\\tempfailexception::getcode' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\tempfailexception::getfile' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\tempfailexception::getline' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\tempfailexception::getmessage' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\tempfailexception::getprevious' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\tempfailexception::gettrace' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\tempfailexception::gettraceasstring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\tempfailexception::ref' => 
+  array (
+    0 => 'null|string',
   ),
   'couchbase\\termrangesearchquery::__construct' => 
   array (
@@ -5743,6 +9670,249 @@ return array (
     0 => 'Couchbase\\TermSearchQuery',
     'prefixLength' => 'int',
   ),
+  'couchbase\\thresholdloggingtracer::analyticsthreshold' => 
+  array (
+    0 => 'string',
+    'duration' => 'int',
+  ),
+  'couchbase\\thresholdloggingtracer::emitinterval' => 
+  array (
+    0 => 'string',
+    'duration' => 'int',
+  ),
+  'couchbase\\thresholdloggingtracer::kvthreshold' => 
+  array (
+    0 => 'string',
+    'duration' => 'int',
+  ),
+  'couchbase\\thresholdloggingtracer::querythreshold' => 
+  array (
+    0 => 'string',
+    'duration' => 'int',
+  ),
+  'couchbase\\thresholdloggingtracer::requestspan' => 
+  array (
+    0 => 'string',
+    'name' => 'string',
+    'parent=' => 'Couchbase\\RequestSpan|null',
+  ),
+  'couchbase\\thresholdloggingtracer::samplesize' => 
+  array (
+    0 => 'string',
+    'size' => 'int',
+  ),
+  'couchbase\\thresholdloggingtracer::searchthreshold' => 
+  array (
+    0 => 'string',
+    'duration' => 'int',
+  ),
+  'couchbase\\thresholdloggingtracer::viewsthreshold' => 
+  array (
+    0 => 'string',
+    'duration' => 'int',
+  ),
+  'couchbase\\timeoutexception::__clone' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\timeoutexception::__construct' => 
+  array (
+    0 => 'string',
+    'message=' => 'string',
+    'code=' => 'string',
+    'previous=' => 'string',
+  ),
+  'couchbase\\timeoutexception::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\timeoutexception::__wakeup' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\timeoutexception::context' => 
+  array (
+    0 => 'Couchbase\\object|null',
+  ),
+  'couchbase\\timeoutexception::getcode' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\timeoutexception::getfile' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\timeoutexception::getline' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\timeoutexception::getmessage' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\timeoutexception::getprevious' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\timeoutexception::gettrace' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\timeoutexception::gettraceasstring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\timeoutexception::ref' => 
+  array (
+    0 => 'null|string',
+  ),
+  'couchbase\\touchoptions::timeout' => 
+  array (
+    0 => 'Couchbase\\TouchOptions',
+    'arg' => 'int',
+  ),
+  'couchbase\\unlockoptions::timeout' => 
+  array (
+    0 => 'Couchbase\\UnlockOptions',
+    'arg' => 'int',
+  ),
+  'couchbase\\upsertoptions::durabilitylevel' => 
+  array (
+    0 => 'Couchbase\\UpsertOptions',
+    'arg' => 'int',
+  ),
+  'couchbase\\upsertoptions::encoder' => 
+  array (
+    0 => 'Couchbase\\UpsertOptions',
+    'arg' => 'callable',
+  ),
+  'couchbase\\upsertoptions::expiry' => 
+  array (
+    0 => 'Couchbase\\UpsertOptions',
+    'arg' => 'Couchbase\\mixed',
+  ),
+  'couchbase\\upsertoptions::preserveexpiry' => 
+  array (
+    0 => 'Couchbase\\UpsertOptions',
+    'shouldPreserve' => 'bool',
+  ),
+  'couchbase\\upsertoptions::timeout' => 
+  array (
+    0 => 'Couchbase\\UpsertOptions',
+    'arg' => 'int',
+  ),
+  'couchbase\\upsertuseroptions::domainname' => 
+  array (
+    0 => 'Couchbase\\DropUserOptions',
+    'name' => 'string',
+  ),
+  'couchbase\\user::displayname' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\user::groups' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'couchbase\\user::roles' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'couchbase\\user::setdisplayname' => 
+  array (
+    0 => 'Couchbase\\User',
+    'name' => 'string',
+  ),
+  'couchbase\\user::setgroups' => 
+  array (
+    0 => 'Couchbase\\User',
+    'groups' => 'array<array-key, mixed>',
+  ),
+  'couchbase\\user::setpassword' => 
+  array (
+    0 => 'Couchbase\\User',
+    'password' => 'string',
+  ),
+  'couchbase\\user::setroles' => 
+  array (
+    0 => 'Couchbase\\User',
+    'roles' => 'array<array-key, mixed>',
+  ),
+  'couchbase\\user::setusername' => 
+  array (
+    0 => 'Couchbase\\User',
+    'username' => 'string',
+  ),
+  'couchbase\\user::username' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\userandmetadata::domain' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\userandmetadata::effectiveroles' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'couchbase\\userandmetadata::externalgroups' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'couchbase\\userandmetadata::passwordchanged' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\userandmetadata::user' => 
+  array (
+    0 => 'Couchbase\\User',
+  ),
+  'couchbase\\usermanager::dropgroup' => 
+  array (
+    0 => 'string',
+    'name' => 'string',
+  ),
+  'couchbase\\usermanager::dropuser' => 
+  array (
+    0 => 'string',
+    'name' => 'string',
+    'options=' => 'Couchbase\\DropUserOptions|null',
+  ),
+  'couchbase\\usermanager::getallgroups' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'couchbase\\usermanager::getallusers' => 
+  array (
+    0 => 'array<array-key, mixed>',
+    'options=' => 'Couchbase\\GetAllUsersOptions|null',
+  ),
+  'couchbase\\usermanager::getgroup' => 
+  array (
+    0 => 'Couchbase\\Group',
+    'name' => 'string',
+  ),
+  'couchbase\\usermanager::getroles' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'couchbase\\usermanager::getuser' => 
+  array (
+    0 => 'Couchbase\\UserAndMetadata',
+    'name' => 'string',
+    'options=' => 'Couchbase\\GetUserOptions|null',
+  ),
+  'couchbase\\usermanager::upsertgroup' => 
+  array (
+    0 => 'string',
+    'group' => 'Couchbase\\Group',
+  ),
+  'couchbase\\usermanager::upsertuser' => 
+  array (
+    0 => 'string',
+    'user' => 'Couchbase\\User',
+    'options=' => 'Couchbase\\UpsertUserOptions|null',
+  ),
   'couchbase\\usersettings::fullname' => 
   array (
     0 => 'Couchbase\\UserSettings',
@@ -5758,6 +9928,238 @@ return array (
     0 => 'Couchbase\\UserSettings',
     'role' => 'string',
     'bucket=' => 'string',
+  ),
+  'couchbase\\valuetoobigexception::__clone' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\valuetoobigexception::__construct' => 
+  array (
+    0 => 'string',
+    'message=' => 'string',
+    'code=' => 'string',
+    'previous=' => 'string',
+  ),
+  'couchbase\\valuetoobigexception::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\valuetoobigexception::__wakeup' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\valuetoobigexception::context' => 
+  array (
+    0 => 'Couchbase\\object|null',
+  ),
+  'couchbase\\valuetoobigexception::getcode' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\valuetoobigexception::getfile' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\valuetoobigexception::getline' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\valuetoobigexception::getmessage' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\valuetoobigexception::getprevious' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\valuetoobigexception::gettrace' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\valuetoobigexception::gettraceasstring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\valuetoobigexception::ref' => 
+  array (
+    0 => 'null|string',
+  ),
+  'couchbase\\view::map' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\view::name' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\view::reduce' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\view::setmap' => 
+  array (
+    0 => 'Couchbase\\View',
+    'mapJsCode' => 'string',
+  ),
+  'couchbase\\view::setname' => 
+  array (
+    0 => 'Couchbase\\View',
+    'name' => 'string',
+  ),
+  'couchbase\\view::setreduce' => 
+  array (
+    0 => 'Couchbase\\View',
+    'reduceJsCode' => 'string',
+  ),
+  'couchbase\\viewexception::__clone' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\viewexception::__construct' => 
+  array (
+    0 => 'string',
+    'message=' => 'string',
+    'code=' => 'string',
+    'previous=' => 'string',
+  ),
+  'couchbase\\viewexception::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\viewexception::__wakeup' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\viewexception::context' => 
+  array (
+    0 => 'Couchbase\\object|null',
+  ),
+  'couchbase\\viewexception::getcode' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\viewexception::getfile' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\viewexception::getline' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\viewexception::getmessage' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\viewexception::getprevious' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\viewexception::gettrace' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\viewexception::gettraceasstring' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\viewexception::ref' => 
+  array (
+    0 => 'null|string',
+  ),
+  'couchbase\\viewindexmanager::dropdesigndocument' => 
+  array (
+    0 => 'string',
+    'name' => 'string',
+  ),
+  'couchbase\\viewindexmanager::getalldesigndocuments' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'couchbase\\viewindexmanager::getdesigndocument' => 
+  array (
+    0 => 'Couchbase\\DesignDocument',
+    'name' => 'string',
+  ),
+  'couchbase\\viewindexmanager::upsertdesigndocument' => 
+  array (
+    0 => 'string',
+    'document' => 'Couchbase\\DesignDocument',
+  ),
+  'couchbase\\viewoptions::group' => 
+  array (
+    0 => 'Couchbase\\ViewOptions',
+    'arg' => 'bool',
+  ),
+  'couchbase\\viewoptions::grouplevel' => 
+  array (
+    0 => 'Couchbase\\ViewOptions',
+    'arg' => 'int',
+  ),
+  'couchbase\\viewoptions::idrange' => 
+  array (
+    0 => 'Couchbase\\ViewOptions',
+    'start' => 'string',
+    'end' => 'string',
+    'inclusiveEnd=' => 'string',
+  ),
+  'couchbase\\viewoptions::includedocuments' => 
+  array (
+    0 => 'Couchbase\\ViewOptions',
+    'arg' => 'bool',
+    'maxConcurrentDocuments=' => 'int',
+  ),
+  'couchbase\\viewoptions::key' => 
+  array (
+    0 => 'Couchbase\\ViewOptions',
+    'arg' => 'string',
+  ),
+  'couchbase\\viewoptions::keys' => 
+  array (
+    0 => 'Couchbase\\ViewOptions',
+    'args' => 'array<array-key, mixed>',
+  ),
+  'couchbase\\viewoptions::limit' => 
+  array (
+    0 => 'Couchbase\\ViewOptions',
+    'arg' => 'int',
+  ),
+  'couchbase\\viewoptions::order' => 
+  array (
+    0 => 'Couchbase\\ViewOptions',
+    'arg' => 'int',
+  ),
+  'couchbase\\viewoptions::range' => 
+  array (
+    0 => 'Couchbase\\ViewOptions',
+    'start' => 'string',
+    'end' => 'string',
+    'inclusiveEnd=' => 'string',
+  ),
+  'couchbase\\viewoptions::raw' => 
+  array (
+    0 => 'Couchbase\\ViewOptions',
+    'key' => 'string',
+    'value' => 'string',
+  ),
+  'couchbase\\viewoptions::reduce' => 
+  array (
+    0 => 'Couchbase\\ViewOptions',
+    'arg' => 'bool',
+  ),
+  'couchbase\\viewoptions::scanconsistency' => 
+  array (
+    0 => 'Couchbase\\ViewOptions',
+    'arg' => 'int',
+  ),
+  'couchbase\\viewoptions::skip' => 
+  array (
+    0 => 'Couchbase\\ViewOptions',
+    'arg' => 'int',
+  ),
+  'couchbase\\viewoptions::timeout' => 
+  array (
+    0 => 'Couchbase\\ViewOptions',
+    'arg' => 'int',
   ),
   'couchbase\\viewquery::__construct' => 
   array (
@@ -5845,6 +10247,27 @@ return array (
   'couchbase\\viewqueryencodable::encode' => 
   array (
     0 => 'array<array-key, mixed>',
+  ),
+  'couchbase\\viewrow::document' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\viewrow::id' => 
+  array (
+    0 => 'null|string',
+  ),
+  'couchbase\\viewrow::key' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\viewrow::value' => 
+  array (
+    0 => 'string',
+  ),
+  'couchbase\\watchqueryindexesoptions::watchprimary' => 
+  array (
+    0 => 'Couchbase\\WatchQueryIndexesOptions',
+    'shouldWatch' => 'bool',
   ),
   'couchbase\\wildcardsearchquery::__construct' => 
   array (

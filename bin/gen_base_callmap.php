@@ -61,20 +61,38 @@ function paramsToEntries(ReflectionFunctionAbstract $reflectionFunction): array
     return $res;
 }
 
+// TEMP: not recommended, install the extension in the Dockerfile, instead
+foreach ([
+    'couchbase/couchbase.php',
+    'ibm_db2/ibm_db2.php',
+] as $stub) {
+    if ($stub === 'ibm_db2/ibm_db2.php' && PHP_MAJOR_VERSION < 8) {
+        continue;
+    }
+    $stub = file_get_contents("https://github.com/JetBrains/phpstorm-stubs/raw/refs/heads/master/$stub");
+    if (PHP_MAJOR_VERSION === 7 && PHP_MINOR_VERSION === 0) {
+        $stub = str_replace(['?', '<php'], ['', '<?php'], $stub);
+        $stub = str_replace(['public const', 'protected const', 'private const'], 'const', $stub);
+    }
+    file_put_contents('temp.php', $stub);
+    require 'temp.php';
+}
 
-foreach (get_defined_functions()['internal'] as $name) {
-    $func = new ReflectionFunction($name);
+foreach (get_defined_functions() as $sub) {
+    foreach ($sub as $name) {
+        $name = strtolower($name);
+        if ($name === 'paramstoentries') continue;
+        if ($name === 'typetostring') continue;
+        $func = new ReflectionFunction($name);
 
-    $args = paramsToEntries($func);
+        $args = paramsToEntries($func);
 
-    $callmap[strtolower($name)] = $args;
+        $callmap[$name] = $args;
+    }
 }
 
 foreach (get_declared_classes() as $class) {
     $refl = new ReflectionClass($class);
-    if (!$refl->isInternal()) {
-        continue;
-    }
 
     foreach ($refl->getMethods() as $method) {
         $args = paramsToEntries($method);

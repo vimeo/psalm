@@ -13,3 +13,4 @@ for f in $VERSIONS; do
 done
 
 php bin/gen_callmap.php
+php bin/gen_callmap.php
