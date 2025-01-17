@@ -5220,11 +5220,6 @@ return array (
     0 => 'int',
     'stmt' => 'resource',
   ),
-  'db2_escape_string' => 
-  array (
-    0 => 'string',
-    'string_literal' => 'string',
-  ),
   'db2_exec' => 
   array (
     0 => 'false|resource',

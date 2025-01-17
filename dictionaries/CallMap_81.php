@@ -11885,6 +11885,10 @@ return array (
     'table_name=' => 'null|string',
     'column_name=' => 'null|string',
   ),
+  'db2_columnprivileges' => 
+  array (
+    0 => 'string',
+  ),
   'db2_columns' => 
   array (
     0 => 'false|resource',
@@ -12019,6 +12023,10 @@ return array (
     'qualifier' => 'null|string',
     'schema' => 'null|string',
     'table_name' => 'string',
+  ),
+  'db2_foreignkeys' => 
+  array (
+    0 => 'string',
   ),
   'db2_free_result' => 
   array (
