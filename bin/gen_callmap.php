@@ -38,7 +38,7 @@ foreach ($customMaps as $version => $data) {
     foreach ($data as $name => $func) {
         $baseRet = ($baseMaps[$version][$name][0] ?? null);
         $myRet = $func[0] ?? null;
-        if ($baseRet && $myRet && $baseRet[0] === '?' && $myRet[0] !== '?') {
+        if ($baseRet && $myRet && $baseRet === "?{$myRet}") {
             unset($data[$name]);
         }
         if (($baseMaps[$version][$name] ?? null) === $func) {
