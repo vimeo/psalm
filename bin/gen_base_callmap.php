@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 $callmap = [];
 
-function typeToString(?ReflectionType $reflection_type = null): string
+/**
+ * @var ?ReflectionType $reflection_type
+ */
+function typeToString($reflection_type = null): string
 {
     if (!$reflection_type) {
         return 'string';
@@ -16,12 +19,14 @@ function typeToString(?ReflectionType $reflection_type = null): string
         $type = implode(
             '|',
             array_map(
-                static fn(ReflectionNamedType $reflection): string => $reflection->getName(),
-                $reflection_type->getTypes(),
-            ),
+                static function (ReflectionNamedType $reflection): string { return $reflection->getName(); },
+                $reflection_type->getTypes()
+            )
         );
+    } else if ($reflection_type instanceof ReflectionType) {
+        $type = $reflection_type->__toString();
     } else {
-        throw new LogicException('Unexpected reflection class ' . $reflection_type::class . ' found.');
+        throw new LogicException('Unexpected reflection class ' . get_class($reflection_type) . ' found.');
     }
 
     if ($reflection_type->allowsNull()) {

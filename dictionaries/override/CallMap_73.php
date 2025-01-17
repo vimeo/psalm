@@ -438,10 +438,6 @@ return array (
   array (
     0 => 'int',
   ),
-  'apcuiterator::key' => 
-  array (
-    0 => 'string',
-  ),
   'apcuiterator::next' => 
   array (
     0 => 'void',
@@ -578,10 +574,6 @@ return array (
     'code=' => 'int',
     'previous=' => 'Throwable|null',
   ),
-  'argumentcounterror::__tostring' => 
-  array (
-    0 => 'string',
-  ),
   'argumentcounterror::__wakeup' => 
   array (
     0 => 'void',
@@ -590,17 +582,9 @@ return array (
   array (
     0 => 'int',
   ),
-  'argumentcounterror::getfile' => 
-  array (
-    0 => 'string',
-  ),
   'argumentcounterror::getline' => 
   array (
     0 => 'int',
-  ),
-  'argumentcounterror::getmessage' => 
-  array (
-    0 => 'string',
   ),
   'argumentcounterror::getprevious' => 
   array (
@@ -609,10 +593,6 @@ return array (
   'argumentcounterror::gettrace' => 
   array (
     0 => 'list<array{args?: array<array-key, mixed>, class?: class-string, file?: string, function: string, line?: int, type?: \'->\'|\'::\'}>',
-  ),
-  'argumentcounterror::gettraceasstring' => 
-  array (
-    0 => 'string',
   ),
   'arithmeticerror::__clone' => 
   array (
@@ -625,10 +605,6 @@ return array (
     'code=' => 'int',
     'previous=' => 'Throwable|null',
   ),
-  'arithmeticerror::__tostring' => 
-  array (
-    0 => 'string',
-  ),
   'arithmeticerror::__wakeup' => 
   array (
     0 => 'void',
@@ -637,17 +613,9 @@ return array (
   array (
     0 => 'int',
   ),
-  'arithmeticerror::getfile' => 
-  array (
-    0 => 'string',
-  ),
   'arithmeticerror::getline' => 
   array (
     0 => 'int',
-  ),
-  'arithmeticerror::getmessage' => 
-  array (
-    0 => 'string',
   ),
   'arithmeticerror::getprevious' => 
   array (
@@ -656,10 +624,6 @@ return array (
   'arithmeticerror::gettrace' => 
   array (
     0 => 'list<array{args?: array<array-key, mixed>, class?: class-string, file?: string, function: string, line?: int, type?: \'->\'|\'::\'}>',
-  ),
-  'arithmeticerror::gettraceasstring' => 
-  array (
-    0 => 'string',
   ),
   'array_change_key_case' => 
   array (
@@ -1206,10 +1170,6 @@ return array (
     0 => 'void',
     'offset' => 'int',
   ),
-  'arrayiterator::serialize' => 
-  array (
-    0 => 'string',
-  ),
   'arrayiterator::setflags' => 
   array (
     0 => 'void',
@@ -1272,10 +1232,6 @@ return array (
   array (
     0 => 'ArrayIterator',
   ),
-  'arrayobject::getiteratorclass' => 
-  array (
-    0 => 'string',
-  ),
   'arrayobject::ksort' => 
   array (
     0 => 'true',
@@ -1309,10 +1265,6 @@ return array (
   array (
     0 => 'void',
     'key' => 'int|string',
-  ),
-  'arrayobject::serialize' => 
-  array (
-    0 => 'string',
   ),
   'arrayobject::setflags' => 
   array (
@@ -1440,25 +1392,13 @@ return array (
     'code=' => 'int',
     'previous=' => 'Throwable|null',
   ),
-  'badfunctioncallexception::__tostring' => 
-  array (
-    0 => 'string',
-  ),
   'badfunctioncallexception::getcode' => 
   array (
     0 => 'int',
   ),
-  'badfunctioncallexception::getfile' => 
-  array (
-    0 => 'string',
-  ),
   'badfunctioncallexception::getline' => 
   array (
     0 => 'int',
-  ),
-  'badfunctioncallexception::getmessage' => 
-  array (
-    0 => 'string',
   ),
   'badfunctioncallexception::getprevious' => 
   array (
@@ -1467,10 +1407,6 @@ return array (
   'badfunctioncallexception::gettrace' => 
   array (
     0 => 'list<array{args?: array<array-key, mixed>, class?: class-string, file?: string, function: string, line?: int, type?: \'->\'|\'::\'}>',
-  ),
-  'badfunctioncallexception::gettraceasstring' => 
-  array (
-    0 => 'string',
   ),
   'badmethodcallexception::__clone' => 
   array (
@@ -1483,25 +1419,13 @@ return array (
     'code=' => 'int',
     'previous=' => 'Throwable|null',
   ),
-  'badmethodcallexception::__tostring' => 
-  array (
-    0 => 'string',
-  ),
   'badmethodcallexception::getcode' => 
   array (
     0 => 'int',
   ),
-  'badmethodcallexception::getfile' => 
-  array (
-    0 => 'string',
-  ),
   'badmethodcallexception::getline' => 
   array (
     0 => 'int',
-  ),
-  'badmethodcallexception::getmessage' => 
-  array (
-    0 => 'string',
   ),
   'badmethodcallexception::getprevious' => 
   array (
@@ -1510,10 +1434,6 @@ return array (
   'badmethodcallexception::gettrace' => 
   array (
     0 => 'list<array{args?: array<array-key, mixed>, class?: class-string, file?: string, function: string, line?: int, type?: \'->\'|\'::\'}>',
-  ),
-  'badmethodcallexception::gettraceasstring' => 
-  array (
-    0 => 'string',
   ),
   'base64_decode' => 
   array (
@@ -1538,12 +1458,6 @@ return array (
     'num' => 'string',
     'from_base' => 'int',
     'to_base' => 'int',
-  ),
-  'basename' => 
-  array (
-    0 => 'string',
-    'path' => 'string',
-    'suffix=' => 'string',
   ),
   'bbcode_add_element' => 
   array (
@@ -1902,10 +1816,6 @@ return array (
     0 => 'void',
     'iterator' => 'Iterator',
     'flags=' => 'mixed',
-  ),
-  'cachingiterator::__tostring' => 
-  array (
-    0 => 'string',
   ),
   'cachingiterator::count' => 
   array (
@@ -2367,25 +2277,13 @@ return array (
   array (
     0 => 'void',
   ),
-  'closedgeneratorexception::__tostring' => 
-  array (
-    0 => 'string',
-  ),
   'closedgeneratorexception::getcode' => 
   array (
     0 => 'int',
   ),
-  'closedgeneratorexception::getfile' => 
-  array (
-    0 => 'string',
-  ),
   'closedgeneratorexception::getline' => 
   array (
     0 => 'int',
-  ),
-  'closedgeneratorexception::getmessage' => 
-  array (
-    0 => 'string',
   ),
   'closedgeneratorexception::getprevious' => 
   array (
@@ -2394,10 +2292,6 @@ return array (
   'closedgeneratorexception::gettrace' => 
   array (
     0 => 'list<array{args?: array<array-key, mixed>, class?: class-string, file?: string, function: string, line?: int, type?: \'->\'|\'::\'}>',
-  ),
-  'closedgeneratorexception::gettraceasstring' => 
-  array (
-    0 => 'string',
   ),
   'closedir' => 
   array (
@@ -2493,10 +2387,6 @@ return array (
   'collator::geterrorcode' => 
   array (
     0 => 'int',
-  ),
-  'collator::geterrormessage' => 
-  array (
-    0 => 'string',
   ),
   'collator::getlocale' => 
   array (
@@ -4834,12 +4724,6 @@ return array (
     0 => 'int',
     'string' => 'string',
   ),
-  'create_function' => 
-  array (
-    0 => 'string',
-    'args' => 'string',
-    'code' => 'string',
-  ),
   'crypt' => 
   array (
     0 => 'string',
@@ -5683,18 +5567,6 @@ return array (
     'mime_type=' => 'string',
     'posted_filename=' => 'string',
   ),
-  'curlfile::getfilename' => 
-  array (
-    0 => 'string',
-  ),
-  'curlfile::getmimetype' => 
-  array (
-    0 => 'string',
-  ),
-  'curlfile::getpostfilename' => 
-  array (
-    0 => 'string',
-  ),
   'curlfile::setmimetype' => 
   array (
     0 => 'void',
@@ -6064,11 +5936,6 @@ return array (
   array (
     0 => 'DateInterval',
     'datetime' => 'string',
-  ),
-  'dateinterval::format' => 
-  array (
-    0 => 'string',
-    'format' => 'string',
   ),
   'dateperiod::__construct' => 
   array (
@@ -7313,10 +7180,6 @@ return array (
     0 => 'void',
     'directory' => 'string',
   ),
-  'directoryiterator::__tostring' => 
-  array (
-    0 => 'string',
-  ),
   'directoryiterator::current' => 
   array (
     0 => 'DirectoryIterator',
@@ -7325,27 +7188,14 @@ return array (
   array (
     0 => 'int',
   ),
-  'directoryiterator::getbasename' => 
-  array (
-    0 => 'string',
-    'suffix=' => 'string',
-  ),
   'directoryiterator::getctime' => 
   array (
     0 => 'int',
-  ),
-  'directoryiterator::getextension' => 
-  array (
-    0 => 'string',
   ),
   'directoryiterator::getfileinfo' => 
   array (
     0 => 'SplFileInfo',
     'class=' => 'class-string',
-  ),
-  'directoryiterator::getfilename' => 
-  array (
-    0 => 'string',
   ),
   'directoryiterator::getgroup' => 
   array (
@@ -7355,10 +7205,6 @@ return array (
   array (
     0 => 'int',
   ),
-  'directoryiterator::getlinktarget' => 
-  array (
-    0 => 'string',
-  ),
   'directoryiterator::getmtime' => 
   array (
     0 => 'int',
@@ -7367,18 +7213,10 @@ return array (
   array (
     0 => 'int',
   ),
-  'directoryiterator::getpath' => 
-  array (
-    0 => 'string',
-  ),
   'directoryiterator::getpathinfo' => 
   array (
     0 => 'SplFileInfo|null',
     'class=' => 'class-string',
-  ),
-  'directoryiterator::getpathname' => 
-  array (
-    0 => 'string',
   ),
   'directoryiterator::getperms' => 
   array (
@@ -7391,10 +7229,6 @@ return array (
   'directoryiterator::getsize' => 
   array (
     0 => 'int',
-  ),
-  'directoryiterator::gettype' => 
-  array (
-    0 => 'string',
   ),
   'directoryiterator::isdir' => 
   array (
@@ -7423,10 +7257,6 @@ return array (
   'directoryiterator::iswritable' => 
   array (
     0 => 'bool',
-  ),
-  'directoryiterator::key' => 
-  array (
-    0 => 'string',
   ),
   'directoryiterator::next' => 
   array (
@@ -7589,10 +7419,6 @@ return array (
     'code=' => 'int',
     'previous=' => 'Throwable|null',
   ),
-  'domainexception::__tostring' => 
-  array (
-    0 => 'string',
-  ),
   'domainexception::__wakeup' => 
   array (
     0 => 'void',
@@ -7601,17 +7427,9 @@ return array (
   array (
     0 => 'int',
   ),
-  'domainexception::getfile' => 
-  array (
-    0 => 'string',
-  ),
   'domainexception::getline' => 
   array (
     0 => 'int',
-  ),
-  'domainexception::getmessage' => 
-  array (
-    0 => 'string',
   ),
   'domainexception::getprevious' => 
   array (
@@ -7620,10 +7438,6 @@ return array (
   'domainexception::gettrace' => 
   array (
     0 => 'list<array{args?: array<array-key, mixed>, class?: class-string, file?: string, function: string, line?: int, type?: \'->\'|\'::\'}>',
-  ),
-  'domainexception::gettraceasstring' => 
-  array (
-    0 => 'string',
   ),
   'domattr::__construct' => 
   array (
@@ -8378,10 +8192,6 @@ return array (
     0 => 'void',
     'callback' => 'callable',
   ),
-  'ds\\deque::capacity' => 
-  array (
-    0 => 'int',
-  ),
   'ds\\deque::clear' => 
   array (
     0 => 'void',
@@ -8394,10 +8204,6 @@ return array (
   'ds\\deque::copy' => 
   array (
     0 => 'Ds\\Deque',
-  ),
-  'ds\\deque::count' => 
-  array (
-    0 => 'int',
   ),
   'ds\\deque::filter' => 
   array (
@@ -8423,15 +8229,6 @@ return array (
     0 => 'void',
     'index' => 'int',
     '...values=' => 'mixed',
-  ),
-  'ds\\deque::isempty' => 
-  array (
-    0 => 'bool',
-  ),
-  'ds\\deque::join' => 
-  array (
-    0 => 'string',
-    'glue=' => 'string',
   ),
   'ds\\deque::jsonserialize' => 
   array (
@@ -8514,10 +8311,6 @@ return array (
   array (
     0 => 'float|int',
   ),
-  'ds\\deque::toarray' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
   'ds\\deque::unshift' => 
   array (
     0 => 'void',
@@ -8547,10 +8340,6 @@ return array (
     0 => 'void',
     'callback' => 'callable',
   ),
-  'ds\\map::capacity' => 
-  array (
-    0 => 'int',
-  ),
   'ds\\map::clear' => 
   array (
     0 => 'void',
@@ -8559,23 +8348,10 @@ return array (
   array (
     0 => 'Ds\\Map',
   ),
-  'ds\\map::count' => 
-  array (
-    0 => 'int',
-  ),
-  'ds\\map::diff' => 
-  array (
-    0 => 'Ds\\Map',
-    'map' => 'Ds\\Map',
-  ),
   'ds\\map::filter' => 
   array (
     0 => 'Ds\\Map',
     'callback=' => 'callable',
-  ),
-  'ds\\map::first' => 
-  array (
-    0 => 'Ds\\Pair',
   ),
   'ds\\map::get' => 
   array (
@@ -8593,22 +8369,9 @@ return array (
     0 => 'bool',
     'value' => 'mixed',
   ),
-  'ds\\map::intersect' => 
-  array (
-    0 => 'Ds\\Map',
-    'map' => 'Ds\\Map',
-  ),
-  'ds\\map::isempty' => 
-  array (
-    0 => 'bool',
-  ),
   'ds\\map::jsonserialize' => 
   array (
     0 => 'array<array-key, mixed>',
-  ),
-  'ds\\map::keys' => 
-  array (
-    0 => 'Ds\\Set',
   ),
   'ds\\map::ksort' => 
   array (
@@ -8620,23 +8383,10 @@ return array (
     0 => 'Ds\\Map',
     'comparator=' => 'callable',
   ),
-  'ds\\map::last' => 
-  array (
-    0 => 'Ds\\Pair',
-  ),
-  'ds\\map::map' => 
-  array (
-    0 => 'Ds\\Map',
-    'callback' => 'callable',
-  ),
   'ds\\map::merge' => 
   array (
     0 => 'Ds\\Map',
     'values' => 'mixed',
-  ),
-  'ds\\map::pairs' => 
-  array (
-    0 => 'Ds\\Sequence',
   ),
   'ds\\map::put' => 
   array (
@@ -8665,21 +8415,6 @@ return array (
   array (
     0 => 'void',
   ),
-  'ds\\map::reversed' => 
-  array (
-    0 => 'Ds\\Map',
-  ),
-  'ds\\map::skip' => 
-  array (
-    0 => 'Ds\\Pair',
-    'position' => 'int',
-  ),
-  'ds\\map::slice' => 
-  array (
-    0 => 'Ds\\Map',
-    'index' => 'int',
-    'length=' => 'int|null',
-  ),
   'ds\\map::sort' => 
   array (
     0 => 'void',
@@ -8694,20 +8429,7 @@ return array (
   array (
     0 => 'float|int',
   ),
-  'ds\\map::toarray' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
   'ds\\map::union' => 
-  array (
-    0 => 'Ds\\Map',
-    'map' => 'Ds\\Map',
-  ),
-  'ds\\map::values' => 
-  array (
-    0 => 'Ds\\Sequence',
-  ),
-  'ds\\map::xor' => 
   array (
     0 => 'Ds\\Map',
     'map' => 'Ds\\Map',
@@ -8722,19 +8444,11 @@ return array (
   array (
     0 => 'void',
   ),
-  'ds\\pair::copy' => 
-  array (
-    0 => 'Ds\\Pair',
-  ),
   'ds\\pair::isempty' => 
   array (
     0 => 'bool',
   ),
   'ds\\pair::jsonserialize' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'ds\\pair::toarray' => 
   array (
     0 => 'array<array-key, mixed>',
   ),
@@ -8747,10 +8461,6 @@ return array (
     0 => 'void',
     'capacity' => 'int',
   ),
-  'ds\\priorityqueue::capacity' => 
-  array (
-    0 => 'int',
-  ),
   'ds\\priorityqueue::clear' => 
   array (
     0 => 'void',
@@ -8758,14 +8468,6 @@ return array (
   'ds\\priorityqueue::copy' => 
   array (
     0 => 'Ds\\PriorityQueue',
-  ),
-  'ds\\priorityqueue::count' => 
-  array (
-    0 => 'int',
-  ),
-  'ds\\priorityqueue::isempty' => 
-  array (
-    0 => 'bool',
   ),
   'ds\\priorityqueue::jsonserialize' => 
   array (
@@ -8785,10 +8487,6 @@ return array (
     'value' => 'mixed',
     'priority' => 'int',
   ),
-  'ds\\priorityqueue::toarray' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
   'ds\\queue::__construct' => 
   array (
     0 => 'void',
@@ -8799,10 +8497,6 @@ return array (
     0 => 'void',
     'capacity' => 'int',
   ),
-  'ds\\queue::capacity' => 
-  array (
-    0 => 'int',
-  ),
   'ds\\queue::clear' => 
   array (
     0 => 'void',
@@ -8810,14 +8504,6 @@ return array (
   'ds\\queue::copy' => 
   array (
     0 => 'Ds\\Queue',
-  ),
-  'ds\\queue::count' => 
-  array (
-    0 => 'int',
-  ),
-  'ds\\queue::isempty' => 
-  array (
-    0 => 'bool',
   ),
   'ds\\queue::jsonserialize' => 
   array (
@@ -8835,10 +8521,6 @@ return array (
   array (
     0 => 'void',
     '...values=' => 'mixed',
-  ),
-  'ds\\queue::toarray' => 
-  array (
-    0 => 'array<array-key, mixed>',
   ),
   'ds\\sequence::allocate' => 
   array (
@@ -8986,10 +8668,6 @@ return array (
     0 => 'void',
     'capacity' => 'int',
   ),
-  'ds\\set::capacity' => 
-  array (
-    0 => 'int',
-  ),
   'ds\\set::clear' => 
   array (
     0 => 'void',
@@ -9002,15 +8680,6 @@ return array (
   'ds\\set::copy' => 
   array (
     0 => 'Ds\\Set',
-  ),
-  'ds\\set::count' => 
-  array (
-    0 => 'int',
-  ),
-  'ds\\set::diff' => 
-  array (
-    0 => 'Ds\\Set',
-    'set' => 'Ds\\Set',
   ),
   'ds\\set::filter' => 
   array (
@@ -9025,20 +8694,6 @@ return array (
   array (
     0 => 'mixed',
     'index' => 'int',
-  ),
-  'ds\\set::intersect' => 
-  array (
-    0 => 'Ds\\Set',
-    'set' => 'Ds\\Set',
-  ),
-  'ds\\set::isempty' => 
-  array (
-    0 => 'bool',
-  ),
-  'ds\\set::join' => 
-  array (
-    0 => 'string',
-    'glue=' => 'string',
   ),
   'ds\\set::jsonserialize' => 
   array (
@@ -9068,16 +8723,6 @@ return array (
   array (
     0 => 'void',
   ),
-  'ds\\set::reversed' => 
-  array (
-    0 => 'Ds\\Set',
-  ),
-  'ds\\set::slice' => 
-  array (
-    0 => 'Ds\\Set',
-    'index' => 'int',
-    'length=' => 'int|null',
-  ),
   'ds\\set::sort' => 
   array (
     0 => 'void',
@@ -9092,20 +8737,6 @@ return array (
   array (
     0 => 'float|int',
   ),
-  'ds\\set::toarray' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'ds\\set::union' => 
-  array (
-    0 => 'Ds\\Set',
-    'set' => 'Ds\\Set',
-  ),
-  'ds\\set::xor' => 
-  array (
-    0 => 'Ds\\Set',
-    'set' => 'Ds\\Set',
-  ),
   'ds\\stack::__construct' => 
   array (
     0 => 'void',
@@ -9116,10 +8747,6 @@ return array (
     0 => 'void',
     'capacity' => 'int',
   ),
-  'ds\\stack::capacity' => 
-  array (
-    0 => 'int',
-  ),
   'ds\\stack::clear' => 
   array (
     0 => 'void',
@@ -9127,14 +8754,6 @@ return array (
   'ds\\stack::copy' => 
   array (
     0 => 'Ds\\Stack',
-  ),
-  'ds\\stack::count' => 
-  array (
-    0 => 'int',
-  ),
-  'ds\\stack::isempty' => 
-  array (
-    0 => 'bool',
   ),
   'ds\\stack::jsonserialize' => 
   array (
@@ -9153,10 +8772,6 @@ return array (
     0 => 'void',
     '...values=' => 'mixed',
   ),
-  'ds\\stack::toarray' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
   'ds\\vector::__construct' => 
   array (
     0 => 'void',
@@ -9172,10 +8787,6 @@ return array (
     0 => 'void',
     'callback' => 'callable',
   ),
-  'ds\\vector::capacity' => 
-  array (
-    0 => 'int',
-  ),
   'ds\\vector::clear' => 
   array (
     0 => 'void',
@@ -9188,10 +8799,6 @@ return array (
   'ds\\vector::copy' => 
   array (
     0 => 'Ds\\Vector',
-  ),
-  'ds\\vector::count' => 
-  array (
-    0 => 'int',
   ),
   'ds\\vector::filter' => 
   array (
@@ -9217,15 +8824,6 @@ return array (
     0 => 'void',
     'index' => 'int',
     '...values=' => 'mixed',
-  ),
-  'ds\\vector::isempty' => 
-  array (
-    0 => 'bool',
-  ),
-  'ds\\vector::join' => 
-  array (
-    0 => 'string',
-    'glue=' => 'string',
   ),
   'ds\\vector::jsonserialize' => 
   array (
@@ -9307,10 +8905,6 @@ return array (
   'ds\\vector::sum' => 
   array (
     0 => 'float|int',
-  ),
-  'ds\\vector::toarray' => 
-  array (
-    0 => 'array<array-key, mixed>',
   ),
   'ds\\vector::unshift' => 
   array (
@@ -9950,25 +9544,13 @@ return array (
     'code=' => 'int',
     'previous=' => 'Throwable|null',
   ),
-  'error::__tostring' => 
-  array (
-    0 => 'string',
-  ),
   'error::getcode' => 
   array (
     0 => 'int',
   ),
-  'error::getfile' => 
-  array (
-    0 => 'string',
-  ),
   'error::getline' => 
   array (
     0 => 'int',
-  ),
-  'error::getmessage' => 
-  array (
-    0 => 'string',
   ),
   'error::getprevious' => 
   array (
@@ -9977,10 +9559,6 @@ return array (
   'error::gettrace' => 
   array (
     0 => 'list<array{args?: array<array-key, mixed>, class?: class-string, file?: string, function: string, line?: int, type?: \'->\'|\'::\'}>',
-  ),
-  'error::gettraceasstring' => 
-  array (
-    0 => 'string',
   ),
   'error_clear_last' => 
   array (
@@ -10017,25 +9595,13 @@ return array (
     'line=' => 'int',
     'previous=' => 'Throwable|null',
   ),
-  'errorexception::__tostring' => 
-  array (
-    0 => 'string',
-  ),
   'errorexception::getcode' => 
   array (
     0 => 'int',
   ),
-  'errorexception::getfile' => 
-  array (
-    0 => 'string',
-  ),
   'errorexception::getline' => 
   array (
     0 => 'int',
-  ),
-  'errorexception::getmessage' => 
-  array (
-    0 => 'string',
   ),
   'errorexception::getprevious' => 
   array (
@@ -10048,20 +9614,6 @@ return array (
   'errorexception::gettrace' => 
   array (
     0 => 'list<array{args?: array<array-key, mixed>, class?: class-string, file?: string, function: string, line?: int, type?: \'->\'|\'::\'}>',
-  ),
-  'errorexception::gettraceasstring' => 
-  array (
-    0 => 'string',
-  ),
-  'escapeshellarg' => 
-  array (
-    0 => 'string',
-    'arg' => 'string',
-  ),
-  'escapeshellcmd' => 
-  array (
-    0 => 'string',
-    'command' => 'string',
   ),
   'ev::backend' => 
   array (
@@ -10802,10 +10354,6 @@ return array (
   array (
     0 => 'void',
   ),
-  'eventbufferevent::getdnserrorstring' => 
-  array (
-    0 => 'string',
-  ),
   'eventbufferevent::getenabled' => 
   array (
     0 => 'int',
@@ -10854,10 +10402,6 @@ return array (
     'lowmark' => 'int',
     'highmark' => 'int',
   ),
-  'eventbufferevent::sslerror' => 
-  array (
-    0 => 'string',
-  ),
   'eventbufferevent::sslfilter' => 
   array (
     0 => 'EventBufferEvent',
@@ -10866,22 +10410,6 @@ return array (
     'ctx' => 'EventSslContext',
     'state' => 'int',
     'options=' => 'int',
-  ),
-  'eventbufferevent::sslgetcipherinfo' => 
-  array (
-    0 => 'string',
-  ),
-  'eventbufferevent::sslgetciphername' => 
-  array (
-    0 => 'string',
-  ),
-  'eventbufferevent::sslgetcipherversion' => 
-  array (
-    0 => 'string',
-  ),
-  'eventbufferevent::sslgetprotocol' => 
-  array (
-    0 => 'string',
   ),
   'eventbufferevent::sslrenegotiate' => 
   array (
@@ -11142,10 +10670,6 @@ return array (
   array (
     0 => 'EventHttpConnection',
   ),
-  'eventhttprequest::gethost' => 
-  array (
-    0 => 'string',
-  ),
   'eventhttprequest::getinputbuffer' => 
   array (
     0 => 'EventBuffer',
@@ -11165,10 +10689,6 @@ return array (
   'eventhttprequest::getresponsecode' => 
   array (
     0 => 'int',
-  ),
-  'eventhttprequest::geturi' => 
-  array (
-    0 => 'string',
   ),
   'eventhttprequest::removeheader' => 
   array (
@@ -11958,25 +11478,13 @@ return array (
     'code=' => 'int',
     'previous=' => 'Throwable|null',
   ),
-  'exception::__tostring' => 
-  array (
-    0 => 'string',
-  ),
   'exception::getcode' => 
   array (
     0 => 'int|string',
   ),
-  'exception::getfile' => 
-  array (
-    0 => 'string',
-  ),
   'exception::getline' => 
   array (
     0 => 'int',
-  ),
-  'exception::getmessage' => 
-  array (
-    0 => 'string',
   ),
   'exception::getprevious' => 
   array (
@@ -11985,10 +11493,6 @@ return array (
   'exception::gettrace' => 
   array (
     0 => 'list<array{args?: array<array-key, mixed>, class?: class-string, file?: string, function: string, line?: int, type?: \'->\'|\'::\'}>',
-  ),
-  'exception::gettraceasstring' => 
-  array (
-    0 => 'string',
   ),
   'exec' => 
   array (
@@ -13888,10 +13392,6 @@ return array (
     'directory' => 'string',
     'flags=' => 'int',
   ),
-  'filesystemiterator::__tostring' => 
-  array (
-    0 => 'string',
-  ),
   'filesystemiterator::current' => 
   array (
     0 => 'FilesystemIterator|SplFileInfo|string',
@@ -13900,27 +13400,14 @@ return array (
   array (
     0 => 'int',
   ),
-  'filesystemiterator::getbasename' => 
-  array (
-    0 => 'string',
-    'suffix=' => 'string',
-  ),
   'filesystemiterator::getctime' => 
   array (
     0 => 'int',
-  ),
-  'filesystemiterator::getextension' => 
-  array (
-    0 => 'string',
   ),
   'filesystemiterator::getfileinfo' => 
   array (
     0 => 'SplFileInfo',
     'class=' => 'class-string',
-  ),
-  'filesystemiterator::getfilename' => 
-  array (
-    0 => 'string',
   ),
   'filesystemiterator::getflags' => 
   array (
@@ -13934,10 +13421,6 @@ return array (
   array (
     0 => 'int',
   ),
-  'filesystemiterator::getlinktarget' => 
-  array (
-    0 => 'string',
-  ),
   'filesystemiterator::getmtime' => 
   array (
     0 => 'int',
@@ -13946,18 +13429,10 @@ return array (
   array (
     0 => 'int',
   ),
-  'filesystemiterator::getpath' => 
-  array (
-    0 => 'string',
-  ),
   'filesystemiterator::getpathinfo' => 
   array (
     0 => 'SplFileInfo|null',
     'class=' => 'class-string',
-  ),
-  'filesystemiterator::getpathname' => 
-  array (
-    0 => 'string',
   ),
   'filesystemiterator::getperms' => 
   array (
@@ -13970,10 +13445,6 @@ return array (
   'filesystemiterator::getsize' => 
   array (
     0 => 'int',
-  ),
-  'filesystemiterator::gettype' => 
-  array (
-    0 => 'string',
   ),
   'filesystemiterator::isdir' => 
   array (
@@ -14002,10 +13473,6 @@ return array (
   'filesystemiterator::iswritable' => 
   array (
     0 => 'bool',
-  ),
-  'filesystemiterator::key' => 
-  array (
-    0 => 'string',
   ),
   'filesystemiterator::next' => 
   array (
@@ -16329,10 +15796,6 @@ return array (
     0 => 'array<non-falsy-string, mixed>',
     'class' => 'string',
   ),
-  'get_current_user' => 
-  array (
-    0 => 'string',
-  ),
   'get_declared_classes' => 
   array (
     0 => 'list<class-string>',
@@ -16377,10 +15840,6 @@ return array (
     'table=' => 'int',
     'flags=' => 'int',
     'encoding=' => 'string',
-  ),
-  'get_include_path' => 
-  array (
-    0 => 'string',
   ),
   'get_included_files' => 
   array (
@@ -16456,11 +15915,6 @@ return array (
   array (
     0 => 'false|string',
     'ip' => 'string',
-  ),
-  'gethostbyname' => 
-  array (
-    0 => 'string',
-    'hostname' => 'string',
   ),
   'gethostbynamel' => 
   array (
@@ -16591,27 +16045,14 @@ return array (
   array (
     0 => 'int',
   ),
-  'globiterator::getbasename' => 
-  array (
-    0 => 'string',
-    'suffix=' => 'string',
-  ),
   'globiterator::getctime' => 
   array (
     0 => 'int',
-  ),
-  'globiterator::getextension' => 
-  array (
-    0 => 'string',
   ),
   'globiterator::getfileinfo' => 
   array (
     0 => 'SplFileInfo',
     'class=' => 'class-string',
-  ),
-  'globiterator::getfilename' => 
-  array (
-    0 => 'string',
   ),
   'globiterator::getflags' => 
   array (
@@ -16637,18 +16078,10 @@ return array (
   array (
     0 => 'int',
   ),
-  'globiterator::getpath' => 
-  array (
-    0 => 'string',
-  ),
   'globiterator::getpathinfo' => 
   array (
     0 => 'SplFileInfo|null',
     'class=' => 'class-string',
-  ),
-  'globiterator::getpathname' => 
-  array (
-    0 => 'string',
   ),
   'globiterator::getperms' => 
   array (
@@ -16693,10 +16126,6 @@ return array (
   'globiterator::iswritable' => 
   array (
     0 => 'bool',
-  ),
-  'globiterator::key' => 
-  array (
-    0 => 'string',
   ),
   'globiterator::next' => 
   array (
@@ -25696,10 +25125,6 @@ return array (
     0 => 'void',
     'files=' => 'array<array-key, string>|string',
   ),
-  'imagick::__tostring' => 
-  array (
-    0 => 'string',
-  ),
   'imagick::adaptiveblurimage' => 
   array (
     0 => 'bool',
@@ -26169,26 +25594,6 @@ return array (
   array (
     0 => 'array<array-key, mixed>',
   ),
-  'imagick::getcopyright' => 
-  array (
-    0 => 'string',
-  ),
-  'imagick::getfeatures' => 
-  array (
-    0 => 'string',
-  ),
-  'imagick::getfilename' => 
-  array (
-    0 => 'string',
-  ),
-  'imagick::getfont' => 
-  array (
-    0 => 'string',
-  ),
-  'imagick::getformat' => 
-  array (
-    0 => 'string',
-  ),
   'imagick::getgravity' => 
   array (
     0 => 'int',
@@ -26196,10 +25601,6 @@ return array (
   'imagick::gethdrienabled' => 
   array (
     0 => 'bool',
-  ),
-  'imagick::gethomeurl' => 
-  array (
-    0 => 'string',
   ),
   'imagick::getimage' => 
   array (
@@ -26209,11 +25610,6 @@ return array (
   array (
     0 => 'bool',
   ),
-  'imagick::getimageartifact' => 
-  array (
-    0 => 'string',
-    'artifact' => 'string',
-  ),
   'imagick::getimageattribute' => 
   array (
     0 => 'string',
@@ -26222,10 +25618,6 @@ return array (
   'imagick::getimagebackgroundcolor' => 
   array (
     0 => 'ImagickPixel',
-  ),
-  'imagick::getimageblob' => 
-  array (
-    0 => 'string',
   ),
   'imagick::getimageblueprimary' => 
   array (
@@ -26329,14 +25721,6 @@ return array (
   array (
     0 => 'array{max: int, min: int}',
   ),
-  'imagick::getimagefilename' => 
-  array (
-    0 => 'string',
-  ),
-  'imagick::getimageformat' => 
-  array (
-    0 => 'string',
-  ),
   'imagick::getimagegamma' => 
   array (
     0 => 'float',
@@ -26393,10 +25777,6 @@ return array (
   array (
     0 => 'ImagickPixel',
   ),
-  'imagick::getimagemimetype' => 
-  array (
-    0 => 'string',
-  ),
   'imagick::getimageorientation' => 
   array (
     0 => 'int',
@@ -26411,11 +25791,6 @@ return array (
     'x' => 'int',
     'y' => 'int',
   ),
-  'imagick::getimageprofile' => 
-  array (
-    0 => 'string',
-    'name' => 'string',
-  ),
   'imagick::getimageprofiles' => 
   array (
     0 => 'array<array-key, mixed>',
@@ -26427,11 +25802,6 @@ return array (
     0 => 'array<int|string, string>',
     'pattern=' => 'string',
     'only_names=' => 'bool',
-  ),
-  'imagick::getimageproperty' => 
-  array (
-    0 => 'string',
-    'name' => 'string',
   ),
   'imagick::getimageredprimary' => 
   array (
@@ -26453,17 +25823,9 @@ return array (
   array (
     0 => 'array{x: float, y: float}',
   ),
-  'imagick::getimagesblob' => 
-  array (
-    0 => 'string',
-  ),
   'imagick::getimagescene' => 
   array (
     0 => 'int',
-  ),
-  'imagick::getimagesignature' => 
-  array (
-    0 => 'string',
   ),
   'imagick::getimagesize' => 
   array (
@@ -26509,15 +25871,6 @@ return array (
   array (
     0 => 'int',
   ),
-  'imagick::getoption' => 
-  array (
-    0 => 'string',
-    'key' => 'string',
-  ),
-  'imagick::getpackagename' => 
-  array (
-    0 => 'string',
-  ),
   'imagick::getpage' => 
   array (
     0 => 'array{height: int, width: int, x: int, y: int}',
@@ -26549,15 +25902,6 @@ return array (
   'imagick::getquantumrange' => 
   array (
     0 => 'array{quantumRangeLong: int, quantumRangeString: string}',
-  ),
-  'imagick::getregistry' => 
-  array (
-    0 => 'string',
-    'key' => 'string',
-  ),
-  'imagick::getreleasedate' => 
-  array (
-    0 => 'string',
   ),
   'imagick::getresource' => 
   array (
@@ -26974,11 +26318,6 @@ return array (
   'imagick::removeimage' => 
   array (
     0 => 'bool',
-  ),
-  'imagick::removeimageprofile' => 
-  array (
-    0 => 'string',
-    'name' => 'string',
   ),
   'imagick::render' => 
   array (
@@ -27799,10 +27138,6 @@ return array (
   array (
     0 => 'ImagickPixel',
   ),
-  'imagickdraw::getclippath' => 
-  array (
-    0 => 'string',
-  ),
   'imagickdraw::getcliprule' => 
   array (
     0 => 'int',
@@ -27826,14 +27161,6 @@ return array (
   'imagickdraw::getfillrule' => 
   array (
     0 => 'int',
-  ),
-  'imagickdraw::getfont' => 
-  array (
-    0 => 'string',
-  ),
-  'imagickdraw::getfontfamily' => 
-  array (
-    0 => 'string',
   ),
   'imagickdraw::getfontresolution' => 
   array (
@@ -27915,10 +27242,6 @@ return array (
   array (
     0 => 'int',
   ),
-  'imagickdraw::gettextencoding' => 
-  array (
-    0 => 'string',
-  ),
   'imagickdraw::gettextinterlinespacing' => 
   array (
     0 => 'float',
@@ -27934,10 +27257,6 @@ return array (
   'imagickdraw::gettextundercolor' => 
   array (
     0 => 'ImagickPixel',
-  ),
-  'imagickdraw::getvectorgraphics' => 
-  array (
-    0 => 'string',
   ),
   'imagickdraw::line' => 
   array (
@@ -28476,10 +27795,6 @@ return array (
   array (
     0 => 'array{a: float|int, b: float|int, g: float|int, r: float|int}',
     'normalized=' => '0|1|2',
-  ),
-  'imagickpixel::getcolorasstring' => 
-  array (
-    0 => 'string',
   ),
   'imagickpixel::getcolorcount' => 
   array (
@@ -29518,10 +28833,6 @@ return array (
   array (
     0 => 'int',
   ),
-  'intl_get_error_message' => 
-  array (
-    0 => 'string',
-  ),
   'intl_is_failure' => 
   array (
     0 => 'bool',
@@ -29576,10 +28887,6 @@ return array (
   'intlbreakiterator::geterrorcode' => 
   array (
     0 => 'int',
-  ),
-  'intlbreakiterator::geterrormessage' => 
-  array (
-    0 => 'string',
   ),
   'intlbreakiterator::getlocale' => 
   array (
@@ -29772,11 +29079,6 @@ return array (
     0 => 'IntlTimeZone',
     'calendar' => 'IntlCalendar',
   ),
-  'intlcal_get_type' => 
-  array (
-    0 => 'string',
-    'calendar' => 'IntlCalendar',
-  ),
   'intlcal_get_weekend_transition' => 
   array (
     0 => 'false|int',
@@ -29953,10 +29255,6 @@ return array (
   array (
     0 => 'int',
   ),
-  'intlcalendar::geterrormessage' => 
-  array (
-    0 => 'string',
-  ),
   'intlcalendar::getfirstdayofweek' => 
   array (
     0 => 'int',
@@ -30016,10 +29314,6 @@ return array (
   'intlcalendar::gettimezone' => 
   array (
     0 => 'IntlTimeZone',
-  ),
-  'intlcalendar::gettype' => 
-  array (
-    0 => 'string',
   ),
   'intlcalendar::getweekendtransition' => 
   array (
@@ -30468,10 +29762,6 @@ return array (
   array (
     0 => 'int',
   ),
-  'intlcodepointbreakiterator::geterrormessage' => 
-  array (
-    0 => 'string',
-  ),
   'intlcodepointbreakiterator::getlastcodepoint' => 
   array (
     0 => 'int',
@@ -30566,18 +29856,10 @@ return array (
   array (
     0 => 'int',
   ),
-  'intldateformatter::geterrormessage' => 
-  array (
-    0 => 'string',
-  ),
   'intldateformatter::getlocale' => 
   array (
     0 => 'string',
     'which=' => 'int',
-  ),
-  'intldateformatter::getpattern' => 
-  array (
-    0 => 'string',
   ),
   'intldateformatter::gettimetype' => 
   array (
@@ -30586,10 +29868,6 @@ return array (
   'intldateformatter::gettimezone' => 
   array (
     0 => 'IntlTimeZone|false',
-  ),
-  'intldateformatter::gettimezoneid' => 
-  array (
-    0 => 'string',
   ),
   'intldateformatter::islenient' => 
   array (
@@ -30638,10 +29916,6 @@ return array (
     'code=' => 'int',
     'previous=' => 'Throwable|null',
   ),
-  'intlexception::__tostring' => 
-  array (
-    0 => 'string',
-  ),
   'intlexception::__wakeup' => 
   array (
     0 => 'void',
@@ -30650,17 +29924,9 @@ return array (
   array (
     0 => 'int',
   ),
-  'intlexception::getfile' => 
-  array (
-    0 => 'string',
-  ),
   'intlexception::getline' => 
   array (
     0 => 'int',
-  ),
-  'intlexception::getmessage' => 
-  array (
-    0 => 'string',
   ),
   'intlexception::getprevious' => 
   array (
@@ -30669,10 +29935,6 @@ return array (
   'intlexception::gettrace' => 
   array (
     0 => 'list<array{args?: array<array-key, mixed>, class?: class-string, file?: string, function: string, line?: int, type?: \'->\'|\'::\'}>',
-  ),
-  'intlexception::gettraceasstring' => 
-  array (
-    0 => 'string',
   ),
   'intlgregcal_create_instance' => 
   array (
@@ -30777,10 +30039,6 @@ return array (
   array (
     0 => 'int',
   ),
-  'intlgregoriancalendar::geterrormessage' => 
-  array (
-    0 => 'string',
-  ),
   'intlgregoriancalendar::getfirstdayofweek' => 
   array (
     0 => 'int',
@@ -30844,10 +30102,6 @@ return array (
   'intlgregoriancalendar::gettimezone' => 
   array (
     0 => 'IntlTimeZone',
-  ),
-  'intlgregoriancalendar::gettype' => 
-  array (
-    0 => 'string',
   ),
   'intlgregoriancalendar::getweekendtransition' => 
   array (
@@ -30956,10 +30210,6 @@ return array (
   array (
     0 => 'mixed',
   ),
-  'intliterator::key' => 
-  array (
-    0 => 'string',
-  ),
   'intliterator::next' => 
   array (
     0 => 'void',
@@ -31024,17 +30274,9 @@ return array (
     0 => 'int',
     'offset' => 'int',
   ),
-  'intlrulebasedbreakiterator::getbinaryrules' => 
-  array (
-    0 => 'string',
-  ),
   'intlrulebasedbreakiterator::geterrorcode' => 
   array (
     0 => 'int',
-  ),
-  'intlrulebasedbreakiterator::geterrormessage' => 
-  array (
-    0 => 'string',
   ),
   'intlrulebasedbreakiterator::getlocale' => 
   array (
@@ -31045,10 +30287,6 @@ return array (
   array (
     0 => 'IntlPartsIterator',
     'type=' => 'string',
-  ),
-  'intlrulebasedbreakiterator::getrules' => 
-  array (
-    0 => 'string',
   ),
   'intlrulebasedbreakiterator::getrulestatus' => 
   array (
@@ -31148,17 +30386,9 @@ return array (
   array (
     0 => 'int',
   ),
-  'intltimezone::geterrormessage' => 
-  array (
-    0 => 'string',
-  ),
   'intltimezone::getgmt' => 
   array (
     0 => 'IntlTimeZone',
-  ),
-  'intltimezone::getid' => 
-  array (
-    0 => 'string',
   ),
   'intltimezone::getidforwindowsid' => 
   array (
@@ -31182,10 +30412,6 @@ return array (
   array (
     0 => 'false|string',
     'timezoneId' => 'string',
-  ),
-  'intltimezone::gettzdataversion' => 
-  array (
-    0 => 'string',
   ),
   'intltimezone::getunknown' => 
   array (
@@ -31329,25 +30555,13 @@ return array (
     'code=' => 'int',
     'previous=' => 'Throwable|null',
   ),
-  'invalidargumentexception::__tostring' => 
-  array (
-    0 => 'string',
-  ),
   'invalidargumentexception::getcode' => 
   array (
     0 => 'int',
   ),
-  'invalidargumentexception::getfile' => 
-  array (
-    0 => 'string',
-  ),
   'invalidargumentexception::getline' => 
   array (
     0 => 'int',
-  ),
-  'invalidargumentexception::getmessage' => 
-  array (
-    0 => 'string',
   ),
   'invalidargumentexception::getprevious' => 
   array (
@@ -31356,10 +30570,6 @@ return array (
   'invalidargumentexception::gettrace' => 
   array (
     0 => 'list<array{args?: array<array-key, mixed>, class?: class-string, file?: string, function: string, line?: int, type?: \'->\'|\'::\'}>',
-  ),
-  'invalidargumentexception::gettraceasstring' => 
-  array (
-    0 => 'string',
   ),
   'ip2long' => 
   array (
@@ -31748,10 +30958,6 @@ return array (
   array (
     0 => 'int',
   ),
-  'json_last_error_msg' => 
-  array (
-    0 => 'string',
-  ),
   'jsonexception::__clone' => 
   array (
     0 => 'void',
@@ -31763,10 +30969,6 @@ return array (
     'code=' => 'int',
     'previous=' => 'Throwable|null',
   ),
-  'jsonexception::__tostring' => 
-  array (
-    0 => 'string',
-  ),
   'jsonexception::__wakeup' => 
   array (
     0 => 'void',
@@ -31775,17 +30977,9 @@ return array (
   array (
     0 => 'int',
   ),
-  'jsonexception::getfile' => 
-  array (
-    0 => 'string',
-  ),
   'jsonexception::getline' => 
   array (
     0 => 'int',
-  ),
-  'jsonexception::getmessage' => 
-  array (
-    0 => 'string',
   ),
   'jsonexception::getprevious' => 
   array (
@@ -31794,10 +30988,6 @@ return array (
   'jsonexception::gettrace' => 
   array (
     0 => 'list<array{args?: array<array-key, mixed>, class?: class-string, file?: string, function: string, line?: int, type?: \'->\'|\'::\'}>',
-  ),
-  'jsonexception::gettraceasstring' => 
-  array (
-    0 => 'string',
   ),
   'jsonincrementalparser::__construct' => 
   array (
@@ -33030,25 +32220,13 @@ return array (
     'code=' => 'int',
     'previous=' => 'Throwable|null',
   ),
-  'lengthexception::__tostring' => 
-  array (
-    0 => 'string',
-  ),
   'lengthexception::getcode' => 
   array (
     0 => 'int',
   ),
-  'lengthexception::getfile' => 
-  array (
-    0 => 'string',
-  ),
   'lengthexception::getline' => 
   array (
     0 => 'int',
-  ),
-  'lengthexception::getmessage' => 
-  array (
-    0 => 'string',
   ),
   'lengthexception::getprevious' => 
   array (
@@ -33057,10 +32235,6 @@ return array (
   'lengthexception::gettrace' => 
   array (
     0 => 'list<array{args?: array<array-key, mixed>, class?: class-string, file?: string, function: string, line?: int, type?: \'->\'|\'::\'}>',
-  ),
-  'lengthexception::gettraceasstring' => 
-  array (
-    0 => 'string',
   ),
   'leveldb::__construct' => 
   array (
@@ -33404,10 +32578,6 @@ return array (
     0 => 'array<array-key, mixed>',
     'locale' => 'string',
   ),
-  'locale::getdefault' => 
-  array (
-    0 => 'string',
-  ),
   'locale::getdisplaylanguage' => 
   array (
     0 => 'string',
@@ -33441,21 +32611,6 @@ return array (
   'locale::getkeywords' => 
   array (
     0 => 'array<array-key, mixed>|false',
-    'locale' => 'string',
-  ),
-  'locale::getprimarylanguage' => 
-  array (
-    0 => 'string',
-    'locale' => 'string',
-  ),
-  'locale::getregion' => 
-  array (
-    0 => 'string',
-    'locale' => 'string',
-  ),
-  'locale::getscript' => 
-  array (
-    0 => 'string',
     'locale' => 'string',
   ),
   'locale::lookup' => 
@@ -33502,10 +32657,6 @@ return array (
   array (
     0 => 'array<array-key, mixed>|null',
     'locale' => 'string',
-  ),
-  'locale_get_default' => 
-  array (
-    0 => 'string',
   ),
   'locale_get_display_language' => 
   array (
@@ -33612,25 +32763,13 @@ return array (
     'code=' => 'int',
     'previous=' => 'Throwable|null',
   ),
-  'logicexception::__tostring' => 
-  array (
-    0 => 'string',
-  ),
   'logicexception::getcode' => 
   array (
     0 => 'int',
   ),
-  'logicexception::getfile' => 
-  array (
-    0 => 'string',
-  ),
   'logicexception::getline' => 
   array (
     0 => 'int',
-  ),
-  'logicexception::getmessage' => 
-  array (
-    0 => 'string',
   ),
   'logicexception::getprevious' => 
   array (
@@ -33639,10 +32778,6 @@ return array (
   'logicexception::gettrace' => 
   array (
     0 => 'list<array{args?: array<array-key, mixed>, class?: class-string, file?: string, function: string, line?: int, type?: \'->\'|\'::\'}>',
-  ),
-  'logicexception::gettraceasstring' => 
-  array (
-    0 => 'string',
   ),
   'long2ip' => 
   array (
@@ -34248,11 +33383,6 @@ return array (
     '&rw_var' => 'array<array-key, mixed>|object|string',
     '&...rw_vars=' => 'array<array-key, mixed>|object|string',
   ),
-  'mb_decode_mimeheader' => 
-  array (
-    0 => 'string',
-    'string' => 'string',
-  ),
   'mb_decode_numericentity' => 
   array (
     0 => 'string',
@@ -34433,11 +33563,6 @@ return array (
   array (
     0 => 'bool|string',
     'encoding=' => 'string',
-  ),
-  'mb_regex_set_options' => 
-  array (
-    0 => 'string',
-    'options=' => 'string',
   ),
   'mb_scrub' => 
   array (
@@ -35669,18 +34794,6 @@ return array (
   array (
     0 => 'int',
   ),
-  'messageformatter::geterrormessage' => 
-  array (
-    0 => 'string',
-  ),
-  'messageformatter::getlocale' => 
-  array (
-    0 => 'string',
-  ),
-  'messageformatter::getpattern' => 
-  array (
-    0 => 'string',
-  ),
   'messageformatter::parse' => 
   array (
     0 => 'array<array-key, mixed>|false',
@@ -36735,25 +35848,9 @@ return array (
     'data' => 'string',
     'type=' => 'int',
   ),
-  'mongodb\\bson\\binary::__tostring' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\bson\\binary::getdata' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\bson\\binary::gettype' => 
-  array (
-    0 => 'int',
-  ),
   'mongodb\\bson\\binary::jsonserialize' => 
   array (
     0 => 'mixed',
-  ),
-  'mongodb\\bson\\binary::serialize' => 
-  array (
-    0 => 'string',
   ),
   'mongodb\\bson\\binary::unserialize' => 
   array (
@@ -36772,17 +35869,9 @@ return array (
   array (
     0 => 'int',
   ),
-  'mongodb\\bson\\dbpointer::__tostring' => 
-  array (
-    0 => 'string',
-  ),
   'mongodb\\bson\\dbpointer::jsonserialize' => 
   array (
     0 => 'mixed',
-  ),
-  'mongodb\\bson\\dbpointer::serialize' => 
-  array (
-    0 => 'string',
   ),
   'mongodb\\bson\\dbpointer::unserialize' => 
   array (
@@ -36794,17 +35883,9 @@ return array (
     0 => 'void',
     'value' => 'string',
   ),
-  'mongodb\\bson\\decimal128::__tostring' => 
-  array (
-    0 => 'string',
-  ),
   'mongodb\\bson\\decimal128::jsonserialize' => 
   array (
     0 => 'mixed',
-  ),
-  'mongodb\\bson\\decimal128::serialize' => 
-  array (
-    0 => 'string',
   ),
   'mongodb\\bson\\decimal128::unserialize' => 
   array (
@@ -36815,20 +35896,6 @@ return array (
   array (
     0 => 'string',
   ),
-  'mongodb\\bson\\document::__tostring' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\bson\\document::frombson' => 
-  array (
-    0 => 'MongoDB\\BSON\\Document',
-    'bson' => 'string',
-  ),
-  'mongodb\\bson\\document::fromjson' => 
-  array (
-    0 => 'MongoDB\\BSON\\Document',
-    'json' => 'string',
-  ),
   'mongodb\\bson\\document::fromphp' => 
   array (
     0 => 'MongoDB\\BSON\\Document',
@@ -36837,15 +35904,6 @@ return array (
   'mongodb\\bson\\document::get' => 
   array (
     0 => 'mixed',
-    'key' => 'string',
-  ),
-  'mongodb\\bson\\document::getiterator' => 
-  array (
-    0 => 'MongoDB\\BSON\\Iterator',
-  ),
-  'mongodb\\bson\\document::has' => 
-  array (
-    0 => 'bool',
     'key' => 'string',
   ),
   'mongodb\\bson\\document::offsetexists' => 
@@ -36869,32 +35927,15 @@ return array (
     0 => 'void',
     'offset' => 'mixed',
   ),
-  'mongodb\\bson\\document::serialize' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\bson\\document::tocanonicalextendedjson' => 
-  array (
-    0 => 'string',
-  ),
   'mongodb\\bson\\document::tophp' => 
   array (
     0 => 'array<array-key, mixed>|object',
     'typeMap=' => 'array<array-key, mixed>|null',
   ),
-  'mongodb\\bson\\document::torelaxedextendedjson' => 
-  array (
-    0 => 'string',
-  ),
   'mongodb\\bson\\document::unserialize' => 
   array (
     0 => 'void',
     'data' => 'string',
-  ),
-  'mongodb\\bson\\fromjson' => 
-  array (
-    0 => 'string',
-    'json' => 'string',
   ),
   'mongodb\\bson\\fromphp' => 
   array (
@@ -36906,17 +35947,9 @@ return array (
     0 => 'void',
     'value' => 'int|string',
   ),
-  'mongodb\\bson\\int64::__tostring' => 
-  array (
-    0 => 'string',
-  ),
   'mongodb\\bson\\int64::jsonserialize' => 
   array (
     0 => 'mixed',
-  ),
-  'mongodb\\bson\\int64::serialize' => 
-  array (
-    0 => 'string',
   ),
   'mongodb\\bson\\int64::unserialize' => 
   array (
@@ -36931,43 +35964,15 @@ return array (
   array (
     0 => 'int|string',
   ),
-  'mongodb\\bson\\iterator::next' => 
-  array (
-    0 => 'void',
-  ),
-  'mongodb\\bson\\iterator::rewind' => 
-  array (
-    0 => 'void',
-  ),
-  'mongodb\\bson\\iterator::valid' => 
-  array (
-    0 => 'bool',
-  ),
   'mongodb\\bson\\javascript::__construct' => 
   array (
     0 => 'void',
     'code' => 'string',
     'scope=' => 'array<array-key, mixed>|null|object',
   ),
-  'mongodb\\bson\\javascript::__tostring' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\bson\\javascript::getcode' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\bson\\javascript::getscope' => 
-  array (
-    0 => 'null|object',
-  ),
   'mongodb\\bson\\javascript::jsonserialize' => 
   array (
     0 => 'mixed',
-  ),
-  'mongodb\\bson\\javascript::serialize' => 
-  array (
-    0 => 'string',
   ),
   'mongodb\\bson\\javascript::unserialize' => 
   array (
@@ -36990,10 +35995,6 @@ return array (
   array (
     0 => 'mixed',
   ),
-  'mongodb\\bson\\maxkey::serialize' => 
-  array (
-    0 => 'string',
-  ),
   'mongodb\\bson\\maxkey::unserialize' => 
   array (
     0 => 'void',
@@ -37002,10 +36003,6 @@ return array (
   'mongodb\\bson\\minkey::jsonserialize' => 
   array (
     0 => 'mixed',
-  ),
-  'mongodb\\bson\\minkey::serialize' => 
-  array (
-    0 => 'string',
   ),
   'mongodb\\bson\\minkey::unserialize' => 
   array (
@@ -37017,21 +36014,9 @@ return array (
     0 => 'void',
     'id=' => 'null|string',
   ),
-  'mongodb\\bson\\objectid::__tostring' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\bson\\objectid::gettimestamp' => 
-  array (
-    0 => 'int',
-  ),
   'mongodb\\bson\\objectid::jsonserialize' => 
   array (
     0 => 'mixed',
-  ),
-  'mongodb\\bson\\objectid::serialize' => 
-  array (
-    0 => 'string',
   ),
   'mongodb\\bson\\objectid::unserialize' => 
   array (
@@ -37046,27 +36031,9 @@ return array (
   array (
     0 => 'int',
   ),
-  'mongodb\\bson\\packedarray::__tostring' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\bson\\packedarray::fromphp' => 
-  array (
-    0 => 'MongoDB\\BSON\\PackedArray',
-    'value' => 'array<array-key, mixed>',
-  ),
   'mongodb\\bson\\packedarray::get' => 
   array (
     0 => 'mixed',
-    'index' => 'int',
-  ),
-  'mongodb\\bson\\packedarray::getiterator' => 
-  array (
-    0 => 'MongoDB\\BSON\\Iterator',
-  ),
-  'mongodb\\bson\\packedarray::has' => 
-  array (
-    0 => 'bool',
     'index' => 'int',
   ),
   'mongodb\\bson\\packedarray::offsetexists' => 
@@ -37090,10 +36057,6 @@ return array (
     0 => 'void',
     'offset' => 'mixed',
   ),
-  'mongodb\\bson\\packedarray::serialize' => 
-  array (
-    0 => 'string',
-  ),
   'mongodb\\bson\\packedarray::tophp' => 
   array (
     0 => 'array<array-key, mixed>|object',
@@ -37114,25 +36077,9 @@ return array (
     'pattern' => 'string',
     'flags=' => 'string',
   ),
-  'mongodb\\bson\\regex::__tostring' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\bson\\regex::getflags' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\bson\\regex::getpattern' => 
-  array (
-    0 => 'string',
-  ),
   'mongodb\\bson\\regex::jsonserialize' => 
   array (
     0 => 'mixed',
-  ),
-  'mongodb\\bson\\regex::serialize' => 
-  array (
-    0 => 'string',
   ),
   'mongodb\\bson\\regex::unserialize' => 
   array (
@@ -37155,17 +36102,9 @@ return array (
   array (
     0 => 'MongoDB\\BSON\\Document|MongoDB\\BSON\\PackedArray|array<array-key, mixed>|stdClass',
   ),
-  'mongodb\\bson\\symbol::__tostring' => 
-  array (
-    0 => 'string',
-  ),
   'mongodb\\bson\\symbol::jsonserialize' => 
   array (
     0 => 'mixed',
-  ),
-  'mongodb\\bson\\symbol::serialize' => 
-  array (
-    0 => 'string',
   ),
   'mongodb\\bson\\symbol::unserialize' => 
   array (
@@ -37178,25 +36117,9 @@ return array (
     'increment' => 'int|string',
     'timestamp' => 'int|string',
   ),
-  'mongodb\\bson\\timestamp::__tostring' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\bson\\timestamp::getincrement' => 
-  array (
-    0 => 'int',
-  ),
-  'mongodb\\bson\\timestamp::gettimestamp' => 
-  array (
-    0 => 'int',
-  ),
   'mongodb\\bson\\timestamp::jsonserialize' => 
   array (
     0 => 'mixed',
-  ),
-  'mongodb\\bson\\timestamp::serialize' => 
-  array (
-    0 => 'string',
   ),
   'mongodb\\bson\\timestamp::unserialize' => 
   array (
@@ -37215,38 +36138,15 @@ return array (
   array (
     0 => 'int',
   ),
-  'mongodb\\bson\\tocanonicalextendedjson' => 
-  array (
-    0 => 'string',
-    'bson' => 'string',
-  ),
-  'mongodb\\bson\\tojson' => 
-  array (
-    0 => 'string',
-    'bson' => 'string',
-  ),
   'mongodb\\bson\\tophp' => 
   array (
     0 => 'array<array-key, mixed>|object',
     'bson' => 'string',
     'typemap=' => 'array<array-key, mixed>|null',
   ),
-  'mongodb\\bson\\torelaxedextendedjson' => 
-  array (
-    0 => 'string',
-    'bson' => 'string',
-  ),
-  'mongodb\\bson\\undefined::__tostring' => 
-  array (
-    0 => 'string',
-  ),
   'mongodb\\bson\\undefined::jsonserialize' => 
   array (
     0 => 'mixed',
-  ),
-  'mongodb\\bson\\undefined::serialize' => 
-  array (
-    0 => 'string',
   ),
   'mongodb\\bson\\undefined::unserialize' => 
   array (
@@ -37263,21 +36163,9 @@ return array (
     0 => 'void',
     'milliseconds=' => 'DateTimeInterface|float|int|null|string',
   ),
-  'mongodb\\bson\\utcdatetime::__tostring' => 
-  array (
-    0 => 'string',
-  ),
   'mongodb\\bson\\utcdatetime::jsonserialize' => 
   array (
     0 => 'mixed',
-  ),
-  'mongodb\\bson\\utcdatetime::serialize' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\bson\\utcdatetime::todatetime' => 
-  array (
-    0 => 'DateTime',
   ),
   'mongodb\\bson\\utcdatetime::unserialize' => 
   array (
@@ -37296,10 +36184,6 @@ return array (
   array (
     0 => 'void',
     'options=' => 'array<array-key, mixed>|null',
-  ),
-  'mongodb\\driver\\bulkwrite::count' => 
-  array (
-    0 => 'int',
   ),
   'mongodb\\driver\\bulkwrite::delete' => 
   array (
@@ -37324,27 +36208,10 @@ return array (
     0 => 'void',
     'options' => 'array<array-key, mixed>',
   ),
-  'mongodb\\driver\\clientencryption::addkeyaltname' => 
-  array (
-    0 => 'null|object',
-    'keyId' => 'MongoDB\\BSON\\Binary',
-    'keyAltName' => 'string',
-  ),
-  'mongodb\\driver\\clientencryption::createdatakey' => 
-  array (
-    0 => 'MongoDB\\BSON\\Binary',
-    'kmsProvider' => 'string',
-    'options=' => 'array<array-key, mixed>|null',
-  ),
   'mongodb\\driver\\clientencryption::decrypt' => 
   array (
     0 => 'mixed',
     'value' => 'MongoDB\\BSON\\Binary',
-  ),
-  'mongodb\\driver\\clientencryption::deletekey' => 
-  array (
-    0 => 'object',
-    'keyId' => 'MongoDB\\BSON\\Binary',
   ),
   'mongodb\\driver\\clientencryption::encrypt' => 
   array (
@@ -37357,26 +36224,6 @@ return array (
     0 => 'object',
     'expr' => 'array<array-key, mixed>|object',
     'options=' => 'array<array-key, mixed>|null',
-  ),
-  'mongodb\\driver\\clientencryption::getkey' => 
-  array (
-    0 => 'null|object',
-    'keyId' => 'MongoDB\\BSON\\Binary',
-  ),
-  'mongodb\\driver\\clientencryption::getkeybyaltname' => 
-  array (
-    0 => 'null|object',
-    'keyAltName' => 'string',
-  ),
-  'mongodb\\driver\\clientencryption::getkeys' => 
-  array (
-    0 => 'MongoDB\\Driver\\Cursor',
-  ),
-  'mongodb\\driver\\clientencryption::removekeyaltname' => 
-  array (
-    0 => 'null|object',
-    'keyId' => 'MongoDB\\BSON\\Binary',
-    'keyAltName' => 'string',
   ),
   'mongodb\\driver\\clientencryption::rewrapmanydatakey' => 
   array (
@@ -37393,51 +36240,6 @@ return array (
   'mongodb\\driver\\cursor::current' => 
   array (
     0 => 'array<array-key, mixed>|null|object',
-  ),
-  'mongodb\\driver\\cursor::getid' => 
-  array (
-    0 => 'MongoDB\\Driver\\CursorId',
-  ),
-  'mongodb\\driver\\cursor::getserver' => 
-  array (
-    0 => 'MongoDB\\Driver\\Server',
-  ),
-  'mongodb\\driver\\cursor::isdead' => 
-  array (
-    0 => 'bool',
-  ),
-  'mongodb\\driver\\cursor::key' => 
-  array (
-    0 => 'int|null',
-  ),
-  'mongodb\\driver\\cursor::next' => 
-  array (
-    0 => 'void',
-  ),
-  'mongodb\\driver\\cursor::rewind' => 
-  array (
-    0 => 'void',
-  ),
-  'mongodb\\driver\\cursor::settypemap' => 
-  array (
-    0 => 'void',
-    'typemap' => 'array<array-key, mixed>',
-  ),
-  'mongodb\\driver\\cursor::toarray' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'mongodb\\driver\\cursor::valid' => 
-  array (
-    0 => 'bool',
-  ),
-  'mongodb\\driver\\cursorid::__tostring' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\cursorid::serialize' => 
-  array (
-    0 => 'string',
   ),
   'mongodb\\driver\\cursorid::unserialize' => 
   array (
@@ -37465,78 +36267,9 @@ return array (
   array (
     0 => 'array<array-key, mixed>',
   ),
-  'mongodb\\driver\\exception\\authenticationexception::__tostring' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\exception\\bulkwriteexception::__tostring' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\exception\\commandexception::__tostring' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\exception\\commandexception::getresultdocument' => 
-  array (
-    0 => 'object',
-  ),
-  'mongodb\\driver\\exception\\connectionexception::__tostring' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\exception\\connectiontimeoutexception::__tostring' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\exception\\encryptionexception::__tostring' => 
-  array (
-    0 => 'string',
-  ),
   'mongodb\\driver\\exception\\exception::__tostring' => 
   array (
     0 => 'string',
-  ),
-  'mongodb\\driver\\exception\\executiontimeoutexception::__tostring' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\exception\\invalidargumentexception::__tostring' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\exception\\logicexception::__tostring' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\exception\\runtimeexception::__tostring' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\exception\\runtimeexception::haserrorlabel' => 
-  array (
-    0 => 'bool',
-    'errorLabel' => 'string',
-  ),
-  'mongodb\\driver\\exception\\serverexception::__tostring' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\exception\\sslconnectionexception::__tostring' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\exception\\unexpectedvalueexception::__tostring' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\exception\\writeexception::__tostring' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\exception\\writeexception::getwriteresult' => 
-  array (
-    0 => 'MongoDB\\Driver\\WriteResult',
   ),
   'mongodb\\driver\\manager::__construct' => 
   array (
@@ -37544,16 +36277,6 @@ return array (
     'uri=' => 'null|string',
     'uriOptions=' => 'array<array-key, mixed>|null',
     'driverOptions=' => 'array<array-key, mixed>|null',
-  ),
-  'mongodb\\driver\\manager::addsubscriber' => 
-  array (
-    0 => 'void',
-    'subscriber' => 'MongoDB\\Driver\\Monitoring\\Subscriber',
-  ),
-  'mongodb\\driver\\manager::createclientencryption' => 
-  array (
-    0 => 'MongoDB\\Driver\\ClientEncryption',
-    'options' => 'array<array-key, mixed>',
   ),
   'mongodb\\driver\\manager::executebulkwrite' => 
   array (
@@ -37576,134 +36299,9 @@ return array (
     'query' => 'MongoDB\\Driver\\Query',
     'options=' => 'MongoDB\\Driver\\ReadPreference|array<array-key, mixed>|null',
   ),
-  'mongodb\\driver\\manager::executereadcommand' => 
-  array (
-    0 => 'MongoDB\\Driver\\Cursor',
-    'db' => 'string',
-    'command' => 'MongoDB\\Driver\\Command',
-    'options=' => 'array<array-key, mixed>|null',
-  ),
-  'mongodb\\driver\\manager::executereadwritecommand' => 
-  array (
-    0 => 'MongoDB\\Driver\\Cursor',
-    'db' => 'string',
-    'command' => 'MongoDB\\Driver\\Command',
-    'options=' => 'array<array-key, mixed>|null',
-  ),
-  'mongodb\\driver\\manager::executewritecommand' => 
-  array (
-    0 => 'MongoDB\\Driver\\Cursor',
-    'db' => 'string',
-    'command' => 'MongoDB\\Driver\\Command',
-    'options=' => 'array<array-key, mixed>|null',
-  ),
   'mongodb\\driver\\manager::getencryptedfieldsmap' => 
   array (
     0 => 'array<array-key, mixed>|null|object',
-  ),
-  'mongodb\\driver\\manager::getreadconcern' => 
-  array (
-    0 => 'MongoDB\\Driver\\ReadConcern',
-  ),
-  'mongodb\\driver\\manager::getreadpreference' => 
-  array (
-    0 => 'MongoDB\\Driver\\ReadPreference',
-  ),
-  'mongodb\\driver\\manager::getservers' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'mongodb\\driver\\manager::getwriteconcern' => 
-  array (
-    0 => 'MongoDB\\Driver\\WriteConcern',
-  ),
-  'mongodb\\driver\\manager::removesubscriber' => 
-  array (
-    0 => 'void',
-    'subscriber' => 'MongoDB\\Driver\\Monitoring\\Subscriber',
-  ),
-  'mongodb\\driver\\manager::selectserver' => 
-  array (
-    0 => 'MongoDB\\Driver\\Server',
-    'readPreference=' => 'MongoDB\\Driver\\ReadPreference|null',
-  ),
-  'mongodb\\driver\\manager::startsession' => 
-  array (
-    0 => 'MongoDB\\Driver\\Session',
-    'options=' => 'array<array-key, mixed>|null',
-  ),
-  'mongodb\\driver\\monitoring\\addsubscriber' => 
-  array (
-    0 => 'void',
-    'subscriber' => 'MongoDB\\Driver\\Monitoring\\Subscriber',
-  ),
-  'mongodb\\driver\\monitoring\\commandfailedevent::getcommandname' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\monitoring\\commandfailedevent::getdurationmicros' => 
-  array (
-    0 => 'int',
-  ),
-  'mongodb\\driver\\monitoring\\commandfailedevent::geterror' => 
-  array (
-    0 => 'Exception',
-  ),
-  'mongodb\\driver\\monitoring\\commandfailedevent::getoperationid' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\monitoring\\commandfailedevent::getreply' => 
-  array (
-    0 => 'object',
-  ),
-  'mongodb\\driver\\monitoring\\commandfailedevent::getrequestid' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\monitoring\\commandfailedevent::getserver' => 
-  array (
-    0 => 'MongoDB\\Driver\\Server',
-  ),
-  'mongodb\\driver\\monitoring\\commandfailedevent::getserverconnectionid' => 
-  array (
-    0 => 'int|null',
-  ),
-  'mongodb\\driver\\monitoring\\commandfailedevent::getserviceid' => 
-  array (
-    0 => 'MongoDB\\BSON\\ObjectId|null',
-  ),
-  'mongodb\\driver\\monitoring\\commandstartedevent::getcommand' => 
-  array (
-    0 => 'object',
-  ),
-  'mongodb\\driver\\monitoring\\commandstartedevent::getcommandname' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\monitoring\\commandstartedevent::getdatabasename' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\monitoring\\commandstartedevent::getoperationid' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\monitoring\\commandstartedevent::getrequestid' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\monitoring\\commandstartedevent::getserver' => 
-  array (
-    0 => 'MongoDB\\Driver\\Server',
-  ),
-  'mongodb\\driver\\monitoring\\commandstartedevent::getserverconnectionid' => 
-  array (
-    0 => 'int|null',
-  ),
-  'mongodb\\driver\\monitoring\\commandstartedevent::getserviceid' => 
-  array (
-    0 => 'MongoDB\\BSON\\ObjectId|null',
   ),
   'mongodb\\driver\\monitoring\\commandsubscriber::commandfailed' => 
   array (
@@ -37720,49 +36318,12 @@ return array (
     0 => 'void',
     'event' => 'MongoDB\\Driver\\Monitoring\\CommandSucceededEvent',
   ),
-  'mongodb\\driver\\monitoring\\commandsucceededevent::getcommandname' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\monitoring\\commandsucceededevent::getdurationmicros' => 
-  array (
-    0 => 'int',
-  ),
-  'mongodb\\driver\\monitoring\\commandsucceededevent::getoperationid' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\monitoring\\commandsucceededevent::getreply' => 
-  array (
-    0 => 'object',
-  ),
-  'mongodb\\driver\\monitoring\\commandsucceededevent::getrequestid' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\monitoring\\commandsucceededevent::getserver' => 
-  array (
-    0 => 'MongoDB\\Driver\\Server',
-  ),
-  'mongodb\\driver\\monitoring\\commandsucceededevent::getserverconnectionid' => 
-  array (
-    0 => 'int|null',
-  ),
-  'mongodb\\driver\\monitoring\\commandsucceededevent::getserviceid' => 
-  array (
-    0 => 'MongoDB\\BSON\\ObjectId|null',
-  ),
   'mongodb\\driver\\monitoring\\logsubscriber::log' => 
   array (
     0 => 'void',
     'level' => 'int',
     'domain' => 'string',
     'message' => 'string',
-  ),
-  'mongodb\\driver\\monitoring\\removesubscriber' => 
-  array (
-    0 => 'void',
-    'subscriber' => 'MongoDB\\Driver\\Monitoring\\Subscriber',
   ),
   'mongodb\\driver\\monitoring\\sdamsubscriber::serverchanged' => 
   array (
@@ -37809,122 +36370,6 @@ return array (
     0 => 'void',
     'event' => 'MongoDB\\Driver\\Monitoring\\TopologyOpeningEvent',
   ),
-  'mongodb\\driver\\monitoring\\serverchangedevent::gethost' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\monitoring\\serverchangedevent::getnewdescription' => 
-  array (
-    0 => 'MongoDB\\Driver\\ServerDescription',
-  ),
-  'mongodb\\driver\\monitoring\\serverchangedevent::getport' => 
-  array (
-    0 => 'int',
-  ),
-  'mongodb\\driver\\monitoring\\serverchangedevent::getpreviousdescription' => 
-  array (
-    0 => 'MongoDB\\Driver\\ServerDescription',
-  ),
-  'mongodb\\driver\\monitoring\\serverchangedevent::gettopologyid' => 
-  array (
-    0 => 'MongoDB\\BSON\\ObjectId',
-  ),
-  'mongodb\\driver\\monitoring\\serverclosedevent::gethost' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\monitoring\\serverclosedevent::getport' => 
-  array (
-    0 => 'int',
-  ),
-  'mongodb\\driver\\monitoring\\serverclosedevent::gettopologyid' => 
-  array (
-    0 => 'MongoDB\\BSON\\ObjectId',
-  ),
-  'mongodb\\driver\\monitoring\\serverheartbeatfailedevent::getdurationmicros' => 
-  array (
-    0 => 'int',
-  ),
-  'mongodb\\driver\\monitoring\\serverheartbeatfailedevent::geterror' => 
-  array (
-    0 => 'Exception',
-  ),
-  'mongodb\\driver\\monitoring\\serverheartbeatfailedevent::gethost' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\monitoring\\serverheartbeatfailedevent::getport' => 
-  array (
-    0 => 'int',
-  ),
-  'mongodb\\driver\\monitoring\\serverheartbeatfailedevent::isawaited' => 
-  array (
-    0 => 'bool',
-  ),
-  'mongodb\\driver\\monitoring\\serverheartbeatstartedevent::gethost' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\monitoring\\serverheartbeatstartedevent::getport' => 
-  array (
-    0 => 'int',
-  ),
-  'mongodb\\driver\\monitoring\\serverheartbeatstartedevent::isawaited' => 
-  array (
-    0 => 'bool',
-  ),
-  'mongodb\\driver\\monitoring\\serverheartbeatsucceededevent::getdurationmicros' => 
-  array (
-    0 => 'int',
-  ),
-  'mongodb\\driver\\monitoring\\serverheartbeatsucceededevent::gethost' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\monitoring\\serverheartbeatsucceededevent::getport' => 
-  array (
-    0 => 'int',
-  ),
-  'mongodb\\driver\\monitoring\\serverheartbeatsucceededevent::getreply' => 
-  array (
-    0 => 'object',
-  ),
-  'mongodb\\driver\\monitoring\\serverheartbeatsucceededevent::isawaited' => 
-  array (
-    0 => 'bool',
-  ),
-  'mongodb\\driver\\monitoring\\serveropeningevent::gethost' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\monitoring\\serveropeningevent::getport' => 
-  array (
-    0 => 'int',
-  ),
-  'mongodb\\driver\\monitoring\\serveropeningevent::gettopologyid' => 
-  array (
-    0 => 'MongoDB\\BSON\\ObjectId',
-  ),
-  'mongodb\\driver\\monitoring\\topologychangedevent::getnewdescription' => 
-  array (
-    0 => 'MongoDB\\Driver\\TopologyDescription',
-  ),
-  'mongodb\\driver\\monitoring\\topologychangedevent::getpreviousdescription' => 
-  array (
-    0 => 'MongoDB\\Driver\\TopologyDescription',
-  ),
-  'mongodb\\driver\\monitoring\\topologychangedevent::gettopologyid' => 
-  array (
-    0 => 'MongoDB\\BSON\\ObjectId',
-  ),
-  'mongodb\\driver\\monitoring\\topologyclosedevent::gettopologyid' => 
-  array (
-    0 => 'MongoDB\\BSON\\ObjectId',
-  ),
-  'mongodb\\driver\\monitoring\\topologyopeningevent::gettopologyid' => 
-  array (
-    0 => 'MongoDB\\BSON\\ObjectId',
-  ),
   'mongodb\\driver\\query::__construct' => 
   array (
     0 => 'void',
@@ -37939,18 +36384,6 @@ return array (
   'mongodb\\driver\\readconcern::bsonserialize' => 
   array (
     0 => 'stdClass',
-  ),
-  'mongodb\\driver\\readconcern::getlevel' => 
-  array (
-    0 => 'null|string',
-  ),
-  'mongodb\\driver\\readconcern::isdefault' => 
-  array (
-    0 => 'bool',
-  ),
-  'mongodb\\driver\\readconcern::serialize' => 
-  array (
-    0 => 'string',
   ),
   'mongodb\\driver\\readconcern::unserialize' => 
   array (
@@ -37967,30 +36400,6 @@ return array (
   'mongodb\\driver\\readpreference::bsonserialize' => 
   array (
     0 => 'stdClass',
-  ),
-  'mongodb\\driver\\readpreference::gethedge' => 
-  array (
-    0 => 'null|object',
-  ),
-  'mongodb\\driver\\readpreference::getmaxstalenessseconds' => 
-  array (
-    0 => 'int',
-  ),
-  'mongodb\\driver\\readpreference::getmode' => 
-  array (
-    0 => 'int',
-  ),
-  'mongodb\\driver\\readpreference::getmodestring' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\readpreference::gettagsets' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'mongodb\\driver\\readpreference::serialize' => 
-  array (
-    0 => 'string',
   ),
   'mongodb\\driver\\readpreference::unserialize' => 
   array (
@@ -38018,75 +36427,6 @@ return array (
     'query' => 'MongoDB\\Driver\\Query',
     'options=' => 'MongoDB\\Driver\\ReadPreference|array<array-key, mixed>|null',
   ),
-  'mongodb\\driver\\server::executereadcommand' => 
-  array (
-    0 => 'MongoDB\\Driver\\Cursor',
-    'db' => 'string',
-    'command' => 'MongoDB\\Driver\\Command',
-    'options=' => 'array<array-key, mixed>|null',
-  ),
-  'mongodb\\driver\\server::executereadwritecommand' => 
-  array (
-    0 => 'MongoDB\\Driver\\Cursor',
-    'db' => 'string',
-    'command' => 'MongoDB\\Driver\\Command',
-    'options=' => 'array<array-key, mixed>|null',
-  ),
-  'mongodb\\driver\\server::executewritecommand' => 
-  array (
-    0 => 'MongoDB\\Driver\\Cursor',
-    'db' => 'string',
-    'command' => 'MongoDB\\Driver\\Command',
-    'options=' => 'array<array-key, mixed>|null',
-  ),
-  'mongodb\\driver\\server::gethost' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\server::getinfo' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'mongodb\\driver\\server::getlatency' => 
-  array (
-    0 => 'int|null',
-  ),
-  'mongodb\\driver\\server::getport' => 
-  array (
-    0 => 'int',
-  ),
-  'mongodb\\driver\\server::getserverdescription' => 
-  array (
-    0 => 'MongoDB\\Driver\\ServerDescription',
-  ),
-  'mongodb\\driver\\server::gettags' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'mongodb\\driver\\server::gettype' => 
-  array (
-    0 => 'int',
-  ),
-  'mongodb\\driver\\server::isarbiter' => 
-  array (
-    0 => 'bool',
-  ),
-  'mongodb\\driver\\server::ishidden' => 
-  array (
-    0 => 'bool',
-  ),
-  'mongodb\\driver\\server::ispassive' => 
-  array (
-    0 => 'bool',
-  ),
-  'mongodb\\driver\\server::isprimary' => 
-  array (
-    0 => 'bool',
-  ),
-  'mongodb\\driver\\server::issecondary' => 
-  array (
-    0 => 'bool',
-  ),
   'mongodb\\driver\\serverapi::__construct' => 
   array (
     0 => 'void',
@@ -38098,114 +36438,15 @@ return array (
   array (
     0 => 'stdClass',
   ),
-  'mongodb\\driver\\serverapi::serialize' => 
-  array (
-    0 => 'string',
-  ),
   'mongodb\\driver\\serverapi::unserialize' => 
   array (
     0 => 'void',
     'data' => 'string',
   ),
-  'mongodb\\driver\\serverdescription::gethelloresponse' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'mongodb\\driver\\serverdescription::gethost' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\serverdescription::getlastupdatetime' => 
-  array (
-    0 => 'int',
-  ),
-  'mongodb\\driver\\serverdescription::getport' => 
-  array (
-    0 => 'int',
-  ),
-  'mongodb\\driver\\serverdescription::getroundtriptime' => 
-  array (
-    0 => 'int|null',
-  ),
-  'mongodb\\driver\\serverdescription::gettype' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\session::aborttransaction' => 
-  array (
-    0 => 'void',
-  ),
   'mongodb\\driver\\session::advanceclustertime' => 
   array (
     0 => 'void',
     'clusterTime' => 'array<array-key, mixed>|object',
-  ),
-  'mongodb\\driver\\session::advanceoperationtime' => 
-  array (
-    0 => 'void',
-    'operationTime' => 'MongoDB\\BSON\\TimestampInterface',
-  ),
-  'mongodb\\driver\\session::committransaction' => 
-  array (
-    0 => 'void',
-  ),
-  'mongodb\\driver\\session::endsession' => 
-  array (
-    0 => 'void',
-  ),
-  'mongodb\\driver\\session::getclustertime' => 
-  array (
-    0 => 'null|object',
-  ),
-  'mongodb\\driver\\session::getlogicalsessionid' => 
-  array (
-    0 => 'object',
-  ),
-  'mongodb\\driver\\session::getoperationtime' => 
-  array (
-    0 => 'MongoDB\\BSON\\Timestamp|null',
-  ),
-  'mongodb\\driver\\session::getserver' => 
-  array (
-    0 => 'MongoDB\\Driver\\Server|null',
-  ),
-  'mongodb\\driver\\session::gettransactionoptions' => 
-  array (
-    0 => 'array<array-key, mixed>|null',
-  ),
-  'mongodb\\driver\\session::gettransactionstate' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\session::isdirty' => 
-  array (
-    0 => 'bool',
-  ),
-  'mongodb\\driver\\session::isintransaction' => 
-  array (
-    0 => 'bool',
-  ),
-  'mongodb\\driver\\session::starttransaction' => 
-  array (
-    0 => 'void',
-    'options=' => 'array<array-key, mixed>|null',
-  ),
-  'mongodb\\driver\\topologydescription::getservers' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'mongodb\\driver\\topologydescription::gettype' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\topologydescription::hasreadableserver' => 
-  array (
-    0 => 'bool',
-    'readPreference=' => 'MongoDB\\Driver\\ReadPreference|null',
-  ),
-  'mongodb\\driver\\topologydescription::haswritableserver' => 
-  array (
-    0 => 'bool',
   ),
   'mongodb\\driver\\writeconcern::__construct' => 
   array (
@@ -38218,102 +36459,14 @@ return array (
   array (
     0 => 'stdClass',
   ),
-  'mongodb\\driver\\writeconcern::getjournal' => 
-  array (
-    0 => 'bool|null',
-  ),
   'mongodb\\driver\\writeconcern::getw' => 
   array (
     0 => 'int|null|string',
-  ),
-  'mongodb\\driver\\writeconcern::getwtimeout' => 
-  array (
-    0 => 'int',
-  ),
-  'mongodb\\driver\\writeconcern::isdefault' => 
-  array (
-    0 => 'bool',
-  ),
-  'mongodb\\driver\\writeconcern::serialize' => 
-  array (
-    0 => 'string',
   ),
   'mongodb\\driver\\writeconcern::unserialize' => 
   array (
     0 => 'void',
     'data' => 'string',
-  ),
-  'mongodb\\driver\\writeconcernerror::getcode' => 
-  array (
-    0 => 'int',
-  ),
-  'mongodb\\driver\\writeconcernerror::getinfo' => 
-  array (
-    0 => 'null|object',
-  ),
-  'mongodb\\driver\\writeconcernerror::getmessage' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\writeerror::getcode' => 
-  array (
-    0 => 'int',
-  ),
-  'mongodb\\driver\\writeerror::getindex' => 
-  array (
-    0 => 'int',
-  ),
-  'mongodb\\driver\\writeerror::getinfo' => 
-  array (
-    0 => 'null|object',
-  ),
-  'mongodb\\driver\\writeerror::getmessage' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\driver\\writeresult::getdeletedcount' => 
-  array (
-    0 => 'int|null',
-  ),
-  'mongodb\\driver\\writeresult::geterrorreplies' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'mongodb\\driver\\writeresult::getinsertedcount' => 
-  array (
-    0 => 'int|null',
-  ),
-  'mongodb\\driver\\writeresult::getmatchedcount' => 
-  array (
-    0 => 'int|null',
-  ),
-  'mongodb\\driver\\writeresult::getmodifiedcount' => 
-  array (
-    0 => 'int|null',
-  ),
-  'mongodb\\driver\\writeresult::getserver' => 
-  array (
-    0 => 'MongoDB\\Driver\\Server',
-  ),
-  'mongodb\\driver\\writeresult::getupsertedcount' => 
-  array (
-    0 => 'int|null',
-  ),
-  'mongodb\\driver\\writeresult::getupsertedids' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'mongodb\\driver\\writeresult::getwriteconcernerror' => 
-  array (
-    0 => 'MongoDB\\Driver\\WriteConcernError|null',
-  ),
-  'mongodb\\driver\\writeresult::getwriteerrors' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'mongodb\\driver\\writeresult::isacknowledged' => 
-  array (
-    0 => 'bool',
   ),
   'mongodbref::create' => 
   array (
@@ -42428,10 +40581,6 @@ return array (
   array (
     0 => 'int',
   ),
-  'numberformatter::geterrormessage' => 
-  array (
-    0 => 'string',
-  ),
   'numberformatter::getlocale' => 
   array (
     0 => 'string',
@@ -44436,25 +42585,13 @@ return array (
     'code=' => 'int',
     'previous=' => 'Throwable|null',
   ),
-  'outofboundsexception::__tostring' => 
-  array (
-    0 => 'string',
-  ),
   'outofboundsexception::getcode' => 
   array (
     0 => 'int',
   ),
-  'outofboundsexception::getfile' => 
-  array (
-    0 => 'string',
-  ),
   'outofboundsexception::getline' => 
   array (
     0 => 'int',
-  ),
-  'outofboundsexception::getmessage' => 
-  array (
-    0 => 'string',
   ),
   'outofboundsexception::getprevious' => 
   array (
@@ -44463,10 +42600,6 @@ return array (
   'outofboundsexception::gettrace' => 
   array (
     0 => 'list<array{args?: array<array-key, mixed>, class?: class-string, file?: string, function: string, line?: int, type?: \'->\'|\'::\'}>',
-  ),
-  'outofboundsexception::gettraceasstring' => 
-  array (
-    0 => 'string',
   ),
   'outofrangeexception::__clone' => 
   array (
@@ -44479,25 +42612,13 @@ return array (
     'code=' => 'int',
     'previous=' => 'Throwable|null',
   ),
-  'outofrangeexception::__tostring' => 
-  array (
-    0 => 'string',
-  ),
   'outofrangeexception::getcode' => 
   array (
     0 => 'int',
   ),
-  'outofrangeexception::getfile' => 
-  array (
-    0 => 'string',
-  ),
   'outofrangeexception::getline' => 
   array (
     0 => 'int',
-  ),
-  'outofrangeexception::getmessage' => 
-  array (
-    0 => 'string',
   ),
   'outofrangeexception::getprevious' => 
   array (
@@ -44506,10 +42627,6 @@ return array (
   'outofrangeexception::gettrace' => 
   array (
     0 => 'list<array{args?: array<array-key, mixed>, class?: class-string, file?: string, function: string, line?: int, type?: \'->\'|\'::\'}>',
-  ),
-  'outofrangeexception::gettraceasstring' => 
-  array (
-    0 => 'string',
   ),
   'output_add_rewrite_var' => 
   array (
@@ -44612,25 +42729,13 @@ return array (
     'code=' => 'int',
     'previous=' => 'Throwable|null',
   ),
-  'overflowexception::__tostring' => 
-  array (
-    0 => 'string',
-  ),
   'overflowexception::getcode' => 
   array (
     0 => 'int',
   ),
-  'overflowexception::getfile' => 
-  array (
-    0 => 'string',
-  ),
   'overflowexception::getline' => 
   array (
     0 => 'int',
-  ),
-  'overflowexception::getmessage' => 
-  array (
-    0 => 'string',
   ),
   'overflowexception::getprevious' => 
   array (
@@ -44639,10 +42744,6 @@ return array (
   'overflowexception::gettrace' => 
   array (
     0 => 'list<array{args?: array<array-key, mixed>, class?: class-string, file?: string, function: string, line?: int, type?: \'->\'|\'::\'}>',
-  ),
-  'overflowexception::gettraceasstring' => 
-  array (
-    0 => 'string',
   ),
   'overload' => 
   array (
@@ -45065,25 +43166,13 @@ return array (
     'code=' => 'int',
     'previous=' => 'Throwable|null',
   ),
-  'parseerror::__tostring' => 
-  array (
-    0 => 'string',
-  ),
   'parseerror::getcode' => 
   array (
     0 => 'int',
   ),
-  'parseerror::getfile' => 
-  array (
-    0 => 'string',
-  ),
   'parseerror::getline' => 
   array (
     0 => 'int',
-  ),
-  'parseerror::getmessage' => 
-  array (
-    0 => 'string',
   ),
   'parseerror::getprevious' => 
   array (
@@ -45092,10 +43181,6 @@ return array (
   'parseerror::gettrace' => 
   array (
     0 => 'list<array{args?: array<array-key, mixed>, class?: class-string, file?: string, function: string, line?: int, type?: \'->\'|\'::\'}>',
-  ),
-  'parseerror::gettraceasstring' => 
-  array (
-    0 => 'string',
   ),
   'parsekit_compile_file' => 
   array (
@@ -47640,17 +45725,9 @@ return array (
   array (
     0 => 'int|string',
   ),
-  'pdoexception::getfile' => 
-  array (
-    0 => 'string',
-  ),
   'pdoexception::getline' => 
   array (
     0 => 'int',
-  ),
-  'pdoexception::getmessage' => 
-  array (
-    0 => 'string',
   ),
   'pdoexception::getprevious' => 
   array (
@@ -47659,10 +45736,6 @@ return array (
   'pdoexception::gettrace' => 
   array (
     0 => 'list<array{args?: array<array-key, mixed>, class?: class-string, file?: string, function: string, line?: int, type?: \'->\'|\'::\'}>',
-  ),
-  'pdoexception::gettraceasstring' => 
-  array (
-    0 => 'string',
   ),
   'pdostatement::bindcolumn' => 
   array (
@@ -47700,10 +45773,6 @@ return array (
   'pdostatement::debugdumpparams' => 
   array (
     0 => 'void',
-  ),
-  'pdostatement::errorcode' => 
-  array (
-    0 => 'string',
   ),
   'pdostatement::errorinfo' => 
   array (
@@ -48474,10 +46543,6 @@ return array (
     'localName' => 'string',
     'contents' => 'string',
   ),
-  'phar::apiversion' => 
-  array (
-    0 => 'string',
-  ),
   'phar::buildfromdirectory' => 
   array (
     0 => 'array<array-key, mixed>|false',
@@ -48578,17 +46643,9 @@ return array (
   array (
     0 => 'bool',
   ),
-  'phar::getpath' => 
-  array (
-    0 => 'string',
-  ),
   'phar::getsignature' => 
   array (
     0 => 'array{hash: string, hash_type: string}',
-  ),
-  'phar::getstub' => 
-  array (
-    0 => 'string',
   ),
   'phar::getsupportedcompression' => 
   array (
@@ -48597,10 +46654,6 @@ return array (
   'phar::getsupportedsignatures' => 
   array (
     0 => 'array<array-key, mixed>',
-  ),
-  'phar::getversion' => 
-  array (
-    0 => 'string',
   ),
   'phar::hasmetadata' => 
   array (
@@ -48905,10 +46958,6 @@ return array (
   array (
     0 => 'int',
   ),
-  'pharfileinfo::getcontent' => 
-  array (
-    0 => 'string',
-  ),
   'pharfileinfo::getcrc32' => 
   array (
     0 => 'int',
@@ -49030,19 +47079,10 @@ return array (
   array (
     0 => 'string',
   ),
-  'php_sapi_name' => 
-  array (
-    0 => 'string',
-  ),
   'php_strip_whitespace' => 
   array (
     0 => 'string',
     'filename' => 'string',
-  ),
-  'php_uname' => 
-  array (
-    0 => 'string',
-    'mode=' => 'string',
   ),
   'php_user_filter::filter' => 
   array (
@@ -51142,25 +49182,13 @@ return array (
     'code=' => 'int',
     'previous=' => 'Throwable|null',
   ),
-  'rangeexception::__tostring' => 
-  array (
-    0 => 'string',
-  ),
   'rangeexception::getcode' => 
   array (
     0 => 'int',
   ),
-  'rangeexception::getfile' => 
-  array (
-    0 => 'string',
-  ),
   'rangeexception::getline' => 
   array (
     0 => 'int',
-  ),
-  'rangeexception::getmessage' => 
-  array (
-    0 => 'string',
   ),
   'rangeexception::getprevious' => 
   array (
@@ -51169,10 +49197,6 @@ return array (
   'rangeexception::gettrace' => 
   array (
     0 => 'list<array{args?: array<array-key, mixed>, class?: class-string, file?: string, function: string, line?: int, type?: \'->\'|\'::\'}>',
-  ),
-  'rangeexception::gettraceasstring' => 
-  array (
-    0 => 'string',
   ),
   'rar_allow_broken_set' => 
   array (
@@ -51629,10 +49653,6 @@ return array (
     0 => 'void',
     'offset' => 'int',
   ),
-  'recursivearrayiterator::serialize' => 
-  array (
-    0 => 'string',
-  ),
   'recursivearrayiterator::setflags' => 
   array (
     0 => 'void',
@@ -51662,10 +49682,6 @@ return array (
     0 => 'void',
     'iterator' => 'Iterator',
     'flags=' => 'int',
-  ),
-  'recursivecachingiterator::__tostring' => 
-  array (
-    0 => 'string',
   ),
   'recursivecachingiterator::count' => 
   array (
@@ -51789,10 +49805,6 @@ return array (
     'directory' => 'string',
     'flags=' => 'int',
   ),
-  'recursivedirectoryiterator::__tostring' => 
-  array (
-    0 => 'string',
-  ),
   'recursivedirectoryiterator::current' => 
   array (
     0 => 'FilesystemIterator|SplFileInfo|string',
@@ -51800,11 +49812,6 @@ return array (
   'recursivedirectoryiterator::getatime' => 
   array (
     0 => 'int',
-  ),
-  'recursivedirectoryiterator::getbasename' => 
-  array (
-    0 => 'string',
-    'suffix=' => 'string',
   ),
   'recursivedirectoryiterator::getchildren' => 
   array (
@@ -51814,18 +49821,10 @@ return array (
   array (
     0 => 'int',
   ),
-  'recursivedirectoryiterator::getextension' => 
-  array (
-    0 => 'string',
-  ),
   'recursivedirectoryiterator::getfileinfo' => 
   array (
     0 => 'SplFileInfo',
     'class=' => 'class-string',
-  ),
-  'recursivedirectoryiterator::getfilename' => 
-  array (
-    0 => 'string',
   ),
   'recursivedirectoryiterator::getflags' => 
   array (
@@ -51839,10 +49838,6 @@ return array (
   array (
     0 => 'int',
   ),
-  'recursivedirectoryiterator::getlinktarget' => 
-  array (
-    0 => 'string',
-  ),
   'recursivedirectoryiterator::getmtime' => 
   array (
     0 => 'int',
@@ -51851,18 +49846,10 @@ return array (
   array (
     0 => 'int',
   ),
-  'recursivedirectoryiterator::getpath' => 
-  array (
-    0 => 'string',
-  ),
   'recursivedirectoryiterator::getpathinfo' => 
   array (
     0 => 'SplFileInfo|null',
     'class=' => 'class-string',
-  ),
-  'recursivedirectoryiterator::getpathname' => 
-  array (
-    0 => 'string',
   ),
   'recursivedirectoryiterator::getperms' => 
   array (
@@ -51875,18 +49862,6 @@ return array (
   'recursivedirectoryiterator::getsize' => 
   array (
     0 => 'int',
-  ),
-  'recursivedirectoryiterator::getsubpath' => 
-  array (
-    0 => 'string',
-  ),
-  'recursivedirectoryiterator::getsubpathname' => 
-  array (
-    0 => 'string',
-  ),
-  'recursivedirectoryiterator::gettype' => 
-  array (
-    0 => 'string',
   ),
   'recursivedirectoryiterator::haschildren' => 
   array (
@@ -51920,10 +49895,6 @@ return array (
   'recursivedirectoryiterator::iswritable' => 
   array (
     0 => 'bool',
-  ),
-  'recursivedirectoryiterator::key' => 
-  array (
-    0 => 'string',
   ),
   'recursivedirectoryiterator::next' => 
   array (
@@ -52151,10 +50122,6 @@ return array (
   array (
     0 => 'int',
   ),
-  'recursiveregexiterator::getregex' => 
-  array (
-    0 => 'string',
-  ),
   'recursiveregexiterator::haschildren' => 
   array (
     0 => 'bool',
@@ -52214,10 +50181,6 @@ return array (
   array (
     0 => 'bool',
   ),
-  'recursivetreeiterator::current' => 
-  array (
-    0 => 'string',
-  ),
   'recursivetreeiterator::endchildren' => 
   array (
     0 => 'void',
@@ -52230,10 +50193,6 @@ return array (
   array (
     0 => 'int',
   ),
-  'recursivetreeiterator::getentry' => 
-  array (
-    0 => 'string',
-  ),
   'recursivetreeiterator::getinneriterator' => 
   array (
     0 => 'RecursiveIterator',
@@ -52242,22 +50201,10 @@ return array (
   array (
     0 => 'false|int',
   ),
-  'recursivetreeiterator::getpostfix' => 
-  array (
-    0 => 'string',
-  ),
-  'recursivetreeiterator::getprefix' => 
-  array (
-    0 => 'string',
-  ),
   'recursivetreeiterator::getsubiterator' => 
   array (
     0 => 'RecursiveIterator|null',
     'level=' => 'int',
-  ),
-  'recursivetreeiterator::key' => 
-  array (
-    0 => 'string',
   ),
   'recursivetreeiterator::next' => 
   array (
@@ -53049,10 +50996,6 @@ return array (
     'pattern' => 'string',
     '...other_patterns=' => 'string',
   ),
-  'redis::randomkey' => 
-  array (
-    0 => 'string',
-  ),
   'redis::rawcommand' => 
   array (
     0 => 'mixed',
@@ -53827,10 +51770,6 @@ return array (
   array (
     0 => 'mixed',
   ),
-  'redisarray::_function' => 
-  array (
-    0 => 'string',
-  ),
   'redisarray::_hosts' => 
   array (
     0 => 'array<array-key, mixed>',
@@ -53844,11 +51783,6 @@ return array (
   array (
     0 => 'mixed',
     'callable=' => 'callable',
-  ),
-  'redisarray::_target' => 
-  array (
-    0 => 'string',
-    'key' => 'string',
   ),
   'redisarray::bgsave' => 
   array (
@@ -53923,10 +51857,6 @@ return array (
     0 => 'RedisArray',
     'host' => 'string',
     'mode=' => 'int',
-  ),
-  'redisarray::ping' => 
-  array (
-    0 => 'string',
   ),
   'redisarray::save' => 
   array (
@@ -54250,12 +52180,6 @@ return array (
     'key' => 'string',
     'start' => 'int',
     'end' => 'int',
-  ),
-  'rediscluster::getset' => 
-  array (
-    0 => 'string',
-    'key' => 'string',
-    'value' => 'string',
   ),
   'rediscluster::hdel' => 
   array (
@@ -55125,10 +53049,6 @@ return array (
     0 => 'void',
     'objectOrClass' => 'class-string|object',
   ),
-  'reflectionclass::__tostring' => 
-  array (
-    0 => 'string',
-  ),
   'reflectionclass::export' => 
   array (
     0 => 'null|string',
@@ -55198,10 +53118,6 @@ return array (
   array (
     0 => 'class-string',
   ),
-  'reflectionclass::getnamespacename' => 
-  array (
-    0 => 'string',
-  ),
   'reflectionclass::getparentclass' => 
   array (
     0 => 'ReflectionClass|false',
@@ -55224,10 +53140,6 @@ return array (
   'reflectionclass::getreflectionconstants' => 
   array (
     0 => 'list<ReflectionClassConstant>',
-  ),
-  'reflectionclass::getshortname' => 
-  array (
-    0 => 'string',
   ),
   'reflectionclass::getstartline' => 
   array (
@@ -55359,10 +53271,6 @@ return array (
     'class' => 'class-string|object',
     'constant' => 'string',
   ),
-  'reflectionclassconstant::__tostring' => 
-  array (
-    0 => 'string',
-  ),
   'reflectionclassconstant::export' => 
   array (
     0 => 'string',
@@ -55381,10 +53289,6 @@ return array (
   'reflectionclassconstant::getmodifiers' => 
   array (
     0 => 'int',
-  ),
-  'reflectionclassconstant::getname' => 
-  array (
-    0 => 'string',
   ),
   'reflectionclassconstant::getvalue' => 
   array (
@@ -55410,10 +53314,6 @@ return array (
   array (
     0 => 'void',
     'name' => 'string',
-  ),
-  'reflectionextension::__tostring' => 
-  array (
-    0 => 'string',
   ),
   'reflectionextension::export' => 
   array (
@@ -55445,10 +53345,6 @@ return array (
   array (
     0 => 'array<string, mixed>',
   ),
-  'reflectionextension::getname' => 
-  array (
-    0 => 'string',
-  ),
   'reflectionextension::getversion' => 
   array (
     0 => 'null|string',
@@ -55469,10 +53365,6 @@ return array (
   array (
     0 => 'void',
     'function' => 'Closure|callable-string',
-  ),
-  'reflectionfunction::__tostring' => 
-  array (
-    0 => 'string',
   ),
   'reflectionfunction::export' => 
   array (
@@ -55516,10 +53408,6 @@ return array (
   array (
     0 => 'callable-string',
   ),
-  'reflectionfunction::getnamespacename' => 
-  array (
-    0 => 'string',
-  ),
   'reflectionfunction::getnumberofparameters' => 
   array (
     0 => 'int',
@@ -55535,10 +53423,6 @@ return array (
   'reflectionfunction::getreturntype' => 
   array (
     0 => 'ReflectionType|null',
-  ),
-  'reflectionfunction::getshortname' => 
-  array (
-    0 => 'string',
   ),
   'reflectionfunction::getstartline' => 
   array (
@@ -55602,10 +53486,6 @@ return array (
   array (
     0 => 'void',
   ),
-  'reflectionfunctionabstract::__tostring' => 
-  array (
-    0 => 'string',
-  ),
   'reflectionfunctionabstract::export' => 
   array (
     0 => 'null|string',
@@ -55638,14 +53518,6 @@ return array (
   array (
     0 => 'false|string',
   ),
-  'reflectionfunctionabstract::getname' => 
-  array (
-    0 => 'string',
-  ),
-  'reflectionfunctionabstract::getnamespacename' => 
-  array (
-    0 => 'string',
-  ),
   'reflectionfunctionabstract::getnumberofparameters' => 
   array (
     0 => 'int',
@@ -55661,10 +53533,6 @@ return array (
   'reflectionfunctionabstract::getreturntype' => 
   array (
     0 => 'ReflectionType|null',
-  ),
-  'reflectionfunctionabstract::getshortname' => 
-  array (
-    0 => 'string',
   ),
   'reflectionfunctionabstract::getstartline' => 
   array (
@@ -55715,10 +53583,6 @@ return array (
     0 => 'void',
     'generator' => 'Generator',
   ),
-  'reflectiongenerator::getexecutingfile' => 
-  array (
-    0 => 'string',
-  ),
   'reflectiongenerator::getexecutinggenerator' => 
   array (
     0 => 'Generator',
@@ -55750,10 +53614,6 @@ return array (
   array (
     0 => 'void',
     'class_method' => 'string',
-  ),
-  'reflectionmethod::__tostring' => 
-  array (
-    0 => 'string',
   ),
   'reflectionmethod::export' => 
   array (
@@ -55803,14 +53663,6 @@ return array (
   array (
     0 => 'int',
   ),
-  'reflectionmethod::getname' => 
-  array (
-    0 => 'string',
-  ),
-  'reflectionmethod::getnamespacename' => 
-  array (
-    0 => 'string',
-  ),
   'reflectionmethod::getnumberofparameters' => 
   array (
     0 => 'int',
@@ -55830,10 +53682,6 @@ return array (
   'reflectionmethod::getreturntype' => 
   array (
     0 => 'ReflectionType|null',
-  ),
-  'reflectionmethod::getshortname' => 
-  array (
-    0 => 'string',
   ),
   'reflectionmethod::getstartline' => 
   array (
@@ -55932,17 +53780,9 @@ return array (
   array (
     0 => 'void',
   ),
-  'reflectionnamedtype::__tostring' => 
-  array (
-    0 => 'string',
-  ),
   'reflectionnamedtype::allowsnull' => 
   array (
     0 => 'bool',
-  ),
-  'reflectionnamedtype::getname' => 
-  array (
-    0 => 'string',
   ),
   'reflectionnamedtype::isbuiltin' => 
   array (
@@ -55956,10 +53796,6 @@ return array (
   array (
     0 => 'void',
     'object' => 'object',
-  ),
-  'reflectionobject::__tostring' => 
-  array (
-    0 => 'string',
   ),
   'reflectionobject::export' => 
   array (
@@ -56026,14 +53862,6 @@ return array (
   array (
     0 => 'int',
   ),
-  'reflectionobject::getname' => 
-  array (
-    0 => 'string',
-  ),
-  'reflectionobject::getnamespacename' => 
-  array (
-    0 => 'string',
-  ),
   'reflectionobject::getparentclass' => 
   array (
     0 => 'ReflectionClass|false',
@@ -56056,10 +53884,6 @@ return array (
   'reflectionobject::getreflectionconstants' => 
   array (
     0 => 'list<ReflectionClassConstant>',
-  ),
-  'reflectionobject::getshortname' => 
-  array (
-    0 => 'string',
   ),
   'reflectionobject::getstartline' => 
   array (
@@ -56196,10 +54020,6 @@ return array (
     'function' => 'array<array-key, mixed>|object|string',
     'param' => 'int|string',
   ),
-  'reflectionparameter::__tostring' => 
-  array (
-    0 => 'string',
-  ),
   'reflectionparameter::allowsnull' => 
   array (
     0 => 'bool',
@@ -56289,10 +54109,6 @@ return array (
     'class' => 'class-string|object',
     'property' => 'string',
   ),
-  'reflectionproperty::__tostring' => 
-  array (
-    0 => 'string',
-  ),
   'reflectionproperty::export' => 
   array (
     0 => 'null|string',
@@ -56311,10 +54127,6 @@ return array (
   'reflectionproperty::getmodifiers' => 
   array (
     0 => 'int',
-  ),
-  'reflectionproperty::getname' => 
-  array (
-    0 => 'string',
   ),
   'reflectionproperty::getvalue' => 
   array (
@@ -56365,10 +54177,6 @@ return array (
   array (
     0 => 'void',
   ),
-  'reflectiontype::__tostring' => 
-  array (
-    0 => 'string',
-  ),
   'reflectiontype::allowsnull' => 
   array (
     0 => 'bool',
@@ -56386,35 +54194,11 @@ return array (
     0 => 'void',
     'name' => 'string',
   ),
-  'reflectionzendextension::__tostring' => 
-  array (
-    0 => 'string',
-  ),
   'reflectionzendextension::export' => 
   array (
     0 => 'null|string',
     'name' => 'string',
     'return=' => 'bool',
-  ),
-  'reflectionzendextension::getauthor' => 
-  array (
-    0 => 'string',
-  ),
-  'reflectionzendextension::getcopyright' => 
-  array (
-    0 => 'string',
-  ),
-  'reflectionzendextension::getname' => 
-  array (
-    0 => 'string',
-  ),
-  'reflectionzendextension::geturl' => 
-  array (
-    0 => 'string',
-  ),
-  'reflectionzendextension::getversion' => 
-  array (
-    0 => 'string',
   ),
   'reflector::__tostring' => 
   array (
@@ -56456,10 +54240,6 @@ return array (
   'regexiterator::getpregflags' => 
   array (
     0 => 'int',
-  ),
-  'regexiterator::getregex' => 
-  array (
-    0 => 'string',
   ),
   'regexiterator::key' => 
   array (
@@ -56556,10 +54336,6 @@ return array (
   'resourcebundle::geterrorcode' => 
   array (
     0 => 'int',
-  ),
-  'resourcebundle::geterrormessage' => 
-  array (
-    0 => 'string',
   ),
   'resourcebundle::getlocales' => 
   array (
@@ -57144,25 +54920,13 @@ return array (
     'code=' => 'int',
     'previous=' => 'Throwable|null',
   ),
-  'runtimeexception::__tostring' => 
-  array (
-    0 => 'string',
-  ),
   'runtimeexception::getcode' => 
   array (
     0 => 'int',
   ),
-  'runtimeexception::getfile' => 
-  array (
-    0 => 'string',
-  ),
   'runtimeexception::getline' => 
   array (
     0 => 'int',
-  ),
-  'runtimeexception::getmessage' => 
-  array (
-    0 => 'string',
   ),
   'runtimeexception::getprevious' => 
   array (
@@ -57171,10 +54935,6 @@ return array (
   'runtimeexception::gettrace' => 
   array (
     0 => 'list<array{args?: array<array-key, mixed>, class?: class-string, file?: string, function: string, line?: int, type?: \'->\'|\'::\'}>',
-  ),
-  'runtimeexception::gettraceasstring' => 
-  array (
-    0 => 'string',
   ),
   'samconnection::commit' => 
   array (
@@ -58722,10 +56482,6 @@ return array (
   array (
     0 => 'bool',
   ),
-  'sessionhandler::create_sid' => 
-  array (
-    0 => 'string',
-  ),
   'sessionhandler::destroy' => 
   array (
     0 => 'bool',
@@ -59312,10 +57068,6 @@ return array (
     0 => 'SimpleXMLElement',
     'name' => 'string',
   ),
-  'simplexmlelement::__tostring' => 
-  array (
-    0 => 'string',
-  ),
   'simplexmlelement::addattribute' => 
   array (
     0 => 'void',
@@ -59360,10 +57112,6 @@ return array (
     0 => 'array<string, string>',
     'recursive=' => 'bool',
     'fromRoot=' => 'bool',
-  ),
-  'simplexmlelement::getname' => 
-  array (
-    0 => 'string',
   ),
   'simplexmlelement::getnamespaces' => 
   array (
@@ -60264,11 +58012,6 @@ return array (
     'string' => 'string',
     'id' => 'int',
   ),
-  'sodium_bin2hex' => 
-  array (
-    0 => 'string',
-    'string' => 'string',
-  ),
   'sodium_compare' => 
   array (
     0 => 'int',
@@ -60383,16 +58126,6 @@ return array (
     'nonce' => 'string',
     'key_pair' => 'string',
   ),
-  'sodium_crypto_box_keypair' => 
-  array (
-    0 => 'string',
-  ),
-  'sodium_crypto_box_keypair_from_secretkey_and_publickey' => 
-  array (
-    0 => 'string',
-    'secret_key' => 'string',
-    'public_key' => 'string',
-  ),
   'sodium_crypto_box_open' => 
   array (
     0 => 'false|string',
@@ -60478,10 +58211,6 @@ return array (
     0 => 'array<int, string>',
     'client_key_pair' => 'string',
     'server_key' => 'string',
-  ),
-  'sodium_crypto_kx_keypair' => 
-  array (
-    0 => 'string',
   ),
   'sodium_crypto_kx_publickey' => 
   array (
@@ -60651,16 +58380,6 @@ return array (
   array (
     0 => 'string',
     'secret_key' => 'string',
-  ),
-  'sodium_crypto_sign_keypair' => 
-  array (
-    0 => 'string',
-  ),
-  'sodium_crypto_sign_keypair_from_secretkey_and_publickey' => 
-  array (
-    0 => 'string',
-    'secret_key' => 'string',
-    'public_key' => 'string',
   ),
   'sodium_crypto_sign_open' => 
   array (
@@ -64218,11 +61937,6 @@ return array (
     0 => 'void',
     'class' => 'string',
   ),
-  'spl_autoload_extensions' => 
-  array (
-    0 => 'string',
-    'file_extensions=' => 'string',
-  ),
   'spl_autoload_functions' => 
   array (
     0 => 'false|list<callable(string):void>',
@@ -64329,10 +62043,6 @@ return array (
   array (
     0 => 'void',
   ),
-  'spldoublylinkedlist::serialize' => 
-  array (
-    0 => 'string',
-  ),
   'spldoublylinkedlist::setiteratormode' => 
   array (
     0 => 'int',
@@ -64376,35 +62086,18 @@ return array (
     0 => 'void',
     'filename' => 'string',
   ),
-  'splfileinfo::__tostring' => 
-  array (
-    0 => 'string',
-  ),
   'splfileinfo::getatime' => 
   array (
     0 => 'false|int',
-  ),
-  'splfileinfo::getbasename' => 
-  array (
-    0 => 'string',
-    'suffix=' => 'string',
   ),
   'splfileinfo::getctime' => 
   array (
     0 => 'false|int',
   ),
-  'splfileinfo::getextension' => 
-  array (
-    0 => 'string',
-  ),
   'splfileinfo::getfileinfo' => 
   array (
     0 => 'SplFileInfo',
     'class=' => 'class-string',
-  ),
-  'splfileinfo::getfilename' => 
-  array (
-    0 => 'string',
   ),
   'splfileinfo::getgroup' => 
   array (
@@ -64426,18 +62119,10 @@ return array (
   array (
     0 => 'false|int',
   ),
-  'splfileinfo::getpath' => 
-  array (
-    0 => 'string',
-  ),
   'splfileinfo::getpathinfo' => 
   array (
     0 => 'SplFileInfo|null',
     'class=' => 'class-string',
-  ),
-  'splfileinfo::getpathname' => 
-  array (
-    0 => 'string',
   ),
   'splfileinfo::getperms' => 
   array (
@@ -64503,10 +62188,6 @@ return array (
     'mode=' => 'string',
     'useIncludePath=' => 'bool',
     'context=' => 'null|resource',
-  ),
-  'splfileobject::__tostring' => 
-  array (
-    0 => 'string',
   ),
   'splfileobject::current' => 
   array (
@@ -64598,11 +62279,6 @@ return array (
   array (
     0 => 'false|int',
   ),
-  'splfileobject::getbasename' => 
-  array (
-    0 => 'string',
-    'suffix=' => 'string',
-  ),
   'splfileobject::getchildren' => 
   array (
     0 => 'null',
@@ -64619,18 +62295,10 @@ return array (
   array (
     0 => 'false|string',
   ),
-  'splfileobject::getextension' => 
-  array (
-    0 => 'string',
-  ),
   'splfileobject::getfileinfo' => 
   array (
     0 => 'SplFileInfo',
     'class=' => 'class-string',
-  ),
-  'splfileobject::getfilename' => 
-  array (
-    0 => 'string',
   ),
   'splfileobject::getflags' => 
   array (
@@ -64660,18 +62328,10 @@ return array (
   array (
     0 => 'false|int',
   ),
-  'splfileobject::getpath' => 
-  array (
-    0 => 'string',
-  ),
   'splfileobject::getpathinfo' => 
   array (
     0 => 'SplFileInfo|null',
     'class=' => 'class-string',
-  ),
-  'splfileobject::getpathname' => 
-  array (
-    0 => 'string',
   ),
   'splfileobject::getperms' => 
   array (
@@ -65055,10 +62715,6 @@ return array (
   array (
     0 => 'void',
   ),
-  'splobjectstorage::serialize' => 
-  array (
-    0 => 'string',
-  ),
   'splobjectstorage::setinfo' => 
   array (
     0 => 'void',
@@ -65210,10 +62866,6 @@ return array (
   array (
     0 => 'void',
   ),
-  'splqueue::serialize' => 
-  array (
-    0 => 'string',
-  ),
   'splqueue::setiteratormode' => 
   array (
     0 => 'int',
@@ -65317,10 +62969,6 @@ return array (
   array (
     0 => 'void',
   ),
-  'splstack::serialize' => 
-  array (
-    0 => 'string',
-  ),
   'splstack::setiteratormode' => 
   array (
     0 => 'int',
@@ -65367,10 +63015,6 @@ return array (
     0 => 'void',
     'maxMemory=' => 'int',
   ),
-  'spltempfileobject::__tostring' => 
-  array (
-    0 => 'string',
-  ),
   'spltempfileobject::current' => 
   array (
     0 => 'array<array-key, mixed>|false|string',
@@ -65393,15 +63037,6 @@ return array (
     'separator=' => 'string',
     'enclosure=' => 'string',
     'escape=' => 'string',
-  ),
-  'spltempfileobject::fgets' => 
-  array (
-    0 => 'string',
-  ),
-  'spltempfileobject::fgetss' => 
-  array (
-    0 => 'string',
-    'allowable_tags=' => 'string',
   ),
   'spltempfileobject::flock' => 
   array (
@@ -65461,11 +63096,6 @@ return array (
   array (
     0 => 'false|int',
   ),
-  'spltempfileobject::getbasename' => 
-  array (
-    0 => 'string',
-    'suffix=' => 'string',
-  ),
   'spltempfileobject::getchildren' => 
   array (
     0 => 'null',
@@ -65478,22 +63108,10 @@ return array (
   array (
     0 => 'false|int',
   ),
-  'spltempfileobject::getcurrentline' => 
-  array (
-    0 => 'string',
-  ),
-  'spltempfileobject::getextension' => 
-  array (
-    0 => 'string',
-  ),
   'spltempfileobject::getfileinfo' => 
   array (
     0 => 'SplFileInfo',
     'class=' => 'class-string',
-  ),
-  'spltempfileobject::getfilename' => 
-  array (
-    0 => 'string',
   ),
   'spltempfileobject::getflags' => 
   array (
@@ -65523,18 +63141,10 @@ return array (
   array (
     0 => 'false|int',
   ),
-  'spltempfileobject::getpath' => 
-  array (
-    0 => 'string',
-  ),
   'spltempfileobject::getpathinfo' => 
   array (
     0 => 'SplFileInfo|null',
     'class=' => 'class-string',
-  ),
-  'spltempfileobject::getpathname' => 
-  array (
-    0 => 'string',
   ),
   'spltempfileobject::getperms' => 
   array (
@@ -65739,10 +63349,6 @@ return array (
   'sqlite3::lasterrorcode' => 
   array (
     0 => 'int',
-  ),
-  'sqlite3::lasterrormsg' => 
-  array (
-    0 => 'string',
   ),
   'sqlite3::lastinsertrowid' => 
   array (
@@ -71468,10 +69074,6 @@ return array (
     'string=' => 'string',
     'start=' => 'int',
   ),
-  'sys_get_temp_dir' => 
-  array (
-    0 => 'string',
-  ),
   'sys_getloadavg' => 
   array (
     0 => 'array<array-key, mixed>|false',
@@ -72201,10 +69803,6 @@ return array (
     'object' => 'DateTimeZone',
     'timestampBegin=' => 'int',
     'timestampEnd=' => 'int',
-  ),
-  'timezone_version_get' => 
-  array (
-    0 => 'string',
   ),
   'tmpfile' => 
   array (
@@ -73713,10 +71311,6 @@ return array (
   array (
     0 => 'int',
   ),
-  'transliterator::geterrormessage' => 
-  array (
-    0 => 'string',
-  ),
   'transliterator::listids' => 
   array (
     0 => 'array<array-key, mixed>',
@@ -73790,25 +71384,13 @@ return array (
     'code=' => 'int',
     'previous=' => 'Throwable|null',
   ),
-  'typeerror::__tostring' => 
-  array (
-    0 => 'string',
-  ),
   'typeerror::getcode' => 
   array (
     0 => 'int',
   ),
-  'typeerror::getfile' => 
-  array (
-    0 => 'string',
-  ),
   'typeerror::getline' => 
   array (
     0 => 'int',
-  ),
-  'typeerror::getmessage' => 
-  array (
-    0 => 'string',
   ),
   'typeerror::getprevious' => 
   array (
@@ -73817,10 +71399,6 @@ return array (
   'typeerror::gettrace' => 
   array (
     0 => 'list<array{args?: array<array-key, mixed>, class?: class-string, file?: string, function: string, line?: int, type?: \'->\'|\'::\'}>',
-  ),
-  'typeerror::gettraceasstring' => 
-  array (
-    0 => 'string',
   ),
   'uasort' => 
   array (
@@ -73921,14 +71499,6 @@ return array (
     'source' => 'string',
     'codeUnits' => 'string',
     '&w_error' => 'int',
-  ),
-  'uconverter::transcode' => 
-  array (
-    0 => 'string',
-    'str' => 'string',
-    'toEncoding' => 'string',
-    'fromEncoding' => 'string',
-    'options=' => 'array<array-key, mixed>|null',
   ),
   'ucwords' => 
   array (
@@ -74889,25 +72459,13 @@ return array (
     'code=' => 'int',
     'previous=' => 'Throwable|null',
   ),
-  'underflowexception::__tostring' => 
-  array (
-    0 => 'string',
-  ),
   'underflowexception::getcode' => 
   array (
     0 => 'int',
   ),
-  'underflowexception::getfile' => 
-  array (
-    0 => 'string',
-  ),
   'underflowexception::getline' => 
   array (
     0 => 'int',
-  ),
-  'underflowexception::getmessage' => 
-  array (
-    0 => 'string',
   ),
   'underflowexception::getprevious' => 
   array (
@@ -74916,10 +72474,6 @@ return array (
   'underflowexception::gettrace' => 
   array (
     0 => 'list<array{args?: array<array-key, mixed>, class?: class-string, file?: string, function: string, line?: int, type?: \'->\'|\'::\'}>',
-  ),
-  'underflowexception::gettraceasstring' => 
-  array (
-    0 => 'string',
   ),
   'unexpectedvalueexception::__clone' => 
   array (
@@ -74932,25 +72486,13 @@ return array (
     'code=' => 'int',
     'previous=' => 'Throwable|null',
   ),
-  'unexpectedvalueexception::__tostring' => 
-  array (
-    0 => 'string',
-  ),
   'unexpectedvalueexception::getcode' => 
   array (
     0 => 'int',
   ),
-  'unexpectedvalueexception::getfile' => 
-  array (
-    0 => 'string',
-  ),
   'unexpectedvalueexception::getline' => 
   array (
     0 => 'int',
-  ),
-  'unexpectedvalueexception::getmessage' => 
-  array (
-    0 => 'string',
   ),
   'unexpectedvalueexception::getprevious' => 
   array (
@@ -74959,10 +72501,6 @@ return array (
   'unexpectedvalueexception::gettrace' => 
   array (
     0 => 'list<array{args?: array<array-key, mixed>, class?: class-string, file?: string, function: string, line?: int, type?: \'->\'|\'::\'}>',
-  ),
-  'unexpectedvalueexception::gettraceasstring' => 
-  array (
-    0 => 'string',
   ),
   'uniqid' => 
   array (
@@ -77729,18 +75267,6 @@ return array (
   'xmlreader::read' => 
   array (
     0 => 'bool',
-  ),
-  'xmlreader::readinnerxml' => 
-  array (
-    0 => 'string',
-  ),
-  'xmlreader::readouterxml' => 
-  array (
-    0 => 'string',
-  ),
-  'xmlreader::readstring' => 
-  array (
-    0 => 'string',
   ),
   'xmlreader::setparserproperty' => 
   array (
@@ -82545,10 +80071,6 @@ return array (
   'zend_thread_id' => 
   array (
     0 => 'int',
-  ),
-  'zend_version' => 
-  array (
-    0 => 'string',
   ),
   'zendapi_job::addjobtoqueue' => 
   array (

@@ -12,4 +12,4 @@ for f in $VERSIONS; do
     docker run --rm -it -v $PWD:/app psalm_test_$f php /app/bin/gen_base_callmap.php
 done
 
-docker run --rm -it -v $PWD:/app psalm_test_$f php bin/gen_callmap.php
+php bin/gen_callmap.php
