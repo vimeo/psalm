@@ -549,11 +549,11 @@ return array (
   ),
   'amqpenvelope::__construct' => 
   array (
-    0 => 'void',
+    0 => 'string',
   ),
   'amqpenvelope::getappid' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpenvelope::getbody' => 
   array (
@@ -561,23 +561,23 @@ return array (
   ),
   'amqpenvelope::getclusterid' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpenvelope::getconsumertag' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpenvelope::getcontentencoding' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpenvelope::getcontenttype' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpenvelope::getcorrelationid' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpenvelope::getdeliverymode' => 
   array (
@@ -585,20 +585,20 @@ return array (
   ),
   'amqpenvelope::getdeliverytag' => 
   array (
-    0 => 'string',
+    0 => 'int|null',
   ),
   'amqpenvelope::getexchangename' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpenvelope::getexpiration' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpenvelope::getheader' => 
   array (
-    0 => 'false|string',
-    'header_key' => 'string',
+    0 => 'mixed|null',
+    'headerName' => 'string',
   ),
   'amqpenvelope::getheaders' => 
   array (
@@ -606,7 +606,7 @@ return array (
   ),
   'amqpenvelope::getmessageid' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpenvelope::getpriority' => 
   array (
@@ -614,7 +614,7 @@ return array (
   ),
   'amqpenvelope::getreplyto' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpenvelope::getroutingkey' => 
   array (
@@ -622,20 +622,20 @@ return array (
   ),
   'amqpenvelope::gettimestamp' => 
   array (
-    0 => 'string',
+    0 => 'int|null',
   ),
   'amqpenvelope::gettype' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpenvelope::getuserid' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpenvelope::hasheader' => 
   array (
     0 => 'bool',
-    'header_key' => 'string',
+    'headerName' => 'string',
   ),
   'amqpenvelope::isredelivery' => 
   array (
