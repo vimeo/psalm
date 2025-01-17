@@ -408,6 +408,100 @@ return array (
   array (
     0 => 'int',
   ),
+  'amqpenvelope::__construct' => 
+  array (
+    0 => 'void',
+  ),
+  'amqpenvelope::getappid' => 
+  array (
+    0 => 'string',
+  ),
+  'amqpenvelope::getbody' => 
+  array (
+    0 => 'string',
+  ),
+  'amqpenvelope::getclusterid' => 
+  array (
+    0 => 'string',
+  ),
+  'amqpenvelope::getconsumertag' => 
+  array (
+    0 => 'string',
+  ),
+  'amqpenvelope::getcontentencoding' => 
+  array (
+    0 => 'string',
+  ),
+  'amqpenvelope::getcontenttype' => 
+  array (
+    0 => 'string',
+  ),
+  'amqpenvelope::getcorrelationid' => 
+  array (
+    0 => 'string',
+  ),
+  'amqpenvelope::getdeliverymode' => 
+  array (
+    0 => 'int',
+  ),
+  'amqpenvelope::getdeliverytag' => 
+  array (
+    0 => 'string',
+  ),
+  'amqpenvelope::getexchangename' => 
+  array (
+    0 => 'string',
+  ),
+  'amqpenvelope::getexpiration' => 
+  array (
+    0 => 'string',
+  ),
+  'amqpenvelope::getheader' => 
+  array (
+    0 => 'false|string',
+    'header_key' => 'string',
+  ),
+  'amqpenvelope::getheaders' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'amqpenvelope::getmessageid' => 
+  array (
+    0 => 'string',
+  ),
+  'amqpenvelope::getpriority' => 
+  array (
+    0 => 'int',
+  ),
+  'amqpenvelope::getreplyto' => 
+  array (
+    0 => 'string',
+  ),
+  'amqpenvelope::getroutingkey' => 
+  array (
+    0 => 'string',
+  ),
+  'amqpenvelope::gettimestamp' => 
+  array (
+    0 => 'string',
+  ),
+  'amqpenvelope::gettype' => 
+  array (
+    0 => 'string',
+  ),
+  'amqpenvelope::getuserid' => 
+  array (
+    0 => 'string',
+  ),
+  'amqpenvelope::hasheader' => 
+  array (
+    0 => 'bool',
+    'header_key' => 'string',
+  ),
+  'amqpenvelope::isredelivery' => 
+  array (
+    0 => 'bool',
+  ),
   'amqpexchange::__construct' => 
   array (
     0 => 'void',
@@ -1395,16 +1489,6 @@ return array (
     'key' => 'int|string',
     'array' => 'array<array-key, mixed>|object',
   ),
-  'array_key_first' => 
-  array (
-    0 => 'int|null|string',
-    'array' => 'array<array-key, mixed>',
-  ),
-  'array_key_last' => 
-  array (
-    0 => 'int|null|string',
-    'array' => 'array<array-key, mixed>',
-  ),
   'array_keys' => 
   array (
     0 => 'list<int|string>',
@@ -1458,7 +1542,7 @@ return array (
   array (
     0 => 'int',
     '&rw_array' => 'array<array-key, mixed>',
-    '...values=' => 'mixed',
+    '...values' => 'mixed',
   ),
   'array_rand' => 
   array (
@@ -1639,7 +1723,7 @@ return array (
   array (
     0 => 'int',
     '&rw_array' => 'array<array-key, mixed>',
-    '...values=' => 'mixed',
+    '...values' => 'mixed',
   ),
   'array_values' => 
   array (
@@ -2288,7 +2372,7 @@ return array (
   'bcscale' => 
   array (
     0 => 'int',
-    'scale=' => 'int',
+    'scale' => 'int',
   ),
   'bcsqrt' => 
   array (
@@ -3007,11 +3091,6 @@ return array (
     0 => 'mixed',
     'newThis' => 'object',
     '...args=' => 'mixed',
-  ),
-  'closure::fromcallable' => 
-  array (
-    0 => 'Closure',
-    'callback' => 'callable',
   ),
   'clusterobj::converttostring' => 
   array (
@@ -6132,11 +6211,6 @@ return array (
     0 => 'void',
     'mh' => 'resource',
   ),
-  'curl_multi_errno' => 
-  array (
-    0 => 'false|int',
-    'mh' => 'resource',
-  ),
   'curl_multi_exec' => 
   array (
     0 => 'int',
@@ -6211,11 +6285,6 @@ return array (
     0 => 'void',
     'sh' => 'resource',
   ),
-  'curl_share_errno' => 
-  array (
-    0 => 'false|int',
-    'sh' => 'resource',
-  ),
   'curl_share_init' => 
   array (
     0 => 'resource',
@@ -6226,11 +6295,6 @@ return array (
     'sh' => 'resource',
     'option' => 'int',
     'value' => 'mixed',
-  ),
-  'curl_share_strerror' => 
-  array (
-    0 => 'null|string',
-    'error_code' => 'int',
   ),
   'curl_strerror' => 
   array (
@@ -6707,11 +6771,6 @@ return array (
     'datetime' => 'string',
     'timezone=' => 'DateTimeZone|null',
   ),
-  'datetime::createfromimmutable' => 
-  array (
-    0 => 'static',
-    'object' => 'DateTimeImmutable',
-  ),
   'datetime::diff' => 
   array (
     0 => 'DateInterval',
@@ -6853,7 +6912,7 @@ return array (
   array (
     0 => 'false|list<string>',
     'timezoneGroup=' => 'int',
-    'countryCode=' => 'null|string',
+    'countryCode=' => 'string',
   ),
   'db2_autocommit' => 
   array (
@@ -7768,7 +7827,7 @@ return array (
     0 => 'bool',
     'constant_name' => 'string',
     'value' => 'array<array-key, mixed>|null|scalar',
-    'case_insensitive=' => 'false',
+    'case_insensitive=' => 'bool',
   ),
   'define_syslog_variables' => 
   array (
@@ -8752,10 +8811,6 @@ return array (
     0 => 'DOMNode|false',
     'node' => 'DOMNode',
     'child' => 'DOMNode',
-  ),
-  'domnodelist::count' => 
-  array (
-    0 => 'int',
   ),
   'domnodelist::item' => 
   array (
@@ -14817,10 +14872,6 @@ return array (
     0 => 'int',
     'stream' => 'resource',
   ),
-  'fpm_get_status' => 
-  array (
-    0 => 'array<array-key, mixed>|false',
-  ),
   'fprintf' => 
   array (
     0 => 'int',
@@ -14915,14 +14966,6 @@ return array (
     'ftp' => 'resource',
     'size' => 'int',
     '&w_response=' => 'string',
-  ),
-  'ftp_append' => 
-  array (
-    0 => 'bool',
-    'ftp' => 'resource',
-    'remote_filename' => 'string',
-    'local_filename' => 'string',
-    'mode=' => 'int',
   ),
   'ftp_cdup' => 
   array (
@@ -15203,10 +15246,6 @@ return array (
   'gc_mem_caches' => 
   array (
     0 => 'int',
-  ),
-  'gc_status' => 
-  array (
-    0 => 'array{collected: int, roots: int, runs: int, threshold: int}',
   ),
   'gd_info' => 
   array (
@@ -16941,7 +16980,6 @@ return array (
     0 => 'array<array-key, mixed>|false',
     'url' => 'string',
     'associative=' => 'int',
-    'context=' => 'null|resource',
   ),
   'get_html_translation_table' => 
   array (
@@ -17020,10 +17058,6 @@ return array (
     'name' => 'string',
     'local_only=' => 'bool',
   ),
-  'getenv\'1' => 
-  array (
-    0 => 'array<string, string>',
-  ),
   'gethostbyaddr' => 
   array (
     0 => 'false|string',
@@ -17087,7 +17121,6 @@ return array (
     0 => 'array<string, false|list<false|string>|string>|false',
     'short_options' => 'string',
     'long_options=' => 'array<array-key, mixed>',
-    '&w_rest_index=' => 'int',
   ),
   'getprotobyname' => 
   array (
@@ -18283,12 +18316,6 @@ return array (
     'num1' => 'GMP|int|string',
     'num2' => 'GMP|int|string',
   ),
-  'gmp_binomial' => 
-  array (
-    0 => 'GMP|false',
-    'n' => 'GMP|int|string',
-    'k' => 'int',
-  ),
   'gmp_clrbit' => 
   array (
     0 => 'void',
@@ -18400,18 +18427,6 @@ return array (
     'num1' => 'GMP|int|string',
     'num2' => 'GMP|int|string',
   ),
-  'gmp_kronecker' => 
-  array (
-    0 => 'int',
-    'num1' => 'GMP|int|string',
-    'num2' => 'GMP|int|string',
-  ),
-  'gmp_lcm' => 
-  array (
-    0 => 'GMP',
-    'num1' => 'GMP|int|string',
-    'num2' => 'GMP|int|string',
-  ),
   'gmp_legendre' => 
   array (
     0 => 'int',
@@ -18445,11 +18460,6 @@ return array (
     0 => 'GMP',
     'num1' => 'GMP|int|string',
     'num2' => 'GMP|int|string',
-  ),
-  'gmp_perfect_power' => 
-  array (
-    0 => 'bool',
-    'num' => 'GMP|int|string',
   ),
   'gmp_perfect_square' => 
   array (
@@ -20297,8 +20307,8 @@ return array (
   ),
   'hash_copy' => 
   array (
-    0 => 'HashContext',
-    'context' => 'HashContext',
+    0 => 'resource',
+    'context' => 'resource',
   ),
   'hash_equals' => 
   array (
@@ -20316,17 +20326,8 @@ return array (
   'hash_final' => 
   array (
     0 => 'non-empty-string',
-    'context' => 'HashContext',
-    'binary=' => 'bool',
-  ),
-  'hash_hkdf' => 
-  array (
-    0 => 'false|non-empty-string',
-    'algo' => 'string',
-    'key' => 'string',
-    'length=' => 'int',
-    'info=' => 'string',
-    'salt=' => 'string',
+    'context' => 'resource',
+    'raw_output=' => 'bool',
   ),
   'hash_hmac' => 
   array (
@@ -20335,10 +20336,6 @@ return array (
     'data' => 'string',
     'key' => 'string',
     'binary=' => 'bool',
-  ),
-  'hash_hmac_algos' => 
-  array (
-    0 => 'list<string>',
   ),
   'hash_hmac_file' => 
   array (
@@ -20350,9 +20347,9 @@ return array (
   ),
   'hash_init' => 
   array (
-    0 => 'HashContext|false',
+    0 => 'resource',
     'algo' => 'string',
-    'flags=' => 'int',
+    'options=' => 'int',
     'key=' => 'string',
   ),
   'hash_pbkdf2' => 
@@ -20368,21 +20365,21 @@ return array (
   'hash_update' => 
   array (
     0 => 'bool',
-    'context' => 'HashContext',
+    'context' => 'resource',
     'data' => 'string',
   ),
   'hash_update_file' => 
   array (
     0 => 'bool',
-    'context' => 'HashContext',
+    'hcontext' => 'resource',
     'filename' => 'string',
-    'stream_context=' => 'resource',
+    'scontext=' => 'resource',
   ),
   'hash_update_stream' => 
   array (
     0 => 'int',
-    'context' => 'HashContext',
-    'stream' => 'resource',
+    'context' => 'resource',
+    'handle' => 'resource',
     'length=' => 'int',
   ),
   'hashtableobj::clear' => 
@@ -20470,16 +20467,6 @@ return array (
     0 => 'bool|string',
     'string' => 'string',
     'return=' => 'bool',
-  ),
-  'hrtime' => 
-  array (
-    0 => 'array{0: int, 1: int}|false',
-    'as_number=' => 'false',
-  ),
-  'hrtime\'1' => 
-  array (
-    0 => 'false|float|int',
-    'as_number=' => 'true',
   ),
   'hrtime\\performancecounter::getelapsedticks' => 
   array (
@@ -25519,13 +25506,6 @@ return array (
     'end_angle' => 'int',
     'color' => 'int',
   ),
-  'imagebmp' => 
-  array (
-    0 => 'bool',
-    'image' => 'resource',
-    'file=' => 'null|resource|string',
-    'compressed=' => 'int',
-  ),
   'imagechar' => 
   array (
     0 => 'bool',
@@ -25747,11 +25727,6 @@ return array (
     0 => 'false|resource',
     'x_size' => 'int',
     'y_size' => 'int',
-  ),
-  'imagecreatefrombmp' => 
-  array (
-    0 => 'false|resource',
-    'filename' => 'string',
   ),
   'imagecreatefromgd' => 
   array (
@@ -26060,14 +26035,6 @@ return array (
   array (
     0 => 'string',
   ),
-  'imageopenpolygon' => 
-  array (
-    0 => 'bool',
-    'image' => 'resource',
-    'points' => 'array<array-key, mixed>',
-    'num_points' => 'int',
-    'color' => 'int',
-  ),
   'imagepalettecopy' => 
   array (
     0 => 'void',
@@ -26105,13 +26072,6 @@ return array (
     'y2' => 'int',
     'color' => 'int',
   ),
-  'imageresolution' => 
-  array (
-    0 => 'array<array-key, mixed>|bool',
-    'image' => 'resource',
-    'resolution_x=' => 'int',
-    'resolution_y=' => 'int',
-  ),
   'imagerotate' => 
   array (
     0 => 'false|resource',
@@ -26139,15 +26099,6 @@ return array (
     0 => 'bool',
     'image' => 'resource',
     'brush' => 'resource',
-  ),
-  'imagesetclip' => 
-  array (
-    0 => 'bool',
-    'image' => 'resource',
-    'x1' => 'int',
-    'x2' => 'int',
-    'y1' => 'int',
-    'y2' => 'int',
   ),
   'imagesetinterpolation' => 
   array (
@@ -31113,7 +31064,7 @@ return array (
   'intldateformatter::format' => 
   array (
     0 => 'false|string',
-    'value' => 'DateTimeInterface|IntlCalendar|array{0?: int, 1?: int, 2?: int, 3?: int, 4?: int, 5?: int, 6?: int, 7?: int, 8?: int, tm_hour?: int, tm_isdst?: int, tm_mday?: int, tm_min?: int, tm_mon?: int, tm_sec?: int, tm_wday?: int, tm_yday?: int, tm_year?: int}|float|int|string',
+    'value' => 'DateTime|IntlCalendar|array{0?: int, 1?: int, 2?: int, 3?: int, 4?: int, 5?: int, 6?: int, 7?: int, 8?: int, tm_hour?: int, tm_isdst?: int, tm_mday?: int, tm_min?: int, tm_mon?: int, tm_sec?: int, tm_wday?: int, tm_yday?: int, tm_year?: int}|float|int|string',
   ),
   'intldateformatter::formatobject' => 
   array (
@@ -31974,11 +31925,6 @@ return array (
     'syntax_only=' => 'bool',
     '&w_callable_name=' => 'string',
   ),
-  'is_countable' => 
-  array (
-    0 => 'bool',
-    'value' => 'mixed',
-  ),
   'is_dir' => 
   array (
     0 => 'bool',
@@ -32020,11 +31966,6 @@ return array (
     'value' => 'mixed',
   ),
   'is_integer' => 
-  array (
-    0 => 'bool',
-    'value' => 'mixed',
-  ),
-  'is_iterable' => 
   array (
     0 => 'bool',
     'value' => 'mixed',
@@ -32305,7 +32246,7 @@ return array (
   array (
     0 => 'mixed',
     'json' => 'string',
-    'associative=' => 'bool|null',
+    'associative=' => 'bool',
     'depth=' => 'int',
     'flags=' => 'int',
   ),
@@ -32321,53 +32262,6 @@ return array (
     0 => 'int',
   ),
   'json_last_error_msg' => 
-  array (
-    0 => 'string',
-  ),
-  'jsonexception::__clone' => 
-  array (
-    0 => 'void',
-  ),
-  'jsonexception::__construct' => 
-  array (
-    0 => 'void',
-    'message=' => 'string',
-    'code=' => 'int',
-    'previous=' => 'Throwable|null',
-  ),
-  'jsonexception::__tostring' => 
-  array (
-    0 => 'string',
-  ),
-  'jsonexception::__wakeup' => 
-  array (
-    0 => 'void',
-  ),
-  'jsonexception::getcode' => 
-  array (
-    0 => 'int',
-  ),
-  'jsonexception::getfile' => 
-  array (
-    0 => 'string',
-  ),
-  'jsonexception::getline' => 
-  array (
-    0 => 'int',
-  ),
-  'jsonexception::getmessage' => 
-  array (
-    0 => 'string',
-  ),
-  'jsonexception::getprevious' => 
-  array (
-    0 => 'Throwable|null',
-  ),
-  'jsonexception::gettrace' => 
-  array (
-    0 => 'list<array{args?: array<array-key, mixed>, class?: class-string, file?: string, function: string, line?: int, type?: \'->\'|\'::\'}>',
-  ),
-  'jsonexception::gettraceasstring' => 
   array (
     0 => 'string',
   ),
@@ -33174,7 +33068,6 @@ return array (
     'dn' => 'string',
     'attribute' => 'string',
     'value' => 'string',
-    'controls=' => 'array<array-key, mixed>',
   ),
   'ldap_connect' => 
   array (
@@ -33212,7 +33105,6 @@ return array (
     0 => 'bool',
     'ldap' => 'resource',
     'dn' => 'string',
-    'controls=' => 'array<array-key, mixed>',
   ),
   'ldap_delete_ext' => 
   array (
@@ -33247,37 +33139,6 @@ return array (
     'value' => 'string',
     'ignore=' => 'string',
     'flags=' => 'int',
-  ),
-  'ldap_exop' => 
-  array (
-    0 => 'bool|resource',
-    'ldap' => 'resource',
-    'request_oid' => 'string',
-    'request_data=' => 'null|string',
-    'controls=' => 'array<array-key, mixed>|null',
-    '&w_response_data=' => 'string',
-    '&w_response_oid=' => 'string',
-  ),
-  'ldap_exop_passwd' => 
-  array (
-    0 => 'bool|string',
-    'ldap' => 'resource',
-    'user=' => 'string',
-    'old_password=' => 'string',
-    'new_password=' => 'string',
-    '&w_controls=' => 'array<array-key, mixed>',
-  ),
-  'ldap_exop_refresh' => 
-  array (
-    0 => 'false|int',
-    'ldap' => 'resource',
-    'dn' => 'string',
-    'ttl' => 'int',
-  ),
-  'ldap_exop_whoami' => 
-  array (
-    0 => 'false|string',
-    'ldap' => 'resource',
   ),
   'ldap_explode_dn' => 
   array (
@@ -33358,7 +33219,6 @@ return array (
     'sizelimit=' => 'int',
     'timelimit=' => 'int',
     'deref=' => 'int',
-    'controls=' => 'array<array-key, mixed>',
   ),
   'ldap_mod_add' => 
   array (
@@ -33366,7 +33226,6 @@ return array (
     'ldap' => 'resource',
     'dn' => 'string',
     'entry' => 'array<array-key, mixed>',
-    'controls=' => 'array<array-key, mixed>',
   ),
   'ldap_mod_add_ext' => 
   array (
@@ -33382,7 +33241,6 @@ return array (
     'ldap' => 'resource',
     'dn' => 'string',
     'entry' => 'array<array-key, mixed>',
-    'controls=' => 'array<array-key, mixed>',
   ),
   'ldap_mod_del_ext' => 
   array (
@@ -33398,7 +33256,6 @@ return array (
     'ldap' => 'resource',
     'dn' => 'string',
     'entry' => 'array<array-key, mixed>',
-    'controls=' => 'array<array-key, mixed>',
   ),
   'ldap_mod_replace_ext' => 
   array (
@@ -33414,7 +33271,6 @@ return array (
     'ldap' => 'resource',
     'dn' => 'string',
     'entry' => 'array<array-key, mixed>',
-    'controls=' => 'array<array-key, mixed>',
   ),
   'ldap_modify_batch' => 
   array (
@@ -33422,7 +33278,6 @@ return array (
     'ldap' => 'resource',
     'dn' => 'string',
     'modifications_info' => 'array<array-key, mixed>',
-    'controls=' => 'array<array-key, mixed>',
   ),
   'ldap_next_attribute' => 
   array (
@@ -33441,14 +33296,6 @@ return array (
     0 => 'false|resource',
     'ldap' => 'resource',
     'entry' => 'resource',
-  ),
-  'ldap_parse_exop' => 
-  array (
-    0 => 'bool',
-    'ldap' => 'resource',
-    'result' => 'resource',
-    '&w_response_data=' => 'string',
-    '&w_response_oid=' => 'string',
   ),
   'ldap_parse_reference' => 
   array (
@@ -33479,7 +33326,6 @@ return array (
     'sizelimit=' => 'int',
     'timelimit=' => 'int',
     'deref=' => 'int',
-    'controls=' => 'array<array-key, mixed>',
   ),
   'ldap_rename' => 
   array (
@@ -33489,7 +33335,6 @@ return array (
     'new_rdn' => 'string',
     'new_parent' => 'string',
     'delete_old_rdn' => 'bool',
-    'controls=' => 'array<array-key, mixed>',
   ),
   'ldap_rename_ext' => 
   array (
@@ -33524,7 +33369,6 @@ return array (
     'sizelimit=' => 'int',
     'timelimit=' => 'int',
     'deref=' => 'int',
-    'controls=' => 'array<array-key, mixed>',
   ),
   'ldap_set_option' => 
   array (
@@ -34775,13 +34619,7 @@ return array (
   'mb_check_encoding' => 
   array (
     0 => 'bool',
-    'value=' => 'array<array-key, mixed>|string',
-    'encoding=' => 'string',
-  ),
-  'mb_chr' => 
-  array (
-    0 => 'false|non-empty-string',
-    'codepoint' => 'int',
+    'value=' => 'string',
     'encoding=' => 'string',
   ),
   'mb_convert_case' => 
@@ -34795,13 +34633,6 @@ return array (
   array (
     0 => 'false|string',
     'string' => 'string',
-    'to_encoding' => 'string',
-    'from_encoding=' => 'mixed',
-  ),
-  'mb_convert_encoding\'1' => 
-  array (
-    0 => 'array<array-key, mixed>',
-    'string' => 'array<array-key, mixed>',
     'to_encoding' => 'string',
     'from_encoding=' => 'mixed',
   ),
@@ -34978,12 +34809,6 @@ return array (
   array (
     0 => 'list<string>',
   ),
-  'mb_ord' => 
-  array (
-    0 => 'false|int',
-    'string' => 'string',
-    'encoding=' => 'string',
-  ),
   'mb_output_handler' => 
   array (
     0 => 'string',
@@ -35010,12 +34835,6 @@ return array (
   array (
     0 => 'string',
     'options=' => 'string',
-  ),
-  'mb_scrub' => 
-  array (
-    0 => 'string',
-    'string' => 'string',
-    'encoding=' => 'string',
   ),
   'mb_send_mail' => 
   array (
@@ -36374,7 +36193,7 @@ return array (
     'directory' => 'string',
     'permissions=' => 'int',
     'recursive=' => 'bool',
-    'context=' => 'null|resource',
+    'context=' => 'resource',
   ),
   'mktime' => 
   array (
@@ -42645,10 +42464,6 @@ return array (
     0 => 'bool',
     '&rw_array' => 'array<array-key, mixed>',
   ),
-  'net_get_interfaces' => 
-  array (
-    0 => 'array<string, array<string, mixed>>|false',
-  ),
   'newrelic_add_custom_parameter' => 
   array (
     0 => 'bool',
@@ -42811,12 +42626,6 @@ return array (
   array (
     0 => 'bool',
   ),
-  'normalizer::getrawdecomposition' => 
-  array (
-    0 => 'null|string',
-    'string' => 'string',
-    'form=' => 'int',
-  ),
   'normalizer::isnormalized' => 
   array (
     0 => 'bool',
@@ -42826,12 +42635,6 @@ return array (
   'normalizer::normalize' => 
   array (
     0 => 'false|string',
-    'string' => 'string',
-    'form=' => 'int',
-  ),
-  'normalizer_get_raw_decomposition' => 
-  array (
-    0 => 'null|string',
     'string' => 'string',
     'form=' => 'int',
   ),
@@ -43855,12 +43658,6 @@ return array (
     'encoding=' => 'string',
     'session_mode=' => 'int',
   ),
-  'oci_register_taf_callback' => 
-  array (
-    0 => 'bool',
-    'connection' => 'resource',
-    'callback=' => 'callable',
-  ),
   'oci_result' => 
   array (
     0 => 'false|mixed',
@@ -43928,11 +43725,6 @@ return array (
   array (
     0 => 'false|string',
     'statement' => 'resource',
-  ),
-  'oci_unregister_taf_callback' => 
-  array (
-    0 => 'bool',
-    'connection' => 'resource',
   ),
   'ocicollection::append' => 
   array (
@@ -44672,10 +44464,6 @@ return array (
     0 => 'array<array-key, mixed>',
     'aliases=' => 'bool',
   ),
-  'openssl_get_curve_names' => 
-  array (
-    0 => 'list<string>',
-  ),
   'openssl_get_md_methods' => 
   array (
     0 => 'array<array-key, mixed>',
@@ -44781,13 +44569,6 @@ return array (
     'untrusted_certificates_filename=' => 'string',
     'content=' => 'string',
     'output_filename=' => 'string',
-  ),
-  'openssl_pkey_derive' => 
-  array (
-    0 => 'false|string',
-    'public_key' => 'mixed',
-    'private_key' => 'mixed',
-    'key_length=' => 'int|null',
   ),
   'openssl_pkey_export' => 
   array (
@@ -45747,11 +45528,6 @@ return array (
     0 => 'int',
     'seconds' => 'int',
   ),
-  'pcntl_async_signals' => 
-  array (
-    0 => 'bool',
-    'enable=' => 'bool',
-  ),
   'pcntl_errno' => 
   array (
     0 => 'int',
@@ -45794,11 +45570,6 @@ return array (
   'pcntl_signal_dispatch' => 
   array (
     0 => 'bool',
-  ),
-  'pcntl_signal_get_handler' => 
-  array (
-    0 => 'int|string',
-    'signal' => 'int',
   ),
   'pcntl_sigprocmask' => 
   array (
@@ -48534,7 +48305,6 @@ return array (
   array (
     0 => 'array<array-key, array<array-key, mixed>>',
     'result' => 'resource',
-    'mode=' => 'int',
   ),
   'pg_fetch_all_columns' => 
   array (
@@ -48925,7 +48695,6 @@ return array (
     'table_name' => 'string',
     'conditions' => 'array<array-key, mixed>',
     'flags=' => 'int',
-    'mode=' => 'int',
   ),
   'pg_send_execute' => 
   array (
@@ -50227,7 +49996,7 @@ return array (
   array (
     0 => 'string',
     'str' => 'string',
-    'delimiter=' => 'null|string',
+    'delimiter=' => 'string',
   ),
   'preg_replace' => 
   array (
@@ -55760,7 +55529,7 @@ return array (
   'reflectionclass::getmethods' => 
   array (
     0 => 'list<ReflectionMethod>',
-    'filter=' => 'int|null',
+    'filter=' => 'int',
   ),
   'reflectionclass::getmodifiers' => 
   array (
@@ -55781,7 +55550,7 @@ return array (
   'reflectionclass::getproperties' => 
   array (
     0 => 'list<ReflectionProperty>',
-    'filter=' => 'int|null',
+    'filter=' => 'int',
   ),
   'reflectionclass::getproperty' => 
   array (
@@ -55881,10 +55650,6 @@ return array (
     0 => 'bool',
   ),
   'reflectionclass::isinternal' => 
-  array (
-    0 => 'bool',
-  ),
-  'reflectionclass::isiterable' => 
   array (
     0 => 'bool',
   ),
@@ -56592,7 +56357,7 @@ return array (
   'reflectionobject::getmethods' => 
   array (
     0 => 'array<array-key, ReflectionMethod>',
-    'filter=' => 'int|null',
+    'filter=' => 'int',
   ),
   'reflectionobject::getmodifiers' => 
   array (
@@ -56613,7 +56378,7 @@ return array (
   'reflectionobject::getproperties' => 
   array (
     0 => 'array<array-key, ReflectionProperty>',
-    'filter=' => 'int|null',
+    'filter=' => 'int',
   ),
   'reflectionobject::getproperty' => 
   array (
@@ -57832,33 +57597,6 @@ return array (
   'sammessage::header' => 
   array (
     0 => 'object',
-  ),
-  'sapi_windows_cp_conv' => 
-  array (
-    0 => 'null|string',
-    'in_codepage' => 'int|string',
-    'out_codepage' => 'int|string',
-    'subject' => 'string',
-  ),
-  'sapi_windows_cp_get' => 
-  array (
-    0 => 'int',
-    'kind=' => 'string',
-  ),
-  'sapi_windows_cp_is_utf8' => 
-  array (
-    0 => 'bool',
-  ),
-  'sapi_windows_cp_set' => 
-  array (
-    0 => 'bool',
-    'codepage' => 'int',
-  ),
-  'sapi_windows_vt100_support' => 
-  array (
-    0 => 'bool',
-    'stream' => 'resource',
-    'enable=' => 'bool',
   ),
   'saxon\\saxonprocessor::__construct' => 
   array (
@@ -59137,11 +58875,6 @@ return array (
   array (
     0 => 'bool',
   ),
-  'session_create_id' => 
-  array (
-    0 => 'false|string',
-    'prefix=' => 'string',
-  ),
   'session_decode' => 
   array (
     0 => 'bool',
@@ -59155,13 +58888,9 @@ return array (
   array (
     0 => 'false|string',
   ),
-  'session_gc' => 
-  array (
-    0 => 'false|int',
-  ),
   'session_get_cookie_params' => 
   array (
-    0 => 'array{domain: null|string, httponly: bool|null, lifetime: int|null, path: null|string, samesite: null|string, secure: bool|null}',
+    0 => 'array{domain: null|string, httponly: bool|null, lifetime: int|null, path: null|string, secure: bool|null}',
   ),
   'session_id' => 
   array (
@@ -59244,11 +58973,6 @@ return array (
     'secure=' => 'bool',
     'httponly=' => 'bool',
   ),
-  'session_set_cookie_params\'1' => 
-  array (
-    0 => 'bool',
-    'options' => 'array{domain?: null|string, httponly?: bool|null, lifetime?: int|null, path?: null|string, samesite?: null|string, secure?: bool|null}',
-  ),
   'session_set_save_handler' => 
   array (
     0 => 'bool',
@@ -59305,7 +59029,7 @@ return array (
   ),
   'sessionhandler::gc' => 
   array (
-    0 => 'false|int',
+    0 => 'bool',
     'max_lifetime' => 'int',
   ),
   'sessionhandler::open' => 
@@ -59427,13 +59151,6 @@ return array (
     'samesite=' => 'string',
     'url_encode=' => 'int',
   ),
-  'setcookie\'1' => 
-  array (
-    0 => 'bool',
-    'name' => 'string',
-    'value=' => 'string',
-    'options=' => 'array<array-key, mixed>',
-  ),
   'setleftfill' => 
   array (
     0 => 'void',
@@ -59479,13 +59196,6 @@ return array (
     'domain=' => 'string',
     'secure=' => 'bool',
     'httponly=' => 'bool',
-  ),
-  'setrawcookie\'1' => 
-  array (
-    0 => 'bool',
-    'name' => 'string',
-    'value=' => 'string',
-    'options=' => 'array<array-key, mixed>',
   ),
   'setrightfill' => 
   array (
@@ -60550,28 +60260,6 @@ return array (
     0 => 'false|resource',
     'socket' => 'resource',
   ),
-  'socket_addrinfo_bind' => 
-  array (
-    0 => 'null|resource',
-    'addrinfo' => 'resource',
-  ),
-  'socket_addrinfo_connect' => 
-  array (
-    0 => 'resource',
-    'addrinfo' => 'resource',
-  ),
-  'socket_addrinfo_explain' => 
-  array (
-    0 => 'array<array-key, mixed>',
-    'addrinfo' => 'resource',
-  ),
-  'socket_addrinfo_lookup' => 
-  array (
-    0 => 'array<array-key, resource>',
-    'host' => 'string',
-    'service=' => 'string',
-    'hints=' => 'array<array-key, mixed>',
-  ),
   'socket_bind' => 
   array (
     0 => 'bool',
@@ -60801,523 +60489,361 @@ return array (
     'data' => 'string',
     'length=' => 'int',
   ),
-  'socket_wsaprotocol_info_export' => 
-  array (
-    0 => 'false|string',
-    'socket' => 'resource',
-    'process_id' => 'int',
-  ),
-  'socket_wsaprotocol_info_import' => 
-  array (
-    0 => 'false|resource',
-    'info_id' => 'string',
-  ),
-  'socket_wsaprotocol_info_release' => 
-  array (
-    0 => 'bool',
-    'info_id' => 'string',
-  ),
-  'sodium_add' => 
+  'sodium\\add' => 
   array (
     0 => 'void',
-    '&rw_string1' => 'string',
-    'string2' => 'string',
+    '&left' => 'string',
+    'right' => 'string',
   ),
-  'sodium_base642bin' => 
+  'sodium\\bin2hex' => 
   array (
     0 => 'string',
-    'string' => 'string',
-    'id' => 'int',
-    'ignore=' => 'string',
+    'binary' => 'string',
   ),
-  'sodium_bin2base64' => 
-  array (
-    0 => 'string',
-    'string' => 'string',
-    'id' => 'int',
-  ),
-  'sodium_bin2hex' => 
-  array (
-    0 => 'string',
-    'string' => 'string',
-  ),
-  'sodium_compare' => 
+  'sodium\\compare' => 
   array (
     0 => 'int',
-    'string1' => 'string',
-    'string2' => 'string',
+    'left' => 'string',
+    'right' => 'string',
   ),
-  'sodium_crypto_aead_aes256gcm_decrypt' => 
+  'sodium\\crypto_aead_aes256gcm_decrypt' => 
   array (
     0 => 'false|string',
-    'ciphertext' => 'string',
-    'additional_data' => 'string',
+    'msg' => 'string',
     'nonce' => 'string',
     'key' => 'string',
+    'ad=' => 'string',
   ),
-  'sodium_crypto_aead_aes256gcm_encrypt' => 
+  'sodium\\crypto_aead_aes256gcm_encrypt' => 
   array (
     0 => 'string',
-    'message' => 'string',
-    'additional_data' => 'string',
+    'msg' => 'string',
     'nonce' => 'string',
     'key' => 'string',
+    'ad=' => 'string',
   ),
-  'sodium_crypto_aead_aes256gcm_is_available' => 
+  'sodium\\crypto_aead_aes256gcm_is_available' => 
   array (
     0 => 'bool',
   ),
-  'sodium_crypto_aead_aes256gcm_keygen' => 
-  array (
-    0 => 'non-empty-string',
-  ),
-  'sodium_crypto_aead_chacha20poly1305_decrypt' => 
-  array (
-    0 => 'false|string',
-    'ciphertext' => 'string',
-    'additional_data' => 'string',
-    'nonce' => 'string',
-    'key' => 'string',
-  ),
-  'sodium_crypto_aead_chacha20poly1305_encrypt' => 
+  'sodium\\crypto_aead_chacha20poly1305_decrypt' => 
   array (
     0 => 'string',
-    'message' => 'string',
-    'additional_data' => 'string',
+    'msg' => 'string',
     'nonce' => 'string',
     'key' => 'string',
+    'ad=' => 'string',
   ),
-  'sodium_crypto_aead_chacha20poly1305_ietf_decrypt' => 
-  array (
-    0 => 'false|string',
-    'ciphertext' => 'string',
-    'additional_data' => 'string',
-    'nonce' => 'string',
-    'key' => 'string',
-  ),
-  'sodium_crypto_aead_chacha20poly1305_ietf_encrypt' => 
+  'sodium\\crypto_aead_chacha20poly1305_encrypt' => 
   array (
     0 => 'string',
-    'message' => 'string',
-    'additional_data' => 'string',
+    'msg' => 'string',
     'nonce' => 'string',
     'key' => 'string',
+    'ad=' => 'string',
   ),
-  'sodium_crypto_aead_chacha20poly1305_ietf_keygen' => 
-  array (
-    0 => 'non-empty-string',
-  ),
-  'sodium_crypto_aead_chacha20poly1305_keygen' => 
-  array (
-    0 => 'non-empty-string',
-  ),
-  'sodium_crypto_aead_xchacha20poly1305_ietf_decrypt' => 
-  array (
-    0 => 'false|string',
-    'ciphertext' => 'string',
-    'additional_data' => 'string',
-    'nonce' => 'string',
-    'key' => 'string',
-  ),
-  'sodium_crypto_aead_xchacha20poly1305_ietf_encrypt' => 
+  'sodium\\crypto_auth' => 
   array (
     0 => 'string',
-    'message' => 'string',
-    'additional_data' => 'string',
-    'nonce' => 'string',
+    'msg' => 'string',
     'key' => 'string',
   ),
-  'sodium_crypto_aead_xchacha20poly1305_ietf_keygen' => 
-  array (
-    0 => 'non-empty-string',
-  ),
-  'sodium_crypto_auth' => 
-  array (
-    0 => 'string',
-    'message' => 'string',
-    'key' => 'string',
-  ),
-  'sodium_crypto_auth_keygen' => 
-  array (
-    0 => 'non-empty-string',
-  ),
-  'sodium_crypto_auth_verify' => 
+  'sodium\\crypto_auth_verify' => 
   array (
     0 => 'bool',
     'mac' => 'string',
-    'message' => 'string',
+    'msg' => 'string',
     'key' => 'string',
   ),
-  'sodium_crypto_box' => 
+  'sodium\\crypto_box' => 
+  array (
+    0 => 'string',
+    'msg' => 'string',
+    'nonce' => 'string',
+    'keypair' => 'string',
+  ),
+  'sodium\\crypto_box_keypair' => 
+  array (
+    0 => 'string',
+  ),
+  'sodium\\crypto_box_keypair_from_secretkey_and_publickey' => 
+  array (
+    0 => 'string',
+    'secretkey' => 'string',
+    'publickey' => 'string',
+  ),
+  'sodium\\crypto_box_open' => 
+  array (
+    0 => 'string',
+    'msg' => 'string',
+    'nonce' => 'string',
+    'keypair' => 'string',
+  ),
+  'sodium\\crypto_box_publickey' => 
+  array (
+    0 => 'string',
+    'keypair' => 'string',
+  ),
+  'sodium\\crypto_box_publickey_from_secretkey' => 
+  array (
+    0 => 'string',
+    'secretkey' => 'string',
+  ),
+  'sodium\\crypto_box_seal' => 
   array (
     0 => 'string',
     'message' => 'string',
-    'nonce' => 'string',
-    'key_pair' => 'string',
+    'publickey' => 'string',
   ),
-  'sodium_crypto_box_keypair' => 
+  'sodium\\crypto_box_seal_open' => 
   array (
     0 => 'string',
+    'encrypted' => 'string',
+    'keypair' => 'string',
   ),
-  'sodium_crypto_box_keypair_from_secretkey_and_publickey' => 
+  'sodium\\crypto_box_secretkey' => 
   array (
     0 => 'string',
-    'secret_key' => 'string',
-    'public_key' => 'string',
+    'keypair' => 'string',
   ),
-  'sodium_crypto_box_open' => 
-  array (
-    0 => 'false|string',
-    'ciphertext' => 'string',
-    'nonce' => 'string',
-    'key_pair' => 'string',
-  ),
-  'sodium_crypto_box_publickey' => 
-  array (
-    0 => 'string',
-    'key_pair' => 'string',
-  ),
-  'sodium_crypto_box_publickey_from_secretkey' => 
-  array (
-    0 => 'string',
-    'secret_key' => 'string',
-  ),
-  'sodium_crypto_box_seal' => 
-  array (
-    0 => 'string',
-    'message' => 'string',
-    'public_key' => 'string',
-  ),
-  'sodium_crypto_box_seal_open' => 
-  array (
-    0 => 'false|string',
-    'ciphertext' => 'string',
-    'key_pair' => 'string',
-  ),
-  'sodium_crypto_box_secretkey' => 
-  array (
-    0 => 'string',
-    'key_pair' => 'string',
-  ),
-  'sodium_crypto_box_seed_keypair' => 
+  'sodium\\crypto_box_seed_keypair' => 
   array (
     0 => 'string',
     'seed' => 'string',
   ),
-  'sodium_crypto_generichash' => 
+  'sodium\\crypto_generichash' => 
   array (
     0 => 'string',
-    'message' => 'string',
+    'input' => 'string',
     'key=' => 'string',
     'length=' => 'int',
   ),
-  'sodium_crypto_generichash_final' => 
+  'sodium\\crypto_generichash_final' => 
   array (
     0 => 'string',
-    '&state' => 'string',
+    'state' => 'string',
     'length=' => 'int',
   ),
-  'sodium_crypto_generichash_init' => 
+  'sodium\\crypto_generichash_init' => 
   array (
     0 => 'string',
     'key=' => 'string',
     'length=' => 'int',
   ),
-  'sodium_crypto_generichash_keygen' => 
+  'sodium\\crypto_generichash_update' => 
   array (
-    0 => 'non-empty-string',
+    0 => 'bool',
+    '&hashState' => 'string',
+    'append' => 'string',
   ),
-  'sodium_crypto_generichash_update' => 
-  array (
-    0 => 'true',
-    '&rw_state' => 'string',
-    'message' => 'string',
-  ),
-  'sodium_crypto_kdf_derive_from_key' => 
+  'sodium\\crypto_kx' => 
   array (
     0 => 'string',
-    'subkey_length' => 'int',
-    'subkey_id' => 'int',
-    'context' => 'string',
-    'key' => 'string',
+    'secretkey' => 'string',
+    'publickey' => 'string',
+    'client_publickey' => 'string',
+    'server_publickey' => 'string',
   ),
-  'sodium_crypto_kdf_keygen' => 
-  array (
-    0 => 'non-empty-string',
-  ),
-  'sodium_crypto_kx_client_session_keys' => 
-  array (
-    0 => 'array<int, string>',
-    'client_key_pair' => 'string',
-    'server_key' => 'string',
-  ),
-  'sodium_crypto_kx_keypair' => 
+  'sodium\\crypto_pwhash' => 
   array (
     0 => 'string',
-  ),
-  'sodium_crypto_kx_publickey' => 
-  array (
-    0 => 'string',
-    'key_pair' => 'string',
-  ),
-  'sodium_crypto_kx_secretkey' => 
-  array (
-    0 => 'string',
-    'key_pair' => 'string',
-  ),
-  'sodium_crypto_kx_seed_keypair' => 
-  array (
-    0 => 'string',
-    'seed' => 'string',
-  ),
-  'sodium_crypto_kx_server_session_keys' => 
-  array (
-    0 => 'array<int, string>',
-    'server_key_pair' => 'string',
-    'client_key' => 'string',
-  ),
-  'sodium_crypto_pwhash' => 
-  array (
-    0 => 'string',
-    'length' => 'int',
-    'password' => 'string',
-    'salt' => 'string',
-    'opslimit' => 'int',
-    'memlimit' => 'int',
-    'algo=' => 'int',
-  ),
-  'sodium_crypto_pwhash_scryptsalsa208sha256' => 
-  array (
-    0 => 'string',
-    'length' => 'int',
-    'password' => 'string',
+    'out_len' => 'int',
+    'passwd' => 'string',
     'salt' => 'string',
     'opslimit' => 'int',
     'memlimit' => 'int',
   ),
-  'sodium_crypto_pwhash_scryptsalsa208sha256_str' => 
+  'sodium\\crypto_pwhash_scryptsalsa208sha256' => 
   array (
     0 => 'string',
-    'password' => 'string',
+    'out_len' => 'int',
+    'passwd' => 'string',
+    'salt' => 'string',
     'opslimit' => 'int',
     'memlimit' => 'int',
   ),
-  'sodium_crypto_pwhash_scryptsalsa208sha256_str_verify' => 
+  'sodium\\crypto_pwhash_scryptsalsa208sha256_str' => 
+  array (
+    0 => 'string',
+    'passwd' => 'string',
+    'opslimit' => 'int',
+    'memlimit' => 'int',
+  ),
+  'sodium\\crypto_pwhash_scryptsalsa208sha256_str_verify' => 
   array (
     0 => 'bool',
     'hash' => 'string',
-    'password' => 'string',
+    'passwd' => 'string',
   ),
-  'sodium_crypto_pwhash_str' => 
+  'sodium\\crypto_pwhash_str' => 
   array (
     0 => 'string',
-    'password' => 'string',
+    'passwd' => 'string',
     'opslimit' => 'int',
     'memlimit' => 'int',
   ),
-  'sodium_crypto_pwhash_str_needs_rehash' => 
-  array (
-    0 => 'bool',
-    'password' => 'string',
-    'opslimit' => 'int',
-    'memlimit' => 'int',
-  ),
-  'sodium_crypto_pwhash_str_verify' => 
+  'sodium\\crypto_pwhash_str_verify' => 
   array (
     0 => 'bool',
     'hash' => 'string',
-    'password' => 'string',
+    'passwd' => 'string',
   ),
-  'sodium_crypto_scalarmult' => 
+  'sodium\\crypto_scalarmult' => 
   array (
     0 => 'string',
-    'n' => 'string',
-    'p' => 'string',
+    'ecdhA' => 'string',
+    'ecdhB' => 'string',
   ),
-  'sodium_crypto_scalarmult_base' => 
+  'sodium\\crypto_scalarmult_base' => 
   array (
     0 => 'string',
-    'secret_key' => 'string',
+    'sk' => 'string',
   ),
-  'sodium_crypto_secretbox' => 
+  'sodium\\crypto_secretbox' => 
   array (
     0 => 'string',
-    'message' => 'string',
+    'plaintext' => 'string',
     'nonce' => 'string',
     'key' => 'string',
   ),
-  'sodium_crypto_secretbox_keygen' => 
+  'sodium\\crypto_secretbox_open' => 
   array (
-    0 => 'non-empty-string',
-  ),
-  'sodium_crypto_secretbox_open' => 
-  array (
-    0 => 'false|string',
+    0 => 'string',
     'ciphertext' => 'string',
     'nonce' => 'string',
     'key' => 'string',
   ),
-  'sodium_crypto_secretstream_xchacha20poly1305_init_pull' => 
-  array (
-    0 => 'string',
-    'header' => 'string',
-    'key' => 'string',
-  ),
-  'sodium_crypto_secretstream_xchacha20poly1305_init_push' => 
-  array (
-    0 => 'array<array-key, mixed>',
-    'key' => 'string',
-  ),
-  'sodium_crypto_secretstream_xchacha20poly1305_keygen' => 
-  array (
-    0 => 'non-empty-string',
-  ),
-  'sodium_crypto_secretstream_xchacha20poly1305_pull' => 
-  array (
-    0 => 'array<array-key, mixed>|false',
-    '&r_state' => 'string',
-    'ciphertext' => 'string',
-    'additional_data=' => 'string',
-  ),
-  'sodium_crypto_secretstream_xchacha20poly1305_push' => 
-  array (
-    0 => 'string',
-    '&w_state' => 'string',
-    'message' => 'string',
-    'additional_data=' => 'string',
-    'tag=' => 'int',
-  ),
-  'sodium_crypto_secretstream_xchacha20poly1305_rekey' => 
-  array (
-    0 => 'void',
-    '&w_state' => 'string',
-  ),
-  'sodium_crypto_shorthash' => 
+  'sodium\\crypto_shorthash' => 
   array (
     0 => 'string',
     'message' => 'string',
     'key' => 'string',
   ),
-  'sodium_crypto_shorthash_keygen' => 
-  array (
-    0 => 'non-empty-string',
-  ),
-  'sodium_crypto_sign' => 
+  'sodium\\crypto_sign' => 
   array (
     0 => 'string',
     'message' => 'string',
-    'secret_key' => 'string',
+    'secretkey' => 'string',
   ),
-  'sodium_crypto_sign_detached' => 
+  'sodium\\crypto_sign_detached' => 
   array (
     0 => 'string',
     'message' => 'string',
-    'secret_key' => 'string',
+    'secretkey' => 'string',
   ),
-  'sodium_crypto_sign_ed25519_pk_to_curve25519' => 
+  'sodium\\crypto_sign_ed25519_pk_to_curve25519' => 
   array (
     0 => 'string',
-    'public_key' => 'string',
+    'sign_pk' => 'string',
   ),
-  'sodium_crypto_sign_ed25519_sk_to_curve25519' => 
+  'sodium\\crypto_sign_ed25519_sk_to_curve25519' => 
   array (
     0 => 'string',
-    'secret_key' => 'string',
+    'sign_sk' => 'string',
   ),
-  'sodium_crypto_sign_keypair' => 
+  'sodium\\crypto_sign_keypair' => 
   array (
     0 => 'string',
   ),
-  'sodium_crypto_sign_keypair_from_secretkey_and_publickey' => 
+  'sodium\\crypto_sign_keypair_from_secretkey_and_publickey' => 
   array (
     0 => 'string',
-    'secret_key' => 'string',
-    'public_key' => 'string',
+    'secretkey' => 'string',
+    'publickey' => 'string',
   ),
-  'sodium_crypto_sign_open' => 
+  'sodium\\crypto_sign_open' => 
   array (
     0 => 'false|string',
     'signed_message' => 'string',
-    'public_key' => 'string',
+    'publickey' => 'string',
   ),
-  'sodium_crypto_sign_publickey' => 
+  'sodium\\crypto_sign_publickey' => 
   array (
     0 => 'string',
-    'key_pair' => 'string',
+    'keypair' => 'string',
   ),
-  'sodium_crypto_sign_publickey_from_secretkey' => 
+  'sodium\\crypto_sign_publickey_from_secretkey' => 
   array (
     0 => 'string',
-    'secret_key' => 'string',
+    'secretkey' => 'string',
   ),
-  'sodium_crypto_sign_secretkey' => 
+  'sodium\\crypto_sign_secretkey' => 
   array (
     0 => 'string',
-    'key_pair' => 'string',
+    'keypair' => 'string',
   ),
-  'sodium_crypto_sign_seed_keypair' => 
+  'sodium\\crypto_sign_seed_keypair' => 
   array (
     0 => 'string',
     'seed' => 'string',
   ),
-  'sodium_crypto_sign_verify_detached' => 
+  'sodium\\crypto_sign_verify_detached' => 
   array (
     0 => 'bool',
     'signature' => 'string',
-    'message' => 'string',
-    'public_key' => 'string',
+    'msg' => 'string',
+    'publickey' => 'string',
   ),
-  'sodium_crypto_stream' => 
+  'sodium\\crypto_stream' => 
   array (
     0 => 'string',
     'length' => 'int',
     'nonce' => 'string',
     'key' => 'string',
   ),
-  'sodium_crypto_stream_keygen' => 
-  array (
-    0 => 'non-empty-string',
-  ),
-  'sodium_crypto_stream_xor' => 
+  'sodium\\crypto_stream_xor' => 
   array (
     0 => 'string',
-    'message' => 'string',
+    'plaintext' => 'string',
     'nonce' => 'string',
     'key' => 'string',
   ),
-  'sodium_hex2bin' => 
+  'sodium\\hex2bin' => 
   array (
     0 => 'string',
-    'string' => 'string',
-    'ignore=' => 'string',
+    'hex' => 'string',
   ),
-  'sodium_increment' => 
+  'sodium\\increment' => 
   array (
-    0 => 'void',
-    '&rw_string' => 'string',
+    0 => 'string',
+    '&nonce' => 'string',
   ),
-  'sodium_memcmp' => 
+  'sodium\\library_version_major' => 
   array (
     0 => 'int',
-    'string1' => 'string',
-    'string2' => 'string',
   ),
-  'sodium_memzero' => 
+  'sodium\\library_version_minor' => 
+  array (
+    0 => 'int',
+  ),
+  'sodium\\memcmp' => 
+  array (
+    0 => 'int',
+    'left' => 'string',
+    'right' => 'string',
+  ),
+  'sodium\\memzero' => 
   array (
     0 => 'void',
-    '&w_string' => 'string',
+    '&target' => 'string',
   ),
-  'sodium_pad' => 
+  'sodium\\randombytes_buf' => 
   array (
     0 => 'string',
-    'string' => 'string',
-    'block_size' => 'int',
+    'length' => 'int',
   ),
-  'sodium_unpad' => 
+  'sodium\\randombytes_random16' => 
+  array (
+    0 => 'int|string',
+  ),
+  'sodium\\randombytes_uniform' => 
+  array (
+    0 => 'int',
+    'upperBoundNonInclusive' => 'int',
+  ),
+  'sodium\\version_string' => 
   array (
     0 => 'string',
-    'string' => 'string',
-    'block_size' => 'int',
   ),
   'solid_fetch_prev' => 
   array (
@@ -65682,10 +65208,6 @@ return array (
     'value' => 'mixed',
     'priority' => 'mixed',
   ),
-  'splpriorityqueue::iscorrupted' => 
-  array (
-    0 => 'bool',
-  ),
   'splpriorityqueue::isempty' => 
   array (
     0 => 'bool',
@@ -66291,7 +65813,6 @@ return array (
     'name' => 'string',
     'callback' => 'callable',
     'argCount=' => 'int',
-    'flags=' => 'int',
   ),
   'sqlite3::enableexceptions' => 
   array (
@@ -66338,8 +65859,7 @@ return array (
     'table' => 'string',
     'column' => 'string',
     'rowid' => 'int',
-    'database=' => 'string',
-    'flags=' => 'int',
+    'dbname=' => 'string',
   ),
   'sqlite3::prepare' => 
   array (
@@ -68329,11 +67849,6 @@ return array (
   array (
     0 => 'bool',
     'stream' => 'resource|string',
-  ),
-  'stream_isatty' => 
-  array (
-    0 => 'bool',
-    'stream' => 'resource',
   ),
   'stream_notification_callback' => 
   array (
@@ -72737,7 +72252,7 @@ return array (
   array (
     0 => 'false|list<string>',
     'timezoneGroup=' => 'int',
-    'countryCode=' => 'null|string',
+    'countryCode=' => 'string',
   ),
   'timezone_location_get' => 
   array (
@@ -75555,10 +75070,9 @@ return array (
   ),
   'unpack' => 
   array (
-    0 => 'array<array-key, mixed>|false',
+    0 => 'array<array-key, mixed>',
     'format' => 'string',
     'string' => 'string',
-    'offset=' => 'int',
   ),
   'unregister_tick_function' => 
   array (
@@ -77805,11 +77319,6 @@ return array (
   'xdebug_get_tracefile_name' => 
   array (
     0 => 'string',
-  ),
-  'xdebug_info' => 
-  array (
-    0 => 'mixed',
-    'category=' => 'string',
   ),
   'xdebug_is_debugger_active' => 
   array (
@@ -83451,10 +82960,6 @@ return array (
   array (
     0 => 'bool',
   ),
-  'ziparchive::count' => 
-  array (
-    0 => 'int',
-  ),
   'ziparchive::deleteindex' => 
   array (
     0 => 'bool',
@@ -83619,20 +83124,6 @@ return array (
     'name' => 'string',
     'method' => 'int',
     'compflags=' => 'int',
-  ),
-  'ziparchive::setencryptionindex' => 
-  array (
-    0 => 'bool',
-    'index' => 'int',
-    'method' => 'int',
-    'password=' => 'string',
-  ),
-  'ziparchive::setencryptionname' => 
-  array (
-    0 => 'bool',
-    'name' => 'string',
-    'method' => 'int',
-    'password=' => 'string',
   ),
   'ziparchive::setexternalattributesindex' => 
   array (

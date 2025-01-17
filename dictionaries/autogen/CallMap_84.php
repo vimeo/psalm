@@ -27157,10 +27157,6 @@ return array (
   array (
     0 => 'int',
   ),
-  'pcntl_getcpu' => 
-  array (
-    0 => 'int',
-  ),
   'pcntl_getcpuaffinity' => 
   array (
     0 => 'array<array-key, mixed>|false',
@@ -28397,6 +28393,12 @@ return array (
     'connection' => 'PgSql\\Connection',
     'query' => 'string',
     'params' => 'array<array-key, mixed>',
+  ),
+  'pg_set_chunked_rows_size' => 
+  array (
+    0 => 'bool',
+    'connection' => 'PgSql\\Connection',
+    'size' => 'int',
   ),
   'pg_set_client_encoding' => 
   array (
