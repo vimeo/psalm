@@ -103,5 +103,5 @@ foreach ($customMaps as $version => $cur) {
         }
     }
 
-    writeCallMap("dictionaries/override/CallMap_$version.php", $diff);
+    writeCallMap("dictionaries/override/CallMap_{$version}_delta.php", $diff);
 }
