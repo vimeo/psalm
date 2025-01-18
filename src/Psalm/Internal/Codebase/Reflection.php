@@ -393,7 +393,9 @@ final class Reflection
                 }
 
                 if ($reflection_return_type = (PHP_VERSION_ID >= 80100 ? (
-                    $reflection_function->getTentativeReturnType() ?? $reflection_function->getReturnType()
+                    ($reflection_function->getTentativeReturnType()
+                        ?? $reflection_function->getReturnType()
+                    )
                 ) : $reflection_function->getReturnType())) {
                     $storage->return_type = self::getPsalmTypeFromReflectionType($reflection_return_type);
                 }

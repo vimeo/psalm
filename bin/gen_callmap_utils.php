@@ -2,14 +2,11 @@
 
 declare(strict_types=1);
 
-require 'vendor/autoload.php';
-
-use DG\BypassFinals;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
-use Psalm\Internal\Provider\FileProvider;
-use Psalm\Internal\Provider\Providers;
-use Psalm\Tests\TestConfig;
+use Psalm\Internal\Codebase\Reflection;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Type;
+use Psalm\Type\Atomic\TNull;
 
 function internalNormalizeCallMap(array|string $callMap, string|int $key = 0): array|string
 {
@@ -125,9 +122,9 @@ function assertEntryParameters(ReflectionFunctionAbstract $function, array &$ent
     }
 }
     
-    /**
-     * @param array{byRef: bool, name?: string, refMode: 'rw'|'w'|'r', variadic: bool, optional: bool, type: string} $normalizedEntry
-     */
+/**
+ * @param array{byRef: bool, name?: string, refMode: 'rw'|'w'|'r', variadic: bool, optional: bool, type: string} $normalizedEntry
+ */
 function assertParameter(array &$normalizedEntry, ReflectionParameter $param): void
 {
     $name = $param->getName();
@@ -163,7 +160,16 @@ function assertTypeValidity(ReflectionType $reflected, string &$specified, strin
     
     $codebase = ProjectAnalyzer::getInstance()->getCodebase();
     try {
-        if (!UnionTypeComparator::isContainedBy($codebase, $callMapType, $expectedType, false, false, null, false, false) && !str_contains($specified, 'static')) {
+        if (!UnionTypeComparator::isContainedBy(
+            $codebase,
+            $callMapType,
+            $expectedType,
+            false,
+            false,
+            null,
+            false,
+            false,
+        ) && !str_contains($specified, 'static')) {
             $specified = $expectedType->getId(true);
             $callMapType = $expectedType;
         }
@@ -182,10 +188,6 @@ function assertTypeValidity(ReflectionType $reflected, string &$specified, strin
         }
     }
     $specified = $callMapType->getId(true);
-    //    //$this->assertSame($expectedType->hasBool(), $callMapType->hasBool(), "{$msgPrefix} type '{$specified}' missing bool from reflected type '{$reflected}'");
-    //    $this->assertSame($expectedType->hasArray(), $callMapType->hasArray(), "{$msgPrefix} type '{$specified}' missing array from reflected type '{$reflected}'");
-    //    $this->assertSame($expectedType->hasInt(), $callMapType->hasInt(), "{$msgPrefix} type '{$specified}' missing int from reflected type '{$reflected}'");
-    //    $this->assertSame($expectedType->hasFloat(), $callMapType->hasFloat(), "{$msgPrefix} type '{$specified}' missing float from reflected type '{$reflected}'");
 }
 
 function writeCallMap(string $file, array $callMap): void
@@ -194,10 +196,3 @@ function writeCallMap(string $file, array $callMap): void
 
 return '.var_export($callMap, true).';');
 }
-
-
-BypassFinals::enable();
-
-new ProjectAnalyzer(new TestConfig, new Providers(new FileProvider));
-
-$codebase = ProjectAnalyzer::getInstance()->getCodebase();

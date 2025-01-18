@@ -359,7 +359,10 @@ final class InternalCallMapHandler
             return self::$call_map;
         }
 
-        $analyzer_version_int = max(self::MIN_CALLMAP_VERSION, (int) ($analyzer_major_version . $analyzer_minor_version));
+        $analyzer_version_int = max(
+            self::MIN_CALLMAP_VERSION,
+            (int) ($analyzer_major_version . $analyzer_minor_version),
+        );
 
         /** @var non-empty-array<lowercase-string, array<int|string, string>> */
         $call_map = require(dirname(__DIR__, 4) . "/dictionaries/CallMap_$analyzer_version_int.php");
