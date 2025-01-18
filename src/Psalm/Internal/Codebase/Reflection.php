@@ -392,7 +392,7 @@ final class Reflection
                     $storage->addParam($param_obj);
                 }
 
-                if ($reflection_return_type = (PHP_VERSION_ID >= 80100 ? (
+                if ($reflection_return_type = (PHP_VERSION_ID >= 8_01_00 ? (
                     ($reflection_function->getTentativeReturnType()
                         ?? $reflection_function->getReturnType()
                     )

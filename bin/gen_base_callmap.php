@@ -10,7 +10,7 @@ function namedTypeName(ReflectionNamedType $refl): string
 }
 
 /**
- * @var ?ReflectionType $reflection_type
+ * @psalm-param ?ReflectionType $reflection_type
  */
 function typeToString($reflection_type, string $defaultType): string
 {
@@ -40,7 +40,11 @@ function typeToString($reflection_type, string $defaultType): string
  */
 function paramsToEntries(ReflectionFunctionAbstract $reflectionFunction, string $defaultReturnType): array
 {
-    $res = [typeToString(PHP_VERSION_ID >= 80100 ? ($reflectionFunction->getTentativeReturnType() ?? $reflectionFunction->getReturnType()) : $reflectionFunction->getReturnType(), $defaultReturnType)];
+    $res = PHP_VERSION_ID >= 80100 ? (
+        $reflectionFunction->getTentativeReturnType() ?? $reflectionFunction->getReturnType()
+    ) : $reflectionFunction->getReturnType();
+
+    $res = [typeToString($res, $defaultReturnType)];
 
     foreach ($reflectionFunction->getParameters() as $param) {
         $key = $param->getName();
@@ -107,6 +111,9 @@ foreach (get_declared_classes() as $class) {
     }
 }
 
-file_put_contents(__DIR__.'/../dictionaries/autogen/CallMap_'.PHP_MAJOR_VERSION.PHP_MINOR_VERSION.'.php', '<?php // phpcs:ignoreFile
+$payload = '<?php // phpcs:ignoreFile
 
-return '.var_export($callmap, true).';');
+return '.var_export($callmap, true).';';
+$f = __DIR__.'/../dictionaries/autogen/CallMap_'.PHP_MAJOR_VERSION.PHP_MINOR_VERSION.'.php';
+
+file_put_contents($f, $payload);

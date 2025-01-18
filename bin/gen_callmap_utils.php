@@ -123,7 +123,14 @@ function assertEntryParameters(ReflectionFunctionAbstract $function, array &$ent
 }
     
 /**
- * @param array{byRef: bool, name?: string, refMode: 'rw'|'w'|'r', variadic: bool, optional: bool, type: string} $normalizedEntry
+ * @param array{
+ *      byRef: bool,
+ *      name?: string,
+ *      refMode: 'rw'|'w'|'r',
+ *      variadic: bool,
+ *      optional: bool,
+ *      type: string
+ * } $normalizedEntry
  */
 function assertParameter(array &$normalizedEntry, ReflectionParameter $param): void
 {
