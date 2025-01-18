@@ -7,10 +7,10 @@ $callmap = [];
 /**
  * @var ?ReflectionType $reflection_type
  */
-function typeToString($reflection_type = null): string
+function typeToString($reflection_type, string $defaultType): string
 {
     if (!$reflection_type) {
-        return 'string';
+        return $defaultType;
     }
 
     if ($reflection_type instanceof ReflectionNamedType) {
@@ -39,9 +39,9 @@ function typeToString($reflection_type = null): string
 /**
  * @return array<string, array{byRef: bool, refMode: 'rw'|'w'|'r', variadic: bool, optional: bool, type: string}>
  */
-function paramsToEntries(ReflectionFunctionAbstract $reflectionFunction): array
+function paramsToEntries(ReflectionFunctionAbstract $reflectionFunction, string $defaultReturnType): array
 {
-    $res = [typeToString($reflectionFunction->getReturnType())];
+    $res = [typeToString($reflectionFunction->getReturnType(), $defaultReturnType)];
 
     foreach ($reflectionFunction->getParameters() as $param) {
         $key = $param->getName();
@@ -55,7 +55,7 @@ function paramsToEntries(ReflectionFunctionAbstract $reflectionFunction): array
             $key .= '=';
         }
 
-        $res[$key] = typeToString($param->getType());
+        $res[$key] = typeToString($param->getType(), 'mixed');
     }
 
     return $res;
@@ -85,7 +85,7 @@ foreach (get_defined_functions() as $sub) {
         if ($name === 'typetostring') continue;
         $func = new ReflectionFunction($name);
 
-        $args = paramsToEntries($func);
+        $args = paramsToEntries($func, 'mixed');
 
         $callmap[$name] = $args;
     }
@@ -95,7 +95,7 @@ foreach (get_declared_classes() as $class) {
     $refl = new ReflectionClass($class);
 
     foreach ($refl->getMethods() as $method) {
-        $args = paramsToEntries($method);
+        $args = paramsToEntries($method, $method->getName() === '__construct' ? 'void' : 'mixed');
     
         $callmap[strtolower($class.'::'.$method->getName())] = $args;
     }

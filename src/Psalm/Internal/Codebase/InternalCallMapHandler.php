@@ -39,8 +39,7 @@ use function version_compare;
 final class InternalCallMapHandler
 {
     private const PHP_MAJOR_VERSION = 8;
-    private const PHP_MINOR_VERSION = 3;
-    private const LOWEST_AVAILABLE_DELTA = 71;
+    private const PHP_MINOR_VERSION = 4;
 
     private static ?int $loaded_php_major_version = null;
     private static ?int $loaded_php_minor_version = null;
@@ -354,12 +353,6 @@ final class InternalCallMapHandler
         $analyzer_major_version = $codebase->getMajorAnalysisPhpVersion();
         $analyzer_minor_version = $codebase->getMinorAnalysisPhpVersion();
 
-        $analyzer_version = $analyzer_major_version . '.' . $analyzer_minor_version;
-        $current_version = self::PHP_MAJOR_VERSION . '.' . self::PHP_MINOR_VERSION;
-
-        $analyzer_version_int = (int) ($analyzer_major_version . $analyzer_minor_version);
-        $current_version_int = (int) (self::PHP_MAJOR_VERSION . self::PHP_MINOR_VERSION);
-
         if (self::$call_map !== null
             && $analyzer_major_version === self::$loaded_php_major_version
             && $analyzer_minor_version === self::$loaded_php_minor_version
@@ -367,10 +360,17 @@ final class InternalCallMapHandler
             return self::$call_map;
         }
 
+        $analyzer_version_int = (int) ($analyzer_major_version . $analyzer_minor_version);
+
         /** @var non-empty-array<lowercase-string, array<int|string, string>> */
-        $call_map = require(dirname(__DIR__, 4) . '/dictionaries/CallMap.php');
+        $call_map = require(dirname(__DIR__, 4) . "/dictionaries/CallMap_$analyzer_version_int.php");
 
         self::$call_map = $call_map;
+
+        assert(!empty(self::$call_map));
+
+        self::$loaded_php_major_version = $analyzer_major_version;
+        self::$loaded_php_minor_version = $analyzer_minor_version;
 
         /**
          * @var non-empty-array<string, non-empty-list<list<TaintKind::*>>>
@@ -384,43 +384,6 @@ final class InternalCallMapHandler
         }
 
         self::$taint_sink_map = $taint_map;
-
-        if (version_compare($analyzer_version, $current_version, '<')) {
-            // the following assumes both minor and major versions a single digits
-            for ($i = $current_version_int; $i > $analyzer_version_int && $i >= self::LOWEST_AVAILABLE_DELTA; --$i) {
-                $delta_file = dirname(__DIR__, 4) . '/dictionaries/CallMap_' . $i . '_delta.php';
-                if (!file_exists($delta_file)) {
-                    continue;
-                }
-                /**
-                 * @var array{
-                 *     added: array<string, array<int|string, string>>,
-                 *     changed: array<string, array{
-                 *         old: array<int|string, string>,
-                 *         new: array<int|string, string>
-                 *     }>,
-                 *     removed: array<string, array<int|string, string>>
-                 * }
-                 */
-                $diff_call_map = require($delta_file);
-
-                foreach ($diff_call_map['added'] as $key => $_) {
-                    unset(self::$call_map[$key]);
-                }
-
-                foreach ($diff_call_map['removed'] as $key => $value) {
-                    self::$call_map[$key] = $value;
-                }
-
-                foreach ($diff_call_map['changed'] as $key => ['old' => $value]) {
-                    self::$call_map[$key] = $value;
-                }
-            }
-        }
-        assert(!empty(self::$call_map));
-
-        self::$loaded_php_major_version = $analyzer_major_version;
-        self::$loaded_php_minor_version = $analyzer_minor_version;
 
         return self::$call_map;
     }
