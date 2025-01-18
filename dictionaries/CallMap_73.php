@@ -2139,7 +2139,7 @@ return array (
   ),
   'array_walk' => 
   array (
-    0 => 'true',
+    0 => 'bool',
     '&rw_array' => 'array<array-key, mixed>',
     'callback' => 'callable',
     'arg=' => 'mixed',
@@ -2153,7 +2153,7 @@ return array (
   ),
   'array_walk_recursive' => 
   array (
-    0 => 'true',
+    0 => 'bool',
     '&rw_array' => 'array<array-key, mixed>',
     'callback' => 'callable',
     'arg=' => 'mixed',
@@ -3019,7 +3019,7 @@ return array (
   array (
     0 => 'void',
     'iterator' => 'Iterator',
-    'flags=' => 'mixed',
+    'flags=' => 'int',
   ),
   'cachingiterator::__tostring' => 
   array (
@@ -6460,7 +6460,7 @@ return array (
   ),
   'collator::getstrength' => 
   array (
-    0 => 'false|int',
+    0 => 'int',
   ),
   'collator::setattribute' => 
   array (
@@ -14100,8 +14100,8 @@ return array (
   array (
     0 => 'void',
     'filename' => 'string',
-    'mime_type=' => 'string',
-    'posted_filename=' => 'string',
+    'mime_type=' => 'null|string',
+    'posted_filename=' => 'null|string',
   ),
   'curlfile::__wakeup' => 
   array (
@@ -14128,6 +14128,13 @@ return array (
   array (
     0 => 'void',
     'posted_filename' => 'string',
+  ),
+  'curlstringfile::__construct' => 
+  array (
+    0 => 'void',
+    'data' => 'string',
+    'postname' => 'string',
+    'mime=' => 'string',
   ),
   'current' => 
   array (
@@ -14486,7 +14493,7 @@ return array (
   ),
   'dateinterval::createfromdatestring' => 
   array (
-    0 => 'DateInterval',
+    0 => 'DateInterval|false',
     'datetime' => 'string',
   ),
   'dateinterval::format' => 
@@ -14578,6 +14585,11 @@ return array (
     0 => 'static',
     'object' => 'DateTimeImmutable',
   ),
+  'datetime::createfrominterface' => 
+  array (
+    0 => 'static',
+    'object' => 'DateTimeInterface',
+  ),
   'datetime::diff' => 
   array (
     0 => 'DateInterval',
@@ -14586,7 +14598,7 @@ return array (
   ),
   'datetime::format' => 
   array (
-    0 => 'false|string',
+    0 => 'string',
     'format' => 'string',
   ),
   'datetime::getlasterrors' => 
@@ -14599,7 +14611,7 @@ return array (
   ),
   'datetime::gettimestamp' => 
   array (
-    0 => 'false|int',
+    0 => 'int',
   ),
   'datetime::gettimezone' => 
   array (
@@ -14673,6 +14685,11 @@ return array (
     'format' => 'mixed',
     'time' => 'mixed',
     'object=' => 'DateTimeZone|null',
+  ),
+  'datetimeimmutable::createfrominterface' => 
+  array (
+    0 => 'static',
+    'object' => 'DateTimeInterface',
   ),
   'datetimeimmutable::createfrommutable' => 
   array (
@@ -14748,6 +14765,15 @@ return array (
     0 => 'mixed',
     'interval' => 'mixed',
   ),
+  'datetimeinterface::__serialize' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'datetimeinterface::__unserialize' => 
+  array (
+    0 => 'void',
+    'data' => 'array<array-key, mixed>',
+  ),
   'datetimeinterface::diff' => 
   array (
     0 => 'DateInterval',
@@ -14795,7 +14821,7 @@ return array (
   ),
   'datetimezone::getoffset' => 
   array (
-    0 => 'false|int',
+    0 => 'int',
     'datetime' => 'DateTimeInterface',
   ),
   'datetimezone::gettransitions' => 
@@ -14810,7 +14836,7 @@ return array (
   ),
   'datetimezone::listidentifiers' => 
   array (
-    0 => 'false|list<string>',
+    0 => 'list<string>',
     'timezoneGroup=' => 'int',
     'countryCode=' => 'null|string',
   ),
@@ -15832,17 +15858,14 @@ return array (
   'directory::close' => 
   array (
     0 => 'void',
-    'dir_handle=' => 'resource',
   ),
   'directory::read' => 
   array (
     0 => 'false|string',
-    'dir_handle=' => 'resource',
   ),
   'directory::rewind' => 
   array (
     0 => 'void',
-    'dir_handle=' => 'resource',
   ),
   'directoryiterator::__construct' => 
   array (
@@ -15881,7 +15904,7 @@ return array (
   'directoryiterator::getfileinfo' => 
   array (
     0 => 'SplFileInfo',
-    'class=' => 'class-string',
+    'class=' => 'class-string|null',
   ),
   'directoryiterator::getfilename' => 
   array (
@@ -15914,7 +15937,7 @@ return array (
   'directoryiterator::getpathinfo' => 
   array (
     0 => 'SplFileInfo|null',
-    'class=' => 'class-string',
+    'class=' => 'class-string|null',
   ),
   'directoryiterator::getpathname' => 
   array (
@@ -15977,7 +16000,7 @@ return array (
     0 => 'SplFileObject',
     'mode=' => 'string',
     'useIncludePath=' => 'bool',
-    'context=' => 'resource',
+    'context=' => 'null|resource',
   ),
   'directoryiterator::rewind' => 
   array (
@@ -16907,12 +16930,12 @@ return array (
   ),
   'domdocument::createcomment' => 
   array (
-    0 => 'DOMComment|false',
+    0 => 'DOMComment',
     'data' => 'string',
   ),
   'domdocument::createdocumentfragment' => 
   array (
-    0 => 'DOMDocumentFragment|false',
+    0 => 'DOMDocumentFragment',
   ),
   'domdocument::createelement' => 
   array (
@@ -16940,7 +16963,7 @@ return array (
   ),
   'domdocument::createtextnode' => 
   array (
-    0 => 'DOMText|false',
+    0 => 'DOMText',
     'data' => 'string',
   ),
   'domdocument::getelementbyid' => 
@@ -16956,7 +16979,7 @@ return array (
   'domdocument::getelementsbytagnamens' => 
   array (
     0 => 'DOMNodeList',
-    'namespace' => 'string',
+    'namespace' => 'null|string',
     'localName' => 'string',
   ),
   'domdocument::getfeature' => 
@@ -17021,25 +17044,25 @@ return array (
   ),
   'domdocument::load' => 
   array (
-    0 => 'DOMDocument|bool',
+    0 => 'bool',
     'filename' => 'string',
     'options=' => 'int',
   ),
   'domdocument::loadhtml' => 
   array (
-    0 => 'DOMDocument|bool',
+    0 => 'bool',
     'source' => 'non-empty-string',
     'options=' => 'int',
   ),
   'domdocument::loadhtmlfile' => 
   array (
-    0 => 'DOMDocument|bool',
+    0 => 'bool',
     'filename' => 'string',
     'options=' => 'int',
   ),
   'domdocument::loadxml' => 
   array (
-    0 => 'DOMDocument|bool',
+    0 => 'bool',
     'source' => 'non-empty-string',
     'options=' => 'int',
   ),
@@ -17917,9 +17940,9 @@ return array (
   'domimplementation::createdocument' => 
   array (
     0 => 'DOMDocument|false',
-    'namespace=' => 'string',
+    'namespace=' => 'null|string',
     'qualifiedName=' => 'string',
-    'doctype=' => 'DOMDocumentType',
+    'doctype=' => 'DOMDocumentType|null',
   ),
   'domimplementation::createdocumenttype' => 
   array (
@@ -20527,8 +20550,8 @@ return array (
     'message=' => 'string',
     'code=' => 'int',
     'severity=' => 'int',
-    'filename=' => 'string',
-    'line=' => 'int',
+    'filename=' => 'null|string',
+    'line=' => 'int|null',
     'previous=' => 'Throwable|null',
   ),
   'errorexception::__tostring' => 
@@ -24435,6 +24458,59 @@ return array (
     'length=' => 'int',
     'allowable_tags=' => 'string',
   ),
+  'fiber::__construct' => 
+  array (
+    0 => 'void',
+    'callback' => 'callable',
+  ),
+  'fiber::getcurrent' => 
+  array (
+    0 => 'null|self',
+  ),
+  'fiber::getreturn' => 
+  array (
+    0 => 'mixed',
+  ),
+  'fiber::isrunning' => 
+  array (
+    0 => 'bool',
+  ),
+  'fiber::isstarted' => 
+  array (
+    0 => 'bool',
+  ),
+  'fiber::issuspended' => 
+  array (
+    0 => 'bool',
+  ),
+  'fiber::isterminated' => 
+  array (
+    0 => 'bool',
+  ),
+  'fiber::resume' => 
+  array (
+    0 => 'mixed',
+    'value=' => 'mixed|null',
+  ),
+  'fiber::start' => 
+  array (
+    0 => 'mixed',
+    '...args' => 'mixed',
+  ),
+  'fiber::suspend' => 
+  array (
+    0 => 'mixed',
+    'value=' => 'mixed|null',
+  ),
+  'fiber::throw' => 
+  array (
+    0 => 'mixed',
+    'exception' => 'Throwable',
+  ),
+  'fibererror::__construct' => 
+  array (
+    0 => 'void',
+  ),
   'file' => 
   array (
     0 => 'false|list<string>',
@@ -24576,7 +24652,7 @@ return array (
   'filesystemiterator::getfileinfo' => 
   array (
     0 => 'SplFileInfo',
-    'class=' => 'class-string',
+    'class=' => 'class-string|null',
   ),
   'filesystemiterator::getfilename' => 
   array (
@@ -24613,7 +24689,7 @@ return array (
   'filesystemiterator::getpathinfo' => 
   array (
     0 => 'SplFileInfo|null',
-    'class=' => 'class-string',
+    'class=' => 'class-string|null',
   ),
   'filesystemiterator::getpathname' => 
   array (
@@ -24676,7 +24752,7 @@ return array (
     0 => 'SplFileObject',
     'mode=' => 'string',
     'useIncludePath=' => 'bool',
-    'context=' => 'resource',
+    'context=' => 'null|resource',
   ),
   'filesystemiterator::rewind' => 
   array (
@@ -25255,7 +25331,7 @@ return array (
   ),
   'func_get_arg' => 
   array (
-    0 => 'mixed|null',
+    0 => 'false|mixed',
     'position' => 'int',
   ),
   'func_get_args' => 
@@ -27285,7 +27361,7 @@ return array (
   'globiterator::getfileinfo' => 
   array (
     0 => 'SplFileInfo',
-    'class=' => 'class-string',
+    'class=' => 'class-string|null',
   ),
   'globiterator::getfilename' => 
   array (
@@ -27322,7 +27398,7 @@ return array (
   'globiterator::getpathinfo' => 
   array (
     0 => 'SplFileInfo|null',
-    'class=' => 'class-string',
+    'class=' => 'class-string|null',
   ),
   'globiterator::getpathname' => 
   array (
@@ -27385,7 +27461,7 @@ return array (
     0 => 'SplFileObject',
     'mode=' => 'string',
     'useIncludePath=' => 'bool',
-    'context=' => 'resource',
+    'context=' => 'null|resource',
   ),
   'globiterator::rewind' => 
   array (
@@ -28371,6 +28447,15 @@ return array (
     'month=' => 'int',
     'day=' => 'int',
     'year=' => 'int',
+  ),
+  'gmp::__serialize' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'gmp::__unserialize' => 
+  array (
+    0 => 'void',
+    'data' => 'array<array-key, mixed>',
   ),
   'gmp_abs' => 
   array (
@@ -36472,17 +36557,17 @@ return array (
   ),
   'imagick::autogammaimage' => 
   array (
-    0 => 'void',
+    0 => 'bool',
     'channel=' => 'int',
   ),
   'imagick::autolevelimage' => 
   array (
-    0 => 'bool',
+    0 => 'void',
     'CHANNEL=' => 'string',
   ),
   'imagick::autoorient' => 
   array (
-    0 => 'void',
+    0 => 'bool',
   ),
   'imagick::autoorientate' => 
   array (
@@ -36512,7 +36597,7 @@ return array (
   ),
   'imagick::blueshiftimage' => 
   array (
-    0 => 'bool',
+    0 => 'void',
     'factor=' => 'float',
   ),
   'imagick::blurimage' => 
@@ -36539,7 +36624,7 @@ return array (
   ),
   'imagick::brightnesscontrastimage' => 
   array (
-    0 => 'bool',
+    0 => 'void',
     'brightness' => 'string',
     'contrast' => 'string',
     'CHANNEL=' => 'string',
@@ -36590,7 +36675,7 @@ return array (
   ),
   'imagick::clampimage' => 
   array (
-    0 => 'bool',
+    0 => 'void',
     'CHANNEL=' => 'string',
   ),
   'imagick::clear' => 
@@ -36649,7 +36734,7 @@ return array (
   ),
   'imagick::colormatriximage' => 
   array (
-    0 => 'bool',
+    0 => 'void',
     'color_matrix' => 'string',
   ),
   'imagick::colorthresholdimage' => 
@@ -36727,7 +36812,7 @@ return array (
   ),
   'imagick::count' => 
   array (
-    0 => 'int',
+    0 => 'void',
     'mode=' => 'string',
   ),
   'imagick::cropimage' => 
@@ -36770,7 +36855,7 @@ return array (
   ),
   'imagick::deleteimageproperty' => 
   array (
-    0 => 'bool',
+    0 => 'void',
     'name' => 'string',
   ),
   'imagick::deleteoption' => 
@@ -36898,7 +36983,7 @@ return array (
   ),
   'imagick::forwardfouriertransformimage' => 
   array (
-    0 => 'bool',
+    0 => 'void',
     'magnitude' => 'bool',
   ),
   'imagick::frameimage' => 
@@ -36968,7 +37053,7 @@ return array (
   ),
   'imagick::getconfigureoptions' => 
   array (
-    0 => 'array<array-key, mixed>',
+    0 => 'string',
   ),
   'imagick::getcopyright' => 
   array (
@@ -36984,7 +37069,7 @@ return array (
   ),
   'imagick::getfont' => 
   array (
-    0 => 'string',
+    0 => 'false|string',
   ),
   'imagick::getformat' => 
   array (
@@ -36996,7 +37081,7 @@ return array (
   ),
   'imagick::gethdrienabled' => 
   array (
-    0 => 'bool',
+    0 => 'int',
   ),
   'imagick::gethomeurl' => 
   array (
@@ -37008,7 +37093,7 @@ return array (
   ),
   'imagick::getimagealphachannel' => 
   array (
-    0 => 'bool',
+    0 => 'int',
   ),
   'imagick::getimageartifact' => 
   array (
@@ -37249,7 +37334,7 @@ return array (
   ),
   'imagick::getimageproperty' => 
   array (
-    0 => 'string',
+    0 => 'false|string',
     'name' => 'string',
   ),
   'imagick::getimagerange' => 
@@ -37388,7 +37473,7 @@ return array (
   ),
   'imagick::getregistry' => 
   array (
-    0 => 'string',
+    0 => 'false|string',
     'key' => 'string',
   ),
   'imagick::getreleasedate' => 
@@ -37452,7 +37537,7 @@ return array (
   ),
   'imagick::identifyformat' => 
   array (
-    0 => 'string',
+    0 => 'false|string',
     'embedText' => 'string',
   ),
   'imagick::identifyimage' => 
@@ -37495,13 +37580,13 @@ return array (
   ),
   'imagick::inversefouriertransformimage' => 
   array (
-    0 => 'bool',
+    0 => 'void',
     'complement' => 'string',
     'magnitude' => 'string',
   ),
   'imagick::key' => 
   array (
-    0 => 'int',
+    0 => 'int|string',
   ),
   'imagick::kmeansimage' => 
   array (
@@ -37557,7 +37642,7 @@ return array (
   ),
   'imagick::localcontrastimage' => 
   array (
-    0 => 'void',
+    0 => 'bool',
     'radius' => 'float',
     'strength' => 'float',
   ),
@@ -37624,7 +37709,7 @@ return array (
   ),
   'imagick::morphology' => 
   array (
-    0 => 'bool',
+    0 => 'void',
     'morphologyMethod' => 'int',
     'iterations' => 'int',
     'ImagickKernel' => 'ImagickKernel',
@@ -37880,7 +37965,7 @@ return array (
   ),
   'imagick::readimages' => 
   array (
-    0 => 'bool',
+    0 => 'Imagick',
     'filenames' => 'string',
   ),
   'imagick::recolorimage' => 
@@ -37927,7 +38012,7 @@ return array (
   ),
   'imagick::resetiterator' => 
   array (
-    0 => 'void',
+    0 => 'mixed',
   ),
   'imagick::resizeimage' => 
   array (
@@ -37956,7 +38041,7 @@ return array (
   ),
   'imagick::rotationalblurimage' => 
   array (
-    0 => 'bool',
+    0 => 'void',
     'angle' => 'string',
     'CHANNEL=' => 'string',
   ),
@@ -37971,7 +38056,7 @@ return array (
   ),
   'imagick::roundcornersimage' => 
   array (
-    0 => 'bool',
+    0 => 'mixed',
     'xRounding' => 'mixed',
     'yRounding' => 'mixed',
     'strokeWidth' => 'mixed',
@@ -38001,7 +38086,7 @@ return array (
   ),
   'imagick::selectiveblurimage' => 
   array (
-    0 => 'bool',
+    0 => 'void',
     'radius' => 'float',
     'sigma' => 'float',
     'threshold' => 'float',
@@ -38019,7 +38104,7 @@ return array (
   ),
   'imagick::setantialias' => 
   array (
-    0 => 'void',
+    0 => 'int',
     'antialias' => 'bool',
   ),
   'imagick::setbackgroundcolor' => 
@@ -38137,7 +38222,7 @@ return array (
   ),
   'imagick::setimagechannelmask' => 
   array (
-    0 => 'int',
+    0 => 'mixed',
     'channel' => 'int',
   ),
   'imagick::setimageclipmask' => 
@@ -38287,7 +38372,7 @@ return array (
   ),
   'imagick::setimageprogressmonitor' => 
   array (
-    0 => 'bool',
+    0 => 'mixed',
     'filename' => 'mixed',
   ),
   'imagick::setimageproperty' => 
@@ -38389,12 +38474,12 @@ return array (
   ),
   'imagick::setprogressmonitor' => 
   array (
-    0 => 'bool',
+    0 => 'void',
     'callback' => 'callable',
   ),
   'imagick::setregistry' => 
   array (
-    0 => 'bool',
+    0 => 'void',
     'key' => 'string',
     'value' => 'string',
   ),
@@ -38536,7 +38621,7 @@ return array (
   ),
   'imagick::statisticimage' => 
   array (
-    0 => 'bool',
+    0 => 'void',
     'type' => 'int',
     'width' => 'int',
     'height' => 'int',
@@ -38577,7 +38662,7 @@ return array (
   ),
   'imagick::textureimage' => 
   array (
-    0 => 'Imagick',
+    0 => 'bool',
     'texture_wand' => 'Imagick',
   ),
   'imagick::thresholdimage' => 
@@ -38803,7 +38888,7 @@ return array (
   ),
   'imagickdraw::getclippath' => 
   array (
-    0 => 'string',
+    0 => 'false|string',
   ),
   'imagickdraw::getcliprule' => 
   array (
@@ -38831,11 +38916,11 @@ return array (
   ),
   'imagickdraw::getfont' => 
   array (
-    0 => 'string',
+    0 => 'false|string',
   ),
   'imagickdraw::getfontfamily' => 
   array (
-    0 => 'string',
+    0 => 'false|string',
   ),
   'imagickdraw::getfontresolution' => 
   array (
@@ -38915,7 +39000,7 @@ return array (
   ),
   'imagickdraw::gettextdirection' => 
   array (
-    0 => 'int',
+    0 => 'bool',
   ),
   'imagickdraw::gettextencoding' => 
   array (
@@ -39166,7 +39251,7 @@ return array (
   ),
   'imagickdraw::resetvectorgraphics' => 
   array (
-    0 => 'bool',
+    0 => 'void',
   ),
   'imagickdraw::rotate' => 
   array (
@@ -39282,12 +39367,12 @@ return array (
   ),
   'imagickdraw::setopacity' => 
   array (
-    0 => 'bool',
+    0 => 'void',
     'opacity' => 'float',
   ),
   'imagickdraw::setresolution' => 
   array (
-    0 => 'bool',
+    0 => 'void',
     'x_resolution' => 'float',
     'y_resolution' => 'float',
   ),
@@ -39373,17 +39458,17 @@ return array (
   ),
   'imagickdraw::settextinterlinespacing' => 
   array (
-    0 => 'bool',
+    0 => 'void',
     'spacing' => 'float',
   ),
   'imagickdraw::settextinterwordspacing' => 
   array (
-    0 => 'bool',
+    0 => 'void',
     'spacing' => 'float',
   ),
   'imagickdraw::settextkerning' => 
   array (
-    0 => 'bool',
+    0 => 'void',
     'kerning' => 'float',
   ),
   'imagickdraw::settextundercolor' => 
@@ -39630,7 +39715,7 @@ return array (
   ),
   'imagickpixel::getcolorquantum' => 
   array (
-    0 => 'array<array-key, mixed>',
+    0 => 'mixed',
   ),
   'imagickpixel::getcolorvalue' => 
   array (
@@ -39639,7 +39724,7 @@ return array (
   ),
   'imagickpixel::getcolorvaluequantum' => 
   array (
-    0 => 'float',
+    0 => 'mixed',
   ),
   'imagickpixel::gethsl' => 
   array (
@@ -39674,7 +39759,7 @@ return array (
   ),
   'imagickpixel::setcolorcount' => 
   array (
-    0 => 'bool',
+    0 => 'void',
     'colorCount' => 'string',
   ),
   'imagickpixel::setcolorfrompixel' => 
@@ -39690,7 +39775,7 @@ return array (
   ),
   'imagickpixel::setcolorvaluequantum' => 
   array (
-    0 => 'bool',
+    0 => 'void',
     'color' => 'int',
     'value' => 'mixed',
   ),
@@ -39703,7 +39788,7 @@ return array (
   ),
   'imagickpixel::setindex' => 
   array (
-    0 => 'bool',
+    0 => 'void',
     'index' => 'int',
   ),
   'imagickpixelexception::__clone' => 
@@ -39764,7 +39849,7 @@ return array (
   ),
   'imagickpixeliterator::current' => 
   array (
-    0 => 'array<array-key, mixed>',
+    0 => 'mixed',
   ),
   'imagickpixeliterator::destroy' => 
   array (
@@ -39784,12 +39869,12 @@ return array (
   ),
   'imagickpixeliterator::getpixeliterator' => 
   array (
-    0 => 'ImagickPixelIterator',
+    0 => 'mixed',
     'Imagick' => 'Imagick',
   ),
   'imagickpixeliterator::getpixelregioniterator' => 
   array (
-    0 => 'ImagickPixelIterator',
+    0 => 'mixed',
     'Imagick' => 'Imagick',
     'x' => 'mixed',
     'y' => 'mixed',
@@ -39802,7 +39887,7 @@ return array (
   ),
   'imagickpixeliterator::key' => 
   array (
-    0 => 'int',
+    0 => 'int|string',
   ),
   'imagickpixeliterator::newpixeliterator' => 
   array (
@@ -40857,7 +40942,7 @@ return array (
   ),
   'intlbreakiterator::settext' => 
   array (
-    0 => 'bool|null',
+    0 => 'bool',
     'text' => 'string',
   ),
   'intlcal_add' => 
@@ -41413,7 +41498,7 @@ return array (
   ),
   'intlchar::enumcharnames' => 
   array (
-    0 => 'bool|null',
+    0 => 'bool',
     'start' => 'int|string',
     'end' => 'int|string',
     'callback' => 'callable(int, int, int):void',
@@ -41768,15 +41853,15 @@ return array (
   ),
   'intlcodepointbreakiterator::settext' => 
   array (
-    0 => 'bool|null',
+    0 => 'bool',
     'text' => 'string',
   ),
   'intldateformatter::__construct' => 
   array (
     0 => 'void',
     'locale' => 'null|string',
-    'datetype' => 'int|null',
-    'timetype' => 'int|null',
+    'dateType=' => 'int',
+    'timeType=' => 'int',
     'timezone=' => 'DateTimeZone|IntlTimeZone|null|string',
     'calendar=' => 'IntlCalendar|int|null',
     'pattern=' => 'null|string',
@@ -41785,8 +41870,8 @@ return array (
   array (
     0 => 'IntlDateFormatter|null',
     'locale' => 'null|string',
-    'datetype' => 'int|null',
-    'timetype' => 'int|null',
+    'dateType=' => 'int',
+    'timeType=' => 'int',
     'timezone=' => 'DateTimeZone|IntlTimeZone|null|string',
     'calendar=' => 'IntlCalendar|int|null',
     'pattern=' => 'null|string',
@@ -41794,26 +41879,26 @@ return array (
   'intldateformatter::format' => 
   array (
     0 => 'false|string',
-    'value' => 'DateTimeInterface|IntlCalendar|array{0?: int, 1?: int, 2?: int, 3?: int, 4?: int, 5?: int, 6?: int, 7?: int, 8?: int, tm_hour?: int, tm_isdst?: int, tm_mday?: int, tm_min?: int, tm_mon?: int, tm_sec?: int, tm_wday?: int, tm_yday?: int, tm_year?: int}|float|int|string',
+    'datetime' => 'DateTimeInterface|IntlCalendar|array{0?: int, 1?: int, 2?: int, 3?: int, 4?: int, 5?: int, 6?: int, 7?: int, 8?: int, tm_hour?: int, tm_isdst?: int, tm_mday?: int, tm_min?: int, tm_mon?: int, tm_sec?: int, tm_wday?: int, tm_yday?: int, tm_year?: int}|float|int|string',
   ),
   'intldateformatter::formatobject' => 
   array (
     0 => 'false|string',
-    'object' => 'DateTime|IntlCalendar',
+    'datetime' => 'DateTimeInterface|IntlCalendar',
     'format=' => 'array{0: int, 1: int}|int|null|string',
     'locale=' => 'null|string',
   ),
   'intldateformatter::getcalendar' => 
   array (
-    0 => 'int',
+    0 => 'false|int',
   ),
   'intldateformatter::getcalendarobject' => 
   array (
-    0 => 'IntlCalendar',
+    0 => 'IntlCalendar|false|null',
   ),
   'intldateformatter::getdatetype' => 
   array (
-    0 => 'int',
+    0 => 'false|int',
   ),
   'intldateformatter::geterrorcode' => 
   array (
@@ -41825,16 +41910,16 @@ return array (
   ),
   'intldateformatter::getlocale' => 
   array (
-    0 => 'string',
-    'which=' => 'int',
+    0 => 'false|string',
+    'type=' => 'int',
   ),
   'intldateformatter::getpattern' => 
   array (
-    0 => 'string',
+    0 => 'false|string',
   ),
   'intldateformatter::gettimetype' => 
   array (
-    0 => 'int',
+    0 => 'false|int',
   ),
   'intldateformatter::gettimezone' => 
   array (
@@ -41842,7 +41927,7 @@ return array (
   ),
   'intldateformatter::gettimezoneid' => 
   array (
-    0 => 'string',
+    0 => 'false|string',
   ),
   'intldateformatter::islenient' => 
   array (
@@ -41850,24 +41935,24 @@ return array (
   ),
   'intldateformatter::localtime' => 
   array (
-    0 => 'array<array-key, mixed>',
-    'value' => 'string',
-    '&rw_position=' => 'int',
+    0 => 'array<array-key, mixed>|false',
+    'string' => 'string',
+    '&rw_offset=' => 'int',
   ),
   'intldateformatter::parse' => 
   array (
-    0 => 'float|int',
-    'value' => 'string',
-    '&rw_position=' => 'int',
+    0 => 'false|float|int',
+    'string' => 'string',
+    '&rw_offset=' => 'int',
   ),
   'intldateformatter::setcalendar' => 
   array (
     0 => 'bool',
-    'which' => 'IntlCalendar|int|null',
+    'calendar' => 'IntlCalendar|int|null',
   ),
   'intldateformatter::setlenient' => 
   array (
-    0 => 'bool',
+    0 => 'void',
     'lenient' => 'bool',
   ),
   'intldateformatter::setpattern' => 
@@ -41877,8 +41962,8 @@ return array (
   ),
   'intldateformatter::settimezone' => 
   array (
-    0 => 'false|null',
-    'zone' => 'DateTimeZone|IntlTimeZone|null|string',
+    0 => 'bool',
+    'timezone' => 'DateTimeZone|IntlTimeZone|null|string',
   ),
   'intlexception::__clone' => 
   array (
@@ -42360,7 +42445,7 @@ return array (
   ),
   'intlrulebasedbreakiterator::settext' => 
   array (
-    0 => 'bool|null',
+    0 => 'bool',
     'text' => 'string',
   ),
   'intltimezone::__construct' => 
@@ -42441,7 +42526,7 @@ return array (
   array (
     0 => 'false|string',
     'timezoneId' => 'string',
-    'region=' => 'string',
+    'region=' => 'null|string',
   ),
   'intltimezone::getoffset' => 
   array (
@@ -44721,31 +44806,31 @@ return array (
   array (
     0 => 'string',
     'locale' => 'string',
-    'displayLocale=' => 'string',
+    'displayLocale=' => 'null|string',
   ),
   'locale::getdisplayname' => 
   array (
     0 => 'string',
     'locale' => 'string',
-    'displayLocale=' => 'string',
+    'displayLocale=' => 'null|string',
   ),
   'locale::getdisplayregion' => 
   array (
     0 => 'string',
     'locale' => 'string',
-    'displayLocale=' => 'string',
+    'displayLocale=' => 'null|string',
   ),
   'locale::getdisplayscript' => 
   array (
     0 => 'string',
     'locale' => 'string',
-    'displayLocale=' => 'string',
+    'displayLocale=' => 'null|string',
   ),
   'locale::getdisplayvariant' => 
   array (
     0 => 'string',
     'locale' => 'string',
-    'displayLocale=' => 'string',
+    'displayLocale=' => 'null|string',
   ),
   'locale::getkeywords' => 
   array (
@@ -44773,7 +44858,7 @@ return array (
     'languageTag' => 'array<array-key, mixed>',
     'locale' => 'string',
     'canonicalize=' => 'bool',
-    'defaultLocale=' => 'string',
+    'defaultLocale=' => 'null|string',
   ),
   'locale::parselocale' => 
   array (
@@ -44881,7 +44966,7 @@ return array (
   ),
   'locale_set_default' => 
   array (
-    0 => 'true',
+    0 => 'bool',
     'locale' => 'string',
   ),
   'localeconv' => 
@@ -52273,7 +52358,7 @@ return array (
   ),
   'multipleiterator::current' => 
   array (
-    0 => 'array<array-key, mixed>',
+    0 => 'array<array-key, mixed>|false',
   ),
   'multipleiterator::detachiterator' => 
   array (
@@ -53954,7 +54039,7 @@ return array (
   ),
   'mysqli_stmt::get_warnings' => 
   array (
-    0 => 'false|mysqli_warning',
+    0 => 'object',
   ),
   'mysqli_stmt::more_results' => 
   array (
@@ -54077,7 +54162,7 @@ return array (
   ),
   'mysqli_stmt_get_warnings' => 
   array (
-    0 => 'false|mysqli_warning',
+    0 => 'object',
     'statement' => 'mysqli_stmt',
   ),
   'mysqli_stmt_init' => 
@@ -54087,7 +54172,7 @@ return array (
   ),
   'mysqli_stmt_insert_id' => 
   array (
-    0 => 'int|string',
+    0 => 'mixed',
     'statement' => 'mysqli_stmt',
   ),
   'mysqli_stmt_more_results' => 
@@ -54998,19 +55083,19 @@ return array (
     0 => 'void',
     'locale' => 'string',
     'style' => 'int',
-    'pattern=' => 'string',
+    'pattern=' => 'null|string',
   ),
   'numberformatter::create' => 
   array (
     0 => 'NumberFormatter|null',
     'locale' => 'string',
     'style' => 'int',
-    'pattern=' => 'string',
+    'pattern=' => 'null|string',
   ),
   'numberformatter::format' => 
   array (
     0 => 'false|string',
-    'num' => 'mixed',
+    'num' => 'float|int',
     'type=' => 'int',
   ),
   'numberformatter::formatcurrency' => 
@@ -56135,12 +56220,12 @@ return array (
   'odbc_autocommit' => 
   array (
     0 => 'bool|int',
-    'odbc' => 'Odbc\\Connection',
+    'odbc' => 'resource',
     'enable=' => 'bool',
   ),
   'odbc_binmode' => 
   array (
-    0 => 'true',
+    0 => 'bool',
     'statement' => 'resource',
     'mode' => 'int',
   ),
@@ -56155,7 +56240,7 @@ return array (
   ),
   'odbc_columnprivileges' => 
   array (
-    0 => 'Odbc\\Result|false',
+    0 => 'false|resource',
     'odbc' => 'resource',
     'catalog' => 'null|string',
     'schema' => 'string',
@@ -56164,7 +56249,7 @@ return array (
   ),
   'odbc_columns' => 
   array (
-    0 => 'Odbc\\Result|false',
+    0 => 'false|resource',
     'odbc' => 'resource',
     'catalog=' => 'null|string',
     'schema=' => 'null|string',
@@ -56178,7 +56263,7 @@ return array (
   ),
   'odbc_connect' => 
   array (
-    0 => 'Odbc\\Connection|false',
+    0 => 'false|resource',
     'dsn' => 'string',
     'user' => 'string',
     'password' => 'string',
@@ -56192,7 +56277,7 @@ return array (
   'odbc_data_source' => 
   array (
     0 => 'array<array-key, mixed>|false',
-    'odbc' => 'Odbc\\Connection',
+    'odbc' => 'resource',
     'fetch_type' => 'int',
   ),
   'odbc_do' => 
@@ -56288,7 +56373,7 @@ return array (
   ),
   'odbc_foreignkeys' => 
   array (
-    0 => 'Odbc\\Result|false',
+    0 => 'false|resource',
     'odbc' => 'resource',
     'pk_catalog' => 'null|string',
     'pk_schema' => 'string',
@@ -56299,18 +56384,18 @@ return array (
   ),
   'odbc_free_result' => 
   array (
-    0 => 'true',
+    0 => 'bool',
     'statement' => 'resource',
   ),
   'odbc_gettypeinfo' => 
   array (
-    0 => 'Odbc\\Result|false',
+    0 => 'resource',
     'odbc' => 'resource',
     'data_type=' => 'int',
   ),
   'odbc_longreadlen' => 
   array (
-    0 => 'true',
+    0 => 'bool',
     'statement' => 'resource',
     'length' => 'int',
   ),
@@ -56331,7 +56416,7 @@ return array (
   ),
   'odbc_pconnect' => 
   array (
-    0 => 'Odbc\\Connection|false',
+    0 => 'false|resource',
     'dsn' => 'string',
     'user' => 'string',
     'password' => 'string',
@@ -56339,13 +56424,13 @@ return array (
   ),
   'odbc_prepare' => 
   array (
-    0 => 'Odbc\\Result|false',
+    0 => 'false|resource',
     'odbc' => 'resource',
     'query' => 'string',
   ),
   'odbc_primarykeys' => 
   array (
-    0 => 'Odbc\\Result|false',
+    0 => 'false|resource',
     'odbc' => 'resource',
     'catalog' => 'null|string',
     'schema' => 'string',
@@ -56353,7 +56438,7 @@ return array (
   ),
   'odbc_procedurecolumns' => 
   array (
-    0 => 'Odbc\\Result|false',
+    0 => 'false|resource',
     'odbc' => 'resource',
     'catalog=' => 'null|string',
     'schema=' => 'null|string',
@@ -56362,7 +56447,7 @@ return array (
   ),
   'odbc_procedures' => 
   array (
-    0 => 'Odbc\\Result|false',
+    0 => 'false|resource',
     'odbc' => 'resource',
     'catalog=' => 'null|string',
     'schema=' => 'null|string',
@@ -56395,7 +56480,7 @@ return array (
   ),
   'odbc_specialcolumns' => 
   array (
-    0 => 'Odbc\\Result|false',
+    0 => 'false|resource',
     'odbc' => 'resource',
     'type' => 'int',
     'catalog' => 'null|string',
@@ -56406,7 +56491,7 @@ return array (
   ),
   'odbc_statistics' => 
   array (
-    0 => 'Odbc\\Result|false',
+    0 => 'false|resource',
     'odbc' => 'resource',
     'catalog' => 'null|string',
     'schema' => 'string',
@@ -56416,7 +56501,7 @@ return array (
   ),
   'odbc_tableprivileges' => 
   array (
-    0 => 'Odbc\\Result|false',
+    0 => 'false|resource',
     'odbc' => 'resource',
     'catalog' => 'null|string',
     'schema' => 'string',
@@ -57746,7 +57831,7 @@ return array (
   ),
   'passthru' => 
   array (
-    0 => 'false|null',
+    0 => 'void',
     'command' => 'string',
     '&w_result_code=' => 'int',
   ),
@@ -60362,11 +60447,11 @@ return array (
   ),
   'pdostatement::debugdumpparams' => 
   array (
-    0 => 'void',
+    0 => 'bool|null',
   ),
   'pdostatement::errorcode' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'pdostatement::errorinfo' => 
   array (
@@ -60375,26 +60460,25 @@ return array (
   'pdostatement::execute' => 
   array (
     0 => 'bool',
-    'bound_input_params=' => 'array<array-key, mixed>|null',
+    'params=' => 'array<array-key, mixed>|null',
   ),
   'pdostatement::fetch' => 
   array (
     0 => 'mixed',
-    'how=' => 'int',
-    'orientation=' => 'int',
-    'offset=' => 'int',
+    'mode=' => 'int',
+    'cursorOrientation=' => 'int',
+    'cursorOffset=' => 'int',
   ),
   'pdostatement::fetchall' => 
   array (
-    0 => 'array<array-key, mixed>|false',
-    'how=' => 'int',
-    'fetch_argument=' => 'callable|int|string',
-    'ctor_args=' => 'array<array-key, mixed>|null',
+    0 => 'array<array-key, mixed>',
+    'mode=' => 'int',
+    '...args=' => 'mixed',
   ),
   'pdostatement::fetchcolumn' => 
   array (
-    0 => 'null|scalar',
-    'column_number=' => 'int',
+    0 => 'mixed',
+    'column=' => 'int',
   ),
   'pdostatement::fetchobject' => 
   array (
@@ -60430,6 +60514,7 @@ return array (
   array (
     0 => 'bool',
     'mode' => 'int',
+    '...args=' => 'mixed',
   ),
   'pdostatement::setfetchmode\'1' => 
   array (
@@ -61281,7 +61366,7 @@ return array (
   array (
     0 => 'void',
     'filename' => 'string',
-    'localName=' => 'string',
+    'localName=' => 'null|string',
   ),
   'phar::addfromstring' => 
   array (
@@ -61295,15 +61380,15 @@ return array (
   ),
   'phar::buildfromdirectory' => 
   array (
-    0 => 'array<array-key, mixed>|false',
+    0 => 'array<array-key, mixed>',
     'directory' => 'string',
     'pattern=' => 'string',
   ),
   'phar::buildfromiterator' => 
   array (
-    0 => 'array<array-key, mixed>|false',
+    0 => 'array<array-key, mixed>',
     'iterator' => 'Traversable',
-    'baseDirectory=' => 'string',
+    'baseDirectory=' => 'null|string',
   ),
   'phar::cancompress' => 
   array (
@@ -61318,7 +61403,7 @@ return array (
   array (
     0 => 'Phar|null',
     'compression' => 'int',
-    'extension=' => 'string',
+    'extension=' => 'null|string',
   ),
   'phar::compressfiles' => 
   array (
@@ -61328,16 +61413,16 @@ return array (
   'phar::converttodata' => 
   array (
     0 => 'PharData|null',
-    'format=' => 'int',
-    'compression=' => 'int',
-    'extension=' => 'string',
+    'format=' => 'int|null',
+    'compression=' => 'int|null',
+    'extension=' => 'null|string',
   ),
   'phar::converttoexecutable' => 
   array (
     0 => 'Phar|null',
-    'format=' => 'int',
-    'compression=' => 'int',
-    'extension=' => 'string',
+    'format=' => 'int|null',
+    'compression=' => 'int|null',
+    'extension=' => 'null|string',
   ),
   'phar::copy' => 
   array (
@@ -61353,8 +61438,8 @@ return array (
   'phar::createdefaultstub' => 
   array (
     0 => 'string',
-    'index=' => 'string',
-    'webIndex=' => 'string',
+    'index=' => 'null|string',
+    'webIndex=' => 'null|string',
   ),
   'phar::current' => 
   array (
@@ -61363,7 +61448,7 @@ return array (
   'phar::decompress' => 
   array (
     0 => 'Phar|null',
-    'extension=' => 'string',
+    'extension=' => 'null|string',
   ),
   'phar::decompressfiles' => 
   array (
@@ -61438,6 +61523,7 @@ return array (
   'phar::getmetadata' => 
   array (
     0 => 'mixed',
+    'unserializeOptions=' => 'array<array-key, mixed>',
   ),
   'phar::getmodified' => 
   array (
@@ -61650,7 +61736,7 @@ return array (
   array (
     0 => 'bool',
     'index=' => 'null|string',
-    'webIndex=' => 'string',
+    'webIndex=' => 'null|string',
   ),
   'phar::setfileclass' => 
   array (
@@ -61676,7 +61762,7 @@ return array (
   array (
     0 => 'void',
     'algo' => 'int',
-    'privateKey=' => 'string',
+    'privateKey=' => 'null|string',
   ),
   'phar::setstub' => 
   array (
@@ -61706,9 +61792,9 @@ return array (
     0 => 'void',
     'alias=' => 'null|string',
     'index=' => 'null|string',
-    'fileNotFoundScript=' => 'string',
+    'fileNotFoundScript=' => 'null|string',
     'mimeTypes=' => 'array<array-key, mixed>',
-    'rewrite=' => 'callable',
+    'rewrite=' => 'callable|null',
   ),
   'phardata::__construct' => 
   array (
@@ -61739,7 +61825,7 @@ return array (
   array (
     0 => 'void',
     'filename' => 'string',
-    'localName=' => 'string',
+    'localName=' => 'null|string',
   ),
   'phardata::addfromstring' => 
   array (
@@ -61753,15 +61839,15 @@ return array (
   ),
   'phardata::buildfromdirectory' => 
   array (
-    0 => 'array<array-key, mixed>|false',
+    0 => 'array<array-key, mixed>',
     'directory' => 'string',
     'pattern=' => 'string',
   ),
   'phardata::buildfromiterator' => 
   array (
-    0 => 'array<array-key, mixed>|false',
+    0 => 'array<array-key, mixed>',
     'iterator' => 'Traversable',
-    'baseDirectory=' => 'string',
+    'baseDirectory=' => 'null|string',
   ),
   'phardata::cancompress' => 
   array (
@@ -61776,7 +61862,7 @@ return array (
   array (
     0 => 'PharData|null',
     'compression' => 'int',
-    'extension=' => 'string',
+    'extension=' => 'null|string',
   ),
   'phardata::compressfiles' => 
   array (
@@ -61786,16 +61872,16 @@ return array (
   'phardata::converttodata' => 
   array (
     0 => 'PharData|null',
-    'format=' => 'int',
-    'compression=' => 'int',
-    'extension=' => 'string',
+    'format=' => 'int|null',
+    'compression=' => 'int|null',
+    'extension=' => 'null|string',
   ),
   'phardata::converttoexecutable' => 
   array (
     0 => 'Phar|null',
-    'format=' => 'int',
-    'compression=' => 'int',
-    'extension=' => 'string',
+    'format=' => 'int|null',
+    'compression=' => 'int|null',
+    'extension=' => 'null|string',
   ),
   'phardata::copy' => 
   array (
@@ -61820,7 +61906,7 @@ return array (
   'phardata::decompress' => 
   array (
     0 => 'PharData|null',
-    'extension=' => 'string',
+    'extension=' => 'null|string',
   ),
   'phardata::decompressfiles' => 
   array (
@@ -62107,7 +62193,7 @@ return array (
   array (
     0 => 'bool',
     'index=' => 'null|string',
-    'webIndex=' => 'string',
+    'webIndex=' => 'null|string',
   ),
   'phardata::setfileclass' => 
   array (
@@ -62133,7 +62219,7 @@ return array (
   array (
     0 => 'void',
     'algo' => 'int',
-    'privateKey=' => 'string',
+    'privateKey=' => 'null|string',
   ),
   'phardata::setstub' => 
   array (
@@ -62302,6 +62388,7 @@ return array (
   'pharfileinfo::getmetadata' => 
   array (
     0 => 'mixed',
+    'unserializeOptions=' => 'array<array-key, mixed>',
   ),
   'pharfileinfo::getmtime' => 
   array (
@@ -62351,7 +62438,7 @@ return array (
   'pharfileinfo::iscompressed' => 
   array (
     0 => 'bool',
-    'compression=' => 'int',
+    'compression=' => 'int|null',
   ),
   'pharfileinfo::iscrcchecked' => 
   array (
@@ -62587,6 +62674,25 @@ return array (
   'phpinfo' => 
   array (
     0 => 'true',
+    'flags=' => 'int',
+  ),
+  'phptoken::gettokenname' => 
+  array (
+    0 => 'null|string',
+  ),
+  'phptoken::is' => 
+  array (
+    0 => 'bool',
+    'kind' => 'array<array-key, int|string>|int|string',
+  ),
+  'phptoken::isignorable' => 
+  array (
+    0 => 'bool',
+  ),
+  'phptoken::tokenize' => 
+  array (
+    0 => 'list<PhpToken>',
+    'code' => 'string',
     'flags=' => 'int',
   ),
   'phpversion' => 
@@ -65293,7 +65399,7 @@ return array (
   'recursivedirectoryiterator::getfileinfo' => 
   array (
     0 => 'SplFileInfo',
-    'class=' => 'class-string',
+    'class=' => 'class-string|null',
   ),
   'recursivedirectoryiterator::getfilename' => 
   array (
@@ -65330,7 +65436,7 @@ return array (
   'recursivedirectoryiterator::getpathinfo' => 
   array (
     0 => 'SplFileInfo|null',
-    'class=' => 'class-string',
+    'class=' => 'class-string|null',
   ),
   'recursivedirectoryiterator::getpathname' => 
   array (
@@ -65406,7 +65512,7 @@ return array (
     0 => 'SplFileObject',
     'mode=' => 'string',
     'useIncludePath=' => 'bool',
-    'context=' => 'resource',
+    'context=' => 'null|resource',
   ),
   'recursivedirectoryiterator::rewind' => 
   array (
@@ -65559,7 +65665,7 @@ return array (
   'recursiveiteratoriterator::getsubiterator' => 
   array (
     0 => 'RecursiveIterator|null',
-    'level=' => 'int',
+    'level=' => 'int|null',
   ),
   'recursiveiteratoriterator::key' => 
   array (
@@ -65725,7 +65831,7 @@ return array (
   'recursivetreeiterator::getsubiterator' => 
   array (
     0 => 'RecursiveIterator|null',
-    'level=' => 'int',
+    'level=' => 'int|null',
   ),
   'recursivetreeiterator::key' => 
   array (
@@ -69413,6 +69519,12 @@ return array (
     'argument' => 'object|string',
     'return=' => 'bool',
   ),
+  'reflectionclass::getattributes' => 
+  array (
+    0 => 'list<ReflectionAttribute>',
+    'name=' => 'null|string',
+    'flags=' => 'int',
+  ),
   'reflectionclass::getconstant' => 
   array (
     0 => 'mixed',
@@ -69421,6 +69533,7 @@ return array (
   'reflectionclass::getconstants' => 
   array (
     0 => 'array<string, mixed>',
+    'filter=' => 'int|null',
   ),
   'reflectionclass::getconstructor' => 
   array (
@@ -69502,6 +69615,7 @@ return array (
   'reflectionclass::getreflectionconstants' => 
   array (
     0 => 'list<ReflectionClassConstant>',
+    'filter=' => 'int|null',
   ),
   'reflectionclass::getshortname' => 
   array (
@@ -69569,6 +69683,10 @@ return array (
   array (
     0 => 'bool',
   ),
+  'reflectionclass::isenum' => 
+  array (
+    0 => 'bool',
+  ),
   'reflectionclass::isfinal' => 
   array (
     0 => 'bool',
@@ -69619,7 +69737,7 @@ return array (
   'reflectionclass::newinstanceargs' => 
   array (
     0 => 'object',
-    'args=' => 'list<mixed>',
+    'args=' => 'array<int<0, max>|string, mixed>',
   ),
   'reflectionclass::newinstancewithoutconstructor' => 
   array (
@@ -69652,6 +69770,12 @@ return array (
     'name' => 'string',
     'return=' => 'bool',
   ),
+  'reflectionclassconstant::getattributes' => 
+  array (
+    0 => 'list<ReflectionAttribute>',
+    'name=' => 'null|string',
+    'flags=' => 'int',
+  ),
   'reflectionclassconstant::getdeclaringclass' => 
   array (
     0 => 'ReflectionClass',
@@ -69683,6 +69807,40 @@ return array (
   'reflectionclassconstant::ispublic' => 
   array (
     0 => 'bool',
+  ),
+  'reflectionenum::getbackingtype' => 
+  array (
+    0 => 'ReflectionType|null',
+  ),
+  'reflectionenum::getcase' => 
+  array (
+    0 => 'ReflectionEnumUnitCase',
+    'name' => 'string',
+  ),
+  'reflectionenum::getcases' => 
+  array (
+    0 => 'list<ReflectionEnumUnitCase>',
+  ),
+  'reflectionenum::hascase' => 
+  array (
+    0 => 'bool',
+    'name' => 'string',
+  ),
+  'reflectionenum::isbacked' => 
+  array (
+    0 => 'bool',
+  ),
+  'reflectionenumbackedcase::getbackingvalue' => 
+  array (
+    0 => 'int|string',
+  ),
+  'reflectionenumunitcase::getenum' => 
+  array (
+    0 => 'ReflectionEnum',
+  ),
+  'reflectionenumunitcase::getvalue' => 
+  array (
+    0 => 'UnitEnum',
   ),
   'reflectionexception::__clone' => 
   array (
@@ -69943,6 +70101,12 @@ return array (
   array (
     0 => 'null|string',
   ),
+  'reflectionfunctionabstract::getattributes' => 
+  array (
+    0 => 'list<ReflectionAttribute>',
+    'name=' => 'null|string',
+    'flags=' => 'int',
+  ),
   'reflectionfunctionabstract::getclosurescopeclass' => 
   array (
     0 => 'ReflectionClass|null',
@@ -70007,7 +70171,15 @@ return array (
   array (
     0 => 'array<array-key, mixed>',
   ),
+  'reflectionfunctionabstract::gettentativereturntype' => 
+  array (
+    0 => 'ReflectionType|null',
+  ),
   'reflectionfunctionabstract::hasreturntype' => 
+  array (
+    0 => 'bool',
+  ),
+  'reflectionfunctionabstract::hastentativereturntype' => 
   array (
     0 => 'bool',
   ),
@@ -70028,6 +70200,10 @@ return array (
     0 => 'bool',
   ),
   'reflectionfunctionabstract::isinternal' => 
+  array (
+    0 => 'bool',
+  ),
+  'reflectionfunctionabstract::isstatic' => 
   array (
     0 => 'bool',
   ),
@@ -70101,8 +70277,8 @@ return array (
   ),
   'reflectionmethod::getclosure' => 
   array (
-    0 => 'Closure|null',
-    'object=' => 'object',
+    0 => 'Closure',
+    'object=' => 'null|object',
   ),
   'reflectionmethod::getclosurescopeclass' => 
   array (
@@ -70312,6 +70488,7 @@ return array (
   'reflectionobject::getconstants' => 
   array (
     0 => 'array<string, mixed>',
+    'filter=' => 'int|null',
   ),
   'reflectionobject::getconstructor' => 
   array (
@@ -70393,6 +70570,7 @@ return array (
   'reflectionobject::getreflectionconstants' => 
   array (
     0 => 'list<ReflectionClassConstant>',
+    'filter=' => 'int|null',
   ),
   'reflectionobject::getshortname' => 
   array (
@@ -70460,6 +70638,10 @@ return array (
   array (
     0 => 'bool',
   ),
+  'reflectionobject::isenum' => 
+  array (
+    0 => 'bool',
+  ),
   'reflectionobject::isfinal' => 
   array (
     0 => 'bool',
@@ -70511,7 +70693,7 @@ return array (
   'reflectionobject::newinstanceargs' => 
   array (
     0 => 'object',
-    'args=' => 'list<mixed>',
+    'args=' => 'array<int<0, max>|string, mixed>',
   ),
   'reflectionobject::newinstancewithoutconstructor' => 
   array (
@@ -70551,6 +70733,12 @@ return array (
     'function' => 'string',
     'parameter' => 'string',
     'return=' => 'bool',
+  ),
+  'reflectionparameter::getattributes' => 
+  array (
+    0 => 'list<ReflectionAttribute>',
+    'name=' => 'null|string',
+    'flags=' => 'int',
   ),
   'reflectionparameter::getclass' => 
   array (
@@ -70637,9 +70825,19 @@ return array (
     'name' => 'string',
     'return=' => 'bool',
   ),
+  'reflectionproperty::getattributes' => 
+  array (
+    0 => 'list<ReflectionAttribute>',
+    'name=' => 'null|string',
+    'flags=' => 'int',
+  ),
   'reflectionproperty::getdeclaringclass' => 
   array (
     0 => 'ReflectionClass',
+  ),
+  'reflectionproperty::getdefaultvalue' => 
+  array (
+    0 => 'mixed',
   ),
   'reflectionproperty::getdoccomment' => 
   array (
@@ -70653,10 +70851,18 @@ return array (
   array (
     0 => 'string',
   ),
+  'reflectionproperty::gettype' => 
+  array (
+    0 => 'ReflectionType|null',
+  ),
   'reflectionproperty::getvalue' => 
   array (
     0 => 'mixed',
-    'object=' => 'object',
+    'object=' => 'null|object',
+  ),
+  'reflectionproperty::hasdefaultvalue' => 
+  array (
+    0 => 'bool',
   ),
   'reflectionproperty::hastype' => 
   array (
@@ -70666,7 +70872,16 @@ return array (
   array (
     0 => 'bool',
   ),
+  'reflectionproperty::isinitialized' => 
+  array (
+    0 => 'bool',
+    'object=' => 'null|object',
+  ),
   'reflectionproperty::isprivate' => 
+  array (
+    0 => 'bool',
+  ),
+  'reflectionproperty::ispromoted' => 
   array (
     0 => 'bool',
   ),
@@ -70675,6 +70890,10 @@ return array (
     0 => 'bool',
   ),
   'reflectionproperty::ispublic' => 
+  array (
+    0 => 'bool',
+  ),
+  'reflectionproperty::isreadonly' => 
   array (
     0 => 'bool',
   ),
@@ -70713,6 +70932,10 @@ return array (
   'reflectiontype::isbuiltin' => 
   array (
     0 => 'bool',
+  ),
+  'reflectionuniontype::gettypes' => 
+  array (
+    0 => 'list<ReflectionNamedType>',
   ),
   'reflectionzendextension::__clone' => 
   array (
@@ -73674,7 +73897,7 @@ return array (
   'simplexmlelement::asxml' => 
   array (
     0 => 'bool|string',
-    'filename' => 'string',
+    'filename=' => 'null|string',
   ),
   'simplexmlelement::asxml\'1' => 
   array (
@@ -73741,7 +73964,7 @@ return array (
   'simplexmlelement::savexml' => 
   array (
     0 => 'bool|string',
-    'filename=' => 'string',
+    'filename=' => 'null|string',
   ),
   'simplexmlelement::xpath' => 
   array (
@@ -74166,7 +74389,7 @@ return array (
     'location' => 'string',
     'action' => 'string',
     'version' => 'int',
-    'one_way=' => 'int',
+    'one_way=' => 'bool',
   ),
   'soapclient::__getcookies' => 
   array (
@@ -74198,7 +74421,7 @@ return array (
   ),
   'soapclient::__setcookie' => 
   array (
-    0 => 'void',
+    0 => 'mixed',
     'name' => 'string',
     'value=' => 'string',
   ),
@@ -78871,7 +79094,7 @@ return array (
   'splfileinfo::getfileinfo' => 
   array (
     0 => 'SplFileInfo',
-    'class=' => 'class-string',
+    'class=' => 'class-string|null',
   ),
   'splfileinfo::getfilename' => 
   array (
@@ -78904,7 +79127,7 @@ return array (
   'splfileinfo::getpathinfo' => 
   array (
     0 => 'SplFileInfo|null',
-    'class=' => 'class-string',
+    'class=' => 'class-string|null',
   ),
   'splfileinfo::getpathname' => 
   array (
@@ -78955,7 +79178,7 @@ return array (
     0 => 'SplFileObject',
     'mode=' => 'string',
     'useIncludePath=' => 'bool',
-    'context=' => 'resource',
+    'context=' => 'null|resource',
   ),
   'splfileinfo::setfileclass' => 
   array (
@@ -79008,7 +79231,7 @@ return array (
   ),
   'splfileobject::fgets' => 
   array (
-    0 => 'false|string',
+    0 => 'string',
   ),
   'splfileobject::fgetss' => 
   array (
@@ -79032,6 +79255,7 @@ return array (
     'separator=' => 'string',
     'enclosure=' => 'string',
     'escape=' => 'string',
+    'eol=' => 'string',
   ),
   'splfileobject::fread' => 
   array (
@@ -79065,7 +79289,7 @@ return array (
   ),
   'splfileobject::fwrite' => 
   array (
-    0 => 'int',
+    0 => 'false|int',
     'data' => 'string',
     'length=' => 'int',
   ),
@@ -79092,7 +79316,7 @@ return array (
   ),
   'splfileobject::getcurrentline' => 
   array (
-    0 => 'false|string',
+    0 => 'string',
   ),
   'splfileobject::getextension' => 
   array (
@@ -79101,7 +79325,7 @@ return array (
   'splfileobject::getfileinfo' => 
   array (
     0 => 'SplFileInfo',
-    'class=' => 'class-string',
+    'class=' => 'class-string|null',
   ),
   'splfileobject::getfilename' => 
   array (
@@ -79142,7 +79366,7 @@ return array (
   'splfileobject::getpathinfo' => 
   array (
     0 => 'SplFileInfo|null',
-    'class=' => 'class-string',
+    'class=' => 'class-string|null',
   ),
   'splfileobject::getpathname' => 
   array (
@@ -79205,7 +79429,7 @@ return array (
     0 => 'SplFileObject',
     'mode=' => 'string',
     'useIncludePath=' => 'bool',
-    'context=' => 'resource',
+    'context=' => 'null|resource',
   ),
   'splfileobject::rewind' => 
   array (
@@ -79269,6 +79493,10 @@ return array (
     0 => 'SplFixedArray',
     'array' => 'array<array-key, mixed>',
     'preserveKeys=' => 'bool',
+  ),
+  'splfixedarray::getiterator' => 
+  array (
+    0 => 'Iterator',
   ),
   'splfixedarray::getsize' => 
   array (
@@ -79966,6 +80194,7 @@ return array (
     'separator=' => 'string',
     'enclosure=' => 'string',
     'escape=' => 'string',
+    'eol=' => 'string',
   ),
   'spltempfileobject::fread' => 
   array (
@@ -79999,7 +80228,7 @@ return array (
   ),
   'spltempfileobject::fwrite' => 
   array (
-    0 => 'int',
+    0 => 'false|int',
     'data' => 'string',
     'length=' => 'int',
   ),
@@ -80035,7 +80264,7 @@ return array (
   'spltempfileobject::getfileinfo' => 
   array (
     0 => 'SplFileInfo',
-    'class=' => 'class-string',
+    'class=' => 'class-string|null',
   ),
   'spltempfileobject::getfilename' => 
   array (
@@ -80076,7 +80305,7 @@ return array (
   'spltempfileobject::getpathinfo' => 
   array (
     0 => 'SplFileInfo|null',
-    'class=' => 'class-string',
+    'class=' => 'class-string|null',
   ),
   'spltempfileobject::getpathname' => 
   array (
@@ -80139,7 +80368,7 @@ return array (
     0 => 'SplTempFileObject',
     'mode=' => 'string',
     'useIncludePath=' => 'bool',
-    'context=' => 'resource',
+    'context=' => 'null|resource',
   ),
   'spltempfileobject::rewind' => 
   array (
@@ -82209,7 +82438,7 @@ return array (
   ),
   'stream_context_set_option' => 
   array (
-    0 => 'true',
+    0 => 'bool',
     'context' => 'mixed',
     'wrapper_or_options' => 'string',
     'option_name' => 'string',
@@ -101645,6 +101874,35 @@ return array (
     'var_name' => 'mixed',
     '...vars=' => 'mixed',
   ),
+  'weakmap::count' => 
+  array (
+    0 => 'int',
+  ),
+  'weakmap::getiterator' => 
+  array (
+    0 => 'Iterator',
+  ),
+  'weakmap::offsetexists' => 
+  array (
+    0 => 'bool',
+    'object' => 'object',
+  ),
+  'weakmap::offsetget' => 
+  array (
+    0 => 'mixed',
+    'object' => 'object',
+  ),
+  'weakmap::offsetset' => 
+  array (
+    0 => 'void',
+    'object' => 'object',
+    'value' => 'mixed',
+  ),
+  'weakmap::offsetunset' => 
+  array (
+    0 => 'void',
+    'object' => 'object',
+  ),
   'weakref::acquire' => 
   array (
     0 => 'bool',
@@ -102763,7 +103021,7 @@ return array (
   array (
     0 => 'true',
     'parser' => 'resource',
-    'handler' => 'callable|null',
+    'handler' => 'callable',
   ),
   'xml_set_default_handler' => 
   array (
@@ -102943,7 +103201,7 @@ return array (
   'xmlreader::next' => 
   array (
     0 => 'bool',
-    'name=' => 'string',
+    'name=' => 'null|string',
   ),
   'xmlreader::open' => 
   array (
@@ -103120,7 +103378,7 @@ return array (
   ),
   'xmlwriter::flush' => 
   array (
-    0 => 'false|int|string',
+    0 => 'int|string',
     'empty=' => 'bool',
   ),
   'xmlwriter::fullendelement' => 
@@ -103159,7 +103417,7 @@ return array (
   'xmlwriter::startattributens' => 
   array (
     0 => 'bool',
-    'prefix' => 'string',
+    'prefix' => 'null|string',
     'name' => 'string',
     'namespace' => 'null|string',
   ),
@@ -103232,7 +103490,7 @@ return array (
   'xmlwriter::writeattributens' => 
   array (
     0 => 'bool',
-    'prefix' => 'string',
+    'prefix' => 'null|string',
     'name' => 'string',
     'namespace' => 'null|string',
     'value' => 'string',
@@ -103272,10 +103530,10 @@ return array (
     0 => 'bool',
     'name' => 'string',
     'content' => 'string',
-    'isParam' => 'bool',
-    'publicId' => 'string',
-    'systemId' => 'string',
-    'notationData' => 'string',
+    'isParam=' => 'bool',
+    'publicId=' => 'null|string',
+    'systemId=' => 'null|string',
+    'notationData=' => 'null|string',
   ),
   'xmlwriter::writeelement' => 
   array (
@@ -108072,6 +108330,7 @@ return array (
   array (
     0 => 'bool',
     'dirname' => 'string',
+    'flags=' => 'int',
   ),
   'ziparchive::addfile' => 
   array (
@@ -108080,12 +108339,14 @@ return array (
     'entryname=' => 'string',
     'start=' => 'int',
     'length=' => 'int',
+    'flags=' => 'int',
   ),
   'ziparchive::addfromstring' => 
   array (
     0 => 'bool',
     'name' => 'string',
     'content' => 'string',
+    'flags=' => 'int',
   ),
   'ziparchive::addglob' => 
   array (
@@ -108100,6 +108361,10 @@ return array (
     'pattern' => 'string',
     'path=' => 'string',
     'options=' => 'array<array-key, mixed>',
+  ),
+  'ziparchive::clearerror' => 
+  array (
+    0 => 'void',
   ),
   'ziparchive::close' => 
   array (
@@ -108180,12 +108445,24 @@ return array (
   ),
   'ziparchive::getstatusstring' => 
   array (
-    0 => 'false|string',
+    0 => 'string',
   ),
   'ziparchive::getstream' => 
   array (
     0 => 'false|resource',
     'name' => 'string',
+  ),
+  'ziparchive::getstreamindex' => 
+  array (
+    0 => 'false|resource',
+    'index' => 'int',
+    'flags=' => 'int',
+  ),
+  'ziparchive::getstreamname' => 
+  array (
+    0 => 'false|resource',
+    'name' => 'string',
+    'flags=' => 'int',
   ),
   'ziparchive::iscompressionmethodsupported' => 
   array (
@@ -108279,14 +108556,14 @@ return array (
     0 => 'bool',
     'index' => 'int',
     'method' => 'int',
-    'password=' => 'string',
+    'password=' => 'null|string',
   ),
   'ziparchive::setencryptionname' => 
   array (
     0 => 'bool',
     'name' => 'string',
     'method' => 'int',
-    'password=' => 'string',
+    'password=' => 'null|string',
   ),
   'ziparchive::setexternalattributesindex' => 
   array (

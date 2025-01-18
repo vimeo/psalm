@@ -2151,7 +2151,7 @@ return array (
   ),
   'array_walk' => 
   array (
-    0 => 'true',
+    0 => 'bool',
     '&rw_array' => 'array<array-key, mixed>',
     'callback' => 'callable',
     'arg=' => 'mixed',
@@ -2165,7 +2165,7 @@ return array (
   ),
   'array_walk_recursive' => 
   array (
-    0 => 'true',
+    0 => 'bool',
     '&rw_array' => 'array<array-key, mixed>',
     'callback' => 'callable',
     'arg=' => 'mixed',
@@ -3058,7 +3058,7 @@ return array (
   array (
     0 => 'void',
     'iterator' => 'Iterator',
-    'flags=' => 'mixed',
+    'flags=' => 'int',
   ),
   'cachingiterator::__tostring' => 
   array (
@@ -13036,7 +13036,7 @@ return array (
   ),
   'dateinterval::createfromdatestring' => 
   array (
-    0 => 'DateInterval',
+    0 => 'DateInterval|false',
     'datetime' => 'string',
   ),
   'dateinterval::format' => 
@@ -23069,7 +23069,7 @@ return array (
   ),
   'fiber::getcurrent' => 
   array (
-    0 => 'Fiber|null',
+    0 => 'null|self',
   ),
   'fiber::getreturn' => 
   array (
@@ -23975,7 +23975,7 @@ return array (
   ),
   'func_get_arg' => 
   array (
-    0 => 'mixed|null',
+    0 => 'false|mixed',
     'position' => 'int',
   ),
   'func_get_args' => 
@@ -35040,8 +35040,8 @@ return array (
     0 => 'bool',
     'image' => 'GdImage',
     'x1' => 'int',
-    'y1' => 'int',
     'x2' => 'int',
+    'y1' => 'int',
     'y2' => 'int',
   ),
   'imagesetinterpolation' => 
@@ -35241,17 +35241,17 @@ return array (
   ),
   'imagick::autogammaimage' => 
   array (
-    0 => 'void',
+    0 => 'bool',
     'channel=' => 'int',
   ),
   'imagick::autolevelimage' => 
   array (
-    0 => 'bool',
+    0 => 'void',
     'CHANNEL=' => 'string',
   ),
   'imagick::autoorient' => 
   array (
-    0 => 'void',
+    0 => 'bool',
   ),
   'imagick::autoorientate' => 
   array (
@@ -35281,7 +35281,7 @@ return array (
   ),
   'imagick::blueshiftimage' => 
   array (
-    0 => 'bool',
+    0 => 'void',
     'factor=' => 'float',
   ),
   'imagick::blurimage' => 
@@ -35308,7 +35308,7 @@ return array (
   ),
   'imagick::brightnesscontrastimage' => 
   array (
-    0 => 'bool',
+    0 => 'void',
     'brightness' => 'string',
     'contrast' => 'string',
     'CHANNEL=' => 'string',
@@ -35359,7 +35359,7 @@ return array (
   ),
   'imagick::clampimage' => 
   array (
-    0 => 'bool',
+    0 => 'void',
     'CHANNEL=' => 'string',
   ),
   'imagick::clear' => 
@@ -35418,7 +35418,7 @@ return array (
   ),
   'imagick::colormatriximage' => 
   array (
-    0 => 'bool',
+    0 => 'void',
     'color_matrix' => 'string',
   ),
   'imagick::colorthresholdimage' => 
@@ -35496,7 +35496,7 @@ return array (
   ),
   'imagick::count' => 
   array (
-    0 => 'int',
+    0 => 'void',
     'mode=' => 'string',
   ),
   'imagick::cropimage' => 
@@ -35539,7 +35539,7 @@ return array (
   ),
   'imagick::deleteimageproperty' => 
   array (
-    0 => 'bool',
+    0 => 'void',
     'name' => 'string',
   ),
   'imagick::deleteoption' => 
@@ -35667,7 +35667,7 @@ return array (
   ),
   'imagick::forwardfouriertransformimage' => 
   array (
-    0 => 'bool',
+    0 => 'void',
     'magnitude' => 'bool',
   ),
   'imagick::frameimage' => 
@@ -35737,7 +35737,7 @@ return array (
   ),
   'imagick::getconfigureoptions' => 
   array (
-    0 => 'array<array-key, mixed>',
+    0 => 'string',
   ),
   'imagick::getcopyright' => 
   array (
@@ -35753,7 +35753,7 @@ return array (
   ),
   'imagick::getfont' => 
   array (
-    0 => 'string',
+    0 => 'false|string',
   ),
   'imagick::getformat' => 
   array (
@@ -35765,7 +35765,7 @@ return array (
   ),
   'imagick::gethdrienabled' => 
   array (
-    0 => 'bool',
+    0 => 'int',
   ),
   'imagick::gethomeurl' => 
   array (
@@ -35777,7 +35777,7 @@ return array (
   ),
   'imagick::getimagealphachannel' => 
   array (
-    0 => 'bool',
+    0 => 'int',
   ),
   'imagick::getimageartifact' => 
   array (
@@ -36018,7 +36018,7 @@ return array (
   ),
   'imagick::getimageproperty' => 
   array (
-    0 => 'string',
+    0 => 'false|string',
     'name' => 'string',
   ),
   'imagick::getimagerange' => 
@@ -36157,7 +36157,7 @@ return array (
   ),
   'imagick::getregistry' => 
   array (
-    0 => 'string',
+    0 => 'false|string',
     'key' => 'string',
   ),
   'imagick::getreleasedate' => 
@@ -36221,7 +36221,7 @@ return array (
   ),
   'imagick::identifyformat' => 
   array (
-    0 => 'string',
+    0 => 'false|string',
     'embedText' => 'string',
   ),
   'imagick::identifyimage' => 
@@ -36264,13 +36264,13 @@ return array (
   ),
   'imagick::inversefouriertransformimage' => 
   array (
-    0 => 'bool',
+    0 => 'void',
     'complement' => 'string',
     'magnitude' => 'string',
   ),
   'imagick::key' => 
   array (
-    0 => 'int',
+    0 => 'int|string',
   ),
   'imagick::kmeansimage' => 
   array (
@@ -36326,7 +36326,7 @@ return array (
   ),
   'imagick::localcontrastimage' => 
   array (
-    0 => 'void',
+    0 => 'bool',
     'radius' => 'float',
     'strength' => 'float',
   ),
@@ -36393,7 +36393,7 @@ return array (
   ),
   'imagick::morphology' => 
   array (
-    0 => 'bool',
+    0 => 'void',
     'morphologyMethod' => 'int',
     'iterations' => 'int',
     'ImagickKernel' => 'ImagickKernel',
@@ -36649,7 +36649,7 @@ return array (
   ),
   'imagick::readimages' => 
   array (
-    0 => 'bool',
+    0 => 'Imagick',
     'filenames' => 'string',
   ),
   'imagick::recolorimage' => 
@@ -36696,7 +36696,7 @@ return array (
   ),
   'imagick::resetiterator' => 
   array (
-    0 => 'void',
+    0 => 'mixed',
   ),
   'imagick::resizeimage' => 
   array (
@@ -36725,7 +36725,7 @@ return array (
   ),
   'imagick::rotationalblurimage' => 
   array (
-    0 => 'bool',
+    0 => 'void',
     'angle' => 'string',
     'CHANNEL=' => 'string',
   ),
@@ -36740,7 +36740,7 @@ return array (
   ),
   'imagick::roundcornersimage' => 
   array (
-    0 => 'bool',
+    0 => 'mixed',
     'xRounding' => 'mixed',
     'yRounding' => 'mixed',
     'strokeWidth' => 'mixed',
@@ -36770,7 +36770,7 @@ return array (
   ),
   'imagick::selectiveblurimage' => 
   array (
-    0 => 'bool',
+    0 => 'void',
     'radius' => 'float',
     'sigma' => 'float',
     'threshold' => 'float',
@@ -36788,7 +36788,7 @@ return array (
   ),
   'imagick::setantialias' => 
   array (
-    0 => 'void',
+    0 => 'int',
     'antialias' => 'bool',
   ),
   'imagick::setbackgroundcolor' => 
@@ -36906,7 +36906,7 @@ return array (
   ),
   'imagick::setimagechannelmask' => 
   array (
-    0 => 'int',
+    0 => 'mixed',
     'channel' => 'int',
   ),
   'imagick::setimageclipmask' => 
@@ -37056,7 +37056,7 @@ return array (
   ),
   'imagick::setimageprogressmonitor' => 
   array (
-    0 => 'bool',
+    0 => 'mixed',
     'filename' => 'mixed',
   ),
   'imagick::setimageproperty' => 
@@ -37158,12 +37158,12 @@ return array (
   ),
   'imagick::setprogressmonitor' => 
   array (
-    0 => 'bool',
+    0 => 'void',
     'callback' => 'callable',
   ),
   'imagick::setregistry' => 
   array (
-    0 => 'bool',
+    0 => 'void',
     'key' => 'string',
     'value' => 'string',
   ),
@@ -37305,7 +37305,7 @@ return array (
   ),
   'imagick::statisticimage' => 
   array (
-    0 => 'bool',
+    0 => 'void',
     'type' => 'int',
     'width' => 'int',
     'height' => 'int',
@@ -37346,7 +37346,7 @@ return array (
   ),
   'imagick::textureimage' => 
   array (
-    0 => 'Imagick',
+    0 => 'bool',
     'texture_wand' => 'Imagick',
   ),
   'imagick::thresholdimage' => 
@@ -37572,7 +37572,7 @@ return array (
   ),
   'imagickdraw::getclippath' => 
   array (
-    0 => 'string',
+    0 => 'false|string',
   ),
   'imagickdraw::getcliprule' => 
   array (
@@ -37600,11 +37600,11 @@ return array (
   ),
   'imagickdraw::getfont' => 
   array (
-    0 => 'string',
+    0 => 'false|string',
   ),
   'imagickdraw::getfontfamily' => 
   array (
-    0 => 'string',
+    0 => 'false|string',
   ),
   'imagickdraw::getfontresolution' => 
   array (
@@ -37684,7 +37684,7 @@ return array (
   ),
   'imagickdraw::gettextdirection' => 
   array (
-    0 => 'int',
+    0 => 'bool',
   ),
   'imagickdraw::gettextencoding' => 
   array (
@@ -37935,7 +37935,7 @@ return array (
   ),
   'imagickdraw::resetvectorgraphics' => 
   array (
-    0 => 'bool',
+    0 => 'void',
   ),
   'imagickdraw::rotate' => 
   array (
@@ -38051,12 +38051,12 @@ return array (
   ),
   'imagickdraw::setopacity' => 
   array (
-    0 => 'bool',
+    0 => 'void',
     'opacity' => 'float',
   ),
   'imagickdraw::setresolution' => 
   array (
-    0 => 'bool',
+    0 => 'void',
     'x_resolution' => 'float',
     'y_resolution' => 'float',
   ),
@@ -38142,17 +38142,17 @@ return array (
   ),
   'imagickdraw::settextinterlinespacing' => 
   array (
-    0 => 'bool',
+    0 => 'void',
     'spacing' => 'float',
   ),
   'imagickdraw::settextinterwordspacing' => 
   array (
-    0 => 'bool',
+    0 => 'void',
     'spacing' => 'float',
   ),
   'imagickdraw::settextkerning' => 
   array (
-    0 => 'bool',
+    0 => 'void',
     'kerning' => 'float',
   ),
   'imagickdraw::settextundercolor' => 
@@ -38387,7 +38387,7 @@ return array (
   ),
   'imagickpixel::getcolorquantum' => 
   array (
-    0 => 'array<array-key, mixed>',
+    0 => 'mixed',
   ),
   'imagickpixel::getcolorvalue' => 
   array (
@@ -38396,7 +38396,7 @@ return array (
   ),
   'imagickpixel::getcolorvaluequantum' => 
   array (
-    0 => 'float',
+    0 => 'mixed',
   ),
   'imagickpixel::gethsl' => 
   array (
@@ -38431,7 +38431,7 @@ return array (
   ),
   'imagickpixel::setcolorcount' => 
   array (
-    0 => 'bool',
+    0 => 'void',
     'colorCount' => 'string',
   ),
   'imagickpixel::setcolorfrompixel' => 
@@ -38447,7 +38447,7 @@ return array (
   ),
   'imagickpixel::setcolorvaluequantum' => 
   array (
-    0 => 'bool',
+    0 => 'void',
     'color' => 'int',
     'value' => 'mixed',
   ),
@@ -38460,7 +38460,7 @@ return array (
   ),
   'imagickpixel::setindex' => 
   array (
-    0 => 'bool',
+    0 => 'void',
     'index' => 'int',
   ),
   'imagickpixelexception::__construct' => 
@@ -38517,7 +38517,7 @@ return array (
   ),
   'imagickpixeliterator::current' => 
   array (
-    0 => 'array<array-key, mixed>',
+    0 => 'mixed',
   ),
   'imagickpixeliterator::destroy' => 
   array (
@@ -38537,12 +38537,12 @@ return array (
   ),
   'imagickpixeliterator::getpixeliterator' => 
   array (
-    0 => 'ImagickPixelIterator',
+    0 => 'mixed',
     'Imagick' => 'Imagick',
   ),
   'imagickpixeliterator::getpixelregioniterator' => 
   array (
-    0 => 'ImagickPixelIterator',
+    0 => 'mixed',
     'Imagick' => 'Imagick',
     'x' => 'mixed',
     'y' => 'mixed',
@@ -38555,7 +38555,7 @@ return array (
   ),
   'imagickpixeliterator::key' => 
   array (
-    0 => 'int',
+    0 => 'int|string',
   ),
   'imagickpixeliterator::newpixeliterator' => 
   array (
@@ -39643,7 +39643,7 @@ return array (
   ),
   'intlbreakiterator::settext' => 
   array (
-    0 => 'bool|null',
+    0 => 'bool',
     'text' => 'string',
   ),
   'intlcal_add' => 
@@ -40199,7 +40199,7 @@ return array (
   ),
   'intlchar::enumcharnames' => 
   array (
-    0 => 'bool|null',
+    0 => 'bool',
     'start' => 'int|string',
     'end' => 'int|string',
     'callback' => 'callable(int, int, int):void',
@@ -40558,7 +40558,7 @@ return array (
   ),
   'intlcodepointbreakiterator::settext' => 
   array (
-    0 => 'bool|null',
+    0 => 'bool',
     'text' => 'string',
   ),
   'intldateformatter::__construct' => 
@@ -40667,7 +40667,7 @@ return array (
   ),
   'intldateformatter::settimezone' => 
   array (
-    0 => 'false|null',
+    0 => 'bool',
     'timezone' => 'DateTimeZone|IntlTimeZone|null|string',
   ),
   'intldatepatterngenerator::__construct' => 
@@ -41173,7 +41173,7 @@ return array (
   ),
   'intlrulebasedbreakiterator::settext' => 
   array (
-    0 => 'bool|null',
+    0 => 'bool',
     'text' => 'string',
   ),
   'intltimezone::__construct' => 
@@ -43677,7 +43677,7 @@ return array (
   ),
   'locale_set_default' => 
   array (
-    0 => 'true',
+    0 => 'bool',
     'locale' => 'string',
   ),
   'localeconv' => 
@@ -50889,7 +50889,7 @@ return array (
   ),
   'multipleiterator::current' => 
   array (
-    0 => 'array<array-key, mixed>',
+    0 => 'array<array-key, mixed>|false',
   ),
   'multipleiterator::detachiterator' => 
   array (
@@ -52596,7 +52596,7 @@ return array (
   ),
   'mysqli_stmt::get_warnings' => 
   array (
-    0 => 'false|mysqli_warning',
+    0 => 'object',
   ),
   'mysqli_stmt::more_results' => 
   array (
@@ -52720,7 +52720,7 @@ return array (
   ),
   'mysqli_stmt_get_warnings' => 
   array (
-    0 => 'false|mysqli_warning',
+    0 => 'object',
     'statement' => 'mysqli_stmt',
   ),
   'mysqli_stmt_init' => 
@@ -52730,7 +52730,7 @@ return array (
   ),
   'mysqli_stmt_insert_id' => 
   array (
-    0 => 'int|string',
+    0 => 'mixed',
     'statement' => 'mysqli_stmt',
   ),
   'mysqli_stmt_more_results' => 
@@ -53647,7 +53647,7 @@ return array (
   'numberformatter::format' => 
   array (
     0 => 'false|string',
-    'num' => 'mixed',
+    'num' => 'float|int',
     'type=' => 'int',
   ),
   'numberformatter::formatcurrency' => 
@@ -54772,12 +54772,12 @@ return array (
   'odbc_autocommit' => 
   array (
     0 => 'bool|int',
-    'odbc' => 'Odbc\\Connection',
+    'odbc' => 'resource',
     'enable=' => 'bool',
   ),
   'odbc_binmode' => 
   array (
-    0 => 'true',
+    0 => 'bool',
     'statement' => 'resource',
     'mode' => 'int',
   ),
@@ -54792,7 +54792,7 @@ return array (
   ),
   'odbc_columnprivileges' => 
   array (
-    0 => 'Odbc\\Result|false',
+    0 => 'false|resource',
     'odbc' => 'resource',
     'catalog' => 'null|string',
     'schema' => 'string',
@@ -54801,7 +54801,7 @@ return array (
   ),
   'odbc_columns' => 
   array (
-    0 => 'Odbc\\Result|false',
+    0 => 'false|resource',
     'odbc' => 'resource',
     'catalog=' => 'null|string',
     'schema=' => 'null|string',
@@ -54815,7 +54815,7 @@ return array (
   ),
   'odbc_connect' => 
   array (
-    0 => 'Odbc\\Connection|false',
+    0 => 'false|resource',
     'dsn' => 'string',
     'user' => 'string',
     'password' => 'string',
@@ -54829,12 +54829,12 @@ return array (
   'odbc_data_source' => 
   array (
     0 => 'array<array-key, mixed>|false',
-    'odbc' => 'Odbc\\Connection',
+    'odbc' => 'resource',
     'fetch_type' => 'int',
   ),
   'odbc_do' => 
   array (
-    0 => 'Odbc\\Result|false',
+    0 => 'resource',
     'odbc' => 'resource',
     'query' => 'string',
   ),
@@ -54850,7 +54850,7 @@ return array (
   ),
   'odbc_exec' => 
   array (
-    0 => 'Odbc\\Result|false',
+    0 => 'resource',
     'odbc' => 'resource',
     'query' => 'string',
   ),
@@ -54923,7 +54923,7 @@ return array (
   ),
   'odbc_foreignkeys' => 
   array (
-    0 => 'Odbc\\Result|false',
+    0 => 'false|resource',
     'odbc' => 'resource',
     'pk_catalog' => 'null|string',
     'pk_schema' => 'string',
@@ -54934,18 +54934,18 @@ return array (
   ),
   'odbc_free_result' => 
   array (
-    0 => 'true',
+    0 => 'bool',
     'statement' => 'resource',
   ),
   'odbc_gettypeinfo' => 
   array (
-    0 => 'Odbc\\Result|false',
+    0 => 'resource',
     'odbc' => 'resource',
     'data_type=' => 'int',
   ),
   'odbc_longreadlen' => 
   array (
-    0 => 'true',
+    0 => 'bool',
     'statement' => 'resource',
     'length' => 'int',
   ),
@@ -54966,7 +54966,7 @@ return array (
   ),
   'odbc_pconnect' => 
   array (
-    0 => 'Odbc\\Connection|false',
+    0 => 'false|resource',
     'dsn' => 'string',
     'user' => 'string',
     'password' => 'string',
@@ -54974,13 +54974,13 @@ return array (
   ),
   'odbc_prepare' => 
   array (
-    0 => 'Odbc\\Result|false',
+    0 => 'false|resource',
     'odbc' => 'resource',
     'query' => 'string',
   ),
   'odbc_primarykeys' => 
   array (
-    0 => 'Odbc\\Result|false',
+    0 => 'false|resource',
     'odbc' => 'resource',
     'catalog' => 'null|string',
     'schema' => 'string',
@@ -54988,7 +54988,7 @@ return array (
   ),
   'odbc_procedurecolumns' => 
   array (
-    0 => 'Odbc\\Result|false',
+    0 => 'false|resource',
     'odbc' => 'resource',
     'catalog=' => 'null|string',
     'schema=' => 'null|string',
@@ -54997,7 +54997,7 @@ return array (
   ),
   'odbc_procedures' => 
   array (
-    0 => 'Odbc\\Result|false',
+    0 => 'false|resource',
     'odbc' => 'resource',
     'catalog=' => 'null|string',
     'schema=' => 'null|string',
@@ -55030,7 +55030,7 @@ return array (
   ),
   'odbc_specialcolumns' => 
   array (
-    0 => 'Odbc\\Result|false',
+    0 => 'false|resource',
     'odbc' => 'resource',
     'type' => 'int',
     'catalog' => 'null|string',
@@ -55041,7 +55041,7 @@ return array (
   ),
   'odbc_statistics' => 
   array (
-    0 => 'Odbc\\Result|false',
+    0 => 'false|resource',
     'odbc' => 'resource',
     'catalog' => 'null|string',
     'schema' => 'string',
@@ -55051,7 +55051,7 @@ return array (
   ),
   'odbc_tableprivileges' => 
   array (
-    0 => 'Odbc\\Result|false',
+    0 => 'false|resource',
     'odbc' => 'resource',
     'catalog' => 'null|string',
     'schema' => 'string',
@@ -55059,7 +55059,7 @@ return array (
   ),
   'odbc_tables' => 
   array (
-    0 => 'Odbc\\Result|false',
+    0 => 'false|resource',
     'odbc' => 'resource',
     'catalog=' => 'null|string',
     'schema=' => 'null|string',
@@ -55336,7 +55336,6 @@ return array (
     'days' => 'int',
     'options=' => 'array<array-key, mixed>|null',
     'serial=' => 'int',
-    'serial_hex=' => 'null|string',
   ),
   'openssl_decrypt' => 
   array (
@@ -56444,7 +56443,7 @@ return array (
   ),
   'passthru' => 
   array (
-    0 => 'false|null',
+    0 => 'void',
     'command' => 'string',
     '&w_result_code=' => 'int',
   ),
@@ -73821,7 +73820,7 @@ return array (
   ),
   'soapclient::__setcookie' => 
   array (
-    0 => 'void',
+    0 => 'mixed',
     'name' => 'string',
     'value=' => 'string',
   ),
@@ -82041,7 +82040,7 @@ return array (
   ),
   'stream_context_set_option' => 
   array (
-    0 => 'true',
+    0 => 'bool',
     'context' => 'mixed',
     'wrapper_or_options' => 'string',
     'option_name' => 'string',
@@ -100355,7 +100354,7 @@ return array (
   array (
     0 => 'true',
     'parser' => 'XMLParser',
-    'handler' => 'callable|null',
+    'handler' => 'callable',
   ),
   'xml_set_default_handler' => 
   array (
@@ -100367,7 +100366,7 @@ return array (
   array (
     0 => 'true',
     'parser' => 'XMLParser',
-    'start_handler' => 'callable|null',
+    'start_handler' => 'callable',
     'end_handler' => 'callable',
   ),
   'xml_set_end_namespace_decl_handler' => 
@@ -100398,7 +100397,7 @@ return array (
   array (
     0 => 'true',
     'parser' => 'XMLParser',
-    'handler' => 'callable|null',
+    'handler' => 'callable',
   ),
   'xml_set_start_namespace_decl_handler' => 
   array (

@@ -16,6 +16,11 @@ The callmap files in the `override` subfolder are then used, in conjunction with
 automatically-generated reflection callmaps in `dictionaries/autogen`, to generate the
 final callmaps in `dictionaries/CallMap_*`, which are the actual callmaps in use by Psalm.
 
+After editing an override callmap, run `bin/gen_callmap.php` to regenerate the final callmap file.
+
+To also regenerate the base callmaps, run `bin/gen_callmap.sh`: it will use the dockerfiles in `bin/` 
+to extract types from PHP and a set of extensions.
+
 ## Full callmap format
 
 The full callmap (`CallMap.php`) has function/method
