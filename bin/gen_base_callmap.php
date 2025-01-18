@@ -1,4 +1,5 @@
-<?php
+<?php // phpcs:disable PSR1.Files.SideEffects.FoundWithSymbols
+
 
 declare(strict_types=1);
 
@@ -40,7 +41,7 @@ function typeToString($reflection_type, string $defaultType): string
  */
 function paramsToEntries(ReflectionFunctionAbstract $reflectionFunction, string $defaultReturnType): array
 {
-    $res = PHP_VERSION_ID >= 80100 ? (
+    $res = PHP_VERSION_ID >= 8_01_00 ? (
         $reflectionFunction->getTentativeReturnType() ?? $reflectionFunction->getReturnType()
     ) : $reflectionFunction->getReturnType();
 
