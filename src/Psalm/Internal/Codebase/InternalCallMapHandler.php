@@ -38,8 +38,7 @@ use function version_compare;
  */
 final class InternalCallMapHandler
 {
-    private const PHP_MAJOR_VERSION = 8;
-    private const PHP_MINOR_VERSION = 4;
+    private const MIN_CALLMAP_VERSION = 70;
 
     private static ?int $loaded_php_major_version = null;
     private static ?int $loaded_php_minor_version = null;
@@ -360,7 +359,7 @@ final class InternalCallMapHandler
             return self::$call_map;
         }
 
-        $analyzer_version_int = (int) ($analyzer_major_version . $analyzer_minor_version);
+        $analyzer_version_int = max(self::MIN_CALLMAP_VERSION, (int) ($analyzer_major_version . $analyzer_minor_version));
 
         /** @var non-empty-array<lowercase-string, array<int|string, string>> */
         $call_map = require(dirname(__DIR__, 4) . "/dictionaries/CallMap_$analyzer_version_int.php");
