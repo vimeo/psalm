@@ -33,12 +33,14 @@ $last = array_key_last($baseMaps);
 
 // Load+normalize hand-written diff maps
 $customMaps = [
-    84 => require __DIR__."/../dictionaries/override/CallMap.php"
+    84 => require __DIR__."/../dictionaries/override/CallMap.php",
 ];
 
 $customDiffs = [];
 foreach (glob(__DIR__."/../dictionaries/override/CallMap_*.php") as $file) {
-    if (!preg_match('/_(\d+)_delta\.php/', $file, $matches)) continue;
+    if (!preg_match('/_(\d+)_delta\.php/', $file, $matches)) {
+        continue;
+    }
     $version = $matches[1];
     $customDiffs[$version] = normalizeCallMap(require $file);
 }
