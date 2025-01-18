@@ -44348,918 +44348,13 @@ return array (
     'format' => 'string',
     'value' => 'float',
   ),
-  'mongo::__construct' => 
-  array (
-    0 => 'void',
-    'server=' => 'string',
-    'options=' => 'array<array-key, mixed>',
-    'driver_options=' => 'array<array-key, mixed>',
-  ),
-  'mongo::__get' => 
-  array (
-    0 => 'MongoDB',
-    'dbname' => 'string',
-  ),
-  'mongo::__tostring' => 
-  array (
-    0 => 'string',
-  ),
-  'mongo::close' => 
-  array (
-    0 => 'bool',
-  ),
-  'mongo::connect' => 
-  array (
-    0 => 'bool',
-  ),
-  'mongo::connectutil' => 
-  array (
-    0 => 'bool',
-  ),
-  'mongo::dropdb' => 
-  array (
-    0 => 'array<array-key, mixed>',
-    'db' => 'mixed',
-  ),
-  'mongo::forceerror' => 
-  array (
-    0 => 'bool',
-  ),
-  'mongo::getconnections' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'mongo::gethosts' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'mongo::getpoolsize' => 
-  array (
-    0 => 'int',
-  ),
-  'mongo::getreadpreference' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'mongo::getslave' => 
-  array (
-    0 => 'null|string',
-  ),
-  'mongo::getslaveokay' => 
-  array (
-    0 => 'bool',
-  ),
-  'mongo::getwriteconcern' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'mongo::killcursor' => 
-  array (
-    0 => 'mixed',
-    'server_hash' => 'string',
-    'id' => 'MongoInt64|int',
-  ),
-  'mongo::lasterror' => 
-  array (
-    0 => 'array<array-key, mixed>|null',
-  ),
-  'mongo::listdbs' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'mongo::pairconnect' => 
-  array (
-    0 => 'bool',
-  ),
-  'mongo::pairpersistconnect' => 
-  array (
-    0 => 'bool',
-    'username=' => 'string',
-    'password=' => 'string',
-  ),
-  'mongo::persistconnect' => 
-  array (
-    0 => 'bool',
-    'username=' => 'string',
-    'password=' => 'string',
-  ),
-  'mongo::pooldebug' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'mongo::preverror' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'mongo::reseterror' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'mongo::selectcollection' => 
-  array (
-    0 => 'MongoCollection',
-    'db' => 'string',
-    'collection' => 'string',
-  ),
-  'mongo::selectdb' => 
-  array (
-    0 => 'MongoDB',
-    'name' => 'string',
-  ),
-  'mongo::setpoolsize' => 
-  array (
-    0 => 'bool',
-    'size' => 'int',
-  ),
-  'mongo::setreadpreference' => 
-  array (
-    0 => 'bool',
-    'readPreference' => 'string',
-    'tags=' => 'array<array-key, mixed>',
-  ),
-  'mongo::setslaveokay' => 
-  array (
-    0 => 'bool',
-    'ok=' => 'bool',
-  ),
-  'mongo::switchslave' => 
-  array (
-    0 => 'string',
-  ),
-  'mongobindata::__construct' => 
-  array (
-    0 => 'void',
-    'data' => 'string',
-    'type=' => 'int',
-  ),
-  'mongobindata::__tostring' => 
-  array (
-    0 => 'string',
-  ),
-  'mongoclient::__construct' => 
-  array (
-    0 => 'void',
-    'server=' => 'string',
-    'options=' => 'array<array-key, mixed>',
-    'driver_options=' => 'array<array-key, mixed>',
-  ),
-  'mongoclient::__get' => 
-  array (
-    0 => 'MongoDB',
-    'dbname' => 'string',
-  ),
-  'mongoclient::__tostring' => 
-  array (
-    0 => 'string',
-  ),
-  'mongoclient::close' => 
-  array (
-    0 => 'bool',
-    'connection=' => 'bool|string',
-  ),
-  'mongoclient::connect' => 
-  array (
-    0 => 'bool',
-  ),
-  'mongoclient::dropdb' => 
-  array (
-    0 => 'array<array-key, mixed>',
-    'db' => 'mixed',
-  ),
-  'mongoclient::getconnections' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'mongoclient::gethosts' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'mongoclient::getreadpreference' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'mongoclient::getwriteconcern' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'mongoclient::killcursor' => 
-  array (
-    0 => 'bool',
-    'server_hash' => 'string',
-    'id' => 'MongoInt64|int',
-  ),
-  'mongoclient::listdbs' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'mongoclient::selectcollection' => 
-  array (
-    0 => 'MongoCollection',
-    'db' => 'string',
-    'collection' => 'string',
-  ),
-  'mongoclient::selectdb' => 
-  array (
-    0 => 'MongoDB',
-    'name' => 'string',
-  ),
-  'mongoclient::setreadpreference' => 
-  array (
-    0 => 'bool',
-    'read_preference' => 'string',
-    'tags=' => 'array<array-key, mixed>',
-  ),
-  'mongoclient::setwriteconcern' => 
-  array (
-    0 => 'bool',
-    'w' => 'mixed',
-    'wtimeout=' => 'int',
-  ),
-  'mongoclient::switchslave' => 
-  array (
-    0 => 'string',
-  ),
-  'mongocode::__construct' => 
-  array (
-    0 => 'void',
-    'code' => 'string',
-    'scope=' => 'array<array-key, mixed>',
-  ),
-  'mongocode::__tostring' => 
-  array (
-    0 => 'string',
-  ),
-  'mongocollection::__construct' => 
-  array (
-    0 => 'void',
-    'db' => 'MongoDB',
-    'name' => 'string',
-  ),
-  'mongocollection::__get' => 
-  array (
-    0 => 'MongoCollection',
-    'name' => 'string',
-  ),
-  'mongocollection::__tostring' => 
-  array (
-    0 => 'string',
-  ),
-  'mongocollection::aggregate' => 
-  array (
-    0 => 'array<array-key, mixed>',
-    'op' => 'array<array-key, mixed>',
-    'op=' => 'array<array-key, mixed>',
-    '...args=' => 'array<array-key, mixed>',
-  ),
-  'mongocollection::aggregate\'1' => 
-  array (
-    0 => 'array<array-key, mixed>',
-    'pipeline' => 'array<array-key, mixed>',
-    'options=' => 'array<array-key, mixed>',
-  ),
-  'mongocollection::aggregatecursor' => 
-  array (
-    0 => 'MongoCommandCursor',
-    'command' => 'array<array-key, mixed>',
-    'options=' => 'array<array-key, mixed>',
-  ),
-  'mongocollection::batchinsert' => 
-  array (
-    0 => 'array<array-key, mixed>|bool',
-    'a' => 'array<array-key, mixed>',
-    'options=' => 'array<array-key, mixed>',
-  ),
-  'mongocollection::count' => 
-  array (
-    0 => 'int',
-    'query=' => 'array<array-key, mixed>',
-    'limit=' => 'int',
-    'skip=' => 'int',
-  ),
-  'mongocollection::createdbref' => 
-  array (
-    0 => 'array<array-key, mixed>',
-    'a' => 'array<array-key, mixed>',
-  ),
-  'mongocollection::createindex' => 
-  array (
-    0 => 'array<array-key, mixed>',
-    'keys' => 'array<array-key, mixed>',
-    'options=' => 'array<array-key, mixed>',
-  ),
-  'mongocollection::deleteindex' => 
-  array (
-    0 => 'array<array-key, mixed>',
-    'keys' => 'array<array-key, mixed>|string',
-  ),
-  'mongocollection::deleteindexes' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'mongocollection::distinct' => 
-  array (
-    0 => 'array<array-key, mixed>|false',
-    'key' => 'string',
-    'query=' => 'array<array-key, mixed>',
-  ),
-  'mongocollection::drop' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'mongocollection::ensureindex' => 
-  array (
-    0 => 'bool',
-    'keys' => 'array<array-key, mixed>',
-    'options=' => 'array<array-key, mixed>',
-  ),
-  'mongocollection::find' => 
-  array (
-    0 => 'MongoCursor',
-    'query=' => 'array<array-key, mixed>',
-    'fields=' => 'array<array-key, mixed>',
-  ),
-  'mongocollection::findandmodify' => 
-  array (
-    0 => 'array<array-key, mixed>',
-    'query' => 'array<array-key, mixed>',
-    'update=' => 'array<array-key, mixed>',
-    'fields=' => 'array<array-key, mixed>',
-    'options=' => 'array<array-key, mixed>',
-  ),
-  'mongocollection::findone' => 
-  array (
-    0 => 'array<array-key, mixed>|null',
-    'query=' => 'array<array-key, mixed>',
-    'fields=' => 'array<array-key, mixed>',
-  ),
-  'mongocollection::getdbref' => 
-  array (
-    0 => 'array<array-key, mixed>',
-    'ref' => 'array<array-key, mixed>',
-  ),
-  'mongocollection::getindexinfo' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'mongocollection::getname' => 
-  array (
-    0 => 'string',
-  ),
-  'mongocollection::getreadpreference' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'mongocollection::getslaveokay' => 
-  array (
-    0 => 'bool',
-  ),
-  'mongocollection::getwriteconcern' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'mongocollection::group' => 
-  array (
-    0 => 'array<array-key, mixed>',
-    'keys' => 'mixed',
-    'initial' => 'array<array-key, mixed>',
-    'reduce' => 'MongoCode',
-    'options=' => 'array<array-key, mixed>',
-  ),
-  'mongocollection::insert' => 
-  array (
-    0 => 'array<array-key, mixed>|bool',
-    'a' => 'array<array-key, mixed>|object',
-    'options=' => 'array<array-key, mixed>',
-  ),
-  'mongocollection::parallelcollectionscan' => 
-  array (
-    0 => 'array<array-key, MongoCommandCursor>',
-    'num_cursors' => 'int',
-  ),
-  'mongocollection::remove' => 
-  array (
-    0 => 'array<array-key, mixed>|bool',
-    'criteria=' => 'array<array-key, mixed>',
-    'options=' => 'array<array-key, mixed>',
-  ),
-  'mongocollection::save' => 
-  array (
-    0 => 'array<array-key, mixed>|bool',
-    'a' => 'array<array-key, mixed>|object',
-    'options=' => 'array<array-key, mixed>',
-  ),
-  'mongocollection::setreadpreference' => 
-  array (
-    0 => 'bool',
-    'read_preference' => 'string',
-    'tags=' => 'array<array-key, mixed>',
-  ),
-  'mongocollection::setslaveokay' => 
-  array (
-    0 => 'bool',
-    'ok=' => 'bool',
-  ),
-  'mongocollection::setwriteconcern' => 
-  array (
-    0 => 'bool',
-    'w' => 'mixed',
-    'wtimeout=' => 'int',
-  ),
-  'mongocollection::toindexstring' => 
-  array (
-    0 => 'string',
-    'keys' => 'mixed',
-  ),
-  'mongocollection::update' => 
-  array (
-    0 => 'bool',
-    'criteria' => 'array<array-key, mixed>',
-    'newobj' => 'array<array-key, mixed>',
-    'options=' => 'array<array-key, mixed>',
-  ),
-  'mongocollection::validate' => 
-  array (
-    0 => 'array<array-key, mixed>',
-    'scan_data=' => 'bool',
-  ),
-  'mongocommandcursor::__construct' => 
-  array (
-    0 => 'void',
-    'connection' => 'MongoClient',
-    'ns' => 'string',
-    'command' => 'array<array-key, mixed>',
-  ),
-  'mongocommandcursor::batchsize' => 
-  array (
-    0 => 'MongoCommandCursor',
-    'batchSize' => 'int',
-  ),
-  'mongocommandcursor::createfromdocument' => 
-  array (
-    0 => 'MongoCommandCursor',
-    'connection' => 'MongoClient',
-    'hash' => 'string',
-    'document' => 'array<array-key, mixed>',
-  ),
-  'mongocommandcursor::current' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'mongocommandcursor::dead' => 
-  array (
-    0 => 'bool',
-  ),
-  'mongocommandcursor::getreadpreference' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'mongocommandcursor::info' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'mongocommandcursor::key' => 
-  array (
-    0 => 'int',
-  ),
-  'mongocommandcursor::next' => 
-  array (
-    0 => 'void',
-  ),
-  'mongocommandcursor::rewind' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'mongocommandcursor::setreadpreference' => 
-  array (
-    0 => 'MongoCommandCursor',
-    'read_preference' => 'string',
-    'tags=' => 'array<array-key, mixed>',
-  ),
-  'mongocommandcursor::timeout' => 
-  array (
-    0 => 'MongoCommandCursor',
-    'ms' => 'int',
-  ),
-  'mongocommandcursor::valid' => 
-  array (
-    0 => 'bool',
-  ),
-  'mongocursor::__construct' => 
-  array (
-    0 => 'void',
-    'connection' => 'MongoClient',
-    'ns' => 'string',
-    'query=' => 'array<array-key, mixed>',
-    'fields=' => 'array<array-key, mixed>',
-  ),
-  'mongocursor::addoption' => 
-  array (
-    0 => 'MongoCursor',
-    'key' => 'string',
-    'value' => 'mixed',
-  ),
-  'mongocursor::awaitdata' => 
-  array (
-    0 => 'MongoCursor',
-    'wait=' => 'bool',
-  ),
-  'mongocursor::batchsize' => 
-  array (
-    0 => 'MongoCursor',
-    'num' => 'int',
-  ),
-  'mongocursor::count' => 
-  array (
-    0 => 'int',
-    'foundonly=' => 'bool',
-  ),
-  'mongocursor::current' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'mongocursor::dead' => 
-  array (
-    0 => 'bool',
-  ),
-  'mongocursor::doquery' => 
-  array (
-    0 => 'void',
-  ),
-  'mongocursor::explain' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'mongocursor::fields' => 
-  array (
-    0 => 'MongoCursor',
-    'f' => 'array<array-key, mixed>',
-  ),
-  'mongocursor::getnext' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'mongocursor::getreadpreference' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'mongocursor::hasnext' => 
-  array (
-    0 => 'bool',
-  ),
-  'mongocursor::hint' => 
-  array (
-    0 => 'MongoCursor',
-    'key_pattern' => 'array<array-key, mixed>|object|string',
-  ),
-  'mongocursor::immortal' => 
-  array (
-    0 => 'MongoCursor',
-    'liveforever=' => 'bool',
-  ),
-  'mongocursor::info' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'mongocursor::key' => 
-  array (
-    0 => 'string',
-  ),
-  'mongocursor::limit' => 
-  array (
-    0 => 'MongoCursor',
-    'num' => 'int',
-  ),
-  'mongocursor::maxtimems' => 
-  array (
-    0 => 'MongoCursor',
-    'ms' => 'int',
-  ),
-  'mongocursor::next' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'mongocursor::partial' => 
-  array (
-    0 => 'MongoCursor',
-    'okay=' => 'bool',
-  ),
-  'mongocursor::reset' => 
-  array (
-    0 => 'void',
-  ),
-  'mongocursor::rewind' => 
-  array (
-    0 => 'void',
-  ),
-  'mongocursor::setflag' => 
-  array (
-    0 => 'MongoCursor',
-    'flag' => 'int',
-    'set=' => 'bool',
-  ),
-  'mongocursor::setreadpreference' => 
-  array (
-    0 => 'MongoCursor',
-    'read_preference' => 'string',
-    'tags=' => 'array<array-key, mixed>',
-  ),
-  'mongocursor::skip' => 
-  array (
-    0 => 'MongoCursor',
-    'num' => 'int',
-  ),
-  'mongocursor::slaveokay' => 
-  array (
-    0 => 'MongoCursor',
-    'okay=' => 'bool',
-  ),
-  'mongocursor::snapshot' => 
-  array (
-    0 => 'MongoCursor',
-  ),
-  'mongocursor::sort' => 
-  array (
-    0 => 'MongoCursor',
-    'fields' => 'array<array-key, mixed>',
-  ),
-  'mongocursor::tailable' => 
-  array (
-    0 => 'MongoCursor',
-    'tail=' => 'bool',
-  ),
-  'mongocursor::timeout' => 
-  array (
-    0 => 'MongoCursor',
-    'ms' => 'int',
-  ),
-  'mongocursor::valid' => 
-  array (
-    0 => 'bool',
-  ),
-  'mongocursorexception::__clone' => 
-  array (
-    0 => 'void',
-  ),
-  'mongocursorexception::__construct' => 
-  array (
-    0 => 'void',
-    'message=' => 'string',
-    'code=' => 'int',
-    'previous=' => 'Exception|Throwable|null',
-  ),
-  'mongocursorexception::__tostring' => 
-  array (
-    0 => 'string',
-  ),
-  'mongocursorexception::__wakeup' => 
-  array (
-    0 => 'void',
-  ),
-  'mongocursorexception::getcode' => 
-  array (
-    0 => 'int',
-  ),
-  'mongocursorexception::getfile' => 
-  array (
-    0 => 'string',
-  ),
-  'mongocursorexception::gethost' => 
-  array (
-    0 => 'string',
-  ),
-  'mongocursorexception::getline' => 
-  array (
-    0 => 'int',
-  ),
-  'mongocursorexception::getmessage' => 
-  array (
-    0 => 'string',
-  ),
-  'mongocursorexception::getprevious' => 
-  array (
-    0 => 'Exception|Throwable',
-  ),
   'mongocursorexception::gettrace' => 
   array (
     0 => 'list<array{args?: array<array-key, mixed>, class?: class-string, file?: string, function: string, line?: int, type?: \'->\'|\'::\'}>',
   ),
-  'mongocursorexception::gettraceasstring' => 
-  array (
-    0 => 'string',
-  ),
-  'mongocursorinterface::__construct' => 
-  array (
-    0 => 'void',
-  ),
-  'mongocursorinterface::batchsize' => 
-  array (
-    0 => 'MongoCursorInterface',
-    'batchSize' => 'int',
-  ),
-  'mongocursorinterface::current' => 
-  array (
-    0 => 'mixed',
-  ),
-  'mongocursorinterface::dead' => 
-  array (
-    0 => 'bool',
-  ),
-  'mongocursorinterface::getreadpreference' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'mongocursorinterface::info' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'mongocursorinterface::key' => 
-  array (
-    0 => 'int|string',
-  ),
-  'mongocursorinterface::next' => 
-  array (
-    0 => 'void',
-  ),
-  'mongocursorinterface::rewind' => 
-  array (
-    0 => 'void',
-  ),
-  'mongocursorinterface::setreadpreference' => 
-  array (
-    0 => 'MongoCursorInterface',
-    'read_preference' => 'string',
-    'tags=' => 'array<array-key, mixed>',
-  ),
-  'mongocursorinterface::timeout' => 
-  array (
-    0 => 'MongoCursorInterface',
-    'ms' => 'int',
-  ),
-  'mongocursorinterface::valid' => 
-  array (
-    0 => 'bool',
-  ),
-  'mongodate::__construct' => 
-  array (
-    0 => 'void',
-    'second=' => 'int',
-    'usecond=' => 'int',
-  ),
-  'mongodate::__tostring' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodate::todatetime' => 
-  array (
-    0 => 'DateTime',
-  ),
-  'mongodb::__construct' => 
-  array (
-    0 => 'void',
-    'conn' => 'MongoClient',
-    'name' => 'string',
-  ),
-  'mongodb::__get' => 
-  array (
-    0 => 'MongoCollection',
-    'name' => 'string',
-  ),
-  'mongodb::__tostring' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb::authenticate' => 
-  array (
-    0 => 'array<array-key, mixed>',
-    'username' => 'string',
-    'password' => 'string',
-  ),
-  'mongodb::command' => 
-  array (
-    0 => 'array<array-key, mixed>',
-    'command' => 'array<array-key, mixed>',
-  ),
-  'mongodb::createcollection' => 
-  array (
-    0 => 'MongoCollection',
-    'name' => 'string',
-    'capped=' => 'bool',
-    'size=' => 'int',
-    'max=' => 'int',
-  ),
-  'mongodb::createdbref' => 
-  array (
-    0 => 'array<array-key, mixed>',
-    'collection' => 'string',
-    'a' => 'mixed',
-  ),
-  'mongodb::drop' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'mongodb::dropcollection' => 
-  array (
-    0 => 'array<array-key, mixed>',
-    'coll' => 'MongoCollection|string',
-  ),
-  'mongodb::execute' => 
-  array (
-    0 => 'array<array-key, mixed>',
-    'code' => 'MongoCode|string',
-    'args=' => 'array<array-key, mixed>',
-  ),
-  'mongodb::forceerror' => 
-  array (
-    0 => 'bool',
-  ),
-  'mongodb::getcollectioninfo' => 
-  array (
-    0 => 'array<array-key, mixed>',
-    'options=' => 'array<array-key, mixed>',
-  ),
-  'mongodb::getcollectionnames' => 
-  array (
-    0 => 'array<array-key, mixed>',
-    'options=' => 'array<array-key, mixed>',
-  ),
-  'mongodb::getdbref' => 
-  array (
-    0 => 'array<array-key, mixed>',
-    'ref' => 'array<array-key, mixed>',
-  ),
-  'mongodb::getgridfs' => 
-  array (
-    0 => 'MongoGridFS',
-    'prefix=' => 'string',
-  ),
-  'mongodb::getprofilinglevel' => 
-  array (
-    0 => 'int',
-  ),
-  'mongodb::getreadpreference' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'mongodb::getslaveokay' => 
-  array (
-    0 => 'bool',
-  ),
-  'mongodb::getwriteconcern' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'mongodb::lasterror' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'mongodb::listcollections' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'mongodb::preverror' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'mongodb::repair' => 
-  array (
-    0 => 'array<array-key, mixed>',
-    'preserve_cloned_files=' => 'bool',
-    'backup_original_files=' => 'bool',
-  ),
-  'mongodb::reseterror' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'mongodb::selectcollection' => 
-  array (
-    0 => 'MongoCollection',
-    'name' => 'string',
-  ),
-  'mongodb::setprofilinglevel' => 
-  array (
-    0 => 'int',
-    'level' => 'int',
-  ),
-  'mongodb::setreadpreference' => 
-  array (
-    0 => 'bool',
-    'read_preference' => 'string',
-    'tags=' => 'array<array-key, mixed>',
-  ),
-  'mongodb::setslaveokay' => 
-  array (
-    0 => 'bool',
-    'ok=' => 'bool',
-  ),
-  'mongodb::setwriteconcern' => 
-  array (
-    0 => 'bool',
-    'w' => 'mixed',
-    'wtimeout=' => 'int',
-  ),
   'mongodb\\bson\\binary::__construct' => 
   array (
-    0 => 'void',
+    0 => 'string',
     'data' => 'string',
     'type=' => 'int',
   ),
@@ -45291,7 +44386,7 @@ return array (
   ),
   'mongodb\\bson\\binary::jsonserialize' => 
   array (
-    0 => 'mixed',
+    0 => 'string',
   ),
   'mongodb\\bson\\binary::serialize' => 
   array (
@@ -45300,19 +44395,7 @@ return array (
   'mongodb\\bson\\binary::unserialize' => 
   array (
     0 => 'void',
-    'data' => 'string',
-  ),
-  'mongodb\\bson\\binaryinterface::__tostring' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\bson\\binaryinterface::getdata' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\bson\\binaryinterface::gettype' => 
-  array (
-    0 => 'int',
+    'serialized' => 'string',
   ),
   'mongodb\\bson\\dbpointer::__construct' => 
   array (
@@ -45338,7 +44421,7 @@ return array (
   ),
   'mongodb\\bson\\dbpointer::jsonserialize' => 
   array (
-    0 => 'mixed',
+    0 => 'string',
   ),
   'mongodb\\bson\\dbpointer::serialize' => 
   array (
@@ -45347,11 +44430,11 @@ return array (
   'mongodb\\bson\\dbpointer::unserialize' => 
   array (
     0 => 'void',
-    'data' => 'string',
+    'serialized' => 'string',
   ),
   'mongodb\\bson\\decimal128::__construct' => 
   array (
-    0 => 'void',
+    0 => 'string',
     'value' => 'string',
   ),
   'mongodb\\bson\\decimal128::__serialize' => 
@@ -45374,7 +44457,7 @@ return array (
   ),
   'mongodb\\bson\\decimal128::jsonserialize' => 
   array (
-    0 => 'mixed',
+    0 => 'string',
   ),
   'mongodb\\bson\\decimal128::serialize' => 
   array (
@@ -45383,11 +44466,7 @@ return array (
   'mongodb\\bson\\decimal128::unserialize' => 
   array (
     0 => 'void',
-    'data' => 'string',
-  ),
-  'mongodb\\bson\\decimal128interface::__tostring' => 
-  array (
-    0 => 'string',
+    'serialized' => 'string',
   ),
   'mongodb\\bson\\document::__construct' => 
   array (
@@ -45424,11 +44503,11 @@ return array (
   'mongodb\\bson\\document::fromphp' => 
   array (
     0 => 'MongoDB\\BSON\\Document',
-    'value' => 'array<array-key, mixed>|object',
+    'value' => 'string',
   ),
   'mongodb\\bson\\document::get' => 
   array (
-    0 => 'mixed',
+    0 => 'string',
     'key' => 'string',
   ),
   'mongodb\\bson\\document::getiterator' => 
@@ -45440,27 +44519,6 @@ return array (
     0 => 'bool',
     'key' => 'string',
   ),
-  'mongodb\\bson\\document::offsetexists' => 
-  array (
-    0 => 'bool',
-    'offset' => 'mixed',
-  ),
-  'mongodb\\bson\\document::offsetget' => 
-  array (
-    0 => 'mixed',
-    'offset' => 'mixed',
-  ),
-  'mongodb\\bson\\document::offsetset' => 
-  array (
-    0 => 'void',
-    'offset' => 'mixed',
-    'value' => 'mixed',
-  ),
-  'mongodb\\bson\\document::offsetunset' => 
-  array (
-    0 => 'void',
-    'offset' => 'mixed',
-  ),
   'mongodb\\bson\\document::serialize' => 
   array (
     0 => 'string',
@@ -45471,7 +44529,7 @@ return array (
   ),
   'mongodb\\bson\\document::tophp' => 
   array (
-    0 => 'array<array-key, mixed>|object',
+    0 => 'string',
     'typeMap=' => 'array<array-key, mixed>|null',
   ),
   'mongodb\\bson\\document::torelaxedextendedjson' => 
@@ -45481,7 +44539,7 @@ return array (
   'mongodb\\bson\\document::unserialize' => 
   array (
     0 => 'void',
-    'data' => 'string',
+    'serialized' => 'string',
   ),
   'mongodb\\bson\\fromjson' => 
   array (
@@ -45491,12 +44549,12 @@ return array (
   'mongodb\\bson\\fromphp' => 
   array (
     0 => 'string',
-    'value' => 'array<array-key, mixed>|object',
+    'value' => 'string',
   ),
   'mongodb\\bson\\int64::__construct' => 
   array (
-    0 => 'void',
-    'value' => 'int|string',
+    0 => 'string',
+    'value' => 'string',
   ),
   'mongodb\\bson\\int64::__serialize' => 
   array (
@@ -45518,7 +44576,7 @@ return array (
   ),
   'mongodb\\bson\\int64::jsonserialize' => 
   array (
-    0 => 'mixed',
+    0 => 'string',
   ),
   'mongodb\\bson\\int64::serialize' => 
   array (
@@ -45527,7 +44585,7 @@ return array (
   'mongodb\\bson\\int64::unserialize' => 
   array (
     0 => 'void',
-    'data' => 'string',
+    'serialized' => 'string',
   ),
   'mongodb\\bson\\iterator::__construct' => 
   array (
@@ -45539,11 +44597,11 @@ return array (
   ),
   'mongodb\\bson\\iterator::current' => 
   array (
-    0 => 'mixed',
+    0 => 'string',
   ),
   'mongodb\\bson\\iterator::key' => 
   array (
-    0 => 'int|string',
+    0 => 'string',
   ),
   'mongodb\\bson\\iterator::next' => 
   array (
@@ -45559,9 +44617,9 @@ return array (
   ),
   'mongodb\\bson\\javascript::__construct' => 
   array (
-    0 => 'void',
+    0 => 'string',
     'code' => 'string',
-    'scope=' => 'array<array-key, mixed>|null|object',
+    'scope=' => 'string',
   ),
   'mongodb\\bson\\javascript::__serialize' => 
   array (
@@ -45591,7 +44649,7 @@ return array (
   ),
   'mongodb\\bson\\javascript::jsonserialize' => 
   array (
-    0 => 'mixed',
+    0 => 'string',
   ),
   'mongodb\\bson\\javascript::serialize' => 
   array (
@@ -45600,19 +44658,7 @@ return array (
   'mongodb\\bson\\javascript::unserialize' => 
   array (
     0 => 'void',
-    'data' => 'string',
-  ),
-  'mongodb\\bson\\javascriptinterface::__tostring' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\bson\\javascriptinterface::getcode' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\bson\\javascriptinterface::getscope' => 
-  array (
-    0 => 'null|object',
+    'serialized' => 'string',
   ),
   'mongodb\\bson\\maxkey::__serialize' => 
   array (
@@ -45630,7 +44676,7 @@ return array (
   ),
   'mongodb\\bson\\maxkey::jsonserialize' => 
   array (
-    0 => 'mixed',
+    0 => 'string',
   ),
   'mongodb\\bson\\maxkey::serialize' => 
   array (
@@ -45639,7 +44685,7 @@ return array (
   'mongodb\\bson\\maxkey::unserialize' => 
   array (
     0 => 'void',
-    'data' => 'string',
+    'serialized' => 'string',
   ),
   'mongodb\\bson\\minkey::__serialize' => 
   array (
@@ -45657,7 +44703,7 @@ return array (
   ),
   'mongodb\\bson\\minkey::jsonserialize' => 
   array (
-    0 => 'mixed',
+    0 => 'string',
   ),
   'mongodb\\bson\\minkey::serialize' => 
   array (
@@ -45666,11 +44712,11 @@ return array (
   'mongodb\\bson\\minkey::unserialize' => 
   array (
     0 => 'void',
-    'data' => 'string',
+    'serialized' => 'string',
   ),
   'mongodb\\bson\\objectid::__construct' => 
   array (
-    0 => 'void',
+    0 => 'string',
     'id=' => 'null|string',
   ),
   'mongodb\\bson\\objectid::__serialize' => 
@@ -45697,7 +44743,7 @@ return array (
   ),
   'mongodb\\bson\\objectid::jsonserialize' => 
   array (
-    0 => 'mixed',
+    0 => 'string',
   ),
   'mongodb\\bson\\objectid::serialize' => 
   array (
@@ -45706,15 +44752,7 @@ return array (
   'mongodb\\bson\\objectid::unserialize' => 
   array (
     0 => 'void',
-    'data' => 'string',
-  ),
-  'mongodb\\bson\\objectidinterface::__tostring' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\bson\\objectidinterface::gettimestamp' => 
-  array (
-    0 => 'int',
+    'serialized' => 'string',
   ),
   'mongodb\\bson\\packedarray::__construct' => 
   array (
@@ -45745,7 +44783,7 @@ return array (
   ),
   'mongodb\\bson\\packedarray::get' => 
   array (
-    0 => 'mixed',
+    0 => 'string',
     'index' => 'int',
   ),
   'mongodb\\bson\\packedarray::getiterator' => 
@@ -45757,48 +44795,23 @@ return array (
     0 => 'bool',
     'index' => 'int',
   ),
-  'mongodb\\bson\\packedarray::offsetexists' => 
-  array (
-    0 => 'bool',
-    'offset' => 'mixed',
-  ),
-  'mongodb\\bson\\packedarray::offsetget' => 
-  array (
-    0 => 'mixed',
-    'offset' => 'mixed',
-  ),
-  'mongodb\\bson\\packedarray::offsetset' => 
-  array (
-    0 => 'void',
-    'offset' => 'mixed',
-    'value' => 'mixed',
-  ),
-  'mongodb\\bson\\packedarray::offsetunset' => 
-  array (
-    0 => 'void',
-    'offset' => 'mixed',
-  ),
   'mongodb\\bson\\packedarray::serialize' => 
   array (
     0 => 'string',
   ),
   'mongodb\\bson\\packedarray::tophp' => 
   array (
-    0 => 'array<array-key, mixed>|object',
+    0 => 'string',
     'typeMap=' => 'array<array-key, mixed>|null',
   ),
   'mongodb\\bson\\packedarray::unserialize' => 
   array (
     0 => 'void',
-    'data' => 'string',
-  ),
-  'mongodb\\bson\\persistable::bsonserialize' => 
-  array (
-    0 => 'MongoDB\\BSON\\Document|array<array-key, mixed>|stdClass',
+    'serialized' => 'string',
   ),
   'mongodb\\bson\\regex::__construct' => 
   array (
-    0 => 'void',
+    0 => 'string',
     'pattern' => 'string',
     'flags=' => 'string',
   ),
@@ -45830,7 +44843,7 @@ return array (
   ),
   'mongodb\\bson\\regex::jsonserialize' => 
   array (
-    0 => 'mixed',
+    0 => 'string',
   ),
   'mongodb\\bson\\regex::serialize' => 
   array (
@@ -45839,23 +44852,7 @@ return array (
   'mongodb\\bson\\regex::unserialize' => 
   array (
     0 => 'void',
-    'data' => 'string',
-  ),
-  'mongodb\\bson\\regexinterface::__tostring' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\bson\\regexinterface::getflags' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\bson\\regexinterface::getpattern' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\bson\\serializable::bsonserialize' => 
-  array (
-    0 => 'MongoDB\\BSON\\Document|MongoDB\\BSON\\PackedArray|array<array-key, mixed>|stdClass',
+    'serialized' => 'string',
   ),
   'mongodb\\bson\\symbol::__construct' => 
   array (
@@ -45881,7 +44878,7 @@ return array (
   ),
   'mongodb\\bson\\symbol::jsonserialize' => 
   array (
-    0 => 'mixed',
+    0 => 'string',
   ),
   'mongodb\\bson\\symbol::serialize' => 
   array (
@@ -45890,13 +44887,13 @@ return array (
   'mongodb\\bson\\symbol::unserialize' => 
   array (
     0 => 'void',
-    'data' => 'string',
+    'serialized' => 'string',
   ),
   'mongodb\\bson\\timestamp::__construct' => 
   array (
-    0 => 'void',
-    'increment' => 'int|string',
-    'timestamp' => 'int|string',
+    0 => 'string',
+    'increment' => 'string',
+    'timestamp' => 'string',
   ),
   'mongodb\\bson\\timestamp::__serialize' => 
   array (
@@ -45926,7 +44923,7 @@ return array (
   ),
   'mongodb\\bson\\timestamp::jsonserialize' => 
   array (
-    0 => 'mixed',
+    0 => 'string',
   ),
   'mongodb\\bson\\timestamp::serialize' => 
   array (
@@ -45935,19 +44932,7 @@ return array (
   'mongodb\\bson\\timestamp::unserialize' => 
   array (
     0 => 'void',
-    'data' => 'string',
-  ),
-  'mongodb\\bson\\timestampinterface::__tostring' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\bson\\timestampinterface::getincrement' => 
-  array (
-    0 => 'int',
-  ),
-  'mongodb\\bson\\timestampinterface::gettimestamp' => 
-  array (
-    0 => 'int',
+    'serialized' => 'string',
   ),
   'mongodb\\bson\\tocanonicalextendedjson' => 
   array (
@@ -45961,7 +44946,7 @@ return array (
   ),
   'mongodb\\bson\\tophp' => 
   array (
-    0 => 'array<array-key, mixed>|object',
+    0 => 'string',
     'bson' => 'string',
     'typemap=' => 'array<array-key, mixed>|null',
   ),
@@ -45994,7 +44979,7 @@ return array (
   ),
   'mongodb\\bson\\undefined::jsonserialize' => 
   array (
-    0 => 'mixed',
+    0 => 'string',
   ),
   'mongodb\\bson\\undefined::serialize' => 
   array (
@@ -46003,17 +44988,12 @@ return array (
   'mongodb\\bson\\undefined::unserialize' => 
   array (
     0 => 'void',
-    'data' => 'string',
-  ),
-  'mongodb\\bson\\unserializable::bsonunserialize' => 
-  array (
-    0 => 'void',
-    'data' => 'array<array-key, mixed>',
+    'serialized' => 'string',
   ),
   'mongodb\\bson\\utcdatetime::__construct' => 
   array (
-    0 => 'void',
-    'milliseconds=' => 'DateTimeInterface|float|int|null|string',
+    0 => 'string',
+    'milliseconds=' => 'string',
   ),
   'mongodb\\bson\\utcdatetime::__serialize' => 
   array (
@@ -46035,7 +45015,7 @@ return array (
   ),
   'mongodb\\bson\\utcdatetime::jsonserialize' => 
   array (
-    0 => 'mixed',
+    0 => 'string',
   ),
   'mongodb\\bson\\utcdatetime::serialize' => 
   array (
@@ -46048,19 +45028,11 @@ return array (
   'mongodb\\bson\\utcdatetime::unserialize' => 
   array (
     0 => 'void',
-    'data' => 'string',
-  ),
-  'mongodb\\bson\\utcdatetimeinterface::__tostring' => 
-  array (
-    0 => 'string',
-  ),
-  'mongodb\\bson\\utcdatetimeinterface::todatetime' => 
-  array (
-    0 => 'DateTime',
+    'serialized' => 'string',
   ),
   'mongodb\\driver\\bulkwrite::__construct' => 
   array (
-    0 => 'void',
+    0 => 'string',
     'options=' => 'array<array-key, mixed>|null',
   ),
   'mongodb\\driver\\bulkwrite::__wakeup' => 
@@ -46074,24 +45046,24 @@ return array (
   'mongodb\\driver\\bulkwrite::delete' => 
   array (
     0 => 'void',
-    'filter' => 'array<array-key, mixed>|object',
+    'filter' => 'string',
     'deleteOptions=' => 'array<array-key, mixed>|null',
   ),
   'mongodb\\driver\\bulkwrite::insert' => 
   array (
-    0 => 'mixed',
-    'document' => 'array<array-key, mixed>|object',
+    0 => 'string',
+    'document' => 'string',
   ),
   'mongodb\\driver\\bulkwrite::update' => 
   array (
     0 => 'void',
-    'filter' => 'array<array-key, mixed>|object',
-    'newObj' => 'array<array-key, mixed>|object',
+    'filter' => 'string',
+    'newObj' => 'string',
     'updateOptions=' => 'array<array-key, mixed>|null',
   ),
   'mongodb\\driver\\clientencryption::__construct' => 
   array (
-    0 => 'void',
+    0 => 'string',
     'options' => 'array<array-key, mixed>',
   ),
   'mongodb\\driver\\clientencryption::__wakeup' => 
@@ -46112,7 +45084,7 @@ return array (
   ),
   'mongodb\\driver\\clientencryption::decrypt' => 
   array (
-    0 => 'mixed',
+    0 => 'string',
     'value' => 'MongoDB\\BSON\\Binary',
   ),
   'mongodb\\driver\\clientencryption::deletekey' => 
@@ -46123,13 +45095,13 @@ return array (
   'mongodb\\driver\\clientencryption::encrypt' => 
   array (
     0 => 'MongoDB\\BSON\\Binary',
-    'value' => 'mixed',
+    'value' => 'string',
     'options=' => 'array<array-key, mixed>|null',
   ),
   'mongodb\\driver\\clientencryption::encryptexpression' => 
   array (
     0 => 'object',
-    'expr' => 'array<array-key, mixed>|object',
+    'expr' => 'string',
     'options=' => 'array<array-key, mixed>|null',
   ),
   'mongodb\\driver\\clientencryption::getkey' => 
@@ -46155,13 +45127,13 @@ return array (
   'mongodb\\driver\\clientencryption::rewrapmanydatakey' => 
   array (
     0 => 'object',
-    'filter' => 'array<array-key, mixed>|object',
+    'filter' => 'string',
     'options=' => 'array<array-key, mixed>|null',
   ),
   'mongodb\\driver\\command::__construct' => 
   array (
-    0 => 'void',
-    'document' => 'array<array-key, mixed>|object',
+    0 => 'string',
+    'document' => 'string',
     'commandOptions=' => 'array<array-key, mixed>|null',
   ),
   'mongodb\\driver\\command::__wakeup' => 
@@ -46178,7 +45150,7 @@ return array (
   ),
   'mongodb\\driver\\cursor::current' => 
   array (
-    0 => 'array<array-key, mixed>|null|object',
+    0 => 'string',
   ),
   'mongodb\\driver\\cursor::getid' => 
   array (
@@ -46246,28 +45218,7 @@ return array (
   'mongodb\\driver\\cursorid::unserialize' => 
   array (
     0 => 'void',
-    'data' => 'string',
-  ),
-  'mongodb\\driver\\cursorinterface::getid' => 
-  array (
-    0 => 'MongoDB\\Driver\\CursorId',
-  ),
-  'mongodb\\driver\\cursorinterface::getserver' => 
-  array (
-    0 => 'MongoDB\\Driver\\Server',
-  ),
-  'mongodb\\driver\\cursorinterface::isdead' => 
-  array (
-    0 => 'bool',
-  ),
-  'mongodb\\driver\\cursorinterface::settypemap' => 
-  array (
-    0 => 'void',
-    'typemap' => 'array<array-key, mixed>',
-  ),
-  'mongodb\\driver\\cursorinterface::toarray' => 
-  array (
-    0 => 'array<array-key, mixed>',
+    'serialized' => 'string',
   ),
   'mongodb\\driver\\exception\\authenticationexception::__clone' => 
   array (
@@ -46588,10 +45539,6 @@ return array (
   array (
     0 => 'bool',
     'errorLabel' => 'string',
-  ),
-  'mongodb\\driver\\exception\\exception::__tostring' => 
-  array (
-    0 => 'string',
   ),
   'mongodb\\driver\\exception\\executiontimeoutexception::__clone' => 
   array (
@@ -47000,7 +45947,7 @@ return array (
   ),
   'mongodb\\driver\\manager::__construct' => 
   array (
-    0 => 'void',
+    0 => 'string',
     'uri=' => 'null|string',
     'uriOptions=' => 'array<array-key, mixed>|null',
     'driverOptions=' => 'array<array-key, mixed>|null',
@@ -47024,21 +45971,21 @@ return array (
     0 => 'MongoDB\\Driver\\WriteResult',
     'namespace' => 'string',
     'bulk' => 'MongoDB\\Driver\\BulkWrite',
-    'options=' => 'MongoDB\\Driver\\WriteConcern|array<array-key, mixed>|null',
+    'options=' => 'string',
   ),
   'mongodb\\driver\\manager::executecommand' => 
   array (
     0 => 'MongoDB\\Driver\\Cursor',
     'db' => 'string',
     'command' => 'MongoDB\\Driver\\Command',
-    'options=' => 'MongoDB\\Driver\\ReadPreference|array<array-key, mixed>|null',
+    'options=' => 'string',
   ),
   'mongodb\\driver\\manager::executequery' => 
   array (
     0 => 'MongoDB\\Driver\\Cursor',
     'namespace' => 'string',
     'query' => 'MongoDB\\Driver\\Query',
-    'options=' => 'MongoDB\\Driver\\ReadPreference|array<array-key, mixed>|null',
+    'options=' => 'string',
   ),
   'mongodb\\driver\\manager::executereadcommand' => 
   array (
@@ -47063,7 +46010,7 @@ return array (
   ),
   'mongodb\\driver\\manager::getencryptedfieldsmap' => 
   array (
-    0 => 'array<array-key, mixed>|null|object',
+    0 => 'string',
   ),
   'mongodb\\driver\\manager::getreadconcern' => 
   array (
@@ -47185,21 +46132,6 @@ return array (
   array (
     0 => 'MongoDB\\BSON\\ObjectId|null',
   ),
-  'mongodb\\driver\\monitoring\\commandsubscriber::commandfailed' => 
-  array (
-    0 => 'void',
-    'event' => 'MongoDB\\Driver\\Monitoring\\CommandFailedEvent',
-  ),
-  'mongodb\\driver\\monitoring\\commandsubscriber::commandstarted' => 
-  array (
-    0 => 'void',
-    'event' => 'MongoDB\\Driver\\Monitoring\\CommandStartedEvent',
-  ),
-  'mongodb\\driver\\monitoring\\commandsubscriber::commandsucceeded' => 
-  array (
-    0 => 'void',
-    'event' => 'MongoDB\\Driver\\Monitoring\\CommandSucceededEvent',
-  ),
   'mongodb\\driver\\monitoring\\commandsucceededevent::__construct' => 
   array (
     0 => 'string',
@@ -47240,62 +46172,10 @@ return array (
   array (
     0 => 'MongoDB\\BSON\\ObjectId|null',
   ),
-  'mongodb\\driver\\monitoring\\logsubscriber::log' => 
-  array (
-    0 => 'void',
-    'level' => 'int',
-    'domain' => 'string',
-    'message' => 'string',
-  ),
   'mongodb\\driver\\monitoring\\removesubscriber' => 
   array (
     0 => 'void',
     'subscriber' => 'MongoDB\\Driver\\Monitoring\\Subscriber',
-  ),
-  'mongodb\\driver\\monitoring\\sdamsubscriber::serverchanged' => 
-  array (
-    0 => 'void',
-    'event' => 'MongoDB\\Driver\\Monitoring\\ServerChangedEvent',
-  ),
-  'mongodb\\driver\\monitoring\\sdamsubscriber::serverclosed' => 
-  array (
-    0 => 'void',
-    'event' => 'MongoDB\\Driver\\Monitoring\\ServerClosedEvent',
-  ),
-  'mongodb\\driver\\monitoring\\sdamsubscriber::serverheartbeatfailed' => 
-  array (
-    0 => 'void',
-    'event' => 'MongoDB\\Driver\\Monitoring\\ServerHeartbeatFailedEvent',
-  ),
-  'mongodb\\driver\\monitoring\\sdamsubscriber::serverheartbeatstarted' => 
-  array (
-    0 => 'void',
-    'event' => 'MongoDB\\Driver\\Monitoring\\ServerHeartbeatStartedEvent',
-  ),
-  'mongodb\\driver\\monitoring\\sdamsubscriber::serverheartbeatsucceeded' => 
-  array (
-    0 => 'void',
-    'event' => 'MongoDB\\Driver\\Monitoring\\ServerHeartbeatSucceededEvent',
-  ),
-  'mongodb\\driver\\monitoring\\sdamsubscriber::serveropening' => 
-  array (
-    0 => 'void',
-    'event' => 'MongoDB\\Driver\\Monitoring\\ServerOpeningEvent',
-  ),
-  'mongodb\\driver\\monitoring\\sdamsubscriber::topologychanged' => 
-  array (
-    0 => 'void',
-    'event' => 'MongoDB\\Driver\\Monitoring\\TopologyChangedEvent',
-  ),
-  'mongodb\\driver\\monitoring\\sdamsubscriber::topologyclosed' => 
-  array (
-    0 => 'void',
-    'event' => 'MongoDB\\Driver\\Monitoring\\TopologyClosedEvent',
-  ),
-  'mongodb\\driver\\monitoring\\sdamsubscriber::topologyopening' => 
-  array (
-    0 => 'void',
-    'event' => 'MongoDB\\Driver\\Monitoring\\TopologyOpeningEvent',
   ),
   'mongodb\\driver\\monitoring\\serverchangedevent::__construct' => 
   array (
@@ -47487,8 +46367,8 @@ return array (
   ),
   'mongodb\\driver\\query::__construct' => 
   array (
-    0 => 'void',
-    'filter' => 'array<array-key, mixed>|object',
+    0 => 'string',
+    'filter' => 'string',
     'queryOptions=' => 'array<array-key, mixed>|null',
   ),
   'mongodb\\driver\\query::__wakeup' => 
@@ -47497,7 +46377,7 @@ return array (
   ),
   'mongodb\\driver\\readconcern::__construct' => 
   array (
-    0 => 'void',
+    0 => 'string',
     'level=' => 'null|string',
   ),
   'mongodb\\driver\\readconcern::__serialize' => 
@@ -47516,7 +46396,7 @@ return array (
   ),
   'mongodb\\driver\\readconcern::bsonserialize' => 
   array (
-    0 => 'stdClass',
+    0 => 'string',
   ),
   'mongodb\\driver\\readconcern::getlevel' => 
   array (
@@ -47533,12 +46413,12 @@ return array (
   'mongodb\\driver\\readconcern::unserialize' => 
   array (
     0 => 'void',
-    'data' => 'string',
+    'serialized' => 'string',
   ),
   'mongodb\\driver\\readpreference::__construct' => 
   array (
-    0 => 'void',
-    'mode' => 'int|string',
+    0 => 'string',
+    'mode' => 'string',
     'tagSets=' => 'array<array-key, mixed>|null',
     'options=' => 'array<array-key, mixed>|null',
   ),
@@ -47558,7 +46438,7 @@ return array (
   ),
   'mongodb\\driver\\readpreference::bsonserialize' => 
   array (
-    0 => 'stdClass',
+    0 => 'string',
   ),
   'mongodb\\driver\\readpreference::gethedge' => 
   array (
@@ -47587,7 +46467,7 @@ return array (
   'mongodb\\driver\\readpreference::unserialize' => 
   array (
     0 => 'void',
-    'data' => 'string',
+    'serialized' => 'string',
   ),
   'mongodb\\driver\\server::__construct' => 
   array (
@@ -47602,21 +46482,21 @@ return array (
     0 => 'MongoDB\\Driver\\WriteResult',
     'namespace' => 'string',
     'bulkWrite' => 'MongoDB\\Driver\\BulkWrite',
-    'options=' => 'MongoDB\\Driver\\WriteConcern|array<array-key, mixed>|null',
+    'options=' => 'string',
   ),
   'mongodb\\driver\\server::executecommand' => 
   array (
     0 => 'MongoDB\\Driver\\Cursor',
     'db' => 'string',
     'command' => 'MongoDB\\Driver\\Command',
-    'options=' => 'MongoDB\\Driver\\ReadPreference|array<array-key, mixed>|null',
+    'options=' => 'string',
   ),
   'mongodb\\driver\\server::executequery' => 
   array (
     0 => 'MongoDB\\Driver\\Cursor',
     'namespace' => 'string',
     'query' => 'MongoDB\\Driver\\Query',
-    'options=' => 'MongoDB\\Driver\\ReadPreference|array<array-key, mixed>|null',
+    'options=' => 'string',
   ),
   'mongodb\\driver\\server::executereadcommand' => 
   array (
@@ -47689,7 +46569,7 @@ return array (
   ),
   'mongodb\\driver\\serverapi::__construct' => 
   array (
-    0 => 'void',
+    0 => 'string',
     'version' => 'string',
     'strict=' => 'bool|null',
     'deprecationErrors=' => 'bool|null',
@@ -47710,7 +46590,7 @@ return array (
   ),
   'mongodb\\driver\\serverapi::bsonserialize' => 
   array (
-    0 => 'stdClass',
+    0 => 'string',
   ),
   'mongodb\\driver\\serverapi::serialize' => 
   array (
@@ -47719,7 +46599,7 @@ return array (
   'mongodb\\driver\\serverapi::unserialize' => 
   array (
     0 => 'void',
-    'data' => 'string',
+    'serialized' => 'string',
   ),
   'mongodb\\driver\\serverdescription::__construct' => 
   array (
@@ -47768,7 +46648,7 @@ return array (
   'mongodb\\driver\\session::advanceclustertime' => 
   array (
     0 => 'void',
-    'clusterTime' => 'array<array-key, mixed>|object',
+    'clusterTime' => 'string',
   ),
   'mongodb\\driver\\session::advanceoperationtime' => 
   array (
@@ -47847,8 +46727,8 @@ return array (
   ),
   'mongodb\\driver\\writeconcern::__construct' => 
   array (
-    0 => 'void',
-    'w' => 'int|string',
+    0 => 'string',
+    'w' => 'string',
     'wtimeout=' => 'int|null',
     'journal=' => 'bool|null',
   ),
@@ -47868,7 +46748,7 @@ return array (
   ),
   'mongodb\\driver\\writeconcern::bsonserialize' => 
   array (
-    0 => 'stdClass',
+    0 => 'string',
   ),
   'mongodb\\driver\\writeconcern::getjournal' => 
   array (
@@ -47876,7 +46756,7 @@ return array (
   ),
   'mongodb\\driver\\writeconcern::getw' => 
   array (
-    0 => 'int|null|string',
+    0 => 'string',
   ),
   'mongodb\\driver\\writeconcern::getwtimeout' => 
   array (
@@ -47893,7 +46773,7 @@ return array (
   'mongodb\\driver\\writeconcern::unserialize' => 
   array (
     0 => 'void',
-    'data' => 'string',
+    'serialized' => 'string',
   ),
   'mongodb\\driver\\writeconcernerror::__construct' => 
   array (
@@ -47991,716 +46871,17 @@ return array (
   array (
     0 => 'bool',
   ),
-  'mongodbref::create' => 
-  array (
-    0 => 'array<array-key, mixed>',
-    'collection' => 'string',
-    'id' => 'mixed',
-    'database=' => 'string',
-  ),
-  'mongodbref::get' => 
-  array (
-    0 => 'array<array-key, mixed>|null',
-    'db' => 'MongoDB',
-    'ref' => 'array<array-key, mixed>',
-  ),
-  'mongodbref::isref' => 
-  array (
-    0 => 'bool',
-    'ref' => 'mixed',
-  ),
-  'mongodeletebatch::__construct' => 
-  array (
-    0 => 'void',
-    'collection' => 'MongoCollection',
-    'write_options=' => 'array<array-key, mixed>',
-  ),
-  'mongoexception::__clone' => 
-  array (
-    0 => 'void',
-  ),
-  'mongoexception::__construct' => 
-  array (
-    0 => 'void',
-    'message=' => 'string',
-    'code=' => 'int',
-    'previous=' => 'Exception|Throwable|null',
-  ),
-  'mongoexception::__tostring' => 
-  array (
-    0 => 'string',
-  ),
-  'mongoexception::__wakeup' => 
-  array (
-    0 => 'void',
-  ),
-  'mongoexception::getcode' => 
-  array (
-    0 => 'int',
-  ),
-  'mongoexception::getfile' => 
-  array (
-    0 => 'string',
-  ),
-  'mongoexception::getline' => 
-  array (
-    0 => 'int',
-  ),
-  'mongoexception::getmessage' => 
-  array (
-    0 => 'string',
-  ),
-  'mongoexception::getprevious' => 
-  array (
-    0 => 'Exception|Throwable',
-  ),
   'mongoexception::gettrace' => 
   array (
     0 => 'list<array{args?: array<array-key, mixed>, class?: class-string, file?: string, function: string, line?: int, type?: \'->\'|\'::\'}>',
-  ),
-  'mongoexception::gettraceasstring' => 
-  array (
-    0 => 'string',
-  ),
-  'mongogridfs::__construct' => 
-  array (
-    0 => 'void',
-    'db' => 'MongoDB',
-    'prefix=' => 'string',
-    'chunks=' => 'mixed',
-  ),
-  'mongogridfs::__get' => 
-  array (
-    0 => 'MongoCollection',
-    'name' => 'string',
-  ),
-  'mongogridfs::__tostring' => 
-  array (
-    0 => 'string',
-  ),
-  'mongogridfs::aggregate' => 
-  array (
-    0 => 'array<array-key, mixed>',
-    'pipeline' => 'array<array-key, mixed>',
-    'op' => 'array<array-key, mixed>',
-    'pipelineOperators' => 'array<array-key, mixed>',
-  ),
-  'mongogridfs::aggregatecursor' => 
-  array (
-    0 => 'MongoCommandCursor',
-    'pipeline' => 'array<array-key, mixed>',
-    'options' => 'array<array-key, mixed>',
-  ),
-  'mongogridfs::batchinsert' => 
-  array (
-    0 => 'mixed',
-    'a' => 'array<array-key, mixed>',
-    'options=' => 'array<array-key, mixed>',
-  ),
-  'mongogridfs::count' => 
-  array (
-    0 => 'int',
-    'query=' => 'array<array-key, mixed>|stdClass',
-  ),
-  'mongogridfs::createdbref' => 
-  array (
-    0 => 'array<array-key, mixed>',
-    'a' => 'array<array-key, mixed>',
-  ),
-  'mongogridfs::createindex' => 
-  array (
-    0 => 'array<array-key, mixed>',
-    'keys' => 'array<array-key, mixed>',
-    'options=' => 'array<array-key, mixed>',
-  ),
-  'mongogridfs::delete' => 
-  array (
-    0 => 'bool',
-    'id' => 'mixed',
-  ),
-  'mongogridfs::deleteindex' => 
-  array (
-    0 => 'array<array-key, mixed>',
-    'keys' => 'array<array-key, mixed>|string',
-  ),
-  'mongogridfs::deleteindexes' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'mongogridfs::distinct' => 
-  array (
-    0 => 'array<array-key, mixed>|bool',
-    'key' => 'string',
-    'query=' => 'array<array-key, mixed>|null',
-  ),
-  'mongogridfs::drop' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'mongogridfs::ensureindex' => 
-  array (
-    0 => 'bool',
-    'keys' => 'array<array-key, mixed>',
-    'options=' => 'array<array-key, mixed>',
-  ),
-  'mongogridfs::find' => 
-  array (
-    0 => 'MongoGridFSCursor',
-    'query=' => 'array<array-key, mixed>',
-    'fields=' => 'array<array-key, mixed>',
-  ),
-  'mongogridfs::findandmodify' => 
-  array (
-    0 => 'array<array-key, mixed>',
-    'query' => 'array<array-key, mixed>',
-    'update=' => 'array<array-key, mixed>|null',
-    'fields=' => 'array<array-key, mixed>|null',
-    'options=' => 'array<array-key, mixed>|null',
-  ),
-  'mongogridfs::findone' => 
-  array (
-    0 => 'MongoGridFSFile|null',
-    'query=' => 'mixed',
-    'fields=' => 'mixed',
-  ),
-  'mongogridfs::get' => 
-  array (
-    0 => 'MongoGridFSFile|null',
-    'id' => 'mixed',
-  ),
-  'mongogridfs::getdbref' => 
-  array (
-    0 => 'array<array-key, mixed>',
-    'ref' => 'array<array-key, mixed>',
-  ),
-  'mongogridfs::getindexinfo' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'mongogridfs::getname' => 
-  array (
-    0 => 'string',
-  ),
-  'mongogridfs::getreadpreference' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'mongogridfs::getslaveokay' => 
-  array (
-    0 => 'bool',
-  ),
-  'mongogridfs::group' => 
-  array (
-    0 => 'array<array-key, mixed>',
-    'keys' => 'mixed',
-    'initial' => 'array<array-key, mixed>',
-    'reduce' => 'MongoCode',
-    'condition=' => 'array<array-key, mixed>',
-  ),
-  'mongogridfs::insert' => 
-  array (
-    0 => 'array<array-key, mixed>|bool',
-    'a' => 'array<array-key, mixed>|object',
-    'options=' => 'array<array-key, mixed>',
-  ),
-  'mongogridfs::put' => 
-  array (
-    0 => 'mixed',
-    'filename' => 'string',
-    'extra=' => 'array<array-key, mixed>',
-  ),
-  'mongogridfs::remove' => 
-  array (
-    0 => 'bool',
-    'criteria=' => 'array<array-key, mixed>',
-    'options=' => 'array<array-key, mixed>',
-  ),
-  'mongogridfs::save' => 
-  array (
-    0 => 'array<array-key, mixed>|bool',
-    'a' => 'array<array-key, mixed>|object',
-    'options=' => 'array<array-key, mixed>',
-  ),
-  'mongogridfs::setreadpreference' => 
-  array (
-    0 => 'bool',
-    'read_preference' => 'string',
-    'tags' => 'array<array-key, mixed>',
-  ),
-  'mongogridfs::setslaveokay' => 
-  array (
-    0 => 'bool',
-    'ok=' => 'bool',
-  ),
-  'mongogridfs::storebytes' => 
-  array (
-    0 => 'mixed',
-    'bytes' => 'string',
-    'extra=' => 'array<array-key, mixed>',
-    'options=' => 'array<array-key, mixed>',
-  ),
-  'mongogridfs::storefile' => 
-  array (
-    0 => 'mixed',
-    'filename' => 'string',
-    'extra=' => 'array<array-key, mixed>',
-    'options=' => 'array<array-key, mixed>',
-  ),
-  'mongogridfs::storeupload' => 
-  array (
-    0 => 'mixed',
-    'name' => 'string',
-    'filename=' => 'string',
-  ),
-  'mongogridfs::toindexstring' => 
-  array (
-    0 => 'string',
-    'keys' => 'mixed',
-  ),
-  'mongogridfs::update' => 
-  array (
-    0 => 'bool',
-    'criteria' => 'array<array-key, mixed>',
-    'newobj' => 'array<array-key, mixed>',
-    'options=' => 'array<array-key, mixed>',
-  ),
-  'mongogridfs::validate' => 
-  array (
-    0 => 'array<array-key, mixed>',
-    'scan_data=' => 'bool',
-  ),
-  'mongogridfscursor::__construct' => 
-  array (
-    0 => 'void',
-    'gridfs' => 'MongoGridFS',
-    'connection' => 'resource',
-    'ns' => 'string',
-    'query' => 'array<array-key, mixed>',
-    'fields' => 'array<array-key, mixed>',
-  ),
-  'mongogridfscursor::addoption' => 
-  array (
-    0 => 'MongoCursor',
-    'key' => 'string',
-    'value' => 'mixed',
-  ),
-  'mongogridfscursor::awaitdata' => 
-  array (
-    0 => 'MongoCursor',
-    'wait=' => 'bool',
-  ),
-  'mongogridfscursor::batchsize' => 
-  array (
-    0 => 'MongoCursor',
-    'batchSize' => 'int',
-  ),
-  'mongogridfscursor::count' => 
-  array (
-    0 => 'int',
-    'all=' => 'bool',
-  ),
-  'mongogridfscursor::current' => 
-  array (
-    0 => 'MongoGridFSFile',
-  ),
-  'mongogridfscursor::dead' => 
-  array (
-    0 => 'bool',
-  ),
-  'mongogridfscursor::doquery' => 
-  array (
-    0 => 'void',
-  ),
-  'mongogridfscursor::explain' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'mongogridfscursor::fields' => 
-  array (
-    0 => 'MongoCursor',
-    'f' => 'array<array-key, mixed>',
-  ),
-  'mongogridfscursor::getnext' => 
-  array (
-    0 => 'MongoGridFSFile',
-  ),
-  'mongogridfscursor::getreadpreference' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'mongogridfscursor::hasnext' => 
-  array (
-    0 => 'bool',
-  ),
-  'mongogridfscursor::hint' => 
-  array (
-    0 => 'MongoCursor',
-    'key_pattern' => 'mixed',
-  ),
-  'mongogridfscursor::immortal' => 
-  array (
-    0 => 'MongoCursor',
-    'liveForever=' => 'bool',
-  ),
-  'mongogridfscursor::info' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'mongogridfscursor::key' => 
-  array (
-    0 => 'string',
-  ),
-  'mongogridfscursor::limit' => 
-  array (
-    0 => 'MongoCursor',
-    'num' => 'int',
-  ),
-  'mongogridfscursor::maxtimems' => 
-  array (
-    0 => 'MongoCursor',
-    'ms' => 'int',
-  ),
-  'mongogridfscursor::next' => 
-  array (
-    0 => 'void',
-  ),
-  'mongogridfscursor::partial' => 
-  array (
-    0 => 'MongoCursor',
-    'okay=' => 'bool',
-  ),
-  'mongogridfscursor::reset' => 
-  array (
-    0 => 'void',
-  ),
-  'mongogridfscursor::rewind' => 
-  array (
-    0 => 'void',
-  ),
-  'mongogridfscursor::setflag' => 
-  array (
-    0 => 'MongoCursor',
-    'flag' => 'int',
-    'set=' => 'bool',
-  ),
-  'mongogridfscursor::setreadpreference' => 
-  array (
-    0 => 'MongoCursor',
-    'read_preference' => 'string',
-    'tags' => 'array<array-key, mixed>',
-  ),
-  'mongogridfscursor::skip' => 
-  array (
-    0 => 'MongoCursor',
-    'num' => 'int',
-  ),
-  'mongogridfscursor::slaveokay' => 
-  array (
-    0 => 'MongoCursor',
-    'okay=' => 'bool',
-  ),
-  'mongogridfscursor::snapshot' => 
-  array (
-    0 => 'MongoCursor',
-  ),
-  'mongogridfscursor::sort' => 
-  array (
-    0 => 'MongoCursor',
-    'fields' => 'array<array-key, mixed>',
-  ),
-  'mongogridfscursor::tailable' => 
-  array (
-    0 => 'MongoCursor',
-    'tail=' => 'bool',
-  ),
-  'mongogridfscursor::timeout' => 
-  array (
-    0 => 'MongoCursor',
-    'ms' => 'int',
-  ),
-  'mongogridfscursor::valid' => 
-  array (
-    0 => 'bool',
-  ),
-  'mongogridfsfile::__construct' => 
-  array (
-    0 => 'void',
-    'gridfs' => 'MongoGridFS',
-    'file' => 'array<array-key, mixed>',
-  ),
-  'mongogridfsfile::getbytes' => 
-  array (
-    0 => 'string',
-  ),
-  'mongogridfsfile::getfilename' => 
-  array (
-    0 => 'string',
-  ),
-  'mongogridfsfile::getresource' => 
-  array (
-    0 => 'resource',
-  ),
-  'mongogridfsfile::getsize' => 
-  array (
-    0 => 'int',
-  ),
-  'mongogridfsfile::write' => 
-  array (
-    0 => 'int',
-    'filename=' => 'string',
-  ),
-  'mongoid::__construct' => 
-  array (
-    0 => 'void',
-    'id=' => 'MongoId|string',
-  ),
-  'mongoid::__set_state' => 
-  array (
-    0 => 'MongoId',
-    'props' => 'array<array-key, mixed>',
-  ),
-  'mongoid::__tostring' => 
-  array (
-    0 => 'string',
-  ),
-  'mongoid::gethostname' => 
-  array (
-    0 => 'string',
-  ),
-  'mongoid::getinc' => 
-  array (
-    0 => 'int',
-  ),
-  'mongoid::getpid' => 
-  array (
-    0 => 'int',
-  ),
-  'mongoid::gettimestamp' => 
-  array (
-    0 => 'int',
-  ),
-  'mongoid::isvalid' => 
-  array (
-    0 => 'bool',
-    'value' => 'mixed',
-  ),
-  'mongoinsertbatch::__construct' => 
-  array (
-    0 => 'void',
-    'collection' => 'MongoCollection',
-    'write_options=' => 'array<array-key, mixed>',
-  ),
-  'mongoint32::__construct' => 
-  array (
-    0 => 'void',
-    'value' => 'string',
-  ),
-  'mongoint32::__tostring' => 
-  array (
-    0 => 'string',
-  ),
-  'mongoint64::__construct' => 
-  array (
-    0 => 'void',
-    'value' => 'string',
-  ),
-  'mongoint64::__tostring' => 
-  array (
-    0 => 'string',
-  ),
-  'mongolog::getcallback' => 
-  array (
-    0 => 'callable',
-  ),
-  'mongolog::getlevel' => 
-  array (
-    0 => 'int',
-  ),
-  'mongolog::getmodule' => 
-  array (
-    0 => 'int',
-  ),
-  'mongolog::setcallback' => 
-  array (
-    0 => 'void',
-    'log_function' => 'callable',
-  ),
-  'mongolog::setlevel' => 
-  array (
-    0 => 'void',
-    'level' => 'int',
-  ),
-  'mongolog::setmodule' => 
-  array (
-    0 => 'void',
-    'module' => 'int',
-  ),
-  'mongopool::getsize' => 
-  array (
-    0 => 'int',
-  ),
-  'mongopool::info' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'mongopool::setsize' => 
-  array (
-    0 => 'bool',
-    'size' => 'int',
-  ),
-  'mongoregex::__construct' => 
-  array (
-    0 => 'void',
-    'regex' => 'string',
-  ),
-  'mongoregex::__tostring' => 
-  array (
-    0 => 'string',
-  ),
-  'mongoresultexception::__clone' => 
-  array (
-    0 => 'void',
-  ),
-  'mongoresultexception::__construct' => 
-  array (
-    0 => 'void',
-    'message=' => 'string',
-    'code=' => 'int',
-    'previous=' => 'Exception|Throwable|null',
-  ),
-  'mongoresultexception::__tostring' => 
-  array (
-    0 => 'string',
-  ),
-  'mongoresultexception::__wakeup' => 
-  array (
-    0 => 'void',
-  ),
-  'mongoresultexception::getcode' => 
-  array (
-    0 => 'int',
-  ),
-  'mongoresultexception::getdocument' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'mongoresultexception::getfile' => 
-  array (
-    0 => 'string',
-  ),
-  'mongoresultexception::getline' => 
-  array (
-    0 => 'int',
-  ),
-  'mongoresultexception::getmessage' => 
-  array (
-    0 => 'string',
-  ),
-  'mongoresultexception::getprevious' => 
-  array (
-    0 => 'Exception|Throwable',
   ),
   'mongoresultexception::gettrace' => 
   array (
     0 => 'list<array{args?: array<array-key, mixed>, class?: class-string, file?: string, function: string, line?: int, type?: \'->\'|\'::\'}>',
   ),
-  'mongoresultexception::gettraceasstring' => 
-  array (
-    0 => 'string',
-  ),
-  'mongotimestamp::__construct' => 
-  array (
-    0 => 'void',
-    'second=' => 'int',
-    'inc=' => 'int',
-  ),
-  'mongotimestamp::__tostring' => 
-  array (
-    0 => 'string',
-  ),
-  'mongoupdatebatch::__construct' => 
-  array (
-    0 => 'void',
-    'collection' => 'MongoCollection',
-    'write_options=' => 'array<array-key, mixed>',
-  ),
-  'mongoupdatebatch::add' => 
-  array (
-    0 => 'bool',
-    'item' => 'array<array-key, mixed>',
-  ),
-  'mongoupdatebatch::execute' => 
-  array (
-    0 => 'array<array-key, mixed>',
-    'write_options' => 'array<array-key, mixed>',
-  ),
-  'mongowritebatch::__construct' => 
-  array (
-    0 => 'void',
-    'collection' => 'MongoCollection',
-    'batch_type' => 'string',
-    'write_options' => 'array<array-key, mixed>',
-  ),
-  'mongowritebatch::add' => 
-  array (
-    0 => 'bool',
-    'item' => 'array<array-key, mixed>',
-  ),
-  'mongowritebatch::execute' => 
-  array (
-    0 => 'array<array-key, mixed>',
-    'write_options' => 'array<array-key, mixed>',
-  ),
-  'mongowriteconcernexception::__clone' => 
-  array (
-    0 => 'void',
-  ),
-  'mongowriteconcernexception::__construct' => 
-  array (
-    0 => 'void',
-    'message=' => 'string',
-    'code=' => 'int',
-    'previous=' => 'Exception|Throwable|null',
-  ),
-  'mongowriteconcernexception::__tostring' => 
-  array (
-    0 => 'string',
-  ),
-  'mongowriteconcernexception::__wakeup' => 
-  array (
-    0 => 'void',
-  ),
-  'mongowriteconcernexception::getcode' => 
-  array (
-    0 => 'int',
-  ),
-  'mongowriteconcernexception::getdocument' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'mongowriteconcernexception::getfile' => 
-  array (
-    0 => 'string',
-  ),
-  'mongowriteconcernexception::getline' => 
-  array (
-    0 => 'int',
-  ),
-  'mongowriteconcernexception::getmessage' => 
-  array (
-    0 => 'string',
-  ),
-  'mongowriteconcernexception::getprevious' => 
-  array (
-    0 => 'Exception|Throwable',
-  ),
   'mongowriteconcernexception::gettrace' => 
   array (
     0 => 'list<array{args?: array<array-key, mixed>, class?: class-string, file?: string, function: string, line?: int, type?: \'->\'|\'::\'}>',
-  ),
-  'mongowriteconcernexception::gettraceasstring' => 
-  array (
-    0 => 'string',
   ),
   'monitor_custom_event' => 
   array (
