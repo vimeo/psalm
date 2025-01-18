@@ -35998,8 +35998,8 @@ return array (
     0 => 'bool',
     'image' => 'GdImage',
     'x1' => 'int',
-    'x2' => 'int',
     'y1' => 'int',
+    'x2' => 'int',
     'y2' => 'int',
   ),
   'imagesetinterpolation' => 

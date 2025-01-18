@@ -41,7 +41,7 @@ function typeToString($reflection_type, string $defaultType): string
  */
 function paramsToEntries(ReflectionFunctionAbstract $reflectionFunction, string $defaultReturnType): array
 {
-    $res = [typeToString($reflectionFunction->getReturnType(), $defaultReturnType)];
+    $res = [typeToString(PHP_VERSION_ID >= 80100 ? ($reflectionFunction->getTentativeReturnType() ?? $reflectionFunction->getReturnType()) : $reflectionFunction->getReturnType(), $defaultReturnType)];
 
     foreach ($reflectionFunction->getParameters() as $param) {
         $key = $param->getName();

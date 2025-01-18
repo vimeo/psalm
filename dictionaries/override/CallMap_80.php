@@ -21303,15 +21303,6 @@ return array (
     'num_points_or_color' => 'int',
     'color' => 'int',
   ),
-  'imagesetclip' => 
-  array (
-    0 => 'bool',
-    'image' => 'GdImage',
-    'x1' => 'int',
-    'x2' => 'int',
-    'y1' => 'int',
-    'y2' => 'int',
-  ),
   'imagesetstyle' => 
   array (
     0 => 'bool',
