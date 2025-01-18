@@ -26,7 +26,6 @@ final class CoalesceAnalyzer
         Context $context
     ): bool {
         $left_expr = $stmt->left;
-
         $root_expr = $left_expr;
 
         while ($root_expr instanceof PhpParser\Node\Expr\ArrayDimFetch
@@ -44,7 +43,9 @@ final class CoalesceAnalyzer
             || $root_expr instanceof PhpParser\Node\Expr\NullsafeMethodCall
             || $root_expr instanceof PhpParser\Node\Expr\Ternary
         ) {
-            $left_var_id = '$<tmp coalesce var>' . (int) $left_expr->getAttribute('startFilePos');
+            $start_pos = (int) $left_expr->getAttribute('startFilePos');
+            $line_number = (int) $left_expr->getAttribute('startLine');
+            $left_var_id = '$coalesce_temp_line' . $line_number . '_pos' . $start_pos;
 
             $cloned = clone $context;
             $cloned->inside_isset = true;
@@ -81,15 +82,12 @@ final class CoalesceAnalyzer
         );
 
         $old_node_data = $statements_analyzer->node_data;
-
         $statements_analyzer->node_data = clone $statements_analyzer->node_data;
 
         ExpressionAnalyzer::analyze($statements_analyzer, $ternary, $context);
 
         $ternary_type = $statements_analyzer->node_data->getType($ternary) ?? Type::getMixed();
-
         $statements_analyzer->node_data = $old_node_data;
-
         $statements_analyzer->node_data->setType($stmt, $ternary_type);
 
         return true;
