@@ -41,7 +41,8 @@ function typeToString($reflection_type, string $defaultType): string
  */
 function paramsToEntries(ReflectionFunctionAbstract $reflectionFunction, string $defaultReturnType): array
 {
-    $res = PHP_VERSION_ID >= 8_01_00 ? (
+    // phpcs:disable SlevomatCodingStandard.Numbers.RequireNumericLiteralSeparator.RequiredNumericLiteralSeparator
+    $res = PHP_VERSION_ID >= 80100 ? (
         $reflectionFunction->getTentativeReturnType() ?? $reflectionFunction->getReturnType()
     ) : $reflectionFunction->getReturnType();
 
