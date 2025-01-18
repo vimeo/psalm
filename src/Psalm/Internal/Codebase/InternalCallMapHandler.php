@@ -23,13 +23,12 @@ use function array_shift;
 use function assert;
 use function count;
 use function dirname;
-use function file_exists;
+use function max;
 use function str_ends_with;
 use function str_starts_with;
 use function strlen;
 use function strtolower;
 use function substr;
-use function version_compare;
 
 /**
  * @internal
@@ -345,6 +344,7 @@ final class InternalCallMapHandler
      * @return non-empty-array<string, array<int|string, string>>
      * @psalm-assert !null self::$taint_sink_map
      * @psalm-assert !null self::$call_map
+     * @psalm-suppress UnresolvableInclude
      */
     public static function getCallMap(): array
     {

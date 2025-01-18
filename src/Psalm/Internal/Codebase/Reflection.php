@@ -33,6 +33,8 @@ use function array_merge;
 use function implode;
 use function strtolower;
 
+use const PHP_VERSION_ID;
+
 /**
  * @internal
  *

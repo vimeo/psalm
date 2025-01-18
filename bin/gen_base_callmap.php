@@ -4,6 +4,11 @@ declare(strict_types=1);
 
 $callmap = [];
 
+function namedTypeName(ReflectionNamedType $refl): string
+{
+    return $refl->getName();
+}
+
 /**
  * @var ?ReflectionType $reflection_type
  */
@@ -16,14 +21,8 @@ function typeToString($reflection_type, string $defaultType): string
     if ($reflection_type instanceof ReflectionNamedType) {
         $type = $reflection_type->getName();
     } elseif ($reflection_type instanceof ReflectionUnionType) {
-        $type = implode(
-            '|',
-            array_map(
-                static function (ReflectionNamedType $reflection): string { return $reflection->getName(); },
-                $reflection_type->getTypes()
-            )
-        );
-    } else if ($reflection_type instanceof ReflectionType) {
+        $type = implode('|', array_map('namedTypeName', $reflection_type->getTypes()));
+    } elseif ($reflection_type instanceof ReflectionType) {
         $type = $reflection_type->__toString();
     } else {
         throw new LogicException('Unexpected reflection class ' . get_class($reflection_type) . ' found.');
@@ -81,8 +80,15 @@ foreach ([
 foreach (get_defined_functions() as $sub) {
     foreach ($sub as $name) {
         $name = strtolower($name);
-        if ($name === 'paramstoentries') continue;
-        if ($name === 'typetostring') continue;
+        if ($name === 'paramstoentries') {
+            continue;
+        }
+        if ($name === 'typetostring') {
+            continue;
+        }
+        if ($name === 'namedtypename') {
+            continue;
+        }
         $func = new ReflectionFunction($name);
 
         $args = paramsToEntries($func, 'mixed');
