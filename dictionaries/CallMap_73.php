@@ -10,6 +10,21 @@ return array (
   array (
     0 => 'void',
   ),
+  '_array' => 
+  array (
+    0 => 'Swoole\\ArrayObject',
+    'array=' => 'array<array-key, mixed>',
+  ),
+  '_mbstring' => 
+  array (
+    0 => 'Swoole\\MultibyteStringObject',
+    'string=' => 'string',
+  ),
+  '_string' => 
+  array (
+    0 => 'Swoole\\StringObject',
+    'string=' => 'string',
+  ),
   'abs' => 
   array (
     0 => 'int<0, max>',
@@ -70,1038 +85,1038 @@ return array (
   ),
   'amqpbasicproperties::__construct' => 
   array (
-    0 => 'string',
+    0 => 'void',
   ),
   'amqpbasicproperties::getappid' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpbasicproperties::getclusterid' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpbasicproperties::getcontentencoding' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpbasicproperties::getcontenttype' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpbasicproperties::getcorrelationid' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpbasicproperties::getdeliverymode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpbasicproperties::getexpiration' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpbasicproperties::getheaders' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpbasicproperties::getmessageid' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpbasicproperties::getpriority' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpbasicproperties::getreplyto' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpbasicproperties::gettimestamp' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpbasicproperties::gettype' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpbasicproperties::getuserid' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpchannel::__construct' => 
   array (
-    0 => 'string',
+    0 => 'void',
     'amqp_connection' => 'AMQPConnection',
   ),
   'amqpchannel::basicrecover' => 
   array (
-    0 => 'string',
-    'requeue=' => 'string',
+    0 => 'mixed',
+    'requeue=' => 'mixed',
   ),
   'amqpchannel::close' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpchannel::committransaction' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpchannel::confirmselect' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpchannel::getchannelid' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpchannel::getconnection' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpchannel::getconsumers' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpchannel::getglobalprefetchcount' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpchannel::getglobalprefetchsize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpchannel::getprefetchcount' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpchannel::getprefetchsize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpchannel::isconnected' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpchannel::qos' => 
   array (
-    0 => 'string',
-    'size' => 'string',
-    'count' => 'string',
-    'global=' => 'string',
+    0 => 'mixed',
+    'size' => 'mixed',
+    'count' => 'mixed',
+    'global=' => 'mixed',
   ),
   'amqpchannel::rollbacktransaction' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpchannel::setconfirmcallback' => 
   array (
-    0 => 'string',
-    'ack_callback' => 'string',
-    'nack_callback=' => 'string',
+    0 => 'mixed',
+    'ack_callback' => 'mixed',
+    'nack_callback=' => 'mixed',
   ),
   'amqpchannel::setglobalprefetchcount' => 
   array (
-    0 => 'string',
-    'count' => 'string',
+    0 => 'mixed',
+    'count' => 'mixed',
   ),
   'amqpchannel::setglobalprefetchsize' => 
   array (
-    0 => 'string',
-    'size' => 'string',
+    0 => 'mixed',
+    'size' => 'mixed',
   ),
   'amqpchannel::setprefetchcount' => 
   array (
-    0 => 'string',
-    'count' => 'string',
+    0 => 'mixed',
+    'count' => 'mixed',
   ),
   'amqpchannel::setprefetchsize' => 
   array (
-    0 => 'string',
-    'size' => 'string',
+    0 => 'mixed',
+    'size' => 'mixed',
   ),
   'amqpchannel::setreturncallback' => 
   array (
-    0 => 'string',
-    'return_callback' => 'string',
+    0 => 'mixed',
+    'return_callback' => 'mixed',
   ),
   'amqpchannel::starttransaction' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpchannel::waitforbasicreturn' => 
   array (
-    0 => 'string',
-    'timeout=' => 'string',
+    0 => 'mixed',
+    'timeout=' => 'mixed',
   ),
   'amqpchannel::waitforconfirm' => 
   array (
-    0 => 'string',
-    'timeout=' => 'string',
+    0 => 'mixed',
+    'timeout=' => 'mixed',
   ),
   'amqpchannelexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpchannelexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'amqpchannelexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpchannelexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpchannelexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpchannelexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpchannelexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpchannelexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpchannelexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpchannelexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpchannelexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpconnection::__construct' => 
   array (
-    0 => 'string',
+    0 => 'void',
     'credentials=' => 'array<array-key, mixed>',
   ),
   'amqpconnection::connect' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpconnection::disconnect' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpconnection::getcacert' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpconnection::getcert' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpconnection::getconnectionname' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpconnection::getheartbeatinterval' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpconnection::gethost' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpconnection::getkey' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpconnection::getlogin' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpconnection::getmaxchannels' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpconnection::getmaxframesize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpconnection::getpassword' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpconnection::getport' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpconnection::getreadtimeout' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpconnection::getrpctimeout' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpconnection::getsaslmethod' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpconnection::gettimeout' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpconnection::getusedchannels' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpconnection::getverify' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpconnection::getvhost' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpconnection::getwritetimeout' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpconnection::isconnected' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpconnection::ispersistent' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpconnection::pconnect' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpconnection::pdisconnect' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpconnection::preconnect' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpconnection::reconnect' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpconnection::setcacert' => 
   array (
-    0 => 'string',
-    'cacert' => 'string',
+    0 => 'mixed',
+    'cacert' => 'mixed',
   ),
   'amqpconnection::setcert' => 
   array (
-    0 => 'string',
-    'cert' => 'string',
+    0 => 'mixed',
+    'cert' => 'mixed',
   ),
   'amqpconnection::setconnectionname' => 
   array (
-    0 => 'string',
-    'connection_name' => 'string',
+    0 => 'mixed',
+    'connection_name' => 'mixed',
   ),
   'amqpconnection::sethost' => 
   array (
-    0 => 'string',
-    'host' => 'string',
+    0 => 'mixed',
+    'host' => 'mixed',
   ),
   'amqpconnection::setkey' => 
   array (
-    0 => 'string',
-    'key' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
   ),
   'amqpconnection::setlogin' => 
   array (
-    0 => 'string',
-    'login' => 'string',
+    0 => 'mixed',
+    'login' => 'mixed',
   ),
   'amqpconnection::setpassword' => 
   array (
-    0 => 'string',
-    'password' => 'string',
+    0 => 'mixed',
+    'password' => 'mixed',
   ),
   'amqpconnection::setport' => 
   array (
-    0 => 'string',
-    'port' => 'string',
+    0 => 'mixed',
+    'port' => 'mixed',
   ),
   'amqpconnection::setreadtimeout' => 
   array (
-    0 => 'string',
-    'timeout' => 'string',
+    0 => 'mixed',
+    'timeout' => 'mixed',
   ),
   'amqpconnection::setrpctimeout' => 
   array (
-    0 => 'string',
-    'timeout' => 'string',
+    0 => 'mixed',
+    'timeout' => 'mixed',
   ),
   'amqpconnection::setsaslmethod' => 
   array (
-    0 => 'string',
-    'sasl_method' => 'string',
+    0 => 'mixed',
+    'sasl_method' => 'mixed',
   ),
   'amqpconnection::settimeout' => 
   array (
-    0 => 'string',
-    'timeout' => 'string',
+    0 => 'mixed',
+    'timeout' => 'mixed',
   ),
   'amqpconnection::setverify' => 
   array (
-    0 => 'string',
-    'verify' => 'string',
+    0 => 'mixed',
+    'verify' => 'mixed',
   ),
   'amqpconnection::setvhost' => 
   array (
-    0 => 'string',
-    'vhost' => 'string',
+    0 => 'mixed',
+    'vhost' => 'mixed',
   ),
   'amqpconnection::setwritetimeout' => 
   array (
-    0 => 'string',
-    'timeout' => 'string',
+    0 => 'mixed',
+    'timeout' => 'mixed',
   ),
   'amqpconnectionexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpconnectionexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'amqpconnectionexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpconnectionexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpconnectionexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpconnectionexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpconnectionexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpconnectionexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpconnectionexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpconnectionexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpconnectionexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpdecimal::__construct' => 
   array (
-    0 => 'string',
-    'exponent' => 'string',
-    'significand' => 'string',
+    0 => 'void',
+    'exponent' => 'mixed',
+    'significand' => 'mixed',
   ),
   'amqpdecimal::getexponent' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpdecimal::getsignificand' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpenvelope::__construct' => 
   array (
-    0 => 'string',
+    0 => 'void',
   ),
   'amqpenvelope::getappid' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpenvelope::getbody' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpenvelope::getclusterid' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpenvelope::getconsumertag' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpenvelope::getcontentencoding' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpenvelope::getcontenttype' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpenvelope::getcorrelationid' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpenvelope::getdeliverymode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpenvelope::getdeliverytag' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpenvelope::getexchangename' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpenvelope::getexpiration' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpenvelope::getheader' => 
   array (
-    0 => 'string',
-    'name' => 'string',
+    0 => 'mixed',
+    'name' => 'mixed',
   ),
   'amqpenvelope::getheaders' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpenvelope::getmessageid' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpenvelope::getpriority' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpenvelope::getreplyto' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpenvelope::getroutingkey' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpenvelope::gettimestamp' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpenvelope::gettype' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpenvelope::getuserid' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpenvelope::hasheader' => 
   array (
-    0 => 'string',
-    'name' => 'string',
+    0 => 'mixed',
+    'name' => 'mixed',
   ),
   'amqpenvelope::isredelivery' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpenvelopeexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpenvelopeexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'amqpenvelopeexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpenvelopeexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpenvelopeexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpenvelopeexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpenvelopeexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpenvelopeexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpenvelopeexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpenvelopeexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpenvelopeexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'amqpexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpexchange::__construct' => 
   array (
-    0 => 'string',
+    0 => 'void',
     'amqp_channel' => 'AMQPChannel',
   ),
   'amqpexchange::bind' => 
   array (
-    0 => 'string',
-    'exchange_name' => 'string',
-    'routing_key' => 'string',
-    'flags=' => 'string',
+    0 => 'mixed',
+    'exchange_name' => 'mixed',
+    'routing_key' => 'mixed',
+    'flags=' => 'mixed',
   ),
   'amqpexchange::declare' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpexchange::declareexchange' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpexchange::delete' => 
   array (
-    0 => 'string',
-    'exchange_name=' => 'string',
-    'flags=' => 'string',
+    0 => 'mixed',
+    'exchange_name=' => 'mixed',
+    'flags=' => 'mixed',
   ),
   'amqpexchange::getargument' => 
   array (
-    0 => 'string',
-    'argument' => 'string',
+    0 => 'mixed',
+    'argument' => 'mixed',
   ),
   'amqpexchange::getarguments' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpexchange::getchannel' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpexchange::getconnection' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpexchange::getflags' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpexchange::getname' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpexchange::gettype' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpexchange::hasargument' => 
   array (
-    0 => 'string',
-    'argument' => 'string',
+    0 => 'mixed',
+    'argument' => 'mixed',
   ),
   'amqpexchange::publish' => 
   array (
-    0 => 'string',
-    'message' => 'string',
-    'routing_key=' => 'string',
-    'flags=' => 'string',
+    0 => 'mixed',
+    'message' => 'mixed',
+    'routing_key=' => 'mixed',
+    'flags=' => 'mixed',
     'headers=' => 'array<array-key, mixed>',
   ),
   'amqpexchange::setargument' => 
   array (
-    0 => 'string',
-    'key' => 'string',
-    'value' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
+    'value' => 'mixed',
   ),
   'amqpexchange::setarguments' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'arguments' => 'array<array-key, mixed>',
   ),
   'amqpexchange::setflags' => 
   array (
-    0 => 'string',
-    'flags' => 'string',
+    0 => 'mixed',
+    'flags' => 'mixed',
   ),
   'amqpexchange::setname' => 
   array (
-    0 => 'string',
-    'exchange_name' => 'string',
+    0 => 'mixed',
+    'exchange_name' => 'mixed',
   ),
   'amqpexchange::settype' => 
   array (
-    0 => 'string',
-    'exchange_type' => 'string',
+    0 => 'mixed',
+    'exchange_type' => 'mixed',
   ),
   'amqpexchange::unbind' => 
   array (
-    0 => 'string',
-    'exchange_name' => 'string',
-    'routing_key' => 'string',
-    'flags=' => 'string',
+    0 => 'mixed',
+    'exchange_name' => 'mixed',
+    'routing_key' => 'mixed',
+    'flags=' => 'mixed',
   ),
   'amqpexchangeexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpexchangeexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'amqpexchangeexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpexchangeexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpexchangeexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpexchangeexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpexchangeexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpexchangeexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpexchangeexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpexchangeexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpexchangeexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpqueue::__construct' => 
   array (
-    0 => 'string',
+    0 => 'void',
     'amqp_channel' => 'AMQPChannel',
   ),
   'amqpqueue::ack' => 
   array (
-    0 => 'string',
-    'delivery_tag' => 'string',
-    'flags=' => 'string',
+    0 => 'mixed',
+    'delivery_tag' => 'mixed',
+    'flags=' => 'mixed',
   ),
   'amqpqueue::bind' => 
   array (
-    0 => 'string',
-    'exchange_name' => 'string',
-    'routing_key=' => 'string',
-    'arguments=' => 'string',
+    0 => 'mixed',
+    'exchange_name' => 'mixed',
+    'routing_key=' => 'mixed',
+    'arguments=' => 'mixed',
   ),
   'amqpqueue::cancel' => 
   array (
-    0 => 'string',
-    'consumer_tag=' => 'string',
+    0 => 'mixed',
+    'consumer_tag=' => 'mixed',
   ),
   'amqpqueue::consume' => 
   array (
-    0 => 'string',
-    'callback' => 'string',
-    'flags=' => 'string',
-    'consumer_tag=' => 'string',
+    0 => 'mixed',
+    'callback' => 'mixed',
+    'flags=' => 'mixed',
+    'consumer_tag=' => 'mixed',
   ),
   'amqpqueue::declare' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpqueue::declarequeue' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpqueue::delete' => 
   array (
-    0 => 'string',
-    'flags=' => 'string',
+    0 => 'mixed',
+    'flags=' => 'mixed',
   ),
   'amqpqueue::get' => 
   array (
-    0 => 'string',
-    'flags=' => 'string',
+    0 => 'mixed',
+    'flags=' => 'mixed',
   ),
   'amqpqueue::getargument' => 
   array (
-    0 => 'string',
-    'argument' => 'string',
+    0 => 'mixed',
+    'argument' => 'mixed',
   ),
   'amqpqueue::getarguments' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpqueue::getchannel' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpqueue::getconnection' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpqueue::getconsumertag' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpqueue::getflags' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpqueue::getname' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpqueue::hasargument' => 
   array (
-    0 => 'string',
-    'key' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
   ),
   'amqpqueue::nack' => 
   array (
-    0 => 'string',
-    'delivery_tag' => 'string',
-    'flags=' => 'string',
+    0 => 'mixed',
+    'delivery_tag' => 'mixed',
+    'flags=' => 'mixed',
   ),
   'amqpqueue::purge' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpqueue::reject' => 
   array (
-    0 => 'string',
-    'delivery_tag' => 'string',
-    'flags=' => 'string',
+    0 => 'mixed',
+    'delivery_tag' => 'mixed',
+    'flags=' => 'mixed',
   ),
   'amqpqueue::setargument' => 
   array (
-    0 => 'string',
-    'key' => 'string',
-    'value' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
+    'value' => 'mixed',
   ),
   'amqpqueue::setarguments' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'arguments' => 'array<array-key, mixed>',
   ),
   'amqpqueue::setflags' => 
   array (
-    0 => 'string',
-    'flags' => 'string',
+    0 => 'mixed',
+    'flags' => 'mixed',
   ),
   'amqpqueue::setname' => 
   array (
-    0 => 'string',
-    'queue_name' => 'string',
+    0 => 'mixed',
+    'queue_name' => 'mixed',
   ),
   'amqpqueue::unbind' => 
   array (
-    0 => 'string',
-    'exchange_name' => 'string',
-    'routing_key=' => 'string',
-    'arguments=' => 'string',
+    0 => 'mixed',
+    'exchange_name' => 'mixed',
+    'routing_key=' => 'mixed',
+    'arguments=' => 'mixed',
   ),
   'amqpqueueexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpqueueexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'amqpqueueexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpqueueexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpqueueexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpqueueexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpqueueexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpqueueexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpqueueexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpqueueexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpqueueexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqptimestamp::__construct' => 
   array (
-    0 => 'string',
-    'timestamp=' => 'string',
+    0 => 'void',
+    'timestamp=' => 'mixed',
   ),
   'amqptimestamp::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqptimestamp::gettimestamp' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpvalueexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpvalueexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'amqpvalueexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpvalueexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpvalueexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpvalueexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpvalueexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpvalueexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpvalueexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpvalueexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'amqpvalueexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'apache_child_terminate' => 
   array (
@@ -1475,7 +1490,7 @@ return array (
   ),
   'apcuiterator::key' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'apcuiterator::next' => 
   array (
@@ -1615,7 +1630,7 @@ return array (
   ),
   'argumentcounterror::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'argumentcounterror::__wakeup' => 
   array (
@@ -1627,7 +1642,7 @@ return array (
   ),
   'argumentcounterror::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'argumentcounterror::getline' => 
   array (
@@ -1635,7 +1650,7 @@ return array (
   ),
   'argumentcounterror::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'argumentcounterror::getprevious' => 
   array (
@@ -1647,7 +1662,7 @@ return array (
   ),
   'argumentcounterror::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'arithmeticerror::__clone' => 
   array (
@@ -1662,7 +1677,7 @@ return array (
   ),
   'arithmeticerror::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'arithmeticerror::__wakeup' => 
   array (
@@ -1674,7 +1689,7 @@ return array (
   ),
   'arithmeticerror::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'arithmeticerror::getline' => 
   array (
@@ -1682,7 +1697,7 @@ return array (
   ),
   'arithmeticerror::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'arithmeticerror::getprevious' => 
   array (
@@ -1694,7 +1709,7 @@ return array (
   ),
   'arithmeticerror::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'array_change_key_case' => 
   array (
@@ -2243,7 +2258,7 @@ return array (
   ),
   'arrayiterator::serialize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'arrayiterator::setflags' => 
   array (
@@ -2309,7 +2324,7 @@ return array (
   ),
   'arrayobject::getiteratorclass' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'arrayobject::ksort' => 
   array (
@@ -2347,7 +2362,7 @@ return array (
   ),
   'arrayobject::serialize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'arrayobject::setflags' => 
   array (
@@ -2410,50 +2425,50 @@ return array (
   ),
   'assertionerror::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'assertionerror::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'assertionerror::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'assertionerror::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'assertionerror::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'assertionerror::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'assertionerror::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'assertionerror::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'assertionerror::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'assertionerror::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'assertionerror::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'ast\\get_kind_name' => 
   array (
@@ -2524,11 +2539,11 @@ return array (
   ),
   'badfunctioncallexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'badfunctioncallexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'badfunctioncallexception::getcode' => 
   array (
@@ -2536,7 +2551,7 @@ return array (
   ),
   'badfunctioncallexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'badfunctioncallexception::getline' => 
   array (
@@ -2544,7 +2559,7 @@ return array (
   ),
   'badfunctioncallexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'badfunctioncallexception::getprevious' => 
   array (
@@ -2556,7 +2571,7 @@ return array (
   ),
   'badfunctioncallexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'badmethodcallexception::__clone' => 
   array (
@@ -2571,11 +2586,11 @@ return array (
   ),
   'badmethodcallexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'badmethodcallexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'badmethodcallexception::getcode' => 
   array (
@@ -2583,7 +2598,7 @@ return array (
   ),
   'badmethodcallexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'badmethodcallexception::getline' => 
   array (
@@ -2591,7 +2606,7 @@ return array (
   ),
   'badmethodcallexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'badmethodcallexception::getprevious' => 
   array (
@@ -2603,7 +2618,7 @@ return array (
   ),
   'badmethodcallexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'base64_decode' => 
   array (
@@ -2631,9 +2646,9 @@ return array (
   ),
   'basename' => 
   array (
-    0 => 'string',
-    'path' => 'string',
-    'suffix=' => 'string',
+    0 => 'mixed',
+    'path' => 'mixed',
+    'suffix=' => 'mixed',
   ),
   'bbcode_add_element' => 
   array (
@@ -2995,7 +3010,7 @@ return array (
   ),
   'cachingiterator::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'cachingiterator::count' => 
   array (
@@ -3172,6 +3187,42 @@ return array (
   array (
     0 => 'float',
     'num' => 'float|int',
+  ),
+  'chan::__construct' => 
+  array (
+    0 => 'void',
+    'size=' => 'mixed',
+  ),
+  'chan::close' => 
+  array (
+    0 => 'mixed',
+  ),
+  'chan::isempty' => 
+  array (
+    0 => 'mixed',
+  ),
+  'chan::isfull' => 
+  array (
+    0 => 'mixed',
+  ),
+  'chan::length' => 
+  array (
+    0 => 'mixed',
+  ),
+  'chan::pop' => 
+  array (
+    0 => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'chan::push' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'chan::stats' => 
+  array (
+    0 => 'mixed',
   ),
   'chdb::__construct' => 
   array (
@@ -3459,18 +3510,18 @@ return array (
   ),
   'closedgeneratorexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'closedgeneratorexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'closedgeneratorexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'closedgeneratorexception::getcode' => 
   array (
@@ -3478,7 +3529,7 @@ return array (
   ),
   'closedgeneratorexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'closedgeneratorexception::getline' => 
   array (
@@ -3486,7 +3537,7 @@ return array (
   ),
   'closedgeneratorexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'closedgeneratorexception::getprevious' => 
   array (
@@ -3498,7 +3549,7 @@ return array (
   ),
   'closedgeneratorexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'closedir' => 
   array (
@@ -3564,6 +3615,2791 @@ return array (
     0 => 'int',
     'expression' => 'string',
   ),
+  'co::cancel' => 
+  array (
+    0 => 'mixed',
+    'cid' => 'mixed',
+  ),
+  'co::create' => 
+  array (
+    0 => 'mixed',
+    'func' => 'callable',
+    '...params=' => 'mixed',
+  ),
+  'co::defer' => 
+  array (
+    0 => 'mixed',
+    'callback' => 'mixed',
+  ),
+  'co::disablescheduler' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co::dnslookup' => 
+  array (
+    0 => 'mixed',
+    'domain_name' => 'mixed',
+    'timeout=' => 'mixed',
+    'type=' => 'mixed',
+  ),
+  'co::enablescheduler' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co::exec' => 
+  array (
+    0 => 'mixed',
+    'command' => 'mixed',
+    'get_error_stream=' => 'mixed',
+  ),
+  'co::exists' => 
+  array (
+    0 => 'mixed',
+    'cid' => 'mixed',
+  ),
+  'co::fgets' => 
+  array (
+    0 => 'mixed',
+    'handle' => 'mixed',
+  ),
+  'co::fread' => 
+  array (
+    0 => 'mixed',
+    'handle' => 'mixed',
+    'length=' => 'mixed',
+  ),
+  'co::fwrite' => 
+  array (
+    0 => 'mixed',
+    'handle' => 'mixed',
+    'string' => 'mixed',
+    'length=' => 'mixed',
+  ),
+  'co::getaddrinfo' => 
+  array (
+    0 => 'mixed',
+    'hostname' => 'mixed',
+    'family=' => 'mixed',
+    'socktype=' => 'mixed',
+    'protocol=' => 'mixed',
+    'service=' => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'co::getbacktrace' => 
+  array (
+    0 => 'mixed',
+    'cid=' => 'mixed',
+    'options=' => 'mixed',
+    'limit=' => 'mixed',
+  ),
+  'co::getcid' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co::getcontext' => 
+  array (
+    0 => 'mixed',
+    'cid=' => 'mixed',
+  ),
+  'co::getelapsed' => 
+  array (
+    0 => 'mixed',
+    'cid=' => 'mixed',
+  ),
+  'co::gethostbyname' => 
+  array (
+    0 => 'mixed',
+    'domain_name' => 'mixed',
+    'family=' => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'co::getoptions' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co::getpcid' => 
+  array (
+    0 => 'mixed',
+    'cid=' => 'mixed',
+  ),
+  'co::getstackusage' => 
+  array (
+    0 => 'mixed',
+    'cid=' => 'mixed',
+  ),
+  'co::getuid' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co::iscanceled' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co::join' => 
+  array (
+    0 => 'mixed',
+    'cid_array' => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'co::list' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co::listcoroutines' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co::printbacktrace' => 
+  array (
+    0 => 'mixed',
+    'cid=' => 'mixed',
+    'options=' => 'mixed',
+    'limit=' => 'mixed',
+  ),
+  'co::readfile' => 
+  array (
+    0 => 'mixed',
+    'filename' => 'mixed',
+  ),
+  'co::resume' => 
+  array (
+    0 => 'mixed',
+    'cid' => 'mixed',
+  ),
+  'co::set' => 
+  array (
+    0 => 'mixed',
+    'options' => 'mixed',
+  ),
+  'co::sleep' => 
+  array (
+    0 => 'mixed',
+    'seconds' => 'mixed',
+  ),
+  'co::stats' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co::statvfs' => 
+  array (
+    0 => 'mixed',
+    'path' => 'mixed',
+  ),
+  'co::suspend' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co::wait' => 
+  array (
+    0 => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'co::waitevent' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+    'events=' => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'co::waitpid' => 
+  array (
+    0 => 'mixed',
+    'pid' => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'co::waitsignal' => 
+  array (
+    0 => 'mixed',
+    'signo' => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'co::writefile' => 
+  array (
+    0 => 'mixed',
+    'filename' => 'mixed',
+    'data' => 'mixed',
+    'flags=' => 'mixed',
+  ),
+  'co::yield' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\channel::__construct' => 
+  array (
+    0 => 'void',
+    'size=' => 'mixed',
+  ),
+  'co\\channel::close' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\channel::isempty' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\channel::isfull' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\channel::length' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\channel::pop' => 
+  array (
+    0 => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'co\\channel::push' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'co\\channel::stats' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\client::__construct' => 
+  array (
+    0 => 'void',
+    'type' => 'mixed',
+  ),
+  'co\\client::__destruct' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\client::close' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\client::connect' => 
+  array (
+    0 => 'mixed',
+    'host' => 'mixed',
+    'port=' => 'mixed',
+    'timeout=' => 'mixed',
+    'sock_flag=' => 'mixed',
+  ),
+  'co\\client::enablessl' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\client::exportsocket' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\client::getpeercert' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\client::getpeername' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\client::getsockname' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\client::isconnected' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\client::peek' => 
+  array (
+    0 => 'mixed',
+    'length=' => 'mixed',
+  ),
+  'co\\client::recv' => 
+  array (
+    0 => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'co\\client::recvfrom' => 
+  array (
+    0 => 'mixed',
+    'length' => 'mixed',
+    '&address' => 'mixed',
+    '&port=' => 'mixed',
+  ),
+  'co\\client::send' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
+  ),
+  'co\\client::sendfile' => 
+  array (
+    0 => 'mixed',
+    'filename' => 'mixed',
+    'offset=' => 'mixed',
+    'length=' => 'mixed',
+  ),
+  'co\\client::sendto' => 
+  array (
+    0 => 'mixed',
+    'address' => 'mixed',
+    'port' => 'mixed',
+    'data' => 'mixed',
+  ),
+  'co\\client::set' => 
+  array (
+    0 => 'mixed',
+    'settings' => 'array<array-key, mixed>',
+  ),
+  'co\\client::verifypeercert' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\context::__construct' => 
+  array (
+    0 => 'void',
+    'input=' => 'mixed',
+    'flags=' => 'mixed',
+    'iterator_class=' => 'mixed',
+  ),
+  'co\\context::append' => 
+  array (
+    0 => 'mixed',
+    'value' => 'mixed',
+  ),
+  'co\\context::asort' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\context::count' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\context::exchangearray' => 
+  array (
+    0 => 'mixed',
+    'array' => 'mixed',
+  ),
+  'co\\context::getarraycopy' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\context::getflags' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\context::getiterator' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\context::getiteratorclass' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\context::ksort' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\context::natcasesort' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\context::natsort' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\context::offsetexists' => 
+  array (
+    0 => 'mixed',
+    'index' => 'mixed',
+  ),
+  'co\\context::offsetget' => 
+  array (
+    0 => 'mixed',
+    'index' => 'mixed',
+  ),
+  'co\\context::offsetset' => 
+  array (
+    0 => 'mixed',
+    'index' => 'mixed',
+    'newval' => 'mixed',
+  ),
+  'co\\context::offsetunset' => 
+  array (
+    0 => 'mixed',
+    'index' => 'mixed',
+  ),
+  'co\\context::serialize' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\context::setflags' => 
+  array (
+    0 => 'mixed',
+    'flags' => 'mixed',
+  ),
+  'co\\context::setiteratorclass' => 
+  array (
+    0 => 'mixed',
+    'iteratorClass' => 'mixed',
+  ),
+  'co\\context::uasort' => 
+  array (
+    0 => 'mixed',
+    'cmp_function' => 'mixed',
+  ),
+  'co\\context::uksort' => 
+  array (
+    0 => 'mixed',
+    'cmp_function' => 'mixed',
+  ),
+  'co\\context::unserialize' => 
+  array (
+    0 => 'mixed',
+    'serialized' => 'mixed',
+  ),
+  'co\\coroutine\\curl\\exception::__clone' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\coroutine\\curl\\exception::__construct' => 
+  array (
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
+  ),
+  'co\\coroutine\\curl\\exception::__tostring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\coroutine\\curl\\exception::__wakeup' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\coroutine\\curl\\exception::getcode' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\coroutine\\curl\\exception::getfile' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\coroutine\\curl\\exception::getline' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\coroutine\\curl\\exception::getmessage' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\coroutine\\curl\\exception::getprevious' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\coroutine\\curl\\exception::gettrace' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\coroutine\\curl\\exception::gettraceasstring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\defer' => 
+  array (
+    0 => 'mixed',
+    'fn' => 'callable',
+  ),
+  'co\\fastcgi\\client::__construct' => 
+  array (
+    0 => 'void',
+    'host' => 'string',
+    'port=' => 'int',
+    'ssl=' => 'bool',
+  ),
+  'co\\fastcgi\\client::call' => 
+  array (
+    0 => 'string',
+    'url' => 'string',
+    'path' => 'string',
+    'data=' => 'mixed',
+    'timeout=' => 'float',
+  ),
+  'co\\fastcgi\\client::execute' => 
+  array (
+    0 => 'Swoole\\FastCGI\\Response',
+    'request' => 'Swoole\\FastCGI\\Request',
+    'timeout=' => 'float',
+  ),
+  'co\\fastcgi\\client::ioexception' => 
+  array (
+    0 => 'void',
+    'errno=' => 'int|null',
+  ),
+  'co\\fastcgi\\client::parseurl' => 
+  array (
+    0 => 'array<array-key, mixed>',
+    'url' => 'string',
+  ),
+  'co\\fastcgi\\client\\exception::__clone' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\fastcgi\\client\\exception::__construct' => 
+  array (
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
+  ),
+  'co\\fastcgi\\client\\exception::__tostring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\fastcgi\\client\\exception::__wakeup' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\fastcgi\\client\\exception::getcode' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\fastcgi\\client\\exception::getfile' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\fastcgi\\client\\exception::getline' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\fastcgi\\client\\exception::getmessage' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\fastcgi\\client\\exception::getprevious' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\fastcgi\\client\\exception::gettrace' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\fastcgi\\client\\exception::gettraceasstring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\fastcgi\\proxy::__construct' => 
+  array (
+    0 => 'void',
+    'url' => 'string',
+    'documentRoot=' => 'string',
+  ),
+  'co\\fastcgi\\proxy::getparam' => 
+  array (
+    0 => 'null|string',
+    'name' => 'string',
+  ),
+  'co\\fastcgi\\proxy::getparams' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'co\\fastcgi\\proxy::pass' => 
+  array (
+    0 => 'void',
+    'userRequest' => 'mixed',
+    'userResponse' => 'mixed',
+  ),
+  'co\\fastcgi\\proxy::staticfilefiltrate' => 
+  array (
+    0 => 'bool',
+    'request' => 'Swoole\\FastCGI\\HttpRequest',
+    'userResponse' => 'mixed',
+  ),
+  'co\\fastcgi\\proxy::translaterequest' => 
+  array (
+    0 => 'Swoole\\FastCGI\\HttpRequest',
+    'userRequest' => 'mixed',
+  ),
+  'co\\fastcgi\\proxy::translateresponse' => 
+  array (
+    0 => 'void',
+    'response' => 'Swoole\\FastCGI\\HttpResponse',
+    'userResponse' => 'mixed',
+  ),
+  'co\\fastcgi\\proxy::withaddedparams' => 
+  array (
+    0 => 'self',
+    'params' => 'array<array-key, mixed>',
+  ),
+  'co\\fastcgi\\proxy::withhttps' => 
+  array (
+    0 => 'self',
+    'https' => 'bool',
+  ),
+  'co\\fastcgi\\proxy::withindex' => 
+  array (
+    0 => 'self',
+    'index' => 'string',
+  ),
+  'co\\fastcgi\\proxy::withoutparam' => 
+  array (
+    0 => 'self',
+    'name' => 'string',
+  ),
+  'co\\fastcgi\\proxy::withparam' => 
+  array (
+    0 => 'self',
+    'name' => 'string',
+    'value' => 'string',
+  ),
+  'co\\fastcgi\\proxy::withparams' => 
+  array (
+    0 => 'self',
+    'params' => 'array<array-key, mixed>',
+  ),
+  'co\\fastcgi\\proxy::withstaticfilefilter' => 
+  array (
+    0 => 'self',
+    'filter' => 'callable|null',
+  ),
+  'co\\fastcgi\\proxy::withtimeout' => 
+  array (
+    0 => 'self',
+    'timeout' => 'float',
+  ),
+  'co\\go' => 
+  array (
+    0 => 'mixed',
+    'fn' => 'callable',
+    '...args=' => 'mixed',
+  ),
+  'co\\http2\\client::__construct' => 
+  array (
+    0 => 'void',
+    'host' => 'mixed',
+    'port=' => 'mixed',
+    'open_ssl=' => 'mixed',
+  ),
+  'co\\http2\\client::__destruct' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\http2\\client::close' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\http2\\client::connect' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\http2\\client::goaway' => 
+  array (
+    0 => 'mixed',
+    'error_code=' => 'mixed',
+    'debug_data=' => 'mixed',
+  ),
+  'co\\http2\\client::isstreamexist' => 
+  array (
+    0 => 'mixed',
+    'stream_id' => 'mixed',
+  ),
+  'co\\http2\\client::ping' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\http2\\client::read' => 
+  array (
+    0 => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'co\\http2\\client::recv' => 
+  array (
+    0 => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'co\\http2\\client::send' => 
+  array (
+    0 => 'mixed',
+    'request' => 'mixed',
+  ),
+  'co\\http2\\client::set' => 
+  array (
+    0 => 'mixed',
+    'settings' => 'array<array-key, mixed>',
+  ),
+  'co\\http2\\client::stats' => 
+  array (
+    0 => 'mixed',
+    'key=' => 'mixed',
+  ),
+  'co\\http2\\client::write' => 
+  array (
+    0 => 'mixed',
+    'stream_id' => 'mixed',
+    'data' => 'mixed',
+    'end_stream=' => 'mixed',
+  ),
+  'co\\http2\\client\\exception::__clone' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\http2\\client\\exception::__construct' => 
+  array (
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
+  ),
+  'co\\http2\\client\\exception::__tostring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\http2\\client\\exception::__wakeup' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\http2\\client\\exception::getcode' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\http2\\client\\exception::getfile' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\http2\\client\\exception::getline' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\http2\\client\\exception::getmessage' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\http2\\client\\exception::getprevious' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\http2\\client\\exception::gettrace' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\http2\\client\\exception::gettraceasstring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\http\\client::__construct' => 
+  array (
+    0 => 'void',
+    'host' => 'mixed',
+    'port=' => 'mixed',
+    'ssl=' => 'mixed',
+  ),
+  'co\\http\\client::__destruct' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\http\\client::adddata' => 
+  array (
+    0 => 'mixed',
+    'path' => 'mixed',
+    'name' => 'mixed',
+    'type=' => 'mixed',
+    'filename=' => 'mixed',
+  ),
+  'co\\http\\client::addfile' => 
+  array (
+    0 => 'mixed',
+    'path' => 'mixed',
+    'name' => 'mixed',
+    'type=' => 'mixed',
+    'filename=' => 'mixed',
+    'offset=' => 'mixed',
+    'length=' => 'mixed',
+  ),
+  'co\\http\\client::close' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\http\\client::download' => 
+  array (
+    0 => 'mixed',
+    'path' => 'mixed',
+    'file' => 'mixed',
+    'offset=' => 'mixed',
+  ),
+  'co\\http\\client::execute' => 
+  array (
+    0 => 'mixed',
+    'path' => 'mixed',
+  ),
+  'co\\http\\client::get' => 
+  array (
+    0 => 'mixed',
+    'path' => 'mixed',
+  ),
+  'co\\http\\client::getbody' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\http\\client::getcookies' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\http\\client::getdefer' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\http\\client::getheaderout' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\http\\client::getheaders' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\http\\client::getpeercert' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\http\\client::getpeername' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\http\\client::getsockname' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\http\\client::getstatuscode' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\http\\client::post' => 
+  array (
+    0 => 'mixed',
+    'path' => 'mixed',
+    'data' => 'mixed',
+  ),
+  'co\\http\\client::push' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
+    'opcode=' => 'mixed',
+    'flags=' => 'mixed',
+  ),
+  'co\\http\\client::recv' => 
+  array (
+    0 => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'co\\http\\client::set' => 
+  array (
+    0 => 'mixed',
+    'settings' => 'array<array-key, mixed>',
+  ),
+  'co\\http\\client::setbasicauth' => 
+  array (
+    0 => 'mixed',
+    'username' => 'mixed',
+    'password' => 'mixed',
+  ),
+  'co\\http\\client::setcookies' => 
+  array (
+    0 => 'mixed',
+    'cookies' => 'array<array-key, mixed>',
+  ),
+  'co\\http\\client::setdata' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
+  ),
+  'co\\http\\client::setdefer' => 
+  array (
+    0 => 'mixed',
+    'defer=' => 'mixed',
+  ),
+  'co\\http\\client::setheaders' => 
+  array (
+    0 => 'mixed',
+    'headers' => 'array<array-key, mixed>',
+  ),
+  'co\\http\\client::setmethod' => 
+  array (
+    0 => 'mixed',
+    'method' => 'mixed',
+  ),
+  'co\\http\\client::upgrade' => 
+  array (
+    0 => 'mixed',
+    'path' => 'mixed',
+  ),
+  'co\\http\\client\\exception::__clone' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\http\\client\\exception::__construct' => 
+  array (
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
+  ),
+  'co\\http\\client\\exception::__tostring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\http\\client\\exception::__wakeup' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\http\\client\\exception::getcode' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\http\\client\\exception::getfile' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\http\\client\\exception::getline' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\http\\client\\exception::getmessage' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\http\\client\\exception::getprevious' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\http\\client\\exception::gettrace' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\http\\client\\exception::gettraceasstring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\http\\server::__construct' => 
+  array (
+    0 => 'void',
+    'host' => 'mixed',
+    'port=' => 'mixed',
+    'ssl=' => 'mixed',
+    'reuse_port=' => 'mixed',
+  ),
+  'co\\http\\server::__destruct' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\http\\server::handle' => 
+  array (
+    0 => 'mixed',
+    'pattern' => 'mixed',
+    'callback' => 'callable',
+  ),
+  'co\\http\\server::onaccept' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\http\\server::set' => 
+  array (
+    0 => 'mixed',
+    'settings' => 'array<array-key, mixed>',
+  ),
+  'co\\http\\server::shutdown' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\http\\server::start' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\iterator::__construct' => 
+  array (
+    0 => 'void',
+    'array=' => 'mixed',
+    'ar_flags=' => 'mixed',
+  ),
+  'co\\iterator::append' => 
+  array (
+    0 => 'mixed',
+    'value' => 'mixed',
+  ),
+  'co\\iterator::asort' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\iterator::count' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\iterator::current' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\iterator::getarraycopy' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\iterator::getflags' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\iterator::key' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\iterator::ksort' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\iterator::natcasesort' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\iterator::natsort' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\iterator::next' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\iterator::offsetexists' => 
+  array (
+    0 => 'mixed',
+    'index' => 'mixed',
+  ),
+  'co\\iterator::offsetget' => 
+  array (
+    0 => 'mixed',
+    'index' => 'mixed',
+  ),
+  'co\\iterator::offsetset' => 
+  array (
+    0 => 'mixed',
+    'index' => 'mixed',
+    'newval' => 'mixed',
+  ),
+  'co\\iterator::offsetunset' => 
+  array (
+    0 => 'mixed',
+    'index' => 'mixed',
+  ),
+  'co\\iterator::rewind' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\iterator::seek' => 
+  array (
+    0 => 'mixed',
+    'position' => 'mixed',
+  ),
+  'co\\iterator::serialize' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\iterator::setflags' => 
+  array (
+    0 => 'mixed',
+    'flags' => 'mixed',
+  ),
+  'co\\iterator::uasort' => 
+  array (
+    0 => 'mixed',
+    'cmp_function' => 'mixed',
+  ),
+  'co\\iterator::uksort' => 
+  array (
+    0 => 'mixed',
+    'cmp_function' => 'mixed',
+  ),
+  'co\\iterator::unserialize' => 
+  array (
+    0 => 'mixed',
+    'serialized' => 'mixed',
+  ),
+  'co\\iterator::valid' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\mysql::__construct' => 
+  array (
+    0 => 'void',
+  ),
+  'co\\mysql::__destruct' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\mysql::begin' => 
+  array (
+    0 => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'co\\mysql::close' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\mysql::commit' => 
+  array (
+    0 => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'co\\mysql::connect' => 
+  array (
+    0 => 'mixed',
+    'server_config=' => 'array<array-key, mixed>',
+  ),
+  'co\\mysql::escape' => 
+  array (
+    0 => 'mixed',
+    'string' => 'mixed',
+    'flags=' => 'mixed',
+  ),
+  'co\\mysql::fetch' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\mysql::fetchall' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\mysql::getdefer' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\mysql::nextresult' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\mysql::prepare' => 
+  array (
+    0 => 'mixed',
+    'query' => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'co\\mysql::query' => 
+  array (
+    0 => 'mixed',
+    'sql' => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'co\\mysql::recv' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\mysql::rollback' => 
+  array (
+    0 => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'co\\mysql::setdefer' => 
+  array (
+    0 => 'mixed',
+    'defer=' => 'mixed',
+  ),
+  'co\\mysql\\exception::__clone' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\mysql\\exception::__construct' => 
+  array (
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
+  ),
+  'co\\mysql\\exception::__tostring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\mysql\\exception::__wakeup' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\mysql\\exception::getcode' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\mysql\\exception::getfile' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\mysql\\exception::getline' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\mysql\\exception::getmessage' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\mysql\\exception::getprevious' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\mysql\\exception::gettrace' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\mysql\\exception::gettraceasstring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\mysql\\statement::close' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\mysql\\statement::execute' => 
+  array (
+    0 => 'mixed',
+    'params=' => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'co\\mysql\\statement::fetch' => 
+  array (
+    0 => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'co\\mysql\\statement::fetchall' => 
+  array (
+    0 => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'co\\mysql\\statement::nextresult' => 
+  array (
+    0 => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'co\\mysql\\statement::recv' => 
+  array (
+    0 => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'co\\redis::__construct' => 
+  array (
+    0 => 'void',
+    'config=' => 'mixed',
+  ),
+  'co\\redis::__destruct' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\redis::append' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'co\\redis::auth' => 
+  array (
+    0 => 'mixed',
+    'password' => 'mixed',
+  ),
+  'co\\redis::bgrewriteaof' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\redis::bgsave' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\redis::bitcount' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'co\\redis::bitop' => 
+  array (
+    0 => 'mixed',
+    'operation' => 'mixed',
+    'ret_key' => 'mixed',
+    'key' => 'mixed',
+    'other_keys=' => 'mixed',
+  ),
+  'co\\redis::blpop' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'timeout_or_key' => 'mixed',
+    'extra_args=' => 'mixed',
+  ),
+  'co\\redis::brpop' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'timeout_or_key' => 'mixed',
+    'extra_args=' => 'mixed',
+  ),
+  'co\\redis::brpoplpush' => 
+  array (
+    0 => 'mixed',
+    'src' => 'mixed',
+    'dst' => 'mixed',
+    'timeout' => 'mixed',
+  ),
+  'co\\redis::bzpopmax' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'timeout_or_key' => 'mixed',
+    'extra_args=' => 'mixed',
+  ),
+  'co\\redis::bzpopmin' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'timeout_or_key' => 'mixed',
+    'extra_args=' => 'mixed',
+  ),
+  'co\\redis::close' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\redis::connect' => 
+  array (
+    0 => 'mixed',
+    'host' => 'mixed',
+    'port=' => 'mixed',
+    'serialize=' => 'mixed',
+  ),
+  'co\\redis::dbsize' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\redis::debug' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'co\\redis::decr' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'co\\redis::decrby' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'co\\redis::del' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'other_keys=' => 'mixed',
+  ),
+  'co\\redis::delete' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'other_keys=' => 'mixed',
+  ),
+  'co\\redis::dump' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'co\\redis::eval' => 
+  array (
+    0 => 'mixed',
+    'script' => 'mixed',
+    'args=' => 'mixed',
+    'num_keys=' => 'mixed',
+  ),
+  'co\\redis::evalsha' => 
+  array (
+    0 => 'mixed',
+    'script_sha' => 'mixed',
+    'args=' => 'mixed',
+    'num_keys=' => 'mixed',
+  ),
+  'co\\redis::exec' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\redis::exists' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'other_keys=' => 'mixed',
+  ),
+  'co\\redis::expire' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'integer' => 'mixed',
+  ),
+  'co\\redis::expireat' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'timestamp' => 'mixed',
+  ),
+  'co\\redis::flushall' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\redis::flushdb' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\redis::get' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'co\\redis::getauth' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\redis::getbit' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'offset' => 'mixed',
+  ),
+  'co\\redis::getdbnum' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\redis::getdefer' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\redis::getkeys' => 
+  array (
+    0 => 'mixed',
+    'pattern' => 'mixed',
+  ),
+  'co\\redis::getoptions' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\redis::getrange' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'start' => 'mixed',
+    'end' => 'mixed',
+  ),
+  'co\\redis::getset' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'co\\redis::hdel' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'member' => 'mixed',
+    'other_members=' => 'mixed',
+  ),
+  'co\\redis::hexists' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'member' => 'mixed',
+  ),
+  'co\\redis::hget' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'member' => 'mixed',
+  ),
+  'co\\redis::hgetall' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'co\\redis::hincrby' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'member' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'co\\redis::hincrbyfloat' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'member' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'co\\redis::hkeys' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'co\\redis::hlen' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'co\\redis::hmget' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'keys' => 'mixed',
+  ),
+  'co\\redis::hmset' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'pairs' => 'mixed',
+  ),
+  'co\\redis::hset' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'member' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'co\\redis::hsetnx' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'member' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'co\\redis::hvals' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'co\\redis::incr' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'co\\redis::incrby' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'co\\redis::incrbyfloat' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'co\\redis::keys' => 
+  array (
+    0 => 'mixed',
+    'pattern' => 'mixed',
+  ),
+  'co\\redis::lastsave' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\redis::lget' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'index' => 'mixed',
+  ),
+  'co\\redis::lgetrange' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'start' => 'mixed',
+    'end' => 'mixed',
+  ),
+  'co\\redis::lindex' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'integer' => 'mixed',
+  ),
+  'co\\redis::linsert' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'position' => 'mixed',
+    'pivot' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'co\\redis::listtrim' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'start' => 'mixed',
+    'stop' => 'mixed',
+  ),
+  'co\\redis::llen' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'co\\redis::lpop' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'co\\redis::lpush' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'co\\redis::lpushx' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'co\\redis::lrange' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'start' => 'mixed',
+    'end' => 'mixed',
+  ),
+  'co\\redis::lrem' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'value' => 'mixed',
+    'count' => 'mixed',
+  ),
+  'co\\redis::lremove' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'value' => 'mixed',
+    'count' => 'mixed',
+  ),
+  'co\\redis::lset' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'index' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'co\\redis::lsize' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'co\\redis::ltrim' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'start' => 'mixed',
+    'stop' => 'mixed',
+  ),
+  'co\\redis::mget' => 
+  array (
+    0 => 'mixed',
+    'keys' => 'mixed',
+  ),
+  'co\\redis::move' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'dbindex' => 'mixed',
+  ),
+  'co\\redis::mset' => 
+  array (
+    0 => 'mixed',
+    'pairs' => 'mixed',
+  ),
+  'co\\redis::msetnx' => 
+  array (
+    0 => 'mixed',
+    'pairs' => 'mixed',
+  ),
+  'co\\redis::multi' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\redis::persist' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'co\\redis::pexpire' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'timestamp' => 'mixed',
+  ),
+  'co\\redis::pexpireat' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'timestamp' => 'mixed',
+  ),
+  'co\\redis::pfadd' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'elements' => 'mixed',
+  ),
+  'co\\redis::pfcount' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'co\\redis::pfmerge' => 
+  array (
+    0 => 'mixed',
+    'dstkey' => 'mixed',
+    'keys' => 'mixed',
+  ),
+  'co\\redis::ping' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\redis::psetex' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'expire' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'co\\redis::psubscribe' => 
+  array (
+    0 => 'mixed',
+    'patterns' => 'mixed',
+  ),
+  'co\\redis::pttl' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'co\\redis::publish' => 
+  array (
+    0 => 'mixed',
+    'channel' => 'mixed',
+    'message' => 'mixed',
+  ),
+  'co\\redis::punsubscribe' => 
+  array (
+    0 => 'mixed',
+    'patterns' => 'mixed',
+  ),
+  'co\\redis::randomkey' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\redis::recv' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\redis::rename' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'newkey' => 'mixed',
+  ),
+  'co\\redis::renamekey' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'newkey' => 'mixed',
+  ),
+  'co\\redis::renamenx' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'newkey' => 'mixed',
+  ),
+  'co\\redis::request' => 
+  array (
+    0 => 'mixed',
+    'params' => 'array<array-key, mixed>',
+  ),
+  'co\\redis::restore' => 
+  array (
+    0 => 'mixed',
+    'ttl' => 'mixed',
+    'key' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'co\\redis::role' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\redis::rpop' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'co\\redis::rpoplpush' => 
+  array (
+    0 => 'mixed',
+    'src' => 'mixed',
+    'dst' => 'mixed',
+  ),
+  'co\\redis::rpush' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'co\\redis::rpushx' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'co\\redis::sadd' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'co\\redis::save' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\redis::scard' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'co\\redis::scontains' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'co\\redis::script' => 
+  array (
+    0 => 'mixed',
+    'cmd' => 'mixed',
+    'args=' => 'mixed',
+  ),
+  'co\\redis::sdiff' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'other_keys=' => 'mixed',
+  ),
+  'co\\redis::sdiffstore' => 
+  array (
+    0 => 'mixed',
+    'dst' => 'mixed',
+    'key' => 'mixed',
+    'other_keys=' => 'mixed',
+  ),
+  'co\\redis::select' => 
+  array (
+    0 => 'mixed',
+    'dbindex' => 'mixed',
+  ),
+  'co\\redis::set' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'value' => 'mixed',
+    'timeout=' => 'mixed',
+    'opt=' => 'mixed',
+  ),
+  'co\\redis::setbit' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'offset' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'co\\redis::setdefer' => 
+  array (
+    0 => 'mixed',
+    'defer' => 'mixed',
+  ),
+  'co\\redis::setex' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'expire' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'co\\redis::setnx' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'co\\redis::setoptions' => 
+  array (
+    0 => 'mixed',
+    'options' => 'mixed',
+  ),
+  'co\\redis::setrange' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'offset' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'co\\redis::settimeout' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'timeout' => 'mixed',
+  ),
+  'co\\redis::sgetmembers' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'co\\redis::sinter' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'other_keys=' => 'mixed',
+  ),
+  'co\\redis::sinterstore' => 
+  array (
+    0 => 'mixed',
+    'dst' => 'mixed',
+    'key' => 'mixed',
+    'other_keys=' => 'mixed',
+  ),
+  'co\\redis::sismember' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'co\\redis::smembers' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'co\\redis::smove' => 
+  array (
+    0 => 'mixed',
+    'src' => 'mixed',
+    'dst' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'co\\redis::spop' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'co\\redis::srandmember' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'count=' => 'mixed',
+  ),
+  'co\\redis::srem' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'co\\redis::sremove' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'co\\redis::ssize' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'co\\redis::strlen' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'co\\redis::subscribe' => 
+  array (
+    0 => 'mixed',
+    'channels' => 'mixed',
+  ),
+  'co\\redis::sunion' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'other_keys=' => 'mixed',
+  ),
+  'co\\redis::sunionstore' => 
+  array (
+    0 => 'mixed',
+    'dst' => 'mixed',
+    'key' => 'mixed',
+    'other_keys=' => 'mixed',
+  ),
+  'co\\redis::time' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\redis::ttl' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'co\\redis::type' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'co\\redis::unsubscribe' => 
+  array (
+    0 => 'mixed',
+    'channels' => 'mixed',
+  ),
+  'co\\redis::unwatch' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\redis::watch' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'other_keys=' => 'mixed',
+  ),
+  'co\\redis::xack' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'group_name' => 'mixed',
+    'id' => 'mixed',
+  ),
+  'co\\redis::xadd' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'id' => 'mixed',
+    'pairs' => 'mixed',
+    'options=' => 'mixed',
+  ),
+  'co\\redis::xautoclaim' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'group_name' => 'mixed',
+    'consumer_name' => 'mixed',
+    'min_idle_time' => 'mixed',
+    'start' => 'mixed',
+    'options=' => 'mixed',
+  ),
+  'co\\redis::xclaim' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'group_name' => 'mixed',
+    'consumer_name' => 'mixed',
+    'min_idle_time' => 'mixed',
+    'id' => 'mixed',
+    'options=' => 'mixed',
+  ),
+  'co\\redis::xdel' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'id' => 'mixed',
+  ),
+  'co\\redis::xgroupcreate' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'group_name' => 'mixed',
+    'id' => 'mixed',
+    'mkstream=' => 'mixed',
+  ),
+  'co\\redis::xgroupcreateconsumer' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'group_name' => 'mixed',
+    'consumer_name' => 'mixed',
+  ),
+  'co\\redis::xgroupdelconsumer' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'group_name' => 'mixed',
+    'consumer_name' => 'mixed',
+  ),
+  'co\\redis::xgroupdestroy' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'group_name' => 'mixed',
+  ),
+  'co\\redis::xgroupsetid' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'group_name' => 'mixed',
+    'id' => 'mixed',
+  ),
+  'co\\redis::xinfoconsumers' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'group_name' => 'mixed',
+  ),
+  'co\\redis::xinfogroups' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'co\\redis::xinfostream' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'co\\redis::xlen' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'co\\redis::xpending' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'group_name' => 'mixed',
+    'options=' => 'mixed',
+  ),
+  'co\\redis::xrange' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'start' => 'mixed',
+    'end' => 'mixed',
+    'count=' => 'mixed',
+  ),
+  'co\\redis::xread' => 
+  array (
+    0 => 'mixed',
+    'streams' => 'mixed',
+    'options=' => 'mixed',
+  ),
+  'co\\redis::xreadgroup' => 
+  array (
+    0 => 'mixed',
+    'group_name' => 'mixed',
+    'consumer_name' => 'mixed',
+    'streams' => 'mixed',
+    'options=' => 'mixed',
+  ),
+  'co\\redis::xrevrange' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'start' => 'mixed',
+    'end' => 'mixed',
+    'count=' => 'mixed',
+  ),
+  'co\\redis::xtrim' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'options=' => 'mixed',
+  ),
+  'co\\redis::zadd' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'score' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'co\\redis::zcard' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'co\\redis::zcount' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'min' => 'mixed',
+    'max' => 'mixed',
+  ),
+  'co\\redis::zdelete' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'member' => 'mixed',
+    'other_members=' => 'mixed',
+  ),
+  'co\\redis::zdeleterangebyrank' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'start' => 'mixed',
+    'end' => 'mixed',
+  ),
+  'co\\redis::zdeleterangebyscore' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'min' => 'mixed',
+    'max' => 'mixed',
+  ),
+  'co\\redis::zincrby' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'value' => 'mixed',
+    'member' => 'mixed',
+  ),
+  'co\\redis::zinter' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'keys' => 'mixed',
+    'weights=' => 'mixed',
+    'aggregate=' => 'mixed',
+  ),
+  'co\\redis::zinterstore' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'keys' => 'mixed',
+    'weights=' => 'mixed',
+    'aggregate=' => 'mixed',
+  ),
+  'co\\redis::zpopmax' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'count' => 'mixed',
+  ),
+  'co\\redis::zpopmin' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'count' => 'mixed',
+  ),
+  'co\\redis::zrange' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'start' => 'mixed',
+    'end' => 'mixed',
+    'scores=' => 'mixed',
+  ),
+  'co\\redis::zrangebylex' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'min' => 'mixed',
+    'max' => 'mixed',
+    'offset=' => 'mixed',
+    'limit=' => 'mixed',
+  ),
+  'co\\redis::zrangebyscore' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'start' => 'mixed',
+    'end' => 'mixed',
+    'options=' => 'mixed',
+  ),
+  'co\\redis::zrank' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'member' => 'mixed',
+  ),
+  'co\\redis::zrem' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'member' => 'mixed',
+    'other_members=' => 'mixed',
+  ),
+  'co\\redis::zremove' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'member' => 'mixed',
+    'other_members=' => 'mixed',
+  ),
+  'co\\redis::zremrangebyrank' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'min' => 'mixed',
+    'max' => 'mixed',
+  ),
+  'co\\redis::zremrangebyscore' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'min' => 'mixed',
+    'max' => 'mixed',
+  ),
+  'co\\redis::zrevrange' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'start' => 'mixed',
+    'end' => 'mixed',
+    'scores=' => 'mixed',
+  ),
+  'co\\redis::zrevrangebylex' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'min' => 'mixed',
+    'max' => 'mixed',
+    'offset=' => 'mixed',
+    'limit=' => 'mixed',
+  ),
+  'co\\redis::zrevrangebyscore' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'start' => 'mixed',
+    'end' => 'mixed',
+    'options=' => 'mixed',
+  ),
+  'co\\redis::zrevrank' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'member' => 'mixed',
+  ),
+  'co\\redis::zscore' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'member' => 'mixed',
+  ),
+  'co\\redis::zsize' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'co\\redis::zunion' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'keys' => 'mixed',
+    'weights=' => 'mixed',
+    'aggregate=' => 'mixed',
+  ),
+  'co\\redis::zunionstore' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'keys' => 'mixed',
+    'weights=' => 'mixed',
+    'aggregate=' => 'mixed',
+  ),
+  'co\\run' => 
+  array (
+    0 => 'mixed',
+    'fn' => 'callable',
+    '...args=' => 'mixed',
+  ),
+  'co\\scheduler::add' => 
+  array (
+    0 => 'mixed',
+    'func' => 'callable',
+    '...params=' => 'mixed',
+  ),
+  'co\\scheduler::getoptions' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\scheduler::parallel' => 
+  array (
+    0 => 'mixed',
+    'n' => 'mixed',
+    'func=' => 'callable',
+    '...params=' => 'mixed',
+  ),
+  'co\\scheduler::set' => 
+  array (
+    0 => 'mixed',
+    'settings' => 'array<array-key, mixed>',
+  ),
+  'co\\scheduler::start' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\server::__construct' => 
+  array (
+    0 => 'void',
+    'host' => 'string',
+    'port=' => 'int',
+    'ssl=' => 'bool',
+    'reuse_port=' => 'bool',
+  ),
+  'co\\server::handle' => 
+  array (
+    0 => 'void',
+    'fn' => 'callable',
+  ),
+  'co\\server::set' => 
+  array (
+    0 => 'void',
+    'setting' => 'array<array-key, mixed>',
+  ),
+  'co\\server::shutdown' => 
+  array (
+    0 => 'bool',
+  ),
+  'co\\server::start' => 
+  array (
+    0 => 'bool',
+  ),
+  'co\\server\\connection::__construct' => 
+  array (
+    0 => 'void',
+    'conn' => 'Swoole\\Coroutine\\Socket',
+  ),
+  'co\\server\\connection::close' => 
+  array (
+    0 => 'bool',
+  ),
+  'co\\server\\connection::exportsocket' => 
+  array (
+    0 => 'Swoole\\Coroutine\\Socket',
+  ),
+  'co\\server\\connection::recv' => 
+  array (
+    0 => 'mixed',
+    'timeout=' => 'float',
+  ),
+  'co\\server\\connection::send' => 
+  array (
+    0 => 'mixed',
+    'data' => 'string',
+  ),
+  'co\\socket::__construct' => 
+  array (
+    0 => 'void',
+    'domain' => 'mixed',
+    'type' => 'mixed',
+    'protocol=' => 'mixed',
+  ),
+  'co\\socket::accept' => 
+  array (
+    0 => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'co\\socket::bind' => 
+  array (
+    0 => 'mixed',
+    'address' => 'mixed',
+    'port=' => 'mixed',
+  ),
+  'co\\socket::cancel' => 
+  array (
+    0 => 'mixed',
+    'event=' => 'mixed',
+  ),
+  'co\\socket::checkliveness' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\socket::close' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\socket::connect' => 
+  array (
+    0 => 'mixed',
+    'host' => 'mixed',
+    'port=' => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'co\\socket::getoption' => 
+  array (
+    0 => 'mixed',
+    'level' => 'mixed',
+    'opt_name' => 'mixed',
+  ),
+  'co\\socket::getpeername' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\socket::getsockname' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\socket::isclosed' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\socket::listen' => 
+  array (
+    0 => 'mixed',
+    'backlog=' => 'mixed',
+  ),
+  'co\\socket::peek' => 
+  array (
+    0 => 'mixed',
+    'length=' => 'mixed',
+  ),
+  'co\\socket::readvector' => 
+  array (
+    0 => 'mixed',
+    'io_vector' => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'co\\socket::readvectorall' => 
+  array (
+    0 => 'mixed',
+    'io_vector' => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'co\\socket::recv' => 
+  array (
+    0 => 'mixed',
+    'length=' => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'co\\socket::recvall' => 
+  array (
+    0 => 'mixed',
+    'length=' => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'co\\socket::recvfrom' => 
+  array (
+    0 => 'mixed',
+    '&peername' => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'co\\socket::recvline' => 
+  array (
+    0 => 'mixed',
+    'length=' => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'co\\socket::recvpacket' => 
+  array (
+    0 => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'co\\socket::recvwithbuffer' => 
+  array (
+    0 => 'mixed',
+    'length=' => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'co\\socket::send' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'co\\socket::sendall' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'co\\socket::sendfile' => 
+  array (
+    0 => 'mixed',
+    'filename' => 'mixed',
+    'offset=' => 'mixed',
+    'length=' => 'mixed',
+  ),
+  'co\\socket::sendto' => 
+  array (
+    0 => 'mixed',
+    'addr' => 'mixed',
+    'port' => 'mixed',
+    'data' => 'mixed',
+  ),
+  'co\\socket::setoption' => 
+  array (
+    0 => 'mixed',
+    'level' => 'mixed',
+    'opt_name' => 'mixed',
+    'opt_value' => 'mixed',
+  ),
+  'co\\socket::setprotocol' => 
+  array (
+    0 => 'mixed',
+    'settings' => 'array<array-key, mixed>',
+  ),
+  'co\\socket::shutdown' => 
+  array (
+    0 => 'mixed',
+    'how=' => 'mixed',
+  ),
+  'co\\socket::sslhandshake' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\socket::writevector' => 
+  array (
+    0 => 'mixed',
+    'io_vector' => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'co\\socket::writevectorall' => 
+  array (
+    0 => 'mixed',
+    'io_vector' => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'co\\socket\\exception::__clone' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\socket\\exception::__construct' => 
+  array (
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
+  ),
+  'co\\socket\\exception::__tostring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\socket\\exception::__wakeup' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\socket\\exception::getcode' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\socket\\exception::getfile' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\socket\\exception::getline' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\socket\\exception::getmessage' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\socket\\exception::getprevious' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\socket\\exception::gettrace' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\socket\\exception::gettraceasstring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'co\\system::dnslookup' => 
+  array (
+    0 => 'mixed',
+    'domain_name' => 'mixed',
+    'timeout=' => 'mixed',
+    'type=' => 'mixed',
+  ),
+  'co\\system::exec' => 
+  array (
+    0 => 'mixed',
+    'command' => 'mixed',
+    'get_error_stream=' => 'mixed',
+  ),
+  'co\\system::fgets' => 
+  array (
+    0 => 'mixed',
+    'handle' => 'mixed',
+  ),
+  'co\\system::fread' => 
+  array (
+    0 => 'mixed',
+    'handle' => 'mixed',
+    'length=' => 'mixed',
+  ),
+  'co\\system::fwrite' => 
+  array (
+    0 => 'mixed',
+    'handle' => 'mixed',
+    'string' => 'mixed',
+    'length=' => 'mixed',
+  ),
+  'co\\system::getaddrinfo' => 
+  array (
+    0 => 'mixed',
+    'hostname' => 'mixed',
+    'family=' => 'mixed',
+    'socktype=' => 'mixed',
+    'protocol=' => 'mixed',
+    'service=' => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'co\\system::gethostbyname' => 
+  array (
+    0 => 'mixed',
+    'domain_name' => 'mixed',
+    'family=' => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'co\\system::readfile' => 
+  array (
+    0 => 'mixed',
+    'filename' => 'mixed',
+  ),
+  'co\\system::sleep' => 
+  array (
+    0 => 'mixed',
+    'seconds' => 'mixed',
+  ),
+  'co\\system::statvfs' => 
+  array (
+    0 => 'mixed',
+    'path' => 'mixed',
+  ),
+  'co\\system::wait' => 
+  array (
+    0 => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'co\\system::waitevent' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+    'events=' => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'co\\system::waitpid' => 
+  array (
+    0 => 'mixed',
+    'pid' => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'co\\system::waitsignal' => 
+  array (
+    0 => 'mixed',
+    'signo' => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'co\\system::writefile' => 
+  array (
+    0 => 'mixed',
+    'filename' => 'mixed',
+    'data' => 'mixed',
+    'flags=' => 'mixed',
+  ),
+  'co\\waitgroup::__construct' => 
+  array (
+    0 => 'void',
+    'delta=' => 'int',
+  ),
+  'co\\waitgroup::add' => 
+  array (
+    0 => 'void',
+    'delta=' => 'int',
+  ),
+  'co\\waitgroup::count' => 
+  array (
+    0 => 'int',
+  ),
+  'co\\waitgroup::done' => 
+  array (
+    0 => 'void',
+  ),
+  'co\\waitgroup::wait' => 
+  array (
+    0 => 'bool',
+    'timeout=' => 'float',
+  ),
   'collator::__construct' => 
   array (
     0 => 'void',
@@ -3597,7 +6433,7 @@ return array (
   ),
   'collator::geterrormessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'collator::getlocale' => 
   array (
@@ -3953,50 +6789,50 @@ return array (
   ),
   'compileerror::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'compileerror::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'compileerror::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'compileerror::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'compileerror::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'compileerror::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'compileerror::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'compileerror::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'compileerror::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'compileerror::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'compileerror::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'componere\\abstract\\definition::addinterface' => 
   array (
@@ -4212,22 +7048,22 @@ return array (
   ),
   'couchbase\\analyticsexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\analyticsexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'couchbase\\analyticsexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\analyticsexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\analyticsexception::context' => 
   array (
@@ -4235,31 +7071,31 @@ return array (
   ),
   'couchbase\\analyticsexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\analyticsexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\analyticsexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\analyticsexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\analyticsexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\analyticsexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\analyticsexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\analyticsexception::ref' => 
   array (
@@ -4267,25 +7103,25 @@ return array (
   ),
   'couchbase\\analyticsindexmanager::connectlink' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'options=' => 'Couchbase\\ConnectAnalyticsLinkOptions|null',
   ),
   'couchbase\\analyticsindexmanager::createdataset' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'datasetName' => 'string',
     'bucketName' => 'string',
     'options=' => 'Couchbase\\CreateAnalyticsDatasetOptions|null',
   ),
   'couchbase\\analyticsindexmanager::createdataverse' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'dataverseName' => 'string',
     'options=' => 'Couchbase\\CreateAnalyticsDataverseOptions|null',
   ),
   'couchbase\\analyticsindexmanager::createindex' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'datasetName' => 'string',
     'indexName' => 'string',
     'fields' => 'array<array-key, mixed>',
@@ -4293,61 +7129,61 @@ return array (
   ),
   'couchbase\\analyticsindexmanager::createlink' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'link' => 'Couchbase\\AnalyticsLink',
     'options=' => 'Couchbase\\CreateAnalyticsLinkOptions|null',
   ),
   'couchbase\\analyticsindexmanager::disconnectlink' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'options=' => 'Couchbase\\DisconnectAnalyticsLinkOptions|null',
   ),
   'couchbase\\analyticsindexmanager::dropdataset' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'datasetName' => 'string',
     'options=' => 'Couchbase\\DropAnalyticsDatasetOptions|null',
   ),
   'couchbase\\analyticsindexmanager::dropdataverse' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'dataverseName' => 'string',
     'options=' => 'Couchbase\\DropAnalyticsDataverseOptions|null',
   ),
   'couchbase\\analyticsindexmanager::dropindex' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'datasetName' => 'string',
     'indexName' => 'string',
     'options=' => 'Couchbase\\DropAnalyticsIndexOptions|null',
   ),
   'couchbase\\analyticsindexmanager::droplink' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'linkName' => 'string',
     'dataverseName' => 'string',
     'options=' => 'Couchbase\\DropAnalyticsLinkOptions|null',
   ),
   'couchbase\\analyticsindexmanager::getalldatasets' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\analyticsindexmanager::getallindexes' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\analyticsindexmanager::getlinks' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'options=' => 'Couchbase\\GetAnalyticsLinksOptions|null',
   ),
   'couchbase\\analyticsindexmanager::getpendingmutations' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\analyticsindexmanager::replacelink' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'link' => 'Couchbase\\AnalyticsLink',
     'options=' => 'Couchbase\\ReplaceAnalyticsLinkOptions|null',
   ),
@@ -4375,7 +7211,7 @@ return array (
   array (
     0 => 'Couchbase\\AnalyticsOptions',
     'key' => 'string',
-    'value' => 'string',
+    'value' => 'mixed',
   ),
   'couchbase\\analyticsoptions::readonly' => 
   array (
@@ -4413,22 +7249,22 @@ return array (
   ),
   'couchbase\\authenticationexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\authenticationexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'couchbase\\authenticationexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\authenticationexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\authenticationexception::context' => 
   array (
@@ -4436,31 +7272,31 @@ return array (
   ),
   'couchbase\\authenticationexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\authenticationexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\authenticationexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\authenticationexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\authenticationexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\authenticationexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\authenticationexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\authenticationexception::ref' => 
   array (
@@ -4508,22 +7344,22 @@ return array (
   ),
   'couchbase\\badinputexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\badinputexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'couchbase\\badinputexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\badinputexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\badinputexception::context' => 
   array (
@@ -4531,31 +7367,31 @@ return array (
   ),
   'couchbase\\badinputexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\badinputexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\badinputexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\badinputexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\badinputexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\badinputexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\badinputexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\badinputexception::ref' => 
   array (
@@ -4563,22 +7399,22 @@ return array (
   ),
   'couchbase\\baseexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\baseexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'couchbase\\baseexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\baseexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\baseexception::context' => 
   array (
@@ -4586,31 +7422,31 @@ return array (
   ),
   'couchbase\\baseexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\baseexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\baseexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\baseexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\baseexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\baseexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\baseexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\baseexception::ref' => 
   array (
@@ -4662,22 +7498,22 @@ return array (
   ),
   'couchbase\\bindingsexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\bindingsexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'couchbase\\bindingsexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\bindingsexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\bindingsexception::context' => 
   array (
@@ -4685,31 +7521,31 @@ return array (
   ),
   'couchbase\\bindingsexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\bindingsexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\bindingsexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\bindingsexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\bindingsexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\bindingsexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\bindingsexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\bindingsexception::ref' => 
   array (
@@ -4816,8 +7652,8 @@ return array (
   ),
   'couchbase\\bucket::diagnostics' => 
   array (
-    0 => 'string',
-    'reportId' => 'string',
+    0 => 'mixed',
+    'reportId' => 'mixed',
   ),
   'couchbase\\bucket::encryptfields' => 
   array (
@@ -5079,7 +7915,7 @@ return array (
   ),
   'couchbase\\bucketmanager::createbucket' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'settings' => 'Couchbase\\BucketSettings',
   ),
   'couchbase\\bucketmanager::createn1qlindex' => 
@@ -5148,7 +7984,7 @@ return array (
   ),
   'couchbase\\bucketmanager::removebucket' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'name' => 'string',
   ),
   'couchbase\\bucketmanager::removedesigndocument' => 
@@ -5164,22 +8000,22 @@ return array (
   ),
   'couchbase\\bucketmissingexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\bucketmissingexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'couchbase\\bucketmissingexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\bucketmissingexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\bucketmissingexception::context' => 
   array (
@@ -5187,31 +8023,31 @@ return array (
   ),
   'couchbase\\bucketmissingexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\bucketmissingexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\bucketmissingexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\bucketmissingexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\bucketmissingexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\bucketmissingexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\bucketmissingexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\bucketmissingexception::ref' => 
   array (
@@ -5318,22 +8154,22 @@ return array (
   ),
   'couchbase\\casmismatchexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\casmismatchexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'couchbase\\casmismatchexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\casmismatchexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\casmismatchexception::context' => 
   array (
@@ -5341,31 +8177,31 @@ return array (
   ),
   'couchbase\\casmismatchexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\casmismatchexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\casmismatchexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\casmismatchexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\casmismatchexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\casmismatchexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\casmismatchexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\casmismatchexception::ref' => 
   array (
@@ -5560,7 +8396,7 @@ return array (
   array (
     0 => 'Couchbase\\MutationResult',
     'id' => 'string',
-    'value' => 'string',
+    'value' => 'mixed',
     'options=' => 'Couchbase\\InsertOptions|null',
   ),
   'couchbase\\collection::lookupin' => 
@@ -5597,7 +8433,7 @@ return array (
   array (
     0 => 'Couchbase\\MutationResult',
     'id' => 'string',
-    'value' => 'string',
+    'value' => 'mixed',
     'options=' => 'Couchbase\\ReplaceOptions|null',
   ),
   'couchbase\\collection::touch' => 
@@ -5618,7 +8454,7 @@ return array (
   array (
     0 => 'Couchbase\\MutationResult',
     'id' => 'string',
-    'value' => 'string',
+    'value' => 'mixed',
     'options=' => 'Couchbase\\UpsertOptions|null',
   ),
   'couchbase\\collection::upsertmulti' => 
@@ -5629,22 +8465,22 @@ return array (
   ),
   'couchbase\\collectionmanager::createcollection' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'collection' => 'Couchbase\\CollectionSpec',
   ),
   'couchbase\\collectionmanager::createscope' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'name' => 'string',
   ),
   'couchbase\\collectionmanager::dropcollection' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'collection' => 'Couchbase\\CollectionSpec',
   ),
   'couchbase\\collectionmanager::dropscope' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'name' => 'string',
   ),
   'couchbase\\collectionmanager::getallscopes' => 
@@ -5658,22 +8494,22 @@ return array (
   ),
   'couchbase\\collectionmissingexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\collectionmissingexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'couchbase\\collectionmissingexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\collectionmissingexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\collectionmissingexception::context' => 
   array (
@@ -5681,31 +8517,31 @@ return array (
   ),
   'couchbase\\collectionmissingexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\collectionmissingexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\collectionmissingexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\collectionmissingexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\collectionmissingexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\collectionmissingexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\collectionmissingexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\collectionmissingexception::ref' => 
   array (
@@ -5764,13 +8600,13 @@ return array (
   ),
   'couchbase\\coordinate::__construct' => 
   array (
-    0 => 'string',
+    0 => 'void',
     'longitude' => 'float',
     'latitude' => 'float',
   ),
   'couchbase\\coordinate::jsonserialize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\couchbaseremoteanalyticslink::dataverse' => 
   array (
@@ -6017,22 +8853,22 @@ return array (
   ),
   'couchbase\\dmlfailureexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\dmlfailureexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'couchbase\\dmlfailureexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\dmlfailureexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\dmlfailureexception::context' => 
   array (
@@ -6040,31 +8876,31 @@ return array (
   ),
   'couchbase\\dmlfailureexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\dmlfailureexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\dmlfailureexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\dmlfailureexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\dmlfailureexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\dmlfailureexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\dmlfailureexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\dmlfailureexception::ref' => 
   array (
@@ -6095,22 +8931,22 @@ return array (
   ),
   'couchbase\\documentnotfoundexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\documentnotfoundexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'couchbase\\documentnotfoundexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\documentnotfoundexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\documentnotfoundexception::context' => 
   array (
@@ -6118,31 +8954,31 @@ return array (
   ),
   'couchbase\\documentnotfoundexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\documentnotfoundexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\documentnotfoundexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\documentnotfoundexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\documentnotfoundexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\documentnotfoundexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\documentnotfoundexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\documentnotfoundexception::ref' => 
   array (
@@ -6200,22 +9036,22 @@ return array (
   ),
   'couchbase\\durabilityexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\durabilityexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'couchbase\\durabilityexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\durabilityexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\durabilityexception::context' => 
   array (
@@ -6223,31 +9059,31 @@ return array (
   ),
   'couchbase\\durabilityexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\durabilityexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\durabilityexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\durabilityexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\durabilityexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\durabilityexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\durabilityexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\durabilityexception::ref' => 
   array (
@@ -6255,22 +9091,22 @@ return array (
   ),
   'couchbase\\encryptionsettings::certificate' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'certificate' => 'string',
   ),
   'couchbase\\encryptionsettings::clientcertificate' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'certificate' => 'string',
   ),
   'couchbase\\encryptionsettings::clientkey' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'key' => 'string',
   ),
   'couchbase\\encryptionsettings::level' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'level' => 'string',
   ),
   'couchbase\\existsoptions::timeout' => 
@@ -6326,7 +9162,7 @@ return array (
   ),
   'couchbase\\geopolygonquery::__construct' => 
   array (
-    0 => 'string',
+    0 => 'void',
     'coordinates' => 'array<array-key, mixed>',
   ),
   'couchbase\\geopolygonquery::boost' => 
@@ -6341,7 +9177,7 @@ return array (
   ),
   'couchbase\\geopolygonquery::jsonserialize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\getallreplicasoptions::decoder' => 
   array (
@@ -6466,22 +9302,22 @@ return array (
   ),
   'couchbase\\httpexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\httpexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'couchbase\\httpexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\httpexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\httpexception::context' => 
   array (
@@ -6489,31 +9325,31 @@ return array (
   ),
   'couchbase\\httpexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\httpexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\httpexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\httpexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\httpexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\httpexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\httpexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\httpexception::ref' => 
   array (
@@ -6546,22 +9382,22 @@ return array (
   ),
   'couchbase\\indexfailureexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\indexfailureexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'couchbase\\indexfailureexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\indexfailureexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\indexfailureexception::context' => 
   array (
@@ -6569,31 +9405,31 @@ return array (
   ),
   'couchbase\\indexfailureexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\indexfailureexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\indexfailureexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\indexfailureexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\indexfailureexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\indexfailureexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\indexfailureexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\indexfailureexception::ref' => 
   array (
@@ -6601,22 +9437,22 @@ return array (
   ),
   'couchbase\\indexnotfoundexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\indexnotfoundexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'couchbase\\indexnotfoundexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\indexnotfoundexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\indexnotfoundexception::context' => 
   array (
@@ -6624,31 +9460,31 @@ return array (
   ),
   'couchbase\\indexnotfoundexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\indexnotfoundexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\indexnotfoundexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\indexnotfoundexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\indexnotfoundexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\indexnotfoundexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\indexnotfoundexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\indexnotfoundexception::ref' => 
   array (
@@ -6676,22 +9512,22 @@ return array (
   ),
   'couchbase\\invalidconfigurationexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\invalidconfigurationexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'couchbase\\invalidconfigurationexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\invalidconfigurationexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\invalidconfigurationexception::context' => 
   array (
@@ -6699,31 +9535,31 @@ return array (
   ),
   'couchbase\\invalidconfigurationexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\invalidconfigurationexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\invalidconfigurationexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\invalidconfigurationexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\invalidconfigurationexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\invalidconfigurationexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\invalidconfigurationexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\invalidconfigurationexception::ref' => 
   array (
@@ -6731,22 +9567,22 @@ return array (
   ),
   'couchbase\\invalidrangeexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\invalidrangeexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'couchbase\\invalidrangeexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\invalidrangeexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\invalidrangeexception::context' => 
   array (
@@ -6754,31 +9590,31 @@ return array (
   ),
   'couchbase\\invalidrangeexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\invalidrangeexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\invalidrangeexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\invalidrangeexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\invalidrangeexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\invalidrangeexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\invalidrangeexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\invalidrangeexception::ref' => 
   array (
@@ -6786,22 +9622,22 @@ return array (
   ),
   'couchbase\\invalidstateexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\invalidstateexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'couchbase\\invalidstateexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\invalidstateexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\invalidstateexception::context' => 
   array (
@@ -6809,31 +9645,31 @@ return array (
   ),
   'couchbase\\invalidstateexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\invalidstateexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\invalidstateexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\invalidstateexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\invalidstateexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\invalidstateexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\invalidstateexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\invalidstateexception::ref' => 
   array (
@@ -6841,22 +9677,22 @@ return array (
   ),
   'couchbase\\keydeletedexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\keydeletedexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'couchbase\\keydeletedexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\keydeletedexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\keydeletedexception::context' => 
   array (
@@ -6864,31 +9700,31 @@ return array (
   ),
   'couchbase\\keydeletedexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\keydeletedexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\keydeletedexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\keydeletedexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\keydeletedexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\keydeletedexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\keydeletedexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\keydeletedexception::ref' => 
   array (
@@ -6896,22 +9732,22 @@ return array (
   ),
   'couchbase\\keyexistsexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\keyexistsexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'couchbase\\keyexistsexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\keyexistsexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\keyexistsexception::context' => 
   array (
@@ -6919,31 +9755,31 @@ return array (
   ),
   'couchbase\\keyexistsexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\keyexistsexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\keyexistsexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\keyexistsexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\keyexistsexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\keyexistsexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\keyexistsexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\keyexistsexception::ref' => 
   array (
@@ -6951,22 +9787,22 @@ return array (
   ),
   'couchbase\\keylockedexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\keylockedexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'couchbase\\keylockedexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\keylockedexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\keylockedexception::context' => 
   array (
@@ -6974,31 +9810,31 @@ return array (
   ),
   'couchbase\\keylockedexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\keylockedexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\keylockedexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\keylockedexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\keylockedexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\keylockedexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\keylockedexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\keylockedexception::ref' => 
   array (
@@ -7006,22 +9842,22 @@ return array (
   ),
   'couchbase\\keyspacenotfoundexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\keyspacenotfoundexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'couchbase\\keyspacenotfoundexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\keyspacenotfoundexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\keyspacenotfoundexception::context' => 
   array (
@@ -7029,31 +9865,31 @@ return array (
   ),
   'couchbase\\keyspacenotfoundexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\keyspacenotfoundexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\keyspacenotfoundexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\keyspacenotfoundexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\keyspacenotfoundexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\keyspacenotfoundexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\keyspacenotfoundexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\keyspacenotfoundexception::ref' => 
   array (
@@ -7061,22 +9897,22 @@ return array (
   ),
   'couchbase\\keyvalueexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\keyvalueexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'couchbase\\keyvalueexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\keyvalueexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\keyvalueexception::context' => 
   array (
@@ -7084,31 +9920,31 @@ return array (
   ),
   'couchbase\\keyvalueexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\keyvalueexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\keyvalueexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\keyvalueexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\keyvalueexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\keyvalueexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\keyvalueexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\keyvalueexception::ref' => 
   array (
@@ -7127,23 +9963,23 @@ return array (
   ),
   'couchbase\\lookupcountspec::__construct' => 
   array (
-    0 => 'string',
+    0 => 'void',
     'path' => 'string',
     'isXattr=' => 'bool',
   ),
   'couchbase\\lookupexistsspec::__construct' => 
   array (
-    0 => 'string',
+    0 => 'void',
     'path' => 'string',
     'isXattr=' => 'bool',
   ),
   'couchbase\\lookupgetfullspec::__construct' => 
   array (
-    0 => 'string',
+    0 => 'void',
   ),
   'couchbase\\lookupgetspec::__construct' => 
   array (
-    0 => 'string',
+    0 => 'void',
     'path' => 'string',
     'isXattr=' => 'bool',
   ),
@@ -7267,16 +10103,16 @@ return array (
   ),
   'couchbase\\mutatearrayadduniquespec::__construct' => 
   array (
-    0 => 'string',
+    0 => 'void',
     'path' => 'string',
-    'value' => 'string',
+    'value' => 'mixed',
     'isXattr' => 'bool',
     'createPath' => 'bool',
     'expandMacros' => 'bool',
   ),
   'couchbase\\mutatearrayappendspec::__construct' => 
   array (
-    0 => 'string',
+    0 => 'void',
     'path' => 'string',
     'values' => 'array<array-key, mixed>',
     'isXattr' => 'bool',
@@ -7285,7 +10121,7 @@ return array (
   ),
   'couchbase\\mutatearrayinsertspec::__construct' => 
   array (
-    0 => 'string',
+    0 => 'void',
     'path' => 'string',
     'values' => 'array<array-key, mixed>',
     'isXattr' => 'bool',
@@ -7294,7 +10130,7 @@ return array (
   ),
   'couchbase\\mutatearrayprependspec::__construct' => 
   array (
-    0 => 'string',
+    0 => 'void',
     'path' => 'string',
     'values' => 'array<array-key, mixed>',
     'isXattr' => 'bool',
@@ -7303,7 +10139,7 @@ return array (
   ),
   'couchbase\\mutatecounterspec::__construct' => 
   array (
-    0 => 'string',
+    0 => 'void',
     'path' => 'string',
     'delta' => 'int',
     'isXattr' => 'bool',
@@ -7442,31 +10278,31 @@ return array (
   ),
   'couchbase\\mutateinsertspec::__construct' => 
   array (
-    0 => 'string',
+    0 => 'void',
     'path' => 'string',
-    'value' => 'string',
+    'value' => 'mixed',
     'isXattr' => 'bool',
     'createPath' => 'bool',
     'expandMacros' => 'bool',
   ),
   'couchbase\\mutateremovespec::__construct' => 
   array (
-    0 => 'string',
+    0 => 'void',
     'path' => 'string',
     'isXattr' => 'bool',
   ),
   'couchbase\\mutatereplacespec::__construct' => 
   array (
-    0 => 'string',
+    0 => 'void',
     'path' => 'string',
-    'value' => 'string',
+    'value' => 'mixed',
     'isXattr' => 'bool',
   ),
   'couchbase\\mutateupsertspec::__construct' => 
   array (
-    0 => 'string',
+    0 => 'void',
     'path' => 'string',
-    'value' => 'string',
+    'value' => 'mixed',
     'isXattr' => 'bool',
     'createPath' => 'bool',
     'expandMacros' => 'bool',
@@ -7588,22 +10424,22 @@ return array (
   ),
   'couchbase\\networkexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\networkexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'couchbase\\networkexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\networkexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\networkexception::context' => 
   array (
@@ -7611,31 +10447,31 @@ return array (
   ),
   'couchbase\\networkexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\networkexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\networkexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\networkexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\networkexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\networkexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\networkexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\networkexception::ref' => 
   array (
@@ -7649,7 +10485,7 @@ return array (
   ),
   'couchbase\\nooptracer::requestspan' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'name' => 'string',
     'parent=' => 'Couchbase\\RequestSpan|null',
   ),
@@ -7680,7 +10516,7 @@ return array (
   'couchbase\\numericrangesearchquery::field' => 
   array (
     0 => 'Couchbase\\NumericRangeSearchQuery',
-    'field' => 'string',
+    'field' => 'mixed',
   ),
   'couchbase\\numericrangesearchquery::jsonserialize' => 
   array (
@@ -7708,22 +10544,22 @@ return array (
   ),
   'couchbase\\parsingfailureexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\parsingfailureexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'couchbase\\parsingfailureexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\parsingfailureexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\parsingfailureexception::context' => 
   array (
@@ -7731,31 +10567,31 @@ return array (
   ),
   'couchbase\\parsingfailureexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\parsingfailureexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\parsingfailureexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\parsingfailureexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\parsingfailureexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\parsingfailureexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\parsingfailureexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\parsingfailureexception::ref' => 
   array (
@@ -7763,22 +10599,22 @@ return array (
   ),
   'couchbase\\partialviewexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\partialviewexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'couchbase\\partialviewexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\partialviewexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\partialviewexception::context' => 
   array (
@@ -7786,31 +10622,31 @@ return array (
   ),
   'couchbase\\partialviewexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\partialviewexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\partialviewexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\partialviewexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\partialviewexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\partialviewexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\partialviewexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\partialviewexception::ref' => 
   array (
@@ -7840,22 +10676,22 @@ return array (
   ),
   'couchbase\\pathexistsexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\pathexistsexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'couchbase\\pathexistsexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\pathexistsexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\pathexistsexception::context' => 
   array (
@@ -7863,31 +10699,31 @@ return array (
   ),
   'couchbase\\pathexistsexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\pathexistsexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\pathexistsexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\pathexistsexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\pathexistsexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\pathexistsexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\pathexistsexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\pathexistsexception::ref' => 
   array (
@@ -7895,22 +10731,22 @@ return array (
   ),
   'couchbase\\pathnotfoundexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\pathnotfoundexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'couchbase\\pathnotfoundexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\pathnotfoundexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\pathnotfoundexception::context' => 
   array (
@@ -7918,31 +10754,31 @@ return array (
   ),
   'couchbase\\pathnotfoundexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\pathnotfoundexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\pathnotfoundexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\pathnotfoundexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\pathnotfoundexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\pathnotfoundexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\pathnotfoundexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\pathnotfoundexception::ref' => 
   array (
@@ -7968,22 +10804,22 @@ return array (
   ),
   'couchbase\\planningfailureexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\planningfailureexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'couchbase\\planningfailureexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\planningfailureexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\planningfailureexception::context' => 
   array (
@@ -7991,31 +10827,31 @@ return array (
   ),
   'couchbase\\planningfailureexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\planningfailureexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\planningfailureexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\planningfailureexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\planningfailureexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\planningfailureexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\planningfailureexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\planningfailureexception::ref' => 
   array (
@@ -8041,22 +10877,22 @@ return array (
   ),
   'couchbase\\preparedstatementexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\preparedstatementexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'couchbase\\preparedstatementexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\preparedstatementexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\preparedstatementexception::context' => 
   array (
@@ -8064,31 +10900,31 @@ return array (
   ),
   'couchbase\\preparedstatementexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\preparedstatementexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\preparedstatementexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\preparedstatementexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\preparedstatementexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\preparedstatementexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\preparedstatementexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\preparedstatementexception::ref' => 
   array (
@@ -8106,22 +10942,22 @@ return array (
   ),
   'couchbase\\queryerrorexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\queryerrorexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'couchbase\\queryerrorexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\queryerrorexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\queryerrorexception::context' => 
   array (
@@ -8129,31 +10965,31 @@ return array (
   ),
   'couchbase\\queryerrorexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\queryerrorexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\queryerrorexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\queryerrorexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\queryerrorexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\queryerrorexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\queryerrorexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\queryerrorexception::ref' => 
   array (
@@ -8161,22 +10997,22 @@ return array (
   ),
   'couchbase\\queryexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\queryexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'couchbase\\queryexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\queryexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\queryexception::context' => 
   array (
@@ -8184,31 +11020,31 @@ return array (
   ),
   'couchbase\\queryexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\queryexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\queryexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\queryexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\queryexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\queryexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\queryexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\queryexception::ref' => 
   array (
@@ -8244,12 +11080,12 @@ return array (
   ),
   'couchbase\\queryindexmanager::builddeferredindexes' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'bucketName' => 'string',
   ),
   'couchbase\\queryindexmanager::createindex' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'bucketName' => 'string',
     'indexName' => 'string',
     'fields' => 'array<array-key, mixed>',
@@ -8257,20 +11093,20 @@ return array (
   ),
   'couchbase\\queryindexmanager::createprimaryindex' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'bucketName' => 'string',
     'options=' => 'Couchbase\\CreateQueryPrimaryIndexOptions|null',
   ),
   'couchbase\\queryindexmanager::dropindex' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'bucketName' => 'string',
     'indexName' => 'string',
     'options=' => 'Couchbase\\DropQueryIndexOptions|null',
   ),
   'couchbase\\queryindexmanager::dropprimaryindex' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'bucketName' => 'string',
     'options=' => 'Couchbase\\DropQueryPrimaryIndexOptions|null',
   ),
@@ -8281,7 +11117,7 @@ return array (
   ),
   'couchbase\\queryindexmanager::watchindexes' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'bucketName' => 'string',
     'indexNames' => 'array<array-key, mixed>',
     'timeout' => 'int',
@@ -8346,7 +11182,7 @@ return array (
   array (
     0 => 'Couchbase\\QueryOptions',
     'key' => 'string',
-    'value' => 'string',
+    'value' => 'mixed',
   ),
   'couchbase\\queryoptions::readonly' => 
   array (
@@ -8380,22 +11216,22 @@ return array (
   ),
   'couchbase\\queryserviceexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\queryserviceexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'couchbase\\queryserviceexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\queryserviceexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\queryserviceexception::context' => 
   array (
@@ -8403,31 +11239,31 @@ return array (
   ),
   'couchbase\\queryserviceexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\queryserviceexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\queryserviceexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\queryserviceexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\queryserviceexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\queryserviceexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\queryserviceexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\queryserviceexception::ref' => 
   array (
@@ -8448,22 +11284,22 @@ return array (
   ),
   'couchbase\\quotalimitedexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\quotalimitedexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'couchbase\\quotalimitedexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\quotalimitedexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\quotalimitedexception::context' => 
   array (
@@ -8471,31 +11307,31 @@ return array (
   ),
   'couchbase\\quotalimitedexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\quotalimitedexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\quotalimitedexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\quotalimitedexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\quotalimitedexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\quotalimitedexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\quotalimitedexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\quotalimitedexception::ref' => 
   array (
@@ -8503,22 +11339,22 @@ return array (
   ),
   'couchbase\\ratelimitedexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\ratelimitedexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'couchbase\\ratelimitedexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\ratelimitedexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\ratelimitedexception::context' => 
   array (
@@ -8526,31 +11362,31 @@ return array (
   ),
   'couchbase\\ratelimitedexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\ratelimitedexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\ratelimitedexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\ratelimitedexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\ratelimitedexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\ratelimitedexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\ratelimitedexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\ratelimitedexception::ref' => 
   array (
@@ -8626,22 +11462,22 @@ return array (
   ),
   'couchbase\\requestcanceledexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\requestcanceledexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'couchbase\\requestcanceledexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\requestcanceledexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\requestcanceledexception::context' => 
   array (
@@ -8649,31 +11485,31 @@ return array (
   ),
   'couchbase\\requestcanceledexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\requestcanceledexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\requestcanceledexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\requestcanceledexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\requestcanceledexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\requestcanceledexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\requestcanceledexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\requestcanceledexception::ref' => 
   array (
@@ -8772,7 +11608,7 @@ return array (
   ),
   'couchbase\\scope::__construct' => 
   array (
-    0 => 'string',
+    0 => 'void',
     'bucket' => 'Couchbase\\Bucket',
     'name' => 'string',
   ),
@@ -8799,22 +11635,22 @@ return array (
   ),
   'couchbase\\scopemissingexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\scopemissingexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'couchbase\\scopemissingexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\scopemissingexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\scopemissingexception::context' => 
   array (
@@ -8822,31 +11658,31 @@ return array (
   ),
   'couchbase\\scopemissingexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\scopemissingexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\scopemissingexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\scopemissingexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\scopemissingexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\scopemissingexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\scopemissingexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\scopemissingexception::ref' => 
   array (
@@ -8862,22 +11698,22 @@ return array (
   ),
   'couchbase\\searchexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\searchexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'couchbase\\searchexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\searchexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\searchexception::context' => 
   array (
@@ -8885,31 +11721,31 @@ return array (
   ),
   'couchbase\\searchexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\searchexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\searchexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\searchexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\searchexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\searchexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\searchexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\searchexception::ref' => 
   array (
@@ -8917,7 +11753,7 @@ return array (
   ),
   'couchbase\\searchindex::jsonserialize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\searchindex::params' => 
   array (
@@ -8984,28 +11820,28 @@ return array (
   ),
   'couchbase\\searchindexmanager::allowquerying' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'indexName' => 'string',
   ),
   'couchbase\\searchindexmanager::analyzedocument' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'indexName' => 'string',
-    'document' => 'string',
+    'document' => 'mixed',
   ),
   'couchbase\\searchindexmanager::disallowquerying' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'indexName' => 'string',
   ),
   'couchbase\\searchindexmanager::dropindex' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'name' => 'string',
   ),
   'couchbase\\searchindexmanager::freezeplan' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'indexName' => 'string',
   ),
   'couchbase\\searchindexmanager::getallindexes' => 
@@ -9024,22 +11860,22 @@ return array (
   ),
   'couchbase\\searchindexmanager::pauseingest' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'indexName' => 'string',
   ),
   'couchbase\\searchindexmanager::resumeingest' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'indexName' => 'string',
   ),
   'couchbase\\searchindexmanager::unfreezeplan' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'indexName' => 'string',
   ),
   'couchbase\\searchindexmanager::upsertindex' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'indexDefinition' => 'Couchbase\\SearchIndex',
   ),
   'couchbase\\searchoptions::collections' => 
@@ -9081,7 +11917,7 @@ return array (
   ),
   'couchbase\\searchoptions::jsonserialize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\searchoptions::limit' => 
   array (
@@ -9450,22 +12286,22 @@ return array (
   ),
   'couchbase\\servicemissingexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\servicemissingexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'couchbase\\servicemissingexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\servicemissingexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\servicemissingexception::context' => 
   array (
@@ -9473,31 +12309,31 @@ return array (
   ),
   'couchbase\\servicemissingexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\servicemissingexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\servicemissingexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\servicemissingexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\servicemissingexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\servicemissingexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\servicemissingexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\servicemissingexception::ref' => 
   array (
@@ -9553,22 +12389,22 @@ return array (
   ),
   'couchbase\\subdocumentexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\subdocumentexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'couchbase\\subdocumentexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\subdocumentexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\subdocumentexception::context' => 
   array (
@@ -9576,31 +12412,31 @@ return array (
   ),
   'couchbase\\subdocumentexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\subdocumentexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\subdocumentexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\subdocumentexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\subdocumentexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\subdocumentexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\subdocumentexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\subdocumentexception::ref' => 
   array (
@@ -9608,22 +12444,22 @@ return array (
   ),
   'couchbase\\tempfailexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\tempfailexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'couchbase\\tempfailexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\tempfailexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\tempfailexception::context' => 
   array (
@@ -9631,31 +12467,31 @@ return array (
   ),
   'couchbase\\tempfailexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\tempfailexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\tempfailexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\tempfailexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\tempfailexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\tempfailexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\tempfailexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\tempfailexception::ref' => 
   array (
@@ -9729,63 +12565,63 @@ return array (
   ),
   'couchbase\\thresholdloggingtracer::analyticsthreshold' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'duration' => 'int',
   ),
   'couchbase\\thresholdloggingtracer::emitinterval' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'duration' => 'int',
   ),
   'couchbase\\thresholdloggingtracer::kvthreshold' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'duration' => 'int',
   ),
   'couchbase\\thresholdloggingtracer::querythreshold' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'duration' => 'int',
   ),
   'couchbase\\thresholdloggingtracer::requestspan' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'name' => 'string',
     'parent=' => 'Couchbase\\RequestSpan|null',
   ),
   'couchbase\\thresholdloggingtracer::samplesize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'size' => 'int',
   ),
   'couchbase\\thresholdloggingtracer::searchthreshold' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'duration' => 'int',
   ),
   'couchbase\\thresholdloggingtracer::viewsthreshold' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'duration' => 'int',
   ),
   'couchbase\\timeoutexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\timeoutexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'couchbase\\timeoutexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\timeoutexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\timeoutexception::context' => 
   array (
@@ -9793,31 +12629,31 @@ return array (
   ),
   'couchbase\\timeoutexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\timeoutexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\timeoutexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\timeoutexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\timeoutexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\timeoutexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\timeoutexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\timeoutexception::ref' => 
   array (
@@ -9926,12 +12762,12 @@ return array (
   ),
   'couchbase\\usermanager::dropgroup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'name' => 'string',
   ),
   'couchbase\\usermanager::dropuser' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'name' => 'string',
     'options=' => 'Couchbase\\DropUserOptions|null',
   ),
@@ -9961,12 +12797,12 @@ return array (
   ),
   'couchbase\\usermanager::upsertgroup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'group' => 'Couchbase\\Group',
   ),
   'couchbase\\usermanager::upsertuser' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'user' => 'Couchbase\\User',
     'options=' => 'Couchbase\\UpsertUserOptions|null',
   ),
@@ -9988,22 +12824,22 @@ return array (
   ),
   'couchbase\\valuetoobigexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\valuetoobigexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'couchbase\\valuetoobigexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\valuetoobigexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\valuetoobigexception::context' => 
   array (
@@ -10011,31 +12847,31 @@ return array (
   ),
   'couchbase\\valuetoobigexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\valuetoobigexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\valuetoobigexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\valuetoobigexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\valuetoobigexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\valuetoobigexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\valuetoobigexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\valuetoobigexception::ref' => 
   array (
@@ -10070,22 +12906,22 @@ return array (
   ),
   'couchbase\\viewexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\viewexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'couchbase\\viewexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\viewexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\viewexception::context' => 
   array (
@@ -10093,31 +12929,31 @@ return array (
   ),
   'couchbase\\viewexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\viewexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\viewexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\viewexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\viewexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\viewexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\viewexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\viewexception::ref' => 
   array (
@@ -10125,7 +12961,7 @@ return array (
   ),
   'couchbase\\viewindexmanager::dropdesigndocument' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'name' => 'string',
   ),
   'couchbase\\viewindexmanager::getalldesigndocuments' => 
@@ -10139,7 +12975,7 @@ return array (
   ),
   'couchbase\\viewindexmanager::upsertdesigndocument' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'document' => 'Couchbase\\DesignDocument',
   ),
   'couchbase\\viewoptions::group' => 
@@ -10155,9 +12991,9 @@ return array (
   'couchbase\\viewoptions::idrange' => 
   array (
     0 => 'Couchbase\\ViewOptions',
-    'start' => 'string',
-    'end' => 'string',
-    'inclusiveEnd=' => 'string',
+    'start' => 'mixed',
+    'end' => 'mixed',
+    'inclusiveEnd=' => 'mixed',
   ),
   'couchbase\\viewoptions::includedocuments' => 
   array (
@@ -10168,7 +13004,7 @@ return array (
   'couchbase\\viewoptions::key' => 
   array (
     0 => 'Couchbase\\ViewOptions',
-    'arg' => 'string',
+    'arg' => 'mixed',
   ),
   'couchbase\\viewoptions::keys' => 
   array (
@@ -10188,15 +13024,15 @@ return array (
   'couchbase\\viewoptions::range' => 
   array (
     0 => 'Couchbase\\ViewOptions',
-    'start' => 'string',
-    'end' => 'string',
-    'inclusiveEnd=' => 'string',
+    'start' => 'mixed',
+    'end' => 'mixed',
+    'inclusiveEnd=' => 'mixed',
   ),
   'couchbase\\viewoptions::raw' => 
   array (
     0 => 'Couchbase\\ViewOptions',
     'key' => 'string',
-    'value' => 'string',
+    'value' => 'mixed',
   ),
   'couchbase\\viewoptions::reduce' => 
   array (
@@ -10307,7 +13143,7 @@ return array (
   ),
   'couchbase\\viewrow::document' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\viewrow::id' => 
   array (
@@ -10315,11 +13151,11 @@ return array (
   ),
   'couchbase\\viewrow::key' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\viewrow::value' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'couchbase\\watchqueryindexesoptions::watchprimary' => 
   array (
@@ -10407,9 +13243,9 @@ return array (
   ),
   'create_function' => 
   array (
-    0 => 'string',
-    'args' => 'string',
-    'code' => 'string',
+    0 => 'mixed',
+    'args' => 'mixed',
+    'code' => 'mixed',
   ),
   'crypt' => 
   array (
@@ -11256,19 +14092,19 @@ return array (
   ),
   'curlfile::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'curlfile::getfilename' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'curlfile::getmimetype' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'curlfile::getpostfilename' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'curlfile::setmimetype' => 
   array (
@@ -11642,8 +14478,8 @@ return array (
   ),
   'dateinterval::format' => 
   array (
-    0 => 'string',
-    'format' => 'string',
+    0 => 'mixed',
+    'format' => 'mixed',
   ),
   'dateperiod::__construct' => 
   array (
@@ -11669,7 +14505,7 @@ return array (
   ),
   'dateperiod::__set_state' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'array' => 'array<array-key, mixed>',
   ),
   'dateperiod::__wakeup' => 
@@ -11686,7 +14522,7 @@ return array (
   ),
   'dateperiod::getrecurrences' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'dateperiod::getstartdate' => 
   array (
@@ -11705,7 +14541,7 @@ return array (
   ),
   'datetime::__set_state' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'array' => 'array<array-key, mixed>',
   ),
   'datetime::__wakeup' => 
@@ -11800,13 +14636,13 @@ return array (
   ),
   'datetimeimmutable::__construct' => 
   array (
-    0 => 'string',
-    'time=' => 'string',
-    'timezone=' => 'string',
+    0 => 'void',
+    'time=' => 'mixed',
+    'timezone=' => 'mixed',
   ),
   'datetimeimmutable::__set_state' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'array' => 'array<array-key, mixed>',
   ),
   'datetimeimmutable::__wakeup' => 
@@ -11815,31 +14651,31 @@ return array (
   ),
   'datetimeimmutable::add' => 
   array (
-    0 => 'string',
-    'interval' => 'string',
+    0 => 'mixed',
+    'interval' => 'mixed',
   ),
   'datetimeimmutable::createfromformat' => 
   array (
-    0 => 'string',
-    'format' => 'string',
-    'time' => 'string',
+    0 => 'mixed',
+    'format' => 'mixed',
+    'time' => 'mixed',
     'object=' => 'DateTimeZone|null',
   ),
   'datetimeimmutable::createfrommutable' => 
   array (
-    0 => 'string',
-    'DateTime' => 'string',
+    0 => 'mixed',
+    'DateTime' => 'mixed',
   ),
   'datetimeimmutable::diff' => 
   array (
-    0 => 'string',
-    'object' => 'string',
-    'absolute=' => 'string',
+    0 => 'mixed',
+    'object' => 'mixed',
+    'absolute=' => 'mixed',
   ),
   'datetimeimmutable::format' => 
   array (
-    0 => 'string',
-    'format' => 'string',
+    0 => 'mixed',
+    'format' => 'mixed',
   ),
   'datetimeimmutable::getlasterrors' => 
   array (
@@ -11847,57 +14683,57 @@ return array (
   ),
   'datetimeimmutable::getoffset' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'datetimeimmutable::gettimestamp' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'datetimeimmutable::gettimezone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'datetimeimmutable::modify' => 
   array (
-    0 => 'string',
-    'modify' => 'string',
+    0 => 'mixed',
+    'modify' => 'mixed',
   ),
   'datetimeimmutable::setdate' => 
   array (
-    0 => 'string',
-    'year' => 'string',
-    'month' => 'string',
-    'day' => 'string',
+    0 => 'mixed',
+    'year' => 'mixed',
+    'month' => 'mixed',
+    'day' => 'mixed',
   ),
   'datetimeimmutable::setisodate' => 
   array (
-    0 => 'string',
-    'year' => 'string',
-    'week' => 'string',
-    'day=' => 'string',
+    0 => 'mixed',
+    'year' => 'mixed',
+    'week' => 'mixed',
+    'day=' => 'mixed',
   ),
   'datetimeimmutable::settime' => 
   array (
-    0 => 'string',
-    'hour' => 'string',
-    'minute' => 'string',
-    'second=' => 'string',
-    'microseconds=' => 'string',
+    0 => 'mixed',
+    'hour' => 'mixed',
+    'minute' => 'mixed',
+    'second=' => 'mixed',
+    'microseconds=' => 'mixed',
   ),
   'datetimeimmutable::settimestamp' => 
   array (
-    0 => 'string',
-    'unixtimestamp' => 'string',
+    0 => 'mixed',
+    'unixtimestamp' => 'mixed',
   ),
   'datetimeimmutable::settimezone' => 
   array (
-    0 => 'string',
-    'timezone' => 'string',
+    0 => 'mixed',
+    'timezone' => 'mixed',
   ),
   'datetimeimmutable::sub' => 
   array (
-    0 => 'string',
-    'interval' => 'string',
+    0 => 'mixed',
+    'interval' => 'mixed',
   ),
   'datetimeinterface::diff' => 
   array (
@@ -12873,6 +15709,11 @@ return array (
     0 => 'string',
     'num' => 'int',
   ),
+  'defer' => 
+  array (
+    0 => 'mixed',
+    'callback' => 'callable',
+  ),
   'define' => 
   array (
     0 => 'bool',
@@ -12997,11 +15838,11 @@ return array (
   ),
   'directoryiterator::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'directoryiterator::_bad_state_ex' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'directoryiterator::current' => 
   array (
@@ -13013,8 +15854,8 @@ return array (
   ),
   'directoryiterator::getbasename' => 
   array (
-    0 => 'string',
-    'suffix=' => 'string',
+    0 => 'mixed',
+    'suffix=' => 'mixed',
   ),
   'directoryiterator::getctime' => 
   array (
@@ -13022,7 +15863,7 @@ return array (
   ),
   'directoryiterator::getextension' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'directoryiterator::getfileinfo' => 
   array (
@@ -13031,7 +15872,7 @@ return array (
   ),
   'directoryiterator::getfilename' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'directoryiterator::getgroup' => 
   array (
@@ -13043,7 +15884,7 @@ return array (
   ),
   'directoryiterator::getlinktarget' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'directoryiterator::getmtime' => 
   array (
@@ -13055,7 +15896,7 @@ return array (
   ),
   'directoryiterator::getpath' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'directoryiterator::getpathinfo' => 
   array (
@@ -13064,7 +15905,7 @@ return array (
   ),
   'directoryiterator::getpathname' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'directoryiterator::getperms' => 
   array (
@@ -13080,7 +15921,7 @@ return array (
   ),
   'directoryiterator::gettype' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'directoryiterator::isdir' => 
   array (
@@ -13112,7 +15953,7 @@ return array (
   ),
   'directoryiterator::key' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'directoryiterator::next' => 
   array (
@@ -13175,50 +16016,50 @@ return array (
   ),
   'divisionbyzeroerror::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'divisionbyzeroerror::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'divisionbyzeroerror::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'divisionbyzeroerror::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'divisionbyzeroerror::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'divisionbyzeroerror::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'divisionbyzeroerror::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'divisionbyzeroerror::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'divisionbyzeroerror::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'divisionbyzeroerror::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'divisionbyzeroerror::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'dl' => 
   array (
@@ -13324,7 +16165,7 @@ return array (
   ),
   'domainexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domainexception::__wakeup' => 
   array (
@@ -13336,7 +16177,7 @@ return array (
   ),
   'domainexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domainexception::getline' => 
   array (
@@ -13344,7 +16185,7 @@ return array (
   ),
   'domainexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domainexception::getprevious' => 
   array (
@@ -13356,7 +16197,7 @@ return array (
   ),
   'domainexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domattr::__construct' => 
   array (
@@ -13366,41 +16207,41 @@ return array (
   ),
   'domattr::appendchild' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'newChild' => 'DOMNode',
   ),
   'domattr::c14n' => 
   array (
-    0 => 'string',
-    'exclusive=' => 'string',
-    'with_comments=' => 'string',
+    0 => 'mixed',
+    'exclusive=' => 'mixed',
+    'with_comments=' => 'mixed',
     'xpath=' => 'array<array-key, mixed>|null',
     'ns_prefixes=' => 'array<array-key, mixed>|null',
   ),
   'domattr::c14nfile' => 
   array (
-    0 => 'string',
-    'uri' => 'string',
-    'exclusive=' => 'string',
-    'with_comments=' => 'string',
+    0 => 'mixed',
+    'uri' => 'mixed',
+    'exclusive=' => 'mixed',
+    'with_comments=' => 'mixed',
     'xpath=' => 'array<array-key, mixed>|null',
     'ns_prefixes=' => 'array<array-key, mixed>|null',
   ),
   'domattr::clonenode' => 
   array (
-    0 => 'string',
-    'deep=' => 'string',
+    0 => 'mixed',
+    'deep=' => 'mixed',
   ),
   'domattr::comparedocumentposition' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'other' => 'DOMNode',
   ),
   'domattr::getfeature' => 
   array (
-    0 => 'string',
-    'feature' => 'string',
-    'version' => 'string',
+    0 => 'mixed',
+    'feature' => 'mixed',
+    'version' => 'mixed',
   ),
   'domattr::getlineno' => 
   array (
@@ -13412,8 +16253,8 @@ return array (
   ),
   'domattr::getuserdata' => 
   array (
-    0 => 'string',
-    'key' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
   ),
   'domattr::hasattributes' => 
   array (
@@ -13436,7 +16277,7 @@ return array (
   ),
   'domattr::isequalnode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'arg' => 'DOMNode',
   ),
   'domattr::isid' => 
@@ -13481,10 +16322,10 @@ return array (
   ),
   'domattr::setuserdata' => 
   array (
-    0 => 'string',
-    'key' => 'string',
-    'data' => 'string',
-    'handler' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
+    'data' => 'mixed',
+    'handler' => 'mixed',
   ),
   'domattribute::name' => 
   array (
@@ -13510,173 +16351,173 @@ return array (
   ),
   'domcdatasection::appendchild' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'newChild' => 'DOMNode',
   ),
   'domcdatasection::appenddata' => 
   array (
-    0 => 'string',
-    'arg' => 'string',
+    0 => 'mixed',
+    'arg' => 'mixed',
   ),
   'domcdatasection::c14n' => 
   array (
-    0 => 'string',
-    'exclusive=' => 'string',
-    'with_comments=' => 'string',
+    0 => 'mixed',
+    'exclusive=' => 'mixed',
+    'with_comments=' => 'mixed',
     'xpath=' => 'array<array-key, mixed>|null',
     'ns_prefixes=' => 'array<array-key, mixed>|null',
   ),
   'domcdatasection::c14nfile' => 
   array (
-    0 => 'string',
-    'uri' => 'string',
-    'exclusive=' => 'string',
-    'with_comments=' => 'string',
+    0 => 'mixed',
+    'uri' => 'mixed',
+    'exclusive=' => 'mixed',
+    'with_comments=' => 'mixed',
     'xpath=' => 'array<array-key, mixed>|null',
     'ns_prefixes=' => 'array<array-key, mixed>|null',
   ),
   'domcdatasection::clonenode' => 
   array (
-    0 => 'string',
-    'deep=' => 'string',
+    0 => 'mixed',
+    'deep=' => 'mixed',
   ),
   'domcdatasection::comparedocumentposition' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'other' => 'DOMNode',
   ),
   'domcdatasection::deletedata' => 
   array (
-    0 => 'string',
-    'offset' => 'string',
-    'count' => 'string',
+    0 => 'mixed',
+    'offset' => 'mixed',
+    'count' => 'mixed',
   ),
   'domcdatasection::getfeature' => 
   array (
-    0 => 'string',
-    'feature' => 'string',
-    'version' => 'string',
+    0 => 'mixed',
+    'feature' => 'mixed',
+    'version' => 'mixed',
   ),
   'domcdatasection::getlineno' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domcdatasection::getnodepath' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domcdatasection::getuserdata' => 
   array (
-    0 => 'string',
-    'key' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
   ),
   'domcdatasection::hasattributes' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domcdatasection::haschildnodes' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domcdatasection::insertbefore' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'newChild' => 'DOMNode',
     'refChild=' => 'DOMNode|null',
   ),
   'domcdatasection::insertdata' => 
   array (
-    0 => 'string',
-    'offset' => 'string',
-    'arg' => 'string',
+    0 => 'mixed',
+    'offset' => 'mixed',
+    'arg' => 'mixed',
   ),
   'domcdatasection::isdefaultnamespace' => 
   array (
-    0 => 'string',
-    'namespaceURI' => 'string',
+    0 => 'mixed',
+    'namespaceURI' => 'mixed',
   ),
   'domcdatasection::iselementcontentwhitespace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domcdatasection::isequalnode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'arg' => 'DOMNode',
   ),
   'domcdatasection::issamenode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'other' => 'DOMNode',
   ),
   'domcdatasection::issupported' => 
   array (
-    0 => 'string',
-    'feature' => 'string',
-    'version' => 'string',
+    0 => 'mixed',
+    'feature' => 'mixed',
+    'version' => 'mixed',
   ),
   'domcdatasection::iswhitespaceinelementcontent' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domcdatasection::lookupnamespaceuri' => 
   array (
-    0 => 'string',
-    'prefix' => 'string',
+    0 => 'mixed',
+    'prefix' => 'mixed',
   ),
   'domcdatasection::lookupprefix' => 
   array (
-    0 => 'string',
-    'namespaceURI' => 'string',
+    0 => 'mixed',
+    'namespaceURI' => 'mixed',
   ),
   'domcdatasection::normalize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domcdatasection::removechild' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'oldChild' => 'DOMNode',
   ),
   'domcdatasection::replacechild' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'newChild' => 'DOMNode',
     'oldChild' => 'DOMNode',
   ),
   'domcdatasection::replacedata' => 
   array (
-    0 => 'string',
-    'offset' => 'string',
-    'count' => 'string',
-    'arg' => 'string',
+    0 => 'mixed',
+    'offset' => 'mixed',
+    'count' => 'mixed',
+    'arg' => 'mixed',
   ),
   'domcdatasection::replacewholetext' => 
   array (
-    0 => 'string',
-    'content' => 'string',
+    0 => 'mixed',
+    'content' => 'mixed',
   ),
   'domcdatasection::setuserdata' => 
   array (
-    0 => 'string',
-    'key' => 'string',
-    'data' => 'string',
-    'handler' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
+    'data' => 'mixed',
+    'handler' => 'mixed',
   ),
   'domcdatasection::splittext' => 
   array (
-    0 => 'string',
-    'offset' => 'string',
+    0 => 'mixed',
+    'offset' => 'mixed',
   ),
   'domcdatasection::substringdata' => 
   array (
-    0 => 'string',
-    'offset' => 'string',
-    'count' => 'string',
+    0 => 'mixed',
+    'offset' => 'mixed',
+    'count' => 'mixed',
   ),
   'domcharacterdata::appendchild' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'newChild' => 'DOMNode',
   ),
   'domcharacterdata::appenddata' => 
@@ -13686,29 +16527,29 @@ return array (
   ),
   'domcharacterdata::c14n' => 
   array (
-    0 => 'string',
-    'exclusive=' => 'string',
-    'with_comments=' => 'string',
+    0 => 'mixed',
+    'exclusive=' => 'mixed',
+    'with_comments=' => 'mixed',
     'xpath=' => 'array<array-key, mixed>|null',
     'ns_prefixes=' => 'array<array-key, mixed>|null',
   ),
   'domcharacterdata::c14nfile' => 
   array (
-    0 => 'string',
-    'uri' => 'string',
-    'exclusive=' => 'string',
-    'with_comments=' => 'string',
+    0 => 'mixed',
+    'uri' => 'mixed',
+    'exclusive=' => 'mixed',
+    'with_comments=' => 'mixed',
     'xpath=' => 'array<array-key, mixed>|null',
     'ns_prefixes=' => 'array<array-key, mixed>|null',
   ),
   'domcharacterdata::clonenode' => 
   array (
-    0 => 'string',
-    'deep=' => 'string',
+    0 => 'mixed',
+    'deep=' => 'mixed',
   ),
   'domcharacterdata::comparedocumentposition' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'other' => 'DOMNode',
   ),
   'domcharacterdata::deletedata' => 
@@ -13719,34 +16560,34 @@ return array (
   ),
   'domcharacterdata::getfeature' => 
   array (
-    0 => 'string',
-    'feature' => 'string',
-    'version' => 'string',
+    0 => 'mixed',
+    'feature' => 'mixed',
+    'version' => 'mixed',
   ),
   'domcharacterdata::getlineno' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domcharacterdata::getnodepath' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domcharacterdata::getuserdata' => 
   array (
-    0 => 'string',
-    'key' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
   ),
   'domcharacterdata::hasattributes' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domcharacterdata::haschildnodes' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domcharacterdata::insertbefore' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'newChild' => 'DOMNode',
     'refChild=' => 'DOMNode|null',
   ),
@@ -13758,47 +16599,47 @@ return array (
   ),
   'domcharacterdata::isdefaultnamespace' => 
   array (
-    0 => 'string',
-    'namespaceURI' => 'string',
+    0 => 'mixed',
+    'namespaceURI' => 'mixed',
   ),
   'domcharacterdata::isequalnode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'arg' => 'DOMNode',
   ),
   'domcharacterdata::issamenode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'other' => 'DOMNode',
   ),
   'domcharacterdata::issupported' => 
   array (
-    0 => 'string',
-    'feature' => 'string',
-    'version' => 'string',
+    0 => 'mixed',
+    'feature' => 'mixed',
+    'version' => 'mixed',
   ),
   'domcharacterdata::lookupnamespaceuri' => 
   array (
-    0 => 'string',
-    'prefix' => 'string',
+    0 => 'mixed',
+    'prefix' => 'mixed',
   ),
   'domcharacterdata::lookupprefix' => 
   array (
-    0 => 'string',
-    'namespaceURI' => 'string',
+    0 => 'mixed',
+    'namespaceURI' => 'mixed',
   ),
   'domcharacterdata::normalize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domcharacterdata::removechild' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'oldChild' => 'DOMNode',
   ),
   'domcharacterdata::replacechild' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'newChild' => 'DOMNode',
     'oldChild' => 'DOMNode',
   ),
@@ -13811,10 +16652,10 @@ return array (
   ),
   'domcharacterdata::setuserdata' => 
   array (
-    0 => 'string',
-    'key' => 'string',
-    'data' => 'string',
-    'handler' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
+    'data' => 'mixed',
+    'handler' => 'mixed',
   ),
   'domcharacterdata::substringdata' => 
   array (
@@ -13829,168 +16670,168 @@ return array (
   ),
   'domcomment::appendchild' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'newChild' => 'DOMNode',
   ),
   'domcomment::appenddata' => 
   array (
-    0 => 'string',
-    'arg' => 'string',
+    0 => 'mixed',
+    'arg' => 'mixed',
   ),
   'domcomment::c14n' => 
   array (
-    0 => 'string',
-    'exclusive=' => 'string',
-    'with_comments=' => 'string',
+    0 => 'mixed',
+    'exclusive=' => 'mixed',
+    'with_comments=' => 'mixed',
     'xpath=' => 'array<array-key, mixed>|null',
     'ns_prefixes=' => 'array<array-key, mixed>|null',
   ),
   'domcomment::c14nfile' => 
   array (
-    0 => 'string',
-    'uri' => 'string',
-    'exclusive=' => 'string',
-    'with_comments=' => 'string',
+    0 => 'mixed',
+    'uri' => 'mixed',
+    'exclusive=' => 'mixed',
+    'with_comments=' => 'mixed',
     'xpath=' => 'array<array-key, mixed>|null',
     'ns_prefixes=' => 'array<array-key, mixed>|null',
   ),
   'domcomment::clonenode' => 
   array (
-    0 => 'string',
-    'deep=' => 'string',
+    0 => 'mixed',
+    'deep=' => 'mixed',
   ),
   'domcomment::comparedocumentposition' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'other' => 'DOMNode',
   ),
   'domcomment::deletedata' => 
   array (
-    0 => 'string',
-    'offset' => 'string',
-    'count' => 'string',
+    0 => 'mixed',
+    'offset' => 'mixed',
+    'count' => 'mixed',
   ),
   'domcomment::getfeature' => 
   array (
-    0 => 'string',
-    'feature' => 'string',
-    'version' => 'string',
+    0 => 'mixed',
+    'feature' => 'mixed',
+    'version' => 'mixed',
   ),
   'domcomment::getlineno' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domcomment::getnodepath' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domcomment::getuserdata' => 
   array (
-    0 => 'string',
-    'key' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
   ),
   'domcomment::hasattributes' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domcomment::haschildnodes' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domcomment::insertbefore' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'newChild' => 'DOMNode',
     'refChild=' => 'DOMNode|null',
   ),
   'domcomment::insertdata' => 
   array (
-    0 => 'string',
-    'offset' => 'string',
-    'arg' => 'string',
+    0 => 'mixed',
+    'offset' => 'mixed',
+    'arg' => 'mixed',
   ),
   'domcomment::isdefaultnamespace' => 
   array (
-    0 => 'string',
-    'namespaceURI' => 'string',
+    0 => 'mixed',
+    'namespaceURI' => 'mixed',
   ),
   'domcomment::isequalnode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'arg' => 'DOMNode',
   ),
   'domcomment::issamenode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'other' => 'DOMNode',
   ),
   'domcomment::issupported' => 
   array (
-    0 => 'string',
-    'feature' => 'string',
-    'version' => 'string',
+    0 => 'mixed',
+    'feature' => 'mixed',
+    'version' => 'mixed',
   ),
   'domcomment::lookupnamespaceuri' => 
   array (
-    0 => 'string',
-    'prefix' => 'string',
+    0 => 'mixed',
+    'prefix' => 'mixed',
   ),
   'domcomment::lookupprefix' => 
   array (
-    0 => 'string',
-    'namespaceURI' => 'string',
+    0 => 'mixed',
+    'namespaceURI' => 'mixed',
   ),
   'domcomment::normalize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domcomment::removechild' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'oldChild' => 'DOMNode',
   ),
   'domcomment::replacechild' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'newChild' => 'DOMNode',
     'oldChild' => 'DOMNode',
   ),
   'domcomment::replacedata' => 
   array (
-    0 => 'string',
-    'offset' => 'string',
-    'count' => 'string',
-    'arg' => 'string',
+    0 => 'mixed',
+    'offset' => 'mixed',
+    'count' => 'mixed',
+    'arg' => 'mixed',
   ),
   'domcomment::setuserdata' => 
   array (
-    0 => 'string',
-    'key' => 'string',
-    'data' => 'string',
-    'handler' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
+    'data' => 'mixed',
+    'handler' => 'mixed',
   ),
   'domcomment::substringdata' => 
   array (
-    0 => 'string',
-    'offset' => 'string',
-    'count' => 'string',
+    0 => 'mixed',
+    'offset' => 'mixed',
+    'count' => 'mixed',
   ),
   'domconfiguration::cansetparameter' => 
   array (
-    0 => 'string',
-    'name=' => 'string',
-    'value=' => 'string',
+    0 => 'mixed',
+    'name=' => 'mixed',
+    'value=' => 'mixed',
   ),
   'domconfiguration::getparameter' => 
   array (
-    0 => 'string',
-    'name=' => 'string',
+    0 => 'mixed',
+    'name=' => 'mixed',
   ),
   'domconfiguration::setparameter' => 
   array (
-    0 => 'string',
-    'name' => 'string',
-    'value' => 'string',
+    0 => 'mixed',
+    'name' => 'mixed',
+    'value' => 'mixed',
   ),
   'domdocument::__construct' => 
   array (
@@ -14000,39 +16841,39 @@ return array (
   ),
   'domdocument::adoptnode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'source' => 'DOMNode',
   ),
   'domdocument::appendchild' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'newChild' => 'DOMNode',
   ),
   'domdocument::c14n' => 
   array (
-    0 => 'string',
-    'exclusive=' => 'string',
-    'with_comments=' => 'string',
+    0 => 'mixed',
+    'exclusive=' => 'mixed',
+    'with_comments=' => 'mixed',
     'xpath=' => 'array<array-key, mixed>|null',
     'ns_prefixes=' => 'array<array-key, mixed>|null',
   ),
   'domdocument::c14nfile' => 
   array (
-    0 => 'string',
-    'uri' => 'string',
-    'exclusive=' => 'string',
-    'with_comments=' => 'string',
+    0 => 'mixed',
+    'uri' => 'mixed',
+    'exclusive=' => 'mixed',
+    'with_comments=' => 'mixed',
     'xpath=' => 'array<array-key, mixed>|null',
     'ns_prefixes=' => 'array<array-key, mixed>|null',
   ),
   'domdocument::clonenode' => 
   array (
-    0 => 'string',
-    'deep=' => 'string',
+    0 => 'mixed',
+    'deep=' => 'mixed',
   ),
   'domdocument::comparedocumentposition' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'other' => 'DOMNode',
   ),
   'domdocument::createattribute' => 
@@ -14107,30 +16948,30 @@ return array (
   ),
   'domdocument::getfeature' => 
   array (
-    0 => 'string',
-    'feature' => 'string',
-    'version' => 'string',
+    0 => 'mixed',
+    'feature' => 'mixed',
+    'version' => 'mixed',
   ),
   'domdocument::getlineno' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domdocument::getnodepath' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domdocument::getuserdata' => 
   array (
-    0 => 'string',
-    'key' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
   ),
   'domdocument::hasattributes' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domdocument::haschildnodes' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domdocument::importnode' => 
   array (
@@ -14140,30 +16981,30 @@ return array (
   ),
   'domdocument::insertbefore' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'newChild' => 'DOMNode',
     'refChild=' => 'DOMNode|null',
   ),
   'domdocument::isdefaultnamespace' => 
   array (
-    0 => 'string',
-    'namespaceURI' => 'string',
+    0 => 'mixed',
+    'namespaceURI' => 'mixed',
   ),
   'domdocument::isequalnode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'arg' => 'DOMNode',
   ),
   'domdocument::issamenode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'other' => 'DOMNode',
   ),
   'domdocument::issupported' => 
   array (
-    0 => 'string',
-    'feature' => 'string',
-    'version' => 'string',
+    0 => 'mixed',
+    'feature' => 'mixed',
+    'version' => 'mixed',
   ),
   'domdocument::load' => 
   array (
@@ -14191,17 +17032,17 @@ return array (
   ),
   'domdocument::lookupnamespaceuri' => 
   array (
-    0 => 'string',
-    'prefix' => 'string',
+    0 => 'mixed',
+    'prefix' => 'mixed',
   ),
   'domdocument::lookupprefix' => 
   array (
-    0 => 'string',
-    'namespaceURI' => 'string',
+    0 => 'mixed',
+    'namespaceURI' => 'mixed',
   ),
   'domdocument::normalize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domdocument::normalizedocument' => 
   array (
@@ -14225,19 +17066,19 @@ return array (
   ),
   'domdocument::removechild' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'oldChild' => 'DOMNode',
   ),
   'domdocument::renamenode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'node' => 'DOMNode',
-    'namespaceURI' => 'string',
-    'qualifiedName' => 'string',
+    'namespaceURI' => 'mixed',
+    'qualifiedName' => 'mixed',
   ),
   'domdocument::replacechild' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'newChild' => 'DOMNode',
     'oldChild' => 'DOMNode',
   ),
@@ -14277,10 +17118,10 @@ return array (
   ),
   'domdocument::setuserdata' => 
   array (
-    0 => 'string',
-    'key' => 'string',
-    'data' => 'string',
-    'handler' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
+    'data' => 'mixed',
+    'handler' => 'mixed',
   ),
   'domdocument::validate' => 
   array (
@@ -14297,7 +17138,7 @@ return array (
   ),
   'domdocumentfragment::appendchild' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'newChild' => 'DOMNode',
   ),
   'domdocumentfragment::appendxml' => 
@@ -14307,234 +17148,234 @@ return array (
   ),
   'domdocumentfragment::c14n' => 
   array (
-    0 => 'string',
-    'exclusive=' => 'string',
-    'with_comments=' => 'string',
+    0 => 'mixed',
+    'exclusive=' => 'mixed',
+    'with_comments=' => 'mixed',
     'xpath=' => 'array<array-key, mixed>|null',
     'ns_prefixes=' => 'array<array-key, mixed>|null',
   ),
   'domdocumentfragment::c14nfile' => 
   array (
-    0 => 'string',
-    'uri' => 'string',
-    'exclusive=' => 'string',
-    'with_comments=' => 'string',
+    0 => 'mixed',
+    'uri' => 'mixed',
+    'exclusive=' => 'mixed',
+    'with_comments=' => 'mixed',
     'xpath=' => 'array<array-key, mixed>|null',
     'ns_prefixes=' => 'array<array-key, mixed>|null',
   ),
   'domdocumentfragment::clonenode' => 
   array (
-    0 => 'string',
-    'deep=' => 'string',
+    0 => 'mixed',
+    'deep=' => 'mixed',
   ),
   'domdocumentfragment::comparedocumentposition' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'other' => 'DOMNode',
   ),
   'domdocumentfragment::getfeature' => 
   array (
-    0 => 'string',
-    'feature' => 'string',
-    'version' => 'string',
+    0 => 'mixed',
+    'feature' => 'mixed',
+    'version' => 'mixed',
   ),
   'domdocumentfragment::getlineno' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domdocumentfragment::getnodepath' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domdocumentfragment::getuserdata' => 
   array (
-    0 => 'string',
-    'key' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
   ),
   'domdocumentfragment::hasattributes' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domdocumentfragment::haschildnodes' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domdocumentfragment::insertbefore' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'newChild' => 'DOMNode',
     'refChild=' => 'DOMNode|null',
   ),
   'domdocumentfragment::isdefaultnamespace' => 
   array (
-    0 => 'string',
-    'namespaceURI' => 'string',
+    0 => 'mixed',
+    'namespaceURI' => 'mixed',
   ),
   'domdocumentfragment::isequalnode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'arg' => 'DOMNode',
   ),
   'domdocumentfragment::issamenode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'other' => 'DOMNode',
   ),
   'domdocumentfragment::issupported' => 
   array (
-    0 => 'string',
-    'feature' => 'string',
-    'version' => 'string',
+    0 => 'mixed',
+    'feature' => 'mixed',
+    'version' => 'mixed',
   ),
   'domdocumentfragment::lookupnamespaceuri' => 
   array (
-    0 => 'string',
-    'prefix' => 'string',
+    0 => 'mixed',
+    'prefix' => 'mixed',
   ),
   'domdocumentfragment::lookupprefix' => 
   array (
-    0 => 'string',
-    'namespaceURI' => 'string',
+    0 => 'mixed',
+    'namespaceURI' => 'mixed',
   ),
   'domdocumentfragment::normalize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domdocumentfragment::removechild' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'oldChild' => 'DOMNode',
   ),
   'domdocumentfragment::replacechild' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'newChild' => 'DOMNode',
     'oldChild' => 'DOMNode',
   ),
   'domdocumentfragment::setuserdata' => 
   array (
-    0 => 'string',
-    'key' => 'string',
-    'data' => 'string',
-    'handler' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
+    'data' => 'mixed',
+    'handler' => 'mixed',
   ),
   'domdocumenttype::appendchild' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'newChild' => 'DOMNode',
   ),
   'domdocumenttype::c14n' => 
   array (
-    0 => 'string',
-    'exclusive=' => 'string',
-    'with_comments=' => 'string',
+    0 => 'mixed',
+    'exclusive=' => 'mixed',
+    'with_comments=' => 'mixed',
     'xpath=' => 'array<array-key, mixed>|null',
     'ns_prefixes=' => 'array<array-key, mixed>|null',
   ),
   'domdocumenttype::c14nfile' => 
   array (
-    0 => 'string',
-    'uri' => 'string',
-    'exclusive=' => 'string',
-    'with_comments=' => 'string',
+    0 => 'mixed',
+    'uri' => 'mixed',
+    'exclusive=' => 'mixed',
+    'with_comments=' => 'mixed',
     'xpath=' => 'array<array-key, mixed>|null',
     'ns_prefixes=' => 'array<array-key, mixed>|null',
   ),
   'domdocumenttype::clonenode' => 
   array (
-    0 => 'string',
-    'deep=' => 'string',
+    0 => 'mixed',
+    'deep=' => 'mixed',
   ),
   'domdocumenttype::comparedocumentposition' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'other' => 'DOMNode',
   ),
   'domdocumenttype::getfeature' => 
   array (
-    0 => 'string',
-    'feature' => 'string',
-    'version' => 'string',
+    0 => 'mixed',
+    'feature' => 'mixed',
+    'version' => 'mixed',
   ),
   'domdocumenttype::getlineno' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domdocumenttype::getnodepath' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domdocumenttype::getuserdata' => 
   array (
-    0 => 'string',
-    'key' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
   ),
   'domdocumenttype::hasattributes' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domdocumenttype::haschildnodes' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domdocumenttype::insertbefore' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'newChild' => 'DOMNode',
     'refChild=' => 'DOMNode|null',
   ),
   'domdocumenttype::isdefaultnamespace' => 
   array (
-    0 => 'string',
-    'namespaceURI' => 'string',
+    0 => 'mixed',
+    'namespaceURI' => 'mixed',
   ),
   'domdocumenttype::isequalnode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'arg' => 'DOMNode',
   ),
   'domdocumenttype::issamenode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'other' => 'DOMNode',
   ),
   'domdocumenttype::issupported' => 
   array (
-    0 => 'string',
-    'feature' => 'string',
-    'version' => 'string',
+    0 => 'mixed',
+    'feature' => 'mixed',
+    'version' => 'mixed',
   ),
   'domdocumenttype::lookupnamespaceuri' => 
   array (
-    0 => 'string',
-    'prefix' => 'string',
+    0 => 'mixed',
+    'prefix' => 'mixed',
   ),
   'domdocumenttype::lookupprefix' => 
   array (
-    0 => 'string',
-    'namespaceURI' => 'string',
+    0 => 'mixed',
+    'namespaceURI' => 'mixed',
   ),
   'domdocumenttype::normalize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domdocumenttype::removechild' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'oldChild' => 'DOMNode',
   ),
   'domdocumenttype::replacechild' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'newChild' => 'DOMNode',
     'oldChild' => 'DOMNode',
   ),
   'domdocumenttype::setuserdata' => 
   array (
-    0 => 'string',
-    'key' => 'string',
-    'data' => 'string',
-    'handler' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
+    'data' => 'mixed',
+    'handler' => 'mixed',
   ),
   'domelement::__construct' => 
   array (
@@ -14545,34 +17386,34 @@ return array (
   ),
   'domelement::appendchild' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'newChild' => 'DOMNode',
   ),
   'domelement::c14n' => 
   array (
-    0 => 'string',
-    'exclusive=' => 'string',
-    'with_comments=' => 'string',
+    0 => 'mixed',
+    'exclusive=' => 'mixed',
+    'with_comments=' => 'mixed',
     'xpath=' => 'array<array-key, mixed>|null',
     'ns_prefixes=' => 'array<array-key, mixed>|null',
   ),
   'domelement::c14nfile' => 
   array (
-    0 => 'string',
-    'uri' => 'string',
-    'exclusive=' => 'string',
-    'with_comments=' => 'string',
+    0 => 'mixed',
+    'uri' => 'mixed',
+    'exclusive=' => 'mixed',
+    'with_comments=' => 'mixed',
     'xpath=' => 'array<array-key, mixed>|null',
     'ns_prefixes=' => 'array<array-key, mixed>|null',
   ),
   'domelement::clonenode' => 
   array (
-    0 => 'string',
-    'deep=' => 'string',
+    0 => 'mixed',
+    'deep=' => 'mixed',
   ),
   'domelement::comparedocumentposition' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'other' => 'DOMNode',
   ),
   'domelement::getattribute' => 
@@ -14610,22 +17451,22 @@ return array (
   ),
   'domelement::getfeature' => 
   array (
-    0 => 'string',
-    'feature' => 'string',
-    'version' => 'string',
+    0 => 'mixed',
+    'feature' => 'mixed',
+    'version' => 'mixed',
   ),
   'domelement::getlineno' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domelement::getnodepath' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domelement::getuserdata' => 
   array (
-    0 => 'string',
-    'key' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
   ),
   'domelement::hasattribute' => 
   array (
@@ -14640,52 +17481,52 @@ return array (
   ),
   'domelement::hasattributes' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domelement::haschildnodes' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domelement::insertbefore' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'newChild' => 'DOMNode',
     'refChild=' => 'DOMNode|null',
   ),
   'domelement::isdefaultnamespace' => 
   array (
-    0 => 'string',
-    'namespaceURI' => 'string',
+    0 => 'mixed',
+    'namespaceURI' => 'mixed',
   ),
   'domelement::isequalnode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'arg' => 'DOMNode',
   ),
   'domelement::issamenode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'other' => 'DOMNode',
   ),
   'domelement::issupported' => 
   array (
-    0 => 'string',
-    'feature' => 'string',
-    'version' => 'string',
+    0 => 'mixed',
+    'feature' => 'mixed',
+    'version' => 'mixed',
   ),
   'domelement::lookupnamespaceuri' => 
   array (
-    0 => 'string',
-    'prefix' => 'string',
+    0 => 'mixed',
+    'prefix' => 'mixed',
   ),
   'domelement::lookupprefix' => 
   array (
-    0 => 'string',
-    'namespaceURI' => 'string',
+    0 => 'mixed',
+    'namespaceURI' => 'mixed',
   ),
   'domelement::normalize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domelement::removeattribute' => 
   array (
@@ -14705,12 +17546,12 @@ return array (
   ),
   'domelement::removechild' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'oldChild' => 'DOMNode',
   ),
   'domelement::replacechild' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'newChild' => 'DOMNode',
     'oldChild' => 'DOMNode',
   ),
@@ -14758,128 +17599,128 @@ return array (
   ),
   'domelement::setuserdata' => 
   array (
-    0 => 'string',
-    'key' => 'string',
-    'data' => 'string',
-    'handler' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
+    'data' => 'mixed',
+    'handler' => 'mixed',
   ),
   'domentity::appendchild' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'newChild' => 'DOMNode',
   ),
   'domentity::c14n' => 
   array (
-    0 => 'string',
-    'exclusive=' => 'string',
-    'with_comments=' => 'string',
+    0 => 'mixed',
+    'exclusive=' => 'mixed',
+    'with_comments=' => 'mixed',
     'xpath=' => 'array<array-key, mixed>|null',
     'ns_prefixes=' => 'array<array-key, mixed>|null',
   ),
   'domentity::c14nfile' => 
   array (
-    0 => 'string',
-    'uri' => 'string',
-    'exclusive=' => 'string',
-    'with_comments=' => 'string',
+    0 => 'mixed',
+    'uri' => 'mixed',
+    'exclusive=' => 'mixed',
+    'with_comments=' => 'mixed',
     'xpath=' => 'array<array-key, mixed>|null',
     'ns_prefixes=' => 'array<array-key, mixed>|null',
   ),
   'domentity::clonenode' => 
   array (
-    0 => 'string',
-    'deep=' => 'string',
+    0 => 'mixed',
+    'deep=' => 'mixed',
   ),
   'domentity::comparedocumentposition' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'other' => 'DOMNode',
   ),
   'domentity::getfeature' => 
   array (
-    0 => 'string',
-    'feature' => 'string',
-    'version' => 'string',
+    0 => 'mixed',
+    'feature' => 'mixed',
+    'version' => 'mixed',
   ),
   'domentity::getlineno' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domentity::getnodepath' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domentity::getuserdata' => 
   array (
-    0 => 'string',
-    'key' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
   ),
   'domentity::hasattributes' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domentity::haschildnodes' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domentity::insertbefore' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'newChild' => 'DOMNode',
     'refChild=' => 'DOMNode|null',
   ),
   'domentity::isdefaultnamespace' => 
   array (
-    0 => 'string',
-    'namespaceURI' => 'string',
+    0 => 'mixed',
+    'namespaceURI' => 'mixed',
   ),
   'domentity::isequalnode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'arg' => 'DOMNode',
   ),
   'domentity::issamenode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'other' => 'DOMNode',
   ),
   'domentity::issupported' => 
   array (
-    0 => 'string',
-    'feature' => 'string',
-    'version' => 'string',
+    0 => 'mixed',
+    'feature' => 'mixed',
+    'version' => 'mixed',
   ),
   'domentity::lookupnamespaceuri' => 
   array (
-    0 => 'string',
-    'prefix' => 'string',
+    0 => 'mixed',
+    'prefix' => 'mixed',
   ),
   'domentity::lookupprefix' => 
   array (
-    0 => 'string',
-    'namespaceURI' => 'string',
+    0 => 'mixed',
+    'namespaceURI' => 'mixed',
   ),
   'domentity::normalize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domentity::removechild' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'oldChild' => 'DOMNode',
   ),
   'domentity::replacechild' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'newChild' => 'DOMNode',
     'oldChild' => 'DOMNode',
   ),
   'domentity::setuserdata' => 
   array (
-    0 => 'string',
-    'key' => 'string',
-    'data' => 'string',
-    'handler' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
+    'data' => 'mixed',
+    'handler' => 'mixed',
   ),
   'domentityreference::__construct' => 
   array (
@@ -14888,173 +17729,173 @@ return array (
   ),
   'domentityreference::appendchild' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'newChild' => 'DOMNode',
   ),
   'domentityreference::c14n' => 
   array (
-    0 => 'string',
-    'exclusive=' => 'string',
-    'with_comments=' => 'string',
+    0 => 'mixed',
+    'exclusive=' => 'mixed',
+    'with_comments=' => 'mixed',
     'xpath=' => 'array<array-key, mixed>|null',
     'ns_prefixes=' => 'array<array-key, mixed>|null',
   ),
   'domentityreference::c14nfile' => 
   array (
-    0 => 'string',
-    'uri' => 'string',
-    'exclusive=' => 'string',
-    'with_comments=' => 'string',
+    0 => 'mixed',
+    'uri' => 'mixed',
+    'exclusive=' => 'mixed',
+    'with_comments=' => 'mixed',
     'xpath=' => 'array<array-key, mixed>|null',
     'ns_prefixes=' => 'array<array-key, mixed>|null',
   ),
   'domentityreference::clonenode' => 
   array (
-    0 => 'string',
-    'deep=' => 'string',
+    0 => 'mixed',
+    'deep=' => 'mixed',
   ),
   'domentityreference::comparedocumentposition' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'other' => 'DOMNode',
   ),
   'domentityreference::getfeature' => 
   array (
-    0 => 'string',
-    'feature' => 'string',
-    'version' => 'string',
+    0 => 'mixed',
+    'feature' => 'mixed',
+    'version' => 'mixed',
   ),
   'domentityreference::getlineno' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domentityreference::getnodepath' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domentityreference::getuserdata' => 
   array (
-    0 => 'string',
-    'key' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
   ),
   'domentityreference::hasattributes' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domentityreference::haschildnodes' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domentityreference::insertbefore' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'newChild' => 'DOMNode',
     'refChild=' => 'DOMNode|null',
   ),
   'domentityreference::isdefaultnamespace' => 
   array (
-    0 => 'string',
-    'namespaceURI' => 'string',
+    0 => 'mixed',
+    'namespaceURI' => 'mixed',
   ),
   'domentityreference::isequalnode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'arg' => 'DOMNode',
   ),
   'domentityreference::issamenode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'other' => 'DOMNode',
   ),
   'domentityreference::issupported' => 
   array (
-    0 => 'string',
-    'feature' => 'string',
-    'version' => 'string',
+    0 => 'mixed',
+    'feature' => 'mixed',
+    'version' => 'mixed',
   ),
   'domentityreference::lookupnamespaceuri' => 
   array (
-    0 => 'string',
-    'prefix' => 'string',
+    0 => 'mixed',
+    'prefix' => 'mixed',
   ),
   'domentityreference::lookupprefix' => 
   array (
-    0 => 'string',
-    'namespaceURI' => 'string',
+    0 => 'mixed',
+    'namespaceURI' => 'mixed',
   ),
   'domentityreference::normalize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domentityreference::removechild' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'oldChild' => 'DOMNode',
   ),
   'domentityreference::replacechild' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'newChild' => 'DOMNode',
     'oldChild' => 'DOMNode',
   ),
   'domentityreference::setuserdata' => 
   array (
-    0 => 'string',
-    'key' => 'string',
-    'data' => 'string',
-    'handler' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
+    'data' => 'mixed',
+    'handler' => 'mixed',
   ),
   'domerrorhandler::handleerror' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'error' => 'DOMDomError',
   ),
   'domexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'domexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domimplementation::__construct' => 
   array (
@@ -15076,9 +17917,9 @@ return array (
   ),
   'domimplementation::getfeature' => 
   array (
-    0 => 'string',
-    'feature' => 'string',
-    'version' => 'string',
+    0 => 'mixed',
+    'feature' => 'mixed',
+    'version' => 'mixed',
   ),
   'domimplementation::hasfeature' => 
   array (
@@ -15088,18 +17929,18 @@ return array (
   ),
   'domimplementationlist::item' => 
   array (
-    0 => 'string',
-    'index' => 'string',
+    0 => 'mixed',
+    'index' => 'mixed',
   ),
   'domimplementationsource::getdomimplementation' => 
   array (
-    0 => 'string',
-    'features' => 'string',
+    0 => 'mixed',
+    'features' => 'mixed',
   ),
   'domimplementationsource::getdomimplementations' => 
   array (
-    0 => 'string',
-    'features' => 'string',
+    0 => 'mixed',
+    'features' => 'mixed',
   ),
   'domnamednodemap::count' => 
   array (
@@ -15123,34 +17964,34 @@ return array (
   ),
   'domnamednodemap::removenameditem' => 
   array (
-    0 => 'string',
-    'name=' => 'string',
+    0 => 'mixed',
+    'name=' => 'mixed',
   ),
   'domnamednodemap::removenameditemns' => 
   array (
-    0 => 'string',
-    'namespaceURI=' => 'string',
-    'localName=' => 'string',
+    0 => 'mixed',
+    'namespaceURI=' => 'mixed',
+    'localName=' => 'mixed',
   ),
   'domnamednodemap::setnameditem' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'arg' => 'DOMNode',
   ),
   'domnamednodemap::setnameditemns' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'arg=' => 'DOMNode',
   ),
   'domnamelist::getname' => 
   array (
-    0 => 'string',
-    'index' => 'string',
+    0 => 'mixed',
+    'index' => 'mixed',
   ),
   'domnamelist::getnamespaceuri' => 
   array (
-    0 => 'string',
-    'index' => 'string',
+    0 => 'mixed',
+    'index' => 'mixed',
   ),
   'domnode::appendchild' => 
   array (
@@ -15181,14 +18022,14 @@ return array (
   ),
   'domnode::comparedocumentposition' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'other' => 'DOMNode',
   ),
   'domnode::getfeature' => 
   array (
-    0 => 'string',
-    'feature' => 'string',
-    'version' => 'string',
+    0 => 'mixed',
+    'feature' => 'mixed',
+    'version' => 'mixed',
   ),
   'domnode::getlineno' => 
   array (
@@ -15200,8 +18041,8 @@ return array (
   ),
   'domnode::getuserdata' => 
   array (
-    0 => 'string',
-    'key' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
   ),
   'domnode::hasattributes' => 
   array (
@@ -15224,7 +18065,7 @@ return array (
   ),
   'domnode::isequalnode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'arg' => 'DOMNode',
   ),
   'domnode::issamenode' => 
@@ -15265,10 +18106,10 @@ return array (
   ),
   'domnode::setuserdata' => 
   array (
-    0 => 'string',
-    'key' => 'string',
-    'data' => 'string',
-    'handler' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
+    'data' => 'mixed',
+    'handler' => 'mixed',
   ),
   'domnodelist::count' => 
   array (
@@ -15281,121 +18122,121 @@ return array (
   ),
   'domnotation::appendchild' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'newChild' => 'DOMNode',
   ),
   'domnotation::c14n' => 
   array (
-    0 => 'string',
-    'exclusive=' => 'string',
-    'with_comments=' => 'string',
+    0 => 'mixed',
+    'exclusive=' => 'mixed',
+    'with_comments=' => 'mixed',
     'xpath=' => 'array<array-key, mixed>|null',
     'ns_prefixes=' => 'array<array-key, mixed>|null',
   ),
   'domnotation::c14nfile' => 
   array (
-    0 => 'string',
-    'uri' => 'string',
-    'exclusive=' => 'string',
-    'with_comments=' => 'string',
+    0 => 'mixed',
+    'uri' => 'mixed',
+    'exclusive=' => 'mixed',
+    'with_comments=' => 'mixed',
     'xpath=' => 'array<array-key, mixed>|null',
     'ns_prefixes=' => 'array<array-key, mixed>|null',
   ),
   'domnotation::clonenode' => 
   array (
-    0 => 'string',
-    'deep=' => 'string',
+    0 => 'mixed',
+    'deep=' => 'mixed',
   ),
   'domnotation::comparedocumentposition' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'other' => 'DOMNode',
   ),
   'domnotation::getfeature' => 
   array (
-    0 => 'string',
-    'feature' => 'string',
-    'version' => 'string',
+    0 => 'mixed',
+    'feature' => 'mixed',
+    'version' => 'mixed',
   ),
   'domnotation::getlineno' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domnotation::getnodepath' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domnotation::getuserdata' => 
   array (
-    0 => 'string',
-    'key' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
   ),
   'domnotation::hasattributes' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domnotation::haschildnodes' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domnotation::insertbefore' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'newChild' => 'DOMNode',
     'refChild=' => 'DOMNode|null',
   ),
   'domnotation::isdefaultnamespace' => 
   array (
-    0 => 'string',
-    'namespaceURI' => 'string',
+    0 => 'mixed',
+    'namespaceURI' => 'mixed',
   ),
   'domnotation::isequalnode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'arg' => 'DOMNode',
   ),
   'domnotation::issamenode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'other' => 'DOMNode',
   ),
   'domnotation::issupported' => 
   array (
-    0 => 'string',
-    'feature' => 'string',
-    'version' => 'string',
+    0 => 'mixed',
+    'feature' => 'mixed',
+    'version' => 'mixed',
   ),
   'domnotation::lookupnamespaceuri' => 
   array (
-    0 => 'string',
-    'prefix' => 'string',
+    0 => 'mixed',
+    'prefix' => 'mixed',
   ),
   'domnotation::lookupprefix' => 
   array (
-    0 => 'string',
-    'namespaceURI' => 'string',
+    0 => 'mixed',
+    'namespaceURI' => 'mixed',
   ),
   'domnotation::normalize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domnotation::removechild' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'oldChild' => 'DOMNode',
   ),
   'domnotation::replacechild' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'newChild' => 'DOMNode',
     'oldChild' => 'DOMNode',
   ),
   'domnotation::setuserdata' => 
   array (
-    0 => 'string',
-    'key' => 'string',
-    'data' => 'string',
-    'handler' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
+    'data' => 'mixed',
+    'handler' => 'mixed',
   ),
   'domprocessinginstruction::__construct' => 
   array (
@@ -15405,136 +18246,136 @@ return array (
   ),
   'domprocessinginstruction::appendchild' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'newChild' => 'DOMNode',
   ),
   'domprocessinginstruction::c14n' => 
   array (
-    0 => 'string',
-    'exclusive=' => 'string',
-    'with_comments=' => 'string',
+    0 => 'mixed',
+    'exclusive=' => 'mixed',
+    'with_comments=' => 'mixed',
     'xpath=' => 'array<array-key, mixed>|null',
     'ns_prefixes=' => 'array<array-key, mixed>|null',
   ),
   'domprocessinginstruction::c14nfile' => 
   array (
-    0 => 'string',
-    'uri' => 'string',
-    'exclusive=' => 'string',
-    'with_comments=' => 'string',
+    0 => 'mixed',
+    'uri' => 'mixed',
+    'exclusive=' => 'mixed',
+    'with_comments=' => 'mixed',
     'xpath=' => 'array<array-key, mixed>|null',
     'ns_prefixes=' => 'array<array-key, mixed>|null',
   ),
   'domprocessinginstruction::clonenode' => 
   array (
-    0 => 'string',
-    'deep=' => 'string',
+    0 => 'mixed',
+    'deep=' => 'mixed',
   ),
   'domprocessinginstruction::comparedocumentposition' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'other' => 'DOMNode',
   ),
   'domprocessinginstruction::getfeature' => 
   array (
-    0 => 'string',
-    'feature' => 'string',
-    'version' => 'string',
+    0 => 'mixed',
+    'feature' => 'mixed',
+    'version' => 'mixed',
   ),
   'domprocessinginstruction::getlineno' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domprocessinginstruction::getnodepath' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domprocessinginstruction::getuserdata' => 
   array (
-    0 => 'string',
-    'key' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
   ),
   'domprocessinginstruction::hasattributes' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domprocessinginstruction::haschildnodes' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domprocessinginstruction::insertbefore' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'newChild' => 'DOMNode',
     'refChild=' => 'DOMNode|null',
   ),
   'domprocessinginstruction::isdefaultnamespace' => 
   array (
-    0 => 'string',
-    'namespaceURI' => 'string',
+    0 => 'mixed',
+    'namespaceURI' => 'mixed',
   ),
   'domprocessinginstruction::isequalnode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'arg' => 'DOMNode',
   ),
   'domprocessinginstruction::issamenode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'other' => 'DOMNode',
   ),
   'domprocessinginstruction::issupported' => 
   array (
-    0 => 'string',
-    'feature' => 'string',
-    'version' => 'string',
+    0 => 'mixed',
+    'feature' => 'mixed',
+    'version' => 'mixed',
   ),
   'domprocessinginstruction::lookupnamespaceuri' => 
   array (
-    0 => 'string',
-    'prefix' => 'string',
+    0 => 'mixed',
+    'prefix' => 'mixed',
   ),
   'domprocessinginstruction::lookupprefix' => 
   array (
-    0 => 'string',
-    'namespaceURI' => 'string',
+    0 => 'mixed',
+    'namespaceURI' => 'mixed',
   ),
   'domprocessinginstruction::normalize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domprocessinginstruction::removechild' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'oldChild' => 'DOMNode',
   ),
   'domprocessinginstruction::replacechild' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'newChild' => 'DOMNode',
     'oldChild' => 'DOMNode',
   ),
   'domprocessinginstruction::setuserdata' => 
   array (
-    0 => 'string',
-    'key' => 'string',
-    'data' => 'string',
-    'handler' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
+    'data' => 'mixed',
+    'handler' => 'mixed',
   ),
   'domstringextend::findoffset16' => 
   array (
-    0 => 'string',
-    'offset32' => 'string',
+    0 => 'mixed',
+    'offset32' => 'mixed',
   ),
   'domstringextend::findoffset32' => 
   array (
-    0 => 'string',
-    'offset16' => 'string',
+    0 => 'mixed',
+    'offset16' => 'mixed',
   ),
   'domstringlist::item' => 
   array (
-    0 => 'string',
-    'index' => 'string',
+    0 => 'mixed',
+    'index' => 'mixed',
   ),
   'domtext::__construct' => 
   array (
@@ -15543,90 +18384,90 @@ return array (
   ),
   'domtext::appendchild' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'newChild' => 'DOMNode',
   ),
   'domtext::appenddata' => 
   array (
-    0 => 'string',
-    'arg' => 'string',
+    0 => 'mixed',
+    'arg' => 'mixed',
   ),
   'domtext::c14n' => 
   array (
-    0 => 'string',
-    'exclusive=' => 'string',
-    'with_comments=' => 'string',
+    0 => 'mixed',
+    'exclusive=' => 'mixed',
+    'with_comments=' => 'mixed',
     'xpath=' => 'array<array-key, mixed>|null',
     'ns_prefixes=' => 'array<array-key, mixed>|null',
   ),
   'domtext::c14nfile' => 
   array (
-    0 => 'string',
-    'uri' => 'string',
-    'exclusive=' => 'string',
-    'with_comments=' => 'string',
+    0 => 'mixed',
+    'uri' => 'mixed',
+    'exclusive=' => 'mixed',
+    'with_comments=' => 'mixed',
     'xpath=' => 'array<array-key, mixed>|null',
     'ns_prefixes=' => 'array<array-key, mixed>|null',
   ),
   'domtext::clonenode' => 
   array (
-    0 => 'string',
-    'deep=' => 'string',
+    0 => 'mixed',
+    'deep=' => 'mixed',
   ),
   'domtext::comparedocumentposition' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'other' => 'DOMNode',
   ),
   'domtext::deletedata' => 
   array (
-    0 => 'string',
-    'offset' => 'string',
-    'count' => 'string',
+    0 => 'mixed',
+    'offset' => 'mixed',
+    'count' => 'mixed',
   ),
   'domtext::getfeature' => 
   array (
-    0 => 'string',
-    'feature' => 'string',
-    'version' => 'string',
+    0 => 'mixed',
+    'feature' => 'mixed',
+    'version' => 'mixed',
   ),
   'domtext::getlineno' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domtext::getnodepath' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domtext::getuserdata' => 
   array (
-    0 => 'string',
-    'key' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
   ),
   'domtext::hasattributes' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domtext::haschildnodes' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domtext::insertbefore' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'newChild' => 'DOMNode',
     'refChild=' => 'DOMNode|null',
   ),
   'domtext::insertdata' => 
   array (
-    0 => 'string',
-    'offset' => 'string',
-    'arg' => 'string',
+    0 => 'mixed',
+    'offset' => 'mixed',
+    'arg' => 'mixed',
   ),
   'domtext::isdefaultnamespace' => 
   array (
-    0 => 'string',
-    'namespaceURI' => 'string',
+    0 => 'mixed',
+    'namespaceURI' => 'mixed',
   ),
   'domtext::iselementcontentwhitespace' => 
   array (
@@ -15634,19 +18475,19 @@ return array (
   ),
   'domtext::isequalnode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'arg' => 'DOMNode',
   ),
   'domtext::issamenode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'other' => 'DOMNode',
   ),
   'domtext::issupported' => 
   array (
-    0 => 'string',
-    'feature' => 'string',
-    'version' => 'string',
+    0 => 'mixed',
+    'feature' => 'mixed',
+    'version' => 'mixed',
   ),
   'domtext::iswhitespaceinelementcontent' => 
   array (
@@ -15654,47 +18495,47 @@ return array (
   ),
   'domtext::lookupnamespaceuri' => 
   array (
-    0 => 'string',
-    'prefix' => 'string',
+    0 => 'mixed',
+    'prefix' => 'mixed',
   ),
   'domtext::lookupprefix' => 
   array (
-    0 => 'string',
-    'namespaceURI' => 'string',
+    0 => 'mixed',
+    'namespaceURI' => 'mixed',
   ),
   'domtext::normalize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domtext::removechild' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'oldChild' => 'DOMNode',
   ),
   'domtext::replacechild' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'newChild' => 'DOMNode',
     'oldChild' => 'DOMNode',
   ),
   'domtext::replacedata' => 
   array (
-    0 => 'string',
-    'offset' => 'string',
-    'count' => 'string',
-    'arg' => 'string',
+    0 => 'mixed',
+    'offset' => 'mixed',
+    'count' => 'mixed',
+    'arg' => 'mixed',
   ),
   'domtext::replacewholetext' => 
   array (
-    0 => 'string',
-    'content' => 'string',
+    0 => 'mixed',
+    'content' => 'mixed',
   ),
   'domtext::setuserdata' => 
   array (
-    0 => 'string',
-    'key' => 'string',
-    'data' => 'string',
-    'handler' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
+    'data' => 'mixed',
+    'handler' => 'mixed',
   ),
   'domtext::splittext' => 
   array (
@@ -15703,13 +18544,13 @@ return array (
   ),
   'domtext::substringdata' => 
   array (
-    0 => 'string',
-    'offset' => 'string',
-    'count' => 'string',
+    0 => 'mixed',
+    'offset' => 'mixed',
+    'count' => 'mixed',
   ),
   'domuserdatahandler::handle' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'domxml_new_doc' => 
   array (
@@ -15955,23 +18796,23 @@ return array (
   'ds\\deque::offsetexists' => 
   array (
     0 => 'bool',
-    'offset' => 'string',
+    'offset' => 'mixed',
   ),
   'ds\\deque::offsetget' => 
   array (
-    0 => 'string',
-    'offset' => 'string',
+    0 => 'mixed',
+    'offset' => 'mixed',
   ),
   'ds\\deque::offsetset' => 
   array (
-    0 => 'string',
-    'offset' => 'string',
-    'value' => 'string',
+    0 => 'mixed',
+    'offset' => 'mixed',
+    'value' => 'mixed',
   ),
   'ds\\deque::offsetunset' => 
   array (
-    0 => 'string',
-    'offset' => 'string',
+    0 => 'mixed',
+    'offset' => 'mixed',
   ),
   'ds\\deque::pop' => 
   array (
@@ -16163,23 +19004,23 @@ return array (
   'ds\\map::offsetexists' => 
   array (
     0 => 'bool',
-    'offset' => 'string',
+    'offset' => 'mixed',
   ),
   'ds\\map::offsetget' => 
   array (
-    0 => 'string',
-    'offset' => 'string',
+    0 => 'mixed',
+    'offset' => 'mixed',
   ),
   'ds\\map::offsetset' => 
   array (
-    0 => 'string',
-    'offset' => 'string',
-    'value' => 'string',
+    0 => 'mixed',
+    'offset' => 'mixed',
+    'value' => 'mixed',
   ),
   'ds\\map::offsetunset' => 
   array (
-    0 => 'string',
-    'offset' => 'string',
+    0 => 'mixed',
+    'offset' => 'mixed',
   ),
   'ds\\map::pairs' => 
   array (
@@ -16381,23 +19222,23 @@ return array (
   'ds\\queue::offsetexists' => 
   array (
     0 => 'bool',
-    'offset' => 'string',
+    'offset' => 'mixed',
   ),
   'ds\\queue::offsetget' => 
   array (
-    0 => 'string',
-    'offset' => 'string',
+    0 => 'mixed',
+    'offset' => 'mixed',
   ),
   'ds\\queue::offsetset' => 
   array (
-    0 => 'string',
-    'offset' => 'string',
-    'value' => 'string',
+    0 => 'mixed',
+    'offset' => 'mixed',
+    'value' => 'mixed',
   ),
   'ds\\queue::offsetunset' => 
   array (
-    0 => 'string',
-    'offset' => 'string',
+    0 => 'mixed',
+    'offset' => 'mixed',
   ),
   'ds\\queue::peek' => 
   array (
@@ -16617,7 +19458,7 @@ return array (
   ),
   'ds\\set::join' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'glue=' => 'string',
   ),
   'ds\\set::jsonserialize' => 
@@ -16641,23 +19482,23 @@ return array (
   'ds\\set::offsetexists' => 
   array (
     0 => 'bool',
-    'offset' => 'string',
+    'offset' => 'mixed',
   ),
   'ds\\set::offsetget' => 
   array (
-    0 => 'string',
-    'offset' => 'string',
+    0 => 'mixed',
+    'offset' => 'mixed',
   ),
   'ds\\set::offsetset' => 
   array (
-    0 => 'string',
-    'offset' => 'string',
-    'value' => 'string',
+    0 => 'mixed',
+    'offset' => 'mixed',
+    'value' => 'mixed',
   ),
   'ds\\set::offsetunset' => 
   array (
-    0 => 'string',
-    'offset' => 'string',
+    0 => 'mixed',
+    'offset' => 'mixed',
   ),
   'ds\\set::reduce' => 
   array (
@@ -16753,23 +19594,23 @@ return array (
   'ds\\stack::offsetexists' => 
   array (
     0 => 'bool',
-    'offset' => 'string',
+    'offset' => 'mixed',
   ),
   'ds\\stack::offsetget' => 
   array (
-    0 => 'string',
-    'offset' => 'string',
+    0 => 'mixed',
+    'offset' => 'mixed',
   ),
   'ds\\stack::offsetset' => 
   array (
-    0 => 'string',
-    'offset' => 'string',
-    'value' => 'string',
+    0 => 'mixed',
+    'offset' => 'mixed',
+    'value' => 'mixed',
   ),
   'ds\\stack::offsetunset' => 
   array (
-    0 => 'string',
-    'offset' => 'string',
+    0 => 'mixed',
+    'offset' => 'mixed',
   ),
   'ds\\stack::peek' => 
   array (
@@ -16883,23 +19724,23 @@ return array (
   'ds\\vector::offsetexists' => 
   array (
     0 => 'bool',
-    'offset' => 'string',
+    'offset' => 'mixed',
   ),
   'ds\\vector::offsetget' => 
   array (
-    0 => 'string',
-    'offset' => 'string',
+    0 => 'mixed',
+    'offset' => 'mixed',
   ),
   'ds\\vector::offsetset' => 
   array (
-    0 => 'string',
-    'offset' => 'string',
-    'value' => 'string',
+    0 => 'mixed',
+    'offset' => 'mixed',
+    'value' => 'mixed',
   ),
   'ds\\vector::offsetunset' => 
   array (
-    0 => 'string',
-    'offset' => 'string',
+    0 => 'mixed',
+    'offset' => 'mixed',
   ),
   'ds\\vector::pop' => 
   array (
@@ -17608,11 +20449,11 @@ return array (
   ),
   'error::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'error::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'error::getcode' => 
   array (
@@ -17620,7 +20461,7 @@ return array (
   ),
   'error::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'error::getline' => 
   array (
@@ -17628,7 +20469,7 @@ return array (
   ),
   'error::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'error::getprevious' => 
   array (
@@ -17640,7 +20481,7 @@ return array (
   ),
   'error::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'error_clear_last' => 
   array (
@@ -17679,11 +20520,11 @@ return array (
   ),
   'errorexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'errorexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'errorexception::getcode' => 
   array (
@@ -17691,7 +20532,7 @@ return array (
   ),
   'errorexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'errorexception::getline' => 
   array (
@@ -17699,7 +20540,7 @@ return array (
   ),
   'errorexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'errorexception::getprevious' => 
   array (
@@ -17715,17 +20556,17 @@ return array (
   ),
   'errorexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'escapeshellarg' => 
   array (
-    0 => 'string',
-    'arg' => 'string',
+    0 => 'mixed',
+    'arg' => 'mixed',
   ),
   'escapeshellcmd' => 
   array (
-    0 => 'string',
-    'command' => 'string',
+    0 => 'mixed',
+    'command' => 'mixed',
   ),
   'ev::backend' => 
   array (
@@ -18027,7 +20868,7 @@ return array (
   ),
   'event::removetimer' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'event::set' => 
   array (
@@ -18259,11 +21100,11 @@ return array (
   ),
   'eventbase::__sleep' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'eventbase::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'eventbase::dispatch' => 
   array (
@@ -18315,7 +21156,7 @@ return array (
   ),
   'eventbase::resume' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'eventbase::stop' => 
   array (
@@ -18323,7 +21164,7 @@ return array (
   ),
   'eventbase::updatecachetime' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'eventbuffer::__construct' => 
   array (
@@ -18474,11 +21315,11 @@ return array (
   ),
   'eventbufferevent::createsslfilter' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'underlying' => 'EventBufferEvent',
     'ctx' => 'EventSslContext',
-    'state' => 'string',
-    'options=' => 'string',
+    'state' => 'mixed',
+    'options=' => 'mixed',
   ),
   'eventbufferevent::disable' => 
   array (
@@ -18496,7 +21337,7 @@ return array (
   ),
   'eventbufferevent::getdnserrorstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'eventbufferevent::getenabled' => 
   array (
@@ -18548,7 +21389,7 @@ return array (
   ),
   'eventbufferevent::sslerror' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'eventbufferevent::sslfilter' => 
   array (
@@ -18561,19 +21402,19 @@ return array (
   ),
   'eventbufferevent::sslgetcipherinfo' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'eventbufferevent::sslgetciphername' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'eventbufferevent::sslgetcipherversion' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'eventbufferevent::sslgetprotocol' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'eventbufferevent::sslrenegotiate' => 
   array (
@@ -18604,11 +21445,11 @@ return array (
   ),
   'eventconfig::__sleep' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'eventconfig::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'eventconfig::avoidmethod' => 
   array (
@@ -18622,8 +21463,8 @@ return array (
   ),
   'eventconfig::setflags' => 
   array (
-    0 => 'string',
-    'flags' => 'string',
+    0 => 'mixed',
+    'flags' => 'mixed',
   ),
   'eventconfig::setmaxdispatchinterval' => 
   array (
@@ -18680,50 +21521,50 @@ return array (
   ),
   'eventexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'eventexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'eventexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'eventexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'eventexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'eventexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'eventexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'eventexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'eventexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'eventexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'eventexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'eventhttp::__construct' => 
   array (
@@ -18733,11 +21574,11 @@ return array (
   ),
   'eventhttp::__sleep' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'eventhttp::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'eventhttp::accept' => 
   array (
@@ -18804,11 +21645,11 @@ return array (
   ),
   'eventhttpconnection::__sleep' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'eventhttpconnection::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'eventhttpconnection::getbase' => 
   array (
@@ -18871,11 +21712,11 @@ return array (
   ),
   'eventhttprequest::__sleep' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'eventhttprequest::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'eventhttprequest::addheader' => 
   array (
@@ -18920,7 +21761,7 @@ return array (
   ),
   'eventhttprequest::gethost' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'eventhttprequest::getinputbuffer' => 
   array (
@@ -18944,7 +21785,7 @@ return array (
   ),
   'eventhttprequest::geturi' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'eventhttprequest::removeheader' => 
   array (
@@ -18992,11 +21833,11 @@ return array (
   ),
   'eventlistener::__sleep' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'eventlistener::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'eventlistener::disable' => 
   array (
@@ -19008,7 +21849,7 @@ return array (
   ),
   'eventlistener::free' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'eventlistener::getbase' => 
   array (
@@ -19039,13 +21880,13 @@ return array (
   ),
   'eventsslcontext::setmaxprotoversion' => 
   array (
-    0 => 'string',
-    'proto' => 'string',
+    0 => 'mixed',
+    'proto' => 'mixed',
   ),
   'eventsslcontext::setminprotoversion' => 
   array (
-    0 => 'string',
-    'proto' => 'string',
+    0 => 'mixed',
+    'proto' => 'mixed',
   ),
   'eventutil::__construct' => 
   array (
@@ -19758,11 +22599,11 @@ return array (
   ),
   'exception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'exception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'exception::getcode' => 
   array (
@@ -19770,7 +22611,7 @@ return array (
   ),
   'exception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'exception::getline' => 
   array (
@@ -19778,7 +22619,7 @@ return array (
   ),
   'exception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'exception::getprevious' => 
   array (
@@ -19790,7 +22631,7 @@ return array (
   ),
   'exception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'exec' => 
   array (
@@ -21692,11 +24533,11 @@ return array (
   ),
   'filesystemiterator::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'filesystemiterator::_bad_state_ex' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'filesystemiterator::current' => 
   array (
@@ -21708,8 +24549,8 @@ return array (
   ),
   'filesystemiterator::getbasename' => 
   array (
-    0 => 'string',
-    'suffix=' => 'string',
+    0 => 'mixed',
+    'suffix=' => 'mixed',
   ),
   'filesystemiterator::getctime' => 
   array (
@@ -21717,7 +24558,7 @@ return array (
   ),
   'filesystemiterator::getextension' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'filesystemiterator::getfileinfo' => 
   array (
@@ -21726,7 +24567,7 @@ return array (
   ),
   'filesystemiterator::getfilename' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'filesystemiterator::getflags' => 
   array (
@@ -21742,7 +24583,7 @@ return array (
   ),
   'filesystemiterator::getlinktarget' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'filesystemiterator::getmtime' => 
   array (
@@ -21754,7 +24595,7 @@ return array (
   ),
   'filesystemiterator::getpath' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'filesystemiterator::getpathinfo' => 
   array (
@@ -21763,7 +24604,7 @@ return array (
   ),
   'filesystemiterator::getpathname' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'filesystemiterator::getperms' => 
   array (
@@ -21779,7 +24620,7 @@ return array (
   ),
   'filesystemiterator::gettype' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'filesystemiterator::isdir' => 
   array (
@@ -21811,7 +24652,7 @@ return array (
   ),
   'filesystemiterator::key' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'filesystemiterator::next' => 
   array (
@@ -21956,9 +24797,9 @@ return array (
   ),
   'finfo::finfo' => 
   array (
-    0 => 'string',
-    'options=' => 'string',
-    'arg=' => 'string',
+    0 => 'mixed',
+    'options=' => 'mixed',
+    'arg=' => 'mixed',
   ),
   'finfo::set_flags' => 
   array (
@@ -23565,7 +26406,7 @@ return array (
   ),
   'generator::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'generator::current' => 
   array (
@@ -24147,7 +26988,7 @@ return array (
   ),
   'get_current_user' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'get_declared_classes' => 
   array (
@@ -24196,7 +27037,7 @@ return array (
   ),
   'get_include_path' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'get_included_files' => 
   array (
@@ -24275,8 +27116,8 @@ return array (
   ),
   'gethostbyname' => 
   array (
-    0 => 'string',
-    'hostname' => 'string',
+    0 => 'mixed',
+    'hostname' => 'mixed',
   ),
   'gethostbynamel' => 
   array (
@@ -24397,11 +27238,11 @@ return array (
   ),
   'globiterator::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'globiterator::_bad_state_ex' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'globiterator::count' => 
   array (
@@ -24417,8 +27258,8 @@ return array (
   ),
   'globiterator::getbasename' => 
   array (
-    0 => 'string',
-    'suffix=' => 'string',
+    0 => 'mixed',
+    'suffix=' => 'mixed',
   ),
   'globiterator::getctime' => 
   array (
@@ -24426,7 +27267,7 @@ return array (
   ),
   'globiterator::getextension' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'globiterator::getfileinfo' => 
   array (
@@ -24435,7 +27276,7 @@ return array (
   ),
   'globiterator::getfilename' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'globiterator::getflags' => 
   array (
@@ -24463,7 +27304,7 @@ return array (
   ),
   'globiterator::getpath' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'globiterator::getpathinfo' => 
   array (
@@ -24472,7 +27313,7 @@ return array (
   ),
   'globiterator::getpathname' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'globiterator::getperms' => 
   array (
@@ -24520,7 +27361,7 @@ return array (
   ),
   'globiterator::key' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'globiterator::next' => 
   array (
@@ -26053,6 +28894,11 @@ return array (
     'signature' => 'string',
     'plaintext=' => 'string',
   ),
+  'go' => 
+  array (
+    0 => 'mixed',
+    'func' => 'callable',
+  ),
   'gopher_parsedir' => 
   array (
     0 => 'array<array-key, mixed>',
@@ -26216,6 +29062,19 @@ return array (
     'pem_root_certs' => 'string',
     'pem_private_key=' => 'string',
     'pem_cert_chain=' => 'string',
+  ),
+  'grpc\\channelcredentials::createxds' => 
+  array (
+    0 => 'mixed',
+    'fallback_creds' => 'Grpc\\ChannelCredentials|null',
+  ),
+  'grpc\\channelcredentials::invalidatedefaultrootspem' => 
+  array (
+    0 => 'mixed',
+  ),
+  'grpc\\channelcredentials::isdefaultrootspemset' => 
+  array (
+    0 => 'mixed',
   ),
   'grpc\\channelcredentials::setdefaultrootspem' => 
   array (
@@ -27639,7 +30498,7 @@ return array (
   ),
   'hashcontext::__construct' => 
   array (
-    0 => 'string',
+    0 => 'void',
   ),
   'hashtableobj::clear' => 
   array (
@@ -33526,7 +36385,7 @@ return array (
   ),
   'imagick::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagick::adaptiveblurimage' => 
   array (
@@ -33569,10 +36428,10 @@ return array (
   ),
   'imagick::addnoiseimagewithattenuate' => 
   array (
-    0 => 'string',
-    'noise' => 'string',
-    'attenuate' => 'string',
-    'channel=' => 'string',
+    0 => 'mixed',
+    'noise' => 'mixed',
+    'attenuate' => 'mixed',
+    'channel=' => 'mixed',
   ),
   'imagick::affinetransformimage' => 
   array (
@@ -33614,12 +36473,12 @@ return array (
   ),
   'imagick::autoorientate' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagick::autothresholdimage' => 
   array (
-    0 => 'string',
-    'auto_threshold_method' => 'string',
+    0 => 'mixed',
+    'auto_threshold_method' => 'mixed',
   ),
   'imagick::averageimages' => 
   array (
@@ -33627,11 +36486,11 @@ return array (
   ),
   'imagick::bilateralblurimage' => 
   array (
-    0 => 'string',
-    'radius' => 'string',
-    'sigma' => 'string',
-    'intensity_sigma' => 'string',
-    'spatial_sigma' => 'string',
+    0 => 'mixed',
+    'radius' => 'mixed',
+    'sigma' => 'mixed',
+    'intensity_sigma' => 'mixed',
+    'spatial_sigma' => 'mixed',
   ),
   'imagick::blackthresholdimage' => 
   array (
@@ -33659,11 +36518,11 @@ return array (
   ),
   'imagick::borderimagewithcomposite' => 
   array (
-    0 => 'string',
-    'border_color' => 'string',
-    'width' => 'string',
-    'height' => 'string',
-    'composite' => 'string',
+    0 => 'mixed',
+    'border_color' => 'mixed',
+    'width' => 'mixed',
+    'height' => 'mixed',
+    'composite' => 'mixed',
   ),
   'imagick::brightnesscontrastimage' => 
   array (
@@ -33674,25 +36533,25 @@ return array (
   ),
   'imagick::calculatecrop' => 
   array (
-    0 => 'string',
-    'original_width' => 'string',
-    'original_height' => 'string',
-    'desired_width' => 'string',
-    'desired_height' => 'string',
-    'legacy=' => 'string',
+    0 => 'mixed',
+    'original_width' => 'mixed',
+    'original_height' => 'mixed',
+    'desired_width' => 'mixed',
+    'desired_height' => 'mixed',
+    'legacy=' => 'mixed',
   ),
   'imagick::cannyedgeimage' => 
   array (
-    0 => 'string',
-    'radius' => 'string',
-    'sigma' => 'string',
-    'lower_percent' => 'string',
-    'upper_percent' => 'string',
+    0 => 'mixed',
+    'radius' => 'mixed',
+    'sigma' => 'mixed',
+    'lower_percent' => 'mixed',
+    'upper_percent' => 'mixed',
   ),
   'imagick::channelfximage' => 
   array (
-    0 => 'string',
-    'expression' => 'string',
+    0 => 'mixed',
+    'expression' => 'mixed',
   ),
   'imagick::charcoalimage' => 
   array (
@@ -33710,11 +36569,11 @@ return array (
   ),
   'imagick::claheimage' => 
   array (
-    0 => 'string',
-    'width' => 'string',
-    'height' => 'string',
-    'number_bins' => 'string',
-    'clip_limit' => 'string',
+    0 => 'mixed',
+    'width' => 'mixed',
+    'height' => 'mixed',
+    'number_bins' => 'mixed',
+    'clip_limit' => 'mixed',
   ),
   'imagick::clampimage' => 
   array (
@@ -33757,8 +36616,8 @@ return array (
   ),
   'imagick::colordecisionlistimage' => 
   array (
-    0 => 'string',
-    'color_correction_collection' => 'string',
+    0 => 'mixed',
+    'color_correction_collection' => 'mixed',
   ),
   'imagick::colorfloodfillimage' => 
   array (
@@ -33782,9 +36641,9 @@ return array (
   ),
   'imagick::colorthresholdimage' => 
   array (
-    0 => 'string',
-    'start_color' => 'string',
-    'stop_color' => 'string',
+    0 => 'mixed',
+    'start_color' => 'mixed',
+    'stop_color' => 'mixed',
   ),
   'imagick::combineimages' => 
   array (
@@ -33816,8 +36675,8 @@ return array (
   ),
   'imagick::compleximages' => 
   array (
-    0 => 'string',
-    'complex_operator' => 'string',
+    0 => 'mixed',
+    'complex_operator' => 'mixed',
   ),
   'imagick::compositeimage' => 
   array (
@@ -33903,8 +36762,8 @@ return array (
   ),
   'imagick::deleteoption' => 
   array (
-    0 => 'string',
-    'option' => 'string',
+    0 => 'mixed',
+    'option' => 'mixed',
   ),
   'imagick::deskewimage' => 
   array (
@@ -34040,13 +36899,13 @@ return array (
   ),
   'imagick::frameimagewithcomposite' => 
   array (
-    0 => 'string',
-    'matte_color' => 'string',
-    'width' => 'string',
-    'height' => 'string',
-    'inner_bevel' => 'string',
-    'outer_bevel' => 'string',
-    'composite' => 'string',
+    0 => 'mixed',
+    'matte_color' => 'mixed',
+    'width' => 'mixed',
+    'height' => 'mixed',
+    'inner_bevel' => 'mixed',
+    'outer_bevel' => 'mixed',
+    'composite' => 'mixed',
   ),
   'imagick::functionimage' => 
   array (
@@ -34076,11 +36935,11 @@ return array (
   ),
   'imagick::getantialias' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagick::getbackgroundcolor' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagick::getcolorspace' => 
   array (
@@ -34100,23 +36959,23 @@ return array (
   ),
   'imagick::getcopyright' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagick::getfeatures' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagick::getfilename' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagick::getfont' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagick::getformat' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagick::getgravity' => 
   array (
@@ -34128,7 +36987,7 @@ return array (
   ),
   'imagick::gethomeurl' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagick::getimage' => 
   array (
@@ -34140,13 +36999,13 @@ return array (
   ),
   'imagick::getimageartifact' => 
   array (
-    0 => 'string',
-    'artifact' => 'string',
+    0 => 'mixed',
+    'artifact' => 'mixed',
   ),
   'imagick::getimageartifacts' => 
   array (
-    0 => 'string',
-    'pattern=' => 'string',
+    0 => 'mixed',
+    'pattern=' => 'mixed',
   ),
   'imagick::getimageattribute' => 
   array (
@@ -34159,7 +37018,7 @@ return array (
   ),
   'imagick::getimageblob' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagick::getimageblueprimary' => 
   array (
@@ -34265,11 +37124,11 @@ return array (
   ),
   'imagick::getimagefilename' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagick::getimageformat' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagick::getimagegamma' => 
   array (
@@ -34313,7 +37172,7 @@ return array (
   ),
   'imagick::getimagekurtosis' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagick::getimagelength' => 
   array (
@@ -34325,8 +37184,8 @@ return array (
   ),
   'imagick::getimagemask' => 
   array (
-    0 => 'string',
-    'pixelmask' => 'string',
+    0 => 'mixed',
+    'pixelmask' => 'mixed',
   ),
   'imagick::getimagematte' => 
   array (
@@ -34338,11 +37197,11 @@ return array (
   ),
   'imagick::getimagemean' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagick::getimagemimetype' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagick::getimageorientation' => 
   array (
@@ -34360,8 +37219,8 @@ return array (
   ),
   'imagick::getimageprofile' => 
   array (
-    0 => 'string',
-    'name' => 'string',
+    0 => 'mixed',
+    'name' => 'mixed',
   ),
   'imagick::getimageprofiles' => 
   array (
@@ -34377,12 +37236,12 @@ return array (
   ),
   'imagick::getimageproperty' => 
   array (
-    0 => 'string',
-    'name' => 'string',
+    0 => 'mixed',
+    'name' => 'mixed',
   ),
   'imagick::getimagerange' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagick::getimageredprimary' => 
   array (
@@ -34406,7 +37265,7 @@ return array (
   ),
   'imagick::getimagesblob' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagick::getimagescene' => 
   array (
@@ -34414,7 +37273,7 @@ return array (
   ),
   'imagick::getimagesignature' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagick::getimagesize' => 
   array (
@@ -34454,7 +37313,7 @@ return array (
   ),
   'imagick::getinterpolatemethod' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagick::getiteratorindex' => 
   array (
@@ -34466,21 +37325,21 @@ return array (
   ),
   'imagick::getoption' => 
   array (
-    0 => 'string',
-    'key' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
   ),
   'imagick::getoptions' => 
   array (
-    0 => 'string',
-    'pattern=' => 'string',
+    0 => 'mixed',
+    'pattern=' => 'mixed',
   ),
   'imagick::getorientation' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagick::getpackagename' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagick::getpage' => 
   array (
@@ -34516,16 +37375,16 @@ return array (
   ),
   'imagick::getregistry' => 
   array (
-    0 => 'string',
-    'key' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
   ),
   'imagick::getreleasedate' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagick::getresolution' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagick::getresource' => 
   array (
@@ -34551,7 +37410,7 @@ return array (
   ),
   'imagick::gettype' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagick::getversion' => 
   array (
@@ -34573,10 +37432,10 @@ return array (
   ),
   'imagick::houghlineimage' => 
   array (
-    0 => 'string',
-    'width' => 'string',
-    'height' => 'string',
-    'threshold' => 'string',
+    0 => 'mixed',
+    'width' => 'mixed',
+    'height' => 'mixed',
+    'threshold' => 'mixed',
   ),
   'imagick::identifyformat' => 
   array (
@@ -34599,9 +37458,9 @@ return array (
   ),
   'imagick::implodeimagewithmethod' => 
   array (
-    0 => 'string',
-    'radius' => 'string',
-    'pixel_interpolate_method' => 'string',
+    0 => 'mixed',
+    'radius' => 'mixed',
+    'pixel_interpolate_method' => 'mixed',
   ),
   'imagick::importimagepixels' => 
   array (
@@ -34616,10 +37475,10 @@ return array (
   ),
   'imagick::interpolativeresizeimage' => 
   array (
-    0 => 'string',
-    'columns' => 'string',
-    'rows' => 'string',
-    'interpolate' => 'string',
+    0 => 'mixed',
+    'columns' => 'mixed',
+    'rows' => 'mixed',
+    'interpolate' => 'mixed',
   ),
   'imagick::inversefouriertransformimage' => 
   array (
@@ -34633,10 +37492,10 @@ return array (
   ),
   'imagick::kmeansimage' => 
   array (
-    0 => 'string',
-    'number_colors' => 'string',
-    'max_iterations' => 'string',
-    'tolerance' => 'string',
+    0 => 'mixed',
+    'number_colors' => 'mixed',
+    'max_iterations' => 'mixed',
+    'tolerance' => 'mixed',
   ),
   'imagick::labelimage' => 
   array (
@@ -34653,17 +37512,17 @@ return array (
   ),
   'imagick::levelimagecolors' => 
   array (
-    0 => 'string',
-    'black_color' => 'string',
-    'white_color' => 'string',
-    'invert' => 'string',
+    0 => 'mixed',
+    'black_color' => 'mixed',
+    'white_color' => 'mixed',
+    'invert' => 'mixed',
   ),
   'imagick::levelizeimage' => 
   array (
-    0 => 'string',
-    'black_point' => 'string',
-    'gamma' => 'string',
-    'white_point' => 'string',
+    0 => 'mixed',
+    'black_point' => 'mixed',
+    'gamma' => 'mixed',
+    'white_point' => 'mixed',
   ),
   'imagick::linearstretchimage' => 
   array (
@@ -34710,10 +37569,10 @@ return array (
   ),
   'imagick::meanshiftimage' => 
   array (
-    0 => 'string',
-    'width' => 'string',
-    'height' => 'string',
-    'color_distance' => 'string',
+    0 => 'mixed',
+    'width' => 'mixed',
+    'height' => 'mixed',
+    'color_distance' => 'mixed',
   ),
   'imagick::medianfilterimage' => 
   array (
@@ -34811,9 +37670,9 @@ return array (
   ),
   'imagick::oilpaintimagewithsigma' => 
   array (
-    0 => 'string',
-    'radius' => 'string',
-    'sigma' => 'string',
+    0 => 'mixed',
+    'radius' => 'mixed',
+    'sigma' => 'mixed',
   ),
   'imagick::opaquepaintimage' => 
   array (
@@ -34830,12 +37689,12 @@ return array (
   ),
   'imagick::optimizeimagetransparency' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagick::orderedditherimage' => 
   array (
-    0 => 'string',
-    'dither_format' => 'string',
+    0 => 'mixed',
+    'dither_format' => 'mixed',
   ),
   'imagick::orderedposterizeimage' => 
   array (
@@ -34892,16 +37751,16 @@ return array (
   ),
   'imagick::polaroidwithtextandmethod' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'settings' => 'ImagickDraw',
-    'angle' => 'string',
-    'caption' => 'string',
-    'method' => 'string',
+    'angle' => 'mixed',
+    'caption' => 'mixed',
+    'method' => 'mixed',
   ),
   'imagick::polynomialimage' => 
   array (
-    0 => 'string',
-    'terms' => 'string',
+    0 => 'mixed',
+    'terms' => 'mixed',
   ),
   'imagick::posterizeimage' => 
   array (
@@ -34983,11 +37842,11 @@ return array (
   ),
   'imagick::rangethresholdimage' => 
   array (
-    0 => 'string',
-    'low_black' => 'string',
-    'low_white' => 'string',
-    'high_white' => 'string',
-    'high_black' => 'string',
+    0 => 'mixed',
+    'low_black' => 'mixed',
+    'low_white' => 'mixed',
+    'high_white' => 'mixed',
+    'high_black' => 'mixed',
   ),
   'imagick::readimage' => 
   array (
@@ -35033,8 +37892,8 @@ return array (
   ),
   'imagick::removeimageprofile' => 
   array (
-    0 => 'string',
-    'name' => 'string',
+    0 => 'mixed',
+    'name' => 'mixed',
   ),
   'imagick::render' => 
   array (
@@ -35172,13 +38031,13 @@ return array (
   ),
   'imagick::setdepth' => 
   array (
-    0 => 'string',
-    'depth' => 'string',
+    0 => 'mixed',
+    'depth' => 'mixed',
   ),
   'imagick::setextract' => 
   array (
-    0 => 'string',
-    'geometry' => 'string',
+    0 => 'mixed',
+    'geometry' => 'mixed',
   ),
   'imagick::setfilename' => 
   array (
@@ -35368,9 +38227,9 @@ return array (
   ),
   'imagick::setimagemask' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'clip_mask' => 'Imagick',
-    'pixelmask' => 'string',
+    'pixelmask' => 'mixed',
   ),
   'imagick::setimagematte' => 
   array (
@@ -35402,10 +38261,10 @@ return array (
   ),
   'imagick::setimagepixelcolor' => 
   array (
-    0 => 'string',
-    'x' => 'string',
-    'y' => 'string',
-    'color' => 'string',
+    0 => 'mixed',
+    'x' => 'mixed',
+    'y' => 'mixed',
+    'color' => 'mixed',
   ),
   'imagick::setimageprofile' => 
   array (
@@ -35479,8 +38338,8 @@ return array (
   ),
   'imagick::setinterpolatemethod' => 
   array (
-    0 => 'string',
-    'method' => 'string',
+    0 => 'mixed',
+    'method' => 'mixed',
   ),
   'imagick::setiteratorindex' => 
   array (
@@ -35499,8 +38358,8 @@ return array (
   ),
   'imagick::setorientation' => 
   array (
-    0 => 'string',
-    'orientation' => 'string',
+    0 => 'mixed',
+    'orientation' => 'mixed',
   ),
   'imagick::setpage' => 
   array (
@@ -35545,8 +38404,8 @@ return array (
   ),
   'imagick::setseed' => 
   array (
-    0 => 'string',
-    'seed' => 'string',
+    0 => 'mixed',
+    'seed' => 'mixed',
   ),
   'imagick::setsize' => 
   array (
@@ -35658,9 +38517,9 @@ return array (
   ),
   'imagick::spreadimagewithmethod' => 
   array (
-    0 => 'string',
-    'radius' => 'string',
-    'interpolate_method' => 'string',
+    0 => 'mixed',
+    'radius' => 'mixed',
+    'interpolate_method' => 'mixed',
   ),
   'imagick::statisticimage' => 
   array (
@@ -35699,9 +38558,9 @@ return array (
   ),
   'imagick::swirlimagewithmethod' => 
   array (
-    0 => 'string',
-    'degrees' => 'string',
-    'interpolate_method' => 'string',
+    0 => 'mixed',
+    'degrees' => 'mixed',
+    'interpolate_method' => 'mixed',
   ),
   'imagick::textureimage' => 
   array (
@@ -35794,20 +38653,20 @@ return array (
   ),
   'imagick::waveimagewithmethod' => 
   array (
-    0 => 'string',
-    'amplitude' => 'string',
-    'length' => 'string',
-    'interpolate_method' => 'string',
+    0 => 'mixed',
+    'amplitude' => 'mixed',
+    'length' => 'mixed',
+    'interpolate_method' => 'mixed',
   ),
   'imagick::waveletdenoiseimage' => 
   array (
-    0 => 'string',
-    'threshold' => 'string',
-    'softness' => 'string',
+    0 => 'mixed',
+    'threshold' => 'mixed',
+    'softness' => 'mixed',
   ),
   'imagick::whitebalanceimage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagick::whitethresholdimage' => 
   array (
@@ -35846,10 +38705,10 @@ return array (
   ),
   'imagickdraw::alpha' => 
   array (
-    0 => 'string',
-    'x' => 'string',
-    'y' => 'string',
-    'paint' => 'string',
+    0 => 'mixed',
+    'x' => 'mixed',
+    'y' => 'mixed',
+    'paint' => 'mixed',
   ),
   'imagickdraw::annotation' => 
   array (
@@ -35931,7 +38790,7 @@ return array (
   ),
   'imagickdraw::getclippath' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagickdraw::getcliprule' => 
   array (
@@ -35959,11 +38818,11 @@ return array (
   ),
   'imagickdraw::getfont' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagickdraw::getfontfamily' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagickdraw::getfontresolution' => 
   array (
@@ -36047,7 +38906,7 @@ return array (
   ),
   'imagickdraw::gettextencoding' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagickdraw::gettextinterlinespacing' => 
   array (
@@ -36067,7 +38926,7 @@ return array (
   ),
   'imagickdraw::getvectorgraphics' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagickdraw::line' => 
   array (
@@ -36550,97 +39409,97 @@ return array (
   ),
   'imagickdrawexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagickdrawexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'imagickdrawexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagickdrawexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagickdrawexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagickdrawexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagickdrawexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagickdrawexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagickdrawexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagickdrawexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagickdrawexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagickexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagickexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'imagickexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagickexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagickexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagickexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagickexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagickexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagickexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagickexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagickexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagickkernel::addkernel' => 
   array (
@@ -36681,50 +39540,50 @@ return array (
   ),
   'imagickkernelexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagickkernelexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'imagickkernelexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagickkernelexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagickkernelexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagickkernelexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagickkernelexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagickkernelexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagickkernelexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagickkernelexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagickkernelexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagickpixel::__construct' => 
   array (
@@ -36750,7 +39609,7 @@ return array (
   ),
   'imagickpixel::getcolorasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagickpixel::getcolorcount' => 
   array (
@@ -36836,50 +39695,50 @@ return array (
   ),
   'imagickpixelexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagickpixelexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'imagickpixelexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagickpixelexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagickpixelexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagickpixelexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagickpixelexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagickpixelexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagickpixelexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagickpixelexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagickpixelexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagickpixeliterator::__construct' => 
   array (
@@ -36981,50 +39840,50 @@ return array (
   ),
   'imagickpixeliteratorexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagickpixeliteratorexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'imagickpixeliteratorexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagickpixeliteratorexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagickpixeliteratorexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagickpixeliteratorexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagickpixeliteratorexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagickpixeliteratorexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagickpixeliteratorexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagickpixeliteratorexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imagickpixeliteratorexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'imap_8bit' => 
   array (
@@ -37885,7 +40744,7 @@ return array (
   ),
   'intl_get_error_message' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'intl_is_failure' => 
   array (
@@ -37944,7 +40803,7 @@ return array (
   ),
   'intlbreakiterator::geterrormessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'intlbreakiterator::getlocale' => 
   array (
@@ -38068,12 +40927,12 @@ return array (
   ),
   'intlcal_get_error_code' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'calendar' => 'IntlCalendar',
   ),
   'intlcal_get_error_message' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'calendar' => 'IntlCalendar',
   ),
   'intlcal_get_first_day_of_week' => 
@@ -38149,7 +41008,7 @@ return array (
   ),
   'intlcal_get_type' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'calendar' => 'IntlCalendar',
   ),
   'intlcal_get_weekend_transition' => 
@@ -38225,9 +41084,9 @@ return array (
   ),
   'intlcal_set_minimal_days_in_first_week' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'calendar' => 'IntlCalendar',
-    'numberOfDays' => 'string',
+    'numberOfDays' => 'mixed',
   ),
   'intlcal_set_repeated_wall_time_option' => 
   array (
@@ -38336,7 +41195,7 @@ return array (
   ),
   'intlcalendar::geterrormessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'intlcalendar::getfirstdayofweek' => 
   array (
@@ -38400,7 +41259,7 @@ return array (
   ),
   'intlcalendar::gettype' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'intlcalendar::getweekendtransition' => 
   array (
@@ -38851,7 +41710,7 @@ return array (
   ),
   'intlcodepointbreakiterator::geterrormessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'intlcodepointbreakiterator::getlastcodepoint' => 
   array (
@@ -38949,7 +41808,7 @@ return array (
   ),
   'intldateformatter::geterrormessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'intldateformatter::getlocale' => 
   array (
@@ -38958,7 +41817,7 @@ return array (
   ),
   'intldateformatter::getpattern' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'intldateformatter::gettimetype' => 
   array (
@@ -38970,7 +41829,7 @@ return array (
   ),
   'intldateformatter::gettimezoneid' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'intldateformatter::islenient' => 
   array (
@@ -39021,7 +41880,7 @@ return array (
   ),
   'intlexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'intlexception::__wakeup' => 
   array (
@@ -39033,7 +41892,7 @@ return array (
   ),
   'intlexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'intlexception::getline' => 
   array (
@@ -39041,7 +41900,7 @@ return array (
   ),
   'intlexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'intlexception::getprevious' => 
   array (
@@ -39053,7 +41912,7 @@ return array (
   ),
   'intlexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'intlgregcal_create_instance' => 
   array (
@@ -39160,7 +42019,7 @@ return array (
   ),
   'intlgregoriancalendar::geterrormessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'intlgregoriancalendar::getfirstdayofweek' => 
   array (
@@ -39228,7 +42087,7 @@ return array (
   ),
   'intlgregoriancalendar::gettype' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'intlgregoriancalendar::getweekendtransition' => 
   array (
@@ -39339,7 +42198,7 @@ return array (
   ),
   'intliterator::key' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'intliterator::next' => 
   array (
@@ -39355,7 +42214,7 @@ return array (
   ),
   'intlpartsiterator::current' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'intlpartsiterator::getbreakiterator' => 
   array (
@@ -39363,19 +42222,19 @@ return array (
   ),
   'intlpartsiterator::key' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'intlpartsiterator::next' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'intlpartsiterator::rewind' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'intlpartsiterator::valid' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'intlrulebasedbreakiterator::__construct' => 
   array (
@@ -39427,7 +42286,7 @@ return array (
   ),
   'intlrulebasedbreakiterator::getbinaryrules' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'intlrulebasedbreakiterator::geterrorcode' => 
   array (
@@ -39435,7 +42294,7 @@ return array (
   ),
   'intlrulebasedbreakiterator::geterrormessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'intlrulebasedbreakiterator::getlocale' => 
   array (
@@ -39449,7 +42308,7 @@ return array (
   ),
   'intlrulebasedbreakiterator::getrules' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'intlrulebasedbreakiterator::getrulestatus' => 
   array (
@@ -39493,7 +42352,7 @@ return array (
   ),
   'intltimezone::__construct' => 
   array (
-    0 => 'string',
+    0 => 'void',
   ),
   'intltimezone::countequivalentids' => 
   array (
@@ -39555,7 +42414,7 @@ return array (
   ),
   'intltimezone::geterrormessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'intltimezone::getgmt' => 
   array (
@@ -39563,7 +42422,7 @@ return array (
   ),
   'intltimezone::getid' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'intltimezone::getidforwindowsid' => 
   array (
@@ -39590,7 +42449,7 @@ return array (
   ),
   'intltimezone::gettzdataversion' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'intltimezone::getunknown' => 
   array (
@@ -39621,7 +42480,7 @@ return array (
   ),
   'intltz_create_default' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'intltz_create_enumeration' => 
   array (
@@ -39635,10 +42494,10 @@ return array (
   ),
   'intltz_create_time_zone_id_enumeration' => 
   array (
-    0 => 'string',
-    'zoneType' => 'string',
-    'region=' => 'string',
-    'rawOffset=' => 'string',
+    0 => 'mixed',
+    'zoneType' => 'mixed',
+    'region=' => 'mixed',
+    'rawOffset=' => 'mixed',
   ),
   'intltz_from_date_time_zone' => 
   array (
@@ -39682,7 +42541,7 @@ return array (
   ),
   'intltz_get_gmt' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'intltz_get_id' => 
   array (
@@ -39705,8 +42564,8 @@ return array (
   ),
   'intltz_get_region' => 
   array (
-    0 => 'string',
-    'zoneId' => 'string',
+    0 => 'mixed',
+    'zoneId' => 'mixed',
   ),
   'intltz_get_tz_data_version' => 
   array (
@@ -39715,7 +42574,7 @@ return array (
   ),
   'intltz_get_unknown' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'intltz_getgmt' => 
   array (
@@ -39760,11 +42619,11 @@ return array (
   ),
   'invalidargumentexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'invalidargumentexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'invalidargumentexception::getcode' => 
   array (
@@ -39772,7 +42631,7 @@ return array (
   ),
   'invalidargumentexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'invalidargumentexception::getline' => 
   array (
@@ -39780,7 +42639,7 @@ return array (
   ),
   'invalidargumentexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'invalidargumentexception::getprevious' => 
   array (
@@ -39792,7 +42651,7 @@ return array (
   ),
   'invalidargumentexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'ip2long' => 
   array (
@@ -40183,7 +43042,7 @@ return array (
   ),
   'json_last_error_msg' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'jsonexception::__clone' => 
   array (
@@ -40198,7 +43057,7 @@ return array (
   ),
   'jsonexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'jsonexception::__wakeup' => 
   array (
@@ -40210,7 +43069,7 @@ return array (
   ),
   'jsonexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'jsonexception::getline' => 
   array (
@@ -40218,7 +43077,7 @@ return array (
   ),
   'jsonexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'jsonexception::getprevious' => 
   array (
@@ -40230,7 +43089,7 @@ return array (
   ),
   'jsonexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'jsonincrementalparser::__construct' => 
   array (
@@ -41465,11 +44324,11 @@ return array (
   ),
   'lengthexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'lengthexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'lengthexception::getcode' => 
   array (
@@ -41477,7 +44336,7 @@ return array (
   ),
   'lengthexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'lengthexception::getline' => 
   array (
@@ -41485,7 +44344,7 @@ return array (
   ),
   'lengthexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'lengthexception::getprevious' => 
   array (
@@ -41497,7 +44356,7 @@ return array (
   ),
   'lengthexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'leveldb::__construct' => 
   array (
@@ -41843,7 +44702,7 @@ return array (
   ),
   'locale::getdefault' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'locale::getdisplaylanguage' => 
   array (
@@ -41882,18 +44741,18 @@ return array (
   ),
   'locale::getprimarylanguage' => 
   array (
-    0 => 'string',
-    'locale' => 'string',
+    0 => 'mixed',
+    'locale' => 'mixed',
   ),
   'locale::getregion' => 
   array (
-    0 => 'string',
-    'locale' => 'string',
+    0 => 'mixed',
+    'locale' => 'mixed',
   ),
   'locale::getscript' => 
   array (
-    0 => 'string',
-    'locale' => 'string',
+    0 => 'mixed',
+    'locale' => 'mixed',
   ),
   'locale::lookup' => 
   array (
@@ -41942,7 +44801,7 @@ return array (
   ),
   'locale_get_default' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'locale_get_display_language' => 
   array (
@@ -42051,11 +44910,11 @@ return array (
   ),
   'logicexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'logicexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'logicexception::getcode' => 
   array (
@@ -42063,7 +44922,7 @@ return array (
   ),
   'logicexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'logicexception::getline' => 
   array (
@@ -42071,7 +44930,7 @@ return array (
   ),
   'logicexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'logicexception::getprevious' => 
   array (
@@ -42083,7 +44942,7 @@ return array (
   ),
   'logicexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'long2ip' => 
   array (
@@ -42691,8 +45550,8 @@ return array (
   ),
   'mb_decode_mimeheader' => 
   array (
-    0 => 'string',
-    'string' => 'string',
+    0 => 'mixed',
+    'string' => 'mixed',
   ),
   'mb_decode_numericentity' => 
   array (
@@ -42877,8 +45736,8 @@ return array (
   ),
   'mb_regex_set_options' => 
   array (
-    0 => 'string',
-    'options=' => 'string',
+    0 => 'mixed',
+    'options=' => 'mixed',
   ),
   'mb_scrub' => 
   array (
@@ -43029,90 +45888,90 @@ return array (
   ),
   'mbereg' => 
   array (
-    0 => 'string',
-    'pattern' => 'string',
-    'string' => 'string',
-    '&registers=' => 'string',
+    0 => 'mixed',
+    'pattern' => 'mixed',
+    'string' => 'mixed',
+    '&registers=' => 'mixed',
   ),
   'mbereg_match' => 
   array (
-    0 => 'string',
-    'pattern' => 'string',
-    'string' => 'string',
-    'option=' => 'string',
+    0 => 'mixed',
+    'pattern' => 'mixed',
+    'string' => 'mixed',
+    'option=' => 'mixed',
   ),
   'mbereg_replace' => 
   array (
-    0 => 'string',
-    'pattern' => 'string',
-    'replacement' => 'string',
-    'string' => 'string',
-    'option=' => 'string',
+    0 => 'mixed',
+    'pattern' => 'mixed',
+    'replacement' => 'mixed',
+    'string' => 'mixed',
+    'option=' => 'mixed',
   ),
   'mbereg_search' => 
   array (
-    0 => 'string',
-    'pattern=' => 'string',
-    'option=' => 'string',
+    0 => 'mixed',
+    'pattern=' => 'mixed',
+    'option=' => 'mixed',
   ),
   'mbereg_search_getpos' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mbereg_search_getregs' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mbereg_search_init' => 
   array (
-    0 => 'string',
-    'string' => 'string',
-    'pattern=' => 'string',
-    'option=' => 'string',
+    0 => 'mixed',
+    'string' => 'mixed',
+    'pattern=' => 'mixed',
+    'option=' => 'mixed',
   ),
   'mbereg_search_pos' => 
   array (
-    0 => 'string',
-    'pattern=' => 'string',
-    'option=' => 'string',
+    0 => 'mixed',
+    'pattern=' => 'mixed',
+    'option=' => 'mixed',
   ),
   'mbereg_search_regs' => 
   array (
-    0 => 'string',
-    'pattern=' => 'string',
-    'option=' => 'string',
+    0 => 'mixed',
+    'pattern=' => 'mixed',
+    'option=' => 'mixed',
   ),
   'mbereg_search_setpos' => 
   array (
-    0 => 'string',
-    'position' => 'string',
+    0 => 'mixed',
+    'position' => 'mixed',
   ),
   'mberegi' => 
   array (
-    0 => 'string',
-    'pattern' => 'string',
-    'string' => 'string',
-    '&registers=' => 'string',
+    0 => 'mixed',
+    'pattern' => 'mixed',
+    'string' => 'mixed',
+    '&registers=' => 'mixed',
   ),
   'mberegi_replace' => 
   array (
-    0 => 'string',
-    'pattern' => 'string',
-    'replacement' => 'string',
-    'string' => 'string',
-    'option=' => 'string',
+    0 => 'mixed',
+    'pattern' => 'mixed',
+    'replacement' => 'mixed',
+    'string' => 'mixed',
+    'option=' => 'mixed',
   ),
   'mbregex_encoding' => 
   array (
-    0 => 'string',
-    'encoding=' => 'string',
+    0 => 'mixed',
+    'encoding=' => 'mixed',
   ),
   'mbsplit' => 
   array (
-    0 => 'string',
-    'pattern' => 'string',
-    'string' => 'string',
-    'limit=' => 'string',
+    0 => 'mixed',
+    'pattern' => 'mixed',
+    'string' => 'mixed',
+    'limit=' => 'mixed',
   ),
   'mcrypt_cbc' => 
   array (
@@ -43738,6 +46597,11 @@ return array (
     'value' => 'mixed',
     'expiration=' => 'int',
   ),
+  'memcached::checkkey' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
   'memcached::decrement' => 
   array (
     0 => 'false|int',
@@ -44023,6 +46887,53 @@ return array (
     'key' => 'string',
     'expiration=' => 'int',
   ),
+  'memcachedexception::__clone' => 
+  array (
+    0 => 'mixed',
+  ),
+  'memcachedexception::__construct' => 
+  array (
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
+  ),
+  'memcachedexception::__tostring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'memcachedexception::__wakeup' => 
+  array (
+    0 => 'mixed',
+  ),
+  'memcachedexception::getcode' => 
+  array (
+    0 => 'mixed',
+  ),
+  'memcachedexception::getfile' => 
+  array (
+    0 => 'mixed',
+  ),
+  'memcachedexception::getline' => 
+  array (
+    0 => 'mixed',
+  ),
+  'memcachedexception::getmessage' => 
+  array (
+    0 => 'mixed',
+  ),
+  'memcachedexception::getprevious' => 
+  array (
+    0 => 'mixed',
+  ),
+  'memcachedexception::gettrace' => 
+  array (
+    0 => 'mixed',
+  ),
+  'memcachedexception::gettraceasstring' => 
+  array (
+    0 => 'mixed',
+  ),
   'memcachepool::add' => 
   array (
     0 => 'bool',
@@ -44199,15 +47110,15 @@ return array (
   ),
   'messageformatter::geterrormessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'messageformatter::getlocale' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'messageformatter::getpattern' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'messageformatter::parse' => 
   array (
@@ -44354,7 +47265,7 @@ return array (
   ),
   'mongodb\\bson\\binary::__construct' => 
   array (
-    0 => 'string',
+    0 => 'void',
     'data' => 'string',
     'type=' => 'int',
   ),
@@ -44386,7 +47297,7 @@ return array (
   ),
   'mongodb\\bson\\binary::jsonserialize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\bson\\binary::serialize' => 
   array (
@@ -44395,11 +47306,11 @@ return array (
   'mongodb\\bson\\binary::unserialize' => 
   array (
     0 => 'void',
-    'serialized' => 'string',
+    'serialized' => 'mixed',
   ),
   'mongodb\\bson\\dbpointer::__construct' => 
   array (
-    0 => 'string',
+    0 => 'void',
   ),
   'mongodb\\bson\\dbpointer::__serialize' => 
   array (
@@ -44421,7 +47332,7 @@ return array (
   ),
   'mongodb\\bson\\dbpointer::jsonserialize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\bson\\dbpointer::serialize' => 
   array (
@@ -44430,11 +47341,11 @@ return array (
   'mongodb\\bson\\dbpointer::unserialize' => 
   array (
     0 => 'void',
-    'serialized' => 'string',
+    'serialized' => 'mixed',
   ),
   'mongodb\\bson\\decimal128::__construct' => 
   array (
-    0 => 'string',
+    0 => 'void',
     'value' => 'string',
   ),
   'mongodb\\bson\\decimal128::__serialize' => 
@@ -44457,7 +47368,7 @@ return array (
   ),
   'mongodb\\bson\\decimal128::jsonserialize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\bson\\decimal128::serialize' => 
   array (
@@ -44466,11 +47377,11 @@ return array (
   'mongodb\\bson\\decimal128::unserialize' => 
   array (
     0 => 'void',
-    'serialized' => 'string',
+    'serialized' => 'mixed',
   ),
   'mongodb\\bson\\document::__construct' => 
   array (
-    0 => 'string',
+    0 => 'void',
   ),
   'mongodb\\bson\\document::__serialize' => 
   array (
@@ -44503,11 +47414,11 @@ return array (
   'mongodb\\bson\\document::fromphp' => 
   array (
     0 => 'MongoDB\\BSON\\Document',
-    'value' => 'string',
+    'value' => 'mixed',
   ),
   'mongodb\\bson\\document::get' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'key' => 'string',
   ),
   'mongodb\\bson\\document::getiterator' => 
@@ -44529,7 +47440,7 @@ return array (
   ),
   'mongodb\\bson\\document::tophp' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'typeMap=' => 'array<array-key, mixed>|null',
   ),
   'mongodb\\bson\\document::torelaxedextendedjson' => 
@@ -44539,7 +47450,7 @@ return array (
   'mongodb\\bson\\document::unserialize' => 
   array (
     0 => 'void',
-    'serialized' => 'string',
+    'serialized' => 'mixed',
   ),
   'mongodb\\bson\\fromjson' => 
   array (
@@ -44549,12 +47460,12 @@ return array (
   'mongodb\\bson\\fromphp' => 
   array (
     0 => 'string',
-    'value' => 'string',
+    'value' => 'mixed',
   ),
   'mongodb\\bson\\int64::__construct' => 
   array (
-    0 => 'string',
-    'value' => 'string',
+    0 => 'void',
+    'value' => 'mixed',
   ),
   'mongodb\\bson\\int64::__serialize' => 
   array (
@@ -44576,7 +47487,7 @@ return array (
   ),
   'mongodb\\bson\\int64::jsonserialize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\bson\\int64::serialize' => 
   array (
@@ -44585,11 +47496,11 @@ return array (
   'mongodb\\bson\\int64::unserialize' => 
   array (
     0 => 'void',
-    'serialized' => 'string',
+    'serialized' => 'mixed',
   ),
   'mongodb\\bson\\iterator::__construct' => 
   array (
-    0 => 'string',
+    0 => 'void',
   ),
   'mongodb\\bson\\iterator::__wakeup' => 
   array (
@@ -44597,11 +47508,11 @@ return array (
   ),
   'mongodb\\bson\\iterator::current' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\bson\\iterator::key' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\bson\\iterator::next' => 
   array (
@@ -44617,9 +47528,9 @@ return array (
   ),
   'mongodb\\bson\\javascript::__construct' => 
   array (
-    0 => 'string',
+    0 => 'void',
     'code' => 'string',
-    'scope=' => 'string',
+    'scope=' => 'mixed',
   ),
   'mongodb\\bson\\javascript::__serialize' => 
   array (
@@ -44649,7 +47560,7 @@ return array (
   ),
   'mongodb\\bson\\javascript::jsonserialize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\bson\\javascript::serialize' => 
   array (
@@ -44658,7 +47569,7 @@ return array (
   'mongodb\\bson\\javascript::unserialize' => 
   array (
     0 => 'void',
-    'serialized' => 'string',
+    'serialized' => 'mixed',
   ),
   'mongodb\\bson\\maxkey::__serialize' => 
   array (
@@ -44676,7 +47587,7 @@ return array (
   ),
   'mongodb\\bson\\maxkey::jsonserialize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\bson\\maxkey::serialize' => 
   array (
@@ -44685,7 +47596,7 @@ return array (
   'mongodb\\bson\\maxkey::unserialize' => 
   array (
     0 => 'void',
-    'serialized' => 'string',
+    'serialized' => 'mixed',
   ),
   'mongodb\\bson\\minkey::__serialize' => 
   array (
@@ -44703,7 +47614,7 @@ return array (
   ),
   'mongodb\\bson\\minkey::jsonserialize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\bson\\minkey::serialize' => 
   array (
@@ -44712,11 +47623,11 @@ return array (
   'mongodb\\bson\\minkey::unserialize' => 
   array (
     0 => 'void',
-    'serialized' => 'string',
+    'serialized' => 'mixed',
   ),
   'mongodb\\bson\\objectid::__construct' => 
   array (
-    0 => 'string',
+    0 => 'void',
     'id=' => 'null|string',
   ),
   'mongodb\\bson\\objectid::__serialize' => 
@@ -44743,7 +47654,7 @@ return array (
   ),
   'mongodb\\bson\\objectid::jsonserialize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\bson\\objectid::serialize' => 
   array (
@@ -44752,11 +47663,11 @@ return array (
   'mongodb\\bson\\objectid::unserialize' => 
   array (
     0 => 'void',
-    'serialized' => 'string',
+    'serialized' => 'mixed',
   ),
   'mongodb\\bson\\packedarray::__construct' => 
   array (
-    0 => 'string',
+    0 => 'void',
   ),
   'mongodb\\bson\\packedarray::__serialize' => 
   array (
@@ -44783,7 +47694,7 @@ return array (
   ),
   'mongodb\\bson\\packedarray::get' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'index' => 'int',
   ),
   'mongodb\\bson\\packedarray::getiterator' => 
@@ -44801,17 +47712,17 @@ return array (
   ),
   'mongodb\\bson\\packedarray::tophp' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'typeMap=' => 'array<array-key, mixed>|null',
   ),
   'mongodb\\bson\\packedarray::unserialize' => 
   array (
     0 => 'void',
-    'serialized' => 'string',
+    'serialized' => 'mixed',
   ),
   'mongodb\\bson\\regex::__construct' => 
   array (
-    0 => 'string',
+    0 => 'void',
     'pattern' => 'string',
     'flags=' => 'string',
   ),
@@ -44843,7 +47754,7 @@ return array (
   ),
   'mongodb\\bson\\regex::jsonserialize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\bson\\regex::serialize' => 
   array (
@@ -44852,11 +47763,11 @@ return array (
   'mongodb\\bson\\regex::unserialize' => 
   array (
     0 => 'void',
-    'serialized' => 'string',
+    'serialized' => 'mixed',
   ),
   'mongodb\\bson\\symbol::__construct' => 
   array (
-    0 => 'string',
+    0 => 'void',
   ),
   'mongodb\\bson\\symbol::__serialize' => 
   array (
@@ -44878,7 +47789,7 @@ return array (
   ),
   'mongodb\\bson\\symbol::jsonserialize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\bson\\symbol::serialize' => 
   array (
@@ -44887,13 +47798,13 @@ return array (
   'mongodb\\bson\\symbol::unserialize' => 
   array (
     0 => 'void',
-    'serialized' => 'string',
+    'serialized' => 'mixed',
   ),
   'mongodb\\bson\\timestamp::__construct' => 
   array (
-    0 => 'string',
-    'increment' => 'string',
-    'timestamp' => 'string',
+    0 => 'void',
+    'increment' => 'mixed',
+    'timestamp' => 'mixed',
   ),
   'mongodb\\bson\\timestamp::__serialize' => 
   array (
@@ -44923,7 +47834,7 @@ return array (
   ),
   'mongodb\\bson\\timestamp::jsonserialize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\bson\\timestamp::serialize' => 
   array (
@@ -44932,7 +47843,7 @@ return array (
   'mongodb\\bson\\timestamp::unserialize' => 
   array (
     0 => 'void',
-    'serialized' => 'string',
+    'serialized' => 'mixed',
   ),
   'mongodb\\bson\\tocanonicalextendedjson' => 
   array (
@@ -44946,7 +47857,7 @@ return array (
   ),
   'mongodb\\bson\\tophp' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'bson' => 'string',
     'typemap=' => 'array<array-key, mixed>|null',
   ),
@@ -44957,7 +47868,7 @@ return array (
   ),
   'mongodb\\bson\\undefined::__construct' => 
   array (
-    0 => 'string',
+    0 => 'void',
   ),
   'mongodb\\bson\\undefined::__serialize' => 
   array (
@@ -44979,7 +47890,7 @@ return array (
   ),
   'mongodb\\bson\\undefined::jsonserialize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\bson\\undefined::serialize' => 
   array (
@@ -44988,12 +47899,12 @@ return array (
   'mongodb\\bson\\undefined::unserialize' => 
   array (
     0 => 'void',
-    'serialized' => 'string',
+    'serialized' => 'mixed',
   ),
   'mongodb\\bson\\utcdatetime::__construct' => 
   array (
-    0 => 'string',
-    'milliseconds=' => 'string',
+    0 => 'void',
+    'milliseconds=' => 'mixed',
   ),
   'mongodb\\bson\\utcdatetime::__serialize' => 
   array (
@@ -45015,7 +47926,7 @@ return array (
   ),
   'mongodb\\bson\\utcdatetime::jsonserialize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\bson\\utcdatetime::serialize' => 
   array (
@@ -45028,11 +47939,11 @@ return array (
   'mongodb\\bson\\utcdatetime::unserialize' => 
   array (
     0 => 'void',
-    'serialized' => 'string',
+    'serialized' => 'mixed',
   ),
   'mongodb\\driver\\bulkwrite::__construct' => 
   array (
-    0 => 'string',
+    0 => 'void',
     'options=' => 'array<array-key, mixed>|null',
   ),
   'mongodb\\driver\\bulkwrite::__wakeup' => 
@@ -45046,24 +47957,24 @@ return array (
   'mongodb\\driver\\bulkwrite::delete' => 
   array (
     0 => 'void',
-    'filter' => 'string',
+    'filter' => 'mixed',
     'deleteOptions=' => 'array<array-key, mixed>|null',
   ),
   'mongodb\\driver\\bulkwrite::insert' => 
   array (
-    0 => 'string',
-    'document' => 'string',
+    0 => 'mixed',
+    'document' => 'mixed',
   ),
   'mongodb\\driver\\bulkwrite::update' => 
   array (
     0 => 'void',
-    'filter' => 'string',
-    'newObj' => 'string',
+    'filter' => 'mixed',
+    'newObj' => 'mixed',
     'updateOptions=' => 'array<array-key, mixed>|null',
   ),
   'mongodb\\driver\\clientencryption::__construct' => 
   array (
-    0 => 'string',
+    0 => 'void',
     'options' => 'array<array-key, mixed>',
   ),
   'mongodb\\driver\\clientencryption::__wakeup' => 
@@ -45084,7 +47995,7 @@ return array (
   ),
   'mongodb\\driver\\clientencryption::decrypt' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
     'value' => 'MongoDB\\BSON\\Binary',
   ),
   'mongodb\\driver\\clientencryption::deletekey' => 
@@ -45095,13 +48006,13 @@ return array (
   'mongodb\\driver\\clientencryption::encrypt' => 
   array (
     0 => 'MongoDB\\BSON\\Binary',
-    'value' => 'string',
+    'value' => 'mixed',
     'options=' => 'array<array-key, mixed>|null',
   ),
   'mongodb\\driver\\clientencryption::encryptexpression' => 
   array (
     0 => 'object',
-    'expr' => 'string',
+    'expr' => 'mixed',
     'options=' => 'array<array-key, mixed>|null',
   ),
   'mongodb\\driver\\clientencryption::getkey' => 
@@ -45127,13 +48038,13 @@ return array (
   'mongodb\\driver\\clientencryption::rewrapmanydatakey' => 
   array (
     0 => 'object',
-    'filter' => 'string',
+    'filter' => 'mixed',
     'options=' => 'array<array-key, mixed>|null',
   ),
   'mongodb\\driver\\command::__construct' => 
   array (
-    0 => 'string',
-    'document' => 'string',
+    0 => 'void',
+    'document' => 'mixed',
     'commandOptions=' => 'array<array-key, mixed>|null',
   ),
   'mongodb\\driver\\command::__wakeup' => 
@@ -45142,7 +48053,7 @@ return array (
   ),
   'mongodb\\driver\\cursor::__construct' => 
   array (
-    0 => 'string',
+    0 => 'void',
   ),
   'mongodb\\driver\\cursor::__wakeup' => 
   array (
@@ -45150,7 +48061,7 @@ return array (
   ),
   'mongodb\\driver\\cursor::current' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\cursor::getid' => 
   array (
@@ -45191,7 +48102,7 @@ return array (
   ),
   'mongodb\\driver\\cursorid::__construct' => 
   array (
-    0 => 'string',
+    0 => 'void',
   ),
   'mongodb\\driver\\cursorid::__serialize' => 
   array (
@@ -45218,54 +48129,54 @@ return array (
   'mongodb\\driver\\cursorid::unserialize' => 
   array (
     0 => 'void',
-    'serialized' => 'string',
+    'serialized' => 'mixed',
   ),
   'mongodb\\driver\\exception\\authenticationexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\authenticationexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'mongodb\\driver\\exception\\authenticationexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\authenticationexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\authenticationexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\authenticationexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\authenticationexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\authenticationexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\authenticationexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\authenticationexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\authenticationexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\authenticationexception::haserrorlabel' => 
   array (
@@ -45274,50 +48185,50 @@ return array (
   ),
   'mongodb\\driver\\exception\\bulkwriteexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\bulkwriteexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'mongodb\\driver\\exception\\bulkwriteexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\bulkwriteexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\bulkwriteexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\bulkwriteexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\bulkwriteexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\bulkwriteexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\bulkwriteexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\bulkwriteexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\bulkwriteexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\bulkwriteexception::getwriteresult' => 
   array (
@@ -45330,42 +48241,42 @@ return array (
   ),
   'mongodb\\driver\\exception\\commandexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\commandexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'mongodb\\driver\\exception\\commandexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\commandexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\commandexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\commandexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\commandexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\commandexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\commandexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\commandexception::getresultdocument' => 
   array (
@@ -45373,11 +48284,11 @@ return array (
   ),
   'mongodb\\driver\\exception\\commandexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\commandexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\commandexception::haserrorlabel' => 
   array (
@@ -45386,50 +48297,50 @@ return array (
   ),
   'mongodb\\driver\\exception\\connectionexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\connectionexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'mongodb\\driver\\exception\\connectionexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\connectionexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\connectionexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\connectionexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\connectionexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\connectionexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\connectionexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\connectionexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\connectionexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\connectionexception::haserrorlabel' => 
   array (
@@ -45438,50 +48349,50 @@ return array (
   ),
   'mongodb\\driver\\exception\\connectiontimeoutexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\connectiontimeoutexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'mongodb\\driver\\exception\\connectiontimeoutexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\connectiontimeoutexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\connectiontimeoutexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\connectiontimeoutexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\connectiontimeoutexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\connectiontimeoutexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\connectiontimeoutexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\connectiontimeoutexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\connectiontimeoutexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\connectiontimeoutexception::haserrorlabel' => 
   array (
@@ -45490,50 +48401,50 @@ return array (
   ),
   'mongodb\\driver\\exception\\encryptionexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\encryptionexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'mongodb\\driver\\exception\\encryptionexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\encryptionexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\encryptionexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\encryptionexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\encryptionexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\encryptionexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\encryptionexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\encryptionexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\encryptionexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\encryptionexception::haserrorlabel' => 
   array (
@@ -45542,50 +48453,50 @@ return array (
   ),
   'mongodb\\driver\\exception\\executiontimeoutexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\executiontimeoutexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'mongodb\\driver\\exception\\executiontimeoutexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\executiontimeoutexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\executiontimeoutexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\executiontimeoutexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\executiontimeoutexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\executiontimeoutexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\executiontimeoutexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\executiontimeoutexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\executiontimeoutexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\executiontimeoutexception::haserrorlabel' => 
   array (
@@ -45594,144 +48505,144 @@ return array (
   ),
   'mongodb\\driver\\exception\\invalidargumentexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\invalidargumentexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'mongodb\\driver\\exception\\invalidargumentexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\invalidargumentexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\invalidargumentexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\invalidargumentexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\invalidargumentexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\invalidargumentexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\invalidargumentexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\invalidargumentexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\invalidargumentexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\logicexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\logicexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'mongodb\\driver\\exception\\logicexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\logicexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\logicexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\logicexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\logicexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\logicexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\logicexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\logicexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\logicexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\runtimeexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\runtimeexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'mongodb\\driver\\exception\\runtimeexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\runtimeexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\runtimeexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\runtimeexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\runtimeexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\runtimeexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\runtimeexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\runtimeexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\runtimeexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\runtimeexception::haserrorlabel' => 
   array (
@@ -45740,50 +48651,50 @@ return array (
   ),
   'mongodb\\driver\\exception\\serverexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\serverexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'mongodb\\driver\\exception\\serverexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\serverexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\serverexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\serverexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\serverexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\serverexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\serverexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\serverexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\serverexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\serverexception::haserrorlabel' => 
   array (
@@ -45792,50 +48703,50 @@ return array (
   ),
   'mongodb\\driver\\exception\\sslconnectionexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\sslconnectionexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'mongodb\\driver\\exception\\sslconnectionexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\sslconnectionexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\sslconnectionexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\sslconnectionexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\sslconnectionexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\sslconnectionexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\sslconnectionexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\sslconnectionexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\sslconnectionexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\sslconnectionexception::haserrorlabel' => 
   array (
@@ -45844,97 +48755,97 @@ return array (
   ),
   'mongodb\\driver\\exception\\unexpectedvalueexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\unexpectedvalueexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'mongodb\\driver\\exception\\unexpectedvalueexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\unexpectedvalueexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\unexpectedvalueexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\unexpectedvalueexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\unexpectedvalueexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\unexpectedvalueexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\unexpectedvalueexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\unexpectedvalueexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\unexpectedvalueexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\writeexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\writeexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'mongodb\\driver\\exception\\writeexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\writeexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\writeexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\writeexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\writeexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\writeexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\writeexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\writeexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\writeexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\exception\\writeexception::getwriteresult' => 
   array (
@@ -45947,7 +48858,7 @@ return array (
   ),
   'mongodb\\driver\\manager::__construct' => 
   array (
-    0 => 'string',
+    0 => 'void',
     'uri=' => 'null|string',
     'uriOptions=' => 'array<array-key, mixed>|null',
     'driverOptions=' => 'array<array-key, mixed>|null',
@@ -45971,21 +48882,21 @@ return array (
     0 => 'MongoDB\\Driver\\WriteResult',
     'namespace' => 'string',
     'bulk' => 'MongoDB\\Driver\\BulkWrite',
-    'options=' => 'string',
+    'options=' => 'mixed',
   ),
   'mongodb\\driver\\manager::executecommand' => 
   array (
     0 => 'MongoDB\\Driver\\Cursor',
     'db' => 'string',
     'command' => 'MongoDB\\Driver\\Command',
-    'options=' => 'string',
+    'options=' => 'mixed',
   ),
   'mongodb\\driver\\manager::executequery' => 
   array (
     0 => 'MongoDB\\Driver\\Cursor',
     'namespace' => 'string',
     'query' => 'MongoDB\\Driver\\Query',
-    'options=' => 'string',
+    'options=' => 'mixed',
   ),
   'mongodb\\driver\\manager::executereadcommand' => 
   array (
@@ -46010,7 +48921,7 @@ return array (
   ),
   'mongodb\\driver\\manager::getencryptedfieldsmap' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\manager::getreadconcern' => 
   array (
@@ -46050,7 +48961,7 @@ return array (
   ),
   'mongodb\\driver\\monitoring\\commandfailedevent::__construct' => 
   array (
-    0 => 'string',
+    0 => 'void',
   ),
   'mongodb\\driver\\monitoring\\commandfailedevent::__wakeup' => 
   array (
@@ -46094,7 +49005,7 @@ return array (
   ),
   'mongodb\\driver\\monitoring\\commandstartedevent::__construct' => 
   array (
-    0 => 'string',
+    0 => 'void',
   ),
   'mongodb\\driver\\monitoring\\commandstartedevent::__wakeup' => 
   array (
@@ -46134,7 +49045,7 @@ return array (
   ),
   'mongodb\\driver\\monitoring\\commandsucceededevent::__construct' => 
   array (
-    0 => 'string',
+    0 => 'void',
   ),
   'mongodb\\driver\\monitoring\\commandsucceededevent::__wakeup' => 
   array (
@@ -46179,7 +49090,7 @@ return array (
   ),
   'mongodb\\driver\\monitoring\\serverchangedevent::__construct' => 
   array (
-    0 => 'string',
+    0 => 'void',
   ),
   'mongodb\\driver\\monitoring\\serverchangedevent::__wakeup' => 
   array (
@@ -46207,7 +49118,7 @@ return array (
   ),
   'mongodb\\driver\\monitoring\\serverclosedevent::__construct' => 
   array (
-    0 => 'string',
+    0 => 'void',
   ),
   'mongodb\\driver\\monitoring\\serverclosedevent::__wakeup' => 
   array (
@@ -46227,7 +49138,7 @@ return array (
   ),
   'mongodb\\driver\\monitoring\\serverheartbeatfailedevent::__construct' => 
   array (
-    0 => 'string',
+    0 => 'void',
   ),
   'mongodb\\driver\\monitoring\\serverheartbeatfailedevent::__wakeup' => 
   array (
@@ -46255,7 +49166,7 @@ return array (
   ),
   'mongodb\\driver\\monitoring\\serverheartbeatstartedevent::__construct' => 
   array (
-    0 => 'string',
+    0 => 'void',
   ),
   'mongodb\\driver\\monitoring\\serverheartbeatstartedevent::__wakeup' => 
   array (
@@ -46275,7 +49186,7 @@ return array (
   ),
   'mongodb\\driver\\monitoring\\serverheartbeatsucceededevent::__construct' => 
   array (
-    0 => 'string',
+    0 => 'void',
   ),
   'mongodb\\driver\\monitoring\\serverheartbeatsucceededevent::__wakeup' => 
   array (
@@ -46303,7 +49214,7 @@ return array (
   ),
   'mongodb\\driver\\monitoring\\serveropeningevent::__construct' => 
   array (
-    0 => 'string',
+    0 => 'void',
   ),
   'mongodb\\driver\\monitoring\\serveropeningevent::__wakeup' => 
   array (
@@ -46323,7 +49234,7 @@ return array (
   ),
   'mongodb\\driver\\monitoring\\topologychangedevent::__construct' => 
   array (
-    0 => 'string',
+    0 => 'void',
   ),
   'mongodb\\driver\\monitoring\\topologychangedevent::__wakeup' => 
   array (
@@ -46343,7 +49254,7 @@ return array (
   ),
   'mongodb\\driver\\monitoring\\topologyclosedevent::__construct' => 
   array (
-    0 => 'string',
+    0 => 'void',
   ),
   'mongodb\\driver\\monitoring\\topologyclosedevent::__wakeup' => 
   array (
@@ -46355,7 +49266,7 @@ return array (
   ),
   'mongodb\\driver\\monitoring\\topologyopeningevent::__construct' => 
   array (
-    0 => 'string',
+    0 => 'void',
   ),
   'mongodb\\driver\\monitoring\\topologyopeningevent::__wakeup' => 
   array (
@@ -46367,8 +49278,8 @@ return array (
   ),
   'mongodb\\driver\\query::__construct' => 
   array (
-    0 => 'string',
-    'filter' => 'string',
+    0 => 'void',
+    'filter' => 'mixed',
     'queryOptions=' => 'array<array-key, mixed>|null',
   ),
   'mongodb\\driver\\query::__wakeup' => 
@@ -46377,7 +49288,7 @@ return array (
   ),
   'mongodb\\driver\\readconcern::__construct' => 
   array (
-    0 => 'string',
+    0 => 'void',
     'level=' => 'null|string',
   ),
   'mongodb\\driver\\readconcern::__serialize' => 
@@ -46396,7 +49307,7 @@ return array (
   ),
   'mongodb\\driver\\readconcern::bsonserialize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\readconcern::getlevel' => 
   array (
@@ -46413,12 +49324,12 @@ return array (
   'mongodb\\driver\\readconcern::unserialize' => 
   array (
     0 => 'void',
-    'serialized' => 'string',
+    'serialized' => 'mixed',
   ),
   'mongodb\\driver\\readpreference::__construct' => 
   array (
-    0 => 'string',
-    'mode' => 'string',
+    0 => 'void',
+    'mode' => 'mixed',
     'tagSets=' => 'array<array-key, mixed>|null',
     'options=' => 'array<array-key, mixed>|null',
   ),
@@ -46438,7 +49349,7 @@ return array (
   ),
   'mongodb\\driver\\readpreference::bsonserialize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\readpreference::gethedge' => 
   array (
@@ -46467,11 +49378,11 @@ return array (
   'mongodb\\driver\\readpreference::unserialize' => 
   array (
     0 => 'void',
-    'serialized' => 'string',
+    'serialized' => 'mixed',
   ),
   'mongodb\\driver\\server::__construct' => 
   array (
-    0 => 'string',
+    0 => 'void',
   ),
   'mongodb\\driver\\server::__wakeup' => 
   array (
@@ -46482,21 +49393,21 @@ return array (
     0 => 'MongoDB\\Driver\\WriteResult',
     'namespace' => 'string',
     'bulkWrite' => 'MongoDB\\Driver\\BulkWrite',
-    'options=' => 'string',
+    'options=' => 'mixed',
   ),
   'mongodb\\driver\\server::executecommand' => 
   array (
     0 => 'MongoDB\\Driver\\Cursor',
     'db' => 'string',
     'command' => 'MongoDB\\Driver\\Command',
-    'options=' => 'string',
+    'options=' => 'mixed',
   ),
   'mongodb\\driver\\server::executequery' => 
   array (
     0 => 'MongoDB\\Driver\\Cursor',
     'namespace' => 'string',
     'query' => 'MongoDB\\Driver\\Query',
-    'options=' => 'string',
+    'options=' => 'mixed',
   ),
   'mongodb\\driver\\server::executereadcommand' => 
   array (
@@ -46569,7 +49480,7 @@ return array (
   ),
   'mongodb\\driver\\serverapi::__construct' => 
   array (
-    0 => 'string',
+    0 => 'void',
     'version' => 'string',
     'strict=' => 'bool|null',
     'deprecationErrors=' => 'bool|null',
@@ -46590,7 +49501,7 @@ return array (
   ),
   'mongodb\\driver\\serverapi::bsonserialize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\serverapi::serialize' => 
   array (
@@ -46599,11 +49510,11 @@ return array (
   'mongodb\\driver\\serverapi::unserialize' => 
   array (
     0 => 'void',
-    'serialized' => 'string',
+    'serialized' => 'mixed',
   ),
   'mongodb\\driver\\serverdescription::__construct' => 
   array (
-    0 => 'string',
+    0 => 'void',
   ),
   'mongodb\\driver\\serverdescription::__wakeup' => 
   array (
@@ -46635,7 +49546,7 @@ return array (
   ),
   'mongodb\\driver\\session::__construct' => 
   array (
-    0 => 'string',
+    0 => 'void',
   ),
   'mongodb\\driver\\session::__wakeup' => 
   array (
@@ -46648,7 +49559,7 @@ return array (
   'mongodb\\driver\\session::advanceclustertime' => 
   array (
     0 => 'void',
-    'clusterTime' => 'string',
+    'clusterTime' => 'mixed',
   ),
   'mongodb\\driver\\session::advanceoperationtime' => 
   array (
@@ -46702,7 +49613,7 @@ return array (
   ),
   'mongodb\\driver\\topologydescription::__construct' => 
   array (
-    0 => 'string',
+    0 => 'void',
   ),
   'mongodb\\driver\\topologydescription::__wakeup' => 
   array (
@@ -46727,8 +49638,8 @@ return array (
   ),
   'mongodb\\driver\\writeconcern::__construct' => 
   array (
-    0 => 'string',
-    'w' => 'string',
+    0 => 'void',
+    'w' => 'mixed',
     'wtimeout=' => 'int|null',
     'journal=' => 'bool|null',
   ),
@@ -46748,7 +49659,7 @@ return array (
   ),
   'mongodb\\driver\\writeconcern::bsonserialize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\writeconcern::getjournal' => 
   array (
@@ -46756,7 +49667,7 @@ return array (
   ),
   'mongodb\\driver\\writeconcern::getw' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'mongodb\\driver\\writeconcern::getwtimeout' => 
   array (
@@ -46773,11 +49684,11 @@ return array (
   'mongodb\\driver\\writeconcern::unserialize' => 
   array (
     0 => 'void',
-    'serialized' => 'string',
+    'serialized' => 'mixed',
   ),
   'mongodb\\driver\\writeconcernerror::__construct' => 
   array (
-    0 => 'string',
+    0 => 'void',
   ),
   'mongodb\\driver\\writeconcernerror::__wakeup' => 
   array (
@@ -46797,7 +49708,7 @@ return array (
   ),
   'mongodb\\driver\\writeerror::__construct' => 
   array (
-    0 => 'string',
+    0 => 'void',
   ),
   'mongodb\\driver\\writeerror::__wakeup' => 
   array (
@@ -46821,7 +49732,7 @@ return array (
   ),
   'mongodb\\driver\\writeresult::__construct' => 
   array (
-    0 => 'string',
+    0 => 'void',
   ),
   'mongodb\\driver\\writeresult::__wakeup' => 
   array (
@@ -50287,7 +53198,7 @@ return array (
   ),
   'numberformatter::geterrormessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'numberformatter::getlocale' => 
   array (
@@ -52295,11 +55206,11 @@ return array (
   ),
   'outofboundsexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'outofboundsexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'outofboundsexception::getcode' => 
   array (
@@ -52307,7 +55218,7 @@ return array (
   ),
   'outofboundsexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'outofboundsexception::getline' => 
   array (
@@ -52315,7 +55226,7 @@ return array (
   ),
   'outofboundsexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'outofboundsexception::getprevious' => 
   array (
@@ -52327,7 +55238,7 @@ return array (
   ),
   'outofboundsexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'outofrangeexception::__clone' => 
   array (
@@ -52342,11 +55253,11 @@ return array (
   ),
   'outofrangeexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'outofrangeexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'outofrangeexception::getcode' => 
   array (
@@ -52354,7 +55265,7 @@ return array (
   ),
   'outofrangeexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'outofrangeexception::getline' => 
   array (
@@ -52362,7 +55273,7 @@ return array (
   ),
   'outofrangeexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'outofrangeexception::getprevious' => 
   array (
@@ -52374,7 +55285,7 @@ return array (
   ),
   'outofrangeexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'output_add_rewrite_var' => 
   array (
@@ -52479,11 +55390,11 @@ return array (
   ),
   'overflowexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'overflowexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'overflowexception::getcode' => 
   array (
@@ -52491,7 +55402,7 @@ return array (
   ),
   'overflowexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'overflowexception::getline' => 
   array (
@@ -52499,7 +55410,7 @@ return array (
   ),
   'overflowexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'overflowexception::getprevious' => 
   array (
@@ -52511,7 +55422,7 @@ return array (
   ),
   'overflowexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'overload' => 
   array (
@@ -52620,7 +55531,7 @@ return array (
   ),
   'parentiterator::current' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'parentiterator::getchildren' => 
   array (
@@ -52628,7 +55539,7 @@ return array (
   ),
   'parentiterator::getinneriterator' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'parentiterator::haschildren' => 
   array (
@@ -52636,7 +55547,7 @@ return array (
   ),
   'parentiterator::key' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'parentiterator::next' => 
   array (
@@ -52948,11 +55859,11 @@ return array (
   ),
   'parseerror::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'parseerror::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'parseerror::getcode' => 
   array (
@@ -52960,7 +55871,7 @@ return array (
   ),
   'parseerror::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'parseerror::getline' => 
   array (
@@ -52968,7 +55879,7 @@ return array (
   ),
   'parseerror::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'parseerror::getprevious' => 
   array (
@@ -52980,7 +55891,7 @@ return array (
   ),
   'parseerror::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'parsekit_compile_file' => 
   array (
@@ -55343,11 +58254,11 @@ return array (
   ),
   'pdo::__sleep' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'pdo::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'pdo::begintransaction' => 
   array (
@@ -55531,22 +58442,22 @@ return array (
   ),
   'pdoexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'pdoexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'pdoexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'pdoexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'pdoexception::getcode' => 
   array (
@@ -55554,7 +58465,7 @@ return array (
   ),
   'pdoexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'pdoexception::getline' => 
   array (
@@ -55562,7 +58473,7 @@ return array (
   ),
   'pdoexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'pdoexception::getprevious' => 
   array (
@@ -55574,15 +58485,15 @@ return array (
   ),
   'pdoexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'pdostatement::__sleep' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'pdostatement::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'pdostatement::bindcolumn' => 
   array (
@@ -55623,7 +58534,7 @@ return array (
   ),
   'pdostatement::errorcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'pdostatement::errorinfo' => 
   array (
@@ -55733,8 +58644,8 @@ return array (
   ),
   'pg_clientencoding' => 
   array (
-    0 => 'string',
-    'connection=' => 'string',
+    0 => 'mixed',
+    'connection=' => 'mixed',
   ),
   'pg_close' => 
   array (
@@ -55743,8 +58654,8 @@ return array (
   ),
   'pg_cmdtuples' => 
   array (
-    0 => 'string',
-    'result' => 'string',
+    0 => 'mixed',
+    'result' => 'mixed',
   ),
   'pg_connect' => 
   array (
@@ -55822,8 +58733,8 @@ return array (
   ),
   'pg_errormessage' => 
   array (
-    0 => 'string',
-    'connection=' => 'string',
+    0 => 'mixed',
+    'connection=' => 'mixed',
   ),
   'pg_escape_bytea' => 
   array (
@@ -56011,41 +58922,41 @@ return array (
   ),
   'pg_fieldisnull' => 
   array (
-    0 => 'string',
-    'result' => 'string',
-    'row=' => 'string',
-    'field_name_or_number=' => 'string',
+    0 => 'mixed',
+    'result' => 'mixed',
+    'row=' => 'mixed',
+    'field_name_or_number=' => 'mixed',
   ),
   'pg_fieldname' => 
   array (
-    0 => 'string',
-    'result' => 'string',
-    'field_number' => 'string',
+    0 => 'mixed',
+    'result' => 'mixed',
+    'field_number' => 'mixed',
   ),
   'pg_fieldnum' => 
   array (
-    0 => 'string',
-    'result' => 'string',
-    'field_name' => 'string',
+    0 => 'mixed',
+    'result' => 'mixed',
+    'field_name' => 'mixed',
   ),
   'pg_fieldprtlen' => 
   array (
-    0 => 'string',
-    'result' => 'string',
-    'row=' => 'string',
-    'field_name_or_number=' => 'string',
+    0 => 'mixed',
+    'result' => 'mixed',
+    'row=' => 'mixed',
+    'field_name_or_number=' => 'mixed',
   ),
   'pg_fieldsize' => 
   array (
-    0 => 'string',
-    'result' => 'string',
-    'field_number' => 'string',
+    0 => 'mixed',
+    'result' => 'mixed',
+    'field_number' => 'mixed',
   ),
   'pg_fieldtype' => 
   array (
-    0 => 'string',
-    'result' => 'string',
-    'field_number' => 'string',
+    0 => 'mixed',
+    'result' => 'mixed',
+    'field_number' => 'mixed',
   ),
   'pg_flush' => 
   array (
@@ -56059,8 +58970,8 @@ return array (
   ),
   'pg_freeresult' => 
   array (
-    0 => 'string',
-    'result' => 'string',
+    0 => 'mixed',
+    'result' => 'mixed',
   ),
   'pg_get_notify' => 
   array (
@@ -56080,8 +58991,8 @@ return array (
   ),
   'pg_getlastoid' => 
   array (
-    0 => 'string',
-    'result' => 'string',
+    0 => 'mixed',
+    'result' => 'mixed',
   ),
   'pg_host' => 
   array (
@@ -56211,59 +59122,59 @@ return array (
   ),
   'pg_loclose' => 
   array (
-    0 => 'string',
-    'large_object' => 'string',
+    0 => 'mixed',
+    'large_object' => 'mixed',
   ),
   'pg_locreate' => 
   array (
-    0 => 'string',
-    'connection=' => 'string',
-    'large_object_id=' => 'string',
+    0 => 'mixed',
+    'connection=' => 'mixed',
+    'large_object_id=' => 'mixed',
   ),
   'pg_loexport' => 
   array (
-    0 => 'string',
-    'connection=' => 'string',
-    'objoid=' => 'string',
-    'filename=' => 'string',
+    0 => 'mixed',
+    'connection=' => 'mixed',
+    'objoid=' => 'mixed',
+    'filename=' => 'mixed',
   ),
   'pg_loimport' => 
   array (
-    0 => 'string',
-    'connection=' => 'string',
-    'filename=' => 'string',
-    'large_object_oid=' => 'string',
+    0 => 'mixed',
+    'connection=' => 'mixed',
+    'filename=' => 'mixed',
+    'large_object_oid=' => 'mixed',
   ),
   'pg_loopen' => 
   array (
-    0 => 'string',
-    'connection=' => 'string',
-    'large_object_oid=' => 'string',
-    'mode=' => 'string',
+    0 => 'mixed',
+    'connection=' => 'mixed',
+    'large_object_oid=' => 'mixed',
+    'mode=' => 'mixed',
   ),
   'pg_loread' => 
   array (
-    0 => 'string',
-    'large_object' => 'string',
-    'len=' => 'string',
+    0 => 'mixed',
+    'large_object' => 'mixed',
+    'len=' => 'mixed',
   ),
   'pg_loreadall' => 
   array (
-    0 => 'string',
-    'large_object' => 'string',
+    0 => 'mixed',
+    'large_object' => 'mixed',
   ),
   'pg_lounlink' => 
   array (
-    0 => 'string',
-    'connection=' => 'string',
-    'large_object_oid=' => 'string',
+    0 => 'mixed',
+    'connection=' => 'mixed',
+    'large_object_oid=' => 'mixed',
   ),
   'pg_lowrite' => 
   array (
-    0 => 'string',
-    'large_object' => 'string',
-    'buf' => 'string',
-    'len=' => 'string',
+    0 => 'mixed',
+    'large_object' => 'mixed',
+    'buf' => 'mixed',
+    'len=' => 'mixed',
   ),
   'pg_meta_data' => 
   array (
@@ -56284,13 +59195,13 @@ return array (
   ),
   'pg_numfields' => 
   array (
-    0 => 'string',
-    'result' => 'string',
+    0 => 'mixed',
+    'result' => 'mixed',
   ),
   'pg_numrows' => 
   array (
-    0 => 'string',
-    'result' => 'string',
+    0 => 'mixed',
+    'result' => 'mixed',
   ),
   'pg_options' => 
   array (
@@ -56374,8 +59285,8 @@ return array (
   ),
   'pg_result' => 
   array (
-    0 => 'string',
-    'connection' => 'string',
+    0 => 'mixed',
+    'connection' => 'mixed',
   ),
   'pg_result_error' => 
   array (
@@ -56460,9 +59371,9 @@ return array (
   ),
   'pg_setclientencoding' => 
   array (
-    0 => 'string',
-    'connection=' => 'string',
-    'encoding=' => 'string',
+    0 => 'mixed',
+    'connection=' => 'mixed',
+    'encoding=' => 'mixed',
   ),
   'pg_socket' => 
   array (
@@ -56519,15 +59430,15 @@ return array (
   ),
   'phar::__destruct' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phar::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phar::_bad_state_ex' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phar::addemptydir' => 
   array (
@@ -56548,7 +59459,7 @@ return array (
   ),
   'phar::apiversion' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phar::buildfromdirectory' => 
   array (
@@ -56615,7 +59526,7 @@ return array (
   ),
   'phar::current' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phar::decompress' => 
   array (
@@ -56648,49 +59559,49 @@ return array (
   ),
   'phar::getatime' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phar::getbasename' => 
   array (
-    0 => 'string',
-    'suffix=' => 'string',
+    0 => 'mixed',
+    'suffix=' => 'mixed',
   ),
   'phar::getchildren' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phar::getctime' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phar::getextension' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phar::getfileinfo' => 
   array (
-    0 => 'string',
-    'class_name=' => 'string',
+    0 => 'mixed',
+    'class_name=' => 'mixed',
   ),
   'phar::getfilename' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phar::getflags' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phar::getgroup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phar::getinode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phar::getlinktarget' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phar::getmetadata' => 
   array (
@@ -56702,32 +59613,32 @@ return array (
   ),
   'phar::getmtime' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phar::getowner' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phar::getpath' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phar::getpathinfo' => 
   array (
-    0 => 'string',
-    'class_name=' => 'string',
+    0 => 'mixed',
+    'class_name=' => 'mixed',
   ),
   'phar::getpathname' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phar::getperms' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phar::getrealpath' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phar::getsignature' => 
   array (
@@ -56735,19 +59646,19 @@ return array (
   ),
   'phar::getsize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phar::getstub' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phar::getsubpath' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phar::getsubpathname' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phar::getsupportedcompression' => 
   array (
@@ -56759,16 +59670,16 @@ return array (
   ),
   'phar::gettype' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phar::getversion' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phar::haschildren' => 
   array (
-    0 => 'string',
-    'allow_links=' => 'string',
+    0 => 'mixed',
+    'allow_links=' => 'mixed',
   ),
   'phar::hasmetadata' => 
   array (
@@ -56788,19 +59699,19 @@ return array (
   ),
   'phar::isdir' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phar::isdot' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phar::isexecutable' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phar::isfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phar::isfileformat' => 
   array (
@@ -56809,11 +59720,11 @@ return array (
   ),
   'phar::islink' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phar::isreadable' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phar::isvalidpharfilename' => 
   array (
@@ -56827,7 +59738,7 @@ return array (
   ),
   'phar::key' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phar::loadphar' => 
   array (
@@ -56854,7 +59765,7 @@ return array (
   ),
   'phar::next' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phar::offsetexists' => 
   array (
@@ -56879,14 +59790,14 @@ return array (
   ),
   'phar::openfile' => 
   array (
-    0 => 'string',
-    'open_mode=' => 'string',
-    'use_include_path=' => 'string',
-    'context=' => 'string',
+    0 => 'mixed',
+    'open_mode=' => 'mixed',
+    'use_include_path=' => 'mixed',
+    'context=' => 'mixed',
   ),
   'phar::rewind' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phar::running' => 
   array (
@@ -56895,8 +59806,8 @@ return array (
   ),
   'phar::seek' => 
   array (
-    0 => 'string',
-    'position' => 'string',
+    0 => 'mixed',
+    'position' => 'mixed',
   ),
   'phar::setalias' => 
   array (
@@ -56911,18 +59822,18 @@ return array (
   ),
   'phar::setfileclass' => 
   array (
-    0 => 'string',
-    'class_name=' => 'string',
+    0 => 'mixed',
+    'class_name=' => 'mixed',
   ),
   'phar::setflags' => 
   array (
-    0 => 'string',
-    'flags=' => 'string',
+    0 => 'mixed',
+    'flags=' => 'mixed',
   ),
   'phar::setinfoclass' => 
   array (
-    0 => 'string',
-    'class_name=' => 'string',
+    0 => 'mixed',
+    'class_name=' => 'mixed',
   ),
   'phar::setmetadata' => 
   array (
@@ -56956,7 +59867,7 @@ return array (
   ),
   'phar::valid' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phar::webphar' => 
   array (
@@ -56977,15 +59888,15 @@ return array (
   ),
   'phardata::__destruct' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phardata::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phardata::_bad_state_ex' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phardata::addemptydir' => 
   array (
@@ -57006,7 +59917,7 @@ return array (
   ),
   'phardata::apiversion' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phardata::buildfromdirectory' => 
   array (
@@ -57022,12 +59933,12 @@ return array (
   ),
   'phardata::cancompress' => 
   array (
-    0 => 'string',
-    'method=' => 'string',
+    0 => 'mixed',
+    'method=' => 'mixed',
   ),
   'phardata::canwrite' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phardata::compress' => 
   array (
@@ -57062,17 +59973,17 @@ return array (
   ),
   'phardata::count' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phardata::createdefaultstub' => 
   array (
-    0 => 'string',
-    'index=' => 'string',
-    'webindex=' => 'string',
+    0 => 'mixed',
+    'index=' => 'mixed',
+    'webindex=' => 'mixed',
   ),
   'phardata::current' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phardata::decompress' => 
   array (
@@ -57101,182 +60012,182 @@ return array (
   ),
   'phardata::getalias' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phardata::getatime' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phardata::getbasename' => 
   array (
-    0 => 'string',
-    'suffix=' => 'string',
+    0 => 'mixed',
+    'suffix=' => 'mixed',
   ),
   'phardata::getchildren' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phardata::getctime' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phardata::getextension' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phardata::getfileinfo' => 
   array (
-    0 => 'string',
-    'class_name=' => 'string',
+    0 => 'mixed',
+    'class_name=' => 'mixed',
   ),
   'phardata::getfilename' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phardata::getflags' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phardata::getgroup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phardata::getinode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phardata::getlinktarget' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phardata::getmetadata' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phardata::getmodified' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phardata::getmtime' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phardata::getowner' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phardata::getpath' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phardata::getpathinfo' => 
   array (
-    0 => 'string',
-    'class_name=' => 'string',
+    0 => 'mixed',
+    'class_name=' => 'mixed',
   ),
   'phardata::getpathname' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phardata::getperms' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phardata::getrealpath' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phardata::getsignature' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phardata::getsize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phardata::getstub' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phardata::getsubpath' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phardata::getsubpathname' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phardata::getsupportedcompression' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phardata::getsupportedsignatures' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phardata::gettype' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phardata::getversion' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phardata::haschildren' => 
   array (
-    0 => 'string',
-    'allow_links=' => 'string',
+    0 => 'mixed',
+    'allow_links=' => 'mixed',
   ),
   'phardata::hasmetadata' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phardata::interceptfilefuncs' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phardata::isbuffering' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phardata::iscompressed' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phardata::isdir' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phardata::isdot' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phardata::isexecutable' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phardata::isfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phardata::isfileformat' => 
   array (
-    0 => 'string',
-    'fileformat' => 'string',
+    0 => 'mixed',
+    'fileformat' => 'mixed',
   ),
   'phardata::islink' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phardata::isreadable' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phardata::isvalidpharfilename' => 
   array (
-    0 => 'string',
-    'filename' => 'string',
-    'executable=' => 'string',
+    0 => 'mixed',
+    'filename' => 'mixed',
+    'executable=' => 'mixed',
   ),
   'phardata::iswritable' => 
   array (
@@ -57284,34 +60195,34 @@ return array (
   ),
   'phardata::key' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phardata::loadphar' => 
   array (
-    0 => 'string',
-    'filename' => 'string',
-    'alias=' => 'string',
+    0 => 'mixed',
+    'filename' => 'mixed',
+    'alias=' => 'mixed',
   ),
   'phardata::mapphar' => 
   array (
-    0 => 'string',
-    'alias=' => 'string',
-    'offset=' => 'string',
+    0 => 'mixed',
+    'alias=' => 'mixed',
+    'offset=' => 'mixed',
   ),
   'phardata::mount' => 
   array (
-    0 => 'string',
-    'inphar' => 'string',
-    'externalfile' => 'string',
+    0 => 'mixed',
+    'inphar' => 'mixed',
+    'externalfile' => 'mixed',
   ),
   'phardata::mungserver' => 
   array (
-    0 => 'string',
-    'munglist' => 'string',
+    0 => 'mixed',
+    'munglist' => 'mixed',
   ),
   'phardata::next' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phardata::offsetexists' => 
   array (
@@ -57336,24 +60247,24 @@ return array (
   ),
   'phardata::openfile' => 
   array (
-    0 => 'string',
-    'open_mode=' => 'string',
-    'use_include_path=' => 'string',
-    'context=' => 'string',
+    0 => 'mixed',
+    'open_mode=' => 'mixed',
+    'use_include_path=' => 'mixed',
+    'context=' => 'mixed',
   ),
   'phardata::rewind' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phardata::running' => 
   array (
-    0 => 'string',
-    'retphar=' => 'string',
+    0 => 'mixed',
+    'retphar=' => 'mixed',
   ),
   'phardata::seek' => 
   array (
-    0 => 'string',
-    'position' => 'string',
+    0 => 'mixed',
+    'position' => 'mixed',
   ),
   'phardata::setalias' => 
   array (
@@ -57368,18 +60279,18 @@ return array (
   ),
   'phardata::setfileclass' => 
   array (
-    0 => 'string',
-    'class_name=' => 'string',
+    0 => 'mixed',
+    'class_name=' => 'mixed',
   ),
   'phardata::setflags' => 
   array (
-    0 => 'string',
-    'flags=' => 'string',
+    0 => 'mixed',
+    'flags=' => 'mixed',
   ),
   'phardata::setinfoclass' => 
   array (
-    0 => 'string',
-    'class_name=' => 'string',
+    0 => 'mixed',
+    'class_name=' => 'mixed',
   ),
   'phardata::setmetadata' => 
   array (
@@ -57400,76 +60311,76 @@ return array (
   ),
   'phardata::startbuffering' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phardata::stopbuffering' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phardata::unlinkarchive' => 
   array (
-    0 => 'string',
-    'archive' => 'string',
+    0 => 'mixed',
+    'archive' => 'mixed',
   ),
   'phardata::valid' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'phardata::webphar' => 
   array (
-    0 => 'string',
-    'alias=' => 'string',
-    'index=' => 'string',
-    'f404=' => 'string',
-    'mimetypes=' => 'string',
-    'rewrites=' => 'string',
+    0 => 'mixed',
+    'alias=' => 'mixed',
+    'index=' => 'mixed',
+    'f404=' => 'mixed',
+    'mimetypes=' => 'mixed',
+    'rewrites=' => 'mixed',
   ),
   'pharexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'pharexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'pharexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'pharexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'pharexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'pharexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'pharexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'pharexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'pharexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'pharexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'pharexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'pharfileinfo::__construct' => 
   array (
@@ -57478,15 +60389,15 @@ return array (
   ),
   'pharfileinfo::__destruct' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'pharfileinfo::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'pharfileinfo::_bad_state_ex' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'pharfileinfo::chmod' => 
   array (
@@ -57508,12 +60419,12 @@ return array (
   ),
   'pharfileinfo::getatime' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'pharfileinfo::getbasename' => 
   array (
-    0 => 'string',
-    'suffix=' => 'string',
+    0 => 'mixed',
+    'suffix=' => 'mixed',
   ),
   'pharfileinfo::getcompressedsize' => 
   array (
@@ -57521,7 +60432,7 @@ return array (
   ),
   'pharfileinfo::getcontent' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'pharfileinfo::getcrc32' => 
   array (
@@ -57529,32 +60440,32 @@ return array (
   ),
   'pharfileinfo::getctime' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'pharfileinfo::getextension' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'pharfileinfo::getfileinfo' => 
   array (
-    0 => 'string',
-    'class_name=' => 'string',
+    0 => 'mixed',
+    'class_name=' => 'mixed',
   ),
   'pharfileinfo::getfilename' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'pharfileinfo::getgroup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'pharfileinfo::getinode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'pharfileinfo::getlinktarget' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'pharfileinfo::getmetadata' => 
   array (
@@ -57562,28 +60473,28 @@ return array (
   ),
   'pharfileinfo::getmtime' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'pharfileinfo::getowner' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'pharfileinfo::getpath' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'pharfileinfo::getpathinfo' => 
   array (
-    0 => 'string',
-    'class_name=' => 'string',
+    0 => 'mixed',
+    'class_name=' => 'mixed',
   ),
   'pharfileinfo::getpathname' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'pharfileinfo::getperms' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'pharfileinfo::getpharflags' => 
   array (
@@ -57591,15 +60502,15 @@ return array (
   ),
   'pharfileinfo::getrealpath' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'pharfileinfo::getsize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'pharfileinfo::gettype' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'pharfileinfo::hasmetadata' => 
   array (
@@ -57616,44 +60527,44 @@ return array (
   ),
   'pharfileinfo::isdir' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'pharfileinfo::isexecutable' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'pharfileinfo::isfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'pharfileinfo::islink' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'pharfileinfo::isreadable' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'pharfileinfo::iswritable' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'pharfileinfo::openfile' => 
   array (
-    0 => 'string',
-    'open_mode=' => 'string',
-    'use_include_path=' => 'string',
-    'context=' => 'string',
+    0 => 'mixed',
+    'open_mode=' => 'mixed',
+    'use_include_path=' => 'mixed',
+    'context=' => 'mixed',
   ),
   'pharfileinfo::setfileclass' => 
   array (
-    0 => 'string',
-    'class_name=' => 'string',
+    0 => 'mixed',
+    'class_name=' => 'mixed',
   ),
   'pharfileinfo::setinfoclass' => 
   array (
-    0 => 'string',
-    'class_name=' => 'string',
+    0 => 'mixed',
+    'class_name=' => 'mixed',
   ),
   'pharfileinfo::setmetadata' => 
   array (
@@ -57753,7 +60664,7 @@ return array (
   ),
   'php_sapi_name' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'php_strip_whitespace' => 
   array (
@@ -57762,8 +60673,8 @@ return array (
   ),
   'php_uname' => 
   array (
-    0 => 'string',
-    'mode=' => 'string',
+    0 => 'mixed',
+    'mode=' => 'mixed',
   ),
   'php_user_filter::filter' => 
   array (
@@ -59865,11 +62776,11 @@ return array (
   ),
   'rangeexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'rangeexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'rangeexception::getcode' => 
   array (
@@ -59877,7 +62788,7 @@ return array (
   ),
   'rangeexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'rangeexception::getline' => 
   array (
@@ -59885,7 +62796,7 @@ return array (
   ),
   'rangeexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'rangeexception::getprevious' => 
   array (
@@ -59897,7 +62808,7 @@ return array (
   ),
   'rangeexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'rar_allow_broken_set' => 
   array (
@@ -60356,7 +63267,7 @@ return array (
   ),
   'recursivearrayiterator::serialize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'recursivearrayiterator::setflags' => 
   array (
@@ -60390,7 +63301,7 @@ return array (
   ),
   'recursivecachingiterator::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'recursivecachingiterator::count' => 
   array (
@@ -60516,11 +63427,11 @@ return array (
   ),
   'recursivedirectoryiterator::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'recursivedirectoryiterator::_bad_state_ex' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'recursivedirectoryiterator::current' => 
   array (
@@ -60532,8 +63443,8 @@ return array (
   ),
   'recursivedirectoryiterator::getbasename' => 
   array (
-    0 => 'string',
-    'suffix=' => 'string',
+    0 => 'mixed',
+    'suffix=' => 'mixed',
   ),
   'recursivedirectoryiterator::getchildren' => 
   array (
@@ -60545,7 +63456,7 @@ return array (
   ),
   'recursivedirectoryiterator::getextension' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'recursivedirectoryiterator::getfileinfo' => 
   array (
@@ -60554,7 +63465,7 @@ return array (
   ),
   'recursivedirectoryiterator::getfilename' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'recursivedirectoryiterator::getflags' => 
   array (
@@ -60570,7 +63481,7 @@ return array (
   ),
   'recursivedirectoryiterator::getlinktarget' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'recursivedirectoryiterator::getmtime' => 
   array (
@@ -60582,7 +63493,7 @@ return array (
   ),
   'recursivedirectoryiterator::getpath' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'recursivedirectoryiterator::getpathinfo' => 
   array (
@@ -60591,7 +63502,7 @@ return array (
   ),
   'recursivedirectoryiterator::getpathname' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'recursivedirectoryiterator::getperms' => 
   array (
@@ -60607,15 +63518,15 @@ return array (
   ),
   'recursivedirectoryiterator::getsubpath' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'recursivedirectoryiterator::getsubpathname' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'recursivedirectoryiterator::gettype' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'recursivedirectoryiterator::haschildren' => 
   array (
@@ -60652,7 +63563,7 @@ return array (
   ),
   'recursivedirectoryiterator::key' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'recursivedirectoryiterator::next' => 
   array (
@@ -60882,7 +63793,7 @@ return array (
   ),
   'recursiveregexiterator::getregex' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'recursiveregexiterator::haschildren' => 
   array (
@@ -60945,7 +63856,7 @@ return array (
   ),
   'recursivetreeiterator::current' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'recursivetreeiterator::endchildren' => 
   array (
@@ -60961,7 +63872,7 @@ return array (
   ),
   'recursivetreeiterator::getentry' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'recursivetreeiterator::getinneriterator' => 
   array (
@@ -60973,11 +63884,11 @@ return array (
   ),
   'recursivetreeiterator::getpostfix' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'recursivetreeiterator::getprefix' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'recursivetreeiterator::getsubiterator' => 
   array (
@@ -60986,7 +63897,7 @@ return array (
   ),
   'recursivetreeiterator::key' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'recursivetreeiterator::next' => 
   array (
@@ -61030,13 +63941,13 @@ return array (
   ),
   'redis::_compress' => 
   array (
-    0 => 'string',
-    'value' => 'string',
+    0 => 'mixed',
+    'value' => 'mixed',
   ),
   'redis::_pack' => 
   array (
-    0 => 'string',
-    'value' => 'string',
+    0 => 'mixed',
+    'value' => 'mixed',
   ),
   'redis::_prefix' => 
   array (
@@ -61050,13 +63961,13 @@ return array (
   ),
   'redis::_uncompress' => 
   array (
-    0 => 'string',
-    'value' => 'string',
+    0 => 'mixed',
+    'value' => 'mixed',
   ),
   'redis::_unpack' => 
   array (
-    0 => 'string',
-    'value' => 'string',
+    0 => 'mixed',
+    'value' => 'mixed',
   ),
   'redis::_unserialize' => 
   array (
@@ -61065,9 +63976,9 @@ return array (
   ),
   'redis::acl' => 
   array (
-    0 => 'string',
-    'subcmd' => 'string',
-    '...args=' => 'string',
+    0 => 'mixed',
+    'subcmd' => 'mixed',
+    '...args=' => 'mixed',
   ),
   'redis::append' => 
   array (
@@ -61111,20 +64022,20 @@ return array (
   ),
   'redis::blmove' => 
   array (
-    0 => 'string',
-    'src' => 'string',
-    'dst' => 'string',
-    'wherefrom' => 'string',
-    'whereto' => 'string',
-    'timeout' => 'string',
+    0 => 'mixed',
+    'src' => 'mixed',
+    'dst' => 'mixed',
+    'wherefrom' => 'mixed',
+    'whereto' => 'mixed',
+    'timeout' => 'mixed',
   ),
   'redis::blmpop' => 
   array (
-    0 => 'string',
-    'timeout' => 'string',
-    'keys' => 'string',
-    'from' => 'string',
-    'count=' => 'string',
+    0 => 'mixed',
+    'timeout' => 'mixed',
+    'keys' => 'mixed',
+    'from' => 'mixed',
+    'count=' => 'mixed',
   ),
   'redis::blpop' => 
   array (
@@ -61161,25 +64072,25 @@ return array (
   ),
   'redis::bzmpop' => 
   array (
-    0 => 'string',
-    'timeout' => 'string',
-    'keys' => 'string',
-    'from' => 'string',
-    'count=' => 'string',
+    0 => 'mixed',
+    'timeout' => 'mixed',
+    'keys' => 'mixed',
+    'from' => 'mixed',
+    'count=' => 'mixed',
   ),
   'redis::bzpopmax' => 
   array (
-    0 => 'string',
-    'key' => 'string',
-    'timeout_or_key' => 'string',
-    '...extra_args=' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
+    'timeout_or_key' => 'mixed',
+    '...extra_args=' => 'mixed',
   ),
   'redis::bzpopmin' => 
   array (
-    0 => 'string',
-    'key' => 'string',
-    'timeout_or_key' => 'string',
-    '...extra_args=' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
+    'timeout_or_key' => 'mixed',
+    '...extra_args=' => 'mixed',
   ),
   'redis::clearlasterror' => 
   array (
@@ -61187,7 +64098,7 @@ return array (
   ),
   'redis::cleartransferredbytes' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'redis::client' => 
   array (
@@ -61223,10 +64134,10 @@ return array (
   ),
   'redis::copy' => 
   array (
-    0 => 'string',
-    'src' => 'string',
-    'dst' => 'string',
-    'options=' => 'string',
+    0 => 'mixed',
+    'src' => 'mixed',
+    'dst' => 'mixed',
+    'options=' => 'mixed',
   ),
   'redis::dbsize' => 
   array (
@@ -61299,10 +64210,10 @@ return array (
   ),
   'redis::eval_ro' => 
   array (
-    0 => 'string',
-    'script_sha' => 'string',
-    'args=' => 'string',
-    'num_keys=' => 'string',
+    0 => 'mixed',
+    'script_sha' => 'mixed',
+    'args=' => 'mixed',
+    'num_keys=' => 'mixed',
   ),
   'redis::evalsha' => 
   array (
@@ -61313,10 +64224,10 @@ return array (
   ),
   'redis::evalsha_ro' => 
   array (
-    0 => 'string',
-    'sha1' => 'string',
-    'args=' => 'string',
-    'num_keys=' => 'string',
+    0 => 'mixed',
+    'sha1' => 'mixed',
+    'args=' => 'mixed',
+    'num_keys=' => 'mixed',
   ),
   'redis::evaluate' => 
   array (
@@ -61360,29 +64271,29 @@ return array (
   ),
   'redis::expiretime' => 
   array (
-    0 => 'string',
-    'key' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
   ),
   'redis::failover' => 
   array (
-    0 => 'string',
-    'to=' => 'string',
-    'abort=' => 'string',
-    'timeout=' => 'string',
+    0 => 'mixed',
+    'to=' => 'mixed',
+    'abort=' => 'mixed',
+    'timeout=' => 'mixed',
   ),
   'redis::fcall' => 
   array (
-    0 => 'string',
-    'fn' => 'string',
-    'keys=' => 'string',
-    'args=' => 'string',
+    0 => 'mixed',
+    'fn' => 'mixed',
+    'keys=' => 'mixed',
+    'args=' => 'mixed',
   ),
   'redis::fcall_ro' => 
   array (
-    0 => 'string',
-    'fn' => 'string',
-    'keys=' => 'string',
-    'args=' => 'string',
+    0 => 'mixed',
+    'fn' => 'mixed',
+    'keys=' => 'mixed',
+    'args=' => 'mixed',
   ),
   'redis::flushall' => 
   array (
@@ -61396,9 +64307,9 @@ return array (
   ),
   'redis::function' => 
   array (
-    0 => 'string',
-    'operation' => 'string',
-    '...args=' => 'string',
+    0 => 'mixed',
+    'operation' => 'mixed',
+    '...args=' => 'mixed',
   ),
   'redis::geoadd' => 
   array (
@@ -61443,13 +64354,13 @@ return array (
   ),
   'redis::georadius_ro' => 
   array (
-    0 => 'string',
-    'key' => 'string',
-    'lng' => 'string',
-    'lat' => 'string',
-    'radius' => 'string',
-    'unit' => 'string',
-    'options=' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
+    'lng' => 'mixed',
+    'lat' => 'mixed',
+    'radius' => 'mixed',
+    'unit' => 'mixed',
+    'options=' => 'mixed',
   ),
   'redis::georadiusbymember' => 
   array (
@@ -61462,31 +64373,31 @@ return array (
   ),
   'redis::georadiusbymember_ro' => 
   array (
-    0 => 'string',
-    'key' => 'string',
-    'member' => 'string',
-    'radius' => 'string',
-    'unit' => 'string',
-    'options=' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
+    'member' => 'mixed',
+    'radius' => 'mixed',
+    'unit' => 'mixed',
+    'options=' => 'mixed',
   ),
   'redis::geosearch' => 
   array (
-    0 => 'string',
-    'key' => 'string',
-    'position' => 'string',
-    'shape' => 'string',
-    'unit' => 'string',
-    'options=' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
+    'position' => 'mixed',
+    'shape' => 'mixed',
+    'unit' => 'mixed',
+    'options=' => 'mixed',
   ),
   'redis::geosearchstore' => 
   array (
-    0 => 'string',
-    'dst' => 'string',
-    'src' => 'string',
-    'position' => 'string',
-    'shape' => 'string',
-    'unit' => 'string',
-    'options=' => 'string',
+    0 => 'mixed',
+    'dst' => 'mixed',
+    'src' => 'mixed',
+    'position' => 'mixed',
+    'shape' => 'mixed',
+    'unit' => 'mixed',
+    'options=' => 'mixed',
   ),
   'redis::get' => 
   array (
@@ -61509,14 +64420,14 @@ return array (
   ),
   'redis::getdel' => 
   array (
-    0 => 'string',
-    'key' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
   ),
   'redis::getex' => 
   array (
-    0 => 'string',
-    'key' => 'string',
-    'options=' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
+    'options=' => 'mixed',
   ),
   'redis::gethost' => 
   array (
@@ -61576,7 +64487,7 @@ return array (
   ),
   'redis::gettransferredbytes' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'redis::hdel' => 
   array (
@@ -61640,9 +64551,9 @@ return array (
   ),
   'redis::hrandfield' => 
   array (
-    0 => 'string',
-    'key' => 'string',
-    'options=' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
+    'options=' => 'mixed',
   ),
   'redis::hscan' => 
   array (
@@ -61714,10 +64625,10 @@ return array (
   ),
   'redis::lcs' => 
   array (
-    0 => 'string',
-    'key1' => 'string',
-    'key2' => 'string',
-    'options=' => 'string',
+    0 => 'mixed',
+    'key1' => 'mixed',
+    'key2' => 'mixed',
+    'options=' => 'mixed',
   ),
   'redis::lget' => 
   array (
@@ -61760,18 +64671,18 @@ return array (
   ),
   'redis::lmove' => 
   array (
-    0 => 'string',
-    'src' => 'string',
-    'dst' => 'string',
-    'wherefrom' => 'string',
-    'whereto' => 'string',
+    0 => 'mixed',
+    'src' => 'mixed',
+    'dst' => 'mixed',
+    'wherefrom' => 'mixed',
+    'whereto' => 'mixed',
   ),
   'redis::lmpop' => 
   array (
-    0 => 'string',
-    'keys' => 'string',
-    'from' => 'string',
-    'count=' => 'string',
+    0 => 'mixed',
+    'keys' => 'mixed',
+    'from' => 'mixed',
+    'count=' => 'mixed',
   ),
   'redis::lpop' => 
   array (
@@ -61780,10 +64691,10 @@ return array (
   ),
   'redis::lpos' => 
   array (
-    0 => 'string',
-    'key' => 'string',
-    'value' => 'string',
-    'options=' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
+    'value' => 'mixed',
+    'options=' => 'mixed',
   ),
   'redis::lpush' => 
   array (
@@ -61920,8 +64831,8 @@ return array (
   ),
   'redis::pexpiretime' => 
   array (
-    0 => 'string',
-    'key' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
   ),
   'redis::pfadd' => 
   array (
@@ -61995,7 +64906,7 @@ return array (
   ),
   'redis::randomkey' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'redis::rawcommand' => 
   array (
@@ -62023,13 +64934,13 @@ return array (
   ),
   'redis::replicaof' => 
   array (
-    0 => 'string',
-    'host=' => 'string',
-    'port=' => 'string',
+    0 => 'mixed',
+    'host=' => 'mixed',
+    'port=' => 'mixed',
   ),
   'redis::reset' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'redis::resetstat' => 
   array (
@@ -62203,9 +65114,9 @@ return array (
   ),
   'redis::sintercard' => 
   array (
-    0 => 'string',
-    'keys' => 'string',
-    'limit=' => 'string',
+    0 => 'mixed',
+    'keys' => 'mixed',
+    'limit=' => 'mixed',
   ),
   'redis::sinterstore' => 
   array (
@@ -62251,10 +65162,10 @@ return array (
   ),
   'redis::smismember' => 
   array (
-    0 => 'string',
-    'key' => 'string',
-    'member' => 'string',
-    '...other_members=' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
+    'member' => 'mixed',
+    '...other_members=' => 'mixed',
   ),
   'redis::smove' => 
   array (
@@ -62271,9 +65182,9 @@ return array (
   ),
   'redis::sort_ro' => 
   array (
-    0 => 'string',
-    'key' => 'string',
-    'options=' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
+    'options=' => 'mixed',
   ),
   'redis::sortasc' => 
   array (
@@ -62355,9 +65266,9 @@ return array (
   ),
   'redis::ssubscribe' => 
   array (
-    0 => 'string',
-    'channels' => 'string',
-    'cb' => 'string',
+    0 => 'mixed',
+    'channels' => 'mixed',
+    'cb' => 'mixed',
   ),
   'redis::strlen' => 
   array (
@@ -62392,8 +65303,8 @@ return array (
   ),
   'redis::sunsubscribe' => 
   array (
-    0 => 'string',
-    'channels' => 'string',
+    0 => 'mixed',
+    'channels' => 'mixed',
   ),
   'redis::swapdb' => 
   array (
@@ -62407,9 +65318,9 @@ return array (
   ),
   'redis::touch' => 
   array (
-    0 => 'string',
-    'key_or_array' => 'string',
-    '...more_keys=' => 'string',
+    0 => 'mixed',
+    'key_or_array' => 'mixed',
+    '...more_keys=' => 'mixed',
   ),
   'redis::ttl' => 
   array (
@@ -62472,14 +65383,14 @@ return array (
   ),
   'redis::xautoclaim' => 
   array (
-    0 => 'string',
-    'key' => 'string',
-    'group' => 'string',
-    'consumer' => 'string',
-    'min_idle' => 'string',
-    'start' => 'string',
-    'count=' => 'string',
-    'justid=' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
+    'group' => 'mixed',
+    'consumer' => 'mixed',
+    'min_idle' => 'mixed',
+    'start' => 'mixed',
+    'count=' => 'mixed',
+    'justid=' => 'mixed',
   ),
   'redis::xclaim' => 
   array (
@@ -62625,15 +65536,15 @@ return array (
   ),
   'redis::zdiff' => 
   array (
-    0 => 'string',
-    'keys' => 'string',
-    'options=' => 'string',
+    0 => 'mixed',
+    'keys' => 'mixed',
+    'options=' => 'mixed',
   ),
   'redis::zdiffstore' => 
   array (
-    0 => 'string',
-    'dst' => 'string',
-    'keys' => 'string',
+    0 => 'mixed',
+    'dst' => 'mixed',
+    'keys' => 'mixed',
   ),
   'redis::zincrby' => 
   array (
@@ -62652,9 +65563,9 @@ return array (
   ),
   'redis::zintercard' => 
   array (
-    0 => 'string',
-    'keys' => 'string',
-    'limit=' => 'string',
+    0 => 'mixed',
+    'keys' => 'mixed',
+    'limit=' => 'mixed',
   ),
   'redis::zinterstore' => 
   array (
@@ -62673,35 +65584,35 @@ return array (
   ),
   'redis::zmpop' => 
   array (
-    0 => 'string',
-    'keys' => 'string',
-    'from' => 'string',
-    'count=' => 'string',
+    0 => 'mixed',
+    'keys' => 'mixed',
+    'from' => 'mixed',
+    'count=' => 'mixed',
   ),
   'redis::zmscore' => 
   array (
-    0 => 'string',
-    'key' => 'string',
-    'member' => 'string',
-    '...other_members=' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
+    'member' => 'mixed',
+    '...other_members=' => 'mixed',
   ),
   'redis::zpopmax' => 
   array (
-    0 => 'string',
-    'key' => 'string',
-    'count=' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
+    'count=' => 'mixed',
   ),
   'redis::zpopmin' => 
   array (
-    0 => 'string',
-    'key' => 'string',
-    'count=' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
+    'count=' => 'mixed',
   ),
   'redis::zrandmember' => 
   array (
-    0 => 'string',
-    'key' => 'string',
-    'options=' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
+    'options=' => 'mixed',
   ),
   'redis::zrange' => 
   array (
@@ -62730,12 +65641,12 @@ return array (
   ),
   'redis::zrangestore' => 
   array (
-    0 => 'string',
-    'dstkey' => 'string',
-    'srckey' => 'string',
-    'start' => 'string',
-    'end' => 'string',
-    'options=' => 'string',
+    0 => 'mixed',
+    'dstkey' => 'mixed',
+    'srckey' => 'mixed',
+    'start' => 'mixed',
+    'end' => 'mixed',
+    'options=' => 'mixed',
   ),
   'redis::zrank' => 
   array (
@@ -62889,7 +65800,7 @@ return array (
   ),
   'redisarray::_function' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'redisarray::_hosts' => 
   array (
@@ -62907,8 +65818,8 @@ return array (
   ),
   'redisarray::_target' => 
   array (
-    0 => 'string',
-    'key' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
   ),
   'redisarray::bgsave' => 
   array (
@@ -62961,11 +65872,11 @@ return array (
   ),
   'redisarray::hscan' => 
   array (
-    0 => 'string',
-    'key' => 'string',
-    '&iterator' => 'string',
-    'pattern=' => 'string',
-    'count=' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
+    '&iterator' => 'mixed',
+    'pattern=' => 'mixed',
+    'count=' => 'mixed',
   ),
   'redisarray::info' => 
   array (
@@ -62994,7 +65905,7 @@ return array (
   ),
   'redisarray::ping' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'redisarray::save' => 
   array (
@@ -63002,11 +65913,11 @@ return array (
   ),
   'redisarray::scan' => 
   array (
-    0 => 'string',
-    '&iterator' => 'string',
-    'node' => 'string',
-    'pattern=' => 'string',
-    'count=' => 'string',
+    0 => 'mixed',
+    '&iterator' => 'mixed',
+    'node' => 'mixed',
+    'pattern=' => 'mixed',
+    'count=' => 'mixed',
   ),
   'redisarray::select' => 
   array (
@@ -63021,11 +65932,11 @@ return array (
   ),
   'redisarray::sscan' => 
   array (
-    0 => 'string',
-    'key' => 'string',
-    '&iterator' => 'string',
-    'pattern=' => 'string',
-    'count=' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
+    '&iterator' => 'mixed',
+    'pattern=' => 'mixed',
+    'count=' => 'mixed',
   ),
   'redisarray::unlink' => 
   array (
@@ -63044,11 +65955,11 @@ return array (
   ),
   'redisarray::zscan' => 
   array (
-    0 => 'string',
-    'key' => 'string',
-    '&iterator' => 'string',
-    'pattern=' => 'string',
-    'count=' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
+    '&iterator' => 'mixed',
+    'pattern=' => 'mixed',
+    'count=' => 'mixed',
   ),
   'rediscluster::__construct' => 
   array (
@@ -63062,8 +65973,8 @@ return array (
   ),
   'rediscluster::_compress' => 
   array (
-    0 => 'string',
-    'value' => 'string',
+    0 => 'mixed',
+    'value' => 'mixed',
   ),
   'rediscluster::_masters' => 
   array (
@@ -63071,8 +65982,8 @@ return array (
   ),
   'rediscluster::_pack' => 
   array (
-    0 => 'string',
-    'value' => 'string',
+    0 => 'mixed',
+    'value' => 'mixed',
   ),
   'rediscluster::_prefix' => 
   array (
@@ -63090,13 +66001,13 @@ return array (
   ),
   'rediscluster::_uncompress' => 
   array (
-    0 => 'string',
-    'value' => 'string',
+    0 => 'mixed',
+    'value' => 'mixed',
   ),
   'rediscluster::_unpack' => 
   array (
-    0 => 'string',
-    'value' => 'string',
+    0 => 'mixed',
+    'value' => 'mixed',
   ),
   'rediscluster::_unserialize' => 
   array (
@@ -63105,10 +66016,10 @@ return array (
   ),
   'rediscluster::acl' => 
   array (
-    0 => 'string',
-    'key_or_address' => 'string',
-    'subcmd' => 'string',
-    '...args=' => 'string',
+    0 => 'mixed',
+    'key_or_address' => 'mixed',
+    'subcmd' => 'mixed',
+    '...args=' => 'mixed',
   ),
   'rediscluster::append' => 
   array (
@@ -63149,20 +66060,20 @@ return array (
   ),
   'rediscluster::blmove' => 
   array (
-    0 => 'string',
-    'src' => 'string',
-    'dst' => 'string',
-    'wherefrom' => 'string',
-    'whereto' => 'string',
-    'timeout' => 'string',
+    0 => 'mixed',
+    'src' => 'mixed',
+    'dst' => 'mixed',
+    'wherefrom' => 'mixed',
+    'whereto' => 'mixed',
+    'timeout' => 'mixed',
   ),
   'rediscluster::blmpop' => 
   array (
-    0 => 'string',
-    'timeout' => 'string',
-    'keys' => 'string',
-    'from' => 'string',
-    'count=' => 'string',
+    0 => 'mixed',
+    'timeout' => 'mixed',
+    'keys' => 'mixed',
+    'from' => 'mixed',
+    'count=' => 'mixed',
   ),
   'rediscluster::blpop' => 
   array (
@@ -63185,25 +66096,25 @@ return array (
   ),
   'rediscluster::bzmpop' => 
   array (
-    0 => 'string',
-    'timeout' => 'string',
-    'keys' => 'string',
-    'from' => 'string',
-    'count=' => 'string',
+    0 => 'mixed',
+    'timeout' => 'mixed',
+    'keys' => 'mixed',
+    'from' => 'mixed',
+    'count=' => 'mixed',
   ),
   'rediscluster::bzpopmax' => 
   array (
-    0 => 'string',
-    'key' => 'string',
-    'timeout_or_key' => 'string',
-    '...extra_args=' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
+    'timeout_or_key' => 'mixed',
+    '...extra_args=' => 'mixed',
   ),
   'rediscluster::bzpopmin' => 
   array (
-    0 => 'string',
-    'key' => 'string',
-    'timeout_or_key' => 'string',
-    '...extra_args=' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
+    'timeout_or_key' => 'mixed',
+    '...extra_args=' => 'mixed',
   ),
   'rediscluster::clearlasterror' => 
   array (
@@ -63211,7 +66122,7 @@ return array (
   ),
   'rediscluster::cleartransferredbytes' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'rediscluster::client' => 
   array (
@@ -63245,10 +66156,10 @@ return array (
   ),
   'rediscluster::copy' => 
   array (
-    0 => 'string',
-    'src' => 'string',
-    'dst' => 'string',
-    'options=' => 'string',
+    0 => 'mixed',
+    'src' => 'mixed',
+    'dst' => 'mixed',
+    'options=' => 'mixed',
   ),
   'rediscluster::dbsize' => 
   array (
@@ -63268,9 +66179,9 @@ return array (
   ),
   'rediscluster::decrbyfloat' => 
   array (
-    0 => 'string',
-    'key' => 'string',
-    'value' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
+    'value' => 'mixed',
   ),
   'rediscluster::del' => 
   array (
@@ -63307,10 +66218,10 @@ return array (
   ),
   'rediscluster::eval_ro' => 
   array (
-    0 => 'string',
-    'script' => 'string',
-    'args=' => 'string',
-    'num_keys=' => 'string',
+    0 => 'mixed',
+    'script' => 'mixed',
+    'args=' => 'mixed',
+    'num_keys=' => 'mixed',
   ),
   'rediscluster::evalsha' => 
   array (
@@ -63321,10 +66232,10 @@ return array (
   ),
   'rediscluster::evalsha_ro' => 
   array (
-    0 => 'string',
-    'script_sha' => 'string',
-    'args=' => 'string',
-    'num_keys=' => 'string',
+    0 => 'mixed',
+    'script_sha' => 'mixed',
+    'args=' => 'mixed',
+    'num_keys=' => 'mixed',
   ),
   'rediscluster::exec' => 
   array (
@@ -63349,8 +66260,8 @@ return array (
   ),
   'rediscluster::expiretime' => 
   array (
-    0 => 'string',
-    'key' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
   ),
   'rediscluster::flushall' => 
   array (
@@ -63407,13 +66318,13 @@ return array (
   ),
   'rediscluster::georadius_ro' => 
   array (
-    0 => 'string',
-    'key' => 'string',
-    'lng' => 'string',
-    'lat' => 'string',
-    'radius' => 'string',
-    'unit' => 'string',
-    'options=' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
+    'lng' => 'mixed',
+    'lat' => 'mixed',
+    'radius' => 'mixed',
+    'unit' => 'mixed',
+    'options=' => 'mixed',
   ),
   'rediscluster::georadiusbymember' => 
   array (
@@ -63426,31 +66337,31 @@ return array (
   ),
   'rediscluster::georadiusbymember_ro' => 
   array (
-    0 => 'string',
-    'key' => 'string',
-    'member' => 'string',
-    'radius' => 'string',
-    'unit' => 'string',
-    'options=' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
+    'member' => 'mixed',
+    'radius' => 'mixed',
+    'unit' => 'mixed',
+    'options=' => 'mixed',
   ),
   'rediscluster::geosearch' => 
   array (
-    0 => 'string',
-    'key' => 'string',
-    'position' => 'string',
-    'shape' => 'string',
-    'unit' => 'string',
-    'options=' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
+    'position' => 'mixed',
+    'shape' => 'mixed',
+    'unit' => 'mixed',
+    'options=' => 'mixed',
   ),
   'rediscluster::geosearchstore' => 
   array (
-    0 => 'string',
-    'dst' => 'string',
-    'src' => 'string',
-    'position' => 'string',
-    'shape' => 'string',
-    'unit' => 'string',
-    'options=' => 'string',
+    0 => 'mixed',
+    'dst' => 'mixed',
+    'src' => 'mixed',
+    'position' => 'mixed',
+    'shape' => 'mixed',
+    'unit' => 'mixed',
+    'options=' => 'mixed',
   ),
   'rediscluster::get' => 
   array (
@@ -63485,13 +66396,13 @@ return array (
   ),
   'rediscluster::getset' => 
   array (
-    0 => 'string',
-    'key' => 'string',
-    'value' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
+    'value' => 'mixed',
   ),
   'rediscluster::gettransferredbytes' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'rediscluster::hdel' => 
   array (
@@ -63555,9 +66466,9 @@ return array (
   ),
   'rediscluster::hrandfield' => 
   array (
-    0 => 'string',
-    'key' => 'string',
-    'options=' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
+    'options=' => 'mixed',
   ),
   'rediscluster::hscan' => 
   array (
@@ -63627,10 +66538,10 @@ return array (
   ),
   'rediscluster::lcs' => 
   array (
-    0 => 'string',
-    'key1' => 'string',
-    'key2' => 'string',
-    'options=' => 'string',
+    0 => 'mixed',
+    'key1' => 'mixed',
+    'key2' => 'mixed',
+    'options=' => 'mixed',
   ),
   'rediscluster::lget' => 
   array (
@@ -63659,18 +66570,18 @@ return array (
   ),
   'rediscluster::lmove' => 
   array (
-    0 => 'string',
-    'src' => 'string',
-    'dst' => 'string',
-    'wherefrom' => 'string',
-    'whereto' => 'string',
+    0 => 'mixed',
+    'src' => 'mixed',
+    'dst' => 'mixed',
+    'wherefrom' => 'mixed',
+    'whereto' => 'mixed',
   ),
   'rediscluster::lmpop' => 
   array (
-    0 => 'string',
-    'keys' => 'string',
-    'from' => 'string',
-    'count=' => 'string',
+    0 => 'mixed',
+    'keys' => 'mixed',
+    'from' => 'mixed',
+    'count=' => 'mixed',
   ),
   'rediscluster::lpop' => 
   array (
@@ -63679,10 +66590,10 @@ return array (
   ),
   'rediscluster::lpos' => 
   array (
-    0 => 'string',
-    'key' => 'string',
-    'value' => 'string',
-    'options=' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
+    'value' => 'mixed',
+    'options=' => 'mixed',
   ),
   'rediscluster::lpush' => 
   array (
@@ -63771,8 +66682,8 @@ return array (
   ),
   'rediscluster::pexpiretime' => 
   array (
-    0 => 'string',
-    'key' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
   ),
   'rediscluster::pfadd' => 
   array (
@@ -63995,9 +66906,9 @@ return array (
   ),
   'rediscluster::sintercard' => 
   array (
-    0 => 'string',
-    'keys' => 'string',
-    'limit=' => 'string',
+    0 => 'mixed',
+    'keys' => 'mixed',
+    'limit=' => 'mixed',
   ),
   'rediscluster::sinterstore' => 
   array (
@@ -64026,10 +66937,10 @@ return array (
   ),
   'rediscluster::smismember' => 
   array (
-    0 => 'string',
-    'key' => 'string',
-    'member' => 'string',
-    '...other_members=' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
+    'member' => 'mixed',
+    '...other_members=' => 'mixed',
   ),
   'rediscluster::smove' => 
   array (
@@ -64046,9 +66957,9 @@ return array (
   ),
   'rediscluster::sort_ro' => 
   array (
-    0 => 'string',
-    'key' => 'string',
-    'options=' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
+    'options=' => 'mixed',
   ),
   'rediscluster::spop' => 
   array (
@@ -64111,9 +67022,9 @@ return array (
   ),
   'rediscluster::touch' => 
   array (
-    0 => 'string',
-    'key' => 'string',
-    '...other_keys=' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
+    '...other_keys=' => 'mixed',
   ),
   'rediscluster::ttl' => 
   array (
@@ -64165,14 +67076,14 @@ return array (
   ),
   'rediscluster::xautoclaim' => 
   array (
-    0 => 'string',
-    'key' => 'string',
-    'group' => 'string',
-    'consumer' => 'string',
-    'min_idle' => 'string',
-    'start' => 'string',
-    'count=' => 'string',
-    'justid=' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
+    'group' => 'mixed',
+    'consumer' => 'mixed',
+    'min_idle' => 'mixed',
+    'start' => 'mixed',
+    'count=' => 'mixed',
+    'justid=' => 'mixed',
   ),
   'rediscluster::xclaim' => 
   array (
@@ -64285,15 +67196,15 @@ return array (
   ),
   'rediscluster::zdiff' => 
   array (
-    0 => 'string',
-    'keys' => 'string',
-    'options=' => 'string',
+    0 => 'mixed',
+    'keys' => 'mixed',
+    'options=' => 'mixed',
   ),
   'rediscluster::zdiffstore' => 
   array (
-    0 => 'string',
-    'dst' => 'string',
-    'keys' => 'string',
+    0 => 'mixed',
+    'dst' => 'mixed',
+    'keys' => 'mixed',
   ),
   'rediscluster::zincrby' => 
   array (
@@ -64304,16 +67215,16 @@ return array (
   ),
   'rediscluster::zinter' => 
   array (
-    0 => 'string',
-    'keys' => 'string',
-    'weights=' => 'string',
-    'options=' => 'string',
+    0 => 'mixed',
+    'keys' => 'mixed',
+    'weights=' => 'mixed',
+    'options=' => 'mixed',
   ),
   'rediscluster::zintercard' => 
   array (
-    0 => 'string',
-    'keys' => 'string',
-    'limit=' => 'string',
+    0 => 'mixed',
+    'keys' => 'mixed',
+    'limit=' => 'mixed',
   ),
   'rediscluster::zinterstore' => 
   array (
@@ -64332,35 +67243,35 @@ return array (
   ),
   'rediscluster::zmpop' => 
   array (
-    0 => 'string',
-    'keys' => 'string',
-    'from' => 'string',
-    'count=' => 'string',
+    0 => 'mixed',
+    'keys' => 'mixed',
+    'from' => 'mixed',
+    'count=' => 'mixed',
   ),
   'rediscluster::zmscore' => 
   array (
-    0 => 'string',
-    'key' => 'string',
-    'member' => 'string',
-    '...other_members=' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
+    'member' => 'mixed',
+    '...other_members=' => 'mixed',
   ),
   'rediscluster::zpopmax' => 
   array (
-    0 => 'string',
-    'key' => 'string',
-    'value=' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
+    'value=' => 'mixed',
   ),
   'rediscluster::zpopmin' => 
   array (
-    0 => 'string',
-    'key' => 'string',
-    'value=' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
+    'value=' => 'mixed',
   ),
   'rediscluster::zrandmember' => 
   array (
-    0 => 'string',
-    'key' => 'string',
-    'options=' => 'string',
+    0 => 'mixed',
+    'key' => 'mixed',
+    'options=' => 'mixed',
   ),
   'rediscluster::zrange' => 
   array (
@@ -64389,12 +67300,12 @@ return array (
   ),
   'rediscluster::zrangestore' => 
   array (
-    0 => 'string',
-    'dstkey' => 'string',
-    'srckey' => 'string',
-    'start' => 'string',
-    'end' => 'string',
-    'options=' => 'string',
+    0 => 'mixed',
+    'dstkey' => 'mixed',
+    'srckey' => 'mixed',
+    'start' => 'mixed',
+    'end' => 'mixed',
+    'options=' => 'mixed',
   ),
   'rediscluster::zrank' => 
   array (
@@ -64477,10 +67388,10 @@ return array (
   ),
   'rediscluster::zunion' => 
   array (
-    0 => 'string',
-    'keys' => 'string',
-    'weights=' => 'string',
-    'options=' => 'string',
+    0 => 'mixed',
+    'keys' => 'mixed',
+    'weights=' => 'mixed',
+    'options=' => 'mixed',
   ),
   'rediscluster::zunionstore' => 
   array (
@@ -64492,153 +67403,153 @@ return array (
   ),
   'redisclusterexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'redisclusterexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'redisclusterexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'redisclusterexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'redisclusterexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'redisclusterexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'redisclusterexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'redisclusterexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'redisclusterexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'redisclusterexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'redisclusterexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'redisexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'redisexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'redisexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'redisexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'redisexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'redisexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'redisexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'redisexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'redisexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'redisexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'redisexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'redissentinel::__construct' => 
   array (
-    0 => 'string',
-    'options=' => 'string',
+    0 => 'void',
+    'options=' => 'mixed',
   ),
   'redissentinel::ckquorum' => 
   array (
-    0 => 'string',
-    'master' => 'string',
+    0 => 'mixed',
+    'master' => 'mixed',
   ),
   'redissentinel::failover' => 
   array (
-    0 => 'string',
-    'master' => 'string',
+    0 => 'mixed',
+    'master' => 'mixed',
   ),
   'redissentinel::flushconfig' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'redissentinel::getmasteraddrbyname' => 
   array (
-    0 => 'string',
-    'master' => 'string',
+    0 => 'mixed',
+    'master' => 'mixed',
   ),
   'redissentinel::master' => 
   array (
-    0 => 'string',
-    'master' => 'string',
+    0 => 'mixed',
+    'master' => 'mixed',
   ),
   'redissentinel::masters' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'redissentinel::myid' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'redissentinel::ping' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'redissentinel::reset' => 
   array (
-    0 => 'string',
-    'pattern' => 'string',
+    0 => 'mixed',
+    'pattern' => 'mixed',
   ),
   'redissentinel::sentinels' => 
   array (
-    0 => 'string',
-    'master' => 'string',
+    0 => 'mixed',
+    'master' => 'mixed',
   ),
   'redissentinel::slaves' => 
   array (
-    0 => 'string',
-    'master' => 'string',
+    0 => 'mixed',
+    'master' => 'mixed',
   ),
   'reflection::export' => 
   array (
@@ -64662,7 +67573,7 @@ return array (
   ),
   'reflectionclass::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'reflectionclass::export' => 
   array (
@@ -64735,7 +67646,7 @@ return array (
   ),
   'reflectionclass::getnamespacename' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'reflectionclass::getparentclass' => 
   array (
@@ -64762,7 +67673,7 @@ return array (
   ),
   'reflectionclass::getshortname' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'reflectionclass::getstartline' => 
   array (
@@ -64890,7 +67801,7 @@ return array (
   ),
   'reflectionclassconstant::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'reflectionclassconstant::__construct' => 
   array (
@@ -64900,7 +67811,7 @@ return array (
   ),
   'reflectionclassconstant::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'reflectionclassconstant::export' => 
   array (
@@ -64923,7 +67834,7 @@ return array (
   ),
   'reflectionclassconstant::getname' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'reflectionclassconstant::getvalue' => 
   array (
@@ -64943,50 +67854,50 @@ return array (
   ),
   'reflectionexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'reflectionexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'reflectionexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'reflectionexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'reflectionexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'reflectionexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'reflectionexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'reflectionexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'reflectionexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'reflectionexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'reflectionexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'reflectionextension::__clone' => 
   array (
@@ -64999,7 +67910,7 @@ return array (
   ),
   'reflectionextension::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'reflectionextension::export' => 
   array (
@@ -65033,7 +67944,7 @@ return array (
   ),
   'reflectionextension::getname' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'reflectionextension::getversion' => 
   array (
@@ -65053,7 +67964,7 @@ return array (
   ),
   'reflectionfunction::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'reflectionfunction::__construct' => 
   array (
@@ -65062,7 +67973,7 @@ return array (
   ),
   'reflectionfunction::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'reflectionfunction::export' => 
   array (
@@ -65108,7 +68019,7 @@ return array (
   ),
   'reflectionfunction::getnamespacename' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'reflectionfunction::getnumberofparameters' => 
   array (
@@ -65128,7 +68039,7 @@ return array (
   ),
   'reflectionfunction::getshortname' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'reflectionfunction::getstartline' => 
   array (
@@ -65194,7 +68105,7 @@ return array (
   ),
   'reflectionfunctionabstract::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'reflectionfunctionabstract::export' => 
   array (
@@ -65230,11 +68141,11 @@ return array (
   ),
   'reflectionfunctionabstract::getname' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'reflectionfunctionabstract::getnamespacename' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'reflectionfunctionabstract::getnumberofparameters' => 
   array (
@@ -65254,7 +68165,7 @@ return array (
   ),
   'reflectionfunctionabstract::getshortname' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'reflectionfunctionabstract::getstartline' => 
   array (
@@ -65307,7 +68218,7 @@ return array (
   ),
   'reflectiongenerator::getexecutingfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'reflectiongenerator::getexecutinggenerator' => 
   array (
@@ -65332,7 +68243,7 @@ return array (
   ),
   'reflectionmethod::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'reflectionmethod::__construct' => 
   array (
@@ -65347,7 +68258,7 @@ return array (
   ),
   'reflectionmethod::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'reflectionmethod::export' => 
   array (
@@ -65399,11 +68310,11 @@ return array (
   ),
   'reflectionmethod::getname' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'reflectionmethod::getnamespacename' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'reflectionmethod::getnumberofparameters' => 
   array (
@@ -65427,7 +68338,7 @@ return array (
   ),
   'reflectionmethod::getshortname' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'reflectionmethod::getstartline' => 
   array (
@@ -65528,7 +68439,7 @@ return array (
   ),
   'reflectionnamedtype::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'reflectionnamedtype::allowsnull' => 
   array (
@@ -65536,7 +68447,7 @@ return array (
   ),
   'reflectionnamedtype::getname' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'reflectionnamedtype::isbuiltin' => 
   array (
@@ -65553,7 +68464,7 @@ return array (
   ),
   'reflectionobject::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'reflectionobject::export' => 
   array (
@@ -65622,11 +68533,11 @@ return array (
   ),
   'reflectionobject::getname' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'reflectionobject::getnamespacename' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'reflectionobject::getparentclass' => 
   array (
@@ -65653,7 +68564,7 @@ return array (
   ),
   'reflectionobject::getshortname' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'reflectionobject::getstartline' => 
   array (
@@ -65792,7 +68703,7 @@ return array (
   ),
   'reflectionparameter::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'reflectionparameter::allowsnull' => 
   array (
@@ -65885,7 +68796,7 @@ return array (
   ),
   'reflectionproperty::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'reflectionproperty::export' => 
   array (
@@ -65908,7 +68819,7 @@ return array (
   ),
   'reflectionproperty::getname' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'reflectionproperty::getvalue' => 
   array (
@@ -65961,7 +68872,7 @@ return array (
   ),
   'reflectiontype::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'reflectiontype::allowsnull' => 
   array (
@@ -65982,7 +68893,7 @@ return array (
   ),
   'reflectionzendextension::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'reflectionzendextension::export' => 
   array (
@@ -65992,23 +68903,23 @@ return array (
   ),
   'reflectionzendextension::getauthor' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'reflectionzendextension::getcopyright' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'reflectionzendextension::getname' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'reflectionzendextension::geturl' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'reflectionzendextension::getversion' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'reflector::__tostring' => 
   array (
@@ -66053,7 +68964,7 @@ return array (
   ),
   'regexiterator::getregex' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'regexiterator::key' => 
   array (
@@ -66153,7 +69064,7 @@ return array (
   ),
   'resourcebundle::geterrormessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'resourcebundle::getlocales' => 
   array (
@@ -66740,11 +69651,11 @@ return array (
   ),
   'runtimeexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'runtimeexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'runtimeexception::getcode' => 
   array (
@@ -66752,7 +69663,7 @@ return array (
   ),
   'runtimeexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'runtimeexception::getline' => 
   array (
@@ -66760,7 +69671,7 @@ return array (
   ),
   'runtimeexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'runtimeexception::getprevious' => 
   array (
@@ -66772,7 +69683,7 @@ return array (
   ),
   'runtimeexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'samconnection::commit' => 
   array (
@@ -68322,7 +71233,7 @@ return array (
   ),
   'sessionhandler::create_sid' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'sessionhandler::destroy' => 
   array (
@@ -68912,7 +71823,7 @@ return array (
   ),
   'simplexmlelement::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'simplexmlelement::addattribute' => 
   array (
@@ -68961,7 +71872,7 @@ return array (
   ),
   'simplexmlelement::getname' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'simplexmlelement::getnamespaces' => 
   array (
@@ -69007,51 +71918,51 @@ return array (
   ),
   'simplexmliterator::__construct' => 
   array (
-    0 => 'string',
-    'data' => 'string',
-    'options=' => 'string',
-    'data_is_url=' => 'string',
-    'ns=' => 'string',
-    'is_prefix=' => 'string',
+    0 => 'void',
+    'data' => 'mixed',
+    'options=' => 'mixed',
+    'data_is_url=' => 'mixed',
+    'ns=' => 'mixed',
+    'is_prefix=' => 'mixed',
   ),
   'simplexmliterator::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'simplexmliterator::addattribute' => 
   array (
-    0 => 'string',
-    'name' => 'string',
-    'value=' => 'string',
-    'ns=' => 'string',
+    0 => 'mixed',
+    'name' => 'mixed',
+    'value=' => 'mixed',
+    'ns=' => 'mixed',
   ),
   'simplexmliterator::addchild' => 
   array (
-    0 => 'string',
-    'name' => 'string',
-    'value=' => 'string',
-    'ns=' => 'string',
+    0 => 'mixed',
+    'name' => 'mixed',
+    'value=' => 'mixed',
+    'ns=' => 'mixed',
   ),
   'simplexmliterator::asxml' => 
   array (
-    0 => 'string',
-    'filename=' => 'string',
+    0 => 'mixed',
+    'filename=' => 'mixed',
   ),
   'simplexmliterator::attributes' => 
   array (
-    0 => 'string',
-    'ns=' => 'string',
-    'is_prefix=' => 'string',
+    0 => 'mixed',
+    'ns=' => 'mixed',
+    'is_prefix=' => 'mixed',
   ),
   'simplexmliterator::children' => 
   array (
-    0 => 'string',
-    'ns=' => 'string',
-    'is_prefix=' => 'string',
+    0 => 'mixed',
+    'ns=' => 'mixed',
+    'is_prefix=' => 'mixed',
   ),
   'simplexmliterator::count' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'simplexmliterator::current' => 
   array (
@@ -69063,18 +71974,18 @@ return array (
   ),
   'simplexmliterator::getdocnamespaces' => 
   array (
-    0 => 'string',
-    'recursve=' => 'string',
-    'from_root=' => 'string',
+    0 => 'mixed',
+    'recursve=' => 'mixed',
+    'from_root=' => 'mixed',
   ),
   'simplexmliterator::getname' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'simplexmliterator::getnamespaces' => 
   array (
-    0 => 'string',
-    'recursve=' => 'string',
+    0 => 'mixed',
+    'recursve=' => 'mixed',
   ),
   'simplexmliterator::haschildren' => 
   array (
@@ -69090,9 +72001,9 @@ return array (
   ),
   'simplexmliterator::registerxpathnamespace' => 
   array (
-    0 => 'string',
-    'prefix' => 'string',
-    'ns' => 'string',
+    0 => 'mixed',
+    'prefix' => 'mixed',
+    'ns' => 'mixed',
   ),
   'simplexmliterator::rewind' => 
   array (
@@ -69100,8 +72011,8 @@ return array (
   ),
   'simplexmliterator::savexml' => 
   array (
-    0 => 'string',
-    'filename=' => 'string',
+    0 => 'mixed',
+    'filename=' => 'mixed',
   ),
   'simplexmliterator::valid' => 
   array (
@@ -69109,8 +72020,8 @@ return array (
   ),
   'simplexmliterator::xpath' => 
   array (
-    0 => 'string',
-    'path' => 'string',
+    0 => 'mixed',
+    'path' => 'mixed',
   ),
   'sin' => 
   array (
@@ -69943,8 +72854,8 @@ return array (
   ),
   'sodium_bin2hex' => 
   array (
-    0 => 'string',
-    'string' => 'string',
+    0 => 'mixed',
+    'string' => 'mixed',
   ),
   'sodium_compare' => 
   array (
@@ -70062,13 +72973,13 @@ return array (
   ),
   'sodium_crypto_box_keypair' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'sodium_crypto_box_keypair_from_secretkey_and_publickey' => 
   array (
-    0 => 'string',
-    'secret_key' => 'string',
-    'public_key' => 'string',
+    0 => 'mixed',
+    'secret_key' => 'mixed',
+    'public_key' => 'mixed',
   ),
   'sodium_crypto_box_open' => 
   array (
@@ -70158,7 +73069,7 @@ return array (
   ),
   'sodium_crypto_kx_keypair' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'sodium_crypto_kx_publickey' => 
   array (
@@ -70331,13 +73242,13 @@ return array (
   ),
   'sodium_crypto_sign_keypair' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'sodium_crypto_sign_keypair_from_secretkey_and_publickey' => 
   array (
-    0 => 'string',
-    'secret_key' => 'string',
-    'public_key' => 'string',
+    0 => 'mixed',
+    'secret_key' => 'mixed',
+    'public_key' => 'mixed',
   ),
   'sodium_crypto_sign_open' => 
   array (
@@ -70426,50 +73337,50 @@ return array (
   ),
   'sodiumexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'sodiumexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'sodiumexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'sodiumexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'sodiumexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'sodiumexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'sodiumexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'sodiumexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'sodiumexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'sodiumexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'sodiumexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'solid_fetch_prev' => 
   array (
@@ -73944,8 +76855,8 @@ return array (
   ),
   'spl_autoload_extensions' => 
   array (
-    0 => 'string',
-    'file_extensions=' => 'string',
+    0 => 'mixed',
+    'file_extensions=' => 'mixed',
   ),
   'spl_autoload_functions' => 
   array (
@@ -74055,7 +76966,7 @@ return array (
   ),
   'spldoublylinkedlist::serialize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'spldoublylinkedlist::setiteratormode' => 
   array (
@@ -74102,11 +77013,11 @@ return array (
   ),
   'splfileinfo::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'splfileinfo::_bad_state_ex' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'splfileinfo::getatime' => 
   array (
@@ -74114,8 +77025,8 @@ return array (
   ),
   'splfileinfo::getbasename' => 
   array (
-    0 => 'string',
-    'suffix=' => 'string',
+    0 => 'mixed',
+    'suffix=' => 'mixed',
   ),
   'splfileinfo::getctime' => 
   array (
@@ -74123,7 +77034,7 @@ return array (
   ),
   'splfileinfo::getextension' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'splfileinfo::getfileinfo' => 
   array (
@@ -74132,7 +77043,7 @@ return array (
   ),
   'splfileinfo::getfilename' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'splfileinfo::getgroup' => 
   array (
@@ -74156,7 +77067,7 @@ return array (
   ),
   'splfileinfo::getpath' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'splfileinfo::getpathinfo' => 
   array (
@@ -74165,7 +77076,7 @@ return array (
   ),
   'splfileinfo::getpathname' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'splfileinfo::getperms' => 
   array (
@@ -74234,11 +77145,11 @@ return array (
   ),
   'splfileobject::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'splfileobject::_bad_state_ex' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'splfileobject::current' => 
   array (
@@ -74332,8 +77243,8 @@ return array (
   ),
   'splfileobject::getbasename' => 
   array (
-    0 => 'string',
-    'suffix=' => 'string',
+    0 => 'mixed',
+    'suffix=' => 'mixed',
   ),
   'splfileobject::getchildren' => 
   array (
@@ -74353,7 +77264,7 @@ return array (
   ),
   'splfileobject::getextension' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'splfileobject::getfileinfo' => 
   array (
@@ -74362,7 +77273,7 @@ return array (
   ),
   'splfileobject::getfilename' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'splfileobject::getflags' => 
   array (
@@ -74394,7 +77305,7 @@ return array (
   ),
   'splfileobject::getpath' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'splfileobject::getpathinfo' => 
   array (
@@ -74403,7 +77314,7 @@ return array (
   ),
   'splfileobject::getpathname' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'splfileobject::getperms' => 
   array (
@@ -74648,52 +77559,52 @@ return array (
   ),
   'splmaxheap::count' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'splmaxheap::current' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'splmaxheap::extract' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'splmaxheap::insert' => 
   array (
-    0 => 'string',
-    'value' => 'string',
+    0 => 'mixed',
+    'value' => 'mixed',
   ),
   'splmaxheap::iscorrupted' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'splmaxheap::isempty' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'splmaxheap::key' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'splmaxheap::next' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'splmaxheap::recoverfromcorruption' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'splmaxheap::rewind' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'splmaxheap::top' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'splmaxheap::valid' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'splminheap::compare' => 
   array (
@@ -74838,7 +77749,7 @@ return array (
   ),
   'splobjectstorage::serialize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'splobjectstorage::setinfo' => 
   array (
@@ -74930,21 +77841,21 @@ return array (
   ),
   'splqueue::add' => 
   array (
-    0 => 'string',
-    'index' => 'string',
-    'newval' => 'string',
+    0 => 'mixed',
+    'index' => 'mixed',
+    'newval' => 'mixed',
   ),
   'splqueue::bottom' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'splqueue::count' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'splqueue::current' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'splqueue::dequeue' => 
   array (
@@ -75011,7 +77922,7 @@ return array (
   ),
   'splqueue::serialize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'splqueue::setiteratormode' => 
   array (
@@ -75118,7 +78029,7 @@ return array (
   ),
   'splstack::serialize' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'splstack::setiteratormode' => 
   array (
@@ -75168,11 +78079,11 @@ return array (
   ),
   'spltempfileobject::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'spltempfileobject::_bad_state_ex' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'spltempfileobject::current' => 
   array (
@@ -75199,12 +78110,12 @@ return array (
   ),
   'spltempfileobject::fgets' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'spltempfileobject::fgetss' => 
   array (
-    0 => 'string',
-    'allowable_tags=' => 'string',
+    0 => 'mixed',
+    'allowable_tags=' => 'mixed',
   ),
   'spltempfileobject::flock' => 
   array (
@@ -75266,8 +78177,8 @@ return array (
   ),
   'spltempfileobject::getbasename' => 
   array (
-    0 => 'string',
-    'suffix=' => 'string',
+    0 => 'mixed',
+    'suffix=' => 'mixed',
   ),
   'spltempfileobject::getchildren' => 
   array (
@@ -75283,11 +78194,11 @@ return array (
   ),
   'spltempfileobject::getcurrentline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'spltempfileobject::getextension' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'spltempfileobject::getfileinfo' => 
   array (
@@ -75296,7 +78207,7 @@ return array (
   ),
   'spltempfileobject::getfilename' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'spltempfileobject::getflags' => 
   array (
@@ -75328,7 +78239,7 @@ return array (
   ),
   'spltempfileobject::getpath' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'spltempfileobject::getpathinfo' => 
   array (
@@ -75337,7 +78248,7 @@ return array (
   ),
   'spltempfileobject::getpathname' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'spltempfileobject::getperms' => 
   array (
@@ -75545,7 +78456,7 @@ return array (
   ),
   'sqlite3::lasterrormsg' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'sqlite3::lastinsertrowid' => 
   array (
@@ -79804,6 +82715,356 @@ return array (
     0 => 'mixed',
     'structure' => 'int',
   ),
+  'swoole\\arrayobject::__construct' => 
+  array (
+    0 => 'void',
+    'array=' => 'array<array-key, mixed>',
+  ),
+  'swoole\\arrayobject::__serialize' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'swoole\\arrayobject::__toarray' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'swoole\\arrayobject::__unserialize' => 
+  array (
+    0 => 'void',
+    'data' => 'array<array-key, mixed>',
+  ),
+  'swoole\\arrayobject::append' => 
+  array (
+    0 => 'Swoole\\ArrayObject',
+    '...values=' => 'mixed',
+  ),
+  'swoole\\arrayobject::arsort' => 
+  array (
+    0 => 'self',
+    'sort_flags=' => 'int',
+  ),
+  'swoole\\arrayobject::asort' => 
+  array (
+    0 => 'self',
+    'sort_flags=' => 'int',
+  ),
+  'swoole\\arrayobject::chunk' => 
+  array (
+    0 => 'self',
+    'size' => 'int',
+    'preserve_keys=' => 'bool',
+  ),
+  'swoole\\arrayobject::clear' => 
+  array (
+    0 => 'self',
+  ),
+  'swoole\\arrayobject::column' => 
+  array (
+    0 => 'self',
+    'column_key' => 'mixed',
+    'index=' => 'mixed',
+  ),
+  'swoole\\arrayobject::contains' => 
+  array (
+    0 => 'bool',
+    'value' => 'mixed',
+    'strict=' => 'bool',
+  ),
+  'swoole\\arrayobject::count' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\arrayobject::current' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\arrayobject::delete' => 
+  array (
+    0 => 'self',
+    'key' => 'mixed',
+  ),
+  'swoole\\arrayobject::detectarraytype' => 
+  array (
+    0 => 'self',
+    'value' => 'array<array-key, mixed>',
+  ),
+  'swoole\\arrayobject::detectstringtype' => 
+  array (
+    0 => 'Swoole\\StringObject',
+    'value' => 'string',
+  ),
+  'swoole\\arrayobject::detecttype' => 
+  array (
+    0 => 'mixed',
+    'value' => 'mixed',
+  ),
+  'swoole\\arrayobject::each' => 
+  array (
+    0 => 'self',
+    'fn' => 'callable',
+  ),
+  'swoole\\arrayobject::exists' => 
+  array (
+    0 => 'bool',
+    'key' => 'mixed',
+  ),
+  'swoole\\arrayobject::filter' => 
+  array (
+    0 => 'self',
+    'fn' => 'callable',
+    'flag=' => 'int',
+  ),
+  'swoole\\arrayobject::first' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\arrayobject::firstkey' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\arrayobject::flip' => 
+  array (
+    0 => 'self',
+  ),
+  'swoole\\arrayobject::get' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'swoole\\arrayobject::getor' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'default=' => 'mixed',
+  ),
+  'swoole\\arrayobject::indexof' => 
+  array (
+    0 => 'mixed',
+    'value' => 'mixed',
+    'strict=' => 'bool',
+  ),
+  'swoole\\arrayobject::insert' => 
+  array (
+    0 => 'self',
+    'offset' => 'int',
+    'value' => 'mixed',
+  ),
+  'swoole\\arrayobject::isempty' => 
+  array (
+    0 => 'bool',
+  ),
+  'swoole\\arrayobject::join' => 
+  array (
+    0 => 'Swoole\\StringObject',
+    'glue=' => 'string',
+  ),
+  'swoole\\arrayobject::key' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\arrayobject::keys' => 
+  array (
+    0 => 'self',
+    '...args=' => 'mixed',
+  ),
+  'swoole\\arrayobject::krsort' => 
+  array (
+    0 => 'self',
+    'sort_flags=' => 'int',
+  ),
+  'swoole\\arrayobject::ksort' => 
+  array (
+    0 => 'self',
+    'sort_flags=' => 'int',
+  ),
+  'swoole\\arrayobject::last' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\arrayobject::lastindexof' => 
+  array (
+    0 => 'mixed',
+    'value' => 'mixed',
+    'strict=' => 'bool',
+  ),
+  'swoole\\arrayobject::lastkey' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\arrayobject::map' => 
+  array (
+    0 => 'self',
+    'fn' => 'callable',
+    '...args=' => 'mixed',
+  ),
+  'swoole\\arrayobject::natcasesort' => 
+  array (
+    0 => 'self',
+  ),
+  'swoole\\arrayobject::natsort' => 
+  array (
+    0 => 'self',
+  ),
+  'swoole\\arrayobject::next' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\arrayobject::offsetexists' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'swoole\\arrayobject::offsetget' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'swoole\\arrayobject::offsetset' => 
+  array (
+    0 => 'void',
+    'key' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'swoole\\arrayobject::offsetunset' => 
+  array (
+    0 => 'void',
+    'key' => 'mixed',
+  ),
+  'swoole\\arrayobject::pop' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\arrayobject::popback' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\arrayobject::popfront' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\arrayobject::product' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\arrayobject::push' => 
+  array (
+    0 => 'mixed',
+    'value' => 'mixed',
+  ),
+  'swoole\\arrayobject::pushback' => 
+  array (
+    0 => 'mixed',
+    'value' => 'mixed',
+  ),
+  'swoole\\arrayobject::pushfront' => 
+  array (
+    0 => 'mixed',
+    'value' => 'mixed',
+  ),
+  'swoole\\arrayobject::randomget' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\arrayobject::reduce' => 
+  array (
+    0 => 'mixed',
+    'fn' => 'callable',
+    'initial=' => 'mixed',
+  ),
+  'swoole\\arrayobject::remove' => 
+  array (
+    0 => 'self',
+    'value' => 'mixed',
+    'strict=' => 'bool',
+    'loop=' => 'bool',
+  ),
+  'swoole\\arrayobject::reverse' => 
+  array (
+    0 => 'self',
+    'preserve_keys=' => 'bool',
+  ),
+  'swoole\\arrayobject::rewind' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\arrayobject::rsort' => 
+  array (
+    0 => 'self',
+    'sort_flags=' => 'int',
+  ),
+  'swoole\\arrayobject::search' => 
+  array (
+    0 => 'mixed',
+    'needle' => 'mixed',
+    'strict=' => 'bool',
+  ),
+  'swoole\\arrayobject::serialize' => 
+  array (
+    0 => 'Swoole\\StringObject',
+  ),
+  'swoole\\arrayobject::set' => 
+  array (
+    0 => 'self',
+    'key' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'swoole\\arrayobject::shuffle' => 
+  array (
+    0 => 'self',
+  ),
+  'swoole\\arrayobject::slice' => 
+  array (
+    0 => 'self',
+    'offset' => 'mixed',
+    'length=' => 'int|null',
+    'preserve_keys=' => 'bool',
+  ),
+  'swoole\\arrayobject::sort' => 
+  array (
+    0 => 'self',
+    'sort_flags=' => 'int',
+  ),
+  'swoole\\arrayobject::sum' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\arrayobject::toarray' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'swoole\\arrayobject::uasort' => 
+  array (
+    0 => 'self',
+    'value_compare_func' => 'callable',
+  ),
+  'swoole\\arrayobject::uksort' => 
+  array (
+    0 => 'self',
+    'value_compare_func' => 'callable',
+  ),
+  'swoole\\arrayobject::unique' => 
+  array (
+    0 => 'self',
+    'sort_flags=' => 'int',
+  ),
+  'swoole\\arrayobject::unserialize' => 
+  array (
+    0 => 'self',
+    'string' => 'mixed',
+  ),
+  'swoole\\arrayobject::usort' => 
+  array (
+    0 => 'self',
+    'value_compare_func' => 'callable',
+  ),
+  'swoole\\arrayobject::valid' => 
+  array (
+    0 => 'bool',
+  ),
+  'swoole\\arrayobject::values' => 
+  array (
+    0 => 'self',
+  ),
   'swoole\\async::dnslookup' => 
   array (
     0 => 'void',
@@ -79845,6 +83106,11 @@ return array (
     'callback=' => 'callable',
     'flags=' => 'string',
   ),
+  'swoole\\atomic::__construct' => 
+  array (
+    0 => 'void',
+    'value=' => 'mixed',
+  ),
   'swoole\\atomic::add' => 
   array (
     0 => 'int',
@@ -79869,6 +83135,46 @@ return array (
   array (
     0 => 'int',
     'sub_value=' => 'int',
+  ),
+  'swoole\\atomic::wait' => 
+  array (
+    0 => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'swoole\\atomic::wakeup' => 
+  array (
+    0 => 'mixed',
+    'count=' => 'mixed',
+  ),
+  'swoole\\atomic\\long::__construct' => 
+  array (
+    0 => 'void',
+    'value=' => 'mixed',
+  ),
+  'swoole\\atomic\\long::add' => 
+  array (
+    0 => 'mixed',
+    'add_value=' => 'mixed',
+  ),
+  'swoole\\atomic\\long::cmpset' => 
+  array (
+    0 => 'mixed',
+    'cmp_value' => 'mixed',
+    'new_value' => 'mixed',
+  ),
+  'swoole\\atomic\\long::get' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\atomic\\long::set' => 
+  array (
+    0 => 'mixed',
+    'value' => 'mixed',
+  ),
+  'swoole\\atomic\\long::sub' => 
+  array (
+    0 => 'mixed',
+    'sub_value=' => 'mixed',
   ),
   'swoole\\buffer::__destruct' => 
   array (
@@ -79932,6 +83238,13 @@ return array (
   array (
     0 => 'array<array-key, mixed>',
   ),
+  'swoole\\client::__construct' => 
+  array (
+    0 => 'void',
+    'type' => 'mixed',
+    'async=' => 'mixed',
+    'id=' => 'mixed',
+  ),
   'swoole\\client::__destruct' => 
   array (
     0 => 'void',
@@ -79948,6 +83261,14 @@ return array (
     'port=' => 'int',
     'timeout=' => 'int',
     'flag=' => 'int',
+  ),
+  'swoole\\client::enablessl' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\client::getpeercert' => 
+  array (
+    0 => 'mixed',
   ),
   'swoole\\client::getpeername' => 
   array (
@@ -80010,13 +83331,77 @@ return array (
     0 => 'void',
     'settings' => 'array<array-key, mixed>',
   ),
+  'swoole\\client::shutdown' => 
+  array (
+    0 => 'mixed',
+    'how' => 'mixed',
+  ),
   'swoole\\client::sleep' => 
   array (
     0 => 'void',
   ),
+  'swoole\\client::verifypeercert' => 
+  array (
+    0 => 'mixed',
+  ),
   'swoole\\client::wakeup' => 
   array (
     0 => 'void',
+  ),
+  'swoole\\client\\exception::__clone' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\client\\exception::__construct' => 
+  array (
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
+  ),
+  'swoole\\client\\exception::__tostring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\client\\exception::__wakeup' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\client\\exception::getcode' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\client\\exception::getfile' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\client\\exception::getline' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\client\\exception::getmessage' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\client\\exception::getprevious' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\client\\exception::gettrace' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\client\\exception::gettraceasstring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\connection\\iterator::__construct' => 
+  array (
+    0 => 'void',
+  ),
+  'swoole\\connection\\iterator::__destruct' => 
+  array (
+    0 => 'mixed',
   ),
   'swoole\\connection\\iterator::count' => 
   array (
@@ -80063,6 +83448,35 @@ return array (
   array (
     0 => 'bool',
   ),
+  'swoole\\connectionpool::__construct' => 
+  array (
+    0 => 'void',
+    'constructor' => 'callable',
+    'size=' => 'int',
+    'proxy=' => 'null|string',
+  ),
+  'swoole\\connectionpool::close' => 
+  array (
+    0 => 'void',
+  ),
+  'swoole\\connectionpool::fill' => 
+  array (
+    0 => 'void',
+  ),
+  'swoole\\connectionpool::get' => 
+  array (
+    0 => 'mixed',
+    'timeout=' => 'float',
+  ),
+  'swoole\\connectionpool::make' => 
+  array (
+    0 => 'void',
+  ),
+  'swoole\\connectionpool::put' => 
+  array (
+    0 => 'void',
+    'connection' => 'mixed',
+  ),
   'swoole\\coroutine::call_user_func' => 
   array (
     0 => 'mixed',
@@ -80076,6 +83490,11 @@ return array (
     'callback' => 'callable',
     'param_array' => 'array<array-key, mixed>',
   ),
+  'swoole\\coroutine::cancel' => 
+  array (
+    0 => 'mixed',
+    'cid' => 'mixed',
+  ),
   'swoole\\coroutine::cli_wait' => 
   array (
     0 => 'ReturnType',
@@ -80084,17 +83503,263 @@ return array (
   array (
     0 => 'ReturnType',
   ),
+  'swoole\\coroutine::defer' => 
+  array (
+    0 => 'mixed',
+    'callback' => 'mixed',
+  ),
+  'swoole\\coroutine::disablescheduler' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine::dnslookup' => 
+  array (
+    0 => 'mixed',
+    'domain_name' => 'mixed',
+    'timeout=' => 'mixed',
+    'type=' => 'mixed',
+  ),
+  'swoole\\coroutine::enablescheduler' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine::exec' => 
+  array (
+    0 => 'mixed',
+    'command' => 'mixed',
+    'get_error_stream=' => 'mixed',
+  ),
+  'swoole\\coroutine::exists' => 
+  array (
+    0 => 'mixed',
+    'cid' => 'mixed',
+  ),
+  'swoole\\coroutine::fgets' => 
+  array (
+    0 => 'mixed',
+    'handle' => 'mixed',
+  ),
+  'swoole\\coroutine::fread' => 
+  array (
+    0 => 'mixed',
+    'handle' => 'mixed',
+    'length=' => 'mixed',
+  ),
+  'swoole\\coroutine::fwrite' => 
+  array (
+    0 => 'mixed',
+    'handle' => 'mixed',
+    'string' => 'mixed',
+    'length=' => 'mixed',
+  ),
+  'swoole\\coroutine::getaddrinfo' => 
+  array (
+    0 => 'mixed',
+    'hostname' => 'mixed',
+    'family=' => 'mixed',
+    'socktype=' => 'mixed',
+    'protocol=' => 'mixed',
+    'service=' => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'swoole\\coroutine::getbacktrace' => 
+  array (
+    0 => 'mixed',
+    'cid=' => 'mixed',
+    'options=' => 'mixed',
+    'limit=' => 'mixed',
+  ),
+  'swoole\\coroutine::getcid' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine::getcontext' => 
+  array (
+    0 => 'mixed',
+    'cid=' => 'mixed',
+  ),
+  'swoole\\coroutine::getelapsed' => 
+  array (
+    0 => 'mixed',
+    'cid=' => 'mixed',
+  ),
+  'swoole\\coroutine::gethostbyname' => 
+  array (
+    0 => 'mixed',
+    'domain_name' => 'mixed',
+    'family=' => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'swoole\\coroutine::getoptions' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine::getpcid' => 
+  array (
+    0 => 'mixed',
+    'cid=' => 'mixed',
+  ),
+  'swoole\\coroutine::getstackusage' => 
+  array (
+    0 => 'mixed',
+    'cid=' => 'mixed',
+  ),
   'swoole\\coroutine::getuid' => 
   array (
     0 => 'ReturnType',
+  ),
+  'swoole\\coroutine::iscanceled' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine::join' => 
+  array (
+    0 => 'mixed',
+    'cid_array' => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'swoole\\coroutine::list' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine::listcoroutines' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine::printbacktrace' => 
+  array (
+    0 => 'mixed',
+    'cid=' => 'mixed',
+    'options=' => 'mixed',
+    'limit=' => 'mixed',
+  ),
+  'swoole\\coroutine::readfile' => 
+  array (
+    0 => 'mixed',
+    'filename' => 'mixed',
   ),
   'swoole\\coroutine::resume' => 
   array (
     0 => 'ReturnType',
   ),
+  'swoole\\coroutine::set' => 
+  array (
+    0 => 'mixed',
+    'options' => 'mixed',
+  ),
+  'swoole\\coroutine::sleep' => 
+  array (
+    0 => 'mixed',
+    'seconds' => 'mixed',
+  ),
+  'swoole\\coroutine::stats' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine::statvfs' => 
+  array (
+    0 => 'mixed',
+    'path' => 'mixed',
+  ),
   'swoole\\coroutine::suspend' => 
   array (
     0 => 'ReturnType',
+  ),
+  'swoole\\coroutine::wait' => 
+  array (
+    0 => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'swoole\\coroutine::waitevent' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+    'events=' => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'swoole\\coroutine::waitpid' => 
+  array (
+    0 => 'mixed',
+    'pid' => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'swoole\\coroutine::waitsignal' => 
+  array (
+    0 => 'mixed',
+    'signo' => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'swoole\\coroutine::writefile' => 
+  array (
+    0 => 'mixed',
+    'filename' => 'mixed',
+    'data' => 'mixed',
+    'flags=' => 'mixed',
+  ),
+  'swoole\\coroutine::yield' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\barrier::__destruct' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\barrier::make' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\barrier::wait' => 
+  array (
+    0 => 'mixed',
+    '&barrier' => 'Swoole\\Coroutine\\Barrier',
+    'timeout=' => 'float',
+  ),
+  'swoole\\coroutine\\batch' => 
+  array (
+    0 => 'array<array-key, mixed>',
+    'tasks' => 'array<array-key, mixed>',
+    'timeout=' => 'float',
+  ),
+  'swoole\\coroutine\\channel::__construct' => 
+  array (
+    0 => 'void',
+    'size=' => 'mixed',
+  ),
+  'swoole\\coroutine\\channel::close' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\channel::isempty' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\channel::isfull' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\channel::length' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\channel::pop' => 
+  array (
+    0 => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'swoole\\coroutine\\channel::push' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'swoole\\coroutine\\channel::stats' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\client::__construct' => 
+  array (
+    0 => 'void',
+    'type' => 'mixed',
   ),
   'swoole\\coroutine\\client::__destruct' => 
   array (
@@ -80108,6 +83773,18 @@ return array (
   array (
     0 => 'ReturnType',
   ),
+  'swoole\\coroutine\\client::enablessl' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\client::exportsocket' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\client::getpeercert' => 
+  array (
+    0 => 'mixed',
+  ),
   'swoole\\coroutine\\client::getpeername' => 
   array (
     0 => 'ReturnType',
@@ -80120,9 +83797,21 @@ return array (
   array (
     0 => 'ReturnType',
   ),
+  'swoole\\coroutine\\client::peek' => 
+  array (
+    0 => 'mixed',
+    'length=' => 'mixed',
+  ),
   'swoole\\coroutine\\client::recv' => 
   array (
     0 => 'ReturnType',
+  ),
+  'swoole\\coroutine\\client::recvfrom' => 
+  array (
+    0 => 'mixed',
+    'length' => 'mixed',
+    '&address' => 'mixed',
+    '&port=' => 'mixed',
   ),
   'swoole\\coroutine\\client::send' => 
   array (
@@ -80140,9 +83829,463 @@ return array (
   array (
     0 => 'ReturnType',
   ),
+  'swoole\\coroutine\\client::verifypeercert' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\context::__construct' => 
+  array (
+    0 => 'void',
+    'input=' => 'mixed',
+    'flags=' => 'mixed',
+    'iterator_class=' => 'mixed',
+  ),
+  'swoole\\coroutine\\context::append' => 
+  array (
+    0 => 'mixed',
+    'value' => 'mixed',
+  ),
+  'swoole\\coroutine\\context::asort' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\context::count' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\context::exchangearray' => 
+  array (
+    0 => 'mixed',
+    'array' => 'mixed',
+  ),
+  'swoole\\coroutine\\context::getarraycopy' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\context::getflags' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\context::getiterator' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\context::getiteratorclass' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\context::ksort' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\context::natcasesort' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\context::natsort' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\context::offsetexists' => 
+  array (
+    0 => 'mixed',
+    'index' => 'mixed',
+  ),
+  'swoole\\coroutine\\context::offsetget' => 
+  array (
+    0 => 'mixed',
+    'index' => 'mixed',
+  ),
+  'swoole\\coroutine\\context::offsetset' => 
+  array (
+    0 => 'mixed',
+    'index' => 'mixed',
+    'newval' => 'mixed',
+  ),
+  'swoole\\coroutine\\context::offsetunset' => 
+  array (
+    0 => 'mixed',
+    'index' => 'mixed',
+  ),
+  'swoole\\coroutine\\context::serialize' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\context::setflags' => 
+  array (
+    0 => 'mixed',
+    'flags' => 'mixed',
+  ),
+  'swoole\\coroutine\\context::setiteratorclass' => 
+  array (
+    0 => 'mixed',
+    'iteratorClass' => 'mixed',
+  ),
+  'swoole\\coroutine\\context::uasort' => 
+  array (
+    0 => 'mixed',
+    'cmp_function' => 'mixed',
+  ),
+  'swoole\\coroutine\\context::uksort' => 
+  array (
+    0 => 'mixed',
+    'cmp_function' => 'mixed',
+  ),
+  'swoole\\coroutine\\context::unserialize' => 
+  array (
+    0 => 'mixed',
+    'serialized' => 'mixed',
+  ),
+  'swoole\\coroutine\\curl\\exception::__clone' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\curl\\exception::__construct' => 
+  array (
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
+  ),
+  'swoole\\coroutine\\curl\\exception::__tostring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\curl\\exception::__wakeup' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\curl\\exception::getcode' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\curl\\exception::getfile' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\curl\\exception::getline' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\curl\\exception::getmessage' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\curl\\exception::getprevious' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\curl\\exception::gettrace' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\curl\\exception::gettraceasstring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\deadlock_check' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\defer' => 
+  array (
+    0 => 'mixed',
+    'fn' => 'callable',
+  ),
+  'swoole\\coroutine\\fastcgi\\client::__construct' => 
+  array (
+    0 => 'void',
+    'host' => 'string',
+    'port=' => 'int',
+    'ssl=' => 'bool',
+  ),
+  'swoole\\coroutine\\fastcgi\\client::call' => 
+  array (
+    0 => 'string',
+    'url' => 'string',
+    'path' => 'string',
+    'data=' => 'mixed',
+    'timeout=' => 'float',
+  ),
+  'swoole\\coroutine\\fastcgi\\client::execute' => 
+  array (
+    0 => 'Swoole\\FastCGI\\Response',
+    'request' => 'Swoole\\FastCGI\\Request',
+    'timeout=' => 'float',
+  ),
+  'swoole\\coroutine\\fastcgi\\client::ioexception' => 
+  array (
+    0 => 'void',
+    'errno=' => 'int|null',
+  ),
+  'swoole\\coroutine\\fastcgi\\client::parseurl' => 
+  array (
+    0 => 'array<array-key, mixed>',
+    'url' => 'string',
+  ),
+  'swoole\\coroutine\\fastcgi\\client\\exception::__clone' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\fastcgi\\client\\exception::__construct' => 
+  array (
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
+  ),
+  'swoole\\coroutine\\fastcgi\\client\\exception::__tostring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\fastcgi\\client\\exception::__wakeup' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\fastcgi\\client\\exception::getcode' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\fastcgi\\client\\exception::getfile' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\fastcgi\\client\\exception::getline' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\fastcgi\\client\\exception::getmessage' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\fastcgi\\client\\exception::getprevious' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\fastcgi\\client\\exception::gettrace' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\fastcgi\\client\\exception::gettraceasstring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\fastcgi\\proxy::__construct' => 
+  array (
+    0 => 'void',
+    'url' => 'string',
+    'documentRoot=' => 'string',
+  ),
+  'swoole\\coroutine\\fastcgi\\proxy::getparam' => 
+  array (
+    0 => 'null|string',
+    'name' => 'string',
+  ),
+  'swoole\\coroutine\\fastcgi\\proxy::getparams' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'swoole\\coroutine\\fastcgi\\proxy::pass' => 
+  array (
+    0 => 'void',
+    'userRequest' => 'mixed',
+    'userResponse' => 'mixed',
+  ),
+  'swoole\\coroutine\\fastcgi\\proxy::staticfilefiltrate' => 
+  array (
+    0 => 'bool',
+    'request' => 'Swoole\\FastCGI\\HttpRequest',
+    'userResponse' => 'mixed',
+  ),
+  'swoole\\coroutine\\fastcgi\\proxy::translaterequest' => 
+  array (
+    0 => 'Swoole\\FastCGI\\HttpRequest',
+    'userRequest' => 'mixed',
+  ),
+  'swoole\\coroutine\\fastcgi\\proxy::translateresponse' => 
+  array (
+    0 => 'void',
+    'response' => 'Swoole\\FastCGI\\HttpResponse',
+    'userResponse' => 'mixed',
+  ),
+  'swoole\\coroutine\\fastcgi\\proxy::withaddedparams' => 
+  array (
+    0 => 'self',
+    'params' => 'array<array-key, mixed>',
+  ),
+  'swoole\\coroutine\\fastcgi\\proxy::withhttps' => 
+  array (
+    0 => 'self',
+    'https' => 'bool',
+  ),
+  'swoole\\coroutine\\fastcgi\\proxy::withindex' => 
+  array (
+    0 => 'self',
+    'index' => 'string',
+  ),
+  'swoole\\coroutine\\fastcgi\\proxy::withoutparam' => 
+  array (
+    0 => 'self',
+    'name' => 'string',
+  ),
+  'swoole\\coroutine\\fastcgi\\proxy::withparam' => 
+  array (
+    0 => 'self',
+    'name' => 'string',
+    'value' => 'string',
+  ),
+  'swoole\\coroutine\\fastcgi\\proxy::withparams' => 
+  array (
+    0 => 'self',
+    'params' => 'array<array-key, mixed>',
+  ),
+  'swoole\\coroutine\\fastcgi\\proxy::withstaticfilefilter' => 
+  array (
+    0 => 'self',
+    'filter' => 'callable|null',
+  ),
+  'swoole\\coroutine\\fastcgi\\proxy::withtimeout' => 
+  array (
+    0 => 'self',
+    'timeout' => 'float',
+  ),
+  'swoole\\coroutine\\go' => 
+  array (
+    0 => 'mixed',
+    'fn' => 'callable',
+    '...args=' => 'mixed',
+  ),
+  'swoole\\coroutine\\http2\\client::__construct' => 
+  array (
+    0 => 'void',
+    'host' => 'mixed',
+    'port=' => 'mixed',
+    'open_ssl=' => 'mixed',
+  ),
+  'swoole\\coroutine\\http2\\client::__destruct' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\http2\\client::close' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\http2\\client::connect' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\http2\\client::goaway' => 
+  array (
+    0 => 'mixed',
+    'error_code=' => 'mixed',
+    'debug_data=' => 'mixed',
+  ),
+  'swoole\\coroutine\\http2\\client::isstreamexist' => 
+  array (
+    0 => 'mixed',
+    'stream_id' => 'mixed',
+  ),
+  'swoole\\coroutine\\http2\\client::ping' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\http2\\client::read' => 
+  array (
+    0 => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'swoole\\coroutine\\http2\\client::recv' => 
+  array (
+    0 => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'swoole\\coroutine\\http2\\client::send' => 
+  array (
+    0 => 'mixed',
+    'request' => 'mixed',
+  ),
+  'swoole\\coroutine\\http2\\client::set' => 
+  array (
+    0 => 'mixed',
+    'settings' => 'array<array-key, mixed>',
+  ),
+  'swoole\\coroutine\\http2\\client::stats' => 
+  array (
+    0 => 'mixed',
+    'key=' => 'mixed',
+  ),
+  'swoole\\coroutine\\http2\\client::write' => 
+  array (
+    0 => 'mixed',
+    'stream_id' => 'mixed',
+    'data' => 'mixed',
+    'end_stream=' => 'mixed',
+  ),
+  'swoole\\coroutine\\http2\\client\\exception::__clone' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\http2\\client\\exception::__construct' => 
+  array (
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
+  ),
+  'swoole\\coroutine\\http2\\client\\exception::__tostring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\http2\\client\\exception::__wakeup' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\http2\\client\\exception::getcode' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\http2\\client\\exception::getfile' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\http2\\client\\exception::getline' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\http2\\client\\exception::getmessage' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\http2\\client\\exception::getprevious' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\http2\\client\\exception::gettrace' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\http2\\client\\exception::gettraceasstring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\http\\client::__construct' => 
+  array (
+    0 => 'void',
+    'host' => 'mixed',
+    'port=' => 'mixed',
+    'ssl=' => 'mixed',
+  ),
   'swoole\\coroutine\\http\\client::__destruct' => 
   array (
     0 => 'ReturnType',
+  ),
+  'swoole\\coroutine\\http\\client::adddata' => 
+  array (
+    0 => 'mixed',
+    'path' => 'mixed',
+    'name' => 'mixed',
+    'type=' => 'mixed',
+    'filename=' => 'mixed',
   ),
   'swoole\\coroutine\\http\\client::addfile' => 
   array (
@@ -80152,6 +84295,13 @@ return array (
   array (
     0 => 'ReturnType',
   ),
+  'swoole\\coroutine\\http\\client::download' => 
+  array (
+    0 => 'mixed',
+    'path' => 'mixed',
+    'file' => 'mixed',
+    'offset=' => 'mixed',
+  ),
   'swoole\\coroutine\\http\\client::execute' => 
   array (
     0 => 'ReturnType',
@@ -80160,9 +84310,41 @@ return array (
   array (
     0 => 'ReturnType',
   ),
+  'swoole\\coroutine\\http\\client::getbody' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\http\\client::getcookies' => 
+  array (
+    0 => 'mixed',
+  ),
   'swoole\\coroutine\\http\\client::getdefer' => 
   array (
     0 => 'ReturnType',
+  ),
+  'swoole\\coroutine\\http\\client::getheaderout' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\http\\client::getheaders' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\http\\client::getpeercert' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\http\\client::getpeername' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\http\\client::getsockname' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\http\\client::getstatuscode' => 
+  array (
+    0 => 'mixed',
   ),
   'swoole\\coroutine\\http\\client::isconnected' => 
   array (
@@ -80172,6 +84354,13 @@ return array (
   array (
     0 => 'ReturnType',
   ),
+  'swoole\\coroutine\\http\\client::push' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
+    'opcode=' => 'mixed',
+    'flags=' => 'mixed',
+  ),
   'swoole\\coroutine\\http\\client::recv' => 
   array (
     0 => 'ReturnType',
@@ -80179,6 +84368,12 @@ return array (
   'swoole\\coroutine\\http\\client::set' => 
   array (
     0 => 'ReturnType',
+  ),
+  'swoole\\coroutine\\http\\client::setbasicauth' => 
+  array (
+    0 => 'mixed',
+    'username' => 'mixed',
+    'password' => 'mixed',
   ),
   'swoole\\coroutine\\http\\client::setcookies' => 
   array (
@@ -80200,21 +84395,343 @@ return array (
   array (
     0 => 'ReturnType',
   ),
+  'swoole\\coroutine\\http\\client::upgrade' => 
+  array (
+    0 => 'mixed',
+    'path' => 'mixed',
+  ),
+  'swoole\\coroutine\\http\\client\\exception::__clone' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\http\\client\\exception::__construct' => 
+  array (
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
+  ),
+  'swoole\\coroutine\\http\\client\\exception::__tostring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\http\\client\\exception::__wakeup' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\http\\client\\exception::getcode' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\http\\client\\exception::getfile' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\http\\client\\exception::getline' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\http\\client\\exception::getmessage' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\http\\client\\exception::getprevious' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\http\\client\\exception::gettrace' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\http\\client\\exception::gettraceasstring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\http\\clientproxy::__construct' => 
+  array (
+    0 => 'void',
+    'body' => 'mixed',
+    'statusCode' => 'mixed',
+    'headers' => 'mixed',
+    'cookies' => 'mixed',
+  ),
+  'swoole\\coroutine\\http\\clientproxy::getbody' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\http\\clientproxy::getcookies' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\http\\clientproxy::getheaders' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\http\\clientproxy::getstatuscode' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\http\\get' => 
+  array (
+    0 => 'Swoole\\Coroutine\\Http\\ClientProxy',
+    'url' => 'string',
+    'options=' => 'array<array-key, mixed>|null',
+    'headers=' => 'array<array-key, mixed>|null',
+    'cookies=' => 'array<array-key, mixed>|null',
+  ),
+  'swoole\\coroutine\\http\\post' => 
+  array (
+    0 => 'Swoole\\Coroutine\\Http\\ClientProxy',
+    'url' => 'string',
+    'data' => 'mixed',
+    'options=' => 'array<array-key, mixed>|null',
+    'headers=' => 'array<array-key, mixed>|null',
+    'cookies=' => 'array<array-key, mixed>|null',
+  ),
+  'swoole\\coroutine\\http\\request' => 
+  array (
+    0 => 'Swoole\\Coroutine\\Http\\ClientProxy',
+    'url' => 'string',
+    'method' => 'string',
+    'data=' => 'mixed',
+    'options=' => 'array<array-key, mixed>|null',
+    'headers=' => 'array<array-key, mixed>|null',
+    'cookies=' => 'array<array-key, mixed>|null',
+  ),
+  'swoole\\coroutine\\http\\request_with_curl' => 
+  array (
+    0 => 'Swoole\\Coroutine\\Http\\ClientProxy',
+    'url' => 'string',
+    'method' => 'string',
+    'data=' => 'mixed',
+    'options=' => 'array<array-key, mixed>|null',
+    'headers=' => 'array<array-key, mixed>|null',
+    'cookies=' => 'array<array-key, mixed>|null',
+  ),
+  'swoole\\coroutine\\http\\request_with_http_client' => 
+  array (
+    0 => 'Swoole\\Coroutine\\Http\\ClientProxy',
+    'url' => 'string',
+    'method' => 'string',
+    'data=' => 'mixed',
+    'options=' => 'array<array-key, mixed>|null',
+    'headers=' => 'array<array-key, mixed>|null',
+    'cookies=' => 'array<array-key, mixed>|null',
+  ),
+  'swoole\\coroutine\\http\\request_with_stream' => 
+  array (
+    0 => 'Swoole\\Coroutine\\Http\\ClientProxy',
+    'url' => 'string',
+    'method' => 'string',
+    'data=' => 'mixed',
+    'options=' => 'array<array-key, mixed>|null',
+    'headers=' => 'array<array-key, mixed>|null',
+    'cookies=' => 'array<array-key, mixed>|null',
+  ),
+  'swoole\\coroutine\\http\\server::__construct' => 
+  array (
+    0 => 'void',
+    'host' => 'mixed',
+    'port=' => 'mixed',
+    'ssl=' => 'mixed',
+    'reuse_port=' => 'mixed',
+  ),
+  'swoole\\coroutine\\http\\server::__destruct' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\http\\server::handle' => 
+  array (
+    0 => 'mixed',
+    'pattern' => 'mixed',
+    'callback' => 'callable',
+  ),
+  'swoole\\coroutine\\http\\server::onaccept' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\http\\server::set' => 
+  array (
+    0 => 'mixed',
+    'settings' => 'array<array-key, mixed>',
+  ),
+  'swoole\\coroutine\\http\\server::shutdown' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\http\\server::start' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\iterator::__construct' => 
+  array (
+    0 => 'void',
+    'array=' => 'mixed',
+    'ar_flags=' => 'mixed',
+  ),
+  'swoole\\coroutine\\iterator::append' => 
+  array (
+    0 => 'mixed',
+    'value' => 'mixed',
+  ),
+  'swoole\\coroutine\\iterator::asort' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\iterator::count' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\iterator::current' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\iterator::getarraycopy' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\iterator::getflags' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\iterator::key' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\iterator::ksort' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\iterator::natcasesort' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\iterator::natsort' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\iterator::next' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\iterator::offsetexists' => 
+  array (
+    0 => 'mixed',
+    'index' => 'mixed',
+  ),
+  'swoole\\coroutine\\iterator::offsetget' => 
+  array (
+    0 => 'mixed',
+    'index' => 'mixed',
+  ),
+  'swoole\\coroutine\\iterator::offsetset' => 
+  array (
+    0 => 'mixed',
+    'index' => 'mixed',
+    'newval' => 'mixed',
+  ),
+  'swoole\\coroutine\\iterator::offsetunset' => 
+  array (
+    0 => 'mixed',
+    'index' => 'mixed',
+  ),
+  'swoole\\coroutine\\iterator::rewind' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\iterator::seek' => 
+  array (
+    0 => 'mixed',
+    'position' => 'mixed',
+  ),
+  'swoole\\coroutine\\iterator::serialize' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\iterator::setflags' => 
+  array (
+    0 => 'mixed',
+    'flags' => 'mixed',
+  ),
+  'swoole\\coroutine\\iterator::uasort' => 
+  array (
+    0 => 'mixed',
+    'cmp_function' => 'mixed',
+  ),
+  'swoole\\coroutine\\iterator::uksort' => 
+  array (
+    0 => 'mixed',
+    'cmp_function' => 'mixed',
+  ),
+  'swoole\\coroutine\\iterator::unserialize' => 
+  array (
+    0 => 'mixed',
+    'serialized' => 'mixed',
+  ),
+  'swoole\\coroutine\\iterator::valid' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\map' => 
+  array (
+    0 => 'array<array-key, mixed>',
+    'list' => 'array<array-key, mixed>',
+    'fn' => 'callable',
+    'timeout=' => 'float',
+  ),
+  'swoole\\coroutine\\mysql::__construct' => 
+  array (
+    0 => 'void',
+  ),
   'swoole\\coroutine\\mysql::__destruct' => 
   array (
     0 => 'ReturnType',
+  ),
+  'swoole\\coroutine\\mysql::begin' => 
+  array (
+    0 => 'mixed',
+    'timeout=' => 'mixed',
   ),
   'swoole\\coroutine\\mysql::close' => 
   array (
     0 => 'ReturnType',
   ),
+  'swoole\\coroutine\\mysql::commit' => 
+  array (
+    0 => 'mixed',
+    'timeout=' => 'mixed',
+  ),
   'swoole\\coroutine\\mysql::connect' => 
   array (
     0 => 'ReturnType',
   ),
+  'swoole\\coroutine\\mysql::escape' => 
+  array (
+    0 => 'mixed',
+    'string' => 'mixed',
+    'flags=' => 'mixed',
+  ),
+  'swoole\\coroutine\\mysql::fetch' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\mysql::fetchall' => 
+  array (
+    0 => 'mixed',
+  ),
   'swoole\\coroutine\\mysql::getdefer' => 
   array (
     0 => 'ReturnType',
+  ),
+  'swoole\\coroutine\\mysql::nextresult' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\mysql::prepare' => 
+  array (
+    0 => 'mixed',
+    'query' => 'mixed',
+    'timeout=' => 'mixed',
   ),
   'swoole\\coroutine\\mysql::query' => 
   array (
@@ -80224,9 +84741,2527 @@ return array (
   array (
     0 => 'ReturnType',
   ),
+  'swoole\\coroutine\\mysql::rollback' => 
+  array (
+    0 => 'mixed',
+    'timeout=' => 'mixed',
+  ),
   'swoole\\coroutine\\mysql::setdefer' => 
   array (
     0 => 'ReturnType',
+  ),
+  'swoole\\coroutine\\mysql\\exception::__clone' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\mysql\\exception::__construct' => 
+  array (
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
+  ),
+  'swoole\\coroutine\\mysql\\exception::__tostring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\mysql\\exception::__wakeup' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\mysql\\exception::getcode' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\mysql\\exception::getfile' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\mysql\\exception::getline' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\mysql\\exception::getmessage' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\mysql\\exception::getprevious' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\mysql\\exception::gettrace' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\mysql\\exception::gettraceasstring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\mysql\\statement::close' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\mysql\\statement::execute' => 
+  array (
+    0 => 'mixed',
+    'params=' => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'swoole\\coroutine\\mysql\\statement::fetch' => 
+  array (
+    0 => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'swoole\\coroutine\\mysql\\statement::fetchall' => 
+  array (
+    0 => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'swoole\\coroutine\\mysql\\statement::nextresult' => 
+  array (
+    0 => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'swoole\\coroutine\\mysql\\statement::recv' => 
+  array (
+    0 => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'swoole\\coroutine\\parallel' => 
+  array (
+    0 => 'void',
+    'n' => 'int',
+    'fn' => 'callable',
+  ),
+  'swoole\\coroutine\\redis::__construct' => 
+  array (
+    0 => 'void',
+    'config=' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::__destruct' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::append' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::auth' => 
+  array (
+    0 => 'mixed',
+    'password' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::bgrewriteaof' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::bgsave' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::bitcount' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::bitop' => 
+  array (
+    0 => 'mixed',
+    'operation' => 'mixed',
+    'ret_key' => 'mixed',
+    'key' => 'mixed',
+    'other_keys=' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::blpop' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'timeout_or_key' => 'mixed',
+    'extra_args=' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::brpop' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'timeout_or_key' => 'mixed',
+    'extra_args=' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::brpoplpush' => 
+  array (
+    0 => 'mixed',
+    'src' => 'mixed',
+    'dst' => 'mixed',
+    'timeout' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::bzpopmax' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'timeout_or_key' => 'mixed',
+    'extra_args=' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::bzpopmin' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'timeout_or_key' => 'mixed',
+    'extra_args=' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::close' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::connect' => 
+  array (
+    0 => 'mixed',
+    'host' => 'mixed',
+    'port=' => 'mixed',
+    'serialize=' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::dbsize' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::debug' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::decr' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::decrby' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::del' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'other_keys=' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::delete' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'other_keys=' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::dump' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::eval' => 
+  array (
+    0 => 'mixed',
+    'script' => 'mixed',
+    'args=' => 'mixed',
+    'num_keys=' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::evalsha' => 
+  array (
+    0 => 'mixed',
+    'script_sha' => 'mixed',
+    'args=' => 'mixed',
+    'num_keys=' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::exec' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::exists' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'other_keys=' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::expire' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'integer' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::expireat' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'timestamp' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::flushall' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::flushdb' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::get' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::getauth' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::getbit' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'offset' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::getdbnum' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::getdefer' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::getkeys' => 
+  array (
+    0 => 'mixed',
+    'pattern' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::getoptions' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::getrange' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'start' => 'mixed',
+    'end' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::getset' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::hdel' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'member' => 'mixed',
+    'other_members=' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::hexists' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'member' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::hget' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'member' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::hgetall' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::hincrby' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'member' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::hincrbyfloat' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'member' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::hkeys' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::hlen' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::hmget' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'keys' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::hmset' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'pairs' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::hset' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'member' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::hsetnx' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'member' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::hvals' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::incr' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::incrby' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::incrbyfloat' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::keys' => 
+  array (
+    0 => 'mixed',
+    'pattern' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::lastsave' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::lget' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'index' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::lgetrange' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'start' => 'mixed',
+    'end' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::lindex' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'integer' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::linsert' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'position' => 'mixed',
+    'pivot' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::listtrim' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'start' => 'mixed',
+    'stop' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::llen' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::lpop' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::lpush' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::lpushx' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::lrange' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'start' => 'mixed',
+    'end' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::lrem' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'value' => 'mixed',
+    'count' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::lremove' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'value' => 'mixed',
+    'count' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::lset' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'index' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::lsize' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::ltrim' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'start' => 'mixed',
+    'stop' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::mget' => 
+  array (
+    0 => 'mixed',
+    'keys' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::move' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'dbindex' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::mset' => 
+  array (
+    0 => 'mixed',
+    'pairs' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::msetnx' => 
+  array (
+    0 => 'mixed',
+    'pairs' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::multi' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::persist' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::pexpire' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'timestamp' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::pexpireat' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'timestamp' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::pfadd' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'elements' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::pfcount' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::pfmerge' => 
+  array (
+    0 => 'mixed',
+    'dstkey' => 'mixed',
+    'keys' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::ping' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::psetex' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'expire' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::psubscribe' => 
+  array (
+    0 => 'mixed',
+    'patterns' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::pttl' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::publish' => 
+  array (
+    0 => 'mixed',
+    'channel' => 'mixed',
+    'message' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::punsubscribe' => 
+  array (
+    0 => 'mixed',
+    'patterns' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::randomkey' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::recv' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::rename' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'newkey' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::renamekey' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'newkey' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::renamenx' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'newkey' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::request' => 
+  array (
+    0 => 'mixed',
+    'params' => 'array<array-key, mixed>',
+  ),
+  'swoole\\coroutine\\redis::restore' => 
+  array (
+    0 => 'mixed',
+    'ttl' => 'mixed',
+    'key' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::role' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::rpop' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::rpoplpush' => 
+  array (
+    0 => 'mixed',
+    'src' => 'mixed',
+    'dst' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::rpush' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::rpushx' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::sadd' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::save' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::scard' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::scontains' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::script' => 
+  array (
+    0 => 'mixed',
+    'cmd' => 'mixed',
+    'args=' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::sdiff' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'other_keys=' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::sdiffstore' => 
+  array (
+    0 => 'mixed',
+    'dst' => 'mixed',
+    'key' => 'mixed',
+    'other_keys=' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::select' => 
+  array (
+    0 => 'mixed',
+    'dbindex' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::set' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'value' => 'mixed',
+    'timeout=' => 'mixed',
+    'opt=' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::setbit' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'offset' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::setdefer' => 
+  array (
+    0 => 'mixed',
+    'defer' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::setex' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'expire' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::setnx' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::setoptions' => 
+  array (
+    0 => 'mixed',
+    'options' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::setrange' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'offset' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::settimeout' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'timeout' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::sgetmembers' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::sinter' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'other_keys=' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::sinterstore' => 
+  array (
+    0 => 'mixed',
+    'dst' => 'mixed',
+    'key' => 'mixed',
+    'other_keys=' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::sismember' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::smembers' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::smove' => 
+  array (
+    0 => 'mixed',
+    'src' => 'mixed',
+    'dst' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::spop' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::srandmember' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'count=' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::srem' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::sremove' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::ssize' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::strlen' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::subscribe' => 
+  array (
+    0 => 'mixed',
+    'channels' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::sunion' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'other_keys=' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::sunionstore' => 
+  array (
+    0 => 'mixed',
+    'dst' => 'mixed',
+    'key' => 'mixed',
+    'other_keys=' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::time' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::ttl' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::type' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::unsubscribe' => 
+  array (
+    0 => 'mixed',
+    'channels' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::unwatch' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::watch' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'other_keys=' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::xack' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'group_name' => 'mixed',
+    'id' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::xadd' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'id' => 'mixed',
+    'pairs' => 'mixed',
+    'options=' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::xautoclaim' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'group_name' => 'mixed',
+    'consumer_name' => 'mixed',
+    'min_idle_time' => 'mixed',
+    'start' => 'mixed',
+    'options=' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::xclaim' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'group_name' => 'mixed',
+    'consumer_name' => 'mixed',
+    'min_idle_time' => 'mixed',
+    'id' => 'mixed',
+    'options=' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::xdel' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'id' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::xgroupcreate' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'group_name' => 'mixed',
+    'id' => 'mixed',
+    'mkstream=' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::xgroupcreateconsumer' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'group_name' => 'mixed',
+    'consumer_name' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::xgroupdelconsumer' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'group_name' => 'mixed',
+    'consumer_name' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::xgroupdestroy' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'group_name' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::xgroupsetid' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'group_name' => 'mixed',
+    'id' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::xinfoconsumers' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'group_name' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::xinfogroups' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::xinfostream' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::xlen' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::xpending' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'group_name' => 'mixed',
+    'options=' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::xrange' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'start' => 'mixed',
+    'end' => 'mixed',
+    'count=' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::xread' => 
+  array (
+    0 => 'mixed',
+    'streams' => 'mixed',
+    'options=' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::xreadgroup' => 
+  array (
+    0 => 'mixed',
+    'group_name' => 'mixed',
+    'consumer_name' => 'mixed',
+    'streams' => 'mixed',
+    'options=' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::xrevrange' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'start' => 'mixed',
+    'end' => 'mixed',
+    'count=' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::xtrim' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'options=' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::zadd' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'score' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::zcard' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::zcount' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'min' => 'mixed',
+    'max' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::zdelete' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'member' => 'mixed',
+    'other_members=' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::zdeleterangebyrank' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'start' => 'mixed',
+    'end' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::zdeleterangebyscore' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'min' => 'mixed',
+    'max' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::zincrby' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'value' => 'mixed',
+    'member' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::zinter' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'keys' => 'mixed',
+    'weights=' => 'mixed',
+    'aggregate=' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::zinterstore' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'keys' => 'mixed',
+    'weights=' => 'mixed',
+    'aggregate=' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::zpopmax' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'count' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::zpopmin' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'count' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::zrange' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'start' => 'mixed',
+    'end' => 'mixed',
+    'scores=' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::zrangebylex' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'min' => 'mixed',
+    'max' => 'mixed',
+    'offset=' => 'mixed',
+    'limit=' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::zrangebyscore' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'start' => 'mixed',
+    'end' => 'mixed',
+    'options=' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::zrank' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'member' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::zrem' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'member' => 'mixed',
+    'other_members=' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::zremove' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'member' => 'mixed',
+    'other_members=' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::zremrangebyrank' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'min' => 'mixed',
+    'max' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::zremrangebyscore' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'min' => 'mixed',
+    'max' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::zrevrange' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'start' => 'mixed',
+    'end' => 'mixed',
+    'scores=' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::zrevrangebylex' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'min' => 'mixed',
+    'max' => 'mixed',
+    'offset=' => 'mixed',
+    'limit=' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::zrevrangebyscore' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'start' => 'mixed',
+    'end' => 'mixed',
+    'options=' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::zrevrank' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'member' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::zscore' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'member' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::zsize' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::zunion' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'keys' => 'mixed',
+    'weights=' => 'mixed',
+    'aggregate=' => 'mixed',
+  ),
+  'swoole\\coroutine\\redis::zunionstore' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'keys' => 'mixed',
+    'weights=' => 'mixed',
+    'aggregate=' => 'mixed',
+  ),
+  'swoole\\coroutine\\run' => 
+  array (
+    0 => 'mixed',
+    'fn' => 'callable',
+    '...args=' => 'mixed',
+  ),
+  'swoole\\coroutine\\scheduler::add' => 
+  array (
+    0 => 'mixed',
+    'func' => 'callable',
+    '...params=' => 'mixed',
+  ),
+  'swoole\\coroutine\\scheduler::getoptions' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\scheduler::parallel' => 
+  array (
+    0 => 'mixed',
+    'n' => 'mixed',
+    'func=' => 'callable',
+    '...params=' => 'mixed',
+  ),
+  'swoole\\coroutine\\scheduler::set' => 
+  array (
+    0 => 'mixed',
+    'settings' => 'array<array-key, mixed>',
+  ),
+  'swoole\\coroutine\\scheduler::start' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\server::__construct' => 
+  array (
+    0 => 'void',
+    'host' => 'string',
+    'port=' => 'int',
+    'ssl=' => 'bool',
+    'reuse_port=' => 'bool',
+  ),
+  'swoole\\coroutine\\server::handle' => 
+  array (
+    0 => 'void',
+    'fn' => 'callable',
+  ),
+  'swoole\\coroutine\\server::set' => 
+  array (
+    0 => 'void',
+    'setting' => 'array<array-key, mixed>',
+  ),
+  'swoole\\coroutine\\server::shutdown' => 
+  array (
+    0 => 'bool',
+  ),
+  'swoole\\coroutine\\server::start' => 
+  array (
+    0 => 'bool',
+  ),
+  'swoole\\coroutine\\server\\connection::__construct' => 
+  array (
+    0 => 'void',
+    'conn' => 'Swoole\\Coroutine\\Socket',
+  ),
+  'swoole\\coroutine\\server\\connection::close' => 
+  array (
+    0 => 'bool',
+  ),
+  'swoole\\coroutine\\server\\connection::exportsocket' => 
+  array (
+    0 => 'Swoole\\Coroutine\\Socket',
+  ),
+  'swoole\\coroutine\\server\\connection::recv' => 
+  array (
+    0 => 'mixed',
+    'timeout=' => 'float',
+  ),
+  'swoole\\coroutine\\server\\connection::send' => 
+  array (
+    0 => 'mixed',
+    'data' => 'string',
+  ),
+  'swoole\\coroutine\\socket::__construct' => 
+  array (
+    0 => 'void',
+    'domain' => 'mixed',
+    'type' => 'mixed',
+    'protocol=' => 'mixed',
+  ),
+  'swoole\\coroutine\\socket::accept' => 
+  array (
+    0 => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'swoole\\coroutine\\socket::bind' => 
+  array (
+    0 => 'mixed',
+    'address' => 'mixed',
+    'port=' => 'mixed',
+  ),
+  'swoole\\coroutine\\socket::cancel' => 
+  array (
+    0 => 'mixed',
+    'event=' => 'mixed',
+  ),
+  'swoole\\coroutine\\socket::checkliveness' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\socket::close' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\socket::connect' => 
+  array (
+    0 => 'mixed',
+    'host' => 'mixed',
+    'port=' => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'swoole\\coroutine\\socket::getoption' => 
+  array (
+    0 => 'mixed',
+    'level' => 'mixed',
+    'opt_name' => 'mixed',
+  ),
+  'swoole\\coroutine\\socket::getpeername' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\socket::getsockname' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\socket::isclosed' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\socket::listen' => 
+  array (
+    0 => 'mixed',
+    'backlog=' => 'mixed',
+  ),
+  'swoole\\coroutine\\socket::peek' => 
+  array (
+    0 => 'mixed',
+    'length=' => 'mixed',
+  ),
+  'swoole\\coroutine\\socket::readvector' => 
+  array (
+    0 => 'mixed',
+    'io_vector' => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'swoole\\coroutine\\socket::readvectorall' => 
+  array (
+    0 => 'mixed',
+    'io_vector' => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'swoole\\coroutine\\socket::recv' => 
+  array (
+    0 => 'mixed',
+    'length=' => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'swoole\\coroutine\\socket::recvall' => 
+  array (
+    0 => 'mixed',
+    'length=' => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'swoole\\coroutine\\socket::recvfrom' => 
+  array (
+    0 => 'mixed',
+    '&peername' => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'swoole\\coroutine\\socket::recvline' => 
+  array (
+    0 => 'mixed',
+    'length=' => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'swoole\\coroutine\\socket::recvpacket' => 
+  array (
+    0 => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'swoole\\coroutine\\socket::recvwithbuffer' => 
+  array (
+    0 => 'mixed',
+    'length=' => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'swoole\\coroutine\\socket::send' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'swoole\\coroutine\\socket::sendall' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'swoole\\coroutine\\socket::sendfile' => 
+  array (
+    0 => 'mixed',
+    'filename' => 'mixed',
+    'offset=' => 'mixed',
+    'length=' => 'mixed',
+  ),
+  'swoole\\coroutine\\socket::sendto' => 
+  array (
+    0 => 'mixed',
+    'addr' => 'mixed',
+    'port' => 'mixed',
+    'data' => 'mixed',
+  ),
+  'swoole\\coroutine\\socket::setoption' => 
+  array (
+    0 => 'mixed',
+    'level' => 'mixed',
+    'opt_name' => 'mixed',
+    'opt_value' => 'mixed',
+  ),
+  'swoole\\coroutine\\socket::setprotocol' => 
+  array (
+    0 => 'mixed',
+    'settings' => 'array<array-key, mixed>',
+  ),
+  'swoole\\coroutine\\socket::shutdown' => 
+  array (
+    0 => 'mixed',
+    'how=' => 'mixed',
+  ),
+  'swoole\\coroutine\\socket::sslhandshake' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\socket::writevector' => 
+  array (
+    0 => 'mixed',
+    'io_vector' => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'swoole\\coroutine\\socket::writevectorall' => 
+  array (
+    0 => 'mixed',
+    'io_vector' => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'swoole\\coroutine\\socket\\exception::__clone' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\socket\\exception::__construct' => 
+  array (
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
+  ),
+  'swoole\\coroutine\\socket\\exception::__tostring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\socket\\exception::__wakeup' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\socket\\exception::getcode' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\socket\\exception::getfile' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\socket\\exception::getline' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\socket\\exception::getmessage' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\socket\\exception::getprevious' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\socket\\exception::gettrace' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\socket\\exception::gettraceasstring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\coroutine\\system::dnslookup' => 
+  array (
+    0 => 'mixed',
+    'domain_name' => 'mixed',
+    'timeout=' => 'mixed',
+    'type=' => 'mixed',
+  ),
+  'swoole\\coroutine\\system::exec' => 
+  array (
+    0 => 'mixed',
+    'command' => 'mixed',
+    'get_error_stream=' => 'mixed',
+  ),
+  'swoole\\coroutine\\system::fgets' => 
+  array (
+    0 => 'mixed',
+    'handle' => 'mixed',
+  ),
+  'swoole\\coroutine\\system::fread' => 
+  array (
+    0 => 'mixed',
+    'handle' => 'mixed',
+    'length=' => 'mixed',
+  ),
+  'swoole\\coroutine\\system::fwrite' => 
+  array (
+    0 => 'mixed',
+    'handle' => 'mixed',
+    'string' => 'mixed',
+    'length=' => 'mixed',
+  ),
+  'swoole\\coroutine\\system::getaddrinfo' => 
+  array (
+    0 => 'mixed',
+    'hostname' => 'mixed',
+    'family=' => 'mixed',
+    'socktype=' => 'mixed',
+    'protocol=' => 'mixed',
+    'service=' => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'swoole\\coroutine\\system::gethostbyname' => 
+  array (
+    0 => 'mixed',
+    'domain_name' => 'mixed',
+    'family=' => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'swoole\\coroutine\\system::readfile' => 
+  array (
+    0 => 'mixed',
+    'filename' => 'mixed',
+  ),
+  'swoole\\coroutine\\system::sleep' => 
+  array (
+    0 => 'mixed',
+    'seconds' => 'mixed',
+  ),
+  'swoole\\coroutine\\system::statvfs' => 
+  array (
+    0 => 'mixed',
+    'path' => 'mixed',
+  ),
+  'swoole\\coroutine\\system::wait' => 
+  array (
+    0 => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'swoole\\coroutine\\system::waitevent' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+    'events=' => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'swoole\\coroutine\\system::waitpid' => 
+  array (
+    0 => 'mixed',
+    'pid' => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'swoole\\coroutine\\system::waitsignal' => 
+  array (
+    0 => 'mixed',
+    'signo' => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'swoole\\coroutine\\system::writefile' => 
+  array (
+    0 => 'mixed',
+    'filename' => 'mixed',
+    'data' => 'mixed',
+    'flags=' => 'mixed',
+  ),
+  'swoole\\coroutine\\waitgroup::__construct' => 
+  array (
+    0 => 'void',
+    'delta=' => 'int',
+  ),
+  'swoole\\coroutine\\waitgroup::add' => 
+  array (
+    0 => 'void',
+    'delta=' => 'int',
+  ),
+  'swoole\\coroutine\\waitgroup::count' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\coroutine\\waitgroup::done' => 
+  array (
+    0 => 'void',
+  ),
+  'swoole\\coroutine\\waitgroup::wait' => 
+  array (
+    0 => 'bool',
+    'timeout=' => 'float',
+  ),
+  'swoole\\curl\\exception::__clone' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\curl\\exception::__construct' => 
+  array (
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
+  ),
+  'swoole\\curl\\exception::__tostring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\curl\\exception::__wakeup' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\curl\\exception::getcode' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\curl\\exception::getfile' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\curl\\exception::getline' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\curl\\exception::getmessage' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\curl\\exception::getprevious' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\curl\\exception::gettrace' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\curl\\exception::gettraceasstring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\curl\\handler::__construct' => 
+  array (
+    0 => 'void',
+    'url=' => 'string',
+  ),
+  'swoole\\curl\\handler::__tostring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\curl\\handler::close' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\curl\\handler::create' => 
+  array (
+    0 => 'void',
+    'urlInfo=' => 'array<array-key, mixed>|null',
+  ),
+  'swoole\\curl\\handler::errno' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\curl\\handler::error' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\curl\\handler::exec' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\curl\\handler::execute' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\curl\\handler::getcontent' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\curl\\handler::getinfo' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\curl\\handler::getredirecturl' => 
+  array (
+    0 => 'array<array-key, mixed>',
+    'location' => 'string',
+  ),
+  'swoole\\curl\\handler::geturl' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\curl\\handler::hasheader' => 
+  array (
+    0 => 'bool',
+    'headerName' => 'string',
+  ),
+  'swoole\\curl\\handler::isavailable' => 
+  array (
+    0 => 'bool',
+  ),
+  'swoole\\curl\\handler::reset' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\curl\\handler::seterror' => 
+  array (
+    0 => 'void',
+    'code' => 'mixed',
+    'msg=' => 'mixed',
+  ),
+  'swoole\\curl\\handler::setheader' => 
+  array (
+    0 => 'void',
+    'headerName' => 'string',
+    'value' => 'string',
+  ),
+  'swoole\\curl\\handler::setopt' => 
+  array (
+    0 => 'bool',
+    'opt' => 'int',
+    'value' => 'mixed',
+  ),
+  'swoole\\curl\\handler::setoption' => 
+  array (
+    0 => 'bool',
+    'opt' => 'int',
+    'value' => 'mixed',
+  ),
+  'swoole\\curl\\handler::setport' => 
+  array (
+    0 => 'void',
+    'port' => 'int',
+  ),
+  'swoole\\curl\\handler::seturl' => 
+  array (
+    0 => 'bool',
+    'url' => 'string',
+    'setInfo=' => 'bool',
+  ),
+  'swoole\\curl\\handler::seturlinfo' => 
+  array (
+    0 => 'bool',
+    'urlInfo' => 'array<array-key, mixed>',
+  ),
+  'swoole\\curl\\handler::unparseurl' => 
+  array (
+    0 => 'string',
+    'parsedUrl' => 'array<array-key, mixed>',
+  ),
+  'swoole\\database\\mysqliconfig::getcharset' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\database\\mysqliconfig::getdbname' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\database\\mysqliconfig::gethost' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\database\\mysqliconfig::getoptions' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'swoole\\database\\mysqliconfig::getpassword' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\database\\mysqliconfig::getport' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\database\\mysqliconfig::getunixsocket' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\database\\mysqliconfig::getusername' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\database\\mysqliconfig::withcharset' => 
+  array (
+    0 => 'self',
+    'charset' => 'string',
+  ),
+  'swoole\\database\\mysqliconfig::withdbname' => 
+  array (
+    0 => 'self',
+    'dbname' => 'string',
+  ),
+  'swoole\\database\\mysqliconfig::withhost' => 
+  array (
+    0 => 'self',
+    'host' => 'mixed',
+  ),
+  'swoole\\database\\mysqliconfig::withoptions' => 
+  array (
+    0 => 'self',
+    'options' => 'array<array-key, mixed>',
+  ),
+  'swoole\\database\\mysqliconfig::withpassword' => 
+  array (
+    0 => 'self',
+    'password' => 'string',
+  ),
+  'swoole\\database\\mysqliconfig::withport' => 
+  array (
+    0 => 'self',
+    'port' => 'int',
+  ),
+  'swoole\\database\\mysqliconfig::withunixsocket' => 
+  array (
+    0 => 'self',
+    'unixSocket' => 'null|string',
+  ),
+  'swoole\\database\\mysqliconfig::withusername' => 
+  array (
+    0 => 'self',
+    'username' => 'string',
+  ),
+  'swoole\\database\\mysqliexception::__clone' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\database\\mysqliexception::__construct' => 
+  array (
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
+  ),
+  'swoole\\database\\mysqliexception::__tostring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\database\\mysqliexception::__wakeup' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\database\\mysqliexception::getcode' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\database\\mysqliexception::getfile' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\database\\mysqliexception::getline' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\database\\mysqliexception::getmessage' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\database\\mysqliexception::getprevious' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\database\\mysqliexception::gettrace' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\database\\mysqliexception::gettraceasstring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\database\\mysqlipool::__construct' => 
+  array (
+    0 => 'void',
+    'config' => 'Swoole\\Database\\MysqliConfig',
+    'size=' => 'int',
+  ),
+  'swoole\\database\\mysqlipool::close' => 
+  array (
+    0 => 'void',
+  ),
+  'swoole\\database\\mysqlipool::fill' => 
+  array (
+    0 => 'void',
+  ),
+  'swoole\\database\\mysqlipool::get' => 
+  array (
+    0 => 'mixed',
+    'timeout=' => 'float',
+  ),
+  'swoole\\database\\mysqlipool::make' => 
+  array (
+    0 => 'void',
+  ),
+  'swoole\\database\\mysqlipool::put' => 
+  array (
+    0 => 'void',
+    'connection' => 'mixed',
+  ),
+  'swoole\\database\\mysqliproxy::__call' => 
+  array (
+    0 => 'mixed',
+    'name' => 'string',
+    'arguments' => 'array<array-key, mixed>',
+  ),
+  'swoole\\database\\mysqliproxy::__clone' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\database\\mysqliproxy::__construct' => 
+  array (
+    0 => 'void',
+    'constructor' => 'callable',
+  ),
+  'swoole\\database\\mysqliproxy::__get' => 
+  array (
+    0 => 'mixed',
+    'name' => 'string',
+  ),
+  'swoole\\database\\mysqliproxy::__getobject' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\database\\mysqliproxy::__invoke' => 
+  array (
+    0 => 'mixed',
+    '...arguments=' => 'mixed',
+  ),
+  'swoole\\database\\mysqliproxy::__isset' => 
+  array (
+    0 => 'mixed',
+    'name' => 'mixed',
+  ),
+  'swoole\\database\\mysqliproxy::__set' => 
+  array (
+    0 => 'void',
+    'name' => 'string',
+    'value' => 'mixed',
+  ),
+  'swoole\\database\\mysqliproxy::__unset' => 
+  array (
+    0 => 'void',
+    'name' => 'string',
+  ),
+  'swoole\\database\\mysqliproxy::change_user' => 
+  array (
+    0 => 'bool',
+    'user' => 'string',
+    'password' => 'string',
+    'database' => 'string',
+  ),
+  'swoole\\database\\mysqliproxy::getround' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\database\\mysqliproxy::options' => 
+  array (
+    0 => 'bool',
+    'option' => 'int',
+    'value' => 'mixed',
+  ),
+  'swoole\\database\\mysqliproxy::reconnect' => 
+  array (
+    0 => 'void',
+  ),
+  'swoole\\database\\mysqliproxy::set_charset' => 
+  array (
+    0 => 'bool',
+    'charset' => 'string',
+  ),
+  'swoole\\database\\mysqliproxy::set_opt' => 
+  array (
+    0 => 'bool',
+    'option' => 'int',
+    'value' => 'mixed',
+  ),
+  'swoole\\database\\mysqlistatementproxy::__call' => 
+  array (
+    0 => 'mixed',
+    'name' => 'string',
+    'arguments' => 'array<array-key, mixed>',
+  ),
+  'swoole\\database\\mysqlistatementproxy::__clone' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\database\\mysqlistatementproxy::__construct' => 
+  array (
+    0 => 'void',
+    'object' => 'mysqli_stmt',
+    'queryString' => 'null|string',
+    'parent' => 'Swoole\\Database\\MysqliProxy',
+  ),
+  'swoole\\database\\mysqlistatementproxy::__get' => 
+  array (
+    0 => 'mixed',
+    'name' => 'string',
+  ),
+  'swoole\\database\\mysqlistatementproxy::__getobject' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\database\\mysqlistatementproxy::__invoke' => 
+  array (
+    0 => 'mixed',
+    '...arguments=' => 'mixed',
+  ),
+  'swoole\\database\\mysqlistatementproxy::__isset' => 
+  array (
+    0 => 'mixed',
+    'name' => 'mixed',
+  ),
+  'swoole\\database\\mysqlistatementproxy::__set' => 
+  array (
+    0 => 'void',
+    'name' => 'string',
+    'value' => 'mixed',
+  ),
+  'swoole\\database\\mysqlistatementproxy::__unset' => 
+  array (
+    0 => 'void',
+    'name' => 'string',
+  ),
+  'swoole\\database\\mysqlistatementproxy::attr_set' => 
+  array (
+    0 => 'bool',
+    'attr' => 'mixed',
+    'mode' => 'mixed',
+  ),
+  'swoole\\database\\mysqlistatementproxy::bind_param' => 
+  array (
+    0 => 'bool',
+    'types' => 'mixed',
+    '...&arguments=' => 'mixed',
+  ),
+  'swoole\\database\\mysqlistatementproxy::bind_result' => 
+  array (
+    0 => 'bool',
+    '...&arguments=' => 'mixed',
+  ),
+  'swoole\\database\\objectproxy::__call' => 
+  array (
+    0 => 'mixed',
+    'name' => 'string',
+    'arguments' => 'array<array-key, mixed>',
+  ),
+  'swoole\\database\\objectproxy::__clone' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\database\\objectproxy::__construct' => 
+  array (
+    0 => 'void',
+    'object' => 'mixed',
+  ),
+  'swoole\\database\\objectproxy::__get' => 
+  array (
+    0 => 'mixed',
+    'name' => 'string',
+  ),
+  'swoole\\database\\objectproxy::__getobject' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\database\\objectproxy::__invoke' => 
+  array (
+    0 => 'mixed',
+    '...arguments=' => 'mixed',
+  ),
+  'swoole\\database\\objectproxy::__isset' => 
+  array (
+    0 => 'mixed',
+    'name' => 'mixed',
+  ),
+  'swoole\\database\\objectproxy::__set' => 
+  array (
+    0 => 'void',
+    'name' => 'string',
+    'value' => 'mixed',
+  ),
+  'swoole\\database\\objectproxy::__unset' => 
+  array (
+    0 => 'void',
+    'name' => 'string',
+  ),
+  'swoole\\database\\pdoconfig::getavailabledrivers' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\database\\pdoconfig::getcharset' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\database\\pdoconfig::getdbname' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\database\\pdoconfig::getdriver' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\database\\pdoconfig::gethost' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\database\\pdoconfig::getoptions' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'swoole\\database\\pdoconfig::getpassword' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\database\\pdoconfig::getport' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\database\\pdoconfig::getunixsocket' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\database\\pdoconfig::getusername' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\database\\pdoconfig::hasunixsocket' => 
+  array (
+    0 => 'bool',
+  ),
+  'swoole\\database\\pdoconfig::withcharset' => 
+  array (
+    0 => 'self',
+    'charset' => 'string',
+  ),
+  'swoole\\database\\pdoconfig::withdbname' => 
+  array (
+    0 => 'self',
+    'dbname' => 'string',
+  ),
+  'swoole\\database\\pdoconfig::withdriver' => 
+  array (
+    0 => 'self',
+    'driver' => 'string',
+  ),
+  'swoole\\database\\pdoconfig::withhost' => 
+  array (
+    0 => 'self',
+    'host' => 'mixed',
+  ),
+  'swoole\\database\\pdoconfig::withoptions' => 
+  array (
+    0 => 'self',
+    'options' => 'array<array-key, mixed>',
+  ),
+  'swoole\\database\\pdoconfig::withpassword' => 
+  array (
+    0 => 'self',
+    'password' => 'string',
+  ),
+  'swoole\\database\\pdoconfig::withport' => 
+  array (
+    0 => 'self',
+    'port' => 'int',
+  ),
+  'swoole\\database\\pdoconfig::withunixsocket' => 
+  array (
+    0 => 'self',
+    'unixSocket' => 'null|string',
+  ),
+  'swoole\\database\\pdoconfig::withusername' => 
+  array (
+    0 => 'self',
+    'username' => 'string',
+  ),
+  'swoole\\database\\pdopool::__construct' => 
+  array (
+    0 => 'void',
+    'config' => 'Swoole\\Database\\PDOConfig',
+    'size=' => 'int',
+  ),
+  'swoole\\database\\pdopool::close' => 
+  array (
+    0 => 'void',
+  ),
+  'swoole\\database\\pdopool::fill' => 
+  array (
+    0 => 'void',
+  ),
+  'swoole\\database\\pdopool::get' => 
+  array (
+    0 => 'mixed',
+    'timeout=' => 'float',
+  ),
+  'swoole\\database\\pdopool::make' => 
+  array (
+    0 => 'void',
+  ),
+  'swoole\\database\\pdopool::put' => 
+  array (
+    0 => 'void',
+    'connection' => 'mixed',
+  ),
+  'swoole\\database\\pdoproxy::__call' => 
+  array (
+    0 => 'mixed',
+    'name' => 'string',
+    'arguments' => 'array<array-key, mixed>',
+  ),
+  'swoole\\database\\pdoproxy::__clone' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\database\\pdoproxy::__construct' => 
+  array (
+    0 => 'void',
+    'constructor' => 'callable',
+  ),
+  'swoole\\database\\pdoproxy::__get' => 
+  array (
+    0 => 'mixed',
+    'name' => 'string',
+  ),
+  'swoole\\database\\pdoproxy::__getobject' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\database\\pdoproxy::__invoke' => 
+  array (
+    0 => 'mixed',
+    '...arguments=' => 'mixed',
+  ),
+  'swoole\\database\\pdoproxy::__isset' => 
+  array (
+    0 => 'mixed',
+    'name' => 'mixed',
+  ),
+  'swoole\\database\\pdoproxy::__set' => 
+  array (
+    0 => 'void',
+    'name' => 'string',
+    'value' => 'mixed',
+  ),
+  'swoole\\database\\pdoproxy::__unset' => 
+  array (
+    0 => 'void',
+    'name' => 'string',
+  ),
+  'swoole\\database\\pdoproxy::getround' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\database\\pdoproxy::intransaction' => 
+  array (
+    0 => 'bool',
+  ),
+  'swoole\\database\\pdoproxy::reconnect' => 
+  array (
+    0 => 'void',
+  ),
+  'swoole\\database\\pdoproxy::setattribute' => 
+  array (
+    0 => 'bool',
+    'attribute' => 'int',
+    'value' => 'mixed',
+  ),
+  'swoole\\database\\pdostatementproxy::__call' => 
+  array (
+    0 => 'mixed',
+    'name' => 'string',
+    'arguments' => 'array<array-key, mixed>',
+  ),
+  'swoole\\database\\pdostatementproxy::__clone' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\database\\pdostatementproxy::__construct' => 
+  array (
+    0 => 'void',
+    'object' => 'PDOStatement',
+    'parent' => 'Swoole\\Database\\PDOProxy',
+  ),
+  'swoole\\database\\pdostatementproxy::__get' => 
+  array (
+    0 => 'mixed',
+    'name' => 'string',
+  ),
+  'swoole\\database\\pdostatementproxy::__getobject' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\database\\pdostatementproxy::__invoke' => 
+  array (
+    0 => 'mixed',
+    '...arguments=' => 'mixed',
+  ),
+  'swoole\\database\\pdostatementproxy::__isset' => 
+  array (
+    0 => 'mixed',
+    'name' => 'mixed',
+  ),
+  'swoole\\database\\pdostatementproxy::__set' => 
+  array (
+    0 => 'void',
+    'name' => 'string',
+    'value' => 'mixed',
+  ),
+  'swoole\\database\\pdostatementproxy::__unset' => 
+  array (
+    0 => 'void',
+    'name' => 'string',
+  ),
+  'swoole\\database\\pdostatementproxy::bindcolumn' => 
+  array (
+    0 => 'bool',
+    'column' => 'mixed',
+    '&param' => 'mixed',
+    'type=' => 'mixed',
+    'maxlen=' => 'mixed',
+    'driverdata=' => 'mixed',
+  ),
+  'swoole\\database\\pdostatementproxy::bindparam' => 
+  array (
+    0 => 'bool',
+    'parameter' => 'mixed',
+    '&variable' => 'mixed',
+    'data_type=' => 'mixed',
+    'length=' => 'mixed',
+    'driver_options=' => 'mixed',
+  ),
+  'swoole\\database\\pdostatementproxy::bindvalue' => 
+  array (
+    0 => 'bool',
+    'parameter' => 'mixed',
+    'value' => 'mixed',
+    'data_type=' => 'mixed',
+  ),
+  'swoole\\database\\pdostatementproxy::setattribute' => 
+  array (
+    0 => 'bool',
+    'attribute' => 'int',
+    'value' => 'mixed',
+  ),
+  'swoole\\database\\pdostatementproxy::setfetchmode' => 
+  array (
+    0 => 'bool',
+    'mode' => 'int',
+    '...args=' => 'mixed',
+  ),
+  'swoole\\database\\redisconfig::getauth' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\database\\redisconfig::getdbindex' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\database\\redisconfig::gethost' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\database\\redisconfig::getport' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\database\\redisconfig::getreadtimeout' => 
+  array (
+    0 => 'float',
+  ),
+  'swoole\\database\\redisconfig::getreserved' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\database\\redisconfig::getretryinterval' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\database\\redisconfig::gettimeout' => 
+  array (
+    0 => 'float',
+  ),
+  'swoole\\database\\redisconfig::withauth' => 
+  array (
+    0 => 'self',
+    'auth' => 'string',
+  ),
+  'swoole\\database\\redisconfig::withdbindex' => 
+  array (
+    0 => 'self',
+    'dbIndex' => 'int',
+  ),
+  'swoole\\database\\redisconfig::withhost' => 
+  array (
+    0 => 'self',
+    'host' => 'mixed',
+  ),
+  'swoole\\database\\redisconfig::withport' => 
+  array (
+    0 => 'self',
+    'port' => 'int',
+  ),
+  'swoole\\database\\redisconfig::withreadtimeout' => 
+  array (
+    0 => 'self',
+    'read_timeout' => 'float',
+  ),
+  'swoole\\database\\redisconfig::withreserved' => 
+  array (
+    0 => 'self',
+    'reserved' => 'string',
+  ),
+  'swoole\\database\\redisconfig::withretryinterval' => 
+  array (
+    0 => 'self',
+    'retry_interval' => 'int',
+  ),
+  'swoole\\database\\redisconfig::withtimeout' => 
+  array (
+    0 => 'self',
+    'timeout' => 'float',
+  ),
+  'swoole\\database\\redispool::__construct' => 
+  array (
+    0 => 'void',
+    'config' => 'Swoole\\Database\\RedisConfig',
+    'size=' => 'int',
+  ),
+  'swoole\\database\\redispool::close' => 
+  array (
+    0 => 'void',
+  ),
+  'swoole\\database\\redispool::fill' => 
+  array (
+    0 => 'void',
+  ),
+  'swoole\\database\\redispool::get' => 
+  array (
+    0 => 'mixed',
+    'timeout=' => 'float',
+  ),
+  'swoole\\database\\redispool::make' => 
+  array (
+    0 => 'void',
+  ),
+  'swoole\\database\\redispool::put' => 
+  array (
+    0 => 'void',
+    'connection' => 'mixed',
+  ),
+  'swoole\\error::__clone' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\error::__construct' => 
+  array (
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
+  ),
+  'swoole\\error::__tostring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\error::__wakeup' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\error::getcode' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\error::getfile' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\error::getline' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\error::getmessage' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\error::getprevious' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\error::gettrace' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\error::gettraceasstring' => 
+  array (
+    0 => 'mixed',
   ),
   'swoole\\event::add' => 
   array (
@@ -80235,6 +87270,12 @@ return array (
     'read_callback' => 'callable',
     'write_callback=' => 'callable',
     'events=' => 'string',
+  ),
+  'swoole\\event::cycle' => 
+  array (
+    0 => 'mixed',
+    'callback' => 'callable|null',
+    'before=' => 'mixed',
   ),
   'swoole\\event::defer' => 
   array (
@@ -80246,9 +87287,23 @@ return array (
     0 => 'bool',
     'fd' => 'string',
   ),
+  'swoole\\event::dispatch' => 
+  array (
+    0 => 'mixed',
+  ),
   'swoole\\event::exit' => 
   array (
     0 => 'void',
+  ),
+  'swoole\\event::isset' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+    'events=' => 'mixed',
+  ),
+  'swoole\\event::rshutdown' => 
+  array (
+    0 => 'mixed',
   ),
   'swoole\\event::set' => 
   array (
@@ -80267,6 +87322,1523 @@ return array (
     0 => 'void',
     'fd' => 'string',
     'data' => 'string',
+  ),
+  'swoole\\exception::__clone' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\exception::__construct' => 
+  array (
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
+  ),
+  'swoole\\exception::__tostring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\exception::__wakeup' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\exception::getcode' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\exception::getfile' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\exception::getline' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\exception::getmessage' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\exception::getprevious' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\exception::gettrace' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\exception::gettraceasstring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\exception\\arraykeynotexists::__clone' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\exception\\arraykeynotexists::__construct' => 
+  array (
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
+  ),
+  'swoole\\exception\\arraykeynotexists::__tostring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\exception\\arraykeynotexists::__wakeup' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\exception\\arraykeynotexists::getcode' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\exception\\arraykeynotexists::getfile' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\exception\\arraykeynotexists::getline' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\exception\\arraykeynotexists::getmessage' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\exception\\arraykeynotexists::getprevious' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\exception\\arraykeynotexists::gettrace' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\exception\\arraykeynotexists::gettraceasstring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\exitexception::__clone' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\exitexception::__construct' => 
+  array (
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
+  ),
+  'swoole\\exitexception::__tostring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\exitexception::__wakeup' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\exitexception::getcode' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\exitexception::getfile' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\exitexception::getflags' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\exitexception::getline' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\exitexception::getmessage' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\exitexception::getprevious' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\exitexception::getstatus' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\exitexception::gettrace' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\exitexception::gettraceasstring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\fastcgi\\frameparser::hasframe' => 
+  array (
+    0 => 'bool',
+    'buffer' => 'string',
+  ),
+  'swoole\\fastcgi\\frameparser::parseframe' => 
+  array (
+    0 => 'Swoole\\FastCGI\\Record',
+    '&buffer' => 'string',
+  ),
+  'swoole\\fastcgi\\httprequest::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\fastcgi\\httprequest::convertheadernametoparamname' => 
+  array (
+    0 => 'mixed',
+    'name' => 'string',
+  ),
+  'swoole\\fastcgi\\httprequest::convertparamnametoheadername' => 
+  array (
+    0 => 'mixed',
+    'name' => 'string',
+  ),
+  'swoole\\fastcgi\\httprequest::getbody' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\fastcgi\\httprequest::getcontentlength' => 
+  array (
+    0 => 'int|null',
+  ),
+  'swoole\\fastcgi\\httprequest::getcontenttype' => 
+  array (
+    0 => 'null|string',
+  ),
+  'swoole\\fastcgi\\httprequest::getdocumentroot' => 
+  array (
+    0 => 'null|string',
+  ),
+  'swoole\\fastcgi\\httprequest::getdocumenturi' => 
+  array (
+    0 => 'null|string',
+  ),
+  'swoole\\fastcgi\\httprequest::geterror' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\fastcgi\\httprequest::getgatewayinterface' => 
+  array (
+    0 => 'null|string',
+  ),
+  'swoole\\fastcgi\\httprequest::getheader' => 
+  array (
+    0 => 'null|string',
+    'name' => 'string',
+  ),
+  'swoole\\fastcgi\\httprequest::getheaders' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'swoole\\fastcgi\\httprequest::getkeepconn' => 
+  array (
+    0 => 'bool',
+  ),
+  'swoole\\fastcgi\\httprequest::getmethod' => 
+  array (
+    0 => 'null|string',
+  ),
+  'swoole\\fastcgi\\httprequest::getparam' => 
+  array (
+    0 => 'null|string',
+    'name' => 'string',
+  ),
+  'swoole\\fastcgi\\httprequest::getparams' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'swoole\\fastcgi\\httprequest::getquerystring' => 
+  array (
+    0 => 'null|string',
+  ),
+  'swoole\\fastcgi\\httprequest::getredirectstatus' => 
+  array (
+    0 => 'null|string',
+  ),
+  'swoole\\fastcgi\\httprequest::getremoteaddr' => 
+  array (
+    0 => 'null|string',
+  ),
+  'swoole\\fastcgi\\httprequest::getremoteport' => 
+  array (
+    0 => 'int|null',
+  ),
+  'swoole\\fastcgi\\httprequest::getrequesturi' => 
+  array (
+    0 => 'null|string',
+  ),
+  'swoole\\fastcgi\\httprequest::getscheme' => 
+  array (
+    0 => 'null|string',
+  ),
+  'swoole\\fastcgi\\httprequest::getscriptfilename' => 
+  array (
+    0 => 'null|string',
+  ),
+  'swoole\\fastcgi\\httprequest::getscriptname' => 
+  array (
+    0 => 'null|string',
+  ),
+  'swoole\\fastcgi\\httprequest::getserveraddr' => 
+  array (
+    0 => 'null|string',
+  ),
+  'swoole\\fastcgi\\httprequest::getservername' => 
+  array (
+    0 => 'null|string',
+  ),
+  'swoole\\fastcgi\\httprequest::getserverport' => 
+  array (
+    0 => 'int|null',
+  ),
+  'swoole\\fastcgi\\httprequest::getserverprotocol' => 
+  array (
+    0 => 'null|string',
+  ),
+  'swoole\\fastcgi\\httprequest::getserversoftware' => 
+  array (
+    0 => 'null|string',
+  ),
+  'swoole\\fastcgi\\httprequest::withaddedparams' => 
+  array (
+    0 => 'self',
+    'params' => 'array<array-key, mixed>',
+  ),
+  'swoole\\fastcgi\\httprequest::withbody' => 
+  array (
+    0 => 'Swoole\\FastCGI\\Message',
+    'body' => 'mixed',
+  ),
+  'swoole\\fastcgi\\httprequest::withcontentlength' => 
+  array (
+    0 => 'self',
+    'contentLength' => 'int',
+  ),
+  'swoole\\fastcgi\\httprequest::withcontenttype' => 
+  array (
+    0 => 'self',
+    'contentType' => 'string',
+  ),
+  'swoole\\fastcgi\\httprequest::withdocumentroot' => 
+  array (
+    0 => 'self',
+    'documentRoot' => 'string',
+  ),
+  'swoole\\fastcgi\\httprequest::withdocumenturi' => 
+  array (
+    0 => 'self',
+    'documentUri' => 'string',
+  ),
+  'swoole\\fastcgi\\httprequest::witherror' => 
+  array (
+    0 => 'self',
+    'error' => 'string',
+  ),
+  'swoole\\fastcgi\\httprequest::withgatewayinterface' => 
+  array (
+    0 => 'self',
+    'gatewayInterface' => 'string',
+  ),
+  'swoole\\fastcgi\\httprequest::withheader' => 
+  array (
+    0 => 'self',
+    'name' => 'string',
+    'value' => 'string',
+  ),
+  'swoole\\fastcgi\\httprequest::withheaders' => 
+  array (
+    0 => 'self',
+    'headers' => 'array<array-key, mixed>',
+  ),
+  'swoole\\fastcgi\\httprequest::withkeepconn' => 
+  array (
+    0 => 'self',
+    'keepConn' => 'bool',
+  ),
+  'swoole\\fastcgi\\httprequest::withmethod' => 
+  array (
+    0 => 'self',
+    'method' => 'string',
+  ),
+  'swoole\\fastcgi\\httprequest::withoutcontentlength' => 
+  array (
+    0 => 'void',
+  ),
+  'swoole\\fastcgi\\httprequest::withoutcontenttype' => 
+  array (
+    0 => 'void',
+  ),
+  'swoole\\fastcgi\\httprequest::withoutdocumentroot' => 
+  array (
+    0 => 'void',
+  ),
+  'swoole\\fastcgi\\httprequest::withoutdocumenturi' => 
+  array (
+    0 => 'void',
+  ),
+  'swoole\\fastcgi\\httprequest::withoutgatewayinterface' => 
+  array (
+    0 => 'void',
+  ),
+  'swoole\\fastcgi\\httprequest::withoutheader' => 
+  array (
+    0 => 'void',
+    'name' => 'string',
+  ),
+  'swoole\\fastcgi\\httprequest::withoutmethod' => 
+  array (
+    0 => 'void',
+  ),
+  'swoole\\fastcgi\\httprequest::withoutparam' => 
+  array (
+    0 => 'self',
+    'name' => 'string',
+  ),
+  'swoole\\fastcgi\\httprequest::withoutquerystring' => 
+  array (
+    0 => 'void',
+  ),
+  'swoole\\fastcgi\\httprequest::withoutredirectstatus' => 
+  array (
+    0 => 'void',
+  ),
+  'swoole\\fastcgi\\httprequest::withoutremoteaddr' => 
+  array (
+    0 => 'void',
+  ),
+  'swoole\\fastcgi\\httprequest::withoutremoteport' => 
+  array (
+    0 => 'void',
+  ),
+  'swoole\\fastcgi\\httprequest::withoutrequesturi' => 
+  array (
+    0 => 'void',
+  ),
+  'swoole\\fastcgi\\httprequest::withoutscheme' => 
+  array (
+    0 => 'void',
+  ),
+  'swoole\\fastcgi\\httprequest::withoutscriptfilename' => 
+  array (
+    0 => 'void',
+  ),
+  'swoole\\fastcgi\\httprequest::withoutscriptname' => 
+  array (
+    0 => 'void',
+  ),
+  'swoole\\fastcgi\\httprequest::withoutserveraddr' => 
+  array (
+    0 => 'void',
+  ),
+  'swoole\\fastcgi\\httprequest::withoutservername' => 
+  array (
+    0 => 'void',
+  ),
+  'swoole\\fastcgi\\httprequest::withoutserverport' => 
+  array (
+    0 => 'void',
+  ),
+  'swoole\\fastcgi\\httprequest::withoutserverprotocol' => 
+  array (
+    0 => 'void',
+  ),
+  'swoole\\fastcgi\\httprequest::withoutserversoftware' => 
+  array (
+    0 => 'void',
+  ),
+  'swoole\\fastcgi\\httprequest::withparam' => 
+  array (
+    0 => 'self',
+    'name' => 'string',
+    'value' => 'string',
+  ),
+  'swoole\\fastcgi\\httprequest::withparams' => 
+  array (
+    0 => 'self',
+    'params' => 'array<array-key, mixed>',
+  ),
+  'swoole\\fastcgi\\httprequest::withprotocolversion' => 
+  array (
+    0 => 'self',
+    'protocolVersion' => 'string',
+  ),
+  'swoole\\fastcgi\\httprequest::withquery' => 
+  array (
+    0 => 'self',
+    'query' => 'mixed',
+  ),
+  'swoole\\fastcgi\\httprequest::withquerystring' => 
+  array (
+    0 => 'self',
+    'queryString' => 'string',
+  ),
+  'swoole\\fastcgi\\httprequest::withredirectstatus' => 
+  array (
+    0 => 'self',
+    'redirectStatus' => 'string',
+  ),
+  'swoole\\fastcgi\\httprequest::withremoteaddr' => 
+  array (
+    0 => 'self',
+    'remoteAddr' => 'string',
+  ),
+  'swoole\\fastcgi\\httprequest::withremoteport' => 
+  array (
+    0 => 'self',
+    'remotePort' => 'int',
+  ),
+  'swoole\\fastcgi\\httprequest::withrequesturi' => 
+  array (
+    0 => 'self',
+    'requestUri' => 'string',
+  ),
+  'swoole\\fastcgi\\httprequest::withscheme' => 
+  array (
+    0 => 'self',
+    'scheme' => 'string',
+  ),
+  'swoole\\fastcgi\\httprequest::withscriptfilename' => 
+  array (
+    0 => 'self',
+    'scriptFilename' => 'string',
+  ),
+  'swoole\\fastcgi\\httprequest::withscriptname' => 
+  array (
+    0 => 'self',
+    'scriptName' => 'string',
+  ),
+  'swoole\\fastcgi\\httprequest::withserveraddr' => 
+  array (
+    0 => 'self',
+    'serverAddr' => 'string',
+  ),
+  'swoole\\fastcgi\\httprequest::withservername' => 
+  array (
+    0 => 'self',
+    'serverName' => 'string',
+  ),
+  'swoole\\fastcgi\\httprequest::withserverport' => 
+  array (
+    0 => 'self',
+    'serverPort' => 'int',
+  ),
+  'swoole\\fastcgi\\httprequest::withserverprotocol' => 
+  array (
+    0 => 'self',
+    'serverProtocol' => 'string',
+  ),
+  'swoole\\fastcgi\\httprequest::withserversoftware' => 
+  array (
+    0 => 'self',
+    'serverSoftware' => 'string',
+  ),
+  'swoole\\fastcgi\\httprequest::withuri' => 
+  array (
+    0 => 'self',
+    'uri' => 'string',
+  ),
+  'swoole\\fastcgi\\httpresponse::__construct' => 
+  array (
+    0 => 'void',
+    'records=' => 'array<array-key, mixed>',
+  ),
+  'swoole\\fastcgi\\httpresponse::getbody' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\fastcgi\\httpresponse::geterror' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\fastcgi\\httpresponse::getheader' => 
+  array (
+    0 => 'null|string',
+    'name' => 'string',
+  ),
+  'swoole\\fastcgi\\httpresponse::getheaders' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'swoole\\fastcgi\\httpresponse::getparam' => 
+  array (
+    0 => 'null|string',
+    'name' => 'string',
+  ),
+  'swoole\\fastcgi\\httpresponse::getparams' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'swoole\\fastcgi\\httpresponse::getreasonphrase' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\fastcgi\\httpresponse::getsetcookieheaderlines' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'swoole\\fastcgi\\httpresponse::getstatuscode' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\httpresponse::verify' => 
+  array (
+    0 => 'bool',
+    'records' => 'array<array-key, mixed>',
+  ),
+  'swoole\\fastcgi\\httpresponse::withaddedparams' => 
+  array (
+    0 => 'self',
+    'params' => 'array<array-key, mixed>',
+  ),
+  'swoole\\fastcgi\\httpresponse::withbody' => 
+  array (
+    0 => 'self',
+    'body' => 'mixed',
+  ),
+  'swoole\\fastcgi\\httpresponse::witherror' => 
+  array (
+    0 => 'self',
+    'error' => 'string',
+  ),
+  'swoole\\fastcgi\\httpresponse::withheader' => 
+  array (
+    0 => 'self',
+    'name' => 'string',
+    'value' => 'string',
+  ),
+  'swoole\\fastcgi\\httpresponse::withheaders' => 
+  array (
+    0 => 'self',
+    'headers' => 'array<array-key, mixed>',
+  ),
+  'swoole\\fastcgi\\httpresponse::withoutparam' => 
+  array (
+    0 => 'self',
+    'name' => 'string',
+  ),
+  'swoole\\fastcgi\\httpresponse::withparam' => 
+  array (
+    0 => 'self',
+    'name' => 'string',
+    'value' => 'string',
+  ),
+  'swoole\\fastcgi\\httpresponse::withparams' => 
+  array (
+    0 => 'self',
+    'params' => 'array<array-key, mixed>',
+  ),
+  'swoole\\fastcgi\\httpresponse::withreasonphrase' => 
+  array (
+    0 => 'self',
+    'reasonPhrase' => 'string',
+  ),
+  'swoole\\fastcgi\\httpresponse::withsetcookieheaderline' => 
+  array (
+    0 => 'self',
+    'value' => 'string',
+  ),
+  'swoole\\fastcgi\\httpresponse::withstatuscode' => 
+  array (
+    0 => 'self',
+    'statusCode' => 'int',
+  ),
+  'swoole\\fastcgi\\message::getbody' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\fastcgi\\message::geterror' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\fastcgi\\message::getparam' => 
+  array (
+    0 => 'null|string',
+    'name' => 'string',
+  ),
+  'swoole\\fastcgi\\message::getparams' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'swoole\\fastcgi\\message::withaddedparams' => 
+  array (
+    0 => 'self',
+    'params' => 'array<array-key, mixed>',
+  ),
+  'swoole\\fastcgi\\message::withbody' => 
+  array (
+    0 => 'self',
+    'body' => 'mixed',
+  ),
+  'swoole\\fastcgi\\message::witherror' => 
+  array (
+    0 => 'self',
+    'error' => 'string',
+  ),
+  'swoole\\fastcgi\\message::withoutparam' => 
+  array (
+    0 => 'self',
+    'name' => 'string',
+  ),
+  'swoole\\fastcgi\\message::withparam' => 
+  array (
+    0 => 'self',
+    'name' => 'string',
+    'value' => 'string',
+  ),
+  'swoole\\fastcgi\\message::withparams' => 
+  array (
+    0 => 'self',
+    'params' => 'array<array-key, mixed>',
+  ),
+  'swoole\\fastcgi\\record::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\fastcgi\\record::getcontentdata' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\fastcgi\\record::getcontentlength' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\record::getpaddinglength' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\record::getrequestid' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\record::gettype' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\record::getversion' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\record::packpayload' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\fastcgi\\record::setcontentdata' => 
+  array (
+    0 => 'self',
+    'data' => 'string',
+  ),
+  'swoole\\fastcgi\\record::setrequestid' => 
+  array (
+    0 => 'self',
+    'requestId' => 'int',
+  ),
+  'swoole\\fastcgi\\record::unpack' => 
+  array (
+    0 => 'self',
+    'data' => 'string',
+  ),
+  'swoole\\fastcgi\\record::unpackpayload' => 
+  array (
+    0 => 'void',
+    'self' => 'mixed',
+    'data' => 'string',
+  ),
+  'swoole\\fastcgi\\record\\abortrequest::__construct' => 
+  array (
+    0 => 'void',
+    'requestId=' => 'int',
+  ),
+  'swoole\\fastcgi\\record\\abortrequest::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\fastcgi\\record\\abortrequest::getcontentdata' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\fastcgi\\record\\abortrequest::getcontentlength' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\record\\abortrequest::getpaddinglength' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\record\\abortrequest::getrequestid' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\record\\abortrequest::gettype' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\record\\abortrequest::getversion' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\record\\abortrequest::packpayload' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\fastcgi\\record\\abortrequest::setcontentdata' => 
+  array (
+    0 => 'self',
+    'data' => 'string',
+  ),
+  'swoole\\fastcgi\\record\\abortrequest::setrequestid' => 
+  array (
+    0 => 'self',
+    'requestId' => 'int',
+  ),
+  'swoole\\fastcgi\\record\\abortrequest::unpack' => 
+  array (
+    0 => 'self',
+    'data' => 'string',
+  ),
+  'swoole\\fastcgi\\record\\abortrequest::unpackpayload' => 
+  array (
+    0 => 'void',
+    'self' => 'mixed',
+    'data' => 'string',
+  ),
+  'swoole\\fastcgi\\record\\beginrequest::__construct' => 
+  array (
+    0 => 'void',
+    'role=' => 'int',
+    'flags=' => 'int',
+    'reserved=' => 'string',
+  ),
+  'swoole\\fastcgi\\record\\beginrequest::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\fastcgi\\record\\beginrequest::getcontentdata' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\fastcgi\\record\\beginrequest::getcontentlength' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\record\\beginrequest::getflags' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\record\\beginrequest::getpaddinglength' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\record\\beginrequest::getrequestid' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\record\\beginrequest::getrole' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\record\\beginrequest::gettype' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\record\\beginrequest::getversion' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\record\\beginrequest::packpayload' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\fastcgi\\record\\beginrequest::setcontentdata' => 
+  array (
+    0 => 'self',
+    'data' => 'string',
+  ),
+  'swoole\\fastcgi\\record\\beginrequest::setrequestid' => 
+  array (
+    0 => 'self',
+    'requestId' => 'int',
+  ),
+  'swoole\\fastcgi\\record\\beginrequest::unpack' => 
+  array (
+    0 => 'self',
+    'data' => 'string',
+  ),
+  'swoole\\fastcgi\\record\\beginrequest::unpackpayload' => 
+  array (
+    0 => 'void',
+    'self' => 'mixed',
+    'data' => 'string',
+  ),
+  'swoole\\fastcgi\\record\\data::__construct' => 
+  array (
+    0 => 'void',
+    'contentData=' => 'string',
+  ),
+  'swoole\\fastcgi\\record\\data::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\fastcgi\\record\\data::getcontentdata' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\fastcgi\\record\\data::getcontentlength' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\record\\data::getpaddinglength' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\record\\data::getrequestid' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\record\\data::gettype' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\record\\data::getversion' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\record\\data::packpayload' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\fastcgi\\record\\data::setcontentdata' => 
+  array (
+    0 => 'self',
+    'data' => 'string',
+  ),
+  'swoole\\fastcgi\\record\\data::setrequestid' => 
+  array (
+    0 => 'self',
+    'requestId' => 'int',
+  ),
+  'swoole\\fastcgi\\record\\data::unpack' => 
+  array (
+    0 => 'self',
+    'data' => 'string',
+  ),
+  'swoole\\fastcgi\\record\\data::unpackpayload' => 
+  array (
+    0 => 'void',
+    'self' => 'mixed',
+    'data' => 'string',
+  ),
+  'swoole\\fastcgi\\record\\endrequest::__construct' => 
+  array (
+    0 => 'void',
+    'protocolStatus=' => 'int',
+    'appStatus=' => 'int',
+    'reserved=' => 'string',
+  ),
+  'swoole\\fastcgi\\record\\endrequest::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\fastcgi\\record\\endrequest::getappstatus' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\record\\endrequest::getcontentdata' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\fastcgi\\record\\endrequest::getcontentlength' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\record\\endrequest::getpaddinglength' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\record\\endrequest::getprotocolstatus' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\record\\endrequest::getrequestid' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\record\\endrequest::gettype' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\record\\endrequest::getversion' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\record\\endrequest::packpayload' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\fastcgi\\record\\endrequest::setcontentdata' => 
+  array (
+    0 => 'self',
+    'data' => 'string',
+  ),
+  'swoole\\fastcgi\\record\\endrequest::setrequestid' => 
+  array (
+    0 => 'self',
+    'requestId' => 'int',
+  ),
+  'swoole\\fastcgi\\record\\endrequest::unpack' => 
+  array (
+    0 => 'self',
+    'data' => 'string',
+  ),
+  'swoole\\fastcgi\\record\\endrequest::unpackpayload' => 
+  array (
+    0 => 'void',
+    'self' => 'mixed',
+    'data' => 'string',
+  ),
+  'swoole\\fastcgi\\record\\getvalues::__construct' => 
+  array (
+    0 => 'void',
+    'keys=' => 'array<array-key, mixed>',
+  ),
+  'swoole\\fastcgi\\record\\getvalues::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\fastcgi\\record\\getvalues::getcontentdata' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\fastcgi\\record\\getvalues::getcontentlength' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\record\\getvalues::getpaddinglength' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\record\\getvalues::getrequestid' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\record\\getvalues::gettype' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\record\\getvalues::getvalues' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'swoole\\fastcgi\\record\\getvalues::getversion' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\record\\getvalues::packpayload' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\fastcgi\\record\\getvalues::setcontentdata' => 
+  array (
+    0 => 'self',
+    'data' => 'string',
+  ),
+  'swoole\\fastcgi\\record\\getvalues::setrequestid' => 
+  array (
+    0 => 'self',
+    'requestId' => 'int',
+  ),
+  'swoole\\fastcgi\\record\\getvalues::unpack' => 
+  array (
+    0 => 'self',
+    'data' => 'string',
+  ),
+  'swoole\\fastcgi\\record\\getvalues::unpackpayload' => 
+  array (
+    0 => 'void',
+    'self' => 'mixed',
+    'data' => 'string',
+  ),
+  'swoole\\fastcgi\\record\\getvaluesresult::__construct' => 
+  array (
+    0 => 'void',
+    'values=' => 'array<array-key, mixed>',
+  ),
+  'swoole\\fastcgi\\record\\getvaluesresult::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\fastcgi\\record\\getvaluesresult::getcontentdata' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\fastcgi\\record\\getvaluesresult::getcontentlength' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\record\\getvaluesresult::getpaddinglength' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\record\\getvaluesresult::getrequestid' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\record\\getvaluesresult::gettype' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\record\\getvaluesresult::getvalues' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'swoole\\fastcgi\\record\\getvaluesresult::getversion' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\record\\getvaluesresult::packpayload' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\fastcgi\\record\\getvaluesresult::setcontentdata' => 
+  array (
+    0 => 'self',
+    'data' => 'string',
+  ),
+  'swoole\\fastcgi\\record\\getvaluesresult::setrequestid' => 
+  array (
+    0 => 'self',
+    'requestId' => 'int',
+  ),
+  'swoole\\fastcgi\\record\\getvaluesresult::unpack' => 
+  array (
+    0 => 'self',
+    'data' => 'string',
+  ),
+  'swoole\\fastcgi\\record\\getvaluesresult::unpackpayload' => 
+  array (
+    0 => 'void',
+    'self' => 'mixed',
+    'data' => 'string',
+  ),
+  'swoole\\fastcgi\\record\\params::__construct' => 
+  array (
+    0 => 'void',
+    'values=' => 'array<array-key, mixed>',
+  ),
+  'swoole\\fastcgi\\record\\params::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\fastcgi\\record\\params::getcontentdata' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\fastcgi\\record\\params::getcontentlength' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\record\\params::getpaddinglength' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\record\\params::getrequestid' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\record\\params::gettype' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\record\\params::getvalues' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'swoole\\fastcgi\\record\\params::getversion' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\record\\params::packpayload' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\fastcgi\\record\\params::setcontentdata' => 
+  array (
+    0 => 'self',
+    'data' => 'string',
+  ),
+  'swoole\\fastcgi\\record\\params::setrequestid' => 
+  array (
+    0 => 'self',
+    'requestId' => 'int',
+  ),
+  'swoole\\fastcgi\\record\\params::unpack' => 
+  array (
+    0 => 'self',
+    'data' => 'string',
+  ),
+  'swoole\\fastcgi\\record\\params::unpackpayload' => 
+  array (
+    0 => 'void',
+    'self' => 'mixed',
+    'data' => 'string',
+  ),
+  'swoole\\fastcgi\\record\\stderr::__construct' => 
+  array (
+    0 => 'void',
+    'contentData=' => 'string',
+  ),
+  'swoole\\fastcgi\\record\\stderr::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\fastcgi\\record\\stderr::getcontentdata' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\fastcgi\\record\\stderr::getcontentlength' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\record\\stderr::getpaddinglength' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\record\\stderr::getrequestid' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\record\\stderr::gettype' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\record\\stderr::getversion' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\record\\stderr::packpayload' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\fastcgi\\record\\stderr::setcontentdata' => 
+  array (
+    0 => 'self',
+    'data' => 'string',
+  ),
+  'swoole\\fastcgi\\record\\stderr::setrequestid' => 
+  array (
+    0 => 'self',
+    'requestId' => 'int',
+  ),
+  'swoole\\fastcgi\\record\\stderr::unpack' => 
+  array (
+    0 => 'self',
+    'data' => 'string',
+  ),
+  'swoole\\fastcgi\\record\\stderr::unpackpayload' => 
+  array (
+    0 => 'void',
+    'self' => 'mixed',
+    'data' => 'string',
+  ),
+  'swoole\\fastcgi\\record\\stdin::__construct' => 
+  array (
+    0 => 'void',
+    'contentData=' => 'string',
+  ),
+  'swoole\\fastcgi\\record\\stdin::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\fastcgi\\record\\stdin::getcontentdata' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\fastcgi\\record\\stdin::getcontentlength' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\record\\stdin::getpaddinglength' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\record\\stdin::getrequestid' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\record\\stdin::gettype' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\record\\stdin::getversion' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\record\\stdin::packpayload' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\fastcgi\\record\\stdin::setcontentdata' => 
+  array (
+    0 => 'self',
+    'data' => 'string',
+  ),
+  'swoole\\fastcgi\\record\\stdin::setrequestid' => 
+  array (
+    0 => 'self',
+    'requestId' => 'int',
+  ),
+  'swoole\\fastcgi\\record\\stdin::unpack' => 
+  array (
+    0 => 'self',
+    'data' => 'string',
+  ),
+  'swoole\\fastcgi\\record\\stdin::unpackpayload' => 
+  array (
+    0 => 'void',
+    'self' => 'mixed',
+    'data' => 'string',
+  ),
+  'swoole\\fastcgi\\record\\stdout::__construct' => 
+  array (
+    0 => 'void',
+    'contentData=' => 'string',
+  ),
+  'swoole\\fastcgi\\record\\stdout::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\fastcgi\\record\\stdout::getcontentdata' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\fastcgi\\record\\stdout::getcontentlength' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\record\\stdout::getpaddinglength' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\record\\stdout::getrequestid' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\record\\stdout::gettype' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\record\\stdout::getversion' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\record\\stdout::packpayload' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\fastcgi\\record\\stdout::setcontentdata' => 
+  array (
+    0 => 'self',
+    'data' => 'string',
+  ),
+  'swoole\\fastcgi\\record\\stdout::setrequestid' => 
+  array (
+    0 => 'self',
+    'requestId' => 'int',
+  ),
+  'swoole\\fastcgi\\record\\stdout::unpack' => 
+  array (
+    0 => 'self',
+    'data' => 'string',
+  ),
+  'swoole\\fastcgi\\record\\stdout::unpackpayload' => 
+  array (
+    0 => 'void',
+    'self' => 'mixed',
+    'data' => 'string',
+  ),
+  'swoole\\fastcgi\\record\\unknowntype::__construct' => 
+  array (
+    0 => 'void',
+    'type=' => 'int',
+    'reserved=' => 'string',
+  ),
+  'swoole\\fastcgi\\record\\unknowntype::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\fastcgi\\record\\unknowntype::getcontentdata' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\fastcgi\\record\\unknowntype::getcontentlength' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\record\\unknowntype::getpaddinglength' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\record\\unknowntype::getrequestid' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\record\\unknowntype::gettype' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\record\\unknowntype::getunrecognizedtype' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\record\\unknowntype::getversion' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\fastcgi\\record\\unknowntype::packpayload' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\fastcgi\\record\\unknowntype::setcontentdata' => 
+  array (
+    0 => 'self',
+    'data' => 'string',
+  ),
+  'swoole\\fastcgi\\record\\unknowntype::setrequestid' => 
+  array (
+    0 => 'self',
+    'requestId' => 'int',
+  ),
+  'swoole\\fastcgi\\record\\unknowntype::unpack' => 
+  array (
+    0 => 'self',
+    'data' => 'string',
+  ),
+  'swoole\\fastcgi\\record\\unknowntype::unpackpayload' => 
+  array (
+    0 => 'void',
+    'self' => 'mixed',
+    'data' => 'string',
+  ),
+  'swoole\\fastcgi\\request::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\fastcgi\\request::getbody' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\fastcgi\\request::geterror' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\fastcgi\\request::getkeepconn' => 
+  array (
+    0 => 'bool',
+  ),
+  'swoole\\fastcgi\\request::getparam' => 
+  array (
+    0 => 'null|string',
+    'name' => 'string',
+  ),
+  'swoole\\fastcgi\\request::getparams' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'swoole\\fastcgi\\request::withaddedparams' => 
+  array (
+    0 => 'self',
+    'params' => 'array<array-key, mixed>',
+  ),
+  'swoole\\fastcgi\\request::withbody' => 
+  array (
+    0 => 'self',
+    'body' => 'mixed',
+  ),
+  'swoole\\fastcgi\\request::witherror' => 
+  array (
+    0 => 'self',
+    'error' => 'string',
+  ),
+  'swoole\\fastcgi\\request::withkeepconn' => 
+  array (
+    0 => 'self',
+    'keepConn' => 'bool',
+  ),
+  'swoole\\fastcgi\\request::withoutparam' => 
+  array (
+    0 => 'self',
+    'name' => 'string',
+  ),
+  'swoole\\fastcgi\\request::withparam' => 
+  array (
+    0 => 'self',
+    'name' => 'string',
+    'value' => 'string',
+  ),
+  'swoole\\fastcgi\\request::withparams' => 
+  array (
+    0 => 'self',
+    'params' => 'array<array-key, mixed>',
+  ),
+  'swoole\\fastcgi\\response::__construct' => 
+  array (
+    0 => 'void',
+    'records=' => 'array<array-key, mixed>',
+  ),
+  'swoole\\fastcgi\\response::getbody' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\fastcgi\\response::geterror' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\fastcgi\\response::getparam' => 
+  array (
+    0 => 'null|string',
+    'name' => 'string',
+  ),
+  'swoole\\fastcgi\\response::getparams' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'swoole\\fastcgi\\response::verify' => 
+  array (
+    0 => 'bool',
+    'records' => 'array<array-key, mixed>',
+  ),
+  'swoole\\fastcgi\\response::withaddedparams' => 
+  array (
+    0 => 'self',
+    'params' => 'array<array-key, mixed>',
+  ),
+  'swoole\\fastcgi\\response::withbody' => 
+  array (
+    0 => 'self',
+    'body' => 'mixed',
+  ),
+  'swoole\\fastcgi\\response::witherror' => 
+  array (
+    0 => 'self',
+    'error' => 'string',
+  ),
+  'swoole\\fastcgi\\response::withoutparam' => 
+  array (
+    0 => 'self',
+    'name' => 'string',
+  ),
+  'swoole\\fastcgi\\response::withparam' => 
+  array (
+    0 => 'self',
+    'name' => 'string',
+    'value' => 'string',
+  ),
+  'swoole\\fastcgi\\response::withparams' => 
+  array (
+    0 => 'self',
+    'params' => 'array<array-key, mixed>',
   ),
   'swoole\\http\\client::__destruct' => 
   array (
@@ -80364,6 +88936,32 @@ return array (
   array (
     0 => 'void',
   ),
+  'swoole\\http\\request::create' => 
+  array (
+    0 => 'mixed',
+    'options=' => 'mixed',
+  ),
+  'swoole\\http\\request::getcontent' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\http\\request::getdata' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\http\\request::getmethod' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\http\\request::iscompleted' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\http\\request::parse' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
+  ),
   'swoole\\http\\request::rawcontent' => 
   array (
     0 => 'string',
@@ -80371,6 +88969,10 @@ return array (
   'swoole\\http\\response::__destruct' => 
   array (
     0 => 'void',
+  ),
+  'swoole\\http\\response::close' => 
+  array (
+    0 => 'mixed',
   ),
   'swoole\\http\\response::cookie' => 
   array (
@@ -80383,10 +88985,24 @@ return array (
     'secure=' => 'string',
     'httponly=' => 'string',
   ),
+  'swoole\\http\\response::create' => 
+  array (
+    0 => 'mixed',
+    'server' => 'mixed',
+    'fd=' => 'mixed',
+  ),
+  'swoole\\http\\response::detach' => 
+  array (
+    0 => 'mixed',
+  ),
   'swoole\\http\\response::end' => 
   array (
     0 => 'void',
     'content=' => 'string',
+  ),
+  'swoole\\http\\response::goaway' => 
+  array (
+    0 => 'mixed',
   ),
   'swoole\\http\\response::gzip' => 
   array (
@@ -80404,6 +89020,21 @@ return array (
   array (
     0 => 'ReturnType',
   ),
+  'swoole\\http\\response::iswritable' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\http\\response::ping' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\http\\response::push' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
+    'opcode=' => 'mixed',
+    'flags=' => 'mixed',
+  ),
   'swoole\\http\\response::rawcookie' => 
   array (
     0 => 'ReturnType',
@@ -80415,21 +89046,222 @@ return array (
     'secure=' => 'string',
     'httponly=' => 'string',
   ),
+  'swoole\\http\\response::recv' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\http\\response::redirect' => 
+  array (
+    0 => 'mixed',
+    'location' => 'mixed',
+    'http_code=' => 'mixed',
+  ),
   'swoole\\http\\response::sendfile' => 
   array (
     0 => 'ReturnType',
     'filename' => 'string',
     'offset=' => 'int',
   ),
+  'swoole\\http\\response::setcookie' => 
+  array (
+    0 => 'mixed',
+    'name' => 'mixed',
+    'value=' => 'mixed',
+    'expires=' => 'mixed',
+    'path=' => 'mixed',
+    'domain=' => 'mixed',
+    'secure=' => 'mixed',
+    'httponly=' => 'mixed',
+    'samesite=' => 'mixed',
+    'priority=' => 'mixed',
+  ),
+  'swoole\\http\\response::setheader' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'value' => 'mixed',
+    'format=' => 'mixed',
+  ),
+  'swoole\\http\\response::setstatuscode' => 
+  array (
+    0 => 'mixed',
+    'http_code' => 'mixed',
+    'reason=' => 'mixed',
+  ),
   'swoole\\http\\response::status' => 
   array (
     0 => 'ReturnType',
     'http_code' => 'string',
   ),
+  'swoole\\http\\response::trailer' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'swoole\\http\\response::upgrade' => 
+  array (
+    0 => 'mixed',
+  ),
   'swoole\\http\\response::write' => 
   array (
     0 => 'void',
     'content' => 'string',
+  ),
+  'swoole\\http\\server::__construct' => 
+  array (
+    0 => 'void',
+    'host' => 'mixed',
+    'port=' => 'mixed',
+    'mode=' => 'mixed',
+    'sock_type=' => 'mixed',
+  ),
+  'swoole\\http\\server::__destruct' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\http\\server::addcommand' => 
+  array (
+    0 => 'mixed',
+    'name' => 'mixed',
+    'accepted_process_types' => 'mixed',
+    'callback' => 'callable',
+  ),
+  'swoole\\http\\server::addlistener' => 
+  array (
+    0 => 'mixed',
+    'host' => 'mixed',
+    'port' => 'mixed',
+    'sock_type' => 'mixed',
+  ),
+  'swoole\\http\\server::addprocess' => 
+  array (
+    0 => 'mixed',
+    'process' => 'swoole_process',
+  ),
+  'swoole\\http\\server::after' => 
+  array (
+    0 => 'mixed',
+    'ms' => 'mixed',
+    'callback' => 'callable',
+  ),
+  'swoole\\http\\server::bind' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+    'uid' => 'mixed',
+  ),
+  'swoole\\http\\server::cleartimer' => 
+  array (
+    0 => 'mixed',
+    'timer_id' => 'mixed',
+  ),
+  'swoole\\http\\server::close' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+    'reset=' => 'mixed',
+  ),
+  'swoole\\http\\server::command' => 
+  array (
+    0 => 'mixed',
+    'name' => 'mixed',
+    'process_id' => 'mixed',
+    'process_type' => 'mixed',
+    'data' => 'mixed',
+    'json_encode=' => 'mixed',
+  ),
+  'swoole\\http\\server::confirm' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+  ),
+  'swoole\\http\\server::connection_info' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+    'reactor_id=' => 'mixed',
+  ),
+  'swoole\\http\\server::connection_list' => 
+  array (
+    0 => 'mixed',
+    'start_fd' => 'mixed',
+    'find_count=' => 'mixed',
+  ),
+  'swoole\\http\\server::defer' => 
+  array (
+    0 => 'mixed',
+    'callback' => 'callable',
+  ),
+  'swoole\\http\\server::exist' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+  ),
+  'swoole\\http\\server::exists' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+  ),
+  'swoole\\http\\server::finish' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
+  ),
+  'swoole\\http\\server::getcallback' => 
+  array (
+    0 => 'mixed',
+    'event_name' => 'mixed',
+  ),
+  'swoole\\http\\server::getclientinfo' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+    'reactor_id=' => 'mixed',
+  ),
+  'swoole\\http\\server::getclientlist' => 
+  array (
+    0 => 'mixed',
+    'start_fd' => 'mixed',
+    'find_count=' => 'mixed',
+  ),
+  'swoole\\http\\server::getlasterror' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\http\\server::getmanagerpid' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\http\\server::getmasterpid' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\http\\server::getworkerid' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\http\\server::getworkerpid' => 
+  array (
+    0 => 'mixed',
+    'worker_id=' => 'mixed',
+  ),
+  'swoole\\http\\server::getworkerstatus' => 
+  array (
+    0 => 'mixed',
+    'worker_id=' => 'mixed',
+  ),
+  'swoole\\http\\server::heartbeat' => 
+  array (
+    0 => 'mixed',
+    'reactor_id' => 'mixed',
+  ),
+  'swoole\\http\\server::listen' => 
+  array (
+    0 => 'mixed',
+    'host' => 'mixed',
+    'port' => 'mixed',
+    'sock_type' => 'mixed',
   ),
   'swoole\\http\\server::on' => 
   array (
@@ -80437,13 +89269,137 @@ return array (
     'event_name' => 'string',
     'callback' => 'callable',
   ),
+  'swoole\\http\\server::pause' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+  ),
+  'swoole\\http\\server::protect' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+    'is_protected=' => 'mixed',
+  ),
+  'swoole\\http\\server::reload' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\http\\server::resume' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+  ),
+  'swoole\\http\\server::send' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+    'send_data' => 'mixed',
+    'server_socket=' => 'mixed',
+  ),
+  'swoole\\http\\server::sendfile' => 
+  array (
+    0 => 'mixed',
+    'conn_fd' => 'mixed',
+    'filename' => 'mixed',
+    'offset=' => 'mixed',
+    'length=' => 'mixed',
+  ),
+  'swoole\\http\\server::sendmessage' => 
+  array (
+    0 => 'mixed',
+    'message' => 'mixed',
+    'dst_worker_id' => 'mixed',
+  ),
+  'swoole\\http\\server::sendto' => 
+  array (
+    0 => 'mixed',
+    'ip' => 'mixed',
+    'port' => 'mixed',
+    'send_data' => 'mixed',
+    'server_socket=' => 'mixed',
+  ),
+  'swoole\\http\\server::sendwait' => 
+  array (
+    0 => 'mixed',
+    'conn_fd' => 'mixed',
+    'send_data' => 'mixed',
+  ),
+  'swoole\\http\\server::set' => 
+  array (
+    0 => 'mixed',
+    'settings' => 'array<array-key, mixed>',
+  ),
+  'swoole\\http\\server::shutdown' => 
+  array (
+    0 => 'mixed',
+  ),
   'swoole\\http\\server::start' => 
   array (
     0 => 'void',
   ),
+  'swoole\\http\\server::stats' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\http\\server::stop' => 
+  array (
+    0 => 'mixed',
+    'worker_id=' => 'mixed',
+  ),
+  'swoole\\http\\server::task' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
+    'task_worker_index=' => 'mixed',
+    'finish_callback=' => 'callable|null',
+  ),
+  'swoole\\http\\server::taskco' => 
+  array (
+    0 => 'mixed',
+    'tasks' => 'array<array-key, mixed>',
+    'timeout=' => 'mixed',
+  ),
+  'swoole\\http\\server::taskwait' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
+    'timeout=' => 'mixed',
+    'task_worker_index=' => 'mixed',
+  ),
+  'swoole\\http\\server::taskwaitmulti' => 
+  array (
+    0 => 'mixed',
+    'tasks' => 'array<array-key, mixed>',
+    'timeout=' => 'mixed',
+  ),
+  'swoole\\http\\server::tick' => 
+  array (
+    0 => 'mixed',
+    'ms' => 'mixed',
+    'callback' => 'callable',
+  ),
+  'swoole\\http\\status::getreasonphrase' => 
+  array (
+    0 => 'string',
+    'value' => 'int',
+  ),
+  'swoole\\http\\status::getreasonphrases' => 
+  array (
+    0 => 'array<array-key, mixed>',
+  ),
+  'swoole\\lock::__construct' => 
+  array (
+    0 => 'void',
+    'type=' => 'mixed',
+    'filename=' => 'mixed',
+  ),
   'swoole\\lock::__destruct' => 
   array (
     0 => 'void',
+  ),
+  'swoole\\lock::destroy' => 
+  array (
+    0 => 'mixed',
   ),
   'swoole\\lock::lock' => 
   array (
@@ -80452,6 +89408,11 @@ return array (
   'swoole\\lock::lock_read' => 
   array (
     0 => 'void',
+  ),
+  'swoole\\lock::lockwait' => 
+  array (
+    0 => 'mixed',
+    'timeout=' => 'mixed',
   ),
   'swoole\\lock::trylock' => 
   array (
@@ -80471,6 +89432,151 @@ return array (
     'filename' => 'string',
     'size=' => 'string',
     'offset=' => 'string',
+  ),
+  'swoole\\multibytestringobject::__construct' => 
+  array (
+    0 => 'void',
+    'string=' => 'string',
+  ),
+  'swoole\\multibytestringobject::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\multibytestringobject::append' => 
+  array (
+    0 => 'self',
+    'str' => 'mixed',
+  ),
+  'swoole\\multibytestringobject::char' => 
+  array (
+    0 => 'string',
+    'index' => 'int',
+  ),
+  'swoole\\multibytestringobject::chunk' => 
+  array (
+    0 => 'Swoole\\ArrayObject',
+    'splitLength=' => 'int',
+    'limit=' => 'int|null',
+  ),
+  'swoole\\multibytestringobject::chunksplit' => 
+  array (
+    0 => 'self',
+    'chunkLength=' => 'int',
+    'chunkEnd=' => 'string',
+  ),
+  'swoole\\multibytestringobject::contains' => 
+  array (
+    0 => 'bool',
+    'subString' => 'string',
+  ),
+  'swoole\\multibytestringobject::detectarraytype' => 
+  array (
+    0 => 'Swoole\\ArrayObject',
+    'value' => 'array<array-key, mixed>',
+  ),
+  'swoole\\multibytestringobject::endswith' => 
+  array (
+    0 => 'bool',
+    'needle' => 'string',
+  ),
+  'swoole\\multibytestringobject::equals' => 
+  array (
+    0 => 'bool',
+    'str' => 'mixed',
+    'strict=' => 'bool',
+  ),
+  'swoole\\multibytestringobject::indexof' => 
+  array (
+    0 => 'mixed',
+    'needle' => 'string',
+    'offset=' => 'int',
+    'encoding=' => 'null|string',
+  ),
+  'swoole\\multibytestringobject::ipos' => 
+  array (
+    0 => 'mixed',
+    'needle' => 'string',
+    'encoding=' => 'null|string',
+  ),
+  'swoole\\multibytestringobject::lastindexof' => 
+  array (
+    0 => 'mixed',
+    'needle' => 'string',
+    'offset=' => 'int',
+    'encoding=' => 'null|string',
+  ),
+  'swoole\\multibytestringobject::length' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\multibytestringobject::lower' => 
+  array (
+    0 => 'self',
+  ),
+  'swoole\\multibytestringobject::ltrim' => 
+  array (
+    0 => 'self',
+  ),
+  'swoole\\multibytestringobject::pos' => 
+  array (
+    0 => 'mixed',
+    'needle' => 'string',
+    'offset=' => 'int',
+    'encoding=' => 'null|string',
+  ),
+  'swoole\\multibytestringobject::repeat' => 
+  array (
+    0 => 'self',
+    'times' => 'int',
+  ),
+  'swoole\\multibytestringobject::replace' => 
+  array (
+    0 => 'self',
+    'search' => 'string',
+    'replace' => 'string',
+    '&count=' => 'mixed',
+  ),
+  'swoole\\multibytestringobject::rpos' => 
+  array (
+    0 => 'mixed',
+    'needle' => 'string',
+    'offset=' => 'int',
+    'encoding=' => 'null|string',
+  ),
+  'swoole\\multibytestringobject::rtrim' => 
+  array (
+    0 => 'self',
+  ),
+  'swoole\\multibytestringobject::split' => 
+  array (
+    0 => 'Swoole\\ArrayObject',
+    'delimiter' => 'string',
+    'limit=' => 'int',
+  ),
+  'swoole\\multibytestringobject::startswith' => 
+  array (
+    0 => 'bool',
+    'needle' => 'string',
+  ),
+  'swoole\\multibytestringobject::substr' => 
+  array (
+    0 => 'mixed',
+    'offset' => 'int',
+    'length=' => 'int|null',
+    'encoding=' => 'null|string',
+  ),
+  'swoole\\multibytestringobject::tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\multibytestringobject::trim' => 
+  array (
+    0 => 'self',
+    'characters=' => 'mixed',
+  ),
+  'swoole\\multibytestringobject::upper' => 
+  array (
+    0 => 'self',
   ),
   'swoole\\mysql::__destruct' => 
   array (
@@ -80502,6 +89608,355 @@ return array (
     'sql' => 'string',
     'callback' => 'callable',
   ),
+  'swoole\\nameresolver::__construct' => 
+  array (
+    0 => 'void',
+    'url' => 'mixed',
+    'prefix=' => 'mixed',
+  ),
+  'swoole\\nameresolver::checkresponse' => 
+  array (
+    0 => 'mixed',
+    'r' => 'mixed',
+    'url' => 'mixed',
+  ),
+  'swoole\\nameresolver::checkserverurl' => 
+  array (
+    0 => 'mixed',
+    'url' => 'mixed',
+  ),
+  'swoole\\nameresolver::getcluster' => 
+  array (
+    0 => 'Swoole\\NameResolver\\Cluster|null',
+    'name' => 'string',
+  ),
+  'swoole\\nameresolver::getfilter' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\nameresolver::hasfilter' => 
+  array (
+    0 => 'bool',
+  ),
+  'swoole\\nameresolver::join' => 
+  array (
+    0 => 'bool',
+    'name' => 'string',
+    'ip' => 'string',
+    'port' => 'int',
+    'options=' => 'array<array-key, mixed>',
+  ),
+  'swoole\\nameresolver::leave' => 
+  array (
+    0 => 'bool',
+    'name' => 'string',
+    'ip' => 'string',
+    'port' => 'int',
+  ),
+  'swoole\\nameresolver::lookup' => 
+  array (
+    0 => 'mixed',
+    'name' => 'string',
+  ),
+  'swoole\\nameresolver::withfilter' => 
+  array (
+    0 => 'self',
+    'fn' => 'callable',
+  ),
+  'swoole\\nameresolver\\cluster::add' => 
+  array (
+    0 => 'void',
+    'host' => 'string',
+    'port' => 'int',
+    'weight=' => 'int',
+  ),
+  'swoole\\nameresolver\\cluster::count' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\nameresolver\\cluster::pop' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\nameresolver\\consul::__construct' => 
+  array (
+    0 => 'void',
+    'url' => 'mixed',
+    'prefix=' => 'mixed',
+  ),
+  'swoole\\nameresolver\\consul::checkresponse' => 
+  array (
+    0 => 'mixed',
+    'r' => 'mixed',
+    'url' => 'mixed',
+  ),
+  'swoole\\nameresolver\\consul::checkserverurl' => 
+  array (
+    0 => 'mixed',
+    'url' => 'mixed',
+  ),
+  'swoole\\nameresolver\\consul::enablemaintenancemode' => 
+  array (
+    0 => 'bool',
+    'name' => 'string',
+    'ip' => 'string',
+    'port' => 'int',
+  ),
+  'swoole\\nameresolver\\consul::getcluster' => 
+  array (
+    0 => 'Swoole\\NameResolver\\Cluster|null',
+    'name' => 'string',
+  ),
+  'swoole\\nameresolver\\consul::getfilter' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\nameresolver\\consul::getserviceid' => 
+  array (
+    0 => 'string',
+    'name' => 'string',
+    'ip' => 'string',
+    'port' => 'int',
+  ),
+  'swoole\\nameresolver\\consul::hasfilter' => 
+  array (
+    0 => 'bool',
+  ),
+  'swoole\\nameresolver\\consul::join' => 
+  array (
+    0 => 'bool',
+    'name' => 'string',
+    'ip' => 'string',
+    'port' => 'int',
+    'options=' => 'array<array-key, mixed>',
+  ),
+  'swoole\\nameresolver\\consul::leave' => 
+  array (
+    0 => 'bool',
+    'name' => 'string',
+    'ip' => 'string',
+    'port' => 'int',
+  ),
+  'swoole\\nameresolver\\consul::lookup' => 
+  array (
+    0 => 'mixed',
+    'name' => 'string',
+  ),
+  'swoole\\nameresolver\\consul::withfilter' => 
+  array (
+    0 => 'self',
+    'fn' => 'callable',
+  ),
+  'swoole\\nameresolver\\exception::__clone' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\nameresolver\\exception::__construct' => 
+  array (
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
+  ),
+  'swoole\\nameresolver\\exception::__tostring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\nameresolver\\exception::__wakeup' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\nameresolver\\exception::getcode' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\nameresolver\\exception::getfile' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\nameresolver\\exception::getline' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\nameresolver\\exception::getmessage' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\nameresolver\\exception::getprevious' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\nameresolver\\exception::gettrace' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\nameresolver\\exception::gettraceasstring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\nameresolver\\nacos::__construct' => 
+  array (
+    0 => 'void',
+    'url' => 'mixed',
+    'prefix=' => 'mixed',
+  ),
+  'swoole\\nameresolver\\nacos::checkresponse' => 
+  array (
+    0 => 'mixed',
+    'r' => 'mixed',
+    'url' => 'mixed',
+  ),
+  'swoole\\nameresolver\\nacos::checkserverurl' => 
+  array (
+    0 => 'mixed',
+    'url' => 'mixed',
+  ),
+  'swoole\\nameresolver\\nacos::getcluster' => 
+  array (
+    0 => 'Swoole\\NameResolver\\Cluster|null',
+    'name' => 'string',
+  ),
+  'swoole\\nameresolver\\nacos::getfilter' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\nameresolver\\nacos::hasfilter' => 
+  array (
+    0 => 'bool',
+  ),
+  'swoole\\nameresolver\\nacos::join' => 
+  array (
+    0 => 'bool',
+    'name' => 'string',
+    'ip' => 'string',
+    'port' => 'int',
+    'options=' => 'array<array-key, mixed>',
+  ),
+  'swoole\\nameresolver\\nacos::leave' => 
+  array (
+    0 => 'bool',
+    'name' => 'string',
+    'ip' => 'string',
+    'port' => 'int',
+  ),
+  'swoole\\nameresolver\\nacos::lookup' => 
+  array (
+    0 => 'mixed',
+    'name' => 'string',
+  ),
+  'swoole\\nameresolver\\nacos::withfilter' => 
+  array (
+    0 => 'self',
+    'fn' => 'callable',
+  ),
+  'swoole\\nameresolver\\redis::__construct' => 
+  array (
+    0 => 'void',
+    'url' => 'mixed',
+    'prefix=' => 'mixed',
+  ),
+  'swoole\\nameresolver\\redis::checkresponse' => 
+  array (
+    0 => 'mixed',
+    'r' => 'mixed',
+    'url' => 'mixed',
+  ),
+  'swoole\\nameresolver\\redis::checkserverurl' => 
+  array (
+    0 => 'mixed',
+    'url' => 'mixed',
+  ),
+  'swoole\\nameresolver\\redis::connect' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\nameresolver\\redis::getcluster' => 
+  array (
+    0 => 'Swoole\\NameResolver\\Cluster|null',
+    'name' => 'string',
+  ),
+  'swoole\\nameresolver\\redis::getfilter' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\nameresolver\\redis::hasfilter' => 
+  array (
+    0 => 'bool',
+  ),
+  'swoole\\nameresolver\\redis::join' => 
+  array (
+    0 => 'bool',
+    'name' => 'string',
+    'ip' => 'string',
+    'port' => 'int',
+    'options=' => 'array<array-key, mixed>',
+  ),
+  'swoole\\nameresolver\\redis::leave' => 
+  array (
+    0 => 'bool',
+    'name' => 'string',
+    'ip' => 'string',
+    'port' => 'int',
+  ),
+  'swoole\\nameresolver\\redis::lookup' => 
+  array (
+    0 => 'mixed',
+    'name' => 'string',
+  ),
+  'swoole\\nameresolver\\redis::withfilter' => 
+  array (
+    0 => 'self',
+    'fn' => 'callable',
+  ),
+  'swoole\\objectproxy::__call' => 
+  array (
+    0 => 'mixed',
+    'name' => 'string',
+    'arguments' => 'array<array-key, mixed>',
+  ),
+  'swoole\\objectproxy::__construct' => 
+  array (
+    0 => 'void',
+    'object' => 'mixed',
+  ),
+  'swoole\\objectproxy::__get' => 
+  array (
+    0 => 'mixed',
+    'name' => 'string',
+  ),
+  'swoole\\objectproxy::__getobject' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\objectproxy::__invoke' => 
+  array (
+    0 => 'mixed',
+    '...arguments=' => 'mixed',
+  ),
+  'swoole\\objectproxy::__isset' => 
+  array (
+    0 => 'mixed',
+    'name' => 'mixed',
+  ),
+  'swoole\\objectproxy::__set' => 
+  array (
+    0 => 'void',
+    'name' => 'string',
+    'value' => 'mixed',
+  ),
+  'swoole\\objectproxy::__unset' => 
+  array (
+    0 => 'void',
+    'name' => 'string',
+  ),
+  'swoole\\process::__construct' => 
+  array (
+    0 => 'void',
+    'callback' => 'callable',
+    'redirect_stdin_and_stdout=' => 'mixed',
+    'pipe_type=' => 'mixed',
+    'enable_coroutine=' => 'mixed',
+  ),
   'swoole\\process::__destruct' => 
   array (
     0 => 'void',
@@ -80532,9 +89987,18 @@ return array (
     0 => 'void',
     'exit_code=' => 'string',
   ),
+  'swoole\\process::exportsocket' => 
+  array (
+    0 => 'mixed',
+  ),
   'swoole\\process::freequeue' => 
   array (
     0 => 'void',
+  ),
+  'swoole\\process::getpriority' => 
+  array (
+    0 => 'mixed',
+    'which' => 'mixed',
   ),
   'swoole\\process::kill' => 
   array (
@@ -80561,6 +90025,27 @@ return array (
   array (
     0 => 'string',
     'maxsize=' => 'int',
+  ),
+  'swoole\\process::set' => 
+  array (
+    0 => 'mixed',
+    'settings' => 'array<array-key, mixed>',
+  ),
+  'swoole\\process::setblocking' => 
+  array (
+    0 => 'mixed',
+    'blocking' => 'mixed',
+  ),
+  'swoole\\process::setpriority' => 
+  array (
+    0 => 'mixed',
+    'which' => 'mixed',
+    'priority' => 'mixed',
+  ),
+  'swoole\\process::settimeout' => 
+  array (
+    0 => 'mixed',
+    'seconds' => 'mixed',
   ),
   'swoole\\process::signal' => 
   array (
@@ -80592,11 +90077,375 @@ return array (
     0 => 'int',
     'data' => 'string',
   ),
+  'swoole\\process\\manager::__construct' => 
+  array (
+    0 => 'void',
+    'ipcType=' => 'int',
+    'msgQueueKey=' => 'int',
+  ),
+  'swoole\\process\\manager::add' => 
+  array (
+    0 => 'self',
+    'func' => 'callable',
+    'enableCoroutine=' => 'bool',
+  ),
+  'swoole\\process\\manager::addbatch' => 
+  array (
+    0 => 'self',
+    'workerNum' => 'int',
+    'func' => 'callable',
+    'enableCoroutine=' => 'bool',
+  ),
+  'swoole\\process\\manager::getipctype' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\process\\manager::getmsgqueuekey' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\process\\manager::setipctype' => 
+  array (
+    0 => 'self',
+    'ipcType' => 'int',
+  ),
+  'swoole\\process\\manager::setmsgqueuekey' => 
+  array (
+    0 => 'self',
+    'msgQueueKey' => 'int',
+  ),
+  'swoole\\process\\manager::start' => 
+  array (
+    0 => 'void',
+  ),
+  'swoole\\process\\pool::__construct' => 
+  array (
+    0 => 'void',
+    'worker_num' => 'mixed',
+    'ipc_type=' => 'mixed',
+    'msgqueue_key=' => 'mixed',
+    'enable_coroutine=' => 'mixed',
+  ),
+  'swoole\\process\\pool::__destruct' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\process\\pool::detach' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\process\\pool::getprocess' => 
+  array (
+    0 => 'mixed',
+    'worker_id=' => 'mixed',
+  ),
+  'swoole\\process\\pool::listen' => 
+  array (
+    0 => 'mixed',
+    'host' => 'mixed',
+    'port=' => 'mixed',
+    'backlog=' => 'mixed',
+  ),
+  'swoole\\process\\pool::on' => 
+  array (
+    0 => 'mixed',
+    'event_name' => 'mixed',
+    'callback' => 'callable',
+  ),
+  'swoole\\process\\pool::set' => 
+  array (
+    0 => 'mixed',
+    'settings' => 'array<array-key, mixed>',
+  ),
+  'swoole\\process\\pool::shutdown' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\process\\pool::start' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\process\\pool::stop' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\process\\pool::write' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
+  ),
+  'swoole\\process\\processmanager::__construct' => 
+  array (
+    0 => 'void',
+    'ipcType=' => 'int',
+    'msgQueueKey=' => 'int',
+  ),
+  'swoole\\process\\processmanager::add' => 
+  array (
+    0 => 'self',
+    'func' => 'callable',
+    'enableCoroutine=' => 'bool',
+  ),
+  'swoole\\process\\processmanager::addbatch' => 
+  array (
+    0 => 'self',
+    'workerNum' => 'int',
+    'func' => 'callable',
+    'enableCoroutine=' => 'bool',
+  ),
+  'swoole\\process\\processmanager::getipctype' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\process\\processmanager::getmsgqueuekey' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\process\\processmanager::setipctype' => 
+  array (
+    0 => 'self',
+    'ipcType' => 'int',
+  ),
+  'swoole\\process\\processmanager::setmsgqueuekey' => 
+  array (
+    0 => 'self',
+    'msgQueueKey' => 'int',
+  ),
+  'swoole\\process\\processmanager::start' => 
+  array (
+    0 => 'void',
+  ),
+  'swoole\\redis\\server::__construct' => 
+  array (
+    0 => 'void',
+    'host' => 'mixed',
+    'port=' => 'mixed',
+    'mode=' => 'mixed',
+    'sock_type=' => 'mixed',
+  ),
+  'swoole\\redis\\server::__destruct' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\redis\\server::addcommand' => 
+  array (
+    0 => 'mixed',
+    'name' => 'mixed',
+    'accepted_process_types' => 'mixed',
+    'callback' => 'callable',
+  ),
+  'swoole\\redis\\server::addlistener' => 
+  array (
+    0 => 'mixed',
+    'host' => 'mixed',
+    'port' => 'mixed',
+    'sock_type' => 'mixed',
+  ),
+  'swoole\\redis\\server::addprocess' => 
+  array (
+    0 => 'mixed',
+    'process' => 'swoole_process',
+  ),
+  'swoole\\redis\\server::after' => 
+  array (
+    0 => 'mixed',
+    'ms' => 'mixed',
+    'callback' => 'callable',
+  ),
+  'swoole\\redis\\server::bind' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+    'uid' => 'mixed',
+  ),
+  'swoole\\redis\\server::cleartimer' => 
+  array (
+    0 => 'mixed',
+    'timer_id' => 'mixed',
+  ),
+  'swoole\\redis\\server::close' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+    'reset=' => 'mixed',
+  ),
+  'swoole\\redis\\server::command' => 
+  array (
+    0 => 'mixed',
+    'name' => 'mixed',
+    'process_id' => 'mixed',
+    'process_type' => 'mixed',
+    'data' => 'mixed',
+    'json_encode=' => 'mixed',
+  ),
+  'swoole\\redis\\server::confirm' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+  ),
+  'swoole\\redis\\server::connection_info' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+    'reactor_id=' => 'mixed',
+  ),
+  'swoole\\redis\\server::connection_list' => 
+  array (
+    0 => 'mixed',
+    'start_fd' => 'mixed',
+    'find_count=' => 'mixed',
+  ),
+  'swoole\\redis\\server::defer' => 
+  array (
+    0 => 'mixed',
+    'callback' => 'callable',
+  ),
+  'swoole\\redis\\server::exist' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+  ),
+  'swoole\\redis\\server::exists' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+  ),
+  'swoole\\redis\\server::finish' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
+  ),
   'swoole\\redis\\server::format' => 
   array (
     0 => 'ReturnType',
     'type' => 'string',
     'value=' => 'string',
+  ),
+  'swoole\\redis\\server::getcallback' => 
+  array (
+    0 => 'mixed',
+    'event_name' => 'mixed',
+  ),
+  'swoole\\redis\\server::getclientinfo' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+    'reactor_id=' => 'mixed',
+  ),
+  'swoole\\redis\\server::getclientlist' => 
+  array (
+    0 => 'mixed',
+    'start_fd' => 'mixed',
+    'find_count=' => 'mixed',
+  ),
+  'swoole\\redis\\server::gethandler' => 
+  array (
+    0 => 'mixed',
+    'command' => 'mixed',
+  ),
+  'swoole\\redis\\server::getlasterror' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\redis\\server::getmanagerpid' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\redis\\server::getmasterpid' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\redis\\server::getworkerid' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\redis\\server::getworkerpid' => 
+  array (
+    0 => 'mixed',
+    'worker_id=' => 'mixed',
+  ),
+  'swoole\\redis\\server::getworkerstatus' => 
+  array (
+    0 => 'mixed',
+    'worker_id=' => 'mixed',
+  ),
+  'swoole\\redis\\server::heartbeat' => 
+  array (
+    0 => 'mixed',
+    'reactor_id' => 'mixed',
+  ),
+  'swoole\\redis\\server::listen' => 
+  array (
+    0 => 'mixed',
+    'host' => 'mixed',
+    'port' => 'mixed',
+    'sock_type' => 'mixed',
+  ),
+  'swoole\\redis\\server::on' => 
+  array (
+    0 => 'mixed',
+    'event_name' => 'mixed',
+    'callback' => 'callable',
+  ),
+  'swoole\\redis\\server::pause' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+  ),
+  'swoole\\redis\\server::protect' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+    'is_protected=' => 'mixed',
+  ),
+  'swoole\\redis\\server::reload' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\redis\\server::resume' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+  ),
+  'swoole\\redis\\server::send' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+    'send_data' => 'mixed',
+    'server_socket=' => 'mixed',
+  ),
+  'swoole\\redis\\server::sendfile' => 
+  array (
+    0 => 'mixed',
+    'conn_fd' => 'mixed',
+    'filename' => 'mixed',
+    'offset=' => 'mixed',
+    'length=' => 'mixed',
+  ),
+  'swoole\\redis\\server::sendmessage' => 
+  array (
+    0 => 'mixed',
+    'message' => 'mixed',
+    'dst_worker_id' => 'mixed',
+  ),
+  'swoole\\redis\\server::sendto' => 
+  array (
+    0 => 'mixed',
+    'ip' => 'mixed',
+    'port' => 'mixed',
+    'send_data' => 'mixed',
+    'server_socket=' => 'mixed',
+  ),
+  'swoole\\redis\\server::sendwait' => 
+  array (
+    0 => 'mixed',
+    'conn_fd' => 'mixed',
+    'send_data' => 'mixed',
+  ),
+  'swoole\\redis\\server::set' => 
+  array (
+    0 => 'mixed',
+    'settings' => 'array<array-key, mixed>',
   ),
   'swoole\\redis\\server::sethandler' => 
   array (
@@ -80606,9 +90455,69 @@ return array (
     'number_of_string_param=' => 'string',
     'type_of_array_param=' => 'string',
   ),
+  'swoole\\redis\\server::shutdown' => 
+  array (
+    0 => 'mixed',
+  ),
   'swoole\\redis\\server::start' => 
   array (
     0 => 'ReturnType',
+  ),
+  'swoole\\redis\\server::stats' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\redis\\server::stop' => 
+  array (
+    0 => 'mixed',
+    'worker_id=' => 'mixed',
+  ),
+  'swoole\\redis\\server::task' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
+    'task_worker_index=' => 'mixed',
+    'finish_callback=' => 'callable|null',
+  ),
+  'swoole\\redis\\server::taskco' => 
+  array (
+    0 => 'mixed',
+    'tasks' => 'array<array-key, mixed>',
+    'timeout=' => 'mixed',
+  ),
+  'swoole\\redis\\server::taskwait' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
+    'timeout=' => 'mixed',
+    'task_worker_index=' => 'mixed',
+  ),
+  'swoole\\redis\\server::taskwaitmulti' => 
+  array (
+    0 => 'mixed',
+    'tasks' => 'array<array-key, mixed>',
+    'timeout=' => 'mixed',
+  ),
+  'swoole\\redis\\server::tick' => 
+  array (
+    0 => 'mixed',
+    'ms' => 'mixed',
+    'callback' => 'callable',
+  ),
+  'swoole\\runtime::enablecoroutine' => 
+  array (
+    0 => 'mixed',
+    'enable=' => 'mixed',
+    'flags=' => 'mixed',
+  ),
+  'swoole\\runtime::gethookflags' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\runtime::sethookflags' => 
+  array (
+    0 => 'mixed',
+    'flags' => 'mixed',
   ),
   'swoole\\serialize::pack' => 
   array (
@@ -80621,6 +90530,25 @@ return array (
     0 => 'ReturnType',
     'data' => 'string',
     'args=' => 'string',
+  ),
+  'swoole\\server::__construct' => 
+  array (
+    0 => 'void',
+    'host' => 'mixed',
+    'port=' => 'mixed',
+    'mode=' => 'mixed',
+    'sock_type=' => 'mixed',
+  ),
+  'swoole\\server::__destruct' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\server::addcommand' => 
+  array (
+    0 => 'mixed',
+    'name' => 'mixed',
+    'accepted_process_types' => 'mixed',
+    'callback' => 'callable',
   ),
   'swoole\\server::addlistener' => 
   array (
@@ -80647,11 +90575,25 @@ return array (
     'fd' => 'int',
     'uid' => 'int',
   ),
+  'swoole\\server::cleartimer' => 
+  array (
+    0 => 'mixed',
+    'timer_id' => 'mixed',
+  ),
   'swoole\\server::close' => 
   array (
     0 => 'bool',
     'fd' => 'int',
     'reset=' => 'bool',
+  ),
+  'swoole\\server::command' => 
+  array (
+    0 => 'mixed',
+    'name' => 'mixed',
+    'process_id' => 'mixed',
+    'process_type' => 'mixed',
+    'data' => 'mixed',
+    'json_encode=' => 'mixed',
   ),
   'swoole\\server::confirm' => 
   array (
@@ -80680,10 +90622,20 @@ return array (
     0 => 'bool',
     'fd' => 'int',
   ),
+  'swoole\\server::exists' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+  ),
   'swoole\\server::finish' => 
   array (
     0 => 'void',
     'data' => 'string',
+  ),
+  'swoole\\server::getcallback' => 
+  array (
+    0 => 'mixed',
+    'event_name' => 'mixed',
   ),
   'swoole\\server::getclientinfo' => 
   array (
@@ -80700,6 +90652,28 @@ return array (
   'swoole\\server::getlasterror' => 
   array (
     0 => 'int',
+  ),
+  'swoole\\server::getmanagerpid' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\server::getmasterpid' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\server::getworkerid' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\server::getworkerpid' => 
+  array (
+    0 => 'mixed',
+    'worker_id=' => 'mixed',
+  ),
+  'swoole\\server::getworkerstatus' => 
+  array (
+    0 => 'mixed',
+    'worker_id=' => 'mixed',
   ),
   'swoole\\server::heartbeat' => 
   array (
@@ -80802,6 +90776,12 @@ return array (
     'dst_worker_id=' => 'int',
     'callback=' => 'callable',
   ),
+  'swoole\\server::taskco' => 
+  array (
+    0 => 'mixed',
+    'tasks' => 'array<array-key, mixed>',
+    'timeout=' => 'mixed',
+  ),
   'swoole\\server::taskwait' => 
   array (
     0 => 'void',
@@ -80821,9 +90801,291 @@ return array (
     'interval_ms' => 'int',
     'callback' => 'callable',
   ),
+  'swoole\\server\\admin::getaccesstoken' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\server\\admin::getarraymemorysize' => 
+  array (
+    0 => 'int',
+    'a' => 'array<array-key, mixed>',
+  ),
+  'swoole\\server\\admin::getobjectmemorysize' => 
+  array (
+    0 => 'int',
+    'o' => 'object',
+  ),
+  'swoole\\server\\admin::getprocesscpuusage' => 
+  array (
+    0 => 'mixed',
+    'pid' => 'mixed',
+  ),
+  'swoole\\server\\admin::getprocessmemoryrealusage' => 
+  array (
+    0 => 'mixed',
+    'pid=' => 'mixed',
+  ),
+  'swoole\\server\\admin::getprocessstatus' => 
+  array (
+    0 => 'mixed',
+    'pid=' => 'mixed',
+  ),
+  'swoole\\server\\admin::getstringmemorysize' => 
+  array (
+    0 => 'int',
+    's' => 'string',
+  ),
+  'swoole\\server\\admin::handlerclosesession' => 
+  array (
+    0 => 'mixed',
+    'server' => 'mixed',
+    'msg' => 'mixed',
+  ),
+  'swoole\\server\\admin::handlergetall' => 
+  array (
+    0 => 'mixed',
+    'server' => 'Swoole\\Server',
+    'process' => 'Swoole\\StringObject',
+    'cmd' => 'mixed',
+    'data' => 'mixed',
+    'json_decode=' => 'bool',
+  ),
+  'swoole\\server\\admin::handlergetallreactor' => 
+  array (
+    0 => 'mixed',
+    'cmd' => 'mixed',
+    'data' => 'mixed',
+    'server' => 'Swoole\\Server',
+    'json_decode=' => 'bool',
+  ),
+  'swoole\\server\\admin::handlergetalltaskworker' => 
+  array (
+    0 => 'mixed',
+    'cmd' => 'mixed',
+    'data' => 'mixed',
+    'server' => 'Swoole\\Server',
+    'json_decode=' => 'bool',
+  ),
+  'swoole\\server\\admin::handlergetallworker' => 
+  array (
+    0 => 'mixed',
+    'cmd' => 'mixed',
+    'data' => 'mixed',
+    'server' => 'Swoole\\Server',
+    'json_decode=' => 'bool',
+  ),
+  'swoole\\server\\admin::handlergetclassinfo' => 
+  array (
+    0 => 'mixed',
+    'server' => 'mixed',
+    'msg' => 'mixed',
+  ),
+  'swoole\\server\\admin::handlergetcoroutinelist' => 
+  array (
+    0 => 'mixed',
+    'server' => 'mixed',
+    'msg' => 'mixed',
+  ),
+  'swoole\\server\\admin::handlergetdeclaredclasses' => 
+  array (
+    0 => 'mixed',
+    'server' => 'mixed',
+    'msg' => 'mixed',
+  ),
+  'swoole\\server\\admin::handlergetdefinedfunctions' => 
+  array (
+    0 => 'mixed',
+    'server' => 'mixed',
+    'msg' => 'mixed',
+  ),
+  'swoole\\server\\admin::handlergetfunctioninfo' => 
+  array (
+    0 => 'mixed',
+    'server' => 'mixed',
+    'msg' => 'mixed',
+  ),
+  'swoole\\server\\admin::handlergetmanager' => 
+  array (
+    0 => 'mixed',
+    'cmd' => 'mixed',
+    'data' => 'mixed',
+    'server' => 'Swoole\\Server',
+    'json_decode=' => 'bool',
+  ),
+  'swoole\\server\\admin::handlergetmaster' => 
+  array (
+    0 => 'mixed',
+    'cmd' => 'mixed',
+    'data' => 'mixed',
+    'server' => 'Swoole\\Server',
+    'json_decode=' => 'bool',
+  ),
+  'swoole\\server\\admin::handlergetobjectbyhandle' => 
+  array (
+    0 => 'mixed',
+    'server' => 'mixed',
+    'msg' => 'mixed',
+  ),
+  'swoole\\server\\admin::handlergetobjects' => 
+  array (
+    0 => 'mixed',
+    'server' => 'mixed',
+    'msg' => 'mixed',
+  ),
+  'swoole\\server\\admin::handlergetresources' => 
+  array (
+    0 => 'mixed',
+    'server' => 'mixed',
+    'msg' => 'mixed',
+  ),
+  'swoole\\server\\admin::handlergetservercpuusage' => 
+  array (
+    0 => 'mixed',
+    'server' => 'mixed',
+    'msg' => 'mixed',
+  ),
+  'swoole\\server\\admin::handlergetservermemoryusage' => 
+  array (
+    0 => 'mixed',
+    'server' => 'mixed',
+    'msg' => 'mixed',
+  ),
+  'swoole\\server\\admin::handlergetstaticpropertyvalue' => 
+  array (
+    0 => 'mixed',
+    'server' => 'mixed',
+    'msg' => 'mixed',
+  ),
+  'swoole\\server\\admin::handlergettimerlist' => 
+  array (
+    0 => 'mixed',
+    'server' => 'mixed',
+    'msg' => 'mixed',
+  ),
+  'swoole\\server\\admin::handlergetversioninfo' => 
+  array (
+    0 => 'mixed',
+    'server' => 'mixed',
+    'msg' => 'mixed',
+  ),
+  'swoole\\server\\admin::handlergetworkerinfo' => 
+  array (
+    0 => 'mixed',
+    'server' => 'mixed',
+    'msg' => 'mixed',
+  ),
+  'swoole\\server\\admin::handlermulti' => 
+  array (
+    0 => 'mixed',
+    'server' => 'Swoole\\Server',
+    'list' => 'array<array-key, mixed>',
+  ),
+  'swoole\\server\\admin::havemanagerprocess' => 
+  array (
+    0 => 'bool',
+    'server' => 'Swoole\\Server',
+  ),
+  'swoole\\server\\admin::havemasterprocess' => 
+  array (
+    0 => 'bool',
+    'server' => 'Swoole\\Server',
+  ),
+  'swoole\\server\\admin::init' => 
+  array (
+    0 => 'mixed',
+    'server' => 'Swoole\\Server',
+  ),
+  'swoole\\server\\admin::json' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
+    'code=' => 'mixed',
+  ),
+  'swoole\\server\\admin::start' => 
+  array (
+    0 => 'mixed',
+    'server' => 'Swoole\\Server',
+  ),
+  'swoole\\server\\helper::checkoptions' => 
+  array (
+    0 => 'mixed',
+    'input_options' => 'array<array-key, mixed>',
+  ),
+  'swoole\\server\\helper::onafterreload' => 
+  array (
+    0 => 'mixed',
+    'server' => 'Swoole\\Server',
+  ),
+  'swoole\\server\\helper::onbeforereload' => 
+  array (
+    0 => 'mixed',
+    'server' => 'Swoole\\Server',
+  ),
+  'swoole\\server\\helper::onbeforeshutdown' => 
+  array (
+    0 => 'mixed',
+    'server' => 'Swoole\\Server',
+  ),
+  'swoole\\server\\helper::onbeforestart' => 
+  array (
+    0 => 'mixed',
+    'server' => 'Swoole\\Server',
+  ),
+  'swoole\\server\\helper::onmanagerstart' => 
+  array (
+    0 => 'mixed',
+    'server' => 'Swoole\\Server',
+  ),
+  'swoole\\server\\helper::onmanagerstop' => 
+  array (
+    0 => 'mixed',
+    'server' => 'Swoole\\Server',
+  ),
+  'swoole\\server\\helper::onshutdown' => 
+  array (
+    0 => 'mixed',
+    'server' => 'Swoole\\Server',
+  ),
+  'swoole\\server\\helper::onstart' => 
+  array (
+    0 => 'mixed',
+    'server' => 'Swoole\\Server',
+  ),
+  'swoole\\server\\helper::onworkererror' => 
+  array (
+    0 => 'mixed',
+    'server' => 'Swoole\\Server',
+  ),
+  'swoole\\server\\helper::onworkerexit' => 
+  array (
+    0 => 'mixed',
+    'server' => 'Swoole\\Server',
+    'workerId' => 'int',
+  ),
+  'swoole\\server\\helper::onworkerstart' => 
+  array (
+    0 => 'mixed',
+    'server' => 'Swoole\\Server',
+    'workerId' => 'int',
+  ),
+  'swoole\\server\\helper::onworkerstop' => 
+  array (
+    0 => 'mixed',
+    'server' => 'Swoole\\Server',
+    'workerId' => 'int',
+  ),
+  'swoole\\server\\port::__construct' => 
+  array (
+    0 => 'void',
+  ),
   'swoole\\server\\port::__destruct' => 
   array (
     0 => 'void',
+  ),
+  'swoole\\server\\port::getcallback' => 
+  array (
+    0 => 'mixed',
+    'event_name' => 'mixed',
   ),
   'swoole\\server\\port::on' => 
   array (
@@ -80835,6 +91097,160 @@ return array (
   array (
     0 => 'void',
     'settings' => 'array<array-key, mixed>',
+  ),
+  'swoole\\server\\task::finish' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
+  ),
+  'swoole\\server\\task::pack' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
+  ),
+  'swoole\\stringobject::__construct' => 
+  array (
+    0 => 'void',
+    'string=' => 'string',
+  ),
+  'swoole\\stringobject::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\stringobject::append' => 
+  array (
+    0 => 'self',
+    'str' => 'mixed',
+  ),
+  'swoole\\stringobject::char' => 
+  array (
+    0 => 'string',
+    'index' => 'int',
+  ),
+  'swoole\\stringobject::chunk' => 
+  array (
+    0 => 'Swoole\\ArrayObject',
+    'splitLength=' => 'int',
+  ),
+  'swoole\\stringobject::chunksplit' => 
+  array (
+    0 => 'self',
+    'chunkLength=' => 'int',
+    'chunkEnd=' => 'string',
+  ),
+  'swoole\\stringobject::contains' => 
+  array (
+    0 => 'bool',
+    'subString' => 'string',
+  ),
+  'swoole\\stringobject::detectarraytype' => 
+  array (
+    0 => 'Swoole\\ArrayObject',
+    'value' => 'array<array-key, mixed>',
+  ),
+  'swoole\\stringobject::endswith' => 
+  array (
+    0 => 'bool',
+    'needle' => 'string',
+  ),
+  'swoole\\stringobject::equals' => 
+  array (
+    0 => 'bool',
+    'str' => 'mixed',
+    'strict=' => 'bool',
+  ),
+  'swoole\\stringobject::indexof' => 
+  array (
+    0 => 'mixed',
+    'needle' => 'string',
+    'offset=' => 'int',
+  ),
+  'swoole\\stringobject::ipos' => 
+  array (
+    0 => 'mixed',
+    'needle' => 'string',
+  ),
+  'swoole\\stringobject::lastindexof' => 
+  array (
+    0 => 'mixed',
+    'needle' => 'string',
+    'offset=' => 'int',
+  ),
+  'swoole\\stringobject::length' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole\\stringobject::lower' => 
+  array (
+    0 => 'self',
+  ),
+  'swoole\\stringobject::ltrim' => 
+  array (
+    0 => 'self',
+  ),
+  'swoole\\stringobject::pos' => 
+  array (
+    0 => 'mixed',
+    'needle' => 'string',
+    'offset=' => 'int',
+  ),
+  'swoole\\stringobject::repeat' => 
+  array (
+    0 => 'self',
+    'times' => 'int',
+  ),
+  'swoole\\stringobject::replace' => 
+  array (
+    0 => 'self',
+    'search' => 'string',
+    'replace' => 'string',
+    '&count=' => 'mixed',
+  ),
+  'swoole\\stringobject::rpos' => 
+  array (
+    0 => 'mixed',
+    'needle' => 'string',
+    'offset=' => 'int',
+  ),
+  'swoole\\stringobject::rtrim' => 
+  array (
+    0 => 'self',
+  ),
+  'swoole\\stringobject::split' => 
+  array (
+    0 => 'Swoole\\ArrayObject',
+    'delimiter' => 'string',
+    'limit=' => 'int',
+  ),
+  'swoole\\stringobject::startswith' => 
+  array (
+    0 => 'bool',
+    'needle' => 'string',
+  ),
+  'swoole\\stringobject::substr' => 
+  array (
+    0 => 'mixed',
+    'offset' => 'int',
+    'length=' => 'int|null',
+  ),
+  'swoole\\stringobject::tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\stringobject::trim' => 
+  array (
+    0 => 'self',
+    'characters=' => 'mixed',
+  ),
+  'swoole\\stringobject::upper' => 
+  array (
+    0 => 'self',
+  ),
+  'swoole\\table::__construct' => 
+  array (
+    0 => 'void',
+    'table_size' => 'mixed',
+    'conflict_proportion=' => 'mixed',
   ),
   'swoole\\table::column' => 
   array (
@@ -80867,6 +91283,11 @@ return array (
     0 => 'void',
     'key' => 'string',
   ),
+  'swoole\\table::delete' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
   'swoole\\table::destroy' => 
   array (
     0 => 'void',
@@ -80876,11 +91297,24 @@ return array (
     0 => 'bool',
     'key' => 'string',
   ),
+  'swoole\\table::exists' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
   'swoole\\table::get' => 
   array (
     0 => 'int',
     'row_key' => 'string',
     'column_key' => 'string',
+  ),
+  'swoole\\table::getmemorysize' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\table::getsize' => 
+  array (
+    0 => 'mixed',
   ),
   'swoole\\table::incr' => 
   array (
@@ -80907,6 +91341,10 @@ return array (
     'key' => 'string',
     'value' => 'array<array-key, mixed>',
   ),
+  'swoole\\table::stats' => 
+  array (
+    0 => 'mixed',
+  ),
   'swoole\\table::valid' => 
   array (
     0 => 'bool',
@@ -80922,10 +91360,32 @@ return array (
     0 => 'void',
     'timer_id' => 'int',
   ),
+  'swoole\\timer::clearall' => 
+  array (
+    0 => 'mixed',
+  ),
   'swoole\\timer::exists' => 
   array (
     0 => 'bool',
     'timer_id' => 'int',
+  ),
+  'swoole\\timer::info' => 
+  array (
+    0 => 'mixed',
+    'timer_id' => 'mixed',
+  ),
+  'swoole\\timer::list' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\timer::set' => 
+  array (
+    0 => 'mixed',
+    'settings' => 'array<array-key, mixed>',
+  ),
+  'swoole\\timer::stats' => 
+  array (
+    0 => 'mixed',
   ),
   'swoole\\timer::tick' => 
   array (
@@ -80934,10 +91394,313 @@ return array (
     'callback' => 'callable',
     'param=' => 'string',
   ),
+  'swoole\\timer\\iterator::__construct' => 
+  array (
+    0 => 'void',
+    'array=' => 'mixed',
+    'ar_flags=' => 'mixed',
+  ),
+  'swoole\\timer\\iterator::append' => 
+  array (
+    0 => 'mixed',
+    'value' => 'mixed',
+  ),
+  'swoole\\timer\\iterator::asort' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\timer\\iterator::count' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\timer\\iterator::current' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\timer\\iterator::getarraycopy' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\timer\\iterator::getflags' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\timer\\iterator::key' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\timer\\iterator::ksort' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\timer\\iterator::natcasesort' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\timer\\iterator::natsort' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\timer\\iterator::next' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\timer\\iterator::offsetexists' => 
+  array (
+    0 => 'mixed',
+    'index' => 'mixed',
+  ),
+  'swoole\\timer\\iterator::offsetget' => 
+  array (
+    0 => 'mixed',
+    'index' => 'mixed',
+  ),
+  'swoole\\timer\\iterator::offsetset' => 
+  array (
+    0 => 'mixed',
+    'index' => 'mixed',
+    'newval' => 'mixed',
+  ),
+  'swoole\\timer\\iterator::offsetunset' => 
+  array (
+    0 => 'mixed',
+    'index' => 'mixed',
+  ),
+  'swoole\\timer\\iterator::rewind' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\timer\\iterator::seek' => 
+  array (
+    0 => 'mixed',
+    'position' => 'mixed',
+  ),
+  'swoole\\timer\\iterator::serialize' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\timer\\iterator::setflags' => 
+  array (
+    0 => 'mixed',
+    'flags' => 'mixed',
+  ),
+  'swoole\\timer\\iterator::uasort' => 
+  array (
+    0 => 'mixed',
+    'cmp_function' => 'mixed',
+  ),
+  'swoole\\timer\\iterator::uksort' => 
+  array (
+    0 => 'mixed',
+    'cmp_function' => 'mixed',
+  ),
+  'swoole\\timer\\iterator::unserialize' => 
+  array (
+    0 => 'mixed',
+    'serialized' => 'mixed',
+  ),
+  'swoole\\timer\\iterator::valid' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\websocket\\closeframe::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\websocket\\closeframe::pack' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
+    'opcode=' => 'mixed',
+    'flags=' => 'mixed',
+  ),
+  'swoole\\websocket\\closeframe::unpack' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
+  ),
+  'swoole\\websocket\\frame::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole\\websocket\\frame::pack' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
+    'opcode=' => 'mixed',
+    'flags=' => 'mixed',
+  ),
+  'swoole\\websocket\\frame::unpack' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
+  ),
+  'swoole\\websocket\\server::__construct' => 
+  array (
+    0 => 'void',
+    'host' => 'mixed',
+    'port=' => 'mixed',
+    'mode=' => 'mixed',
+    'sock_type=' => 'mixed',
+  ),
+  'swoole\\websocket\\server::__destruct' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\websocket\\server::addcommand' => 
+  array (
+    0 => 'mixed',
+    'name' => 'mixed',
+    'accepted_process_types' => 'mixed',
+    'callback' => 'callable',
+  ),
+  'swoole\\websocket\\server::addlistener' => 
+  array (
+    0 => 'mixed',
+    'host' => 'mixed',
+    'port' => 'mixed',
+    'sock_type' => 'mixed',
+  ),
+  'swoole\\websocket\\server::addprocess' => 
+  array (
+    0 => 'mixed',
+    'process' => 'swoole_process',
+  ),
+  'swoole\\websocket\\server::after' => 
+  array (
+    0 => 'mixed',
+    'ms' => 'mixed',
+    'callback' => 'callable',
+  ),
+  'swoole\\websocket\\server::bind' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+    'uid' => 'mixed',
+  ),
+  'swoole\\websocket\\server::cleartimer' => 
+  array (
+    0 => 'mixed',
+    'timer_id' => 'mixed',
+  ),
+  'swoole\\websocket\\server::close' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+    'reset=' => 'mixed',
+  ),
+  'swoole\\websocket\\server::command' => 
+  array (
+    0 => 'mixed',
+    'name' => 'mixed',
+    'process_id' => 'mixed',
+    'process_type' => 'mixed',
+    'data' => 'mixed',
+    'json_encode=' => 'mixed',
+  ),
+  'swoole\\websocket\\server::confirm' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+  ),
+  'swoole\\websocket\\server::connection_info' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+    'reactor_id=' => 'mixed',
+  ),
+  'swoole\\websocket\\server::connection_list' => 
+  array (
+    0 => 'mixed',
+    'start_fd' => 'mixed',
+    'find_count=' => 'mixed',
+  ),
+  'swoole\\websocket\\server::defer' => 
+  array (
+    0 => 'mixed',
+    'callback' => 'callable',
+  ),
+  'swoole\\websocket\\server::disconnect' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+    'code=' => 'mixed',
+    'reason=' => 'mixed',
+  ),
   'swoole\\websocket\\server::exist' => 
   array (
     0 => 'bool',
     'fd' => 'int',
+  ),
+  'swoole\\websocket\\server::exists' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+  ),
+  'swoole\\websocket\\server::finish' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
+  ),
+  'swoole\\websocket\\server::getcallback' => 
+  array (
+    0 => 'mixed',
+    'event_name' => 'mixed',
+  ),
+  'swoole\\websocket\\server::getclientinfo' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+    'reactor_id=' => 'mixed',
+  ),
+  'swoole\\websocket\\server::getclientlist' => 
+  array (
+    0 => 'mixed',
+    'start_fd' => 'mixed',
+    'find_count=' => 'mixed',
+  ),
+  'swoole\\websocket\\server::getlasterror' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\websocket\\server::getmanagerpid' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\websocket\\server::getmasterpid' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\websocket\\server::getworkerid' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\websocket\\server::getworkerpid' => 
+  array (
+    0 => 'mixed',
+    'worker_id=' => 'mixed',
+  ),
+  'swoole\\websocket\\server::getworkerstatus' => 
+  array (
+    0 => 'mixed',
+    'worker_id=' => 'mixed',
+  ),
+  'swoole\\websocket\\server::heartbeat' => 
+  array (
+    0 => 'mixed',
+    'reactor_id' => 'mixed',
+  ),
+  'swoole\\websocket\\server::isestablished' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+  ),
+  'swoole\\websocket\\server::listen' => 
+  array (
+    0 => 'mixed',
+    'host' => 'mixed',
+    'port' => 'mixed',
+    'sock_type' => 'mixed',
   ),
   'swoole\\websocket\\server::on' => 
   array (
@@ -80953,6 +91716,17 @@ return array (
     'finish=' => 'string',
     'mask=' => 'string',
   ),
+  'swoole\\websocket\\server::pause' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+  ),
+  'swoole\\websocket\\server::protect' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+    'is_protected=' => 'mixed',
+  ),
   'swoole\\websocket\\server::push' => 
   array (
     0 => 'void',
@@ -80961,16 +91735,138 @@ return array (
     'opcode=' => 'string',
     'finish=' => 'string',
   ),
+  'swoole\\websocket\\server::reload' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\websocket\\server::resume' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+  ),
+  'swoole\\websocket\\server::send' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+    'send_data' => 'mixed',
+    'server_socket=' => 'mixed',
+  ),
+  'swoole\\websocket\\server::sendfile' => 
+  array (
+    0 => 'mixed',
+    'conn_fd' => 'mixed',
+    'filename' => 'mixed',
+    'offset=' => 'mixed',
+    'length=' => 'mixed',
+  ),
+  'swoole\\websocket\\server::sendmessage' => 
+  array (
+    0 => 'mixed',
+    'message' => 'mixed',
+    'dst_worker_id' => 'mixed',
+  ),
+  'swoole\\websocket\\server::sendto' => 
+  array (
+    0 => 'mixed',
+    'ip' => 'mixed',
+    'port' => 'mixed',
+    'send_data' => 'mixed',
+    'server_socket=' => 'mixed',
+  ),
+  'swoole\\websocket\\server::sendwait' => 
+  array (
+    0 => 'mixed',
+    'conn_fd' => 'mixed',
+    'send_data' => 'mixed',
+  ),
+  'swoole\\websocket\\server::set' => 
+  array (
+    0 => 'mixed',
+    'settings' => 'array<array-key, mixed>',
+  ),
+  'swoole\\websocket\\server::shutdown' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\websocket\\server::start' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\websocket\\server::stats' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole\\websocket\\server::stop' => 
+  array (
+    0 => 'mixed',
+    'worker_id=' => 'mixed',
+  ),
+  'swoole\\websocket\\server::task' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
+    'task_worker_index=' => 'mixed',
+    'finish_callback=' => 'callable|null',
+  ),
+  'swoole\\websocket\\server::taskco' => 
+  array (
+    0 => 'mixed',
+    'tasks' => 'array<array-key, mixed>',
+    'timeout=' => 'mixed',
+  ),
+  'swoole\\websocket\\server::taskwait' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
+    'timeout=' => 'mixed',
+    'task_worker_index=' => 'mixed',
+  ),
+  'swoole\\websocket\\server::taskwaitmulti' => 
+  array (
+    0 => 'mixed',
+    'tasks' => 'array<array-key, mixed>',
+    'timeout=' => 'mixed',
+  ),
+  'swoole\\websocket\\server::tick' => 
+  array (
+    0 => 'mixed',
+    'ms' => 'mixed',
+    'callback' => 'callable',
+  ),
   'swoole\\websocket\\server::unpack' => 
   array (
     0 => 'string',
     'data' => 'binary',
+  ),
+  'swoole_array' => 
+  array (
+    0 => 'Swoole\\ArrayObject',
+    'array=' => 'array<array-key, mixed>',
+  ),
+  'swoole_array_default_value' => 
+  array (
+    0 => 'mixed',
+    'array' => 'array<array-key, mixed>',
+    'key' => 'mixed',
+    'default_value=' => 'mixed',
+  ),
+  'swoole_array_list' => 
+  array (
+    0 => 'Swoole\\ArrayObject',
+    '...arrray=' => 'mixed',
   ),
   'swoole_async_dns_lookup' => 
   array (
     0 => 'bool',
     'hostname' => 'string',
     'callback' => 'callable',
+  ),
+  'swoole_async_dns_lookup_coro' => 
+  array (
+    0 => 'mixed',
+    'domain_name' => 'mixed',
+    'timeout=' => 'mixed',
+    'type=' => 'mixed',
   ),
   'swoole_async_read' => 
   array (
@@ -81007,6 +91903,168 @@ return array (
     'callback=' => 'callable',
     'flags=' => 'int',
   ),
+  'swoole_atomic::__construct' => 
+  array (
+    0 => 'void',
+    'value=' => 'mixed',
+  ),
+  'swoole_atomic::add' => 
+  array (
+    0 => 'mixed',
+    'add_value=' => 'mixed',
+  ),
+  'swoole_atomic::cmpset' => 
+  array (
+    0 => 'mixed',
+    'cmp_value' => 'mixed',
+    'new_value' => 'mixed',
+  ),
+  'swoole_atomic::get' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_atomic::set' => 
+  array (
+    0 => 'mixed',
+    'value' => 'mixed',
+  ),
+  'swoole_atomic::sub' => 
+  array (
+    0 => 'mixed',
+    'sub_value=' => 'mixed',
+  ),
+  'swoole_atomic::wait' => 
+  array (
+    0 => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'swoole_atomic::wakeup' => 
+  array (
+    0 => 'mixed',
+    'count=' => 'mixed',
+  ),
+  'swoole_atomic_long::__construct' => 
+  array (
+    0 => 'void',
+    'value=' => 'mixed',
+  ),
+  'swoole_atomic_long::add' => 
+  array (
+    0 => 'mixed',
+    'add_value=' => 'mixed',
+  ),
+  'swoole_atomic_long::cmpset' => 
+  array (
+    0 => 'mixed',
+    'cmp_value' => 'mixed',
+    'new_value' => 'mixed',
+  ),
+  'swoole_atomic_long::get' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_atomic_long::set' => 
+  array (
+    0 => 'mixed',
+    'value' => 'mixed',
+  ),
+  'swoole_atomic_long::sub' => 
+  array (
+    0 => 'mixed',
+    'sub_value=' => 'mixed',
+  ),
+  'swoole_clear_dns_cache' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_clear_error' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_client::__construct' => 
+  array (
+    0 => 'void',
+    'type' => 'mixed',
+    'async=' => 'mixed',
+    'id=' => 'mixed',
+  ),
+  'swoole_client::__destruct' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_client::close' => 
+  array (
+    0 => 'mixed',
+    'force=' => 'mixed',
+  ),
+  'swoole_client::connect' => 
+  array (
+    0 => 'mixed',
+    'host' => 'mixed',
+    'port=' => 'mixed',
+    'timeout=' => 'mixed',
+    'sock_flag=' => 'mixed',
+  ),
+  'swoole_client::enablessl' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_client::getpeercert' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_client::getpeername' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_client::getsockname' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_client::isconnected' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_client::recv' => 
+  array (
+    0 => 'mixed',
+    'size=' => 'mixed',
+    'flag=' => 'mixed',
+  ),
+  'swoole_client::send' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
+    'flag=' => 'mixed',
+  ),
+  'swoole_client::sendfile' => 
+  array (
+    0 => 'mixed',
+    'filename' => 'mixed',
+    'offset=' => 'mixed',
+    'length=' => 'mixed',
+  ),
+  'swoole_client::sendto' => 
+  array (
+    0 => 'mixed',
+    'ip' => 'mixed',
+    'port' => 'mixed',
+    'data' => 'mixed',
+  ),
+  'swoole_client::set' => 
+  array (
+    0 => 'mixed',
+    'settings' => 'array<array-key, mixed>',
+  ),
+  'swoole_client::shutdown' => 
+  array (
+    0 => 'mixed',
+    'how' => 'mixed',
+  ),
+  'swoole_client::verifypeercert' => 
+  array (
+    0 => 'mixed',
+  ),
   'swoole_client_select' => 
   array (
     0 => 'int',
@@ -81015,13 +92073,258 @@ return array (
     'error_array' => 'array<array-key, mixed>',
     'timeout=' => 'float',
   ),
+  'swoole_connection_iterator::__construct' => 
+  array (
+    0 => 'void',
+  ),
+  'swoole_connection_iterator::__destruct' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_connection_iterator::count' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole_connection_iterator::current' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_connection_iterator::key' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_connection_iterator::next' => 
+  array (
+    0 => 'void',
+  ),
+  'swoole_connection_iterator::offsetexists' => 
+  array (
+    0 => 'bool',
+    'fd' => 'mixed',
+  ),
+  'swoole_connection_iterator::offsetget' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+  ),
+  'swoole_connection_iterator::offsetset' => 
+  array (
+    0 => 'void',
+    'fd' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'swoole_connection_iterator::offsetunset' => 
+  array (
+    0 => 'void',
+    'fd' => 'mixed',
+  ),
+  'swoole_connection_iterator::rewind' => 
+  array (
+    0 => 'void',
+  ),
+  'swoole_connection_iterator::valid' => 
+  array (
+    0 => 'bool',
+  ),
+  'swoole_coroutine_create' => 
+  array (
+    0 => 'mixed',
+    'func' => 'callable',
+    '...params=' => 'mixed',
+  ),
+  'swoole_coroutine_defer' => 
+  array (
+    0 => 'mixed',
+    'callback' => 'callable',
+  ),
+  'swoole_coroutine_socketpair' => 
+  array (
+    0 => 'mixed',
+    'domain' => 'mixed',
+    'type' => 'mixed',
+    'protocol' => 'mixed',
+  ),
   'swoole_cpu_num' => 
   array (
     0 => 'int',
   ),
+  'swoole_curl_close' => 
+  array (
+    0 => 'mixed',
+    'obj' => 'Swoole\\Curl\\Handler',
+  ),
+  'swoole_curl_errno' => 
+  array (
+    0 => 'mixed',
+    'obj' => 'Swoole\\Curl\\Handler',
+  ),
+  'swoole_curl_error' => 
+  array (
+    0 => 'mixed',
+    'obj' => 'Swoole\\Curl\\Handler',
+  ),
+  'swoole_curl_exec' => 
+  array (
+    0 => 'mixed',
+    'obj' => 'Swoole\\Curl\\Handler',
+  ),
+  'swoole_curl_getinfo' => 
+  array (
+    0 => 'mixed',
+    'obj' => 'Swoole\\Curl\\Handler',
+    'opt=' => 'int',
+  ),
+  'swoole_curl_init' => 
+  array (
+    0 => 'Swoole\\Curl\\Handler',
+    'url=' => 'string',
+  ),
+  'swoole_curl_multi_getcontent' => 
+  array (
+    0 => 'mixed',
+    'obj' => 'Swoole\\Curl\\Handler',
+  ),
+  'swoole_curl_reset' => 
+  array (
+    0 => 'mixed',
+    'obj' => 'Swoole\\Curl\\Handler',
+  ),
+  'swoole_curl_setopt' => 
+  array (
+    0 => 'bool',
+    'obj' => 'Swoole\\Curl\\Handler',
+    'opt' => 'int',
+    'value' => 'mixed',
+  ),
+  'swoole_curl_setopt_array' => 
+  array (
+    0 => 'bool',
+    'obj' => 'Swoole\\Curl\\Handler',
+    'array' => 'mixed',
+  ),
   'swoole_errno' => 
   array (
     0 => 'int',
+  ),
+  'swoole_error::__clone' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_error::__construct' => 
+  array (
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
+  ),
+  'swoole_error::__tostring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_error::__wakeup' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_error::getcode' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_error::getfile' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_error::getline' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_error::getmessage' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_error::getprevious' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_error::gettrace' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_error::gettraceasstring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_error_log' => 
+  array (
+    0 => 'mixed',
+    'level' => 'mixed',
+    'msg' => 'mixed',
+  ),
+  'swoole_error_log_ex' => 
+  array (
+    0 => 'mixed',
+    'level' => 'mixed',
+    'error' => 'mixed',
+    'msg' => 'mixed',
+  ),
+  'swoole_event::add' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+    'read_callback' => 'callable|null',
+    'write_callback=' => 'callable|null',
+    'events=' => 'mixed',
+  ),
+  'swoole_event::cycle' => 
+  array (
+    0 => 'mixed',
+    'callback' => 'callable|null',
+    'before=' => 'mixed',
+  ),
+  'swoole_event::defer' => 
+  array (
+    0 => 'mixed',
+    'callback' => 'callable',
+  ),
+  'swoole_event::del' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+  ),
+  'swoole_event::dispatch' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_event::exit' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_event::isset' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+    'events=' => 'mixed',
+  ),
+  'swoole_event::rshutdown' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_event::set' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+    'read_callback=' => 'callable|null',
+    'write_callback=' => 'callable|null',
+    'events=' => 'mixed',
+  ),
+  'swoole_event::wait' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_event::write' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+    'data' => 'mixed',
   ),
   'swoole_event_add' => 
   array (
@@ -81030,6 +92333,12 @@ return array (
     'read_callback=' => 'callable',
     'write_callback=' => 'callable',
     'events=' => 'int',
+  ),
+  'swoole_event_cycle' => 
+  array (
+    0 => 'mixed',
+    'callback' => 'callable|null',
+    'before=' => 'mixed',
   ),
   'swoole_event_defer' => 
   array (
@@ -81041,9 +92350,19 @@ return array (
     0 => 'bool',
     'fd' => 'int',
   ),
+  'swoole_event_dispatch' => 
+  array (
+    0 => 'mixed',
+  ),
   'swoole_event_exit' => 
   array (
     0 => 'void',
+  ),
+  'swoole_event_isset' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+    'events=' => 'mixed',
   ),
   'swoole_event_set' => 
   array (
@@ -81063,18 +92382,1140 @@ return array (
     'fd' => 'int',
     'data' => 'string',
   ),
+  'swoole_exception::__clone' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_exception::__construct' => 
+  array (
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
+  ),
+  'swoole_exception::__tostring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_exception::__wakeup' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_exception::getcode' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_exception::getfile' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_exception::getline' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_exception::getmessage' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_exception::getprevious' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_exception::gettrace' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_exception::gettraceasstring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_exec' => 
+  array (
+    0 => 'mixed',
+    'command' => 'string',
+    '&output=' => 'mixed',
+    '&returnVar=' => 'mixed',
+  ),
   'swoole_get_local_ip' => 
   array (
     0 => 'array<array-key, mixed>',
+  ),
+  'swoole_get_local_mac' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_get_mime_type' => 
+  array (
+    0 => 'mixed',
+    'filename' => 'mixed',
+  ),
+  'swoole_get_object_by_handle' => 
+  array (
+    0 => 'mixed',
+    'handle' => 'mixed',
+  ),
+  'swoole_get_objects' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_get_vm_status' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_hashcode' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
+    'type=' => 'mixed',
+  ),
+  'swoole_http_request::__destruct' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_http_request::create' => 
+  array (
+    0 => 'mixed',
+    'options=' => 'mixed',
+  ),
+  'swoole_http_request::getcontent' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_http_request::getdata' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_http_request::getmethod' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_http_request::iscompleted' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_http_request::parse' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
+  ),
+  'swoole_http_request::rawcontent' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_http_response::__destruct' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_http_response::close' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_http_response::cookie' => 
+  array (
+    0 => 'mixed',
+    'name' => 'mixed',
+    'value=' => 'mixed',
+    'expires=' => 'mixed',
+    'path=' => 'mixed',
+    'domain=' => 'mixed',
+    'secure=' => 'mixed',
+    'httponly=' => 'mixed',
+    'samesite=' => 'mixed',
+    'priority=' => 'mixed',
+  ),
+  'swoole_http_response::create' => 
+  array (
+    0 => 'mixed',
+    'server' => 'mixed',
+    'fd=' => 'mixed',
+  ),
+  'swoole_http_response::detach' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_http_response::end' => 
+  array (
+    0 => 'mixed',
+    'content=' => 'mixed',
+  ),
+  'swoole_http_response::goaway' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_http_response::header' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'value' => 'mixed',
+    'format=' => 'mixed',
+  ),
+  'swoole_http_response::initheader' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_http_response::iswritable' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_http_response::ping' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_http_response::push' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
+    'opcode=' => 'mixed',
+    'flags=' => 'mixed',
+  ),
+  'swoole_http_response::rawcookie' => 
+  array (
+    0 => 'mixed',
+    'name' => 'mixed',
+    'value=' => 'mixed',
+    'expires=' => 'mixed',
+    'path=' => 'mixed',
+    'domain=' => 'mixed',
+    'secure=' => 'mixed',
+    'httponly=' => 'mixed',
+    'samesite=' => 'mixed',
+    'priority=' => 'mixed',
+  ),
+  'swoole_http_response::recv' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_http_response::redirect' => 
+  array (
+    0 => 'mixed',
+    'location' => 'mixed',
+    'http_code=' => 'mixed',
+  ),
+  'swoole_http_response::sendfile' => 
+  array (
+    0 => 'mixed',
+    'filename' => 'mixed',
+    'offset=' => 'mixed',
+    'length=' => 'mixed',
+  ),
+  'swoole_http_response::setcookie' => 
+  array (
+    0 => 'mixed',
+    'name' => 'mixed',
+    'value=' => 'mixed',
+    'expires=' => 'mixed',
+    'path=' => 'mixed',
+    'domain=' => 'mixed',
+    'secure=' => 'mixed',
+    'httponly=' => 'mixed',
+    'samesite=' => 'mixed',
+    'priority=' => 'mixed',
+  ),
+  'swoole_http_response::setheader' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'value' => 'mixed',
+    'format=' => 'mixed',
+  ),
+  'swoole_http_response::setstatuscode' => 
+  array (
+    0 => 'mixed',
+    'http_code' => 'mixed',
+    'reason=' => 'mixed',
+  ),
+  'swoole_http_response::status' => 
+  array (
+    0 => 'mixed',
+    'http_code' => 'mixed',
+    'reason=' => 'mixed',
+  ),
+  'swoole_http_response::trailer' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'value' => 'mixed',
+  ),
+  'swoole_http_response::upgrade' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_http_response::write' => 
+  array (
+    0 => 'mixed',
+    'content' => 'mixed',
+  ),
+  'swoole_http_server::__construct' => 
+  array (
+    0 => 'void',
+    'host' => 'mixed',
+    'port=' => 'mixed',
+    'mode=' => 'mixed',
+    'sock_type=' => 'mixed',
+  ),
+  'swoole_http_server::__destruct' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_http_server::addcommand' => 
+  array (
+    0 => 'mixed',
+    'name' => 'mixed',
+    'accepted_process_types' => 'mixed',
+    'callback' => 'callable',
+  ),
+  'swoole_http_server::addlistener' => 
+  array (
+    0 => 'mixed',
+    'host' => 'mixed',
+    'port' => 'mixed',
+    'sock_type' => 'mixed',
+  ),
+  'swoole_http_server::addprocess' => 
+  array (
+    0 => 'mixed',
+    'process' => 'swoole_process',
+  ),
+  'swoole_http_server::after' => 
+  array (
+    0 => 'mixed',
+    'ms' => 'mixed',
+    'callback' => 'callable',
+  ),
+  'swoole_http_server::bind' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+    'uid' => 'mixed',
+  ),
+  'swoole_http_server::cleartimer' => 
+  array (
+    0 => 'mixed',
+    'timer_id' => 'mixed',
+  ),
+  'swoole_http_server::close' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+    'reset=' => 'mixed',
+  ),
+  'swoole_http_server::command' => 
+  array (
+    0 => 'mixed',
+    'name' => 'mixed',
+    'process_id' => 'mixed',
+    'process_type' => 'mixed',
+    'data' => 'mixed',
+    'json_encode=' => 'mixed',
+  ),
+  'swoole_http_server::confirm' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+  ),
+  'swoole_http_server::connection_info' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+    'reactor_id=' => 'mixed',
+  ),
+  'swoole_http_server::connection_list' => 
+  array (
+    0 => 'mixed',
+    'start_fd' => 'mixed',
+    'find_count=' => 'mixed',
+  ),
+  'swoole_http_server::defer' => 
+  array (
+    0 => 'mixed',
+    'callback' => 'callable',
+  ),
+  'swoole_http_server::exist' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+  ),
+  'swoole_http_server::exists' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+  ),
+  'swoole_http_server::finish' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
+  ),
+  'swoole_http_server::getcallback' => 
+  array (
+    0 => 'mixed',
+    'event_name' => 'mixed',
+  ),
+  'swoole_http_server::getclientinfo' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+    'reactor_id=' => 'mixed',
+  ),
+  'swoole_http_server::getclientlist' => 
+  array (
+    0 => 'mixed',
+    'start_fd' => 'mixed',
+    'find_count=' => 'mixed',
+  ),
+  'swoole_http_server::getlasterror' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_http_server::getmanagerpid' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_http_server::getmasterpid' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_http_server::getworkerid' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_http_server::getworkerpid' => 
+  array (
+    0 => 'mixed',
+    'worker_id=' => 'mixed',
+  ),
+  'swoole_http_server::getworkerstatus' => 
+  array (
+    0 => 'mixed',
+    'worker_id=' => 'mixed',
+  ),
+  'swoole_http_server::heartbeat' => 
+  array (
+    0 => 'mixed',
+    'reactor_id' => 'mixed',
+  ),
+  'swoole_http_server::listen' => 
+  array (
+    0 => 'mixed',
+    'host' => 'mixed',
+    'port' => 'mixed',
+    'sock_type' => 'mixed',
+  ),
+  'swoole_http_server::on' => 
+  array (
+    0 => 'mixed',
+    'event_name' => 'mixed',
+    'callback' => 'callable',
+  ),
+  'swoole_http_server::pause' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+  ),
+  'swoole_http_server::protect' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+    'is_protected=' => 'mixed',
+  ),
+  'swoole_http_server::reload' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_http_server::resume' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+  ),
+  'swoole_http_server::send' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+    'send_data' => 'mixed',
+    'server_socket=' => 'mixed',
+  ),
+  'swoole_http_server::sendfile' => 
+  array (
+    0 => 'mixed',
+    'conn_fd' => 'mixed',
+    'filename' => 'mixed',
+    'offset=' => 'mixed',
+    'length=' => 'mixed',
+  ),
+  'swoole_http_server::sendmessage' => 
+  array (
+    0 => 'mixed',
+    'message' => 'mixed',
+    'dst_worker_id' => 'mixed',
+  ),
+  'swoole_http_server::sendto' => 
+  array (
+    0 => 'mixed',
+    'ip' => 'mixed',
+    'port' => 'mixed',
+    'send_data' => 'mixed',
+    'server_socket=' => 'mixed',
+  ),
+  'swoole_http_server::sendwait' => 
+  array (
+    0 => 'mixed',
+    'conn_fd' => 'mixed',
+    'send_data' => 'mixed',
+  ),
+  'swoole_http_server::set' => 
+  array (
+    0 => 'mixed',
+    'settings' => 'array<array-key, mixed>',
+  ),
+  'swoole_http_server::shutdown' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_http_server::start' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_http_server::stats' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_http_server::stop' => 
+  array (
+    0 => 'mixed',
+    'worker_id=' => 'mixed',
+  ),
+  'swoole_http_server::task' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
+    'task_worker_index=' => 'mixed',
+    'finish_callback=' => 'callable|null',
+  ),
+  'swoole_http_server::taskco' => 
+  array (
+    0 => 'mixed',
+    'tasks' => 'array<array-key, mixed>',
+    'timeout=' => 'mixed',
+  ),
+  'swoole_http_server::taskwait' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
+    'timeout=' => 'mixed',
+    'task_worker_index=' => 'mixed',
+  ),
+  'swoole_http_server::taskwaitmulti' => 
+  array (
+    0 => 'mixed',
+    'tasks' => 'array<array-key, mixed>',
+    'timeout=' => 'mixed',
+  ),
+  'swoole_http_server::tick' => 
+  array (
+    0 => 'mixed',
+    'ms' => 'mixed',
+    'callback' => 'callable',
+  ),
+  'swoole_ignore_error' => 
+  array (
+    0 => 'mixed',
+    'error' => 'mixed',
+  ),
+  'swoole_internal_call_user_shutdown_begin' => 
+  array (
+    0 => 'mixed',
   ),
   'swoole_last_error' => 
   array (
     0 => 'int',
   ),
+  'swoole_library_get_option' => 
+  array (
+    0 => 'mixed',
+    'key' => 'string',
+  ),
+  'swoole_library_get_options' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_library_set_option' => 
+  array (
+    0 => 'mixed',
+    'key' => 'string',
+    'value' => 'mixed',
+  ),
+  'swoole_library_set_options' => 
+  array (
+    0 => 'mixed',
+    'options' => 'array<array-key, mixed>',
+  ),
   'swoole_load_module' => 
   array (
     0 => 'mixed',
     'filename' => 'string',
+  ),
+  'swoole_lock::__construct' => 
+  array (
+    0 => 'void',
+    'type=' => 'mixed',
+    'filename=' => 'mixed',
+  ),
+  'swoole_lock::__destruct' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_lock::destroy' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_lock::lock' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_lock::lock_read' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_lock::lockwait' => 
+  array (
+    0 => 'mixed',
+    'timeout=' => 'mixed',
+  ),
+  'swoole_lock::trylock' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_lock::trylock_read' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_lock::unlock' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_mbstring' => 
+  array (
+    0 => 'Swoole\\MultibyteStringObject',
+    'string=' => 'string',
+  ),
+  'swoole_mime_type_add' => 
+  array (
+    0 => 'mixed',
+    'suffix' => 'mixed',
+    'mime_type' => 'mixed',
+  ),
+  'swoole_mime_type_delete' => 
+  array (
+    0 => 'mixed',
+    'suffix' => 'mixed',
+  ),
+  'swoole_mime_type_exists' => 
+  array (
+    0 => 'mixed',
+    'filename' => 'mixed',
+  ),
+  'swoole_mime_type_get' => 
+  array (
+    0 => 'mixed',
+    'filename' => 'mixed',
+  ),
+  'swoole_mime_type_list' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_mime_type_set' => 
+  array (
+    0 => 'mixed',
+    'suffix' => 'mixed',
+    'mime_type' => 'mixed',
+  ),
+  'swoole_process::__construct' => 
+  array (
+    0 => 'void',
+    'callback' => 'callable',
+    'redirect_stdin_and_stdout=' => 'mixed',
+    'pipe_type=' => 'mixed',
+    'enable_coroutine=' => 'mixed',
+  ),
+  'swoole_process::__destruct' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_process::alarm' => 
+  array (
+    0 => 'mixed',
+    'usec' => 'mixed',
+    'type=' => 'mixed',
+  ),
+  'swoole_process::close' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_process::daemon' => 
+  array (
+    0 => 'mixed',
+    'nochdir=' => 'mixed',
+    'noclose=' => 'mixed',
+    'pipes=' => 'mixed',
+  ),
+  'swoole_process::exec' => 
+  array (
+    0 => 'mixed',
+    'exec_file' => 'mixed',
+    'args' => 'mixed',
+  ),
+  'swoole_process::exit' => 
+  array (
+    0 => 'mixed',
+    'exit_code=' => 'mixed',
+  ),
+  'swoole_process::exportsocket' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_process::freequeue' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_process::getpriority' => 
+  array (
+    0 => 'mixed',
+    'which' => 'mixed',
+  ),
+  'swoole_process::kill' => 
+  array (
+    0 => 'mixed',
+    'pid' => 'mixed',
+    'signal_no=' => 'mixed',
+  ),
+  'swoole_process::name' => 
+  array (
+    0 => 'mixed',
+    'process_name' => 'mixed',
+  ),
+  'swoole_process::pop' => 
+  array (
+    0 => 'mixed',
+    'size=' => 'mixed',
+  ),
+  'swoole_process::push' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
+  ),
+  'swoole_process::read' => 
+  array (
+    0 => 'mixed',
+    'size=' => 'mixed',
+  ),
+  'swoole_process::set' => 
+  array (
+    0 => 'mixed',
+    'settings' => 'array<array-key, mixed>',
+  ),
+  'swoole_process::setblocking' => 
+  array (
+    0 => 'mixed',
+    'blocking' => 'mixed',
+  ),
+  'swoole_process::setpriority' => 
+  array (
+    0 => 'mixed',
+    'which' => 'mixed',
+    'priority' => 'mixed',
+  ),
+  'swoole_process::settimeout' => 
+  array (
+    0 => 'mixed',
+    'seconds' => 'mixed',
+  ),
+  'swoole_process::signal' => 
+  array (
+    0 => 'mixed',
+    'signal_no' => 'mixed',
+    'callback' => 'mixed',
+  ),
+  'swoole_process::start' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_process::statqueue' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_process::usequeue' => 
+  array (
+    0 => 'mixed',
+    'key=' => 'mixed',
+    'mode=' => 'mixed',
+    'capacity=' => 'mixed',
+  ),
+  'swoole_process::wait' => 
+  array (
+    0 => 'mixed',
+    'blocking=' => 'mixed',
+  ),
+  'swoole_process::write' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
+  ),
+  'swoole_process_pool::__construct' => 
+  array (
+    0 => 'void',
+    'worker_num' => 'mixed',
+    'ipc_type=' => 'mixed',
+    'msgqueue_key=' => 'mixed',
+    'enable_coroutine=' => 'mixed',
+  ),
+  'swoole_process_pool::__destruct' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_process_pool::detach' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_process_pool::getprocess' => 
+  array (
+    0 => 'mixed',
+    'worker_id=' => 'mixed',
+  ),
+  'swoole_process_pool::listen' => 
+  array (
+    0 => 'mixed',
+    'host' => 'mixed',
+    'port=' => 'mixed',
+    'backlog=' => 'mixed',
+  ),
+  'swoole_process_pool::on' => 
+  array (
+    0 => 'mixed',
+    'event_name' => 'mixed',
+    'callback' => 'callable',
+  ),
+  'swoole_process_pool::set' => 
+  array (
+    0 => 'mixed',
+    'settings' => 'array<array-key, mixed>',
+  ),
+  'swoole_process_pool::shutdown' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_process_pool::start' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_process_pool::stop' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_process_pool::write' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
+  ),
+  'swoole_redis_server::__construct' => 
+  array (
+    0 => 'void',
+    'host' => 'mixed',
+    'port=' => 'mixed',
+    'mode=' => 'mixed',
+    'sock_type=' => 'mixed',
+  ),
+  'swoole_redis_server::__destruct' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_redis_server::addcommand' => 
+  array (
+    0 => 'mixed',
+    'name' => 'mixed',
+    'accepted_process_types' => 'mixed',
+    'callback' => 'callable',
+  ),
+  'swoole_redis_server::addlistener' => 
+  array (
+    0 => 'mixed',
+    'host' => 'mixed',
+    'port' => 'mixed',
+    'sock_type' => 'mixed',
+  ),
+  'swoole_redis_server::addprocess' => 
+  array (
+    0 => 'mixed',
+    'process' => 'swoole_process',
+  ),
+  'swoole_redis_server::after' => 
+  array (
+    0 => 'mixed',
+    'ms' => 'mixed',
+    'callback' => 'callable',
+  ),
+  'swoole_redis_server::bind' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+    'uid' => 'mixed',
+  ),
+  'swoole_redis_server::cleartimer' => 
+  array (
+    0 => 'mixed',
+    'timer_id' => 'mixed',
+  ),
+  'swoole_redis_server::close' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+    'reset=' => 'mixed',
+  ),
+  'swoole_redis_server::command' => 
+  array (
+    0 => 'mixed',
+    'name' => 'mixed',
+    'process_id' => 'mixed',
+    'process_type' => 'mixed',
+    'data' => 'mixed',
+    'json_encode=' => 'mixed',
+  ),
+  'swoole_redis_server::confirm' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+  ),
+  'swoole_redis_server::connection_info' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+    'reactor_id=' => 'mixed',
+  ),
+  'swoole_redis_server::connection_list' => 
+  array (
+    0 => 'mixed',
+    'start_fd' => 'mixed',
+    'find_count=' => 'mixed',
+  ),
+  'swoole_redis_server::defer' => 
+  array (
+    0 => 'mixed',
+    'callback' => 'callable',
+  ),
+  'swoole_redis_server::exist' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+  ),
+  'swoole_redis_server::exists' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+  ),
+  'swoole_redis_server::finish' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
+  ),
+  'swoole_redis_server::format' => 
+  array (
+    0 => 'mixed',
+    'type' => 'mixed',
+    'value=' => 'mixed',
+  ),
+  'swoole_redis_server::getcallback' => 
+  array (
+    0 => 'mixed',
+    'event_name' => 'mixed',
+  ),
+  'swoole_redis_server::getclientinfo' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+    'reactor_id=' => 'mixed',
+  ),
+  'swoole_redis_server::getclientlist' => 
+  array (
+    0 => 'mixed',
+    'start_fd' => 'mixed',
+    'find_count=' => 'mixed',
+  ),
+  'swoole_redis_server::gethandler' => 
+  array (
+    0 => 'mixed',
+    'command' => 'mixed',
+  ),
+  'swoole_redis_server::getlasterror' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_redis_server::getmanagerpid' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_redis_server::getmasterpid' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_redis_server::getworkerid' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_redis_server::getworkerpid' => 
+  array (
+    0 => 'mixed',
+    'worker_id=' => 'mixed',
+  ),
+  'swoole_redis_server::getworkerstatus' => 
+  array (
+    0 => 'mixed',
+    'worker_id=' => 'mixed',
+  ),
+  'swoole_redis_server::heartbeat' => 
+  array (
+    0 => 'mixed',
+    'reactor_id' => 'mixed',
+  ),
+  'swoole_redis_server::listen' => 
+  array (
+    0 => 'mixed',
+    'host' => 'mixed',
+    'port' => 'mixed',
+    'sock_type' => 'mixed',
+  ),
+  'swoole_redis_server::on' => 
+  array (
+    0 => 'mixed',
+    'event_name' => 'mixed',
+    'callback' => 'callable',
+  ),
+  'swoole_redis_server::pause' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+  ),
+  'swoole_redis_server::protect' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+    'is_protected=' => 'mixed',
+  ),
+  'swoole_redis_server::reload' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_redis_server::resume' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+  ),
+  'swoole_redis_server::send' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+    'send_data' => 'mixed',
+    'server_socket=' => 'mixed',
+  ),
+  'swoole_redis_server::sendfile' => 
+  array (
+    0 => 'mixed',
+    'conn_fd' => 'mixed',
+    'filename' => 'mixed',
+    'offset=' => 'mixed',
+    'length=' => 'mixed',
+  ),
+  'swoole_redis_server::sendmessage' => 
+  array (
+    0 => 'mixed',
+    'message' => 'mixed',
+    'dst_worker_id' => 'mixed',
+  ),
+  'swoole_redis_server::sendto' => 
+  array (
+    0 => 'mixed',
+    'ip' => 'mixed',
+    'port' => 'mixed',
+    'send_data' => 'mixed',
+    'server_socket=' => 'mixed',
+  ),
+  'swoole_redis_server::sendwait' => 
+  array (
+    0 => 'mixed',
+    'conn_fd' => 'mixed',
+    'send_data' => 'mixed',
+  ),
+  'swoole_redis_server::set' => 
+  array (
+    0 => 'mixed',
+    'settings' => 'array<array-key, mixed>',
+  ),
+  'swoole_redis_server::sethandler' => 
+  array (
+    0 => 'mixed',
+    'command' => 'mixed',
+    'callback' => 'callable',
+  ),
+  'swoole_redis_server::shutdown' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_redis_server::start' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_redis_server::stats' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_redis_server::stop' => 
+  array (
+    0 => 'mixed',
+    'worker_id=' => 'mixed',
+  ),
+  'swoole_redis_server::task' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
+    'task_worker_index=' => 'mixed',
+    'finish_callback=' => 'callable|null',
+  ),
+  'swoole_redis_server::taskco' => 
+  array (
+    0 => 'mixed',
+    'tasks' => 'array<array-key, mixed>',
+    'timeout=' => 'mixed',
+  ),
+  'swoole_redis_server::taskwait' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
+    'timeout=' => 'mixed',
+    'task_worker_index=' => 'mixed',
+  ),
+  'swoole_redis_server::taskwaitmulti' => 
+  array (
+    0 => 'mixed',
+    'tasks' => 'array<array-key, mixed>',
+    'timeout=' => 'mixed',
+  ),
+  'swoole_redis_server::tick' => 
+  array (
+    0 => 'mixed',
+    'ms' => 'mixed',
+    'callback' => 'callable',
+  ),
+  'swoole_runtime::enablecoroutine' => 
+  array (
+    0 => 'mixed',
+    'enable=' => 'mixed',
+    'flags=' => 'mixed',
+  ),
+  'swoole_runtime::gethookflags' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_runtime::sethookflags' => 
+  array (
+    0 => 'mixed',
+    'flags' => 'mixed',
   ),
   'swoole_select' => 
   array (
@@ -81084,17 +93525,681 @@ return array (
     'error_array' => 'array<array-key, mixed>',
     'timeout=' => 'float',
   ),
+  'swoole_server::__construct' => 
+  array (
+    0 => 'void',
+    'host' => 'mixed',
+    'port=' => 'mixed',
+    'mode=' => 'mixed',
+    'sock_type=' => 'mixed',
+  ),
+  'swoole_server::__destruct' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_server::addcommand' => 
+  array (
+    0 => 'mixed',
+    'name' => 'mixed',
+    'accepted_process_types' => 'mixed',
+    'callback' => 'callable',
+  ),
+  'swoole_server::addlistener' => 
+  array (
+    0 => 'mixed',
+    'host' => 'mixed',
+    'port' => 'mixed',
+    'sock_type' => 'mixed',
+  ),
+  'swoole_server::addprocess' => 
+  array (
+    0 => 'mixed',
+    'process' => 'swoole_process',
+  ),
+  'swoole_server::after' => 
+  array (
+    0 => 'mixed',
+    'ms' => 'mixed',
+    'callback' => 'callable',
+  ),
+  'swoole_server::bind' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+    'uid' => 'mixed',
+  ),
+  'swoole_server::cleartimer' => 
+  array (
+    0 => 'mixed',
+    'timer_id' => 'mixed',
+  ),
+  'swoole_server::close' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+    'reset=' => 'mixed',
+  ),
+  'swoole_server::command' => 
+  array (
+    0 => 'mixed',
+    'name' => 'mixed',
+    'process_id' => 'mixed',
+    'process_type' => 'mixed',
+    'data' => 'mixed',
+    'json_encode=' => 'mixed',
+  ),
+  'swoole_server::confirm' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+  ),
+  'swoole_server::connection_info' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+    'reactor_id=' => 'mixed',
+  ),
+  'swoole_server::connection_list' => 
+  array (
+    0 => 'mixed',
+    'start_fd' => 'mixed',
+    'find_count=' => 'mixed',
+  ),
+  'swoole_server::defer' => 
+  array (
+    0 => 'mixed',
+    'callback' => 'callable',
+  ),
+  'swoole_server::exist' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+  ),
+  'swoole_server::exists' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+  ),
+  'swoole_server::finish' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
+  ),
+  'swoole_server::getcallback' => 
+  array (
+    0 => 'mixed',
+    'event_name' => 'mixed',
+  ),
+  'swoole_server::getclientinfo' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+    'reactor_id=' => 'mixed',
+  ),
+  'swoole_server::getclientlist' => 
+  array (
+    0 => 'mixed',
+    'start_fd' => 'mixed',
+    'find_count=' => 'mixed',
+  ),
+  'swoole_server::getlasterror' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_server::getmanagerpid' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_server::getmasterpid' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_server::getworkerid' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_server::getworkerpid' => 
+  array (
+    0 => 'mixed',
+    'worker_id=' => 'mixed',
+  ),
+  'swoole_server::getworkerstatus' => 
+  array (
+    0 => 'mixed',
+    'worker_id=' => 'mixed',
+  ),
+  'swoole_server::heartbeat' => 
+  array (
+    0 => 'mixed',
+    'reactor_id' => 'mixed',
+  ),
+  'swoole_server::listen' => 
+  array (
+    0 => 'mixed',
+    'host' => 'mixed',
+    'port' => 'mixed',
+    'sock_type' => 'mixed',
+  ),
+  'swoole_server::on' => 
+  array (
+    0 => 'mixed',
+    'event_name' => 'mixed',
+    'callback' => 'callable',
+  ),
+  'swoole_server::pause' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+  ),
+  'swoole_server::protect' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+    'is_protected=' => 'mixed',
+  ),
+  'swoole_server::reload' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_server::resume' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+  ),
+  'swoole_server::send' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+    'send_data' => 'mixed',
+    'server_socket=' => 'mixed',
+  ),
+  'swoole_server::sendfile' => 
+  array (
+    0 => 'mixed',
+    'conn_fd' => 'mixed',
+    'filename' => 'mixed',
+    'offset=' => 'mixed',
+    'length=' => 'mixed',
+  ),
+  'swoole_server::sendmessage' => 
+  array (
+    0 => 'mixed',
+    'message' => 'mixed',
+    'dst_worker_id' => 'mixed',
+  ),
+  'swoole_server::sendto' => 
+  array (
+    0 => 'mixed',
+    'ip' => 'mixed',
+    'port' => 'mixed',
+    'send_data' => 'mixed',
+    'server_socket=' => 'mixed',
+  ),
+  'swoole_server::sendwait' => 
+  array (
+    0 => 'mixed',
+    'conn_fd' => 'mixed',
+    'send_data' => 'mixed',
+  ),
+  'swoole_server::set' => 
+  array (
+    0 => 'mixed',
+    'settings' => 'array<array-key, mixed>',
+  ),
+  'swoole_server::shutdown' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_server::start' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_server::stats' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_server::stop' => 
+  array (
+    0 => 'mixed',
+    'worker_id=' => 'mixed',
+  ),
+  'swoole_server::task' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
+    'task_worker_index=' => 'mixed',
+    'finish_callback=' => 'callable|null',
+  ),
+  'swoole_server::taskco' => 
+  array (
+    0 => 'mixed',
+    'tasks' => 'array<array-key, mixed>',
+    'timeout=' => 'mixed',
+  ),
+  'swoole_server::taskwait' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
+    'timeout=' => 'mixed',
+    'task_worker_index=' => 'mixed',
+  ),
+  'swoole_server::taskwaitmulti' => 
+  array (
+    0 => 'mixed',
+    'tasks' => 'array<array-key, mixed>',
+    'timeout=' => 'mixed',
+  ),
+  'swoole_server::tick' => 
+  array (
+    0 => 'mixed',
+    'ms' => 'mixed',
+    'callback' => 'callable',
+  ),
+  'swoole_server_port::__construct' => 
+  array (
+    0 => 'void',
+  ),
+  'swoole_server_port::__destruct' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_server_port::getcallback' => 
+  array (
+    0 => 'mixed',
+    'event_name' => 'mixed',
+  ),
+  'swoole_server_port::on' => 
+  array (
+    0 => 'mixed',
+    'event_name' => 'mixed',
+    'callback' => 'callable',
+  ),
+  'swoole_server_port::set' => 
+  array (
+    0 => 'mixed',
+    'settings' => 'array<array-key, mixed>',
+  ),
+  'swoole_server_task::finish' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
+  ),
+  'swoole_server_task::pack' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
+  ),
   'swoole_set_process_name' => 
   array (
     0 => 'void',
     'process_name' => 'string',
     'size=' => 'int',
   ),
+  'swoole_shell_exec' => 
+  array (
+    0 => 'mixed',
+    'cmd' => 'string',
+  ),
+  'swoole_socket_accept' => 
+  array (
+    0 => 'mixed',
+    'socket' => 'Swoole\\Coroutine\\Socket',
+  ),
+  'swoole_socket_bind' => 
+  array (
+    0 => 'bool',
+    'socket' => 'Swoole\\Coroutine\\Socket',
+    'address' => 'string',
+    'port=' => 'int',
+  ),
+  'swoole_socket_clear_error' => 
+  array (
+    0 => 'mixed',
+    'socket=' => 'Swoole\\Coroutine\\Socket|null',
+  ),
+  'swoole_socket_close' => 
+  array (
+    0 => 'mixed',
+    'socket' => 'Swoole\\Coroutine\\Socket',
+  ),
+  'swoole_socket_connect' => 
+  array (
+    0 => 'mixed',
+    'socket' => 'Swoole\\Coroutine\\Socket',
+    'address' => 'string',
+    'port=' => 'int',
+  ),
+  'swoole_socket_create' => 
+  array (
+    0 => 'mixed',
+    'domain' => 'int',
+    'type' => 'int',
+    'protocol' => 'int',
+  ),
+  'swoole_socket_create_listen' => 
+  array (
+    0 => 'mixed',
+    'port' => 'int',
+    'backlog=' => 'int',
+  ),
+  'swoole_socket_create_pair' => 
+  array (
+    0 => 'mixed',
+    'domain' => 'int',
+    'type' => 'int',
+    'protocol' => 'int',
+    '&pair' => 'array<array-key, mixed>',
+  ),
+  'swoole_socket_get_option' => 
+  array (
+    0 => 'mixed',
+    'socket' => 'Swoole\\Coroutine\\Socket',
+    'level' => 'int',
+    'optname' => 'int',
+  ),
+  'swoole_socket_getopt' => 
+  array (
+    0 => 'mixed',
+    'socket' => 'Swoole\\Coroutine\\Socket',
+    'level' => 'int',
+    'optname' => 'int',
+  ),
+  'swoole_socket_getpeername' => 
+  array (
+    0 => 'mixed',
+    'socket' => 'Swoole\\Coroutine\\Socket',
+    '&address' => 'mixed',
+    '&port=' => 'mixed',
+  ),
+  'swoole_socket_getsockname' => 
+  array (
+    0 => 'mixed',
+    'socket' => 'Swoole\\Coroutine\\Socket',
+    '&address' => 'mixed',
+    '&port=' => 'mixed',
+  ),
+  'swoole_socket_last_error' => 
+  array (
+    0 => 'int',
+    'socket=' => 'Swoole\\Coroutine\\Socket|null',
+  ),
+  'swoole_socket_listen' => 
+  array (
+    0 => 'bool',
+    'socket' => 'Swoole\\Coroutine\\Socket',
+    'backlog=' => 'int',
+  ),
+  'swoole_socket_read' => 
+  array (
+    0 => 'mixed',
+    'socket' => 'Swoole\\Coroutine\\Socket',
+    'length' => 'int',
+    'type=' => 'int',
+  ),
+  'swoole_socket_recv' => 
+  array (
+    0 => 'mixed',
+    'socket' => 'Swoole\\Coroutine\\Socket',
+    '&buffer' => 'mixed',
+    'length' => 'int',
+    'flags' => 'int',
+  ),
+  'swoole_socket_recvfrom' => 
+  array (
+    0 => 'mixed',
+    'socket' => 'Swoole\\Coroutine\\Socket',
+    '&buffer' => 'mixed',
+    'length' => 'int',
+    'flags' => 'int',
+    '&name' => 'mixed',
+    '&port=' => 'mixed',
+  ),
+  'swoole_socket_send' => 
+  array (
+    0 => 'mixed',
+    'socket' => 'Swoole\\Coroutine\\Socket',
+    'buffer' => 'string',
+    'length' => 'int',
+    'flags' => 'int',
+  ),
+  'swoole_socket_sendto' => 
+  array (
+    0 => 'mixed',
+    'socket' => 'Swoole\\Coroutine\\Socket',
+    'buffer' => 'string',
+    'length' => 'int',
+    'flags' => 'int',
+    'addr' => 'string',
+    'port=' => 'int',
+  ),
+  'swoole_socket_set_block' => 
+  array (
+    0 => 'mixed',
+    'socket' => 'Swoole\\Coroutine\\Socket',
+  ),
+  'swoole_socket_set_nonblock' => 
+  array (
+    0 => 'mixed',
+    'socket' => 'Swoole\\Coroutine\\Socket',
+  ),
+  'swoole_socket_set_option' => 
+  array (
+    0 => 'bool',
+    'socket' => 'Swoole\\Coroutine\\Socket',
+    'level' => 'int',
+    'optname' => 'int',
+    'optval' => 'mixed',
+  ),
+  'swoole_socket_setopt' => 
+  array (
+    0 => 'bool',
+    'socket' => 'Swoole\\Coroutine\\Socket',
+    'level' => 'int',
+    'optname' => 'int',
+    'optval' => 'mixed',
+  ),
+  'swoole_socket_shutdown' => 
+  array (
+    0 => 'bool',
+    'socket' => 'Swoole\\Coroutine\\Socket',
+    'how=' => 'int',
+  ),
+  'swoole_socket_write' => 
+  array (
+    0 => 'mixed',
+    'socket' => 'Swoole\\Coroutine\\Socket',
+    'buffer' => 'string',
+    'length=' => 'int',
+  ),
   'swoole_strerror' => 
   array (
     0 => 'string',
     'errno' => 'int',
     'error_type=' => 'int',
+  ),
+  'swoole_string' => 
+  array (
+    0 => 'Swoole\\StringObject',
+    'string=' => 'string',
+  ),
+  'swoole_substr_json_decode' => 
+  array (
+    0 => 'mixed',
+    'json' => 'mixed',
+    'offset' => 'mixed',
+    'length=' => 'mixed',
+    'associative=' => 'mixed',
+    'depth=' => 'mixed',
+    'flags=' => 'mixed',
+  ),
+  'swoole_substr_unserialize' => 
+  array (
+    0 => 'mixed',
+    'str' => 'mixed',
+    'offset' => 'mixed',
+    'length=' => 'mixed',
+    'options=' => 'mixed',
+  ),
+  'swoole_table' => 
+  array (
+    0 => 'Swoole\\Table',
+    'size' => 'int',
+    'fields' => 'string',
+  ),
+  'swoole_table::__construct' => 
+  array (
+    0 => 'void',
+    'table_size' => 'mixed',
+    'conflict_proportion=' => 'mixed',
+  ),
+  'swoole_table::column' => 
+  array (
+    0 => 'mixed',
+    'name' => 'mixed',
+    'type' => 'mixed',
+    'size=' => 'mixed',
+  ),
+  'swoole_table::count' => 
+  array (
+    0 => 'int',
+  ),
+  'swoole_table::create' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_table::current' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_table::decr' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'column' => 'mixed',
+    'decrby=' => 'mixed',
+  ),
+  'swoole_table::del' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'swoole_table::delete' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'swoole_table::destroy' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_table::exist' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'swoole_table::exists' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+  ),
+  'swoole_table::get' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'field=' => 'mixed',
+  ),
+  'swoole_table::getmemorysize' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_table::getsize' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_table::incr' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'column' => 'mixed',
+    'incrby=' => 'mixed',
+  ),
+  'swoole_table::key' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_table::next' => 
+  array (
+    0 => 'void',
+  ),
+  'swoole_table::rewind' => 
+  array (
+    0 => 'void',
+  ),
+  'swoole_table::set' => 
+  array (
+    0 => 'mixed',
+    'key' => 'mixed',
+    'value' => 'array<array-key, mixed>',
+  ),
+  'swoole_table::stats' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_table::valid' => 
+  array (
+    0 => 'bool',
+  ),
+  'swoole_test_kernel_coroutine' => 
+  array (
+    0 => 'mixed',
+    'count=' => 'mixed',
+    'sleep_time=' => 'mixed',
+  ),
+  'swoole_timer::after' => 
+  array (
+    0 => 'mixed',
+    'ms' => 'mixed',
+    'callback' => 'callable',
+    '...params=' => 'mixed',
+  ),
+  'swoole_timer::clear' => 
+  array (
+    0 => 'mixed',
+    'timer_id' => 'mixed',
+  ),
+  'swoole_timer::clearall' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_timer::exists' => 
+  array (
+    0 => 'mixed',
+    'timer_id' => 'mixed',
+  ),
+  'swoole_timer::info' => 
+  array (
+    0 => 'mixed',
+    'timer_id' => 'mixed',
+  ),
+  'swoole_timer::list' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_timer::set' => 
+  array (
+    0 => 'mixed',
+    'settings' => 'array<array-key, mixed>',
+  ),
+  'swoole_timer::stats' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_timer::tick' => 
+  array (
+    0 => 'mixed',
+    'ms' => 'mixed',
+    'callback' => 'callable',
+    '...params=' => 'mixed',
   ),
   'swoole_timer_after' => 
   array (
@@ -81103,10 +94208,146 @@ return array (
     'callback' => 'callable',
     'param=' => 'mixed',
   ),
+  'swoole_timer_clear' => 
+  array (
+    0 => 'mixed',
+    'timer_id' => 'mixed',
+  ),
+  'swoole_timer_clear_all' => 
+  array (
+    0 => 'mixed',
+  ),
   'swoole_timer_exists' => 
   array (
     0 => 'bool',
     'timer_id' => 'int',
+  ),
+  'swoole_timer_info' => 
+  array (
+    0 => 'mixed',
+    'timer_id' => 'mixed',
+  ),
+  'swoole_timer_iterator::__construct' => 
+  array (
+    0 => 'void',
+    'array=' => 'mixed',
+    'ar_flags=' => 'mixed',
+  ),
+  'swoole_timer_iterator::append' => 
+  array (
+    0 => 'mixed',
+    'value' => 'mixed',
+  ),
+  'swoole_timer_iterator::asort' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_timer_iterator::count' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_timer_iterator::current' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_timer_iterator::getarraycopy' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_timer_iterator::getflags' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_timer_iterator::key' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_timer_iterator::ksort' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_timer_iterator::natcasesort' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_timer_iterator::natsort' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_timer_iterator::next' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_timer_iterator::offsetexists' => 
+  array (
+    0 => 'mixed',
+    'index' => 'mixed',
+  ),
+  'swoole_timer_iterator::offsetget' => 
+  array (
+    0 => 'mixed',
+    'index' => 'mixed',
+  ),
+  'swoole_timer_iterator::offsetset' => 
+  array (
+    0 => 'mixed',
+    'index' => 'mixed',
+    'newval' => 'mixed',
+  ),
+  'swoole_timer_iterator::offsetunset' => 
+  array (
+    0 => 'mixed',
+    'index' => 'mixed',
+  ),
+  'swoole_timer_iterator::rewind' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_timer_iterator::seek' => 
+  array (
+    0 => 'mixed',
+    'position' => 'mixed',
+  ),
+  'swoole_timer_iterator::serialize' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_timer_iterator::setflags' => 
+  array (
+    0 => 'mixed',
+    'flags' => 'mixed',
+  ),
+  'swoole_timer_iterator::uasort' => 
+  array (
+    0 => 'mixed',
+    'cmp_function' => 'mixed',
+  ),
+  'swoole_timer_iterator::uksort' => 
+  array (
+    0 => 'mixed',
+    'cmp_function' => 'mixed',
+  ),
+  'swoole_timer_iterator::unserialize' => 
+  array (
+    0 => 'mixed',
+    'serialized' => 'mixed',
+  ),
+  'swoole_timer_iterator::valid' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_timer_list' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_timer_set' => 
+  array (
+    0 => 'mixed',
+    'settings' => 'array<array-key, mixed>',
+  ),
+  'swoole_timer_stats' => 
+  array (
+    0 => 'mixed',
   ),
   'swoole_timer_tick' => 
   array (
@@ -81118,6 +94359,340 @@ return array (
   'swoole_version' => 
   array (
     0 => 'string',
+  ),
+  'swoole_websocket_closeframe::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole_websocket_closeframe::pack' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
+    'opcode=' => 'mixed',
+    'flags=' => 'mixed',
+  ),
+  'swoole_websocket_closeframe::unpack' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
+  ),
+  'swoole_websocket_frame::__tostring' => 
+  array (
+    0 => 'string',
+  ),
+  'swoole_websocket_frame::pack' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
+    'opcode=' => 'mixed',
+    'flags=' => 'mixed',
+  ),
+  'swoole_websocket_frame::unpack' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
+  ),
+  'swoole_websocket_server::__construct' => 
+  array (
+    0 => 'void',
+    'host' => 'mixed',
+    'port=' => 'mixed',
+    'mode=' => 'mixed',
+    'sock_type=' => 'mixed',
+  ),
+  'swoole_websocket_server::__destruct' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_websocket_server::addcommand' => 
+  array (
+    0 => 'mixed',
+    'name' => 'mixed',
+    'accepted_process_types' => 'mixed',
+    'callback' => 'callable',
+  ),
+  'swoole_websocket_server::addlistener' => 
+  array (
+    0 => 'mixed',
+    'host' => 'mixed',
+    'port' => 'mixed',
+    'sock_type' => 'mixed',
+  ),
+  'swoole_websocket_server::addprocess' => 
+  array (
+    0 => 'mixed',
+    'process' => 'swoole_process',
+  ),
+  'swoole_websocket_server::after' => 
+  array (
+    0 => 'mixed',
+    'ms' => 'mixed',
+    'callback' => 'callable',
+  ),
+  'swoole_websocket_server::bind' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+    'uid' => 'mixed',
+  ),
+  'swoole_websocket_server::cleartimer' => 
+  array (
+    0 => 'mixed',
+    'timer_id' => 'mixed',
+  ),
+  'swoole_websocket_server::close' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+    'reset=' => 'mixed',
+  ),
+  'swoole_websocket_server::command' => 
+  array (
+    0 => 'mixed',
+    'name' => 'mixed',
+    'process_id' => 'mixed',
+    'process_type' => 'mixed',
+    'data' => 'mixed',
+    'json_encode=' => 'mixed',
+  ),
+  'swoole_websocket_server::confirm' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+  ),
+  'swoole_websocket_server::connection_info' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+    'reactor_id=' => 'mixed',
+  ),
+  'swoole_websocket_server::connection_list' => 
+  array (
+    0 => 'mixed',
+    'start_fd' => 'mixed',
+    'find_count=' => 'mixed',
+  ),
+  'swoole_websocket_server::defer' => 
+  array (
+    0 => 'mixed',
+    'callback' => 'callable',
+  ),
+  'swoole_websocket_server::disconnect' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+    'code=' => 'mixed',
+    'reason=' => 'mixed',
+  ),
+  'swoole_websocket_server::exist' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+  ),
+  'swoole_websocket_server::exists' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+  ),
+  'swoole_websocket_server::finish' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
+  ),
+  'swoole_websocket_server::getcallback' => 
+  array (
+    0 => 'mixed',
+    'event_name' => 'mixed',
+  ),
+  'swoole_websocket_server::getclientinfo' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+    'reactor_id=' => 'mixed',
+  ),
+  'swoole_websocket_server::getclientlist' => 
+  array (
+    0 => 'mixed',
+    'start_fd' => 'mixed',
+    'find_count=' => 'mixed',
+  ),
+  'swoole_websocket_server::getlasterror' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_websocket_server::getmanagerpid' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_websocket_server::getmasterpid' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_websocket_server::getworkerid' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_websocket_server::getworkerpid' => 
+  array (
+    0 => 'mixed',
+    'worker_id=' => 'mixed',
+  ),
+  'swoole_websocket_server::getworkerstatus' => 
+  array (
+    0 => 'mixed',
+    'worker_id=' => 'mixed',
+  ),
+  'swoole_websocket_server::heartbeat' => 
+  array (
+    0 => 'mixed',
+    'reactor_id' => 'mixed',
+  ),
+  'swoole_websocket_server::isestablished' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+  ),
+  'swoole_websocket_server::listen' => 
+  array (
+    0 => 'mixed',
+    'host' => 'mixed',
+    'port' => 'mixed',
+    'sock_type' => 'mixed',
+  ),
+  'swoole_websocket_server::on' => 
+  array (
+    0 => 'mixed',
+    'event_name' => 'mixed',
+    'callback' => 'callable',
+  ),
+  'swoole_websocket_server::pack' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
+    'opcode=' => 'mixed',
+    'flags=' => 'mixed',
+  ),
+  'swoole_websocket_server::pause' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+  ),
+  'swoole_websocket_server::protect' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+    'is_protected=' => 'mixed',
+  ),
+  'swoole_websocket_server::push' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+    'data' => 'mixed',
+    'opcode=' => 'mixed',
+    'flags=' => 'mixed',
+  ),
+  'swoole_websocket_server::reload' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_websocket_server::resume' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+  ),
+  'swoole_websocket_server::send' => 
+  array (
+    0 => 'mixed',
+    'fd' => 'mixed',
+    'send_data' => 'mixed',
+    'server_socket=' => 'mixed',
+  ),
+  'swoole_websocket_server::sendfile' => 
+  array (
+    0 => 'mixed',
+    'conn_fd' => 'mixed',
+    'filename' => 'mixed',
+    'offset=' => 'mixed',
+    'length=' => 'mixed',
+  ),
+  'swoole_websocket_server::sendmessage' => 
+  array (
+    0 => 'mixed',
+    'message' => 'mixed',
+    'dst_worker_id' => 'mixed',
+  ),
+  'swoole_websocket_server::sendto' => 
+  array (
+    0 => 'mixed',
+    'ip' => 'mixed',
+    'port' => 'mixed',
+    'send_data' => 'mixed',
+    'server_socket=' => 'mixed',
+  ),
+  'swoole_websocket_server::sendwait' => 
+  array (
+    0 => 'mixed',
+    'conn_fd' => 'mixed',
+    'send_data' => 'mixed',
+  ),
+  'swoole_websocket_server::set' => 
+  array (
+    0 => 'mixed',
+    'settings' => 'array<array-key, mixed>',
+  ),
+  'swoole_websocket_server::shutdown' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_websocket_server::start' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_websocket_server::stats' => 
+  array (
+    0 => 'mixed',
+  ),
+  'swoole_websocket_server::stop' => 
+  array (
+    0 => 'mixed',
+    'worker_id=' => 'mixed',
+  ),
+  'swoole_websocket_server::task' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
+    'task_worker_index=' => 'mixed',
+    'finish_callback=' => 'callable|null',
+  ),
+  'swoole_websocket_server::taskco' => 
+  array (
+    0 => 'mixed',
+    'tasks' => 'array<array-key, mixed>',
+    'timeout=' => 'mixed',
+  ),
+  'swoole_websocket_server::taskwait' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
+    'timeout=' => 'mixed',
+    'task_worker_index=' => 'mixed',
+  ),
+  'swoole_websocket_server::taskwaitmulti' => 
+  array (
+    0 => 'mixed',
+    'tasks' => 'array<array-key, mixed>',
+    'timeout=' => 'mixed',
+  ),
+  'swoole_websocket_server::tick' => 
+  array (
+    0 => 'mixed',
+    'ms' => 'mixed',
+    'callback' => 'callable',
+  ),
+  'swoole_websocket_server::unpack' => 
+  array (
+    0 => 'mixed',
+    'data' => 'mixed',
   ),
   'symbolobj::__construct' => 
   array (
@@ -81273,7 +94848,7 @@ return array (
   ),
   'sys_get_temp_dir' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'sys_getloadavg' => 
   array (
@@ -82007,7 +95582,7 @@ return array (
   ),
   'timezone_version_get' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'tmpfile' => 
   array (
@@ -83498,7 +97073,7 @@ return array (
   ),
   'transliterator::__construct' => 
   array (
-    0 => 'string',
+    0 => 'void',
   ),
   'transliterator::create' => 
   array (
@@ -83522,7 +97097,7 @@ return array (
   ),
   'transliterator::geterrormessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'transliterator::listids' => 
   array (
@@ -83599,11 +97174,11 @@ return array (
   ),
   'typeerror::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'typeerror::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'typeerror::getcode' => 
   array (
@@ -83611,7 +97186,7 @@ return array (
   ),
   'typeerror::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'typeerror::getline' => 
   array (
@@ -83619,7 +97194,7 @@ return array (
   ),
   'typeerror::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'typeerror::getprevious' => 
   array (
@@ -83631,7 +97206,7 @@ return array (
   ),
   'typeerror::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'uasort' => 
   array (
@@ -83735,10 +97310,10 @@ return array (
   ),
   'uconverter::transcode' => 
   array (
-    0 => 'string',
-    'str' => 'string',
-    'toEncoding' => 'string',
-    'fromEncoding' => 'string',
+    0 => 'mixed',
+    'str' => 'mixed',
+    'toEncoding' => 'mixed',
+    'fromEncoding' => 'mixed',
     'options=' => 'array<array-key, mixed>|null',
   ),
   'ucwords' => 
@@ -84702,11 +98277,11 @@ return array (
   ),
   'underflowexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'underflowexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'underflowexception::getcode' => 
   array (
@@ -84714,7 +98289,7 @@ return array (
   ),
   'underflowexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'underflowexception::getline' => 
   array (
@@ -84722,7 +98297,7 @@ return array (
   ),
   'underflowexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'underflowexception::getprevious' => 
   array (
@@ -84734,7 +98309,7 @@ return array (
   ),
   'underflowexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'unexpectedvalueexception::__clone' => 
   array (
@@ -84749,11 +98324,11 @@ return array (
   ),
   'unexpectedvalueexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'unexpectedvalueexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'unexpectedvalueexception::getcode' => 
   array (
@@ -84761,7 +98336,7 @@ return array (
   ),
   'unexpectedvalueexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'unexpectedvalueexception::getline' => 
   array (
@@ -84769,7 +98344,7 @@ return array (
   ),
   'unexpectedvalueexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'unexpectedvalueexception::getprevious' => 
   array (
@@ -84781,7 +98356,7 @@ return array (
   ),
   'unexpectedvalueexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'uniqid' => 
   array (
@@ -87551,15 +101126,15 @@ return array (
   ),
   'xmlreader::readinnerxml' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'xmlreader::readouterxml' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'xmlreader::readstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'xmlreader::setparserproperty' => 
   array (
@@ -92367,7 +105942,7 @@ return array (
   ),
   'zend_version' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'zendapi_job::addjobtoqueue' => 
   array (
@@ -92969,25 +106544,25 @@ return array (
   ),
   'zmq::clock' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'zmq::curvekeypair' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'zmq::z85decode' => 
   array (
-    0 => 'string',
-    'data' => 'string',
+    0 => 'mixed',
+    'data' => 'mixed',
   ),
   'zmq::z85encode' => 
   array (
-    0 => 'string',
-    'data' => 'string',
+    0 => 'mixed',
+    'data' => 'mixed',
   ),
   'zmqcontext::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'zmqcontext::__construct' => 
   array (
@@ -92997,7 +106572,7 @@ return array (
   ),
   'zmqcontext::acquire' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'zmqcontext::getopt' => 
   array (
@@ -93013,7 +106588,7 @@ return array (
   ),
   'zmqcontext::getsocketcount' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'zmqcontext::ispersistent' => 
   array (
@@ -93027,54 +106602,54 @@ return array (
   ),
   'zmqcontextexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'zmqcontextexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'zmqcontextexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'zmqcontextexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'zmqcontextexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'zmqcontextexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'zmqcontextexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'zmqcontextexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'zmqcontextexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'zmqcontextexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'zmqcontextexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'zmqdevice::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'zmqdevice::__construct' => 
   array (
@@ -93121,101 +106696,101 @@ return array (
   ),
   'zmqdeviceexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'zmqdeviceexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'zmqdeviceexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'zmqdeviceexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'zmqdeviceexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'zmqdeviceexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'zmqdeviceexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'zmqdeviceexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'zmqdeviceexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'zmqdeviceexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'zmqdeviceexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'zmqexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'zmqexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'zmqexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'zmqexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'zmqexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'zmqexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'zmqexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'zmqexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'zmqexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'zmqexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'zmqexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'zmqpoll::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'zmqpoll::add' => 
   array (
@@ -93237,7 +106812,7 @@ return array (
   ),
   'zmqpoll::items' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'zmqpoll::poll' => 
   array (
@@ -93253,54 +106828,54 @@ return array (
   ),
   'zmqpollexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'zmqpollexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'zmqpollexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'zmqpollexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'zmqpollexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'zmqpollexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'zmqpollexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'zmqpollexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'zmqpollexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'zmqpollexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'zmqpollexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'zmqsocket::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'zmqsocket::__construct' => 
   array (
@@ -93350,9 +106925,9 @@ return array (
   ),
   'zmqsocket::monitor' => 
   array (
-    0 => 'string',
-    'dsn' => 'string',
-    'events=' => 'string',
+    0 => 'mixed',
+    'dsn' => 'mixed',
+    'events=' => 'mixed',
   ),
   'zmqsocket::recv' => 
   array (
@@ -93361,13 +106936,13 @@ return array (
   ),
   'zmqsocket::recvevent' => 
   array (
-    0 => 'string',
-    'flags=' => 'string',
+    0 => 'mixed',
+    'flags=' => 'mixed',
   ),
   'zmqsocket::recvmsg' => 
   array (
-    0 => 'string',
-    'mode=' => 'string',
+    0 => 'mixed',
+    'mode=' => 'mixed',
   ),
   'zmqsocket::recvmulti' => 
   array (
@@ -93388,9 +106963,9 @@ return array (
   ),
   'zmqsocket::sendmsg' => 
   array (
-    0 => 'string',
-    'message' => 'string',
-    'mode=' => 'string',
+    0 => 'mixed',
+    'message' => 'mixed',
+    'mode=' => 'mixed',
   ),
   'zmqsocket::sendmulti' => 
   array (
@@ -93411,50 +106986,57 @@ return array (
   ),
   'zmqsocketexception::__clone' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'zmqsocketexception::__construct' => 
   array (
-    0 => 'string',
-    'message=' => 'string',
-    'code=' => 'string',
-    'previous=' => 'string',
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
   ),
   'zmqsocketexception::__tostring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'zmqsocketexception::__wakeup' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'zmqsocketexception::getcode' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'zmqsocketexception::getfile' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'zmqsocketexception::getline' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'zmqsocketexception::getmessage' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'zmqsocketexception::getprevious' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'zmqsocketexception::gettrace' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
   ),
   'zmqsocketexception::gettraceasstring' => 
   array (
-    0 => 'string',
+    0 => 'mixed',
+  ),
+  'zookeeper::__construct' => 
+  array (
+    0 => 'void',
+    'host=' => 'mixed',
+    'watcher_cb=' => 'mixed',
+    'recv_timeout=' => 'mixed',
   ),
   'zookeeper::addauth' => 
   array (
@@ -93487,6 +107069,10 @@ return array (
     0 => 'bool',
     'path' => 'string',
     'version=' => 'int',
+  ),
+  'zookeeper::dispatch' => 
+  array (
+    0 => 'mixed',
   ),
   'zookeeper::exists' => 
   array (
@@ -93572,6 +107158,53 @@ return array (
   array (
     0 => 'void',
   ),
+  'zookeeperauthenticationexception::__clone' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeeperauthenticationexception::__construct' => 
+  array (
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
+  ),
+  'zookeeperauthenticationexception::__tostring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeeperauthenticationexception::__wakeup' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeeperauthenticationexception::getcode' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeeperauthenticationexception::getfile' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeeperauthenticationexception::getline' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeeperauthenticationexception::getmessage' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeeperauthenticationexception::getprevious' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeeperauthenticationexception::gettrace' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeeperauthenticationexception::gettraceasstring' => 
+  array (
+    0 => 'mixed',
+  ),
   'zookeeperconfig::add' => 
   array (
     0 => 'void',
@@ -93598,5 +107231,287 @@ return array (
     'members' => 'string',
     'version=' => 'int',
     'stat=' => 'array<array-key, mixed>',
+  ),
+  'zookeeperconnectionexception::__clone' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeeperconnectionexception::__construct' => 
+  array (
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
+  ),
+  'zookeeperconnectionexception::__tostring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeeperconnectionexception::__wakeup' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeeperconnectionexception::getcode' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeeperconnectionexception::getfile' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeeperconnectionexception::getline' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeeperconnectionexception::getmessage' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeeperconnectionexception::getprevious' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeeperconnectionexception::gettrace' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeeperconnectionexception::gettraceasstring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeeperexception::__clone' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeeperexception::__construct' => 
+  array (
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
+  ),
+  'zookeeperexception::__tostring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeeperexception::__wakeup' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeeperexception::getcode' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeeperexception::getfile' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeeperexception::getline' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeeperexception::getmessage' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeeperexception::getprevious' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeeperexception::gettrace' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeeperexception::gettraceasstring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeepermarshallingexception::__clone' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeepermarshallingexception::__construct' => 
+  array (
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
+  ),
+  'zookeepermarshallingexception::__tostring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeepermarshallingexception::__wakeup' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeepermarshallingexception::getcode' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeepermarshallingexception::getfile' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeepermarshallingexception::getline' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeepermarshallingexception::getmessage' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeepermarshallingexception::getprevious' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeepermarshallingexception::gettrace' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeepermarshallingexception::gettraceasstring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeepernonodeexception::__clone' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeepernonodeexception::__construct' => 
+  array (
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
+  ),
+  'zookeepernonodeexception::__tostring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeepernonodeexception::__wakeup' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeepernonodeexception::getcode' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeepernonodeexception::getfile' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeepernonodeexception::getline' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeepernonodeexception::getmessage' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeepernonodeexception::getprevious' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeepernonodeexception::gettrace' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeepernonodeexception::gettraceasstring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeeperoperationtimeoutexception::__clone' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeeperoperationtimeoutexception::__construct' => 
+  array (
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
+  ),
+  'zookeeperoperationtimeoutexception::__tostring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeeperoperationtimeoutexception::__wakeup' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeeperoperationtimeoutexception::getcode' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeeperoperationtimeoutexception::getfile' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeeperoperationtimeoutexception::getline' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeeperoperationtimeoutexception::getmessage' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeeperoperationtimeoutexception::getprevious' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeeperoperationtimeoutexception::gettrace' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeeperoperationtimeoutexception::gettraceasstring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeepersessionexception::__clone' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeepersessionexception::__construct' => 
+  array (
+    0 => 'void',
+    'message=' => 'mixed',
+    'code=' => 'mixed',
+    'previous=' => 'mixed',
+  ),
+  'zookeepersessionexception::__tostring' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeepersessionexception::__wakeup' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeepersessionexception::getcode' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeepersessionexception::getfile' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeepersessionexception::getline' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeepersessionexception::getmessage' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeepersessionexception::getprevious' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeepersessionexception::gettrace' => 
+  array (
+    0 => 'mixed',
+  ),
+  'zookeepersessionexception::gettraceasstring' => 
+  array (
+    0 => 'mixed',
   ),
 );
