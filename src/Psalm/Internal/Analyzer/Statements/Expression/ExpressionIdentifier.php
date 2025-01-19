@@ -10,12 +10,9 @@ use Psalm\FileSource;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 
-use function array_keys;
-use function array_map;
 use function count;
 use function implode;
 use function in_array;
-use function is_int;
 use function is_string;
 use function strtolower;
 
@@ -210,25 +207,6 @@ final class ExpressionIdentifier
 
                 return $resolved_name . '::' . $stmt->name;
             }
-        }
-
-        if ($stmt instanceof PhpParser\Node\Expr\FuncCall) {
-            if ($stmt->name instanceof PhpParser\Node\Name) {
-                $resolved_name = $stmt->name->toCodeString();
-            } else {
-                $resolved_name = self::getExtendedVarId($stmt->name, $this_class_name, $source);
-            }
-            if ($resolved_name === null) {
-                return null;
-            }
-
-            $argsPlaceholder = array_map(
-                fn($index): string => is_int($index) ? '#' . ($index + 1) : $index,
-                array_keys($stmt->args),
-            );
-            $argsPlaceholder = implode(', ', $argsPlaceholder);
-
-            return $resolved_name . '(' . $argsPlaceholder . ')';
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\MethodCall
