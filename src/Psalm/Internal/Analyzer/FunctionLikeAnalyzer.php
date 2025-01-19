@@ -845,7 +845,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             FunctionCallReturnTypeFetcher::taintUsingStorage(
                 $storage,
                 $codebase->taint_flow_graph,
-                $method_source
+                $method_source,
             );
         }
 

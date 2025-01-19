@@ -10,9 +10,12 @@ use Psalm\FileSource;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 
+use function array_keys;
+use function array_map;
 use function count;
 use function implode;
 use function in_array;
+use function is_int;
 use function is_string;
 use function strtolower;
 
@@ -220,10 +223,10 @@ final class ExpressionIdentifier
             }
 
             $argsPlaceholder = array_map(
-                fn ($index): string => is_int($index) ? '#' . ($index + 1) : $index,
-                array_keys($stmt->args)
+                fn($index): string => is_int($index) ? '#' . ($index + 1) : $index,
+                array_keys($stmt->args),
             );
-            $argsPlaceholder = join(', ', $argsPlaceholder);
+            $argsPlaceholder = implode(', ', $argsPlaceholder);
 
             return $resolved_name . '(' . $argsPlaceholder . ')';
         }

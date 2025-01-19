@@ -43,6 +43,7 @@ use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_diff;
 use function array_merge;
 use function array_values;
 use function count;
@@ -753,13 +754,13 @@ final class FunctionCallReturnTypeFetcher
         $added_taints = [];
         if ($function_storage->taint_source_types !== []) {
             $added_taints = $function_storage->taint_source_types;
-        } else if ($function_storage->added_taints !== []) {
+        } elseif ($function_storage->added_taints !== []) {
             $added_taints = $function_storage->added_taints;
         }
 
         $added_taints = array_diff(
             $added_taints,
-            $function_storage->removed_taints
+            $function_storage->removed_taints,
         );
         if ($added_taints !== []) {
             $taint_source = TaintSource::fromNode($function_call_node);
