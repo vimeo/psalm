@@ -88,6 +88,7 @@ use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_diff;
 use function count;
 use function in_array;
 use function is_string;
@@ -280,35 +281,6 @@ final class AssignmentAnalyzer
                 $extended_var_id,
                 $assign_value_type,
                 $context,
-            );
-        }
-
-        if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
-            && !in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
-            && $assign_value) {
-            $assign_value_location = new CodeLocation($statements_analyzer->getSource(), $assign_value);
-
-            $event = new AddRemoveTaintsEvent($assign_value, $context, $statements_analyzer, $codebase);
-
-            $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
-            $removed_taints = [
-                ...$removed_taints,
-                ...$codebase->config->eventDispatcher->dispatchRemoveTaints($event),
-            ];
-
-            $rhs_var_id = ExpressionIdentifier::getExtendedVarId(
-                $assign_value,
-                $statements_analyzer->getFQCLN(),
-                $statements_analyzer,
-            ) ?? 'assignment_expr';
-
-            self::taintAssignment(
-                $assign_value_type,
-                $statements_analyzer->data_flow_graph,
-                $rhs_var_id,
-                $assign_value_location,
-                $removed_taints,
-                $added_taints,
             );
         }
 
@@ -633,7 +605,7 @@ final class AssignmentAnalyzer
         Context $context,
         PhpParser\Node $assign_var,
         ?string $var_id,
-        Union $assign_value_type,
+        ?Union $assign_value_type,
         ?Doc $doc_comment,
         ?Union &$comment_type,
         ?DocblockTypeLocation &$comment_type_location,
@@ -829,8 +801,12 @@ final class AssignmentAnalyzer
         $data_flow_graph->addNode($new_parent_node);
         $new_parent_nodes = [$new_parent_node->id => $new_parent_node];
 
-        if ($added_taints !== [] && $data_flow_graph instanceof TaintFlowGraph) {
+        // If taints get added (e.g. due to plugin) this assignment needs to
+        // become a new taint source
+        $taints = array_diff($added_taints, $removed_taints);
+        if ($taints !== [] && $data_flow_graph instanceof TaintFlowGraph) {
             $taint_source = TaintSource::fromNode($new_parent_node);
+            $taint_source->taints = $taints;
             $data_flow_graph->addSource($taint_source);
         }
 
