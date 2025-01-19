@@ -153,60 +153,19 @@ final class AssignmentAnalyzer
 
         $removed_taints = [];
 
-        if ($doc_comment) {
-            $file_path = $statements_analyzer->getRootFilePath();
-
-            $file_storage_provider = $codebase->file_storage_provider;
-
-            $file_storage = $file_storage_provider->get($file_path);
-
-            $template_type_map = $statements_analyzer->getTemplateTypeMap();
-
-            try {
-                $var_comments = $codebase->config->disable_var_parsing
-                    ? []
-                    : CommentAnalyzer::getTypeFromComment(
-                        $doc_comment,
-                        $statements_analyzer->getSource(),
-                        $statements_analyzer->getAliases(),
-                        $template_type_map,
-                        $file_storage->type_aliases,
-                    );
-            } catch (IncorrectDocblockException $e) {
-                IssueBuffer::maybeAdd(
-                    new MissingDocblockType(
-                        $e->getMessage(),
-                        new CodeLocation($statements_analyzer->getSource(), $assign_var),
-                    ),
-                );
-            } catch (DocblockParseException $e) {
-                IssueBuffer::maybeAdd(
-                    new InvalidDocblock(
-                        $e->getMessage(),
-                        new CodeLocation($statements_analyzer->getSource(), $assign_var),
-                    ),
-                );
-            }
-
-            foreach ($var_comments as $var_comment) {
-                if ($var_comment->removed_taints) {
-                    $removed_taints = $var_comment->removed_taints;
-                }
-
-                self::assignTypeFromVarDocblock(
-                    $statements_analyzer,
-                    $assign_var,
-                    $var_comment,
-                    $context,
-                    $var_id,
-                    $comment_type,
-                    $comment_type_location,
-                    $not_ignored_docblock_var_ids,
-                    $var_id === $var_comment->var_id
-                        && $assign_value_type && $comment_type && $assign_value_type->by_ref,
-                );
-            }
-        }
+        self::analyzeDocComment(
+            $statements_analyzer,
+            $codebase,
+            $context,
+            $assign_var,
+            $var_id,
+            $assign_value_type,
+            $doc_comment,
+            $comment_type,
+            $comment_type_location,
+            $not_ignored_docblock_var_ids,
+            $removed_taints,
+        );
 
         if ($extended_var_id) {
             unset($context->cond_referenced_var_ids[$extended_var_id]);
@@ -663,6 +622,80 @@ final class AssignmentAnalyzer
             }
         }
         return null;
+    }
+
+    /**
+     * @param array<string> $removed_taints
+     */
+    private static function analyzeDocComment(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        Context $context,
+        PhpParser\Node $assign_var,
+        ?string $var_id,
+        Union $assign_value_type,
+        ?Doc $doc_comment,
+        ?Union &$comment_type,
+        ?DocblockTypeLocation &$comment_type_location,
+        array $not_ignored_docblock_var_ids,
+        array &$removed_taints
+    ): void {
+        if (!$doc_comment) {
+            return;
+        }
+
+        $file_path = $statements_analyzer->getRootFilePath();
+
+        $file_storage_provider = $codebase->file_storage_provider;
+
+        $file_storage = $file_storage_provider->get($file_path);
+
+        $template_type_map = $statements_analyzer->getTemplateTypeMap();
+
+        try {
+            $var_comments = $codebase->config->disable_var_parsing
+                ? []
+                : CommentAnalyzer::getTypeFromComment(
+                    $doc_comment,
+                    $statements_analyzer->getSource(),
+                    $statements_analyzer->getAliases(),
+                    $template_type_map,
+                    $file_storage->type_aliases,
+                );
+        } catch (IncorrectDocblockException $e) {
+            IssueBuffer::maybeAdd(
+                new MissingDocblockType(
+                    $e->getMessage(),
+                    new CodeLocation($statements_analyzer->getSource(), $assign_var),
+                ),
+            );
+        } catch (DocblockParseException $e) {
+            IssueBuffer::maybeAdd(
+                new InvalidDocblock(
+                    $e->getMessage(),
+                    new CodeLocation($statements_analyzer->getSource(), $assign_var),
+                ),
+            );
+        }
+
+        foreach ($var_comments as $var_comment) {
+            if ($var_comment->removed_taints) {
+                $removed_taints = $var_comment->removed_taints;
+            }
+
+            self::assignTypeFromVarDocblock(
+                $statements_analyzer,
+                $assign_var,
+                $var_comment,
+                $context,
+                $var_id,
+                $comment_type,
+                $comment_type_location,
+                $not_ignored_docblock_var_ids,
+                $var_id === $var_comment->var_id
+                    && $assign_value_type && $comment_type && $assign_value_type->by_ref,
+            );
+        }
     }
 
     public static function assignTypeFromVarDocblock(
@@ -1885,13 +1918,16 @@ final class AssignmentAnalyzer
         return $assign_value_type->setParentNodes($parent_nodes);
     }
 
+    /**
+     * @var array<string> $removed_taints
+     */
     private static function analyzeAssignValueDataFlow(
         StatementsAnalyzer $statements_analyzer,
         Codebase $codebase,
         PhpParser\Node\Expr $assign_var,
         ?PhpParser\Node\Expr $assign_expr,
         Union &$assign_value_type,
-        ?string $var_id,
+        string $var_id,
         Context $context,
         array $removed_taints
     ): void {
