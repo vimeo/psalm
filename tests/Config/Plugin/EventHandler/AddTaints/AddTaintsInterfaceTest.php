@@ -272,6 +272,53 @@ class AddTaintsInterfaceTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
+    public function testTaintsArePassedByTaintedMethodReturns(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 5) . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="6"
+                    runTaintAnalysis="true"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <plugins>
+                        <plugin filename="tests/Config/Plugin/EventHandler/AddTaints/TaintBadDataPlugin.php" />
+                    </plugins>
+                </psalm>',
+            ),
+        );
+
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
+        $file_path = getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php // --taint-analysis
+
+            class Foo {
+                public function genBadData() {
+                    return $bad_html;
+                }
+            }
+
+            $foo = new Foo();
+            echo $foo->genBadData();
+            ',
+        );
+
+        $this->project_analyzer->trackTaintedInputs();
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessageMatches('/TaintedHtml/');
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
     public function testAddTaintsActiveRecord(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(

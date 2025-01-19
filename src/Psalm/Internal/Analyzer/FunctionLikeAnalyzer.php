@@ -17,6 +17,7 @@ use Psalm\Exception\UnresolvableConstantException;
 use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\FunctionLike\ReturnTypeAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLike\ReturnTypeCollector;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
@@ -828,6 +829,24 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     '$this',
                 );
             }
+        }
+
+        // Class methods are analyzed deferred, therefor it's required to
+        // add taint sources additionally on analyze not only on call
+        if ($codebase->taint_flow_graph
+            && $this->function instanceof ClassMethod
+            && $cased_method_id) {
+            $method_source = DataFlowNode::getForMethodReturn(
+                (string) $method_id,
+                $cased_method_id,
+                $storage->location,
+            );
+
+            FunctionCallReturnTypeFetcher::taintUsingStorage(
+                $storage,
+                $codebase->taint_flow_graph,
+                $method_source
+            );
         }
 
         if ($add_mutations) {

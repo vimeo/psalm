@@ -618,9 +618,11 @@ final class FunctionCallReturnTypeFetcher
             $stmt_type = $stmt_type->addParentNodes([$function_call_node->id => $function_call_node]);
         }
 
-        if ($function_storage->return_source_params
-            && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph
-        ) {
+        if (!$statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+            return $function_call_node;
+        }
+
+        if ($function_storage->return_source_params) {
             $removed_taints = $function_storage->removed_taints;
 
             if ($function_id === 'preg_replace' && count($stmt->getArgs()) > 2) {
@@ -674,26 +676,7 @@ final class FunctionCallReturnTypeFetcher
             );
         }
 
-        if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
-            // Docblock-defined taints should override inherited
-            $added_taints = [];
-            if ($function_storage->taint_source_types !== []) {
-                $added_taints = $function_storage->taint_source_types;
-            } else if ($function_storage->added_taints !== []) {
-                $added_taints = $function_storage->added_taints;
-            }
-
-            $added_taints = array_diff(
-                $added_taints,
-                $function_storage->removed_taints
-            );
-            if ($added_taints !== []) {
-                $taint_source = TaintSource::fromNode($function_call_node);
-                $taint_source->taints = $added_taints;
-
-                $statements_analyzer->data_flow_graph->addSource($taint_source);
-            }
-        }
+        self::taintUsingStorage($function_storage, $statements_analyzer->data_flow_graph, $function_call_node);
 
         return $function_call_node;
     }
@@ -753,6 +736,36 @@ final class FunctionCallReturnTypeFetcher
                     $removed_taints,
                 );
             }
+        }
+    }
+
+    /**
+     * @param  array<PhpParser\Node\Arg>   $args
+     * @param  array<string> $removed_taints
+     * @param  array<string> $added_taints
+     */
+    public static function taintUsingStorage(
+        FunctionLikeStorage $function_storage,
+        TaintFlowGraph $graph,
+        DataFlowNode $function_call_node
+    ): void {
+        // Docblock-defined taints should override inherited
+        $added_taints = [];
+        if ($function_storage->taint_source_types !== []) {
+            $added_taints = $function_storage->taint_source_types;
+        } else if ($function_storage->added_taints !== []) {
+            $added_taints = $function_storage->added_taints;
+        }
+
+        $added_taints = array_diff(
+            $added_taints,
+            $function_storage->removed_taints
+        );
+        if ($added_taints !== []) {
+            $taint_source = TaintSource::fromNode($function_call_node);
+            $taint_source->taints = $added_taints;
+
+            $graph->addSource($taint_source);
         }
     }
 

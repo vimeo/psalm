@@ -533,18 +533,6 @@ final class MethodCallReturnTypeFetcher
             return;
         }
 
-        if ($method_storage->taint_source_types) {
-            $method_node = TaintSource::getForMethodReturn(
-                (string) $method_id,
-                $cased_method_id,
-                $method_storage->signature_return_type_location ?: $method_storage->location,
-            );
-
-            $method_node->taints = $method_storage->taint_source_types;
-
-            $statements_analyzer->data_flow_graph->addSource($method_node);
-        }
-
         FunctionCallReturnTypeFetcher::taintUsingFlows(
             $statements_analyzer,
             $method_storage,
@@ -554,6 +542,12 @@ final class MethodCallReturnTypeFetcher
             $node_location,
             $method_call_node,
             $method_storage->removed_taints,
+        );
+
+        FunctionCallReturnTypeFetcher::taintUsingStorage(
+            $method_storage,
+            $statements_analyzer->data_flow_graph,
+            $method_call_node
         );
     }
 
