@@ -209,6 +209,25 @@ final class ExpressionIdentifier
             }
         }
 
+        if ($stmt instanceof PhpParser\Node\Expr\FuncCall) {
+            if ($stmt->name instanceof PhpParser\Node\Name) {
+                $resolved_name = $stmt->name->toCodeString();
+            } else {
+                $resolved_name = self::getExtendedVarId($stmt->name, $this_class_name, $source);
+            }
+            if ($resolved_name === null) {
+                return null;
+            }
+
+            $argsPlaceholder = array_map(
+                fn ($index): string => is_int($index) ? '#' . ($index + 1) : $index,
+                array_keys($stmt->args)
+            );
+            $argsPlaceholder = join(', ', $argsPlaceholder);
+
+            return $resolved_name . '(' . $argsPlaceholder . ')';
+        }
+
         if ($stmt instanceof PhpParser\Node\Expr\MethodCall
             && $stmt->name instanceof PhpParser\Node\Identifier
             && !$stmt->isFirstClassCallable()

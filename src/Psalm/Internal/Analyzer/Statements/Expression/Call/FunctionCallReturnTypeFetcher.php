@@ -266,6 +266,7 @@ final class FunctionCallReturnTypeFetcher
             $statements_analyzer,
             $stmt,
             $function_id,
+            $function_name->toCodeString(),
             $function_storage,
             $stmt_type,
             $template_result,
@@ -535,6 +536,7 @@ final class FunctionCallReturnTypeFetcher
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\FuncCall $stmt,
         string $function_id,
+        string $cased_function_id,
         FunctionLikeStorage $function_storage,
         Union &$stmt_type,
         TemplateResult $template_result,
@@ -560,13 +562,12 @@ final class FunctionCallReturnTypeFetcher
 
         $function_call_node = DataFlowNode::getForMethodReturn(
             $function_id,
-            $function_id,
+            $cased_function_id,
             $statements_analyzer->data_flow_graph instanceof TaintFlowGraph
                 ? ($function_storage->signature_return_type_location ?: $function_storage->location)
                 : ($function_storage->return_type_location ?: $function_storage->location),
             $function_storage->specialize_call ? $node_location : null,
         );
-
         $statements_analyzer->data_flow_graph->addNode($function_call_node);
 
         $codebase = $statements_analyzer->getCodebase();
@@ -673,16 +674,25 @@ final class FunctionCallReturnTypeFetcher
             );
         }
 
-        if ($function_storage->taint_source_types && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
-            $method_node = TaintSource::getForMethodReturn(
-                $function_id,
-                $function_id,
-                $node_location,
+        if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+            // Docblock-defined taints should override inherited
+            $added_taints = [];
+            if ($function_storage->taint_source_types !== []) {
+                $added_taints = $function_storage->taint_source_types;
+            } else if ($function_storage->added_taints !== []) {
+                $added_taints = $function_storage->added_taints;
+            }
+
+            $added_taints = array_diff(
+                $added_taints,
+                $function_storage->removed_taints
             );
+            if ($added_taints !== []) {
+                $taint_source = TaintSource::fromNode($function_call_node);
+                $taint_source->taints = $added_taints;
 
-            $method_node->taints = $function_storage->taint_source_types;
-
-            $statements_analyzer->data_flow_graph->addSource($method_node);
+                $statements_analyzer->data_flow_graph->addSource($taint_source);
+            }
         }
 
         return $function_call_node;

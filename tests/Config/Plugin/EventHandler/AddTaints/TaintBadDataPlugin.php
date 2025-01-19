@@ -5,6 +5,7 @@ namespace Psalm\Example\Plugin;
 use PhpParser\Node\Expr\Variable;
 use Psalm\Plugin\EventHandler\AddTaintsInterface;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
+use Psalm\Type\TaintKind;
 use Psalm\Type\TaintKindGroup;
 
 /**
@@ -21,8 +22,21 @@ class TaintBadDataPlugin implements AddTaintsInterface
     {
         $expr = $event->getExpr();
 
-        if ($expr instanceof Variable && $expr->name === 'bad_data') {
-            return TaintKindGroup::ALL_INPUT;
+        if (!$expr instanceof Variable) {
+            return [];
+        }
+
+        switch ($expr->name) {
+            case 'bad_data':
+                return TaintKindGroup::ALL_INPUT;
+            case 'bad_sql':
+                return [TaintKind::INPUT_SQL];
+            case 'bad_html':
+                return [TaintKind::INPUT_HTML];
+            case 'bad_eval':
+                return [TaintKind::INPUT_EVAL];
+            case 'bad_file':
+                return [TaintKind::INPUT_FILE];
         }
 
         return [];
