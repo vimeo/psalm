@@ -101,7 +101,7 @@ class AddTaintsInterfaceTest extends TestCase
         $this->project_analyzer->trackTaintedInputs();
 
         $this->expectException(CodeException::class);
-        $this->expectExceptionMessageMatches('/TaintedHtml/');
+        $this->expectExceptionMessage('TaintedHtml');
     }
 
     public function setUp(): void
@@ -240,6 +240,62 @@ class AddTaintsInterfaceTest extends TestCase
 
             $foo = new Foo();
             echo $foo->genBadData();
+            ',
+        );
+
+        $this->expectTaintedHtml();
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testTaintsArePassedByTaintedStaticMethodReturns(): void
+    {
+        $this->setupProjectAnalyzerWithTaintBadDataPlugin();
+
+        $file_path = getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php // --taint-analysis
+
+            class Foo {
+                public static function genBadData() {
+                    return $bad_html;
+                }
+            }
+
+            echo Foo::genBadData();
+            ',
+        );
+
+        $this->expectTaintedHtml();
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testTaintsArePassedByProxyCalls(): void
+    {
+        $this->setupProjectAnalyzerWithTaintBadDataPlugin();
+
+        $file_path = getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php // --taint-analysis
+
+            class Foo {
+                public static function genBadData() {
+                    return $bad_html;
+                }
+            }
+
+            class Bar {
+                public static function proxy() {
+                    return Foo::genBadData();
+                }
+            }
+
+            echo Bar::proxy();
             ',
         );
 
