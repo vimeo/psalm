@@ -10,6 +10,8 @@ use Psalm\Type\TaintKindGroup;
 
 /**
  * Add input taints to all variables named 'bad_data'
+ *
+ * @psalm-suppress UnusedClass
  */
 class TaintBadDataPlugin implements AddTaintsInterface
 {

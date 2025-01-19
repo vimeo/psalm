@@ -6,6 +6,9 @@ use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Plugin\EventHandler\RemoveTaintsInterface;
 use Psalm\Type\TaintKindGroup;
 
+/**
+ * @psalm-suppress UnusedClass
+ */
 class RemoveAllTaintsPlugin implements RemoveTaintsInterface
 {
     /**

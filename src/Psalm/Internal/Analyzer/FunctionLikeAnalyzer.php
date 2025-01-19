@@ -1086,7 +1086,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
                     $statements_analyzer->data_flow_graph->addNode($param_assignment);
 
-                    if ($cased_method_id) {
+                    if ($cased_method_id !== null) {
                         $type_source = DataFlowNode::getForMethodArgument(
                             $cased_method_id,
                             $cased_method_id,
