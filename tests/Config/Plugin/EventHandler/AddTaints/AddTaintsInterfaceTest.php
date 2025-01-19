@@ -52,13 +52,7 @@ class AddTaintsInterfaceTest extends TestCase
         );
     }
 
-    public function setUp(): void
-    {
-        RuntimeCaches::clearAll();
-        $this->file_provider = new FakeFileProvider();
-    }
-
-    public function testTaintBadDataVariables(): void
+    private function setupProjectAnalyzerWithTaintBadDataPlugin(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
@@ -77,8 +71,48 @@ class AddTaintsInterfaceTest extends TestCase
                 </psalm>',
             ),
         );
-
         $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+    }
+
+    private function setupProjectAnalyzerWithActiveRecordPlugin(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 5) . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="6"
+                    runTaintAnalysis="true"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <plugins>
+                        <plugin filename="examples/plugins/TaintActiveRecords.php" />
+                    </plugins>
+                </psalm>',
+            ),
+        );
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+    }
+
+    private function expectTaintedHtml(): void
+    {
+        $this->project_analyzer->trackTaintedInputs();
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessageMatches('/TaintedHtml/');
+    }
+
+    public function setUp(): void
+    {
+        RuntimeCaches::clearAll();
+        $this->file_provider = new FakeFileProvider();
+    }
+
+    public function testTaintBadDataVariables(): void
+    {
+        $this->setupProjectAnalyzerWithTaintBadDataPlugin();
 
         $file_path = getcwd() . '/src/somefile.php';
 
@@ -90,35 +124,14 @@ class AddTaintsInterfaceTest extends TestCase
             ',
         );
 
-        $this->project_analyzer->trackTaintedInputs();
-
-        $this->expectException(CodeException::class);
-        $this->expectExceptionMessageMatches('/TaintedHtml/');
+        $this->expectTaintedHtml();
 
         $this->analyzeFile($file_path, new Context());
     }
 
     public function testTaintsArePassedByTaintedAssignments(): void
     {
-        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
-            TestConfig::loadFromXML(
-                dirname(__DIR__, 5) . DIRECTORY_SEPARATOR,
-                '<?xml version="1.0"?>
-                <psalm
-                    errorLevel="6"
-                    runTaintAnalysis="true"
-                >
-                    <projectFiles>
-                        <directory name="src" />
-                    </projectFiles>
-                    <plugins>
-                        <plugin filename="tests/Config/Plugin/EventHandler/AddTaints/TaintBadDataPlugin.php" />
-                    </plugins>
-                </psalm>',
-            ),
-        );
-
-        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+        $this->setupProjectAnalyzerWithTaintBadDataPlugin();
 
         $file_path = getcwd() . '/src/somefile.php';
 
@@ -131,35 +144,14 @@ class AddTaintsInterfaceTest extends TestCase
             ',
         );
 
-        $this->project_analyzer->trackTaintedInputs();
-
-        $this->expectException(CodeException::class);
-        $this->expectExceptionMessageMatches('/TaintedHtml/');
+        $this->expectTaintedHtml();
 
         $this->analyzeFile($file_path, new Context());
     }
 
     public function testTaintsAreOverriddenByRawAssignments(): void
     {
-        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
-            TestConfig::loadFromXML(
-                dirname(__DIR__, 5) . DIRECTORY_SEPARATOR,
-                '<?xml version="1.0"?>
-                <psalm
-                    errorLevel="6"
-                    runTaintAnalysis="true"
-                >
-                    <projectFiles>
-                        <directory name="src" />
-                    </projectFiles>
-                    <plugins>
-                        <plugin filename="tests/Config/Plugin/EventHandler/AddTaints/TaintBadDataPlugin.php" />
-                    </plugins>
-                </psalm>',
-            ),
-        );
-
-        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+        $this->setupProjectAnalyzerWithTaintBadDataPlugin();
 
         $file_path = getcwd() . '/src/somefile.php';
 
@@ -181,25 +173,7 @@ class AddTaintsInterfaceTest extends TestCase
 
     public function testTaintsArePassedByTaintedFuncReturns(): void
     {
-        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
-            TestConfig::loadFromXML(
-                dirname(__DIR__, 5) . DIRECTORY_SEPARATOR,
-                '<?xml version="1.0"?>
-                <psalm
-                    errorLevel="6"
-                    runTaintAnalysis="true"
-                >
-                    <projectFiles>
-                        <directory name="src" />
-                    </projectFiles>
-                    <plugins>
-                        <plugin filename="tests/Config/Plugin/EventHandler/AddTaints/TaintBadDataPlugin.php" />
-                    </plugins>
-                </psalm>',
-            ),
-        );
-
-        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+        $this->setupProjectAnalyzerWithTaintBadDataPlugin();
 
         $file_path = getcwd() . '/src/somefile.php';
 
@@ -215,35 +189,14 @@ class AddTaintsInterfaceTest extends TestCase
             ',
         );
 
-        $this->project_analyzer->trackTaintedInputs();
-
-        $this->expectException(CodeException::class);
-        $this->expectExceptionMessageMatches('/TaintedHtml/');
+        $this->expectTaintedHtml();
 
         $this->analyzeFile($file_path, new Context());
     }
 
     public function testTaintsArePassedByTaintedFuncMultipleReturns(): void
     {
-        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
-            TestConfig::loadFromXML(
-                dirname(__DIR__, 5) . DIRECTORY_SEPARATOR,
-                '<?xml version="1.0"?>
-                <psalm
-                    errorLevel="6"
-                    runTaintAnalysis="true"
-                >
-                    <projectFiles>
-                        <directory name="src" />
-                    </projectFiles>
-                    <plugins>
-                        <plugin filename="tests/Config/Plugin/EventHandler/AddTaints/TaintBadDataPlugin.php" />
-                    </plugins>
-                </psalm>',
-            ),
-        );
-
-        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+        $this->setupProjectAnalyzerWithTaintBadDataPlugin();
 
         $file_path = getcwd() . '/src/somefile.php';
 
@@ -263,36 +216,15 @@ class AddTaintsInterfaceTest extends TestCase
             ',
         );
 
-        $this->project_analyzer->trackTaintedInputs();
-
         // Find TaintedHtml here, not TaintedSql, as this is not a sink for echo
-        $this->expectException(CodeException::class);
-        $this->expectExceptionMessageMatches('/TaintedHtml/');
+        $this->expectTaintedHtml();
 
         $this->analyzeFile($file_path, new Context());
     }
 
     public function testTaintsArePassedByTaintedMethodReturns(): void
     {
-        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
-            TestConfig::loadFromXML(
-                dirname(__DIR__, 5) . DIRECTORY_SEPARATOR,
-                '<?xml version="1.0"?>
-                <psalm
-                    errorLevel="6"
-                    runTaintAnalysis="true"
-                >
-                    <projectFiles>
-                        <directory name="src" />
-                    </projectFiles>
-                    <plugins>
-                        <plugin filename="tests/Config/Plugin/EventHandler/AddTaints/TaintBadDataPlugin.php" />
-                    </plugins>
-                </psalm>',
-            ),
-        );
-
-        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+        $this->setupProjectAnalyzerWithTaintBadDataPlugin();
 
         $file_path = getcwd() . '/src/somefile.php';
 
@@ -311,35 +243,14 @@ class AddTaintsInterfaceTest extends TestCase
             ',
         );
 
-        $this->project_analyzer->trackTaintedInputs();
-
-        $this->expectException(CodeException::class);
-        $this->expectExceptionMessageMatches('/TaintedHtml/');
+        $this->expectTaintedHtml();
 
         $this->analyzeFile($file_path, new Context());
     }
 
     public function testAddTaintsActiveRecord(): void
     {
-        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
-            TestConfig::loadFromXML(
-                dirname(__DIR__, 5) . DIRECTORY_SEPARATOR,
-                '<?xml version="1.0"?>
-                <psalm
-                    errorLevel="6"
-                    runTaintAnalysis="true"
-                >
-                    <projectFiles>
-                        <directory name="src" />
-                    </projectFiles>
-                    <plugins>
-                        <plugin filename="examples/plugins/TaintActiveRecords.php" />
-                    </plugins>
-                </psalm>',
-            ),
-        );
-
-        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+        $this->setupProjectAnalyzerWithActiveRecordPlugin();
 
         $file_path = getcwd() . '/src/somefile.php';
 
@@ -358,35 +269,14 @@ class AddTaintsInterfaceTest extends TestCase
             ',
         );
 
-        $this->project_analyzer->trackTaintedInputs();
-
-        $this->expectException(CodeException::class);
-        $this->expectExceptionMessageMatches('/TaintedHtml/');
+        $this->expectTaintedHtml();
 
         $this->analyzeFile($file_path, new Context());
     }
 
     public function testAddTaintsActiveRecordList(): void
     {
-        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
-            TestConfig::loadFromXML(
-                dirname(__DIR__, 5) . DIRECTORY_SEPARATOR,
-                '<?xml version="1.0"?>
-                <psalm
-                    errorLevel="6"
-                    runTaintAnalysis="true"
-                >
-                    <projectFiles>
-                        <directory name="src" />
-                    </projectFiles>
-                    <plugins>
-                        <plugin filename="examples/plugins/TaintActiveRecords.php" />
-                    </plugins>
-                </psalm>',
-            ),
-        );
-
-        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+        $this->setupProjectAnalyzerWithActiveRecordPlugin();
 
         $file_path = getcwd() . '/src/somefile.php';
 
@@ -416,10 +306,7 @@ class AddTaintsInterfaceTest extends TestCase
             ',
         );
 
-        $this->project_analyzer->trackTaintedInputs();
-
-        $this->expectException(CodeException::class);
-        $this->expectExceptionMessageMatches('/TaintedHtml/');
+        $this->expectTaintedHtml();
 
         $this->analyzeFile($file_path, new Context());
     }
