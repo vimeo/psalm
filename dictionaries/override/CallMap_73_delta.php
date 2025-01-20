@@ -3,68 +3,6 @@
 return array (
   'added' => 
   array (
-    'DateTime::createFromImmutable' => 
-    array (
-      0 => 'static',
-      'object' => 'DateTimeImmutable',
-    ),
-    'JsonException::__clone' => 
-    array (
-      0 => 'void',
-    ),
-    'JsonException::__construct' => 
-    array (
-      0 => 'void',
-      'message=' => 'string',
-      'code=' => 'int',
-      'previous=' => 'Throwable|null',
-    ),
-    'JsonException::__toString' => 
-    array (
-      0 => 'string',
-    ),
-    'JsonException::__wakeup' => 
-    array (
-      0 => 'void',
-    ),
-    'JsonException::getCode' => 
-    array (
-      0 => 'int',
-    ),
-    'JsonException::getFile' => 
-    array (
-      0 => 'string',
-    ),
-    'JsonException::getLine' => 
-    array (
-      0 => 'int',
-    ),
-    'JsonException::getMessage' => 
-    array (
-      0 => 'string',
-    ),
-    'JsonException::getPrevious' => 
-    array (
-      0 => 'Throwable|null',
-    ),
-    'JsonException::getTrace' => 
-    array (
-      0 => 'list<array{args?: array<array-key, mixed>, class?: class-string, file?: string, function: string, line?: int, type?: \'->\'|\'::\'}>',
-    ),
-    'JsonException::getTraceAsString' => 
-    array (
-      0 => 'string',
-    ),
-    'Normalizer::getRawDecomposition' => 
-    array (
-      0 => 'null|string',
-      'string' => 'string',
-      'form=' => 'int',
-    ),
-    'SplPriorityQueue::isCorrupted' => 
-    array (
-      0 => 'bool',
-    ),
     'array_key_first' => 
     array (
       0 => 'int|null|string',
@@ -74,6 +12,11 @@ return array (
     array (
       0 => 'int|null|string',
       'array' => 'array<array-key, mixed>',
+    ),
+    'datetime::createfromimmutable' => 
+    array (
+      0 => 'static',
+      'object' => 'DateTimeImmutable',
     ),
     'fpm_get_status' => 
     array (
@@ -121,15 +64,68 @@ return array (
       0 => 'bool',
       'value' => 'mixed',
     ),
-    'normalizer_get_raw_decomposition' => 
+    'jsonexception::__clone' => 
+    array (
+      0 => 'void',
+    ),
+    'jsonexception::__construct' => 
+    array (
+      0 => 'void',
+      'message=' => 'string',
+      'code=' => 'int',
+      'previous=' => 'Throwable|null',
+    ),
+    'jsonexception::__tostring' => 
+    array (
+      0 => 'string',
+    ),
+    'jsonexception::__wakeup' => 
+    array (
+      0 => 'void',
+    ),
+    'jsonexception::getcode' => 
+    array (
+      0 => 'int',
+    ),
+    'jsonexception::getfile' => 
+    array (
+      0 => 'string',
+    ),
+    'jsonexception::getline' => 
+    array (
+      0 => 'int',
+    ),
+    'jsonexception::getmessage' => 
+    array (
+      0 => 'string',
+    ),
+    'jsonexception::getprevious' => 
+    array (
+      0 => 'Throwable|null',
+    ),
+    'jsonexception::gettrace' => 
+    array (
+      0 => 'list<array{args?: array<array-key, mixed>, class?: class-string, file?: string, function: string, line?: int, type?: \'->\'|\'::\'}>',
+    ),
+    'jsonexception::gettraceasstring' => 
+    array (
+      0 => 'string',
+    ),
+    'net_get_interfaces' => 
+    array (
+      0 => 'array<string, array<string, mixed>>|false',
+    ),
+    'normalizer::getrawdecomposition' => 
     array (
       0 => 'null|string',
       'string' => 'string',
       'form=' => 'int',
     ),
-    'net_get_interfaces' => 
+    'normalizer_get_raw_decomposition' => 
     array (
-      0 => 'array<string, array<string, mixed>>|false',
+      0 => 'null|string',
+      'string' => 'string',
+      'form=' => 'int',
     ),
     'openssl_pkey_derive' => 
     array (
@@ -172,6 +168,10 @@ return array (
     array (
       0 => 'bool',
       'info_id' => 'string',
+    ),
+    'splpriorityqueue::iscorrupted' => 
+    array (
+      0 => 'bool',
     ),
   ),
   'changed' => 

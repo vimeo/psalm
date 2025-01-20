@@ -8,21 +8,90 @@ return array (
       0 => 'bool',
       'array' => 'array<array-key, mixed>',
     ),
+    'curlstringfile::__construct' => 
+    array (
+      0 => 'void',
+      'data' => 'string',
+      'postname' => 'string',
+      'mime=' => 'string',
+    ),
     'enum_exists' => 
     array (
       0 => 'bool',
       'enum' => 'string',
       'autoload=' => 'bool',
     ),
+    'fdatasync' => 
+    array (
+      0 => 'bool',
+      'stream' => 'resource',
+    ),
+    'fiber::__construct' => 
+    array (
+      0 => 'void',
+      'callback' => 'callable',
+    ),
+    'fiber::getcurrent' => 
+    array (
+      0 => 'null|self',
+    ),
+    'fiber::getreturn' => 
+    array (
+      0 => 'mixed',
+    ),
+    'fiber::isrunning' => 
+    array (
+      0 => 'bool',
+    ),
+    'fiber::isstarted' => 
+    array (
+      0 => 'bool',
+    ),
+    'fiber::issuspended' => 
+    array (
+      0 => 'bool',
+    ),
+    'fiber::isterminated' => 
+    array (
+      0 => 'bool',
+    ),
+    'fiber::resume' => 
+    array (
+      0 => 'mixed',
+      'value=' => 'mixed|null',
+    ),
+    'fiber::start' => 
+    array (
+      0 => 'mixed',
+      '...args' => 'mixed',
+    ),
+    'fiber::suspend' => 
+    array (
+      0 => 'mixed',
+      'value=' => 'mixed|null',
+    ),
+    'fiber::throw' => 
+    array (
+      0 => 'mixed',
+      'exception' => 'Throwable',
+    ),
+    'fibererror::__construct' => 
+    array (
+      0 => 'void',
+    ),
     'fsync' => 
     array (
       0 => 'bool',
       'stream' => 'resource',
     ),
-    'fdatasync' => 
+    'gmp::__serialize' => 
     array (
-      0 => 'bool',
-      'stream' => 'resource',
+      0 => 'array<array-key, mixed>',
+    ),
+    'gmp::__unserialize' => 
+    array (
+      0 => 'void',
+      'data' => 'array<array-key, mixed>',
     ),
     'imageavif' => 
     array (
@@ -48,130 +117,61 @@ return array (
       0 => 'false|float|int|null|string',
       'column=' => 'int',
     ),
-    'CURLStringFile::__construct' => 
-    array (
-      0 => 'void',
-      'data' => 'string',
-      'postname' => 'string',
-      'mime=' => 'string',
-    ),
-    'Fiber::__construct' => 
-    array (
-      0 => 'void',
-      'callback' => 'callable',
-    ),
-    'Fiber::start' => 
-    array (
-      0 => 'mixed',
-      '...args' => 'mixed',
-    ),
-    'Fiber::resume' => 
-    array (
-      0 => 'mixed',
-      'value=' => 'mixed|null',
-    ),
-    'Fiber::throw' => 
-    array (
-      0 => 'mixed',
-      'exception' => 'Throwable',
-    ),
-    'Fiber::isStarted' => 
+    'reflectionclass::isenum' => 
     array (
       0 => 'bool',
     ),
-    'Fiber::isSuspended' => 
-    array (
-      0 => 'bool',
-    ),
-    'Fiber::isRunning' => 
-    array (
-      0 => 'bool',
-    ),
-    'Fiber::isTerminated' => 
-    array (
-      0 => 'bool',
-    ),
-    'Fiber::getReturn' => 
-    array (
-      0 => 'mixed',
-    ),
-    'Fiber::getCurrent' => 
-    array (
-      0 => 'null|self',
-    ),
-    'Fiber::suspend' => 
-    array (
-      0 => 'mixed',
-      'value=' => 'mixed|null',
-    ),
-    'FiberError::__construct' => 
-    array (
-      0 => 'void',
-    ),
-    'GMP::__serialize' => 
-    array (
-      0 => 'array<array-key, mixed>',
-    ),
-    'GMP::__unserialize' => 
-    array (
-      0 => 'void',
-      'data' => 'array<array-key, mixed>',
-    ),
-    'ReflectionClass::isEnum' => 
-    array (
-      0 => 'bool',
-    ),
-    'ReflectionEnum::getBackingType' => 
+    'reflectionenum::getbackingtype' => 
     array (
       0 => 'ReflectionType|null',
     ),
-    'ReflectionEnum::getCase' => 
+    'reflectionenum::getcase' => 
     array (
       0 => 'ReflectionEnumUnitCase',
       'name' => 'string',
     ),
-    'ReflectionEnum::getCases' => 
+    'reflectionenum::getcases' => 
     array (
       0 => 'list<ReflectionEnumUnitCase>',
     ),
-    'ReflectionEnum::hasCase' => 
+    'reflectionenum::hascase' => 
     array (
       0 => 'bool',
       'name' => 'string',
     ),
-    'ReflectionEnum::isBacked' => 
+    'reflectionenum::isbacked' => 
     array (
       0 => 'bool',
     ),
-    'ReflectionEnumUnitCase::getEnum' => 
-    array (
-      0 => 'ReflectionEnum',
-    ),
-    'ReflectionEnumUnitCase::getValue' => 
-    array (
-      0 => 'UnitEnum',
-    ),
-    'ReflectionEnumBackedCase::getBackingValue' => 
+    'reflectionenumbackedcase::getbackingvalue' => 
     array (
       0 => 'int|string',
     ),
-    'ReflectionFunctionAbstract::getTentativeReturnType' => 
+    'reflectionenumunitcase::getenum' => 
+    array (
+      0 => 'ReflectionEnum',
+    ),
+    'reflectionenumunitcase::getvalue' => 
+    array (
+      0 => 'UnitEnum',
+    ),
+    'reflectionfunctionabstract::gettentativereturntype' => 
     array (
       0 => 'ReflectionType|null',
     ),
-    'ReflectionFunctionAbstract::hasTentativeReturnType' => 
+    'reflectionfunctionabstract::hastentativereturntype' => 
     array (
       0 => 'bool',
     ),
-    'ReflectionFunctionAbstract::isStatic' => 
+    'reflectionfunctionabstract::isstatic' => 
     array (
       0 => 'bool',
     ),
-    'ReflectionObject::isEnum' => 
+    'reflectionobject::isenum' => 
     array (
       0 => 'bool',
     ),
-    'ReflectionProperty::isReadonly' => 
+    'reflectionproperty::isreadonly' => 
     array (
       0 => 'bool',
     ),
@@ -196,7 +196,163 @@ return array (
   ),
   'changed' => 
   array (
-    'DOMDocument::createComment' => 
+    'ctype_alnum' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'text' => 'int|string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'text' => 'string',
+      ),
+    ),
+    'ctype_alpha' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'text' => 'int|string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'text' => 'string',
+      ),
+    ),
+    'ctype_cntrl' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'text' => 'int|string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'text' => 'string',
+      ),
+    ),
+    'ctype_digit' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'text' => 'int|string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'text' => 'string',
+      ),
+    ),
+    'ctype_graph' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'text' => 'int|string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'text' => 'string',
+      ),
+    ),
+    'ctype_lower' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'text' => 'int|string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'text' => 'string',
+      ),
+    ),
+    'ctype_print' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'text' => 'int|string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'text' => 'string',
+      ),
+    ),
+    'ctype_punct' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'text' => 'int|string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'text' => 'string',
+      ),
+    ),
+    'ctype_space' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'text' => 'int|string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'text' => 'string',
+      ),
+    ),
+    'ctype_upper' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'text' => 'int|string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'text' => 'string',
+      ),
+    ),
+    'ctype_xdigit' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'text' => 'int|string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'text' => 'string',
+      ),
+    ),
+    'current' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|mixed',
+        'array' => 'array<array-key, mixed>|object',
+      ),
+      'new' => 
+      array (
+        0 => 'false|mixed',
+        'array' => 'array<array-key, mixed>',
+      ),
+    ),
+    'domdocument::createcomment' => 
     array (
       'old' => 
       array (
@@ -209,7 +365,7 @@ return array (
         'data' => 'string',
       ),
     ),
-    'DOMDocument::createDocumentFragment' => 
+    'domdocument::createdocumentfragment' => 
     array (
       'old' => 
       array (
@@ -220,7 +376,7 @@ return array (
         0 => 'DOMDocumentFragment',
       ),
     ),
-    'DOMDocument::createTextNode' => 
+    'domdocument::createtextnode' => 
     array (
       'old' => 
       array (
@@ -231,130 +387,6 @@ return array (
       array (
         0 => 'DOMText',
         'data' => 'string',
-      ),
-    ),
-    'Phar::buildFromDirectory' => 
-    array (
-      'old' => 
-      array (
-        0 => 'array<array-key, mixed>|false',
-        'directory' => 'string',
-        'pattern=' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'array<array-key, mixed>',
-        'directory' => 'string',
-        'pattern=' => 'string',
-      ),
-    ),
-    'Phar::buildFromIterator' => 
-    array (
-      'old' => 
-      array (
-        0 => 'array<array-key, mixed>|false',
-        'iterator' => 'Traversable',
-        'baseDirectory=' => 'null|string',
-      ),
-      'new' => 
-      array (
-        0 => 'array<array-key, mixed>',
-        'iterator' => 'Traversable',
-        'baseDirectory=' => 'null|string',
-      ),
-    ),
-    'PharData::buildFromDirectory' => 
-    array (
-      'old' => 
-      array (
-        0 => 'array<array-key, mixed>|false',
-        'directory' => 'string',
-        'pattern=' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'array<array-key, mixed>',
-        'directory' => 'string',
-        'pattern=' => 'string',
-      ),
-    ),
-    'PharData::buildFromIterator' => 
-    array (
-      'old' => 
-      array (
-        0 => 'array<array-key, mixed>|false',
-        'iterator' => 'Traversable',
-        'baseDirectory=' => 'null|string',
-      ),
-      'new' => 
-      array (
-        0 => 'array<array-key, mixed>',
-        'iterator' => 'Traversable',
-        'baseDirectory=' => 'null|string',
-      ),
-    ),
-    'SplFileObject::fputcsv' => 
-    array (
-      'old' => 
-      array (
-        0 => 'false|int',
-        'fields' => 'array<array-key, Stringable|null|scalar>',
-        'separator=' => 'string',
-        'enclosure=' => 'string',
-        'escape=' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'false|int',
-        'fields' => 'array<array-key, Stringable|null|scalar>',
-        'separator=' => 'string',
-        'enclosure=' => 'string',
-        'escape=' => 'string',
-        'eol=' => 'string',
-      ),
-    ),
-    'SplTempFileObject::fputcsv' => 
-    array (
-      'old' => 
-      array (
-        0 => 'false|int',
-        'fields' => 'array<array-key, Stringable|null|scalar>',
-        'separator=' => 'string',
-        'enclosure=' => 'string',
-        'escape=' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'false|int',
-        'fields' => 'array<array-key, Stringable|null|scalar>',
-        'separator=' => 'string',
-        'enclosure=' => 'string',
-        'escape=' => 'string',
-        'eol=' => 'string',
-      ),
-    ),
-    'hash_pbkdf2' => 
-    array (
-      'old' => 
-      array (
-        0 => 'non-empty-string',
-        'algo' => 'string',
-        'password' => 'string',
-        'salt' => 'string',
-        'iterations' => 'int',
-        'length=' => 'int',
-        'binary=' => 'bool',
-      ),
-      'new' => 
-      array (
-        0 => 'non-empty-string',
-        'algo' => 'string',
-        'password' => 'string',
-        'salt' => 'string',
-        'iterations' => 'int',
-        'length=' => 'int',
-        'binary=' => 'bool',
-        'options=' => 'array<array-key, mixed>',
       ),
     ),
     'finfo_buffer' => 
@@ -460,68 +492,40 @@ return array (
         'eol=' => 'string',
       ),
     ),
-    'ftp_connect' => 
-    array (
-      'old' => 
-      array (
-        0 => 'false|resource',
-        'hostname' => 'string',
-        'port=' => 'int',
-        'timeout=' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'FTP\\Connection|false',
-        'hostname' => 'string',
-        'port=' => 'int',
-        'timeout=' => 'int',
-      ),
-    ),
-    'ftp_ssl_connect' => 
-    array (
-      'old' => 
-      array (
-        0 => 'false|resource',
-        'hostname' => 'string',
-        'port=' => 'int',
-        'timeout=' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'FTP\\Connection|false',
-        'hostname' => 'string',
-        'port=' => 'int',
-        'timeout=' => 'int',
-      ),
-    ),
-    'ftp_login' => 
+    'ftp_alloc' => 
     array (
       'old' => 
       array (
         0 => 'bool',
         'ftp' => 'resource',
-        'username' => 'string',
-        'password' => 'string',
+        'size' => 'int',
+        '&w_response=' => 'string',
       ),
       'new' => 
       array (
         0 => 'bool',
         'ftp' => 'FTP\\Connection',
-        'username' => 'string',
-        'password' => 'string',
+        'size' => 'int',
+        '&w_response=' => 'string',
       ),
     ),
-    'ftp_pwd' => 
+    'ftp_append' => 
     array (
       'old' => 
       array (
-        0 => 'false|string',
+        0 => 'bool',
         'ftp' => 'resource',
+        'remote_filename' => 'string',
+        'local_filename' => 'string',
+        'mode=' => 'int',
       ),
       'new' => 
       array (
-        0 => 'false|string',
+        0 => 'bool',
         'ftp' => 'FTP\\Connection',
+        'remote_filename' => 'string',
+        'local_filename' => 'string',
+        'mode=' => 'int',
       ),
     ),
     'ftp_cdup' => 
@@ -538,66 +542,6 @@ return array (
       ),
     ),
     'ftp_chdir' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'ftp' => 'resource',
-        'directory' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'ftp' => 'FTP\\Connection',
-        'directory' => 'string',
-      ),
-    ),
-    'ftp_exec' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'ftp' => 'resource',
-        'command' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'ftp' => 'FTP\\Connection',
-        'command' => 'string',
-      ),
-    ),
-    'ftp_raw' => 
-    array (
-      'old' => 
-      array (
-        0 => 'array<array-key, mixed>|null',
-        'ftp' => 'resource',
-        'command' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'array<array-key, mixed>|null',
-        'ftp' => 'FTP\\Connection',
-        'command' => 'string',
-      ),
-    ),
-    'ftp_mkdir' => 
-    array (
-      'old' => 
-      array (
-        0 => 'false|string',
-        'ftp' => 'resource',
-        'directory' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'false|string',
-        'ftp' => 'FTP\\Connection',
-        'directory' => 'string',
-      ),
-    ),
-    'ftp_rmdir' => 
     array (
       'old' => 
       array (
@@ -629,81 +573,64 @@ return array (
         'filename' => 'string',
       ),
     ),
-    'ftp_alloc' => 
+    'ftp_close' => 
     array (
       'old' => 
       array (
         0 => 'bool',
         'ftp' => 'resource',
-        'size' => 'int',
-        '&w_response=' => 'string',
       ),
       'new' => 
       array (
         0 => 'bool',
         'ftp' => 'FTP\\Connection',
-        'size' => 'int',
-        '&w_response=' => 'string',
       ),
     ),
-    'ftp_nlist' => 
+    'ftp_connect' => 
     array (
       'old' => 
       array (
-        0 => 'array<array-key, mixed>|false',
-        'ftp' => 'resource',
-        'directory' => 'string',
+        0 => 'false|resource',
+        'hostname' => 'string',
+        'port=' => 'int',
+        'timeout=' => 'int',
       ),
       'new' => 
       array (
-        0 => 'array<array-key, mixed>|false',
-        'ftp' => 'FTP\\Connection',
-        'directory' => 'string',
+        0 => 'FTP\\Connection|false',
+        'hostname' => 'string',
+        'port=' => 'int',
+        'timeout=' => 'int',
       ),
     ),
-    'ftp_rawlist' => 
+    'ftp_delete' => 
     array (
       'old' => 
       array (
-        0 => 'array<array-key, mixed>|false',
+        0 => 'bool',
         'ftp' => 'resource',
-        'directory' => 'string',
-        'recursive=' => 'bool',
+        'filename' => 'string',
       ),
       'new' => 
       array (
-        0 => 'array<array-key, mixed>|false',
+        0 => 'bool',
         'ftp' => 'FTP\\Connection',
-        'directory' => 'string',
-        'recursive=' => 'bool',
+        'filename' => 'string',
       ),
     ),
-    'ftp_mlsd' => 
+    'ftp_exec' => 
     array (
       'old' => 
       array (
-        0 => 'array<array-key, mixed>|false',
+        0 => 'bool',
         'ftp' => 'resource',
-        'directory' => 'string',
+        'command' => 'string',
       ),
       'new' => 
       array (
-        0 => 'array<array-key, mixed>|false',
+        0 => 'bool',
         'ftp' => 'FTP\\Connection',
-        'directory' => 'string',
-      ),
-    ),
-    'ftp_systype' => 
-    array (
-      'old' => 
-      array (
-        0 => 'false|string',
-        'ftp' => 'resource',
-      ),
-      'new' => 
-      array (
-        0 => 'false|string',
-        'ftp' => 'FTP\\Connection',
+        'command' => 'string',
       ),
     ),
     'ftp_fget' => 
@@ -727,40 +654,25 @@ return array (
         'offset=' => 'int',
       ),
     ),
-    'ftp_nb_fget' => 
-    array (
-      'old' => 
-      array (
-        0 => 'int',
-        'ftp' => 'resource',
-        'stream' => 'resource',
-        'remote_filename' => 'string',
-        'mode=' => 'int',
-        'offset=' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'int',
-        'ftp' => 'FTP\\Connection',
-        'stream' => 'resource',
-        'remote_filename' => 'string',
-        'mode=' => 'int',
-        'offset=' => 'int',
-      ),
-    ),
-    'ftp_pasv' => 
+    'ftp_fput' => 
     array (
       'old' => 
       array (
         0 => 'bool',
         'ftp' => 'resource',
-        'enable' => 'bool',
+        'remote_filename' => 'string',
+        'stream' => 'resource',
+        'mode=' => 'int',
+        'offset=' => 'int',
       ),
       'new' => 
       array (
         0 => 'bool',
         'ftp' => 'FTP\\Connection',
-        'enable' => 'bool',
+        'remote_filename' => 'string',
+        'stream' => 'resource',
+        'mode=' => 'int',
+        'offset=' => 'int',
       ),
     ),
     'ftp_get' => 
@@ -784,25 +696,81 @@ return array (
         'offset=' => 'int',
       ),
     ),
-    'ftp_nb_get' => 
+    'ftp_get_option' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|int',
+        'ftp' => 'resource',
+        'option' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'false|int',
+        'ftp' => 'FTP\\Connection',
+        'option' => 'int',
+      ),
+    ),
+    'ftp_login' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'ftp' => 'resource',
+        'username' => 'string',
+        'password' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'ftp' => 'FTP\\Connection',
+        'username' => 'string',
+        'password' => 'string',
+      ),
+    ),
+    'ftp_mdtm' => 
     array (
       'old' => 
       array (
         0 => 'int',
         'ftp' => 'resource',
-        'local_filename' => 'string',
-        'remote_filename' => 'string',
-        'mode=' => 'int',
-        'offset=' => 'int',
+        'filename' => 'string',
       ),
       'new' => 
       array (
         0 => 'int',
         'ftp' => 'FTP\\Connection',
-        'local_filename' => 'string',
-        'remote_filename' => 'string',
-        'mode=' => 'int',
-        'offset=' => 'int',
+        'filename' => 'string',
+      ),
+    ),
+    'ftp_mkdir' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|string',
+        'ftp' => 'resource',
+        'directory' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'false|string',
+        'ftp' => 'FTP\\Connection',
+        'directory' => 'string',
+      ),
+    ),
+    'ftp_mlsd' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'ftp' => 'resource',
+        'directory' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'ftp' => 'FTP\\Connection',
+        'directory' => 'string',
       ),
     ),
     'ftp_nb_continue' => 
@@ -818,23 +786,23 @@ return array (
         'ftp' => 'FTP\\Connection',
       ),
     ),
-    'ftp_fput' => 
+    'ftp_nb_fget' => 
     array (
       'old' => 
       array (
-        0 => 'bool',
+        0 => 'int',
         'ftp' => 'resource',
-        'remote_filename' => 'string',
         'stream' => 'resource',
+        'remote_filename' => 'string',
         'mode=' => 'int',
         'offset=' => 'int',
       ),
       'new' => 
       array (
-        0 => 'bool',
+        0 => 'int',
         'ftp' => 'FTP\\Connection',
-        'remote_filename' => 'string',
         'stream' => 'resource',
+        'remote_filename' => 'string',
         'mode=' => 'int',
         'offset=' => 'int',
       ),
@@ -860,44 +828,25 @@ return array (
         'offset=' => 'int',
       ),
     ),
-    'ftp_put' => 
+    'ftp_nb_get' => 
     array (
       'old' => 
       array (
-        0 => 'bool',
+        0 => 'int',
         'ftp' => 'resource',
-        'remote_filename' => 'string',
         'local_filename' => 'string',
+        'remote_filename' => 'string',
         'mode=' => 'int',
         'offset=' => 'int',
       ),
       'new' => 
       array (
-        0 => 'bool',
+        0 => 'int',
         'ftp' => 'FTP\\Connection',
-        'remote_filename' => 'string',
         'local_filename' => 'string',
+        'remote_filename' => 'string',
         'mode=' => 'int',
         'offset=' => 'int',
-      ),
-    ),
-    'ftp_append' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'ftp' => 'resource',
-        'remote_filename' => 'string',
-        'local_filename' => 'string',
-        'mode=' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'ftp' => 'FTP\\Connection',
-        'remote_filename' => 'string',
-        'local_filename' => 'string',
-        'mode=' => 'int',
       ),
     ),
     'ftp_nb_put' => 
@@ -921,34 +870,113 @@ return array (
         'offset=' => 'int',
       ),
     ),
-    'ftp_size' => 
+    'ftp_nlist' => 
     array (
       'old' => 
       array (
-        0 => 'int',
+        0 => 'array<array-key, mixed>|false',
         'ftp' => 'resource',
-        'filename' => 'string',
+        'directory' => 'string',
       ),
       'new' => 
       array (
-        0 => 'int',
+        0 => 'array<array-key, mixed>|false',
         'ftp' => 'FTP\\Connection',
-        'filename' => 'string',
+        'directory' => 'string',
       ),
     ),
-    'ftp_mdtm' => 
+    'ftp_pasv' => 
     array (
       'old' => 
       array (
-        0 => 'int',
+        0 => 'bool',
         'ftp' => 'resource',
-        'filename' => 'string',
+        'enable' => 'bool',
       ),
       'new' => 
       array (
-        0 => 'int',
+        0 => 'bool',
         'ftp' => 'FTP\\Connection',
-        'filename' => 'string',
+        'enable' => 'bool',
+      ),
+    ),
+    'ftp_put' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'ftp' => 'resource',
+        'remote_filename' => 'string',
+        'local_filename' => 'string',
+        'mode=' => 'int',
+        'offset=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'ftp' => 'FTP\\Connection',
+        'remote_filename' => 'string',
+        'local_filename' => 'string',
+        'mode=' => 'int',
+        'offset=' => 'int',
+      ),
+    ),
+    'ftp_pwd' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|string',
+        'ftp' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'false|string',
+        'ftp' => 'FTP\\Connection',
+      ),
+    ),
+    'ftp_quit' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'ftp' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'ftp' => 'FTP\\Connection',
+      ),
+    ),
+    'ftp_raw' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|null',
+        'ftp' => 'resource',
+        'command' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|null',
+        'ftp' => 'FTP\\Connection',
+        'command' => 'string',
+      ),
+    ),
+    'ftp_rawlist' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'ftp' => 'resource',
+        'directory' => 'string',
+        'recursive=' => 'bool',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'ftp' => 'FTP\\Connection',
+        'directory' => 'string',
+        'recursive=' => 'bool',
       ),
     ),
     'ftp_rename' => 
@@ -968,60 +996,19 @@ return array (
         'to' => 'string',
       ),
     ),
-    'ftp_delete' => 
+    'ftp_rmdir' => 
     array (
       'old' => 
       array (
         0 => 'bool',
         'ftp' => 'resource',
-        'filename' => 'string',
+        'directory' => 'string',
       ),
       'new' => 
       array (
         0 => 'bool',
         'ftp' => 'FTP\\Connection',
-        'filename' => 'string',
-      ),
-    ),
-    'ftp_site' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'ftp' => 'resource',
-        'command' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'ftp' => 'FTP\\Connection',
-        'command' => 'string',
-      ),
-    ),
-    'ftp_close' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'ftp' => 'resource',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'ftp' => 'FTP\\Connection',
-      ),
-    ),
-    'ftp_quit' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'ftp' => 'resource',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'ftp' => 'FTP\\Connection',
+        'directory' => 'string',
       ),
     ),
     'ftp_set_option' => 
@@ -1041,19 +1028,64 @@ return array (
         'value' => 'mixed',
       ),
     ),
-    'ftp_get_option' => 
+    'ftp_site' => 
     array (
       'old' => 
       array (
-        0 => 'false|int',
+        0 => 'bool',
         'ftp' => 'resource',
-        'option' => 'int',
+        'command' => 'string',
       ),
       'new' => 
       array (
-        0 => 'false|int',
+        0 => 'bool',
         'ftp' => 'FTP\\Connection',
-        'option' => 'int',
+        'command' => 'string',
+      ),
+    ),
+    'ftp_size' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+        'ftp' => 'resource',
+        'filename' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+        'ftp' => 'FTP\\Connection',
+        'filename' => 'string',
+      ),
+    ),
+    'ftp_ssl_connect' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|resource',
+        'hostname' => 'string',
+        'port=' => 'int',
+        'timeout=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'FTP\\Connection|false',
+        'hostname' => 'string',
+        'port=' => 'int',
+        'timeout=' => 'int',
+      ),
+    ),
+    'ftp_systype' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|string',
+        'ftp' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'false|string',
+        'ftp' => 'FTP\\Connection',
       ),
     ),
     'hash' => 
@@ -1108,6 +1140,30 @@ return array (
         'flags=' => 'int',
         'key=' => 'string',
         'options=' => 'array{seed: scalar}',
+      ),
+    ),
+    'hash_pbkdf2' => 
+    array (
+      'old' => 
+      array (
+        0 => 'non-empty-string',
+        'algo' => 'string',
+        'password' => 'string',
+        'salt' => 'string',
+        'iterations' => 'int',
+        'length=' => 'int',
+        'binary=' => 'bool',
+      ),
+      'new' => 
+      array (
+        0 => 'non-empty-string',
+        'algo' => 'string',
+        'password' => 'string',
+        'salt' => 'string',
+        'iterations' => 'int',
+        'length=' => 'int',
+        'binary=' => 'bool',
+        'options=' => 'array<array-key, mixed>',
       ),
     ),
     'imageloadfont' => 
@@ -2080,7 +2136,7 @@ return array (
         'value' => 'null|scalar',
       ),
     ),
-    'IntlDateFormatter::__construct' => 
+    'intldateformatter::__construct' => 
     array (
       'old' => 
       array (
@@ -2103,7 +2159,7 @@ return array (
         'pattern=' => 'null|string',
       ),
     ),
-    'IntlDateFormatter::create' => 
+    'intldateformatter::create' => 
     array (
       'old' => 
       array (
@@ -2124,6 +2180,19 @@ return array (
         'timezone=' => 'DateTimeZone|IntlTimeZone|null|string',
         'calendar=' => 'IntlCalendar|int|null',
         'pattern=' => 'null|string',
+      ),
+    ),
+    'key' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int|null|string',
+        'array' => 'array<array-key, mixed>|object',
+      ),
+      'new' => 
+      array (
+        0 => 'int|null|string',
+        'array' => 'array<array-key, mixed>',
       ),
     ),
     'ldap_add' => 
@@ -3034,6 +3103,21 @@ return array (
         'ldap' => 'LDAP\\Connection',
       ),
     ),
+    'mb_check_encoding' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'value=' => 'array<array-key, mixed>|null|string',
+        'encoding=' => 'null|string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'value' => 'array<array-key, mixed>|string',
+        'encoding=' => 'null|string',
+      ),
+    ),
     'mysqli::connect' => 
     array (
       'old' => 
@@ -3147,6 +3231,18 @@ return array (
         0 => 'list<object{name:string, orgname:string, table:string, orgtable:string, max_length:0, length:int, charsetnr:int, flags:int, type:int, decimals:int, db:string, def:\'\', catalog:\'def\'}>',
       ),
     ),
+    'mysqli_stmt::execute' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'params=' => 'list<mixed>|null',
+      ),
+    ),
     'mysqli_stmt_execute' => 
     array (
       'old' => 
@@ -3161,16 +3257,17 @@ return array (
         'params=' => 'list<mixed>|null',
       ),
     ),
-    'mysqli_stmt::execute' => 
+    'next' => 
     array (
       'old' => 
       array (
-        0 => 'bool',
+        0 => 'mixed',
+        '&r_array' => 'array<array-key, mixed>|object',
       ),
       'new' => 
       array (
-        0 => 'bool',
-        'params=' => 'list<mixed>|null',
+        0 => 'mixed',
+        '&r_array' => 'array<array-key, mixed>',
       ),
     ),
     'openssl_decrypt' => 
@@ -4676,6 +4773,79 @@ return array (
         'connection=' => 'PgSql\\Connection|null',
       ),
     ),
+    'phar::buildfromdirectory' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'directory' => 'string',
+        'pattern=' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>',
+        'directory' => 'string',
+        'pattern=' => 'string',
+      ),
+    ),
+    'phar::buildfromiterator' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'iterator' => 'Traversable',
+        'baseDirectory=' => 'null|string',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>',
+        'iterator' => 'Traversable',
+        'baseDirectory=' => 'null|string',
+      ),
+    ),
+    'phardata::buildfromdirectory' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'directory' => 'string',
+        'pattern=' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>',
+        'directory' => 'string',
+        'pattern=' => 'string',
+      ),
+    ),
+    'phardata::buildfromiterator' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'iterator' => 'Traversable',
+        'baseDirectory=' => 'null|string',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>',
+        'iterator' => 'Traversable',
+        'baseDirectory=' => 'null|string',
+      ),
+    ),
+    'prev' => 
+    array (
+      'old' => 
+      array (
+        0 => 'mixed',
+        '&r_array' => 'array<array-key, mixed>|object',
+      ),
+      'new' => 
+      array (
+        0 => 'mixed',
+        '&r_array' => 'array<array-key, mixed>',
+      ),
+    ),
     'pspell_add_to_personal' => 
     array (
       'old' => 
@@ -4975,6 +5145,59 @@ return array (
         'word' => 'string',
       ),
     ),
+    'reset' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|mixed',
+        '&r_array' => 'array<array-key, mixed>|object',
+      ),
+      'new' => 
+      array (
+        0 => 'false|mixed',
+        '&r_array' => 'array<array-key, mixed>',
+      ),
+    ),
+    'splfileobject::fputcsv' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|int',
+        'fields' => 'array<array-key, Stringable|null|scalar>',
+        'separator=' => 'string',
+        'enclosure=' => 'string',
+        'escape=' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'false|int',
+        'fields' => 'array<array-key, Stringable|null|scalar>',
+        'separator=' => 'string',
+        'enclosure=' => 'string',
+        'escape=' => 'string',
+        'eol=' => 'string',
+      ),
+    ),
+    'spltempfileobject::fputcsv' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|int',
+        'fields' => 'array<array-key, Stringable|null|scalar>',
+        'separator=' => 'string',
+        'enclosure=' => 'string',
+        'escape=' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'false|int',
+        'fields' => 'array<array-key, Stringable|null|scalar>',
+        'separator=' => 'string',
+        'enclosure=' => 'string',
+        'escape=' => 'string',
+        'eol=' => 'string',
+      ),
+    ),
     'stream_select' => 
     array (
       'old' => 
@@ -4996,233 +5219,10 @@ return array (
         'microseconds=' => 'int|null',
       ),
     ),
-    'mb_check_encoding' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'value=' => 'array<array-key, mixed>|null|string',
-        'encoding=' => 'null|string',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'value' => 'array<array-key, mixed>|string',
-        'encoding=' => 'null|string',
-      ),
-    ),
-    'ctype_alnum' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'text' => 'int|string',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'text' => 'string',
-      ),
-    ),
-    'ctype_alpha' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'text' => 'int|string',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'text' => 'string',
-      ),
-    ),
-    'ctype_cntrl' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'text' => 'int|string',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'text' => 'string',
-      ),
-    ),
-    'ctype_digit' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'text' => 'int|string',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'text' => 'string',
-      ),
-    ),
-    'ctype_graph' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'text' => 'int|string',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'text' => 'string',
-      ),
-    ),
-    'ctype_lower' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'text' => 'int|string',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'text' => 'string',
-      ),
-    ),
-    'ctype_print' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'text' => 'int|string',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'text' => 'string',
-      ),
-    ),
-    'ctype_punct' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'text' => 'int|string',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'text' => 'string',
-      ),
-    ),
-    'ctype_space' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'text' => 'int|string',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'text' => 'string',
-      ),
-    ),
-    'ctype_upper' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'text' => 'int|string',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'text' => 'string',
-      ),
-    ),
-    'ctype_xdigit' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'text' => 'int|string',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'text' => 'string',
-      ),
-    ),
-    'key' => 
-    array (
-      'old' => 
-      array (
-        0 => 'int|null|string',
-        'array' => 'array<array-key, mixed>|object',
-      ),
-      'new' => 
-      array (
-        0 => 'int|null|string',
-        'array' => 'array<array-key, mixed>',
-      ),
-    ),
-    'current' => 
-    array (
-      'old' => 
-      array (
-        0 => 'false|mixed',
-        'array' => 'array<array-key, mixed>|object',
-      ),
-      'new' => 
-      array (
-        0 => 'false|mixed',
-        'array' => 'array<array-key, mixed>',
-      ),
-    ),
-    'next' => 
-    array (
-      'old' => 
-      array (
-        0 => 'mixed',
-        '&r_array' => 'array<array-key, mixed>|object',
-      ),
-      'new' => 
-      array (
-        0 => 'mixed',
-        '&r_array' => 'array<array-key, mixed>',
-      ),
-    ),
-    'prev' => 
-    array (
-      'old' => 
-      array (
-        0 => 'mixed',
-        '&r_array' => 'array<array-key, mixed>|object',
-      ),
-      'new' => 
-      array (
-        0 => 'mixed',
-        '&r_array' => 'array<array-key, mixed>',
-      ),
-    ),
-    'reset' => 
-    array (
-      'old' => 
-      array (
-        0 => 'false|mixed',
-        '&r_array' => 'array<array-key, mixed>|object',
-      ),
-      'new' => 
-      array (
-        0 => 'false|mixed',
-        '&r_array' => 'array<array-key, mixed>',
-      ),
-    ),
   ),
   'removed' => 
   array (
-    'ReflectionMethod::isStatic' => 
+    'reflectionmethod::isstatic' => 
     array (
       0 => 'bool',
     ),

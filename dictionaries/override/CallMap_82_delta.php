@@ -3,28 +3,19 @@
 return array (
   'added' => 
   array (
-    'mysqli_execute_query' => 
-    array (
-      0 => 'bool|mysqli_result',
-      'mysql' => 'mysqli',
-      'query' => 'non-empty-string',
-      'params=' => 'list<mixed>|null',
-    ),
-    'mysqli::execute_query' => 
-    array (
-      0 => 'bool|mysqli_result',
-      'query' => 'non-empty-string',
-      'params=' => 'list<mixed>|null',
-    ),
-    'openssl_cipher_key_length' => 
-    array (
-      0 => 'false|int<1, max>',
-      'cipher_algo' => 'non-empty-string',
-    ),
     'curl_upkeep' => 
     array (
       0 => 'bool',
       'handle' => 'CurlHandle',
+    ),
+    'datetimeinterface::__serialize' => 
+    array (
+      0 => 'array<array-key, mixed>',
+    ),
+    'datetimeinterface::__unserialize' => 
+    array (
+      0 => 'void',
+      'data' => 'array<array-key, mixed>',
     ),
     'imap_is_open' => 
     array (
@@ -44,6 +35,24 @@ return array (
     array (
       0 => 'void',
     ),
+    'mysqli::execute_query' => 
+    array (
+      0 => 'bool|mysqli_result',
+      'query' => 'non-empty-string',
+      'params=' => 'list<mixed>|null',
+    ),
+    'mysqli_execute_query' => 
+    array (
+      0 => 'bool|mysqli_result',
+      'mysql' => 'mysqli',
+      'query' => 'non-empty-string',
+      'params=' => 'list<mixed>|null',
+    ),
+    'openssl_cipher_key_length' => 
+    array (
+      0 => 'false|int<1, max>',
+      'cipher_algo' => 'non-empty-string',
+    ),
     'sodium_crypto_stream_xchacha20_xor_ic' => 
     array (
       0 => 'string',
@@ -52,30 +61,21 @@ return array (
       'counter' => 'int',
       'key' => 'non-empty-string',
     ),
-    'ZipArchive::clearError' => 
+    'ziparchive::clearerror' => 
     array (
       0 => 'void',
     ),
-    'ZipArchive::getStreamIndex' => 
+    'ziparchive::getstreamindex' => 
     array (
       0 => 'false|resource',
       'index' => 'int',
       'flags=' => 'int',
     ),
-    'ZipArchive::getStreamName' => 
+    'ziparchive::getstreamname' => 
     array (
       0 => 'false|resource',
       'name' => 'string',
       'flags=' => 'int',
-    ),
-    'DateTimeInterface::__serialize' => 
-    array (
-      0 => 'array<array-key, mixed>',
-    ),
-    'DateTimeInterface::__unserialize' => 
-    array (
-      0 => 'void',
-      'data' => 'array<array-key, mixed>',
     ),
   ),
   'changed' => 
@@ -150,6 +150,19 @@ return array (
         'preserve_keys=' => 'bool',
       ),
     ),
+    'mb_get_info' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|false|int|string',
+        'type=' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|false|int|null|string',
+        'type=' => 'string',
+      ),
+    ),
     'str_split' => 
     array (
       'old' => 
@@ -165,20 +178,7 @@ return array (
         'length=' => 'int<1, max>',
       ),
     ),
-    'mb_get_info' => 
-    array (
-      'old' => 
-      array (
-        0 => 'array<array-key, mixed>|false|int|string',
-        'type=' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'array<array-key, mixed>|false|int|null|string',
-        'type=' => 'string',
-      ),
-    ),
-    'strcmp' => 
+    'strcasecmp' => 
     array (
       'old' => 
       array (
@@ -193,7 +193,7 @@ return array (
         'string2' => 'string',
       ),
     ),
-    'strcasecmp' => 
+    'strcmp' => 
     array (
       'old' => 
       array (
@@ -238,7 +238,7 @@ return array (
         'string2' => 'string',
       ),
     ),
-    'strncmp' => 
+    'strncasecmp' => 
     array (
       'old' => 
       array (
@@ -255,7 +255,7 @@ return array (
         'length' => 'int<0, max>',
       ),
     ),
-    'strncasecmp' => 
+    'strncmp' => 
     array (
       'old' => 
       array (
