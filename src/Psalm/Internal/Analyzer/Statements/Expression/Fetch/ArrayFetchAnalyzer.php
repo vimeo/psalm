@@ -89,6 +89,7 @@ use Psalm\Type\MutableUnion;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_diff;
 use function array_keys;
 use function array_map;
 use function array_pop;
@@ -395,6 +396,13 @@ final class ArrayFetchAnalyzer
                 return;
             }
 
+            $var_location = new CodeLocation($statements_analyzer->getSource(), $var);
+
+            $new_parent_node = DataFlowNode::getForAssignment(
+                $keyed_array_var_id ?: 'arrayvalue-fetch',
+                $var_location,
+            );
+
             $added_taints = [];
             $removed_taints = [];
 
@@ -404,14 +412,14 @@ final class ArrayFetchAnalyzer
 
                 $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
                 $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
+
+                $taints = array_diff($added_taints, $removed_taints);
+                if ($taints !== [] && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+                    $taint_source = TaintSource::fromNode($new_parent_node);
+                    $taint_source->taints = $taints;
+                    $statements_analyzer->data_flow_graph->addSource($taint_source);
+                }
             }
-
-            $var_location = new CodeLocation($statements_analyzer->getSource(), $var);
-
-            $new_parent_node = DataFlowNode::getForAssignment(
-                $keyed_array_var_id ?: 'arrayvalue-fetch',
-                $var_location,
-            );
 
             $array_key_node = null;
 
@@ -463,11 +471,6 @@ final class ArrayFetchAnalyzer
             }
 
             $stmt_type = $stmt_type->setParentNodes([$new_parent_node->id => $new_parent_node]);
-
-            if ($added_taints !== [] && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
-                $taint_source = TaintSource::fromNode($new_parent_node);
-                $statements_analyzer->data_flow_graph->addSource($taint_source);
-            }
 
             if ($array_key_node) {
                 $offset_type = $offset_type->setParentNodes([$array_key_node->id => $array_key_node]);

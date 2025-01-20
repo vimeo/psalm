@@ -25,6 +25,7 @@ use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type\TaintKind;
 use Symfony\Component\Filesystem\Path;
 
+use function array_diff;
 use function constant;
 use function defined;
 use function dirname;
@@ -135,8 +136,10 @@ final class IncludeAnalyzer
             $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
             $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
 
-            if ($added_taints !== []) {
+            $taints = array_diff($added_taints, $removed_taints);
+            if ($taints !== []) {
                 $taint_source = TaintSource::fromNode($include_param_sink);
+                $taint_source->taints = $taints;
                 $statements_analyzer->data_flow_graph->addSource($taint_source);
             }
 

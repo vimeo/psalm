@@ -753,14 +753,13 @@ final class FunctionCallReturnTypeFetcher
             $added_taints = $function_storage->added_taints;
         }
 
-        $added_taints = array_diff(
+        $taints = array_diff(
             $added_taints,
             $function_storage->removed_taints,
         );
-        if ($added_taints !== []) {
+        if ($taints !== []) {
             $taint_source = TaintSource::fromNode($function_call_node);
-            $taint_source->taints = $added_taints;
-
+            $taint_source->taints = $taints;
             $graph->addSource($taint_source);
         }
     }

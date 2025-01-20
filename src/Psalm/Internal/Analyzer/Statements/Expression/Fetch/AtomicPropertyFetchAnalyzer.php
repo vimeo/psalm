@@ -63,6 +63,7 @@ use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
+use function array_diff;
 use function array_filter;
 use function array_keys;
 use function array_map;
@@ -900,8 +901,10 @@ final class AtomicPropertyFetchAnalyzer
 
                 $type = $type->setParentNodes([$property_node->id => $property_node], true);
 
-                if ($added_taints !== [] && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+                $taints = array_diff($added_taints, $removed_taints);
+                if ($taints !== [] && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
                     $taint_source = TaintSource::fromNode($var_node);
+                    $taint_source->taints = $taints;
                     $statements_analyzer->data_flow_graph->addSource($taint_source);
                 }
             }
@@ -981,8 +984,10 @@ final class AtomicPropertyFetchAnalyzer
 
         $type = $type->setParentNodes([$localized_property_node->id => $localized_property_node], true);
 
-        if ($added_taints !== [] && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+        $taints = array_diff($added_taints, $removed_taints);
+        if ($taints !== [] && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
             $taint_source = TaintSource::fromNode($localized_property_node);
+            $taint_source->taints = $taints;
             $statements_analyzer->data_flow_graph->addSource($taint_source);
         }
     }

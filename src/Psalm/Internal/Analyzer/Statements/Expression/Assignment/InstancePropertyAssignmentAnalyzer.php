@@ -79,6 +79,7 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_diff;
 use function array_merge;
 use function array_pop;
 use function count;
@@ -506,8 +507,10 @@ final class InstancePropertyAssignmentAnalyzer
                 $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
                 $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
 
-                if ($added_taints !== [] && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+                $taints = array_diff($added_taints, $removed_taints);
+                if ($taints !== [] && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
                     $taint_source = TaintSource::fromNode($property_node);
+                    $taint_source->taints = $taints;
                     $statements_analyzer->data_flow_graph->addSource($taint_source);
                 }
 
@@ -606,8 +609,10 @@ final class InstancePropertyAssignmentAnalyzer
         $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
         $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
 
-        if ($added_taints !== [] && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
+        $taints = array_diff($added_taints, $removed_taints);
+        if ($taints !== [] && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph) {
             $taint_source = TaintSource::fromNode($property_node);
+            $taint_source->taints = $taints;
             $statements_analyzer->data_flow_graph->addSource($taint_source);
         }
 
