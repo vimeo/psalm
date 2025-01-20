@@ -9581,23 +9581,6 @@ return array (
         'value' => 'array<array-key, mixed>|int|string',
       ),
     ),
-    'socket_set_timeout' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'stream' => 'resource',
-        'seconds' => 'int',
-        'microseconds=' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'stream' => 'resource',
-        'seconds' => 'int',
-        'microseconds=' => 'int',
-      ),
-    ),
     'socket_setopt' => 
     array (
       'old' => 

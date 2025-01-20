@@ -88,31 +88,34 @@ foreach ($customMaps as $version => $data) {
 
 // Overwrite custom diff maps
 writeCallMap(__DIR__."/../dictionaries/override/CallMap.php", $customMaps[$last]);
-$customDiffs = [];
-die;
+
 // Regenerate diff maps from custom maps
-foreach ($customMaps as $version => $data) {
-    if ($version === $last) {
-        $nextVersion = $version;
-        $nextData = $data;
+foreach ($customMaps as $prevVersion => $prevData) {
+    if ($prevVersion === $last) {
+        $nextVersion = $prevVersion;
+        $nextData = $prevData;
         continue;
     }
 
     $diff = ['added' => [], 'changed' => [], 'removed' => []];
-    foreach ($data as $func => $descr) {
+    foreach ($prevData as $func => $descr) {
         if (!isset($nextData[$func])) {
             $diff['removed'][$func] = $descr;
         } else if ($nextData[$func] !== $descr) {
             $diff['changed'][$func] = [
+                'old' => $descr,
                 'new' => $nextData[$func],
-                'old' => $descr
             ];
         }
     }
     foreach ($nextData as $func => $descr) {
-        if (!isset($data[$func])) {
+        if (!isset($prevData[$func])) {
             $diff['added'][$func] = $descr;
         }
     }
+
     writeCallMap(__DIR__."/../dictionaries/override/CallMap_{$nextVersion}_delta.php", normalizeCallMap($diff));
+
+    $nextVersion = $prevVersion;
+    $nextData = $prevData;
 }
