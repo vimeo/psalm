@@ -12,15 +12,6 @@ use Psalm\StatementsSource;
 
 final class BeforeStatementAnalysisEvent
 {
-    private Stmt $stmt;
-    private Context $context;
-    private StatementsSource $statements_source;
-    private Codebase $codebase;
-    /**
-     * @var list<FileManipulation>
-     */
-    private array $file_replacements;
-
     /**
      * Called after a statement has been checked
      *
@@ -28,17 +19,12 @@ final class BeforeStatementAnalysisEvent
      * @internal
      */
     public function __construct(
-        Stmt $stmt,
-        Context $context,
-        StatementsSource $statements_source,
-        Codebase $codebase,
-        array $file_replacements = []
+        private Stmt $stmt,
+        private readonly Context $context,
+        private readonly StatementsSource $statements_source,
+        private readonly Codebase $codebase,
+        private array $file_replacements = [],
     ) {
-        $this->stmt = $stmt;
-        $this->context = $context;
-        $this->statements_source = $statements_source;
-        $this->codebase = $codebase;
-        $this->file_replacements = $file_replacements;
     }
 
     public function getStmt(): Stmt

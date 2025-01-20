@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\FileManipulation;
 
 use Psalm\Storage\ImmutableNonCloneableTrait;
@@ -12,27 +14,12 @@ final class CodeMigration
 {
     use ImmutableNonCloneableTrait;
 
-    public string $source_file_path;
-
-    public int $source_start;
-
-    public int $source_end;
-
-    public string $destination_file_path;
-
-    public int $destination_start;
-
     public function __construct(
-        string $source_file_path,
-        int $source_start,
-        int $source_end,
-        string $destination_file_path,
-        int $destination_start
+        public readonly string $source_file_path,
+        public readonly int $source_start,
+        public readonly int $source_end,
+        public readonly string $destination_file_path,
+        public readonly int $destination_start,
     ) {
-        $this->source_file_path = $source_file_path;
-        $this->source_start = $source_start;
-        $this->source_end = $source_end;
-        $this->destination_file_path = $destination_file_path;
-        $this->destination_start = $destination_start;
     }
 }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Storage;
 
 use Psalm\CodeLocation;
@@ -14,32 +16,15 @@ final class EnumCaseStorage
 {
     use UnserializeMemoryUsageSuppressionTrait;
 
-    /**
-     * @var int|string|null|UnresolvedConstantComponent
-     */
-    public $value;
+    public bool $deprecated = false;
 
-    /** @var CodeLocation */
-    public $stmt_location;
-
-    /**
-     * @var bool
-     */
-    public $deprecated = false;
-
-    /**
-     * @param int|string|null|UnresolvedConstantComponent  $value
-     */
     public function __construct(
-        $value,
-        CodeLocation $location
+        public TLiteralString|TLiteralInt|UnresolvedConstantComponent|null $value,
+        public CodeLocation $stmt_location,
     ) {
-        $this->value = $value;
-        $this->stmt_location = $location;
     }
 
-    /** @return int|string|null */
-    public function getValue(ClassLikes $classlikes)
+    public function getValue(ClassLikes $classlikes): TLiteralInt|TLiteralString|null
     {
         $case_value = $this->value;
 
@@ -49,11 +34,9 @@ final class EnumCaseStorage
                 $case_value,
             );
 
-            if ($case_value instanceof TLiteralString) {
-                $case_value = $case_value->value;
-            } elseif ($case_value instanceof TLiteralInt) {
-                $case_value = $case_value->value;
-            } else {
+            if (!$case_value instanceof TLiteralString
+                && !$case_value instanceof TLiteralInt
+            ) {
                 throw new UnexpectedValueException('Failed to infer case value');
             }
         }

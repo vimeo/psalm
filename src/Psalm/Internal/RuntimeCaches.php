@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal;
 
 use Psalm\Internal\Analyzer\FileAnalyzer;
@@ -38,7 +40,6 @@ abstract class RuntimeCaches
         FunctionLikeAnalyzer::clearCache();
         ClassLikeStorageProvider::deleteAll();
         FileStorageProvider::deleteAll();
-        StatementsProvider::clearLexer();
         StatementsProvider::clearParser();
         ParsedDocblock::resetNewlineBetweenAnnotations();
     }

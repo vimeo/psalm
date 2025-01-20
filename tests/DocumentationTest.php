@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
 use DOMAttr;
@@ -16,6 +18,7 @@ use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\Issue\UnusedBaselineEntry;
+use Psalm\Issue\UnusedIssueHandlerSuppression;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use UnexpectedValueException;
 
@@ -24,6 +27,7 @@ use function array_filter;
 use function array_keys;
 use function array_map;
 use function array_shift;
+use function assert;
 use function count;
 use function dirname;
 use function explode;
@@ -100,9 +104,12 @@ class DocumentationTest extends TestCase
         }
 
         $issue_code = [];
+        $files = glob($issues_dir . '/*.md');
+        assert($files !== false);
 
-        foreach (glob($issues_dir . '/*.md') as $file_path) {
+        foreach ($files as $file_path) {
             $file_contents = file_get_contents($file_path);
+            assert($file_contents !== false);
 
             $file_lines = explode("\n", $file_contents);
 
@@ -266,6 +273,7 @@ class DocumentationTest extends TestCase
                 case 'TraitMethodSignatureMismatch':
                 case 'UncaughtThrowInGlobalScope':
                 case UnusedBaselineEntry::getIssueType():
+                case UnusedIssueHandlerSuppression::getIssueType():
                     continue 2;
 
                 /** @todo reinstate this test when the issue is restored */
@@ -282,10 +290,6 @@ class DocumentationTest extends TestCase
 
                 case 'InvalidReturnType':
                     $ignored_issues = ['InvalidReturnStatement'];
-                    break;
-
-                case 'MixedInferredReturnType':
-                    $ignored_issues = ['MixedReturnStatement'];
                     break;
 
                 case 'MixedStringOffsetAssignment':
@@ -365,7 +369,9 @@ class DocumentationTest extends TestCase
     {
         if ('' === self::$docContents) {
             foreach (self::ANNOTATION_DOCS as $file) {
-                self::$docContents .= file_get_contents(__DIR__ . '/../' . $file);
+                $file_contents = file_get_contents(__DIR__ . '/../' . $file);
+                assert($file_contents !== false);
+                self::$docContents .= $file_contents;
             }
         }
 
@@ -411,18 +417,12 @@ class DocumentationTest extends TestCase
                 return $this->inner->toString();
             }
 
-            /**
-             * @param mixed $other
-             */
-            protected function matches($other): bool
+            protected function matches(mixed $other): bool
             {
                 return $this->inner->matches($other);
             }
 
-            /**
-             * @param mixed $other
-             */
-            protected function failureDescription($other): string
+            protected function failureDescription(mixed $other): string
             {
                 return $this->exporter()->shortenedExport($other) . ' ' . $this->toString();
             }
@@ -459,13 +459,15 @@ class DocumentationTest extends TestCase
             return $matches[1];
         }, $issues_index_contents);
 
+        $dir_contents = scandir($issues_dir);
+        assert($dir_contents !== false);
         $issue_files = array_filter(array_map(function (string $issue_file) {
             if ($issue_file === "." || $issue_file === "..") {
                 return false;
             }
             $this->assertStringEndsWith(".md", $issue_file, "Invalid file in issues documentation: $issue_file");
             return substr($issue_file, 0, strlen($issue_file) - 3);
-        }, scandir($issues_dir)));
+        }, $dir_contents));
 
         $unlisted_issues = array_diff($issue_files, $issues_index_list);
         $this->assertEmpty($unlisted_issues, "Issue documentation missing from issues.md: " . implode(", ", $unlisted_issues));

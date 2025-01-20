@@ -1,10 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\PluginManager;
 
 use RuntimeException;
 
 use function array_merge;
+use function assert;
 use function file_get_contents;
 use function is_array;
 use function is_string;
@@ -17,24 +20,20 @@ use function json_last_error_msg;
  */
 final class ComposerLock
 {
-    /** @var string[] */
-    private array $file_names;
-
     /** @param string[] $file_names */
-    public function __construct(array $file_names)
-    {
-        $this->file_names = $file_names;
+    public function __construct(
+        private readonly array $file_names,
+    ) {
     }
 
     /**
-     * @param mixed $package
      * @psalm-assert-if-true array{
      *      name: string,
      *      extra: array{psalm: array{pluginClass: string}}
      * } $package
      * @psalm-pure
      */
-    public function isPlugin($package): bool
+    public function isPlugin(mixed $package): bool
     {
         return is_array($package)
             && isset($package['name'], $package['extra']['psalm']['pluginClass'])
@@ -60,7 +59,10 @@ final class ComposerLock
 
     private function read(string $file_name): array
     {
-        $contents = json_decode(file_get_contents($file_name), true);
+        $file_contents = file_get_contents($file_name);
+        assert($file_contents !== false);
+
+        $contents = json_decode($file_contents, true);
 
         if ($error = json_last_error()) {
             throw new RuntimeException(json_last_error_msg(), $error);

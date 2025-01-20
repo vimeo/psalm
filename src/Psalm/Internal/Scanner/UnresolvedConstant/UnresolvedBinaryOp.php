@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Scanner\UnresolvedConstant;
 
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
@@ -13,13 +15,9 @@ abstract class UnresolvedBinaryOp extends UnresolvedConstantComponent
 {
     use ImmutableNonCloneableTrait;
 
-    public UnresolvedConstantComponent $left;
-
-    public UnresolvedConstantComponent $right;
-
-    public function __construct(UnresolvedConstantComponent $left, UnresolvedConstantComponent $right)
-    {
-        $this->left = $left;
-        $this->right = $right;
+    public function __construct(
+        public readonly UnresolvedConstantComponent $left,
+        public readonly UnresolvedConstantComponent $right,
+    ) {
     }
 }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Type\Comparator;
 
 use Psalm\Codebase;
@@ -42,7 +44,7 @@ final class UnionTypeComparator
         bool $ignore_false = false,
         ?TypeComparisonResult $union_comparison_result = null,
         bool $allow_interface_equality = false,
-        bool $allow_float_int_equality = true
+        bool $allow_float_int_equality = true,
     ): bool {
         if ($container_type->isVanillaMixed()) {
             return true;
@@ -355,7 +357,7 @@ final class UnionTypeComparator
      */
     public static function isContainedByInPhp(
         ?Union $input_type,
-        Union $container_type
+        Union $container_type,
     ): bool {
         if ($container_type->isMixed()) {
             return true;
@@ -403,7 +405,7 @@ final class UnionTypeComparator
         Union $container_type,
         bool $ignore_null = false,
         bool $ignore_false = false,
-        array &$matching_input_keys = []
+        array &$matching_input_keys = [],
     ): bool {
         if ($container_type->hasMixed()) {
             return true;
@@ -455,7 +457,7 @@ final class UnionTypeComparator
         Codebase $codebase,
         Union $type1,
         Union $type2,
-        bool $allow_interface_equality = true
+        bool $allow_interface_equality = true,
     ): bool {
         if ($type1->hasMixed() || $type2->hasMixed()) {
             return true;
@@ -498,7 +500,7 @@ final class UnionTypeComparator
      */
     private static function getTypeParts(
         Codebase $codebase,
-        Union $union_type
+        Union $union_type,
     ): array {
         $atomic_types = [];
         foreach ($union_type->getAtomicTypes() as $atomic_type) {

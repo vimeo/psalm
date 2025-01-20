@@ -183,8 +183,6 @@ $a = [];
 foreach (range(1,1) as $_) $a[(string)rand(0,1)] = rand(0,1); // array<string,int>
 ```
 
-`TCallableArray` - denotes an array that is _also_ `callable`.
-
 `TCallableKeyedArray` - denotes an object-like array that is _also_ `callable`.
 
 `TClassStringMap` - Represents an array where the type of each value is a function of its string key value

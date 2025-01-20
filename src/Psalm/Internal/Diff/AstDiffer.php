@@ -21,7 +21,7 @@ use function count;
  *
  * @internal
  */
-class AstDiffer
+abstract class AstDiffer
 {
     /**
      * @param Closure(Stmt, Stmt, string, string, bool=): bool $is_equal
@@ -34,7 +34,7 @@ class AstDiffer
         array $a,
         array $b,
         string $a_code,
-        string $b_code
+        string $b_code,
     ): array {
         $n = count($a);
         $m = count($b);

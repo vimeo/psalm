@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
@@ -27,7 +29,6 @@ use function array_intersect;
 use function array_intersect_key;
 use function array_keys;
 use function array_map;
-use function array_merge;
 use function array_values;
 use function count;
 use function in_array;
@@ -43,7 +44,7 @@ final class TernaryAnalyzer
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\Ternary $stmt,
-        Context $context
+        Context $context,
     ): bool {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -64,7 +65,7 @@ final class TernaryAnalyzer
 
             $cond_referenced_var_ids = $if_conditional_scope->cond_referenced_var_ids;
             $assigned_in_conditional_var_ids = $if_conditional_scope->assigned_in_conditional_var_ids;
-        } catch (ScopeAnalysisException $e) {
+        } catch (ScopeAnalysisException) {
             return false;
         }
 
@@ -154,7 +155,7 @@ final class TernaryAnalyzer
 
         try {
             $if_scope->negated_clauses = Algebra::negateFormula($if_clauses);
-        } catch (ComplicatedExpressionException $e) {
+        } catch (ComplicatedExpressionException) {
             try {
                 $if_scope->negated_clauses = FormulaGenerator::getFormula(
                     $cond_object_id,
@@ -165,7 +166,7 @@ final class TernaryAnalyzer
                     $codebase,
                     false,
                 );
-            } catch (ComplicatedExpressionException $e) {
+            } catch (ComplicatedExpressionException) {
                 $if_scope->negated_clauses = [];
             }
         }
@@ -209,10 +210,10 @@ final class TernaryAnalyzer
                 return false;
             }
 
-            $context->cond_referenced_var_ids = array_merge(
-                $context->cond_referenced_var_ids,
-                $if_context->cond_referenced_var_ids,
-            );
+            $context->cond_referenced_var_ids = [
+                ...$context->cond_referenced_var_ids,
+                ...$if_context->cond_referenced_var_ids,
+            ];
         }
 
         $t_else_context->clauses = Algebra::simplifyCNF(
@@ -288,16 +289,16 @@ final class TernaryAnalyzer
             }
         }
 
-        $context->vars_possibly_in_scope = array_merge(
-            $context->vars_possibly_in_scope,
-            $if_context->vars_possibly_in_scope,
-            $t_else_context->vars_possibly_in_scope,
-        );
+        $context->vars_possibly_in_scope = [
+            ...$context->vars_possibly_in_scope,
+            ...$if_context->vars_possibly_in_scope,
+            ...$t_else_context->vars_possibly_in_scope,
+        ];
 
-        $context->cond_referenced_var_ids = array_merge(
-            $context->cond_referenced_var_ids,
-            $t_else_context->cond_referenced_var_ids,
-        );
+        $context->cond_referenced_var_ids = [
+            ...$context->cond_referenced_var_ids,
+            ...$t_else_context->cond_referenced_var_ids,
+        ];
 
         $lhs_type = null;
         $stmt_cond_type = $statements_analyzer->node_data->getType($stmt->cond);

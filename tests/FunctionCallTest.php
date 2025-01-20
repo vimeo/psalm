@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Tests;
 
 use Psalm\Config;
@@ -401,6 +403,14 @@ class FunctionCallTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => ['MixedAssignment', 'MixedArgument'],
+            ],
+            'noRedundantErrorForCallableStrToLower' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @var callable-string */
+                    $function = "strlen";
+                    strtolower($function);
+                PHP,
             ],
             'objectLikeArrayAssignmentInConditional' => [
                 'code' => '<?php
@@ -960,7 +970,7 @@ class FunctionCallTest extends TestCase
                     '$porta' => 'false|int|null',
                     '$porte' => 'false|int|null',
                 ],
-                'ignored_issues' => ['MixedReturnStatement', 'MixedInferredReturnType'],
+                'ignored_issues' => ['MixedReturnStatement'],
             ],
             'parseUrlComponent' => [
                 'code' => '<?php

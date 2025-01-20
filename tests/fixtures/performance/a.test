@@ -845,7 +845,7 @@ class PHPMailer
             case 'echo':
             default:
                 //Normalize line breaks
-                $str = preg_replace('/\r\n|\r/ms', "\n", $str);
+                $str = (string) preg_replace('/\r\n|\r/ms', "\n", $str);
                 echo gmdate('Y-m-d H:i:s'),
                 "\t",
                     //Trim trailing space
@@ -990,7 +990,7 @@ class PHPMailer
     protected function addOrEnqueueAnAddress($kind, $address, $name)
     {
         $address = trim($address);
-        $name = trim(preg_replace('/[\r\n]+/', '', $name)); //Strip breaks and trim
+        $name = trim((string) preg_replace('/[\r\n]+/', '', $name)); //Strip breaks and trim
         $pos = strrpos($address, '@');
         if (false === $pos) {
             // At-sign is missing.
@@ -1160,7 +1160,7 @@ class PHPMailer
     public function setFrom($address, $name = '', $auto = true)
     {
         $address = trim($address);
-        $name = trim(preg_replace('/[\r\n]+/', '', $name)); //Strip breaks and trim
+        $name = trim((string) preg_replace('/[\r\n]+/', '', $name)); //Strip breaks and trim
         // Don't validate now addresses with IDN. Will be done in send().
         $pos = strrpos($address, '@');
         if (false === $pos or
@@ -3090,7 +3090,7 @@ class PHPMailer
                 $maxlen -= $maxlen % 4;
                 $encoded = trim(chunk_split($encoded, $maxlen, "\n"));
             }
-            $encoded = preg_replace('/^(.*)$/m', ' =?' . $this->CharSet . "?$encoding?\\1?=", $encoded);
+            $encoded = (string) preg_replace('/^(.*)$/m', ' =?' . $this->CharSet . "?$encoding?\\1?=", $encoded);
         } elseif ($matchcount > 0) {
             //1 or more chars need encoding, use Q-encode
             $encoding = 'Q';
@@ -3099,7 +3099,7 @@ class PHPMailer
             $encoded = $this->encodeQ($str, $position);
             $encoded = $this->wrapText($encoded, $maxlen, true);
             $encoded = str_replace('=' . static::$LE, "\n", trim($encoded));
-            $encoded = preg_replace('/^(.*)$/m', ' =?' . $this->CharSet . "?$encoding?\\1?=", $encoded);
+            $encoded = (string) preg_replace('/^(.*)$/m', ' =?' . $this->CharSet . "?$encoding?\\1?=", $encoded);
         } elseif (strlen($str) > $maxlen) {
             //No chars need encoding, but line is too long, so fold it
             $encoded = trim($this->wrapText($str, $maxlen, false));
@@ -3108,7 +3108,7 @@ class PHPMailer
                 $encoded = trim(chunk_split($str, static::STD_LINE_LENGTH, static::$LE));
             }
             $encoded = str_replace(static::$LE, "\n", trim($encoded));
-            $encoded = preg_replace('/^(.*)$/m', ' \\1', $encoded);
+            $encoded = (string) preg_replace('/^(.*)$/m', ' \\1', $encoded);
         } else {
             //No reformatting needed
             return $str;
@@ -3784,7 +3784,7 @@ class PHPMailer
                         static::_mime_types((string) static::mb_pathinfo($filename, PATHINFO_EXTENSION))
                     )
                     ) {
-                        $message = preg_replace(
+                        $message = (string) preg_replace(
                             '/' . $images[1][$imgindex] . '=["\']' . preg_quote($url, '/') . '["\']/Ui',
                             $images[1][$imgindex] . '="cid:' . $cid . '"',
                             $message
@@ -4215,7 +4215,7 @@ class PHPMailer
         //Note PCRE \s is too broad a definition of whitespace; RFC5322 defines it as `[ \t]`
         //@see https://tools.ietf.org/html/rfc5322#section-2.2
         //That means this may break if you do something daft like put vertical tabs in your headers.
-        $signHeader = preg_replace('/\r\n[ \t]+/', ' ', $signHeader);
+        $signHeader = (string) preg_replace('/\r\n[ \t]+/', ' ', $signHeader);
         $lines = explode("\r\n", $signHeader);
         foreach ($lines as $key => $line) {
             //If the header is missing a :, skip it as it's invalid
@@ -4228,7 +4228,7 @@ class PHPMailer
             //Lower-case header name
             $heading = strtolower($heading);
             //Collapse white space within the value
-            $value = preg_replace('/[ \t]{2,}/', ' ', $value);
+            $value = (string) preg_replace('/[ \t]{2,}/', ' ', $value);
             //RFC6376 is slightly unclear here - it says to delete space at the *end* of each value
             //But then says to delete space before and after the colon.
             //Net result is the same as trimming both ends of the value.

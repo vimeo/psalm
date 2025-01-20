@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\Internal\Analyzer\FunctionLike;
 
 use PhpParser;
@@ -38,7 +40,6 @@ use Psalm\Issue\LessSpecificReturnType;
 use Psalm\Issue\MismatchingDocblockReturnType;
 use Psalm\Issue\MissingClosureReturnType;
 use Psalm\Issue\MissingReturnType;
-use Psalm\Issue\MixedInferredReturnType;
 use Psalm\Issue\MixedReturnTypeCoercion;
 use Psalm\Issue\MoreSpecificReturnType;
 use Psalm\Issue\UnresolvableConstant;
@@ -57,7 +58,7 @@ use function array_values;
 use function count;
 use function implode;
 use function in_array;
-use function strpos;
+use function str_starts_with;
 use function strtolower;
 
 /**
@@ -85,7 +86,7 @@ final class ReturnTypeAnalyzer
         ?CodeLocation $return_type_location = null,
         array $compatible_method_ids = [],
         bool $did_explicitly_return = false,
-        bool $closure_inside_call = false
+        bool $closure_inside_call = false,
     ): ?bool {
         $suppressed_issues = $function_like_analyzer->getSuppressedIssues();
         $codebase = $source->getCodebase();
@@ -125,7 +126,7 @@ final class ReturnTypeAnalyzer
         $is_to_string = $function instanceof ClassMethod && strtolower($function->name->name) === '__tostring';
 
         if ($function instanceof ClassMethod
-            && strpos($function->name->name, '__') === 0
+            && str_starts_with($function->name->name, '__')
             && !$is_to_string
             && !$return_type
         ) {
@@ -505,17 +506,6 @@ final class ReturnTypeAnalyzer
             }
 
             if ($inferred_return_type->hasMixed()) {
-                if (IssueBuffer::accepts(
-                    new MixedInferredReturnType(
-                        'Could not verify return type \'' . $declared_return_type . '\' for ' .
-                            $cased_method_id,
-                        $return_type_location,
-                    ),
-                    $suppressed_issues,
-                )) {
-                    return false;
-                }
-
                 return null;
             }
 
@@ -822,7 +812,7 @@ final class ReturnTypeAnalyzer
         ProjectAnalyzer $project_analyzer,
         FunctionLikeAnalyzer $function_like_analyzer,
         FunctionLikeStorage $storage,
-        Context $context
+        Context $context,
     ): ?bool {
         $codebase = $project_analyzer->getCodebase();
 
@@ -1018,7 +1008,7 @@ final class ReturnTypeAnalyzer
         Union $inferred_return_type,
         StatementsSource $source,
         bool $docblock_only = false,
-        ?FunctionLikeStorage $function_like_storage = null
+        ?FunctionLikeStorage $function_like_storage = null,
     ): void {
         $manipulator = FunctionDocblockManipulator::getForFunction(
             $project_analyzer,

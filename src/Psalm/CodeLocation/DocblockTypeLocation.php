@@ -1,18 +1,20 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Psalm\CodeLocation;
 
 use Psalm\CodeLocation;
 use Psalm\FileSource;
 
 /** @psalm-immutable */
-class DocblockTypeLocation extends CodeLocation
+final class DocblockTypeLocation extends CodeLocation
 {
     public function __construct(
         FileSource $file_source,
         int $file_start,
         int $file_end,
-        int $line_number
+        int $line_number,
     ) {
         $this->file_start = $file_start;
         // matches how CodeLocation works
