@@ -676,7 +676,7 @@ class ArrayAccessTest extends TestCase
                     '$e' => 'DOMElement|null',
                 ],
             ],
-            'getOnArrayAcccess' => [
+            'getOnArrayAccess' => [
                 'code' => '<?php
                     /** @param ArrayAccess<int, string> $a */
                     function foo(ArrayAccess $a) : string {

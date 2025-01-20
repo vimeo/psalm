@@ -121,13 +121,21 @@ final class ScalarTypeComparator
             return false;
         }
 
-        if ($input_type_part instanceof TCallableString
-            && (get_class($container_type_part) === TSingleLetter::class
-                || get_class($container_type_part) === TNonEmptyString::class
+        if ($input_type_part instanceof TCallableString) {
+            if (get_class($container_type_part) === TNonEmptyString::class
                 || get_class($container_type_part) === TNonFalsyString::class
-                || get_class($container_type_part) === TLowercaseString::class)
-        ) {
-            return true;
+            ) {
+                return true;
+            }
+
+            if (get_class($container_type_part) === TLowercaseString::class
+                || get_class($container_type_part) === TSingleLetter::class
+            ) {
+                if ($atomic_comparison_result) {
+                    $atomic_comparison_result->type_coerced = true;
+                }
+                return false;
+            }
         }
 
         if (($container_type_part instanceof TLowercaseString

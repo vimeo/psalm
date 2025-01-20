@@ -1249,7 +1249,7 @@ function preg_replace_callback($pattern, $callback, $subject, int $limit = -1, &
  *              )
  *          )
  *        ) $matches
- * @return int|false
+ * @return int<0,max>|false
  * @psalm-ignore-falsable-return
  */
 function preg_match_all($pattern, $subject, &$matches = [], int $flags = 1, int $offset = 0) {}
@@ -1674,7 +1674,7 @@ function stream_select(null|array &$read, null|array &$write, null|array &$excep
  * @psalm-taint-escape sql
  * @psalm-flow ($string) -> return
  */
-function mysqli_escape_string($string) {}
+function mysqli_escape_string(mysqli $mysqli, $string) {}
 
 /**
  * @psalm-pure
@@ -1682,7 +1682,7 @@ function mysqli_escape_string($string) {}
  * @psalm-taint-escape sql
  * @psalm-flow ($string) -> return
  */
-function mysqli_real_escape_string($string) {}
+function mysqli_real_escape_string(mysqli $mysqli, $string) {}
 
 /**
  * @psalm-pure
@@ -1803,3 +1803,23 @@ function exec(string $command, &$output = null, int &$result_code = null): strin
 * @psalm-ignore-falsable-return
 */
 function get_browser(?string $user_agent = null, bool $return_array = false): object|array|false {}
+
+/**
+ * @psalm-taint-sink callable $callback
+ */
+function forward_static_call(callable $callback, mixed ...$args): mixed {}
+
+/**
+ * @psalm-taint-sink callable $callback
+ */
+function forward_static_call_array(callable $callback, array $args): mixed {}
+
+/**
+ * @psalm-taint-sink callable $callback
+ */
+function register_shutdown_function(callable $callback, mixed ...$args): void {}
+
+/**
+ * @psalm-taint-sink callable $callback
+ */
+function register_tick_function(callable $callback, mixed ...$args): bool {}

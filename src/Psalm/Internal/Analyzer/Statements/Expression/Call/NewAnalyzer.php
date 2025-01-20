@@ -353,7 +353,7 @@ final class NewAnalyzer extends CallAnalyzer
         if ($storage->abstract && !$can_extend) {
             if (IssueBuffer::accepts(
                 new AbstractInstantiation(
-                    'Unable to instantiate a abstract class ' . $fq_class_name,
+                    'Unable to instantiate an abstract class ' . $fq_class_name,
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
                 ),
                 $statements_analyzer->getSuppressedIssues(),

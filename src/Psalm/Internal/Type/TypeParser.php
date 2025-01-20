@@ -717,7 +717,7 @@ final class TypeParser
         }
 
         if ($generic_type_value === 'arraylike-object') {
-            $array_acccess = new TGenericObject('ArrayAccess', $generic_params, false, false, [], $from_docblock);
+            $array_access = new TGenericObject('ArrayAccess', $generic_params, false, false, [], $from_docblock);
             $countable = new TNamedObject('Countable', false, false, [], $from_docblock);
             return new TGenericObject(
                 'Traversable',
@@ -725,7 +725,7 @@ final class TypeParser
                 false,
                 false,
                 [
-                    $array_acccess->getKey() => $array_acccess,
+                    $array_access->getKey() => $array_access,
                     $countable->getKey() => $countable,
                 ],
                 $from_docblock,

@@ -126,6 +126,11 @@ class mysqli
      * @var int<-1, max>|numeric-string
      */
     public int|string $affected_rows;
+
+    /**
+    * @psalm-taint-sink sql $query
+    */
+    public function execute_query(string $query, ?array $params = null): mysqli_result|bool {}
 }
 
 /**
@@ -189,6 +194,11 @@ class mysqli_stmt
      */
     public string $sqlstate;
 }
+
+/**
+ * @psalm-taint-sink sql $query
+ */
+function mysqli_execute_query(mysqli $mysql, string $query, ?array $params = null): mysqli_result|bool {}
 
 /**
  * @psalm-taint-sink callable $class

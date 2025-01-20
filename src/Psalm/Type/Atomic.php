@@ -425,7 +425,7 @@ abstract class Atomic implements TypeNode
 
     /**
      * This is the string that will be used to represent the type in Union::$types. This means that two types sharing
-     * the same getKey value will override themselves in an Union
+     * the same getKey value will override themselves in a Union
      */
     abstract public function getKey(bool $include_extra = true): string;
 
@@ -701,7 +701,7 @@ abstract class Atomic implements TypeNode
     }
 
     /**
-     * This is the true identifier for the type. It defaults to self::getKey() but can be overrided to be more precise
+     * This is the true identifier for the type. It defaults to self::getKey() but can be overridden to be more precise
      */
     public function getId(bool $exact = true, bool $nested = false): string
     {

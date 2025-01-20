@@ -449,7 +449,7 @@ class ClassTest extends TestCase
                         }
                     }',
             ],
-            'classAliasOnNonexistantClass' => [
+            'classAliasOnNonexistentClass' => [
                 'code' => '<?php
                     if (!class_exists(\PHPUnit\Framework\TestCase::class)) {
                         /** @psalm-suppress UndefinedClass */
@@ -1156,7 +1156,7 @@ class ClassTest extends TestCase
                     class A extends A {}',
                 'error_message' => 'CircularReference',
             ],
-            'preventAbstractInstantiationDefiniteClasss' => [
+            'preventAbstractInstantiationDefiniteClass' => [
                 'code' => '<?php
                     abstract class A {}
 
