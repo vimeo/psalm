@@ -1770,29 +1770,6 @@ final class AssignmentAnalyzer
                     }
                 }
 
-                if ($assign_value
-                    && $statements_analyzer->data_flow_graph instanceof TaintFlowGraph
-                    && !in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
-                ) {
-                    $assign_location = new CodeLocation($statements_analyzer->getSource(), $assign_var);
-
-                    $event = new AddRemoveTaintsEvent($assign_value, $context, $statements_analyzer, $codebase);
-
-                    $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
-                    $removed_taints = [
-                        ...$removed_taints,
-                        ...$codebase->config->eventDispatcher->dispatchRemoveTaints($event),
-                    ];
-
-                    self::taintAssignment(
-                        $context->vars_in_scope[$var_id],
-                        $statements_analyzer->data_flow_graph,
-                        $var_id,
-                        $assign_location,
-                        $removed_taints,
-                        $added_taints,
-                    );
-                }
 
                 if (isset($context->references_possibly_from_confusing_scope[$var_id])) {
                     IssueBuffer::maybeAdd(

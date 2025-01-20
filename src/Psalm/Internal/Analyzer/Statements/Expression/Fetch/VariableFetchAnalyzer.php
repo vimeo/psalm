@@ -22,6 +22,7 @@ use Psalm\Issue\PossiblyUndefinedVariable;
 use Psalm\Issue\UndefinedGlobalVariable;
 use Psalm\Issue\UndefinedVariable;
 use Psalm\IssueBuffer;
+use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TBool;
@@ -36,6 +37,9 @@ use Psalm\Type\Atomic\TString;
 use Psalm\Type\TaintKindGroup;
 use Psalm\Type\Union;
 
+use function array_diff;
+use function array_merge;
+use function array_unique;
 use function in_array;
 use function is_string;
 use function time;
@@ -166,7 +170,7 @@ final class VariableFetchAnalyzer
             if (isset($context->vars_in_scope[$var_name])) {
                 $type = $context->vars_in_scope[$var_name];
 
-                self::taintVariable($statements_analyzer, $var_name, $type, $stmt);
+                self::taintVariable($statements_analyzer, $context, $var_name, $type, $stmt);
 
                 $context->vars_in_scope[$var_name] = $type;
                 $statements_analyzer->node_data->setType($stmt, $type);
@@ -176,7 +180,7 @@ final class VariableFetchAnalyzer
 
             $type = self::getGlobalType($var_name, $codebase->analysis_php_version_id);
 
-            self::taintVariable($statements_analyzer, $var_name, $type, $stmt);
+            self::taintVariable($statements_analyzer, $context, $var_name, $type, $stmt);
 
             $statements_analyzer->node_data->setType($stmt, $type);
             $context->vars_in_scope[$var_name] = $type;
@@ -252,6 +256,8 @@ final class VariableFetchAnalyzer
                             $context->branch_point,
                         );
                     }
+
+                    self::taintVariable($statements_analyzer, $context, $var_name, $stmt_type, $stmt);
                     $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
                     if ($assigned_to_reference) {
@@ -266,29 +272,27 @@ final class VariableFetchAnalyzer
                     || $statements_analyzer->getSource() instanceof FunctionLikeAnalyzer
                 ) {
                     if ($context->is_global || $from_global) {
-                        IssueBuffer::maybeAdd(
-                            new UndefinedGlobalVariable(
-                                'Cannot find referenced variable ' . $var_name . ' in global scope',
-                                new CodeLocation($statements_analyzer->getSource(), $stmt),
-                                $var_name,
-                            ),
-                            $statements_analyzer->getSuppressedIssues(),
+                        $exception = new UndefinedGlobalVariable(
+                            'Cannot find referenced variable ' . $var_name . ' in global scope',
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
+                            $var_name,
                         );
-
-                        $statements_analyzer->node_data->setType($stmt, Type::getMixed());
-
-                        return true;
+                    } else {
+                        $exception = new UndefinedVariable(
+                            'Cannot find referenced variable ' . $var_name,
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
+                        );
                     }
 
                     IssueBuffer::maybeAdd(
-                        new UndefinedVariable(
-                            'Cannot find referenced variable ' . $var_name,
-                            new CodeLocation($statements_analyzer->getSource(), $stmt),
-                        ),
+                        $exception,
                         $statements_analyzer->getSuppressedIssues(),
                     );
 
-                    $statements_analyzer->node_data->setType($stmt, Type::getMixed());
+                    $type = Type::getMixed();
+                    self::taintVariable($statements_analyzer, $context, $var_name, $type, $stmt);
+
+                    $statements_analyzer->node_data->setType($stmt, $type);
 
                     return true;
                 }
@@ -369,6 +373,8 @@ final class VariableFetchAnalyzer
             }
         } else {
             $stmt_type = $context->vars_in_scope[$var_name];
+
+            self::taintVariable($statements_analyzer, $context, $var_name, $stmt_type, $stmt);
 
             self::addDataFlowToVariable($statements_analyzer, $stmt, $var_name, $stmt_type, $context);
 
@@ -505,35 +511,55 @@ final class VariableFetchAnalyzer
 
     private static function taintVariable(
         StatementsAnalyzer $statements_analyzer,
+        Context $context,
         string $var_name,
         Union &$type,
         PhpParser\Node\Expr\Variable $stmt,
     ): void {
-        if ($statements_analyzer->data_flow_graph instanceof TaintFlowGraph
-            && !in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
+        if (!$statements_analyzer->data_flow_graph instanceof TaintFlowGraph
+            || in_array('TaintedInput', $statements_analyzer->getSuppressedIssues())
         ) {
-            if ($var_name === '$_GET'
-                || $var_name === '$_POST'
-                || $var_name === '$_COOKIE'
-                || $var_name === '$_REQUEST'
-            ) {
-                $taint_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
-
-                $server_taint_source = new TaintSource(
-                    $var_name . ':' . $taint_location->file_name . ':' . $taint_location->raw_file_start,
-                    $var_name,
-                    null,
-                    null,
-                    TaintKindGroup::ALL_INPUT,
-                );
-
-                $statements_analyzer->data_flow_graph->addSource($server_taint_source);
-
-                $type = $type->setParentNodes([
-                    $server_taint_source->id => $server_taint_source,
-                ]);
-            }
+            return;
         }
+
+        // Add superglobal server taint sources
+        if ($var_name === '$_GET'
+            || $var_name === '$_POST'
+            || $var_name === '$_COOKIE'
+            || $var_name === '$_REQUEST'
+        ) {
+            $taints = TaintKindGroup::ALL_INPUT;
+        } else {
+            $taints = [];
+        }
+
+        // Trigger event to possibly get more/less taints
+        $codebase = $statements_analyzer->getCodebase();
+        $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);
+
+        $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
+        $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
+        $taints = array_unique(array_merge($taints, $added_taints));
+        $taints = array_diff($taints, $removed_taints);
+
+        if ($taints === []) {
+            return;
+        }
+
+        $taint_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
+
+        $taint_source = new TaintSource(
+            $var_name . ':' . $taint_location->file_name . ':' . $taint_location->raw_file_start,
+            $var_name,
+            null,
+            null,
+            $taints,
+        );
+        $statements_analyzer->data_flow_graph->addSource($taint_source);
+
+        $type = $type->setParentNodes([
+            $taint_source->id => $taint_source,
+        ]);
     }
 
     /**
