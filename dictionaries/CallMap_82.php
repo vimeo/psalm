@@ -39643,7 +39643,7 @@ return array (
   ),
   'intlbreakiterator::settext' => 
   array (
-    0 => 'bool',
+    0 => 'bool|null',
     'text' => 'string',
   ),
   'intlcal_add' => 
@@ -40199,7 +40199,7 @@ return array (
   ),
   'intlchar::enumcharnames' => 
   array (
-    0 => 'bool',
+    0 => 'bool|null',
     'start' => 'int|string',
     'end' => 'int|string',
     'callback' => 'callable(int, int, int):void',
@@ -40558,7 +40558,7 @@ return array (
   ),
   'intlcodepointbreakiterator::settext' => 
   array (
-    0 => 'bool',
+    0 => 'bool|null',
     'text' => 'string',
   ),
   'intldateformatter::__construct' => 
@@ -40667,7 +40667,7 @@ return array (
   ),
   'intldateformatter::settimezone' => 
   array (
-    0 => 'bool',
+    0 => 'false|null',
     'timezone' => 'DateTimeZone|IntlTimeZone|null|string',
   ),
   'intldatepatterngenerator::__construct' => 
@@ -41173,7 +41173,7 @@ return array (
   ),
   'intlrulebasedbreakiterator::settext' => 
   array (
-    0 => 'bool',
+    0 => 'bool|null',
     'text' => 'string',
   ),
   'intltimezone::__construct' => 

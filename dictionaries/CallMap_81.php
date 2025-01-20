@@ -13294,15 +13294,6 @@ return array (
     0 => 'DateTimeImmutable',
     'interval' => 'DateInterval',
   ),
-  'datetimeinterface::__serialize' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'datetimeinterface::__unserialize' => 
-  array (
-    0 => 'void',
-    'data' => 'array<array-key, mixed>',
-  ),
   'datetimeinterface::diff' => 
   array (
     0 => 'DateInterval',
@@ -39569,7 +39560,7 @@ return array (
   ),
   'intlbreakiterator::settext' => 
   array (
-    0 => 'bool',
+    0 => 'bool|null',
     'text' => 'string',
   ),
   'intlcal_add' => 
@@ -40125,7 +40116,7 @@ return array (
   ),
   'intlchar::enumcharnames' => 
   array (
-    0 => 'bool',
+    0 => 'bool|null',
     'start' => 'int|string',
     'end' => 'int|string',
     'callback' => 'callable(int, int, int):void',
@@ -40484,7 +40475,7 @@ return array (
   ),
   'intlcodepointbreakiterator::settext' => 
   array (
-    0 => 'bool',
+    0 => 'bool|null',
     'text' => 'string',
   ),
   'intldateformatter::__construct' => 
@@ -40593,7 +40584,7 @@ return array (
   ),
   'intldateformatter::settimezone' => 
   array (
-    0 => 'bool',
+    0 => 'false|null',
     'timezone' => 'DateTimeZone|IntlTimeZone|null|string',
   ),
   'intldatepatterngenerator::__construct' => 
@@ -41099,7 +41090,7 @@ return array (
   ),
   'intlrulebasedbreakiterator::settext' => 
   array (
-    0 => 'bool',
+    0 => 'bool|null',
     'text' => 'string',
   ),
   'intltimezone::__construct' => 
@@ -105201,10 +105192,6 @@ return array (
     'path=' => 'string',
     'options=' => 'array<array-key, mixed>',
   ),
-  'ziparchive::clearerror' => 
-  array (
-    0 => 'void',
-  ),
   'ziparchive::close' => 
   array (
     0 => 'bool',
@@ -105290,18 +105277,6 @@ return array (
   array (
     0 => 'false|resource',
     'name' => 'string',
-  ),
-  'ziparchive::getstreamindex' => 
-  array (
-    0 => 'false|resource',
-    'index' => 'int',
-    'flags=' => 'int',
-  ),
-  'ziparchive::getstreamname' => 
-  array (
-    0 => 'false|resource',
-    'name' => 'string',
-    'flags=' => 'int',
   ),
   'ziparchive::iscompressionmethodsupported' => 
   array (

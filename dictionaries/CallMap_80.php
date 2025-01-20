@@ -14006,13 +14006,6 @@ return array (
     0 => 'void',
     'posted_filename' => 'string',
   ),
-  'curlstringfile::__construct' => 
-  array (
-    0 => 'void',
-    'data' => 'string',
-    'postname' => 'string',
-    'mime=' => 'string',
-  ),
   'current' => 
   array (
     0 => 'false|mixed',
@@ -14645,15 +14638,6 @@ return array (
   array (
     0 => 'mixed',
     'interval' => 'DateInterval',
-  ),
-  'datetimeinterface::__serialize' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'datetimeinterface::__unserialize' => 
-  array (
-    0 => 'void',
-    'data' => 'array<array-key, mixed>',
   ),
   'datetimeinterface::diff' => 
   array (
@@ -16742,12 +16726,12 @@ return array (
   ),
   'domdocument::createcomment' => 
   array (
-    0 => 'DOMComment',
+    0 => 'DOMComment|false',
     'data' => 'string',
   ),
   'domdocument::createdocumentfragment' => 
   array (
-    0 => 'DOMDocumentFragment',
+    0 => 'DOMDocumentFragment|false',
   ),
   'domdocument::createelement' => 
   array (
@@ -16775,7 +16759,7 @@ return array (
   ),
   'domdocument::createtextnode' => 
   array (
-    0 => 'DOMText',
+    0 => 'DOMText|false',
     'data' => 'string',
   ),
   'domdocument::getelementbyid' => 
@@ -24162,59 +24146,6 @@ return array (
     'stream' => 'resource',
     'length=' => 'int|null',
   ),
-  'fiber::__construct' => 
-  array (
-    0 => 'void',
-    'callback' => 'callable',
-  ),
-  'fiber::getcurrent' => 
-  array (
-    0 => 'null|self',
-  ),
-  'fiber::getreturn' => 
-  array (
-    0 => 'mixed',
-  ),
-  'fiber::isrunning' => 
-  array (
-    0 => 'bool',
-  ),
-  'fiber::isstarted' => 
-  array (
-    0 => 'bool',
-  ),
-  'fiber::issuspended' => 
-  array (
-    0 => 'bool',
-  ),
-  'fiber::isterminated' => 
-  array (
-    0 => 'bool',
-  ),
-  'fiber::resume' => 
-  array (
-    0 => 'mixed',
-    'value=' => 'mixed|null',
-  ),
-  'fiber::start' => 
-  array (
-    0 => 'mixed',
-    '...args' => 'mixed',
-  ),
-  'fiber::suspend' => 
-  array (
-    0 => 'mixed',
-    'value=' => 'mixed|null',
-  ),
-  'fiber::throw' => 
-  array (
-    0 => 'mixed',
-    'exception' => 'Throwable',
-  ),
-  'fibererror::__construct' => 
-  array (
-    0 => 'void',
-  ),
   'file' => 
   array (
     0 => 'false|list<string>',
@@ -28164,15 +28095,6 @@ return array (
     'month=' => 'int|null',
     'day=' => 'int|null',
     'year=' => 'int|null',
-  ),
-  'gmp::__serialize' => 
-  array (
-    0 => 'array<array-key, mixed>',
-  ),
-  'gmp::__unserialize' => 
-  array (
-    0 => 'void',
-    'data' => 'array<array-key, mixed>',
   ),
   'gmp_abs' => 
   array (
@@ -40668,7 +40590,7 @@ return array (
   ),
   'intlbreakiterator::settext' => 
   array (
-    0 => 'bool',
+    0 => 'bool|null',
     'text' => 'string',
   ),
   'intlcal_add' => 
@@ -41224,7 +41146,7 @@ return array (
   ),
   'intlchar::enumcharnames' => 
   array (
-    0 => 'bool',
+    0 => 'bool|null',
     'start' => 'int|string',
     'end' => 'int|string',
     'callback' => 'callable(int, int, int):void',
@@ -41583,15 +41505,15 @@ return array (
   ),
   'intlcodepointbreakiterator::settext' => 
   array (
-    0 => 'bool',
+    0 => 'bool|null',
     'text' => 'string',
   ),
   'intldateformatter::__construct' => 
   array (
     0 => 'void',
     'locale' => 'null|string',
-    'dateType=' => 'int',
-    'timeType=' => 'int',
+    'dateType' => 'int',
+    'timeType' => 'int',
     'timezone=' => 'DateTimeZone|IntlTimeZone|null|string',
     'calendar=' => 'IntlCalendar|int|null',
     'pattern=' => 'null|string',
@@ -41600,8 +41522,8 @@ return array (
   array (
     0 => 'IntlDateFormatter|null',
     'locale' => 'null|string',
-    'dateType=' => 'int',
-    'timeType=' => 'int',
+    'dateType' => 'int',
+    'timeType' => 'int',
     'timezone=' => 'DateTimeZone|IntlTimeZone|null|string',
     'calendar=' => 'IntlCalendar|int|null',
     'pattern=' => 'null|string',
@@ -41692,7 +41614,7 @@ return array (
   ),
   'intldateformatter::settimezone' => 
   array (
-    0 => 'bool',
+    0 => 'false|null',
     'timezone' => 'DateTimeZone|IntlTimeZone|null|string',
   ),
   'intlexception::__clone' => 
@@ -42179,7 +42101,7 @@ return array (
   ),
   'intlrulebasedbreakiterator::settext' => 
   array (
-    0 => 'bool',
+    0 => 'bool|null',
     'text' => 'string',
   ),
   'intltimezone::__construct' => 
@@ -60938,13 +60860,13 @@ return array (
   ),
   'phar::buildfromdirectory' => 
   array (
-    0 => 'array<array-key, mixed>',
+    0 => 'array<array-key, mixed>|false',
     'directory' => 'string',
     'pattern=' => 'string',
   ),
   'phar::buildfromiterator' => 
   array (
-    0 => 'array<array-key, mixed>',
+    0 => 'array<array-key, mixed>|false',
     'iterator' => 'Traversable',
     'baseDirectory=' => 'null|string',
   ),
@@ -61401,13 +61323,13 @@ return array (
   ),
   'phardata::buildfromdirectory' => 
   array (
-    0 => 'array<array-key, mixed>',
+    0 => 'array<array-key, mixed>|false',
     'directory' => 'string',
     'pattern=' => 'string',
   ),
   'phardata::buildfromiterator' => 
   array (
-    0 => 'array<array-key, mixed>',
+    0 => 'array<array-key, mixed>|false',
     'iterator' => 'Traversable',
     'baseDirectory=' => 'null|string',
   ),
@@ -69296,10 +69218,6 @@ return array (
   array (
     0 => 'bool',
   ),
-  'reflectionclass::isenum' => 
-  array (
-    0 => 'bool',
-  ),
   'reflectionclass::isfinal' => 
   array (
     0 => 'bool',
@@ -69413,40 +69331,6 @@ return array (
   'reflectionclassconstant::ispublic' => 
   array (
     0 => 'bool',
-  ),
-  'reflectionenum::getbackingtype' => 
-  array (
-    0 => 'ReflectionType|null',
-  ),
-  'reflectionenum::getcase' => 
-  array (
-    0 => 'ReflectionEnumUnitCase',
-    'name' => 'string',
-  ),
-  'reflectionenum::getcases' => 
-  array (
-    0 => 'list<ReflectionEnumUnitCase>',
-  ),
-  'reflectionenum::hascase' => 
-  array (
-    0 => 'bool',
-    'name' => 'string',
-  ),
-  'reflectionenum::isbacked' => 
-  array (
-    0 => 'bool',
-  ),
-  'reflectionenumbackedcase::getbackingvalue' => 
-  array (
-    0 => 'int|string',
-  ),
-  'reflectionenumunitcase::getenum' => 
-  array (
-    0 => 'ReflectionEnum',
-  ),
-  'reflectionenumunitcase::getvalue' => 
-  array (
-    0 => 'UnitEnum',
   ),
   'reflectionexception::__construct' => 
   array (
@@ -69767,15 +69651,7 @@ return array (
   array (
     0 => 'array<array-key, mixed>',
   ),
-  'reflectionfunctionabstract::gettentativereturntype' => 
-  array (
-    0 => 'ReflectionType|null',
-  ),
   'reflectionfunctionabstract::hasreturntype' => 
-  array (
-    0 => 'bool',
-  ),
-  'reflectionfunctionabstract::hastentativereturntype' => 
   array (
     0 => 'bool',
   ),
@@ -69796,10 +69672,6 @@ return array (
     0 => 'bool',
   ),
   'reflectionfunctionabstract::isinternal' => 
-  array (
-    0 => 'bool',
-  ),
-  'reflectionfunctionabstract::isstatic' => 
   array (
     0 => 'bool',
   ),
@@ -70233,10 +70105,6 @@ return array (
   array (
     0 => 'bool',
   ),
-  'reflectionobject::isenum' => 
-  array (
-    0 => 'bool',
-  ),
   'reflectionobject::isfinal' => 
   array (
     0 => 'bool',
@@ -70475,10 +70343,6 @@ return array (
     0 => 'bool',
   ),
   'reflectionproperty::ispublic' => 
-  array (
-    0 => 'bool',
-  ),
-  'reflectionproperty::isreadonly' => 
   array (
     0 => 'bool',
   ),
@@ -78900,7 +78764,6 @@ return array (
     'separator=' => 'string',
     'enclosure=' => 'string',
     'escape=' => 'string',
-    'eol=' => 'string',
   ),
   'splfileobject::fread' => 
   array (
@@ -79873,7 +79736,6 @@ return array (
     'separator=' => 'string',
     'enclosure=' => 'string',
     'escape=' => 'string',
-    'eol=' => 'string',
   ),
   'spltempfileobject::fread' => 
   array (
@@ -106861,10 +106723,6 @@ return array (
     'path=' => 'string',
     'options=' => 'array<array-key, mixed>',
   ),
-  'ziparchive::clearerror' => 
-  array (
-    0 => 'void',
-  ),
   'ziparchive::close' => 
   array (
     0 => 'bool',
@@ -106950,18 +106808,6 @@ return array (
   array (
     0 => 'false|resource',
     'name' => 'string',
-  ),
-  'ziparchive::getstreamindex' => 
-  array (
-    0 => 'false|resource',
-    'index' => 'int',
-    'flags=' => 'int',
-  ),
-  'ziparchive::getstreamname' => 
-  array (
-    0 => 'false|resource',
-    'name' => 'string',
-    'flags=' => 'int',
   ),
   'ziparchive::iscompressionmethodsupported' => 
   array (
