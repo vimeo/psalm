@@ -353,26 +353,26 @@ bar&#13;
                     $this->assertSame(
                         3,
                         count($file1Issues[0]->getElementsByTagName('code')),
-                        'MixedAssignment should have occured 3 times',
+                        'MixedAssignment should have occurred 3 times',
                     );
                     $this->assertSame('MixedOperand', $file1Issues[1]->tagName);
                     $this->assertSame(
                         1,
                         count($file1Issues[1]->getElementsByTagName('code')),
-                        'MixedOperand should have occured 1 time',
+                        'MixedOperand should have occurred 1 time',
                     );
 
                     $this->assertSame('MixedAssignment', $file2Issues[0]->tagName);
                     $this->assertSame(
                         2,
                         count($file2Issues[0]->getElementsByTagName('code')),
-                        'MixedAssignment should have occured 2 times',
+                        'MixedAssignment should have occurred 2 times',
                     );
                     $this->assertSame('TypeCoercion', $file2Issues[1]->tagName);
                     $this->assertSame(
                         1,
                         count($file2Issues[1]->getElementsByTagName('code')),
-                        'TypeCoercion should have occured 1 time',
+                        'TypeCoercion should have occurred 1 time',
                     );
 
                     return true;

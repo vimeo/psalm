@@ -1,6 +1,6 @@
 # DirectConstructorCall
 
-Emitted when `__construct()` is called directly as a method. Constructors are supposed to be called implicitely, as a result of `new ClassName` statement.
+Emitted when `__construct()` is called directly as a method. Constructors are supposed to be called implicitly, as a result of `new ClassName` statement.
 
 ```php
 <?php

@@ -200,7 +200,7 @@ class MagicMethodAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', $context);
     }
 
-    public function testOverrideParentClassRetunType(): void
+    public function testOverrideParentClassReturnType(): void
     {
         Config::getInstance()->use_phpdoc_method_without_magic_or_parent = true;
 
@@ -1738,7 +1738,7 @@ class MagicMethodAnnotationTest extends TestCase
 
               /** @var A & B $b */
               $b = new B();
-              $b->nonExistantMethod();
+              $b->nonExistentMethod();
               ',
         );
 
