@@ -2314,7 +2314,7 @@ class UnusedVariableTest extends TestCase
                         $d += $l;
                     }',
             ],
-            'mixedArrayAccessMighBeObject' => [
+            'mixedArrayAccessMightBeObject' => [
                 'code' => '<?php
                     function takesResults(array $arr) : void {
                         /**

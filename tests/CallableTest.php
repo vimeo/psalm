@@ -3376,7 +3376,7 @@ class CallableTest extends TestCase
                     }',
                 'error_message' => 'InvalidArgument',
             ],
-            'inexistantCallableinCallableString' => [
+            'inexistentCallableinCallableString' => [
                 'code' => '<?php
                     /**
                      * @param callable-string $c

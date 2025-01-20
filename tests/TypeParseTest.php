@@ -127,7 +127,7 @@ class TypeParseTest extends TestCase
         $this->assertSame('array<int|string, string>', (string) Type::parseString('array<int|string, string>'));
     }
 
-    public function testNonEmptyArrray(): void
+    public function testNonEmptyArray(): void
     {
         $this->assertSame('non-empty-array<array-key, int>', (string) Type::parseString('non-empty-array<int>'));
     }
@@ -152,7 +152,7 @@ class TypeParseTest extends TestCase
         $this->assertSame('I1&I2|null', (string) Type::parseString('null|I1&I2'));
     }
 
-    public function testInteratorAndTraversable(): void
+    public function testIteratorAndTraversable(): void
     {
         $this->assertSame('Iterator<mixed, int>&Traversable', (string) Type::parseString('Iterator<int>&Traversable'));
     }

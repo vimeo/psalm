@@ -371,7 +371,7 @@ class WhileTest extends TestCase
                         }
                     }',
             ],
-            'assingnedConditionallyReassignedToMixedInLoop' => [
+            'assignedConditionallyReassignedToMixedInLoop' => [
                 'code' => '<?php
                     function foo(array $arr): void {
                         while (rand(0, 1)) {
@@ -641,7 +641,7 @@ class WhileTest extends TestCase
 
                         private function getResult(): string
                         {
-                            // return tring or throw exception whatever
+                            // return string or throw exception whatever
                             throw new Exception();
                         }
 
