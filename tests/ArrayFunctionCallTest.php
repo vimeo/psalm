@@ -640,7 +640,7 @@ class ArrayFunctionCallTest extends TestCase
                     '$b' => 'int',
                 ],
             ],
-            'arrayPopNonEmptyAfterCountGreatorOrEqualToOneReversed' => [
+            'arrayPopNonEmptyAfterCountGreaterOrEqualToOneReversed' => [
                 'code' => '<?php
                     /** @var array<string, int> */
                     $a = ["a" => 5, "b" => 6, "c" => 7];

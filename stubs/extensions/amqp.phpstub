@@ -747,7 +747,7 @@ class AMQPConnection
      *
      *      TLS support (see https://www.rabbitmq.com/ssl.html for details):
      *      'cacert' => Path to the CA cert file in PEM format..
-     *      'cert'   => Path to the client certificate in PEM foramt.
+     *      'cert'   => Path to the client certificate in PEM format.
      *      'key'    => Path to the client key in PEM format.
      *      'verify' => Enable or disable peer verification. If peer verification is enabled then the common name in the
      *                  server certificate must match the server name. Peer verification is enabled by default.
