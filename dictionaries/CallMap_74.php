@@ -103,23 +103,23 @@ return array (
   ),
   'amqpbasicproperties::getappid' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpbasicproperties::getclusterid' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpbasicproperties::getcontentencoding' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpbasicproperties::getcontenttype' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpbasicproperties::getcorrelationid' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpbasicproperties::getdeliverymode' => 
   array (
@@ -127,7 +127,7 @@ return array (
   ),
   'amqpbasicproperties::getexpiration' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpbasicproperties::getheaders' => 
   array (
@@ -135,7 +135,7 @@ return array (
   ),
   'amqpbasicproperties::getmessageid' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpbasicproperties::getpriority' => 
   array (
@@ -143,19 +143,19 @@ return array (
   ),
   'amqpbasicproperties::getreplyto' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpbasicproperties::gettimestamp' => 
   array (
-    0 => 'string',
+    0 => 'int|null',
   ),
   'amqpbasicproperties::gettype' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpbasicproperties::getuserid' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpchannel::__construct' => 
   array (
@@ -328,11 +328,11 @@ return array (
   ),
   'amqpconnection::getcacert' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpconnection::getcert' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpconnection::getconnectionname' => 
   array (
@@ -352,7 +352,7 @@ return array (
   ),
   'amqpconnection::getkey' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpconnection::getlogin' => 
   array (
@@ -576,7 +576,7 @@ return array (
   ),
   'amqpenvelope::getappid' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpenvelope::getbody' => 
   array (
@@ -584,23 +584,23 @@ return array (
   ),
   'amqpenvelope::getclusterid' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpenvelope::getconsumertag' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpenvelope::getcontentencoding' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpenvelope::getcontenttype' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpenvelope::getcorrelationid' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpenvelope::getdeliverymode' => 
   array (
@@ -608,15 +608,15 @@ return array (
   ),
   'amqpenvelope::getdeliverytag' => 
   array (
-    0 => 'string',
+    0 => 'int|null',
   ),
   'amqpenvelope::getexchangename' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpenvelope::getexpiration' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpenvelope::getheader' => 
   array (
@@ -629,7 +629,7 @@ return array (
   ),
   'amqpenvelope::getmessageid' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpenvelope::getpriority' => 
   array (
@@ -637,7 +637,7 @@ return array (
   ),
   'amqpenvelope::getreplyto' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpenvelope::getroutingkey' => 
   array (
@@ -645,15 +645,15 @@ return array (
   ),
   'amqpenvelope::gettimestamp' => 
   array (
-    0 => 'string',
+    0 => 'int|null',
   ),
   'amqpenvelope::gettype' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpenvelope::getuserid' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpenvelope::hasheader' => 
   array (
@@ -811,11 +811,11 @@ return array (
   ),
   'amqpexchange::getname' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpexchange::gettype' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpexchange::hasargument' => 
   array (
@@ -960,7 +960,7 @@ return array (
   ),
   'amqpqueue::get' => 
   array (
-    0 => 'AMQPEnvelope|false',
+    0 => 'AMQPEnvelope|null',
     'flags=' => 'int',
   ),
   'amqpqueue::getargument' => 
@@ -990,7 +990,7 @@ return array (
   ),
   'amqpqueue::getname' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpqueue::hasargument' => 
   array (

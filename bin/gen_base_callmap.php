@@ -29,7 +29,7 @@ function typeToString($reflection_type, string $defaultType): string
         throw new LogicException('Unexpected reflection class ' . get_class($reflection_type) . ' found.');
     }
 
-    if ($reflection_type->allowsNull()) {
+    if ($reflection_type->allowsNull() && $type !== 'mixed') {
         $type .= '|null';
     }
 

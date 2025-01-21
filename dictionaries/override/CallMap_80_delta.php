@@ -843,7 +843,7 @@ return array (
       ),
       'new' => 
       array (
-        0 => 'string',
+        0 => 'null|string',
         'handle' => 'CurlHandle',
       ),
     ),
@@ -1994,6 +1994,231 @@ return array (
         'previous=' => 'Throwable|null',
       ),
     ),
+    'evcheck::getloop' => 
+    array (
+      'old' => 
+      array (
+        0 => 'EvLoop',
+      ),
+      'new' => 
+      array (
+        0 => 'EvLoop|null',
+      ),
+    ),
+    'evchild::getloop' => 
+    array (
+      'old' => 
+      array (
+        0 => 'EvLoop',
+      ),
+      'new' => 
+      array (
+        0 => 'EvLoop|null',
+      ),
+    ),
+    'evembed::getloop' => 
+    array (
+      'old' => 
+      array (
+        0 => 'EvLoop',
+      ),
+      'new' => 
+      array (
+        0 => 'EvLoop|null',
+      ),
+    ),
+    'eventbuffer::pullup' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'size' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'null|string',
+        'size' => 'int',
+      ),
+    ),
+    'eventbuffer::readline' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'eol_style' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'null|string',
+        'eol_style' => 'int',
+      ),
+    ),
+    'eventbufferevent::read' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'size' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'null|string',
+        'size' => 'int',
+      ),
+    ),
+    'eventhttpconnection::makerequest' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'req' => 'EventHttpRequest',
+        'type' => 'int',
+        'uri' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool|null',
+        'req' => 'EventHttpRequest',
+        'type' => 'int',
+        'uri' => 'string',
+      ),
+    ),
+    'eventhttprequest::findheader' => 
+    array (
+      'old' => 
+      array (
+        0 => 'void',
+        'key' => 'string',
+        'type' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'null|string',
+        'key' => 'string',
+        'type' => 'string',
+      ),
+    ),
+    'eventhttprequest::getbufferevent' => 
+    array (
+      'old' => 
+      array (
+        0 => 'EventBufferEvent',
+      ),
+      'new' => 
+      array (
+        0 => 'EventBufferEvent|null',
+      ),
+    ),
+    'eventhttprequest::getconnection' => 
+    array (
+      'old' => 
+      array (
+        0 => 'EventHttpConnection',
+      ),
+      'new' => 
+      array (
+        0 => 'EventHttpConnection|null',
+      ),
+    ),
+    'evfork::getloop' => 
+    array (
+      'old' => 
+      array (
+        0 => 'EvLoop',
+      ),
+      'new' => 
+      array (
+        0 => 'EvLoop|null',
+      ),
+    ),
+    'evidle::getloop' => 
+    array (
+      'old' => 
+      array (
+        0 => 'EvLoop',
+      ),
+      'new' => 
+      array (
+        0 => 'EvLoop|null',
+      ),
+    ),
+    'evio::getloop' => 
+    array (
+      'old' => 
+      array (
+        0 => 'EvLoop',
+      ),
+      'new' => 
+      array (
+        0 => 'EvLoop|null',
+      ),
+    ),
+    'evperiodic::getloop' => 
+    array (
+      'old' => 
+      array (
+        0 => 'EvLoop',
+      ),
+      'new' => 
+      array (
+        0 => 'EvLoop|null',
+      ),
+    ),
+    'evprepare::getloop' => 
+    array (
+      'old' => 
+      array (
+        0 => 'EvLoop',
+      ),
+      'new' => 
+      array (
+        0 => 'EvLoop|null',
+      ),
+    ),
+    'evsignal::getloop' => 
+    array (
+      'old' => 
+      array (
+        0 => 'EvLoop',
+      ),
+      'new' => 
+      array (
+        0 => 'EvLoop|null',
+      ),
+    ),
+    'evstat::getloop' => 
+    array (
+      'old' => 
+      array (
+        0 => 'EvLoop',
+      ),
+      'new' => 
+      array (
+        0 => 'EvLoop|null',
+      ),
+    ),
+    'evtimer::getloop' => 
+    array (
+      'old' => 
+      array (
+        0 => 'EvLoop',
+      ),
+      'new' => 
+      array (
+        0 => 'EvLoop|null',
+      ),
+    ),
+    'evwatcher::getloop' => 
+    array (
+      'old' => 
+      array (
+        0 => 'EvLoop',
+      ),
+      'new' => 
+      array (
+        0 => 'EvLoop|null',
+      ),
+    ),
     'exif_read_data' => 
     array (
       'old' => 
@@ -2175,6 +2400,21 @@ return array (
         'stream' => 'resource',
         'data' => 'string',
         'length=' => 'int|null',
+      ),
+    ),
+    'fscanf' => 
+    array (
+      'old' => 
+      array (
+        0 => 'list<mixed>',
+        'stream' => 'resource',
+        'format' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|false|int|null',
+        'stream' => 'resource',
+        'format' => 'string',
       ),
     ),
     'fsockopen' => 
@@ -4513,6 +4753,19 @@ return array (
         'image' => 'GdImage',
         'filename' => 'null|string',
         'foreground_color=' => 'int|null',
+      ),
+    ),
+    'imagick::getimageartifact' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'artifact' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'null|string',
+        'artifact' => 'string',
       ),
     ),
     'imap_append' => 
@@ -8602,6 +8855,21 @@ return array (
       array (
         0 => 'bool',
         'object=' => 'null|object',
+      ),
+    ),
+    'register_shutdown_function' => 
+    array (
+      'old' => 
+      array (
+        0 => 'void',
+        'callback' => 'callable',
+        '...args=' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'bool|null',
+        'callback' => 'callable',
+        '...args=' => 'mixed',
       ),
     ),
     'sapi_windows_vt100_support' => 

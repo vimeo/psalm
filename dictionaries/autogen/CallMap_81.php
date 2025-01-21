@@ -572,7 +572,7 @@ return array (
   ),
   'amqpenvelope::getheader' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'headerName' => 'string',
   ),
   'amqpenvelope::getheaders' => 
@@ -1098,7 +1098,7 @@ return array (
   array (
     0 => 'array<array-key, mixed>|bool',
     'key' => 'mixed',
-    'value=' => 'mixed|null',
+    'value=' => 'mixed',
     'ttl=' => 'int',
   ),
   'apcu_cache_info' => 
@@ -1136,7 +1136,7 @@ return array (
   ),
   'apcu_entry' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'key' => 'string',
     'callback' => 'callable',
     'ttl=' => 'int',
@@ -1148,7 +1148,7 @@ return array (
   ),
   'apcu_fetch' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'key' => 'mixed',
     '&success=' => 'mixed',
   ),
@@ -1174,7 +1174,7 @@ return array (
   array (
     0 => 'array<array-key, mixed>|bool',
     'key' => 'mixed',
-    'value=' => 'mixed|null',
+    'value=' => 'mixed',
     'ttl=' => 'int',
   ),
   'apcuiterator::__construct' => 
@@ -1187,7 +1187,7 @@ return array (
   ),
   'apcuiterator::current' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'apcuiterator::gettotalcount' => 
   array (
@@ -1228,7 +1228,7 @@ return array (
   ),
   'appenditerator::current' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'appenditerator::getarrayiterator' => 
   array (
@@ -1244,7 +1244,7 @@ return array (
   ),
   'appenditerator::key' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'appenditerator::next' => 
   array (
@@ -1410,13 +1410,13 @@ return array (
     0 => 'array<array-key, mixed>',
     'start_index' => 'int',
     'count' => 'int',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'array_fill_keys' => 
   array (
     0 => 'array<array-key, mixed>',
     'keys' => 'array<array-key, mixed>',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'array_filter' => 
   array (
@@ -1485,7 +1485,7 @@ return array (
   array (
     0 => 'array<array-key, mixed>',
     'array' => 'array<array-key, mixed>',
-    'filter_value=' => 'mixed|null',
+    'filter_value=' => 'mixed',
     'strict=' => 'bool',
   ),
   'array_map' => 
@@ -1516,11 +1516,11 @@ return array (
     0 => 'array<array-key, mixed>',
     'array' => 'array<array-key, mixed>',
     'length' => 'int',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'array_pop' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     '&array' => 'array<array-key, mixed>',
   ),
   'array_product' => 
@@ -1532,7 +1532,7 @@ return array (
   array (
     0 => 'int',
     '&array' => 'array<array-key, mixed>',
-    '...values=' => 'mixed|null',
+    '...values=' => 'mixed',
   ),
   'array_rand' => 
   array (
@@ -1542,10 +1542,10 @@ return array (
   ),
   'array_reduce' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'array' => 'array<array-key, mixed>',
     'callback' => 'callable',
-    'initial=' => 'mixed|null',
+    'initial=' => 'mixed',
   ),
   'array_replace' => 
   array (
@@ -1568,13 +1568,13 @@ return array (
   'array_search' => 
   array (
     0 => 'false|int|string',
-    'needle' => 'mixed|null',
+    'needle' => 'mixed',
     'haystack' => 'array<array-key, mixed>',
     'strict=' => 'bool',
   ),
   'array_shift' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     '&array' => 'array<array-key, mixed>',
   ),
   'array_slice' => 
@@ -1591,7 +1591,7 @@ return array (
     '&array' => 'array<array-key, mixed>',
     'offset' => 'int',
     'length=' => 'int|null',
-    'replacement=' => 'mixed|null',
+    'replacement=' => 'mixed',
   ),
   'array_sum' => 
   array (
@@ -1644,7 +1644,7 @@ return array (
   array (
     0 => 'int',
     '&array' => 'array<array-key, mixed>',
-    '...values=' => 'mixed|null',
+    '...values=' => 'mixed',
   ),
   'array_values' => 
   array (
@@ -1656,14 +1656,14 @@ return array (
     0 => 'bool',
     '&array' => 'array<array-key, mixed>|object',
     'callback' => 'callable',
-    'arg=' => 'mixed|null',
+    'arg=' => 'mixed',
   ),
   'array_walk_recursive' => 
   array (
     0 => 'bool',
     '&array' => 'array<array-key, mixed>|object',
     'callback' => 'callable',
-    'arg=' => 'mixed|null',
+    'arg=' => 'mixed',
   ),
   'arrayiterator::__construct' => 
   array (
@@ -1687,7 +1687,7 @@ return array (
   'arrayiterator::append' => 
   array (
     0 => 'void',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'arrayiterator::asort' => 
   array (
@@ -1700,7 +1700,7 @@ return array (
   ),
   'arrayiterator::current' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'arrayiterator::getarraycopy' => 
   array (
@@ -1734,23 +1734,23 @@ return array (
   'arrayiterator::offsetexists' => 
   array (
     0 => 'bool',
-    'key' => 'mixed|null',
+    'key' => 'mixed',
   ),
   'arrayiterator::offsetget' => 
   array (
-    0 => 'mixed|null',
-    'key' => 'mixed|null',
+    0 => 'mixed',
+    'key' => 'mixed',
   ),
   'arrayiterator::offsetset' => 
   array (
     0 => 'void',
-    'key' => 'mixed|null',
-    'value' => 'mixed|null',
+    'key' => 'mixed',
+    'value' => 'mixed',
   ),
   'arrayiterator::offsetunset' => 
   array (
     0 => 'void',
-    'key' => 'mixed|null',
+    'key' => 'mixed',
   ),
   'arrayiterator::rewind' => 
   array (
@@ -1812,7 +1812,7 @@ return array (
   'arrayobject::append' => 
   array (
     0 => 'void',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'arrayobject::asort' => 
   array (
@@ -1860,23 +1860,23 @@ return array (
   'arrayobject::offsetexists' => 
   array (
     0 => 'bool',
-    'key' => 'mixed|null',
+    'key' => 'mixed',
   ),
   'arrayobject::offsetget' => 
   array (
-    0 => 'mixed|null',
-    'key' => 'mixed|null',
+    0 => 'mixed',
+    'key' => 'mixed',
   ),
   'arrayobject::offsetset' => 
   array (
     0 => 'void',
-    'key' => 'mixed|null',
-    'value' => 'mixed|null',
+    'key' => 'mixed',
+    'value' => 'mixed',
   ),
   'arrayobject::offsetunset' => 
   array (
     0 => 'void',
-    'key' => 'mixed|null',
+    'key' => 'mixed',
   ),
   'arrayobject::serialize' => 
   array (
@@ -1932,14 +1932,14 @@ return array (
   'assert' => 
   array (
     0 => 'bool',
-    'assertion' => 'mixed|null',
+    'assertion' => 'mixed',
     'description=' => 'Throwable|null|string',
   ),
   'assert_options' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'option' => 'int',
-    'value=' => 'mixed|null',
+    'value=' => 'mixed',
   ),
   'assertionerror::__construct' => 
   array (
@@ -2196,7 +2196,7 @@ return array (
   'boolval' => 
   array (
     0 => 'bool',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'cachingiterator::__construct' => 
   array (
@@ -2214,7 +2214,7 @@ return array (
   ),
   'cachingiterator::current' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'cachingiterator::getcache' => 
   array (
@@ -2234,7 +2234,7 @@ return array (
   ),
   'cachingiterator::key' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'cachingiterator::next' => 
   array (
@@ -2247,14 +2247,14 @@ return array (
   ),
   'cachingiterator::offsetget' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'key' => 'mixed',
   ),
   'cachingiterator::offsetset' => 
   array (
     0 => 'void',
     'key' => 'mixed',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'cachingiterator::offsetunset' => 
   array (
@@ -2276,13 +2276,13 @@ return array (
   ),
   'call_user_func' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'callback' => 'callable',
-    '...args=' => 'mixed|null',
+    '...args=' => 'mixed',
   ),
   'call_user_func_array' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'callback' => 'callable',
     'args' => 'array<array-key, mixed>',
   ),
@@ -2298,7 +2298,7 @@ return array (
   ),
   'callbackfilteriterator::current' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'callbackfilteriterator::getinneriterator' => 
   array (
@@ -2306,7 +2306,7 @@ return array (
   ),
   'callbackfilteriterator::key' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'callbackfilteriterator::next' => 
   array (
@@ -2348,13 +2348,13 @@ return array (
   ),
   'chan::pop' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'timeout=' => 'float',
   ),
   'chan::push' => 
   array (
     0 => 'bool',
-    'data' => 'mixed|null',
+    'data' => 'mixed',
     'timeout=' => 'float',
   ),
   'chan::stats' => 
@@ -2541,9 +2541,9 @@ return array (
   ),
   'closure::call' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'newThis' => 'object',
-    '...args=' => 'mixed|null',
+    '...args=' => 'mixed',
   ),
   'closure::fromcallable' => 
   array (
@@ -2559,7 +2559,7 @@ return array (
   array (
     0 => 'false|int',
     'func' => 'callable',
-    '...param=' => 'mixed|null',
+    '...param=' => 'mixed',
   ),
   'co::defer' => 
   array (
@@ -2715,7 +2715,7 @@ return array (
   'co::waitevent' => 
   array (
     0 => 'false|int',
-    'socket' => 'mixed|null',
+    'socket' => 'mixed',
     'events=' => 'int',
     'timeout=' => 'float',
   ),
@@ -2765,13 +2765,13 @@ return array (
   ),
   'co\\channel::pop' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'timeout=' => 'float',
   ),
   'co\\channel::push' => 
   array (
     0 => 'bool',
-    'data' => 'mixed|null',
+    'data' => 'mixed',
     'timeout=' => 'float',
   ),
   'co\\channel::stats' => 
@@ -2837,8 +2837,8 @@ return array (
   array (
     0 => 'false|string',
     'length' => 'int',
-    '&address' => 'mixed|null',
-    '&port=' => 'mixed|null',
+    '&address' => 'mixed',
+    '&port=' => 'mixed',
   ),
   'co\\client::send' => 
   array (
@@ -2893,7 +2893,7 @@ return array (
   'co\\context::append' => 
   array (
     0 => 'void',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'co\\context::asort' => 
   array (
@@ -2941,23 +2941,23 @@ return array (
   'co\\context::offsetexists' => 
   array (
     0 => 'bool',
-    'key' => 'mixed|null',
+    'key' => 'mixed',
   ),
   'co\\context::offsetget' => 
   array (
-    0 => 'mixed|null',
-    'key' => 'mixed|null',
+    0 => 'mixed',
+    'key' => 'mixed',
   ),
   'co\\context::offsetset' => 
   array (
     0 => 'void',
-    'key' => 'mixed|null',
-    'value' => 'mixed|null',
+    'key' => 'mixed',
+    'value' => 'mixed',
   ),
   'co\\context::offsetunset' => 
   array (
     0 => 'void',
-    'key' => 'mixed|null',
+    'key' => 'mixed',
   ),
   'co\\context::serialize' => 
   array (
@@ -3215,7 +3215,7 @@ return array (
   array (
     0 => 'bool',
     'stream_id' => 'int',
-    'data' => 'mixed|null',
+    'data' => 'mixed',
     'end_stream=' => 'bool',
   ),
   'co\\http2\\client\\exception::__construct' => 
@@ -3351,12 +3351,12 @@ return array (
   array (
     0 => 'bool',
     'path' => 'string',
-    'data' => 'mixed|null',
+    'data' => 'mixed',
   ),
   'co\\http\\client::push' => 
   array (
     0 => 'bool',
-    'data' => 'mixed|null',
+    'data' => 'mixed',
     'opcode=' => 'int',
     'flags=' => 'int',
   ),
@@ -3503,7 +3503,7 @@ return array (
   'co\\iterator::append' => 
   array (
     0 => 'void',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'co\\iterator::asort' => 
   array (
@@ -3516,7 +3516,7 @@ return array (
   ),
   'co\\iterator::current' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'co\\iterator::getarraycopy' => 
   array (
@@ -3550,23 +3550,23 @@ return array (
   'co\\iterator::offsetexists' => 
   array (
     0 => 'bool',
-    'key' => 'mixed|null',
+    'key' => 'mixed',
   ),
   'co\\iterator::offsetget' => 
   array (
-    0 => 'mixed|null',
-    'key' => 'mixed|null',
+    0 => 'mixed',
+    'key' => 'mixed',
   ),
   'co\\iterator::offsetset' => 
   array (
     0 => 'void',
-    'key' => 'mixed|null',
-    'value' => 'mixed|null',
+    'key' => 'mixed',
+    'value' => 'mixed',
   ),
   'co\\iterator::offsetunset' => 
   array (
     0 => 'void',
-    'key' => 'mixed|null',
+    'key' => 'mixed',
   ),
   'co\\iterator::rewind' => 
   array (
@@ -3615,7 +3615,7 @@ return array (
   array (
     0 => 'void',
     'func' => 'callable',
-    '...param=' => 'mixed|null',
+    '...param=' => 'mixed',
   ),
   'co\\scheduler::getoptions' => 
   array (
@@ -3626,7 +3626,7 @@ return array (
     0 => 'void',
     'n' => 'int',
     'func' => 'callable',
-    '...param=' => 'mixed|null',
+    '...param=' => 'mixed',
   ),
   'co\\scheduler::set' => 
   array (
@@ -3731,7 +3731,7 @@ return array (
   ),
   'co\\socket::getoption' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'level' => 'int',
     'opt_name' => 'int',
   ),
@@ -3789,7 +3789,7 @@ return array (
   'co\\socket::recvfrom' => 
   array (
     0 => 'false|string',
-    '&peername' => 'mixed|null',
+    '&peername' => 'mixed',
     'timeout=' => 'float',
   ),
   'co\\socket::recvline' => 
@@ -3840,7 +3840,7 @@ return array (
     0 => 'bool',
     'level' => 'int',
     'opt_name' => 'int',
-    'opt_value' => 'mixed|null',
+    'opt_value' => 'mixed',
   ),
   'co\\socket::setprotocol' => 
   array (
@@ -3965,7 +3965,7 @@ return array (
   'co\\system::waitevent' => 
   array (
     0 => 'false|int',
-    'socket' => 'mixed|null',
+    'socket' => 'mixed',
     'events=' => 'int',
     'timeout=' => 'float',
   ),
@@ -4219,7 +4219,7 @@ return array (
   ),
   'constant' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'name' => 'string',
   ),
   'convert_uudecode' => 
@@ -5519,7 +5519,7 @@ return array (
   'couchbase\\decrementoptions::expiry' => 
   array (
     0 => 'Couchbase\\DecrementOptions',
-    'arg' => 'mixed|null',
+    'arg' => 'mixed',
   ),
   'couchbase\\decrementoptions::initial' => 
   array (
@@ -6081,7 +6081,7 @@ return array (
   'couchbase\\incrementoptions::expiry' => 
   array (
     0 => 'Couchbase\\IncrementOptions',
-    'arg' => 'mixed|null',
+    'arg' => 'mixed',
   ),
   'couchbase\\incrementoptions::initial' => 
   array (
@@ -6807,7 +6807,7 @@ return array (
   'couchbase\\mutateinoptions::expiry' => 
   array (
     0 => 'Couchbase\\MutateInOptions',
-    'arg' => 'mixed|null',
+    'arg' => 'mixed',
   ),
   'couchbase\\mutateinoptions::preserveexpiry' => 
   array (
@@ -7826,7 +7826,7 @@ return array (
   'couchbase\\replaceoptions::expiry' => 
   array (
     0 => 'Couchbase\\ReplaceOptions',
-    'arg' => 'mixed|null',
+    'arg' => 'mixed',
   ),
   'couchbase\\replaceoptions::preserveexpiry' => 
   array (
@@ -8718,7 +8718,7 @@ return array (
   'couchbase\\upsertoptions::expiry' => 
   array (
     0 => 'Couchbase\\UpsertOptions',
-    'arg' => 'mixed|null',
+    'arg' => 'mixed',
   ),
   'couchbase\\upsertoptions::preserveexpiry' => 
   array (
@@ -9132,57 +9132,57 @@ return array (
   'ctype_alnum' => 
   array (
     0 => 'bool',
-    'text' => 'mixed|null',
+    'text' => 'mixed',
   ),
   'ctype_alpha' => 
   array (
     0 => 'bool',
-    'text' => 'mixed|null',
+    'text' => 'mixed',
   ),
   'ctype_cntrl' => 
   array (
     0 => 'bool',
-    'text' => 'mixed|null',
+    'text' => 'mixed',
   ),
   'ctype_digit' => 
   array (
     0 => 'bool',
-    'text' => 'mixed|null',
+    'text' => 'mixed',
   ),
   'ctype_graph' => 
   array (
     0 => 'bool',
-    'text' => 'mixed|null',
+    'text' => 'mixed',
   ),
   'ctype_lower' => 
   array (
     0 => 'bool',
-    'text' => 'mixed|null',
+    'text' => 'mixed',
   ),
   'ctype_print' => 
   array (
     0 => 'bool',
-    'text' => 'mixed|null',
+    'text' => 'mixed',
   ),
   'ctype_punct' => 
   array (
     0 => 'bool',
-    'text' => 'mixed|null',
+    'text' => 'mixed',
   ),
   'ctype_space' => 
   array (
     0 => 'bool',
-    'text' => 'mixed|null',
+    'text' => 'mixed',
   ),
   'ctype_upper' => 
   array (
     0 => 'bool',
-    'text' => 'mixed|null',
+    'text' => 'mixed',
   ),
   'ctype_xdigit' => 
   array (
     0 => 'bool',
-    'text' => 'mixed|null',
+    'text' => 'mixed',
   ),
   'curl_close' => 
   array (
@@ -9224,7 +9224,7 @@ return array (
   ),
   'curl_getinfo' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'handle' => 'CurlHandle',
     'option=' => 'int|null',
   ),
@@ -9287,7 +9287,7 @@ return array (
     0 => 'bool',
     'multi_handle' => 'CurlMultiHandle',
     'option' => 'int',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'curl_multi_strerror' => 
   array (
@@ -9310,7 +9310,7 @@ return array (
     0 => 'bool',
     'handle' => 'CurlHandle',
     'option' => 'int',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'curl_setopt_array' => 
   array (
@@ -9337,7 +9337,7 @@ return array (
     0 => 'bool',
     'share_handle' => 'CurlShareHandle',
     'option' => 'int',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'curl_share_strerror' => 
   array (
@@ -9397,7 +9397,7 @@ return array (
   ),
   'current' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'array' => 'array<array-key, mixed>|object',
   ),
   'date' => 
@@ -10287,7 +10287,7 @@ return array (
   ),
   'db2_result' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'stmt' => 'mixed',
     'column' => 'int|string',
   ),
@@ -10380,8 +10380,8 @@ return array (
   'debug_zval_dump' => 
   array (
     0 => 'void',
-    'value' => 'mixed|null',
-    '...values=' => 'mixed|null',
+    'value' => 'mixed',
+    '...values=' => 'mixed',
   ),
   'decbin' => 
   array (
@@ -10407,7 +10407,7 @@ return array (
   array (
     0 => 'bool',
     'constant_name' => 'string',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
     'case_insensitive=' => 'bool',
   ),
   'defined' => 
@@ -10470,7 +10470,7 @@ return array (
   ),
   'directoryiterator::current' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'directoryiterator::getatime' => 
   array (
@@ -10577,7 +10577,7 @@ return array (
   ),
   'directoryiterator::key' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'directoryiterator::next' => 
   array (
@@ -12845,14 +12845,14 @@ return array (
   ),
   'domxpath::evaluate' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'expression' => 'string',
     'contextNode=' => 'DOMNode|null',
     'registerNodeNS=' => 'bool',
   ),
   'domxpath::query' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'expression' => 'string',
     'contextNode=' => 'DOMNode|null',
     'registerNodeNS=' => 'bool',
@@ -12871,7 +12871,7 @@ return array (
   'doubleval' => 
   array (
     0 => 'float',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'ds\\deque::__construct' => 
   array (
@@ -12949,7 +12949,7 @@ return array (
   ),
   'ds\\deque::jsonserialize' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'ds\\deque::last' => 
   array (
@@ -12972,19 +12972,19 @@ return array (
   ),
   'ds\\deque::offsetget' => 
   array (
-    0 => 'mixed|null',
-    'offset' => 'mixed|null',
+    0 => 'mixed',
+    'offset' => 'mixed',
   ),
   'ds\\deque::offsetset' => 
   array (
     0 => 'void',
-    'offset' => 'mixed|null',
-    'value' => 'mixed|null',
+    'offset' => 'mixed',
+    'value' => 'mixed',
   ),
   'ds\\deque::offsetunset' => 
   array (
     0 => 'void',
-    'offset' => 'mixed|null',
+    'offset' => 'mixed',
   ),
   'ds\\deque::pop' => 
   array (
@@ -13134,7 +13134,7 @@ return array (
   ),
   'ds\\map::jsonserialize' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'ds\\map::keys' => 
   array (
@@ -13171,19 +13171,19 @@ return array (
   ),
   'ds\\map::offsetget' => 
   array (
-    0 => 'mixed|null',
-    'offset' => 'mixed|null',
+    0 => 'mixed',
+    'offset' => 'mixed',
   ),
   'ds\\map::offsetset' => 
   array (
     0 => 'void',
-    'offset' => 'mixed|null',
-    'value' => 'mixed|null',
+    'offset' => 'mixed',
+    'value' => 'mixed',
   ),
   'ds\\map::offsetunset' => 
   array (
     0 => 'void',
-    'offset' => 'mixed|null',
+    'offset' => 'mixed',
   ),
   'ds\\map::pairs' => 
   array (
@@ -13275,7 +13275,7 @@ return array (
   ),
   'ds\\pair::jsonserialize' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'ds\\pair::toarray' => 
   array (
@@ -13316,7 +13316,7 @@ return array (
   ),
   'ds\\priorityqueue::jsonserialize' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'ds\\priorityqueue::peek' => 
   array (
@@ -13372,7 +13372,7 @@ return array (
   ),
   'ds\\queue::jsonserialize' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'ds\\queue::offsetexists' => 
   array (
@@ -13381,19 +13381,19 @@ return array (
   ),
   'ds\\queue::offsetget' => 
   array (
-    0 => 'mixed|null',
-    'offset' => 'mixed|null',
+    0 => 'mixed',
+    'offset' => 'mixed',
   ),
   'ds\\queue::offsetset' => 
   array (
     0 => 'void',
-    'offset' => 'mixed|null',
-    'value' => 'mixed|null',
+    'offset' => 'mixed',
+    'value' => 'mixed',
   ),
   'ds\\queue::offsetunset' => 
   array (
     0 => 'void',
-    'offset' => 'mixed|null',
+    'offset' => 'mixed',
   ),
   'ds\\queue::peek' => 
   array (
@@ -13487,7 +13487,7 @@ return array (
   ),
   'ds\\set::jsonserialize' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'ds\\set::last' => 
   array (
@@ -13510,19 +13510,19 @@ return array (
   ),
   'ds\\set::offsetget' => 
   array (
-    0 => 'mixed|null',
-    'offset' => 'mixed|null',
+    0 => 'mixed',
+    'offset' => 'mixed',
   ),
   'ds\\set::offsetset' => 
   array (
     0 => 'void',
-    'offset' => 'mixed|null',
-    'value' => 'mixed|null',
+    'offset' => 'mixed',
+    'value' => 'mixed',
   ),
   'ds\\set::offsetunset' => 
   array (
     0 => 'void',
-    'offset' => 'mixed|null',
+    'offset' => 'mixed',
   ),
   'ds\\set::reduce' => 
   array (
@@ -13613,7 +13613,7 @@ return array (
   ),
   'ds\\stack::jsonserialize' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'ds\\stack::offsetexists' => 
   array (
@@ -13622,19 +13622,19 @@ return array (
   ),
   'ds\\stack::offsetget' => 
   array (
-    0 => 'mixed|null',
-    'offset' => 'mixed|null',
+    0 => 'mixed',
+    'offset' => 'mixed',
   ),
   'ds\\stack::offsetset' => 
   array (
     0 => 'void',
-    'offset' => 'mixed|null',
-    'value' => 'mixed|null',
+    'offset' => 'mixed',
+    'value' => 'mixed',
   ),
   'ds\\stack::offsetunset' => 
   array (
     0 => 'void',
-    'offset' => 'mixed|null',
+    'offset' => 'mixed',
   ),
   'ds\\stack::peek' => 
   array (
@@ -13729,7 +13729,7 @@ return array (
   ),
   'ds\\vector::jsonserialize' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'ds\\vector::last' => 
   array (
@@ -13752,19 +13752,19 @@ return array (
   ),
   'ds\\vector::offsetget' => 
   array (
-    0 => 'mixed|null',
-    'offset' => 'mixed|null',
+    0 => 'mixed',
+    'offset' => 'mixed',
   ),
   'ds\\vector::offsetset' => 
   array (
     0 => 'void',
-    'offset' => 'mixed|null',
-    'value' => 'mixed|null',
+    'offset' => 'mixed',
+    'value' => 'mixed',
   ),
   'ds\\vector::offsetunset' => 
   array (
     0 => 'void',
-    'offset' => 'mixed|null',
+    'offset' => 'mixed',
   ),
   'ds\\vector::pop' => 
   array (
@@ -13860,7 +13860,7 @@ return array (
   ),
   'end' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     '&array' => 'array<array-key, mixed>|object',
   ),
   'enum_exists' => 
@@ -14073,8 +14073,8 @@ return array (
   'evcheck::__construct' => 
   array (
     0 => 'void',
-    'callback' => 'mixed|null',
-    'data=' => 'mixed|null',
+    'callback' => 'mixed',
+    'data=' => 'mixed',
     'priority=' => 'int',
   ),
   'evcheck::clear' => 
@@ -14084,8 +14084,8 @@ return array (
   'evcheck::createstopped' => 
   array (
     0 => 'EvCheck',
-    'callback' => 'mixed|null',
-    'data=' => 'mixed|null',
+    'callback' => 'mixed',
+    'data=' => 'mixed',
     'priority=' => 'int',
   ),
   'evcheck::feed' => 
@@ -14110,7 +14110,7 @@ return array (
   'evcheck::setcallback' => 
   array (
     0 => 'void',
-    'callback' => 'mixed|null',
+    'callback' => 'mixed',
   ),
   'evcheck::start' => 
   array (
@@ -14125,8 +14125,8 @@ return array (
     0 => 'void',
     'pid' => 'int',
     'trace' => 'bool',
-    'callback' => 'mixed|null',
-    'data=' => 'mixed|null',
+    'callback' => 'mixed',
+    'data=' => 'mixed',
     'priority=' => 'int',
   ),
   'evchild::clear' => 
@@ -14138,8 +14138,8 @@ return array (
     0 => 'EvChild',
     'pid' => 'int',
     'trace' => 'bool',
-    'callback' => 'mixed|null',
-    'data=' => 'mixed|null',
+    'callback' => 'mixed',
+    'data=' => 'mixed',
     'priority=' => 'int',
   ),
   'evchild::feed' => 
@@ -14170,7 +14170,7 @@ return array (
   'evchild::setcallback' => 
   array (
     0 => 'void',
-    'callback' => 'mixed|null',
+    'callback' => 'mixed',
   ),
   'evchild::start' => 
   array (
@@ -14184,8 +14184,8 @@ return array (
   array (
     0 => 'void',
     'other' => 'EvLoop',
-    'callback' => 'mixed|null',
-    'data=' => 'mixed|null',
+    'callback' => 'mixed',
+    'data=' => 'mixed',
     'priority=' => 'int',
   ),
   'evembed::clear' => 
@@ -14196,8 +14196,8 @@ return array (
   array (
     0 => 'EvEmbed',
     'other' => 'EvLoop',
-    'callback' => 'mixed|null',
-    'data=' => 'mixed|null',
+    'callback' => 'mixed',
+    'data=' => 'mixed',
     'priority=' => 'int',
   ),
   'evembed::feed' => 
@@ -14227,7 +14227,7 @@ return array (
   'evembed::setcallback' => 
   array (
     0 => 'void',
-    'callback' => 'mixed|null',
+    'callback' => 'mixed',
   ),
   'evembed::start' => 
   array (
@@ -14245,10 +14245,10 @@ return array (
   array (
     0 => 'void',
     'base' => 'EventBase',
-    'fd' => 'mixed|null',
+    'fd' => 'mixed',
     'what' => 'int',
     'cb' => 'callable',
-    'arg=' => 'mixed|null',
+    'arg=' => 'mixed',
   ),
   'event::add' => 
   array (
@@ -14298,10 +14298,10 @@ return array (
   array (
     0 => 'bool',
     'base' => 'EventBase',
-    'fd' => 'mixed|null',
+    'fd' => 'mixed',
     'what=' => 'int',
     'cb=' => 'callable|null',
-    'arg=' => 'mixed|null',
+    'arg=' => 'mixed',
   ),
   'event::setpriority' => 
   array (
@@ -14313,7 +14313,7 @@ return array (
     0 => 'bool',
     'base' => 'EventBase',
     'cb' => 'callable',
-    'arg=' => 'mixed|null',
+    'arg=' => 'mixed',
   ),
   'event::signal' => 
   array (
@@ -14321,14 +14321,14 @@ return array (
     'base' => 'EventBase',
     'signum' => 'int',
     'cb' => 'callable',
-    'arg=' => 'mixed|null',
+    'arg=' => 'mixed',
   ),
   'event::timer' => 
   array (
     0 => 'Event',
     'base' => 'EventBase',
     'cb' => 'callable',
-    'arg=' => 'mixed|null',
+    'arg=' => 'mixed',
   ),
   'eventbase::__construct' => 
   array (
@@ -14480,7 +14480,7 @@ return array (
   'eventbuffer::readfrom' => 
   array (
     0 => 'false|int',
-    'fd' => 'mixed|null',
+    'fd' => 'mixed',
     'howmuch=' => 'int',
   ),
   'eventbuffer::readline' => 
@@ -14520,19 +14520,19 @@ return array (
   'eventbuffer::write' => 
   array (
     0 => 'false|int',
-    'fd' => 'mixed|null',
+    'fd' => 'mixed',
     'howmuch=' => 'int',
   ),
   'eventbufferevent::__construct' => 
   array (
     0 => 'void',
     'base' => 'EventBase',
-    'socket=' => 'mixed|null',
+    'socket=' => 'mixed',
     'options=' => 'int',
     'readcb=' => 'callable|null',
     'writecb=' => 'callable|null',
     'eventcb=' => 'callable|null',
-    'arg=' => 'mixed|null',
+    'arg=' => 'mixed',
   ),
   'eventbufferevent::close' => 
   array (
@@ -14611,7 +14611,7 @@ return array (
     'readcb' => 'callable|null',
     'writecb' => 'callable|null',
     'eventcb' => 'callable|null',
-    'arg=' => 'mixed|null',
+    'arg=' => 'mixed',
   ),
   'eventbufferevent::setpriority' => 
   array (
@@ -14659,7 +14659,7 @@ return array (
   array (
     0 => 'EventBufferEvent',
     'base' => 'EventBase',
-    'socket' => 'mixed|null',
+    'socket' => 'mixed',
     'ctx' => 'EventSslContext',
     'state' => 'int',
     'options=' => 'int',
@@ -14712,7 +14712,7 @@ return array (
   array (
     0 => 'void',
     'base' => 'EventBase',
-    'initialize' => 'mixed|null',
+    'initialize' => 'mixed',
   ),
   'eventdnsbase::addnameserverip' => 
   array (
@@ -14814,7 +14814,7 @@ return array (
   'eventhttp::accept' => 
   array (
     0 => 'bool',
-    'socket' => 'mixed|null',
+    'socket' => 'mixed',
   ),
   'eventhttp::addserveralias' => 
   array (
@@ -14842,13 +14842,13 @@ return array (
     0 => 'bool',
     'path' => 'string',
     'cb' => 'callable',
-    'arg=' => 'mixed|null',
+    'arg=' => 'mixed',
   ),
   'eventhttp::setdefaultcallback' => 
   array (
     0 => 'void',
     'cb' => 'callable',
-    'arg=' => 'mixed|null',
+    'arg=' => 'mixed',
   ),
   'eventhttp::setmaxbodysize' => 
   array (
@@ -14889,8 +14889,8 @@ return array (
   'eventhttpconnection::getpeer' => 
   array (
     0 => 'void',
-    '&address' => 'mixed|null',
-    '&port' => 'mixed|null',
+    '&address' => 'mixed',
+    '&port' => 'mixed',
   ),
   'eventhttpconnection::makerequest' => 
   array (
@@ -14903,7 +14903,7 @@ return array (
   array (
     0 => 'void',
     'callback' => 'callable',
-    'data=' => 'mixed|null',
+    'data=' => 'mixed',
   ),
   'eventhttpconnection::setlocaladdress' => 
   array (
@@ -14939,7 +14939,7 @@ return array (
   array (
     0 => 'void',
     'callback' => 'callable',
-    'data=' => 'mixed|null',
+    'data=' => 'mixed',
   ),
   'eventhttprequest::__sleep' => 
   array (
@@ -15057,10 +15057,10 @@ return array (
     0 => 'void',
     'base' => 'EventBase',
     'cb' => 'callable',
-    'data' => 'mixed|null',
+    'data' => 'mixed',
     'flags' => 'int',
     'backlog' => 'int',
-    'target' => 'mixed|null',
+    'target' => 'mixed',
   ),
   'eventlistener::__sleep' => 
   array (
@@ -15089,14 +15089,14 @@ return array (
   'eventlistener::getsocketname' => 
   array (
     0 => 'bool',
-    '&address' => 'mixed|null',
-    '&port' => 'mixed|null',
+    '&address' => 'mixed',
+    '&port' => 'mixed',
   ),
   'eventlistener::setcallback' => 
   array (
     0 => 'void',
     'cb' => 'callable',
-    'arg=' => 'mixed|null',
+    'arg=' => 'mixed',
   ),
   'eventlistener::seterrorcallback' => 
   array (
@@ -15131,27 +15131,27 @@ return array (
   'eventutil::getlastsocketerror' => 
   array (
     0 => 'false|string',
-    'socket=' => 'mixed|null',
+    'socket=' => 'mixed',
   ),
   'eventutil::getsocketfd' => 
   array (
     0 => 'int',
-    'socket' => 'mixed|null',
+    'socket' => 'mixed',
   ),
   'eventutil::getsocketname' => 
   array (
     0 => 'bool',
-    'socket' => 'mixed|null',
-    '&address' => 'mixed|null',
-    '&port=' => 'mixed|null',
+    'socket' => 'mixed',
+    '&address' => 'mixed',
+    '&port=' => 'mixed',
   ),
   'eventutil::setsocketoption' => 
   array (
     0 => 'bool',
-    'socket' => 'mixed|null',
+    'socket' => 'mixed',
     'level' => 'int',
     'optname' => 'int',
-    'optval' => 'mixed|null',
+    'optval' => 'mixed',
   ),
   'eventutil::sslrandpoll' => 
   array (
@@ -15161,8 +15161,8 @@ return array (
   array (
     0 => 'void',
     'loop' => 'EvLoop',
-    'callback' => 'mixed|null',
-    'data=' => 'mixed|null',
+    'callback' => 'mixed',
+    'data=' => 'mixed',
     'priority=' => 'int',
   ),
   'evfork::clear' => 
@@ -15173,8 +15173,8 @@ return array (
   array (
     0 => 'EvFork',
     'loop' => 'EvLoop',
-    'callback' => 'mixed|null',
-    'data=' => 'mixed|null',
+    'callback' => 'mixed',
+    'data=' => 'mixed',
     'priority=' => 'int',
   ),
   'evfork::feed' => 
@@ -15199,7 +15199,7 @@ return array (
   'evfork::setcallback' => 
   array (
     0 => 'void',
-    'callback' => 'mixed|null',
+    'callback' => 'mixed',
   ),
   'evfork::start' => 
   array (
@@ -15212,8 +15212,8 @@ return array (
   'evidle::__construct' => 
   array (
     0 => 'void',
-    'callback' => 'mixed|null',
-    'data=' => 'mixed|null',
+    'callback' => 'mixed',
+    'data=' => 'mixed',
     'priority=' => 'int',
   ),
   'evidle::clear' => 
@@ -15223,8 +15223,8 @@ return array (
   'evidle::createstopped' => 
   array (
     0 => 'EvIdle',
-    'callback' => 'mixed|null',
-    'data=' => 'mixed|null',
+    'callback' => 'mixed',
+    'data=' => 'mixed',
     'priority=' => 'int',
   ),
   'evidle::feed' => 
@@ -15249,7 +15249,7 @@ return array (
   'evidle::setcallback' => 
   array (
     0 => 'void',
-    'callback' => 'mixed|null',
+    'callback' => 'mixed',
   ),
   'evidle::start' => 
   array (
@@ -15262,10 +15262,10 @@ return array (
   'evio::__construct' => 
   array (
     0 => 'void',
-    'fd' => 'mixed|null',
+    'fd' => 'mixed',
     'events' => 'int',
-    'callback' => 'mixed|null',
-    'data=' => 'mixed|null',
+    'callback' => 'mixed',
+    'data=' => 'mixed',
     'priority=' => 'int',
   ),
   'evio::clear' => 
@@ -15275,10 +15275,10 @@ return array (
   'evio::createstopped' => 
   array (
     0 => 'EvIo',
-    'fd' => 'mixed|null',
+    'fd' => 'mixed',
     'events' => 'int',
-    'callback' => 'mixed|null',
-    'data=' => 'mixed|null',
+    'callback' => 'mixed',
+    'data=' => 'mixed',
     'priority=' => 'int',
   ),
   'evio::feed' => 
@@ -15303,13 +15303,13 @@ return array (
   'evio::set' => 
   array (
     0 => 'void',
-    'fd' => 'mixed|null',
+    'fd' => 'mixed',
     'events' => 'int',
   ),
   'evio::setcallback' => 
   array (
     0 => 'void',
-    'callback' => 'mixed|null',
+    'callback' => 'mixed',
   ),
   'evio::start' => 
   array (
@@ -15323,7 +15323,7 @@ return array (
   array (
     0 => 'void',
     'flags=' => 'int',
-    'data=' => 'mixed|null',
+    'data=' => 'mixed',
     'io_interval=' => 'float',
     'timeout_interval=' => 'float',
   ),
@@ -15340,15 +15340,15 @@ return array (
     0 => 'EvChild',
     'pid' => 'int',
     'trace' => 'bool',
-    'callback' => 'mixed|null',
-    'data=' => 'mixed|null',
+    'callback' => 'mixed',
+    'data=' => 'mixed',
     'priority=' => 'int',
   ),
   'evloop::defaultloop' => 
   array (
     0 => 'EvLoop',
     'flags=' => 'int',
-    'data=' => 'mixed|null',
+    'data=' => 'mixed',
     'io_interval=' => 'float',
     'timeout_interval=' => 'float',
   ),
@@ -15363,8 +15363,8 @@ return array (
   'evloop::idle' => 
   array (
     0 => 'EvIdle',
-    'callback' => 'mixed|null',
-    'data=' => 'mixed|null',
+    'callback' => 'mixed',
+    'data=' => 'mixed',
     'priority=' => 'int',
   ),
   'evloop::invokepending' => 
@@ -15374,10 +15374,10 @@ return array (
   'evloop::io' => 
   array (
     0 => 'EvIo',
-    'fd' => 'mixed|null',
+    'fd' => 'mixed',
     'events' => 'int',
-    'callback' => 'mixed|null',
-    'data=' => 'mixed|null',
+    'callback' => 'mixed',
+    'data=' => 'mixed',
     'priority=' => 'int',
   ),
   'evloop::loopfork' => 
@@ -15397,9 +15397,9 @@ return array (
     0 => 'EvPeriodic',
     'offset' => 'float',
     'interval' => 'float',
-    'reschedule_cb' => 'mixed|null',
-    'callback' => 'mixed|null',
-    'data=' => 'mixed|null',
+    'reschedule_cb' => 'mixed',
+    'callback' => 'mixed',
+    'data=' => 'mixed',
     'priority=' => 'int',
   ),
   'evloop::prepare' => 
@@ -15419,8 +15419,8 @@ return array (
   array (
     0 => 'EvSignal',
     'signum' => 'int',
-    'callback' => 'mixed|null',
-    'data=' => 'mixed|null',
+    'callback' => 'mixed',
+    'data=' => 'mixed',
     'priority=' => 'int',
   ),
   'evloop::stat' => 
@@ -15428,8 +15428,8 @@ return array (
     0 => 'EvStat',
     'path' => 'string',
     'interval' => 'float',
-    'callback' => 'mixed|null',
-    'data=' => 'mixed|null',
+    'callback' => 'mixed',
+    'data=' => 'mixed',
     'priority=' => 'int',
   ),
   'evloop::stop' => 
@@ -15446,8 +15446,8 @@ return array (
     0 => 'EvTimer',
     'after' => 'float',
     'repeat' => 'float',
-    'callback' => 'mixed|null',
-    'data=' => 'mixed|null',
+    'callback' => 'mixed',
+    'data=' => 'mixed',
     'priority=' => 'int',
   ),
   'evloop::verify' => 
@@ -15459,9 +15459,9 @@ return array (
     0 => 'void',
     'offset' => 'float',
     'interval' => 'float',
-    'reschedule_cb' => 'mixed|null',
-    'callback' => 'mixed|null',
-    'data=' => 'mixed|null',
+    'reschedule_cb' => 'mixed',
+    'callback' => 'mixed',
+    'data=' => 'mixed',
     'priority=' => 'int',
   ),
   'evperiodic::again' => 
@@ -15481,9 +15481,9 @@ return array (
     0 => 'EvPeriodic',
     'offset' => 'float',
     'interval' => 'float',
-    'reschedule_cb' => 'mixed|null',
-    'callback' => 'mixed|null',
-    'data=' => 'mixed|null',
+    'reschedule_cb' => 'mixed',
+    'callback' => 'mixed',
+    'data=' => 'mixed',
     'priority=' => 'int',
   ),
   'evperiodic::feed' => 
@@ -15510,12 +15510,12 @@ return array (
     0 => 'void',
     'offset' => 'float',
     'interval' => 'float',
-    'reschedule_cb=' => 'mixed|null',
+    'reschedule_cb=' => 'mixed',
   ),
   'evperiodic::setcallback' => 
   array (
     0 => 'void',
-    'callback' => 'mixed|null',
+    'callback' => 'mixed',
   ),
   'evperiodic::start' => 
   array (
@@ -15528,8 +15528,8 @@ return array (
   'evprepare::__construct' => 
   array (
     0 => 'void',
-    'callback' => 'mixed|null',
-    'data=' => 'mixed|null',
+    'callback' => 'mixed',
+    'data=' => 'mixed',
     'priority=' => 'int',
   ),
   'evprepare::clear' => 
@@ -15539,8 +15539,8 @@ return array (
   'evprepare::createstopped' => 
   array (
     0 => 'EvPrepare',
-    'callback' => 'mixed|null',
-    'data=' => 'mixed|null',
+    'callback' => 'mixed',
+    'data=' => 'mixed',
     'priority=' => 'int',
   ),
   'evprepare::feed' => 
@@ -15565,7 +15565,7 @@ return array (
   'evprepare::setcallback' => 
   array (
     0 => 'void',
-    'callback' => 'mixed|null',
+    'callback' => 'mixed',
   ),
   'evprepare::start' => 
   array (
@@ -15579,8 +15579,8 @@ return array (
   array (
     0 => 'void',
     'signum' => 'int',
-    'callback' => 'mixed|null',
-    'data=' => 'mixed|null',
+    'callback' => 'mixed',
+    'data=' => 'mixed',
     'priority=' => 'int',
   ),
   'evsignal::clear' => 
@@ -15591,8 +15591,8 @@ return array (
   array (
     0 => 'EvSignal',
     'signum' => 'int',
-    'callback' => 'mixed|null',
-    'data=' => 'mixed|null',
+    'callback' => 'mixed',
+    'data=' => 'mixed',
     'priority=' => 'int',
   ),
   'evsignal::feed' => 
@@ -15622,7 +15622,7 @@ return array (
   'evsignal::setcallback' => 
   array (
     0 => 'void',
-    'callback' => 'mixed|null',
+    'callback' => 'mixed',
   ),
   'evsignal::start' => 
   array (
@@ -15637,13 +15637,13 @@ return array (
     0 => 'void',
     'path' => 'string',
     'interval' => 'float',
-    'callback' => 'mixed|null',
-    'data=' => 'mixed|null',
+    'callback' => 'mixed',
+    'data=' => 'mixed',
     'priority=' => 'int',
   ),
   'evstat::attr' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'evstat::clear' => 
   array (
@@ -15654,8 +15654,8 @@ return array (
     0 => 'EvStat',
     'path' => 'string',
     'interval' => 'float',
-    'callback' => 'mixed|null',
-    'data=' => 'mixed|null',
+    'callback' => 'mixed',
+    'data=' => 'mixed',
     'priority=' => 'int',
   ),
   'evstat::feed' => 
@@ -15679,7 +15679,7 @@ return array (
   ),
   'evstat::prev' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'evstat::set' => 
   array (
@@ -15690,7 +15690,7 @@ return array (
   'evstat::setcallback' => 
   array (
     0 => 'void',
-    'callback' => 'mixed|null',
+    'callback' => 'mixed',
   ),
   'evstat::start' => 
   array (
@@ -15709,8 +15709,8 @@ return array (
     0 => 'void',
     'after' => 'float',
     'repeat' => 'float',
-    'callback' => 'mixed|null',
-    'data=' => 'mixed|null',
+    'callback' => 'mixed',
+    'data=' => 'mixed',
     'priority=' => 'int',
   ),
   'evtimer::again' => 
@@ -15726,8 +15726,8 @@ return array (
     0 => 'EvTimer',
     'after' => 'float',
     'repeat' => 'float',
-    'callback' => 'mixed|null',
-    'data=' => 'mixed|null',
+    'callback' => 'mixed',
+    'data=' => 'mixed',
     'priority=' => 'int',
   ),
   'evtimer::feed' => 
@@ -15758,7 +15758,7 @@ return array (
   'evtimer::setcallback' => 
   array (
     0 => 'void',
-    'callback' => 'mixed|null',
+    'callback' => 'mixed',
   ),
   'evtimer::start' => 
   array (
@@ -15794,7 +15794,7 @@ return array (
   'evwatcher::setcallback' => 
   array (
     0 => 'void',
-    'callback' => 'mixed|null',
+    'callback' => 'mixed',
   ),
   'evwatcher::start' => 
   array (
@@ -16194,7 +16194,7 @@ return array (
   ),
   'fiber::getreturn' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'fiber::isrunning' => 
   array (
@@ -16214,22 +16214,22 @@ return array (
   ),
   'fiber::resume' => 
   array (
-    0 => 'mixed|null',
-    'value=' => 'mixed|null',
+    0 => 'mixed',
+    'value=' => 'mixed',
   ),
   'fiber::start' => 
   array (
-    0 => 'mixed|null',
-    '...args=' => 'mixed|null',
+    0 => 'mixed',
+    '...args=' => 'mixed',
   ),
   'fiber::suspend' => 
   array (
-    0 => 'mixed|null',
-    'value=' => 'mixed|null',
+    0 => 'mixed',
+    'value=' => 'mixed',
   ),
   'fiber::throw' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'exception' => 'Throwable',
   ),
   'fibererror::__construct' => 
@@ -16297,7 +16297,7 @@ return array (
   array (
     0 => 'false|int',
     'filename' => 'string',
-    'data' => 'mixed|null',
+    'data' => 'mixed',
     'flags=' => 'int',
     'context=' => 'mixed',
   ),
@@ -16531,7 +16531,7 @@ return array (
   ),
   'filter_input' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'type' => 'int',
     'var_name' => 'string',
     'filter=' => 'int',
@@ -16550,8 +16550,8 @@ return array (
   ),
   'filter_var' => 
   array (
-    0 => 'mixed|null',
-    'value' => 'mixed|null',
+    0 => 'mixed',
+    'value' => 'mixed',
     'filter=' => 'int',
     'options=' => 'array<array-key, mixed>|int',
   ),
@@ -16573,7 +16573,7 @@ return array (
   ),
   'filteriterator::current' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'filteriterator::getinneriterator' => 
   array (
@@ -16581,7 +16581,7 @@ return array (
   ),
   'filteriterator::key' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'filteriterator::next' => 
   array (
@@ -16656,7 +16656,7 @@ return array (
   'floatval' => 
   array (
     0 => 'float',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'flock' => 
   array (
@@ -16697,13 +16697,13 @@ return array (
   ),
   'forward_static_call' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'callback' => 'callable',
-    '...args=' => 'mixed|null',
+    '...args=' => 'mixed',
   ),
   'forward_static_call_array' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'callback' => 'callable',
     'args' => 'array<array-key, mixed>',
   ),
@@ -16717,7 +16717,7 @@ return array (
     0 => 'int',
     'stream' => 'mixed',
     'format' => 'string',
-    '...values=' => 'mixed|null',
+    '...values=' => 'mixed',
   ),
   'fputcsv' => 
   array (
@@ -16747,7 +16747,7 @@ return array (
     0 => 'array<array-key, mixed>|false|int|null',
     'stream' => 'mixed',
     'format' => 'string',
-    '...&vars=' => 'mixed|null',
+    '...&vars=' => 'mixed',
   ),
   'fseek' => 
   array (
@@ -17038,7 +17038,7 @@ return array (
   ),
   'func_get_arg' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'position' => 'int',
   ),
   'func_get_args' => 
@@ -17091,15 +17091,15 @@ return array (
   ),
   'generator::current' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'generator::getreturn' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'generator::key' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'generator::next' => 
   array (
@@ -17111,12 +17111,12 @@ return array (
   ),
   'generator::send' => 
   array (
-    0 => 'mixed|null',
-    'value' => 'mixed|null',
+    0 => 'mixed',
+    'value' => 'mixed',
   ),
   'generator::throw' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'exception' => 'Throwable',
   ),
   'generator::valid' => 
@@ -17160,7 +17160,7 @@ return array (
   'get_debug_type' => 
   array (
     0 => 'string',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'get_declared_classes' => 
   array (
@@ -17379,7 +17379,7 @@ return array (
   'gettype' => 
   array (
     0 => 'string',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'glob' => 
   array (
@@ -20647,7 +20647,7 @@ return array (
   'imagick::pingimagefile' => 
   array (
     0 => 'bool',
-    'filehandle' => 'mixed|null',
+    'filehandle' => 'mixed',
     'filename=' => 'null|string',
   ),
   'imagick::polaroidimage' => 
@@ -20763,7 +20763,7 @@ return array (
   'imagick::readimagefile' => 
   array (
     0 => 'bool',
-    'filehandle' => 'mixed|null',
+    'filehandle' => 'mixed',
     'filename=' => 'null|string',
   ),
   'imagick::readimages' => 
@@ -21541,7 +21541,7 @@ return array (
   'imagick::writeimagefile' => 
   array (
     0 => 'bool',
-    'filehandle' => 'mixed|null',
+    'filehandle' => 'mixed',
     'format=' => 'null|string',
   ),
   'imagick::writeimages' => 
@@ -21553,7 +21553,7 @@ return array (
   'imagick::writeimagesfile' => 
   array (
     0 => 'bool',
-    'filehandle' => 'mixed|null',
+    'filehandle' => 'mixed',
     'format=' => 'null|string',
   ),
   'imagickdraw::__construct' => 
@@ -22725,7 +22725,7 @@ return array (
   'in_array' => 
   array (
     0 => 'bool',
-    'needle' => 'mixed|null',
+    'needle' => 'mixed',
     'haystack' => 'array<array-key, mixed>',
     'strict=' => 'bool',
   ),
@@ -22746,7 +22746,7 @@ return array (
   ),
   'infiniteiterator::current' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'infiniteiterator::getinneriterator' => 
   array (
@@ -22754,7 +22754,7 @@ return array (
   ),
   'infiniteiterator::key' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'infiniteiterator::next' => 
   array (
@@ -22837,11 +22837,11 @@ return array (
   ),
   'internaliterator::current' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'internaliterator::key' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'internaliterator::next' => 
   array (
@@ -24314,11 +24314,11 @@ return array (
   ),
   'intliterator::current' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'intliterator::key' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'intliterator::next' => 
   array (
@@ -24334,7 +24334,7 @@ return array (
   ),
   'intlpartsiterator::current' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'intlpartsiterator::getbreakiterator' => 
   array (
@@ -24346,7 +24346,7 @@ return array (
   ),
   'intlpartsiterator::key' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'intlpartsiterator::next' => 
   array (
@@ -24733,7 +24733,7 @@ return array (
   'intval' => 
   array (
     0 => 'int',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
     'base=' => 'int',
   ),
   'invalidargumentexception::__construct' => 
@@ -24799,31 +24799,31 @@ return array (
   'is_a' => 
   array (
     0 => 'bool',
-    'object_or_class' => 'mixed|null',
+    'object_or_class' => 'mixed',
     'class' => 'string',
     'allow_string=' => 'bool',
   ),
   'is_array' => 
   array (
     0 => 'bool',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'is_bool' => 
   array (
     0 => 'bool',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'is_callable' => 
   array (
     0 => 'bool',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
     'syntax_only=' => 'bool',
     '&callable_name=' => 'mixed',
   ),
   'is_countable' => 
   array (
     0 => 'bool',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'is_dir' => 
   array (
@@ -24833,7 +24833,7 @@ return array (
   'is_double' => 
   array (
     0 => 'bool',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'is_executable' => 
   array (
@@ -24853,7 +24853,7 @@ return array (
   'is_float' => 
   array (
     0 => 'bool',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'is_infinite' => 
   array (
@@ -24863,17 +24863,17 @@ return array (
   'is_int' => 
   array (
     0 => 'bool',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'is_integer' => 
   array (
     0 => 'bool',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'is_iterable' => 
   array (
     0 => 'bool',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'is_link' => 
   array (
@@ -24883,7 +24883,7 @@ return array (
   'is_long' => 
   array (
     0 => 'bool',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'is_nan' => 
   array (
@@ -24893,17 +24893,17 @@ return array (
   'is_null' => 
   array (
     0 => 'bool',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'is_numeric' => 
   array (
     0 => 'bool',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'is_object' => 
   array (
     0 => 'bool',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'is_readable' => 
   array (
@@ -24913,27 +24913,27 @@ return array (
   'is_resource' => 
   array (
     0 => 'bool',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'is_scalar' => 
   array (
     0 => 'bool',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'is_soap_fault' => 
   array (
     0 => 'bool',
-    'object' => 'mixed|null',
+    'object' => 'mixed',
   ),
   'is_string' => 
   array (
     0 => 'bool',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'is_subclass_of' => 
   array (
     0 => 'bool',
-    'object_or_class' => 'mixed|null',
+    'object_or_class' => 'mixed',
     'class' => 'string',
     'allow_string=' => 'bool',
   ),
@@ -24978,7 +24978,7 @@ return array (
   ),
   'iteratoriterator::current' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'iteratoriterator::getinneriterator' => 
   array (
@@ -24986,7 +24986,7 @@ return array (
   ),
   'iteratoriterator::key' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'iteratoriterator::next' => 
   array (
@@ -25008,7 +25008,7 @@ return array (
   ),
   'json_decode' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'json' => 'string',
     'associative=' => 'bool|null',
     'depth=' => 'int',
@@ -25017,7 +25017,7 @@ return array (
   'json_encode' => 
   array (
     0 => 'false|string',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
     'flags=' => 'int',
     'depth=' => 'int',
   ),
@@ -25209,7 +25209,7 @@ return array (
   ),
   'limititerator::current' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'limititerator::getinneriterator' => 
   array (
@@ -25221,7 +25221,7 @@ return array (
   ),
   'limititerator::key' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'limititerator::next' => 
   array (
@@ -25545,9 +25545,9 @@ return array (
   ),
   'max' => 
   array (
-    0 => 'mixed|null',
-    'value' => 'mixed|null',
-    '...values=' => 'mixed|null',
+    0 => 'mixed',
+    'value' => 'mixed',
+    '...values=' => 'mixed',
   ),
   'mb_check_encoding' => 
   array (
@@ -25587,8 +25587,8 @@ return array (
     0 => 'false|string',
     'to_encoding' => 'string',
     'from_encoding' => 'array<array-key, mixed>|string',
-    '&var' => 'mixed|null',
-    '...&vars=' => 'mixed|null',
+    '&var' => 'mixed',
+    '...&vars=' => 'mixed',
   ),
   'mb_decode_mimeheader' => 
   array (
@@ -25958,7 +25958,7 @@ return array (
   array (
     0 => 'bool',
     'key' => 'string',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
     'expiration=' => 'int',
   ),
   'memcached::addbykey' => 
@@ -25966,7 +25966,7 @@ return array (
     0 => 'bool',
     'server_key' => 'string',
     'key' => 'string',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
     'expiration=' => 'int',
   ),
   'memcached::addserver' => 
@@ -25999,7 +25999,7 @@ return array (
     0 => 'bool',
     'cas_token' => 'float|int|string',
     'key' => 'string',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
     'expiration=' => 'int',
   ),
   'memcached::casbykey' => 
@@ -26008,7 +26008,7 @@ return array (
     'cas_token' => 'float|int|string',
     'server_key' => 'string',
     'key' => 'string',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
     'expiration=' => 'int',
   ),
   'memcached::checkkey' => 
@@ -26078,7 +26078,7 @@ return array (
   ),
   'memcached::get' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'key' => 'string',
     'cache_cb=' => 'callable|null',
     'get_flags=' => 'int',
@@ -26089,7 +26089,7 @@ return array (
   ),
   'memcached::getbykey' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'server_key' => 'string',
     'key' => 'string',
     'cache_cb=' => 'callable|null',
@@ -26141,7 +26141,7 @@ return array (
   ),
   'memcached::getoption' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'option' => 'int',
   ),
   'memcached::getresultcode' => 
@@ -26216,7 +26216,7 @@ return array (
   array (
     0 => 'bool',
     'key' => 'string',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
     'expiration=' => 'int',
   ),
   'memcached::replacebykey' => 
@@ -26224,7 +26224,7 @@ return array (
     0 => 'bool',
     'server_key' => 'string',
     'key' => 'string',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
     'expiration=' => 'int',
   ),
   'memcached::resetserverlist' => 
@@ -26235,7 +26235,7 @@ return array (
   array (
     0 => 'bool',
     'key' => 'string',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
     'expiration=' => 'int',
   ),
   'memcached::setbucket' => 
@@ -26250,7 +26250,7 @@ return array (
     0 => 'bool',
     'server_key' => 'string',
     'key' => 'string',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
     'expiration=' => 'int',
   ),
   'memcached::setencodingkey' => 
@@ -26275,7 +26275,7 @@ return array (
   array (
     0 => 'bool',
     'option' => 'int',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'memcached::setoptions' => 
   array (
@@ -26464,9 +26464,9 @@ return array (
   ),
   'min' => 
   array (
-    0 => 'mixed|null',
-    'value' => 'mixed|null',
-    '...values=' => 'mixed|null',
+    0 => 'mixed',
+    'value' => 'mixed',
+    '...values=' => 'mixed',
   ),
   'mkdir' => 
   array (
@@ -26520,7 +26520,7 @@ return array (
   ),
   'mongodb\\bson\\binary::jsonserialize' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'mongodb\\bson\\binary::serialize' => 
   array (
@@ -26555,7 +26555,7 @@ return array (
   ),
   'mongodb\\bson\\dbpointer::jsonserialize' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'mongodb\\bson\\dbpointer::serialize' => 
   array (
@@ -26591,7 +26591,7 @@ return array (
   ),
   'mongodb\\bson\\decimal128::jsonserialize' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'mongodb\\bson\\decimal128::serialize' => 
   array (
@@ -26641,7 +26641,7 @@ return array (
   ),
   'mongodb\\bson\\document::get' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'key' => 'string',
   ),
   'mongodb\\bson\\document::getiterator' => 
@@ -26656,23 +26656,23 @@ return array (
   'mongodb\\bson\\document::offsetexists' => 
   array (
     0 => 'bool',
-    'offset' => 'mixed|null',
+    'offset' => 'mixed',
   ),
   'mongodb\\bson\\document::offsetget' => 
   array (
-    0 => 'mixed|null',
-    'offset' => 'mixed|null',
+    0 => 'mixed',
+    'offset' => 'mixed',
   ),
   'mongodb\\bson\\document::offsetset' => 
   array (
     0 => 'void',
-    'offset' => 'mixed|null',
-    'value' => 'mixed|null',
+    'offset' => 'mixed',
+    'value' => 'mixed',
   ),
   'mongodb\\bson\\document::offsetunset' => 
   array (
     0 => 'void',
-    'offset' => 'mixed|null',
+    'offset' => 'mixed',
   ),
   'mongodb\\bson\\document::serialize' => 
   array (
@@ -26731,7 +26731,7 @@ return array (
   ),
   'mongodb\\bson\\int64::jsonserialize' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'mongodb\\bson\\int64::serialize' => 
   array (
@@ -26748,7 +26748,7 @@ return array (
   ),
   'mongodb\\bson\\iterator::current' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'mongodb\\bson\\iterator::key' => 
   array (
@@ -26800,7 +26800,7 @@ return array (
   ),
   'mongodb\\bson\\javascript::jsonserialize' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'mongodb\\bson\\javascript::serialize' => 
   array (
@@ -26827,7 +26827,7 @@ return array (
   ),
   'mongodb\\bson\\maxkey::jsonserialize' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'mongodb\\bson\\maxkey::serialize' => 
   array (
@@ -26854,7 +26854,7 @@ return array (
   ),
   'mongodb\\bson\\minkey::jsonserialize' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'mongodb\\bson\\minkey::serialize' => 
   array (
@@ -26894,7 +26894,7 @@ return array (
   ),
   'mongodb\\bson\\objectid::jsonserialize' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'mongodb\\bson\\objectid::serialize' => 
   array (
@@ -26939,7 +26939,7 @@ return array (
   ),
   'mongodb\\bson\\packedarray::get' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'index' => 'int',
   ),
   'mongodb\\bson\\packedarray::getiterator' => 
@@ -26954,23 +26954,23 @@ return array (
   'mongodb\\bson\\packedarray::offsetexists' => 
   array (
     0 => 'bool',
-    'offset' => 'mixed|null',
+    'offset' => 'mixed',
   ),
   'mongodb\\bson\\packedarray::offsetget' => 
   array (
-    0 => 'mixed|null',
-    'offset' => 'mixed|null',
+    0 => 'mixed',
+    'offset' => 'mixed',
   ),
   'mongodb\\bson\\packedarray::offsetset' => 
   array (
     0 => 'void',
-    'offset' => 'mixed|null',
-    'value' => 'mixed|null',
+    'offset' => 'mixed',
+    'value' => 'mixed',
   ),
   'mongodb\\bson\\packedarray::offsetunset' => 
   array (
     0 => 'void',
-    'offset' => 'mixed|null',
+    'offset' => 'mixed',
   ),
   'mongodb\\bson\\packedarray::serialize' => 
   array (
@@ -27028,7 +27028,7 @@ return array (
   ),
   'mongodb\\bson\\regex::jsonserialize' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'mongodb\\bson\\regex::serialize' => 
   array (
@@ -27063,7 +27063,7 @@ return array (
   ),
   'mongodb\\bson\\symbol::jsonserialize' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'mongodb\\bson\\symbol::serialize' => 
   array (
@@ -27108,7 +27108,7 @@ return array (
   ),
   'mongodb\\bson\\timestamp::jsonserialize' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'mongodb\\bson\\timestamp::serialize' => 
   array (
@@ -27164,7 +27164,7 @@ return array (
   ),
   'mongodb\\bson\\undefined::jsonserialize' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'mongodb\\bson\\undefined::serialize' => 
   array (
@@ -27200,7 +27200,7 @@ return array (
   ),
   'mongodb\\bson\\utcdatetime::jsonserialize' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'mongodb\\bson\\utcdatetime::serialize' => 
   array (
@@ -27236,7 +27236,7 @@ return array (
   ),
   'mongodb\\driver\\bulkwrite::insert' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'document' => 'array<array-key, mixed>|object',
   ),
   'mongodb\\driver\\bulkwrite::update' => 
@@ -27265,7 +27265,7 @@ return array (
   ),
   'mongodb\\driver\\clientencryption::decrypt' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'value' => 'MongoDB\\BSON\\Binary',
   ),
   'mongodb\\driver\\clientencryption::deletekey' => 
@@ -27276,7 +27276,7 @@ return array (
   'mongodb\\driver\\clientencryption::encrypt' => 
   array (
     0 => 'MongoDB\\BSON\\Binary',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
     'options=' => 'array<array-key, mixed>|null',
   ),
   'mongodb\\driver\\clientencryption::encryptexpression' => 
@@ -29098,7 +29098,7 @@ return array (
   ),
   'next' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     '&array' => 'array<array-key, mixed>|object',
   ),
   'nl2br' => 
@@ -29119,7 +29119,7 @@ return array (
   ),
   'norewinditerator::current' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'norewinditerator::getinneriterator' => 
   array (
@@ -29127,7 +29127,7 @@ return array (
   ),
   'norewinditerator::key' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'norewinditerator::next' => 
   array (
@@ -30097,7 +30097,7 @@ return array (
   array (
     0 => 'string',
     'format' => 'string',
-    '...values=' => 'mixed|null',
+    '...values=' => 'mixed',
   ),
   'parentiterator::__construct' => 
   array (
@@ -30110,7 +30110,7 @@ return array (
   ),
   'parentiterator::current' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'parentiterator::getchildren' => 
   array (
@@ -30126,7 +30126,7 @@ return array (
   ),
   'parentiterator::key' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'parentiterator::next' => 
   array (
@@ -30420,7 +30420,7 @@ return array (
   ),
   'pdo::getattribute' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'attribute' => 'int',
   ),
   'pdo::getavailabledrivers' => 
@@ -30447,7 +30447,7 @@ return array (
     0 => 'PDOStatement|false',
     'query' => 'string',
     'fetchMode=' => 'int|null',
-    '...fetchModeArgs=' => 'mixed|null',
+    '...fetchModeArgs=' => 'mixed',
   ),
   'pdo::quote' => 
   array (
@@ -30463,7 +30463,7 @@ return array (
   array (
     0 => 'bool',
     'attribute' => 'int',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'pdo_drivers' => 
   array (
@@ -30516,25 +30516,25 @@ return array (
   array (
     0 => 'bool',
     'column' => 'int|string',
-    '&var' => 'mixed|null',
+    '&var' => 'mixed',
     'type=' => 'int',
     'maxLength=' => 'int',
-    'driverOptions=' => 'mixed|null',
+    'driverOptions=' => 'mixed',
   ),
   'pdostatement::bindparam' => 
   array (
     0 => 'bool',
     'param' => 'int|string',
-    '&var' => 'mixed|null',
+    '&var' => 'mixed',
     'type=' => 'int',
     'maxLength=' => 'int',
-    'driverOptions=' => 'mixed|null',
+    'driverOptions=' => 'mixed',
   ),
   'pdostatement::bindvalue' => 
   array (
     0 => 'bool',
     'param' => 'int|string',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
     'type=' => 'int',
   ),
   'pdostatement::closecursor' => 
@@ -30564,7 +30564,7 @@ return array (
   ),
   'pdostatement::fetch' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'mode=' => 'int',
     'cursorOrientation=' => 'int',
     'cursorOffset=' => 'int',
@@ -30573,11 +30573,11 @@ return array (
   array (
     0 => 'array<array-key, mixed>',
     'mode=' => 'int',
-    '...args=' => 'mixed|null',
+    '...args=' => 'mixed',
   ),
   'pdostatement::fetchcolumn' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'column=' => 'int',
   ),
   'pdostatement::fetchobject' => 
@@ -30588,7 +30588,7 @@ return array (
   ),
   'pdostatement::getattribute' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'name' => 'int',
   ),
   'pdostatement::getcolumnmeta' => 
@@ -30612,13 +30612,13 @@ return array (
   array (
     0 => 'bool',
     'attribute' => 'int',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'pdostatement::setfetchmode' => 
   array (
     0 => 'mixed',
     'mode' => 'int',
-    '...args=' => 'mixed|null',
+    '...args=' => 'mixed',
   ),
   'pfsockopen' => 
   array (
@@ -31504,7 +31504,7 @@ return array (
   ),
   'phar::getmetadata' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'unserializeOptions=' => 'array<array-key, mixed>',
   ),
   'phar::getmodified' => 
@@ -31738,7 +31738,7 @@ return array (
   'phar::setmetadata' => 
   array (
     0 => 'void',
-    'metadata' => 'mixed|null',
+    'metadata' => 'mixed',
   ),
   'phar::setsignaturealgorithm' => 
   array (
@@ -31967,7 +31967,7 @@ return array (
   ),
   'phardata::getmetadata' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'unserializeOptions=' => 'array<array-key, mixed>',
   ),
   'phardata::getmodified' => 
@@ -32201,7 +32201,7 @@ return array (
   'phardata::setmetadata' => 
   array (
     0 => 'void',
-    'metadata' => 'mixed|null',
+    'metadata' => 'mixed',
   ),
   'phardata::setsignaturealgorithm' => 
   array (
@@ -32375,7 +32375,7 @@ return array (
   ),
   'pharfileinfo::getmetadata' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'unserializeOptions=' => 'array<array-key, mixed>',
   ),
   'pharfileinfo::getmtime' => 
@@ -32476,7 +32476,7 @@ return array (
   'pharfileinfo::setmetadata' => 
   array (
     0 => 'void',
-    'metadata' => 'mixed|null',
+    'metadata' => 'mixed',
   ),
   'php_ini_loaded_file' => 
   array (
@@ -32574,7 +32574,7 @@ return array (
   ),
   'pos' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'array' => 'array<array-key, mixed>|object',
   ),
   'posix_access' => 
@@ -32758,8 +32758,8 @@ return array (
   'pow' => 
   array (
     0 => 'float|int|object',
-    'num' => 'mixed|null',
-    'exponent' => 'mixed|null',
+    'num' => 'mixed',
+    'exponent' => 'mixed',
   ),
   'preg_filter' => 
   array (
@@ -32847,20 +32847,20 @@ return array (
   ),
   'prev' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     '&array' => 'array<array-key, mixed>|object',
   ),
   'print_r' => 
   array (
     0 => 'bool|string',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
     'return=' => 'bool',
   ),
   'printf' => 
   array (
     0 => 'int',
     'format' => 'string',
-    '...values=' => 'mixed|null',
+    '...values=' => 'mixed',
   ),
   'proc_close' => 
   array (
@@ -33054,7 +33054,7 @@ return array (
   ),
   'readline_info' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'var_name=' => 'null|string',
     'value=' => 'mixed',
   ),
@@ -33120,7 +33120,7 @@ return array (
   'recursivearrayiterator::append' => 
   array (
     0 => 'void',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'recursivearrayiterator::asort' => 
   array (
@@ -33133,7 +33133,7 @@ return array (
   ),
   'recursivearrayiterator::current' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'recursivearrayiterator::getarraycopy' => 
   array (
@@ -33175,23 +33175,23 @@ return array (
   'recursivearrayiterator::offsetexists' => 
   array (
     0 => 'bool',
-    'key' => 'mixed|null',
+    'key' => 'mixed',
   ),
   'recursivearrayiterator::offsetget' => 
   array (
-    0 => 'mixed|null',
-    'key' => 'mixed|null',
+    0 => 'mixed',
+    'key' => 'mixed',
   ),
   'recursivearrayiterator::offsetset' => 
   array (
     0 => 'void',
-    'key' => 'mixed|null',
-    'value' => 'mixed|null',
+    'key' => 'mixed',
+    'value' => 'mixed',
   ),
   'recursivearrayiterator::offsetunset' => 
   array (
     0 => 'void',
-    'key' => 'mixed|null',
+    'key' => 'mixed',
   ),
   'recursivearrayiterator::rewind' => 
   array (
@@ -33246,7 +33246,7 @@ return array (
   ),
   'recursivecachingiterator::current' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'recursivecachingiterator::getcache' => 
   array (
@@ -33274,7 +33274,7 @@ return array (
   ),
   'recursivecachingiterator::key' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'recursivecachingiterator::next' => 
   array (
@@ -33287,14 +33287,14 @@ return array (
   ),
   'recursivecachingiterator::offsetget' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'key' => 'mixed',
   ),
   'recursivecachingiterator::offsetset' => 
   array (
     0 => 'void',
     'key' => 'mixed',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'recursivecachingiterator::offsetunset' => 
   array (
@@ -33326,7 +33326,7 @@ return array (
   ),
   'recursivecallbackfilteriterator::current' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'recursivecallbackfilteriterator::getchildren' => 
   array (
@@ -33342,7 +33342,7 @@ return array (
   ),
   'recursivecallbackfilteriterator::key' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'recursivecallbackfilteriterator::next' => 
   array (
@@ -33556,7 +33556,7 @@ return array (
   ),
   'recursivefilteriterator::current' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'recursivefilteriterator::getchildren' => 
   array (
@@ -33572,7 +33572,7 @@ return array (
   ),
   'recursivefilteriterator::key' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'recursivefilteriterator::next' => 
   array (
@@ -33611,7 +33611,7 @@ return array (
   ),
   'recursiveiteratoriterator::current' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'recursiveiteratoriterator::endchildren' => 
   array (
@@ -33640,7 +33640,7 @@ return array (
   ),
   'recursiveiteratoriterator::key' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'recursiveiteratoriterator::next' => 
   array (
@@ -33678,7 +33678,7 @@ return array (
   ),
   'recursiveregexiterator::current' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'recursiveregexiterator::getchildren' => 
   array (
@@ -33710,7 +33710,7 @@ return array (
   ),
   'recursiveregexiterator::key' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'recursiveregexiterator::next' => 
   array (
@@ -33765,7 +33765,7 @@ return array (
   ),
   'recursivetreeiterator::current' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'recursivetreeiterator::endchildren' => 
   array (
@@ -33806,7 +33806,7 @@ return array (
   ),
   'recursivetreeiterator::key' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'recursivetreeiterator::next' => 
   array (
@@ -33857,7 +33857,7 @@ return array (
   'redis::_pack' => 
   array (
     0 => 'string',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'redis::_prefix' => 
   array (
@@ -33867,7 +33867,7 @@ return array (
   'redis::_serialize' => 
   array (
     0 => 'string',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'redis::_uncompress' => 
   array (
@@ -33876,17 +33876,17 @@ return array (
   ),
   'redis::_unpack' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'value' => 'string',
   ),
   'redis::_unserialize' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'value' => 'string',
   ),
   'redis::acl' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'subcmd' => 'string',
     '...args=' => 'string',
   ),
@@ -33894,12 +33894,12 @@ return array (
   array (
     0 => 'Redis|false|int',
     'key' => 'string',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'redis::auth' => 
   array (
     0 => 'Redis|bool',
-    'credentials' => 'mixed|null',
+    'credentials' => 'mixed',
   ),
   'redis::bgrewriteaof' => 
   array (
@@ -33956,14 +33956,14 @@ return array (
     0 => 'Redis|array<array-key, mixed>|false|null',
     'key_or_keys' => 'array<array-key, mixed>|string',
     'timeout_or_key' => 'float|int|string',
-    '...extra_args=' => 'mixed|null',
+    '...extra_args=' => 'mixed',
   ),
   'redis::brpop' => 
   array (
     0 => 'Redis|array<array-key, mixed>|false|null',
     'key_or_keys' => 'array<array-key, mixed>|string',
     'timeout_or_key' => 'float|int|string',
-    '...extra_args=' => 'mixed|null',
+    '...extra_args=' => 'mixed',
   ),
   'redis::brpoplpush' => 
   array (
@@ -33985,14 +33985,14 @@ return array (
     0 => 'Redis|array<array-key, mixed>|false',
     'key' => 'array<array-key, mixed>|string',
     'timeout_or_key' => 'int|string',
-    '...extra_args=' => 'mixed|null',
+    '...extra_args=' => 'mixed',
   ),
   'redis::bzpopmin' => 
   array (
     0 => 'Redis|array<array-key, mixed>|false',
     'key' => 'array<array-key, mixed>|string',
     'timeout_or_key' => 'int|string',
-    '...extra_args=' => 'mixed|null',
+    '...extra_args=' => 'mixed',
   ),
   'redis::clearlasterror' => 
   array (
@@ -34004,9 +34004,9 @@ return array (
   ),
   'redis::client' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'opt' => 'string',
-    '...args=' => 'mixed|null',
+    '...args=' => 'mixed',
   ),
   'redis::close' => 
   array (
@@ -34014,13 +34014,13 @@ return array (
   ),
   'redis::command' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'opt=' => 'null|string',
-    '...args=' => 'mixed|null',
+    '...args=' => 'mixed',
   ),
   'redis::config' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'operation' => 'string',
     'key_or_settings=' => 'array<array-key, mixed>|null|string',
     'value=' => 'null|string',
@@ -34092,28 +34092,28 @@ return array (
   ),
   'redis::eval' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'script' => 'string',
     'args=' => 'array<array-key, mixed>',
     'num_keys=' => 'int',
   ),
   'redis::eval_ro' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'script_sha' => 'string',
     'args=' => 'array<array-key, mixed>',
     'num_keys=' => 'int',
   ),
   'redis::evalsha' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'sha1' => 'string',
     'args=' => 'array<array-key, mixed>',
     'num_keys=' => 'int',
   ),
   'redis::evalsha_ro' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'sha1' => 'string',
     'args=' => 'array<array-key, mixed>',
     'num_keys=' => 'int',
@@ -34125,8 +34125,8 @@ return array (
   'redis::exists' => 
   array (
     0 => 'Redis|bool|int',
-    'key' => 'mixed|null',
-    '...other_keys=' => 'mixed|null',
+    'key' => 'mixed',
+    '...other_keys=' => 'mixed',
   ),
   'redis::expire' => 
   array (
@@ -34156,14 +34156,14 @@ return array (
   ),
   'redis::fcall' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'fn' => 'string',
     'keys=' => 'array<array-key, mixed>',
     'args=' => 'array<array-key, mixed>',
   ),
   'redis::fcall_ro' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'fn' => 'string',
     'keys=' => 'array<array-key, mixed>',
     'args=' => 'array<array-key, mixed>',
@@ -34182,7 +34182,7 @@ return array (
   array (
     0 => 'Redis|array<array-key, mixed>|bool|string',
     'operation' => 'string',
-    '...args=' => 'mixed|null',
+    '...args=' => 'mixed',
   ),
   'redis::geoadd' => 
   array (
@@ -34191,7 +34191,7 @@ return array (
     'lng' => 'float',
     'lat' => 'float',
     'member' => 'string',
-    '...other_triples_and_options=' => 'mixed|null',
+    '...other_triples_and_options=' => 'mixed',
   ),
   'redis::geodist' => 
   array (
@@ -34217,7 +34217,7 @@ return array (
   ),
   'redis::georadius' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'key' => 'string',
     'lng' => 'float',
     'lat' => 'float',
@@ -34227,7 +34227,7 @@ return array (
   ),
   'redis::georadius_ro' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'key' => 'string',
     'lng' => 'float',
     'lat' => 'float',
@@ -34237,7 +34237,7 @@ return array (
   ),
   'redis::georadiusbymember' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'key' => 'string',
     'member' => 'string',
     'radius' => 'float',
@@ -34246,7 +34246,7 @@ return array (
   ),
   'redis::georadiusbymember_ro' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'key' => 'string',
     'member' => 'string',
     'radius' => 'float',
@@ -34274,12 +34274,12 @@ return array (
   ),
   'redis::get' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'key' => 'string',
   ),
   'redis::getauth' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'redis::getbit' => 
   array (
@@ -34316,7 +34316,7 @@ return array (
   ),
   'redis::getoption' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'option' => 'int',
   ),
   'redis::getpersistentid' => 
@@ -34342,7 +34342,7 @@ return array (
   array (
     0 => 'Redis|false|string',
     'key' => 'string',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'redis::gettimeout' => 
   array (
@@ -34367,7 +34367,7 @@ return array (
   ),
   'redis::hget' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'key' => 'string',
     'member' => 'string',
   ),
@@ -34430,14 +34430,14 @@ return array (
   array (
     0 => 'Redis|false|int',
     'key' => 'string',
-    '...fields_and_vals=' => 'mixed|null',
+    '...fields_and_vals=' => 'mixed',
   ),
   'redis::hsetnx' => 
   array (
     0 => 'Redis|bool',
     'key' => 'string',
     'field' => 'string',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'redis::hstrlen' => 
   array (
@@ -34495,7 +34495,7 @@ return array (
   ),
   'redis::lindex' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'key' => 'string',
     'index' => 'int',
   ),
@@ -34504,8 +34504,8 @@ return array (
     0 => 'mixed',
     'key' => 'string',
     'pos' => 'string',
-    'pivot' => 'mixed|null',
-    'value' => 'mixed|null',
+    'pivot' => 'mixed',
+    'value' => 'mixed',
   ),
   'redis::llen' => 
   array (
@@ -34537,20 +34537,20 @@ return array (
   array (
     0 => 'Redis|array<array-key, mixed>|bool|int|null',
     'key' => 'string',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
     'options=' => 'array<array-key, mixed>|null',
   ),
   'redis::lpush' => 
   array (
     0 => 'Redis|false|int',
     'key' => 'string',
-    '...elements=' => 'mixed|null',
+    '...elements=' => 'mixed',
   ),
   'redis::lpushx' => 
   array (
     0 => 'Redis|false|int',
     'key' => 'string',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'redis::lrange' => 
   array (
@@ -34563,7 +34563,7 @@ return array (
   array (
     0 => 'Redis|false|int',
     'key' => 'string',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
     'count=' => 'int',
   ),
   'redis::lset' => 
@@ -34571,7 +34571,7 @@ return array (
     0 => 'Redis|bool',
     'key' => 'string',
     'index' => 'int',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'redis::ltrim' => 
   array (
@@ -34595,7 +34595,7 @@ return array (
     'timeout' => 'int',
     'copy=' => 'bool',
     'replace=' => 'bool',
-    'credentials=' => 'mixed|null',
+    'credentials=' => 'mixed',
   ),
   'redis::move' => 
   array (
@@ -34712,7 +34712,7 @@ return array (
     0 => 'Redis|bool',
     'key' => 'string',
     'expire' => 'int',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'redis::psubscribe' => 
   array (
@@ -34733,9 +34733,9 @@ return array (
   ),
   'redis::pubsub' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'command' => 'string',
-    'arg=' => 'mixed|null',
+    'arg=' => 'mixed',
   ),
   'redis::punsubscribe' => 
   array (
@@ -34748,9 +34748,9 @@ return array (
   ),
   'redis::rawcommand' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'command' => 'string',
-    '...args=' => 'mixed|null',
+    '...args=' => 'mixed',
   ),
   'redis::rename' => 
   array (
@@ -34784,7 +34784,7 @@ return array (
   ),
   'redis::role' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'redis::rpop' => 
   array (
@@ -34802,20 +34802,20 @@ return array (
   array (
     0 => 'Redis|false|int',
     'key' => 'string',
-    '...elements=' => 'mixed|null',
+    '...elements=' => 'mixed',
   ),
   'redis::rpushx' => 
   array (
     0 => 'Redis|false|int',
     'key' => 'string',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'redis::sadd' => 
   array (
     0 => 'Redis|false|int',
     'key' => 'string',
-    'value' => 'mixed|null',
-    '...other_values=' => 'mixed|null',
+    'value' => 'mixed',
+    '...other_values=' => 'mixed',
   ),
   'redis::saddarray' => 
   array (
@@ -34842,9 +34842,9 @@ return array (
   ),
   'redis::script' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'command' => 'string',
-    '...args=' => 'mixed|null',
+    '...args=' => 'mixed',
   ),
   'redis::sdiff' => 
   array (
@@ -34868,8 +34868,8 @@ return array (
   array (
     0 => 'Redis|bool|string',
     'key' => 'string',
-    'value' => 'mixed|null',
-    'options=' => 'mixed|null',
+    'value' => 'mixed',
+    'options=' => 'mixed',
   ),
   'redis::setbit' => 
   array (
@@ -34883,19 +34883,19 @@ return array (
     0 => 'mixed',
     'key' => 'string',
     'expire' => 'int',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'redis::setnx' => 
   array (
     0 => 'Redis|bool',
     'key' => 'string',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'redis::setoption' => 
   array (
     0 => 'bool',
     'option' => 'int',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'redis::setrange' => 
   array (
@@ -34926,7 +34926,7 @@ return array (
   array (
     0 => 'Redis|bool',
     'key' => 'string',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'redis::slaveof' => 
   array (
@@ -34936,7 +34936,7 @@ return array (
   ),
   'redis::slowlog' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'operation' => 'string',
     'length=' => 'int',
   ),
@@ -34957,17 +34957,17 @@ return array (
     0 => 'Redis|bool',
     'src' => 'string',
     'dst' => 'string',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'redis::sort' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'key' => 'string',
     'options=' => 'array<array-key, mixed>|null',
   ),
   'redis::sort_ro' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'key' => 'string',
     'options=' => 'array<array-key, mixed>|null',
   ),
@@ -34976,7 +34976,7 @@ return array (
     0 => 'array<array-key, mixed>',
     'key' => 'string',
     'pattern=' => 'null|string',
-    'get=' => 'mixed|null',
+    'get=' => 'mixed',
     'offset=' => 'int',
     'count=' => 'int',
     'store=' => 'null|string',
@@ -34986,7 +34986,7 @@ return array (
     0 => 'array<array-key, mixed>',
     'key' => 'string',
     'pattern=' => 'null|string',
-    'get=' => 'mixed|null',
+    'get=' => 'mixed',
     'offset=' => 'int',
     'count=' => 'int',
     'store=' => 'null|string',
@@ -34996,7 +34996,7 @@ return array (
     0 => 'array<array-key, mixed>',
     'key' => 'string',
     'pattern=' => 'null|string',
-    'get=' => 'mixed|null',
+    'get=' => 'mixed',
     'offset=' => 'int',
     'count=' => 'int',
     'store=' => 'null|string',
@@ -35006,7 +35006,7 @@ return array (
     0 => 'array<array-key, mixed>',
     'key' => 'string',
     'pattern=' => 'null|string',
-    'get=' => 'mixed|null',
+    'get=' => 'mixed',
     'offset=' => 'int',
     'count=' => 'int',
     'store=' => 'null|string',
@@ -35019,7 +35019,7 @@ return array (
   ),
   'redis::srandmember' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'key' => 'string',
     'count=' => 'int',
   ),
@@ -35027,8 +35027,8 @@ return array (
   array (
     0 => 'Redis|false|int',
     'key' => 'string',
-    'value' => 'mixed|null',
-    '...other_values=' => 'mixed|null',
+    'value' => 'mixed',
+    '...other_values=' => 'mixed',
   ),
   'redis::sscan' => 
   array (
@@ -35179,7 +35179,7 @@ return array (
   ),
   'redis::xgroup' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'operation' => 'string',
     'key=' => 'null|string',
     'group=' => 'null|string',
@@ -35189,7 +35189,7 @@ return array (
   ),
   'redis::xinfo' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'operation' => 'string',
     'arg1=' => 'null|string',
     'arg2=' => 'null|string',
@@ -35256,7 +35256,7 @@ return array (
     0 => 'Redis|false|float|int',
     'key' => 'string',
     'score_or_options' => 'array<array-key, mixed>|float',
-    '...more_scores_and_mems=' => 'mixed|null',
+    '...more_scores_and_mems=' => 'mixed',
   ),
   'redis::zcard' => 
   array (
@@ -35287,7 +35287,7 @@ return array (
     0 => 'Redis|false|float',
     'key' => 'string',
     'value' => 'float',
-    'member' => 'mixed|null',
+    'member' => 'mixed',
   ),
   'redis::zinter' => 
   array (
@@ -35328,8 +35328,8 @@ return array (
   array (
     0 => 'Redis|array<array-key, mixed>|false',
     'key' => 'string',
-    'member' => 'mixed|null',
-    '...other_members=' => 'mixed|null',
+    'member' => 'mixed',
+    '...other_members=' => 'mixed',
   ),
   'redis::zpopmax' => 
   array (
@@ -35387,14 +35387,14 @@ return array (
   array (
     0 => 'Redis|false|int',
     'key' => 'string',
-    'member' => 'mixed|null',
+    'member' => 'mixed',
   ),
   'redis::zrem' => 
   array (
     0 => 'Redis|false|int',
-    'key' => 'mixed|null',
-    'member' => 'mixed|null',
-    '...other_members=' => 'mixed|null',
+    'key' => 'mixed',
+    'member' => 'mixed',
+    '...other_members=' => 'mixed',
   ),
   'redis::zremrangebylex' => 
   array (
@@ -35423,7 +35423,7 @@ return array (
     'key' => 'string',
     'start' => 'int',
     'end' => 'int',
-    'scores=' => 'mixed|null',
+    'scores=' => 'mixed',
   ),
   'redis::zrevrangebylex' => 
   array (
@@ -35446,7 +35446,7 @@ return array (
   array (
     0 => 'Redis|false|int',
     'key' => 'string',
-    'member' => 'mixed|null',
+    'member' => 'mixed',
   ),
   'redis::zscan' => 
   array (
@@ -35460,7 +35460,7 @@ return array (
   array (
     0 => 'Redis|false|float',
     'key' => 'string',
-    'member' => 'mixed|null',
+    'member' => 'mixed',
   ),
   'redis::zunion' => 
   array (
@@ -35479,7 +35479,7 @@ return array (
   ),
   'redisarray::__call' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'function_name' => 'string',
     'arguments' => 'array<array-key, mixed>',
   ),
@@ -35645,7 +35645,7 @@ return array (
     'timeout=' => 'float|int',
     'read_timeout=' => 'float|int',
     'persistent=' => 'bool',
-    'auth=' => 'mixed|null',
+    'auth=' => 'mixed',
     'context=' => 'array<array-key, mixed>|null',
   ),
   'rediscluster::_compress' => 
@@ -35660,7 +35660,7 @@ return array (
   'rediscluster::_pack' => 
   array (
     0 => 'string',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'rediscluster::_prefix' => 
   array (
@@ -35674,7 +35674,7 @@ return array (
   'rediscluster::_serialize' => 
   array (
     0 => 'bool|string',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'rediscluster::_uncompress' => 
   array (
@@ -35683,17 +35683,17 @@ return array (
   ),
   'rediscluster::_unpack' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'value' => 'string',
   ),
   'rediscluster::_unserialize' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'value' => 'string',
   ),
   'rediscluster::acl' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'key_or_address' => 'array<array-key, mixed>|string',
     'subcmd' => 'string',
     '...args=' => 'string',
@@ -35702,7 +35702,7 @@ return array (
   array (
     0 => 'RedisCluster|bool|int',
     'key' => 'string',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'rediscluster::bgrewriteaof' => 
   array (
@@ -35761,18 +35761,18 @@ return array (
     0 => 'RedisCluster|array<array-key, mixed>|false|null',
     'key' => 'array<array-key, mixed>|string',
     'timeout_or_key' => 'float|int|string',
-    '...extra_args=' => 'mixed|null',
+    '...extra_args=' => 'mixed',
   ),
   'rediscluster::brpop' => 
   array (
     0 => 'RedisCluster|array<array-key, mixed>|false|null',
     'key' => 'array<array-key, mixed>|string',
     'timeout_or_key' => 'float|int|string',
-    '...extra_args=' => 'mixed|null',
+    '...extra_args=' => 'mixed',
   ),
   'rediscluster::brpoplpush' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'srckey' => 'string',
     'deskey' => 'string',
     'timeout' => 'int',
@@ -35790,14 +35790,14 @@ return array (
     0 => 'array<array-key, mixed>',
     'key' => 'array<array-key, mixed>|string',
     'timeout_or_key' => 'int|string',
-    '...extra_args=' => 'mixed|null',
+    '...extra_args=' => 'mixed',
   ),
   'rediscluster::bzpopmin' => 
   array (
     0 => 'array<array-key, mixed>',
     'key' => 'array<array-key, mixed>|string',
     'timeout_or_key' => 'int|string',
-    '...extra_args=' => 'mixed|null',
+    '...extra_args=' => 'mixed',
   ),
   'rediscluster::clearlasterror' => 
   array (
@@ -35820,22 +35820,22 @@ return array (
   ),
   'rediscluster::cluster' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'key_or_address' => 'array<array-key, mixed>|string',
     'command' => 'string',
-    '...extra_args=' => 'mixed|null',
+    '...extra_args=' => 'mixed',
   ),
   'rediscluster::command' => 
   array (
-    0 => 'mixed|null',
-    '...extra_args=' => 'mixed|null',
+    0 => 'mixed',
+    '...extra_args=' => 'mixed',
   ),
   'rediscluster::config' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'key_or_address' => 'array<array-key, mixed>|string',
     'subcommand' => 'string',
-    '...extra_args=' => 'mixed|null',
+    '...extra_args=' => 'mixed',
   ),
   'rediscluster::copy' => 
   array (
@@ -35890,28 +35890,28 @@ return array (
   ),
   'rediscluster::eval' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'script' => 'string',
     'args=' => 'array<array-key, mixed>',
     'num_keys=' => 'int',
   ),
   'rediscluster::eval_ro' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'script' => 'string',
     'args=' => 'array<array-key, mixed>',
     'num_keys=' => 'int',
   ),
   'rediscluster::evalsha' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'script_sha' => 'string',
     'args=' => 'array<array-key, mixed>',
     'num_keys=' => 'int',
   ),
   'rediscluster::evalsha_ro' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'script_sha' => 'string',
     'args=' => 'array<array-key, mixed>',
     'num_keys=' => 'int',
@@ -35923,8 +35923,8 @@ return array (
   'rediscluster::exists' => 
   array (
     0 => 'RedisCluster|bool|int',
-    'key' => 'mixed|null',
-    '...other_keys=' => 'mixed|null',
+    'key' => 'mixed',
+    '...other_keys=' => 'mixed',
   ),
   'rediscluster::expire' => 
   array (
@@ -35964,7 +35964,7 @@ return array (
     'lng' => 'float',
     'lat' => 'float',
     'member' => 'string',
-    '...other_triples_and_options=' => 'mixed|null',
+    '...other_triples_and_options=' => 'mixed',
   ),
   'rediscluster::geodist' => 
   array (
@@ -35990,7 +35990,7 @@ return array (
   ),
   'rediscluster::georadius' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'key' => 'string',
     'lng' => 'float',
     'lat' => 'float',
@@ -36000,7 +36000,7 @@ return array (
   ),
   'rediscluster::georadius_ro' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'key' => 'string',
     'lng' => 'float',
     'lat' => 'float',
@@ -36010,7 +36010,7 @@ return array (
   ),
   'rediscluster::georadiusbymember' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'key' => 'string',
     'member' => 'string',
     'radius' => 'float',
@@ -36019,7 +36019,7 @@ return array (
   ),
   'rediscluster::georadiusbymember_ro' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'key' => 'string',
     'member' => 'string',
     'radius' => 'float',
@@ -36047,7 +36047,7 @@ return array (
   ),
   'rediscluster::get' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'key' => 'string',
   ),
   'rediscluster::getbit' => 
@@ -36072,7 +36072,7 @@ return array (
   ),
   'rediscluster::getoption' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'option' => 'int',
   ),
   'rediscluster::getrange' => 
@@ -36086,7 +36086,7 @@ return array (
   array (
     0 => 'RedisCluster|bool|string',
     'key' => 'string',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'rediscluster::gettransferredbytes' => 
   array (
@@ -36107,7 +36107,7 @@ return array (
   ),
   'rediscluster::hget' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'key' => 'string',
     'member' => 'string',
   ),
@@ -36171,14 +36171,14 @@ return array (
     0 => 'RedisCluster|false|int',
     'key' => 'string',
     'member' => 'string',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'rediscluster::hsetnx' => 
   array (
     0 => 'RedisCluster|bool',
     'key' => 'string',
     'member' => 'string',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'rediscluster::hstrlen' => 
   array (
@@ -36240,7 +36240,7 @@ return array (
   ),
   'rediscluster::lindex' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'key' => 'string',
     'index' => 'int',
   ),
@@ -36249,8 +36249,8 @@ return array (
     0 => 'RedisCluster|false|int',
     'key' => 'string',
     'pos' => 'string',
-    'pivot' => 'mixed|null',
-    'value' => 'mixed|null',
+    'pivot' => 'mixed',
+    'value' => 'mixed',
   ),
   'rediscluster::llen' => 
   array (
@@ -36282,21 +36282,21 @@ return array (
   array (
     0 => 'Redis|array<array-key, mixed>|bool|int|null',
     'key' => 'string',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
     'options=' => 'array<array-key, mixed>|null',
   ),
   'rediscluster::lpush' => 
   array (
     0 => 'RedisCluster|bool|int',
     'key' => 'string',
-    'value' => 'mixed|null',
-    '...other_values=' => 'mixed|null',
+    'value' => 'mixed',
+    '...other_values=' => 'mixed',
   ),
   'rediscluster::lpushx' => 
   array (
     0 => 'RedisCluster|bool|int',
     'key' => 'string',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'rediscluster::lrange' => 
   array (
@@ -36309,7 +36309,7 @@ return array (
   array (
     0 => 'RedisCluster|bool|int',
     'key' => 'string',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
     'count=' => 'int',
   ),
   'rediscluster::lset' => 
@@ -36317,7 +36317,7 @@ return array (
     0 => 'RedisCluster|bool',
     'key' => 'string',
     'index' => 'int',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'rediscluster::ltrim' => 
   array (
@@ -36395,7 +36395,7 @@ return array (
   ),
   'rediscluster::ping' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'key_or_address' => 'array<array-key, mixed>|string',
     'message=' => 'null|string',
   ),
@@ -36425,7 +36425,7 @@ return array (
   ),
   'rediscluster::pubsub' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'key_or_address' => 'array<array-key, mixed>|string',
     '...values=' => 'string',
   ),
@@ -36442,10 +36442,10 @@ return array (
   ),
   'rediscluster::rawcommand' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'key_or_address' => 'array<array-key, mixed>|string',
     'command' => 'string',
-    '...args=' => 'mixed|null',
+    '...args=' => 'mixed',
   ),
   'rediscluster::rename' => 
   array (
@@ -36469,7 +36469,7 @@ return array (
   ),
   'rediscluster::role' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'key_or_address' => 'array<array-key, mixed>|string',
   ),
   'rediscluster::rpop' => 
@@ -36488,7 +36488,7 @@ return array (
   array (
     0 => 'RedisCluster|false|int',
     'key' => 'string',
-    '...elements=' => 'mixed|null',
+    '...elements=' => 'mixed',
   ),
   'rediscluster::rpushx' => 
   array (
@@ -36500,8 +36500,8 @@ return array (
   array (
     0 => 'RedisCluster|false|int',
     'key' => 'string',
-    'value' => 'mixed|null',
-    '...other_values=' => 'mixed|null',
+    'value' => 'mixed',
+    '...other_values=' => 'mixed',
   ),
   'rediscluster::saddarray' => 
   array (
@@ -36529,9 +36529,9 @@ return array (
   ),
   'rediscluster::script' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'key_or_address' => 'array<array-key, mixed>|string',
-    '...args=' => 'mixed|null',
+    '...args=' => 'mixed',
   ),
   'rediscluster::sdiff' => 
   array (
@@ -36550,8 +36550,8 @@ return array (
   array (
     0 => 'RedisCluster|bool|string',
     'key' => 'string',
-    'value' => 'mixed|null',
-    'options=' => 'mixed|null',
+    'value' => 'mixed',
+    'options=' => 'mixed',
   ),
   'rediscluster::setbit' => 
   array (
@@ -36565,19 +36565,19 @@ return array (
     0 => 'RedisCluster|bool',
     'key' => 'string',
     'expire' => 'int',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'rediscluster::setnx' => 
   array (
     0 => 'RedisCluster|bool',
     'key' => 'string',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'rediscluster::setoption' => 
   array (
     0 => 'bool',
     'option' => 'int',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'rediscluster::setrange' => 
   array (
@@ -36608,13 +36608,13 @@ return array (
   array (
     0 => 'RedisCluster|bool',
     'key' => 'string',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'rediscluster::slowlog' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'key_or_address' => 'array<array-key, mixed>|string',
-    '...args=' => 'mixed|null',
+    '...args=' => 'mixed',
   ),
   'rediscluster::smembers' => 
   array (
@@ -36663,8 +36663,8 @@ return array (
   array (
     0 => 'RedisCluster|false|int',
     'key' => 'string',
-    'value' => 'mixed|null',
-    '...other_values=' => 'mixed|null',
+    'value' => 'mixed',
+    '...other_values=' => 'mixed',
   ),
   'rediscluster::sscan' => 
   array (
@@ -36706,8 +36706,8 @@ return array (
   'rediscluster::touch' => 
   array (
     0 => 'RedisCluster|bool|int',
-    'key' => 'mixed|null',
-    '...other_keys=' => 'mixed|null',
+    'key' => 'mixed',
+    '...other_keys=' => 'mixed',
   ),
   'rediscluster::ttl' => 
   array (
@@ -36793,7 +36793,7 @@ return array (
   ),
   'rediscluster::xgroup' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'operation' => 'string',
     'key=' => 'null|string',
     'group=' => 'null|string',
@@ -36803,7 +36803,7 @@ return array (
   ),
   'rediscluster::xinfo' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'operation' => 'string',
     'arg1=' => 'null|string',
     'arg2=' => 'null|string',
@@ -36870,7 +36870,7 @@ return array (
     0 => 'RedisCluster|false|float|int',
     'key' => 'string',
     'score_or_options' => 'array<array-key, mixed>|float',
-    '...more_scores_and_mems=' => 'mixed|null',
+    '...more_scores_and_mems=' => 'mixed',
   ),
   'rediscluster::zcard' => 
   array (
@@ -36942,8 +36942,8 @@ return array (
   array (
     0 => 'Redis|array<array-key, mixed>|false',
     'key' => 'string',
-    'member' => 'mixed|null',
-    '...other_members=' => 'mixed|null',
+    'member' => 'mixed',
+    '...other_members=' => 'mixed',
   ),
   'rediscluster::zpopmax' => 
   array (
@@ -36967,8 +36967,8 @@ return array (
   array (
     0 => 'RedisCluster|array<array-key, mixed>|bool',
     'key' => 'string',
-    'start' => 'mixed|null',
-    'end' => 'mixed|null',
+    'start' => 'mixed',
+    'end' => 'mixed',
     'options=' => 'array<array-key, mixed>|bool|null',
   ),
   'rediscluster::zrangebylex' => 
@@ -37001,7 +37001,7 @@ return array (
   array (
     0 => 'RedisCluster|false|int',
     'key' => 'string',
-    'member' => 'mixed|null',
+    'member' => 'mixed',
   ),
   'rediscluster::zrem' => 
   array (
@@ -37059,7 +37059,7 @@ return array (
   array (
     0 => 'RedisCluster|false|int',
     'key' => 'string',
-    'member' => 'mixed|null',
+    'member' => 'mixed',
   ),
   'rediscluster::zscan' => 
   array (
@@ -37073,7 +37073,7 @@ return array (
   array (
     0 => 'RedisCluster|false|float',
     'key' => 'string',
-    'member' => 'mixed|null',
+    'member' => 'mixed',
   ),
   'rediscluster::zunion' => 
   array (
@@ -37290,7 +37290,7 @@ return array (
   ),
   'reflectionclass::getconstant' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'name' => 'string',
   ),
   'reflectionclass::getconstants' => 
@@ -37394,9 +37394,9 @@ return array (
   ),
   'reflectionclass::getstaticpropertyvalue' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'name' => 'string',
-    'default=' => 'mixed|null',
+    'default=' => 'mixed',
   ),
   'reflectionclass::gettraitaliases' => 
   array (
@@ -37495,7 +37495,7 @@ return array (
   'reflectionclass::newinstance' => 
   array (
     0 => 'object',
-    '...args=' => 'mixed|null',
+    '...args=' => 'mixed',
   ),
   'reflectionclass::newinstanceargs' => 
   array (
@@ -37510,7 +37510,7 @@ return array (
   array (
     0 => 'void',
     'name' => 'string',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'reflectionclassconstant::__clone' => 
   array (
@@ -37550,7 +37550,7 @@ return array (
   ),
   'reflectionclassconstant::getvalue' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'reflectionclassconstant::isenumcase' => 
   array (
@@ -37602,7 +37602,7 @@ return array (
   ),
   'reflectionenum::getconstant' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'name' => 'string',
   ),
   'reflectionenum::getconstants' => 
@@ -37706,9 +37706,9 @@ return array (
   ),
   'reflectionenum::getstaticpropertyvalue' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'name' => 'string',
-    'default=' => 'mixed|null',
+    'default=' => 'mixed',
   ),
   'reflectionenum::gettraitaliases' => 
   array (
@@ -37816,7 +37816,7 @@ return array (
   'reflectionenum::newinstance' => 
   array (
     0 => 'object',
-    '...args=' => 'mixed|null',
+    '...args=' => 'mixed',
   ),
   'reflectionenum::newinstanceargs' => 
   array (
@@ -37831,7 +37831,7 @@ return array (
   array (
     0 => 'void',
     'name' => 'string',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'reflectionenumbackedcase::__construct' => 
   array (
@@ -38192,12 +38192,12 @@ return array (
   ),
   'reflectionfunction::invoke' => 
   array (
-    0 => 'mixed|null',
-    '...args=' => 'mixed|null',
+    0 => 'mixed',
+    '...args=' => 'mixed',
   ),
   'reflectionfunction::invokeargs' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'args' => 'array<array-key, mixed>',
   ),
   'reflectionfunction::isclosure' => 
@@ -38535,13 +38535,13 @@ return array (
   ),
   'reflectionmethod::invoke' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'object' => 'null|object',
-    '...args=' => 'mixed|null',
+    '...args=' => 'mixed',
   ),
   'reflectionmethod::invokeargs' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'object' => 'null|object',
     'args' => 'array<array-key, mixed>',
   ),
@@ -38643,7 +38643,7 @@ return array (
   ),
   'reflectionobject::getconstant' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'name' => 'string',
   ),
   'reflectionobject::getconstants' => 
@@ -38747,9 +38747,9 @@ return array (
   ),
   'reflectionobject::getstaticpropertyvalue' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'name' => 'string',
-    'default=' => 'mixed|null',
+    'default=' => 'mixed',
   ),
   'reflectionobject::gettraitaliases' => 
   array (
@@ -38848,7 +38848,7 @@ return array (
   'reflectionobject::newinstance' => 
   array (
     0 => 'object',
-    '...args=' => 'mixed|null',
+    '...args=' => 'mixed',
   ),
   'reflectionobject::newinstanceargs' => 
   array (
@@ -38863,7 +38863,7 @@ return array (
   array (
     0 => 'void',
     'name' => 'string',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'reflectionparameter::__clone' => 
   array (
@@ -38907,7 +38907,7 @@ return array (
   ),
   'reflectionparameter::getdefaultvalue' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'reflectionparameter::getdefaultvalueconstantname' => 
   array (
@@ -38987,7 +38987,7 @@ return array (
   ),
   'reflectionproperty::getdefaultvalue' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'reflectionproperty::getdoccomment' => 
   array (
@@ -39007,7 +39007,7 @@ return array (
   ),
   'reflectionproperty::getvalue' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'object=' => 'null|object',
   ),
   'reflectionproperty::hasdefaultvalue' => 
@@ -39059,8 +39059,8 @@ return array (
   'reflectionproperty::setvalue' => 
   array (
     0 => 'void',
-    'objectOrValue' => 'mixed|null',
-    'value=' => 'mixed|null',
+    'objectOrValue' => 'mixed',
+    'value=' => 'mixed',
   ),
   'reflectionreference::__clone' => 
   array (
@@ -39152,7 +39152,7 @@ return array (
   ),
   'regexiterator::current' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'regexiterator::getflags' => 
   array (
@@ -39176,7 +39176,7 @@ return array (
   ),
   'regexiterator::key' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'regexiterator::next' => 
   array (
@@ -39209,13 +39209,13 @@ return array (
   array (
     0 => 'bool|null',
     'callback' => 'callable',
-    '...args=' => 'mixed|null',
+    '...args=' => 'mixed',
   ),
   'register_tick_function' => 
   array (
     0 => 'bool',
     'callback' => 'callable',
-    '...args=' => 'mixed|null',
+    '...args=' => 'mixed',
   ),
   'rename' => 
   array (
@@ -39226,7 +39226,7 @@ return array (
   ),
   'reset' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     '&array' => 'array<array-key, mixed>|object',
   ),
   'resourcebundle::__construct' => 
@@ -39249,7 +39249,7 @@ return array (
   ),
   'resourcebundle::get' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'index' => 'mixed',
     'fallback=' => 'bool',
   ),
@@ -39284,7 +39284,7 @@ return array (
   ),
   'resourcebundle_get' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'bundle' => 'ResourceBundle',
     'index' => 'mixed',
     'fallback=' => 'bool',
@@ -39404,7 +39404,7 @@ return array (
   'serialize' => 
   array (
     0 => 'string',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'session_abort' => 
   array (
@@ -39616,7 +39616,7 @@ return array (
   'settype' => 
   array (
     0 => 'bool',
-    '&var' => 'mixed|null',
+    '&var' => 'mixed',
     'type' => 'string',
   ),
   'sha1' => 
@@ -39915,7 +39915,7 @@ return array (
   ),
   'soapclient::__call' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'name' => 'string',
     'args' => 'array<array-key, mixed>',
   ),
@@ -39980,7 +39980,7 @@ return array (
   ),
   'soapclient::__soapcall' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'name' => 'string',
     'args' => 'array<array-key, mixed>',
     'options=' => 'array<array-key, mixed>|null',
@@ -39993,9 +39993,9 @@ return array (
     'code' => 'array<array-key, mixed>|null|string',
     'string' => 'string',
     'actor=' => 'null|string',
-    'details=' => 'mixed|null',
+    'details=' => 'mixed',
     'name=' => 'null|string',
-    'headerFault=' => 'mixed|null',
+    'headerFault=' => 'mixed',
   ),
   'soapfault::__tostring' => 
   array (
@@ -40038,14 +40038,14 @@ return array (
     0 => 'void',
     'namespace' => 'string',
     'name' => 'string',
-    'data=' => 'mixed|null',
+    'data=' => 'mixed',
     'mustUnderstand=' => 'bool',
     'actor=' => 'int|null|string',
   ),
   'soapparam::__construct' => 
   array (
     0 => 'void',
-    'data' => 'mixed|null',
+    'data' => 'mixed',
     'name' => 'string',
   ),
   'soapserver::__construct' => 
@@ -40070,7 +40070,7 @@ return array (
     'code' => 'string',
     'string' => 'string',
     'actor=' => 'string',
-    'details=' => 'mixed|null',
+    'details=' => 'mixed',
     'name=' => 'string',
   ),
   'soapserver::getfunctions' => 
@@ -40086,7 +40086,7 @@ return array (
   array (
     0 => 'void',
     'class' => 'string',
-    '...args=' => 'mixed|null',
+    '...args=' => 'mixed',
   ),
   'soapserver::setobject' => 
   array (
@@ -40101,7 +40101,7 @@ return array (
   'soapvar::__construct' => 
   array (
     0 => 'void',
-    'data' => 'mixed|null',
+    'data' => 'mixed',
     'encoding' => 'int|null',
     'typeName=' => 'null|string',
     'typeNamespace=' => 'null|string',
@@ -40822,11 +40822,11 @@ return array (
   array (
     0 => 'void',
     'index' => 'int',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'spldoublylinkedlist::bottom' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'spldoublylinkedlist::count' => 
   array (
@@ -40834,7 +40834,7 @@ return array (
   ),
   'spldoublylinkedlist::current' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'spldoublylinkedlist::getiteratormode' => 
   array (
@@ -40859,14 +40859,14 @@ return array (
   ),
   'spldoublylinkedlist::offsetget' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'index' => 'mixed',
   ),
   'spldoublylinkedlist::offsetset' => 
   array (
     0 => 'void',
     'index' => 'mixed',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'spldoublylinkedlist::offsetunset' => 
   array (
@@ -40875,7 +40875,7 @@ return array (
   ),
   'spldoublylinkedlist::pop' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'spldoublylinkedlist::prev' => 
   array (
@@ -40884,7 +40884,7 @@ return array (
   'spldoublylinkedlist::push' => 
   array (
     0 => 'void',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'spldoublylinkedlist::rewind' => 
   array (
@@ -40901,11 +40901,11 @@ return array (
   ),
   'spldoublylinkedlist::shift' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'spldoublylinkedlist::top' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'spldoublylinkedlist::unserialize' => 
   array (
@@ -40915,7 +40915,7 @@ return array (
   'spldoublylinkedlist::unshift' => 
   array (
     0 => 'void',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'spldoublylinkedlist::valid' => 
   array (
@@ -41129,7 +41129,7 @@ return array (
   array (
     0 => 'array<array-key, mixed>|int|null',
     'format' => 'string',
-    '...&vars=' => 'mixed|null',
+    '...&vars=' => 'mixed',
   ),
   'splfileobject::fseek' => 
   array (
@@ -41372,14 +41372,14 @@ return array (
   ),
   'splfixedarray::offsetget' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'index' => 'mixed',
   ),
   'splfixedarray::offsetset' => 
   array (
     0 => 'void',
     'index' => 'mixed',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'splfixedarray::offsetunset' => 
   array (
@@ -41402,8 +41402,8 @@ return array (
   'splheap::compare' => 
   array (
     0 => 'int',
-    'value1' => 'mixed|null',
-    'value2' => 'mixed|null',
+    'value1' => 'mixed',
+    'value2' => 'mixed',
   ),
   'splheap::count' => 
   array (
@@ -41411,16 +41411,16 @@ return array (
   ),
   'splheap::current' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'splheap::extract' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'splheap::insert' => 
   array (
     0 => 'bool',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'splheap::iscorrupted' => 
   array (
@@ -41448,7 +41448,7 @@ return array (
   ),
   'splheap::top' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'splheap::valid' => 
   array (
@@ -41461,8 +41461,8 @@ return array (
   'splmaxheap::compare' => 
   array (
     0 => 'int',
-    'value1' => 'mixed|null',
-    'value2' => 'mixed|null',
+    'value1' => 'mixed',
+    'value2' => 'mixed',
   ),
   'splmaxheap::count' => 
   array (
@@ -41470,16 +41470,16 @@ return array (
   ),
   'splmaxheap::current' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'splmaxheap::extract' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'splmaxheap::insert' => 
   array (
     0 => 'bool',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'splmaxheap::iscorrupted' => 
   array (
@@ -41507,7 +41507,7 @@ return array (
   ),
   'splmaxheap::top' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'splmaxheap::valid' => 
   array (
@@ -41520,8 +41520,8 @@ return array (
   'splminheap::compare' => 
   array (
     0 => 'int',
-    'value1' => 'mixed|null',
-    'value2' => 'mixed|null',
+    'value1' => 'mixed',
+    'value2' => 'mixed',
   ),
   'splminheap::count' => 
   array (
@@ -41529,16 +41529,16 @@ return array (
   ),
   'splminheap::current' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'splminheap::extract' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'splminheap::insert' => 
   array (
     0 => 'bool',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'splminheap::iscorrupted' => 
   array (
@@ -41566,7 +41566,7 @@ return array (
   ),
   'splminheap::top' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'splminheap::valid' => 
   array (
@@ -41594,7 +41594,7 @@ return array (
   array (
     0 => 'void',
     'object' => 'object',
-    'info=' => 'mixed|null',
+    'info=' => 'mixed',
   ),
   'splobjectstorage::contains' => 
   array (
@@ -41622,7 +41622,7 @@ return array (
   ),
   'splobjectstorage::getinfo' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'splobjectstorage::key' => 
   array (
@@ -41639,14 +41639,14 @@ return array (
   ),
   'splobjectstorage::offsetget' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'object' => 'mixed',
   ),
   'splobjectstorage::offsetset' => 
   array (
     0 => 'void',
     'object' => 'mixed',
-    'info=' => 'mixed|null',
+    'info=' => 'mixed',
   ),
   'splobjectstorage::offsetunset' => 
   array (
@@ -41674,7 +41674,7 @@ return array (
   'splobjectstorage::setinfo' => 
   array (
     0 => 'void',
-    'info' => 'mixed|null',
+    'info' => 'mixed',
   ),
   'splobjectstorage::unserialize' => 
   array (
@@ -41692,8 +41692,8 @@ return array (
   'splpriorityqueue::compare' => 
   array (
     0 => 'int',
-    'priority1' => 'mixed|null',
-    'priority2' => 'mixed|null',
+    'priority1' => 'mixed',
+    'priority2' => 'mixed',
   ),
   'splpriorityqueue::count' => 
   array (
@@ -41701,11 +41701,11 @@ return array (
   ),
   'splpriorityqueue::current' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'splpriorityqueue::extract' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'splpriorityqueue::getextractflags' => 
   array (
@@ -41714,8 +41714,8 @@ return array (
   'splpriorityqueue::insert' => 
   array (
     0 => 'mixed',
-    'value' => 'mixed|null',
-    'priority' => 'mixed|null',
+    'value' => 'mixed',
+    'priority' => 'mixed',
   ),
   'splpriorityqueue::iscorrupted' => 
   array (
@@ -41748,7 +41748,7 @@ return array (
   ),
   'splpriorityqueue::top' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'splpriorityqueue::valid' => 
   array (
@@ -41771,11 +41771,11 @@ return array (
   array (
     0 => 'void',
     'index' => 'int',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'splqueue::bottom' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'splqueue::count' => 
   array (
@@ -41783,16 +41783,16 @@ return array (
   ),
   'splqueue::current' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'splqueue::dequeue' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'splqueue::enqueue' => 
   array (
     0 => 'void',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'splqueue::getiteratormode' => 
   array (
@@ -41817,14 +41817,14 @@ return array (
   ),
   'splqueue::offsetget' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'index' => 'mixed',
   ),
   'splqueue::offsetset' => 
   array (
     0 => 'void',
     'index' => 'mixed',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'splqueue::offsetunset' => 
   array (
@@ -41833,7 +41833,7 @@ return array (
   ),
   'splqueue::pop' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'splqueue::prev' => 
   array (
@@ -41842,7 +41842,7 @@ return array (
   'splqueue::push' => 
   array (
     0 => 'void',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'splqueue::rewind' => 
   array (
@@ -41859,11 +41859,11 @@ return array (
   ),
   'splqueue::shift' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'splqueue::top' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'splqueue::unserialize' => 
   array (
@@ -41873,7 +41873,7 @@ return array (
   'splqueue::unshift' => 
   array (
     0 => 'void',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'splqueue::valid' => 
   array (
@@ -41896,11 +41896,11 @@ return array (
   array (
     0 => 'void',
     'index' => 'int',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'splstack::bottom' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'splstack::count' => 
   array (
@@ -41908,7 +41908,7 @@ return array (
   ),
   'splstack::current' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'splstack::getiteratormode' => 
   array (
@@ -41933,14 +41933,14 @@ return array (
   ),
   'splstack::offsetget' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'index' => 'mixed',
   ),
   'splstack::offsetset' => 
   array (
     0 => 'void',
     'index' => 'mixed',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'splstack::offsetunset' => 
   array (
@@ -41949,7 +41949,7 @@ return array (
   ),
   'splstack::pop' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'splstack::prev' => 
   array (
@@ -41958,7 +41958,7 @@ return array (
   'splstack::push' => 
   array (
     0 => 'void',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'splstack::rewind' => 
   array (
@@ -41975,11 +41975,11 @@ return array (
   ),
   'splstack::shift' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'splstack::top' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'splstack::unserialize' => 
   array (
@@ -41989,7 +41989,7 @@ return array (
   'splstack::unshift' => 
   array (
     0 => 'void',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'splstack::valid' => 
   array (
@@ -42067,7 +42067,7 @@ return array (
   array (
     0 => 'array<array-key, mixed>|int|null',
     'format' => 'string',
-    '...&vars=' => 'mixed|null',
+    '...&vars=' => 'mixed',
   ),
   'spltempfileobject::fseek' => 
   array (
@@ -42308,7 +42308,7 @@ return array (
   array (
     0 => 'string',
     'format' => 'string',
-    '...values=' => 'mixed|null',
+    '...values=' => 'mixed',
   ),
   'sqlite3::__construct' => 
   array (
@@ -42428,7 +42428,7 @@ return array (
   ),
   'sqlite3::querysingle' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'query' => 'string',
     'entireRow=' => 'bool',
   ),
@@ -42482,14 +42482,14 @@ return array (
   array (
     0 => 'bool',
     'param' => 'int|string',
-    '&var' => 'mixed|null',
+    '&var' => 'mixed',
     'type=' => 'int',
   ),
   'sqlite3stmt::bindvalue' => 
   array (
     0 => 'bool',
     'param' => 'int|string',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
     'type=' => 'int',
   ),
   'sqlite3stmt::clear' => 
@@ -42537,7 +42537,7 @@ return array (
     0 => 'array<array-key, mixed>|int|null',
     'string' => 'string',
     'format' => 'string',
-    '...&vars=' => 'mixed|null',
+    '...&vars=' => 'mixed',
   ),
   'stat' => 
   array (
@@ -42711,7 +42711,7 @@ return array (
     'context' => 'mixed',
     'wrapper_or_options' => 'array<array-key, mixed>|string',
     'option_name=' => 'null|string',
-    'value=' => 'mixed|null',
+    'value=' => 'mixed',
   ),
   'stream_context_set_params' => 
   array (
@@ -42733,7 +42733,7 @@ return array (
     'stream' => 'mixed',
     'filter_name' => 'string',
     'mode=' => 'int',
-    'params=' => 'mixed|null',
+    'params=' => 'mixed',
   ),
   'stream_filter_prepend' => 
   array (
@@ -42741,7 +42741,7 @@ return array (
     'stream' => 'mixed',
     'filter_name' => 'string',
     'mode=' => 'int',
-    'params=' => 'mixed|null',
+    'params=' => 'mixed',
   ),
   'stream_filter_register' => 
   array (
@@ -43096,7 +43096,7 @@ return array (
   'strval' => 
   array (
     0 => 'string',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'substr' => 
   array (
@@ -43176,13 +43176,13 @@ return array (
   'swoole\\arrayobject::column' => 
   array (
     0 => 'static',
-    'column_key' => 'mixed|null',
-    'index=' => 'mixed|null',
+    'column_key' => 'mixed',
+    'index=' => 'mixed',
   ),
   'swoole\\arrayobject::contains' => 
   array (
     0 => 'bool',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
     'strict=' => 'bool',
   ),
   'swoole\\arrayobject::count' => 
@@ -43196,7 +43196,7 @@ return array (
   'swoole\\arrayobject::delete' => 
   array (
     0 => 'self',
-    'key' => 'mixed|null',
+    'key' => 'mixed',
   ),
   'swoole\\arrayobject::detectarraytype' => 
   array (
@@ -43211,7 +43211,7 @@ return array (
   'swoole\\arrayobject::detecttype' => 
   array (
     0 => 'mixed',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'swoole\\arrayobject::each' => 
   array (
@@ -43221,7 +43221,7 @@ return array (
   'swoole\\arrayobject::exists' => 
   array (
     0 => 'bool',
-    'key' => 'mixed|null',
+    'key' => 'mixed',
   ),
   'swoole\\arrayobject::filter' => 
   array (
@@ -43249,25 +43249,25 @@ return array (
   'swoole\\arrayobject::get' => 
   array (
     0 => 'mixed',
-    'key' => 'mixed|null',
+    'key' => 'mixed',
   ),
   'swoole\\arrayobject::getor' => 
   array (
     0 => 'mixed',
-    'key' => 'mixed|null',
-    'default=' => 'mixed|null',
+    'key' => 'mixed',
+    'default=' => 'mixed',
   ),
   'swoole\\arrayobject::indexof' => 
   array (
     0 => 'mixed',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
     'strict=' => 'bool',
   ),
   'swoole\\arrayobject::insert' => 
   array (
     0 => 'self',
     'offset' => 'int',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'swoole\\arrayobject::isempty' => 
   array (
@@ -43304,7 +43304,7 @@ return array (
   'swoole\\arrayobject::lastindexof' => 
   array (
     0 => 'mixed',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
     'strict=' => 'bool',
   ),
   'swoole\\arrayobject::lastkey' => 
@@ -43332,23 +43332,23 @@ return array (
   'swoole\\arrayobject::offsetexists' => 
   array (
     0 => 'mixed',
-    'key' => 'mixed|null',
+    'key' => 'mixed',
   ),
   'swoole\\arrayobject::offsetget' => 
   array (
     0 => 'mixed',
-    'key' => 'mixed|null',
+    'key' => 'mixed',
   ),
   'swoole\\arrayobject::offsetset' => 
   array (
     0 => 'void',
-    'key' => 'mixed|null',
-    'value' => 'mixed|null',
+    'key' => 'mixed',
+    'value' => 'mixed',
   ),
   'swoole\\arrayobject::offsetunset' => 
   array (
     0 => 'void',
-    'key' => 'mixed|null',
+    'key' => 'mixed',
   ),
   'swoole\\arrayobject::pop' => 
   array (
@@ -43369,17 +43369,17 @@ return array (
   'swoole\\arrayobject::push' => 
   array (
     0 => 'mixed',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'swoole\\arrayobject::pushback' => 
   array (
     0 => 'mixed',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'swoole\\arrayobject::pushfront' => 
   array (
     0 => 'mixed',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'swoole\\arrayobject::randomget' => 
   array (
@@ -43394,7 +43394,7 @@ return array (
   'swoole\\arrayobject::remove' => 
   array (
     0 => 'self',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
     'strict=' => 'bool',
     'loop=' => 'bool',
   ),
@@ -43415,7 +43415,7 @@ return array (
   'swoole\\arrayobject::search' => 
   array (
     0 => 'mixed',
-    'needle' => 'mixed|null',
+    'needle' => 'mixed',
     'strict=' => 'bool',
   ),
   'swoole\\arrayobject::serialize' => 
@@ -43425,8 +43425,8 @@ return array (
   'swoole\\arrayobject::set' => 
   array (
     0 => 'self',
-    'key' => 'mixed|null',
-    'value' => 'mixed|null',
+    'key' => 'mixed',
+    'value' => 'mixed',
   ),
   'swoole\\arrayobject::shuffle' => 
   array (
@@ -43802,11 +43802,11 @@ return array (
   ),
   'swoole\\connection\\iterator::current' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'swoole\\connection\\iterator::key' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'swoole\\connection\\iterator::next' => 
   array (
@@ -43815,23 +43815,23 @@ return array (
   'swoole\\connection\\iterator::offsetexists' => 
   array (
     0 => 'bool',
-    'fd' => 'mixed|null',
+    'fd' => 'mixed',
   ),
   'swoole\\connection\\iterator::offsetget' => 
   array (
-    0 => 'mixed|null',
-    'fd' => 'mixed|null',
+    0 => 'mixed',
+    'fd' => 'mixed',
   ),
   'swoole\\connection\\iterator::offsetset' => 
   array (
     0 => 'void',
-    'fd' => 'mixed|null',
-    'value' => 'mixed|null',
+    'fd' => 'mixed',
+    'value' => 'mixed',
   ),
   'swoole\\connection\\iterator::offsetunset' => 
   array (
     0 => 'void',
-    'fd' => 'mixed|null',
+    'fd' => 'mixed',
   ),
   'swoole\\connection\\iterator::rewind' => 
   array (
@@ -43879,7 +43879,7 @@ return array (
   array (
     0 => 'false|int',
     'func' => 'callable',
-    '...param=' => 'mixed|null',
+    '...param=' => 'mixed',
   ),
   'swoole\\coroutine::defer' => 
   array (
@@ -44035,7 +44035,7 @@ return array (
   'swoole\\coroutine::waitevent' => 
   array (
     0 => 'false|int',
-    'socket' => 'mixed|null',
+    'socket' => 'mixed',
     'events=' => 'int',
     'timeout=' => 'float',
   ),
@@ -44105,13 +44105,13 @@ return array (
   ),
   'swoole\\coroutine\\channel::pop' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'timeout=' => 'float',
   ),
   'swoole\\coroutine\\channel::push' => 
   array (
     0 => 'bool',
-    'data' => 'mixed|null',
+    'data' => 'mixed',
     'timeout=' => 'float',
   ),
   'swoole\\coroutine\\channel::stats' => 
@@ -44177,8 +44177,8 @@ return array (
   array (
     0 => 'false|string',
     'length' => 'int',
-    '&address' => 'mixed|null',
-    '&port=' => 'mixed|null',
+    '&address' => 'mixed',
+    '&port=' => 'mixed',
   ),
   'swoole\\coroutine\\client::send' => 
   array (
@@ -44233,7 +44233,7 @@ return array (
   'swoole\\coroutine\\context::append' => 
   array (
     0 => 'void',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'swoole\\coroutine\\context::asort' => 
   array (
@@ -44281,23 +44281,23 @@ return array (
   'swoole\\coroutine\\context::offsetexists' => 
   array (
     0 => 'bool',
-    'key' => 'mixed|null',
+    'key' => 'mixed',
   ),
   'swoole\\coroutine\\context::offsetget' => 
   array (
-    0 => 'mixed|null',
-    'key' => 'mixed|null',
+    0 => 'mixed',
+    'key' => 'mixed',
   ),
   'swoole\\coroutine\\context::offsetset' => 
   array (
     0 => 'void',
-    'key' => 'mixed|null',
-    'value' => 'mixed|null',
+    'key' => 'mixed',
+    'value' => 'mixed',
   ),
   'swoole\\coroutine\\context::offsetunset' => 
   array (
     0 => 'void',
-    'key' => 'mixed|null',
+    'key' => 'mixed',
   ),
   'swoole\\coroutine\\context::serialize' => 
   array (
@@ -44559,7 +44559,7 @@ return array (
   array (
     0 => 'bool',
     'stream_id' => 'int',
-    'data' => 'mixed|null',
+    'data' => 'mixed',
     'end_stream=' => 'bool',
   ),
   'swoole\\coroutine\\http2\\client\\exception::__construct' => 
@@ -44695,12 +44695,12 @@ return array (
   array (
     0 => 'bool',
     'path' => 'string',
-    'data' => 'mixed|null',
+    'data' => 'mixed',
   ),
   'swoole\\coroutine\\http\\client::push' => 
   array (
     0 => 'bool',
-    'data' => 'mixed|null',
+    'data' => 'mixed',
     'opcode=' => 'int',
     'flags=' => 'int',
   ),
@@ -44829,7 +44829,7 @@ return array (
   array (
     0 => 'Swoole\\Coroutine\\Http\\ClientProxy',
     'url' => 'string',
-    'data' => 'mixed|null',
+    'data' => 'mixed',
     'options=' => 'array<array-key, mixed>|null',
     'headers=' => 'array<array-key, mixed>|null',
     'cookies=' => 'array<array-key, mixed>|null',
@@ -44839,7 +44839,7 @@ return array (
     0 => 'Swoole\\Coroutine\\Http\\ClientProxy',
     'url' => 'string',
     'method' => 'string',
-    'data=' => 'mixed|null',
+    'data=' => 'mixed',
     'options=' => 'array<array-key, mixed>|null',
     'headers=' => 'array<array-key, mixed>|null',
     'cookies=' => 'array<array-key, mixed>|null',
@@ -44849,7 +44849,7 @@ return array (
     0 => 'Swoole\\Coroutine\\Http\\ClientProxy',
     'url' => 'string',
     'method' => 'string',
-    'data=' => 'mixed|null',
+    'data=' => 'mixed',
     'options=' => 'array<array-key, mixed>|null',
     'headers=' => 'array<array-key, mixed>|null',
     'cookies=' => 'array<array-key, mixed>|null',
@@ -44859,7 +44859,7 @@ return array (
     0 => 'Swoole\\Coroutine\\Http\\ClientProxy',
     'url' => 'string',
     'method' => 'string',
-    'data=' => 'mixed|null',
+    'data=' => 'mixed',
     'options=' => 'array<array-key, mixed>|null',
     'headers=' => 'array<array-key, mixed>|null',
     'cookies=' => 'array<array-key, mixed>|null',
@@ -44869,7 +44869,7 @@ return array (
     0 => 'Swoole\\Coroutine\\Http\\ClientProxy',
     'url' => 'string',
     'method' => 'string',
-    'data=' => 'mixed|null',
+    'data=' => 'mixed',
     'options=' => 'array<array-key, mixed>|null',
     'headers=' => 'array<array-key, mixed>|null',
     'cookies=' => 'array<array-key, mixed>|null',
@@ -44928,7 +44928,7 @@ return array (
   'swoole\\coroutine\\iterator::append' => 
   array (
     0 => 'void',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'swoole\\coroutine\\iterator::asort' => 
   array (
@@ -44941,7 +44941,7 @@ return array (
   ),
   'swoole\\coroutine\\iterator::current' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'swoole\\coroutine\\iterator::getarraycopy' => 
   array (
@@ -44975,23 +44975,23 @@ return array (
   'swoole\\coroutine\\iterator::offsetexists' => 
   array (
     0 => 'bool',
-    'key' => 'mixed|null',
+    'key' => 'mixed',
   ),
   'swoole\\coroutine\\iterator::offsetget' => 
   array (
-    0 => 'mixed|null',
-    'key' => 'mixed|null',
+    0 => 'mixed',
+    'key' => 'mixed',
   ),
   'swoole\\coroutine\\iterator::offsetset' => 
   array (
     0 => 'void',
-    'key' => 'mixed|null',
-    'value' => 'mixed|null',
+    'key' => 'mixed',
+    'value' => 'mixed',
   ),
   'swoole\\coroutine\\iterator::offsetunset' => 
   array (
     0 => 'void',
-    'key' => 'mixed|null',
+    'key' => 'mixed',
   ),
   'swoole\\coroutine\\iterator::rewind' => 
   array (
@@ -45053,7 +45053,7 @@ return array (
   array (
     0 => 'void',
     'func' => 'callable',
-    '...param=' => 'mixed|null',
+    '...param=' => 'mixed',
   ),
   'swoole\\coroutine\\scheduler::getoptions' => 
   array (
@@ -45064,7 +45064,7 @@ return array (
     0 => 'void',
     'n' => 'int',
     'func' => 'callable',
-    '...param=' => 'mixed|null',
+    '...param=' => 'mixed',
   ),
   'swoole\\coroutine\\scheduler::set' => 
   array (
@@ -45169,7 +45169,7 @@ return array (
   ),
   'swoole\\coroutine\\socket::getoption' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'level' => 'int',
     'opt_name' => 'int',
   ),
@@ -45227,7 +45227,7 @@ return array (
   'swoole\\coroutine\\socket::recvfrom' => 
   array (
     0 => 'false|string',
-    '&peername' => 'mixed|null',
+    '&peername' => 'mixed',
     'timeout=' => 'float',
   ),
   'swoole\\coroutine\\socket::recvline' => 
@@ -45278,7 +45278,7 @@ return array (
     0 => 'bool',
     'level' => 'int',
     'opt_name' => 'int',
-    'opt_value' => 'mixed|null',
+    'opt_value' => 'mixed',
   ),
   'swoole\\coroutine\\socket::setprotocol' => 
   array (
@@ -45403,7 +45403,7 @@ return array (
   'swoole\\coroutine\\system::waitevent' => 
   array (
     0 => 'false|int',
-    'socket' => 'mixed|null',
+    'socket' => 'mixed',
     'events=' => 'int',
     'timeout=' => 'float',
   ),
@@ -45578,7 +45578,7 @@ return array (
   array (
     0 => 'bool',
     'opt' => 'int',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'swoole\\curl\\handler::setport' => 
   array (
@@ -46267,7 +46267,7 @@ return array (
   array (
     0 => 'self',
     'option' => 'int',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'swoole\\database\\redisconfig::withport' => 
   array (
@@ -46368,7 +46368,7 @@ return array (
   'swoole\\event::add' => 
   array (
     0 => 'false|int',
-    'fd' => 'mixed|null',
+    'fd' => 'mixed',
     'read_callback=' => 'callable|null',
     'write_callback=' => 'callable|null',
     'events=' => 'int',
@@ -46387,7 +46387,7 @@ return array (
   'swoole\\event::del' => 
   array (
     0 => 'bool',
-    'fd' => 'mixed|null',
+    'fd' => 'mixed',
   ),
   'swoole\\event::dispatch' => 
   array (
@@ -46400,7 +46400,7 @@ return array (
   'swoole\\event::isset' => 
   array (
     0 => 'bool',
-    'fd' => 'mixed|null',
+    'fd' => 'mixed',
     'events=' => 'int',
   ),
   'swoole\\event::rshutdown' => 
@@ -46410,7 +46410,7 @@ return array (
   'swoole\\event::set' => 
   array (
     0 => 'bool',
-    'fd' => 'mixed|null',
+    'fd' => 'mixed',
     'read_callback=' => 'callable|null',
     'write_callback=' => 'callable|null',
     'events=' => 'int',
@@ -46422,7 +46422,7 @@ return array (
   'swoole\\event::write' => 
   array (
     0 => 'bool',
-    'fd' => 'mixed|null',
+    'fd' => 'mixed',
     'data' => 'string',
   ),
   'swoole\\exception::__construct' => 
@@ -46552,7 +46552,7 @@ return array (
   ),
   'swoole\\exitexception::getstatus' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'swoole\\exitexception::gettrace' => 
   array (
@@ -48235,7 +48235,7 @@ return array (
     'name' => 'string',
     'process_id' => 'int',
     'process_type' => 'int',
-    'data' => 'mixed|null',
+    'data' => 'mixed',
     'json_decode=' => 'bool',
   ),
   'swoole\\http\\server::confirm' => 
@@ -48269,7 +48269,7 @@ return array (
   'swoole\\http\\server::finish' => 
   array (
     0 => 'bool',
-    'data' => 'mixed|null',
+    'data' => 'mixed',
   ),
   'swoole\\http\\server::getcallback' => 
   array (
@@ -48372,7 +48372,7 @@ return array (
   'swoole\\http\\server::sendmessage' => 
   array (
     0 => 'bool',
-    'message' => 'mixed|null',
+    'message' => 'mixed',
     'dst_worker_id' => 'int',
   ),
   'swoole\\http\\server::sendto' => 
@@ -48415,7 +48415,7 @@ return array (
   'swoole\\http\\server::task' => 
   array (
     0 => 'false|int',
-    'data' => 'mixed|null',
+    'data' => 'mixed',
     'taskWorkerIndex=' => 'int',
     'finishCallback=' => 'callable|null',
   ),
@@ -48427,8 +48427,8 @@ return array (
   ),
   'swoole\\http\\server::taskwait' => 
   array (
-    0 => 'mixed|null',
-    'data' => 'mixed|null',
+    0 => 'mixed',
+    'data' => 'mixed',
     'timeout=' => 'float',
     'taskWorkerIndex=' => 'int',
   ),
@@ -48497,7 +48497,7 @@ return array (
   'swoole\\multibytestringobject::append' => 
   array (
     0 => 'static',
-    'str' => 'mixed|null',
+    'str' => 'mixed',
   ),
   'swoole\\multibytestringobject::char' => 
   array (
@@ -49305,7 +49305,7 @@ return array (
     'name' => 'string',
     'process_id' => 'int',
     'process_type' => 'int',
-    'data' => 'mixed|null',
+    'data' => 'mixed',
     'json_decode=' => 'bool',
   ),
   'swoole\\redis\\server::confirm' => 
@@ -49339,13 +49339,13 @@ return array (
   'swoole\\redis\\server::finish' => 
   array (
     0 => 'bool',
-    'data' => 'mixed|null',
+    'data' => 'mixed',
   ),
   'swoole\\redis\\server::format' => 
   array (
     0 => 'false|string',
     'type' => 'int',
-    'value=' => 'mixed|null',
+    'value=' => 'mixed',
   ),
   'swoole\\redis\\server::getcallback' => 
   array (
@@ -49453,7 +49453,7 @@ return array (
   'swoole\\redis\\server::sendmessage' => 
   array (
     0 => 'bool',
-    'message' => 'mixed|null',
+    'message' => 'mixed',
     'dst_worker_id' => 'int',
   ),
   'swoole\\redis\\server::sendto' => 
@@ -49502,7 +49502,7 @@ return array (
   'swoole\\redis\\server::task' => 
   array (
     0 => 'false|int',
-    'data' => 'mixed|null',
+    'data' => 'mixed',
     'taskWorkerIndex=' => 'int',
     'finishCallback=' => 'callable|null',
   ),
@@ -49514,8 +49514,8 @@ return array (
   ),
   'swoole\\redis\\server::taskwait' => 
   array (
-    0 => 'mixed|null',
-    'data' => 'mixed|null',
+    0 => 'mixed',
+    'data' => 'mixed',
     'timeout=' => 'float',
     'taskWorkerIndex=' => 'int',
   ),
@@ -49588,7 +49588,7 @@ return array (
     'name' => 'string',
     'process_id' => 'int',
     'process_type' => 'int',
-    'data' => 'mixed|null',
+    'data' => 'mixed',
     'json_decode=' => 'bool',
   ),
   'swoole\\server::confirm' => 
@@ -49622,7 +49622,7 @@ return array (
   'swoole\\server::finish' => 
   array (
     0 => 'bool',
-    'data' => 'mixed|null',
+    'data' => 'mixed',
   ),
   'swoole\\server::getcallback' => 
   array (
@@ -49725,7 +49725,7 @@ return array (
   'swoole\\server::sendmessage' => 
   array (
     0 => 'bool',
-    'message' => 'mixed|null',
+    'message' => 'mixed',
     'dst_worker_id' => 'int',
   ),
   'swoole\\server::sendto' => 
@@ -49768,7 +49768,7 @@ return array (
   'swoole\\server::task' => 
   array (
     0 => 'false|int',
-    'data' => 'mixed|null',
+    'data' => 'mixed',
     'taskWorkerIndex=' => 'int',
     'finishCallback=' => 'callable|null',
   ),
@@ -49780,8 +49780,8 @@ return array (
   ),
   'swoole\\server::taskwait' => 
   array (
-    0 => 'mixed|null',
-    'data' => 'mixed|null',
+    0 => 'mixed',
+    'data' => 'mixed',
     'timeout=' => 'float',
     'taskWorkerIndex=' => 'int',
   ),
@@ -50091,16 +50091,16 @@ return array (
   'swoole\\server\\task::finish' => 
   array (
     0 => 'bool',
-    'data' => 'mixed|null',
+    'data' => 'mixed',
   ),
   'swoole\\server\\task::pack' => 
   array (
     0 => 'false|string',
-    'data' => 'mixed|null',
+    'data' => 'mixed',
   ),
   'swoole\\server\\task::unpack' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'data' => 'string',
   ),
   'swoole\\stringobject::__construct' => 
@@ -50115,7 +50115,7 @@ return array (
   'swoole\\stringobject::append' => 
   array (
     0 => 'static',
-    'str' => 'mixed|null',
+    'str' => 'mixed',
   ),
   'swoole\\stringobject::char' => 
   array (
@@ -50273,7 +50273,7 @@ return array (
   ),
   'swoole\\table::current' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'swoole\\table::decr' => 
   array (
@@ -50329,7 +50329,7 @@ return array (
   ),
   'swoole\\table::key' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'swoole\\table::next' => 
   array (
@@ -50416,7 +50416,7 @@ return array (
     0 => 'false|int',
     'ms' => 'int',
     'callback' => 'callable',
-    '...params=' => 'mixed|null',
+    '...params=' => 'mixed',
   ),
   'swoole\\timer::clear' => 
   array (
@@ -50450,7 +50450,7 @@ return array (
     0 => 'false|int',
     'ms' => 'int',
     'callback' => 'callable',
-    '...params=' => 'mixed|null',
+    '...params=' => 'mixed',
   ),
   'swoole\\timer\\iterator::__construct' => 
   array (
@@ -50474,7 +50474,7 @@ return array (
   'swoole\\timer\\iterator::append' => 
   array (
     0 => 'void',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'swoole\\timer\\iterator::asort' => 
   array (
@@ -50487,7 +50487,7 @@ return array (
   ),
   'swoole\\timer\\iterator::current' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
   ),
   'swoole\\timer\\iterator::getarraycopy' => 
   array (
@@ -50521,23 +50521,23 @@ return array (
   'swoole\\timer\\iterator::offsetexists' => 
   array (
     0 => 'bool',
-    'key' => 'mixed|null',
+    'key' => 'mixed',
   ),
   'swoole\\timer\\iterator::offsetget' => 
   array (
-    0 => 'mixed|null',
-    'key' => 'mixed|null',
+    0 => 'mixed',
+    'key' => 'mixed',
   ),
   'swoole\\timer\\iterator::offsetset' => 
   array (
     0 => 'void',
-    'key' => 'mixed|null',
-    'value' => 'mixed|null',
+    'key' => 'mixed',
+    'value' => 'mixed',
   ),
   'swoole\\timer\\iterator::offsetunset' => 
   array (
     0 => 'void',
-    'key' => 'mixed|null',
+    'key' => 'mixed',
   ),
   'swoole\\timer\\iterator::rewind' => 
   array (
@@ -50657,7 +50657,7 @@ return array (
     'name' => 'string',
     'process_id' => 'int',
     'process_type' => 'int',
-    'data' => 'mixed|null',
+    'data' => 'mixed',
     'json_decode=' => 'bool',
   ),
   'swoole\\websocket\\server::confirm' => 
@@ -50698,7 +50698,7 @@ return array (
   'swoole\\websocket\\server::finish' => 
   array (
     0 => 'bool',
-    'data' => 'mixed|null',
+    'data' => 'mixed',
   ),
   'swoole\\websocket\\server::getcallback' => 
   array (
@@ -50821,7 +50821,7 @@ return array (
   'swoole\\websocket\\server::sendmessage' => 
   array (
     0 => 'bool',
-    'message' => 'mixed|null',
+    'message' => 'mixed',
     'dst_worker_id' => 'int',
   ),
   'swoole\\websocket\\server::sendto' => 
@@ -50864,7 +50864,7 @@ return array (
   'swoole\\websocket\\server::task' => 
   array (
     0 => 'false|int',
-    'data' => 'mixed|null',
+    'data' => 'mixed',
     'taskWorkerIndex=' => 'int',
     'finishCallback=' => 'callable|null',
   ),
@@ -50876,8 +50876,8 @@ return array (
   ),
   'swoole\\websocket\\server::taskwait' => 
   array (
-    0 => 'mixed|null',
-    'data' => 'mixed|null',
+    0 => 'mixed',
+    'data' => 'mixed',
     'timeout=' => 'float',
     'taskWorkerIndex=' => 'int',
   ),
@@ -50945,7 +50945,7 @@ return array (
   array (
     0 => 'false|int',
     'func' => 'callable',
-    '...params=' => 'mixed|null',
+    '...params=' => 'mixed',
   ),
   'swoole_coroutine_defer' => 
   array (
@@ -51037,7 +51037,7 @@ return array (
   'swoole_event_add' => 
   array (
     0 => 'false|int',
-    'fd' => 'mixed|null',
+    'fd' => 'mixed',
     'read_callback=' => 'callable|null',
     'write_callback=' => 'callable|null',
     'events=' => 'int',
@@ -51056,7 +51056,7 @@ return array (
   'swoole_event_del' => 
   array (
     0 => 'bool',
-    'fd' => 'mixed|null',
+    'fd' => 'mixed',
   ),
   'swoole_event_dispatch' => 
   array (
@@ -51069,13 +51069,13 @@ return array (
   'swoole_event_isset' => 
   array (
     0 => 'bool',
-    'fd' => 'mixed|null',
+    'fd' => 'mixed',
     'events=' => 'int',
   ),
   'swoole_event_set' => 
   array (
     0 => 'bool',
-    'fd' => 'mixed|null',
+    'fd' => 'mixed',
     'read_callback=' => 'callable|null',
     'write_callback=' => 'callable|null',
     'events=' => 'int',
@@ -51087,7 +51087,7 @@ return array (
   'swoole_event_write' => 
   array (
     0 => 'bool',
-    'fd' => 'mixed|null',
+    'fd' => 'mixed',
     'data' => 'string',
   ),
   'swoole_exec' => 
@@ -51136,9 +51136,9 @@ return array (
   ),
   'swoole_implicit_fn' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'fn' => 'string',
-    'args=' => 'mixed|null',
+    'args=' => 'mixed',
   ),
   'swoole_internal_call_user_shutdown_begin' => 
   array (
@@ -51154,7 +51154,7 @@ return array (
   ),
   'swoole_library_get_option' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'key' => 'string',
   ),
   'swoole_library_get_options' => 
@@ -51165,7 +51165,7 @@ return array (
   array (
     0 => 'void',
     'key' => 'string',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'swoole_library_set_options' => 
   array (
@@ -51323,7 +51323,7 @@ return array (
   'swoole_socket_import_stream' => 
   array (
     0 => 'Swoole\\Coroutine\\Socket|false',
-    'stream' => 'mixed|null',
+    'stream' => 'mixed',
   ),
   'swoole_socket_last_error' => 
   array (
@@ -51431,7 +51431,7 @@ return array (
   ),
   'swoole_substr_json_decode' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'str' => 'string',
     'offset' => 'int',
     'length=' => 'int',
@@ -51441,7 +51441,7 @@ return array (
   ),
   'swoole_substr_unserialize' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'str' => 'string',
     'offset' => 'int',
     'length=' => 'int',
@@ -52049,7 +52049,7 @@ return array (
   ),
   'unserialize' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'data' => 'string',
     'options=' => 'array<array-key, mixed>',
   ),
@@ -53035,13 +53035,13 @@ return array (
   'var_dump' => 
   array (
     0 => 'void',
-    'value' => 'mixed|null',
-    '...values=' => 'mixed|null',
+    'value' => 'mixed',
+    '...values=' => 'mixed',
   ),
   'var_export' => 
   array (
     0 => 'null|string',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
     'return=' => 'bool',
   ),
   'version_compare' => 
@@ -53085,14 +53085,14 @@ return array (
   ),
   'weakmap::offsetget' => 
   array (
-    0 => 'mixed|null',
+    0 => 'mixed',
     'object' => 'mixed',
   ),
   'weakmap::offsetset' => 
   array (
     0 => 'void',
     'object' => 'mixed',
-    'value' => 'mixed|null',
+    'value' => 'mixed',
   ),
   'weakmap::offsetunset' => 
   array (

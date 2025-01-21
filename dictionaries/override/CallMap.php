@@ -88,23 +88,23 @@ return array (
   ),
   'amqpbasicproperties::getappid' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpbasicproperties::getclusterid' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpbasicproperties::getcontentencoding' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpbasicproperties::getcontenttype' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpbasicproperties::getcorrelationid' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpbasicproperties::getdeliverymode' => 
   array (
@@ -112,7 +112,7 @@ return array (
   ),
   'amqpbasicproperties::getexpiration' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpbasicproperties::getheaders' => 
   array (
@@ -120,7 +120,7 @@ return array (
   ),
   'amqpbasicproperties::getmessageid' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpbasicproperties::getpriority' => 
   array (
@@ -128,19 +128,19 @@ return array (
   ),
   'amqpbasicproperties::getreplyto' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpbasicproperties::gettimestamp' => 
   array (
-    0 => 'string',
+    0 => 'int|null',
   ),
   'amqpbasicproperties::gettype' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpbasicproperties::getuserid' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpchannel::__construct' => 
   array (
@@ -248,11 +248,11 @@ return array (
   ),
   'amqpconnection::getcacert' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpconnection::getcert' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpconnection::getheartbeatinterval' => 
   array (
@@ -264,7 +264,7 @@ return array (
   ),
   'amqpconnection::getkey' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpconnection::getlogin' => 
   array (
@@ -414,7 +414,7 @@ return array (
   ),
   'amqpenvelope::getappid' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpenvelope::getbody' => 
   array (
@@ -422,23 +422,23 @@ return array (
   ),
   'amqpenvelope::getclusterid' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpenvelope::getconsumertag' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpenvelope::getcontentencoding' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpenvelope::getcontenttype' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpenvelope::getcorrelationid' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpenvelope::getdeliverymode' => 
   array (
@@ -446,15 +446,15 @@ return array (
   ),
   'amqpenvelope::getdeliverytag' => 
   array (
-    0 => 'string',
+    0 => 'int|null',
   ),
   'amqpenvelope::getexchangename' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpenvelope::getexpiration' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpenvelope::getheader' => 
   array (
@@ -467,7 +467,7 @@ return array (
   ),
   'amqpenvelope::getmessageid' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpenvelope::getpriority' => 
   array (
@@ -475,7 +475,7 @@ return array (
   ),
   'amqpenvelope::getreplyto' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpenvelope::getroutingkey' => 
   array (
@@ -483,15 +483,15 @@ return array (
   ),
   'amqpenvelope::gettimestamp' => 
   array (
-    0 => 'string',
+    0 => 'int|null',
   ),
   'amqpenvelope::gettype' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpenvelope::getuserid' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpenvelope::hasheader' => 
   array (
@@ -547,11 +547,11 @@ return array (
   ),
   'amqpexchange::getname' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpexchange::gettype' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpexchange::hasargument' => 
   array (
@@ -640,7 +640,7 @@ return array (
   ),
   'amqpqueue::get' => 
   array (
-    0 => 'AMQPEnvelope|false',
+    0 => 'AMQPEnvelope|null',
     'flags=' => 'int',
   ),
   'amqpqueue::getargument' => 
@@ -670,7 +670,7 @@ return array (
   ),
   'amqpqueue::getname' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'amqpqueue::hasargument' => 
   array (
@@ -1211,11 +1211,11 @@ return array (
   ),
   'appenditerator::getinneriterator' => 
   array (
-    0 => 'Iterator',
+    0 => 'Iterator|null',
   ),
   'appenditerator::getiteratorindex' => 
   array (
-    0 => 'int',
+    0 => 'int|null',
   ),
   'appenditerator::key' => 
   array (
@@ -2580,7 +2580,7 @@ return array (
   ),
   'cachingiterator::getinneriterator' => 
   array (
-    0 => 'Iterator',
+    0 => 'Iterator|null',
   ),
   'cachingiterator::hasnext' => 
   array (
@@ -2715,7 +2715,7 @@ return array (
   ),
   'callbackfilteriterator::getinneriterator' => 
   array (
-    0 => 'Iterator',
+    0 => 'Iterator|null',
   ),
   'callbackfilteriterator::key' => 
   array (
@@ -6218,7 +6218,7 @@ return array (
   ),
   'curl_multi_getcontent' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
     'handle' => 'CurlHandle',
   ),
   'curl_multi_info_read' => 
@@ -10836,7 +10836,7 @@ return array (
   ),
   'evcheck::getloop' => 
   array (
-    0 => 'EvLoop',
+    0 => 'EvLoop|null',
   ),
   'evcheck::invoke' => 
   array (
@@ -10890,7 +10890,7 @@ return array (
   ),
   'evchild::getloop' => 
   array (
-    0 => 'EvLoop',
+    0 => 'EvLoop|null',
   ),
   'evchild::invoke' => 
   array (
@@ -10948,7 +10948,7 @@ return array (
   ),
   'evembed::getloop' => 
   array (
-    0 => 'EvLoop',
+    0 => 'EvLoop|null',
   ),
   'evembed::invoke' => 
   array (
@@ -11372,7 +11372,7 @@ return array (
   ),
   'eventbuffer::pullup' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
     'size' => 'int',
   ),
   'eventbuffer::read' => 
@@ -11388,7 +11388,7 @@ return array (
   ),
   'eventbuffer::readline' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
     'eol_style' => 'int',
   ),
   'eventbuffer::search' => 
@@ -11490,7 +11490,7 @@ return array (
   ),
   'eventbufferevent::read' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
     'size' => 'int',
   ),
   'eventbufferevent::readbuffer' => 
@@ -11724,7 +11724,7 @@ return array (
   ),
   'eventhttpconnection::makerequest' => 
   array (
-    0 => 'bool',
+    0 => 'bool|null',
     'req' => 'EventHttpRequest',
     'type' => 'int',
     'uri' => 'string',
@@ -11792,7 +11792,7 @@ return array (
   ),
   'eventhttprequest::findheader' => 
   array (
-    0 => 'void',
+    0 => 'null|string',
     'key' => 'string',
     'type' => 'string',
   ),
@@ -11802,7 +11802,7 @@ return array (
   ),
   'eventhttprequest::getbufferevent' => 
   array (
-    0 => 'EventBufferEvent',
+    0 => 'EventBufferEvent|null',
   ),
   'eventhttprequest::getcommand' => 
   array (
@@ -11810,7 +11810,7 @@ return array (
   ),
   'eventhttprequest::getconnection' => 
   array (
-    0 => 'EventHttpConnection',
+    0 => 'EventHttpConnection|null',
   ),
   'eventhttprequest::gethost' => 
   array (
@@ -11982,7 +11982,7 @@ return array (
   ),
   'evfork::getloop' => 
   array (
-    0 => 'EvLoop',
+    0 => 'EvLoop|null',
   ),
   'evfork::invoke' => 
   array (
@@ -12032,7 +12032,7 @@ return array (
   ),
   'evidle::getloop' => 
   array (
-    0 => 'EvLoop',
+    0 => 'EvLoop|null',
   ),
   'evidle::invoke' => 
   array (
@@ -12086,7 +12086,7 @@ return array (
   ),
   'evio::getloop' => 
   array (
-    0 => 'EvLoop',
+    0 => 'EvLoop|null',
   ),
   'evio::invoke' => 
   array (
@@ -12303,7 +12303,7 @@ return array (
   ),
   'evperiodic::getloop' => 
   array (
-    0 => 'EvLoop',
+    0 => 'EvLoop|null',
   ),
   'evperiodic::invoke' => 
   array (
@@ -12359,7 +12359,7 @@ return array (
   ),
   'evprepare::getloop' => 
   array (
-    0 => 'EvLoop',
+    0 => 'EvLoop|null',
   ),
   'evprepare::invoke' => 
   array (
@@ -12411,7 +12411,7 @@ return array (
   ),
   'evsignal::getloop' => 
   array (
-    0 => 'EvLoop',
+    0 => 'EvLoop|null',
   ),
   'evsignal::invoke' => 
   array (
@@ -12474,7 +12474,7 @@ return array (
   ),
   'evstat::getloop' => 
   array (
-    0 => 'EvLoop',
+    0 => 'EvLoop|null',
   ),
   'evstat::invoke' => 
   array (
@@ -12546,7 +12546,7 @@ return array (
   ),
   'evtimer::getloop' => 
   array (
-    0 => 'EvLoop',
+    0 => 'EvLoop|null',
   ),
   'evtimer::invoke' => 
   array (
@@ -12592,7 +12592,7 @@ return array (
   ),
   'evwatcher::getloop' => 
   array (
-    0 => 'EvLoop',
+    0 => 'EvLoop|null',
   ),
   'evwatcher::invoke' => 
   array (
@@ -14833,7 +14833,7 @@ return array (
   ),
   'filteriterator::getinneriterator' => 
   array (
-    0 => 'Iterator',
+    0 => 'Iterator|null',
   ),
   'filteriterator::key' => 
   array (
@@ -15018,7 +15018,7 @@ return array (
   ),
   'fscanf' => 
   array (
-    0 => 'list<mixed>',
+    0 => 'array<array-key, mixed>|false|int|null',
     'stream' => 'resource',
     'format' => 'string',
   ),
@@ -26964,7 +26964,7 @@ return array (
   ),
   'imagick::getimageartifact' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
     'artifact' => 'string',
   ),
   'imagick::getimageattribute' => 
@@ -26978,7 +26978,7 @@ return array (
   ),
   'imagick::getimageblob' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'imagick::getimageblueprimary' => 
   array (
@@ -29261,19 +29261,19 @@ return array (
   ),
   'imagickpixel::ispixelsimilar' => 
   array (
-    0 => 'bool',
+    0 => 'bool|null',
     'color' => 'ImagickPixel',
     'fuzz' => 'float',
   ),
   'imagickpixel::ispixelsimilarquantum' => 
   array (
-    0 => 'bool',
+    0 => 'bool|null',
     'color' => 'string',
     'fuzz=' => 'string',
   ),
   'imagickpixel::issimilar' => 
   array (
-    0 => 'bool',
+    0 => 'bool|null',
     'color' => 'ImagickPixel',
     'fuzz' => 'float',
   ),
@@ -29327,7 +29327,7 @@ return array (
   ),
   'imagickpixeliterator::current' => 
   array (
-    0 => 'mixed',
+    0 => 'array<array-key, mixed>|null',
   ),
   'imagickpixeliterator::destroy' => 
   array (
@@ -29335,7 +29335,7 @@ return array (
   ),
   'imagickpixeliterator::getcurrentiteratorrow' => 
   array (
-    0 => 'array<array-key, mixed>',
+    0 => 'array<array-key, mixed>|null',
   ),
   'imagickpixeliterator::getiteratorrow' => 
   array (
@@ -29343,7 +29343,7 @@ return array (
   ),
   'imagickpixeliterator::getnextiteratorrow' => 
   array (
-    0 => 'array<array-key, mixed>',
+    0 => 'array<array-key, mixed>|null',
   ),
   'imagickpixeliterator::getpixeliterator' => 
   array (
@@ -29962,7 +29962,7 @@ return array (
   ),
   'infiniteiterator::getinneriterator' => 
   array (
-    0 => 'Iterator',
+    0 => 'Iterator|null',
   ),
   'infiniteiterator::key' => 
   array (
@@ -32354,7 +32354,7 @@ return array (
   ),
   'iteratoriterator::getinneriterator' => 
   array (
-    0 => 'Iterator',
+    0 => 'Iterator|null',
   ),
   'iteratoriterator::key' => 
   array (
@@ -34013,7 +34013,7 @@ return array (
   ),
   'limititerator::getinneriterator' => 
   array (
-    0 => 'Iterator',
+    0 => 'Iterator|null',
   ),
   'limititerator::getposition' => 
   array (
@@ -34122,7 +34122,7 @@ return array (
   ),
   'locale::getallvariants' => 
   array (
-    0 => 'array<array-key, mixed>',
+    0 => 'array<array-key, mixed>|null',
     'locale' => 'string',
   ),
   'locale::getdefault' => 
@@ -34161,22 +34161,22 @@ return array (
   ),
   'locale::getkeywords' => 
   array (
-    0 => 'array<array-key, mixed>|false',
+    0 => 'array<array-key, mixed>|false|null',
     'locale' => 'string',
   ),
   'locale::getprimarylanguage' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
     'locale' => 'string',
   ),
   'locale::getregion' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
     'locale' => 'string',
   ),
   'locale::getscript' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
     'locale' => 'string',
   ),
   'locale::lookup' => 
@@ -34189,7 +34189,7 @@ return array (
   ),
   'locale::parselocale' => 
   array (
-    0 => 'array<array-key, mixed>',
+    0 => 'array<array-key, mixed>|null',
     'locale' => 'string',
   ),
   'locale::setdefault' => 
@@ -36377,7 +36377,7 @@ return array (
   ),
   'messageformatter::create' => 
   array (
-    0 => 'MessageFormatter',
+    0 => 'MessageFormatter|null',
     'locale' => 'string',
     'pattern' => 'string',
   ),
@@ -42976,7 +42976,7 @@ return array (
   ),
   'norewinditerator::getinneriterator' => 
   array (
-    0 => 'Iterator',
+    0 => 'Iterator|null',
   ),
   'norewinditerator::key' => 
   array (
@@ -52417,7 +52417,7 @@ return array (
   ),
   'recursivecachingiterator::getinneriterator' => 
   array (
-    0 => 'Iterator',
+    0 => 'Iterator|null',
   ),
   'recursivecachingiterator::haschildren' => 
   array (
@@ -52489,7 +52489,7 @@ return array (
   ),
   'recursivecallbackfilteriterator::getinneriterator' => 
   array (
-    0 => 'Iterator',
+    0 => 'Iterator|null',
   ),
   'recursivecallbackfilteriterator::haschildren' => 
   array (
@@ -52711,7 +52711,7 @@ return array (
   ),
   'recursivefilteriterator::getinneriterator' => 
   array (
-    0 => 'Iterator',
+    0 => 'Iterator|null',
   ),
   'recursivefilteriterator::haschildren' => 
   array (
@@ -52869,7 +52869,7 @@ return array (
   ),
   'recursiveregexiterator::getinneriterator' => 
   array (
-    0 => 'Iterator',
+    0 => 'Iterator|null',
   ),
   'recursiveregexiterator::getmode' => 
   array (
@@ -56068,7 +56068,7 @@ return array (
   ),
   'reflectionclass::newinstanceargs' => 
   array (
-    0 => 'object',
+    0 => 'null|object',
     'args=' => 'array<int<0, max>|string, mixed>',
   ),
   'reflectionclass::newinstancewithoutconstructor' => 
@@ -56235,11 +56235,11 @@ return array (
   ),
   'reflectionfunction::getclosurescopeclass' => 
   array (
-    0 => 'ReflectionClass',
+    0 => 'ReflectionClass|null',
   ),
   'reflectionfunction::getclosurethis' => 
   array (
-    0 => 'object',
+    0 => 'null|object',
   ),
   'reflectionfunction::getdoccomment' => 
   array (
@@ -56525,11 +56525,11 @@ return array (
   ),
   'reflectionmethod::getclosurescopeclass' => 
   array (
-    0 => 'ReflectionClass',
+    0 => 'ReflectionClass|null',
   ),
   'reflectionmethod::getclosurethis' => 
   array (
-    0 => 'object',
+    0 => 'null|object',
   ),
   'reflectionmethod::getdeclaringclass' => 
   array (
@@ -56917,7 +56917,7 @@ return array (
   ),
   'reflectionobject::newinstanceargs' => 
   array (
-    0 => 'object',
+    0 => 'null|object',
     'args=' => 'array<int<0, max>|string, mixed>',
   ),
   'reflectionobject::newinstancewithoutconstructor' => 
@@ -57208,7 +57208,7 @@ return array (
   ),
   'regexiterator::getinneriterator' => 
   array (
-    0 => 'Iterator',
+    0 => 'Iterator|null',
   ),
   'regexiterator::getmode' => 
   array (
@@ -57310,7 +57310,7 @@ return array (
   ),
   'resourcebundle::get' => 
   array (
-    0 => 'mixed',
+    0 => 'ResourceBundle|array<array-key, mixed>|int|null|string',
     'index' => 'int|string',
     'fallback=' => 'bool',
   ),
@@ -60513,7 +60513,7 @@ return array (
   ),
   'soapclient::__setlocation' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
     'new_location=' => 'string',
   ),
   'soapclient::__setsoapheaders' => 
@@ -65316,7 +65316,7 @@ return array (
   ),
   'splfileobject::fscanf' => 
   array (
-    0 => 'array<array-key, mixed>|int',
+    0 => 'array<array-key, mixed>|int|null',
     'format' => 'string',
     '&...w_vars=' => 'float|int|string',
   ),
@@ -66159,7 +66159,7 @@ return array (
   ),
   'spltempfileobject::fscanf' => 
   array (
-    0 => 'array<array-key, mixed>|int',
+    0 => 'array<array-key, mixed>|int|null',
     'format' => 'string',
     '&...w_vars=' => 'float|int|string',
   ),

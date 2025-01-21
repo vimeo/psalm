@@ -192,6 +192,50 @@ return array (
   ),
   'changed' => 
   array (
+    'appenditerator::getinneriterator' => 
+    array (
+      'old' => 
+      array (
+        0 => 'Iterator',
+      ),
+      'new' => 
+      array (
+        0 => 'Iterator|null',
+      ),
+    ),
+    'appenditerator::getiteratorindex' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'int|null',
+      ),
+    ),
+    'cachingiterator::getinneriterator' => 
+    array (
+      'old' => 
+      array (
+        0 => 'Iterator',
+      ),
+      'new' => 
+      array (
+        0 => 'Iterator|null',
+      ),
+    ),
+    'callbackfilteriterator::getinneriterator' => 
+    array (
+      'old' => 
+      array (
+        0 => 'Iterator',
+      ),
+      'new' => 
+      array (
+        0 => 'Iterator|null',
+      ),
+    ),
     'ctype_alnum' => 
     array (
       'old' => 
@@ -383,6 +427,17 @@ return array (
       array (
         0 => 'DOMText',
         'data' => 'string',
+      ),
+    ),
+    'filteriterator::getinneriterator' => 
+    array (
+      'old' => 
+      array (
+        0 => 'Iterator',
+      ),
+      'new' => 
+      array (
+        0 => 'Iterator|null',
       ),
     ),
     'finfo_buffer' => 
@@ -2102,6 +2157,17 @@ return array (
         'mailbox' => 'string',
       ),
     ),
+    'infiniteiterator::getinneriterator' => 
+    array (
+      'old' => 
+      array (
+        0 => 'Iterator',
+      ),
+      'new' => 
+      array (
+        0 => 'Iterator|null',
+      ),
+    ),
     'ini_alter' => 
     array (
       'old' => 
@@ -2176,6 +2242,17 @@ return array (
         'timezone=' => 'DateTimeZone|IntlTimeZone|null|string',
         'calendar=' => 'IntlCalendar|int|null',
         'pattern=' => 'null|string',
+      ),
+    ),
+    'iteratoriterator::getinneriterator' => 
+    array (
+      'old' => 
+      array (
+        0 => 'Iterator',
+      ),
+      'new' => 
+      array (
+        0 => 'Iterator|null',
       ),
     ),
     'key' => 
@@ -3099,6 +3176,95 @@ return array (
         'ldap' => 'LDAP\\Connection',
       ),
     ),
+    'limititerator::getinneriterator' => 
+    array (
+      'old' => 
+      array (
+        0 => 'Iterator',
+      ),
+      'new' => 
+      array (
+        0 => 'Iterator|null',
+      ),
+    ),
+    'locale::getallvariants' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>',
+        'locale' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|null',
+        'locale' => 'string',
+      ),
+    ),
+    'locale::getkeywords' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'locale' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|false|null',
+        'locale' => 'string',
+      ),
+    ),
+    'locale::getprimarylanguage' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'locale' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'null|string',
+        'locale' => 'string',
+      ),
+    ),
+    'locale::getregion' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'locale' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'null|string',
+        'locale' => 'string',
+      ),
+    ),
+    'locale::getscript' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'locale' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'null|string',
+        'locale' => 'string',
+      ),
+    ),
+    'locale::parselocale' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>',
+        'locale' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|null',
+        'locale' => 'string',
+      ),
+    ),
     'mb_check_encoding' => 
     array (
       'old' => 
@@ -3112,6 +3278,21 @@ return array (
         0 => 'bool',
         'value' => 'array<array-key, mixed>|string',
         'encoding=' => 'null|string',
+      ),
+    ),
+    'messageformatter::create' => 
+    array (
+      'old' => 
+      array (
+        0 => 'MessageFormatter',
+        'locale' => 'string',
+        'pattern' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'MessageFormatter|null',
+        'locale' => 'string',
+        'pattern' => 'string',
       ),
     ),
     'multipleiterator::current' => 
@@ -3275,6 +3456,17 @@ return array (
       array (
         0 => 'mixed',
         '&r_array' => 'array<array-key, mixed>',
+      ),
+    ),
+    'norewinditerator::getinneriterator' => 
+    array (
+      'old' => 
+      array (
+        0 => 'Iterator',
+      ),
+      'new' => 
+      array (
+        0 => 'Iterator|null',
       ),
     ),
     'openssl_decrypt' => 
@@ -5152,6 +5344,153 @@ return array (
         'word' => 'string',
       ),
     ),
+    'recursivecachingiterator::getinneriterator' => 
+    array (
+      'old' => 
+      array (
+        0 => 'Iterator',
+      ),
+      'new' => 
+      array (
+        0 => 'Iterator|null',
+      ),
+    ),
+    'recursivecallbackfilteriterator::getinneriterator' => 
+    array (
+      'old' => 
+      array (
+        0 => 'Iterator',
+      ),
+      'new' => 
+      array (
+        0 => 'Iterator|null',
+      ),
+    ),
+    'recursivefilteriterator::getinneriterator' => 
+    array (
+      'old' => 
+      array (
+        0 => 'Iterator',
+      ),
+      'new' => 
+      array (
+        0 => 'Iterator|null',
+      ),
+    ),
+    'recursiveregexiterator::getinneriterator' => 
+    array (
+      'old' => 
+      array (
+        0 => 'Iterator',
+      ),
+      'new' => 
+      array (
+        0 => 'Iterator|null',
+      ),
+    ),
+    'reflectionclass::getstaticproperties' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<string, ReflectionProperty>',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|null',
+      ),
+    ),
+    'reflectionclass::newinstanceargs' => 
+    array (
+      'old' => 
+      array (
+        0 => 'object',
+        'args=' => 'array<int<0, max>|string, mixed>',
+      ),
+      'new' => 
+      array (
+        0 => 'null|object',
+        'args=' => 'array<int<0, max>|string, mixed>',
+      ),
+    ),
+    'reflectionfunction::getclosurescopeclass' => 
+    array (
+      'old' => 
+      array (
+        0 => 'ReflectionClass',
+      ),
+      'new' => 
+      array (
+        0 => 'ReflectionClass|null',
+      ),
+    ),
+    'reflectionfunction::getclosurethis' => 
+    array (
+      'old' => 
+      array (
+        0 => 'object',
+      ),
+      'new' => 
+      array (
+        0 => 'null|object',
+      ),
+    ),
+    'reflectionmethod::getclosurescopeclass' => 
+    array (
+      'old' => 
+      array (
+        0 => 'ReflectionClass',
+      ),
+      'new' => 
+      array (
+        0 => 'ReflectionClass|null',
+      ),
+    ),
+    'reflectionmethod::getclosurethis' => 
+    array (
+      'old' => 
+      array (
+        0 => 'object',
+      ),
+      'new' => 
+      array (
+        0 => 'null|object',
+      ),
+    ),
+    'reflectionobject::getstaticproperties' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, ReflectionProperty>',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|null',
+      ),
+    ),
+    'reflectionobject::newinstanceargs' => 
+    array (
+      'old' => 
+      array (
+        0 => 'object',
+        'args=' => 'array<int<0, max>|string, mixed>',
+      ),
+      'new' => 
+      array (
+        0 => 'null|object',
+        'args=' => 'array<int<0, max>|string, mixed>',
+      ),
+    ),
+    'regexiterator::getinneriterator' => 
+    array (
+      'old' => 
+      array (
+        0 => 'Iterator',
+      ),
+      'new' => 
+      array (
+        0 => 'Iterator|null',
+      ),
+    ),
     'reset' => 
     array (
       'old' => 
@@ -5163,6 +5502,19 @@ return array (
       array (
         0 => 'false|mixed',
         '&r_array' => 'array<array-key, mixed>',
+      ),
+    ),
+    'soapclient::__setlocation' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'new_location=' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'null|string',
+        'new_location=' => 'string',
       ),
     ),
     'splfileobject::fputcsv' => 
@@ -5185,6 +5537,21 @@ return array (
         'eol=' => 'string',
       ),
     ),
+    'splfileobject::fscanf' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|int',
+        'format' => 'string',
+        '&...w_vars=' => 'float|int|string',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|int|null',
+        'format' => 'string',
+        '&...w_vars=' => 'float|int|string',
+      ),
+    ),
     'spltempfileobject::fputcsv' => 
     array (
       'old' => 
@@ -5203,6 +5570,21 @@ return array (
         'enclosure=' => 'string',
         'escape=' => 'string',
         'eol=' => 'string',
+      ),
+    ),
+    'spltempfileobject::fscanf' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|int',
+        'format' => 'string',
+        '&...w_vars=' => 'float|int|string',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|int|null',
+        'format' => 'string',
+        '&...w_vars=' => 'float|int|string',
       ),
     ),
     'stream_select' => 
