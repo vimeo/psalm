@@ -19,7 +19,8 @@ final callmaps in `dictionaries/CallMap_*`, which are the actual callmaps in use
 After editing an override callmap, run `bin/gen_callmap.php` to regenerate the final callmap file.
 
 To also regenerate the base callmaps, run `bin/gen_callmap.sh`: it will use the dockerfiles in `bin/` 
-to extract types from PHP and a set of extensions.
+to extract types from PHP and a set of extensions.  
+To add types from an extension to the callmap, edit all versions of the Dockerfiles.  
 
 ## Full callmap format
 

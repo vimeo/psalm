@@ -101,7 +101,7 @@ foreach ($customMaps as $prevVersion => $prevData) {
     foreach ($prevData as $func => $descr) {
         if (!isset($nextData[$func])) {
             $diff['removed'][$func] = $descr;
-        } else if ($nextData[$func] !== $descr) {
+        } elseif ($nextData[$func] !== $descr) {
             $diff['changed'][$func] = [
                 'old' => $descr,
                 'new' => $nextData[$func],

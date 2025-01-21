@@ -14458,10 +14458,6 @@ return array (
     0 => 'void',
     'callback' => 'callable',
   ),
-  'fiber::getcurrent' => 
-  array (
-    0 => 'null|self',
-  ),
   'fiber::getreturn' => 
   array (
     0 => 'mixed',
@@ -40405,7 +40401,7 @@ return array (
   ),
   'multipleiterator::current' => 
   array (
-    0 => 'array<array-key, mixed>|false',
+    0 => 'array<array-key, mixed>',
   ),
   'multipleiterator::detachiterator' => 
   array (
@@ -45864,7 +45860,7 @@ return array (
   ),
   'passthru' => 
   array (
-    0 => 'void',
+    0 => 'false|null',
     'command' => 'string',
     '&w_result_code=' => 'int',
   ),

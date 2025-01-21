@@ -27224,7 +27224,7 @@ return array (
   ),
   'fiber::getcurrent' => 
   array (
-    0 => 'null|self',
+    0 => 'Fiber|null',
   ),
   'fiber::getreturn' => 
   array (
@@ -55170,7 +55170,7 @@ return array (
   ),
   'multipleiterator::current' => 
   array (
-    0 => 'array<array-key, mixed>|false',
+    0 => 'array<array-key, mixed>',
   ),
   'multipleiterator::detachiterator' => 
   array (
@@ -60717,7 +60717,7 @@ return array (
   ),
   'passthru' => 
   array (
-    0 => 'void',
+    0 => 'false|null',
     'command' => 'string',
     '&w_result_code=' => 'int',
   ),

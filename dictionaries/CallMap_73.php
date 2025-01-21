@@ -57746,7 +57746,7 @@ return array (
   ),
   'passthru' => 
   array (
-    0 => 'void',
+    0 => 'false|null',
     'command' => 'string',
     '&w_result_code=' => 'int',
   ),

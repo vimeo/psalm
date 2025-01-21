@@ -31,10 +31,6 @@ return array (
       0 => 'void',
       'callback' => 'callable',
     ),
-    'fiber::getcurrent' => 
-    array (
-      0 => 'null|self',
-    ),
     'fiber::getreturn' => 
     array (
       0 => 'mixed',
@@ -3116,6 +3112,17 @@ return array (
         0 => 'bool',
         'value' => 'array<array-key, mixed>|string',
         'encoding=' => 'null|string',
+      ),
+    ),
+    'multipleiterator::current' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>',
       ),
     ),
     'mysqli::connect' => 
