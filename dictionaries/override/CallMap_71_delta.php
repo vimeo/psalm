@@ -1,251 +1,80 @@
 <?php // phpcs:ignoreFile
 
-return array (
-  'added' => 
-  array (
-    'closure::fromcallable' => 
-    array (
-      0 => 'Closure',
-      'callback' => 'callable',
-    ),
-    'curl_multi_errno' => 
-    array (
-      0 => 'false|int',
-      'mh' => 'resource',
-    ),
-    'curl_share_errno' => 
-    array (
-      0 => 'false|int',
-      'sh' => 'resource',
-    ),
-    'curl_share_strerror' => 
-    array (
-      0 => 'null|string',
-      'error_code' => 'int',
-    ),
-    'getenv\'1' => 
-    array (
-      0 => 'array<string, string>',
-    ),
-    'hash_hkdf' => 
-    array (
-      0 => 'false|non-empty-string',
-      'algo' => 'string',
-      'key' => 'string',
-      'length=' => 'int',
-      'info=' => 'string',
-      'salt=' => 'string',
-    ),
-    'is_iterable' => 
-    array (
-      0 => 'bool',
-      'value' => 'mixed',
-    ),
-    'openssl_get_curve_names' => 
-    array (
-      0 => 'list<string>',
-    ),
-    'pcntl_async_signals' => 
-    array (
-      0 => 'bool',
-      'enable=' => 'bool',
-    ),
-    'pcntl_signal_get_handler' => 
-    array (
-      0 => 'int|string',
-      'signal' => 'int',
-    ),
-    'sapi_windows_cp_conv' => 
-    array (
-      0 => 'null|string',
-      'in_codepage' => 'int|string',
-      'out_codepage' => 'int|string',
-      'subject' => 'string',
-    ),
-    'sapi_windows_cp_get' => 
-    array (
-      0 => 'int',
-      'kind=' => 'string',
-    ),
-    'sapi_windows_cp_is_utf8' => 
-    array (
-      0 => 'bool',
-    ),
-    'sapi_windows_cp_set' => 
-    array (
-      0 => 'bool',
-      'codepage' => 'int',
-    ),
-    'session_create_id' => 
-    array (
-      0 => 'false|string',
-      'prefix=' => 'string',
-    ),
-    'session_gc' => 
-    array (
-      0 => 'false|int',
-    ),
-  ),
-  'changed' => 
-  array (
-    'datetimezone::listidentifiers' => 
-    array (
-      'old' => 
-      array (
-        0 => 'false|list<string>',
-        'timezoneGroup=' => 'int',
-        'countryCode=' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'false|list<string>',
-        'timezoneGroup=' => 'int',
-        'countryCode=' => 'null|string',
-      ),
-    ),
-    'get_headers' => 
-    array (
-      'old' => 
-      array (
-        0 => 'array<array-key, mixed>|false',
-        'url' => 'string',
-        'associative=' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'array<array-key, mixed>|false',
-        'url' => 'string',
-        'associative=' => 'int',
-        'context=' => 'null|resource',
-      ),
-    ),
-    'getopt' => 
-    array (
-      'old' => 
-      array (
-        0 => 'array<string, false|list<false|string>|string>|false',
-        'short_options' => 'string',
-        'long_options=' => 'array<array-key, mixed>',
-      ),
-      'new' => 
-      array (
-        0 => 'array<string, false|list<false|string>|string>|false',
-        'short_options' => 'string',
-        'long_options=' => 'array<array-key, mixed>',
-        '&w_rest_index=' => 'int',
-      ),
-    ),
-    'intldateformatter::format' => 
-    array (
-      'old' => 
-      array (
-        0 => 'false|string',
-        'value' => 'DateTime|IntlCalendar|array{0?: int, 1?: int, 2?: int, 3?: int, 4?: int, 5?: int, 6?: int, 7?: int, 8?: int, tm_hour?: int, tm_isdst?: int, tm_mday?: int, tm_min?: int, tm_mon?: int, tm_sec?: int, tm_wday?: int, tm_yday?: int, tm_year?: int}|float|int|string',
-      ),
-      'new' => 
-      array (
-        0 => 'false|string',
-        'value' => 'DateTimeInterface|IntlCalendar|array{0?: int, 1?: int, 2?: int, 3?: int, 4?: int, 5?: int, 6?: int, 7?: int, 8?: int, tm_hour?: int, tm_isdst?: int, tm_mday?: int, tm_min?: int, tm_mon?: int, tm_sec?: int, tm_wday?: int, tm_yday?: int, tm_year?: int}|float|int|string',
-      ),
-    ),
-    'pg_fetch_all' => 
-    array (
-      'old' => 
-      array (
-        0 => 'array<array-key, array<array-key, mixed>>',
-        'result' => 'resource',
-      ),
-      'new' => 
-      array (
-        0 => 'array<array-key, array<array-key, mixed>>',
-        'result' => 'resource',
-        'mode=' => 'int',
-      ),
-    ),
-    'pg_select' => 
-    array (
-      'old' => 
-      array (
-        0 => 'array<array-key, mixed>|false|string',
-        'connection' => 'resource',
-        'table_name' => 'string',
-        'conditions' => 'array<array-key, mixed>',
-        'flags=' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'array<array-key, mixed>|false|string',
-        'connection' => 'resource',
-        'table_name' => 'string',
-        'conditions' => 'array<array-key, mixed>',
-        'flags=' => 'int',
-        'mode=' => 'int',
-      ),
-    ),
-    'sessionhandler::gc' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'max_lifetime' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'false|int',
-        'max_lifetime' => 'int',
-      ),
-    ),
-    'sqlite3::createfunction' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'name' => 'string',
-        'callback' => 'callable',
-        'argCount=' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'name' => 'string',
-        'callback' => 'callable',
-        'argCount=' => 'int',
-        'flags=' => 'int',
-      ),
-    ),
-    'timezone_identifiers_list' => 
-    array (
-      'old' => 
-      array (
-        0 => 'false|list<string>',
-        'timezoneGroup=' => 'int',
-        'countryCode=' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'false|list<string>',
-        'timezoneGroup=' => 'int',
-        'countryCode=' => 'null|string',
-      ),
-    ),
-    'unpack' => 
-    array (
-      'old' => 
-      array (
-        0 => 'array<array-key, mixed>',
-        'format' => 'string',
-        'string' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'array<array-key, mixed>|false',
-        'format' => 'string',
-        'string' => 'string',
-        'offset=' => 'int',
-      ),
-    ),
-  ),
-  'removed' => 
-  array (
-  ),
-);
+/**
+ * This contains the information needed to convert the function signatures for php 7.1 to php 7.0 (and vice versa)
+ *
+ * This file has three sections.
+ * The 'added' section contains function/method names from FunctionSignatureMap (And alternates, if applicable) that did not exist prior to PHP 7.1
+ * The 'removed' section contains the signatures that were removed in php 7.1.
+ * The 'changed' section contains functions for which the signature has changed for php 7.1.
+ *     Each function in the 'changed' section has an 'old' and a 'new' section,
+ *     representing the function as it was in PHP before 7.1 and in PHP 7.1, respectively
+ *
+ * @see CallMap.php
+ *
+ * @phan-file-suppress PhanPluginMixedKeyNoKey (read by Phan when analyzing this file)
+ */
+return [
+  'added' => [
+    'Closure::fromCallable' => ['Closure', 'callback'=>'callable'],
+    'curl_multi_errno' => ['int|false', 'mh'=>'resource'],
+    'curl_share_errno' => ['int|false', 'sh'=>'resource'],
+    'curl_share_strerror' => ['?string', 'error_code'=>'int'],
+    'getenv\'1' => ['array<string,string>'],
+    'hash_hkdf' => ['non-empty-string|false', 'algo'=>'string', 'key'=>'string', 'length='=>'int', 'info='=>'string', 'salt='=>'string'],
+    'is_iterable' => ['bool', 'value'=>'mixed'],
+    'openssl_get_curve_names' => ['list<string>'],
+    'pcntl_async_signals' => ['bool', 'enable='=>'bool'],
+    'pcntl_signal_get_handler' => ['int|string', 'signal'=>'int'],
+    'sapi_windows_cp_conv' => ['?string', 'in_codepage'=>'int|string', 'out_codepage'=>'int|string', 'subject'=>'string'],
+    'sapi_windows_cp_get' => ['int', 'kind='=>'string'],
+    'sapi_windows_cp_is_utf8' => ['bool'],
+    'sapi_windows_cp_set' => ['bool', 'codepage'=>'int'],
+    'session_create_id' => ['string|false', 'prefix='=>'string'],
+    'session_gc' => ['int|false'],
+  ],
+  'changed' => [
+    'DateTimeZone::listIdentifiers' => [
+      'old' => ['list<string>|false', 'timezoneGroup='=>'int', 'countryCode='=>'string'],
+      'new' => ['list<string>|false', 'timezoneGroup='=>'int', 'countryCode='=>'string|null'],
+    ],
+    'IntlDateFormatter::format' => [
+        'old' => ['string|false', 'value'=>'IntlCalendar|DateTime|array{0: int, 1: int, 2: int, 3: int, 4: int, 5: int, 6: int, 7: int, 8: int}|array{tm_sec: int, tm_min: int, tm_hour: int, tm_mday: int, tm_mon: int, tm_year: int, tm_wday: int, tm_yday: int, tm_isdst: int}|string|int|float'],
+        'new' => ['string|false', 'value'=>'IntlCalendar|DateTimeInterface|array{0: int, 1: int, 2: int, 3: int, 4: int, 5: int, 6: int, 7: int, 8: int}|array{tm_sec: int, tm_min: int, tm_hour: int, tm_mday: int, tm_mon: int, tm_year: int, tm_wday: int, tm_yday: int, tm_isdst: int}|string|int|float'],
+    ],
+    'SessionHandler::gc' => [
+      'old' => ['bool', 'max_lifetime'=>'int'],
+      'new' => ['int|false', 'max_lifetime'=>'int'],
+    ],
+    'SQLite3::createFunction' => [
+      'old' => ['bool', 'name'=>'string', 'callback'=>'callable', 'argCount='=>'int'],
+      'new' => ['bool', 'name'=>'string', 'callback'=>'callable', 'argCount='=>'int', 'flags='=>'int'],
+    ],
+    'get_headers' => [
+      'old' => ['array|false', 'url'=>'string', 'associative='=>'int'],
+      'new' => ['array|false', 'url'=>'string', 'associative='=>'int', 'context='=>'?resource'],
+    ],
+    'getopt' => [
+      'old' => ['array<string,string|false|list<string|false>>|false', 'short_options'=>'string', 'long_options='=>'array'],
+      'new' => ['array<string,string|false|list<string|false>>|false', 'short_options'=>'string', 'long_options='=>'array', '&w_rest_index='=>'int'],
+    ],
+    'pg_fetch_all' => [
+      'old' => ['array<array>', 'result'=>'resource'],
+      'new' => ['array<array>', 'result'=>'resource', 'mode='=>'int'],
+    ],
+    'pg_select' => [
+      'old' => ['string|array|false', 'connection'=>'resource', 'table_name'=>'string', 'conditions'=>'array', 'flags='=>'int'],
+      'new' => ['string|array|false', 'connection'=>'resource', 'table_name'=>'string', 'conditions'=>'array', 'flags='=>'int', 'mode='=>'int'],
+    ],
+    'timezone_identifiers_list' => [
+      'old' => ['list<string>|false', 'timezoneGroup='=>'int', 'countryCode='=>'string'],
+      'new' => ['list<string>|false', 'timezoneGroup='=>'int', 'countryCode='=>'?string'],
+    ],
+    'unpack' => [
+      'old' => ['array', 'format'=>'string', 'string'=>'string'],
+      'new' => ['array|false', 'format'=>'string', 'string'=>'string', 'offset='=>'int'],
+    ],
+  ],
+  'removed' => [
+  ],
+];

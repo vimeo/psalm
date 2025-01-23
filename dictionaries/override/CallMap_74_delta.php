@@ -1,315 +1,92 @@
 <?php // phpcs:ignoreFile
 
-return array (
-  'added' => 
-  array (
-    'mb_str_split' => 
-    array (
-      0 => 'false|list<string>',
-      'string' => 'string',
-      'length=' => 'int<1, max>',
-      'encoding=' => 'string',
-    ),
-    'openssl_x509_verify' => 
-    array (
-      0 => 'int',
-      'certificate' => 'resource|string',
-      'public_key' => 'array<array-key, mixed>|resource|string',
-    ),
-    'reflectionproperty::gettype' => 
-    array (
-      0 => 'ReflectionType|null',
-    ),
-    'reflectionproperty::isinitialized' => 
-    array (
-      0 => 'bool',
-      'object' => 'object',
-    ),
-  ),
-  'changed' => 
-  array (
-    'array_merge' => 
-    array (
-      'old' => 
-      array (
-        0 => 'array<array-key, mixed>',
-        '...arrays' => 'array<array-key, mixed>',
-      ),
-      'new' => 
-      array (
-        0 => 'array<array-key, mixed>',
-        '...arrays=' => 'array<array-key, mixed>',
-      ),
-    ),
-    'array_merge_recursive' => 
-    array (
-      'old' => 
-      array (
-        0 => 'array<array-key, mixed>',
-        '...arrays' => 'array<array-key, mixed>',
-      ),
-      'new' => 
-      array (
-        0 => 'array<array-key, mixed>',
-        '...arrays=' => 'array<array-key, mixed>',
-      ),
-    ),
-    'gzread' => 
-    array (
-      'old' => 
-      array (
-        0 => '0|string',
-        'stream' => 'resource',
-        'length' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'false|string',
-        'stream' => 'resource',
-        'length' => 'int',
-      ),
-    ),
-    'locale::lookup' => 
-    array (
-      'old' => 
-      array (
-        0 => 'null|string',
-        'languageTag' => 'array<array-key, mixed>',
-        'locale' => 'string',
-        'canonicalize=' => 'bool',
-        'defaultLocale=' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'null|string',
-        'languageTag' => 'array<array-key, mixed>',
-        'locale' => 'string',
-        'canonicalize=' => 'bool',
-        'defaultLocale=' => 'null|string',
-      ),
-    ),
-    'locale_lookup' => 
-    array (
-      'old' => 
-      array (
-        0 => 'null|string',
-        'languageTag' => 'array<array-key, mixed>',
-        'locale' => 'string',
-        'canonicalize=' => 'bool',
-        'defaultLocale=' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'null|string',
-        'languageTag' => 'array<array-key, mixed>',
-        'locale' => 'string',
-        'canonicalize=' => 'bool',
-        'defaultLocale=' => 'null|string',
-      ),
-    ),
-    'openssl_random_pseudo_bytes' => 
-    array (
-      'old' => 
-      array (
-        0 => 'false|string',
-        'length' => 'int',
-        '&w_strong_result=' => 'bool',
-      ),
-      'new' => 
-      array (
-        0 => 'string',
-        'length' => 'int',
-        '&w_strong_result=' => 'bool',
-      ),
-    ),
-    'password_hash' => 
-    array (
-      'old' => 
-      array (
-        0 => 'false|string',
-        'password' => 'string',
-        'algo' => 'int',
-        'options=' => 'array<array-key, mixed>',
-      ),
-      'new' => 
-      array (
-        0 => 'false|string',
-        'password' => 'string',
-        'algo' => 'int|null|string',
-        'options=' => 'array<array-key, mixed>',
-      ),
-    ),
-    'password_needs_rehash' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool',
-        'hash' => 'string',
-        'algo' => 'int',
-        'options=' => 'array<array-key, mixed>',
-      ),
-      'new' => 
-      array (
-        0 => 'bool',
-        'hash' => 'string',
-        'algo' => 'int|null|string',
-        'options=' => 'array<array-key, mixed>',
-      ),
-    ),
-    'preg_replace_callback' => 
-    array (
-      'old' => 
-      array (
-        0 => 'null|string',
-        'pattern' => 'array<array-key, mixed>|string',
-        'callback' => 'callable(array<array-key, string>):string',
-        'subject' => 'string',
-        'limit=' => 'int',
-        '&w_count=' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'null|string',
-        'pattern' => 'array<array-key, mixed>|string',
-        'callback' => 'callable(array<array-key, string>):string',
-        'subject' => 'string',
-        'limit=' => 'int',
-        '&w_count=' => 'int',
-        'flags=' => 'int',
-      ),
-    ),
-    'preg_replace_callback\'1' => 
-    array (
-      'old' => 
-      array (
-        0 => 'array<array-key, string>|null',
-        'pattern' => 'array<array-key, mixed>|string',
-        'callback' => 'callable(array<array-key, string>):string',
-        'subject' => 'array<array-key, string>',
-        'limit=' => 'int',
-        '&w_count=' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'array<array-key, string>|null',
-        'pattern' => 'array<array-key, mixed>|string',
-        'callback' => 'callable(array<array-key, string>):string',
-        'subject' => 'array<array-key, string>',
-        'limit=' => 'int',
-        '&w_count=' => 'int',
-        'flags=' => 'int',
-      ),
-    ),
-    'preg_replace_callback_array' => 
-    array (
-      'old' => 
-      array (
-        0 => 'null|string',
-        'pattern' => 'array<string, callable(array<array-key, mixed>):string>',
-        'subject' => 'string',
-        'limit=' => 'int',
-        '&w_count=' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'null|string',
-        'pattern' => 'array<string, callable(array<array-key, mixed>):string>',
-        'subject' => 'string',
-        'limit=' => 'int',
-        '&w_count=' => 'int',
-        'flags=' => 'int',
-      ),
-    ),
-    'preg_replace_callback_array\'1' => 
-    array (
-      'old' => 
-      array (
-        0 => 'array<array-key, string>|null',
-        'pattern' => 'array<string, callable(array<array-key, mixed>):string>',
-        'subject' => 'array<array-key, string>',
-        'limit=' => 'int',
-        '&w_count=' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'array<array-key, string>|null',
-        'pattern' => 'array<string, callable(array<array-key, mixed>):string>',
-        'subject' => 'array<array-key, string>',
-        'limit=' => 'int',
-        '&w_count=' => 'int',
-        'flags=' => 'int',
-      ),
-    ),
-    'proc_open' => 
-    array (
-      'old' => 
-      array (
-        0 => 'false|resource',
-        'command' => 'string',
-        'descriptor_spec' => 'array<array-key, mixed>',
-        '&pipes' => 'array<array-key, resource>',
-        'cwd=' => 'null|string',
-        'env_vars=' => 'array<array-key, mixed>|null',
-        'options=' => 'array<array-key, mixed>|null',
-      ),
-      'new' => 
-      array (
-        0 => 'false|resource',
-        'command' => 'array<array-key, mixed>|string',
-        'descriptor_spec' => 'array<array-key, mixed>',
-        '&pipes' => 'array<array-key, resource>',
-        'cwd=' => 'null|string',
-        'env_vars=' => 'array<array-key, mixed>|null',
-        'options=' => 'array<array-key, mixed>|null',
-      ),
-    ),
-    'splfileobject::fwrite' => 
-    array (
-      'old' => 
-      array (
-        0 => 'int',
-        'data' => 'string',
-        'length=' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'false|int',
-        'data' => 'string',
-        'length=' => 'int',
-      ),
-    ),
-    'spltempfileobject::fwrite' => 
-    array (
-      'old' => 
-      array (
-        0 => 'int',
-        'data' => 'string',
-        'length=' => 'int',
-      ),
-      'new' => 
-      array (
-        0 => 'false|int',
-        'data' => 'string',
-        'length=' => 'int',
-      ),
-    ),
-    'strip_tags' => 
-    array (
-      'old' => 
-      array (
-        0 => 'string',
-        'string' => 'string',
-        'allowed_tags=' => 'string',
-      ),
-      'new' => 
-      array (
-        0 => 'string',
-        'string' => 'string',
-        'allowed_tags=' => 'list<non-empty-string>|string',
-      ),
-    ),
-  ),
-  'removed' => 
-  array (
-  ),
-);
+/**
+ * This contains the information needed to convert the function signatures for php 7.4 to php 7.3 (and vice versa)
+ *
+ * This file has three sections.
+ * The 'added' section contains function/method names from FunctionSignatureMap (And alternates, if applicable) that do not exist in php 7.3
+ * The 'removed' section contains the signatures that were removed in php 7.4.
+ * The 'changed' section contains functions for which the signature has changed for php 7.4.
+ *     Each function in the 'changed' section has an 'old' and a 'new' section,
+ *     representing the function as it was in PHP 7.3 and in PHP 7.4, respectively
+ *
+ * @see CallMap.php
+ *
+ * @phan-file-suppress PhanPluginMixedKeyNoKey (read by Phan when analyzing this file)
+ */
+return [
+  'added' => [
+    'ReflectionProperty::getType' => ['?ReflectionType'],
+    'ReflectionProperty::isInitialized' => ['bool', 'object'=>'object'],
+    'mb_str_split' => ['list<string>|false', 'string'=>'string', 'length='=>'positive-int', 'encoding='=>'string'],
+    'openssl_x509_verify' => ['int', 'certificate'=>'string|resource', 'public_key'=>'string|array|resource'],
+  ],
+  'changed' => [
+    'Locale::lookup' => [
+      'old' => ['?string', 'languageTag'=>'array', 'locale'=>'string', 'canonicalize='=>'bool', 'defaultLocale='=>'string'],
+      'new' => ['?string', 'languageTag'=>'array', 'locale'=>'string', 'canonicalize='=>'bool', 'defaultLocale='=>'?string'],
+    ],
+    'SplFileObject::fwrite' => [
+      'old' => ['int', 'data'=>'string', 'length='=>'int'],
+      'new' => ['int|false', 'data'=>'string', 'length='=>'int'],
+    ],
+    'SplTempFileObject::fwrite' => [
+      'old' => ['int', 'data'=>'string', 'length='=>'int'],
+      'new' => ['int|false', 'data'=>'string', 'length='=>'int'],
+    ],
+    'array_merge' => [
+      'old' => ['array', '...arrays'=>'array'],
+      'new' => ['array', '...arrays='=>'array'],
+    ],
+    'array_merge_recursive' => [
+      'old' => ['array', '...arrays'=>'array'],
+      'new' => ['array', '...arrays='=>'array'],
+    ],
+    'gzread' => [
+      'old' => ['string|0', 'stream'=>'resource', 'length'=>'int'],
+      'new' => ['string|false', 'stream'=>'resource', 'length'=>'int'],
+    ],
+    'locale_lookup' => [
+      'old' => ['?string', 'languageTag'=>'array', 'locale'=>'string', 'canonicalize='=>'bool', 'defaultLocale='=>'string'],
+      'new' => ['?string', 'languageTag'=>'array', 'locale'=>'string', 'canonicalize='=>'bool', 'defaultLocale='=>'?string'],
+    ],
+    'openssl_random_pseudo_bytes' => [
+      'old' => ['string|false', 'length'=>'int', '&w_strong_result='=>'bool'],
+      'new' => ['string', 'length'=>'int', '&w_strong_result='=>'bool'],
+    ],
+    'password_hash' => [
+      'old' => ['string|false', 'password'=>'string', 'algo'=>'int', 'options='=>'array'],
+      'new' => ['string|false', 'password'=>'string', 'algo'=>'int|string|null', 'options='=>'array'],
+    ],
+    'password_needs_rehash' => [
+      'old' => ['bool', 'hash'=>'string', 'algo'=>'int', 'options='=>'array'],
+      'new' => ['bool', 'hash'=>'string', 'algo'=>'int|string|null', 'options='=>'array'],
+    ],
+    'preg_replace_callback' => [
+      'old' => ['string|null', 'pattern'=>'string|array', 'callback'=>'callable(string[]):string', 'subject'=>'string', 'limit='=>'int', '&w_count='=>'int'],
+      'new' => ['string|null', 'pattern'=>'string|array', 'callback'=>'callable(string[]):string', 'subject'=>'string', 'limit='=>'int', '&w_count='=>'int', 'flags='=>'int'],
+    ],
+    'preg_replace_callback\'1' => [
+      'old' => ['string[]|null', 'pattern'=>'string|array', 'callback'=>'callable(string[]):string', 'subject'=>'string[]', 'limit='=>'int', '&w_count='=>'int'],
+      'new' => ['string[]|null', 'pattern'=>'string|array', 'callback'=>'callable(string[]):string', 'subject'=>'string[]', 'limit='=>'int', '&w_count='=>'int', 'flags='=>'int'],
+    ],
+    'preg_replace_callback_array' => [
+      'old' => ['string|null', 'pattern'=>'array<string,callable(array):string>', 'subject'=>'string', 'limit='=>'int', '&w_count='=>'int'],
+      'new' => ['string|null', 'pattern'=>'array<string,callable(array):string>', 'subject'=>'string', 'limit='=>'int', '&w_count='=>'int', 'flags='=>'int'],
+    ],
+    'preg_replace_callback_array\'1' => [
+        'old' => ['string[]|null', 'pattern'=>'array<string,callable(array):string>', 'subject'=>'string[]', 'limit='=>'int', '&w_count='=>'int'],
+        'new' => ['string[]|null', 'pattern'=>'array<string,callable(array):string>', 'subject'=>'string[]', 'limit='=>'int', '&w_count='=>'int', 'flags='=>'int'],
+    ],
+    'proc_open' => [
+      'old' => ['resource|false', 'command'=>'string', 'descriptor_spec'=>'array', '&pipes'=>'resource[]', 'cwd='=>'?string', 'env_vars='=>'?array', 'options='=>'?array'],
+      'new' => ['resource|false', 'command'=>'string|array', 'descriptor_spec'=>'array', '&pipes'=>'resource[]', 'cwd='=>'?string', 'env_vars='=>'?array', 'options='=>'?array'],
+    ],
+    'strip_tags' => [
+      'old' => ['string', 'string'=>'string', 'allowed_tags='=>'string'],
+      'new' => ['string', 'string'=>'string', 'allowed_tags='=>'string|list<non-empty-string>'],
+    ],
+  ],
+  'removed' => [
+  ],
+];
