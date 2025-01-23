@@ -349,28 +349,6 @@ return array (
         'resource=' => 'int|null',
       ),
     ),
-    'reflectionclass::getstaticproperties' => 
-    array (
-      'old' => 
-      array (
-        0 => 'array<array-key, mixed>|null',
-      ),
-      'new' => 
-      array (
-        0 => 'array<string, ReflectionProperty>',
-      ),
-    ),
-    'reflectionobject::getstaticproperties' => 
-    array (
-      'old' => 
-      array (
-        0 => 'array<array-key, mixed>|null',
-      ),
-      'new' => 
-      array (
-        0 => 'array<array-key, ReflectionProperty>',
-      ),
-    ),
     'rsort' => 
     array (
       'old' => 

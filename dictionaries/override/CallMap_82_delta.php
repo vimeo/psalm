@@ -163,21 +163,6 @@ return array (
         'type=' => 'string',
       ),
     ),
-    'register_shutdown_function' => 
-    array (
-      'old' => 
-      array (
-        0 => 'bool|null',
-        'callback' => 'callable',
-        '...args=' => 'mixed',
-      ),
-      'new' => 
-      array (
-        0 => 'void',
-        'callback' => 'callable',
-        '...args=' => 'mixed',
-      ),
-    ),
     'str_split' => 
     array (
       'old' => 

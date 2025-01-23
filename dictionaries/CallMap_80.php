@@ -103,23 +103,23 @@ return array (
   ),
   'amqpbasicproperties::getappid' => 
   array (
-    0 => 'null|string',
+    0 => 'string',
   ),
   'amqpbasicproperties::getclusterid' => 
   array (
-    0 => 'null|string',
+    0 => 'string',
   ),
   'amqpbasicproperties::getcontentencoding' => 
   array (
-    0 => 'null|string',
+    0 => 'string',
   ),
   'amqpbasicproperties::getcontenttype' => 
   array (
-    0 => 'null|string',
+    0 => 'string',
   ),
   'amqpbasicproperties::getcorrelationid' => 
   array (
-    0 => 'null|string',
+    0 => 'string',
   ),
   'amqpbasicproperties::getdeliverymode' => 
   array (
@@ -127,7 +127,7 @@ return array (
   ),
   'amqpbasicproperties::getexpiration' => 
   array (
-    0 => 'null|string',
+    0 => 'string',
   ),
   'amqpbasicproperties::getheaders' => 
   array (
@@ -135,7 +135,7 @@ return array (
   ),
   'amqpbasicproperties::getmessageid' => 
   array (
-    0 => 'null|string',
+    0 => 'string',
   ),
   'amqpbasicproperties::getpriority' => 
   array (
@@ -143,19 +143,19 @@ return array (
   ),
   'amqpbasicproperties::getreplyto' => 
   array (
-    0 => 'null|string',
+    0 => 'string',
   ),
   'amqpbasicproperties::gettimestamp' => 
   array (
-    0 => 'int|null',
+    0 => 'string',
   ),
   'amqpbasicproperties::gettype' => 
   array (
-    0 => 'null|string',
+    0 => 'string',
   ),
   'amqpbasicproperties::getuserid' => 
   array (
-    0 => 'null|string',
+    0 => 'string',
   ),
   'amqpchannel::__construct' => 
   array (
@@ -324,11 +324,11 @@ return array (
   ),
   'amqpconnection::getcacert' => 
   array (
-    0 => 'null|string',
+    0 => 'string',
   ),
   'amqpconnection::getcert' => 
   array (
-    0 => 'null|string',
+    0 => 'string',
   ),
   'amqpconnection::getconnectionname' => 
   array (
@@ -348,7 +348,7 @@ return array (
   ),
   'amqpconnection::getkey' => 
   array (
-    0 => 'null|string',
+    0 => 'string',
   ),
   'amqpconnection::getlogin' => 
   array (
@@ -568,7 +568,7 @@ return array (
   ),
   'amqpenvelope::getappid' => 
   array (
-    0 => 'null|string',
+    0 => 'string',
   ),
   'amqpenvelope::getbody' => 
   array (
@@ -576,23 +576,23 @@ return array (
   ),
   'amqpenvelope::getclusterid' => 
   array (
-    0 => 'null|string',
+    0 => 'string',
   ),
   'amqpenvelope::getconsumertag' => 
   array (
-    0 => 'null|string',
+    0 => 'string',
   ),
   'amqpenvelope::getcontentencoding' => 
   array (
-    0 => 'null|string',
+    0 => 'string',
   ),
   'amqpenvelope::getcontenttype' => 
   array (
-    0 => 'null|string',
+    0 => 'string',
   ),
   'amqpenvelope::getcorrelationid' => 
   array (
-    0 => 'null|string',
+    0 => 'string',
   ),
   'amqpenvelope::getdeliverymode' => 
   array (
@@ -600,15 +600,15 @@ return array (
   ),
   'amqpenvelope::getdeliverytag' => 
   array (
-    0 => 'int|null',
+    0 => 'string',
   ),
   'amqpenvelope::getexchangename' => 
   array (
-    0 => 'null|string',
+    0 => 'string',
   ),
   'amqpenvelope::getexpiration' => 
   array (
-    0 => 'null|string',
+    0 => 'string',
   ),
   'amqpenvelope::getheader' => 
   array (
@@ -621,7 +621,7 @@ return array (
   ),
   'amqpenvelope::getmessageid' => 
   array (
-    0 => 'null|string',
+    0 => 'string',
   ),
   'amqpenvelope::getpriority' => 
   array (
@@ -629,7 +629,7 @@ return array (
   ),
   'amqpenvelope::getreplyto' => 
   array (
-    0 => 'null|string',
+    0 => 'string',
   ),
   'amqpenvelope::getroutingkey' => 
   array (
@@ -637,15 +637,15 @@ return array (
   ),
   'amqpenvelope::gettimestamp' => 
   array (
-    0 => 'int|null',
+    0 => 'string',
   ),
   'amqpenvelope::gettype' => 
   array (
-    0 => 'null|string',
+    0 => 'string',
   ),
   'amqpenvelope::getuserid' => 
   array (
-    0 => 'null|string',
+    0 => 'string',
   ),
   'amqpenvelope::hasheader' => 
   array (
@@ -795,11 +795,11 @@ return array (
   ),
   'amqpexchange::getname' => 
   array (
-    0 => 'null|string',
+    0 => 'string',
   ),
   'amqpexchange::gettype' => 
   array (
-    0 => 'null|string',
+    0 => 'string',
   ),
   'amqpexchange::hasargument' => 
   array (
@@ -940,7 +940,7 @@ return array (
   ),
   'amqpqueue::get' => 
   array (
-    0 => 'AMQPEnvelope|null',
+    0 => 'AMQPEnvelope|false',
     'flags=' => 'int',
   ),
   'amqpqueue::getargument' => 
@@ -970,7 +970,7 @@ return array (
   ),
   'amqpqueue::getname' => 
   array (
-    0 => 'null|string',
+    0 => 'string',
   ),
   'amqpqueue::hasargument' => 
   array (
@@ -13874,7 +13874,7 @@ return array (
   ),
   'curl_multi_getcontent' => 
   array (
-    0 => 'null|string',
+    0 => 'string',
     'handle' => 'CurlHandle',
   ),
   'curl_multi_info_read' => 
@@ -20208,7 +20208,7 @@ return array (
   ),
   'evcheck::getloop' => 
   array (
-    0 => 'EvLoop|null',
+    0 => 'EvLoop',
   ),
   'evcheck::invoke' => 
   array (
@@ -20262,7 +20262,7 @@ return array (
   ),
   'evchild::getloop' => 
   array (
-    0 => 'EvLoop|null',
+    0 => 'EvLoop',
   ),
   'evchild::invoke' => 
   array (
@@ -20320,7 +20320,7 @@ return array (
   ),
   'evembed::getloop' => 
   array (
-    0 => 'EvLoop|null',
+    0 => 'EvLoop',
   ),
   'evembed::invoke' => 
   array (
@@ -20769,7 +20769,7 @@ return array (
   ),
   'eventbuffer::pullup' => 
   array (
-    0 => 'null|string',
+    0 => 'string',
     'size' => 'int',
   ),
   'eventbuffer::read' => 
@@ -20785,7 +20785,7 @@ return array (
   ),
   'eventbuffer::readline' => 
   array (
-    0 => 'null|string',
+    0 => 'string',
     'eol_style' => 'int',
   ),
   'eventbuffer::search' => 
@@ -20895,7 +20895,7 @@ return array (
   ),
   'eventbufferevent::read' => 
   array (
-    0 => 'null|string',
+    0 => 'string',
     'size' => 'int',
   ),
   'eventbufferevent::readbuffer' => 
@@ -21201,7 +21201,7 @@ return array (
   ),
   'eventhttpconnection::makerequest' => 
   array (
-    0 => 'bool|null',
+    0 => 'bool',
     'req' => 'EventHttpRequest',
     'type' => 'int',
     'uri' => 'string',
@@ -21277,7 +21277,7 @@ return array (
   ),
   'eventhttprequest::findheader' => 
   array (
-    0 => 'null|string',
+    0 => 'void',
     'key' => 'string',
     'type' => 'string',
   ),
@@ -21287,7 +21287,7 @@ return array (
   ),
   'eventhttprequest::getbufferevent' => 
   array (
-    0 => 'EventBufferEvent|null',
+    0 => 'EventBufferEvent',
   ),
   'eventhttprequest::getcommand' => 
   array (
@@ -21295,7 +21295,7 @@ return array (
   ),
   'eventhttprequest::getconnection' => 
   array (
-    0 => 'EventHttpConnection|null',
+    0 => 'EventHttpConnection',
   ),
   'eventhttprequest::gethost' => 
   array (
@@ -21489,7 +21489,7 @@ return array (
   ),
   'evfork::getloop' => 
   array (
-    0 => 'EvLoop|null',
+    0 => 'EvLoop',
   ),
   'evfork::invoke' => 
   array (
@@ -21539,7 +21539,7 @@ return array (
   ),
   'evidle::getloop' => 
   array (
-    0 => 'EvLoop|null',
+    0 => 'EvLoop',
   ),
   'evidle::invoke' => 
   array (
@@ -21593,7 +21593,7 @@ return array (
   ),
   'evio::getloop' => 
   array (
-    0 => 'EvLoop|null',
+    0 => 'EvLoop',
   ),
   'evio::invoke' => 
   array (
@@ -21810,7 +21810,7 @@ return array (
   ),
   'evperiodic::getloop' => 
   array (
-    0 => 'EvLoop|null',
+    0 => 'EvLoop',
   ),
   'evperiodic::invoke' => 
   array (
@@ -21866,7 +21866,7 @@ return array (
   ),
   'evprepare::getloop' => 
   array (
-    0 => 'EvLoop|null',
+    0 => 'EvLoop',
   ),
   'evprepare::invoke' => 
   array (
@@ -21918,7 +21918,7 @@ return array (
   ),
   'evsignal::getloop' => 
   array (
-    0 => 'EvLoop|null',
+    0 => 'EvLoop',
   ),
   'evsignal::invoke' => 
   array (
@@ -21981,7 +21981,7 @@ return array (
   ),
   'evstat::getloop' => 
   array (
-    0 => 'EvLoop|null',
+    0 => 'EvLoop',
   ),
   'evstat::invoke' => 
   array (
@@ -22053,7 +22053,7 @@ return array (
   ),
   'evtimer::getloop' => 
   array (
-    0 => 'EvLoop|null',
+    0 => 'EvLoop',
   ),
   'evtimer::invoke' => 
   array (
@@ -22099,7 +22099,7 @@ return array (
   ),
   'evwatcher::getloop' => 
   array (
-    0 => 'EvLoop|null',
+    0 => 'EvLoop',
   ),
   'evwatcher::invoke' => 
   array (
@@ -24669,7 +24669,7 @@ return array (
   ),
   'fscanf' => 
   array (
-    0 => 'array<array-key, mixed>|false|int|null',
+    0 => 'list<mixed>',
     'stream' => 'resource',
     'format' => 'string',
   ),
@@ -36738,7 +36738,7 @@ return array (
   ),
   'imagick::getimageartifact' => 
   array (
-    0 => 'null|string',
+    0 => 'string',
     'artifact' => 'string',
   ),
   'imagick::getimageartifacts' => 
@@ -57331,7 +57331,7 @@ return array (
   ),
   'passthru' => 
   array (
-    0 => 'false|null',
+    0 => 'void',
     'command' => 'string',
     '&w_result_code=' => 'int',
   ),
@@ -70526,7 +70526,7 @@ return array (
   ),
   'register_shutdown_function' => 
   array (
-    0 => 'bool|null',
+    0 => 'void',
     'callback' => 'callable',
     '...args=' => 'mixed',
   ),
