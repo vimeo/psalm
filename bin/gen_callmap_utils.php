@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
-use Psalm\Internal\Codebase\Reflection;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNull;
@@ -52,13 +51,12 @@ function getReflectionFunction(string $functionName): ?ReflectionFunctionAbstrac
         return null;
     }
 }
-    
-    /**
-     * @param array<string, string> $entryParameters
-     */
-function assertEntryParameters(ReflectionFunctionAbstract $function, array &$entryParameters): void
+
+/**
+ * @return array<string, array{byRef: bool, refMode: 'rw'|'w'|'r', variadic: bool, optional: bool, type: string}>
+ */
+function normalizeParameters(string $func, array $parameters): array
 {
-    assertEntryReturnType($function, $entryParameters[0]);
 
     /**
      * Parse the parameter names from the map.
@@ -67,7 +65,7 @@ function assertEntryParameters(ReflectionFunctionAbstract $function, array &$ent
      */
     $normalizedEntries = [];
     
-    foreach ($entryParameters as $key => &$entry) {
+    foreach ($parameters as $key => $entry) {
         if ($key === 0) {
             continue;
         }
@@ -79,7 +77,7 @@ function assertEntryParameters(ReflectionFunctionAbstract $function, array &$ent
             'variadic' => false,
             'byRef' => false,
             'optional' => false,
-            'type' => &$entry,
+            'type' => $entry,
         ];
         if (strncmp($normalizedKey, '&', 1) === 0) {
             $normalizedEntry['byRef'] = true;
@@ -96,10 +94,11 @@ function assertEntryParameters(ReflectionFunctionAbstract $function, array &$ent
             $parts = explode('_', $normalizedKey, 2);
             if (count($parts) === 2) {
                 if (!($parts[0] === 'rw' || $parts[0] === 'w' || $parts[0] === 'r')) {
-                    throw new InvalidArgumentException('Invalid refMode: '.$parts[0]);
+                    $normalizedEntry['refMode'] = 'rw';
+                } else {
+                    $normalizedEntry['refMode'] = $parts[0];
+                    $normalizedKey = $parts[1];
                 }
-                $normalizedEntry['refMode'] = $parts[0];
-                $normalizedKey = $parts[1];
             } else {
                 $normalizedEntry['refMode'] = 'rw';
             }
@@ -115,11 +114,49 @@ function assertEntryParameters(ReflectionFunctionAbstract $function, array &$ent
         $normalizedEntries[$normalizedKey] = $normalizedEntry;
     }
     
-    foreach ($function->getParameters() as $parameter) {
-        if (isset($normalizedEntries[$parameter->getName()])) {
-            assertParameter($normalizedEntries[$parameter->getName()], $parameter);
+    return $normalizedEntries;
+}
+    
+/**
+ * @param array<string|int, string> $baseParameters
+ * @param array<string|int, string> $customParameters
+ * @return array<string|int, string>
+ */
+function assertEntryParameters(string $func, array $baseParameters, array $customParameters): array
+{
+    $customParameters[0] = assertTypeValidity($baseParameters[0], $customParameters[0], "Return $func");
+
+    $normalized = normalizeParameters($func, $customParameters);
+
+    foreach (normalizeParameters($func, $baseParameters) as $name => $parameter) {
+        if (isset($custom[$name])) {
+            $normalized[$name] = assertParameter($func, $name, $normalized[$name], $parameter);
+        } else {
+            $normalized[$name] = $parameter;
         }
     }
+
+    $denormalized = [$customParameters[0]];
+    foreach ($normalized as $key => $param) {
+        if ($key === 0) {
+            continue;
+        }
+        if (($param['refMode'] ?? 'rw') !== 'rw') {
+            $key = "{$param['refMode']}_$key";
+        }
+        if ($param['byRef']) {
+            $key = "&$key";
+        }
+        if ($param['variadic']) {
+            $key = "...$key";
+        }
+        if ($param['optional']) {
+            $key = "$key=";
+        }
+        $denormalized[$key] = $param['type'];
+    }
+
+    return $denormalized;
 }
     
 /**
@@ -130,40 +167,31 @@ function assertEntryParameters(ReflectionFunctionAbstract $function, array &$ent
  *      variadic: bool,
  *      optional: bool,
  *      type: string
- * } $normalizedEntry
+ * } $custom
+ * @param array{
+ *      byRef: bool,
+ *      name?: string,
+ *      refMode: 'rw'|'w'|'r',
+ *      variadic: bool,
+ *      optional: bool,
+ *      type: string
+ * } $base
  */
-function assertParameter(array &$normalizedEntry, ReflectionParameter $param): void
+function assertParameter(string $func, string $paramName, array $custom, array $base): array
 {
-    $name = $param->getName();
+    $custom['optional'] = $base['optional'];
+    $custom['variadic'] = $base['variadic'];
+    $custom['byRef'] = $base['byRef'];
     
-    $expectedType = $param->getType();
-    
-    if (isset($expectedType) && !empty($normalizedEntry['type'])) {
-        $func = $param->getDeclaringFunction()->getName();
-        assertTypeValidity($expectedType, $normalizedEntry['type'], "Param $func '{$name}'");
-    }
+    $custom['type'] = assertTypeValidity($base['type'], $custom['type'], "Param $func '{$paramName}'");
+
+    return $custom;
 }
-    
-function assertEntryReturnType(ReflectionFunctionAbstract $function, string &$entryReturnType): void
+
+function assertTypeValidity(string $base, string $custom, string $msgPrefix): string
 {
-    if (version_compare(PHP_VERSION, '8.1.0', '>=')) {
-        $expectedType = $function->getTentativeReturnType() ?? $function->getReturnType();
-    } else {
-        $expectedType = $function->getReturnType();
-    }
-    
-    if ($expectedType !== null) {
-        assertTypeValidity($expectedType, $entryReturnType, 'Return');
-    }
-}
-    
-        /**
-         * Since string equality is too strict, we do some extra checking here
-         */
-function assertTypeValidity(ReflectionType $reflected, string &$specified, string $msgPrefix): void
-{
-    $expectedType = Reflection::getPsalmTypeFromReflectionType($reflected);
-    $callMapType = Type::parseString($specified === '' ? 'mixed' : $specified);
+    $expectedType = Type::parseString($base);
+    $callMapType = Type::parseString($custom === '' ? $base : $custom);
     
     $codebase = ProjectAnalyzer::getInstance()->getCodebase();
     try {
@@ -176,15 +204,15 @@ function assertTypeValidity(ReflectionType $reflected, string &$specified, strin
             null,
             false,
             false,
-        ) && !str_contains($specified, 'static')) {
-            $specified = $expectedType->getId(true);
+        ) && !str_contains($custom, 'static')) {
+            $custom = $expectedType->getId(true);
             $callMapType = $expectedType;
         }
     } catch (Throwable) {
     }
     
     if ($expectedType->hasMixed()) {
-        return;
+        return $custom;
     }
     $callMapType = $callMapType->getBuilder();
     if ($expectedType->isNullable() !== $callMapType->isNullable()) {
@@ -194,7 +222,7 @@ function assertTypeValidity(ReflectionType $reflected, string &$specified, strin
             $callMapType->removeType('null');
         }
     }
-    $specified = $callMapType->getId(true);
+    return $callMapType->getId(true);
 }
 
 function writeCallMap(string $file, array $callMap): void
