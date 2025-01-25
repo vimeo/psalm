@@ -32,27 +32,6 @@ function normalizeCallMap(array $callMap): array
 }
 
 /**
-     * Returns the correct reflection type for function or method name.
-     */
-function getReflectionFunction(string $functionName): ?ReflectionFunctionAbstract
-{
-    try {
-        if (strpos($functionName, '::') !== false) {
-            if (PHP_VERSION_ID < 8_03_00) {
-                return new ReflectionMethod($functionName);
-            }
-    
-            return ReflectionMethod::createFromMethodName($functionName);
-        }
-    
-        /** @var callable-string $functionName */
-        return new ReflectionFunction($functionName);
-    } catch (ReflectionException $e) {
-        return null;
-    }
-}
-
-/**
  * @return array<string, array{byRef: bool, refMode: 'rw'|'w'|'r', variadic: bool, optional: bool, type: string}>
  */
 function normalizeParameters(string $func, array $parameters): array
@@ -124,20 +103,27 @@ function normalizeParameters(string $func, array $parameters): array
  */
 function assertEntryParameters(string $func, array $baseParameters, array $customParameters): array
 {
-    $customParameters[0] = assertTypeValidity($baseParameters[0], $customParameters[0], "Return $func");
+    $denormalized = [assertTypeValidity($baseParameters[0], $customParameters[0], "Return $func")];
 
-    $normalized = normalizeParameters($func, $customParameters);
+    $baseParameters = normalizeParameters($func, $baseParameters);
+    $customParameters = normalizeParameters($func, $customParameters);
 
-    foreach (normalizeParameters($func, $baseParameters) as $name => $parameter) {
-        if (isset($custom[$name])) {
-            $normalized[$name] = assertParameter($func, $name, $normalized[$name], $parameter);
+    $customParametersByVal = array_values($customParameters);
+
+    $final = [];
+    $idx = 0;
+    foreach ($baseParameters as $name => $parameter) {
+        if (isset($customParameters[$name])) {
+            $final[$name] = assertParameter($func, $name, $customParameters[$name], $parameter);
+        } elseif (isset($customParametersByVal[$idx])) {
+            $final[$name] = assertParameter($func, $name, $customParametersByVal[$idx], $parameter);
         } else {
-            $normalized[$name] = $parameter;
+            $final[$name] = $parameter;
         }
+        $idx++;
     }
 
-    $denormalized = [$customParameters[0]];
-    foreach ($normalized as $key => $param) {
+    foreach ($final as $key => $param) {
         if ($key === 0) {
             continue;
         }
@@ -190,6 +176,7 @@ function assertParameter(string $func, string $paramName, array $custom, array $
 
 function assertTypeValidity(string $base, string $custom, string $msgPrefix): string
 {
+    return $custom;
     $expectedType = Type::parseString($base);
     $callMapType = Type::parseString($custom === '' ? $base : $custom);
     

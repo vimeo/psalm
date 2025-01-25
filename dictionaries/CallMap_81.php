@@ -1371,7 +1371,7 @@ return array (
   array (
     0 => 'bool',
     'key' => 'string',
-    'var' => 'mixed',
+    'value=' => 'mixed',
     'ttl=' => 'int',
   ),
   'apcu_add\'1' => 
@@ -1423,13 +1423,13 @@ return array (
   array (
     0 => 'mixed',
     'key' => 'string',
-    'generator' => 'callable(string):mixed',
+    'callback' => 'callable(string):mixed',
     'ttl=' => 'int',
   ),
   'apcu_exists' => 
   array (
     0 => 'bool',
-    'keys' => 'string',
+    'key' => 'string',
   ),
   'apcu_exists\'1' => 
   array (
@@ -1470,7 +1470,7 @@ return array (
   array (
     0 => 'bool',
     'key' => 'string',
-    'var=' => 'mixed',
+    'value=' => 'mixed',
     'ttl=' => 'int',
   ),
   'apcu_store\'1' => 
@@ -1780,8 +1780,7 @@ return array (
   array (
     0 => 'array<array-key, mixed>',
     'array' => 'array<array-key, mixed>',
-    'rest' => 'array<array-key, mixed>',
-    'data_comp_func' => 'callable(mixed, mixed):int',
+    '...rest=' => 'array<array-key, mixed>',
   ),
   'array_diff_uassoc\'1' => 
   array (
@@ -1796,8 +1795,7 @@ return array (
   array (
     0 => 'array<array-key, mixed>',
     'array' => 'array<array-key, mixed>',
-    'rest' => 'array<array-key, mixed>',
-    'key_comp_func' => 'callable(mixed, mixed):int',
+    '...rest=' => 'array<array-key, mixed>',
   ),
   'array_diff_ukey\'1' => 
   array (
@@ -1855,8 +1853,7 @@ return array (
   array (
     0 => 'array<array-key, mixed>',
     'array' => 'array<array-key, mixed>',
-    'rest' => 'array<array-key, mixed>',
-    'key_compare_func' => 'callable(mixed, mixed):int',
+    '...rest=' => 'array<array-key, mixed>',
   ),
   'array_intersect_uassoc\'1' => 
   array (
@@ -1871,8 +1868,7 @@ return array (
   array (
     0 => 'array<array-key, mixed>',
     'array' => 'array<array-key, mixed>',
-    'rest' => 'array<array-key, mixed>',
-    'key_compare_func' => 'callable(mixed, mixed):int',
+    '...rest=' => 'array<array-key, mixed>',
   ),
   'array_intersect_ukey\'1' => 
   array (
@@ -1931,10 +1927,8 @@ return array (
   'array_multisort' => 
   array (
     0 => 'bool',
-    '&rw_array' => 'array<array-key, mixed>',
-    'rest=' => 'array<array-key, mixed>|int',
-    'array1_sort_flags=' => 'array<array-key, mixed>|int',
-    '...args=' => 'array<array-key, mixed>|int',
+    '&array' => 'array<array-key, mixed>',
+    '...&rest=' => 'array<array-key, mixed>|int',
   ),
   'array_pad' => 
   array (
@@ -1946,7 +1940,7 @@ return array (
   'array_pop' => 
   array (
     0 => 'mixed',
-    '&rw_array' => 'array<array-key, mixed>',
+    '&array' => 'array<array-key, mixed>',
   ),
   'array_product' => 
   array (
@@ -1956,14 +1950,14 @@ return array (
   'array_push' => 
   array (
     0 => 'int',
-    '&rw_array' => 'array<array-key, mixed>',
+    '&array' => 'array<array-key, mixed>',
     '...values=' => 'mixed',
   ),
   'array_rand' => 
   array (
     0 => 'array<int, int|string>|int|string',
     'array' => 'non-empty-array<array-key, mixed>',
-    'num' => 'int',
+    'num=' => 'int',
   ),
   'array_rand\'1' => 
   array (
@@ -2005,7 +1999,7 @@ return array (
   'array_shift' => 
   array (
     0 => 'mixed|null',
-    '&rw_array' => 'array<array-key, mixed>',
+    '&array' => 'array<array-key, mixed>',
   ),
   'array_slice' => 
   array (
@@ -2018,7 +2012,7 @@ return array (
   'array_splice' => 
   array (
     0 => 'array<array-key, mixed>',
-    '&rw_array' => 'array<array-key, mixed>',
+    '&array' => 'array<array-key, mixed>',
     'offset' => 'int',
     'length=' => 'int|null',
     'replacement=' => 'array<array-key, mixed>|string',
@@ -2032,8 +2026,7 @@ return array (
   array (
     0 => 'array<array-key, mixed>',
     'array' => 'array<array-key, mixed>',
-    'rest' => 'array<array-key, mixed>',
-    'data_comp_func' => 'callable(mixed, mixed):int',
+    '...rest=' => 'array<array-key, mixed>',
   ),
   'array_udiff\'1' => 
   array (
@@ -2048,8 +2041,7 @@ return array (
   array (
     0 => 'array<array-key, mixed>',
     'array' => 'array<array-key, mixed>',
-    'rest' => 'array<array-key, mixed>',
-    'key_comp_func' => 'callable(mixed, mixed):int',
+    '...rest=' => 'array<array-key, mixed>',
   ),
   'array_udiff_assoc\'1' => 
   array (
@@ -2064,9 +2056,7 @@ return array (
   array (
     0 => 'array<array-key, mixed>',
     'array' => 'array<array-key, mixed>',
-    'rest' => 'array<array-key, mixed>',
-    'data_comp_func' => 'callable(mixed, mixed):int',
-    'key_comp_func' => 'callable(mixed, mixed):int',
+    '...rest=' => 'array<array-key, mixed>',
   ),
   'array_udiff_uassoc\'1' => 
   array (
@@ -2082,8 +2072,7 @@ return array (
   array (
     0 => 'array<array-key, mixed>',
     'array' => 'array<array-key, mixed>',
-    'rest' => 'array<array-key, mixed>',
-    'data_compare_func' => 'callable(mixed, mixed):int',
+    '...rest=' => 'array<array-key, mixed>',
   ),
   'array_uintersect\'1' => 
   array (
@@ -2098,8 +2087,7 @@ return array (
   array (
     0 => 'array<array-key, mixed>',
     'array' => 'array<array-key, mixed>',
-    'rest' => 'array<array-key, mixed>',
-    'data_compare_func' => 'callable(mixed, mixed):int',
+    '...rest=' => 'array<array-key, mixed>',
   ),
   'array_uintersect_assoc\'1' => 
   array (
@@ -2114,9 +2102,7 @@ return array (
   array (
     0 => 'array<array-key, mixed>',
     'array' => 'array<array-key, mixed>',
-    'rest' => 'array<array-key, mixed>',
-    'data_compare_func' => 'callable(mixed, mixed):int',
-    'key_compare_func' => 'callable(mixed, mixed):int',
+    '...rest=' => 'array<array-key, mixed>',
   ),
   'array_uintersect_uassoc\'1' => 
   array (
@@ -2137,7 +2123,7 @@ return array (
   'array_unshift' => 
   array (
     0 => 'int',
-    '&rw_array' => 'array<array-key, mixed>',
+    '&array' => 'array<array-key, mixed>',
     '...values=' => 'mixed',
   ),
   'array_values' => 
@@ -2148,7 +2134,7 @@ return array (
   'array_walk' => 
   array (
     0 => 'bool',
-    '&rw_array' => 'array<array-key, mixed>',
+    '&array' => 'array<array-key, mixed>',
     'callback' => 'callable',
     'arg=' => 'mixed',
   ),
@@ -2162,7 +2148,7 @@ return array (
   'array_walk_recursive' => 
   array (
     0 => 'bool',
-    '&rw_array' => 'array<array-key, mixed>',
+    '&array' => 'array<array-key, mixed>',
     'callback' => 'callable',
     'arg=' => 'mixed',
   ),
@@ -2439,7 +2425,7 @@ return array (
   'arsort' => 
   array (
     0 => 'true',
-    '&rw_array' => 'array<array-key, mixed>',
+    '&array' => 'array<array-key, mixed>',
     'flags=' => 'int',
   ),
   'asin' => 
@@ -2455,7 +2441,7 @@ return array (
   'asort' => 
   array (
     0 => 'true',
-    '&rw_array' => 'array<array-key, mixed>',
+    '&array' => 'array<array-key, mixed>',
     'flags=' => 'int',
   ),
   'assert' => 
@@ -3054,7 +3040,7 @@ return array (
   array (
     0 => 'void',
     'iterator' => 'Iterator',
-    'flags=' => 'int',
+    'flags=' => 'mixed',
   ),
   'cachingiterator::__tostring' => 
   array (
@@ -5199,7 +5185,7 @@ return array (
   array (
     0 => 'bool',
     'object' => 'collator',
-    '&rw_array' => 'array<array-key, mixed>',
+    '&array' => 'array<array-key, mixed>',
     'flags=' => 'int',
   ),
   'collator_compare' => 
@@ -5264,14 +5250,14 @@ return array (
   array (
     0 => 'bool',
     'object' => 'collator',
-    '&rw_array' => 'array<array-key, mixed>',
+    '&array' => 'array<array-key, mixed>',
     'flags=' => 'int',
   ),
   'collator_sort_with_sort_keys' => 
   array (
     0 => 'bool',
     'object' => 'collator',
-    '&rw_array' => 'array<array-key, mixed>',
+    '&array' => 'array<array-key, mixed>',
   ),
   'collectable::isgarbage' => 
   array (
@@ -11747,7 +11733,7 @@ return array (
   'count_chars' => 
   array (
     0 => 'array<int, int>',
-    'input' => 'string',
+    'string' => 'string',
     'mode=' => '0|1|2',
   ),
   'count_chars\'1' => 
@@ -12623,7 +12609,6 @@ return array (
   'curl_version' => 
   array (
     0 => 'array<array-key, mixed>',
-    'version=' => 'int',
   ),
   'curlfile::__construct' => 
   array (
@@ -12857,11 +12842,11 @@ return array (
   'date_time_set' => 
   array (
     0 => 'DateTime',
-    'object' => 'DateTime',
-    'hour' => 'int',
-    'minute' => 'int',
-    'second=' => 'int',
-    'microsecond=' => 'int',
+    'object' => 'mixed',
+    'hour' => 'mixed',
+    'minute' => 'mixed',
+    'second=' => 'mixed',
+    'microsecond=' => 'mixed',
   ),
   'date_timestamp_get' => 
   array (
@@ -12969,14 +12954,14 @@ return array (
     0 => 'array<array-key, mixed>|false',
     'formatter' => 'IntlDateFormatter',
     'string' => 'string',
-    '&rw_offset=' => 'int',
+    '&offset=' => 'int',
   ),
   'datefmt_parse' => 
   array (
     0 => 'false|float|int',
     'formatter' => 'IntlDateFormatter',
     'string' => 'string',
-    '&rw_offset=' => 'int',
+    '&offset=' => 'int',
   ),
   'datefmt_set_calendar' => 
   array (
@@ -13585,7 +13570,7 @@ return array (
   'db2_pclose' => 
   array (
     0 => 'bool',
-    'resource' => 'resource',
+    'connection' => 'resource',
   ),
   'db2_pconnect' => 
   array (
@@ -21027,7 +21012,7 @@ return array (
   'extract' => 
   array (
     0 => 'int',
-    '&rw_array' => 'array<array-key, mixed>',
+    '&array' => 'array<array-key, mixed>',
     'flags=' => 'int',
     'prefix=' => 'string',
   ),
@@ -23611,6 +23596,7 @@ return array (
     0 => 'list<mixed>',
     'stream' => 'resource',
     'format' => 'string',
+    '...&vars=' => 'mixed',
   ),
   'fscanf\'1' => 
   array (
@@ -25779,7 +25765,7 @@ return array (
   'getenv' => 
   array (
     0 => 'false|string',
-    'name' => 'string',
+    'name=' => 'string',
     'local_only=' => 'bool',
   ),
   'getenv\'1' => 
@@ -25890,6 +25876,7 @@ return array (
   'gettimeofday' => 
   array (
     0 => 'array<string, int>',
+    'as_float=' => 'bool',
   ),
   'gettimeofday\'1' => 
   array (
@@ -34711,7 +34698,7 @@ return array (
     'image' => 'GdImage',
     'points' => 'array<array-key, mixed>',
     'num_points_or_color' => 'int',
-    'color' => 'int',
+    'color=' => 'int',
   ),
   'imagefilledrectangle' => 
   array (
@@ -34887,8 +34874,8 @@ return array (
     0 => 'bool',
     'image' => 'GdImage',
     'points' => 'array<array-key, mixed>',
-    'num_points' => 'int',
-    'color' => 'int',
+    'num_points_or_color' => 'int',
+    'color=' => 'int',
   ),
   'imagepalettecopy' => 
   array (
@@ -34915,7 +34902,7 @@ return array (
     'image' => 'GdImage',
     'points' => 'array<array-key, mixed>',
     'num_points_or_color' => 'int',
-    'color' => 'int',
+    'color=' => 'int',
   ),
   'imagerectangle' => 
   array (
@@ -34967,8 +34954,8 @@ return array (
     0 => 'bool',
     'image' => 'GdImage',
     'x1' => 'int',
-    'x2' => 'int',
     'y1' => 'int',
+    'x2' => 'int',
     'y2' => 'int',
   ),
   'imagesetinterpolation' => 
@@ -39072,7 +39059,7 @@ return array (
   array (
     0 => 'string',
     'separator' => 'string',
-    'array' => 'array<array-key, mixed>',
+    'array=' => 'array<array-key, mixed>',
   ),
   'implode\'1' => 
   array (
@@ -39774,6 +39761,10 @@ return array (
     'calendar' => 'IntlCalendar',
     'year' => 'int',
     'month' => 'int',
+    'dayOfMonth=' => 'int',
+    'hour=' => 'int',
+    'minute=' => 'int',
+    'second=' => 'int',
   ),
   'intlcal_set\'1' => 
   array (
@@ -41319,7 +41310,6 @@ return array (
   'intltz_get_tz_data_version' => 
   array (
     0 => 'string',
-    'object' => 'IntlTimeZone',
   ),
   'intltz_get_unknown' => 
   array (
@@ -41759,7 +41749,7 @@ return array (
   array (
     0 => 'string',
     'separator' => 'string',
-    'array' => 'array<array-key, mixed>',
+    'array=' => 'array<array-key, mixed>',
   ),
   'join\'1' => 
   array (
@@ -42058,13 +42048,13 @@ return array (
   'krsort' => 
   array (
     0 => 'true',
-    '&rw_array' => 'array<array-key, mixed>',
+    '&array' => 'array<array-key, mixed>',
     'flags=' => 'int',
   ),
   'ksort' => 
   array (
     0 => 'true',
-    '&rw_array' => 'array<array-key, mixed>',
+    '&array' => 'array<array-key, mixed>',
     'flags=' => 'int',
   ),
   'ktaglib_id3v2_attachedpictureframe::getdescription' => 
@@ -43255,6 +43245,9 @@ return array (
     0 => 'int',
     'string1' => 'string',
     'string2' => 'string',
+    'insertion_cost=' => 'int',
+    'replacement_cost=' => 'int',
+    'deletion_cost=' => 'int',
   ),
   'levenshtein\'1' => 
   array (
@@ -44214,6 +44207,7 @@ return array (
   array (
     0 => 'mixed',
     'value' => 'non-empty-array<array-key, mixed>',
+    '...values=' => 'mixed',
   ),
   'max\'1' => 
   array (
@@ -44225,7 +44219,7 @@ return array (
   'mb_check_encoding' => 
   array (
     0 => 'bool',
-    'value' => 'array<array-key, mixed>|string',
+    'value=' => 'array<array-key, mixed>|string',
     'encoding=' => 'null|string',
   ),
   'mb_chr' => 
@@ -44267,8 +44261,8 @@ return array (
     0 => 'false|string',
     'to_encoding' => 'string',
     'from_encoding' => 'array<array-key, mixed>|string',
-    '&rw_var' => 'array<array-key, mixed>|object|string',
-    '&...rw_vars=' => 'array<array-key, mixed>|object|string',
+    '&var' => 'array<array-key, mixed>|object|string',
+    '...&vars=' => 'array<array-key, mixed>|object|string',
   ),
   'mb_decode_mimeheader' => 
   array (
@@ -45835,6 +45829,7 @@ return array (
   array (
     0 => 'mixed',
     'value' => 'non-empty-array<array-key, mixed>',
+    '...values=' => 'mixed',
   ),
   'min\'1' => 
   array (
@@ -50759,8 +50754,8 @@ return array (
   'mt_rand' => 
   array (
     0 => 'int',
-    'min' => 'int',
-    'max' => 'int',
+    'min=' => 'int',
+    'max=' => 'int',
   ),
   'mt_rand\'1' => 
   array (
@@ -53205,12 +53200,12 @@ return array (
   'natcasesort' => 
   array (
     0 => 'bool',
-    '&rw_array' => 'array<array-key, mixed>',
+    '&array' => 'array<array-key, mixed>',
   ),
   'natsort' => 
   array (
     0 => 'bool',
-    '&rw_array' => 'array<array-key, mixed>',
+    '&array' => 'array<array-key, mixed>',
   ),
   'net_get_interfaces' => 
   array (
@@ -53543,7 +53538,7 @@ return array (
   'numberformatter::format' => 
   array (
     0 => 'false|string',
-    'num' => 'float|int',
+    'num' => 'mixed',
     'type=' => 'int',
   ),
   'numberformatter::formatcurrency' => 
@@ -53687,7 +53682,7 @@ return array (
     'formatter' => 'NumberFormatter',
     'string' => 'string',
     'type=' => 'int',
-    '&rw_offset=' => 'int',
+    '&offset=' => 'int',
   ),
   'numfmt_parse_currency' => 
   array (
@@ -53695,7 +53690,7 @@ return array (
     'formatter' => 'NumberFormatter',
     'string' => 'string',
     '&w_currency' => 'string',
-    '&rw_offset=' => 'int',
+    '&offset=' => 'int',
   ),
   'numfmt_set_attribute' => 
   array (
@@ -55487,7 +55482,7 @@ return array (
     '&w_encrypted_keys' => 'array<array-key, mixed>',
     'public_key' => 'list<OpenSSLAsymmetricKey>',
     'cipher_algo' => 'string',
-    '&rw_iv=' => 'string',
+    '&iv=' => 'string',
   ),
   'openssl_sign' => 
   array (
@@ -59134,7 +59129,7 @@ return array (
   array (
     0 => 'string',
     'connection' => 'PgSql\\Connection',
-    'string' => 'string',
+    'string=' => 'string',
   ),
   'pg_escape_bytea\'1' => 
   array (
@@ -59145,7 +59140,7 @@ return array (
   array (
     0 => 'false|string',
     'connection' => 'PgSql\\Connection',
-    'string' => 'string',
+    'string=' => 'string',
   ),
   'pg_escape_identifier\'1' => 
   array (
@@ -59156,7 +59151,7 @@ return array (
   array (
     0 => 'false|string',
     'connection' => 'PgSql\\Connection',
-    'string' => 'string',
+    'string=' => 'string',
   ),
   'pg_escape_literal\'1' => 
   array (
@@ -59167,7 +59162,7 @@ return array (
   array (
     0 => 'string',
     'connection' => 'PgSql\\Connection',
-    'string' => 'string',
+    'string=' => 'string',
   ),
   'pg_escape_string\'1' => 
   array (
@@ -59178,7 +59173,7 @@ return array (
   array (
     0 => 'PgSql\\Result|false',
     'connection' => 'PgSql\\Connection',
-    'query' => 'string',
+    'query=' => 'string',
   ),
   'pg_exec\'1' => 
   array (
@@ -59190,7 +59185,7 @@ return array (
     0 => 'PgSql\\Result|false',
     'connection' => 'PgSql\\Connection',
     'statement_name' => 'string',
-    'params' => 'array<array-key, mixed>',
+    'params=' => 'array<array-key, mixed>',
   ),
   'pg_execute\'1' => 
   array (
@@ -59236,6 +59231,7 @@ return array (
     0 => 'false|null|string',
     'result' => 'PgSql\\Result',
     'row' => 'int|string',
+    'field=' => 'int|string',
   ),
   'pg_fetch_result\'1' => 
   array (
@@ -59256,6 +59252,7 @@ return array (
     0 => 'false|int',
     'result' => 'PgSql\\Result',
     'row' => 'int|string',
+    'field=' => 'int|string',
   ),
   'pg_field_is_null\'1' => 
   array (
@@ -59281,6 +59278,7 @@ return array (
     0 => 'false|int',
     'result' => 'PgSql\\Result',
     'row' => 'int|string',
+    'field=' => 'int|string',
   ),
   'pg_field_prtlen\'1' => 
   array (
@@ -59432,8 +59430,8 @@ return array (
   array (
     0 => 'bool',
     'connection' => 'PgSql\\Connection',
-    'oid' => 'int|string',
-    'filename' => 'string',
+    'oid=' => 'int|string',
+    'filename=' => 'string',
   ),
   'pg_lo_export\'1' => 
   array (
@@ -59445,8 +59443,8 @@ return array (
   array (
     0 => 'false|int|string',
     'connection' => 'PgSql\\Connection',
-    'filename' => 'string',
-    'oid' => 'int|string',
+    'filename=' => 'string',
+    'oid=' => 'int|string',
   ),
   'pg_lo_import\'1' => 
   array (
@@ -59458,8 +59456,8 @@ return array (
   array (
     0 => 'PgSql\\Lob|false',
     'connection' => 'PgSql\\Connection',
-    'oid' => 'int|string',
-    'mode' => 'string',
+    'oid=' => 'int|string',
+    'mode=' => 'string',
   ),
   'pg_lo_open\'1' => 
   array (
@@ -59500,7 +59498,7 @@ return array (
   array (
     0 => 'bool',
     'connection' => 'PgSql\\Connection',
-    'oid' => 'int|string',
+    'oid=' => 'int|string',
   ),
   'pg_lo_unlink\'1' => 
   array (
@@ -59606,7 +59604,7 @@ return array (
   array (
     0 => 'false|string',
     'connection' => 'PgSql\\Connection',
-    'name' => 'string',
+    'name=' => 'string',
   ),
   'pg_parameter_status\'1' => 
   array (
@@ -59634,7 +59632,7 @@ return array (
     0 => 'PgSql\\Result|false',
     'connection' => 'PgSql\\Connection',
     'statement_name' => 'string',
-    'query' => 'string',
+    'query=' => 'string',
   ),
   'pg_prepare\'1' => 
   array (
@@ -59646,7 +59644,7 @@ return array (
   array (
     0 => 'bool',
     'connection' => 'PgSql\\Connection',
-    'data' => 'string',
+    'query=' => 'string',
   ),
   'pg_put_line\'1' => 
   array (
@@ -59657,7 +59655,7 @@ return array (
   array (
     0 => 'PgSql\\Result|false',
     'connection' => 'PgSql\\Connection',
-    'query' => 'string',
+    'query=' => 'string',
   ),
   'pg_query\'1' => 
   array (
@@ -59669,7 +59667,7 @@ return array (
     0 => 'PgSql\\Result|false',
     'connection' => 'PgSql\\Connection',
     'query' => 'string',
-    'params' => 'array<array-key, mixed>',
+    'params=' => 'array<array-key, mixed>',
   ),
   'pg_query_params\'1' => 
   array (
@@ -59747,7 +59745,7 @@ return array (
   array (
     0 => 'int',
     'connection' => 'PgSql\\Connection',
-    'encoding' => 'string',
+    'encoding=' => 'string',
   ),
   'pg_set_client_encoding\'1' => 
   array (
@@ -59758,7 +59756,7 @@ return array (
   array (
     0 => 'false|int',
     'connection' => 'PgSql\\Connection',
-    'verbosity' => 'int',
+    'verbosity=' => 'int',
   ),
   'pg_set_error_verbosity\'1' => 
   array (
@@ -61089,7 +61087,7 @@ return array (
     0 => 'int',
     'in' => 'resource',
     'out' => 'resource',
-    '&rw_consumed' => 'int',
+    '&consumed' => 'int',
     'closing' => 'bool',
   ),
   'php_user_filter::onclose' => 
@@ -61775,7 +61773,7 @@ return array (
     0 => 'false|list<string>',
     'pattern' => 'string',
     'subject' => 'string',
-    'limit' => 'int',
+    'limit=' => 'int',
     'flags=' => 'null',
   ),
   'preg_split\'1' => 
@@ -61800,6 +61798,7 @@ return array (
   array (
     0 => 'string',
     'value' => 'mixed',
+    'return=' => 'bool',
   ),
   'print_r\'1' => 
   array (
@@ -63176,8 +63175,8 @@ return array (
   'rand' => 
   array (
     0 => 'int',
-    'min' => 'int',
-    'max' => 'int',
+    'min=' => 'int',
+    'max=' => 'int',
   ),
   'rand\'1' => 
   array (
@@ -70351,7 +70350,7 @@ return array (
   'rsort' => 
   array (
     0 => 'bool',
-    '&rw_array' => 'array<array-key, mixed>',
+    '&array' => 'array<array-key, mixed>',
     'flags=' => 'int',
   ),
   'rtrim' => 
@@ -72197,7 +72196,7 @@ return array (
   'session_set_cookie_params' => 
   array (
     0 => 'bool',
-    'lifetime' => 'int',
+    'lifetime_or_options' => 'int',
     'path=' => 'null|string',
     'domain=' => 'null|string',
     'secure=' => 'bool|null',
@@ -72212,11 +72211,11 @@ return array (
   array (
     0 => 'bool',
     'open' => 'callable(string, string):bool',
-    'close' => 'callable():bool',
-    'read' => 'callable(string):string',
-    'write' => 'callable(string, string):bool',
-    'destroy' => 'callable(string):bool',
-    'gc' => 'callable(string):bool',
+    'close=' => 'callable():bool',
+    'read=' => 'callable(string):string',
+    'write=' => 'callable(string, string):bool',
+    'destroy=' => 'callable(string):bool',
+    'gc=' => 'callable(string):bool',
     'create_sid=' => 'callable():string',
     'validate_sid=' => 'callable(string):bool',
     'update_timestamp=' => 'callable(string):bool',
@@ -72378,13 +72377,11 @@ return array (
     0 => 'bool',
     'name' => 'string',
     'value=' => 'string',
-    'expires=' => 'int',
+    'expires_or_options=' => 'int',
     'path=' => 'string',
     'domain=' => 'string',
     'secure=' => 'bool',
     'httponly=' => 'bool',
-    'samesite=' => 'string',
-    'url_encode=' => 'int',
   ),
   'setcookie\'1' => 
   array (
@@ -72433,7 +72430,7 @@ return array (
     0 => 'bool',
     'name' => 'string',
     'value=' => 'string',
-    'expires=' => 'int',
+    'expires_or_options=' => 'int',
     'path=' => 'string',
     'domain=' => 'string',
     'secure=' => 'bool',
@@ -72462,7 +72459,7 @@ return array (
   'settype' => 
   array (
     0 => 'bool',
-    '&rw_var' => 'mixed',
+    '&var' => 'mixed',
     'type' => 'string',
   ),
   'sha1' => 
@@ -72790,7 +72787,7 @@ return array (
   'shuffle' => 
   array (
     0 => 'true',
-    '&rw_array' => 'array<array-key, mixed>',
+    '&array' => 'array<array-key, mixed>',
   ),
   'signeurlpaiement' => 
   array (
@@ -73886,7 +73883,7 @@ return array (
   'sodium_add' => 
   array (
     0 => 'void',
-    '&rw_string1' => 'string',
+    '&string1' => 'string',
     'string2' => 'string',
   ),
   'sodium_base642bin' => 
@@ -74164,7 +74161,7 @@ return array (
   'sodium_crypto_generichash_update' => 
   array (
     0 => 'true',
-    '&rw_state' => 'string',
+    '&state' => 'string',
     'message' => 'string',
   ),
   'sodium_crypto_kdf_derive_from_key' => 
@@ -74457,7 +74454,7 @@ return array (
   'sodium_increment' => 
   array (
     0 => 'void',
-    '&rw_string' => 'string',
+    '&string' => 'string',
   ),
   'sodium_memcmp' => 
   array (
@@ -77777,7 +77774,7 @@ return array (
   'sort' => 
   array (
     0 => 'true',
-    '&rw_array' => 'array<array-key, mixed>',
+    '&array' => 'array<array-key, mixed>',
     'flags=' => 'int',
   ),
   'soundex' => 
@@ -80486,7 +80483,7 @@ return array (
     0 => 'int|list<float|int|null|string>|null',
     'string' => 'string',
     'format' => 'string',
-    '&...w_vars=' => 'float|int|null|string',
+    '...w_&vars=' => 'float|int|null|string',
   ),
   'ssdeep_fuzzy_compare' => 
   array (
@@ -81622,8 +81619,8 @@ return array (
     0 => 'bool',
     'context' => 'mixed',
     'wrapper_or_options' => 'string',
-    'option_name' => 'string',
-    'value' => 'mixed',
+    'option_name=' => 'string',
+    'value=' => 'mixed',
   ),
   'stream_context_set_option\'1' => 
   array (
@@ -81744,9 +81741,9 @@ return array (
   'stream_select' => 
   array (
     0 => 'false|int',
-    '&rw_read' => 'array<array-key, resource>|null',
-    '&rw_write' => 'array<array-key, resource>|null',
-    '&rw_except' => 'array<array-key, resource>|null',
+    '&read' => 'array<array-key, resource>|null',
+    '&write' => 'array<array-key, resource>|null',
+    '&except' => 'array<array-key, resource>|null',
     'seconds' => 'int|null',
     'microseconds=' => 'int|null',
   ),
@@ -82131,7 +82128,7 @@ return array (
   array (
     0 => 'false|non-empty-string',
     'string' => 'string',
-    'token' => 'string',
+    'token=' => 'string',
   ),
   'strtok\'1' => 
   array (
@@ -82159,7 +82156,7 @@ return array (
     0 => 'string',
     'string' => 'string',
     'from' => 'string',
-    'to' => 'string',
+    'to=' => 'string',
   ),
   'strtr\'1' => 
   array (
@@ -84612,7 +84609,7 @@ return array (
     'host' => 'string',
     'port=' => 'int',
     'timeout=' => 'int',
-    'flag=' => 'int',
+    'sock_flag=' => 'int',
   ),
   'swoole\\client::enablessl' => 
   array (
@@ -84671,6 +84668,7 @@ return array (
     0 => 'bool',
     'filename' => 'string',
     'offset=' => 'int',
+    'length=' => 'int',
   ),
   'swoole\\client::sendto' => 
   array (
@@ -84851,6 +84849,8 @@ return array (
   'swoole\\coroutine::create' => 
   array (
     0 => 'ReturnType',
+    'func' => 'callable',
+    '...param=' => 'mixed',
   ),
   'swoole\\coroutine::defer' => 
   array (
@@ -84973,6 +84973,7 @@ return array (
   'swoole\\coroutine::resume' => 
   array (
     0 => 'ReturnType',
+    'cid' => 'int',
   ),
   'swoole\\coroutine::set' => 
   array (
@@ -85104,6 +85105,10 @@ return array (
   'swoole\\coroutine\\client::connect' => 
   array (
     0 => 'ReturnType',
+    'host' => 'string',
+    'port=' => 'int',
+    'timeout=' => 'float',
+    'sock_flag=' => 'int',
   ),
   'swoole\\coroutine\\client::enablessl' => 
   array (
@@ -85137,6 +85142,7 @@ return array (
   'swoole\\coroutine\\client::recv' => 
   array (
     0 => 'ReturnType',
+    'timeout=' => 'float',
   ),
   'swoole\\coroutine\\client::recvfrom' => 
   array (
@@ -85148,18 +85154,27 @@ return array (
   'swoole\\coroutine\\client::send' => 
   array (
     0 => 'ReturnType',
+    'data' => 'string',
+    'timeout=' => 'float',
   ),
   'swoole\\coroutine\\client::sendfile' => 
   array (
     0 => 'ReturnType',
+    'filename' => 'string',
+    'offset=' => 'int',
+    'length=' => 'int',
   ),
   'swoole\\coroutine\\client::sendto' => 
   array (
     0 => 'ReturnType',
+    'address' => 'string',
+    'port' => 'int',
+    'data' => 'string',
   ),
   'swoole\\coroutine\\client::set' => 
   array (
     0 => 'ReturnType',
+    'settings' => 'array<array-key, mixed>',
   ),
   'swoole\\coroutine\\client::verifypeercert' => 
   array (
@@ -85598,10 +85613,12 @@ return array (
   'swoole\\coroutine\\http\\client::execute' => 
   array (
     0 => 'ReturnType',
+    'path' => 'string',
   ),
   'swoole\\coroutine\\http\\client::get' => 
   array (
     0 => 'ReturnType',
+    'path' => 'string',
   ),
   'swoole\\coroutine\\http\\client::getbody' => 
   array (
@@ -85646,6 +85663,8 @@ return array (
   'swoole\\coroutine\\http\\client::post' => 
   array (
     0 => 'ReturnType',
+    'path' => 'string',
+    'data' => 'mixed',
   ),
   'swoole\\coroutine\\http\\client::push' => 
   array (
@@ -85657,10 +85676,12 @@ return array (
   'swoole\\coroutine\\http\\client::recv' => 
   array (
     0 => 'ReturnType',
+    'timeout=' => 'float',
   ),
   'swoole\\coroutine\\http\\client::set' => 
   array (
     0 => 'ReturnType',
+    'settings' => 'array<array-key, mixed>',
   ),
   'swoole\\coroutine\\http\\client::setbasicauth' => 
   array (
@@ -87340,7 +87361,7 @@ return array (
   array (
     0 => 'bool',
     'fd' => 'int',
-    'read_callback' => 'callable',
+    'read_callback=' => 'callable',
     'write_callback=' => 'callable',
     'events=' => 'string',
   ),
@@ -89105,13 +89126,16 @@ return array (
   'swoole\\http\\response::cookie' => 
   array (
     0 => 'string',
-    'name' => 'string',
+    'name_or_object' => 'string',
     'value=' => 'string',
     'expires=' => 'string',
     'path=' => 'string',
     'domain=' => 'string',
     'secure=' => 'string',
     'httponly=' => 'string',
+    'samesite=' => 'string',
+    'priority=' => 'string',
+    'partitioned=' => 'bool',
   ),
   'swoole\\http\\response::create' => 
   array (
@@ -89144,7 +89168,7 @@ return array (
     0 => 'void',
     'key' => 'string',
     'value' => 'string',
-    'ucwords=' => 'string',
+    'format=' => 'string',
   ),
   'swoole\\http\\response::initheader' => 
   array (
@@ -89168,13 +89192,16 @@ return array (
   'swoole\\http\\response::rawcookie' => 
   array (
     0 => 'ReturnType',
-    'name' => 'string',
+    'name_or_object' => 'string',
     'value=' => 'string',
     'expires=' => 'string',
     'path=' => 'string',
     'domain=' => 'string',
     'secure=' => 'string',
     'httponly=' => 'string',
+    'samesite=' => 'string',
+    'priority=' => 'string',
+    'partitioned=' => 'bool',
   ),
   'swoole\\http\\response::recv' => 
   array (
@@ -89192,6 +89219,7 @@ return array (
     0 => 'ReturnType',
     'filename' => 'string',
     'offset=' => 'int',
+    'length=' => 'int',
   ),
   'swoole\\http\\response::setcookie' => 
   array (
@@ -89238,6 +89266,7 @@ return array (
   array (
     0 => 'ReturnType',
     'http_code' => 'string',
+    'reason=' => 'string',
   ),
   'swoole\\http\\response::trailer' => 
   array (
@@ -90098,17 +90127,20 @@ return array (
   'swoole\\process::alarm' => 
   array (
     0 => 'void',
-    'interval_usec' => 'int',
+    'usec' => 'int',
+    'type=' => 'int',
   ),
   'swoole\\process::close' => 
   array (
     0 => 'void',
+    'which=' => 'int',
   ),
   'swoole\\process::daemon' => 
   array (
     0 => 'void',
     'nochdir=' => 'bool',
     'noclose=' => 'bool',
+    'pipes=' => 'array<array-key, mixed>',
   ),
   'swoole\\process::exec' => 
   array (
@@ -90149,7 +90181,7 @@ return array (
   'swoole\\process::pop' => 
   array (
     0 => 'mixed',
-    'maxsize=' => 'int',
+    'size=' => 'int',
   ),
   'swoole\\process::push' => 
   array (
@@ -90159,7 +90191,7 @@ return array (
   'swoole\\process::read' => 
   array (
     0 => 'string',
-    'maxsize=' => 'int',
+    'size=' => 'int',
   ),
   'swoole\\process::set' => 
   array (
@@ -90187,7 +90219,7 @@ return array (
   array (
     0 => 'void',
     'signal_no' => 'string',
-    'callback' => 'callable',
+    'callback=' => 'callable',
   ),
   'swoole\\process::start' => 
   array (
@@ -90678,7 +90710,7 @@ return array (
     0 => 'void',
     'host' => 'string',
     'port' => 'int',
-    'socket_type' => 'string',
+    'sock_type' => 'string',
   ),
   'swoole\\server::addprocess' => 
   array (
@@ -90723,12 +90755,13 @@ return array (
     0 => 'array<array-key, mixed>',
     'fd' => 'int',
     'reactor_id=' => 'int',
+    'ignoreError=' => 'bool',
   ),
   'swoole\\server::connection_list' => 
   array (
     0 => 'array<array-key, mixed>',
-    'start_fd' => 'int',
-    'pagesize=' => 'int',
+    'start_fd=' => 'int',
+    'find_count=' => 'int',
   ),
   'swoole\\server::defer' => 
   array (
@@ -90796,14 +90829,14 @@ return array (
   'swoole\\server::heartbeat' => 
   array (
     0 => 'mixed',
-    'if_close_connection' => 'bool',
+    'ifCloseConnection=' => 'bool',
   ),
   'swoole\\server::listen' => 
   array (
     0 => 'bool',
     'host' => 'string',
     'port' => 'int',
-    'socket_type' => 'string',
+    'sock_type' => 'string',
   ),
   'swoole\\server::on' => 
   array (
@@ -90825,6 +90858,7 @@ return array (
   'swoole\\server::reload' => 
   array (
     0 => 'bool',
+    'only_reload_taskworker=' => 'bool',
   ),
   'swoole\\server::resume' => 
   array (
@@ -90835,15 +90869,16 @@ return array (
   array (
     0 => 'bool',
     'fd' => 'int',
-    'data' => 'string',
-    'reactor_id=' => 'int',
+    'send_data' => 'string',
+    'serverSocket=' => 'int',
   ),
   'swoole\\server::sendfile' => 
   array (
     0 => 'bool',
-    'fd' => 'int',
+    'conn_fd' => 'int',
     'filename' => 'string',
     'offset=' => 'int',
+    'length=' => 'int',
   ),
   'swoole\\server::sendmessage' => 
   array (
@@ -90856,14 +90891,14 @@ return array (
     0 => 'bool',
     'ip' => 'string',
     'port' => 'int',
-    'data' => 'string',
+    'send_data' => 'string',
     'server_socket=' => 'string',
   ),
   'swoole\\server::sendwait' => 
   array (
     0 => 'bool',
-    'fd' => 'int',
-    'data' => 'string',
+    'conn_fd' => 'int',
+    'send_data' => 'string',
   ),
   'swoole\\server::set' => 
   array (
@@ -90885,14 +90920,15 @@ return array (
   'swoole\\server::stop' => 
   array (
     0 => 'bool',
-    'worker_id=' => 'int',
+    'workerId=' => 'int',
+    'waitEvent=' => 'bool',
   ),
   'swoole\\server::task' => 
   array (
     0 => 'mixed',
     'data' => 'string',
-    'dst_worker_id=' => 'int',
-    'callback=' => 'callable',
+    'taskWorkerIndex=' => 'int',
+    'finishCallback=' => 'callable',
   ),
   'swoole\\server::taskco' => 
   array (
@@ -90905,7 +90941,7 @@ return array (
     0 => 'void',
     'data' => 'string',
     'timeout=' => 'float',
-    'worker_id=' => 'int',
+    'taskWorkerIndex=' => 'int',
   ),
   'swoole\\server::taskwaitmulti' => 
   array (
@@ -91408,7 +91444,7 @@ return array (
     0 => 'ReturnType',
     'key' => 'string',
     'column' => 'string',
-    'decrby=' => 'int',
+    'incrby=' => 'int',
   ),
   'swoole\\table::del' => 
   array (
@@ -91437,8 +91473,8 @@ return array (
   'swoole\\table::get' => 
   array (
     0 => 'int',
-    'row_key' => 'string',
-    'column_key' => 'string',
+    'key' => 'string',
+    'field=' => 'string',
   ),
   'swoole\\table::getmemorysize' => 
   array (
@@ -91542,8 +91578,9 @@ return array (
   'swoole\\timer::after' => 
   array (
     0 => 'void',
-    'after_time_ms' => 'int',
+    'ms' => 'int',
     'callback' => 'callable',
+    '...params=' => 'mixed',
   ),
   'swoole\\timer::clear' => 
   array (
@@ -91575,9 +91612,9 @@ return array (
   'swoole\\timer::tick' => 
   array (
     0 => 'void',
-    'interval_ms' => 'int',
+    'ms' => 'int',
     'callback' => 'callable',
-    'param=' => 'string',
+    '...params=' => 'string',
   ),
   'swoole\\timer\\iterator::__construct' => 
   array (
@@ -91899,8 +91936,7 @@ return array (
     0 => 'binary',
     'data' => 'string',
     'opcode=' => 'string',
-    'finish=' => 'string',
-    'mask=' => 'string',
+    'flags=' => 'string',
   ),
   'swoole\\websocket\\server::pause' => 
   array (
@@ -91919,7 +91955,7 @@ return array (
     'fd' => 'string',
     'data' => 'string',
     'opcode=' => 'string',
-    'finish=' => 'string',
+    'flags=' => 'string',
   ),
   'swoole\\websocket\\server::reload' => 
   array (
@@ -92096,9 +92132,9 @@ return array (
   'swoole_client_select' => 
   array (
     0 => 'int',
-    'read_array' => 'array<array-key, mixed>',
-    'write_array' => 'array<array-key, mixed>',
-    'error_array' => 'array<array-key, mixed>',
+    '&read' => 'array<array-key, mixed>',
+    '&write' => 'array<array-key, mixed>',
+    '&except' => 'array<array-key, mixed>',
     'timeout=' => 'float',
   ),
   'swoole_container_cpu_num' => 
@@ -92396,16 +92432,15 @@ return array (
   'swoole_select' => 
   array (
     0 => 'int',
-    'read_array' => 'array<array-key, mixed>',
-    'write_array' => 'array<array-key, mixed>',
-    'error_array' => 'array<array-key, mixed>',
+    '&read' => 'array<array-key, mixed>',
+    '&write' => 'array<array-key, mixed>',
+    '&except' => 'array<array-key, mixed>',
     'timeout=' => 'float',
   ),
   'swoole_set_process_name' => 
   array (
     0 => 'void',
     'process_name' => 'string',
-    'size=' => 'int',
   ),
   'swoole_shell_exec' => 
   array (
@@ -92634,7 +92669,6 @@ return array (
     0 => 'int',
     'ms' => 'int',
     'callback' => 'callable',
-    'param=' => 'mixed',
   ),
   'swoole_timer_clear' => 
   array (
@@ -92668,7 +92702,6 @@ return array (
     0 => 'int',
     'ms' => 'int',
     'callback' => 'callable',
-    'param=' => 'mixed',
   ),
   'swoole_version' => 
   array (
@@ -95191,7 +95224,7 @@ return array (
   'uasort' => 
   array (
     0 => 'true',
-    '&rw_array' => 'array<array-key, mixed>',
+    '&array' => 'array<array-key, mixed>',
     'callback' => 'callable(mixed, mixed):int',
   ),
   'ucfirst' => 
@@ -96236,7 +96269,7 @@ return array (
   'uksort' => 
   array (
     0 => 'true',
-    '&rw_array' => 'array<array-key, mixed>',
+    '&array' => 'array<array-key, mixed>',
     'callback' => 'callable(mixed, mixed):int',
   ),
   'umask' => 
@@ -96711,7 +96744,7 @@ return array (
   'usort' => 
   array (
     0 => 'true',
-    '&rw_array' => 'array<array-key, mixed>',
+    '&array' => 'array<array-key, mixed>',
     'callback' => 'callable(mixed, mixed):int',
   ),
   'utf8_decode' => 
@@ -98112,7 +98145,7 @@ return array (
     0 => 'bool',
     'version1' => 'string',
     'version2' => 'string',
-    'operator' => '\'!=\'|\'<\'|\'<=\'|\'<>\'|\'=\'|\'==\'|\'>\'|\'>=\'|\'eq\'|\'ge\'|\'gt\'|\'le\'|\'lt\'|\'ne\'',
+    'operator=' => '\'!=\'|\'<\'|\'<=\'|\'<>\'|\'=\'|\'==\'|\'>\'|\'>=\'|\'eq\'|\'ge\'|\'gt\'|\'le\'|\'lt\'|\'ne\'',
   ),
   'version_compare\'1' => 
   array (

@@ -1,88 +1,279 @@
 <?php // phpcs:ignoreFile
 
-/**
- * This contains the information needed to convert the function signatures for php 8.2 to php 8.1 (and vice versa)
- *
- * This file has three sections.
- * The 'added' section contains function/method names from FunctionSignatureMap (And alternates, if applicable) that do not exist in php 8.1
- * The 'removed' section contains the signatures that were removed in php 8.2
- * The 'changed' section contains functions for which the signature has changed for php 8.2.
- *     Each function in the 'changed' section has an 'old' and a 'new' section,
- *     representing the function as it was in PHP 8.1 and in PHP 8.2, respectively
- *
- * @see CallMap.php
- *
- * @phan-file-suppress PhanPluginMixedKeyNoKey (read by Phan when analyzing this file)
- */
-return [
-  'added' => [
-    'mysqli_execute_query' => ['mysqli_result|bool', 'mysql'=>'mysqli', 'query'=>'non-empty-string', 'params='=>'list<mixed>|null'],
-    'mysqli::execute_query' => ['mysqli_result|bool', 'query'=>'non-empty-string', 'params='=>'list<mixed>|null'],
-    'openssl_cipher_key_length' => ['positive-int|false', 'cipher_algo'=>'non-empty-string'],
-    'curl_upkeep' => ['bool', 'handle'=>'CurlHandle'],
-    'imap_is_open' => ['bool', 'imap'=>'IMAP\Connection'],
-    'ini_parse_quantity' => ['int', 'shorthand'=>'non-empty-string'],
-    'libxml_get_external_entity_loader' => ['(callable(string,string,array{directory:?string,intSubName:?string,extSubURI:?string,extSubSystem:?string}):(resource|string|null))|null'],
-    'memory_reset_peak_usage' => ['void'],
-    'sodium_crypto_stream_xchacha20_xor_ic' => ['string', 'message'=>'string', 'nonce'=>'non-empty-string', 'counter'=>'int', 'key'=>'non-empty-string'],
-    'ZipArchive::clearError' => ['void'],
-    'ZipArchive::getStreamIndex' => ['resource|false', 'index'=>'int', 'flags='=>'int'],
-    'ZipArchive::getStreamName' => ['resource|false', 'name'=>'string', 'flags='=>'int'],
-    'DateTimeInterface::__serialize' => ['array'],
-    'DateTimeInterface::__unserialize' => ['void', 'data'=>'array'],
-  ],
-
-  'changed' => [
-    'dba_open' => [
-      'old' => ['resource', 'path'=>'string', 'mode'=>'string', 'handler='=>'string', '...handler_params='=>'string'],
-      'new' => ['resource', 'path'=>'string', 'mode'=>'string', 'handler='=>'?string', 'permission='=>'int', 'map_size='=>'int', 'flags='=>'?int'],
-    ],
-    'dba_popen' => [
-      'old' => ['resource', 'path'=>'string', 'mode'=>'string', 'handler='=>'string', '...handler_params='=>'string'],
-      'new' => ['resource', 'path'=>'string', 'mode'=>'string', 'handler='=>'?string', 'permission='=>'int', 'map_size='=>'int', 'flags='=>'?int'],
-    ],
-    'iterator_count' => [
-      'old' => ['0|positive-int', 'iterator'=>'Traversable'],
-      'new' => ['0|positive-int', 'iterator'=>'Traversable|array'],
-    ],
-    'iterator_to_array' => [
-      'old' => ['array', 'iterator'=>'Traversable', 'preserve_keys='=>'bool'],
-      'new' => ['array', 'iterator'=>'Traversable|array', 'preserve_keys='=>'bool'],
-    ],
-    'str_split' => [
-       'old' => ['non-empty-list<string>', 'string'=>'string', 'length='=>'positive-int'],
-       'new' => ['list<non-empty-string>', 'string'=>'string', 'length='=>'positive-int'],
-    ],
-    'mb_get_info' => [
-        'old' => ['array|string|int|false', 'type='=>'string'],
-        'new' => ['array|string|int|false|null', 'type='=>'string'],
-    ],
-    'strcmp' => [
-        'old' => ['int', 'string1' => 'string', 'string2' => 'string'],
-        'new' => ['int<-1,1>', 'string1' => 'string', 'string2' => 'string'],
-    ],
-    'strcasecmp' => [
-        'old' => ['int', 'string1' => 'string', 'string2' => 'string'],
-        'new' => ['int<-1,1>', 'string1' => 'string', 'string2' => 'string'],
-    ],
-    'strnatcasecmp' => [
-        'old' => ['int', 'string1' => 'string', 'string2' => 'string'],
-        'new' => ['int<-1,1>', 'string1' => 'string', 'string2' => 'string'],
-    ],
-    'strnatcmp' => [
-        'old' => ['int', 'string1' => 'string', 'string2' => 'string'],
-        'new' => ['int<-1,1>', 'string1' => 'string', 'string2' => 'string'],
-    ],
-    'strncmp' => [
-        'old' => ['int', 'string1'=>'string', 'string2'=>'string', 'length'=>'int'],
-        'new' => ['int<-1,1>', 'string1' => 'string', 'string2' => 'string', 'length'=>'positive-int|0'],
-    ],
-    'strncasecmp' => [
-        'old' => ['int', 'string1'=>'string', 'string2'=>'string', 'length'=>'int'],
-        'new' => ['int<-1,1>', 'string1' => 'string', 'string2' => 'string', 'length'=>'positive-int|0'],
-    ],
-  ],
-
-  'removed' => [
-  ],
-];
+return array (
+  'added' => 
+  array (
+    'curl_upkeep' => 
+    array (
+      0 => 'bool',
+      'handle' => 'CurlHandle',
+    ),
+    'datetimeinterface::__serialize' => 
+    array (
+      0 => 'array<array-key, mixed>',
+    ),
+    'datetimeinterface::__unserialize' => 
+    array (
+      0 => 'void',
+      'data' => 'array<array-key, mixed>',
+    ),
+    'imap_is_open' => 
+    array (
+      0 => 'bool',
+      'imap' => 'IMAP\\Connection',
+    ),
+    'ini_parse_quantity' => 
+    array (
+      0 => 'int',
+      'shorthand' => 'non-empty-string',
+    ),
+    'libxml_get_external_entity_loader' => 
+    array (
+      0 => 'callable(string, string, array{directory: null|string, extSubSystem: null|string, extSubURI: null|string, intSubName: null|string}):(null|resource|string)|null',
+    ),
+    'memory_reset_peak_usage' => 
+    array (
+      0 => 'void',
+    ),
+    'mysqli::execute_query' => 
+    array (
+      0 => 'bool|mysqli_result',
+      'query' => 'non-empty-string',
+      'params=' => 'list<mixed>|null',
+    ),
+    'mysqli_execute_query' => 
+    array (
+      0 => 'bool|mysqli_result',
+      'mysql' => 'mysqli',
+      'query' => 'non-empty-string',
+      'params=' => 'list<mixed>|null',
+    ),
+    'openssl_cipher_key_length' => 
+    array (
+      0 => 'false|int<1, max>',
+      'cipher_algo' => 'non-empty-string',
+    ),
+    'sodium_crypto_stream_xchacha20_xor_ic' => 
+    array (
+      0 => 'string',
+      'message' => 'string',
+      'nonce' => 'non-empty-string',
+      'counter' => 'int',
+      'key' => 'non-empty-string',
+    ),
+    'ziparchive::clearerror' => 
+    array (
+      0 => 'void',
+    ),
+    'ziparchive::getstreamindex' => 
+    array (
+      0 => 'false|resource',
+      'index' => 'int',
+      'flags=' => 'int',
+    ),
+    'ziparchive::getstreamname' => 
+    array (
+      0 => 'false|resource',
+      'name' => 'string',
+      'flags=' => 'int',
+    ),
+  ),
+  'changed' => 
+  array (
+    'dba_open' => 
+    array (
+      'old' => 
+      array (
+        0 => 'resource',
+        'path' => 'string',
+        'mode' => 'string',
+        'handler=' => 'string',
+        '...handler_params=' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'resource',
+        'path' => 'string',
+        'mode' => 'string',
+        'handler=' => 'null|string',
+        'permission=' => 'int',
+        'map_size=' => 'int',
+        'flags=' => 'int|null',
+      ),
+    ),
+    'dba_popen' => 
+    array (
+      'old' => 
+      array (
+        0 => 'resource',
+        'path' => 'string',
+        'mode' => 'string',
+        'handler=' => 'string',
+        '...handler_params=' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'resource',
+        'path' => 'string',
+        'mode' => 'string',
+        'handler=' => 'null|string',
+        'permission=' => 'int',
+        'map_size=' => 'int',
+        'flags=' => 'int|null',
+      ),
+    ),
+    'iterator_count' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int<0, max>',
+        'iterator' => 'Traversable',
+      ),
+      'new' => 
+      array (
+        0 => 'int<0, max>',
+        'iterator' => 'Traversable|array<array-key, mixed>',
+      ),
+    ),
+    'iterator_to_array' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>',
+        'iterator' => 'Traversable',
+        'preserve_keys=' => 'bool',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>',
+        'iterator' => 'Traversable|array<array-key, mixed>',
+        'preserve_keys=' => 'bool',
+      ),
+    ),
+    'mb_get_info' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|false|int|string',
+        'type=' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|false|int|null|string',
+        'type=' => 'string',
+      ),
+    ),
+    'str_split' => 
+    array (
+      'old' => 
+      array (
+        0 => 'non-empty-list<string>',
+        'string' => 'string',
+        'length=' => 'int<1, max>',
+      ),
+      'new' => 
+      array (
+        0 => 'list<non-empty-string>',
+        'string' => 'string',
+        'length=' => 'int<1, max>',
+      ),
+    ),
+    'strcasecmp' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+        'string1' => 'string',
+        'string2' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'int<-1, 1>',
+        'string1' => 'string',
+        'string2' => 'string',
+      ),
+    ),
+    'strcmp' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+        'string1' => 'string',
+        'string2' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'int<-1, 1>',
+        'string1' => 'string',
+        'string2' => 'string',
+      ),
+    ),
+    'strnatcasecmp' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+        'string1' => 'string',
+        'string2' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'int<-1, 1>',
+        'string1' => 'string',
+        'string2' => 'string',
+      ),
+    ),
+    'strnatcmp' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+        'string1' => 'string',
+        'string2' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'int<-1, 1>',
+        'string1' => 'string',
+        'string2' => 'string',
+      ),
+    ),
+    'strncasecmp' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+        'string1' => 'string',
+        'string2' => 'string',
+        'length' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'int<-1, 1>',
+        'string1' => 'string',
+        'string2' => 'string',
+        'length' => 'int<0, max>',
+      ),
+    ),
+    'strncmp' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+        'string1' => 'string',
+        'string2' => 'string',
+        'length' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'int<-1, 1>',
+        'string1' => 'string',
+        'string2' => 'string',
+        'length' => 'int<0, max>',
+      ),
+    ),
+  ),
+  'removed' => 
+  array (
+  ),
+);

@@ -1,80 +1,1023 @@
 <?php // phpcs:ignoreFile
 
-/**
- * This contains the information needed to convert the function signatures for php 7.1 to php 7.0 (and vice versa)
- *
- * This file has three sections.
- * The 'added' section contains function/method names from FunctionSignatureMap (And alternates, if applicable) that did not exist prior to PHP 7.1
- * The 'removed' section contains the signatures that were removed in php 7.1.
- * The 'changed' section contains functions for which the signature has changed for php 7.1.
- *     Each function in the 'changed' section has an 'old' and a 'new' section,
- *     representing the function as it was in PHP before 7.1 and in PHP 7.1, respectively
- *
- * @see CallMap.php
- *
- * @phan-file-suppress PhanPluginMixedKeyNoKey (read by Phan when analyzing this file)
- */
-return [
-  'added' => [
-    'Closure::fromCallable' => ['Closure', 'callback'=>'callable'],
-    'curl_multi_errno' => ['int|false', 'mh'=>'resource'],
-    'curl_share_errno' => ['int|false', 'sh'=>'resource'],
-    'curl_share_strerror' => ['?string', 'error_code'=>'int'],
-    'getenv\'1' => ['array<string,string>'],
-    'hash_hkdf' => ['non-empty-string|false', 'algo'=>'string', 'key'=>'string', 'length='=>'int', 'info='=>'string', 'salt='=>'string'],
-    'is_iterable' => ['bool', 'value'=>'mixed'],
-    'openssl_get_curve_names' => ['list<string>'],
-    'pcntl_async_signals' => ['bool', 'enable='=>'bool'],
-    'pcntl_signal_get_handler' => ['int|string', 'signal'=>'int'],
-    'sapi_windows_cp_conv' => ['?string', 'in_codepage'=>'int|string', 'out_codepage'=>'int|string', 'subject'=>'string'],
-    'sapi_windows_cp_get' => ['int', 'kind='=>'string'],
-    'sapi_windows_cp_is_utf8' => ['bool'],
-    'sapi_windows_cp_set' => ['bool', 'codepage'=>'int'],
-    'session_create_id' => ['string|false', 'prefix='=>'string'],
-    'session_gc' => ['int|false'],
-  ],
-  'changed' => [
-    'DateTimeZone::listIdentifiers' => [
-      'old' => ['list<string>|false', 'timezoneGroup='=>'int', 'countryCode='=>'string'],
-      'new' => ['list<string>|false', 'timezoneGroup='=>'int', 'countryCode='=>'string|null'],
-    ],
-    'IntlDateFormatter::format' => [
-        'old' => ['string|false', 'value'=>'IntlCalendar|DateTime|array{0: int, 1: int, 2: int, 3: int, 4: int, 5: int, 6: int, 7: int, 8: int}|array{tm_sec: int, tm_min: int, tm_hour: int, tm_mday: int, tm_mon: int, tm_year: int, tm_wday: int, tm_yday: int, tm_isdst: int}|string|int|float'],
-        'new' => ['string|false', 'value'=>'IntlCalendar|DateTimeInterface|array{0: int, 1: int, 2: int, 3: int, 4: int, 5: int, 6: int, 7: int, 8: int}|array{tm_sec: int, tm_min: int, tm_hour: int, tm_mday: int, tm_mon: int, tm_year: int, tm_wday: int, tm_yday: int, tm_isdst: int}|string|int|float'],
-    ],
-    'SessionHandler::gc' => [
-      'old' => ['bool', 'max_lifetime'=>'int'],
-      'new' => ['int|false', 'max_lifetime'=>'int'],
-    ],
-    'SQLite3::createFunction' => [
-      'old' => ['bool', 'name'=>'string', 'callback'=>'callable', 'argCount='=>'int'],
-      'new' => ['bool', 'name'=>'string', 'callback'=>'callable', 'argCount='=>'int', 'flags='=>'int'],
-    ],
-    'get_headers' => [
-      'old' => ['array|false', 'url'=>'string', 'associative='=>'int'],
-      'new' => ['array|false', 'url'=>'string', 'associative='=>'int', 'context='=>'?resource'],
-    ],
-    'getopt' => [
-      'old' => ['array<string,string|false|list<string|false>>|false', 'short_options'=>'string', 'long_options='=>'array'],
-      'new' => ['array<string,string|false|list<string|false>>|false', 'short_options'=>'string', 'long_options='=>'array', '&w_rest_index='=>'int'],
-    ],
-    'pg_fetch_all' => [
-      'old' => ['array<array>', 'result'=>'resource'],
-      'new' => ['array<array>', 'result'=>'resource', 'mode='=>'int'],
-    ],
-    'pg_select' => [
-      'old' => ['string|array|false', 'connection'=>'resource', 'table_name'=>'string', 'conditions'=>'array', 'flags='=>'int'],
-      'new' => ['string|array|false', 'connection'=>'resource', 'table_name'=>'string', 'conditions'=>'array', 'flags='=>'int', 'mode='=>'int'],
-    ],
-    'timezone_identifiers_list' => [
-      'old' => ['list<string>|false', 'timezoneGroup='=>'int', 'countryCode='=>'string'],
-      'new' => ['list<string>|false', 'timezoneGroup='=>'int', 'countryCode='=>'?string'],
-    ],
-    'unpack' => [
-      'old' => ['array', 'format'=>'string', 'string'=>'string'],
-      'new' => ['array|false', 'format'=>'string', 'string'=>'string', 'offset='=>'int'],
-    ],
-  ],
-  'removed' => [
-  ],
-];
+return array (
+  'added' => 
+  array (
+    'closure::fromcallable' => 
+    array (
+      0 => 'Closure',
+      'callback' => 'callable',
+    ),
+    'curl_multi_errno' => 
+    array (
+      0 => 'false|int',
+      'mh' => 'resource',
+    ),
+    'curl_share_errno' => 
+    array (
+      0 => 'false|int',
+      'sh' => 'resource',
+    ),
+    'curl_share_strerror' => 
+    array (
+      0 => 'null|string',
+      'errornum' => 'int',
+    ),
+    'getenv\'1' => 
+    array (
+      0 => 'array<string, string>',
+    ),
+    'hash_hkdf' => 
+    array (
+      0 => 'false|non-empty-string',
+      'ikm' => 'string',
+      'algo' => 'string',
+      'length=' => 'int',
+      'string=' => 'string',
+      'salt=' => 'string',
+    ),
+    'is_iterable' => 
+    array (
+      0 => 'bool',
+      'var' => 'mixed',
+    ),
+    'openssl_get_curve_names' => 
+    array (
+      0 => 'list<string>',
+    ),
+    'pcntl_async_signals' => 
+    array (
+      0 => 'bool',
+      'on' => 'bool',
+    ),
+    'pcntl_signal_get_handler' => 
+    array (
+      0 => 'int|string',
+      'signo' => 'int',
+    ),
+    'sapi_windows_cp_conv' => 
+    array (
+      0 => 'null|string',
+      'in_codepage' => 'int|string',
+      'out_codepage' => 'int|string',
+      'subject' => 'string',
+    ),
+    'sapi_windows_cp_get' => 
+    array (
+      0 => 'int',
+      'kind=' => 'string',
+    ),
+    'sapi_windows_cp_is_utf8' => 
+    array (
+      0 => 'bool',
+    ),
+    'sapi_windows_cp_set' => 
+    array (
+      0 => 'bool',
+      'codepage' => 'int',
+    ),
+    'session_create_id' => 
+    array (
+      0 => 'false|string',
+      'prefix=' => 'string',
+    ),
+    'session_gc' => 
+    array (
+      0 => 'false|int',
+    ),
+  ),
+  'changed' => 
+  array (
+    'array_merge' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>',
+        'arr1' => 'array<array-key, mixed>',
+        '...arrays' => 'array<array-key, mixed>',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>',
+        'arr1' => 'array<array-key, mixed>',
+        '...arrays=' => 'array<array-key, mixed>',
+      ),
+    ),
+    'array_merge_recursive' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>',
+        'arr1' => 'array<array-key, mixed>',
+        '...arrays' => 'array<array-key, mixed>',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>',
+        'arr1' => 'array<array-key, mixed>',
+        '...arrays=' => 'array<array-key, mixed>',
+      ),
+    ),
+    'array_replace' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>',
+        'arr1' => 'array<array-key, mixed>',
+        '...arrays' => 'array<array-key, mixed>',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>',
+        'arr1' => 'array<array-key, mixed>',
+        '...arrays=' => 'array<array-key, mixed>',
+      ),
+    ),
+    'array_replace_recursive' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>',
+        'arr1' => 'array<array-key, mixed>',
+        '...arrays' => 'array<array-key, mixed>',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>',
+        'arr1' => 'array<array-key, mixed>',
+        '...arrays=' => 'array<array-key, mixed>',
+      ),
+    ),
+    'date_create' => 
+    array (
+      'old' => 
+      array (
+        0 => 'DateTime|false',
+        'time=' => 'string',
+        'object=' => 'DateTimeZone|null',
+      ),
+      'new' => 
+      array (
+        0 => 'DateTime|false',
+        'time=' => 'string',
+        'timezone=' => 'DateTimeZone|null',
+      ),
+    ),
+    'date_create_immutable' => 
+    array (
+      'old' => 
+      array (
+        0 => 'DateTimeImmutable|false',
+        'time=' => 'string',
+        'object=' => 'DateTimeZone|null',
+      ),
+      'new' => 
+      array (
+        0 => 'DateTimeImmutable|false',
+        'time=' => 'string',
+        'timezone=' => 'DateTimeZone|null',
+      ),
+    ),
+    'date_time_set' => 
+    array (
+      'old' => 
+      array (
+        0 => 'DateTime|false',
+        'object' => 'mixed',
+        'hour' => 'mixed',
+        'minute' => 'mixed',
+        'second=' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'DateTime|false',
+        'object' => 'mixed',
+        'hour' => 'mixed',
+        'minute' => 'mixed',
+        'second=' => 'mixed',
+        'microseconds=' => 'mixed',
+      ),
+    ),
+    'datetimezone::listidentifiers' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|list<string>',
+        'timezoneGroup=' => 'int',
+        'countryCode=' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'false|list<string>',
+        'timezoneGroup=' => 'int',
+        'countryCode=' => 'null|string',
+      ),
+    ),
+    'fsockopen' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|resource',
+        'hostname' => 'string',
+        'port' => 'int',
+        '&w_errno=' => 'int',
+        '&w_errstr=' => 'string',
+        'timeout=' => 'float',
+      ),
+      'new' => 
+      array (
+        0 => 'false|resource',
+        'hostname' => 'string',
+        'port=' => 'int',
+        '&w_errno=' => 'int',
+        '&w_errstr=' => 'string',
+        'timeout=' => 'float',
+      ),
+    ),
+    'get_defined_functions' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array{internal: list<callable-string>, user: list<callable-string>}',
+      ),
+      'new' => 
+      array (
+        0 => 'array{internal: list<callable-string>, user: list<callable-string>}',
+        'exclude_disabled=' => 'bool',
+      ),
+    ),
+    'get_headers' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'url' => 'string',
+        'format=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'url' => 'string',
+        'format=' => 'int',
+        'context=' => 'null|resource',
+      ),
+    ),
+    'getenv' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|string',
+        'varname' => 'string',
+        'local_only=' => 'bool',
+      ),
+      'new' => 
+      array (
+        0 => 'false|string',
+        'varname=' => 'string',
+        'local_only=' => 'bool',
+      ),
+    ),
+    'getopt' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<string, false|list<false|string>|string>|false',
+        'options' => 'string',
+        'opts=' => 'array<array-key, mixed>',
+      ),
+      'new' => 
+      array (
+        0 => 'array<string, false|list<false|string>|string>|false',
+        'options' => 'string',
+        'opts=' => 'array<array-key, mixed>',
+        '&w_optind=' => 'int',
+      ),
+    ),
+    'hash_update_file' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'context=' => 'resource',
+        'filename' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'context' => 'resource',
+        'filename' => 'string',
+        'stream_context=' => 'resource',
+      ),
+    ),
+    'imagegd' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'im' => 'resource',
+        'filename=' => 'null|resource|string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'im' => 'resource',
+        'to=' => 'null|resource|string',
+      ),
+    ),
+    'imagegd2' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'im' => 'resource',
+        'filename=' => 'null|resource|string',
+        'chunk_size=' => 'int',
+        'type=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'im' => 'resource',
+        'to=' => 'null|resource|string',
+        'chunk_size=' => 'int',
+        'type=' => 'int',
+      ),
+    ),
+    'imagegif' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'im' => 'resource',
+        'filename=' => 'null|resource|string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'im' => 'resource',
+        'to=' => 'null|resource|string',
+      ),
+    ),
+    'imagejpeg' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'im' => 'resource',
+        'filename=' => 'null|resource|string',
+        'quality=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'im' => 'resource',
+        'to=' => 'null|resource|string',
+        'quality=' => 'int',
+      ),
+    ),
+    'imagepng' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'im' => 'resource',
+        'filename=' => 'null|resource|string',
+        'quality=' => 'int',
+        'filters=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'im' => 'resource',
+        'to=' => 'null|resource|string',
+        'quality=' => 'int',
+        'filters=' => 'int',
+      ),
+    ),
+    'imagesetinterpolation' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'im' => 'resource',
+        'method' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'im' => 'resource',
+        'method=' => 'int',
+      ),
+    ),
+    'imagewbmp' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'im' => 'resource',
+        'filename=' => 'null|resource|string',
+        'foreground=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'im' => 'resource',
+        'to=' => 'null|resource|string',
+        'foreground=' => 'int',
+      ),
+    ),
+    'imagewebp' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'im' => 'resource',
+        'filename=' => 'null|resource|string',
+        'quality=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'im' => 'resource',
+        'to=' => 'null|resource|string',
+        'quality=' => 'int',
+      ),
+    ),
+    'intldateformatter::format' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|string',
+        'value' => 'DateTime|IntlCalendar|array{0?: int, 1?: int, 2?: int, 3?: int, 4?: int, 5?: int, 6?: int, 7?: int, 8?: int, tm_hour?: int, tm_isdst?: int, tm_mday?: int, tm_min?: int, tm_mon?: int, tm_sec?: int, tm_wday?: int, tm_yday?: int, tm_year?: int}|float|int|string',
+      ),
+      'new' => 
+      array (
+        0 => 'false|string',
+        'value' => 'DateTimeInterface|IntlCalendar|array{0?: int, 1?: int, 2?: int, 3?: int, 4?: int, 5?: int, 6?: int, 7?: int, 8?: int, tm_hour?: int, tm_isdst?: int, tm_mday?: int, tm_min?: int, tm_mon?: int, tm_sec?: int, tm_wday?: int, tm_yday?: int, tm_year?: int}|float|int|string',
+      ),
+    ),
+    'mt_srand' => 
+    array (
+      'old' => 
+      array (
+        0 => 'void',
+        'seed=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'void',
+        'seed=' => 'int',
+        'mode=' => 'int',
+      ),
+    ),
+    'openssl_csr_get_public_key' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|resource',
+        'csr' => 'resource|string',
+      ),
+      'new' => 
+      array (
+        0 => 'false|resource',
+        'csr' => 'resource|string',
+        'use_shortnames=' => 'bool',
+      ),
+    ),
+    'openssl_csr_get_subject' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'csr' => 'resource|string',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'csr' => 'resource|string',
+        'use_shortnames=' => 'bool',
+      ),
+    ),
+    'openssl_decrypt' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|string',
+        'data' => 'string',
+        'method' => 'string',
+        'password' => 'string',
+        'options=' => 'int',
+        'iv=' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'false|string',
+        'data' => 'string',
+        'method' => 'string',
+        'password' => 'string',
+        'options=' => 'int',
+        'iv=' => 'string',
+        'tag=' => 'string',
+        'aad=' => 'string',
+      ),
+    ),
+    'openssl_encrypt' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|string',
+        'data' => 'string',
+        'method' => 'string',
+        'password' => 'string',
+        'options=' => 'int',
+        'iv=' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'false|string',
+        'data' => 'string',
+        'method' => 'string',
+        'password' => 'string',
+        'options=' => 'int',
+        'iv=' => 'string',
+        '&w_tag=' => 'string',
+        'aad=' => 'string',
+        'tag_length=' => 'int',
+      ),
+    ),
+    'openssl_pkcs12_export' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'x509' => 'resource|string',
+        '&w_out' => 'string',
+        'priv_key' => 'array<array-key, mixed>|resource|string',
+        'pass' => 'string',
+        'args' => 'array<array-key, mixed>',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'x509' => 'resource|string',
+        '&w_out' => 'string',
+        'priv_key' => 'array<array-key, mixed>|resource|string',
+        'pass' => 'string',
+        'args=' => 'array<array-key, mixed>',
+      ),
+    ),
+    'openssl_x509_checkpurpose' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool|int',
+        'x509cert' => 'resource|string',
+        'purpose' => 'int',
+        'cainfo' => 'array<array-key, mixed>',
+        'untrustedfile=' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool|int',
+        'x509cert' => 'resource|string',
+        'purpose' => 'int',
+        'cainfo=' => 'array<array-key, mixed>',
+        'untrustedfile=' => 'string',
+      ),
+    ),
+    'openssl_x509_parse' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'x509' => 'resource|string',
+        'shortname' => 'bool',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'x509' => 'resource|string',
+        'shortname=' => 'bool',
+      ),
+    ),
+    'pfsockopen' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|resource',
+        'hostname' => 'string',
+        'port' => 'int',
+        '&w_errno=' => 'int',
+        '&w_errstr=' => 'string',
+        'timeout=' => 'float',
+      ),
+      'new' => 
+      array (
+        0 => 'false|resource',
+        'hostname' => 'string',
+        'port=' => 'int',
+        '&w_errno=' => 'int',
+        '&w_errstr=' => 'string',
+        'timeout=' => 'float',
+      ),
+    ),
+    'pg_fetch_all' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, array<array-key, mixed>>',
+        'result' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, array<array-key, mixed>>',
+        'result' => 'resource',
+        'result_type=' => 'int',
+      ),
+    ),
+    'pg_last_notice' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|bool|string',
+        'connection' => 'resource',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|bool|string',
+        'connection' => 'resource',
+        'option=' => 'int',
+      ),
+    ),
+    'pg_select' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>|false|string',
+        'db' => 'resource',
+        'table' => 'string',
+        'ids' => 'array<array-key, mixed>',
+        'options=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|false|string',
+        'db' => 'resource',
+        'table' => 'string',
+        'ids' => 'array<array-key, mixed>',
+        'options=' => 'int',
+        'result_type=' => 'int',
+      ),
+    ),
+    'sessionhandler::gc' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'max_lifetime' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'false|int',
+        'max_lifetime' => 'int',
+      ),
+    ),
+    'sqlite3::createfunction' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'name' => 'string',
+        'callback' => 'callable',
+        'argCount=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'name' => 'string',
+        'callback' => 'callable',
+        'argCount=' => 'int',
+        'flags=' => 'int',
+      ),
+    ),
+    'srand' => 
+    array (
+      'old' => 
+      array (
+        0 => 'void',
+        'seed=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'void',
+        'seed=' => 'int',
+        'mode=' => 'int',
+      ),
+    ),
+    'strpbrk' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|string',
+        'haystack' => 'string',
+        'char_list=' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'false|string',
+        'haystack' => 'string',
+        'char_list' => 'string',
+      ),
+    ),
+    'strtok' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|non-empty-string',
+        'str' => 'string',
+        'token' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'false|non-empty-string',
+        'str' => 'string',
+        'token=' => 'string',
+      ),
+    ),
+    'swoole\\client::on' => 
+    array (
+      'old' => 
+      array (
+        0 => 'void',
+        'event_name' => 'string',
+        'callback' => 'callable',
+      ),
+      'new' => 
+      array (
+        0 => 'void',
+        'event' => 'string',
+        'callback' => 'callable',
+      ),
+    ),
+    'swoole\\client::pipe' => 
+    array (
+      'old' => 
+      array (
+        0 => 'void',
+        'dst_socket' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'void',
+        'socket' => 'string',
+      ),
+    ),
+    'swoole\\coroutine\\mysql::connect' => 
+    array (
+      'old' => 
+      array (
+        0 => 'ReturnType',
+        'server_config' => 'array<array-key, mixed>',
+      ),
+      'new' => 
+      array (
+        0 => 'ReturnType',
+        'server_config=' => 'array<array-key, mixed>',
+      ),
+    ),
+    'swoole\\http\\response::cookie' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'name' => 'string',
+        'value=' => 'string',
+        'expires=' => 'string',
+        'path=' => 'string',
+        'domain=' => 'string',
+        'secure=' => 'string',
+        'httponly=' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+        'name' => 'string',
+        'value=' => 'string',
+        'expires=' => 'string',
+        'path=' => 'string',
+        'domain=' => 'string',
+        'secure=' => 'string',
+        'httponly=' => 'string',
+        'samesite=' => 'mixed',
+        'priority=' => 'mixed',
+      ),
+    ),
+    'swoole\\http\\response::rawcookie' => 
+    array (
+      'old' => 
+      array (
+        0 => 'ReturnType',
+        'name' => 'string',
+        'value=' => 'string',
+        'expires=' => 'string',
+        'path=' => 'string',
+        'domain=' => 'string',
+        'secure=' => 'string',
+        'httponly=' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'ReturnType',
+        'name' => 'string',
+        'value=' => 'string',
+        'expires=' => 'string',
+        'path=' => 'string',
+        'domain=' => 'string',
+        'secure=' => 'string',
+        'httponly=' => 'string',
+        'samesite=' => 'mixed',
+        'priority=' => 'mixed',
+      ),
+    ),
+    'swoole\\process::daemon' => 
+    array (
+      'old' => 
+      array (
+        0 => 'void',
+        'nochdir=' => 'bool',
+        'noclose=' => 'bool',
+      ),
+      'new' => 
+      array (
+        0 => 'void',
+        'nochdir=' => 'bool',
+        'noclose=' => 'bool',
+        'pipes=' => 'mixed',
+      ),
+    ),
+    'swoole\\serialize::pack' => 
+    array (
+      'old' => 
+      array (
+        0 => 'ReturnType',
+        'data' => 'string',
+        'flag=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'ReturnType',
+        'data' => 'string',
+        'is_fast=' => 'int',
+      ),
+    ),
+    'swoole\\serialize::unpack' => 
+    array (
+      'old' => 
+      array (
+        0 => 'ReturnType',
+        'string' => 'string',
+        'flag=' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'ReturnType',
+        'data' => 'string',
+        'args=' => 'string',
+      ),
+    ),
+    'swoole\\server::after' => 
+    array (
+      'old' => 
+      array (
+        0 => 'ReturnType',
+        'ms' => 'int',
+        'callback' => 'callable',
+        'param=' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'ReturnType',
+        'ms' => 'int',
+        'callback' => 'callable',
+      ),
+    ),
+    'swoole\\websocket\\server::pack' => 
+    array (
+      'old' => 
+      array (
+        0 => 'binary',
+        'data' => 'string',
+        'opcode=' => 'string',
+        'finish=' => 'string',
+        'mask=' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'binary',
+        'data' => 'string',
+        'opcode=' => 'string',
+        'flags=' => 'string',
+      ),
+    ),
+    'swoole\\websocket\\server::push' => 
+    array (
+      'old' => 
+      array (
+        0 => 'void',
+        'fd' => 'string',
+        'data' => 'string',
+        'opcode=' => 'string',
+        'finish=' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'void',
+        'fd' => 'string',
+        'data' => 'string',
+        'opcode=' => 'string',
+        'flags=' => 'string',
+      ),
+    ),
+    'swoole_timer_after' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+        'ms' => 'int',
+        'callback' => 'callable',
+        '...params=' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+        'ms' => 'int',
+        'callback' => 'callable',
+      ),
+    ),
+    'swoole_timer_tick' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+        'ms' => 'int',
+        'callback' => 'callable',
+        '...params=' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+        'ms' => 'int',
+        'callback' => 'callable',
+      ),
+    ),
+    'timezone_identifiers_list' => 
+    array (
+      'old' => 
+      array (
+        0 => 'false|list<string>',
+        'what=' => 'int',
+        'country=' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'false|list<string>',
+        'what=' => 'int',
+        'country=' => 'null|string',
+      ),
+    ),
+    'unpack' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, mixed>',
+        'format' => 'string',
+        'input' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, mixed>|false',
+        'format' => 'string',
+        'input' => 'string',
+        'offset=' => 'int',
+      ),
+    ),
+    'xml_set_object' => 
+    array (
+      'old' => 
+      array (
+        0 => 'true',
+        'parser' => 'resource',
+        '&obj' => 'object',
+      ),
+      'new' => 
+      array (
+        0 => 'true',
+        'parser' => 'resource',
+        'obj' => 'object',
+      ),
+    ),
+  ),
+  'removed' => 
+  array (
+  ),
+);
