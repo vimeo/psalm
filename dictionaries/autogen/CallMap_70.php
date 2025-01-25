@@ -2441,6 +2441,11 @@ return array (
   array (
     0 => 'void',
   ),
+  'closure::__invoke' => 
+  array (
+    0 => 'mixed',
+    '...args=' => 'mixed',
+  ),
   'closure::bind' => 
   array (
     0 => 'mixed',
@@ -48981,10 +48986,5 @@ return array (
   'zookeepersessionexception::gettraceasstring' => 
   array (
     0 => 'mixed',
-  ),
-  'closure::__invoke' => 
-  array (
-    0 => 'mixed',
-    '...args=' => 'mixed',
   ),
 );

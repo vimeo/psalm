@@ -27,7 +27,6 @@ foreach (glob(__DIR__."/../dictionaries/autogen/CallMap_*.php") as $file) {
     $version = $matches[1];
 
     $baseMaps[$version] = normalizeCallMap(require $file);
-    $allFuncs += $baseMaps[$version];
 
     $baseMaps[$version]['debug_zval_dump'] = [
         0 => 'void',
@@ -81,6 +80,9 @@ foreach (glob(__DIR__."/../dictionaries/autogen/CallMap_*.php") as $file) {
             $t = 'int';
         }
     } unset($t);
+
+    $baseMaps[$version] = normalizeCallMap($baseMaps[$version]);
+    $allFuncs += $baseMaps[$version];
     writeCallMap($file, $baseMaps[$version]);
 }
 
