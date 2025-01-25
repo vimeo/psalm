@@ -26651,7 +26651,7 @@ return array (
   ),
   'get_cfg_var' => 
   array (
-    0 => 'false|string',
+    0 => 'array<array-key, mixed>|false|string',
     'option' => 'string',
   ),
   'get_class' => 

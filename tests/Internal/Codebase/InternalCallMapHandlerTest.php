@@ -78,7 +78,6 @@ class InternalCallMapHandlerTest extends TestCase
      * @var array<int|string, string|list<string>>
      */
     private static array $ignoredFunctions = [
-        'array_multisort',
         'datefmt_create' => ['8.0'],
         'get_class' => ['8.3', '8.4'],
         'get_parent_class' => ['8.3', '8.4'],
@@ -514,15 +513,21 @@ class InternalCallMapHandlerTest extends TestCase
                 'optional' => false,
                 'type' => $entry,
             ];
-            if (strncmp($normalizedKey, '&', 1) === 0) {
-                $normalizedEntry['byRef'] = true;
-                $normalizedKey = substr($normalizedKey, 1);
-            }
 
-            if (strncmp($normalizedKey, '...', 3) === 0) {
-                $normalizedEntry['variadic'] = true;
-                $normalizedKey = substr($normalizedKey, 3);
-            }
+            do {
+                if (strncmp($normalizedKey, '...', 3) === 0) {
+                    $normalizedEntry['variadic'] = true;
+                    $normalizedKey = substr($normalizedKey, 3);
+                    continue;
+                }
+
+                if (strncmp($normalizedKey, '&', 1) === 0) {
+                    $normalizedEntry['byRef'] = true;
+                    $normalizedKey = substr($normalizedKey, 1);
+                    continue;
+                }
+                break;
+            } while (true);
 
             // Read the reference mode
             if ($normalizedEntry['byRef']) {

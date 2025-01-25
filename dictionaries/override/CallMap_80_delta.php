@@ -7689,7 +7689,7 @@ return array (
       ),
       'new' => 
       array (
-        0 => 'false|string',
+        0 => 'array<array-key, mixed>|false|string',
         'option' => 'string',
       ),
     ),
