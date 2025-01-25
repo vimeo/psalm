@@ -80,7 +80,6 @@ class InternalCallMapHandlerTest extends TestCase
     private static array $ignoredFunctions = [
         'array_multisort',
         'datefmt_create' => ['8.0'],
-        'fiber::start',
         'get_class' => ['8.3', '8.4'],
         'get_parent_class' => ['8.3', '8.4'],
         'imagefilledpolygon',
@@ -88,7 +87,6 @@ class InternalCallMapHandlerTest extends TestCase
         'imagegd2',
         'imageopenpolygon',
         'imagepolygon',
-        'intlgregoriancalendar::__construct',
         'lzf_compress',
         'lzf_decompress',
         'mailparse_msg_extract_part',
@@ -100,7 +98,6 @@ class InternalCallMapHandlerTest extends TestCase
         'mailparse_msg_get_structure',
         'mailparse_msg_parse',
         'mailparse_stream_encode',
-        'mb_check_encoding' => ['8.1', '8.2', '8.3', '8.4'],
         'memcached::cas', // memcached 3.2.0 has incorrect reflection
         'memcached::casbykey', // memcached 3.2.0 has incorrect reflection
         'oauth::fetch',
@@ -178,6 +175,17 @@ class InternalCallMapHandlerTest extends TestCase
      * @var array<int|string, string|list<string>>
      */
     private static array $ignoredReturnTypeOnlyFunctions = [
+        'datetime::add' => ['8.1', '8.2', '8.3'], // DateTime does not contain static
+        'datetime::modify' => ['8.1', '8.2', '8.3'], // DateTime does not contain static
+        'datetime::createfromformat' => ['8.1', '8.2', '8.3'], // DateTime does not contain static
+        'datetime::createfromimmutable' => ['8.1'],
+        'datetime::createfrominterface',
+        'datetime::setdate' => ['8.1', '8.2', '8.3'], // DateTime does not contain static
+        'datetime::setisodate' => ['8.1', '8.2', '8.3'], // DateTime does not contain static
+        'datetime::settime' => ['8.1', '8.2', '8.3'], // DateTime does not contain static
+        'datetime::settimestamp' => ['8.1', '8.2', '8.3'], // DateTime does not contain static
+        'datetime::settimezone' => ['8.1', '8.2', '8.3'], // DateTime does not contain static
+        'datetime::sub' => ['8.1', '8.2', '8.3'], // DateTime does not contain static
     ];
 
     /**
@@ -270,7 +278,7 @@ class InternalCallMapHandlerTest extends TestCase
         $collator_sort_entry = $entries[0];
         $this->assertIsArray($collator_sort_entry->params);
         $this->assertArrayHasKey(1, $collator_sort_entry->params);
-        $this->assertEquals('array', $collator_sort_entry->params[1]->name);
+        $this->assertEquals('arr', $collator_sort_entry->params[1]->name);
     }
 
     public function testGetCallablesFromCallmapRemovesWPrefixFromParameterNames(): void
